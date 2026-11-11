@@ -13,7 +13,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
-import { TodoPolicy } from '../../domains/todo.model';
+import { getShiftedEndDate, TodoPolicy } from '../../domains/todo.model';
 import { useTodoId } from '../../hooks/use-todo-params';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
@@ -89,7 +89,7 @@ TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => v
             changedField: 'date',
             input: {
               startDate: startDateKey,
-              endDate: TodoPolicy.getShiftedEndDate(todo, startDateKey),
+              endDate: getShiftedEndDate(todo, startDateKey),
               scheduledTime: todo.isAllDay ? null : editValues.scheduledTime,
               isAllDay: todo.isAllDay,
             },

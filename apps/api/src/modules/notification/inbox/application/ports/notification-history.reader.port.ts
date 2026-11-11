@@ -4,7 +4,7 @@ import type { NotificationType } from "../../domain/notification-type.constants.
 export interface ExistsRecentNotificationQuery {
   readonly userId: string;
   readonly type: NotificationType;
-  readonly since: Date;
+  readonly since: Temporal.Instant;
   readonly friendId?: string;
   readonly todoId?: number;
   readonly nudgeId?: number;
@@ -14,7 +14,7 @@ export interface ExistsRecentNotificationQuery {
 export interface FindAlreadyNotifiedUserIdsQuery {
   readonly userIds: string[];
   readonly type: NotificationType;
-  readonly notificationDate: Date;
+  readonly notificationDate: Temporal.PlainDate;
   readonly friendId?: string;
 }
 

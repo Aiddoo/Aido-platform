@@ -43,7 +43,7 @@ export class ExchangeOAuthCodeUseCase {
     }
     const { accessToken, refreshToken, userId } = exchange;
     const consumed = await this.#dependencies.oauthStateRepository.consumeExchangeCode({
-      id: state.id.value,
+      id: state.id,
       exchangeCode: input.code,
       at,
       purpose: "login",

@@ -7,15 +7,15 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
-import { AppVersion } from "#api/platform/http/request-client/index";
+import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { ListTodoCommentRepliesUseCase } from "../../../application/use-cases/list-todo-comment-replies.use-case.js";
 import {

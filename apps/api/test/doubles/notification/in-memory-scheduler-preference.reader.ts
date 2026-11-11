@@ -1,7 +1,7 @@
 import { resolveRecipientLocale } from "#api/modules/notification/push/domain/recipient-locale.domain-service";
 import { SchedulerPreferenceReaderPort } from "#api/modules/notification/reminders/application/ports/scheduler-preference-reader.port";
 import type { UserLocaleMap } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
-import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 interface StoredPreference {
   readonly timezone: string;

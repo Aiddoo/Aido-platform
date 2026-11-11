@@ -4,7 +4,7 @@ import type {
   WeatherReportResponse,
 } from "@aido/api/contracts/weather";
 
-import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
 import type { WeatherReportResult } from "../../../application/use-cases/get-weather-report.use-case.js";
 import type { WeatherBriefing } from "../../../domain/weather-briefing.domain-service.js";
@@ -12,6 +12,14 @@ import type { WeatherReportDayPart } from "../../../domain/weather-report.vo.js"
 
 /** v2 대기질은 한국 위치에서 에어코리아로만 채운다. */
 const AIR_QUALITY_SOURCE = "AIRKOREA";
+
+function toISOString(date: Date): string {
+  return toIsoString(instantFromDate(date));
+}
+
+function toISOStringOrNull(date: Date | null): string | null {
+  return date == null ? null : toISOString(date);
+}
 
 function toDayPartResponse(part: WeatherReportDayPart | null): WeatherDayPartForecast | null {
   return part == null ? null : { ...part };

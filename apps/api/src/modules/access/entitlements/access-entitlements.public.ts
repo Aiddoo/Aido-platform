@@ -3,13 +3,10 @@ export { assertEntitled, premiumFeatureDenied } from "./application/entitlements
 export { EntitlementCacheInvalidatorPort } from "./application/ports/entitlement-cache-invalidator.port.js";
 export {
   EntitlementReaderPort,
-  type FeatureEntitlement,
   type UserEntitlements,
 } from "./application/ports/entitlement.reader.port.js";
-export {
-  FeatureGranterPort,
-  type FeatureGrantInput,
-} from "./application/ports/feature-granter.port.js";
+export { type FeatureEntitlement } from "./domain/entitlement.domain-service.js";
+export { FeatureGranterPort } from "./application/ports/feature-granter.port.js";
 export {
   calculateRemainingLimit,
   isExemptFromDormancy,

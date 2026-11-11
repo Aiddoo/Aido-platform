@@ -25,7 +25,7 @@ describe('toWeeklyAchievement', () => {
 
     // Then
     expect(weeklyAchievementSchema.parse(achievement)).toEqual(achievement);
-    expect(achievement).toMatchObject({ id: 42, weekLabel: '3월 2주차', completionRate: 93.3 });
+    expect(achievement).toMatchObject({ id: 42, week: 10, completionRate: 93.3 });
   });
 
   it('달성 시각을 Date로 바꾸지 않고 같은 순간의 문자열로 둔다', () => {

@@ -1,5 +1,7 @@
 import type { SubscriptionEnvironment } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type {
   StoreSubscriptionEventKind,
   SubscriptionStore,
@@ -27,7 +29,7 @@ export abstract class SubscriptionEventNotifierPort {
    * 사용자에게 갈 결제 문제 푸시를 활성 UoW 안에서 기록한다. 처리 원장과 함께 커밋돼야 커밋 뒤 실패로
    * 알림을 잃어도 공급자 재전송이 원장에 막혀 복구되지 않는 일이 없다.
    */
-  abstract recordBillingIssue(userId: string, at: Temporal.Instant): Promise<void>;
+  abstract recordBillingIssue(userId: UserId, at: Temporal.Instant): Promise<void>;
   abstract reportWebhookFailure(
     error: unknown,
     context: StoreSubscriptionEventFailureContext,

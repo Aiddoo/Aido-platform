@@ -3,26 +3,27 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createPremiumRenewalUpcomingNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
   NotificationRecipientLocaleReaderPort,
   NotificationRecipientTimezoneReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
 import type { UpcomingRenewalNotice } from "../../application/ports/upcoming-renewal-notice.repository.port.js";
 import { UpcomingRenewalNotifierPort } from "../../application/ports/upcoming-renewal-notifier.port.js";
 
 @Injectable()
 export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort {
-  readonly #notificationPublisher: NotificationPublisher;
+  readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
 
   constructor(
-    notificationPublisher: NotificationPublisher,
+    notificationPublisher: PublishNotificationUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
     @Inject(NotificationRecipientTimezoneReaderPort)
@@ -40,7 +41,7 @@ export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort 
     }
     const userIds = notices.map((notice) => notice.userId);
     const [locales, timezones] = await Promise.all([
-      this.#localeReader.getLocales(userIds),
+      this.#localeReader.getLocales(userIds.map((userId) => UserId.reconstitute(userId))),
       this.#timezoneReader.getTimezones(userIds),
     ]);
     await this.#notificationPublisher.publishBatch(

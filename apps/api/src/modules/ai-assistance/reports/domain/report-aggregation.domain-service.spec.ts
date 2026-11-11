@@ -1,11 +1,13 @@
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
-
 import {
   computeCategoryBreakdown,
   computeDayPatterns,
   computeStreakDays,
   computeTimePatterns,
 } from "./report-aggregation.domain-service.js";
+
+// 사용자 현지 자정의 순간
+const localMidnight = (date: string, timezone: string) =>
+  new Date(Temporal.PlainDate.from(date).toZonedDateTime(timezone).epochMilliseconds);
 
 const row = (date: string, count: number) => ({
   startDate: new Date(`${date}T00:00:00.000Z`),
@@ -31,8 +33,8 @@ describe("보고서 DATE label과 실제 시각", () => {
         computeStreakDays(
           groups,
           groups,
-          parseLocalDateTime("2026-03-09", "00:00", timezone),
-          parseLocalDateTime("2026-03-16", "00:00", timezone),
+          localMidnight("2026-03-09", timezone),
+          localMidnight("2026-03-16", timezone),
           timezone,
         ),
       ).toBe(2);
@@ -43,8 +45,8 @@ describe("보고서 DATE label과 실제 시각", () => {
       computeStreakDays(
         [row("2026-03-09", 1), row("2026-03-15", 2)],
         [row("2026-03-09", 1), row("2026-03-15", 1)],
-        parseLocalDateTime("2026-03-09", "00:00", "America/Los_Angeles"),
-        parseLocalDateTime("2026-03-16", "00:00", "America/Los_Angeles"),
+        localMidnight("2026-03-09", "America/Los_Angeles"),
+        localMidnight("2026-03-16", "America/Los_Angeles"),
         "America/Los_Angeles",
       ),
     ).toBe(0);

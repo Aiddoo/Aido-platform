@@ -2,11 +2,13 @@ import type { AiDataSharingConsentVersion } from "@aido/api/vocabulary";
 import { Logger } from "@nestjs/common";
 import { z } from "zod";
 
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { ok, status, StubProviderAdapter } from "#test/mocks/ai-provider-adapter.stub";
 import { createAiSdkGenerator, createAiTestConfig } from "#test/mocks/ai-provider-http.stub";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
+import { AiAlerts } from "../../application/ai-generation.alerts.js";
 import { AiGenerationError, isTransientAiFailure } from "../../application/ai-generation.errors.js";
 import type { AiGenerationRequest } from "../../application/ports/ai-generator.port.js";
 import { AiSpendBudgetAdapter } from "./ai-spend-budget.adapter.js";
@@ -42,7 +44,7 @@ function request(
     task: "parse-todo",
     taskClass: "interactive",
     userId: "user-1",
-    maxInputChars: 5_000,
+    maxInputChars: 5000,
     promptVersion: "parse-todo@test",
     system: "규칙",
     prompt: "PRIVATE_PROMPT",
@@ -70,7 +72,12 @@ describe("AiSpendBudgetAdapter — 기동 검사", () => {
     // Given
     const config = createAiTestConfig({ AI_MODEL_ANTHROPIC: "claude-unknown-9" });
     const alert = new RecordingOperationalAlert();
-    const guard = new AiSpendBudgetAdapter(config, new InMemoryUsageMeterAdapter(), alert);
+    const guard = new AiSpendBudgetAdapter(
+      config,
+      new InMemoryUsageMeterAdapter(),
+      alert,
+      new DateClock(),
+    );
     // When
     guard.onModuleInit();
     // Then
@@ -89,6 +96,7 @@ describe("AiSpendBudgetAdapter — 기동 검사", () => {
       createAiTestConfig(),
       new InMemoryUsageMeterAdapter(),
       alert,
+      new DateClock(),
     );
     // When
     guard.onModuleInit();
@@ -872,7 +880,7 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
     expect(chain.anthropic.callCount).toBe(3);
     expect(chain.alert.alerts).toEqual([
       expect.objectContaining({
-        key: "ai.provider.billing-circuit-opened",
+        key: "ai.provider.auth-circuit-opened",
         tags: expect.objectContaining({ breaker: "auth", reason: "AUTH" }),
       }),
     ]);
@@ -893,9 +901,7 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
     expect(chain.anthropic.callCount).toBe(1);
     expect(chain.alert.alerts).toEqual([
       {
-        key: "ai.provider.billing-circuit-opened",
-        severity: "error",
-        message: "Claude 결제 실패, 다음 순서 AI 업체로 전환",
+        ...AiAlerts.PROVIDER_BILLING_CIRCUIT_OPENED,
         tags: {
           policy: "ai:anthropic",
           breaker: "billing",
@@ -1033,6 +1039,11 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
     // Then
     expect(open).toMatchObject({ kind: "CIRCUIT_OPEN", errorCode: "AI_1301", attempts: 0 });
     expect(isTransientAiFailure("CIRCUIT_OPEN")).toBe(true);
+    expect(chain.alert.alerts.map((alert) => alert.key)).toEqual([
+      AiAlerts.PROVIDER_BILLING_CIRCUIT_OPENED.key,
+      AiAlerts.ALL_PROVIDERS_CIRCUIT_OPEN.key,
+    ]);
+    expect(noKey.alert.alerts).toEqual([]);
     expect(unavailable).toMatchObject({ kind: "UNAVAILABLE", errorCode: "AI_1301" });
     expect(isTransientAiFailure("UNAVAILABLE")).toBe(false);
     expect(chain.google.callCount).toBe(1);
@@ -1069,7 +1080,7 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
     await probe;
     // Then
     expect(short).toMatchObject({ provider: "google", fallbackFrom: null });
-    expect(waitedMs).toBeLessThan(1_000);
+    expect(waitedMs).toBeLessThan(1000);
     expect(anthropic.callCount).toBe(2);
   });
 });

@@ -8,14 +8,15 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
-  ApiDoc,
-  ApiSuccessResponse,
   ApiTooManyRequestsError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { UpsertUserLocationUseCase } from "../../../application/use-cases/upsert-user-location.use-case.js";
 import { toWeatherLocationResponse } from "./weather-location-response.mapper.js";

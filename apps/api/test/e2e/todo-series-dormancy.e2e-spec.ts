@@ -22,7 +22,7 @@ describe("반복 할 일 복귀 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -55,10 +55,10 @@ describe("반복 할 일 복귀 E2E", () => {
       .getClient()
       .update(todoSeries)
       .set({
-        startDate: new Date(dateAfter(-300)),
-        nextOccurrenceDate: new Date(dateAfter(-110)),
+        startDate: Temporal.PlainDate.from(dateAfter(-300)),
+        nextOccurrenceDate: Temporal.PlainDate.from(dateAfter(-110)),
         generatedCount: 190,
-        updatedAt: lastMovedAt,
+        updatedAt: instantFromDate(lastMovedAt),
       })
       .where(eq(todoSeries.id, seriesId));
     await ctx.testDatabase
@@ -89,7 +89,7 @@ describe("반복 할 일 복귀 E2E", () => {
       .where(eq(todo.seriesId, seriesId))
       .orderBy(todo.occurrenceDate);
     expect(rows).toHaveLength(91);
-    expect(rows[0]?.occurrenceDate?.toISOString().slice(0, 10)).toBe(dateAfter(0));
+    expect(rows[0]?.occurrenceDate?.toString()).toBe(dateAfter(0));
   });
 
   it("같이 불리는 요약에도 오늘 회차가 잡힌다", async () => {

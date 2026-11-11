@@ -11,6 +11,7 @@ import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/ident
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -32,7 +33,7 @@ import { type UserCategoryReaderPort } from "../ports/user-category.reader.port.
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
 
 /** parse-todo 메타에 상한을 넘어 만들지 않은 할 일 수를 더한다. */
-export interface ParseMemoMeta extends ParseTodoMeta {
+interface ParseMemoMeta extends ParseTodoMeta {
   omittedTodoCount: number;
 }
 
@@ -94,16 +95,17 @@ export class ParseMemoUseCase {
 
   async execute(input: ParseMemoCommand): Promise<ParseMemoResult> {
     const { userId, content, categoryId, idempotencyKey } = input;
+    const owner = UserId.reconstitute(userId);
     const startTime = this.#dependencies.clock.now().epochMilliseconds;
 
     const { timezone, locale } = await resolveRequestLocale(
       this.#dependencies.localePreferenceReader,
-      userId,
+      owner,
       input,
     );
     const { quota } = this.#dependencies;
     const reservation = await quota.reserve({
-      userId,
+      userId: UserId.reconstitute(userId),
       feature: "AI_PARSE",
       idempotencyKey,
       ...(idempotencyKey != null && {
@@ -114,7 +116,7 @@ export class ParseMemoUseCase {
     const { result, featureQuota } = await this.#dependencies.chargedGeneration.settle({
       // 확정 뒤 응답을 받지 못한 재시도다. 메모 결과는 서버에 남기지 않아 추가 차감 없이 다시 만든다.
       reservation: reservation.isAlreadyCommitted ? await quota.reopen(reservation) : reservation,
-      userId,
+      userId: owner,
       feature: "AI_PARSE",
       task: parseMemoPrompt.id,
       generate: async () => {
@@ -137,9 +139,10 @@ export class ParseMemoUseCase {
     const definition = parseMemoPrompt;
     const at = instantToDate(this.#dependencies.clock.now());
 
+    const owner = UserId.reconstitute(userId);
     const [userCategories, upcomingTodos] = await Promise.all([
-      this.#dependencies.categoryReader.findByUserId(userId),
-      this.#dependencies.upcomingTodoReader.findByUserId(userId, timezone),
+      this.#dependencies.categoryReader.findByUserId(owner),
+      this.#dependencies.upcomingTodoReader.findByUserId(owner, timezone),
     ]);
     const built = buildWithinLimit(
       definition,
@@ -152,7 +155,9 @@ export class ParseMemoUseCase {
       userId,
     } as const;
 
-    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
+    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(
+      UserId.reconstitute(userId),
+    );
     const { agreedVersion } = consent.status();
     try {
       const { value, meta } = await generateWithPrompt(

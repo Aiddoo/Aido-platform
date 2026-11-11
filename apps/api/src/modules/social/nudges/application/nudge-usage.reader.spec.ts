@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import {
@@ -20,7 +21,10 @@ describe("NudgeUsageReader — identity가 읽는 콕 일간 사용량", () => {
     });
 
     // When
-    const usage = await reader.readDailyUsage(NUDGE_FIXTURE_SENDER_ID, "America/Los_Angeles");
+    const usage = await reader.readDailyUsage(
+      UserId.reconstitute(NUDGE_FIXTURE_SENDER_ID),
+      "America/Los_Angeles",
+    );
 
     // Then
     expect(usage).toEqual({ used: 1, resetsAt: new Date("2026-07-26T07:00:00.000Z") });

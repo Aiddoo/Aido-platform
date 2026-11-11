@@ -1,10 +1,13 @@
-import { queryOptions } from '@tanstack/react-query';
+import { type InfiniteData, queryOptions } from '@tanstack/react-query';
 
-import type { Memo } from '../domains/memo.model';
+import type { Memo, MemoPage } from '../domains/memo.model';
 
 export const MEMO_QUERY_KEYS = {
   all: ['memo'] as const,
-  list: () => [...MEMO_QUERY_KEYS.all, 'list'] as const,
+  list: () =>
+    queryOptions<InfiniteData<MemoPage, number | undefined>>({
+      queryKey: [...MEMO_QUERY_KEYS.all, 'list'],
+    }).queryKey,
   details: () => [...MEMO_QUERY_KEYS.all, 'detail'] as const,
   detail: ({ memoId }: { memoId: number }) =>
     queryOptions<Memo>({ queryKey: [...MEMO_QUERY_KEYS.details(), { memoId }] }).queryKey,

@@ -8,16 +8,17 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiNotFoundError,
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiCreatedResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { ReportContentUseCase } from "../../../application/use-cases/report-content.use-case.js";
 import { toCreateUserReportResponse } from "./user-report-response.mapper.js";

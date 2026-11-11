@@ -16,6 +16,10 @@ export class FriendshipEstablisherAdapter implements FriendshipEstablisherPort {
   }
 
   establish(input: EstablishFriendshipInput): Promise<FriendshipEstablishment> {
-    return this.#establishFriendship.execute(input);
+    return this.#establishFriendship.execute({
+      requesterId: input.requesterId.value,
+      targetUserId: input.targetUserId.value,
+      shouldNotifyFriends: input.shouldNotifyFriends,
+    });
   }
 }

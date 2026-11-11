@@ -1,3 +1,4 @@
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NudgeId } from "../../domain/nudge-id.vo.js";
@@ -35,13 +36,13 @@ export abstract class NudgeReaderPort {
   }): Promise<NudgeListItem[]>;
 
   abstract findInteractionTodo(
-    todoId: number,
+    todoId: TodoId,
     ownerId: UserId,
   ): Promise<NudgeInteractionTodo | null>;
-  abstract findLastReceivedNudgeId(todoId: number, receiverId: UserId): Promise<NudgeId | null>;
+  abstract findLastReceivedNudgeId(todoId: TodoId, receiverId: UserId): Promise<NudgeId | null>;
   // 그 할 일에서 이미 감사를 전한 서로 다른 친구 수와 마지막 감사 시각
-  abstract countThankedRecipients(todoId: number, receiverId: UserId): Promise<number>;
-  abstract findLastThankedAt(todoId: number, receiverId: UserId): Promise<Temporal.Instant | null>;
+  abstract countThankedRecipients(todoId: TodoId, receiverId: UserId): Promise<number>;
+  abstract findLastThankedAt(todoId: TodoId, receiverId: UserId): Promise<Temporal.Instant | null>;
   // 감사 대상(NudgeThanksCandidateQuery)을 id 내림차순으로. limit이 null이면 모두 준다
   abstract listThanksRecipients(
     query: NudgeThanksCandidateQuery & {

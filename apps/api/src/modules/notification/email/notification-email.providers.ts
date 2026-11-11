@@ -1,12 +1,8 @@
 import { Logger, type Provider } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
 import { Mailer } from "@nestjs/mail";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
-import {
-  USAGE_METER,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -21,13 +17,16 @@ import { selectEmailSender } from "./infrastructure/adapters/email-sender-factor
 import { MeteredEmailBudgetAdapter } from "./infrastructure/adapters/metered-email-budget.adapter.js";
 import { NestMailEmailSenderAdapter } from "./infrastructure/adapters/nest-mail-email-sender.adapter.js";
 import { EmailDeliveryQueueAdapter } from "./infrastructure/jobs/email-delivery-queue.adapter.js";
-import { notificationEmailConfig } from "./notification-email.config.js";
+import {
+  notificationEmailConfig,
+  type NotificationEmailConfig,
+} from "./notification-email.config.js";
 
 const NOTIFICATION_EMAIL_QUEUE_PROVIDERS = [
   { provide: EmailDeliveryQueuePort, useClass: EmailDeliveryQueueAdapter },
 ] satisfies Provider[];
 
-// 렌더는 공급자와 상관없이 Mailer가 맡고, 전송 어댑터는 EMAIL_PROVIDER로 고른다
+// 렌더는 공급자와 상관없이 Mailer가 맡고, 전송 어댑터는 EMAIL_PROVIDER(비우면 배포 환경 기본값)로 고른다
 const NOTIFICATION_EMAIL_EXTERNAL_PROVIDERS = [
   {
     provide: NestMailEmailSenderAdapter,
@@ -35,21 +34,19 @@ const NOTIFICATION_EMAIL_EXTERNAL_PROVIDERS = [
     useFactory: (
       mailer: Mailer,
       policies: OutboundPolicyRegistry,
-      config: ConfigType<typeof notificationEmailConfig>,
+      config: NotificationEmailConfig,
     ) => new NestMailEmailSenderAdapter({ mailer, policies, isConfigured: config.apiKey != null }),
   },
   { provide: EmailTemplateRendererPort, useExisting: NestMailEmailSenderAdapter },
   {
     provide: EmailSenderPort,
     inject: [notificationEmailConfig.KEY, NestMailEmailSenderAdapter],
-    useFactory: (
-      config: ConfigType<typeof notificationEmailConfig>,
-      nestMail: NestMailEmailSenderAdapter,
-    ) => selectEmailSender(config.provider, nestMail),
+    useFactory: (config: NotificationEmailConfig, nestMail: NestMailEmailSenderAdapter) =>
+      selectEmailSender(config.provider, nestMail),
   },
   {
     provide: EmailBudgetPort,
-    inject: [USAGE_METER, OperationalAlertPort, ClockPort],
+    inject: [UsageMeterPort, OperationalAlertPort, ClockPort],
     useFactory: (meter: UsageMeterPort, alert: OperationalAlertPort, clock: ClockPort) =>
       new MeteredEmailBudgetAdapter({
         meter,

@@ -5,13 +5,12 @@ import {
 } from "@aido/api/vocabulary";
 import { orderBy } from "es-toolkit";
 
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
-
+import { localDateAt } from "../../shared/domain/weather-calendar.domain-service.js";
 import type { WeatherReportHour } from "./weather-report.vo.js";
 
 /** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
 const RESCHEDULE_OPTION_LIMIT = 4;
+const HOUR_MS = 60 * 60_000;
 
 export type WeatherBriefingHour = Pick<
   WeatherReportHour,
@@ -75,8 +74,7 @@ export function findHourIndexAt(
 ): number {
   const time = at.getTime();
   return hourly.findIndex(
-    (hour) =>
-      hour.startsAt.getTime() <= time && time < hour.startsAt.getTime() + TIME_UNIT.MS_PER_HOUR,
+    (hour) => hour.startsAt.getTime() <= time && time < hour.startsAt.getTime() + HOUR_MS,
   );
 }
 
@@ -108,13 +106,13 @@ function planRescheduleOptions(params: {
   readonly reason: WeatherRescheduleReason;
 }): WeatherRescheduleOption[] {
   const { hourly, todo, now, timezone, reason } = params;
-  const todoDay = dayWindowInTimezone(todo.scheduledAt, timezone).localDate;
+  const todoDay = localDateAt(todo.scheduledAt, timezone);
   const distance = (hour: WeatherBriefingHour) =>
     Math.abs(hour.startsAt.getTime() - todo.scheduledAt.getTime());
   const sameDayHours = hourly.filter(
     (hour) =>
       hour.startsAt.getTime() > now.getTime() &&
-      dayWindowInTimezone(hour.startsAt, timezone).localDate === todoDay,
+      localDateAt(hour.startsAt, timezone).equals(todoDay),
   );
   const ordered =
     reason === "rain"

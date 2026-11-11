@@ -1,7 +1,8 @@
 import { DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
-import dayjs from "dayjs";
 import { range, uniq } from "es-toolkit";
 import { match } from "ts-pattern";
+
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import type {
   DateRef,
@@ -27,8 +28,10 @@ const DEFAULT_RECURRENCE_WEEKS = 4;
 const HALF_DAY_MINUTES = 12 * 60;
 /** "이번 달 초"로 보는 마지막 날(초순) */
 const MONTH_EARLY_LAST_DAY = 10;
-/** "올해 초"로 보는 달(1월)의 dayjs 월 번호 */
-const YEAR_EARLY_MONTH_INDEX = 0;
+/** "올해 초"로 보는 달(1월) */
+const YEAR_EARLY_MONTH = 1;
+/** YYYY-MM-DD로 쓸 수 있는 마지막 해 */
+const MAX_CALENDAR_YEAR = 9999;
 
 /** 때만 말한 경우의 기본 시각(분). 자정은 대상 날짜 다음 날 00:00으로 따로 다룬다. */
 const PART_OF_DAY_MINUTES: Readonly<Record<Exclude<PartOfDay, "MIDNIGHT">, number>> = {
@@ -41,7 +44,7 @@ const PART_OF_DAY_MINUTES: Readonly<Record<Exclude<PartOfDay, "MIDNIGHT">, numbe
 };
 
 /** 요일 + 종료일 recurrence로 나타낼 수 없는 반복 */
-const LEGACY_UNSUPPORTED_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
+const UNREPRESENTABLE_REPEAT_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
   "UNSUPPORTED",
   "BIWEEKLY_DAYS",
   "MONTHLY_DAY",
@@ -50,8 +53,29 @@ const LEGACY_UNSUPPORTED_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
 const WEEKDAYS: readonly DayOfWeek[] = ["MON", "TUE", "WED", "THU", "FRI"];
 const WEEKEND: readonly DayOfWeek[] = ["SAT", "SUN"];
 
-/** 사용자 시간대의 달력 날짜를 UTC 자정으로 고정해 DST와 무관하게 날짜만 계산한다. */
-type CalendarDay = dayjs.Dayjs;
+/** 사용자 시간대의 달력 날짜. 시간대가 없어 DST와 무관하게 날짜만 계산한다. */
+type CalendarDay = Temporal.PlainDate;
+
+function isBefore(day: CalendarDay, other: CalendarDay): boolean {
+  return Temporal.PlainDate.compare(day, other) < 0;
+}
+
+function isAfter(day: CalendarDay, other: CalendarDay): boolean {
+  return Temporal.PlainDate.compare(day, other) > 0;
+}
+
+// 모델이 낸 숫자에는 범위 제한이 없다. Temporal 달력 범위(RangeError)나 네 자리 연도를 넘는 날짜는 읽지 못한 날짜다
+function representableDay<T extends { readonly day: CalendarDay }>(resolve: () => T): T | null {
+  try {
+    const resolved = resolve();
+    return resolved.day.year > MAX_CALENDAR_YEAR ? null : resolved;
+  } catch (error) {
+    if (error instanceof RangeError) {
+      return null;
+    }
+    throw error;
+  }
+}
 
 interface DayResolution {
   readonly day: CalendarDay;
@@ -71,9 +95,9 @@ export function resolveTodoSchedule(
   draft: ScheduleDraft<RepeatRef | PlanRepeatRef>,
   clock: ScheduleClock,
 ): ResolvedSchedule {
-  const local = dayjs(clock.now).tz(clock.timeZone);
-  const today = dayjs.utc(local.format("YYYY-MM-DD"));
-  const nowMinutes = local.hour() * 60 + local.minute();
+  const local = instantFromDate(clock.now).toZonedDateTimeISO(clock.timeZone);
+  const today = local.toPlainDate();
+  const nowMinutes = local.hour * 60 + local.minute;
   const warnings: ScheduleWarning[] = [];
 
   const dateExplicit = draft.date.kind !== "NONE";
@@ -99,10 +123,10 @@ export function resolveTodoSchedule(
     scheduledMinutes = time.minutes;
     // 반복 일정의 시작일은 시각과 무관하게 반복 규칙이 정한다.
     if (!isRecurringDraft) {
-      const passedToday = !isRelative && time.day.isSame(today) && time.minutes <= nowMinutes;
+      const passedToday = !isRelative && time.day.equals(today) && time.minutes <= nowMinutes;
       if (passedToday && !dateExplicit) {
         // 날짜를 말하지 않은 단발 일정의 시각이 이미 지났으면 내일로 넘긴다.
-        startDay = today.add(1, "day");
+        startDay = today.add({ days: 1 });
       } else if (passedToday && draft.time?.hour == null) {
         // "오늘 아침"처럼 오늘을 말했는데 그 때가 지났으면 날짜는 지키고 지난 기본 시각을 만들지 않는다.
         startDay = today;
@@ -119,15 +143,15 @@ export function resolveTodoSchedule(
     if (end.warning != null) {
       warnings.push(end.warning);
     }
-    if (end.day.isBefore(startDay)) {
+    if (isBefore(end.day, startDay)) {
       warnings.push("END_BEFORE_START");
-    } else if (end.day.isAfter(startDay)) {
+    } else if (isAfter(end.day, startDay)) {
       endDate = formatDay(end.day);
     }
   }
 
   let recurrence: ResolvedSchedule["recurrence"] = null;
-  if (LEGACY_UNSUPPORTED_PATTERNS.has(draft.repeat.pattern)) {
+  if (UNREPRESENTABLE_REPEAT_PATTERNS.has(draft.repeat.pattern)) {
     warnings.push("UNSUPPORTED_RECURRENCE");
   }
   if (recurrenceBase != null) {
@@ -137,7 +161,7 @@ export function resolveTodoSchedule(
       const end = recurrenceBase.end ?? resolveRecurrenceEnd(draft.repeat, startDay, today);
       recurrence = {
         daysOfWeek: [...recurrenceBase.days],
-        endDate: formatDay(end.isBefore(startDay) ? startDay : end),
+        endDate: formatDay(isBefore(end, startDay) ? startDay : end),
       };
     }
   }
@@ -195,7 +219,7 @@ export function isSingleWeekendRepeat(repeat: TodoRepeatRule, startDate: string)
     repeat.weekdays.includes("SAT") &&
     repeat.weekdays.includes("SUN") &&
     repeat.end.type === "UNTIL" &&
-    dayjs.utc(repeat.end.date).diff(dayjs.utc(startDate), "day") <= 1
+    Temporal.PlainDate.from(startDate).until(Temporal.PlainDate.from(repeat.end.date)).days <= 1
   );
 }
 
@@ -239,7 +263,7 @@ function resolveRepeat(
 
 function readMonthDay(repeat: RepeatRef | PlanRepeatRef, start: CalendarDay): number {
   const monthDay = "monthDay" in repeat ? repeat.monthDay : null;
-  return monthDay != null && monthDay >= 1 && monthDay <= 31 ? monthDay : start.date();
+  return monthDay != null && monthDay >= 1 && monthDay <= 31 ? monthDay : start.day;
 }
 
 function resolveRepeatEnd(
@@ -252,26 +276,35 @@ function resolveRepeatEnd(
   if (end == null) {
     return { type: "NEVER" };
   }
-  return { type: "UNTIL", date: formatDay(end.isBefore(start) ? start : end) };
+  return { type: "UNTIL", date: formatDay(isBefore(end, start) ? start : end) };
 }
 
 function resolveDateRef(ref: DateRef, today: CalendarDay): DayResolution {
-  return clampPastToToday(resolveStatedDay(ref, today), today);
+  const stated = representableDay(() => resolveStatedDay(ref, today));
+  return stated == null ? { day: today, warning: "INVALID_DATE" } : clampPastToToday(stated, today);
 }
 
 /** 여기까지 온 지난 값은 음수나 지난 날을 집어 말한 값이라 다음 시기로 넘기면 말한 시기와 달라진다. */
 function clampPastToToday(stated: DayResolution, today: CalendarDay): DayResolution {
-  return stated.day.isBefore(today) ? { day: today, warning: "INVALID_DATE" } : stated;
+  return isBefore(stated.day, today) ? { day: today, warning: "INVALID_DATE" } : stated;
 }
 
 /** "이번 달 초"가 지났으면 할 일로 쓸 수 있는 다음 달 초로 넘긴다. */
 function findUpcomingMonthStart(today: CalendarDay): CalendarDay {
-  return today.date() <= MONTH_EARLY_LAST_DAY ? today : today.add(1, "month").startOf("month");
+  return today.day <= MONTH_EARLY_LAST_DAY ? today : today.with({ day: 1 }).add({ months: 1 });
 }
 
 /** "올해 초"가 지났으면 할 일로 쓸 수 있는 내년 초로 넘긴다. */
 function findUpcomingYearStart(today: CalendarDay): CalendarDay {
-  return today.month() === YEAR_EARLY_MONTH_INDEX ? today : today.add(1, "year").startOf("year");
+  return today.month === YEAR_EARLY_MONTH ? today : yearStart(today.year + 1);
+}
+
+function yearStart(year: number): CalendarDay {
+  return Temporal.PlainDate.from({ year, month: 1, day: 1 });
+}
+
+function monthEnd(day: CalendarDay): CalendarDay {
+  return day.with({ day: day.daysInMonth });
 }
 
 function resolveStatedDay(ref: DateRef, today: CalendarDay): DayResolution {
@@ -279,24 +312,25 @@ function resolveStatedDay(ref: DateRef, today: CalendarDay): DayResolution {
   return (
     match(ref.kind)
       .with("NONE", "TODAY", () => ({ day: today }))
-      .with("OFFSET_DAYS", () => ({ day: today.add(amount, "day") }))
-      .with("OFFSET_WEEKS", () => ({ day: today.add(amount * 7, "day") }))
-      // dayjs는 없는 말일을 그 달의 마지막 날로 맞춘다 (1월 31일 + 1개월 → 2월 말일).
-      .with("OFFSET_MONTHS", () => ({ day: today.add(amount, "month") }))
+      .with("OFFSET_DAYS", () => ({ day: today.add({ days: amount }) }))
+      .with("OFFSET_WEEKS", () => ({ day: today.add({ days: amount * 7 }) }))
+      // 없는 말일은 그 달의 마지막 날로 맞춘다 (1월 31일 + 1개월 → 2월 말일, overflow "constrain").
+      .with("OFFSET_MONTHS", () => ({ day: today.add({ months: amount }) }))
       .with("WEEKDAY", () => resolveWeekday(ref, today))
       .with("CALENDAR_DATE", () => resolveCalendarDate(ref, today))
       .with("MONTH_START", () => ({
         day:
           amount === 0
             ? findUpcomingMonthStart(today)
-            : today.add(amount, "month").startOf("month"),
+            : today.with({ day: 1 }).add({ months: amount }),
       }))
-      .with("MONTH_END", () => ({ day: today.add(amount, "month").endOf("month").startOf("day") }))
+      .with("MONTH_END", () => ({ day: monthEnd(today.with({ day: 1 }).add({ months: amount })) }))
       .with("YEAR_START", () => ({
-        day:
-          amount === 0 ? findUpcomingYearStart(today) : dayjs.utc(`${today.year() + amount}-01-01`),
+        day: amount === 0 ? findUpcomingYearStart(today) : yearStart(today.year + amount),
       }))
-      .with("YEAR_END", () => ({ day: dayjs.utc(`${today.year() + amount}-12-31`) }))
+      .with("YEAR_END", () => ({
+        day: Temporal.PlainDate.from({ year: today.year + amount, month: 12, day: 31 }),
+      }))
       .exhaustive()
   );
 }
@@ -304,7 +338,7 @@ function resolveStatedDay(ref: DateRef, today: CalendarDay): DayResolution {
 /** "금요일부터 일요일까지"의 끝 요일은 오늘이 아니라 시작일에서 가장 가까운 그 요일이다. */
 function resolveEndDateRef(ref: DateRef, today: CalendarDay, start: CalendarDay): DayResolution {
   const end = resolveDateRef(ref, today);
-  return ref.kind === "WEEKDAY" && ref.weekday != null && end.day.isBefore(start)
+  return ref.kind === "WEEKDAY" && ref.weekday != null && isBefore(end.day, start)
     ? { day: findUpcomingWeekday(ref.weekday, start) }
     : end;
 }
@@ -314,13 +348,13 @@ function isoIndex(day: DayOfWeek): number {
 }
 
 function getWeekdayThisWeek(weekday: DayOfWeek, baseDay: CalendarDay): CalendarDay {
-  return baseDay.isoWeekday(isoIndex(weekday) + 1);
+  return baseDay.add({ days: isoIndex(weekday) + 1 - baseDay.dayOfWeek });
 }
 
 /** 기준일을 포함해 가장 가까운 그 요일 */
 function findUpcomingWeekday(weekday: DayOfWeek, baseDay: CalendarDay): CalendarDay {
   const weekdayThisWeek = getWeekdayThisWeek(weekday, baseDay);
-  return weekdayThisWeek.isBefore(baseDay) ? weekdayThisWeek.add(1, "week") : weekdayThisWeek;
+  return isBefore(weekdayThisWeek, baseDay) ? weekdayThisWeek.add({ weeks: 1 }) : weekdayThisWeek;
 }
 
 function resolveWeekday(ref: DateRef, today: CalendarDay): DayResolution {
@@ -331,16 +365,20 @@ function resolveWeekday(ref: DateRef, today: CalendarDay): DayResolution {
   if (ref.weekOffset == null) {
     return { day: upcomingWeekday };
   }
-  const statedWeekday = getWeekdayThisWeek(ref.weekday, today).add(ref.weekOffset, "week");
+  const statedWeekday = getWeekdayThisWeek(ref.weekday, today).add({ weeks: ref.weekOffset });
   // 할 일에 지난 날짜는 쓸 수 없어 다음 그 요일로 넘긴다.
-  return { day: statedWeekday.isBefore(today) ? upcomingWeekday : statedWeekday };
+  return { day: isBefore(statedWeekday, today) ? upcomingWeekday : statedWeekday };
 }
 
 function calendarDay(year: number, month: number, day: number): CalendarDay | null {
-  const candidate = dayjs.utc(Date.UTC(year, month - 1, day));
-  return candidate.year() === year && candidate.month() === month - 1 && candidate.date() === day
-    ? candidate
-    : null;
+  try {
+    return Temporal.PlainDate.from({ year, month, day }, { overflow: "reject" });
+  } catch (error) {
+    if (error instanceof RangeError) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 function resolveCalendarDate(ref: DateRef, today: CalendarDay): DayResolution {
@@ -356,12 +394,12 @@ function resolveCalendarDate(ref: DateRef, today: CalendarDay): DayResolution {
   const candidates =
     month == null
       ? [0, 1, 2].map((offset) => {
-          const base = today.add(offset, "month");
-          return calendarDay(base.year(), base.month() + 1, day);
+          const base = today.add({ months: offset });
+          return calendarDay(base.year, base.month, day);
         })
-      : [0, 1, 2, 3, 4].map((offset) => calendarDay(today.year() + offset, month, day));
+      : [0, 1, 2, 3, 4].map((offset) => calendarDay(today.year + offset, month, day));
   const next = candidates.find(
-    (candidate): candidate is CalendarDay => candidate != null && !candidate.isBefore(today),
+    (candidate): candidate is CalendarDay => candidate != null && !isBefore(candidate, today),
   );
   return next == null ? { day: today, warning: "INVALID_DATE" } : { day: next };
 }
@@ -388,18 +426,21 @@ function resolveTime(
 ): TimeResolution | "INVALID" | null {
   if (isRelative && ref.relativeMinutes != null) {
     // 벽시계 분에 더하면 DST 전환 구간에서 한 시간이 어긋나므로 실제 순간에 더한 뒤 현지로 바꾼다.
-    const target = dayjs(clock.now).add(ref.relativeMinutes, "minute").tz(clock.timeZone);
-    return {
-      day: dayjs.utc(target.format("YYYY-MM-DD")),
-      minutes: target.hour() * 60 + target.minute(),
-    };
+    const { relativeMinutes } = ref;
+    const target = representableDay(() => {
+      const local = instantFromDate(clock.now)
+        .add({ minutes: relativeMinutes })
+        .toZonedDateTimeISO(clock.timeZone);
+      return { day: local.toPlainDate(), minutes: local.hour * 60 + local.minute };
+    });
+    return target ?? "INVALID";
   }
   if (ref.hour == null) {
     if (ref.partOfDay == null) {
       return null;
     }
     if (ref.partOfDay === "MIDNIGHT") {
-      return { day: targetDay.add(1, "day"), minutes: 0 };
+      return { day: targetDay.add({ days: 1 }), minutes: 0 };
     }
     return { day: targetDay, minutes: PART_OF_DAY_MINUTES[ref.partOfDay] };
   }
@@ -445,14 +486,14 @@ function resolveAmbiguousHour(
     return { day: targetDay, minutes: morning };
   }
   // 날짜를 말하지 않았으면 오늘 남은 시각 중 가장 이른 것, 둘 다 지났으면 내일의 일반적 시각이다.
-  if (targetDay.isSame(today)) {
+  if (targetDay.equals(today)) {
     if (morning > nowMinutes) {
       return { day: today, minutes: morning };
     }
     if (evening > nowMinutes) {
       return { day: today, minutes: evening };
     }
-    return { day: today.add(1, "day"), minutes: conventionalMinutes(hour, minute) };
+    return { day: today.add({ days: 1 }), minutes: conventionalMinutes(hour, minute) };
   }
   return { day: targetDay, minutes: conventionalMinutes(hour, minute) };
 }
@@ -469,9 +510,9 @@ interface RecurrenceWindow {
 }
 
 function daysBetween(from: CalendarDay, to: CalendarDay): DayOfWeek[] {
-  const count = to.diff(from, "day");
+  const count = from.until(to).days;
   return range(count + 1).map((offset) => {
-    const isoDay = from.add(offset, "day").isoWeekday();
+    const isoDay = from.add({ days: offset }).dayOfWeek;
     return DAY_OF_WEEK_ORDER[isoDay - 1] ?? "MON";
   });
 }
@@ -485,8 +526,8 @@ function resolveRecurrenceWindow(
   today: CalendarDay,
   resolvedDay: CalendarDay,
 ): RecurrenceWindow | null {
-  const monday = today.startOf("isoWeek");
-  const sunday = monday.add(6, "day");
+  const monday = today.subtract({ days: today.dayOfWeek - 1 });
+  const sunday = monday.add({ days: 6 });
   const everyDay = [...DAY_OF_WEEK_ORDER];
   return match(repeat.pattern)
     .with("NONE", "UNSUPPORTED", "BIWEEKLY_DAYS", "MONTHLY_DAY", () => null)
@@ -500,29 +541,37 @@ function resolveRecurrenceWindow(
     .with("WEEKENDS", () => ({ start: resolvedDay, end: null, days: [...WEEKEND] }))
     .with("THIS_WEEK", () => ({ start: today, end: sunday, days: daysBetween(today, sunday) }))
     .with("NEXT_WEEK", () => ({
-      start: monday.add(7, "day"),
-      end: sunday.add(7, "day"),
+      start: monday.add({ days: 7 }),
+      end: sunday.add({ days: 7 }),
       days: everyDay,
     }))
     .with("WEEK_AFTER_NEXT", () => ({
-      start: monday.add(14, "day"),
-      end: sunday.add(14, "day"),
+      start: monday.add({ days: 14 }),
+      end: sunday.add({ days: 14 }),
       days: everyDay,
     }))
     .with("THIS_WEEKEND", () => {
-      const saturday = monday.add(5, "day");
-      return { start: today.isAfter(saturday) ? today : saturday, end: sunday, days: [...WEEKEND] };
+      const saturday = monday.add({ days: 5 });
+      return {
+        start: isAfter(today, saturday) ? today : saturday,
+        end: sunday,
+        days: [...WEEKEND],
+      };
     })
     .with("NEXT_WEEKEND", () => ({
-      start: monday.add(12, "day"),
-      end: sunday.add(7, "day"),
+      start: monday.add({ days: 12 }),
+      end: sunday.add({ days: 7 }),
       days: [...WEEKEND],
     }))
     .with("THIS_WEEKDAYS", () => {
-      const friday = monday.add(4, "day");
+      const friday = monday.add({ days: 4 });
       // 주말에 말한 "이번 주 주중"은 남은 평일이 없으므로 다음 주 평일로 본다.
-      if (today.isAfter(friday)) {
-        return { start: monday.add(7, "day"), end: friday.add(7, "day"), days: [...WEEKDAYS] };
+      if (isAfter(today, friday)) {
+        return {
+          start: monday.add({ days: 7 }),
+          end: friday.add({ days: 7 }),
+          days: [...WEEKDAYS],
+        };
       }
       return { start: today, end: friday, days: daysBetween(today, friday) };
     })
@@ -548,18 +597,18 @@ function resolveSpokenRepeatEnd(
   const end =
     repeat.until != null && repeat.until.kind !== "NONE"
       ? resolveDateRef(repeat.until, today).day
-      : resolveDurationEnd(repeat, start);
-  return end.isAfter(start) ? end : null;
+      : representableDay(() => ({ day: resolveDurationEnd(repeat, start) }))?.day;
+  return end != null && isAfter(end, start) ? end : null;
 }
 
 function resolveDurationEnd({ forDuration }: RepeatRef, start: CalendarDay): CalendarDay {
   const amount = forDuration?.amount ?? 0;
   const end = match(forDuration?.unit ?? "DAY")
-    .with("DAY", () => start.add(amount, "day"))
-    .with("WEEK", () => start.add(amount, "week"))
-    .with("MONTH", () => start.add(amount, "month"))
+    .with("DAY", () => start.add({ days: amount }))
+    .with("WEEK", () => start.add({ weeks: amount }))
+    .with("MONTH", () => start.add({ months: amount }))
     .exhaustive();
-  return end.subtract(1, "day");
+  return end.subtract({ days: 1 });
 }
 
 function resolveRecurrenceEnd(
@@ -568,12 +617,12 @@ function resolveRecurrenceEnd(
   today: CalendarDay,
 ): CalendarDay {
   return (
-    resolveSpokenRepeatEnd(repeat, start, today) ?? today.add(DEFAULT_RECURRENCE_WEEKS, "week")
+    resolveSpokenRepeatEnd(repeat, start, today) ?? today.add({ weeks: DEFAULT_RECURRENCE_WEEKS })
   );
 }
 
 function formatDay(day: CalendarDay): string {
-  return day.format("YYYY-MM-DD");
+  return day.toString();
 }
 
 function formatMinutes(minutes: number): string {

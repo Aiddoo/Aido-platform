@@ -16,8 +16,9 @@ import type { IdentityAccounts } from "#api/modules/identity/auth/domain/identit
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account } from "#api/platform/database/schema/index";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { toAuthAccountRecord, toIdentityAccounts } from "./auth-row.mapper.js";
 
@@ -43,10 +44,12 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
   }
 
   async findByUserIdAndProvider(
-    userId: string,
+    userId: UserId,
     provider: AccountProvider,
   ): Promise<AuthAccountRecord | null> {
-    const row = await this.#db.query.account.findFirst({ where: { userId, provider } });
+    const row = await this.#db.query.account.findFirst({
+      where: { userId: userId.value, provider },
+    });
     return row == null ? null : toAuthAccountRecord(row);
   }
 
@@ -58,35 +61,35 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
     return row == null ? null : toAuthAccountRecord(row);
   }
 
-  async findAllByUserId(userId: string): Promise<AuthAccountRecord[]> {
+  async findAllByUserId(userId: UserId): Promise<AuthAccountRecord[]> {
     const rows = await this.#db.query.account.findMany({
-      where: { userId },
+      where: { userId: userId.value },
       orderBy: { id: "asc" },
     });
     return rows.map(toAuthAccountRecord);
   }
 
-  async findIdentityAccounts(userId: string): Promise<IdentityAccounts> {
+  async findIdentityAccounts(userId: UserId): Promise<IdentityAccounts> {
     const rows = await this.#db.query.account.findMany({
       columns: { id: true, provider: true, providerAccountId: true, createdAt: true },
-      where: { userId },
+      where: { userId: userId.value },
       orderBy: { id: "asc" },
     });
-    return toIdentityAccounts(userId, rows);
+    return toIdentityAccounts(userId.value, rows);
   }
 
-  async createCredentialAccount(userId: string, hashedPassword: string): Promise<void> {
+  async createCredentialAccount(userId: UserId, hashedPassword: string): Promise<void> {
     try {
       await this.#db.insert(account).values({
-        userId,
+        userId: userId.value,
         provider: "CREDENTIAL",
         // 이메일 계정은 공급자 계정 id가 없어 userId로 유일 제약을 채운다
-        providerAccountId: userId,
+        providerAccountId: userId.value,
         password: hashedPassword,
         updatedAt: this.#clock.now(),
       });
     } catch (error) {
-      // Account_userId_provider_key·Account_provider_providerAccountId_key: 필터의 옛 제약 표와 같은 USER_0604
+      // Account_userId_provider_key·Account_provider_providerAccountId_key: 출시 앱이 받던 USER_0604
       if (isUniqueConstraintViolation(error)) {
         throw accountAlreadyExists();
       }
@@ -94,15 +97,15 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
     }
   }
 
-  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+  async updatePassword(userId: UserId, hashedPassword: string): Promise<void> {
     await this.#db
       .update(account)
       .set({ password: hashedPassword, updatedAt: this.#clock.now() })
-      .where(and(eq(account.userId, userId), eq(account.provider, "CREDENTIAL")));
+      .where(and(eq(account.userId, userId.value), eq(account.provider, "CREDENTIAL")));
   }
 
   async updatePasswordIfUnchanged(
-    userId: string,
+    userId: UserId,
     expectedPasswordHash: string,
     passwordHash: string,
   ): Promise<boolean> {
@@ -111,7 +114,7 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
       .set({ password: passwordHash, updatedAt: this.#clock.now() })
       .where(
         and(
-          eq(account.userId, userId),
+          eq(account.userId, userId.value),
           eq(account.provider, "CREDENTIAL"),
           eq(account.password, expectedPasswordHash),
         ),
@@ -123,7 +126,7 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
   async createOAuthAccount(newAccount: NewOAuthAccount): Promise<void> {
     try {
       await this.#db.insert(account).values({
-        userId: newAccount.userId,
+        userId: newAccount.userId.value,
         provider: newAccount.provider,
         providerAccountId: newAccount.providerAccountId,
         refreshToken:
@@ -140,9 +143,9 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
     }
   }
 
-  async deleteAccount(userId: string, provider: AccountProvider): Promise<void> {
+  async deleteAccount(userId: UserId, provider: AccountProvider): Promise<void> {
     await this.#db
       .delete(account)
-      .where(and(eq(account.userId, userId), eq(account.provider, provider)));
+      .where(and(eq(account.userId, userId.value), eq(account.provider, provider)));
   }
 }

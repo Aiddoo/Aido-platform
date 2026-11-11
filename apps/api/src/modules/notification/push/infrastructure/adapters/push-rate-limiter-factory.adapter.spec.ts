@@ -5,16 +5,16 @@ import { createDatabase } from "#api/platform/database/database.client";
 
 import { InMemoryPushRateLimiterAdapter } from "./in-memory-push-rate-limiter.adapter.js";
 import { PostgresPushRateLimiterAdapter } from "./postgres-push-rate-limiter.adapter.js";
-import { createPushRateLimiter } from "./push-rate-limiter-factory.adapter.js";
+import { selectPushRateLimiter } from "./push-rate-limiter-factory.adapter.js";
 import { RedisPushRateLimiterAdapter } from "./redis-push-rate-limiter.adapter.js";
 
-describe("createPushRateLimiter", () => {
+describe("selectPushRateLimiter", () => {
   // 연결하지 않는 client다. 어떤 구현을 고르는지만 본다
   const database = createDatabase(new Pool());
 
   it("PostgreSQL을 기본 운영 구현으로 생성한다", () => {
     // Given / When
-    const limiter = createPushRateLimiter({ backend: "postgres", database });
+    const limiter = selectPushRateLimiter("postgres", { database });
 
     // Then
     expect(limiter).toBeInstanceOf(PostgresPushRateLimiterAdapter);
@@ -25,7 +25,7 @@ describe("createPushRateLimiter", () => {
     const redis = new Redis({ lazyConnect: true });
 
     // When
-    const limiter = createPushRateLimiter({ backend: "redis", database, redis });
+    const limiter = selectPushRateLimiter("redis", { database, redis });
 
     // Then
     expect(limiter).toBeInstanceOf(RedisPushRateLimiterAdapter);
@@ -34,7 +34,7 @@ describe("createPushRateLimiter", () => {
 
   it("Redis를 선택하고 client가 없으면 메모리로 폴백하지 않는다", () => {
     // Given / When
-    const create = () => createPushRateLimiter({ backend: "redis", database });
+    const create = () => selectPushRateLimiter("redis", { database });
 
     // Then
     expect(create).toThrow(
@@ -44,7 +44,7 @@ describe("createPushRateLimiter", () => {
 
   it("memory는 명시적으로 선택한 개발·테스트 환경에서만 생성한다", () => {
     // Given / When
-    const limiter = createPushRateLimiter({ backend: "memory", database });
+    const limiter = selectPushRateLimiter("memory", { database });
 
     // Then
     expect(limiter).toBeInstanceOf(InMemoryPushRateLimiterAdapter);

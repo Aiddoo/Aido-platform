@@ -34,7 +34,7 @@ export function dateRefFixture(input: DateRefInput): DateRef {
   };
 }
 
-export function timeRefFixture(input: Partial<TimeRef>): TimeRef {
+function timeRefFixture(input: Partial<TimeRef>): TimeRef {
   return {
     hour: null,
     minute: null,

@@ -13,8 +13,10 @@ import {
   user as userTable,
   userActivityDay,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -59,7 +61,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 
     // When
     await activityWriter.updateLastActiveAt({
-      userId: "activity-user",
+      userId: UserId.reconstitute("activity-user"),
       timezone: "Asia/Seoul",
       seenAt: seenNow(),
     });
@@ -74,7 +76,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     await Promise.all(
       Array.from({ length: 6 }, () =>
         activityWriter.updateLastActiveAt({
-          userId: "activity-user",
+          userId: UserId.reconstitute("activity-user"),
           timezone: "Asia/Seoul",
           seenAt: seenNow(),
         }),
@@ -127,13 +129,13 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       // When
       vi.setSystemTime(later);
       await activityWriter.updateLastActiveAt({
-        userId: "out-of-order-user",
+        userId: UserId.reconstitute("out-of-order-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
       vi.setSystemTime(earlier);
       await otherWriter.updateLastActiveAt({
-        userId: "out-of-order-user",
+        userId: UserId.reconstitute("out-of-order-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
@@ -173,13 +175,13 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       // When
       vi.setSystemTime(earlier);
       const earlierWrite = activityWriter.updateLastActiveAt({
-        userId: "parallel-insert-user",
+        userId: UserId.reconstitute("parallel-insert-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
       vi.setSystemTime(later);
       const laterWrite = otherWriter.updateLastActiveAt({
-        userId: "parallel-insert-user",
+        userId: UserId.reconstitute("parallel-insert-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
@@ -349,11 +351,14 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       activity("immature-d30", "2026-07-27", "UTC", "2026-07-27T10:00:00.000Z"),
     ]);
 
-  await client
-    .insert(todoCategory)
-    .values(
-      users.map((user) => ({ userId: user.id, name: `category-${user.id}`, color: "#000000" })),
-    );
+  await client.insert(todoCategory).values(
+    users.map((user) => ({
+      userId: user.id,
+      name: `category-${user.id}`,
+      color: "#000000",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    })),
+  );
   const categories = await client
     .select({ id: todoCategory.id, userId: todoCategory.userId })
     .from(todoCategory);
@@ -373,27 +378,30 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       userId: "activated-retained",
       categoryId: activatedCategory,
       title: "created within window",
-      startDate: new Date("2026-06-02T00:00:00.000Z"),
-      createdAt: new Date(activatedSignup.epochMilliseconds + 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-06-02"),
+      createdAt: activatedSignup.add({ milliseconds: 60 * 60 * 1000 }),
       completed: false,
+      updatedAt: nowInstant(),
     },
     {
       userId: "activated-retained",
       categoryId: activatedCategory,
       title: "completed within window",
-      startDate: new Date("2026-06-02T00:00:00.000Z"),
-      createdAt: new Date(activatedSignup.epochMilliseconds - 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-06-02"),
+      createdAt: activatedSignup.subtract({ milliseconds: 60 * 60 * 1000 }),
       completed: true,
-      completedAt: new Date(activatedSignup.epochMilliseconds + 2 * 60 * 60 * 1000),
+      completedAt: activatedSignup.add({ milliseconds: 2 * 60 * 60 * 1000 }),
+      updatedAt: nowInstant(),
     },
     {
       userId: "immature-d30",
       categoryId: immatureCategory,
       title: "activated",
-      startDate: new Date("2026-07-20T00:00:00.000Z"),
-      createdAt: new Date(immatureSignup.epochMilliseconds + 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-07-20"),
+      createdAt: immatureSignup.add({ milliseconds: 60 * 60 * 1000 }),
       completed: true,
-      completedAt: new Date(immatureSignup.epochMilliseconds + 2 * 60 * 60 * 1000),
+      completedAt: immatureSignup.add({ milliseconds: 2 * 60 * 60 * 1000 }),
+      updatedAt: nowInstant(),
     },
   ]);
 }
@@ -417,7 +425,12 @@ async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> 
   });
   const [category] = await client
     .insert(todoCategory)
-    .values({ userId: "deleted-growth-user", name: "deleted-user-category", color: "#000000" })
+    .values({
+      userId: "deleted-growth-user",
+      name: "deleted-user-category",
+      color: "#000000",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    })
     .returning();
   const categoryId = requireRecord(category).id;
   await client.insert(todo).values([
@@ -425,18 +438,20 @@ async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> 
       userId: "deleted-growth-user",
       categoryId,
       title: "deleted created",
-      startDate: new Date("2026-06-01T00:00:00.000Z"),
-      createdAt: new Date(signupAt.getTime() + 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-06-01"),
+      createdAt: instantFromDate(new Date(signupAt.getTime() + 60 * 60 * 1000)),
       completed: false,
+      updatedAt: nowInstant(),
     },
     {
       userId: "deleted-growth-user",
       categoryId,
       title: "deleted completed",
-      startDate: new Date("2026-06-01T00:00:00.000Z"),
-      createdAt: signupAt,
+      startDate: Temporal.PlainDate.from("2026-06-01"),
+      createdAt: instantFromDate(signupAt),
       completed: true,
-      completedAt: new Date(signupAt.getTime() + 2 * 60 * 60 * 1000),
+      completedAt: instantFromDate(new Date(signupAt.getTime() + 2 * 60 * 60 * 1000)),
+      updatedAt: nowInstant(),
     },
   ]);
   await client

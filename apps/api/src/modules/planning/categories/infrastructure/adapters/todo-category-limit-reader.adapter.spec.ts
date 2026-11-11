@@ -1,4 +1,5 @@
 import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCategoryLimitReaderAdapter } from "./todo-category-limit-reader.adapter.js";
 
@@ -48,11 +49,13 @@ describe("TodoCategoryLimitReaderAdapter", () => {
     const adapter = new TodoCategoryLimitReaderAdapter(entitlementReader);
 
     // When
-    const result = await adapter.readLimitInTx("user-123");
+    const result = await adapter.readLimitInTx(UserId.reconstitute("user-123"));
 
     // Then
     expect(result).toBe(3);
-    expect(entitlementReader.limitReads).toEqual([["user-123", "TODO_CATEGORY"]]);
+    expect(entitlementReader.limitReads).toEqual([
+      [UserId.reconstitute("user-123"), "TODO_CATEGORY"],
+    ]);
   });
 
   it("한도 오류 featureQuota는 현재 개수를 resource 사용량으로 넘겨 계산한다", async () => {
@@ -61,11 +64,11 @@ describe("TodoCategoryLimitReaderAdapter", () => {
     const adapter = new TodoCategoryLimitReaderAdapter(entitlementReader);
 
     // When
-    await adapter.readFeatureQuotaInTx("user-123", 3);
+    await adapter.readFeatureQuotaInTx(UserId.reconstitute("user-123"), 3);
 
     // Then
     expect(entitlementReader.quotaReads).toEqual([
-      ["user-123", "TODO_CATEGORY", { used: 3, resetsAt: null }],
+      [UserId.reconstitute("user-123"), "TODO_CATEGORY", { used: 3, resetsAt: null }],
     ]);
   });
 });

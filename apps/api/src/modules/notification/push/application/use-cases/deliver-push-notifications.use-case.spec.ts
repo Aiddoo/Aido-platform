@@ -1,3 +1,5 @@
+import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
+
 // Provider accept와 DB finalize 사이에는 외부 트랜잭션 경계가 있어 전달 보장은 at-least-once다. 재시도 때 stale worker가 상태를 덮어쓰지 않도록 모든 상태 변경이 claimed fence와 UOW를 거치는지 고정한다
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { StubMarketingPushOptOutToken } from "#test/doubles/notification/stub-marketing-push-opt-out-token";
@@ -22,10 +24,7 @@ import type { PushPayload } from "../ports/push-provider.port.js";
 import { RetryablePushProviderTransportError } from "../ports/push-provider.port.js";
 import type { PushRateLimiterPort } from "../ports/push-rate-limiter.port.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../push-delivery-rate-limit-reservation-conflict.errors.js";
-import type {
-  DeliverPushNotificationsInput,
-  PushDispatchSkipReason,
-} from "../read-models/push-delivery.read-model.js";
+import type { DeliverPushNotificationsInput } from "../read-models/push-delivery.read-model.js";
 import { DeliverPushNotificationsUseCase } from "./deliver-push-notifications.use-case.js";
 import type {
   BatchPushNotificationDeliveryResult,
@@ -41,12 +40,11 @@ import type {
 } from "./evaluate-push-delivery-eligibility.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-08-29T03:00:00.000Z");
-const NOW_DATE = new Date(NOW.epochMilliseconds);
 const PROCESSING_JOB_ID = "push-delivery-job-20260829";
 const LOCAL_DATE = "2026-08-29";
 const LOCAL_DATE_CONTEXT = {
   timezone: "Asia/Seoul",
-  localDate: new Date("2026-08-29T00:00:00.000Z"),
+  localDate: Temporal.PlainDate.from("2026-08-29"),
 };
 
 type SingleEvaluateInput = Parameters<EvaluatePushDeliveryEligibilityUseCase["evaluateSingle"]>;
@@ -79,7 +77,7 @@ function createClaimedDelivery(input: {
     force,
     rateLimitReservation: input.rateLimitReservation ?? { status: "pending" },
     item: {
-      notificationId: input.notificationId ?? input.dispatchId + 1_000,
+      notificationId: input.notificationId ?? input.dispatchId + 1000,
       data: createNotificationDraftFixture({
         userId: input.userId,
         type: "FOLLOW_NEW",
@@ -309,6 +307,8 @@ class StubPushDelivery implements Pick<
         title: payload.title,
         body: payload.body,
         data: payload.data,
+        priority: payload.priority,
+        ttlSeconds: payload.ttlSeconds,
       })),
       dispatchIds: deliverable.map(({ dispatchId }) => dispatchId),
     };
@@ -407,7 +407,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
         processingJobId: input.processingJobId,
         processingJobAttempt: input.processingJobAttempt,
         publications: input.publications,
-        startedAt: NOW_DATE,
+        startedAt: NOW,
       },
     ]);
     expect(lifecycle.operations).toEqual(["claim"]);
@@ -635,7 +635,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
           fence: claimed.fence,
           error: expect.any(String),
           reopenOutbox: false,
-          availableAt: NOW_DATE,
+          availableAt: NOW,
         },
       ],
     ]);
@@ -713,7 +713,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
         fence,
         error: providerError.message,
         reopenOutbox: true,
-        availableAt: expect.any(Date),
+        availableAt: expect.any(Temporal.Instant),
       })),
     ]);
     expect(fixture.observations.at(-1)).toEqual({ operation: "release", transactionDepth: 1 });
@@ -754,7 +754,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
           fence: claimed.fence,
           error: finalizeResultsError.message,
           reopenOutbox: false,
-          availableAt: NOW_DATE,
+          availableAt: NOW,
         },
       ],
     ]);
@@ -823,7 +823,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
     // Then
     await expect(result).rejects.toBe(claimError);
     expect(fixture.lifecycle.reopenAfterFinalClaimFailureInputs).toEqual([
-      { publications: input.publications, availableAt: NOW_DATE, error: claimError.message },
+      { publications: input.publications, availableAt: NOW, error: claimError.message },
     ]);
     fixture.expectPersistenceInsideUnitOfWork();
   });

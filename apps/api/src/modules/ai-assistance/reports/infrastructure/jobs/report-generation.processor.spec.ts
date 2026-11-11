@@ -11,7 +11,7 @@ class RecordingGenerateReport {
 const generateJob = {
   name: "generate-report",
   data: { userId: "user-1", timezone: "Asia/Seoul", locale: "ko", reportType: "WEEKLY" },
-};
+} as const;
 
 describe("ReportGenerationProcessor", () => {
   it.each([

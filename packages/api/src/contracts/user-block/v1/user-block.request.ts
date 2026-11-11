@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { USER_BLOCK_LIMITS } from "../../../vocabulary/user-block.constants.js";
 import { userIdParamSchema } from "../../follow/v1/follow.request.js";
 
@@ -12,10 +13,7 @@ export const unblockUserParamSchema = userIdParamSchema;
 export type UnblockUserParam = z.infer<typeof unblockUserParamSchema>;
 
 export const getBlockedUsersQuerySchema = z.object({
-  cursor: z
-    .cuid()
-    .optional()
-    .describe("페이지네이션 커서. 이전 응답의 nextCursor (CUID 25자, 선택)"),
+  cursor: entityIdSchema.optional().describe("페이지네이션 커서. 이전 응답의 nextCursor (선택)"),
   limit: z
     .string()
     .regex(/^\d+$/, "숫자만 입력 가능합니다")

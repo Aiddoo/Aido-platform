@@ -1,4 +1,5 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
@@ -33,7 +34,7 @@ export class ListActiveSessionsUseCase {
 
   async execute(input: ListActiveSessionsQuery): Promise<ActiveSession[]> {
     const sessions = await this.#dependencies.sessionRepository.listActiveByUserId(
-      input.userId,
+      UserId.reconstitute(input.userId),
       this.#dependencies.clock.now(),
     );
     return sessions.map((session) => ({

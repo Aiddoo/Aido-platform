@@ -15,7 +15,7 @@ const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 const webhookSecret = "me-entitlements-webhook-secret";
 const AT = new Date("2027-01-04T12:00:00.000Z");
-const HOUR_MS = 60 * 60 * 1_000;
+const HOUR_MS = 60 * 60 * 1000;
 const FUTURE_EXPIRY = new Date("2027-02-04T12:00:00.000Z");
 
 describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () => {
@@ -24,9 +24,12 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
   beforeAll(async () => {
     context = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue({
-          revenuecat: { webhookSecret, projectId: undefined, apiV2SecretKey: undefined },
-        }),
+        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue(
+          billingSubscriptionsConfig.parse({
+            NODE_ENV: "test",
+            REVENUECAT_WEBHOOK_SECRET: webhookSecret,
+          }),
+        ),
     });
   });
 

@@ -1,7 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
@@ -10,6 +9,10 @@ import type { TimezoneResolverPort } from "../../../locations/application/ports/
 import type { UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import { isKoreanWeatherCovered } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
+import {
+  localDateAt,
+  startOfLocalDate,
+} from "../../../shared/domain/weather-calendar.domain-service.js";
 import {
   planWeatherBriefing,
   type WeatherBriefing,
@@ -144,13 +147,13 @@ export class GetWeatherReportUseCase {
     now: Temporal.Instant,
     timezone: string,
   ): Promise<WeatherBriefingTodo[]> {
-    const today = dayWindowInTimezone(instantToDate(now), timezone);
+    const today = localDateAt(instantToDate(now), timezone);
     const todos = await this.#dependencies.scheduledTodoReader.listPendingTimedTodos({
       userId,
-      date: Temporal.PlainDate.from(today.localDate),
+      date: today,
       timezone,
       from: now,
-      until: instantFromDate(today.endsAt),
+      until: instantFromDate(startOfLocalDate(today.add({ days: 1 }), timezone)),
     });
     return todos.map((todo) => ({ id: todo.id, scheduledAt: instantToDate(todo.scheduledAt) }));
   }

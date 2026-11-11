@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { JobEnvelope, QueueDefinition } from "#api/shared/application/ports/index";
+import type { JobEnvelope, QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import { PushDeliveryQueueProcessor } from "./push-delivery-queue.processor.js";

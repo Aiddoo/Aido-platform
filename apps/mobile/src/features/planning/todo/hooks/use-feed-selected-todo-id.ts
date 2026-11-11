@@ -1,6 +1,6 @@
 import { useOpenDetailWhenCompact } from '@src/shared/hooks/use-open-detail-when-compact';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
+import { usePaneSizeClass } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 import { useCallback } from 'react';
@@ -11,23 +11,23 @@ import { CLEARED_TODO_SELECTION, feedParamsSchema } from '../schemas/feed-params
 /** 접힌 화면은 상세로 push, 펼친 화면은 칸을 바꾼다. 할 일이 바뀌면 댓글 위치·정렬을 버리고 같은 할 일은 그대로 둔다 */
 export function useFeedSelectedTodoId() {
   const [{ todoId: selectedTodoId }, setParams] = useRouteParams(feedParamsSchema);
-  const windowSizeClass = useWindowSizeClass();
+  const paneSizeClass = usePaneSizeClass();
 
   const setSelectedTodoId = useCallback(
     (todoId: number | undefined) => {
-      match({ windowSizeClass, todoId })
-        .with({ windowSizeClass: 'compact', todoId: P.nullish }, noop)
-        .with({ windowSizeClass: 'compact', todoId: P.number }, ({ todoId: selected }) =>
+      match({ paneSizeClass, todoId })
+        .with({ paneSizeClass: 'compact', todoId: P.nullish }, noop)
+        .with({ paneSizeClass: 'compact', todoId: P.number }, ({ todoId: selected }) =>
           router.push({ pathname: '/todo/[todoId]', params: { todoId: selected } }),
         )
-        .with({ windowSizeClass: P.union('medium', 'expanded') }, () => {
+        .with({ paneSizeClass: P.union('medium', 'expanded') }, () => {
           if (todoId !== selectedTodoId) {
             setParams({ ...CLEARED_TODO_SELECTION, todoId });
           }
         })
         .exhaustive();
     },
-    [windowSizeClass, selectedTodoId, setParams],
+    [paneSizeClass, selectedTodoId, setParams],
   );
 
   return [selectedTodoId, setSelectedTodoId] as const;

@@ -9,7 +9,7 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification, pushDispatch } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { CreateNotificationData } from "../../application/ports/notification-draft.port.js";
 import {
@@ -106,7 +106,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     const { id, userId, isRead, readAt } = target.toPrimitives();
     const updated = await this.#db
       .update(notification)
-      .set({ isRead, readAt: readAt == null ? null : instantToDate(readAt) })
+      .set({ isRead, readAt })
       .where(
         and(
           eq(notification.id, id),
@@ -120,14 +120,14 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
 
   async markAsOpened(
     notificationId: NotificationId,
-    userId: string,
+    owner: UserId,
     now: Temporal.Instant,
   ): Promise<boolean> {
     const id = notificationId.value;
-    const openedAt = instantToDate(now);
+    const userId = owner.value;
     const updated = await this.#db
       .update(notification)
-      .set({ openedAt, isRead: true, readAt: openedAt })
+      .set({ openedAt: now, isRead: true, readAt: now })
       .where(
         and(
           eq(notification.id, id),
@@ -139,7 +139,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     if (updated.length > 0) {
       await this.#db
         .update(pushDispatch)
-        .set({ openedAt })
+        .set({ openedAt: now, updatedAt: now })
         .where(
           and(
             eq(pushDispatch.notificationId, id),
@@ -152,16 +152,16 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
   }
 
   async markAllAsRead(
-    userId: string,
+    userId: UserId,
     types: readonly NotificationType[] | undefined,
     now: Temporal.Instant,
   ): Promise<{ count: number }> {
     const updated = await this.#db
       .update(notification)
-      .set({ isRead: true, readAt: instantToDate(now) })
+      .set({ isRead: true, readAt: now })
       .where(
         and(
-          eq(notification.userId, userId),
+          eq(notification.userId, userId.value),
           eq(notification.isRead, false),
           types ? inArray(notification.type, [...types]) : undefined,
         ),
@@ -171,8 +171,9 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
   }
 
   async deleteNotificationsByActorId(
-    actorId: string,
+    actor: UserId,
   ): Promise<{ count: number; affectedUserIds: string[] }> {
+    const actorId = actor.value;
     const deletedRows = await this.#db
       .delete(notification)
       .where(

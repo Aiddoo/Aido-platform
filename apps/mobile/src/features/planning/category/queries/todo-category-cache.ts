@@ -1,7 +1,99 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import type {
+  TodoCategoriesResult,
+  TodoCategory,
+  TodoCategoryDeletionResult,
+  TodoCategoryWithCount,
+} from '../domains/todo-category.model';
+import type { useGetTodoCategoryDeletionPreviewQueryOptions } from './todo-category.queries';
+
+/** 만들기 응답 전에 목록에 먼저 그리는 임시 행 */
+export type OptimisticTodoCategoryWithCount = TodoCategoryWithCount & { readonly optimistic: true };
+
+export function withCategoryAdded(
+  result: TodoCategoriesResult,
+  category: TodoCategoryWithCount,
+): TodoCategoriesResult {
+  return { ...result, categories: [...result.categories, category] };
+}
+
+/**
+ * 만들기 응답의 서버 값으로 임시 행을 바꾼다. 새 카테고리라 할 일 수는 그대로(0)다.
+ * 그사이 다시 받아 임시 행이 사라졌으면 서버 행이 없을 때만 끝에 붙인다
+ */
+export function withCategorySaved(
+  result: TodoCategoriesResult,
+  optimisticCategoryId: number,
+  savedCategory: TodoCategory,
+): TodoCategoriesResult {
+  if (result.categories.some(({ id }) => id === optimisticCategoryId)) {
+    return {
+      ...result,
+      categories: result.categories.map((category) =>
+        category.id === optimisticCategoryId
+          ? { ...savedCategory, todoCount: category.todoCount }
+          : category,
+      ),
+    };
+  }
+  if (result.categories.some(({ id }) => id === savedCategory.id)) {
+    return result;
+  }
+  return withCategoryAdded(result, { ...savedCategory, todoCount: 0 });
+}
+
+export function withCategoryRemoved(
+  result: TodoCategoriesResult,
+  categoryId: number,
+): TodoCategoriesResult {
+  return { ...result, categories: result.categories.filter(({ id }) => id !== categoryId) };
+}
+
+export function withCategoryChanged(
+  result: TodoCategoriesResult,
+  categoryId: number,
+  change: Partial<Pick<TodoCategory, 'name' | 'color'>>,
+): TodoCategoriesResult {
+  return {
+    ...result,
+    categories: result.categories.map((category) =>
+      category.id === categoryId ? { ...category, ...change } : category,
+    ),
+  };
+}
+
+/** 할 일을 만들거나 지운 만큼 그 카테고리의 개수만 바꾼다. 개수는 서버가 세는 카테고리의 할 일 수와 같다 */
+export function withTodoCountChanged(
+  result: TodoCategoriesResult,
+  categoryId: number,
+  delta: number,
+): TodoCategoriesResult {
+  return {
+    ...result,
+    categories: result.categories.map((category) =>
+      category.id === categoryId
+        ? { ...category, todoCount: Math.max(0, category.todoCount + delta) }
+        : category,
+    ),
+  };
+}
+
+/** 지운 카테고리를 빼고, 옮겼으면 옮긴 곳에 옮긴 할 일 수를 더한다. 결과가 없는 옛 서버는 다시 받을 때 맞춰진다 */
+export function withCategoryDeleted(
+  result: TodoCategoriesResult,
+  categoryId: number,
+  deletionResult: TodoCategoryDeletionResult | null,
+): TodoCategoriesResult {
+  const remaining = withCategoryRemoved(result, categoryId);
+
+  if (deletionResult?.todoHandling !== 'move' || deletionResult.moveToCategoryId == null) {
+    return remaining;
+  }
+
+  return withTodoCountChanged(remaining, deletionResult.moveToCategoryId, deletionResult.todoCount);
+}
 
 export function invalidateTodoCategories(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
@@ -14,6 +106,40 @@ export function changeCachedCategoryTodoCount(
 ) {
   queryClient.setQueryData(
     TODO_CATEGORY_QUERY_KEYS.list(),
-    (old) => old && TodoCategoryPolicy.withTodoCountChanged(old, categoryId, delta),
+    (old) => old && withTodoCountChanged(old, categoryId, delta),
   );
+}
+
+/** 삭제 응답으로 목록을 바로 고쳐 시트가 다시 받기를 기다리지 않고 닫힌다 */
+export function removeDeletedCategory(
+  queryClient: QueryClient,
+  {
+    categoryId,
+    deletionResult,
+  }: { categoryId: number; deletionResult: TodoCategoryDeletionResult | null },
+) {
+  queryClient.setQueryData(
+    TODO_CATEGORY_QUERY_KEYS.list(),
+    (old) => old && withCategoryDeleted(old, categoryId, deletionResult),
+  );
+}
+
+/** 삭제를 누를 때마다 지금 개수를 미리 받는다. 지난 미리보기를 먼저 버려 시트가 옛 개수로 그려지지 않는다 */
+export function prefetchDeletionPreview(
+  queryClient: QueryClient,
+  options: ReturnType<typeof useGetTodoCategoryDeletionPreviewQueryOptions>,
+) {
+  queryClient.removeQueries({ queryKey: options.queryKey, exact: true });
+  return queryClient.prefetchQuery(options);
+}
+
+/** 미리보기와 달라 서버가 거절하면(그사이 할 일이 생기거나 마지막 카테고리가 됨) 지금 개수로 다시 받아 고르기 화면을 맞춘다 */
+export function invalidateDeletionPreview(
+  queryClient: QueryClient,
+  { categoryId }: { categoryId: number },
+) {
+  return queryClient.invalidateQueries({
+    queryKey: TODO_CATEGORY_QUERY_KEYS.deletionPreview({ categoryId }),
+    exact: true,
+  });
 }

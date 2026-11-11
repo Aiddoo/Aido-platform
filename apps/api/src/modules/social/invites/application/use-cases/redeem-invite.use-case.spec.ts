@@ -146,8 +146,8 @@ describe("RedeemInviteUseCase — 초대 수락", () => {
     expect(redeemer.rewardClaimRepository.size).toBe(2);
     expect(redeemer.friendshipEstablisher.requests).toEqual([
       {
-        requesterId: INVITE_FIXTURE_INVITEE_ID,
-        targetUserId: INVITE_FIXTURE_INVITER_ID,
+        requesterId: INVITEE_ID,
+        targetUserId: INVITER_ID,
         shouldNotifyFriends: false,
       },
     ]);

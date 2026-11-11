@@ -4,7 +4,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import { Client, DatabaseError, Pool, type QueryResult } from "pg";
 import { vi } from "vitest";
 
-import { createDatabase, type Database } from "#api/platform/database/database.client";
+import { createDatabase } from "#api/platform/database/database.client";
 import { createTransactionHost } from "#test/setup/database-context";
 
 const dialect = new PgDialect();
@@ -12,11 +12,6 @@ const dialect = new PgDialect();
 /** Drizzle SQL 객체를 PostgreSQL 문장과 파라미터로 렌더링한다. */
 export function renderSql(query: SQL): { sql: string; params: unknown[] } {
   return dialect.sqlToQuery(query);
-}
-
-/** 트랜잭션 밖에서 `tx`가 주어진 database인 실제 TransactionHost. */
-export function createMockDrizzleTransactionHost(database: Database) {
-  return { host: createTransactionHost(database), database };
 }
 
 export interface ExecutedStatement {

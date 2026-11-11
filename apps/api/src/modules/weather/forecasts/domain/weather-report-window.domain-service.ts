@@ -1,7 +1,6 @@
 import { WEATHER_REPORT_LIMITS } from "@aido/api/vocabulary";
 
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
-
+import { localDateAt } from "../../shared/domain/weather-calendar.domain-service.js";
 import type { WeatherReport, WeatherReportNextHour } from "./weather-report.vo.js";
 
 const HOUR_MS = 60 * 60_000;
@@ -17,7 +16,7 @@ export function windowWeatherReport(
   timezone: string,
 ): WeatherReport {
   const currentHourStartMs = now.getTime() - HOUR_MS;
-  const today = dayWindowInTimezone(now, timezone).localDate;
+  const today = localDateAt(now, timezone).toString();
 
   return {
     ...report,

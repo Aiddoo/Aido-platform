@@ -3,6 +3,7 @@ import {
   type NotificationMarketingConsent,
   UserNotificationSettingsPort,
 } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/notification/notification-delivery-preference.fixture";
 
 // 사용자별 수신 설정·광고 동의를 메모리에 둔다. 동의 조회 순서를 보려고 읽은 사용자도 남긴다
@@ -21,21 +22,25 @@ export class InMemoryUserNotificationSettings extends UserNotificationSettingsPo
     this.#now = now;
   }
 
-  async upsertPushTimezone(userId: string, timezone: string): Promise<void> {
+  async upsertPushTimezone(user: UserId, timezone: string): Promise<void> {
+    const userId = user.value;
     this.preferences.set(userId, { ...this.#preferenceOf(userId), timezone });
   }
 
-  async upsertPushLocale(userId: string, locale: string): Promise<void> {
+  async upsertPushLocale(user: UserId, locale: string): Promise<void> {
+    const userId = user.value;
     this.preferences.set(userId, { ...this.#preferenceOf(userId), locale });
   }
 
-  async getPreferenceRecord(userId: string): Promise<NotificationDeliveryPreference | null> {
+  async getPreferenceRecord(user: UserId): Promise<NotificationDeliveryPreference | null> {
+    const userId = user.value;
     return this.preferences.get(userId) ?? null;
   }
 
   async getPreferenceRecordsByUserIds(
-    userIds: string[],
+    users: readonly UserId[],
   ): Promise<Array<NotificationDeliveryPreference & { readonly userId: string }>> {
+    const userIds = users.map((user) => user.value);
     this.preferenceBatchReads.push([...userIds]);
     return userIds.flatMap((userId) => {
       const preference = this.preferences.get(userId);
@@ -43,14 +48,16 @@ export class InMemoryUserNotificationSettings extends UserNotificationSettingsPo
     });
   }
 
-  async getConsentRecord(userId: string): Promise<NotificationMarketingConsent | null> {
+  async getConsentRecord(user: UserId): Promise<NotificationMarketingConsent | null> {
+    const userId = user.value;
     this.consentReadUserIds.push(userId);
     return this.consents.get(userId) ?? null;
   }
 
   async getConsentRecordsByUserIds(
-    userIds: string[],
+    users: readonly UserId[],
   ): Promise<Array<NotificationMarketingConsent & { readonly userId: string }>> {
+    const userIds = users.map((user) => user.value);
     this.consentBatchReads.push([...userIds]);
     return userIds.flatMap((userId) => {
       const consent = this.consents.get(userId);
@@ -58,7 +65,8 @@ export class InMemoryUserNotificationSettings extends UserNotificationSettingsPo
     });
   }
 
-  async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
+  async updateMarketingPushConsent(user: UserId, agreed: boolean): Promise<void> {
+    const userId = user.value;
     this.consents.set(userId, { marketingPushAgreedAt: agreed ? this.#now() : null });
   }
 

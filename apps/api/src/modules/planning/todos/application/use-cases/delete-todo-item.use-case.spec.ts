@@ -5,8 +5,10 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { DeleteTodoItemUseCase } from "./delete-todo-item.use-case.js";
 
 describe("하위 항목 삭제", () => {
@@ -25,7 +27,7 @@ describe("하위 항목 삭제", () => {
 
   it("요청한 항목만 삭제하고 다른 항목과 통계를 보존한다", async () => {
     // Given
-    await fixture.todoRepository.createInlineItems(1, [
+    await fixture.todoRepository.createInlineItems(TodoId.reconstitute(1), [
       { title: "첫 항목" },
       { title: "둘째 항목" },
     ]);
@@ -38,7 +40,7 @@ describe("하위 항목 삭제", () => {
   it("없는 항목과 다른 소유자의 할 일은 상태를 바꾸지 않는다", async () => {
     // Given
     await fixture.todoRepository.seedItem(1, { title: "기존 항목", sortOrder: 0 });
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({ todoId: 1, itemId: 999, userId: fixture.userId }),

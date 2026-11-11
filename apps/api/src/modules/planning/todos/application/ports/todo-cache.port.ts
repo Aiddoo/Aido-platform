@@ -1,4 +1,5 @@
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { FriendTodoReadModel } from "../read-models/todo.read-model.js";
 
@@ -21,14 +22,14 @@ export interface FriendTodosFirstPageCacheRead {
  * 모든 쓰기 use-case가 TX 커밋 후 직접 호출합니다.
  */
 export abstract class TodoCachePort {
-  abstract invalidateTodoCategories(userId: string): Promise<void>;
+  abstract invalidateTodoCategories(userId: UserId): Promise<void>;
 
   /**
    * 친구 공개 투두 첫 페이지 조회.
    * 날짜 세그먼트는 YYYY-MM-DD 또는 "-"(미지정).
    */
   abstract readFriendTodosFirstPage(
-    ownerUserId: string,
+    ownerUserId: UserId,
     startDate: string,
     endDate: string,
     size: number,
@@ -39,7 +40,7 @@ export abstract class TodoCachePort {
    * 캐시 값은 소유자의 PUBLIC 첫 페이지(뷰어 무관 공유).
    */
   abstract storeFriendTodosFirstPageIfCurrent(
-    ownerUserId: string,
+    ownerUserId: UserId,
     startDate: string,
     endDate: string,
     size: number,
@@ -48,5 +49,5 @@ export abstract class TodoCachePort {
   ): Promise<void>;
 
   /** 소유자의 친구 공개 투두 캐시 전체 무효화 (모든 날짜 범위·size 변형 포함). */
-  abstract invalidateFriendTodos(ownerUserId: string): Promise<void>;
+  abstract invalidateFriendTodos(ownerUserId: UserId): Promise<void>;
 }

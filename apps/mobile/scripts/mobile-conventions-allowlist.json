@@ -19,5 +19,9 @@
   "form-shape": {
     "reason": "남은 예외가 없다. 새로 생기면 form과 Controller로 고친다",
     "entries": {}
+  },
+  "policy-facade": {
+    "reason": "남은 예외가 없다. 새로 생기면 모델 전체를 받거나 Policy 밖 순수 함수로 고친다",
+    "entries": {}
   }
 }

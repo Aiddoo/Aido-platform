@@ -37,7 +37,7 @@ export class GetFriendDailyCompletionsUseCase {
     const friendUserId = UserId.reconstitute(query.friendUserId);
 
     // 친구가 아니면 날짜를 보기 전에 거절한다(기존 오류 우선순위)
-    if (!(await friendshipReader.isMutualFriend(query.userId, friendUserId.value))) {
+    if (!(await friendshipReader.isMutualFriend(UserId.reconstitute(query.userId), friendUserId))) {
       throw notMutualFriend(friendUserId);
     }
 
