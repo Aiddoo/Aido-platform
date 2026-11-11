@@ -14,7 +14,7 @@ import {
 const USER_ID = UserId.reconstitute(ACCESS_FIXTURE_USER_ID);
 const OTHER_USER_ID = UserId.reconstitute(ACCESS_FIXTURE_OTHER_USER_ID);
 
-export interface SeedAccessUserInput {
+interface SeedAccessUserInput {
   readonly id: string;
   readonly role: UserRole;
   readonly subscriptionStatus: SubscriptionStatus;

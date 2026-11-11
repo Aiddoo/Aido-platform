@@ -11,8 +11,6 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { FeatureEntitlement } from "../../domain/entitlement.domain-service.js";
 import type { FeatureQuotaDetails } from "../read-models/feature-quota.read-model.js";
 
-export type { FeatureEntitlement };
-
 /** 소유 Context가 사용량·개수를 세는 한도 기능 (CHEER·NUDGE·FRIEND·TODO_CATEGORY) */
 export type UnmeteredLimitFeatureKey = Exclude<PlanLimitFeatureKey, MeteredFeatureKey>;
 

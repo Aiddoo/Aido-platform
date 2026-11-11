@@ -1,5 +1,6 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
 import type { RetentionRepositoryPort } from "../ports/retention.repository.port.js";
@@ -24,7 +25,7 @@ export class ActivateRetentionExperimentUseCase {
     }
     const startedAt = this.#dependencies.clock.now();
     await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.repository.activate(userId, startedAt),
+      this.#dependencies.repository.activate(UserId.reconstitute(userId), startedAt),
     );
   }
 }

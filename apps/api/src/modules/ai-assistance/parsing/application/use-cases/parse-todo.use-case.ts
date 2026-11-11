@@ -28,7 +28,7 @@ import type { ChargedGenerationPort } from "../ports/charged-generation.port.js"
 import { type UserCategoryReaderPort } from "../ports/user-category.reader.port.js";
 
 /** 공개 응답의 토큰 사용량 (사고 토큰은 로그에만 남긴다). */
-export interface ParseTokenUsage {
+interface ParseTokenUsage {
   input: number;
   output: number;
 }

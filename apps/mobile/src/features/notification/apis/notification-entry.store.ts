@@ -1,5 +1,9 @@
 import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
-import type { PendingNotificationResponse } from '../domains/notification.model';
+import {
+  type HandledResponseIds,
+  HandledResponsePolicy,
+  type PendingNotificationResponse,
+} from '../domains/notification.model';
 import type { NotificationDestination } from '../utils/notification-destination';
 
 interface NotificationEntryState {
@@ -22,7 +26,7 @@ export interface NotificationEntryStore {
   receive(response: PendingNotificationResponse): void;
   /** 소유 확인이 끝난 탭의 목적지를 정한다. 그 사이 새 탭이 왔으면 무시한다 */
   markReady(responseId: string, destination: NotificationDestination): void;
-  /** 끝난 응답을 슬롯에서 빼고, 같은 응답이 다시 와도 무시한다 */
+  /** 끝난 응답을 슬롯에서 빼고, 같은 응답이 다시 와도 무시한다(최근 응답만 기억한다) */
   settle(responseId: string): void;
   clear(): void;
 }
@@ -32,7 +36,7 @@ const EMPTY_STATE: NotificationEntryState = { pending: null, ready: null, optOut
 /** 응답 슬롯. 라우트 경계가 다시 그려도 남도록 DI가 소유한다 */
 export function createNotificationEntryStore(): NotificationEntryStore {
   let state = EMPTY_STATE;
-  let lastSettledId: string | null = null;
+  let handledResponseIds: HandledResponseIds = [];
   const listeners = new Set<() => void>();
 
   function setState(next: NotificationEntryState) {
@@ -52,7 +56,7 @@ export function createNotificationEntryStore(): NotificationEntryStore {
     },
     receive: (response) => {
       if (
-        response.id === lastSettledId ||
+        HandledResponsePolicy.hasHandledResponse(handledResponseIds, response.id) ||
         response.id === state.pending?.id ||
         response.id === state.ready?.response.id ||
         response.id === state.optOut?.id
@@ -72,7 +76,10 @@ export function createNotificationEntryStore(): NotificationEntryStore {
       setState({ ...state, pending: null, ready: { response: state.pending, destination } });
     },
     settle: (responseId) => {
-      lastSettledId = responseId;
+      handledResponseIds = HandledResponsePolicy.rememberHandledResponse(
+        handledResponseIds,
+        responseId,
+      );
       setState({
         pending: state.pending?.id === responseId ? null : state.pending,
         ready: state.ready?.response.id === responseId ? null : state.ready,

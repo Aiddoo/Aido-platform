@@ -13,7 +13,6 @@
  * 콘솔에는 case id·통과 여부·지연·토큰·비용만 쓰고 입력 원문·전사·키는 쓰지 않는다.
  * 기준: 날짜 0.97, 제목 0.9, 겹침 판정 0.9(계획), NO_ACTION 1(parse-todo). 결과는 apps/api/docs/ai.md에 남긴다.
  */
-import "../../src/shared/domain/date/dayjs.setup.js";
 import { writeFileSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";

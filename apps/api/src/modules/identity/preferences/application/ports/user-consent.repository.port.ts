@@ -3,8 +3,6 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { AiDataSharingConsent } from "../../domain/ai-data-sharing-consent.entity.js";
 import type { UserConsentRecord } from "../../domain/user-consent.constants.js";
 
-export type { UserConsentRecord };
-
 /** 배치 조회용 동의 레코드 (사용자 식별자 포함). */
 export type UserConsentRecordWithId = UserConsentRecord & { userId: string };
 

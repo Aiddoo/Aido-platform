@@ -15,7 +15,7 @@ import {
   background,
   cornerRadius,
   font,
-  foregroundColor,
+  foregroundStyle,
   frame,
   gaugeStyle,
   lineLimit,
@@ -83,7 +83,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         <Text
           modifiers={[
             font({ size: 14, weight: 'semibold', design: 'rounded' }),
-            foregroundColor(palette.foreground),
+            foregroundStyle(palette.foreground),
           ]}
           // 첫 동기화 전에는 문구가 번들 Localizable.strings의 키라 markdown으로 시스템 언어 문구를 얻는다
           markdownEnabled={props.localizeStateCopy}
@@ -91,7 +91,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           {props.stateTitle}
         </Text>
         <Text
-          modifiers={[font({ size: 12 }), foregroundColor(palette.muted)]}
+          modifiers={[font({ size: 12 }), foregroundStyle(palette.muted)]}
           markdownEnabled={props.localizeStateCopy}
         >
           {props.stateCta}
@@ -107,7 +107,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           <Text
             modifiers={[
               font({ size: 12, weight: 'medium', design: 'rounded' }),
-              foregroundColor(palette.muted),
+              foregroundStyle(palette.muted),
               lineLimit(1),
               minimumScaleFactor(0.7),
             ]}
@@ -124,7 +124,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
               monospacedDigit(),
               lineLimit(1),
               minimumScaleFactor(0.6),
-              foregroundColor(palette.brand),
+              foregroundStyle(palette.brand),
             ]}
           >
             {`${props.completedTodos}`}
@@ -135,7 +135,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
               monospacedDigit(),
               lineLimit(1),
               minimumScaleFactor(0.6),
-              foregroundColor(palette.muted),
+              foregroundStyle(palette.muted),
             ]}
           >
             {`/${props.totalTodos}`}
@@ -152,7 +152,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           <Text
             modifiers={[
               font({ size: 11, weight: 'medium', design: 'rounded' }),
-              foregroundColor(props.isComplete ? palette.brand : palette.muted),
+              foregroundStyle(props.isComplete ? palette.brand : palette.muted),
               lineLimit(1),
             ]}
           >
@@ -163,7 +163,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             <Text
               modifiers={[
                 font({ size: 11, weight: 'medium', design: 'rounded' }),
-                foregroundColor(palette.brand),
+                foregroundStyle(palette.brand),
                 lineLimit(1),
               ]}
             >
@@ -193,16 +193,16 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         <ZStack modifiers={[frame({ width: 16, height: 16 })]}>
           <RoundedRectangle
             cornerRadius={5}
-            modifiers={[foregroundColor(todo.color), frame({ width: 16, height: 16 })]}
+            modifiers={[foregroundStyle(todo.color), frame({ width: 16, height: 16 })]}
           />
           {!todo.completed ? (
             <RoundedRectangle
               cornerRadius={3}
-              modifiers={[foregroundColor(palette.background), frame({ width: 12, height: 12 })]}
+              modifiers={[foregroundStyle(palette.background), frame({ width: 12, height: 12 })]}
             />
           ) : null}
           {todo.completed ? (
-            <Text modifiers={[font({ size: 10, weight: 'bold' }), foregroundColor('#FFFFFF')]}>
+            <Text modifiers={[font({ size: 10, weight: 'bold' }), foregroundStyle('#FFFFFF')]}>
               ✓
             </Text>
           ) : null}
@@ -210,7 +210,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         <Text
           modifiers={[
             font({ size: 13 }),
-            foregroundColor(todo.completed ? palette.muted : palette.foreground),
+            foregroundStyle(todo.completed ? palette.muted : palette.foreground),
             strikethrough({ isActive: todo.completed, pattern: 'solid', color: palette.muted }),
             lineLimit(1),
           ]}
@@ -227,7 +227,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
       <Text
         modifiers={[
           font({ size: 12, weight: 'semibold', design: 'rounded' }),
-          foregroundColor(palette.brand),
+          foregroundStyle(palette.brand),
           lineLimit(1),
           padding({ horizontal: 10, vertical: 6 }),
           background(palette.brandSurface),
@@ -243,7 +243,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           monospacedDigit(),
           lineLimit(1),
           minimumScaleFactor(0.6),
-          foregroundColor(palette.brand),
+          foregroundStyle(palette.brand),
         ]}
       >{`${props.completedTodos}`}</Text>
       <Text
@@ -252,7 +252,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           monospacedDigit(),
           lineLimit(1),
           minimumScaleFactor(0.6),
-          foregroundColor(palette.muted),
+          foregroundStyle(palette.muted),
         ]}
       >{`/${props.totalTodos}`}</Text>
     </HStack>
@@ -265,7 +265,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           <Text
             modifiers={[
               font({ size: 11, weight: 'medium', design: 'rounded' }),
-              foregroundColor(palette.muted),
+              foregroundStyle(palette.muted),
               lineLimit(1),
             ]}
           >
@@ -283,7 +283,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             <Text
               modifiers={[
                 font({ size: 11, design: 'rounded' }),
-                foregroundColor(palette.brand),
+                foregroundStyle(palette.brand),
                 lineLimit(1),
               ]}
             >
@@ -297,7 +297,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
             <Text
               modifiers={[
                 font({ size: 12 }),
-                foregroundColor(palette.muted),
+                foregroundStyle(palette.muted),
                 lineLimit(2),
                 frame({ height: 60 }),
               ]}
@@ -327,7 +327,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         <Text
           modifiers={[
             font({ size: 10, design: 'rounded' }),
-            foregroundColor(weekendColors[index] ?? palette.muted),
+            foregroundStyle(weekendColors[index] ?? palette.muted),
           ]}
         >
           {day.weekdayLabel}
@@ -336,13 +336,13 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           {day.isToday ? (
             <RoundedRectangle
               cornerRadius={14}
-              modifiers={[foregroundColor(palette.brand), frame({ width: 28, height: 28 })]}
+              modifiers={[foregroundStyle(palette.brand), frame({ width: 28, height: 28 })]}
             />
           ) : null}
           <Text
             modifiers={[
               font({ size: 14, weight: day.isToday ? 'bold' : 'medium', design: 'rounded' }),
-              foregroundColor(day.isToday ? '#FFFFFF' : palette.foreground),
+              foregroundStyle(day.isToday ? '#FFFFFF' : palette.foreground),
             ]}
           >
             {day.dayLabel}
@@ -352,7 +352,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           {day.isComplete ? (
             renderPaw(7)
           ) : (
-            <Text modifiers={[font({ size: 14 }), foregroundColor(palette.brand)]}>
+            <Text modifiers={[font({ size: 14 }), foregroundStyle(palette.brand)]}>
               {day.hasTodos ? '•' : ' '}
             </Text>
           )}
@@ -368,7 +368,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         <Text
           modifiers={[
             font({ size: 14, weight: 'semibold', design: 'rounded' }),
-            foregroundColor(palette.foreground),
+            foregroundStyle(palette.foreground),
             lineLimit(1),
             minimumScaleFactor(0.8),
           ]}
@@ -381,7 +381,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           <Text
             modifiers={[
               font({ size: 10, design: 'rounded' }),
-              foregroundColor(palette.muted),
+              foregroundStyle(palette.muted),
               lineLimit(1),
               minimumScaleFactor(0.8),
             ]}
@@ -409,7 +409,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         <Text
           modifiers={[
             font({ size: 12, weight: 'medium', design: 'rounded' }),
-            foregroundColor(palette.muted),
+            foregroundStyle(palette.muted),
           ]}
         >
           {props.progressTitle}
@@ -428,7 +428,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
           <Text
             modifiers={[
               font({ size: 13 }),
-              foregroundColor(palette.muted),
+              foregroundStyle(palette.muted),
               lineLimit(2),
               frame({ height: 108 }),
             ]}
@@ -447,7 +447,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
         <Text
           modifiers={[
             font({ size: 10, design: 'rounded' }),
-            foregroundColor(palette.muted),
+            foregroundStyle(palette.muted),
             lineLimit(1),
           ]}
         >

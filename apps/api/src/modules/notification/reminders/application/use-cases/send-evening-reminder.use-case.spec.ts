@@ -5,7 +5,7 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TEST_CUID } from "#test/fixtures/index";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createEveningReminderNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createEveningReminderNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";

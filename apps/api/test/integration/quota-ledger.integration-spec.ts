@@ -14,11 +14,11 @@ import {
   QUOTA_REQUEST_HASH_RETENTION_MS,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
 } from "#api/modules/access/quotas/domain/quotas.constants";
-import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge, quotaUsage, user as userTable } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";
@@ -61,7 +61,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       strict: false,
     });
     usageRepository = context.module.get(QuotaUsageRepositoryPort, { strict: false });
-    unitOfWork = context.module.get(UNIT_OF_WORK);
+    unitOfWork = context.module.get(UnitOfWorkPort);
     entitlement = context.module.get(EntitlementReaderPort);
   });
   beforeEach(async () => {
@@ -818,7 +818,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         sourceKey: "invite:quota-ledger",
         durationDays: 7,
       });
-      const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1_000);
+      const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1000);
       vi.setSystemTime(new Date(grantEndsAt.getTime() - 1));
       const duringGrant = await ledger.read(UserId.reconstitute(userId), "AI_PARSE");
 

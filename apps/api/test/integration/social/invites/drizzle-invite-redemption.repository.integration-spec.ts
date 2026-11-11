@@ -188,7 +188,7 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
   it("수락이 1천 건이어도 내 초대 요약은 문장 네 개, 상태별 목록은 한 문장이다", async () => {
     // Given
     const { redemptions, grants } = createRepositories();
-    const inviteeIds = await insertInvitees(1_000);
+    const inviteeIds = await insertInvitees(1000);
     const now = Temporal.Instant.from("2028-03-10T00:00:00Z");
     const rows = inviteeIds.map((inviteeId, index) => ({
       id: createEntityId(),

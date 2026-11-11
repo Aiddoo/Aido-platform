@@ -24,9 +24,9 @@ import {
   type AiGenerationRequest,
   type AiGenerationResult,
   AiGeneratorPort,
-  type AiTaskClass,
 } from "../../application/ports/ai-generator.port.js";
 import { planAiRoute, resolveAttemptTime } from "../../domain/ai-route.domain-service.js";
+import { type AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 import {
   type AiGenerationPolicy,
   resolveGenerationPolicy,

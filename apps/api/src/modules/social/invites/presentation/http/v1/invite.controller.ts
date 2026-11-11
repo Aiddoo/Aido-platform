@@ -9,21 +9,22 @@ import {
   Public,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
-import { Timezone } from "#api/platform/http/decorators/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
   ApiConflictError,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiGoneError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { GetInviteAvailabilityUseCase } from "../../../application/use-cases/get-invite-availability.use-case.js";
 import { GetInvitedFriendsUseCase } from "../../../application/use-cases/get-invited-friends.use-case.js";

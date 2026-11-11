@@ -4,17 +4,6 @@ import {
 } from '@src/features/planning/category/constants/todo-category.constants';
 import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
 
-export const RELEASE_1_15_0_STEPS = [
-  'intro',
-  'voiceTodoCapture',
-  'voiceTodoReview',
-  'voiceTodoList',
-  'voiceNoteRecord',
-  'voiceNoteResult',
-  'freeQuota',
-  'finish',
-] as const;
-
 export const DEMO_CATEGORIES = [
   { id: 'exercise', color: CATEGORY_COLORS[6] },
   { id: 'daily', color: DEFAULT_CATEGORY_COLOR },

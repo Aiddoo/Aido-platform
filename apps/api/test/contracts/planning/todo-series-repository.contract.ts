@@ -1,8 +1,10 @@
 import type { TodoSeriesRepositoryPort } from "#api/modules/planning/todo-series/application/ports/todo-series.repository.port";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import type {
   TodoSeries,
   TodoSeriesPrimitives,
 } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fixture";
 import {
   TODO_FIXTURE_OTHER_USER_ID,
@@ -67,12 +69,12 @@ export function describeTodoSeriesRepositoryContract(
 
       // When
       const found = await context.seriesRepository.findByIdAndUserId(
-        series.id.value,
-        TODO_FIXTURE_USER_ID,
+        series.id,
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
       );
       const foreign = await context.seriesRepository.findByIdAndUserId(
-        series.id.value,
-        TODO_FIXTURE_OTHER_USER_ID,
+        series.id,
+        UserId.reconstitute(TODO_FIXTURE_OTHER_USER_ID),
       );
 
       // Then
@@ -89,7 +91,7 @@ export function describeTodoSeriesRepositoryContract(
 
       // When
       await context.seriesRepository.update(series);
-      const locked = await context.seriesRepository.lockForUpdate(series.id.value);
+      const locked = await context.seriesRepository.lockForUpdate(series.id);
 
       // Then
       expect(withoutUpdatedAt(locked)).toEqual(withoutUpdatedAt(series));
@@ -112,7 +114,9 @@ export function describeTodoSeriesRepositoryContract(
       });
 
       // When
-      const active = await context.seriesRepository.countActiveByUserId(TODO_FIXTURE_USER_ID);
+      const active = await context.seriesRepository.countActiveByUserId(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      );
       const firstBatch = await context.seriesRepository.findDueBatch({
         through: "2026-11-11",
         afterId: null,
@@ -120,11 +124,11 @@ export function describeTodoSeriesRepositoryContract(
       });
       const nextBatch = await context.seriesRepository.findDueBatch({
         through: "2026-11-11",
-        afterId: firstBatch.at(-1)?.id ?? null,
+        afterId: firstBatch.map(({ id }) => TodoSeriesId.reconstitute(id)).at(-1) ?? null,
         limit: 5,
       });
       const behind = await context.seriesRepository.findIdsBehind(
-        TODO_FIXTURE_USER_ID,
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
         "2026-11-10",
       );
 
@@ -148,11 +152,14 @@ export function describeTodoSeriesRepositoryContract(
       await insertSeries(context, { id: last, originSeriesId: origin, startDate: "2026-11-20" });
 
       // When
-      const family = await context.seriesRepository.lockFamilyIds(TODO_FIXTURE_USER_ID, origin);
+      const family = await context.seriesRepository.lockFamilyIds(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        TodoSeriesId.reconstitute(origin),
+      );
       const following = await context.seriesRepository.lockFollowingSegments(source);
 
       // Then
-      expect(family).toEqual([origin, middle, last]);
+      expect(family.map((id) => id.value)).toEqual([origin, middle, last]);
       expect(following.map((segment) => segment.id.value)).toEqual([middle, last]);
     });
 
@@ -168,20 +175,23 @@ export function describeTodoSeriesRepositoryContract(
 
       // When
       const changed = await context.seriesRepository.updateTimezoneByUserId(
-        TODO_FIXTURE_USER_ID,
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
         "America/New_York",
       );
-      await context.seriesRepository.deleteMany([SERIES_IDS[1]]);
+      await context.seriesRepository.deleteMany([TodoSeriesId.reconstitute(SERIES_IDS[1])]);
 
       // Then
       const kept = await context.seriesRepository.findByIdAndUserId(
-        SERIES_IDS[0],
-        TODO_FIXTURE_USER_ID,
+        TodoSeriesId.reconstitute(SERIES_IDS[0]),
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
       );
       expect(changed).toBe(1);
       expect(kept?.timezone).toBe("America/New_York");
       expect(
-        await context.seriesRepository.findByIdAndUserId(SERIES_IDS[1], TODO_FIXTURE_USER_ID),
+        await context.seriesRepository.findByIdAndUserId(
+          TodoSeriesId.reconstitute(SERIES_IDS[1]),
+          UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        ),
       ).toBeNull();
     });
   });

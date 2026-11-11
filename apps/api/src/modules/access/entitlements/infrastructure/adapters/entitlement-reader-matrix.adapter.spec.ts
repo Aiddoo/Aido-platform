@@ -9,7 +9,7 @@ import { createEntitlementFixture } from "#test/fixtures/access/entitlement.fixt
 import { assertEntitled, assertEntitledInTx } from "../../application/entitlements.errors.js";
 
 const NOW = Temporal.Instant.from("2026-11-03T00:00:00.000Z");
-const SECOND_MS = 1_000;
+const SECOND_MS = 1000;
 
 const SUBJECTS = {
   FREE: { role: "USER", subscriptionStatus: "FREE", accessDeadline: null },

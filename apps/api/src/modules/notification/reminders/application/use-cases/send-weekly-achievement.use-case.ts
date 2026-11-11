@@ -1,9 +1,9 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
-import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createWeeklyAchievementNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createWeeklyAchievementNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import { previousIsoWeekOf } from "../../domain/reminder-day.domain-service.js";
@@ -65,12 +65,13 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
       week: isoWeek,
       totalTodos: g.count,
       completedTodos: completedMap.get(g.userId) ?? 0,
-      // insights 주간 달성 기록은 아직 UTC 자정 Date로 받는다
-      achievedAt: plainDateToDate(today),
+      achievedAt: today,
     }));
 
     // ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
-    await this.#dependencies.weeklyAchievementWriter.execute({ records });
+    await this.#dependencies.weeklyAchievementWriter.execute({
+      records: records.map((record) => ({ ...record, userId: UserId.reconstitute(record.userId) })),
+    });
 
     // ─── C. 알림 발송 (completed > 0 + dedup) ────
     const completedUserIds = records.filter((r) => r.completedTodos > 0).map((r) => r.userId);

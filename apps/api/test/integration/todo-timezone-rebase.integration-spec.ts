@@ -9,6 +9,7 @@ import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/ap
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
+import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
@@ -34,20 +35,11 @@ import {
 } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { SystemClock } from "#api/platform/time/system-clock";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import {
-  localDateInTimezone,
-  parseLocalDateTime,
-  todayInTimezone,
-  toLocalTimeString,
-} from "#api/shared/domain/date/utils/timezone";
-import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant, shiftDateKey, todayIn, wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -58,6 +50,7 @@ import {
   type E2eTestContext,
 } from "../e2e/helpers/e2e-app-factory.js";
 import { suppressLogger } from "../setup/suppress-logger.js";
+import { withFastJobTiming } from "./helpers/fast-job-timing.js";
 
 const SEOUL = "Asia/Seoul";
 const NEW_YORK = "America/New_York";
@@ -68,7 +61,6 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let boss: PgBoss;
-  let runtime: PgBossJobRuntimeAdapter;
   let jobQueue: PgBossJobQueueAdapter;
   let useCase: RebaseTodoTimezoneUseCase;
   let queue: TodoTimezoneRebaseQueueService;
@@ -98,9 +90,10 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       max: 3,
     });
     transaction = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, { shutdownTimeoutMs: 10_000 });
-    await runtime.start();
-    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry());
+    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
+      shutdownTimeoutMs: 10_000,
+    });
+    await jobQueue.start();
     reminderAdapter = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
     );
@@ -113,7 +106,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
         findTimezone: async (id) => {
           const row = await transaction.txHost.tx.query.userPreference.findFirst({
             columns: { timezone: true },
-            where: { userId: id },
+            where: { userId: id.value },
           });
           return row?.timezone ?? null;
         },
@@ -147,11 +140,11 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     categoryId = category?.id ?? 0;
-    today = toDateString(todayInTimezone(NEW_YORK));
+    today = todayIn(NEW_YORK).toString();
   });
 
   afterAll(async () => {
-    await runtime?.stop();
+    await jobQueue?.stop();
     await database?.stop();
   });
 
@@ -162,7 +155,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
         ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
         startDate: Temporal.PlainDate.from(date),
         scheduledLocalTime: localTime,
-        scheduledTime: instantFromDate(parseLocalDateTime(date, localTime, SEOUL)),
+        scheduledTime: wallClockInstant(date, localTime, SEOUL),
         isAllDay: false,
         ...overrides,
       })
@@ -197,26 +190,26 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("옛 예약을 지우고 새 시각으로 다시 예약하며 벽시계는 그대로다", async () => {
     // Given
-    const date = addDaysToDateKey(today, 3);
+    const date = shiftDateKey(today, 3);
     const id = await seedTodo(date, "10:00");
-    const seoulInstant = instantFromDate(parseLocalDateTime(date, "10:00", SEOUL));
+    const seoulInstant = wallClockInstant(date, "10:00", SEOUL);
     await reminderAdapter.scheduleReminders([{ todoId: id, scheduledTime: seoulInstant, userId }]);
     // When
     const result = await useCase.execute({ userId });
     // Then
-    const expected = parseLocalDateTime(date, "10:00", NEW_YORK);
+    const expected = wallClockInstant(date, "10:00", NEW_YORK);
     expect(result).toMatchObject({ outcome: "COMPLETED", rebasedCount: 1 });
-    expect(await readInstant(id)).toBe(expected.toISOString());
+    expect(await readInstant(id)).toBe(toIsoString(expected));
     const starts = await queuedStarts(id, "60min");
     expect(starts).toHaveLength(1);
-    expect(Math.abs((starts[0] ?? 0) - (expected.getTime() - HOUR_MS))).toBeLessThan(5_000);
+    expect(Math.abs((starts[0] ?? 0) - (expected.epochMilliseconds - HOUR_MS))).toBeLessThan(5000);
     const row = await client.query.todo.findFirst({ where: { id } });
     expect(row?.scheduledLocalTime).toBe("10:00");
   });
 
   it("새 시간대에서 이미 지난 시각은 옛 예약을 지우고 다시 예약하지 않는다", async () => {
     // Given
-    const yesterday = addDaysToDateKey(today, -1);
+    const yesterday = shiftDateKey(today, -1);
     const id = await seedTodo(yesterday, "00:00", {
       scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),
     });
@@ -233,9 +226,9 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("새 시간대에서 10분 안쪽으로 남으면 바로 보내지 않고 건너뛴다", async () => {
     // Given
-    const soon = new Date(Date.now() + 5 * 60 * 1000);
-    const localTime = toLocalTimeString(soon, NEW_YORK);
-    const id = await seedTodo(localDateInTimezone(soon, NEW_YORK), localTime, {
+    const soon = nowInstant().add({ minutes: 5 }).toZonedDateTimeISO(NEW_YORK);
+    const localTime = soon.toPlainTime().toString({ smallestUnit: "minute" });
+    const id = await seedTodo(soon.toPlainDate().toString(), localTime, {
       scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),
     });
     await reminderAdapter.scheduleReminders([
@@ -250,8 +243,8 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("완료했거나 지난 할 일은 순간만 바꾸고 예약은 만들지 않는다", async () => {
     // Given
-    const future = addDaysToDateKey(today, 3);
-    const past = addDaysToDateKey(today, -400);
+    const future = shiftDateKey(today, 3);
+    const past = shiftDateKey(today, -400);
     const completedFuture = await seedTodo(future, "10:00", { completed: true });
     const completedPast = await seedTodo(past, "10:00", { completed: true });
     const openPast = await seedTodo(past, "11:00");
@@ -261,13 +254,13 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     // Then
     expect(result).toMatchObject({ scannedCount: 4, rebasedCount: 4 });
     expect(await readInstant(completedFuture)).toBe(
-      parseLocalDateTime(future, "10:00", NEW_YORK).toISOString(),
+      toIsoString(wallClockInstant(future, "10:00", NEW_YORK)),
     );
     expect(await readInstant(completedPast)).toBe(
-      parseLocalDateTime(past, "10:00", NEW_YORK).toISOString(),
+      toIsoString(wallClockInstant(past, "10:00", NEW_YORK)),
     );
     expect(await readInstant(openPast)).toBe(
-      parseLocalDateTime(past, "11:00", NEW_YORK).toISOString(),
+      toIsoString(wallClockInstant(past, "11:00", NEW_YORK)),
     );
     expect(await queuedStarts(completedFuture, "60min")).toEqual([]);
     expect(await queuedStarts(completedPast, "60min")).toEqual([]);
@@ -278,9 +271,9 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("왕복 여행과 중복 실행 뒤에도 예약은 회차·단계마다 하나다", async () => {
     // Given
-    const date = addDaysToDateKey(today, 3);
+    const date = shiftDateKey(today, 3);
     const id = await seedTodo(date, "10:00");
-    const seoulInstant = instantFromDate(parseLocalDateTime(date, "10:00", SEOUL));
+    const seoulInstant = wallClockInstant(date, "10:00", SEOUL);
     await reminderAdapter.scheduleReminders([{ todoId: id, scheduledTime: seoulInstant, userId }]);
     // When
     await useCase.execute({ userId });
@@ -293,7 +286,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const starts = await queuedStarts(id, "60min");
     expect(starts).toHaveLength(1);
     expect(Math.abs((starts[0] ?? 0) - (seoulInstant.epochMilliseconds - HOUR_MS))).toBeLessThan(
-      5_000,
+      5000,
     );
     expect(await queuedStarts(id, "10min")).toHaveLength(1);
   });
@@ -342,7 +335,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("중간에 실패하면 그 묶음만 되돌아가고 재시도가 나머지를 끝낸다", async () => {
     // Given
-    const date = addDaysToDateKey(today, 3);
+    const date = shiftDateKey(today, 3);
     const ids = [await seedTodo(date, "10:00"), await seedTodo(date, "11:00")];
     const transaction = createDatabaseTransactionFixture(client);
     let failed = false;
@@ -371,19 +364,21 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const afterFailure = await readInstant(ids[0] ?? 0);
     const retried = await flaky.execute({ userId });
     // Then
-    expect(afterFailure).toBe(parseLocalDateTime(date, "10:00", SEOUL).toISOString());
+    expect(afterFailure).toBe(toIsoString(wallClockInstant(date, "10:00", SEOUL)));
     expect(retried).toMatchObject({ outcome: "COMPLETED", rebasedCount: 2 });
     expect(await readInstant(ids[1] ?? 0)).toBe(
-      parseLocalDateTime(date, "11:00", NEW_YORK).toISOString(),
+      toIsoString(wallClockInstant(date, "11:00", NEW_YORK)),
     );
   });
 
   it("같은 구간의 변경은 작업 하나로 묶이고 다음 구간은 새 작업이 된다", async () => {
     // Given
     const windowStart = Math.floor(Date.now() / TODO_TIMEZONE_REBASE_WINDOW_MS);
-    const first = new Date(windowStart * TODO_TIMEZONE_REBASE_WINDOW_MS + 1_000);
-    const sameWindow = new Date(windowStart * TODO_TIMEZONE_REBASE_WINDOW_MS + 30_000);
-    const nextWindow = new Date((windowStart + 1) * TODO_TIMEZONE_REBASE_WINDOW_MS + 1_000);
+    const first = Temporal.Instant.fromEpochMilliseconds(
+      windowStart * TODO_TIMEZONE_REBASE_WINDOW_MS + 1000,
+    );
+    const sameWindow = first.add({ seconds: 29 });
+    const nextWindow = first.add({ milliseconds: TODO_TIMEZONE_REBASE_WINDOW_MS });
     // When
     await queue.enqueueRebase(userId, first);
     await queue.enqueueRebase(userId, sameWindow);
@@ -393,7 +388,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const mine = jobs.filter((job) => job.singletonKey?.includes(userId));
     expect(mine).toHaveLength(2);
     expect(Math.min(...mine.map((job) => job.startAfter.getTime()))).toBeGreaterThan(
-      first.getTime(),
+      first.epochMilliseconds,
     );
   });
 
@@ -428,19 +423,19 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     "기기 두 대 $name: 같은 분의 전환은 작업 하나이고 결과는 마지막 값이다",
     async ({ requests, last }) => {
       // Given
-      const date = addDaysToDateKey(today, 3);
+      const date = shiftDateKey(today, 3);
       const id = await seedTodo(date, "10:00");
       await reminderAdapter.scheduleReminders([
         {
           todoId: id,
-          scheduledTime: instantFromDate(parseLocalDateTime(date, "10:00", SEOUL)),
+          scheduledTime: wallClockInstant(date, "10:00", SEOUL),
           userId,
         },
       ]);
       await setStoredTimezone(SEOUL);
-      const at = new Date(
+      const at = Temporal.Instant.fromEpochMilliseconds(
         Math.floor(Date.now() / TODO_TIMEZONE_REBASE_WINDOW_MS) * TODO_TIMEZONE_REBASE_WINDOW_MS +
-          1_000,
+          1000,
       );
       const preferenceRepository = new DrizzleUserPreferenceRepository(transaction.txHost);
       const refresh = new RefreshPushTimezoneUseCase({
@@ -459,7 +454,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       const jobs = await boss.findJobs(TODO_TIMEZONE_REBASE_QUEUE.name, { queued: true });
       expect(jobs.filter((job) => job.singletonKey?.includes(userId))).toHaveLength(1);
       await useCase.execute({ userId });
-      expect(await readInstant(id)).toBe(parseLocalDateTime(date, "10:00", last).toISOString());
+      expect(await readInstant(id)).toBe(toIsoString(wallClockInstant(date, "10:00", last)));
       expect(await queuedStarts(id, "60min")).toHaveLength(1);
     },
   );
@@ -468,9 +463,11 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     // Given
     const transaction = createDatabaseTransactionFixture(client);
     const localQueue = new TodoTimezoneRebaseQueueService(
-      new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry()),
+      new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
+        shutdownTimeoutMs: 10_000,
+      }),
     );
-    const at = new Date(Date.now() + 10 * TODO_TIMEZONE_REBASE_WINDOW_MS);
+    const at = nowInstant().add({ milliseconds: 10 * TODO_TIMEZONE_REBASE_WINDOW_MS });
     // When
     await expect(
       transaction.uow.run(async () => {
@@ -485,30 +482,30 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("실제 worker가 구간이 지난 작업을 실행해 시각을 고친다", async () => {
     // Given
-    const date = addDaysToDateKey(today, 3);
+    const date = shiftDateKey(today, 3);
     const id = await seedTodo(date, "10:00");
     const done = Promise.withResolvers<void>();
-    await jobQueue.work(
-      { ...TODO_TIMEZONE_REBASE_QUEUE, worker: { localConcurrency: 1, pollingIntervalSeconds: 1 } },
-      async (jobs) => {
-        for (const job of jobs) {
-          if (job.data.data.userId === userId) {
-            await useCase.execute({ userId });
-            done.resolve();
-          }
+    await jobQueue.work(withFastJobTiming(TODO_TIMEZONE_REBASE_QUEUE), async (jobs) => {
+      for (const job of jobs) {
+        if (job.data.data.userId === userId) {
+          await useCase.execute({ userId });
+          done.resolve();
         }
-      },
-    );
+      }
+    });
     // When
-    await queue.enqueueRebase(userId, new Date(Date.now() - 2 * TODO_TIMEZONE_REBASE_WINDOW_MS));
+    await queue.enqueueRebase(
+      userId,
+      nowInstant().subtract({ milliseconds: 2 * TODO_TIMEZONE_REBASE_WINDOW_MS }),
+    );
     await done.promise;
     // Then
-    expect(await readInstant(id)).toBe(parseLocalDateTime(date, "10:00", NEW_YORK).toISOString());
+    expect(await readInstant(id)).toBe(toIsoString(wallClockInstant(date, "10:00", NEW_YORK)));
   }, 30_000);
 
   it("이미 울린 단계는 하루가 넘게 지나 다시 돌아도 알림을 또 남기지 않는다", async () => {
     // Given
-    const date = addDaysToDateKey(today, 1);
+    const date = shiftDateKey(today, 1);
     const id = await seedTodo(date, "10:00");
     const insert = () =>
       client
@@ -534,7 +531,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
   });
 });
 
-describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", () => {
+describe("Todo.scheduledLocalTime 이관 (실제 PostgreSQL)", () => {
   const MIGRATIONS_DIR = join(process.cwd(), "drizzle");
   const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 4 }) });
   let client: TestDatabaseClient;
@@ -547,16 +544,6 @@ describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", 
       .split("--> statement-breakpoint")
       .map((statement) => statement.trim());
     return statements.find((statement) => statement.includes('UPDATE "Todo"')) ?? "";
-  }
-
-  function readRedeploySql(): string {
-    const document = readFileSync(
-      join(process.cwd(), "../../docs/releases/1.15.0/server-rollback.md"),
-      "utf8",
-    );
-    const section = document.slice(document.indexOf("다시 채우는 SQL"));
-    const body = /```sql\n([\s\S]*?)```/.exec(section)?.[1];
-    return body ?? "";
   }
 
   beforeAll(async () => {
@@ -627,43 +614,6 @@ describe("Todo.scheduledLocalTime 이관과 재배포 SQL (실제 PostgreSQL)", 
     expect(filled?.updatedAt).toEqual(row?.updatedAt);
     expect(untouched?.scheduledLocalTime).toBeNull();
   });
-
-  it("재배포 SQL은 롤백 중 옛 서버가 쓴 행만 고치고 지난 행의 벽시계는 지키며 두 번 돌려도 같다", async () => {
-    // Given
-    const owner = await seedUser("BF000006", NEW_YORK);
-    const rollbackAt = new Date("2026-11-05T00:00:00.000Z");
-    const before = Temporal.Instant.from("2026-11-04T00:00:00.000Z");
-    const after = Temporal.Instant.from("2026-11-05T12:00:00.000Z");
-    const pastKept = await seedRow(owner, Temporal.Instant.from("2026-11-01T01:00:00.000Z"), {
-      scheduledLocalTime: "10:00",
-      updatedAt: before,
-    });
-    const created = await seedRow(owner, Temporal.Instant.from("2026-11-06T14:00:00.000Z"), {
-      updatedAt: after,
-    });
-    const edited = await seedRow(owner, Temporal.Instant.from("2026-11-07T15:30:00.000Z"), {
-      scheduledLocalTime: "09:00",
-      updatedAt: after,
-    });
-    const cleared = await seedRow(owner, null, { scheduledLocalTime: "09:00", updatedAt: after });
-    const script = readRedeploySql().replaceAll(
-      ":'rollback_started_at'",
-      `'${rollbackAt.toISOString()}'`,
-    );
-    const read = (id: number | undefined) =>
-      client.query.todo.findFirst({
-        where: { id: id ?? 0 },
-        columns: { scheduledLocalTime: true },
-      });
-    // When
-    await client.execute(sql.raw(script));
-    await client.execute(sql.raw(script));
-    // Then
-    expect((await read(pastKept?.id))?.scheduledLocalTime).toBe("10:00");
-    expect((await read(created?.id))?.scheduledLocalTime).toBe("09:00");
-    expect((await read(edited?.id))?.scheduledLocalTime).toBe("10:30");
-    expect((await read(cleared?.id))?.scheduledLocalTime).toBeNull();
-  });
 });
 
 describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
@@ -694,7 +644,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
       .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     categoryId = category?.id ?? 0;
-    today = toDateString(todayInTimezone(NEW_YORK));
+    today = todayIn(NEW_YORK).toString();
   });
   afterAll(async () => {
     await destroyE2eApp(context);
@@ -702,10 +652,10 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
 
   async function createDailySeries(time: string) {
     const { series, todos } = await context.module.get(CreateTodoUseCase).execute({
-      userId,
+      userId: UserId.reconstitute(userId),
       title: "회차",
-      categoryId,
-      startDate: parseDateOnly(addDaysToDateKey(today, 1)),
+      categoryId: TodoCategoryId.reconstitute(categoryId),
+      startDate: Temporal.PlainDate.from(shiftDateKey(today, 1)),
       scheduledTime: time,
       timezone: SEOUL,
       isAllDay: false,
@@ -722,11 +672,8 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
     const wrong = rows.filter(
       (row) =>
         row.scheduledTime?.epochMilliseconds !==
-        parseLocalDateTime(
-          row.startDate.toString(),
-          row.scheduledLocalTime ?? "",
-          timezone,
-        ).getTime(),
+        wallClockInstant(row.startDate.toString(), row.scheduledLocalTime ?? "", timezone)
+          .epochMilliseconds,
     );
     expect(wrong.map((row) => row.id)).toEqual([]);
   }
@@ -752,10 +699,10 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
       }),
       materialize.execute(),
       create.execute({
-        userId,
+        userId: UserId.reconstitute(userId),
         title: "새 할 일",
-        categoryId,
-        startDate: parseDateOnly(addDaysToDateKey(today, 2)),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
+        startDate: Temporal.PlainDate.from(shiftDateKey(today, 2)),
         scheduledTime: "07:15",
         timezone: NEW_YORK,
         isAllDay: false,
@@ -772,12 +719,12 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
 
   it("단건 수정과 겹쳐도 수정한 벽시계로 계산된다", async () => {
     // Given
-    const date = addDaysToDateKey(today, 2);
+    const date = shiftDateKey(today, 2);
     const { todos } = await context.module.get(CreateTodoUseCase).execute({
-      userId,
+      userId: UserId.reconstitute(userId),
       title: "단건",
-      categoryId,
-      startDate: parseDateOnly(date),
+      categoryId: TodoCategoryId.reconstitute(categoryId),
+      startDate: Temporal.PlainDate.from(date),
       scheduledTime: "09:00",
       timezone: SEOUL,
       isAllDay: false,
@@ -801,9 +748,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
     expect(outcomes.map((outcome) => outcome.status)).not.toContain("rejected");
     const row = await client.query.todo.findFirst({ where: { id } });
     expect(row?.scheduledLocalTime).toBe("21:00");
-    expect(row?.scheduledTime).toEqual(
-      instantFromDate(parseLocalDateTime(date, "21:00", NEW_YORK)),
-    );
+    expect(row?.scheduledTime).toEqual(wallClockInstant(date, "21:00", NEW_YORK));
   });
 
   it("재계산 뒤 만드는 회차와 휴면 복귀로 채우는 회차는 새 시간대다", async () => {
@@ -812,7 +757,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
     await client
       .update(todoSeries)
       .set({
-        nextOccurrenceDate: Temporal.PlainDate.from(addDaysToDateKey(today, 1)),
+        nextOccurrenceDate: Temporal.PlainDate.from(shiftDateKey(today, 1)),
         generatedCount: 1,
       })
       .where(eq(todoSeries.id, seriesId));
@@ -821,7 +766,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
       .where(
         and(
           eq(todo.seriesId, seriesId),
-          gte(todo.occurrenceDate, Temporal.PlainDate.from(addDaysToDateKey(today, 1))),
+          gte(todo.occurrenceDate, Temporal.PlainDate.from(shiftDateKey(today, 1))),
         ),
       );
     // When

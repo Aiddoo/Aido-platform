@@ -2,7 +2,7 @@
  * 예정 시각 뒤 실행이 만들어지고 재시도까지 끝나기를 기다리는 여유. 배포로 멈춘 몇 분과
  * 스케줄 작업의 가장 긴 만료 시간(30분)을 덮는다.
  */
-export const SCHEDULE_RUN_GRACE = Temporal.Duration.from({ minutes: 30 });
+const SCHEDULE_RUN_GRACE = Temporal.Duration.from({ minutes: 30 });
 
 // DB 시계로 기록된 실행이 앱 시계의 예정 시각보다 조금 앞서 보여도 창에 넣는다
 const CLOCK_SKEW_TOLERANCE = Temporal.Duration.from({ minutes: 1 });
@@ -124,7 +124,7 @@ export interface ScheduleRunCounts {
   readonly oldestPendingCreatedAt: Temporal.Instant | null;
 }
 
-export const SCHEDULE_VERDICTS = ["healthy", "in-progress", "failing", "overdue"] as const;
+const SCHEDULE_VERDICTS = ["healthy", "in-progress", "failing", "overdue"] as const;
 export type ScheduleVerdict = (typeof SCHEDULE_VERDICTS)[number];
 
 /**

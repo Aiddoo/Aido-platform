@@ -4,6 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
 import {
@@ -136,7 +137,9 @@ export class ReconcilePushReceiptsUseCase {
     }
     const userIds = uniq(invalidTokens.map(({ userId }) => userId));
     const settled = await Promise.allSettled(
-      userIds.map((userId) => this.#dependencies.cache.invalidatePushTokens(userId)),
+      userIds.map((userId) =>
+        this.#dependencies.cache.invalidatePushTokens(UserId.reconstitute(userId)),
+      ),
     );
     const failedCount = settled.filter((result) => result.status === "rejected").length;
     if (failedCount > 0) {

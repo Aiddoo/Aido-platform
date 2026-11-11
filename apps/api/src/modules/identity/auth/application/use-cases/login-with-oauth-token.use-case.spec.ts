@@ -81,6 +81,9 @@ class ClockAdvancingUnitOfWork extends UnitOfWorkPort {
   }
 }
 
+// 탈퇴 유예 중 비활성 계정은 권한을 무료로 캐시한다
+const FREE_ACCESS_WHILE_DELETED = { status: null, isAdmin: false, resourceBonuses: {} };
+
 async function saveUserStatus(
   fixture: OAuthFixture,
   status: UserStatus,
@@ -432,6 +435,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       fixture.identityProvider.profile.email = fixture.user.email;
       await saveUserStatus(fixture, "SUSPENDED", daysBeforeNow(30).add({ milliseconds: 1 }));
       fixture.cacheService.userIds.add(fixture.user.id);
+      fixture.entitlementCache.entries.set(fixture.user.id, FREE_ACCESS_WHILE_DELETED);
       const unitOfWork = new ClockAdvancingUnitOfWork(fixture.clock, { milliseconds: 2 });
       // When
       const result = await new LoginWithOAuthTokenUseCase({ ...fixture, unitOfWork }).execute({
@@ -447,6 +451,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         deletedAt: null,
       });
       expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(false);
+      expect(fixture.entitlementCache.entries.has(fixture.user.id)).toBe(false);
       expect(
         fixture.securityLogRepository.entries.some(
           (entry) => entry.event === SECURITY_EVENT.ACCOUNT_RESTORED,

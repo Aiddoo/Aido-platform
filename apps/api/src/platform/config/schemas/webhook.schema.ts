@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { AppEnvironment } from "./app.schema.js";
 
 /** 관리자 알림 어댑터. 어댑터를 더하면 여기와 admin-notifier-selection 표에 한 줄씩 더한다. */
-export const ADMIN_NOTIFIER_PROVIDERS = ["discord", "log"] as const;
+const ADMIN_NOTIFIER_PROVIDERS = ["discord", "log"] as const;
 export type AdminNotifierProviderId = (typeof ADMIN_NOTIFIER_PROVIDERS)[number];
 
 /** ADMIN_NOTIFIER_PROVIDER가 비었을 때의 어댑터. 개발 환경은 Discord 웹훅이 있을 때만 실제로 보낸다. */

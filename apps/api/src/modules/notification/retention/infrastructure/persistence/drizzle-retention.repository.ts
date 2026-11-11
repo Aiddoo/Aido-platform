@@ -21,9 +21,11 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
+import type { NotificationId } from "../../../inbox/domain/notification-id.vo.js";
 import type { RetentionRepositoryPort } from "../../application/ports/retention.repository.port.js";
 import type {
   RetentionStageCandidate,
@@ -78,7 +80,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
   }
 
   async enroll(input: {
-    userId: string;
+    userId: UserId;
     variant: RetentionVariant;
     startedAt: Temporal.Instant | null;
   }): Promise<void> {
@@ -88,7 +90,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
         .insert(retentionExperimentAssignment)
         .values({
           id: assignmentId,
-          userId: input.userId,
+          userId: input.userId.value,
           experimentKey: RETENTION_EXPERIMENT_KEY,
           variant: input.variant,
           startedAt: input.startedAt,
@@ -112,13 +114,13 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     });
   }
 
-  async activate(userId: string, startedAt: Temporal.Instant): Promise<boolean> {
+  async activate(userId: UserId, startedAt: Temporal.Instant): Promise<boolean> {
     const claimed = await this.#db
       .update(retentionExperimentAssignment)
       .set({ startedAt })
       .where(
         and(
-          eq(retentionExperimentAssignment.userId, userId),
+          eq(retentionExperimentAssignment.userId, userId.value),
           eq(retentionExperimentAssignment.experimentKey, RETENTION_EXPERIMENT_KEY),
           isNull(retentionExperimentAssignment.startedAt),
         ),
@@ -308,12 +310,12 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 
   async linkStageNotification(
     stageId: string,
-    notificationId: number,
+    notificationId: NotificationId,
     linkedAt: Temporal.Instant,
   ): Promise<void> {
     const [linked] = await this.#db
       .update(retentionExperimentStage)
-      .set({ notificationId, updatedAt: linkedAt })
+      .set({ notificationId: notificationId.value, updatedAt: linkedAt })
       .where(eq(retentionExperimentStage.id, stageId))
       .returning({ id: retentionExperimentStage.id });
     requireRecord(linked);

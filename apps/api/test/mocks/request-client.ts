@@ -2,7 +2,8 @@ import type { IncomingHttpHeaders } from "node:http";
 
 import { ClsServiceManager } from "nestjs-cls";
 
-import { parseRequestClient, RequestClientReader } from "#api/platform/http/request-client/index";
+import { parseRequestClient } from "#api/platform/http/request-client/request-client";
+import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
 import { storeRequestClient } from "#api/platform/http/request-client/request-client.store";
 
 export const TEST_REQUEST_ID = "00000000-0000-4000-8000-000000000001";

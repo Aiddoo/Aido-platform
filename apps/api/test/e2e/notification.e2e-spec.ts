@@ -5,6 +5,7 @@ import {
   notificationInboxResponseSchema,
   notificationListResponseSchema,
   pushDeviceResponseSchema,
+  unregisterPushDeviceByTokenResponseSchema,
 } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 /**
@@ -24,7 +25,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { UpcomingRenewalNotifierPort } from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notifier.port";
-import { createBillingIssueNotificationMessage } from "#api/modules/notification/push/application/messages/notification.messages";
+import { createBillingIssueNotificationMessage } from "#api/modules/notification/push/application/messages/system-notification.messages";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -34,7 +35,7 @@ import {
   pushToken,
   userConsent,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -44,7 +45,7 @@ describe("알림 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -372,6 +373,51 @@ describe("알림 E2E", () => {
         expect(device).toMatchObject({ permissionStatus: "DENIED", permissionCanAskAgain: false });
       });
 
+      it("기존 등록 기기는 1.15.0 앱의 보고 형태 그대로 와도 토큰을 잃지 않는다", async () => {
+        // Given 1.15.0 앱이 허용 권한과 토큰으로 보고한 기기
+        const user = await ctx.helpers.createVerifiedUser("push-device-keep@test.com", password);
+        const token = "ExponentPushToken[push-device-keep]";
+        const report = (reportedToken: string | null) =>
+          request(ctx.app.getHttpServer())
+            .put("/v1/notifications/push-devices/ios_e2e-keep")
+            .set("Authorization", `Bearer ${user.accessToken}`)
+            .set("X-App-Version", "1.15.0")
+            .set("X-App-Build", "150")
+            .set("X-Device-Type", "IOS")
+            .set("X-Timezone", "Asia/Seoul")
+            .set("Accept-Language", "ko")
+            .send({
+              permission: { status: "GRANTED", canAskAgain: false },
+              token: reportedToken,
+              payloadVersion: 2,
+            });
+        await report(token).expect(200);
+
+        // When 토큰 발급이 시간 초과로 실패해 null로 보고한 뒤 같은 토큰으로 두 번 다시 보고한다
+        const failed = await report(null).expect(200);
+        await report(token).expect(200);
+        await report(token).expect(200);
+
+        // Then
+        expect(pushDeviceResponseSchema.parse(failed.body.data)).toMatchObject({
+          hasActiveToken: true,
+          permission: { status: "GRANTED", canAskAgain: false },
+        });
+        const rows = await ctx.testDatabase
+          .getClient()
+          .select()
+          .from(pushToken)
+          .where(eq(pushToken.userId, user.userId));
+        expect(rows).toEqual([
+          expect.objectContaining({
+            deviceId: "ios_e2e-keep",
+            token,
+            isActive: true,
+            appVersion: "1.15.0",
+          }),
+        ]);
+      });
+
       it("deviceId 접두어로 플랫폼을 알 수 없으면 400 NOTIFICATION_1006을 돌려준다", async () => {
         const user = await ctx.helpers.createVerifiedUser("push-device-3@test.com", password);
 
@@ -386,6 +432,96 @@ describe("알림 E2E", () => {
           .expect(400);
 
         expect(response.body.error.code).toBe(ErrorCode.NOTIFICATION_1006);
+      });
+    });
+
+    describe("POST /notifications/push-devices/unregister - 세션이 끝난 기기의 공개 해제", () => {
+      const phoneToken = "ExponentPushToken[unregister-phone]";
+      const tabletToken = "ExponentPushToken[unregister-tablet]";
+
+      async function registerTwoDevices(email: string) {
+        const user = await ctx.helpers.createVerifiedUser(email, password);
+        for (const [deviceId, token] of [
+          ["ios_unregister-phone", phoneToken],
+          ["android_unregister-tablet", tabletToken],
+        ] as const) {
+          await request(ctx.app.getHttpServer())
+            .put(`/v1/notifications/push-devices/${deviceId}`)
+            .set("Authorization", `Bearer ${user.accessToken}`)
+            .send({
+              permission: { status: "GRANTED", canAskAgain: false },
+              token,
+              payloadVersion: 2,
+            })
+            .expect(200);
+        }
+        return user;
+      }
+
+      async function deviceIdsOf(userId: string) {
+        const client = ctx.testDatabase.getClient();
+        const tokens = await client
+          .select({ deviceId: pushToken.deviceId })
+          .from(pushToken)
+          .where(eq(pushToken.userId, userId));
+        const devices = await client
+          .select({ deviceId: pushDevice.deviceId })
+          .from(pushDevice)
+          .where(eq(pushDevice.userId, userId));
+        return {
+          tokens: tokens.map((row) => row.deviceId).toSorted(),
+          devices: devices.map((row) => row.deviceId).toSorted(),
+        };
+      }
+
+      it("로그인 없이 기기 ID와 그 기기의 토큰이 맞으면 그 기기만 해제한다", async () => {
+        // Given 두 기기를 쓰는 사용자
+        const user = await registerTwoDevices("push-unregister-1@test.com");
+
+        // When 세션이 끝난 휴대폰이 인증 헤더 없이 해제한다
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/notifications/push-devices/unregister")
+          .send({ deviceId: "ios_unregister-phone", token: phoneToken })
+          .expect(200);
+
+        // Then
+        expect(unregisterPushDeviceByTokenResponseSchema.parse(response.body.data)).toEqual({
+          unregistered: true,
+        });
+        expect(await deviceIdsOf(user.userId)).toEqual({
+          tokens: ["android_unregister-tablet"],
+          devices: ["android_unregister-tablet"],
+        });
+      });
+
+      it.each([
+        ["다른 기기의 토큰", "ios_unregister-phone", tabletToken],
+        ["모르는 기기", "ios_unregister-unknown", phoneToken],
+      ])("%s면 같은 200을 주고 아무것도 지우지 않는다", async (_case, deviceId, token) => {
+        // Given
+        const user = await registerTwoDevices(`push-unregister-${deviceId}@test.com`);
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/notifications/push-devices/unregister")
+          .send({ deviceId, token })
+          .expect(200);
+
+        // Then
+        expect(response.body.data).toEqual({ unregistered: true });
+        expect(await deviceIdsOf(user.userId)).toEqual({
+          tokens: ["android_unregister-tablet", "ios_unregister-phone"],
+          devices: ["android_unregister-tablet", "ios_unregister-phone"],
+        });
+      });
+
+      it("토큰 형식이 Expo 토큰이 아니면 400 SYS_0002를 돌려준다", async () => {
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/notifications/push-devices/unregister")
+          .send({ deviceId: "ios_unregister-phone", token: "not-a-token" })
+          .expect(400);
+
+        expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
       });
     });
 
@@ -1211,13 +1347,13 @@ describe("알림 E2E", () => {
         // Given
         const user = await ctx.helpers.createVerifiedUser("notif-renewal@test.com", password);
         const now = new Date();
-        await ctx.module.get<UnitOfWorkPort>(UNIT_OF_WORK).run(() =>
+        await ctx.module.get(UnitOfWorkPort).run(() =>
           ctx.module.get(UpcomingRenewalNotifierPort).notify(
             [
               {
                 subscriptionId: 1,
                 userId: user.userId,
-                expiresAt: instantFromDate(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1_000)),
+                expiresAt: instantFromDate(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)),
                 isCurrentChain: true,
               },
             ],

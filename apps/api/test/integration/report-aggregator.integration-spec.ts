@@ -115,7 +115,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     reader = module.get(TodoStatsReaderPort);
     txHost = module.get(TransactionHost);
     uow = module.get(ClsUnitOfWork);
-  }, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
+  }, 60_000); // 컨테이너 시작에 시간이 걸릴 수 있음
 
   beforeEach(async () => {
     vi.clearAllMocks();

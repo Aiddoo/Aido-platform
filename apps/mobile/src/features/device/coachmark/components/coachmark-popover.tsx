@@ -22,6 +22,11 @@ interface CoachmarkPopoverProps
   description: string;
   isEnabled?: boolean;
   isForced?: boolean;
+  /**
+   * false면 먼저 뜰 화면(알림 화면·새로운 기능)이 남아 자동으로 열지 않는다. true가 되면 자리를 처음부터 다시 재므로
+   * 그 화면이 곧 덮어 포커스를 잃으면 열리지 않는다. 사용자가 연 안내(`isForced`)는 기다리지 않는다
+   */
+  shouldAutoOpen?: boolean;
   onDismiss?: () => void;
   /** 대상이 지금 눌리지 않을 때. `Popover.Trigger`가 대상의 비활성을 덮어써 여기로 받는다 */
   isTargetDisabled?: boolean;
@@ -38,6 +43,7 @@ export function CoachmarkPopover({
   description,
   isEnabled = true,
   isForced = false,
+  shouldAutoOpen = true,
   onDismiss,
   isTargetDisabled = false,
   dismissKey,
@@ -55,7 +61,7 @@ export function CoachmarkPopover({
   const { trackEvent } = useTrack();
   const [isPending, complete] = usePendingCoachmark({ accountId, kind });
   const isFocused = useIsFocused();
-  const isSettled = useIsCoachmarkSettled(isFocused, dismissKey);
+  const isSettled = useIsCoachmarkSettled(isFocused && (shouldAutoOpen || isForced), dismissKey);
   const isOpen = accountId != null && (isPending || isForced) && isEnabled && isSettled;
   const shownDismissKeyRef = useRef(dismissKey);
   /** 대상이 움직여 닫았다 다시 여는 것은 같은 노출이다. 사용자가 닫아야 끝난다 */

@@ -9,7 +9,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { AiTaskId } from "../../../generation/application/ports/ai-generator.port.js";
 
 /** 결과를 준 뒤의 차감: 확정(CHARGE), 줄 결과는 있지만 환불(NO_ACTION), 줄 결과가 없어 AI_1302(EMPTY). */
-export const CHARGE_OUTCOMES = ["CHARGE", "NO_ACTION", "EMPTY"] as const;
+const CHARGE_OUTCOMES = ["CHARGE", "NO_ACTION", "EMPTY"] as const;
 
 export type ChargeOutcome = (typeof CHARGE_OUTCOMES)[number];
 

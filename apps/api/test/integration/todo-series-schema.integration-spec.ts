@@ -18,14 +18,10 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import {
-  DEFAULT_DELIVERY_TIMEZONE,
-  parseLocalDateTime,
-} from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -217,7 +213,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         await client.insert(userPreference).values({ userId, timezone: stored });
       }
       const row = await seedLegacy("group-zone", "2026-03-02", {
-        scheduledTime: instantFromDate(parseLocalDateTime("2026-03-02", time, zone)),
+        scheduledTime: wallClockInstant("2026-03-02", time, zone),
         isAllDay: false,
       });
       // When
@@ -228,13 +224,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       const migrated = await client.query.todo.findFirst({ where: { id: row.id } });
       expect(migrated?.scheduledTime).toEqual(row.scheduledTime);
       expect(
-        instantFromDate(
-          parseLocalDateTime(
-            "2026-03-02",
-            series?.scheduledLocalTime ?? "",
-            series?.timezone ?? "",
-          ),
-        ),
+        wallClockInstant("2026-03-02", series?.scheduledLocalTime ?? "", series?.timezone ?? ""),
       ).toEqual(row.scheduledTime);
     });
 
@@ -243,7 +233,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       await client.insert(userPreference).values({ userId, timezone: "America/New_York" });
       for (const date of ["2026-03-02", "2026-03-09", "2026-03-16"]) {
         await seedLegacy("group-dst", date, {
-          scheduledTime: instantFromDate(parseLocalDateTime(date, "09:00", "America/New_York")),
+          scheduledTime: wallClockInstant(date, "09:00", "America/New_York"),
           isAllDay: false,
         });
       }
@@ -579,7 +569,10 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       const series = plan(id, rule);
       // When
       await repository().insert(series);
-      const restored = await repository().findByIdAndUserId(id, userId);
+      const restored = await repository().findByIdAndUserId(
+        TodoSeriesId.reconstitute(id),
+        UserId.reconstitute(userId),
+      );
       // Then
       expect(restored?.rule.equals(rule)).toBe(true);
       expect(restored?.checklistTemplate).toEqual([{ title: "항목" }]);
@@ -603,7 +596,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       finished.planOccurrences("2026-12-31");
       await repository().update(finished);
       // Then
-      expect(await repository().countActiveByUserId(userId)).toBe(1);
+      expect(await repository().countActiveByUserId(UserId.reconstitute(userId))).toBe(1);
     });
 
     it("다음 회차가 through 이하인 규칙만 id 순 커서로 돌려준다", async () => {
@@ -640,7 +633,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       });
       const second = await repository().findDueBatch({
         through: "2026-12-01",
-        afterId: first.at(-1)?.id ?? null,
+        afterId: first.map((due) => TodoSeriesId.reconstitute(due.id)).at(-1) ?? null,
         limit: 2,
       });
       // Then
@@ -659,7 +652,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       const held = Promise.withResolvers<void>();
       const release = Promise.withResolvers<void>();
       const holder = uow.run(async () => {
-        await locking.lockForUpdate(id);
+        await locking.lockForUpdate(TodoSeriesId.reconstitute(id));
         held.resolve();
         await release.promise;
       });
@@ -668,9 +661,12 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         // When
         const fixture = createDatabaseTransactionFixture(client);
         const skipped = await fixture.uow.run(() =>
-          new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).lockForUpdate(id, {
-            skipLocked: true,
-          }),
+          new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).lockForUpdate(
+            TodoSeriesId.reconstitute(id),
+            {
+              skipLocked: true,
+            },
+          ),
         );
         // Then
         expect(skipped).toBeNull();

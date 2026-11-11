@@ -13,7 +13,8 @@ import {
   REMINDER_CACHE_TTL_MS,
 } from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
 import { notificationRetentionConfig } from "#api/modules/notification/retention/notification-retention.config";
-import { CacheService } from "#api/platform/cache/cache.service";
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, userPreference } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -79,13 +80,13 @@ export class DrizzleSchedulerReader
     SchedulerPreferenceReaderPort
 {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
   readonly #retention: RetentionSettings;
   readonly #clock: ClockPort;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    cacheService: CacheService,
+    cacheService: CacheStorePort,
     @Inject(notificationRetentionConfig.KEY) retention: RetentionSettings,
     clock: ClockPort,
   ) {
@@ -115,7 +116,7 @@ export class DrizzleSchedulerReader
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         RAW: (target) => premiumAccessCondition(target, this.#now()),
         preference: { timezone: tz, morningReminderHour: hour, morningReminderMinute: minute },
       },
@@ -148,7 +149,7 @@ export class DrizzleSchedulerReader
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         RAW: (target) => premiumAccessCondition(target, this.#now()),
         preference: { timezone: tz, eveningReminderHour: hour, eveningReminderMinute: minute },
         todos: { startDate: { gte: today, lt: tomorrow } },
@@ -428,7 +429,7 @@ export class DrizzleSchedulerReader
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         status: "ACTIVE",
         deletedAt: { isNull: true },
         preference: {
@@ -451,7 +452,7 @@ export class DrizzleSchedulerReader
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         status: "ACTIVE",
         deletedAt: { isNull: true },
         preference: {
@@ -473,7 +474,7 @@ export class DrizzleSchedulerReader
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         status: "ACTIVE",
         deletedAt: { isNull: true },
         preference: {
@@ -496,7 +497,7 @@ export class DrizzleSchedulerReader
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         status: "ACTIVE",
         deletedAt: { isNull: true },
         preference: {
@@ -562,7 +563,7 @@ export class DrizzleSchedulerReader
   // TodoReminderReaderPort — 지연 잡 처리용
   // ─────────────────────────────────────────────────────────────
 
-  async findActiveTodo(todoId: number): Promise<ActiveTodo | null> {
+  async findActiveTodo(todoId: TodoId): Promise<ActiveTodo | null> {
     const row = await this.#db.query.todo.findFirst({
       columns: {
         id: true,
@@ -572,7 +573,7 @@ export class DrizzleSchedulerReader
         scheduledLocalTime: true,
         scheduledTime: true,
       },
-      where: { id: todoId, completed: false },
+      where: { id: todoId.value, completed: false },
     });
     if (row == null) {
       return null;

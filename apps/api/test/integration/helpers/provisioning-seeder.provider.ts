@@ -33,7 +33,7 @@ export const provisioningSeederTestProvider: Provider = {
       });
     },
     async seedDefaultCategories(userId, locale): Promise<void> {
-      await defaultTodoCategorySeeder.seed(userId.value, locale);
+      await defaultTodoCategorySeeder.seed(userId, locale);
     },
   }),
   inject: [

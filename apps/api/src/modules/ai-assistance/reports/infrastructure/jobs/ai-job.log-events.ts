@@ -1,9 +1,5 @@
 export const AiJobLogEvent = {
-  STALLED: "ai.job.stalled",
   FAILURE_RETENTION_DELEGATED: "ai.job.failure-retention.delegated",
-  WORKER_FAILED: "ai.job.worker_failed",
-  FAILED: "ai.job.failed",
-  INVALID: "ai.job.invalid",
   STARTED: "ai.job.started",
   SKIPPED: "ai.job.skipped",
   COMPLETED: "ai.job.completed",

@@ -19,6 +19,7 @@ import type { NotificationId } from "#api/modules/notification/inbox/domain/noti
 import type { NotificationType } from "#api/modules/notification/inbox/domain/notification-type.constants";
 import { Notification } from "#api/modules/notification/inbox/domain/notification.aggregate";
 import type { NotificationMilestone } from "#api/modules/notification/push/domain/notification-milestone.constants";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 // Drizzle 저장소와 같은 순서(createdAt·id 내림차순)로 나열한다
@@ -129,9 +130,10 @@ export class InMemoryNotificationRepository
 
   async markAsOpened(
     notificationId: NotificationId,
-    userId: string,
+    user: UserId,
     now: Temporal.Instant,
   ): Promise<boolean> {
+    const userId = user.value;
     const row = this.#rows.get(notificationId.value);
     if (row == null || row.userId !== userId || row.openedAt != null) {
       return false;
@@ -141,10 +143,11 @@ export class InMemoryNotificationRepository
   }
 
   async markAllAsRead(
-    userId: string,
+    user: UserId,
     types: readonly NotificationType[] | undefined,
     now: Temporal.Instant,
   ): Promise<{ count: number }> {
+    const userId = user.value;
     const targets = [...this.#rows.values()].filter(
       (row) => row.userId === userId && !row.isRead && isOfTypes(row, types),
     );
@@ -155,8 +158,9 @@ export class InMemoryNotificationRepository
   }
 
   async deleteNotificationsByActorId(
-    actorId: string,
+    actor: UserId,
   ): Promise<{ count: number; affectedUserIds: string[] }> {
+    const actorId = actor.value;
     const deleted = [...this.#rows.values()].filter(
       (row) => row.friendId === actorId || metadataField(row, "senderId") === actorId,
     );
@@ -170,7 +174,7 @@ export class InMemoryNotificationRepository
     const visible = [...this.#rows.values()]
       .filter(
         (row) =>
-          row.userId === query.userId &&
+          row.userId === query.userId.value &&
           (!query.unreadOnly || !row.isRead) &&
           isOfTypes(row, query.types),
       )
@@ -178,14 +182,15 @@ export class InMemoryNotificationRepository
     if (query.afterNotificationId == null) {
       return visible.slice(0, query.limit);
     }
-    const anchor = this.#rows.get(query.afterNotificationId);
+    const anchor = this.#rows.get(query.afterNotificationId.value);
     if (anchor == null) {
       return [];
     }
     return visible.filter((row) => compareListOrder(anchor, row) < 0).slice(0, query.limit);
   }
 
-  async countUnread(userId: string, types?: readonly NotificationType[]): Promise<number> {
+  async countUnread(user: UserId, types?: readonly NotificationType[]): Promise<number> {
+    const userId = user.value;
     return [...this.#rows.values()].filter(
       (row) => row.userId === userId && !row.isRead && isOfTypes(row, types),
     ).length;

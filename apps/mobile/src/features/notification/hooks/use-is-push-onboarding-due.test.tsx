@@ -126,7 +126,7 @@ describe('useIsPushOnboardingDue — 알림 권한을 이미 답한 사용자', 
         canAskAgain: false,
         iosStatus: null,
       });
-      const renderedValues: boolean[] = [];
+      const renderedValues: (boolean | null)[] = [];
 
       // When
       const { queryClient } = await renderUiHook(
@@ -150,7 +150,8 @@ describe('useIsPushOnboardingDue — 알림 권한을 이미 답한 사용자', 
       });
 
       // Then
-      expect(renderedValues[0]).toBe(false);
+      await waitFor(() => expect(renderedValues.at(-1)).toBe(false));
+      expect(renderedValues[0]).toBeNull();
       expect(renderedValues).not.toContain(true);
     },
   );

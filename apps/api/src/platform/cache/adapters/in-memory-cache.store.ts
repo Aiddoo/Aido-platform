@@ -33,7 +33,7 @@ export class InMemoryCacheStore extends CacheStorePort {
     this.#entries = new LRUCache({
       max: options.maxItems,
       ttl: options.defaultTtlMs,
-      // 옛 저장소처럼 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
+      // 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
       perf: { now: () => Date.now() },
       // 시각을 타이머로 잠깐 캐시하지 않아 만료 판정이 매번 현재 시각을 본다
       ttlResolution: 0,

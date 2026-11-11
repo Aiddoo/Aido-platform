@@ -41,7 +41,10 @@ export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
       .from(todo)
       .where(
         and(
-          inArray(todo.userId, [...userIds]),
+          inArray(
+            todo.userId,
+            userIds.map((userId) => userId.value),
+          ),
           eq(todo.isAllDay, false),
           eq(todo.completed, false),
           or(

@@ -6,8 +6,11 @@ import { sumBy } from "es-toolkit";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
-import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
+import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import type {
   TodoPlanReaderPort,
   UpcomingTodoView,
@@ -89,8 +92,11 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return this.#txHost.tx;
   }
 
-  async findOwnerId(id: number): Promise<string | null> {
-    const row = await this.#db.query.todo.findFirst({ columns: { userId: true }, where: { id } });
+  async findOwnerId(id: TodoId): Promise<string | null> {
+    const row = await this.#db.query.todo.findFirst({
+      columns: { userId: true },
+      where: { id: id.value },
+    });
     return row?.userId ?? null;
   }
 
@@ -140,9 +146,9 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       .innerJoin(todoCategory, eq(todo.categoryId, todoCategory.id))
       .where(
         and(
-          eq(todo.userId, userId),
+          eq(todo.userId, userId.value),
           completed == null ? undefined : eq(todo.completed, completed),
-          categoryId == null ? undefined : eq(todo.categoryId, categoryId),
+          categoryId == null ? undefined : eq(todo.categoryId, categoryId.value),
           publicOnly ? eq(todo.visibility, "PUBLIC") : undefined,
           todoDateCondition(startDate, endDate),
           anchorCondition,
@@ -153,18 +159,18 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return ids.map((row) => row.id);
   }
 
-  countCompletedByUser(userId: string): Promise<number> {
-    return this.#db.$count(todo, and(eq(todo.userId, userId), eq(todo.completed, true)));
+  countCompletedByUser(userId: UserId): Promise<number> {
+    return this.#db.$count(todo, and(eq(todo.userId, userId.value), eq(todo.completed, true)));
   }
 
   async getTodayTodoStats(
-    userId: string,
+    userId: UserId,
     today: Temporal.PlainDate,
   ): Promise<{ total: number; completed: number }> {
     const groups = await this.#db
       .select({ completed: todo.completed, count: count() })
       .from(todo)
-      .where(and(eq(todo.userId, userId), todoDateCondition(today, today)))
+      .where(and(eq(todo.userId, userId.value), todoDateCondition(today, today)))
       .groupBy(todo.completed);
     return {
       total: sumBy(groups, (group) => group.count),
@@ -172,7 +178,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     };
   }
 
-  findTodayTopTodos(userId: string, today: Temporal.PlainDate, limit: number) {
+  findTodayTopTodos(userId: UserId, today: Temporal.PlainDate, limit: number) {
     return this.#db
       .select({
         id: todo.id,
@@ -182,31 +188,34 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       })
       .from(todo)
       .innerJoin(todoCategory, eq(todo.categoryId, todoCategory.id))
-      .where(and(eq(todo.userId, userId), todoDateCondition(today, today)))
+      .where(and(eq(todo.userId, userId.value), todoDateCondition(today, today)))
       .orderBy(asc(todo.completed), asc(todoCategory.sortOrder), asc(todo.sortOrder), asc(todo.id))
       .limit(limit);
   }
 
-  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoReadModel[]> {
+  async findManyBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]> {
     const rows = await this.#db.query.todo.findMany({
-      where: { userId, seriesId },
+      where: { userId: userId.value, seriesId: seriesId.value },
       with: todoWith,
       orderBy: { sortOrder: "asc" },
     });
     return rows.map(toTodoReadModel);
   }
 
-  async findByIdAndUserId(id: number, userId: string): Promise<TodoReadModel | null> {
-    const row = await this.#db.query.todo.findFirst({ where: { id, userId }, with: todoWith });
+  async findByIdAndUserId(id: TodoId, userId: UserId): Promise<TodoReadModel | null> {
+    const row = await this.#db.query.todo.findFirst({
+      where: { id: id.value, userId: userId.value },
+      with: todoWith,
+    });
     return row == null ? null : toTodoReadModel(row);
   }
 
-  async findManyByIds(userId: string, ids: readonly number[]): Promise<TodoReadModel[]> {
+  async findManyByIds(userId: UserId, ids: readonly TodoId[]): Promise<TodoReadModel[]> {
     if (ids.length === 0) {
       return [];
     }
     const rows = await this.#db.query.todo.findMany({
-      where: { userId, id: { in: [...ids] } },
+      where: { userId: userId.value, id: { in: ids.map((id) => id.value) } },
       with: todoWith,
       orderBy: { sortOrder: "asc" },
     });
@@ -214,10 +223,10 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
   }
 
   async findUpcoming(
-    userId: string,
-    input: { readonly fromDate: Date; readonly limit: number },
+    userId: UserId,
+    input: { readonly fromDate: Temporal.PlainDate; readonly limit: number },
   ): Promise<UpcomingTodoView[]> {
-    const fromDate = plainDateFromDate(input.fromDate);
+    const { fromDate } = input;
     // 반복 할 일은 회차가 수십 개라도 다음 회차 하나만 맥락에 넣는다.
     const groupKey = sql`coalesce(${todo.seriesId}, ${todo.id}::text)`;
     const upcoming = this.#db
@@ -230,7 +239,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       .from(todo)
       .where(
         and(
-          eq(todo.userId, userId),
+          eq(todo.userId, userId.value),
           eq(todo.completed, false),
           or(gte(todo.startDate, fromDate), gte(todo.endDate, fromDate)),
         ),
@@ -250,12 +259,12 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     }));
   }
 
-  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+  async countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number> {
     const todos = await this.#db.$count(
       todo,
       and(
-        eq(todo.userId, userId),
-        eq(todo.categoryId, categoryId),
+        eq(todo.userId, userId.value),
+        eq(todo.categoryId, categoryId.value),
         eq(todo.completed, false),
         isNull(todo.seriesId),
       ),
@@ -263,8 +272,8 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     const series = await this.#db.$count(
       todoSeries,
       and(
-        eq(todoSeries.userId, userId),
-        eq(todoSeries.categoryId, categoryId),
+        eq(todoSeries.userId, userId.value),
+        eq(todoSeries.categoryId, categoryId.value),
         isNotNull(todoSeries.nextOccurrenceDate),
       ),
     );

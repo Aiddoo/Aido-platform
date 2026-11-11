@@ -131,7 +131,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
           const [waiting] = z.array(z.object({ count: z.number() })).parse(rows);
           expect(waiting?.count).toBe(2);
         },
-        { timeout: 5_000, interval: 10 },
+        { timeout: 5000, interval: 10 },
       );
     } finally {
       release.resolve();

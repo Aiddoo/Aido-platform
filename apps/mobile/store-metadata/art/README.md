@@ -21,7 +21,7 @@ pnpm --filter @aido/mobile test:store-art
 
 ## 캡처 연결
 
-장면마다 `capture: { file, plan, theme }`이 있고, 경로는 `maestro/screenshots-1.13.0/capture.sh` 결과 규칙을 따라요.
+장면마다 `capture: { file, plan, theme }`이 있고, 경로는 `.maestro/store-screenshots/capture.sh` 결과 규칙을 따라요.
 
 ```
 <캡처 루트>/<기기>/<일반|프리미엄>/<라이트|다크>[/en]/<NN_화면명>.png

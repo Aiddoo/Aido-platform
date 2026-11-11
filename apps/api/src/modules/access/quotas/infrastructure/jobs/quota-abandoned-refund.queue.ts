@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import { defineQueue } from "#api/shared/application/ports/job-queue.port";
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-runtime.port";
+import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 // 옛 스케줄이 넣은 작업이 빈 객체라 그대로 받는다
 const quotaAbandonedRefundPayloadSchema = z.object({});

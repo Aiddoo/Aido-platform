@@ -123,7 +123,7 @@ export class WriteTodoCommentChainUseCase {
         {
           failureEvent: TodoCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
           context,
-          run: () => todoViewCache.invalidateForTodo(command.todoId),
+          run: () => todoViewCache.invalidateForTodo(TodoId.reconstitute(command.todoId)),
         },
         {
           failureEvent: TodoCommentLogEvent.WRITE_NOTIFICATION_FAILED,
@@ -211,10 +211,7 @@ export class WriteTodoCommentChainUseCase {
       const placement =
         replyTarget == null ? CommentPlacement.create(null) : replyTarget.placeReply();
       const created = await this.#createChain(request, placement);
-      await this.#dependencies.engagementCounter.increaseCommentCount(
-        request.todoId,
-        created.length,
-      );
+      await this.#dependencies.engagementCounter.increaseCommentCount(todoId, created.length);
       if (thread != null) {
         thread.addReplies(created.length, this.#dependencies.clock.now());
         await repository.save(thread);

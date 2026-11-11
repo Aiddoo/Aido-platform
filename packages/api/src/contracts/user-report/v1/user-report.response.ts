@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { USER_REPORT_STATUSES } from "../../../vocabulary/user-report.constants.js";
 
 export const userReportStatusSchema = z
@@ -9,7 +10,7 @@ export const userReportStatusSchema = z
 
 export const userReportSchema = z
   .object({
-    id: z.cuid().describe("신고 ID (CUID 25자)"),
+    id: entityIdSchema.describe("신고 ID"),
     status: userReportStatusSchema,
     createdAt: datetimeSchema.describe("신고 접수 시각 (ISO 8601 UTC)"),
   })

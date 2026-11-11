@@ -168,7 +168,7 @@ describe('syncMeUntilStorePremium', () => {
 
   async function serveMe(...responses: (typeof FREE_ME)[]) {
     const fetchMe = jest.fn(async () => responses.shift() ?? FREE_ME);
-    await queryClient.prefetchQuery({ queryKey: USER_QUERY_KEYS.me(), queryFn: fetchMe });
+    await queryClient.query({ queryKey: USER_QUERY_KEYS.me(), queryFn: fetchMe });
     return fetchMe;
   }
 
