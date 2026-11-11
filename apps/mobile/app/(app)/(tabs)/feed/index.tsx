@@ -50,36 +50,46 @@ import {
   AdaptivePane,
   Box,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  SafeAreaScrollView,
   Spacing,
   StyledSafeAreaView,
-  type QueryErrorFallbackProps,
+  TintedRefreshControl,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { type ComponentProps, Suspense, useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { type ComponentProps, Suspense, useEffect, useState } from 'react';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
-/** 친구 피드 위 쿡 찌르기 안내 줄의 높이(그림 72). 불러오는 동안과 실패했을 때 같은 자리를 잡는다 */
-const NUDGE_BANNER_HEIGHT = 72;
+/** 친구 피드가 친구를 읽는 단계. 세 단계 모두 같은 뼈대에 그린다 */
+type FriendFeedView =
+  | { status: 'loading' }
+  | ({ status: 'error' } & QueryErrorFallbackProps)
+  | { status: 'ready'; friendId: string };
 
 export default function FeedScreen() {
   const [friendId] = useFeedFriendId();
   const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
   const [{ sort, comment }] = useTodoCommentParams();
+
   const isInviteAvailable = useIsInviteAvailable();
-  const openMyInvite = useOpenMyInvite();
-  const closeDetail = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
+
   // 피드를 내리기 시작하면 위에 떠 있는 친구 줄 안내가 내용을 가리지 않게 닫는다
   const [hasScrolledFeed, setHasScrolledFeed] = useState(false);
+
+  const openMyInvite = useOpenMyInvite();
+
   // 첫 피드는 알림 화면 → 새로운 기능 → 말풍선 순서라 앞 화면을 열지 정해진 뒤에만 말풍선을 띄운다
   const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
   const { shouldShowCoachmarks } = useWhatsNewAutoOpen({
     isOnboardingSettled: isPushOnboardingSettled,
   });
 
+  // 펼친 화면에서 고른 할 일이 있는 채로 접히면 그 할 일과 댓글 위치를 상세 화면으로 넘긴다
   useFeedTodoDetailHandoff();
+
+  const closeDetail = () => setSelectedTodoId(undefined);
 
   return (
     <>
@@ -102,9 +112,12 @@ export default function FeedScreen() {
 
             {match(friendId)
               .with(P.string, (id) => (
-                <QueryErrorBoundary key={id} fallback={FriendFeedTodos.Error}>
-                  <Suspense fallback={<FriendFeedTodos.Loading />}>
-                    <FriendFeedTodos />
+                <QueryErrorBoundary
+                  key={id}
+                  fallback={(props) => <FriendFeed view={{ status: 'error', ...props }} />}
+                >
+                  <Suspense fallback={<FriendFeed view={{ status: 'loading' }} />}>
+                    <FriendFeed.RouteFriend />
                   </Suspense>
                 </QueryErrorBoundary>
               ))
@@ -170,17 +183,22 @@ function MyFeed({
 }: Pick<ComponentProps<typeof ScrollViewContainer>, 'onScrollBeginDrag'> &
   Pick<ComponentProps<typeof MyCalendar>, 'shouldShowHint'>) {
   const [selectedDateKey] = useFeedDateKey();
+
   const queryClient = useQueryClient();
-  const status = useAuthStatus();
+  const authStatus = useAuthStatus();
   const hasPendingNavigation = useHasPendingPushNotificationEntry();
+  const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
+  const isReminderOff = useIsPushReminderOff();
+
+  // 내 피드에서만 도는 첫 화면 조율이다. 앱이 앞에 안정적으로 떠 있으면(로그인, 알림 이동 없음)
+  // 알림 켜기 화면을 열고, 그 화면이 정해진 뒤 새로운 기능 안내를 연다. 닫은 안내는 다시 보기 카드로 남는다
   const isStable = useStableFeedForeground({
-    isAuthenticated: status === 'authenticated',
+    isAuthenticated: authStatus === 'authenticated',
     hasPendingNavigation,
   });
   useOpenPushOnboarding({ isStable });
-  const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
-  const isReminderOff = useIsPushReminderOff();
   const whatsNew = useWhatsNewFeed({ isStable, isOnboardingSettled: isPushOnboardingSettled });
+
   const [isRefreshing, handleRefresh] = useRefresh(() => {
     // 날씨는 위치부터 다시 읽어 늦을 수 있다. 당김 표시는 할 일만 기다리고 날씨 실패는 날씨 칸이 보인다
     refetchWeather(queryClient).catch(noop);
@@ -192,7 +210,7 @@ function MyFeed({
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
       onScrollBeginDrag={onScrollBeginDrag}
-      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+      refreshControl={<TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
     >
       <StyledSafeAreaView edges={['left', 'right']}>
         <AddTodoRequestEntry />
@@ -242,9 +260,74 @@ function MyFeed({
   );
 }
 
-function FriendFeedTodos() {
+/** 친구 피드 뼈대 하나. 친구를 읽는 동안·실패·다 읽은 뒤가 같은 자리에 그려져 상태가 바뀌어도 칸이 밀리지 않는다 */
+function FriendFeed({ view }: { view: FriendFeedView }) {
   const [selectedDateKey] = useFeedDateKey();
+
   const queryClient = useQueryClient();
+
+  const [isRefreshing, handleRefresh] = useRefresh(() =>
+    Promise.all([invalidateFriendTodos(queryClient), invalidateNudges(queryClient)]),
+  );
+
+  return (
+    <SafeAreaScrollView
+      className="flex-1"
+      contentContainerClassName="grow"
+      refreshControl={
+        view.status === 'ready' ? (
+          <TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        ) : undefined
+      }
+    >
+      {match(view)
+        .with({ status: 'ready' }, ({ friendId }) => <FriendCalendar friendId={friendId} />)
+        .otherwise(() => (
+          <Calendar />
+        ))}
+
+      <Spacing size={8} />
+
+      {/* 콕 한도는 친구와 무관해 친구를 읽는 동안·실패해도 같은 자리에 스스로 그린다 */}
+      <Box px={16}>
+        <QueryErrorBoundary fallback={NudgeLimitBanner.Error}>
+          <Suspense fallback={<NudgeLimitBanner.Loading />}>
+            <NudgeLimitBanner />
+          </Suspense>
+        </QueryErrorBoundary>
+      </Box>
+
+      <Spacing size={16} />
+
+      <Box className="grow px-4 pb-6">
+        {match(view)
+          .with({ status: 'loading' }, () => <FriendTodoList.Loading />)
+          .with({ status: 'error' }, ({ error, reset }) => (
+            <FriendTodoList.Error error={error} reset={reset} />
+          ))
+          .with({ status: 'ready' }, ({ friendId }) => (
+            <QueryErrorBoundary
+              resetKeys={[friendId, selectedDateKey]}
+              fallback={FriendTodoList.Error}
+            >
+              <Suspense fallback={<FriendTodoList.Loading />}>
+                <FriendTodoList
+                  key={selectedDateKey}
+                  friendId={friendId}
+                  rowAction={FriendTodoNudgeAction}
+                  emptyAction={FriendRemindNudgeAction}
+                />
+              </Suspense>
+            </QueryErrorBoundary>
+          ))
+          .exhaustive()}
+      </Box>
+    </SafeAreaScrollView>
+  );
+}
+
+/** route의 friendId를 친구 목록에서 확인한다. 더는 친구가 아니면 내 피드로 돌아간다 */
+FriendFeed.RouteFriend = function RouteFriend() {
   const {
     data: friend,
     hasNextPage,
@@ -252,114 +335,26 @@ function FriendFeedTodos() {
     error,
     fetchNextPage,
   } = useRouteFriendQuery();
-  const [isRefreshing, handleRefresh] = useRefresh(() =>
-    Promise.all([invalidateFriendTodos(queryClient), invalidateNudges(queryClient)]),
-  );
 
   return match({ friend, isFetchNextPageError, hasNextPage })
-    .with({ friend: P.nullish, isFetchNextPageError: true }, () => (
-      <FriendFeedTodos.Error
-        error={error}
-        reset={() => fetchNextPage({ cancelRefetch: false }).catch(noop)}
+    .with({ friend: P.nonNullable }, ({ friend }) => (
+      <FriendFeed view={{ status: 'ready', friendId: friend.id }} />
+    ))
+    .with({ isFetchNextPageError: true }, () => (
+      <FriendFeed
+        view={{
+          status: 'error',
+          error,
+          reset: () => fetchNextPage({ cancelRefetch: false }).catch(noop),
+        }}
       />
     ))
-    .with({ friend: P.nullish, hasNextPage: true }, () => <FriendFeedTodos.Loading />)
-    .with({ friend: P.nullish }, () => <MyFeedRedirect />)
-    .with({ friend: P.nonNullable }, ({ friend }) => (
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        className="flex-1"
-        contentContainerClassName="grow"
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
-      >
-        <StyledSafeAreaView edges={['left', 'right']} className="grow">
-          <FriendCalendar friendId={friend.id} />
-
-          <Spacing size={8} />
-
-          <Box px={16}>
-            <QueryErrorBoundary fallback={NudgeLimitBanner.Error}>
-              <Suspense fallback={<NudgeLimitBanner.Loading />}>
-                <NudgeLimitBanner />
-              </Suspense>
-            </QueryErrorBoundary>
-          </Box>
-
-          <Spacing size={16} />
-
-          <Box className="grow px-4 pb-6">
-            <QueryErrorBoundary
-              resetKeys={[friend.id, selectedDateKey]}
-              fallback={FriendTodoList.Error}
-            >
-              <Suspense fallback={<FriendTodoList.Loading />}>
-                <FriendTodoList
-                  key={selectedDateKey}
-                  friendId={friend.id}
-                  rowAction={FriendTodoNudgeAction}
-                  emptyAction={FriendRemindNudgeAction}
-                />
-              </Suspense>
-            </QueryErrorBoundary>
-          </Box>
-        </StyledSafeAreaView>
-      </ScrollView>
-    ))
-    .exhaustive();
-}
-
-FriendFeedTodos.Loading = function Loading() {
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      className="flex-1"
-      contentContainerClassName="grow"
-    >
-      <StyledSafeAreaView edges={['left', 'right']} className="grow">
-        <Calendar />
-
-        <Spacing size={8} />
-
-        <Box px={16}>
-          <NudgeLimitBanner.Loading />
-        </Box>
-
-        <Spacing size={16} />
-
-        <Box px={16}>
-          <FriendTodoList.Loading />
-        </Box>
-      </StyledSafeAreaView>
-    </ScrollView>
-  );
+    .with({ hasNextPage: true }, () => <FriendFeed view={{ status: 'loading' }} />)
+    .otherwise(() => <ReturnToMyFeed />);
 };
 
-FriendFeedTodos.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      className="flex-1"
-      contentContainerClassName="grow"
-    >
-      <StyledSafeAreaView edges={['left', 'right']} className="grow">
-        <Calendar />
-
-        <Spacing size={8} />
-
-        {/* 불러오기 전과 같은 높이로 안내 줄 자리를 비워 둬 오류 뒤 목록이 밀리지 않는다 */}
-        <Box className="px-4" style={{ height: NUDGE_BANNER_HEIGHT }} />
-
-        <Spacing size={16} />
-
-        <Box className="grow px-4 pb-6">
-          <FriendTodoList.Error {...props} />
-        </Box>
-      </StyledSafeAreaView>
-    </ScrollView>
-  );
-};
-
-function MyFeedRedirect() {
+// <Redirect>는 피드 탭 첫 화면을 replace해 화면이 다시 마운트된다. 같은 화면에서 친구 선택만 지운다
+function ReturnToMyFeed() {
   const [_friendId, selectFriend] = useFeedFriendId();
 
   useEffect(() => {
