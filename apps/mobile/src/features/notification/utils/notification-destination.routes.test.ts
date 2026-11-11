@@ -1,17 +1,18 @@
 import { readdirSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-import { NOTICE_DEEP_LINK_PATH, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import type { Href } from 'expo-router';
 
 import { NAVIGATION_CASES } from '../__tests__/notification-navigation-cases';
-import { resolveNotificationDestination } from './notification-destination';
+import {
+  type NotificationDestination,
+  toNotificationDestination,
+} from './notification-destination';
 
 const APP_DIRECTORY = join(__dirname, '../../../../app');
 const ROUTE_GROUP = /^\(.+\)$/;
 const WINDOW_SIZE_CLASSES: readonly WindowSizeClass[] = ['compact', 'expanded'];
-const CONTEXT = { todoId: 1, nudgeId: 1, friendId: 'friend-1' };
 
 function findRouteFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
@@ -43,7 +44,7 @@ function getHrefPathname(href: Href): string | undefined {
 }
 
 function getRouteDestinationPathnames(
-  destinations: readonly ReturnType<typeof resolveNotificationDestination>[],
+  destinations: readonly NotificationDestination[],
 ): (string | undefined)[] {
   return destinations.flatMap((destination) =>
     destination.kind === 'route' ? [getHrefPathname(destination.href)] : [],
@@ -53,21 +54,6 @@ function getRouteDestinationPathnames(
 describe('알림 목적지와 라우트 파일', () => {
   const routePathnames = getRoutePathnames();
 
-  it.each(Object.values(NOTIFICATION_TYPE))('%s 알림의 목적지는 있는 화면이다', (type) => {
-    // When
-    const destinations = WINDOW_SIZE_CLASSES.map((windowSizeClass) =>
-      resolveNotificationDestination(
-        { type, context: CONTEXT, action: { type: 'DEEP_LINK' } },
-        { windowSizeClass, shouldOpenToday: true },
-      ),
-    );
-
-    // Then
-    getRouteDestinationPathnames(destinations).forEach((pathname) => {
-      expect(routePathnames).toContain(pathname);
-    });
-  });
-
   it.each(
     NAVIGATION_CASES.flatMap(({ name, navigation }) =>
       navigation == null ? [] : [{ name, navigation }],
@@ -75,10 +61,7 @@ describe('알림 목적지와 라우트 파일', () => {
   )('$name: 서버 navigation의 목적지는 있는 화면이다', ({ navigation }) => {
     // When
     const destinations = WINDOW_SIZE_CLASSES.map((windowSizeClass) =>
-      resolveNotificationDestination(
-        { type: null, navigation },
-        { windowSizeClass, shouldOpenToday: true },
-      ),
+      toNotificationDestination(navigation, { windowSizeClass }),
     );
 
     // Then
@@ -87,30 +70,12 @@ describe('알림 목적지와 라우트 파일', () => {
     });
   });
 
-  it('모르는 타입의 목적지는 있는 화면이다', () => {
+  it('목적지가 없는 알림이 여는 알림함은 있는 화면이다', () => {
     // When
-    const destination = resolveNotificationDestination(
-      { type: null },
-      { windowSizeClass: 'compact' },
-    );
+    const destination = toNotificationDestination(undefined, { windowSizeClass: 'compact' });
 
     // Then
-    expect(destination.kind === 'route' && getHrefPathname(destination.href)).toBe(
-      '/notifications',
-    );
+    expect(getRouteDestinationPathnames([destination])).toEqual(['/notifications']);
     expect(routePathnames).toContain('/notifications');
-  });
-
-  it.each(Object.values(NOTICE_DEEP_LINK_PATH))('공지 경로 %s는 있는 화면이다', (url) => {
-    // When
-    const destination = resolveNotificationDestination(
-      { type: NOTIFICATION_TYPE.SYSTEM_NOTICE, action: { type: 'DEEP_LINK', url } },
-      { windowSizeClass: 'compact', shouldOpenToday: true },
-    );
-
-    // Then
-    expect(destination.kind).toBe('route');
-    const [pathname] = getRouteDestinationPathnames([destination]);
-    expect(routePathnames).toContain(pathname);
   });
 });

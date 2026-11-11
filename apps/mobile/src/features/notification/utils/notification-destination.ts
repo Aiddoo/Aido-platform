@@ -1,22 +1,9 @@
-import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import type { WeatherEntry } from '@src/features/weather/schemas/weather-entry-params.schema';
-import {
-  parseWeatherRescheduleUrl,
-  toWeatherRescheduleHref,
-} from '@src/features/weather/utils/weather-reschedule-link';
+import { toWeatherRescheduleHref } from '@src/features/weather/utils/weather-reschedule-link';
 import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 
-import { NOTIFICATION_TYPE_TRAITS } from '../constants/notification.constants';
-import {
-  type NotificationAction,
-  type NotificationContext,
-  type NotificationDestinationRouting,
-  notificationDestinationRoutingSchema,
-  type NotificationRouting,
-  type NotificationType,
-} from '../domains/notification.model';
 import { type NotificationNavigation } from '../schemas/push-notification-payload.schema';
 
 export type NotificationDestination =
@@ -24,20 +11,6 @@ export type NotificationDestination =
   | { kind: 'route'; href: Href }
   | { kind: 'browser'; url: string }
   | { kind: 'webview'; url: string };
-
-export interface NotificationDestinationSource {
-  /** 새 서버의 모르는 타입이면 null이다 */
-  type: NotificationType | null;
-  context?: NotificationContext;
-  routing?: NotificationRouting;
-  action?: NotificationAction;
-  /** 서버가 고른 목적지. 없으면(옛 푸시·옛 알림함 항목) 구 필드로 고른다 */
-  navigation?: NotificationNavigation;
-}
-
-type LegacyDestinationSource = NotificationDestinationSource & { type: NotificationType };
-
-const NO_DESTINATION: NotificationDestination = { kind: 'none' };
 
 export const NOTIFICATION_INBOX_DESTINATION: NotificationDestination = {
   kind: 'route',
@@ -92,72 +65,25 @@ export function isViewingNotificationDestination(
   );
 }
 
-interface NotificationDestinationOptions {
-  /** 피드로 열 때 날짜를 오늘로 맞춘다 */
-  shouldOpenToday?: boolean;
-  /** 할 일 목적지를 상세 화면으로 열지 펼친 피드의 상세 pane으로 열지 정한다. */
+export interface NotificationDestinationContext {
+  /** 할 일 목적지를 상세 화면으로 열지 펼친 피드의 상세 pane으로 열지 정한다 */
   windowSizeClass: WindowSizeClass;
   /** 나. 할 일 주인이 내가 아니면 펼친 화면의 목록 pane을 그 친구 피드로 연다 */
   viewerId?: string;
 }
 
-export function resolveNotificationDestination(
-  source: NotificationDestinationSource,
-  options: NotificationDestinationOptions,
+/** 서버가 푸시·알림함 행에 계산해 실은 목적지를 연다. 계산하지 못해 없으면 알림함이다 */
+export function toNotificationDestination(
+  navigation: NotificationNavigation | undefined,
+  { windowSizeClass, viewerId }: NotificationDestinationContext,
 ): NotificationDestination {
-  if (source.navigation != null) {
-    return toNavigationDestination(source.navigation, options);
+  if (navigation == null) {
+    return NOTIFICATION_INBOX_DESTINATION;
   }
-  if (source.type == null) {
-    return { kind: 'route', href: '/notifications' };
-  }
-  return toLegacyFieldsDestination({ ...source, type: source.type }, options);
-}
-
-function toLegacyFieldsDestination(
-  source: LegacyDestinationSource,
-  { shouldOpenToday, windowSizeClass, viewerId }: NotificationDestinationOptions,
-): NotificationDestination {
-  if (source.action?.type === 'NONE') {
-    return NO_DESTINATION;
-  }
-  if (source.action?.type === 'BROWSER') {
-    return toExternalDestination('browser', source.action.url);
-  }
-  if (source.action?.type === 'WEBVIEW') {
-    return toExternalDestination('webview', source.action.url);
-  }
-
-  // 종류만으로 갈 곳을 정할 수 없는 공지. 서버가 DEEP_LINK url에 고른 앱 경로를 따른다(리텐션 /feed·/achievements 등)
-  if (NOTIFICATION_TYPE_TRAITS[source.type].legacyDestination === 'notice') {
-    return toNoticeDestination(source.action?.url, { shouldOpenToday });
-  }
-
-  // 아침 날씨 알림이 할 일과 겹친 비·더위를 알리면 옮기기 시트로 바로 연다. 링크가 없거나 낯설면 날씨 화면이다.
-  const rescheduleHref =
-    source.type === NOTIFICATION_TYPE.WEATHER_MORNING
-      ? parseWeatherRescheduleUrl(source.action?.url)
-      : null;
-  if (rescheduleHref != null) {
-    return { kind: 'route', href: rescheduleHref };
-  }
-
-  const routing = parseNotificationRouting(source);
-  return routing == null
-    ? NO_DESTINATION
-    : toRouteDestination(routing, { shouldOpenToday, windowSizeClass, viewerId });
-}
-
-/** 구 필드로 고른 곳과 같아야 한다(`packages/api/test-fixtures/notification-navigation.cases.json`) */
-function toNavigationDestination(
-  navigation: NotificationNavigation,
-  { shouldOpenToday, windowSizeClass, viewerId }: NotificationDestinationOptions,
-): NotificationDestination {
-  const feedDate = shouldOpenToday ? 'today' : undefined;
   return (
     match(navigation)
       .returnType<NotificationDestination>()
-      .with({ kind: 'NONE' }, () => NO_DESTINATION)
+      .with({ kind: 'NONE' }, () => ({ kind: 'none' }))
       .with({ kind: 'EXTERNAL_URL', presentation: 'BROWSER' }, ({ url }) => ({
         kind: 'browser',
         url,
@@ -168,31 +94,32 @@ function toNavigationDestination(
       }))
       .with({ kind: 'FEED' }, () => ({
         kind: 'route',
-        href: { pathname: '/feed', params: { date: feedDate } },
+        href: { pathname: '/feed', params: { date: 'today' } },
       }))
-      // 응원은 지금처럼 친구 피드로 연다. cheerId는 이동에 쓰지 않는다
+      // 응원은 친구 피드로 연다. cheerId는 이동에 쓰지 않는다
       .with({ kind: P.union('FRIEND_FEED', 'CHEER') }, ({ friendId }) => ({
         kind: 'route',
-        href: { pathname: '/feed', params: { friendId, date: feedDate } },
+        href: { pathname: '/feed', params: { friendId, date: 'today' } },
       }))
       .with({ kind: 'FRIENDS' }, () => ({ kind: 'route', href: '/friends' }))
       .with({ kind: 'FRIEND_REQUESTS' }, () => ({
         kind: 'route',
         href: { pathname: '/friends', params: { view: 'receiver' } },
       }))
-      .with({ kind: 'TODO' }, ({ todoId, ...target }) => ({
+      .with({ kind: 'TODO' }, ({ todoId, todoOwnerId, todoDate }) => ({
         kind: 'route',
         href: toTodoDetailRoute(windowSizeClass, {
           todoId,
-          ...toTodoFeedTarget(target, viewerId),
+          ...toTodoFeed({ ownerId: todoOwnerId, date: todoDate }, viewerId),
         }),
       }))
-      .with({ kind: 'TODO_COMMENT' }, ({ todoId, commentId, ...target }) => ({
+      // 댓글 알림은 할 일 상세 한 화면을 그 댓글 위치(`?comment=`)로 연다. 펼친 화면은 피드 pane이다
+      .with({ kind: 'TODO_COMMENT' }, ({ todoId, commentId, todoOwnerId, todoDate }) => ({
         kind: 'route',
         href: toTodoDetailRoute(windowSizeClass, {
           todoId,
           comment: commentId,
-          ...toTodoFeedTarget(target, viewerId),
+          ...toTodoFeed({ ownerId: todoOwnerId, date: todoDate }, viewerId),
         }),
       }))
       .with({ kind: 'NUDGE' }, ({ nudgeId }) => ({
@@ -221,7 +148,7 @@ function toNavigationDestination(
         kind: 'route',
         href: { pathname: '/settings/subscription' },
       }))
-      .with({ kind: 'NOTIFICATIONS' }, () => ({ kind: 'route', href: '/notifications' }))
+      .with({ kind: 'NOTIFICATIONS' }, () => NOTIFICATION_INBOX_DESTINATION)
       .with({ kind: 'NOTIFICATION_SETTINGS' }, () => ({
         kind: 'route',
         href: '/settings/notifications',
@@ -230,164 +157,13 @@ function toNavigationDestination(
   );
 }
 
-/** 공지의 앱 경로는 아는 화면만 연다. 모르는 경로, 상세 id·프리미엄 확인이 필요한 경로는 이동하지 않는다. */
-function toNoticeDestination(
-  url: string | undefined,
-  { shouldOpenToday }: Pick<NotificationDestinationOptions, 'shouldOpenToday'>,
-): NotificationDestination {
-  const feedDate = shouldOpenToday ? 'today' : undefined;
-  return match(url)
-    .with('/feed', () => ({
-      kind: 'route' as const,
-      href: { pathname: '/feed' as const, params: { date: feedDate } },
-    }))
-    .with('/friends/invite', () => ({
-      kind: 'route' as const,
-      href: { pathname: '/friends/invite' as const },
-    }))
-    .with('/settings/subscription', () => ({
-      kind: 'route' as const,
-      href: { pathname: '/settings/subscription' as const },
-    }))
-    .with('/weather', () => ({
-      kind: 'route' as const,
-      href: {
-        pathname: '/weather' as const,
-        params: { entry: 'notification' satisfies WeatherEntry },
-      },
-    }))
-    .with('/achievements', '/friends', '/settings/notifications', (href) => ({
-      kind: 'route' as const,
-      href,
-    }))
-    .otherwise(() => NO_DESTINATION);
-}
-
-function parseNotificationRouting(
-  source: LegacyDestinationSource,
-): NotificationDestinationRouting | null {
-  const candidate = {
-    type: NOTIFICATION_TYPE_TRAITS[source.type].legacyDestination === 'feed' ? 'FEED' : source.type,
-    todoId: source.context?.todoId,
-    nudgeId: source.context?.nudgeId,
-    friendId: source.context?.friendId,
-    commentId: source.routing?.commentId,
-    todoOwnerId: source.routing?.todoOwnerId,
-    todoDate: source.routing?.todoDate,
-  };
-  const result = notificationDestinationRoutingSchema.safeParse(candidate);
-
-  return result.success ? result.data : null;
-}
-
-function toExternalDestination(kind: 'browser' | 'webview', url?: string): NotificationDestination {
-  return url != null && /^https?:\/\//.test(url) ? { kind, url } : NO_DESTINATION;
-}
-
-function toRouteDestination(
-  routing: NotificationDestinationRouting,
-  { shouldOpenToday, windowSizeClass, viewerId }: NotificationDestinationOptions,
-): NotificationDestination {
-  const toTodoFeed = (target: TodoTarget) => toTodoFeedTarget(target, viewerId);
-  const feedDate = shouldOpenToday ? 'today' : undefined;
-  return (
-    match(routing)
-      .with({ type: 'NUDGE_RECEIVED', nudgeId: P.number, todoId: P.number }, ({ nudgeId }) => ({
-        kind: 'route' as const,
-        href: { pathname: '/nudges/[nudgeId]' as const, params: { nudgeId } },
-      }))
-      .with(
-        { type: P.union('NUDGE_REPLIED', 'NUDGE_THANKED'), nudgeId: P.number },
-        ({ nudgeId }) => ({
-          kind: 'route' as const,
-          href: { pathname: '/nudges/[nudgeId]' as const, params: { nudgeId } },
-        }),
-      )
-      .with({ type: P.union('NUDGE_REPLIED', 'NUDGE_THANKED') }, () => ({
-        kind: 'route' as const,
-        href: '/notifications' as const,
-      }))
-      .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER'), todoId: P.number }, (routing) => ({
-        kind: 'route' as const,
-        href: toTodoDetailRoute(windowSizeClass, {
-          todoId: routing.todoId,
-          ...toTodoFeed(routing),
-        }),
-      }))
-      .with({ type: 'NUDGE_RECEIVED', friendId: P.string }, ({ friendId }) => ({
-        kind: 'route' as const,
-        href: { pathname: '/feed' as const, params: { friendId, date: feedDate } },
-      }))
-      .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER') }, () => ({
-        kind: 'route' as const,
-        href: { pathname: '/feed' as const, params: { date: feedDate } },
-      }))
-      .with({ type: P.union('WEATHER_MORNING', 'WEATHER_EVENING') }, () => ({
-        kind: 'route' as const,
-        href: {
-          pathname: '/weather' as const,
-          params: { entry: 'notification' satisfies WeatherEntry },
-        },
-      }))
-      // 댓글 알림은 할 일 상세 한 화면을 그 댓글 위치(`?comment=`)로 연다. 펼친 화면은 피드 pane이다
-      .with({ type: 'TODO_SHARED' }, (routing) => ({
-        kind: 'route' as const,
-        href: toTodoDetailRoute(windowSizeClass, {
-          todoId: routing.todoId,
-          comment: routing.commentId,
-          ...toTodoFeed(routing),
-        }),
-      }))
-      .with(
-        {
-          type: P.union('FOLLOW_ACCEPTED', 'CHEER_RECEIVED', 'FRIEND_COMPLETED', 'NUDGE_SUGGEST'),
-        },
-        ({ friendId }) => ({
-          kind: 'route' as const,
-          href: { pathname: '/feed' as const, params: { friendId, date: feedDate } },
-        }),
-      )
-      .with({ type: 'FOLLOW_NEW' }, () => ({
-        kind: 'route' as const,
-        href: { pathname: '/friends' as const, params: { view: 'receiver' } },
-      }))
-      .with({ type: 'WEEKLY_ACHIEVEMENT' }, () => ({
-        kind: 'route' as const,
-        href: '/achievements' as const,
-      }))
-      .with({ type: P.union('WEEKLY_REPORT', 'MONTHLY_REPORT') }, () => ({
-        kind: 'route' as const,
-        href: '/reports' as const,
-      }))
-      .with({ type: 'AI_SUGGESTION' }, () => ({
-        kind: 'route' as const,
-        href: '/suggestions' as const,
-      }))
-      .with({ type: P.union('INVITE_JOINED', 'INVITE_REWARDED', 'INVITE_PROGRESS') }, () => ({
-        kind: 'route' as const,
-        href: { pathname: '/friends/invite' as const },
-      }))
-      .with({ type: 'PREMIUM_GRANT_ENDING' }, () => ({
-        kind: 'route' as const,
-        href: { pathname: '/settings/subscription' as const },
-      }))
-      .with({ type: 'FEED' }, () => ({
-        kind: 'route' as const,
-        href: { pathname: '/feed' as const, params: { date: feedDate } },
-      }))
-      .exhaustive()
-  );
-}
-
-interface TodoTarget {
-  todoOwnerId?: string;
-  todoDate?: string;
-}
-
 /** 펼친 화면 목록 pane의 피드. 남의 할 일이면 그 친구 피드, 내 할 일이거나 나를 모르면 내 피드다. */
-function toTodoFeedTarget({ todoOwnerId, todoDate }: TodoTarget, viewerId?: string) {
-  const isFriendTodo = todoOwnerId != null && viewerId != null && todoOwnerId !== viewerId;
-  return { friendId: isFriendTodo ? todoOwnerId : undefined, date: todoDate };
+function toTodoFeed(
+  { ownerId, date }: { ownerId?: string; date?: string },
+  viewerId: string | undefined,
+) {
+  const isFriendTodo = ownerId != null && viewerId != null && ownerId !== viewerId;
+  return { friendId: isFriendTodo ? ownerId : undefined, date };
 }
 
 interface TodoDetailTarget {

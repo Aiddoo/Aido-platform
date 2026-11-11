@@ -30,7 +30,6 @@ export function toNotification(server: ServerNotification): Notification {
     isRead: server.isRead,
     ...(routing && { routing }),
     context: server.context,
-    action: server.action,
     navigation: server.navigation,
     createdAt: toInstant(server.createdAt),
     readAt: toNullableInstant(server.readAt),

@@ -35,7 +35,7 @@ import {
 import { PushNotificationPolicy } from '../domains/push-notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
 import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
-import { resolveNotificationDestination } from '../utils/notification-destination';
+import { toNotificationDestination } from '../utils/notification-destination';
 import { useNotificationEntry } from './use-notification-entry';
 import { useNotificationNavigation } from './use-notification-navigation';
 
@@ -216,8 +216,7 @@ function useResolveResponse(
       }
       store.markReady(
         target.id,
-        resolveNotificationDestination(data, {
-          shouldOpenToday: true,
+        toNotificationDestination(data.navigation, {
           windowSizeClass,
           viewerId: getCachedMe(queryClient)?.id,
         }),

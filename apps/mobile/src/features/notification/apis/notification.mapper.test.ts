@@ -2,7 +2,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
-import { resolveNotificationDestination } from '../utils/notification-destination';
+import { toNotificationDestination } from '../utils/notification-destination';
 import { toNotification, toNotificationPage } from './notification.mapper';
 
 setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
@@ -196,6 +196,7 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
       type: 'TODO_REMINDER',
       action: { type: 'DEEP_LINK' },
       context: { todoId: 42 },
+      navigation: { kind: 'TODO', todoId: 42 },
       stage: 'series-paused',
     };
 
@@ -207,10 +208,7 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
       throw new Error('Expected push payload');
     }
     expect(
-      resolveNotificationDestination(result.data, {
-        shouldOpenToday: true,
-        windowSizeClass: 'compact',
-      }),
+      toNotificationDestination(result.data.navigation, { windowSizeClass: 'compact' }),
     ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
   });
 
@@ -227,15 +225,13 @@ describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paus
       type: 'TODO_REMINDER',
       context: { todoId: 42 },
       metadata: { stage: 'series-paused' },
+      navigation: { kind: 'TODO', todoId: 42 },
     });
 
     // Then
     expect(notification.routing).toBeUndefined();
     expect(
-      resolveNotificationDestination(notification, {
-        shouldOpenToday: true,
-        windowSizeClass: 'compact',
-      }),
+      toNotificationDestination(notification.navigation, { windowSizeClass: 'compact' }),
     ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
   });
 });
@@ -265,7 +261,7 @@ describe('pushNotificationPayloadSchema의 navigation·깨진 필드 처리', ()
     expect(result).toMatchObject({ success: true, data: { type: null, notificationId: 7 } });
   });
 
-  it('서버의 새 kind나 틀린 모양의 navigation은 버려 구 필드로 간다', () => {
+  it('서버의 새 kind나 틀린 모양의 navigation은 버려 알림함으로 간다', () => {
     // When
     const newKind = pushNotificationPayloadSchema.safeParse({
       ...BASE,

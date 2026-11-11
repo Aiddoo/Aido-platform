@@ -73,7 +73,7 @@ describe('알림함 항목을 누르면', () => {
     });
   }
 
-  it('서버가 고른 navigation이 있으면 구 필드가 가리키는 날씨 화면 대신 그곳(옮기기 시트)으로 간다', async () => {
+  it('서버가 고른 navigation으로 간다', async () => {
     // Given
     await renderInbox({
       ...INBOX_ITEM,
@@ -90,7 +90,7 @@ describe('알림함 항목을 누르면', () => {
     });
   });
 
-  it('navigation이 없는 옛 항목은 구 필드로 고른 곳으로 간다', async () => {
+  it('서버가 navigation을 싣지 못한 항목은 알림함에 머문다', async () => {
     // Given
     await renderInbox(INBOX_ITEM);
 
@@ -98,9 +98,6 @@ describe('알림함 항목을 누르면', () => {
     await fireEvent.press(await screen.findByTestId('notification-item-WEATHER_MORNING'));
 
     // Then
-    expect(router.navigate).toHaveBeenCalledWith({
-      pathname: '/weather',
-      params: { entry: 'notification' },
-    });
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 });

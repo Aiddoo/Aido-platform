@@ -14,7 +14,7 @@ import { getForegroundPushPresentation } from '../utils/get-foreground-push-pres
 import {
   isViewingNotificationDestination,
   NOTIFICATION_INBOX_DESTINATION,
-  resolveNotificationDestination,
+  toNotificationDestination,
 } from '../utils/notification-destination';
 
 /** 앱이 앞에 있을 때 받은 알림을 지금 보고 있는 화면에 맞춰 배너로 보일지 정한다 */
@@ -32,8 +32,7 @@ export function useForegroundPushPresentation() {
         return 'banner';
       }
       const currentRoute = { pathname, params };
-      const destination = resolveNotificationDestination(payload.data, {
-        shouldOpenToday: true,
+      const destination = toNotificationDestination(payload.data.navigation, {
         windowSizeClass,
         viewerId: getCachedMe(queryClient)?.id,
       });

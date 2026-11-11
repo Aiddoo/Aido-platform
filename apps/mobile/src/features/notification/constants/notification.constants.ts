@@ -69,8 +69,6 @@ interface NotificationTypeTraits {
     | 'social';
   /** 프리미엄 AI 기능이 만든 알림. 열기 전에 기능 한도를 묻는다 */
   isAiFeature: boolean;
-  /** 서버 목적지(`navigation`)가 없을 때의 구 필드 경로. `notice`는 서버가 DEEP_LINK url에 고른 앱 경로다 */
-  legacyDestination: 'feed' | 'notice' | 'routing';
   /** 앱이 켜진 동안 받으면 다시 받을 다른 기능의 화면. 없으면 null */
   invalidation: 'nudge-interactions' | 'friends' | 'invite' | 'me' | null;
 }
@@ -80,184 +78,154 @@ export const NOTIFICATION_TYPE_TRAITS = {
   FOLLOW_NEW: {
     labelKey: 'friend',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: 'friends',
   },
   FOLLOW_ACCEPTED: {
     labelKey: 'friend',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: 'friends',
   },
   INVITE_JOINED: {
     labelKey: 'friend',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: 'invite',
   },
   INVITE_REWARDED: {
     labelKey: 'friend',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: 'invite',
   },
   INVITE_PROGRESS: {
     labelKey: 'friend',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: 'invite',
   },
   // 초대받은 사람이 오늘 할 일을 끝내 사용 시작하도록 오늘 피드로 연다
   INVITE_QUALIFY_REMINDER: {
     labelKey: 'friend',
     isAiFeature: false,
-    legacyDestination: 'feed',
     invalidation: null,
   },
   NUDGE_RECEIVED: {
     labelKey: 'nudge',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: 'nudge-interactions',
   },
   NUDGE_REPLIED: {
     labelKey: 'nudge',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: 'nudge-interactions',
   },
   NUDGE_THANKED: {
     labelKey: 'nudge',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: 'nudge-interactions',
   },
   CHEER_RECEIVED: {
     labelKey: 'cheer',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: null,
   },
   DAILY_COMPLETE: {
     labelKey: 'achievement',
     isAiFeature: false,
-    legacyDestination: 'feed',
     invalidation: null,
   },
   FRIEND_COMPLETED: {
     labelKey: 'achievement',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: null,
   },
   WEEKLY_ACHIEVEMENT: {
     labelKey: 'achievement',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: null,
   },
   TODO_REMINDER: {
     labelKey: 'todo',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: null,
   },
   TODO_SHARED: {
     labelKey: 'todo',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: null,
   },
-  WINBACK: { labelKey: 'todo', isAiFeature: false, legacyDestination: 'feed', invalidation: null },
+  WINBACK: { labelKey: 'todo', isAiFeature: false, invalidation: null },
   WEATHER_MORNING: {
     labelKey: 'todo',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: null,
   },
   WEATHER_EVENING: {
     labelKey: 'todo',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: null,
   },
   MORNING_REMINDER: {
     labelKey: 'reminder',
     isAiFeature: false,
-    legacyDestination: 'feed',
     invalidation: null,
   },
   EVENING_REMINDER: {
     labelKey: 'reminder',
     isAiFeature: false,
-    legacyDestination: 'feed',
     invalidation: null,
   },
   LUNCH_NUDGE: {
     labelKey: 'reminder',
     isAiFeature: false,
-    legacyDestination: 'feed',
     invalidation: null,
   },
   STREAK_AT_RISK: {
     labelKey: 'reminder',
     isAiFeature: false,
-    legacyDestination: 'feed',
     invalidation: null,
   },
   WEEKLY_REPORT: {
     labelKey: 'ai',
     isAiFeature: true,
-    legacyDestination: 'routing',
     invalidation: null,
   },
   MONTHLY_REPORT: {
     labelKey: 'ai',
     isAiFeature: true,
-    legacyDestination: 'routing',
     invalidation: null,
   },
   AI_SUGGESTION: {
     labelKey: 'ai',
     isAiFeature: true,
-    legacyDestination: 'routing',
     invalidation: null,
   },
   SYSTEM_NOTICE: {
     labelKey: 'notice',
     isAiFeature: false,
-    legacyDestination: 'notice',
     invalidation: null,
   },
   ADMIN_BROADCAST: {
     labelKey: 'notice',
     isAiFeature: false,
-    legacyDestination: 'notice',
     invalidation: null,
   },
   ADMIN_TARGETED: {
     labelKey: 'notice',
     isAiFeature: false,
-    legacyDestination: 'notice',
     invalidation: null,
   },
   // 보상 기간이 곧 끝난다는 알림이면 구독 화면의 남은 기간을 서버 값으로 맞춘다
   PREMIUM_GRANT_ENDING: {
     labelKey: 'notice',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: 'me',
   },
   SOCIAL_DIGEST: {
     labelKey: 'social',
     isAiFeature: false,
-    legacyDestination: 'feed',
     invalidation: null,
   },
   NUDGE_SUGGEST: {
     labelKey: 'social',
     isAiFeature: false,
-    legacyDestination: 'routing',
     invalidation: null,
   },
 } as const satisfies Record<NotificationType, NotificationTypeTraits>;

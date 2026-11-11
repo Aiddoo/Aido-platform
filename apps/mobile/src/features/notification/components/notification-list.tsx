@@ -32,7 +32,10 @@ import { invalidateNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
 import { toDateSectionedListItems } from '../utils/date-section';
-import { resolveNotificationDestination } from '../utils/notification-destination';
+import {
+  type NotificationDestination,
+  toNotificationDestination,
+} from '../utils/notification-destination';
 import { NotificationListRow } from './notification-list-row';
 
 const NOTIFICATION_PAGE_SIZE = 10;
@@ -179,16 +182,15 @@ function useOpenNotification() {
       return;
     }
 
-    const destination = resolveNotificationDestination(
-      {
-        type: notification.type,
-        context: notification.context,
-        routing: notification.routing,
-        action: notification.action,
-        navigation: notification.navigation,
-      },
-      { shouldOpenToday: true, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
-    );
+    // 목록은 알림함 화면에만 있어, 알림함을 여는 알림은 같은 화면을 다시 열지 않고 머문다
+    const opensInbox =
+      notification.navigation == null || notification.navigation.kind === 'NOTIFICATIONS';
+    const destination: NotificationDestination = opensInbox
+      ? { kind: 'none' }
+      : toNotificationDestination(notification.navigation, {
+          windowSizeClass,
+          viewerId: getCachedMe(queryClient)?.id,
+        });
     trackEvent('notification_center_opened', {
       type: notification.type,
       destination: destination.kind,
