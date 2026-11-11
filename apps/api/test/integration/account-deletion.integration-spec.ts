@@ -6,6 +6,8 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 import { vi } from "vitest";
 
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
 import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   AuthCachePort,
@@ -46,22 +48,21 @@ import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/applica
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
-import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
+import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { DRIZZLE } from "#api/platform/database/database.client";
 import { account, user as userTable } from "#api/platform/database/schema/index";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { createMockCacheService } from "#test/mocks/cache-test-utils";
+import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -86,6 +87,10 @@ import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";
 import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider.js";
 import { sessionPushDeviceReleaserTestProvider } from "./helpers/session-push-device-releaser.provider.js";
+
+function daysAgo(days: number): Temporal.Instant {
+  return Temporal.Now.instant().subtract({ hours: days * 24 });
+}
 
 describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
@@ -179,9 +184,10 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
         AuthCacheAdapter,
         { provide: AuthCachePort, useExisting: AuthCacheAdapter },
+        { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
         {
           provide: AuthRegistrationNotifierPort,
-          useExisting: AdminEventNotifier,
+          useExisting: AdminEventNotifierPort,
         },
         DrizzleUserConsentRepository,
         DrizzleUserPreferenceRepository,
@@ -198,6 +204,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           useValue: transaction.txHost,
         },
         { provide: ClockPort, useClass: DateClock },
+        { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         {
           provide: jwtConfig.KEY,
           useValue: {
@@ -217,47 +224,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           useClass: FakeEmailService,
         },
         {
-          provide: CacheService,
-          useFactory: () => {
-            const cache = createMockCacheService();
-            cache.wrap.mockImplementation((_key, _schema, factory) => factory());
-            return cache;
-          },
-        },
-        {
-          provide: CACHE_SERVICE,
-          useValue: {
-            get: async () => undefined,
-            set: async () => {},
-            del: async () => {},
-          },
-        },
-        {
-          provide: TypedConfigService,
-          useValue: {
-            get: (key: string) => {
-              const config: Record<string, string> = {
-                JWT_SECRET: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-                JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
-                JWT_REFRESH_SECRET:
-                  process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-                JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-              };
-              return config[key];
-            },
-            jwtSecret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-            jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
-            jwtRefreshSecret:
-              process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-            jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-            jwtConfig: {
-              secret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-              expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
-              refreshSecret:
-                process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-              refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-            },
-          },
+          provide: CacheStorePort,
+          useValue: new NoCacheStore(),
         },
         {
           provide: ConfigService,
@@ -275,7 +243,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           },
         },
         {
-          provide: AdminEventNotifier,
+          provide: AdminEventNotifierPort,
           useValue: {
             notifyUserRegistered: () => {},
             notifySubscriptionEvent: () => {},
@@ -299,7 +267,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
     requestPasswordReset = module.get(RequestPasswordResetUseCase);
     deleteAccount = module.get(DeleteAccountUseCase);
     purgeDeletedAccounts = module.get(PurgeDeletedAccountsUseCase);
-  }, 60000);
+  }, 60_000);
 
   beforeEach(async () => {
     suppressLogger();
@@ -330,7 +298,10 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
     await client
       .update(userTable)
-      .set({ status: "ACTIVE", emailVerifiedAt: new Date() })
+      .set({
+        status: "ACTIVE",
+        emailVerifiedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      })
       .where(eq(userTable.id, registerResult.userId));
 
     return registerResult.userId;
@@ -353,7 +324,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       expect(result.deletedAt).toBeDefined();
 
       const user = await client.query.user.findFirst({ where: { id: userId } });
-      expect(user?.deletedAt?.toISOString()).toBe(result.deletedAt);
+      expect(user?.deletedAt).toEqual(Temporal.Instant.from(result.deletedAt));
       expect(user?.status).toBe("SUSPENDED");
 
       const sessions = await client.query.session.findMany({ where: { userId } });
@@ -375,13 +346,17 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           email: "social-delete@example.com",
           userTag: "SODEL001",
           status: "ACTIVE",
-          emailVerifiedAt: new Date(),
+          emailVerifiedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })
         .returning();
       const user = requireRecord(created);
-      await client
-        .insert(account)
-        .values({ userId: user.id, provider: "GOOGLE", providerAccountId: "google-123" });
+      await client.insert(account).values({
+        userId: user.id,
+        provider: "GOOGLE",
+        providerAccountId: "google-123",
+        updatedAt: Temporal.Now.instant(),
+      });
 
       // When
       const result = await deleteAccount.execute({ userId: user.id });
@@ -419,7 +394,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
     it("유예 기간 초과 시 로그인 차단 (USER_0606)", async () => {
       // Given
-      const pastDate = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
+      const pastDate = daysAgo(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
 
       const email = "expired-delete@example.com";
       const password = "Test1234!";
@@ -438,7 +413,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
   describe("PurgeDeletedAccounts — 계정 영구 삭제", () => {
     it("유예 기간 경과 후 hard delete 실행", async () => {
       // Given
-      const pastDate = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
+      const pastDate = daysAgo(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
 
       const [created] = await client
         .insert(userTable)
@@ -447,6 +422,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           userTag: "PURGE001",
           status: "SUSPENDED",
           deletedAt: pastDate,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })
         .returning();
       const user = requireRecord(created);
@@ -461,7 +437,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
     it("유예 기간 내 사용자는 삭제하지 않음", async () => {
       // Given
-      const recentDate = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1);
+      const recentDate = daysAgo(ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1);
 
       const [created] = await client
         .insert(userTable)
@@ -470,6 +446,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           userTag: "KEEP0001",
           status: "SUSPENDED",
           deletedAt: recentDate,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })
         .returning();
       const user = requireRecord(created);

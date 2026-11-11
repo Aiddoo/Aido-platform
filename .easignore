@@ -1,3 +1,8 @@
+# EAS Build upload — .easignore
+# - 이 파일이 있으면 EAS는 .gitignore 대신 이 파일로 업로드 대상을 고른다.
+#   그래서 비밀값·네이티브 생성물 규칙을 여기에도 다시 적는다.
+# - 빌드에 필요한 비밀값(Firebase 설정 등)은 EAS Secrets로 넣는다(apps/mobile/docs/EAS_SECRETS.md).
+
 # Dependencies
 node_modules/
 .pnpm-store/
@@ -9,27 +14,32 @@ dist/
 
 # Tests & coverage
 coverage/
-/apps/mobile/maestro/
+/apps/mobile/.maestro/
+/apps/mobile/maestro-output/
 
 # Environment & secrets
 .env*
 !.env*.example
 .secrets/
 
-# Mobile native (generated projects, credentials, signing keys, store binaries)
+# Mobile: native projects & EAS local config (CNG가 빌드 서버에서 다시 만든다)
 /apps/mobile/ios/
 /apps/mobile/android/
+/apps/mobile/.kotlin/
 /apps/mobile/.eas/
 /apps/mobile/.easrc
-/apps/mobile/.kotlin/
 /apps/mobile/expo-env.d.ts
 /apps/mobile/.metro-health-check*
+
+# Mobile: credentials & service config
 /apps/mobile/google-services*.json
 /apps/mobile/GoogleService-Info*.plist
 /apps/mobile/credentials/
 /apps/mobile/credentials.json
 /apps/mobile/*service-account*.json
 /apps/mobile/*-firebase-adminsdk-*.json
+
+# Signing keys & store binaries
 *.keystore
 *.jks
 *.p8
@@ -41,13 +51,10 @@ coverage/
 *.apk
 *.aab
 
-# IDE & OS
-.idea/
-.vscode/
-.cursor/
-.zed/
-*.swp
-.DS_Store
+# Docs
+*.md
+/docs/
+/apps/*/docs/
 
 # Logs
 *.log
@@ -59,7 +66,10 @@ coverage/
 /apps/mobile/.agents/
 /myDocs/
 
-# Docs
-*.md
-/docs/
-/apps/*/docs/
+# Editors & OS
+.idea/
+.cursor/
+.zed/
+.vscode/
+*.swp
+.DS_Store

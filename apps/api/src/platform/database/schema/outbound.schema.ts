@@ -1,4 +1,6 @@
-import { bigint, index, pgTable, primaryKey, timestamp, varchar } from "drizzle-orm/pg-core";
+import { bigint, index, pgTable, primaryKey, varchar } from "drizzle-orm/pg-core";
+
+import { instant } from "../columns/temporal-columns.js";
 
 /**
  * 외부 호출 누적 사용량(AI 추정 비용·WeatherKit 호출·이메일 발송). 기간별 한 행을 원자적으로 더한다.
@@ -10,10 +12,8 @@ export const outboundUsage = pgTable(
     meter: varchar({ length: 48 }).notNull(),
     periodKey: varchar({ length: 16 }).notNull(),
     subject: varchar({ length: 64 }).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 계량기 어댑터가 ClockPort 값으로 insert-or-update·차감마다 명시한다
+    updatedAt: instant().notNull(),
     used: bigint({ mode: "number" }).notNull(),
   },
   (table) => [

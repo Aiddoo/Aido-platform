@@ -14,8 +14,6 @@ import {
 import { renderSignupNoticeEmbed } from "./discord-signup-notice.mapper.js";
 import { renderSubscriptionNoticeEmbed } from "./discord-subscription-notice.mapper.js";
 
-export type { DiscordEmbed };
-
 function severityColor(severity: AdminNotificationSeverity): number {
   return match(severity)
     .with("info", () => 0x5865f2)

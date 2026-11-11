@@ -15,10 +15,7 @@ import { UnlikeTodoCommentUseCase } from "#api/modules/engagement/comments/appli
 import { WriteTodoCommentChainUseCase } from "#api/modules/engagement/comments/application/use-cases/write-todo-comment-chain.use-case";
 import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
-import {
-  NOTIFICATION_CACHE,
-  type NotificationCachePort,
-} from "#api/modules/notification/inbox/application/ports/notification-cache.port";
+import { NotificationCachePort } from "#api/modules/notification/inbox/application/ports/notification-cache.port";
 import { PushDispatchStagingRepositoryPort } from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
 import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-after-commit.use-case";
 import { PublishPushDeliveryOutboxUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
@@ -97,7 +94,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
             userId,
             categoryId: category.id,
             visibility: "PUBLIC",
-            startDate: AT,
+            startDate: Temporal.PlainDate.from("2027-01-08"),
             sortOrder: 0,
             commentCount: 9,
           }),
@@ -235,7 +232,8 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     expect(focus.result.items.at(0)?.id).toBe(focusId);
   });
 
-  it("할 일 소유자 상세는 관계를 쿼리 1번으로 읽는다", async () => {
+  // 할 일·카테고리·항목은 planning 조회 포트가 한 번에, 주인 프로필은 engagement가 따로 읽는다
+  it("할 일 소유자 상세는 할 일 1번·주인 프로필 1번으로 읽는다", async () => {
     // Given
     const getDetails = context.module.get(GetTodoDetailsUseCase);
 
@@ -243,7 +241,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     const measured = await measure(() => getDetails.execute({ todoId, viewerId: userId }));
 
     // Then
-    expect(measured.count).toBe(1);
+    expect(measured.count).toBe(2);
     expect(measured.result).toMatchObject({ commentCount: 9 });
   });
 
@@ -269,7 +267,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
       context.module.get(PublishPushDeliveryAfterCommitUseCase),
       "register",
     );
-    const cache = context.module.get<NotificationCachePort>(NOTIFICATION_CACHE);
+    const cache = context.module.get<NotificationCachePort>(NotificationCachePort);
     const invalidation = vi.spyOn(cache, "invalidateUnreadCount");
     let stagedCounts: number[] = [];
     let markerSqlState: string | undefined;
@@ -426,7 +424,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     expect(await client.$count(notification)).toBe(1);
   });
 
-  it("구버전 작성기와 unique 경합한 뒤 권한이 사라지면 저장된 댓글을 다시 보내도 거부한다", async () => {
+  it("다른 작성기와 unique 경합한 뒤 권한이 사라지면 저장된 댓글을 다시 보내도 거부한다", async () => {
     // Given
     await client.update(todo).set({ visibility: "PRIVATE" }).where(eq(todo.id, todoId));
     await client
@@ -440,7 +438,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     );
     const save = repository.save.bind(repository);
     vi.spyOn(repository, "save").mockImplementationOnce(async (comment) => {
-      // 구버전 작성기가 같은 멱등 키로 다른 id의 글을 먼저 커밋한다
+      // 다른 작성기가 같은 멱등 키로 다른 id의 글을 먼저 커밋한다
       await outside.save(
         TodoComment.reconstitute({ ...comment.toPrimitives(), id: createEntityId() }),
       );

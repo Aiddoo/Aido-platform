@@ -1163,24 +1163,56 @@ function isWireContractModule(moduleName) {
   );
 }
 
+// 모델은 업무 규칙만 둔다. 문구·화면 부품·플랫폼은 view-model·컴포넌트·어댑터가 맡는다
+function findModelPresentationImport(moduleName) {
+  if (
+    moduleName === '@src/shared/i18n' ||
+    moduleName.startsWith('@src/shared/i18n/') ||
+    moduleName === 'i18next' ||
+    moduleName === 'react-i18next'
+  ) {
+    return '문구(i18n)';
+  }
+  if (moduleName === '@src/shared/ui' || moduleName.startsWith('@src/shared/ui/')) {
+    return '화면 부품(shared/ui)';
+  }
+  if (moduleName === 'react-native' || moduleName.startsWith('react-native/')) {
+    return '플랫폼(react-native)';
+  }
+  if (moduleName === 'react' || moduleName.startsWith('react/')) {
+    return 'React';
+  }
+  return null;
+}
+
 function checkClientOwnedModelImports(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  const isDomainModel = DOMAIN_MODEL_FILE.test(relativePath);
   if (
     relativePath.includes('.test.') ||
-    (!CLIENT_OWNED_MODEL_PATHS.some((path) => relativePath.startsWith(path)) &&
-      !DOMAIN_MODEL_FILE.test(relativePath))
+    (!CLIENT_OWNED_MODEL_PATHS.some((path) => relativePath.startsWith(path)) && !isDomainModel)
   ) {
     return;
   }
   for (const statement of sourceFile.statements) {
     if (
-      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
-      statement.moduleSpecifier !== undefined &&
-      ts.isStringLiteral(statement.moduleSpecifier) &&
-      isWireContractModule(statement.moduleSpecifier.text)
+      !(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) ||
+      statement.moduleSpecifier === undefined ||
+      !ts.isStringLiteral(statement.moduleSpecifier)
     ) {
+      continue;
+    }
+    const moduleName = statement.moduleSpecifier.text;
+    if (isWireContractModule(moduleName)) {
       errors.push(
-        `${getLocation(sourceFile, statement, repositoryRoot)} 클라이언트 모델은 요청·응답 계약(${statement.moduleSpecifier.text})을 import하지 않습니다. 모델이 자기 Zod 스키마를 갖고 apis/*.mapper.ts가 DTO를 모델로 바꿔야 서버가 바뀌어도 mapper만 고칩니다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져오세요.`,
+        `${getLocation(sourceFile, statement, repositoryRoot)} 클라이언트 모델은 요청·응답 계약(${moduleName})을 import하지 않습니다. 모델이 자기 Zod 스키마를 갖고 apis/*.mapper.ts가 DTO를 모델로 바꿔야 서버가 바뀌어도 mapper만 고칩니다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져오세요.`,
+      );
+      continue;
+    }
+    const presentation = isDomainModel ? findModelPresentationImport(moduleName) : null;
+    if (presentation !== null) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} 도메인 모델은 ${presentation}(${moduleName})을 import하지 않습니다. 모델과 Policy는 업무 규칙만 두고 문구·화면·플랫폼 값은 view-model·컴포넌트·어댑터가 맡습니다.`,
       );
     }
   }
@@ -1856,44 +1888,197 @@ function checkLowerLayerImports(sourceFile, relativePath, errors, repositoryRoot
   }
 }
 
-function collectFeatureImports(sourceFile, findings, featureEdges, errors, repositoryRoot) {
+const DI_CONTEXT_FILE = 'apps/mobile/src/bootstrap/providers/di-context.tsx';
+const DI_CONTEXT_MODULE = '@src/bootstrap/providers/di-context';
+const SHARED_DI_CONTEXT_MODULE = '@src/shared/di/shared-di-context';
+const DI_HOOK_NAME = /^use[A-Z]/u;
+
+/** `return useDI().field` 한 줄이면 field, 아니면 null */
+function getReturnedDiField(declaration) {
+  const statements = declaration.body?.statements ?? [];
+  const [statement] = statements;
+  if (
+    statements.length !== 1 ||
+    !ts.isReturnStatement(statement) ||
+    statement.expression === undefined ||
+    !ts.isPropertyAccessExpression(statement.expression)
+  ) {
+    return null;
+  }
+  const { expression, name } = statement.expression;
+  return ts.isCallExpression(expression) && getCallName(expression.expression) === 'useDI'
+    ? name.text
+    : null;
+}
+
+/**
+ * di-context의 `use{X}` 훅이 돌려주는 값의 주인 feature. `DIContainer` 필드 타입을 import한 경로에서 읽어
+ * 컨테이너가 바뀌면 함께 바뀐다. 주인이 feature가 아니면(core·shared·bootstrap) 담지 않는다
+ */
+function loadDiHookOwners(repositoryRoot, errors) {
+  const path = resolve(repositoryRoot, DI_CONTEXT_FILE);
+  if (!existsSync(path)) {
+    return new Map();
+  }
+  const sourceFile = ts.createSourceFile(
+    path,
+    readFileSync(path, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const typeModules = new Map();
+  const fieldTypes = new Map();
+  const hookFields = new Map();
+  for (const statement of sourceFile.statements) {
+    if (ts.isImportDeclaration(statement)) {
+      const bindings = statement.importClause?.namedBindings;
+      if (bindings !== undefined && ts.isNamedImports(bindings)) {
+        for (const element of bindings.elements) {
+          typeModules.set(element.name.text, statement.moduleSpecifier.text);
+        }
+      }
+    } else if (ts.isInterfaceDeclaration(statement) && statement.name.text === 'DIContainer') {
+      for (const member of statement.members) {
+        const name = getPropertyName(member.name);
+        if (
+          name !== null &&
+          ts.isPropertySignature(member) &&
+          member.type !== undefined &&
+          ts.isTypeReferenceNode(member.type) &&
+          ts.isIdentifier(member.type.typeName)
+        ) {
+          fieldTypes.set(name, member.type.typeName.text);
+        }
+      }
+    } else if (
+      ts.isFunctionDeclaration(statement) &&
+      statement.name !== undefined &&
+      DI_HOOK_NAME.test(statement.name.text) &&
+      statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      const field = getReturnedDiField(statement);
+      if (field === null) {
+        errors.push(
+          `${getLocation(sourceFile, statement, repositoryRoot)} di-context의 ${statement.name.text}는 \`return useDI().필드\` 한 줄로 씁니다. 층 검사가 돌려주는 값의 주인을 읽어야 합니다.`,
+        );
+      } else {
+        hookFields.set(statement.name.text, field);
+      }
+    }
+  }
+  const owners = new Map();
+  for (const [hook, field] of hookFields) {
+    const moduleName = typeModules.get(fieldTypes.get(field));
+    const featurePath = moduleName === undefined ? null : getImportedFeaturePath(moduleName, path);
+    const owner = featurePath === null ? null : getFeatureName(featurePath);
+    if (owner !== null) {
+      owners.set(hook, owner);
+    }
+  }
+  return owners;
+}
+
+/** 타입이 아닌 이름으로 가져온 DI 훅과 그 주인 feature */
+function getDiHookTargets(statement, diHookOwners) {
+  const clause = ts.isImportDeclaration(statement) ? statement.importClause : undefined;
+  const bindings = clause?.isTypeOnly ? undefined : clause?.namedBindings;
+  if (bindings === undefined || !ts.isNamedImports(bindings)) {
+    return [];
+  }
+  return bindings.elements.flatMap((element) => {
+    const hook = (element.propertyName ?? element.name).text;
+    const target = diHookOwners.get(hook);
+    return element.isTypeOnly || target === undefined ? [] : [{ hook, target }];
+  });
+}
+
+/** feature와 app/의 DI 입구는 di-context 하나다. shared-di-context는 shared가 bootstrap을 못 봐서 나눈 것이다 */
+function checkDiEntryImports(sourceFile, relativePath, errors, repositoryRoot) {
+  if (
+    !relativePath.startsWith(FEATURE_SOURCE_ROOT) &&
+    !relativePath.startsWith('apps/mobile/app/')
+  ) {
+    return;
+  }
+  for (const statement of getModuleStatements(sourceFile)) {
+    if (statement.moduleSpecifier.text === SHARED_DI_CONTEXT_MODULE) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} feature와 app/은 DI 훅을 ${DI_CONTEXT_MODULE}에서 꺼냅니다. 빠진 훅은 di-context가 다시 내보내게 하세요.`,
+      );
+    }
+  }
+}
+
+function recordFeatureImport({
+  owner,
+  target,
+  location,
+  isAllowedUpward,
+  upwardMessage,
+  findings,
+  featureEdges,
+  errors,
+}) {
+  if (target === owner) {
+    return;
+  }
+  if (!featureEdges.has(owner)) {
+    featureEdges.set(owner, new Set());
+  }
+  featureEdges.get(owner).add(target);
+  const ownerLayer = FEATURE_LAYERS.get(owner);
+  const targetLayer = FEATURE_LAYERS.get(target);
+  if (ownerLayer === undefined || targetLayer === undefined) {
+    errors.push(
+      `${location} ${ownerLayer === undefined ? owner : target}의 층이 정해지지 않았습니다. FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더하세요.`,
+    );
+    return;
+  }
+  if (ownerLayer < targetLayer && !isAllowedUpward) {
+    findings.push({ rule: 'feature-upward', key: `${owner} -> ${target}`, message: upwardMessage });
+  }
+}
+
+function collectFeatureImports(
+  sourceFile,
+  { findings, featureEdges, diHookOwners },
+  errors,
+  repositoryRoot,
+) {
   const owner = getFeatureName(sourceFile.fileName);
   if (owner === null) {
     return;
   }
+  const collected = { owner, findings, featureEdges, errors };
   for (const statement of getModuleStatements(sourceFile)) {
-    const importedPath = getImportedFeaturePath(
-      statement.moduleSpecifier.text,
-      sourceFile.fileName,
-    );
-    const target = importedPath === null ? null : getFeatureName(importedPath);
-    if (target === null || target === owner) {
-      continue;
-    }
-    if (!featureEdges.has(owner)) {
-      featureEdges.set(owner, new Set());
-    }
-    featureEdges.get(owner).add(target);
+    const moduleName = statement.moduleSpecifier.text;
     const location = getLocation(sourceFile, statement, repositoryRoot);
-    const ownerLayer = FEATURE_LAYERS.get(owner);
-    const targetLayer = FEATURE_LAYERS.get(target);
-    if (ownerLayer === undefined || targetLayer === undefined) {
-      errors.push(
-        `${location} ${ownerLayer === undefined ? owner : target}의 층이 정해지지 않았습니다. FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더하세요.`,
-      );
+    if (moduleName === DI_CONTEXT_MODULE) {
+      for (const { hook, target } of getDiHookTargets(statement, diHookOwners)) {
+        recordFeatureImport({
+          ...collected,
+          target,
+          location,
+          isAllowedUpward: false,
+          upwardMessage: `${location} 위층 ${target}의 값을 ${hook}로 꺼냅니다. 위층의 Service·저장소는 쓰지 않습니다. 이벤트로 알리거나 app/에서 조립해 인자로 넘기세요.`,
+        });
+      }
       continue;
     }
-    if (
-      ownerLayer < targetLayer &&
-      !isTypeOnlyStatement(statement) &&
-      !ANY_LAYER_IMPORT_PATTERN.test(importedPath)
-    ) {
-      findings.push({
-        rule: 'feature-upward',
-        key: `${owner} -> ${target}`,
-        message: `${location} 위층 ${target}의 코드를 import합니다. 위층에서 가져와도 되는 것은 타입, 모델(Policy), *-cache입니다. app/에서 조립하거나 슬롯으로 넘기세요.`,
-      });
+    const importedPath = getImportedFeaturePath(moduleName, sourceFile.fileName);
+    const target = importedPath === null ? null : getFeatureName(importedPath);
+    if (target === null) {
+      continue;
     }
+    recordFeatureImport({
+      ...collected,
+      target,
+      location,
+      isAllowedUpward:
+        isTypeOnlyStatement(statement) || ANY_LAYER_IMPORT_PATTERN.test(importedPath),
+      upwardMessage: `${location} 위층 ${target}의 코드를 import합니다. 위층에서 가져와도 되는 것은 타입, 모델(Policy), *-cache입니다. app/에서 조립하거나 슬롯으로 넘기세요.`,
+    });
   }
 }
 
@@ -1948,6 +2133,123 @@ function unwrapExpression(expression) {
   return current;
 }
 
+// 모델 일부만 받는 모양. 모델에 필드가 늘거나 줄 때마다 Policy 서명과 호출부가 함께 바뀐다
+const MODEL_FRAGMENT_UTILITIES = new Set(['Pick', 'Partial', 'Omit', 'Required']);
+const ARRAY_TYPE_NAMES = new Set(['ReadonlyArray', 'Array']);
+
+function collectLocalTypeAliases(sourceFile) {
+  const aliases = new Map();
+  for (const statement of sourceFile.statements) {
+    if (ts.isTypeAliasDeclaration(statement)) {
+      aliases.set(statement.name.text, statement.type);
+    }
+  }
+  return aliases;
+}
+
+function isNullishTypeNode(typeNode) {
+  return (
+    typeNode.kind === ts.SyntaxKind.UndefinedKeyword ||
+    (ts.isLiteralTypeNode(typeNode) && typeNode.literal.kind === ts.SyntaxKind.NullKeyword)
+  );
+}
+
+/**
+ * 첫 인자가 모델 전체(또는 모델 목록)가 아니라 일부를 받는지 본다. 같은 파일의 type 별칭과 타입 인자 제약까지 따라간다.
+ * 별칭이 객체 리터럴의 합(판별 유니온)이면 상태 모델이라 통과한다
+ */
+function describeModelFragment(typeNode, context, isAliasUnionMember = false) {
+  if (ts.isParenthesizedTypeNode(typeNode)) {
+    return describeModelFragment(typeNode.type, context, isAliasUnionMember);
+  }
+  if (ts.isTypeOperatorNode(typeNode) && typeNode.operator === ts.SyntaxKind.ReadonlyKeyword) {
+    return describeModelFragment(typeNode.type, context);
+  }
+  if (ts.isArrayTypeNode(typeNode)) {
+    return describeModelFragment(typeNode.elementType, context);
+  }
+  if (ts.isRestTypeNode(typeNode) || ts.isNamedTupleMember(typeNode)) {
+    return describeModelFragment(typeNode.type, context);
+  }
+  if (ts.isTupleTypeNode(typeNode)) {
+    for (const element of typeNode.elements) {
+      const fragment = describeModelFragment(element, context);
+      if (fragment !== null) {
+        return fragment;
+      }
+    }
+    return null;
+  }
+  if (ts.isUnionTypeNode(typeNode)) {
+    for (const member of typeNode.types) {
+      if (isNullishTypeNode(member)) {
+        continue;
+      }
+      const fragment = describeModelFragment(member, context, context.isInAlias);
+      if (fragment !== null) {
+        return fragment;
+      }
+    }
+    return null;
+  }
+  if (ts.isIntersectionTypeNode(typeNode)) {
+    return '교차 타입';
+  }
+  if (ts.isTypeLiteralNode(typeNode)) {
+    return isAliasUnionMember ? null : '객체 리터럴 타입';
+  }
+  if (ts.isIndexedAccessTypeNode(typeNode)) {
+    return '모델 필드 타입';
+  }
+  if (!ts.isTypeReferenceNode(typeNode) || !ts.isIdentifier(typeNode.typeName)) {
+    return null;
+  }
+  const name = typeNode.typeName.text;
+  if (MODEL_FRAGMENT_UTILITIES.has(name)) {
+    return `${name}<…>`;
+  }
+  const [elementType] = typeNode.typeArguments ?? [];
+  if (ARRAY_TYPE_NAMES.has(name) && elementType !== undefined) {
+    return describeModelFragment(elementType, context);
+  }
+  if (context.visited.has(name)) {
+    return null;
+  }
+  const constraint = context.typeParameters.get(name);
+  if (constraint !== undefined) {
+    context.visited.add(name);
+    return describeModelFragment(constraint, context);
+  }
+  const alias = context.aliases.get(name);
+  if (alias === undefined) {
+    return null;
+  }
+  context.visited.add(name);
+  const fragment = describeModelFragment(alias, { ...context, isInAlias: true });
+  return fragment === null ? null : `${name}(${fragment})`;
+}
+
+function checkPolicyMemberFirstParameter(declaration, sourceFile, aliases) {
+  const [firstParameter] = declaration.parameters;
+  if (firstParameter === undefined) {
+    return null;
+  }
+  if (firstParameter.type === undefined) {
+    return ts.isObjectBindingPattern(firstParameter.name) ? '구조 분해한 객체' : null;
+  }
+  const typeParameters = new Map(
+    (declaration.typeParameters ?? [])
+      .filter((parameter) => parameter.constraint !== undefined)
+      .map((parameter) => [parameter.name.text, parameter.constraint]),
+  );
+  return describeModelFragment(firstParameter.type, {
+    aliases,
+    typeParameters,
+    visited: new Set(),
+    isInAlias: false,
+  });
+}
+
 function checkPolicyFacade(node, sourceFile, relativePath, findings, repositoryRoot) {
   const object = node.initializer === undefined ? null : unwrapExpression(node.initializer);
   if (object === null || !ts.isObjectLiteralExpression(object)) {
@@ -1959,19 +2261,44 @@ function checkPolicyFacade(node, sourceFile, relativePath, findings, repositoryR
       key: relativePath,
       message: `${getLocation(sourceFile, member, repositoryRoot)} ${node.name.text}: ${problem}. Facade는 모듈 수준 함수를 같은 이름으로 모으기만 합니다.`,
     });
+  const functions = new Map(
+    sourceFile.statements
+      .filter((statement) => ts.isFunctionDeclaration(statement) && statement.name !== undefined)
+      .map((statement) => [statement.name.text, statement]),
+  );
+  const aliases = collectLocalTypeAliases(sourceFile);
   for (const member of object.properties) {
     if (ts.isMethodDeclaration(member)) {
       push(member, '메서드를 Facade 안에 정의했습니다');
       continue;
     }
-    if (!ts.isPropertyAssignment(member)) {
+    const value = ts.isShorthandPropertyAssignment(member)
+      ? member.name
+      : ts.isPropertyAssignment(member)
+        ? unwrapExpression(member.initializer)
+        : null;
+    if (value === null) {
       continue;
     }
-    const value = unwrapExpression(member.initializer);
     if (ts.isIdentifier(value) && value.text !== getPropertyName(member.name)) {
       push(member, `별칭(${getPropertyName(member.name)}: ${value.text})을 썼습니다`);
-    } else if (ts.isArrowFunction(value) || ts.isFunctionExpression(value)) {
+      continue;
+    }
+    if (ts.isArrowFunction(value) || ts.isFunctionExpression(value)) {
       push(member, '함수를 Facade 안에 정의했습니다');
+      continue;
+    }
+    const declaration = ts.isIdentifier(value) ? functions.get(value.text) : undefined;
+    const fragment =
+      declaration === undefined
+        ? null
+        : checkPolicyMemberFirstParameter(declaration, sourceFile, aliases);
+    if (fragment !== null) {
+      findings.push({
+        rule: 'policy-facade',
+        key: relativePath,
+        message: `${getLocation(sourceFile, member, repositoryRoot)} ${node.name.text}.${value.text}: 첫 인자가 모델 일부(${fragment})입니다. Policy 멤버는 모델 전체(category: TodoCategory)나 모델 목록(readonly TodoCategory[])을 첫 인자로 받아 모델 필드가 바뀌어도 서명이 그대로입니다. 호출부가 모델 일부(폼 값 등)만 가지면 엔티티 규칙이 아니니 Policy 밖 순수 함수로 두세요.`,
+      });
     }
   }
 }
@@ -2386,6 +2713,7 @@ export function shrinkAllowlist(findings, allowlist) {
 export function collectArchitectureFindings(repositoryRoot, errors) {
   const findings = [];
   const featureEdges = new Map();
+  const diHookOwners = loadDiHookOwners(repositoryRoot, errors);
   for (const file of ['apps/mobile/src', 'apps/mobile/app'].flatMap((root) =>
     getSourceFiles(repositoryRoot, root),
   )) {
@@ -2400,7 +2728,13 @@ export function collectArchitectureFindings(repositoryRoot, errors) {
     collectRatchetFindings(sourceFile, relativePath, findings, repositoryRoot);
     if (!isTestSource(relativePath)) {
       checkLowerLayerImports(sourceFile, relativePath, errors, repositoryRoot);
-      collectFeatureImports(sourceFile, findings, featureEdges, errors, repositoryRoot);
+      checkDiEntryImports(sourceFile, relativePath, errors, repositoryRoot);
+      collectFeatureImports(
+        sourceFile,
+        { findings, featureEdges, diHookOwners },
+        errors,
+        repositoryRoot,
+      );
     }
   }
   collectBidirectionalFindings(featureEdges, findings);

@@ -2,6 +2,7 @@ import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -33,8 +34,9 @@ export class LogoutAllUseCase {
   }
 
   async execute(input: LogoutAllCommand): Promise<{ message: string; revokedCount: number }> {
+    const userId = UserId.reconstitute(input.userId);
     const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
-      userId: input.userId,
+      userId,
       reason: REVOKE_REASON.USER_LOGOUT_ALL,
       now: this.#dependencies.clock.now(),
     });
@@ -46,7 +48,7 @@ export class LogoutAllUseCase {
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     const revokedCount = revokedSessionIds.length;
     await this.#dependencies.securityLogRepository.create({
-      userId: input.userId,
+      userId,
       event: SECURITY_EVENT.SESSION_REVOKED_ALL,
       ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
       userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,

@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import type { AdminNotificationChannel } from "../../domain/admin-notices.constants.js";
-import { AdminNoticeAlert } from "../admin-notices.alerts.js";
+import { AdminNoticeAlerts } from "../admin-notices.alerts.js";
 import { adminNotificationRetryable } from "../admin-notices.errors.js";
 import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
 import type { AdminNotifierPort } from "../ports/admin-notifier.port.js";
@@ -59,9 +59,7 @@ export class SendAdminNotificationUseCase {
       statusCode: outcome.statusCode,
     });
     alert.raise({
-      key: AdminNoticeAlert.ADMIN_NOTIFICATION_REJECTED,
-      severity: "warning",
-      message: "관리자 알림이 채널에서 거절되었습니다",
+      ...AdminNoticeAlerts.ADMIN_NOTIFICATION_REJECTED,
       tags: { channel },
       details: { statusCode: outcome.statusCode ?? null },
     });

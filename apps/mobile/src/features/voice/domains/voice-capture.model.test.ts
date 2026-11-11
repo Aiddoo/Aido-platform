@@ -745,18 +745,29 @@ describe('isChargedReview', () => {
 });
 
 describe('isManualInput', () => {
+  const plan = voicePlanSchema.parse({
+    planId: 'plan-1',
+    source: 'quick-voice',
+    sourceMemoId: null,
+    actions: [],
+    omittedTodoCount: 0,
+  });
+
   it.each([
-    { status: 'idle', expected: true },
-    { status: 'failed', expected: true },
-    { status: 'preparing', expected: false },
-    { status: 'listening', expected: false },
-    { status: 'paused', expected: false },
-    { status: 'finalizing', expected: false },
-    { status: 'planning', expected: false },
-    { status: 'review', expected: false },
-  ] as const)('$status 상태에서 손으로 입력하는지는 $expected다', ({ status, expected }) => {
+    { input: { status: 'idle' }, expected: true },
+    { input: { status: 'failed', reason: 'client' }, expected: true },
+    { input: { status: 'preparing' }, expected: false },
+    { input: { status: 'listening', listeningSince: NOW }, expected: false },
+    { input: { status: 'paused', cause: 'app-background' }, expected: false },
+    { input: { status: 'finalizing' }, expected: false },
+    { input: { status: 'planning' }, expected: false },
+    { input: { status: 'review', plan, isCharged: false }, expected: false },
+  ] as const)('$input.status 상태에서 손으로 입력하는지는 $expected다', ({ input, expected }) => {
+    // Given
+    const state = createCaptureState(input);
+
     // When
-    const result = VoiceCapturePolicy.isManualInput({ status });
+    const result = VoiceCapturePolicy.isManualInput(state);
 
     // Then
     expect(result).toBe(expected);

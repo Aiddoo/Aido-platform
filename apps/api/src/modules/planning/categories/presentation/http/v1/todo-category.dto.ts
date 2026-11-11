@@ -5,11 +5,10 @@ import {
   deleteTodoCategoryResponseSchema,
   reorderTodoCategoryResponseSchema,
   reorderTodoCategorySchema,
+  todoCategoryDeletionPreviewSchema,
   todoCategoryIdParamSchema,
   todoCategoryListResponseSchema,
   todoCategoryResponseSchema,
-  todoCategorySchema,
-  todoCategoryWithCountSchema,
   updateTodoCategoryResponseSchema,
   updateTodoCategorySchema,
 } from "@aido/api";
@@ -52,12 +51,6 @@ export class TodoCategoryResourceLimitResponseDto {
   declare maxCount: number | null;
 }
 
-export const TodoCategoryDto = todoCategorySchema.meta({ id: "TodoCategoryDto" });
-export type TodoCategoryDto = z.infer<typeof TodoCategoryDto>;
-export const TodoCategoryWithCountDto = todoCategoryWithCountSchema.meta({
-  id: "TodoCategoryWithCountDto",
-});
-export type TodoCategoryWithCountDto = z.infer<typeof TodoCategoryWithCountDto>;
 export const TodoCategoryListResponseDto = todoCategoryListResponseSchema.meta({
   id: "TodoCategoryListResponseDto",
 });
@@ -78,6 +71,10 @@ export const DeleteTodoCategoryResponseDto = deleteTodoCategoryResponseSchema.me
   id: "DeleteTodoCategoryResponseDto",
 });
 export type DeleteTodoCategoryResponseDto = z.infer<typeof DeleteTodoCategoryResponseDto>;
+export const TodoCategoryDeletionPreviewDto = todoCategoryDeletionPreviewSchema.meta({
+  id: "TodoCategoryDeletionPreviewDto",
+});
+export type TodoCategoryDeletionPreviewDto = z.infer<typeof TodoCategoryDeletionPreviewDto>;
 export const ReorderTodoCategoryResponseDto = reorderTodoCategoryResponseSchema.meta({
   id: "ReorderTodoCategoryResponseDto",
 });

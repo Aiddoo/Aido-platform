@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { resolveAiDataSharingConsent } from "./ai-data-sharing-consent.domain-service.js";
 
 const RELEASED_VERSION = "2026-10-26";
-const agreedAt = new Date("2026-10-26T09:00:00.000Z");
+const agreedAt = Temporal.Instant.from("2026-10-26T09:00:00.000Z");
 
 describe("resolveAiDataSharingConsent", () => {
   it.each([

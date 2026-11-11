@@ -1,35 +1,35 @@
 # 작업과 이벤트 (pg-boss·도메인 이벤트·크론)
 
-큐·스케줄·도메인 이벤트 구독을 만들거나 바꿀 때, 배포 중 작업 유실을 판단할 때 읽는다. 푸시 발송 큐의 세부는 [푸시 알림](push-notifications.md#큐와-작업-key)에 있다.
+큐·스케줄·도메인 이벤트 구독을 만들거나 바꿀 때, 배포 중 작업 유실을 판단할 때 읽는다. 푸시 큐와 작업 key는 [푸시 발송](push-delivery.md#큐와-작업-key)에 있다.
 
 ## 판단: 어떤 방식으로 보내는가
 
 문제는 EventEmitter가 아니라 내구성 없는 전달로 업무 상태를 바꾸는 것이다.
 
-| 반응                                           | 방식                                                                                                |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 같은 Context 반응(할 일 변경 → 리마인더 예약)  | 이벤트 없이 UseCase가 같은 트랜잭션에서 포트를 직접 호출(`TodoReminderSchedulerPort`)               |
-| 다른 Context의 상태 변경(초대 활동 기록, 보상) | `DomainEventPublisherPort.publish(events)`를 UoW 안에서 호출 → 구독자별 pg-boss 작업(같은 트랜잭션) |
-| 다른 Context의 캐시 무효화(insights 일간 완료) | 같은 publish의 `delivery: "after-commit"` 구독(`@nestjs/event-emitter`). 실패해도 TTL로 맞아진다    |
+| 반응                                          | 방식                                                                                                             |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 같은 Context 반응(할 일 변경 → 리마인더 예약) | 이벤트 없이 UseCase가 같은 트랜잭션에서 포트를 직접 호출(`ApplyTodoEventsUseCase` → `TodoReminderSchedulerPort`) |
+| 다른 Context의 상태 변경(초대 활동 기록)      | UoW 안 `DomainEventPublisherPort.publish(events)` → `delivery: "durable"` 구독의 pg-boss 작업(같은 트랜잭션)     |
+| 다른 Context의 캐시 정리                      | 같은 `publish`의 `delivery: "after-commit"` 구독. 실패해도 TTL로 맞아진다                                        |
 
 - `delivery: "after-commit"` 구독자가 상태를 쓰면 리뷰에서 막는다. 캐시 정리 전용이다.
 - 이벤트 이름은 `<context>.<aggregate>.<과거형>`(`planning.todo.completed`)이다.
 
 ## 도메인 이벤트 fan-out
 
-- 구독자 목록은 각 Context의 `*.event-handler.ts`가 `defineEventSubscription({ name, eventName, delivery, payloadSchema, queue })`으로 선언한 정적 코드 레지스트리다. slice module의 `providers`에 `provideEventSubscriptions(...)`로 넣으면 `EventSubscriptionCatalog`가 조립 때 모은다(이름이 겹치면 부팅 실패). 컴파일 시점에 정해져 타입 검사·테스트가 쉽다.
-- 이벤트는 `PublishedDomainEvent`(`eventName`·`eventId`·`occurredAt`·`toPayload()`)다. 발행 쪽에서 구독 schema로 먼저 `parse`해 계약이 어긋나면 트랜잭션째 실패한다.
-- `delivery: "durable"`은 `queue`가 필수다. 구독 큐의 worker는 구독 Context가 `JobQueuePort.work(queue, …)`로 등록한다.
-- `delivery: "after-commit"`은 커밋 뒤 `EventEmitter2.emitAsync(subscription.name, payload)`로 보낸다. 받는 쪽은 `@OnEvent(<구독 이름>)`이고, 옛 `publishAll`의 이벤트 이름 채널과 겹치지 않는다. 실패는 구독 단위로 로그만 남기고 커밋을 되돌리지 않는다.
-- publish는 구독자마다 그 큐에 `JobQueuePort.enqueue`를 같은 트랜잭션으로 넣는다. 구독자별 idempotency key는 `<eventId>:<subscription>`이고 재시도·DLQ가 구독자마다 붙는다. pg-boss 테이블이 곧 트랜잭셔널 아웃박스다.
-- pg-boss 내장 `publish`/`subscribe`는 쓰지 않는다: 구독자 조회가 pg-boss 자체 풀(트랜잭션 밖)에서 돌고, 구독이 없으면 조용히 지나가고, 모든 구독 큐에 같은 job id가 가서 구독자별 결정적 id를 쓸 수 없다.
-- payload는 이벤트의 Zod schema(발행 Context `*.public.ts`)로 구독자가 다시 `parse`한다. payload에 Temporal 객체를 넣지 않고 `toIsoString`으로 직렬화한다.
-- 메시지 브로커가 필요해지면 어댑터만 `OutboxDomainEventPublisher`(같은 트랜잭션의 `DomainEventOutbox` 행 + 릴레이)로 바꾼다. Port·발행 코드·구독 계약은 그대로다.
-- `PushDispatchOutbox`는 이벤트 아웃박스가 아니다. 기기별 발송·receipt를 추적하는 도메인 데이터라 그대로 둔다.
+- 구독은 `*.event-handler.ts`가 `defineEventSubscription({ name, eventName, delivery, payloadSchema, queue })`로 선언하고(`shared/application/ports/domain-event-publisher.port.ts`), slice module `providers`에 `provideEventSubscriptions(...)`로 넣는다. `EventSubscriptionCatalog`가 조립 때 모은다(이름이 겹치면 부팅 실패). 사례: [InviteeActivityEventHandler](../src/modules/social/invites/infrastructure/event-handlers/invitee-activity.event-handler.ts)(`social.invitee-activity` ← `planning.todo.completed`).
+- 이벤트는 `PublishedDomainEvent`(`eventName`·`eventId`·`occurredAt`·`toPayload()`)다. [FanOutDomainEventPublisher](../src/platform/events/fan-out-domain-event.publisher.ts)가 구독 schema로 먼저 `parse`해 계약이 어긋나면 트랜잭션째 실패한다.
+- `durable`은 구독마다 그 큐에 `JobQueuePort.enqueue`를 같은 트랜잭션으로 넣는다. idempotency key는 `<eventId>:<subscription name>`이라 구독 이름을 바꾸면 같은 이벤트가 다시 전달된다. worker는 구독 Context가 `JobQueuePort.work(queue, …)`로 등록한다. pg-boss 테이블이 곧 트랜잭셔널 아웃박스다.
+- `after-commit`은 커밋 뒤 `EventEmitter2.emitAsync(subscription.name, payload)`로 보낸다. 받는 쪽은 그 구독 이름 채널을 `EventEmitter2`로 듣고, 실패는 구독 단위로 로그(`PlatformLogEvent.DOMAIN_EVENT_PUBLISH_FAILED`)만 남긴다.
+- payload는 발행 Context `*.public.ts`의 Zod schema(`todoChangedPayloadSchema`)로 구독자가 다시 `parse`한다. payload에 Temporal 객체를 넣지 않고 `toIsoString`으로 직렬화한다.
+- pg-boss 내장 `publish`/`subscribe`는 쓰지 않는다: 구독자 조회가 pg-boss 자체 풀(트랜잭션 밖)에서 돌고, 구독이 없으면 조용히 지나가고, 구독자별 결정적 id를 쓸 수 없다.
+- 메시지 브로커가 필요해지면 어댑터만 아웃박스 행 + 릴레이로 바꾼다. Port·발행 코드·구독 계약은 그대로다. `PushDispatchOutbox`는 이벤트 아웃박스가 아니라 기기별 발송을 추적하는 도메인 데이터다.
+
+**after-commit 사례**: insights `DailyCompletionCacheEventHandler`가 planning이 내는 할 일·회차·카테고리 이벤트 이름마다 `delivery: "after-commit"` 구독을 선언하고 그 사용자의 일간 완료 캐시만 버린다. 구독을 새로 옮기거나 바꾸는 커밋은 같은 커밋에서 옛 전달 경로를 지워 두 번 처리되지 않게 하고 "한 번만" integration으로 확인한다.
 
 ## 큐 정의
 
-`defineQueue({ name, payloadSchema, retry, deadLetter, worker: { localConcurrency, pollingIntervalSeconds, batchSize, burstWhenBatchFull, isolateJobFailures, minPriority, maxPriority }, schedules })`가 큐 하나의 정의다(`shared/application/ports/job-queue.port.ts`). producer·consumer·Health·스케줄이 같은 정의를 `JobQueuePort`에 넘긴다.
+[defineQueue](../src/shared/application/ports/job-queue.port.ts)`({ name, payloadSchema, retry, deadLetter, worker, schedules })`가 큐 하나의 정의다. producer·consumer·Health·스케줄이 같은 정의를 `JobQueuePort`에 넘긴다.
 
 ```ts
 export const DOCUMENT_QUEUE = defineQueue({
@@ -55,41 +55,55 @@ await jobQueue.work(DOCUMENT_QUEUE, async (jobs) => {
 await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upsert
 ```
 
-| 규칙         | 내용                                                                                                                                                                                                                                                          |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| payload      | enqueue는 schema 타입으로 검사하고 소비 때 `parse`한다. 맞지 않는 작업은 handler에 오지 않고 그 작업만 실패한다(`perJobResults`)                                                                                                                              |
-| 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(`singletonKey`, 유니크 키, 상태 fence, `boolean` 전이)                                                                                                                                               |
-| 이름         | `teamSize` 대신 pg-boss 12 용어 `localConcurrency`                                                                                                                                                                                                            |
-| 묶음         | 발송량이 많은 큐는 `batchSize`(+`burstWhenBatchFull`). handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다. 다시 실행하면 한 번 더 보내는 작업이 섞인 큐는 `isolateJobFailures`로 작업마다 끝낸다(`notification.v1`·`push-delivery.v1`) |
-| Health       | `JobQueuePort`에 넘긴 정의(와 DLQ)는 `JobQueueRegistry`가 모아 Health에 더한다. 옮기지 않은 큐는 `job-runtime.health.ts`의 옛 목록에 있다                                                                                                                     |
-| 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                                                                                                                                                                      |
-| `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                        |
-| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림](notifications.md)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                                                        |
+| 규칙         | 내용                                                                                                                                                                                                                                                                                                  |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| payload      | enqueue는 schema 타입으로 검사하고 소비 때 `parse`한다. 맞지 않는 작업은 handler에 오지 않고 그 작업만 실패한다                                                                                                                                                                                       |
+| 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(idempotency key, 유니크 키, 상태 fence, `boolean` 전이)                                                                                                                                                                                      |
+| 이름         | 새 큐는 `<context>.<purpose>.v1`. worker 동시성은 pg-boss 12 용어 `localConcurrency`                                                                                                                                                                                                                  |
+| 묶음         | 발송량이 많거나 같은 시각에 몰리는 큐는 `batchSize`(+`burstWhenBatchFull`). handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다. 다시 실행하면 한 번 더 보내는 작업이 섞인 큐는 `isolateJobFailures`로 작업마다 끝낸다(`notification.v1`·`push-delivery.v1`·`todo-reminder.v1`) |
+| Health       | `JobQueuePort.health()`는 이 프로세스가 정의로 쓴 큐와 그 DLQ(`JobQueueRegistry`)를 본다. 큐를 따로 목록에 적지 않는다                                                                                                                                                                                |
+| 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                                                                                                                                                                                                              |
+| `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                                                                |
+| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림 발송 설계](notifications.md#발송-우선순위)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                                                                        |
 
-- `JobQueuePort`(`PgBossJobQueueAdapter`)와 옛 `JobRuntimePort`(`PgBossJobRuntimeAdapter`)는 메서드 이름이 겹쳐 클래스가 나뉘지만 같은 pg-boss client와 시작·종료를 쓴다.
-- E2E 앱은 `JobQueuePort`를 `test/doubles/platform/in-memory-job-queue.ts`로 바꾼다.
+- 큐·스케줄은 모두 `defineQueue` + `JobQueuePort` 하나로 만든다. `PgBossJobQueueAdapter`가 등록·소비·스케줄·Health와 시작·종료(`JobQueueLifecycle`)를 맡고, pg-boss를 직접 부르거나 큐 이름 문자열을 따로 적지 않는다.
+- E2E 앱은 `JobQueuePort`를 [InMemoryJobQueue](../test/doubles/platform/in-memory-job-queue.ts)로 바꾼다.
 
 **바꾸지 않는 운영 계약**
 
 - 큐 이름 `*.v1`과 스케줄 key. 바꾸면 쌓인 작업과 스케줄을 잃는다.
-- 결정적 job id의 key 문자열(`deterministicJobId(queue, key)`). 날짜가 들어간 key(`invite-qualify-reminder:${redemptionId}:${sendAt}`)도 Temporal 전환 뒤 바이트 단위로 같아야 `cancel()`이 지운다.
-- 옛 payload schema(`LegacyAdminNotificationSchema`·`LegacySendDataSchema`, `ai-report-queue`의 locale 기본값). 배포 순간 쌓여 있는 작업을 위해 둔다.
+- 결정적 job id의 key 문자열(`deterministicJobId(queue, key)`). 날짜가 들어간 key(`invite-qualify-reminder:<수락>:<발송 시각>`)도 바이트 단위로 같아야 `cancel()`이 지운다.
+- 옛 payload schema(`admin-notification.queue.ts`의 `LegacyAdminNotificationSchema`·`LegacySendDataSchema`, `ai-report.queue.ts`의 선택 `locale`). 배포 순간 쌓여 있는 작업을 위해 둔다. 지울 시점은 [호환](../../../docs/conventions/compatibility.md)에 적는다.
 
 ## 크론 주기와 `missed` 정책
 
-모든 스케줄은 `missed`를 명시한다(`defineQueue` schedule의 필수 필드). 기본값 `skip`은 배포로 내려간 사이의 실행을 버린다.
+`defineQueue` 스케줄은 `missed`가 필수다. `skip`은 배포로 내려간 사이의 실행을 버리고, `once`는 놓친 실행 중 마지막 하나를 보낸다. 재시도를 다 쓴 실패·늦거나 계속 실패하는 스케줄·DLQ 유입·worker 정지는 [작업 실패 경보](observability.md#작업-실패-경보)가 알린다.
 
-| 스케줄                                         | 주기                                 | `missed`·보완                         |
-| ---------------------------------------------- | ------------------------------------ | ------------------------------------- |
-| `tz-reminder-sweep`                            | 매분                                 | `once` + 워터마크 따라잡기(최대 15분) |
-| `retention-stage-sweep`                        | 매분(현지 야간 경계에서 밀리지 않게) | `once` + 상태 기준 조회(아래)         |
-| `push-receipts`                                | 5분, 15분 지난 ticket만              | `skip`(다음 실행이 남은 것을 처리)    |
-| `push-delivery-outbox-relay`                   | 매분(복구용)                         | `skip`(스캔 기반)                     |
-| `marketing-consent-reconfirm`                  | 매시 정각(현지 야간이면 낮 실행에서) | `skip`(다음 실행이 같은 조건)         |
-| `daily-suggestion`                             | 매시 정각에 "현지 07시대" 사용자     | `once`                                |
-| 주간·월간 리포트                               | 매시 :05 UTC(사용자 현지 경계)       | `once`                                |
-| `quota-abandoned-refund`·`premium-grant-sweep` | 10분                                 | `skip`                                |
-| 03:00~03:30 KST 일간 정리, 04:30, 00:10        | 하루 1회, 10분 간격 분산(RDS 메모리) | `once`(멱등)                          |
+| 스케줄 key                                     | 큐                                            | 주기                              | `missed`·보완                         |
+| ---------------------------------------------- | --------------------------------------------- | --------------------------------- | ------------------------------------- |
+| `tz-reminder-sweep-scheduler`                  | `timezone-reminder.v1`                        | 매분                              | `once` + 워터마크 따라잡기(최대 15분) |
+| `retention-stage-sweep-scheduler`              | `retention.v1`                                | 매분                              | `once` + 상태 기준 조회(아래)         |
+| `push-receipts-scheduler`                      | `notification.v1`                             | 5분, 15분 지난 ticket만           | `skip`(다음 실행이 남은 것을 처리)    |
+| `push-delivery-outbox-relay-scheduler`         | `push-delivery.v1`                            | 매분(복구용)                      | `skip`(스캔 기반)                     |
+| `schedule-watchdog-scheduler`                  | `schedule-watchdog.v1`                        | 15분                              | `skip`                                |
+| `hourly-marketing-consent-reconfirm-scheduler` | `notification.marketing-consent-reconfirm.v1` | 매시 정각(현지 야간은 미룸)       | `skip`(다음 실행이 같은 조건)         |
+| `daily-suggestion-scheduler`                   | `ai-suggestion-analysis.v1`                   | 매시 정각, 현지 07시대인 사용자만 | `once`                                |
+| `weekly-report-scheduler`                      | `ai-report-generation.v1`                     | 매시 5분, 현지 새 주가 된 사용자  | `once`                                |
+| `monthly-report-scheduler`                     | `ai-report-generation.v1`                     | 매시 5분, 현지 새 달이 된 사용자  | `once`                                |
+| `premium-grant-sweep-scheduler`                | `premium-grant-sweep.v1`                      | 10분                              | `skip`                                |
+| `quota-abandoned-refund-scheduler`             | `quota-abandoned-refund.v1`                   | 10분                              | `skip`                                |
+| `daily-signup-summary-scheduler`               | `admin-notification.v1`                       | 00:10 KST                         | `once`                                |
+| `daily-account-purge-scheduler`                | `account-purge.v1`                            | 03:00 KST                         | `skip`                                |
+| `daily-todo-series-materialization-scheduler`  | `todo-series-materialization.v1`              | 03:10 KST                         | `once` + 실행일 키                    |
+| `daily-plan-application-cleanup-scheduler`     | `voice-plan-application-cleanup.v1`           | 03:20 KST                         | `once`                                |
+| `daily-invite-maintenance-scheduler`           | `invite-maintenance.v1`                       | 03:30 KST                         | `skip`                                |
+| `daily-outbound-usage-retention`               | `outbound-usage-retention.v1`                 | 04:30 KST                         | `skip`                                |
+
+- 사용자 현지 시각에 맞춰야 하는 작업(제안·리포트)은 고정 KST가 아니라 매시 실행에서 "지금 현지 경계에 있는 사용자"를 고른다.
+- 하루 한 번인 정리 작업은 03:00~04:30 KST에 10분 이상 간격으로 흩어 RDS 메모리 압박을 피한다. 모두 멱등이고, 놓친 하루를 다음 실행이 같이 처리하는 작업은 `skip`, 그날 실행이 꼭 필요한 작업은 `once`다.
+- 스케줄을 더하거나 옮기면 이 표에 한 줄을 더한다.
+
+**광고성 동의 재확인을 하루 한 번으로 줄이지 않는 이유**: 현지 야간(21:00~08:00) 사용자는 표시하지 않고 다음 실행에 남기는데, 하루 한 번 고정 시각은 어떤 시간대에서는 늘 야간이라 그 사용자들이 영영 알림을 받지 못한다. 대상이 없으면 인덱스 조회 한 번이라 매시 실행이 싸다.
 
 **워터마크 따라잡기**: 마지막 성공 시각(`ScheduledSweepCursor` 행)부터 지금까지의 분(최대 15분)을 모두 처리한다. 중복은 기존 일간 dedup 유니크가 막는다. 15분 넘게 늦은 리마인더는 보내지 않고 사유를 남긴다.
 
@@ -103,27 +117,34 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 - `SweepCursorPort`(`shared/application/ports`)는 활성 UoW 트랜잭션에 쓰므로 분 처리와 커서 갱신을 같은 UoW에 넣으면 함께 커밋된다.
 - `minutesToSweep`(`shared/application/minutes-to-sweep.ts`)은 처음이면 지금 분만, 시계가 거꾸로 가면 지금 분만, 이미 지금 분을 끝냈으면 빈 목록을 준다.
-- 커서 key는 `tz-reminder-sweep`이다. notification reminders의 `SweepTimezoneRemindersUseCase`가 분마다 처리 뒤 커서를 옮기고, 15분을 넘은 분은 `late-over-15m` 사유와 건너뛴 분 수를 남긴다. 검증은 `test/integration/notification/reminders/reminder-sweep-catch-up.integration-spec.ts`다.
-- `todo-reminder.v1` 작업은 의도한 발송 시각(할 일 시각 - 단계 리드)보다 15분 넘게 늦으면 같은 사유로 건너뛴다.
+- `SweepTimezoneRemindersUseCase`가 분마다 처리 뒤 커서를 옮기고, 15분을 넘은 분은 `late-over-15m` 사유와 건너뛴 분 수를 남긴다. `todo-reminder.v1` 작업도 의도한 발송 시각(할 일 시각 - 단계 리드)보다 15분 넘게 늦으면 같은 사유로, 할 일 시각이 됐으면 `todo-started`로 건너뛴다. 마지막 발송 시각은 min(발송 시각 + 15분, 할 일 시각)이라 10분 단계는 10분까지만 늦을 수 있다(`reminderLateSkipReason`).
 
-**상태 기준 조회**(`retention-stage-sweep`): 단계 후보를 시각 구간이 아니라 `SCHEDULED` 상태와 "결정할 때가 됐는가"(`isRetentionStageDue`와 같은 SQL)로 고르므로 워터마크 커서가 필요 없다. 실행 사이나 놓친 실행 동안 때가 된 단계는 다음 실행이 모두 읽고, 한 실행은 생성 순서 위치로 이어 읽어(200건씩 최대 10묶음) 실패한 단계에 막히지 않는다. 중복은 `SCHEDULED → OUTBOXED/SKIPPED` 조건부 전이가 막는다.
+**같은 분에 몰리는 리마인더**: `batchSize` 없이 15초 폴링이면 프로세스 전체가 분당 4건만 꺼내 같은 분의 60번째쯤부터 늦음 한도에 걸린다. `todo-reminder.v1`은 worker 하나(`localConcurrency: 1`, 앱 풀 연결 하나)가 20건씩 꺼내고 묶음이 차면 쉬지 않고 다음을 꺼낸다. 로컬 Testcontainers PG에서 200건 0.3초, 2,000건 2.9~7.5초(작업당 1.5~3.8ms, 호스트 부하에 따라)였다. 운영 작업당 시간은 재지 않았다. DB 왕복이 10번 안팎이라 작업당 30ms로 잡으면 3,000건이 1분 30초다.
 
-**광고성 동의 재확인을 매일 10:00 KST로 줄이지 않는 이유**: 현지 야간(21:00~08:00) 사용자는 표시하지 않고 다음 실행에 남기는데, 10:00 KST는 유럽·인도·미국 동부(서머타임)의 야간이라 하루 한 번이면 그 사용자들은 영영 알림을 받지 못한다. 대상이 없으면 인덱스 조회 한 번이라 매시 실행이 싸다.
+**상태 기준 조회**(`retention-stage-sweep`): 단계 후보를 시각 구간이 아니라 `SCHEDULED` 상태와 "결정할 때가 됐는가"(`isRetentionStageDue`와 같은 SQL)로 고르므로 워터마크 커서가 필요 없다. 한 실행은 생성 순서 위치로 이어 읽어(200건씩 최대 10묶음) 실패한 단계에 막히지 않는다. 중복은 `SCHEDULED → OUTBOXED`·`SKIPPED` 조건부 전이가 막는다.
+
+## 작업 실패 경보와 스케줄 감시
+
+작업이 조용히 멈추는 것을 사람이 알 수 있어야 한다. 신호·판정·중복 제거의 상세는 [관측](observability.md#작업-실패-경보)에 있다.
+
+- 재시도를 다 쓴 마지막 실패(DLQ로 가는 실패)만 경보를 올린다. 중간 재시도 실패는 `jobs.attempt.failed` 로그로만 남긴다. 같은 경보 key는 dedup으로 묶여 장애 하나가 경보 폭주가 되지 않는다.
+- 스케줄 감시 작업(`schedule-watchdog.v1`, 15분)이 pg-boss에 등록된 스케줄을 보고 예정 시각이 지났는데 실행되지 않음, 실패만 있음, DLQ 유입을 경보로 올린다. 새 스케줄은 `defineQueue`에 넣으면 감시 대상이 된다.
+- worker 전체가 살아 있는지는 Sentry Cron 모니터 하나(`aido-job-worker`)로 본다. 큐마다 monitor를 만들지 않는다.
 
 ## 배포 중 내구성
 
 블루그린이 없어 `compose up` 동안 API와 worker가 잠깐 멈춘다.
 
-| 대상                               | 보장                                                                                                           |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 할 일 리마인더(`todo-reminder.v1`) | 작업이 PostgreSQL에 남아 늦어질 뿐 유실 없음. 15분을 넘으면 사유와 함께 건너뜀                                 |
-| 분 단위 sweep                      | 워터마크 따라잡기                                                                                              |
-| 실행 중이던 작업                   | `stop_grace_period` 120초, graceful stop 90초, 넘으면 `expireInSeconds` 뒤 재시도. 상태 fence로 중복 발송 없음 |
-| 푸시 발송                          | 커밋 뒤 즉시 발행이 실패하면 outbox 행을 매분 relay가 리스(15분) 뒤 다시 보낸다                                |
-| 커밋 뒤 캐시 정리                  | best-effort. 중단되면 TTL까지 오래된 값(캐시만 허용)                                                           |
+| 대상                               | 보장                                                                                                                         |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 할 일 리마인더(`todo-reminder.v1`) | 작업이 PostgreSQL에 남아 늦어질 뿐 유실 없음. 15분을 넘거나 할 일 시각이 지나면 사유와 함께 건너뜀                           |
+| 분 단위 sweep                      | 워터마크 따라잡기                                                                                                            |
+| 실행 중이던 작업                   | `stop_grace_period` 120초, graceful stop 90초(`JOB_SHUTDOWN_TIMEOUT_MS`), 넘으면 만료 뒤 재시도. 상태 fence로 중복 발송 없음 |
+| 푸시 발송                          | 커밋 뒤 즉시 발행이 실패하면 outbox 행을 매분 relay가 리스(15분) 뒤 다시 보낸다                                              |
+| 커밋 뒤 캐시 정리                  | best-effort. 중단되면 TTL까지 오래된 값(캐시만 허용)                                                                         |
 
-검증은 integration의 "worker 정지 → 시각 경과 → 재시작" 시나리오(FixedClock + 실제 pg-boss)다: 놓친 분의 리마인더가 한 번 발송되고, 15분 넘은 리마인더는 건너뛰고, 같은 작업이 두 번 처리돼도 푸시는 한 번이다. 배포 시각 runbook은 [배포](deployment.md#job과-종료)에 있다.
+검증은 [reminder-sweep-catch-up](../test/integration/notification/reminders/reminder-sweep-catch-up.integration-spec.ts)의 "worker 정지 → 시각 경과 → 재시작" 시나리오(FixedClock + 실제 pg-boss)다. 배포 시각은 [배포](deployment.md#job과-종료)에 있다.
 
 ## 전환 중
 
-아직 옮기지 않은 Context는 `JobRuntimePort`·`teamSize`(스케줄 `missed`는 생략 시 `skip`), `*.job.ts`·`*-queue.constants.ts`로 흩어진 큐 정의, 커밋 뒤 `publishAll`과 `@OnEvent` 구독(리마인더 예약 5개·초대 활동 1개)을 쓴다. 새 publisher(`FanOutDomainEventPublisher`)가 들어온 뒤에도 옛 `publishAll`(커밋 뒤 이벤트 이름 채널로 in-process 전달)·이벤트 이름 상수는 마지막 Context가 옮길 때까지 남는다. 구독을 옮기는 커밋은 같은 커밋에서 옛 `@OnEvent`를 지워 두 번 기록되지 않게 한다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.
+초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다. 옛 `publishAll`·이벤트 이름 상수·`@OnEvent` 구독은 없다. planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 소유 Context가 내구성 구독으로 옮기기 전까지 `ApplyTodoCompletionEffectsUseCase`가 커밋 뒤 바로 부른다.

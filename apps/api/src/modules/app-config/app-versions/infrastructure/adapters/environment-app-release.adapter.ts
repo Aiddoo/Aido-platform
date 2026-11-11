@@ -1,21 +1,23 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
-
+import {
+  type AppConfigAppVersionsConfig,
+  appConfigAppVersionsConfig,
+} from "../../app-config-app-versions.config.js";
 import { AppReleaseReaderPort } from "../../application/ports/app-release.reader.port.js";
 import { AppRelease } from "../../domain/app-release.entity.js";
 
 @Injectable()
 export class EnvironmentAppReleaseAdapter extends AppReleaseReaderPort {
-  readonly #config: Pick<TypedConfigService, "appVersion">;
+  readonly #config: AppConfigAppVersionsConfig;
 
-  constructor(@Inject(TypedConfigService) config: Pick<TypedConfigService, "appVersion">) {
+  constructor(@Inject(appConfigAppVersionsConfig.KEY) config: AppConfigAppVersionsConfig) {
     super();
     this.#config = config;
   }
 
   listLatestReleases(): AppRelease[] {
-    const { enabled, iosLatestVersion, androidLatestVersion } = this.#config.appVersion;
+    const { enabled, iosLatestVersion, androidLatestVersion } = this.#config;
     if (!enabled || !iosLatestVersion || !androidLatestVersion) {
       return [];
     }

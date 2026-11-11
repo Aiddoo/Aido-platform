@@ -1,5 +1,9 @@
 import type { TodoCommentSort } from "@aido/api/vocabulary";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import { commentNotFound, invalidCommentRequest, todoNotFound } from "../comments.errors.js";
 import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
 import type {
@@ -32,8 +36,8 @@ export interface GetTodoConversationQuery {
 interface ConversationAnchor {
   readonly mode: TodoConversationPageMode;
   readonly scope: TodoConversationScope;
-  readonly commentId?: string;
-  readonly threadId?: string;
+  readonly commentId?: TodoCommentId;
+  readonly threadId?: TodoCommentId;
   readonly position?: TodoCommentRootPosition;
 }
 
@@ -64,12 +68,14 @@ export class GetTodoConversationUseCase {
 
   async execute(query: GetTodoConversationQuery): Promise<TodoConversationPage> {
     const { reader, blockReader, cursorCodec } = this.#dependencies;
-    if ((await reader.findAccessibleTodoOwnerId(query.todoId, query.viewerId)) == null) {
+    const todoId = TodoId.reconstitute(query.todoId);
+    const viewerId = UserId.reconstitute(query.viewerId);
+    if ((await reader.findAccessibleTodoOwnerId(todoId, viewerId)) == null) {
       throw todoNotFound(query.todoId);
     }
     const anchor = this.#toAnchor(query);
     const window = await reader.listConversation({
-      todoId: query.todoId,
+      todoId,
       sort: query.sort,
       size: query.size,
       mode: anchor.mode,
@@ -82,7 +88,7 @@ export class GetTodoConversationUseCase {
     // 없거나 대화에서 사라진 focus는 다른 묶음으로 바꾸지 않고 빈 대화로 연다
     if (
       anchor.mode === "FOCUS" &&
-      (window == null || focusedItem == null || focusedItem.id !== anchor.commentId)
+      (window == null || focusedItem == null || focusedItem.id !== anchor.commentId?.value)
     ) {
       return this.#toEmptyPage(query);
     }
@@ -92,14 +98,14 @@ export class GetTodoConversationUseCase {
 
     const focusItem = this.#findFocusItem(window.items, window.anchorIndex, anchor);
     const precedingThreadComments = await this.#listPrecedingThreadComment(
-      query.todoId,
+      todoId,
       focusItem,
       window.items,
     );
     const visibleComments = [...window.items, ...precedingThreadComments];
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
-      reader.listLikedCommentIds(listCommentIds(visibleComments), query.viewerId),
-      blockReader.findBlockedCounterpartIds(query.viewerId, listCommentAuthorIds(visibleComments)),
+      reader.listLikedCommentIds(listCommentIds(visibleComments), viewerId),
+      blockReader.findBlockedCounterpartIds(viewerId, listCommentAuthorIds(visibleComments)),
     ]);
     const first = window.items.at(0);
     const last = window.items.at(-1);
@@ -134,7 +140,11 @@ export class GetTodoConversationUseCase {
 
   #toAnchor(query: GetTodoConversationQuery): ConversationAnchor {
     if (query.focusCommentId != null) {
-      return { mode: "FOCUS", scope: "THREAD", commentId: query.focusCommentId };
+      return {
+        mode: "FOCUS",
+        scope: "THREAD",
+        commentId: TodoCommentId.reconstitute(query.focusCommentId),
+      };
     }
     if (query.before != null) {
       return { mode: "BEFORE", ...this.#fromCursor(this.#decode(query.before, query)) };
@@ -156,8 +166,8 @@ export class GetTodoConversationUseCase {
   #fromCursor(cursor: TodoConversationCursor): Omit<ConversationAnchor, "mode"> {
     return {
       scope: cursor.scope,
-      commentId: cursor.commentId,
-      threadId: cursor.threadId,
+      commentId: TodoCommentId.reconstitute(cursor.commentId),
+      threadId: TodoCommentId.reconstitute(cursor.threadId),
       position: cursor.position,
     };
   }
@@ -171,8 +181,8 @@ export class GetTodoConversationUseCase {
       return null;
     }
     const item = anchorIndex == null ? undefined : items[anchorIndex];
-    if (item == null || item.id !== anchor.commentId) {
-      throw commentNotFound(anchor.commentId ?? "");
+    if (item == null || item.id !== anchor.commentId?.value) {
+      throw commentNotFound(anchor.commentId?.value ?? "");
     }
     return item;
   }
@@ -195,7 +205,7 @@ export class GetTodoConversationUseCase {
 
   /** 1.14.0 이하 앱은 focus 답글 앞에 묶음 머리가 보여야 대화를 이어 그린다 */
   async #listPrecedingThreadComment(
-    todoId: number,
+    todoId: TodoId,
     focusItem: TodoCommentReadModel | null,
     pageItems: readonly TodoCommentReadModel[],
   ): Promise<TodoCommentReadModel[]> {
@@ -203,6 +213,8 @@ export class GetTodoConversationUseCase {
     if (threadCommentId == null || pageItems.some((item) => item.id === threadCommentId)) {
       return [];
     }
-    return this.#dependencies.reader.listComments(todoId, [threadCommentId]);
+    return this.#dependencies.reader.listComments(todoId, [
+      TodoCommentId.reconstitute(threadCommentId),
+    ]);
   }
 }

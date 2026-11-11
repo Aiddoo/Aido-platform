@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import type { NewSecurityLog } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
 import { securityLog, user } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeAuthSecurityLogRepositoryContract } from "#test/contracts/identity/auth-security-log-repository.contract";
+import type { SecurityLogRecord } from "#test/doubles/identity/in-memory-auth-security-log.repository";
 import {
   AUTH_FIXTURE_OTHER_USER_ID,
   AUTH_FIXTURE_USER_ID,
@@ -49,7 +50,7 @@ describe("DrizzleSecurityLogRepository (실제 PostgreSQL)", () => {
     return new DrizzleSecurityLogRepository(txHost);
   }
 
-  async function listEntries(): Promise<NewSecurityLog[]> {
+  async function listEntries(): Promise<SecurityLogRecord[]> {
     const rows = await client.query.securityLog.findMany({ orderBy: { id: "asc" } });
     return rows.map((row) => ({
       ...(row.userId == null ? {} : { userId: row.userId }),
@@ -69,7 +70,7 @@ describe("DrizzleSecurityLogRepository (실제 PostgreSQL)", () => {
     // Given
     const repository = createRepository();
     await repository.create({
-      userId: AUTH_FIXTURE_OTHER_USER_ID,
+      userId: UserId.reconstitute(AUTH_FIXTURE_OTHER_USER_ID),
       event: "LOGOUT",
       ipAddress: "127.0.0.1",
       userAgent: "Aido/1.15.1",

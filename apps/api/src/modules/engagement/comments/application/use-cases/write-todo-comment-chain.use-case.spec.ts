@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { InMemoryTodoCommentRepository } from "#test/doubles/engagement/in-memory-todo-comment.repository";
 import {
   nextClientRequestId,
@@ -109,7 +110,10 @@ describe("WriteTodoCommentChainUseCase — 댓글 작성과 멱등성", () => {
       threadCommentId: head.id.value,
       replyToCommentId: reply.id.value,
     });
-    const storedHead = await fixture.repository.findByIdAndTodoId(head.id, TODO_ID);
+    const storedHead = await fixture.repository.findByIdAndTodoId(
+      head.id,
+      TodoId.reconstitute(TODO_ID),
+    );
     expect(storedHead?.replyCount).toBe(2);
     expect(fixture.mutationLock.acquiredKeys.at(0)?.slice(1)).toEqual([
       TodoCommentLockKeys.comment(reply.id.value),

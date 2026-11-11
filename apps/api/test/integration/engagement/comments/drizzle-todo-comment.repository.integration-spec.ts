@@ -2,6 +2,7 @@ import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/
 import { DrizzleTodoCommentLikeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-like.repository";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import {
   describeTodoCommentLikeRepositoryContract,
@@ -9,6 +10,7 @@ import {
 } from "#test/contracts/engagement/todo-comment-like-repository.contract";
 import { describeTodoCommentPurgeRepositoryContract } from "#test/contracts/engagement/todo-comment-purge-repository.contract";
 import { describeTodoCommentRepositoryContract } from "#test/contracts/engagement/todo-comment-repository.contract";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import {
   createTodoCommentFixture,
   TODO_COMMENT_FIXTURE_FRIEND_ID,
@@ -50,6 +52,7 @@ describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {
       userId: TODO_COMMENT_FIXTURE_OWNER_ID,
       name: "댓글",
       color: "#123456",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
     });
     await client.insert(todo).values(
       TODO_IDS.map((id) => ({
@@ -57,7 +60,8 @@ describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {
         userId: TODO_COMMENT_FIXTURE_OWNER_ID,
         categoryId: CATEGORY_ID,
         title: `댓글 할 일 ${id}`,
-        startDate: new Date("2026-08-26T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2026-08-26"),
+        updatedAt: nowInstant(),
       })),
     );
   });
@@ -95,7 +99,10 @@ describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {
 
     // When
     await comments.save(comment);
-    const found = await comments.findByIdAndTodoId(comment.id, TODO_COMMENT_FIXTURE_TODO_ID);
+    const found = await comments.findByIdAndTodoId(
+      comment.id,
+      TodoId.reconstitute(TODO_COMMENT_FIXTURE_TODO_ID),
+    );
 
     // Then
     expect(found?.toPrimitives().createdAt).toEqual(createdAt);

@@ -86,6 +86,7 @@ describe("신규 사용자 리텐션 V2 E2E", () => {
         email: "existing-retention@example.com",
         userTag: "EXIST001",
         status: "ACTIVE",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       })
       .returning();
     if (existing == null) {

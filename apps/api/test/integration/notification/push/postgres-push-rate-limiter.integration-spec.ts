@@ -7,6 +7,7 @@ import {
   pushRateLimitReservation,
   user,
 } from "#api/platform/database/schema/index";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";
 
@@ -30,6 +31,7 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
       .values({
         email: `rate-limit-${suffix}@example.com`,
         userTag: suffix.padEnd(8, "X").slice(0, 8),
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         status: "ACTIVE",
       })
       .returning({ id: user.id });
@@ -49,7 +51,12 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
     }
     const [dispatch] = await client
       .insert(pushDispatch)
-      .values({ notificationId: createdNotification.id, userId, purpose: "ENGAGEMENT" })
+      .values({
+        notificationId: createdNotification.id,
+        userId,
+        purpose: "ENGAGEMENT",
+        updatedAt: nowInstant(),
+      })
       .returning({ id: pushDispatch.id });
     if (dispatch === undefined) {
       throw new Error("dispatch was not created");

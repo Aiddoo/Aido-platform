@@ -1,11 +1,7 @@
 import { createHmac } from "node:crypto";
 
 import { TODO_COMMENT_SORT } from "@aido/api/vocabulary";
-import { ConfigService } from "@nestjs/config";
 import { z } from "zod";
-
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import type {
   TodoCommentThreadReadModel,
@@ -67,15 +63,9 @@ function createCodec(config: {
   readonly jwtSecret: string;
   readonly cursorSigningKeys?: string;
 }): HmacTodoCommentCursorCodecAdapter {
-  return new HmacTodoCommentCursorCodecAdapter(
-    new TypedConfigService(
-      new ConfigService<EnvConfig, true>({
-        JWT_SECRET: config.jwtSecret,
-        JWT_REFRESH_SECRET: "test-refresh-secret-at-least-32-characters",
-        CURSOR_SIGNING_KEYS: config.cursorSigningKeys,
-      }),
-    ),
-  );
+  return new HmacTodoCommentCursorCodecAdapter({
+    cursorSigning: { configured: config.cursorSigningKeys, legacySecret: config.jwtSecret },
+  });
 }
 
 function signLegacy(payload: string): string {

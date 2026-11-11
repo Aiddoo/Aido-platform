@@ -1,12 +1,12 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createWeeklyAchievementNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createWeeklyAchievementNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { previousIsoWeekOf } from "../../domain/reminder-day.domain-service.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
@@ -37,7 +37,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
     const { tz, today } = ctx;
 
     // 월요일 실행 → 이전 주(월~일) 집계
-    const { start, end, isoYear, isoWeek } = previousIsoWeekRange(today);
+    const { start, end, isoYear, isoWeek } = previousIsoWeekOf(today);
 
     // ─── A. DB 집계 (모든 유저, pushEnabled 무관) ──────────────
     const [totalByUser, completedByUser] = await Promise.all([
@@ -69,7 +69,9 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
     }));
 
     // ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
-    await this.#dependencies.weeklyAchievementWriter.execute({ records });
+    await this.#dependencies.weeklyAchievementWriter.execute({
+      records: records.map((record) => ({ ...record, userId: UserId.reconstitute(record.userId) })),
+    });
 
     // ─── C. 알림 발송 (completed > 0 + dedup) ────
     const completedUserIds = records.filter((r) => r.completedTodos > 0).map((r) => r.userId);
@@ -110,7 +112,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
           recipientId: r.userId,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
       return {

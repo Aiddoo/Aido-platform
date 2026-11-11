@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import { UserMutationLockPort } from "../../application/ports/user-mutation-lock.port.js";
 import { DrizzleUserRepository } from "../persistence/drizzle-user.repository.js";
 
@@ -13,7 +15,7 @@ export class UserMutationLockAdapter extends UserMutationLockPort {
     this.#users = users;
   }
 
-  async lockById(userId: string): Promise<boolean> {
+  async lockById(userId: UserId): Promise<boolean> {
     return (await this.#users.findByIdForUpdate(userId)) != null;
   }
 }

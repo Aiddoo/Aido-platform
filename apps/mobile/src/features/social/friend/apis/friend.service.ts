@@ -20,7 +20,8 @@ import { noop } from 'es-toolkit';
 
 import { FRIEND_ERROR_CODE, type FriendErrorCode } from '../domains/friend.error';
 import {
-  FriendPolicy,
+  isValidSearchQuery,
+  isValidUserTag,
   type SearchedUser,
   type SendFriendRequestResult,
 } from '../domains/friend.model';
@@ -53,7 +54,7 @@ export class FriendService {
     if (!tag) {
       return err(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
     }
-    if (!FriendPolicy.isValidUserTag({ userTag: tag })) {
+    if (!isValidUserTag(tag)) {
       return err(new BusinessError(FRIEND_ERROR_CODE.INVALID_TAG));
     }
 
@@ -128,7 +129,7 @@ export class FriendService {
   ): Promise<Result<Page<SearchedUser>, FriendServiceError>> => {
     const query = params.query.trim();
     // 2자 미만이면 네트워크 요청 없이 실패한다
-    if (!FriendPolicy.isValidSearchQuery({ query })) {
+    if (!isValidSearchQuery(query)) {
       return err(new BusinessError(FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT));
     }
 

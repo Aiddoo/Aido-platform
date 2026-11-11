@@ -12,11 +12,16 @@ import {
   toDateKey,
   toEpochMs,
 } from '@src/shared/date/instant';
-import { maxBy, range, takeWhile } from 'es-toolkit';
+import { keyBy, maxBy, range, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import type { DailyForecastEntry, HourlyForecastEntry } from './weather-report.model';
-import { WeatherReportPolicy } from './weather-report.model';
+import type {
+  HourlyForecastEntry,
+  RescheduleOption,
+  WeatherReport,
+  WeatherReportBriefing,
+} from './weather-report.model';
+import { isNowcastExpired, WeatherReportPolicy } from './weather-report.model';
 
 /** 체감 온도가 이 값(°C) 이상인 낮 시간은 야외 할 일을 피하라고 안내한다. 서버 날씨 알림과 같은 기준이다. */
 const HEAT_APPARENT_TEMPERATURE = WEATHER_BRIEFING_RULES.HOT_APPARENT_TEMPERATURE;
@@ -27,8 +32,7 @@ const BEST_TIME_TOLERANCE = 1;
 /** 이 시각(위치 시간대) 이후 남은 할 일이 없으면 내일 아침 날씨를 알려 준다. */
 const EVENING_HOUR = WEATHER_BRIEFING_RULES.EVENING_HOUR;
 /** 새벽, 오전, 오후가 시작하는 시각(기기 시간대. 위치 벽시계가 기기와 다르면 브리핑을 숨긴다). 저녁은 EVENING_HOUR부터다. */
-const MORNING_START_HOUR = 6;
-const AFTERNOON_START_HOUR = 12;
+const { MORNING_START_HOUR, AFTERNOON_START_HOUR } = WEATHER_BRIEFING_RULES;
 const CLEAR_CONDITIONS: readonly WeatherCondition[] = ['CLEAR', 'MOSTLY_CLEAR', 'PARTLY_CLOUDY'];
 const OVERCAST_CONDITIONS: readonly WeatherCondition[] = [
   'CLOUDY',
@@ -51,7 +55,7 @@ export interface BriefingTodo {
 
 /** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
 function toBriefingTodo(
-  todo: Pick<Todo, 'id' | 'title' | 'localTime' | 'isAllDay' | 'completed' | 'subTodos'>,
+  todo: Todo,
   { date, timeZone }: { date: string; timeZone: string },
 ): BriefingTodo {
   return {
@@ -62,7 +66,9 @@ function toBriefingTodo(
         ? null
         : fromWallClock(date, todo.localTime, timeZone),
     completed: todo.completed,
-    subTodoProgress: SubTodoPolicy.hasSubTodos(todo) ? SubTodoPolicy.getSubTodoStats(todo) : null,
+    subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
+      ? SubTodoPolicy.getSubTodoStats(todo.subTodos)
+      : null,
   };
 }
 
@@ -76,6 +82,11 @@ export interface ForecastTodo {
   hour: HourlyForecastEntry;
 }
 
+/** 서버가 날씨와 겹친다고 본 할 일. 옮길 시각 후보도 서버가 고른 것이다. */
+export interface AffectedTodo extends ForecastTodo {
+  rescheduleOptions: RescheduleOption[];
+}
+
 export interface HourRange {
   startsAt: Instant;
   endsAt: Instant;
@@ -85,10 +96,10 @@ type BriefingDay = 'today' | 'tomorrow';
 type DayPart = 'dawn' | 'morning' | 'afternoon' | 'evening';
 
 export type BriefingResult =
-  | { kind: 'rainy'; todos: ForecastTodo[] }
-  | { kind: 'stormy'; todos: ForecastTodo[]; range: HourRange }
-  | { kind: 'snowy'; todos: ForecastTodo[] }
-  | { kind: 'hot'; todos: ForecastTodo[]; range: HourRange; peakApparentTemperature: number }
+  | { kind: 'rainy'; todos: AffectedTodo[] }
+  | { kind: 'stormy'; todos: AffectedTodo[]; range: HourRange }
+  | { kind: 'snowy'; todos: AffectedTodo[] }
+  | { kind: 'hot'; todos: AffectedTodo[]; range: HourRange; peakApparentTemperature: number }
   | {
       kind: 'rainLater';
       todos: ForecastTodo[];
@@ -103,11 +114,7 @@ export type BriefingResult =
   | { kind: 'dry'; todos: ForecastTodo[] }
   | { kind: 'noScheduledTodos' };
 
-type BriefingSource = {
-  location: { timezone: string };
-  hourly: HourlyForecastEntry[];
-  daily: DailyForecastEntry[];
-};
+type BriefingSource = Pick<WeatherReport, 'location' | 'hourly' | 'daily' | 'briefing'>;
 
 /** 할 일 날짜는 기기 시간대로 저장되므로 오늘·내일도 기기 시간대로 가른다. */
 interface BriefingClock {
@@ -188,6 +195,21 @@ function getForecastTodos(
   });
 }
 
+/** 서버가 고른 순서(시각 순)대로 오늘 목록의 할 일과 묶는다. 목록에서 사라졌거나 이미 지난 할 일은 뺀다. */
+function getAffectedTodos(
+  briefing: WeatherReportBriefing,
+  forecastTodos: readonly ForecastTodo[],
+): AffectedTodo[] {
+  const forecastTodosById = keyBy(forecastTodos, (todo) => todo.todoId);
+  const optionsByTodoId = keyBy(briefing.rescheduleOptions, (entry) => entry.todoId);
+  return briefing.affectedTodoIds.flatMap((todoId) => {
+    const todo = forecastTodosById[todoId];
+    return todo == null
+      ? []
+      : [{ ...todo, rescheduleOptions: optionsByTodoId[todoId]?.options ?? [] }];
+  });
+}
+
 function toDayPart(hour: number): DayPart {
   if (hour < MORNING_START_HOUR) {
     return 'dawn';
@@ -200,7 +222,7 @@ function toDayPart(hour: number): DayPart {
 
 function toWetBriefing(
   hourly: readonly HourlyForecastEntry[],
-  todos: ForecastTodo[],
+  todos: AffectedTodo[],
 ): BriefingResult {
   const stormyTodo = todos.find((todo) => isThunderHour(todo.hour));
   if (stormyTodo != null) {
@@ -221,7 +243,7 @@ function toWetBriefing(
 
 function toHotBriefing(
   hourly: readonly HourlyForecastEntry[],
-  todos: ForecastTodo[],
+  todos: AffectedTodo[],
 ): BriefingResult | null {
   const [first] = todos;
   const range =
@@ -330,24 +352,29 @@ function toTomorrowMorningBriefing(
   };
 }
 
-/** 할 일에 닿는 위험(뇌우·눈·비 → 더위)을 먼저, 없으면 곧 올 비·맑은 날·내일 아침 순으로 알린다 */
-function getWeatherBriefing(
+/**
+ * 서버가 고른 할 일에 닿는 위험(뇌우·눈·비 → 더위)을 먼저, 없으면 곧 올 비·맑은 날·내일 아침 순으로 알린다.
+ * 서버가 판단하지 못한 리포트(옛 서버·오늘 할 일 읽기 실패)는 앱이 다시 판단하지 않고 null이다.
+ */
+export function getWeatherBriefing(
   report: BriefingSource,
   todos: readonly BriefingTodo[],
   clock: BriefingClock,
-): BriefingResult {
-  const { hourly } = report;
-  const forecastTodos = getForecastTodos(hourly, todos, clock.now);
-  const wetTodos = forecastTodos.filter((todo) => WeatherReportPolicy.isWetHour(todo.hour));
-  if (wetTodos.length > 0) {
-    return toWetBriefing(hourly, wetTodos);
+): BriefingResult | null {
+  const { hourly, briefing } = report;
+  if (briefing == null) {
+    return null;
   }
-  const hotTodos = forecastTodos.filter((todo) => isHot(todo.hour));
+  const forecastTodos = getForecastTodos(hourly, todos, clock.now);
+  const affectedTodos = getAffectedTodos(briefing, forecastTodos);
+  if (briefing.reason === 'rain' && affectedTodos.length > 0) {
+    return toWetBriefing(hourly, affectedTodos);
+  }
   // 브리핑에서 체크해 완료해도 카드가 바뀌지 않도록 판단에는 완료한 할 일도 센다.
   const scheduledCount = forecastTodos.length;
 
   const todayBriefing =
-    toHotBriefing(hourly, hotTodos) ??
+    (briefing.reason === 'heat' ? toHotBriefing(hourly, affectedTodos) : null) ??
     toRainLaterBriefing(hourly, forecastTodos, clock) ??
     toClearBriefing(hourly, forecastTodos, clock);
   if (todayBriefing != null) {
@@ -376,15 +403,16 @@ function getSuggestedStartAt(
 
 type BriefingState = 'loading' | 'hidden' | 'visible';
 
-function getBriefingState(
-  report: { location: { timezone: string }; fetchedAt: Instant } | undefined,
+// 브리핑 카드는 예보의 브리핑 칸만 구독해 Policy 밖 함수로 두고 필요한 칸만 받는다
+export function getBriefingState(
+  report: Pick<WeatherReport, 'location' | 'fetchedAt'> | undefined,
   { now, deviceTimeZone }: { now: Instant; deviceTimeZone: string },
 ): BriefingState {
   if (report == null) {
     return 'loading';
   }
   if (
-    WeatherReportPolicy.isNowcastExpired(report, now) ||
+    isNowcastExpired(report, now) ||
     !hasSameWallClock(now, report.location.timezone, deviceTimeZone)
   ) {
     return 'hidden';
@@ -392,24 +420,22 @@ function getBriefingState(
   return 'visible';
 }
 
-function isTodoWithinRange(todo: Pick<ForecastTodo, 'scheduledAt'>, range: HourRange): boolean {
+function isTodoWithinRange(todo: ForecastTodo, range: HourRange): boolean {
   return (
     toEpochMs(range.startsAt) <= toEpochMs(todo.scheduledAt) &&
     toEpochMs(todo.scheduledAt) < toEpochMs(range.endsAt)
   );
 }
 
-function getUncompletedTodoIds(todos: readonly Pick<ForecastTodo, 'todoId' | 'completed'>[]) {
+function getUncompletedTodoIds(todos: readonly ForecastTodo[]) {
   return todos.filter((todo) => !todo.completed).map((todo) => todo.todoId);
 }
 
 export const WeatherBriefingPolicy = {
-  getBriefingState,
   isTodoWithinRange,
   getUncompletedTodoIds,
   toBriefingTodo,
-  getWeatherBriefing,
   getSuggestedStartAt,
-  isHot,
   getForecastTodos,
+  getAffectedTodos,
 } as const;

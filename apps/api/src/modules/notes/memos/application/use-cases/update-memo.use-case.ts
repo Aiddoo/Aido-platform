@@ -39,7 +39,7 @@ export class UpdateMemoUseCase {
     const memoId = MemoId.reconstitute(command.memoId);
 
     const { memo, isRewritten } = await unitOfWork.run(async () => {
-      await mutationLock.acquire([MemoLockKeys.memo(memoId)]);
+      await mutationLock.acquire(MemoLockKeys.existingMemo(memoId, userId));
       // 없는 메모를 내용 검증보다 먼저 거절한다(출시 앱이 받는 오류 우선순위)
       const found = await memoRepository.findByIdAndUserId(memoId, userId);
       if (found == null) {

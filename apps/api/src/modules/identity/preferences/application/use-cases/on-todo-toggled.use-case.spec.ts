@@ -1,4 +1,5 @@
 import type { StreakState } from "#api/modules/identity/preferences/domain/streak.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryUserPreferenceRepository } from "#test/doubles/identity/in-memory-user-preference.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
@@ -7,8 +8,8 @@ import { TodoCompletionStatsReaderPort } from "../ports/todo-completion-stats.re
 import { PreferenceLogEvent } from "../preferences.log-events.js";
 import { OnTodoToggledUseCase } from "./on-todo-toggled.use-case.js";
 
-const today = new Date("2026-01-16T00:00:00.000Z");
-const yesterday = new Date("2026-01-15T00:00:00.000Z");
+const today = Temporal.PlainDate.from("2026-01-16");
+const yesterday = Temporal.PlainDate.from("2026-01-15");
 
 interface ConcurrentStreakChange {
   /** 다른 요청이 먼저 커밋한 연속 완료 상태. 없으면 상태는 그대로 두고 CAS만 진다 */
@@ -26,7 +27,7 @@ class ContendedPreferenceRepository extends InMemoryUserPreferenceRepository {
   }
 
   override async updateStreakIfUnchanged(
-    userId: string,
+    userId: UserId,
     expected: StreakState,
     next: StreakState,
   ): Promise<boolean> {
@@ -159,10 +160,7 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
         lastCompletedDate: hadYesterdayCompletion ? yesterday : null,
       });
       expect(fixture.milestoneNotifier.userIds).toEqual([]);
-      expect(fixture.statsReader.queries.map((query) => query.dayStart)).toEqual([
-        today,
-        yesterday,
-      ]);
+      expect(fixture.statsReader.queries.map((query) => query.day)).toEqual([today, yesterday]);
     },
   );
   it("CAS 충돌 후 최신 완료 현황을 다시 읽고 처리 중 자정을 지나도 처음 선택한 날짜를 유지한다", async () => {
@@ -178,7 +176,7 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
     await fixture.useCase.execute({ userId: fixture.userId, completed: true });
     // Then
     expect(fixture.preferenceRepository.stored(fixture.userId)).toEqual(fixture.preference);
-    expect(fixture.statsReader.queries.map((query) => query.dayStart)).toEqual([today, today]);
+    expect(fixture.statsReader.queries.map((query) => query.day)).toEqual([today, today]);
     expect(fixture.milestoneNotifier.userIds).toEqual([]);
   });
   it("CAS 충돌 후 다른 요청이 반영한 최신 상태를 읽으면 덮어쓰거나 마일스톤을 재등록하지 않는다", async () => {
@@ -273,14 +271,14 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
       timezone,
     });
     // Then
-    const expectedDay = new Date(`${date}T00:00:00.000Z`);
+    const expectedDay = Temporal.PlainDate.from(date);
     expect(fixture.preferenceRepository.stored(fixture.userId)?.lastCompletedDate).toEqual(
       expectedDay,
     );
     expect(fixture.statsReader.queries).toEqual([
       {
         userId: fixture.userId,
-        dayStart: expectedDay,
+        day: expectedDay,
       },
     ]);
   });
@@ -305,7 +303,7 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
         preference: {
           currentStreak: 2,
           longestStreak: 5,
-          lastCompletedDate: new Date(`${prior}T00:00:00.000Z`),
+          lastCompletedDate: Temporal.PlainDate.from(prior),
         },
       });
       fixture.statsReader.days.set(`${fixture.userId}/${date}`, { total: 1, completed: 1 });
@@ -320,7 +318,7 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
       expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
         currentStreak: 3,
         longestStreak: 5,
-        lastCompletedDate: new Date(`${date}T00:00:00.000Z`),
+        lastCompletedDate: Temporal.PlainDate.from(date),
       });
       expect(fixture.milestoneNotifier.userIds).toEqual([fixture.userId]);
     },

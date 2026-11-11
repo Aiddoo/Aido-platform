@@ -1,6 +1,6 @@
 export interface TodoReminderSchedule {
   readonly todoId: number;
-  readonly scheduledTime: Date;
+  readonly scheduledTime: Temporal.Instant;
   readonly userId: string;
 }
 
@@ -15,7 +15,11 @@ export abstract class TodoReminderSchedulerPort {
    * 리마인더 등록 — 같은 todoId로 재호출 시 기존 예약을 대체합니다.
    * 기존 예약 취소나 새 작업 등록 실패는 reject됩니다.
    */
-  abstract scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void>;
+  abstract scheduleReminder(
+    todoId: number,
+    scheduledTime: Temporal.Instant,
+    userId: string,
+  ): Promise<void>;
 
   /** 새로 만든 회차의 리마인더를 한 번에 등록한다. 이미 지난 시각은 등록하지 않는다. */
   abstract scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void>;

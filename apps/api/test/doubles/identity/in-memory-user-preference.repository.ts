@@ -8,6 +8,7 @@ import {
 import type { StreakState } from "#api/modules/identity/preferences/domain/streak.vo";
 import { UserPreference } from "#api/modules/identity/preferences/domain/user-preference.aggregate";
 import type { UserPreferenceRecord } from "#api/modules/identity/preferences/domain/user-preference.constants";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // UserPreference 테이블의 열 기본값과 같다
 const COLUMN_DEFAULTS: UserPreferenceRecord = {
@@ -31,13 +32,8 @@ const COLUMN_DEFAULTS: UserPreferenceRecord = {
   lastCompletedDate: null,
 };
 
-// lastCompletedDate는 DATE 열이라 시각을 버리고 UTC 자정으로 읽힌다
-function toCalendarDate(date: Date | null): Date | null {
-  return date == null ? null : new Date(`${date.toISOString().slice(0, 10)}T00:00:00.000Z`);
-}
-
 function copyOf(record: UserPreferenceRecordWithId): UserPreferenceRecordWithId {
-  return { ...record, lastCompletedDate: toCalendarDate(record.lastCompletedDate) };
+  return { ...record };
 }
 
 function definedFields(data: PreferenceWriteInput): PreferenceWriteInput {
@@ -63,54 +59,54 @@ export class InMemoryUserPreferenceRepository extends UserPreferenceRepositoryPo
     return record == null ? undefined : copyOf(record);
   }
 
-  async findByUserId(userId: string): Promise<UserPreferenceRecordWithId | null> {
-    return this.stored(userId) ?? null;
+  async findByUserId(userId: UserId): Promise<UserPreferenceRecordWithId | null> {
+    return this.stored(userId.value) ?? null;
   }
 
-  async findStreakByUserId(userId: string): Promise<UserPreference | null> {
-    const record = this.#records.get(userId);
+  async findStreakByUserId(userId: UserId): Promise<UserPreference | null> {
+    const record = this.#records.get(userId.value);
     return record == null
       ? null
       : UserPreference.reconstitute({
-          userId,
+          userId: userId.value,
           currentStreak: record.currentStreak,
           longestStreak: record.longestStreak,
-          lastCompletedDate: toCalendarDate(record.lastCompletedDate),
+          lastCompletedDate: record.lastCompletedDate,
         });
   }
 
-  async findByUserIds(userIds: readonly string[]): Promise<UserPreferenceRecordWithId[]> {
-    return this.all.filter((record) => userIds.includes(record.userId));
+  async findByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceRecordWithId[]> {
+    return this.all.filter((record) => userIds.some((userId) => userId.value === record.userId));
   }
 
   async create(
-    userId: string,
+    userId: UserId,
     data: PreferenceWriteInput = {},
   ): Promise<UserPreferenceRecordWithId> {
-    if (this.#records.has(userId)) {
-      throw new Error(`UserPreference already exists for ${userId}`);
+    if (this.#records.has(userId.value)) {
+      throw new Error(`UserPreference already exists for ${userId.value}`);
     }
-    return this.#write({ ...COLUMN_DEFAULTS, ...definedFields(data), userId });
+    return this.#write({ ...COLUMN_DEFAULTS, ...definedFields(data), userId: userId.value });
   }
 
-  async upsert(userId: string, data: PreferenceWriteInput): Promise<UserPreferenceRecordWithId> {
-    const existing = this.#records.get(userId);
+  async upsert(userId: UserId, data: PreferenceWriteInput): Promise<UserPreferenceRecordWithId> {
+    const existing = this.#records.get(userId.value);
     return existing == null
       ? this.create(userId, data)
       : this.#write({ ...existing, ...definedFields(data) });
   }
 
-  async upsertTimezone(userId: string, timezone: string): Promise<boolean> {
-    const existing = this.#records.get(userId);
+  async upsertTimezone(userId: UserId, timezone: string): Promise<boolean> {
+    const existing = this.#records.get(userId.value);
     if (existing?.timezone === timezone) {
       return false;
     }
-    this.#write({ ...(existing ?? { ...COLUMN_DEFAULTS, userId }), timezone });
+    this.#write({ ...(existing ?? { ...COLUMN_DEFAULTS, userId: userId.value }), timezone });
     return true;
   }
 
-  async refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number> {
-    const existing = this.#records.get(userId);
+  async refreshTimezoneIfChanged(userId: UserId, timezone: string): Promise<number> {
+    const existing = this.#records.get(userId.value);
     if (existing == null || existing.timezone === timezone) {
       return 0;
     }
@@ -118,22 +114,24 @@ export class InMemoryUserPreferenceRepository extends UserPreferenceRepositoryPo
     return 1;
   }
 
-  async upsertLocale(userId: string, locale: string): Promise<void> {
-    this.#write({ ...(this.#records.get(userId) ?? { ...COLUMN_DEFAULTS, userId }), locale });
+  async upsertLocale(userId: UserId, locale: string): Promise<void> {
+    this.#write({
+      ...(this.#records.get(userId.value) ?? { ...COLUMN_DEFAULTS, userId: userId.value }),
+      locale,
+    });
   }
 
   async updateStreakIfUnchanged(
-    userId: string,
+    userId: UserId,
     expected: StreakState,
     next: StreakState,
   ): Promise<boolean> {
-    const existing = this.#records.get(userId);
+    const existing = this.#records.get(userId.value);
     if (
       existing == null ||
       existing.currentStreak !== expected.currentStreak ||
       existing.longestStreak !== expected.longestStreak ||
-      toCalendarDate(existing.lastCompletedDate)?.getTime() !==
-        toCalendarDate(expected.lastCompletedDate)?.getTime()
+      existing.lastCompletedDate?.toString() !== expected.lastCompletedDate?.toString()
     ) {
       return false;
     }

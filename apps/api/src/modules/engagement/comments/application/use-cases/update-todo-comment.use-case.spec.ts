@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import {
   createTodoCommentLikeFixture,
   TODO_COMMENT_FIXTURE_FRIEND_ID,
@@ -76,9 +77,10 @@ describe("UpdateTodoCommentUseCase — 댓글 수정", () => {
 
     // Then
     await expect(updating).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0832 });
-    expect((await fixture.repository.findByIdAndTodoId(comment.id, TODO_ID))?.content).toBe(
-      "댓글 원문",
-    );
+    expect(
+      (await fixture.repository.findByIdAndTodoId(comment.id, TodoId.reconstitute(TODO_ID)))
+        ?.content,
+    ).toBe("댓글 원문");
   });
 
   it("할 일을 볼 수 없으면 글이 없어도 TODO_0801을 먼저 낸다", async () => {

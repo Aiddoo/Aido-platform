@@ -9,7 +9,6 @@ import { DateRange } from "#api/modules/insights/daily-completions/domain/date-r
 export const DAILY_COMPLETION_FIXTURE_NOW = Temporal.Instant.from("2028-02-29T12:00:00Z");
 export const DAILY_COMPLETION_FIXTURE_USER_ID = "clz7x5p8k0001qz0z8z8z8z8z";
 export const DAILY_COMPLETION_FIXTURE_FRIEND_ID = "clz7x5p8k0002qz0z8z8z8z8z";
-export const DAILY_COMPLETION_FIXTURE_STRANGER_ID = "clz7x5p8k0003qz0z8z8z8z8z";
 
 export function calendarDate(isoDate: string): Temporal.PlainDate {
   return Temporal.PlainDate.from(isoDate);

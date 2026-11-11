@@ -1,4 +1,3 @@
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
@@ -6,7 +5,7 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TEST_CUID } from "#test/fixtures/index";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createEveningReminderNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createEveningReminderNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";
@@ -112,7 +111,7 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     reader.premiumEveningUsers = [
       user(TEST_CUID.USER_1, [true, true], {
         currentStreak: 5,
-        lastCompletedDate: parseDateOnly("2024-01-15"),
+        lastCompletedDate: Temporal.PlainDate.from("2024-01-15"),
       }),
     ];
 

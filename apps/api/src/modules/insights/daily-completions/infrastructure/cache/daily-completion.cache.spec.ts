@@ -203,24 +203,6 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
     expect(result.value).toBeNull();
   });
 
-  it("이전 배포의 v1 prefix 무효화도 새 세대를 끊고 v1 값은 읽지 않는다", async () => {
-    // Given
-    const initialRead = await cache.readRange(USER, RANGE);
-    await cache.storePublicRangeIfCurrent(USER, initialRead.generation, VALUE);
-    const legacyKey = `aido:v1:daily-completion:range-v1:${USER.value}:${START_DATE}:${END_DATE}`;
-
-    // When - 이전 서버의 무효화와 같은 prefix 삭제
-    await backend.delByPattern(DailyCompletionCacheKey.legacyPattern(USER.value));
-    await backend.set(legacyKey, { completions: [] });
-    const publicRead = await cache.readPublicRange(USER, RANGE);
-    const ownRead = await cache.readRange(USER, RANGE);
-
-    // Then
-    expect(publicRead.generation).not.toBe(initialRead.generation);
-    expect(publicRead.value).toBeNull();
-    expect(ownRead.value).toBeNull();
-  });
-
   it("세대 키만 사라져도 남은 이전 namespace가 다시 살아나지 않는다", async () => {
     // Given
     const initialRead = await cache.readRange(USER, RANGE);

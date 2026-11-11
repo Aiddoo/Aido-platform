@@ -4,7 +4,6 @@ import { and, count, eq, exists, gte, lt, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account, user } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   type SignupStats,
@@ -30,12 +29,10 @@ export class DrizzleSignupStatsReader extends SignupStatsReaderPort {
   }
 
   async getSignupStats(start: Temporal.Instant, end: Temporal.Instant): Promise<SignupStats> {
-    const startUtc = instantToDate(start);
-    const endUtc = instantToDate(end);
     const signupsByProvider = await this.#db
       .select({ provider: account.provider, count: count() })
       .from(account)
-      .where(and(gte(account.createdAt, startUtc), lt(account.createdAt, endUtc)))
+      .where(and(gte(account.createdAt, start), lt(account.createdAt, end)))
       .groupBy(account.provider);
 
     // 플랫폼 내부 FK용 사용자는 가입자가 아니다. 실제 인증 계정이 생긴 사용자만 센다.

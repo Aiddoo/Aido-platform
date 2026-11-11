@@ -1,11 +1,13 @@
+import { NotificationId } from "#api/modules/notification/inbox/domain/notification-id.vo";
 import type { RetentionRepositoryPort } from "#api/modules/notification/retention/application/ports/retention.repository.port";
 import type { RetentionStageCandidate } from "#api/modules/notification/retention/application/read-models/retention-stage-candidate.read-model";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-export interface RetentionD7Result {
+interface RetentionD7Result {
   readonly returnedWithinD7: boolean;
   readonly todoActionWithinD7: boolean;
-  readonly measuredAt: Date;
+  readonly measuredAt: Temporal.Instant;
 }
 
 export interface RetentionRepositoryContractSubject {
@@ -18,21 +20,21 @@ export interface RetentionRepositoryContractSubject {
 }
 
 // 서울 09:00에 시작한 사용자. D0는 2시간 뒤, D1은 다음 날 10:30부터 결정할 때가 된다
-const STARTED_AT = new Date("2026-07-15T00:00:00.000Z");
-const D0_ONLY_DUE_AT = new Date("2026-07-15T03:00:00.000Z");
-const ALL_DUE_AT = new Date("2026-08-15T00:00:00.000Z");
-const PROCESSED_AT = new Date("2026-07-15T03:00:00.000Z");
+const STARTED_AT = Temporal.Instant.from("2026-07-15T00:00:00.000Z");
+const D0_ONLY_DUE_AT = Temporal.Instant.from("2026-07-15T03:00:00.000Z");
+const ALL_DUE_AT = Temporal.Instant.from("2026-08-15T00:00:00.000Z");
+const PROCESSED_AT = Temporal.Instant.from("2026-07-15T03:00:00.000Z");
 
 function byCreation(left: RetentionStageCandidate, right: RetentionStageCandidate): number {
   return (
-    left.stageCreatedAt.getTime() - right.stageCreatedAt.getTime() ||
+    Temporal.Instant.compare(left.stageCreatedAt, right.stageCreatedAt) ||
     left.stageId.localeCompare(right.stageId)
   );
 }
 
 async function dueStagesOf(
   repository: RetentionRepositoryPort,
-  dueAt: Date = ALL_DUE_AT,
+  dueAt: Temporal.Instant = ALL_DUE_AT,
 ): Promise<RetentionStageCandidate[]> {
   return repository.findDueStages({ dueAt, limit: 200 });
 }
@@ -56,8 +58,16 @@ export function describeRetentionRepositoryContract(
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "en" });
 
       // When
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt: STARTED_AT });
-      await repository.enroll({ userId, variant: "CONTROL", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "CONTROL",
+        startedAt: STARTED_AT,
+      });
 
       // Then
       const stages = await dueStagesOf(repository);
@@ -79,29 +89,35 @@ export function describeRetentionRepositoryContract(
       const { repository, givenUser } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
       const unknownUserId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId, variant: "CONTROL", startedAt: null });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "CONTROL",
+        startedAt: null,
+      });
       const beforeActivation = await dueStagesOf(repository);
 
       // When
-      const first = await repository.activate(userId, STARTED_AT);
-      const second = await repository.activate(userId, ALL_DUE_AT);
-      const notEnrolled = await repository.activate(unknownUserId, STARTED_AT);
+      const first = await repository.activate(UserId.reconstitute(userId), STARTED_AT);
+      const second = await repository.activate(UserId.reconstitute(userId), ALL_DUE_AT);
+      const notEnrolled = await repository.activate(UserId.reconstitute(unknownUserId), STARTED_AT);
 
       // Then
       expect(beforeActivation).toEqual([]);
       expect([first, second, notEnrolled]).toEqual([true, false, false]);
       const stages = await dueStagesOf(repository);
       expect(stageNamesOf(stages)).toEqual(["D0", "D1", "D3", "D7"]);
-      expect(stages.every((stage) => stage.startedAt.getTime() === STARTED_AT.getTime())).toBe(
-        true,
-      );
+      expect(stages.every((stage) => stage.startedAt.equals(STARTED_AT))).toBe(true);
     });
 
     it("결정할 때가 된 단계만 고른다", async () => {
       // Given
       const { repository, givenUser } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
 
       // When
       const atStart = await dueStagesOf(repository, STARTED_AT);
@@ -119,14 +135,22 @@ export function describeRetentionRepositoryContract(
       const { repository, givenUser } = await createSubject();
       const first = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
       const second = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId: first, variant: "TREATMENT", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(first),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
       await nextMillisecond();
-      await repository.enroll({ userId: second, variant: "CONTROL", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(second),
+        variant: "CONTROL",
+        startedAt: STARTED_AT,
+      });
 
       // When
       const all = await dueStagesOf(repository);
       const paged: string[] = [];
-      let after: { createdAt: Date; stageId: string } | undefined;
+      let after: { createdAt: Temporal.Instant; stageId: string } | undefined;
       for (;;) {
         const page = await repository.findDueStages({
           dueAt: ALL_DUE_AT,
@@ -162,7 +186,11 @@ export function describeRetentionRepositoryContract(
       // Given
       const { repository, givenUser } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
       const [d0, d1] = (await dueStagesOf(repository)).toSorted((left, right) =>
         left.stage.localeCompare(right.stage),
       );
@@ -193,7 +221,11 @@ export function describeRetentionRepositoryContract(
       const { repository } = await createSubject();
 
       // When
-      const linking = repository.linkStageNotification("missing-stage", 1);
+      const linking = repository.linkStageNotification(
+        "missing-stage",
+        NotificationId.reconstitute(1),
+        PROCESSED_AT,
+      );
 
       // Then
       await expect(linking).rejects.toThrow();
@@ -203,7 +235,11 @@ export function describeRetentionRepositoryContract(
       // Given
       const { repository, givenUser, d7ResultOf } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({ userId, variant: "TREATMENT", startedAt: STARTED_AT });
+      await repository.enroll({
+        userId: UserId.reconstitute(userId),
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
       const [stage] = await dueStagesOf(repository);
       if (stage == null) {
         throw new Error("stage fixture 누락");
@@ -215,20 +251,20 @@ export function describeRetentionRepositoryContract(
         assignmentId,
         returnedWithinD7: false,
         todoActionWithinD7: false,
-        measuredAt: new Date("2026-07-22T01:30:00.000Z"),
+        measuredAt: Temporal.Instant.from("2026-07-22T01:30:00.000Z"),
       });
       await repository.recordD7Result({
         assignmentId,
         returnedWithinD7: true,
         todoActionWithinD7: true,
-        measuredAt: new Date("2026-07-22T01:35:00.000Z"),
+        measuredAt: Temporal.Instant.from("2026-07-22T01:35:00.000Z"),
       });
 
       // Then
       expect(await d7ResultOf(assignmentId)).toEqual({
         returnedWithinD7: true,
         todoActionWithinD7: true,
-        measuredAt: new Date("2026-07-22T01:35:00.000Z"),
+        measuredAt: Temporal.Instant.from("2026-07-22T01:35:00.000Z"),
       });
     });
   });

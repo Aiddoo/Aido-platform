@@ -2,12 +2,11 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { sumBy, uniq } from "es-toolkit";
 
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import type { JobEnvelope } from "#api/shared/application/ports/job-runtime.port";
+import { type JobEnvelope, JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { SubscriptionAlertKey } from "../../application/subscriptions.alerts.js";
+import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
 import { ReconcileStoreSubscriptionsUseCase } from "../../application/use-cases/reconcile-store-subscriptions.use-case.js";
 import type { SubscriptionReconcileField } from "../../domain/subscription.aggregate.js";
@@ -93,9 +92,7 @@ export class StoreSubscriptionReconcileProcessor implements OnModuleInit {
       if (attempt > STORE_SUBSCRIPTION_RECONCILE_QUEUE.retry.retryLimit) {
         // 재시도가 끝났다. 키 권한·만료나 RevenueCat 장애면 모든 사용자의 대조가 멈추므로 사람이 봐야 한다
         this.#alert.raise({
-          key: SubscriptionAlertKey.RECONCILE_FAILED,
-          severity: "error",
-          message: "구독 스토어 상태 대조가 재시도 뒤에도 실패했습니다.",
+          ...SubscriptionAlerts.RECONCILE_FAILED,
           details: { userId, attempt, errorType: toErrorType(error) },
         });
       }
