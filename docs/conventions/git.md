@@ -22,6 +22,9 @@
 
 - 의존하는 PR은 같은 `stack:<release>` 라벨(예: `stack:1.13.0`)을 단다. 맨 위 tip 하나만 `ci:stack-tip`을 달고, 그 tip이 누적 diff를 검증한다([CI](../../apps/api/docs/ci.md#실행-범위), [stack-policy](../../scripts/ci/stack-policy.mjs)). 중간 PR에 `ci:stack-tip`을 달지 않는다.
 - 공유 브랜치의 이력을 바꾸는 rebase·force push는 그 stack의 담당 범위에서만 한다.
+- 위에서부터 합친다. tip을 부모 브랜치에 합치고 차례로 내려가 맨 아래 PR만 마지막에 `main`에 합친다. `main` push가 한 번이라 운영 배포도 한 번이다(`deploy.yml`은 main CI 성공마다 배포한다). 브랜치는 모두 합친 뒤에 지운다. 아래부터 `--delete-branch`로 합치면 GitHub가 다음 PR을 `main`으로 바꾸지 않고 닫는다.
+- 부모 브랜치로 합치는 PR의 `Closes #N`은 GitHub가 처리하지 않는다(기본 브랜치를 향한 PR만 처리한다). 이 저장소의 merge commit 메시지는 PR 제목뿐이라 키워드가 `main`에 닿지도 않는다. 1.15.1에서 이슈 64개가 열린 채 남은 이유다. 그래서 부모에 합칠 때 merge commit 본문에 그 PR의 키워드를 넣는다: `gh pr merge <n> --merge --body "Closes #<issue>"`. 맨 아래 PR이 `main`에 합쳐지면 commit의 키워드로 이슈가 닫힌다([GitHub 문서](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)).
+- 다 합친 뒤 `gh issue list --state open`으로 stack 이슈가 모두 닫혔는지 확인한다. 남은 이슈는 PR 머지 커밋이 `main`에 있는지(`git merge-base --is-ancestor`) 확인하고 PR 링크와 함께 닫는다.
 
 ## 버전
 
