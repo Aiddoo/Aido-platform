@@ -31,7 +31,7 @@ src/
 │   ├── hooks/                    # 앱 시작 때 한 번 도는 훅 (use-auth-boot, use-sync-user-identity, use-claim-device-data-for-user, use-widget-app-entry)
 │   ├── navigation/               # 인증 게이트 레이아웃, 콜드 스타트 링크, 루트 오류 경계 로그 키
 │   ├── providers/                # 루트에 끼우는 Provider와 DI 조립
-│   │   ├── composition-root.ts          # 프로세스 수명 객체의 유일한 주인 (모듈 수준 값은 여기만)
+│   │   ├── composition-root.ts          # 프로세스 수명 객체의 유일한 주인 (그런 모듈 수준 값은 여기만)
 │   │   ├── create-composition-root.ts   # 프로세스에 한 번 만들고 다시 쓰는 로직 (테스트는 stub 포트로)
 │   │   ├── create-device-ports.ts       # 기기 어댑터 조립
 │   │   ├── create-app-container.ts      # 포트로 Service·저장소 조립 (순수 함수, 마운트마다)
@@ -1180,7 +1180,7 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 | 화면     | Service, 저장소(repository), 앱 store(`authSessionStore`, `notificationEntryStore`)                                                                                                                                           | `DIProvider`가 마운트마다 `createAppContainer(ports)`           |
 
 - 루트 "다시 시도"는 트리를 다시 그려 화면 수명 컨테이너만 새로 만든다. 프로세스 수명 객체는 그대로라 로그인이 남고(토큰 갱신기가 하나라 갱신이 겹쳐 세션이 끝나지 않는다), 결제 SDK를 다시 설정하지 않고(어댑터의 `configure`는 프로세스에 한 번이다), 같은 실패를 다시 보고하지 않는다.
-- 모듈 수준 값은 `composition-root.ts`에만 둔다. 이것이 예외가 아니라 규칙이다. 테스트는 같은 로직(`createCompositionRoot`)을 stub 포트로 만든다.
+- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`(`compositionRoot`)에만 둔다. 예외가 아니라 규칙이다. 루트 오류 화면의 보고기만 조립이 실패해도 보고하려고 `app/_layout.tsx`에 따로 있다. 테스트는 같은 로직(`createCompositionRoot`)을 stub 포트로 만든다.
 - 암호화 저장소는 연 결과만 기억한다. 열지 못하면 그 실행은 저장을 끄고, 다음 마운트가 다시 연다(실패 보고는 프로세스에 한 번).
 - 시작 정리(지난 초안, 은퇴한 키, 평문 조회 캐시)는 렌더가 아니라 마운트 뒤 effect(`useStartupCleanup`)에서 돈다. 다시 돌아도 결과가 같아 StrictMode와 루트 "다시 시도"가 다시 불러도 된다.
 - 테스트에서 포트를 바꾸면 그 포트를 쓰는 Service가 모두 다시 조립된다. Service를 바꾸면 그 키만 바뀌고 다른 Service는 원래 것을 쓴다([testing-guide](./testing-guide.md#stub-우선-di-테스트)).

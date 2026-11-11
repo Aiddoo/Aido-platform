@@ -20,7 +20,12 @@ export function TodoThanksSummary({ todo, onClose }: TodoThanksSummaryProps) {
     <QueryErrorBoundary
       resetKeys={[todo.id]}
       fallback={(fallbackProps) => (
-        <ThanksSummaryRow.Error {...fallbackProps} onInquiry={() => onClose(INQUIRY_SHEET_EXIT)} />
+        <ThanksSummaryRow.Error
+          {...fallbackProps}
+          // 시트 바탕이 다크에서 gray-1이라 안내 면을 한 단계 올려 구분한다
+          className="dark:bg-gray-2"
+          onInquiry={() => onClose(INQUIRY_SHEET_EXIT)}
+        />
       )}
     >
       {/* 보낼 대상이 있는지 조회해야 보일지 아는 줄이라 로딩 때 자리를 잡지 않는다(ThanksSummaryRow 머리 주석) */}

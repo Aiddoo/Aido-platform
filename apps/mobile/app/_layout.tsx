@@ -11,7 +11,7 @@ import {
   initErrorReporting,
   wrapRootComponent,
 } from '@src/shared/infra/observability/error-reporting';
-import { openSupportMail } from '@src/shared/ui';
+import { ErrorIllustration, openSupportMail } from '@src/shared/ui';
 
 import '../global.css';
 import '@src/shared/i18n/init';
@@ -44,24 +44,37 @@ function restartApp() {
   );
 }
 
-/** Provider·내비게이터가 없을 수 있어 RN 기본 컴포넌트와 디자인 토큰만 쓰고, 문의는 화면 이동 대신 메일로 연다 */
+/** Provider·내비게이터가 없을 수 있어 RN 기본 컴포넌트와 디자인 토큰으로 `Result`·`QueryErrorFallback`과 같은 모양을 그리고, 문의는 화면 이동 대신 메일로 연다 */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { t } = useTranslation('common');
 
   useEffect(() => {
     SplashScreen.hideAsync().catch(noop);
-    rootErrorReporter.captureException(error, { feature: 'error_boundary' });
+    rootErrorReporter.captureException(error, { feature: 'root_error_boundary' });
   }, [error]);
 
   return (
     <View className="flex-1 items-center justify-center bg-white px-6" testID="root-error-fallback">
-      <Text className="text-b3 font-medium text-gray-6 text-center">
+      <View accessible={false} importantForAccessibility="no" className="mb-4">
+        <ErrorIllustration />
+      </View>
+      <Text
+        className="text-b3 font-semibold text-gray-9 text-center"
+        lineBreakStrategyIOS="hangul-word"
+        textBreakStrategy="highQuality"
+      >
         {t('errorBoundary.title')}
       </Text>
-      <Text className="mt-1 text-b4 text-gray-5 text-center">{t('errorBoundary.description')}</Text>
+      <Text
+        className="mt-1 text-b4 text-gray-6 text-center"
+        lineBreakStrategyIOS="hangul-word"
+        textBreakStrategy="highQuality"
+      >
+        {t('errorBoundary.description')}
+      </Text>
       <Pressable
         accessibilityRole="button"
-        className="mt-6 h-10 items-center justify-center rounded-xl bg-gray-9 px-4 dark:bg-gray-3"
+        className="mt-5 h-10 items-center justify-center rounded-xl bg-gray-9 px-4 dark:bg-gray-3"
         onPress={retry}
       >
         <Text className="text-b4 font-semibold text-white dark:text-gray-9">

@@ -25,7 +25,9 @@
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
-        "test/**"
+        "test/**",
+        "$TURBO_ROOT$/apps/*/package.json",
+        "$TURBO_ROOT$/packages/*/package.json"
       ],
       "dependsOn": ["^build"]
     },
@@ -45,7 +47,6 @@
       "dependsOn": ["^build"]
     },
     "test:integration": {
-      "cache": false,
       "inputs": [
         "src/**",
         "drizzle/**",
@@ -58,6 +59,20 @@
         "test/**"
       ],
       "dependsOn": ["^build"]
+    },
+    "test:contract": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "src/**",
+        "drizzle/**",
+        "package.json",
+        "drizzle.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        "test/**"
+      ]
     },
     "typecheck": {
       "inputs": [

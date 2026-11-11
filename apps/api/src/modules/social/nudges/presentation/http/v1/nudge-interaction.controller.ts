@@ -182,12 +182,11 @@ export class NudgeInteractionController {
     summary: "감사를 받을 친구 미리보기",
     operationId: "getNudgeThanksPreview",
     description:
-      "완료한 내 할 일에 콕을 보낸 현재 친구를 미리 봅니다. 할 일이 완료되지 않았으면 NUDGE_1110, 기능이 꺼져 있거나 throughNudgeId가 이 할 일에서 받은 콕이 아니면 NUDGE_1105입니다.",
+      "완료한 내 할 일에 콕을 보낸 현재 친구를 미리 봅니다. 아직 완료하지 않은 할 일이면(완료 저장보다 먼저 도착한 조회 포함) 친구 없이 0명인 빈 미리보기를 반환합니다. 기능이 꺼져 있거나 throughNudgeId가 이 할 일에서 받은 콕이 아니면 NUDGE_1105입니다.",
   })
   @ApiSuccessResponse({ type: NudgeThanksPreviewResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.NUDGE_1105])
-  @ApiConflictError(ErrorCode.NUDGE_1110)
   async getThanksPreview(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeTodoIdParamDto }) params: NudgeTodoIdParamDto,
