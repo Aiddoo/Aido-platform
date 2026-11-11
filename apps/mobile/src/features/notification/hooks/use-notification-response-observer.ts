@@ -8,7 +8,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
+import { getConsentResult } from '@src/features/identity/consent/domains/consent.model';
 import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
 import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -165,7 +165,7 @@ function useMarketingOptOut(
     }
     finishResponse(target.id);
     // 설정 토글과 같은 결과 안내(처리 일시는 서버 값)를 띄우고, 설정 화면의 토글도 서버 값으로 맞춘다
-    const result = ConsentPolicy.getConsentResult({ agreedAt: null, withdrawnAt });
+    const result = getConsentResult({ agreedAt: null, withdrawnAt });
     if (result == null) {
       toast.success(t('notification:consentResult.marketingPushOptedOut'));
     } else {

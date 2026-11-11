@@ -117,7 +117,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
 function TodoCompletionStats({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
   const { stats } = report;
-  const rateDiff = ReportPolicy.getCompletionRateChange(stats);
+  const rateDiff = ReportPolicy.getCompletionRateChange(report);
 
   return (
     <VStack gap={16}>
@@ -238,7 +238,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
   );
 }
 
-function TimePatternSummary({ report }: { report: Pick<AiReport, 'timePatterns'> }) {
+function TimePatternSummary({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();

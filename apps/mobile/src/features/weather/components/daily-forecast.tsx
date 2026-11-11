@@ -29,7 +29,7 @@ import {
 } from '../constants/weather-colors.constants';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
-import { WeatherReportPolicy } from '../domains/weather-report.model';
+import { getTodayKey } from '../domains/weather-report.model';
 import type { DailyForecastEntry } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
@@ -86,7 +86,7 @@ export function DailyForecast() {
   const fontScaleRatio = useFontScaleRatio();
   const dateFormat = useLocationDateFormat(data.location.timezone);
   const now = useMinuteNow();
-  const forecastTodayKey = WeatherReportPolicy.getTodayKey(data, now);
+  const forecastTodayKey = getTodayKey(data, now);
   const bars = toTemperatureBars(data.daily);
   const nowPosition = toTemperaturePosition(data.daily, data.current.temperature);
   const format = useMemo<RowFormat>(

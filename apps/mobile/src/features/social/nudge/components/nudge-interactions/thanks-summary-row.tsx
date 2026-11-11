@@ -1,5 +1,7 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
+import { todoCompletionWritesFilter } from '@src/features/planning/todo/queries/todo-cache';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -12,15 +14,18 @@ import {
   Button,
   HeartFilledIcon,
   HStack,
+  InlineAlert,
   QueryErrorActions,
   type QueryErrorFallbackProps,
   Text,
+  TextButton,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { useIsMutating, useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { type ComponentProps, type ReactNode, useEffect, useRef } from 'react';
 import Animated, {
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -29,7 +34,7 @@ import Animated, {
 import { match } from 'ts-pattern';
 
 import {
-  NudgeInteractionPolicy,
+  NudgeThanksPreviewPolicy,
   type NudgeThanksPreview,
 } from '../../domains/nudge-interaction.model';
 import {
@@ -49,10 +54,13 @@ interface ThanksSummaryRowProps {
 /**
  * 쓸 수 있는지, 보낼 대상이 있는지 두 번 조회해야 보일지 아는 줄이라 로딩 때 자리를 잡지 않는다.
  * 자리를 잡으면 대상이 없을 때 나타났다 사라져 아래가 두 번 움직인다.
+ * 완료를 저장하는 동안은 서버가 아직 완료 전이라 묻지 않고, 저장이 끝나면 할 일 변경 무효화로 새로 받는다.
  */
 export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
   const availability = useQuery(useGetNudgeInteractionAvailabilityQueryOptions());
-  if (availability.data !== true) {
+  const isCompletionSaving =
+    useIsMutating(todoCompletionWritesFilter({ todoId: props.todoId })) > 0;
+  if (availability.data !== true || isCompletionSaving) {
     return null;
   }
 
@@ -71,7 +79,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onOpenThanks }: ThanksSu
     return null;
   }
 
-  const { state, pendingRecipientCount } = NudgeInteractionPolicy.getThanksSummary(preview);
+  const { state, pendingRecipientCount } = NudgeThanksPreviewPolicy.getThanksSummary(preview);
   const thanksButtonLabel = t('interaction.thanksQuickActionLabel', {
     count: pendingRecipientCount,
   });
@@ -148,29 +156,31 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onOpenThanks }: ThanksSu
     .exhaustive();
 };
 
-interface ThanksSummaryRowErrorProps extends QueryErrorFallbackProps {
+interface ThanksSummaryRowErrorProps
+  extends QueryErrorFallbackProps, Pick<ComponentProps<typeof InlineAlert>, 'className'> {
   /** 시트 안에서는 시트를 닫고 문의 화면으로 가도록 바꿔 준다 */
   onInquiry?: () => void;
 }
 
-/** 고마움 보내기 입구라 숨기지 않고 같은 자리에 다시 시도·문의를 둔다 */
-ThanksSummaryRow.Error = function ErrorFallback({ reset, onInquiry }: ThanksSummaryRowErrorProps) {
+/** 고마움 보내기 입구라 숨기지 않고 같은 자리에 다시 시도·문의를 둔다. 다른 인라인 안내처럼 조용히 알린다 */
+ThanksSummaryRow.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+  className,
+}: ThanksSummaryRowErrorProps) {
   const { t } = useTranslation(['todo', 'common']);
 
   return (
-    <ThanksSummaryCard
-      tone="neutral"
-      left={null}
-      title={<CardTitle>{t('todo:interaction.thanksLoadFailed')}</CardTitle>}
-      description={
-        <Box className="items-start">
-          <QueryErrorActions.Inquiry onPress={onInquiry} />
-        </Box>
-      }
+    <InlineAlert
+      className={className}
+      description={t('todo:interaction.thanksLoadFailed')}
       action={
-        <Button variant="weak" color="dark" size="small" display="inline" onPress={reset}>
-          {t('common:actions.retry')}
-        </Button>
+        <HStack align="center" gap={16}>
+          <TextButton size="small" testID="thanks-summary-retry" onPress={reset}>
+            {t('common:actions.retry')}
+          </TextButton>
+          <QueryErrorActions.Inquiry onPress={onInquiry} />
+        </HStack>
       }
     />
   );
@@ -210,23 +220,26 @@ function ThanksSummaryCard({ tone, left, title, description, action }: ThanksSum
   const { fontScale } = useFontScale();
   const isActionStacked = fontScale === 'xlarge';
 
+  // 자리를 잡지 않고 받은 뒤에 나타나는 카드라 튀어나오지 않게 페이드로 들인다
   return (
-    <HStack
-      align="center"
-      gap={12}
-      wrap={isActionStacked ? 'wrap' : 'nowrap'}
-      className={cn(
-        'min-h-16 rounded-2xl py-3 pl-4 pr-3',
-        tone === 'highlighted' ? 'bg-main/8 dark:bg-main/20' : 'bg-gray-2',
-      )}
-    >
-      {left}
-      <VStack flex={1} gap={2} className="min-w-0">
-        {title}
-        {description}
-      </VStack>
-      {action != null && <Box className={cn(isActionStacked && 'w-full')}>{action}</Box>}
-    </HStack>
+    <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+      <HStack
+        align="center"
+        gap={12}
+        wrap={isActionStacked ? 'wrap' : 'nowrap'}
+        className={cn(
+          'min-h-16 rounded-2xl py-3 pl-4 pr-3',
+          tone === 'highlighted' ? 'bg-main/8 dark:bg-main/20' : 'bg-gray-2',
+        )}
+      >
+        {left}
+        <VStack flex={1} gap={2} className="min-w-0">
+          {title}
+          {description}
+        </VStack>
+        {action != null && <Box className={cn(isActionStacked && 'w-full')}>{action}</Box>}
+      </HStack>
+    </Animated.View>
   );
 }
 

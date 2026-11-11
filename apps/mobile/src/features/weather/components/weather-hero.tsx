@@ -25,7 +25,7 @@ import { match, P } from 'ts-pattern';
 import { HERO_TEXT_SHADOW_COLOR } from '../constants/weather-colors.constants';
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import type { PlaceName } from '../domains/weather-location.model';
-import { WeatherReportPolicy } from '../domains/weather-report.model';
+import { findTodayOrFirstForecast, isReportStale } from '../domains/weather-report.model';
 import type { DailyForecastEntry } from '../domains/weather-report.model';
 import {
   isOfflineError,
@@ -111,7 +111,7 @@ export function WeatherHero() {
     select: WeatherReportSelect.hero,
   });
   const now = useMinuteNow();
-  const today = WeatherReportPolicy.findTodayOrFirstForecast(data, now);
+  const today = findTodayOrFirstForecast(data, now);
   const readyLocation = location.status === 'ready' ? location : null;
   const place = readyLocation?.place ?? null;
   const countryCode = readyLocation?.countryCode ?? null;
@@ -175,7 +175,7 @@ export function WeatherHero() {
           )}
         </VStack>
         {today?.restOfDay != null && <WeatherHero.RestOfDay restOfDay={today.restOfDay} />}
-        {WeatherReportPolicy.isReportStale(data, now) && (
+        {isReportStale(data, now) && (
           <WeatherHero.StaleNotice fetchedAt={data.fetchedAt} now={now} />
         )}
       </VStack>

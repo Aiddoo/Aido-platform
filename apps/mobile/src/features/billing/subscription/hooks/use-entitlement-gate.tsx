@@ -15,7 +15,7 @@ import { PremiumUpsellBottomSheet } from '../components/premium-upsell-bottom-sh
 import type { EntitlementGateSurface, LimitReachedTrigger } from '../constants/subscription.events';
 import { findLimitedFeature } from '../domains/entitlement.error';
 import { type EntitlementFeature } from '../domains/entitlement.model';
-import { EntitlementPolicy } from '../domains/entitlement.model';
+import { EntitlementPolicy, LimitedFeaturePolicy } from '../domains/entitlement.model';
 import { type UpsellPresentation } from '../domains/upsell.model';
 import { UpsellPolicy } from '../domains/upsell.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
@@ -183,7 +183,7 @@ export function useEntitlementGate(
         if (limited.featureQuota != null) {
           setFeatureQuota(queryClient, limited.featureQuota);
         }
-        open(limited.feature, EntitlementPolicy.getBlockedDecision(limited), 'server', options);
+        open(limited.feature, LimitedFeaturePolicy.getBlockedDecision(limited), 'server', options);
         return true;
       },
     };
