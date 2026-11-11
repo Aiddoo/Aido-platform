@@ -45,7 +45,8 @@ X.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 ```
 
 route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으로 바꿉니다(`INQUIRY_SHEET_EXIT`, 문의에서 돌아오면
-시트 아래 화면). fallback이 `sheet`를 받을 수 있게 경계에서 넘깁니다.
+시트 아래 화면). `RouteBottomSheet`가 이 경계를 갖고 있어 시트는 경계를 다시 두지 않습니다. 경계가 시트 밖에 있는
+폼 시트만 fallback이 `sheet`를 받을 수 있게 경계에서 넘깁니다.
 
 ```tsx
 <QueryErrorBoundary

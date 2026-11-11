@@ -1,15 +1,8 @@
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  BottomSheet,
-  INQUIRY_SHEET_EXIT,
-  QueryErrorBoundary,
-  QueryErrorFallback,
-  type QueryErrorFallbackProps,
-  useSheetRoute,
-} from '@src/shared/ui';
+import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { type ComponentProps, Suspense } from 'react';
+import type { ComponentProps } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
@@ -19,28 +12,15 @@ import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutatio
 import { TodoScopeStep } from '../todo-scope-step';
 
 type TodoCategoryBottomSheetProps = Omit<
-  ComponentProps<typeof BottomSheet>,
-  'children' | 'isOpen' | 'onOpenChange'
+  ComponentProps<typeof RouteBottomSheet>,
+  'fallbackHref' | 'loading' | 'children'
 >;
 
 export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
-  const sheet = useSheetRoute('/feed');
-
   return (
-    <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary
-        fallback={(fallbackProps) => (
-          <TodoCategoryBottomSheet.Error
-            {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-          />
-        )}
-      >
-        <Suspense fallback={<TodoCategoryBottomSheet.Loading />}>
-          <TodoCategoryBottomSheet.CategoryForm onClose={() => sheet.close()} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </BottomSheet>
+    <RouteBottomSheet {...props} fallbackHref="/feed" loading={<TodoCategoryBottomSheet.Loading />}>
+      {(sheet) => <TodoCategoryBottomSheet.CategoryForm onClose={() => sheet.close()} />}
+    </RouteBottomSheet>
   );
 }
 
@@ -98,10 +78,3 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
 };
 
 TodoCategoryBottomSheet.Loading = CategorySelectInput.Loading;
-
-TodoCategoryBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
-};

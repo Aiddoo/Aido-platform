@@ -45,7 +45,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 - **`ScrollFade`**(있음): `surface: 'screen' | 'sheet'`. 화면·시트 스크롤의 잘리는 쪽을 흐리게 덮는다(`ScreenScrollShadow`·`SheetScrollShadow`를 대신한다).
 - **`Mascot`**(있음): `name`, `size?`, `isCentered`. 고양이 이미지를 직접 import하지 않는다.
 - **`TimeSpinner`**: `value`, `onChange`, `timeFormat`, `minimum`, `maximum`. Android 시스템 피커는 `openAndroidTimePicker()`다.
-- **`RouteBottomSheet`**: `fallbackHref`, `loading`. 대상이 있는 시트 route의 껍데기 하나이고 대상은 `useSheetTodo` 같은 route 훅으로 읽는다.
+- **`RouteBottomSheet`**(있음): `fallbackHref`, `loading`, `children`·`footer`는 `(sheet) => ReactNode`. 대상이 있는 시트 route의 껍데기 하나(떠나기·경계·문의)이고 대상은 `useSheetTodo` 같은 route 훅으로 읽는다. 입력이 있으면 `RouteKeyboardBottomSheet`다.
 - **`useOpenSheet()`**: `openSheet(render, options)`. route 문맥이 없는 시트(폼에 묶인 피커)를 띄운다.
 - **`QueryErrorFallback.Inline`**(있음): 블록 안 "실패 + 다시 시도" 한 줄이다. `hasInquiry`를 켜면 문의하기가 붙는다.
 
@@ -86,12 +86,13 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 
 ## 시트
 
-| 부품                  | 쓰임                                                                 |
-| --------------------- | -------------------------------------------------------------------- |
-| `KeyboardBottomSheet` | 입력이 있는 폼                                                       |
-| `BottomSheet`         | 키보드가 필요 없는 피커·액션 시트                                    |
-| `ModalBottomSheet`    | 시트 위 시트(`useOpenSheet`). 열릴 때 키보드를 스스로 내린다         |
-| `RouteBottomSheet`    | 대상이 있는 시트(`transparentModal` route, id는 route 훅으로 읽는다) |
+| 부품                       | 쓰임                                                                 |
+| -------------------------- | -------------------------------------------------------------------- |
+| `KeyboardBottomSheet`      | 입력이 있는 폼                                                       |
+| `BottomSheet`              | 키보드가 필요 없는 피커·액션 시트                                    |
+| `ModalBottomSheet`         | 시트 위 시트(`useOpenSheet`). 열릴 때 키보드를 스스로 내린다         |
+| `RouteBottomSheet`         | 대상이 있는 시트(`transparentModal` route, id는 route 훅으로 읽는다) |
+| `RouteKeyboardBottomSheet` | 입력이 있는 대상 시트 route                                          |
 
 - 내용은 `children` 흐름에 두고, 작은 화면·큰 글자·키보드에도 보여야 할 주 버튼만 `footer`에 둔다. 시트 안에 세로 스크롤을 또 두지 않는다.
 - 아래 시트 입력으로 포커스를 돌릴 때는 `onCloseStart`에서 한다. "확인"이 머리글에 있으면 `hasFixedHeader` + `SheetHeaderLayout`이다. 배치(Duo 접힘선·레일, iPad 여백)는 `getSheetLayout`이 정한다.

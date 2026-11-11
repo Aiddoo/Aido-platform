@@ -2,28 +2,23 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  BottomSheet,
+  RouteBottomSheet,
   CalendarIcon,
   ClockIcon,
   EditIcon,
-  INQUIRY_SHEET_EXIT,
   ListFilledIcon,
   MoveRightIcon,
-  QueryErrorBoundary,
-  QueryErrorFallback,
-  type QueryErrorFallbackProps,
   RepeatIcon,
   type SheetRouteExit,
   SunIcon,
   TrashIcon,
   useConfirmDialog,
-  useSheetRoute,
   VStack,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, type ComponentType, Suspense } from 'react';
+import type { ComponentProps, ComponentType } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
@@ -41,8 +36,8 @@ import { TodoActionRow } from '../todo-action-row';
 import { TodoScopeStep } from '../todo-scope-step';
 
 type TodoActionsBottomSheetProps = Omit<
-  ComponentProps<typeof BottomSheet>,
-  'children' | 'isOpen' | 'onOpenChange'
+  ComponentProps<typeof RouteBottomSheet>,
+  'fallbackHref' | 'loading' | 'children'
 > & {
   /** 목록 맨 위에 붙는 요약 줄(받은 감사 등). 다시 마운트되지 않도록 모듈 수준 컴포넌트를 넘긴다 */
   summary: ComponentType<TodoActionsSummaryProps>;
@@ -54,23 +49,10 @@ interface TodoActionsSummaryProps {
 }
 
 export function TodoActionsBottomSheet({ summary, ...props }: TodoActionsBottomSheetProps) {
-  const sheet = useSheetRoute('/feed');
-
   return (
-    <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary
-        fallback={(fallbackProps) => (
-          <TodoActionsBottomSheet.Error
-            {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-          />
-        )}
-      >
-        <Suspense fallback={<TodoActionsBottomSheet.Loading />}>
-          <TodoActionsBottomSheet.ActionList summary={summary} onClose={sheet.close} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </BottomSheet>
+    <RouteBottomSheet {...props} fallbackHref="/feed" loading={<TodoActionsBottomSheet.Loading />}>
+      {(sheet) => <TodoActionsBottomSheet.ActionList summary={summary} onClose={sheet.close} />}
+    </RouteBottomSheet>
   );
 }
 
@@ -254,11 +236,4 @@ TodoActionsBottomSheet.Loading = function Loading() {
       ))}
     </VStack>
   );
-};
-
-TodoActionsBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };

@@ -1,15 +1,8 @@
 import { toLocalDay } from '@src/shared/date/native-date';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import {
-  BottomSheet,
-  INQUIRY_SHEET_EXIT,
-  QueryErrorBoundary,
-  QueryErrorFallback,
-  type QueryErrorFallbackProps,
-  useSheetRoute,
-} from '@src/shared/ui';
+import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { type ComponentProps, Suspense } from 'react';
+import type { ComponentProps } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
@@ -21,34 +14,23 @@ import { TodoScopeStep } from '../todo-scope-step';
 import { TodoTimePicker } from '../todo-time-picker';
 
 type TodoTimeBottomSheetProps = Omit<
-  ComponentProps<typeof BottomSheet>,
-  'children' | 'isOpen' | 'onOpenChange'
+  ComponentProps<typeof RouteBottomSheet>,
+  'fallbackHref' | 'loading' | 'children'
 > & {
   /** 종일이 아닌 시각을 저장한 뒤 불린다. 알림 권한은 위층 기능이라 route가 넘긴다 */
   onTimeScheduled?: () => void;
 };
 
 export function TodoTimeBottomSheet({ onTimeScheduled, ...props }: TodoTimeBottomSheetProps) {
-  const sheet = useSheetRoute('/feed');
-
   return (
-    <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary
-        fallback={(fallbackProps) => (
-          <TodoTimeBottomSheet.Error
-            {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-          />
-        )}
-      >
-        <Suspense fallback={<TodoTimeBottomSheet.Loading />}>
-          <TodoTimeBottomSheet.TimeForm
-            onClose={() => sheet.close()}
-            onTimeScheduled={onTimeScheduled}
-          />
-        </Suspense>
-      </QueryErrorBoundary>
-    </BottomSheet>
+    <RouteBottomSheet {...props} fallbackHref="/feed" loading={<TodoTimeBottomSheet.Loading />}>
+      {(sheet) => (
+        <TodoTimeBottomSheet.TimeForm
+          onClose={() => sheet.close()}
+          onTimeScheduled={onTimeScheduled}
+        />
+      )}
+    </RouteBottomSheet>
   );
 }
 
@@ -129,10 +111,3 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
 };
 
 TodoTimeBottomSheet.Loading = TodoTimePicker.Loading;
-
-TodoTimeBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
-};

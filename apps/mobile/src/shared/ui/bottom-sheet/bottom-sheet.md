@@ -166,11 +166,10 @@ export default function TodoActionsSheetRoute() {
   );
 }
 
-// 시트
-const sheet = useSheetRoute('/feed');
-<BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-  …
-</BottomSheet>;
+// 시트: 껍데기는 RouteBottomSheet 하나다(../route-bottom-sheet/route-bottom-sheet.md)
+<RouteBottomSheet fallbackHref="/feed" loading={<TodoActionsBottomSheet.Loading />}>
+  {(sheet) => <TodoActionsBottomSheet.ActionList onClose={sheet.close} />}
+</RouteBottomSheet>;
 ```
 
 - Stack 레이아웃에 `SHEET_ROUTE_SCREEN_OPTIONS`(`transparentModal`, `animation: 'none'`, 투명 배경)로 등록한다.

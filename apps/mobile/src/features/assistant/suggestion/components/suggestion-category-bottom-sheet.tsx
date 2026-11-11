@@ -4,48 +4,31 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  BottomSheet,
-  INQUIRY_SHEET_EXIT,
-  QueryErrorBoundary,
-  QueryErrorFallback,
-  type QueryErrorFallbackProps,
-  type SheetRouteExit,
-  useSheetRoute,
-} from '@src/shared/ui';
+import { RouteBottomSheet, type SheetRouteExit } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { type ComponentProps, Suspense, useEffect } from 'react';
+import { type ComponentProps, useEffect } from 'react';
 
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { suggestionParamsSchema } from '../schemas/suggestion-params.schema';
 
 type SuggestionCategoryBottomSheetProps = Omit<
-  ComponentProps<typeof BottomSheet>,
-  'children' | 'isOpen' | 'onOpenChange'
+  ComponentProps<typeof RouteBottomSheet>,
+  'fallbackHref' | 'loading' | 'children'
 >;
 
 /** 제안을 받아들일 카테고리를 고르는 시트. 대상은 `/suggestions/[suggestionId]/category` route에서 읽는다. */
 export function SuggestionCategoryBottomSheet(props: SuggestionCategoryBottomSheetProps) {
-  const sheet = useSheetRoute('/suggestions');
-
   return (
-    <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      {sheet.isOpen && (
-        <QueryErrorBoundary
-          fallback={(fallbackProps) => (
-            <SuggestionCategoryBottomSheet.Error
-              {...fallbackProps}
-              onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-            />
-          )}
-        >
-          <Suspense fallback={<SuggestionCategoryBottomSheet.Loading />}>
-            <SuggestionCategoryBottomSheet.AcceptForm onClose={sheet.close} />
-          </Suspense>
-        </QueryErrorBoundary>
-      )}
-    </BottomSheet>
+    <RouteBottomSheet
+      {...props}
+      fallbackHref="/suggestions"
+      loading={<SuggestionCategoryBottomSheet.Loading />}
+    >
+      {(sheet) =>
+        sheet.isOpen && <SuggestionCategoryBottomSheet.AcceptForm onClose={sheet.close} />
+      }
+    </RouteBottomSheet>
   );
 }
 
@@ -94,10 +77,3 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
 };
 
 SuggestionCategoryBottomSheet.Loading = CategorySelectInput.Loading;
-
-SuggestionCategoryBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
-};

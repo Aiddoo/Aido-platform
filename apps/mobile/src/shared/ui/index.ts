@@ -149,6 +149,7 @@ export {
 } from './query-error-boundary';
 export { READABLE_CONTENT_MAX_WIDTH, ReadableContent } from './readable-content';
 export { Result } from './result';
+export { RouteBottomSheet, RouteKeyboardBottomSheet } from './route-bottom-sheet';
 export { ScrollFade } from './scroll-fade';
 export { SafeAreaScrollView } from './safe-area-scroll-view';
 export { StyledSafeAreaView } from './styled-safe-area-view';

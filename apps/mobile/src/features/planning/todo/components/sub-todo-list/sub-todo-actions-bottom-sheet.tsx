@@ -1,20 +1,9 @@
 import { useTranslation } from '@src/shared/i18n';
-import {
-  BottomSheet,
-  EditIcon,
-  INQUIRY_SHEET_EXIT,
-  QueryErrorBoundary,
-  QueryErrorFallback,
-  type QueryErrorFallbackProps,
-  type SheetRouteExit,
-  TrashIcon,
-  useSheetRoute,
-  VStack,
-} from '@src/shared/ui';
+import { RouteBottomSheet, EditIcon, type SheetRouteExit, TrashIcon, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, Suspense } from 'react';
+import type { ComponentProps } from 'react';
 
 import { useSheetSubTodo } from '../../hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
@@ -22,28 +11,19 @@ import { useDeleteSubTodoMutationOptions } from '../../queries/sub-todo.mutation
 import { TodoActionRow } from '../todo-action-row';
 
 type SubTodoActionsBottomSheetProps = Omit<
-  ComponentProps<typeof BottomSheet>,
-  'children' | 'isOpen' | 'onOpenChange'
+  ComponentProps<typeof RouteBottomSheet>,
+  'fallbackHref' | 'loading' | 'children'
 >;
 
 export function SubTodoActionsBottomSheet(props: SubTodoActionsBottomSheetProps) {
-  const sheet = useSheetRoute('/feed');
-
   return (
-    <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary
-        fallback={(fallbackProps) => (
-          <SubTodoActionsBottomSheet.Error
-            {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-          />
-        )}
-      >
-        <Suspense fallback={<SubTodoActionsBottomSheet.Loading />}>
-          <SubTodoActionsBottomSheet.ActionList onClose={sheet.close} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </BottomSheet>
+    <RouteBottomSheet
+      {...props}
+      fallbackHref="/feed"
+      loading={<SubTodoActionsBottomSheet.Loading />}
+    >
+      {(sheet) => <SubTodoActionsBottomSheet.ActionList onClose={sheet.close} />}
+    </RouteBottomSheet>
   );
 }
 
@@ -113,11 +93,4 @@ SubTodoActionsBottomSheet.Loading = function Loading() {
       ))}
     </VStack>
   );
-};
-
-SubTodoActionsBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };

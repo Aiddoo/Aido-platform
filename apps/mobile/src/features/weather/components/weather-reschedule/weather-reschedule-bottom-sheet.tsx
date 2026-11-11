@@ -7,16 +7,12 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppTheme } from '@src/shared/providers/theme-provider';
 import {
-  BottomSheet,
-  INQUIRY_SHEET_EXIT,
   QueryErrorBoundary,
-  QueryErrorFallback,
-  type QueryErrorFallbackProps,
   Result,
+  RouteBottomSheet,
   Spacing,
   Text,
   TextSkeleton,
-  useSheetRoute,
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
@@ -51,7 +47,6 @@ const LOADING_TODO_COUNT = 2;
 
 /** footer의 주 버튼과 목록이 같은 폼을 보도록 시트가 소유하고, 목록에서 빠진 할 일의 선택은 함께 지운다 */
 export function WeatherRescheduleBottomSheet() {
-  const sheet = useSheetRoute(WEATHER_HREF);
   const form = useForm({
     resolver: zodResolver(weatherRescheduleFormSchema),
     defaultValues: { selections: {} },
@@ -59,26 +54,13 @@ export function WeatherRescheduleBottomSheet() {
   });
 
   return (
-    <BottomSheet
-      isOpen={sheet.isOpen}
-      onOpenChange={sheet.onOpenChange}
-      footer={<RescheduleFooter form={form} onDone={() => sheet.close()} />}
+    <RouteBottomSheet
+      fallbackHref={WEATHER_HREF}
+      loading={<WeatherRescheduleBottomSheet.Loading />}
+      footer={(sheet) => <RescheduleFooter form={form} onDone={() => sheet.close()} />}
     >
-      {sheet.isOpen && (
-        <QueryErrorBoundary
-          fallback={(fallbackProps) => (
-            <WeatherRescheduleBottomSheet.Error
-              {...fallbackProps}
-              onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-            />
-          )}
-        >
-          <Suspense fallback={<WeatherRescheduleBottomSheet.Loading />}>
-            <RescheduleTodoList form={form} onEmpty={() => sheet.close()} />
-          </Suspense>
-        </QueryErrorBoundary>
-      )}
-    </BottomSheet>
+      {(sheet) => sheet.isOpen && <RescheduleTodoList form={form} onEmpty={() => sheet.close()} />}
+    </RouteBottomSheet>
   );
 }
 
@@ -92,13 +74,6 @@ WeatherRescheduleBottomSheet.Loading = function Loading() {
       ))}
     </VStack>
   );
-};
-
-WeatherRescheduleBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };
 
 function RescheduleTodoList({
