@@ -98,40 +98,6 @@ describe('TodoService', () => {
     });
   });
 
-  describe('getTodoExistence', () => {
-    it('날짜 조건 없이 전체·완료 할 일을 한 건씩 읽어 있는지를 돌려준다', async () => {
-      // Given
-      const { httpClient, service } = createSut();
-      httpClient.get.mockImplementation(async (_url, options) =>
-        options?.params?.completed === true
-          ? { ok: true, value: createTodoListResponseDto({ items: [] }) }
-          : { ok: true, value: createTodoListResponseDto() },
-      );
-
-      // When
-      const result = await service.getTodoExistence();
-
-      // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/todos', {
-        params: expect.objectContaining({ size: 1, startDate: undefined, endDate: undefined }),
-      });
-      expect(result).toEqual({ ok: true, value: { hasTodo: true, hasCompletedTodo: false } });
-    });
-
-    it('한 요청이라도 실패하면 그 오류를 돌려준다', async () => {
-      // Given
-      const { httpClient, service } = createSut();
-      const apiError = createTodoApiError();
-      httpClient.get.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.getTodoExistence();
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-  });
-
   describe('getTodoSummary', () => {
     it('요약할 날짜를 date 쿼리로 보내고 응답 날짜를 그대로 반환한다', async () => {
       // Given

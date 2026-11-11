@@ -122,17 +122,17 @@ describe('목록 updater', () => {
     expect(next.todos.at(-1)).toBe(second);
   });
 
-  it('존재 여부는 이미 참이면 같은 객체를 돌려 구독자가 다시 그리지 않는다', () => {
+  it('개요는 이미 참이면 같은 객체를 돌려 구독자가 다시 그리지 않는다', () => {
     // Given
-    const existence = { hasTodo: true, hasCompletedTodo: false };
+    const overview = { hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false };
 
     // When
-    const created = withTodoCreated(existence);
-    const completed = withTodoCompleted(existence);
+    const created = withTodoCreated(overview);
+    const completed = withTodoCompleted(overview);
 
     // Then
-    expect(created).toBe(existence);
-    expect(completed).toEqual({ hasTodo: true, hasCompletedTodo: true });
+    expect(created).toBe(overview);
+    expect(completed).toEqual({ hasTodo: true, hasCompletedTodo: true, hasActiveRepeat: false });
   });
 });
 
@@ -379,15 +379,15 @@ describe('바뀐 날짜를 모를 때의 무효화', () => {
 });
 
 describe('달력 요약 맞추기', () => {
-  it('그날을 담은 범위만 고치고 같은 접두사의 위젯 요약·존재 여부 캐시는 건드리지 않는다', () => {
+  it('그날을 담은 범위만 고치고 같은 접두사의 위젯 요약·개요 캐시는 건드리지 않는다', () => {
     // Given
     const client = createTestQueryClient();
     const widgetKey = TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: 'u' });
     const widgetSummary = toSummary(DAY);
-    const existence = { hasTodo: true, hasCompletedTodo: false };
+    const overview = { hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false };
     const nextWeek = toCompletions(NEXT_WEEK);
     client.setQueryData(widgetKey, widgetSummary);
-    client.setQueryData(TODO_QUERY_KEYS.existence(), existence);
+    client.setQueryData(TODO_QUERY_KEYS.overview(), overview);
     client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }), toList([]));
     client.setQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK), nextWeek);
     client.setQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK), {
@@ -409,7 +409,7 @@ describe('달력 요약 맞추기', () => {
 
     // Then
     expect(client.getQueryData(widgetKey)).toBe(widgetSummary);
-    expect(client.getQueryData(TODO_QUERY_KEYS.existence())).toBe(existence);
+    expect(client.getQueryData(TODO_QUERY_KEYS.overview())).toBe(overview);
     expect(client.getQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK))).toBe(nextWeek);
     expect(client.getQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK))?.completions).toEqual([]);
   });

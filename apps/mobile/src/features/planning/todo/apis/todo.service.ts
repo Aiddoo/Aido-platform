@@ -7,12 +7,13 @@ import {
   type GetTodosQuery,
   type ReorderTodoInput,
   type ToggleTodoCompleteInput,
+  todoOverviewResponseSchema,
   todoSummaryResponseSchema,
   type UpdateTodoInput,
   type UpdateTodoScheduleInput,
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
-import { ok, type Result } from '@src/core/errors/result';
+import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { noop } from 'es-toolkit';
@@ -23,7 +24,7 @@ import type { TodoSeries } from '../domains/todo-series.model';
 import type {
   Todo,
   TodoDetails,
-  TodoExistence,
+  TodoOverview,
   TodoSummary,
   TodoListResult,
 } from '../domains/todo.model';
@@ -52,6 +53,7 @@ import {
   toTodo,
   toTodoDetails,
   toTodoListResult,
+  toTodoOverview,
   toTodoSummary,
 } from './todo.mapper';
 
@@ -86,22 +88,15 @@ export class TodoService {
     );
   };
 
-  /** 날짜 조건 없이 한 건씩만 읽어, 기간과 무관하게 할 일·완료한 할 일이 있는지 본다 */
-  getTodoExistence = async (signal?: AbortSignal): Promise<Result<TodoExistence, ApiError>> => {
-    const [anyTodo, completedTodo] = await Promise.all([
-      this.getTodos({ size: 1 }, signal),
-      this.getTodos({ size: 1, completed: true }, signal),
-    ]);
-    if (!anyTodo.ok) {
-      return anyTodo;
-    }
-    if (!completedTodo.ok) {
-      return completedTodo;
-    }
-    return ok({
-      hasTodo: anyTodo.value.todos.length > 0,
-      hasCompletedTodo: completedTodo.value.todos.length > 0,
-    });
+  getTodoOverview = async (signal?: AbortSignal): Promise<Result<TodoOverview, ApiError>> => {
+    const result = await this.#httpClient.get('v1/todos/overview', { signal });
+
+    return parseApiResponse(
+      result,
+      todoOverviewResponseSchema,
+      toTodoOverview,
+      '[TodoService] Invalid getTodoOverview response',
+    );
   };
 
   getFriendTodos = async (

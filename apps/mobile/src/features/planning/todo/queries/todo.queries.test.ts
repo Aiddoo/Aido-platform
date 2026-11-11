@@ -1,4 +1,3 @@
-import { TODO_QUERY_KEYS } from './todo-query-keys';
 import { getTodoSummaryRefetchInterval, shouldPersistTodosByDate } from './todo.queries';
 
 describe('shouldPersistTodosByDate', () => {
@@ -71,30 +70,5 @@ describe('getTodoSummaryRefetchInterval', () => {
 
     // Then
     expect(interval).toBe(false);
-  });
-});
-
-describe('반복 안내 쿼리 키', () => {
-  it('날짜가 바뀌면 다른 키라 자정 뒤 어제 값을 쓰지 않는다', () => {
-    // Given
-    const beforeMidnight = '2026-11-07';
-    const afterMidnight = '2026-11-08';
-
-    // When
-    const before = TODO_QUERY_KEYS.upcomingRepeat({ date: beforeMidnight });
-    const after = TODO_QUERY_KEYS.upcomingRepeat({ date: afterMidnight });
-
-    // Then
-    expect(before).not.toEqual(after);
-  });
-
-  it('완료 현황 키 아래에 있어 생성·토글·삭제 때 함께 무효화된다', () => {
-    // When
-    const key = TODO_QUERY_KEYS.upcomingRepeat({ date: '2026-11-07' });
-
-    // Then
-    expect(key.slice(0, TODO_QUERY_KEYS.completions().length)).toEqual(
-      TODO_QUERY_KEYS.completions(),
-    );
   });
 });

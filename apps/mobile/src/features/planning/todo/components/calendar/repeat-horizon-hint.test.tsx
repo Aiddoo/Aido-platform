@@ -1,11 +1,9 @@
-import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
 import { ok, unwrap } from '@src/core/errors/result';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { getNowInstant } from '@src/shared/date/clock';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,
@@ -19,7 +17,6 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 
-import { createTodoDto, createTodoListResponseDto } from '../../__tests__/todo.fixtures';
 import { RepeatHorizonHint } from './repeat-horizon-hint';
 
 const accountId = createCurrentUserDto().userId;
@@ -41,11 +38,7 @@ async function renderHint({
 }) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(
-    ok(
-      createTodoListResponseDto({
-        items: [createTodoDto({ recurrenceGroupId: hasRepeat ? 'group-1' : null })],
-      }),
-    ),
+    ok({ hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: hasRepeat }),
   );
   const userHttpClient = createHttpClientStub();
   userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
@@ -110,26 +103,16 @@ describe('RepeatHorizonHint', () => {
     });
   });
 
-  it('매월처럼 먼 규칙이나 다음 달에 시작하는 규칙도 찾도록 미리 만드는 범위 전체를 묻는다', async () => {
-    // Given
-    const today = '2026-11-05';
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers({ now: new Date(2026, 10, 5, 9), advanceTimers: true });
-
+  it('진행 중 반복은 90일 치 목록을 받지 않고 서버 개요 한 번으로 묻는다', async () => {
     // When
     const { httpClient } = await renderHint({});
+    await screen.findByText(INFO_TITLE, {}, { timeout: 2_000 });
 
     // Then
-    await waitFor(() => expect(httpClient.get).toHaveBeenCalled());
-    const [, options] = httpClient.get.mock.lastCall ?? [];
-    expect(options).toMatchObject({
-      params: {
-        startDate: today,
-        endDate: addDaysToDateKey(today, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS),
-      },
-    });
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
+    const todoRequests = httpClient.get.mock.calls
+      .map(([url]) => url)
+      .filter((url) => url.startsWith('v1/todos'));
+    expect(todoRequests).toEqual(['v1/todos/overview']);
   });
 
   it.each([

@@ -11,8 +11,8 @@ import { DailyCompletionPolicy } from '../domains/daily-completion.model';
 import { type DailyCompletionsResult } from '../domains/daily-completion.model';
 import {
   type Todo,
-  type TodoExistence,
   type TodoListResult,
+  type TodoOverview,
   TodoPolicy,
 } from '../domains/todo.model';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
@@ -92,12 +92,12 @@ export function withTodoSaved(
   return withTodoAdded(list, saved);
 }
 
-export function withTodoCreated(existence: TodoExistence): TodoExistence {
-  return existence.hasTodo ? existence : { ...existence, hasTodo: true };
+export function withTodoCreated(overview: TodoOverview): TodoOverview {
+  return overview.hasTodo ? overview : { ...overview, hasTodo: true };
 }
 
-export function withTodoCompleted(existence: TodoExistence): TodoExistence {
-  return existence.hasCompletedTodo ? existence : { ...existence, hasCompletedTodo: true };
+export function withTodoCompleted(overview: TodoOverview): TodoOverview {
+  return overview.hasCompletedTodo ? overview : { ...overview, hasCompletedTodo: true };
 }
 
 export function snapshotTodo(
@@ -200,11 +200,11 @@ export function restoreTodo(queryClient: QueryClient, snapshot: TodoSnapshot) {
   );
 }
 
-export function updateCachedTodoExistence(
+export function updateCachedTodoOverview(
   queryClient: QueryClient,
-  update: (existence: TodoExistence) => TodoExistence,
+  update: (overview: TodoOverview) => TodoOverview,
 ) {
-  queryClient.setQueryData(TODO_QUERY_KEYS.existence(), (old) => old && update(old));
+  queryClient.setQueryData(TODO_QUERY_KEYS.overview(), (old) => old && update(old));
 }
 
 /** 증감 대신 목록에서 계산해 낙관적 반영·되돌리기가 같다. 목록이 잘려 있으면(서버 한도 초과) 서버 값을 기다린다 */
@@ -474,7 +474,7 @@ export function settleTodoEdit(
     todoListsFilter(after.id, spans),
     ...spans.map(widgetSummariesFilter),
     ...(isCalendarChanged ? spans.map(completionRangesFilter) : []),
-    ...getUpcomingRepeatFilters(before),
+    ...getRepeatOverviewFilters(before),
   ];
   if (isCategoryChanged) {
     invalidateTodoCategories(queryClient);
@@ -483,16 +483,14 @@ export function settleTodoEdit(
   return settleTodoQueries(queryClient, filters);
 }
 
-/** 완료를 풀거나 지우면 완료한 할 일·할 일이 남았는지 서버만 안다 */
-export function getTodoExistenceFilters(): InvalidateQueryFilters[] {
-  return [{ queryKey: TODO_QUERY_KEYS.existence() }];
+/** 완료를 풀거나 지우면 완료한 할 일·할 일·진행 중 반복이 남았는지 서버만 안다 */
+export function getTodoOverviewFilters(): InvalidateQueryFilters[] {
+  return [{ queryKey: TODO_QUERY_KEYS.overview() }];
 }
 
-/** 반복 회차는 다음 3개월 반복 안내를 바꿀 수 있다 */
-export function getUpcomingRepeatFilters(todo: Todo | undefined): InvalidateQueryFilters[] {
-  return todo != null && TodoPolicy.isRecurringTodo(todo)
-    ? [{ queryKey: TODO_QUERY_KEYS.upcomingRepeats() }]
-    : [];
+/** 반복 회차를 고치면 규칙이 끝났는지(3개월 반복 안내)는 서버만 안다 */
+function getRepeatOverviewFilters(todo: Todo | undefined): InvalidateQueryFilters[] {
+  return todo != null && TodoPolicy.isRecurringTodo(todo) ? getTodoOverviewFilters() : [];
 }
 
 function isTodoDependentQuery(query: Pick<Query, 'meta'>) {

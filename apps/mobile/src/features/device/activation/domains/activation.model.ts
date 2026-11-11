@@ -1,4 +1,4 @@
-import type { TodoExistence } from '@src/features/planning/todo/domains/todo.model';
+import type { TodoOverview } from '@src/features/planning/todo/domains/todo.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { z } from 'zod';
@@ -49,13 +49,13 @@ function shouldOfferChecklist(
 // 재설치·다른 기기·웹에서 만든 할 일도 세도록 서버 기록과 기기 기록 중 하나라도 있으면 끝이다(서버를 못 읽었으면 기기만 본다)
 function getChecklistSteps(
   progress: ActivationProgress,
-  todoExistence: TodoExistence | undefined,
+  todoOverview: Pick<TodoOverview, 'hasTodo' | 'hasCompletedTodo'> | undefined,
 ): ActivationChecklistSteps {
   const hasCompletedTodo =
-    progress.activatedAt != null || (todoExistence?.hasCompletedTodo ?? false);
+    progress.activatedAt != null || (todoOverview?.hasCompletedTodo ?? false);
   return {
     hasCreatedTodo:
-      hasCompletedTodo || progress.todoCreatedAt != null || (todoExistence?.hasTodo ?? false),
+      hasCompletedTodo || progress.todoCreatedAt != null || (todoOverview?.hasTodo ?? false),
     hasCompletedTodo,
   };
 }

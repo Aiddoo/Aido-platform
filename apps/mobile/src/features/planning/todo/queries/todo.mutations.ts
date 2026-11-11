@@ -35,7 +35,7 @@ import {
   getCachedTodosByDate,
   findCachedTodo,
   getCachedTodoDateSpan,
-  getUpcomingRepeatFilters,
+  getTodoOverviewFilters,
   invalidateTodoDependentQueries,
   invalidateTodos,
   removeTodoFromList,
@@ -46,7 +46,7 @@ import {
   snapshotTodo,
   syncDailyCompletionWithList,
   updateCachedTodo,
-  updateCachedTodoExistence,
+  updateCachedTodoOverview,
   withTodoCompleted,
 } from './todo-cache';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
@@ -108,7 +108,7 @@ export function useToggleTodoMutationOptions() {
       if (!variables.body.completed) {
         return;
       }
-      updateCachedTodoExistence(queryClient, withTodoCompleted);
+      updateCachedTodoOverview(queryClient, withTodoCompleted);
       recordActiveDay();
       // 오늘 목록의 마지막 할 일을 끝낸 순간 — 피드의 '다 끝낸 날' 배너와 같은 순간이다
       const todayTodos = getCachedTodosByDate(queryClient, { date: todayKey }) ?? [];
@@ -138,7 +138,7 @@ export function useToggleTodoMutationOptions() {
         hasFailed: error != null,
         ticket: context?.ticket,
         // 완료를 풀면 완료한 할 일이 하나도 남지 않았는지 서버만 안다
-        extra: body.completed ? [] : [{ queryKey: TODO_QUERY_KEYS.existence() }],
+        extra: body.completed ? [] : getTodoOverviewFilters(),
       });
     },
     meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.changeFailedRetry' } },
@@ -277,7 +277,6 @@ export function useDeleteTodoMutationOptions() {
       }
     },
     onSettled: (_data, error, { todoId, date }, context) => {
-      const snapshot = context?.snapshot;
       invalidateTodoDependentQueries(queryClient);
       settleTodoWrite(queryClient, {
         date,
@@ -287,10 +286,9 @@ export function useDeleteTodoMutationOptions() {
         hasFailed: error != null,
         ticket: context?.ticket,
         extra: [
-          // 마지막 할 일을 지웠는지는 서버만 안다
-          { queryKey: TODO_QUERY_KEYS.existence() },
+          // 마지막 할 일·반복 회차를 지웠는지는 서버만 안다
+          ...getTodoOverviewFilters(),
           { queryKey: TODO_QUERY_KEYS.page({ todoId }) },
-          ...getUpcomingRepeatFilters(snapshot?.todo),
         ],
       });
     },

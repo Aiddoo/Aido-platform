@@ -1,7 +1,7 @@
 import { useActivationProgressRepository } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useGetTodoExistenceQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { useGetTodoOverviewQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useQuery } from '@tanstack/react-query';
@@ -34,20 +34,20 @@ export function useActivationChecklist() {
     user != null &&
     ActivationPolicy.shouldOfferChecklist(user, { progress, now });
   // 재설치·다른 기기에서도 같은 진행을 보이도록 서버의 할 일 기록을 함께 본다. 대상 사용자에게만 부른다
-  const todoExistenceQuery = useQuery({
-    ...useGetTodoExistenceQueryOptions(),
+  const todoRecordQuery = useQuery({
+    ...useGetTodoOverviewQueryOptions(),
+    select: ({ hasTodo, hasCompletedTodo }) => ({ hasTodo, hasCompletedTodo }),
     enabled: shouldOfferChecklist,
-    throwOnError: false,
   });
-  const steps = ActivationPolicy.getChecklistSteps(progress, todoExistenceQuery.data);
+  const steps = ActivationPolicy.getChecklistSteps(progress, todoRecordQuery.data);
   // 끝낸 사용자에게 카드가 잠깐 보였다 사라지지 않게 서버 기록을 읽은 뒤 띄우고, 실패하면 기기 기록만 본다
-  const hasSettledTodoExistence = todoExistenceQuery.isSuccess || todoExistenceQuery.isError;
+  const hasSettledTodoRecord = todoRecordQuery.isSuccess || todoRecordQuery.isError;
 
   return {
     steps,
     isVisible:
       shouldOfferChecklist &&
-      hasSettledTodoExistence &&
+      hasSettledTodoRecord &&
       !ActivationPolicy.hasFinishedRequiredSteps(steps),
   };
 }

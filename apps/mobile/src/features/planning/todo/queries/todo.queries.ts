@@ -1,4 +1,4 @@
-import { TODO_PAGE_SIZE, TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
+import { TODO_PAGE_SIZE } from '@aido/api/vocabulary';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
@@ -9,7 +9,6 @@ import { type QueryState, queryOptions } from '@tanstack/react-query';
 import { keyBy } from 'es-toolkit';
 
 import { type DailyCompletionSummary } from '../domains/daily-completion.model';
-import { TodoPolicy } from '../domains/todo.model';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 /** 다시 열 때 먼저 보일 어제·오늘·내일 목록만 기기에 남긴다. 둘러본 다른 날짜는 콜드 스타트 복원 크기만 키운다 */
@@ -103,31 +102,6 @@ export function useGetFriendTodosQueryOptions({
   });
 }
 
-/** 계정 전체 반복 목록 API가 없어 미리 만든 범위의 회차로 본다. 다음 달부터 시작하는 규칙도 놓치지 않게 범위 전체를 본다 */
-export function useGetHasUpcomingRepeatQueryOptions() {
-  const todoService = useTodoService();
-  const todayKey = useTodayKey();
-
-  return queryOptions({
-    // 키에 날짜가 있어야 자정이 지나면 어제 기준으로 구한 값을 쓰지 않고 새로 묻는다
-    queryKey: TODO_QUERY_KEYS.upcomingRepeat({ date: todayKey }),
-    queryFn: async ({ signal }) => {
-      const { todos } = unwrap(
-        await todoService.getTodos(
-          {
-            startDate: todayKey,
-            endDate: addDaysToDateKey(todayKey, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS),
-            size: TODO_PAGE_SIZE.MAX,
-          },
-          signal,
-        ),
-      );
-      return todos.some(TodoPolicy.isRecurringTodo);
-    },
-    throwOnError: false,
-  });
-}
-
 export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
   const todoService = useTodoService();
 
@@ -137,12 +111,14 @@ export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
   });
 }
 
-export function useGetTodoExistenceQueryOptions() {
+/** 반복 안내·시작 체크리스트가 각자 select로 고른다. 둘 다 화면 한쪽의 보조 정보라 실패해도 경계로 보내지 않고 그 안내만 뺀다 */
+export function useGetTodoOverviewQueryOptions() {
   const todoService = useTodoService();
 
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.existence(),
-    queryFn: async ({ signal }) => unwrap(await todoService.getTodoExistence(signal)),
+    queryKey: TODO_QUERY_KEYS.overview(),
+    queryFn: async ({ signal }) => unwrap(await todoService.getTodoOverview(signal)),
+    throwOnError: false,
   });
 }
 

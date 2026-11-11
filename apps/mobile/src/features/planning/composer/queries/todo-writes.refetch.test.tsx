@@ -28,7 +28,7 @@ import {
   useGetDailyCompletionsQueryOptions,
   useGetFriendTodosQueryOptions,
   useGetTodoDetailsQueryOptions,
-  useGetTodoExistenceQueryOptions,
+  useGetTodoOverviewQueryOptions,
   useGetTodosByDateQueryOptions,
   useGetTodoSummaryQueryOptions,
 } from '@src/features/planning/todo/queries/todo.queries';
@@ -66,7 +66,7 @@ const WATCHED: Record<string, QueryKey> = {
   'calendar:month': TODO_QUERY_KEYS.completionsByRange(MONTH),
   'calendar:next-month': TODO_QUERY_KEYS.completionsByRange(NEXT_MONTH),
   'widget:day': TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null }),
-  existence: TODO_QUERY_KEYS.existence(),
+  overview: TODO_QUERY_KEYS.overview(),
   categories: TODO_CATEGORY_QUERY_KEYS.list(),
   'friend:day': TODO_QUERY_KEYS.friendListByDate({ userId: FRIEND_ID, date: DAY }),
   'detail:1': TODO_QUERY_KEYS.detail({ todoId: 1 }),
@@ -105,6 +105,13 @@ function createTodoServer() {
   function get(url: string, params: Record<string, unknown> = {}): unknown {
     if (url === 'v1/todo-categories') {
       return createTodoCategoryListDto();
+    }
+    if (url === 'v1/todos/overview') {
+      return {
+        hasTodo: state.todos.length > 0,
+        hasCompletedTodo: state.todos.some((todo) => todo.completed),
+        hasActiveRepeat: state.todos.some((todo) => todo.recurrenceGroupId != null),
+      };
     }
     if (url === 'v1/todos/summary') {
       const dayTodos = state.todos.filter((todo) => isOn(todo, String(params.date)));
@@ -254,7 +261,7 @@ function WatchedQueries() {
   useQuery(useGetTodosByDateQueryOptions({ date: OTHER_DAY }));
   useQuery(useGetDailyCompletionsQueryOptions(NEXT_MONTH));
   useQuery(useGetTodoSummaryQueryOptions({ date: DAY }));
-  useQuery(useGetTodoExistenceQueryOptions());
+  useQuery(useGetTodoOverviewQueryOptions());
   useQuery(useGetTodoCategoriesQueryOptions());
   useQuery(useGetFriendTodosQueryOptions({ friendUserId: FRIEND_ID, date: DAY }));
   return null;
@@ -429,7 +436,7 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
     {
       path: '할 일 체크 풀기',
       start: (w) => w.toggleTodo.mutateAsync({ todoId: 3, body: { completed: false }, date: DAY }),
-      expected: ['existence', 'widget:day'],
+      expected: ['overview', 'widget:day'],
     },
     {
       path: '할 일 만들기',
@@ -448,7 +455,7 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
     {
       path: '할 일 지우기',
       start: (w) => w.deleteTodo.mutateAsync({ todoId: 2, date: DAY }),
-      expected: ['existence', 'widget:day'],
+      expected: ['overview', 'widget:day'],
     },
     {
       path: '할 일 순서 바꾸기',
@@ -490,7 +497,7 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
     {
       path: '끝낸 할 일에 하위 항목 더하기',
       start: (w) => w.addSubTodo.mutateAsync({ todoId: 3, title: '새 항목', date: DAY }),
-      expected: ['existence', 'widget:day'],
+      expected: ['overview', 'widget:day'],
     },
     {
       path: '하위 항목 체크',

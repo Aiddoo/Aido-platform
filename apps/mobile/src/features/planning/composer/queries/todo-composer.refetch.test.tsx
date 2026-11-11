@@ -12,7 +12,7 @@ import {
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import {
   useGetDailyCompletionsQueryOptions,
-  useGetTodoExistenceQueryOptions,
+  useGetTodoOverviewQueryOptions,
   useGetTodosByDateQueryOptions,
   useGetTodoSummaryQueryOptions,
 } from '@src/features/planning/todo/queries/todo.queries';
@@ -78,6 +78,9 @@ function respondAsServer(
   if (url === 'v1/daily-completions') {
     return ok(completionsDto(params?.startDate === WEEK.startDate ? WEEK : MONTH, hasCreated));
   }
+  if (url === 'v1/todos/overview') {
+    return ok({ hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false });
+  }
   if (url === 'v1/todos/summary') {
     return ok({
       date: DAY,
@@ -109,7 +112,7 @@ function BackgroundProbe() {
   // 위젯 동기화·시작 체크리스트가 피드 뒤에서 붙들고 있는 조회
   useQuery(useGetTodoSummaryQueryOptions({ date: DAY }));
   useQuery(useGetDailyCompletionsQueryOptions(WEEK));
-  useQuery(useGetTodoExistenceQueryOptions());
+  useQuery(useGetTodoOverviewQueryOptions());
   return null;
 }
 

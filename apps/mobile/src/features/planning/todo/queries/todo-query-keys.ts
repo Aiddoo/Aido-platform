@@ -1,12 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import type { DailyCompletionsResult } from '../domains/daily-completion.model';
-import type {
-  TodoDetails,
-  TodoExistence,
-  TodoListResult,
-  TodoSummary,
-} from '../domains/todo.model';
+import type { TodoDetails, TodoListResult, TodoOverview, TodoSummary } from '../domains/todo.model';
 
 export const TODO_QUERY_KEYS = {
   all: ['todo'] as const,
@@ -26,15 +21,10 @@ export const TODO_QUERY_KEYS = {
       queryKey: [...TODO_QUERY_KEYS.widgetSummary(), { date, userId: userId ?? null }],
     }).queryKey,
 
-  // 할 일·완료한 할 일이 있는지(시작 체크리스트) — completions() 하위라 생성·토글·삭제 invalidation을 상속한다
-  existence: () =>
-    queryOptions<TodoExistence>({ queryKey: [...TODO_QUERY_KEYS.completions(), 'existence'] })
+  // 할 일·완료한 할 일·진행 중 반복이 있는지(시작 체크리스트, 3개월 안내) — completions() 하위라 생성·토글·삭제 invalidation을 상속한다
+  overview: () =>
+    queryOptions<TodoOverview>({ queryKey: [...TODO_QUERY_KEYS.completions(), 'overview'] })
       .queryKey,
-
-  // 다가오는 반복 할 일이 있는지(3개월 안내) — 위와 같이 생성·토글·삭제 invalidation을 상속한다
-  upcomingRepeats: () => [...TODO_QUERY_KEYS.completions(), 'upcoming-repeat'] as const,
-  upcomingRepeat: ({ date }: { date: string }) =>
-    queryOptions<boolean>({ queryKey: [...TODO_QUERY_KEYS.upcomingRepeats(), { date }] }).queryKey,
 
   lists: () => [...TODO_QUERY_KEYS.all, 'list'] as const,
   listByDate: ({ date }: { date: string }) =>

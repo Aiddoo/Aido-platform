@@ -41,12 +41,13 @@ export const todoListResultSchema = z.object({
 });
 export type TodoListResult = z.infer<typeof todoListResultSchema>;
 
-// 기기와 무관한 서버 기록이다
-const todoExistenceSchema = z.object({
+// 기기와 무관한 서버 기록이다. 진행 중 반복은 서버가 정한다(다음 회차가 남은 규칙, 휴면 규칙 포함)
+const todoOverviewSchema = z.object({
   hasTodo: z.boolean(),
   hasCompletedTodo: z.boolean(),
+  hasActiveRepeat: z.boolean(),
 });
-export type TodoExistence = z.infer<typeof todoExistenceSchema>;
+export type TodoOverview = z.infer<typeof todoOverviewSchema>;
 
 export const todoSummarySchema = z.object({
   date: z.string(),

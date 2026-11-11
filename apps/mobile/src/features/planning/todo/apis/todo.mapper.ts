@@ -5,6 +5,7 @@ import {
   type Todo as TodoDto,
   type TodoDetailsResponse,
   type TodoListResponse,
+  type TodoOverviewResponse,
   type TodoSummaryResponse,
 } from '@aido/api';
 import { toNullableInstant } from '@src/shared/date/instant';
@@ -17,6 +18,7 @@ import {
 import {
   type Todo,
   type TodoDetails,
+  type TodoOverview,
   type TodoSummary,
   type TodoListResult,
 } from '../domains/todo.model';
@@ -61,6 +63,14 @@ export function toDailyCompletionsResult(
     completions: dto.completions.map(toDailyCompletionSummary),
     totalCompleteDays: dto.totalCompleteDays,
     dateRange: dto.dateRange,
+  };
+}
+
+export function toTodoOverview(dto: TodoOverviewResponse): TodoOverview {
+  return {
+    hasTodo: dto.hasTodo,
+    hasCompletedTodo: dto.hasCompletedTodo,
+    hasActiveRepeat: dto.hasActiveRepeat,
   };
 }
 
