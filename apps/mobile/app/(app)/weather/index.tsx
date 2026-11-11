@@ -73,12 +73,18 @@ export default function WeatherScreen() {
                         <Box px={SCREEN_GUTTER}>
                           <WeatherLocationNotice />
                         </Box>
-                        <Box pt={HERO_TOP} px={HERO_GUTTER}>
+
+                        <Spacing size={HERO_TOP} />
+
+                        <Box px={HERO_GUTTER}>
                           <WeatherReportGate.Suspense fallback={<WeatherHero.Loading />}>
                             <WeatherHero />
                           </WeatherReportGate.Suspense>
                         </Box>
-                        <VStack gap={CARD_GAP} pt={CARDS_TOP} px={SCREEN_GUTTER}>
+
+                        <Spacing size={CARDS_TOP} />
+
+                        <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>
                           {/* 특보는 대부분 없어서 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
                           <WeatherReportGate.Suspense fallback={null}>
                             <WeatherAlerts />
@@ -96,9 +102,11 @@ export default function WeatherScreen() {
                             <HourlyForecast />
                           </WeatherReportGate.Suspense>
                         </VStack>
+
                         {isCompact && (
                           <>
                             <Spacing size={CARD_GAP} />
+
                             <ForecastCards />
                           </>
                         )}
