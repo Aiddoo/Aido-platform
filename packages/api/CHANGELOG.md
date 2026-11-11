@@ -1,5 +1,18 @@
 # @aido/api
 
+## 1.15.1
+
+### Patch Changes
+
+- 3a4ca7f: 카테고리를 지울 때 안의 할 일을 다른 카테고리로 옮길지, 카테고리와 함께 지울지 고를 수 있다. 삭제 요청에 선택 값 `todoHandling`(`move`·`delete`)을 더했고, `move`는 옮길 카테고리가 꼭 필요하고 `delete`는 옮길 카테고리를 받지 않는다(어기면 `SYS_0002`). 함께 지우면 하위 항목·댓글·반복 규칙·예약된 알림까지 한 번에 지우고, 완료한 할 일도 사라져 날짜별 완료 기록에서 빠진다(연속 기록과 지난 주간 성취는 그대로다). 지우기 전에 `GET /v1/todo-categories/:id/deletion-preview`로 할 일·완료·진행 중 반복 수와 마지막 카테고리인지를 볼 수 있고, 삭제 응답에는 실제로 한 일(`result`)이 함께 온다. `todoHandling`을 보내지 않는 출시 앱(1.15.0까지)은 전과 같이 할 일이 있으면 옮길 카테고리를 요구하고 같은 오류 코드를 받는다. 옮기기는 사용자 인덱스를 타도록 바꿔 할 일 5,000개도 0.1초 안에 끝난다.
+- 26dcb4a: DB 연결 끊김·풀 대기 초과·쿼리 시간 초과(57014, 클라이언트 쿼리 상한 초과 포함)·잠금 대기 실패(55P03)를 새 오류 코드 `SYS_0005`(503, 잠시 뒤 다시 시도)로 응답하고 `@aido/api` 오류 계약과 ko·en 문구에 더한다. 알 수 없는 unique 제약 위반은 지금처럼 409 `SYS_0004`이고 운영 경보를 올린다.
+- 26dcb4a: 알림함 응답 항목에 푸시와 같은 계산으로 정한 선택 필드 `navigation`을 더한다. 출시 앱은 새 필드를 무시하므로 동작이 같다.
+- e598830: 관리자 브로드캐스트 캠페인(`POST /v2/admin/notifications/broadcasts`)에 선택 필드 `localizedContent`(언어별 제목·본문, 없는 언어는 `title`·`body`)와 `delivery`(`NOW` 기본, `RECIPIENT_LOCAL_TIME`은 수신자 저장 시간대의 날짜·시각, 이미 지났으면 다음 날)를 더하고, 마케팅 분배·발송 작업은 우선순위 0 차선에 올린다. 성장 지표 응답에 `stickiness`(DAU/MAU %)를 더한다. 관리자 API 추가 필드라 출시 앱 계약은 그대로다. `BroadcastCampaign`에 `localizedContent`·`delivery` 컬럼(nullable jsonb)을 더하는 추가 마이그레이션이 있다.
+- f6e9f13: 알림 권한을 허용한 기기가 토큰 발급에 한 번 실패해 `token: null`로 보고해도 이미 등록된 푸시 토큰을 지우지 않는다(출시된 1.13~1.15.0 앱도 서버만으로 고쳐진다). 권한·보고 시각과 토큰의 세션·앱 버전만 이번 보고로 옮기고, 거절·미요청 보고는 지금처럼 토큰을 지운다. 로그아웃 해제를 보내지 못하고 세션이 끝난 기기(갱신 토큰 만료, 오프라인 로그아웃)는 계정 푸시를 계속 받았는데, 로그인 없이 기기 ID와 그 기기의 토큰이 모두 맞을 때만 지우는 `POST /v1/notifications/push-devices/unregister`를 더했다. 맞는 등록이 없어도 같은 200 `{ unregistered: true }`를 주고 IP마다 분당 20번까지 받는다. 오래 쉰 사용자의 재방문 알림을 막지 않으려 발송을 세션으로 거르지는 않는다. 푸시마다 알림 종류로 정한 보관 시간(할 일 리마인더 1시간, 아침·저녁 요약과 날씨 2시간, 그날 알림 3시간, 소셜 12시간, 나머지 24시간)과 우선순위(high)를 실어 꺼져 있던 기기에 지난 리마인더가 쌓이지 않는다. Android 채널은 출시 앱의 `default` 그대로다. 사용자가 시각을 정한 할 일 리마인더와 프리미엄 아침·저녁 리마인더는 날씨 알림처럼 야간 수신을 꺼도 보내고, 광고성 야간 금지와 소셜·재방문 알림의 야간 설정은 그대로다. 푸시 열람 로그 키는 `notification.push.opened`이고 알림마다 처음 열 때 한 번 남는다. 기존 operation의 계약 fingerprint와 DB는 바뀌지 않는다.
+- 1e354d3: 서버 15개 Context를 한 가지 구조로 정리한다. 기능(slice)마다 Nest Module 하나·Aggregate Root 하나를 두고, 쓰기는 Entity·값 객체, 포트는 abstract class DI 토큰(`provideUseCase` 조립, Symbol 토큰·barrel 재수출 제거), 업무 오류는 slice의 이름 있는 생성 함수, 큐는 `defineQueue` 한 곳, 날짜는 `ClockPort`와 Temporal(`dayjs` 제거), 설정은 namespace config로 읽는다. 이름·경계·순환·미사용 코드는 ls-lint·dependency-cruiser·관례 검사·knip이 `pnpm check`에서 막는다. `@aido/api`는 엔티티 ID 규칙을 `ENTITY_ID_PATTERN`(`^c[0-9a-z]{8,63}$`) 하나로 두어 `z.cuid()`를 대신하고(운영 ID 모양과 출시 앱 요청은 그대로 통과한다), 표준 커서 목록 `cursorPageSchema`로 할 일·친구 할 일·메모·주간 성취 목록을 만들며(JSON Schema 출력은 바이트 단위로 같다), 쓰지 않는 follow 계약 별칭과 `weeklyAchievementSchema` export를 지운다. 출시 앱 OpenAPI 지문은 ID pattern만 갱신했고 HTTP 응답 모양·오류 코드·큐 이름·잡 키는 그대로다.
+- 26dcb4a: `@aido/api/vocabulary`에 앱·서버가 함께 쓰는 규칙을 모은다: 언어 규칙(`SUPPORTED_LOCALES`·`resolveSupportedLocale`, 값 없음 ko·지원하지 않는 언어 en), SemVer 비교, 공유 enum 튜플, 날씨 시간대 경계·마케팅 푸시 카테고리·매월 반복 말일 기준. 기존 export 경로(`@aido/api/common` 포함)와 계약 값은 그대로다.
+- 26dcb4a: 날씨 v2(`GET /v2/weather`) 응답에 선택 필드 `briefing`(`reason`·`affectedTodoIds`·`rescheduleOptions`)을 더해 비·더위에 영향받는 오늘 남은 할 일과 옮길 시각 후보를 서버가 고른다. 할 일을 읽지 못하면 `briefing`만 빠지고 리포트는 그대로 응답한다.
+
 ## 1.15.0
 
 ### Minor Changes
