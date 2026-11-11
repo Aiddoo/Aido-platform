@@ -49,6 +49,19 @@ describe('이름 수정 화면', () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
+  it('공백만 쓴 이름은 빈 이름으로 보고 저장 버튼을 켜지 않는다', async () => {
+    // Given
+    await renderEditName(httpClient);
+    await fireEvent.changeText(screen.getByTestId('edit-name-input'), '새이름');
+    await waitFor(() => expect(screen.getByTestId('edit-name-submit')).toBeEnabled());
+
+    // When
+    await fireEvent.changeText(screen.getByTestId('edit-name-input'), '   ');
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('edit-name-submit')).toBeDisabled());
+  });
+
   it('저장하면 한 번만 보내고 뒤로 간다', async () => {
     // Given
     httpClient.patch.mockResolvedValue(ok(createUpdateProfileDto({ name: '새이름' })));
