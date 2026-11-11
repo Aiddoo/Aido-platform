@@ -226,12 +226,13 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   let tokenStore: TokenStore;
   let requestRefresh: jest.MockedFunction<RefreshTokensRequest>;
   let endSession: jest.MockedFunction<(details: unknown) => Promise<void>>;
+  let errorReporter: ReturnType<typeof createErrorReporterStub>;
   let http: KyHttpClient;
 
   const buildClient = (): KyInstance => {
     const sessionEpoch = createSessionEpoch();
     const logger = createLoggerStub();
-    const errorReporter = createErrorReporterStub();
+    errorReporter = createErrorReporterStub();
     const refresh = createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch, logger });
 
     return ky.create({
@@ -371,6 +372,21 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
 
     // Then
     await expect(request).rejects.toBeInstanceOf(ServerError);
+  });
+
+  it('비밀번호가 틀린 업무 401(USER_0602)은 갱신·재전송 없이 ApiError로 담고 Sentry에 남기지 않는다', async () => {
+    // Given
+    fetchMock.mockImplementation(async () => errorBody(401, 'USER_0602', 'wrong password'));
+
+    // When
+    const result = await http.patch('auth/password', { currentPassword: 'wrong' });
+
+    // Then
+    expect(result).toMatchObject({ ok: false, error: { code: 'USER_0602', status: 401 } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requestRefresh).not.toHaveBeenCalled();
+    expect(endSession).not.toHaveBeenCalled();
+    expect(errorReporter.captureMessage).not.toHaveBeenCalled();
   });
 
   it('4xx는 서버 코드와 카탈로그 문구를 보존한 Result.err(ApiError)로 담는다', async () => {

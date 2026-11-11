@@ -1,3 +1,4 @@
+import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
@@ -10,10 +11,37 @@ import ky, { type AfterResponseHook } from 'ky';
 import { match } from 'ts-pattern';
 
 import { getPathname } from './request-path';
+import { toServerErrorCode } from './server-error-code';
 import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
 /** 재시도가 다시 401이어도 갱신을 반복하지 않는다 */
 export const RETRY_MARKER_HEADER = 'x-retried-after-refresh';
+
+/** 토큰·세션이 거부된 401 코드(지금 JWT 가드는 AUTH_0101 하나로 낸다). 비밀번호가 틀린 USER_0602 같은 업무 401은 갱신하지 않는다 */
+const ACCESS_TOKEN_REJECTED_CODES: ReadonlySet<ErrorCodeType> = new Set([
+  ErrorCode.AUTH_0101,
+  ErrorCode.AUTH_0102,
+  ErrorCode.AUTH_0103,
+  ErrorCode.AUTH_0104,
+  ErrorCode.AUTH_0105,
+  ErrorCode.AUTH_0106,
+  ErrorCode.AUTH_0107,
+  ErrorCode.SESSION_0701,
+  ErrorCode.SESSION_0702,
+  ErrorCode.SESSION_0703,
+  ErrorCode.SESSION_0704,
+]);
+
+/** 코드를 읽지 못한 401(게이트웨이·본문 없는 응답)은 전처럼 토큰 거부로 본다 */
+async function isAccessTokenRejected(response: Response): Promise<boolean> {
+  const code = toServerErrorCode(
+    await response
+      .clone()
+      .json()
+      .catch(() => null),
+  );
+  return code == null || ACCESS_TOKEN_REJECTED_CODES.has(code);
+}
 
 /** 요청을 보낸 세션의 세대를 ky `context`에 남긴다. 서버로 나가는 헤더에 싣지 않는다 */
 const SENT_EPOCH_CONTEXT_KEY = 'sentSessionEpoch';
@@ -48,7 +76,7 @@ export function createTokenRefreshHook(deps: TokenRefreshHookDeps): AfterRespons
   };
 
   return async ({ request, options, response }) => {
-    if (response.status !== 401) {
+    if (response.status !== 401 || !(await isAccessTokenRejected(response))) {
       return response;
     }
 

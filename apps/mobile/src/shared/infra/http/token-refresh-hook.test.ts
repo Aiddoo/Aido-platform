@@ -17,6 +17,12 @@ const createFakeRequest = (headers: Record<string, string> = {}): Request =>
 
 const createFakeResponse = (status: number): Response => new Response(null, { status });
 
+const createErrorResponse = (status: number, code: string): Response =>
+  new Response(JSON.stringify({ error: { code, message: 'error' } }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
 /** `ky.retry({ request })` 마커에서 재시도 요청을 꺼낸다. 마커가 아니면 undefined다. */
 const readRetriedRequest = (result: unknown): Request | undefined => {
   if (typeof result !== 'object' || result == null || !('options' in result)) {
@@ -85,6 +91,34 @@ describe('createTokenRefreshHook', () => {
     // Then
     expect(result).toBe(response);
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('비밀번호가 틀린 업무 401(USER_0602)은 갱신·재시도 없이 그대로 돌려주고 Sentry에 남기지 않는다', async () => {
+    // Given
+    const response = createErrorResponse(401, 'USER_0602');
+
+    // When
+    const result = await invokeHook(createFakeRequest(), response);
+
+    // Then
+    expect(result).toBe(response);
+    expect(refresh).not.toHaveBeenCalled();
+    expect(endSession).not.toHaveBeenCalled();
+    expect(errorReporter.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('JWT 가드의 토큰 거부(AUTH_0101)는 전처럼 갱신해 재시도한다', async () => {
+    // Given
+    tokenStore.getAccessToken.mockResolvedValue('current-token');
+    refresh.mockResolvedValue({ kind: 'refreshed', accessToken: 'new-token' });
+    const request = createFakeRequest({ Authorization: 'Bearer current-token' });
+
+    // When
+    const result = await invokeHook(request, createErrorResponse(401, 'AUTH_0101'));
+
+    // Then
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expectForcedRetry(result, 'new-token');
   });
 
   it('재시도 마커가 있으면 갱신 없이 응답을 반환하고, 즉시 Sentry warning을 남긴다', async () => {
