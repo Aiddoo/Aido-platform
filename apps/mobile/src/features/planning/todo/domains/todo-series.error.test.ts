@@ -112,14 +112,14 @@ describe('getTodoSeriesLimit', () => {
     expect(limit).toBe(12);
   });
 
-  it('상세에 한도가 없으면 공유 상한을 쓴다', () => {
+  it('한도를 쓰지 않는 실패는 한도가 없다', () => {
     // Given
-    const error = new ApiError('TODO_0842', '거절', 400);
+    const error = new ApiError('TODO_0841', '없음', 404);
 
     // When
     const limit = getTodoSeriesLimit(error);
 
     // Then
-    expect(limit).toBe(30);
+    expect(limit).toBeNull();
   });
 });

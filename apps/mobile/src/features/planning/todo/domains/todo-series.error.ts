@@ -1,5 +1,4 @@
 import { ErrorCode } from '@aido/api/errors';
-import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { isApiError } from '@src/shared/errors';
 import { match, P } from 'ts-pattern';
 
@@ -40,12 +39,10 @@ export function isTodoSeriesFailure(error: unknown): boolean {
   return findTodoSeriesFailure(error) != null;
 }
 
-// 한도가 상세에 없는 옛 서버 응답은 공유 상한으로 안내한다
-export function getTodoSeriesLimit(error: unknown): number {
+// 한도 거절(TODO_0842)은 서버가 상세에 limit을 항상 싣는다. 다른 실패는 문구가 한도를 쓰지 않는다
+export function getTodoSeriesLimit(error: unknown): number | null {
   const limit = isApiError(error) ? error.details?.limit : null;
-  return typeof limit === 'number' && Number.isInteger(limit) && limit > 0
-    ? limit
-    : TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER;
+  return typeof limit === 'number' ? limit : null;
 }
 
 export function shouldReopenRepeatPicker(error: unknown): boolean {
