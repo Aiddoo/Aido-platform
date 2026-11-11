@@ -31,47 +31,54 @@ Policy는 의미 값(등급, 단계, 종류)을 돌려준다. 그 값을 문구�
 // features/notification/domains/notification.model.ts
 import { notificationTypeSchema } from '@aido/api/common';
 import { instantSchema } from '@src/shared/date/instant';
-import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
+// 알림을 누르면 열 곳. 서버 navigation 종류와 1:1이고 칸은 앱이 쓰는 것만 둔다
 export const notificationTargetSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('NOTIFICATIONS') }),
   z.object({ kind: z.literal('FRIEND_FEED'), friendId: z.string() }),
-  // … 서버 navigation 종류와 1:1(필드는 앱이 쓰는 것만)
+  z.object({
+    kind: z.literal('TODO'),
+    todoId: z.int().positive(),
+    ownerId: z.string().nullable(),
+    dateKey: z.iso.date().nullable(),
+  }),
+  // … 종류마다 한 줄
 ]);
 export type NotificationTarget = z.infer<typeof notificationTargetSchema>;
 
 export const notificationSchema = z.object({
-  id: z.int(),
+  id: z.int().positive(),
   type: notificationTypeSchema,
   isRead: z.boolean(),
   target: notificationTargetSchema,
-  receivedCheer: z.object({ cheerId: z.int().positive(), sender: userSummarySchema }).nullable(),
+  receivedCheer: z
+    .object({
+      cheerId: z.int().positive(),
+      senderId: z.string(),
+      senderName: z.string().nullable(),
+    })
+    .nullable(),
   createdAt: instantSchema,
 });
 export type Notification = z.infer<typeof notificationSchema>;
-export type FilterNotification = (notification: Notification) => boolean;
 
 // 프리미엄 AI 기능이 만든 알림. 서버가 종류를 더하면 이 표가 빌드를 막는다
 const IS_AI_FEATURE_TYPE = {
   // 종류마다 한 줄
 } as const satisfies Record<NotificationType, boolean>;
 
-export function isAiFeature(notification: Notification) {
+function isAiFeature(notification: Notification) {
   return IS_AI_FEATURE_TYPE[notification.type];
 }
 
-export function isUnread(notification: Notification) {
+function isUnread(notification: Notification) {
   return !notification.isRead;
 }
 
-export function canReportCheer(notification: Notification) {
-  return notification.receivedCheer != null;
-}
-
-export const NotificationPolicy = { isAiFeature, isUnread, canReportCheer } as const;
+export const NotificationPolicy = { isAiFeature, isUnread } as const;
 ```
 
 ## Mapper
@@ -79,28 +86,43 @@ export const NotificationPolicy = { isAiFeature, isUnread, canReportCheer } as c
 - `apis/{entity}.mapper.ts`에만, 엔티티당 하나다. 서버 DTO든 OS·SDK 값이든 "바깥 값 ↔ 모델"은 이 파일에서 바꾼다.
 - 순수 함수다. 포트·시계·로그를 쓰지 않고 DI에 넣지 않는다.
 - 이름은 `to{Model}(dto)`, `to{X}Request(values)`, `to{X}FormValues(model)`, `parse{X}(unknown): X | null`이다. 같은 요청을 만드는 곳이 여럿이면 mapper 하나로 모은다.
+- 버린 칸을 로그로 남겨야 하는 입력(푸시 data)은 `parse{X}`가 `{ x: X | null, droppedPaths }`를 돌려준다. 경로에는 값을 싣지 않고, 로그는 부르는 훅이 남긴다.
 - 계약의 열거·유니온은 `satisfies Record<ContractEnum, …>`나 `match().exhaustive()`로 빠짐없이 바꾼다. brand·enum은 `schema.parse`로 붙이고 `as`로 단정하지 않는다.
 - 결과는 plain 값이다. 날짜는 문자열 brand(`Instant`, `DateKey`, `TimeOfDay`)로 바꾸고 `Date`·class를 넣지 않는다. 그래야 Query의 structural sharing이 같은 값의 참조를 지킨다(`memo.mapper.structural-sharing.test.ts`).
 
 ```ts
 // apis/notification.mapper.ts: 서버 navigation이 바뀌면 여기만 고친다
-export function toNotificationTarget(navigation: NotificationNavigationDto): NotificationTarget {
-  // 종류마다 .with 한 줄
-  return match(navigation)
-    .with({ kind: 'FRIEND_FEED' }, ({ friendId }) => ({ kind: 'FRIEND_FEED' as const, friendId }))
-    .exhaustive();
+export function toNotificationTarget(
+  navigation: NotificationNavigationDto | undefined,
+): NotificationTarget {
+  if (navigation == null) {
+    return { kind: 'NOTIFICATIONS' };
+  }
+  return (
+    match(navigation)
+      .returnType<NotificationTarget>()
+      .with({ kind: 'FRIEND_FEED' }, ({ friendId }) => ({ kind: 'FRIEND_FEED', friendId }))
+      .with({ kind: 'TODO' }, ({ todoId, todoOwnerId, todoDate }) => ({
+        kind: 'TODO',
+        todoId,
+        ownerId: todoOwnerId ?? null,
+        dateKey: todoDate ?? null,
+      }))
+      // … 종류마다 .with 한 줄
+      .exhaustive()
+  );
 }
 
-// apis/push-notification.mapper.ts: 푸시 data를 읽는 곳은 이 함수 하나다. 틀리면 null → 알림함으로 연다
-export function parsePushNotification(data: unknown): PushNotification | null {
-  const payload = pushNotificationPayloadSchema.safeParse(data);
-  if (!payload.success) {
-    return null;
+// apis/push-notification.mapper.ts: 푸시 data를 읽는 곳은 이 함수 하나다. 칸 하나가 틀리면 그 칸만 버리고 경로를 돌려준다
+export function parsePushNotification(data: unknown): ParsedPushNotification {
+  const exact = pushNotificationPayloadSchema.safeParse(data);
+  if (exact.success) {
+    return { notification: toPushNotification(exact.data), droppedPaths: [] };
   }
+  const lenient = lenientPushNotificationPayloadSchema.safeParse(data); // 칸마다 .catch
   return {
-    notificationId: payload.data.notificationId,
-    type: payload.data.type,
-    target: toNotificationTarget(payload.data.navigation),
+    notification: lenient.success ? toPushNotification(lenient.data) : null,
+    droppedPaths: exact.error.issues.map(({ path }) => path.map(String).join('.')),
   };
 }
 ```

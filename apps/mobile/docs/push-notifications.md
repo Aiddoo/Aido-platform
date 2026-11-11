@@ -26,7 +26,9 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | `hooks/use-notification-response-observer.ts`                                                        | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                                                          |
 | `hooks/use-notification-entry.ts`                                                                    | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                       |
 | `stores/notification-entry.store.ts`                                                                 | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다                                                     |
-| `apis/notification.mapper.ts`                                                                        | 서버 `navigation` → 앱 목적지(`target`). 알림함 항목도 같은 길이다                                          |
+| `apis/notification.mapper.ts`                                                                        | `toNotificationTarget`: 서버 `navigation` → 앱 `NotificationTarget`. 알림함 항목도 같은 길이다              |
+| `domains/push-notification.model.ts`·`push-notification-response.model.ts`                           | 받은 푸시(`{ notificationId, type, target, … }`)와 누른 응답, 각자의 Policy                                 |
+| `utils/notification-destination.ts`                                                                  | `toNotificationDestination(target, { windowSizeClass, viewerId })`: target → 앱 경로·외부 링크              |
 
 ## 클라이언트가 하는 일
 
@@ -74,7 +76,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 
 ## 앱이 앞에 있을 때 받은 알림
 
-`registerForegroundNotificationPresentation`이 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고, `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `PushNotificationPolicy.getForegroundPresentation` 하나다.
+`registerForegroundNotificationPresentation`이 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고, `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `utils/get-foreground-push-presentation.ts`의 `getForegroundPushPresentation` 하나다(배너·조용히는 표시 방식이라 모델에 두지 않는다).
 
 | 지금 화면                                                         | 보이는 방식                           | 이유                                                                     |
 | ----------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
@@ -101,27 +103,35 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 
 ## 눌린 푸시 처리
 
-탭은 읽음(`markAsReadAndCheckOwnership`)과 열림(`POST …/opened`, 읽음 포함)을 기존 API로 남기고, 이동한 뒤 `push_notification_opened`를 한 번 보낸다. `app_state`는 `NotificationResponsePolicy.getOpenAppState`가 정한다. 시작할 때 읽은 마지막 응답은 `cold`, 앱이 뒤에 있었거나 앞으로 온 지 1초 안이면 `background`(응답과 복귀 이벤트의 순서가 플랫폼마다 다르다), 그 밖은 `foreground`다. 개인 정보는 보내지 않는다.
+탭은 읽음(`markAsReadAndCheckOwnership`)과 열림(`POST …/opened`, 읽음 포함)을 기존 API로 남기고, 이동한 뒤 `push_notification_opened`를 한 번 보낸다. `app_state`는 `PushNotificationResponsePolicy.getOpenAppState`가 정한다. 시작할 때 읽은 마지막 응답은 `cold`, 앱이 뒤에 있었거나 앞으로 온 지 1초 안이면 `background`(응답과 복귀 이벤트의 순서가 플랫폼마다 다르다), 그 밖은 `foreground`다. 개인 정보는 보내지 않는다.
 
 Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNotificationResponse`와 응답 리스너를 받아 슬롯에 넣고, 처리 뒤 `clearLastNotificationResponse`로 재시작 중복을 막는다. 푸시는 URL을 싣지 않으므로 `+native-intent`는 관여하지 않는다.
 
-| 상황                                    | 동작                                                                                                                                                                  |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 인증 확인 중(`loading`·`locked`)        | 슬롯에 둔다. `locked`는 스피너로 넘기고 잠금이 풀리면 이어간다                                                                                                        |
-| 로그아웃 상태                           | 슬롯에 둔다(10분). 로그인 뒤 같은 Index 경로로 한 번만 연다                                                                                                           |
-| 연속 두 탭                              | 슬롯이 하나라 마지막 탭만 연다. 앞 탭의 늦은 읽음 응답은 버린다                                                                                                       |
-| 같은 탭이 다시 옴                       | 처리한 응답 id를 최근 20개 기억해(`HandledResponsePolicy.rememberHandledResponse`) 콜드 스타트의 마지막 응답·리스너 중복·다시 그린 레이아웃에도 한 번만 연다          |
-| 로그아웃·세션 만료                      | 슬롯과 마지막 응답을 지운다. 진행 중 응답은 `SessionEpoch`와 슬롯 id로 버린다                                                                                         |
-| 다른 계정 알림·없는 대상                | 읽음이 403·404면 버리고 머문다. 페이로드에 수신자 id가 없어 이것이 유일한 방어다                                                                                      |
-| 오프라인·5xx·읽음 지연                  | `NOTIFICATION_READ_BUDGET_MS`(800ms, 초깃값, Release 측정 뒤 확정) 안에 끝내고 연다. 서버의 `opened`가 읽음도 처리하므로 mutation이 연결될 때까지 멈췄다가 재시도한다 |
-| 모르는 타입, `navigation` 있음          | `navigation`을 따른다. Analytics `type`은 `UNKNOWN`이다                                                                                                               |
-| `navigation` 없음·모르는 kind·틀린 모양 | `parsePushNotification`이 `null`을 돌려주고 알림 목록으로 연다(로그를 남긴다). 서버는 모든 푸시·알림함 행에 `navigation`을 계산해 싣는다                              |
-| 수신 거부 버튼                          | 인증 없이 공개 API로 보낸다. 다음 탭에 밀리지 않게 슬롯을 따로 두고 실패하면 포그라운드 복귀 때 다시 보낸다(10분)                                                     |
-| 알림함 항목                             | 서버가 푸시와 같은 계산으로 싣는 `navigation`을 따른다                                                                                                                |
+| 상황                                      | 동작                                                                                                                                                                                                       |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 인증 확인 중(`loading`·`locked`)          | 슬롯에 둔다. `locked`는 스피너로 넘기고 잠금이 풀리면 이어간다                                                                                                                                             |
+| 로그아웃 상태                             | 슬롯에 둔다(10분). 로그인 뒤 같은 Index 경로로 한 번만 연다                                                                                                                                                |
+| 연속 두 탭                                | 슬롯이 하나라 마지막 탭만 연다. 앞 탭의 늦은 읽음 응답은 버린다                                                                                                                                            |
+| 같은 탭이 다시 옴                         | 처리한 응답 id를 최근 20개 기억해(`rememberHandledResponse`) 콜드 스타트의 마지막 응답·리스너 중복·다시 그린 레이아웃에도 한 번만 연다                                                                     |
+| 로그아웃·세션 만료                        | 슬롯과 마지막 응답을 지운다. 진행 중 응답은 `SessionEpoch`와 슬롯 id로 버린다                                                                                                                              |
+| 다른 계정 알림·없는 대상                  | 읽음이 403·404면 버리고 머문다. 페이로드에 수신자 id가 없어 이것이 유일한 방어다                                                                                                                           |
+| 오프라인·5xx·읽음 지연                    | `NOTIFICATION_READ_BUDGET_MS`(800ms, 초깃값, Release 측정 뒤 확정) 안에 끝내고 연다. 서버의 `opened`가 읽음도 처리하므로 mutation이 연결될 때까지 멈췄다가 재시도한다                                      |
+| 모르는 타입, `navigation` 있음            | `navigation`을 따른다. Analytics `type`은 `UNKNOWN`이다                                                                                                                                                    |
+| `navigation` 없음·모르는 kind·틀린 모양   | 그 칸만 버리고 `toNotificationTarget`이 알림함 target을 만든다(버린 칸의 경로를 `notification.push.parse-dropped`로 남긴다). 서버는 모든 푸시·알림함 행에 `navigation`을 계산해 싣는다                     |
+| 모르는 종류·분석 칸·수신 거부 토큰이 틀림 | 그 칸만 버리고(`null`) 종류·목적지는 그대로 연다(로그를 남긴다)                                                                                                                                            |
+| data를 읽지 못함                          | `parsePushNotification`의 `notification`이 `null`이면 로그를 남기고 버리지 않은 채 알림함으로 연다(`createUnreadablePushNotification`)                                                                     |
+| 수신 거부 버튼                            | 인증 없이 공개 API로 보낸다. 다음 탭에 밀리지 않게 슬롯을 따로 두고 실패하면 포그라운드 복귀 때 다시 보낸다(10분)                                                                                          |
+| 알림함 항목                               | 서버가 푸시와 같은 계산으로 싣는 `navigation`을 따른다(서버 1.15.1+, [배포 순서](../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)). 알림함을 여는 항목은 같은 화면을 다시 열지 않는다 |
 
 ### 목적지 대조
 
-서버가 푸시·알림함 행에 싣는 `navigation`이 유일한 목적지 입력이다. 앱은 옛 type·action·context·routing 필드로 목적지를 계산하지 않는다(서버가 호환용으로 함께 싣는 옛 필드는 출시된 구 앱의 몫이다). `packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽어 kind별 목적지를 고정하고, 앱은 compact·medium·expanded와 보는 사람 없음·주인·다른 사람 조합을 확인한다.
+서버가 푸시·알림함 행에 싣는 `navigation`이 유일한 목적지 입력이다. 앱은 옛 type·action·context·routing 필드를 읽지 않는다(서버가 호환용으로 함께 싣는 옛 필드는 출시된 구 앱의 몫이다). 알림함 행의 `navigation`은 서버 1.15.1부터 실리므로 서버 1.15.1 이상을 앱 1.15.2보다 먼저 배포하고 그 아래로 되돌리지 않는다. 이번 릴리스는 서버 1.15.2를 앱과 함께 배포한다. 길은 하나다.
+
+```text
+navigation ─(toNotificationTarget, mapper)→ NotificationTarget ─(toNotificationDestination)→ 경로·외부 링크·이동 없음
+```
+
+`packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽는다. 앱은 navigation이 있는 줄마다 접힌 화면이 여는 곳을 적어 두고(`notification-destination.navigation.test.ts`), 서버가 줄을 더하면 앱 테스트가 먼저 깨진다. 할 일이 아닌 목적지는 medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서도 같은지, 할 일 목적지는 펼친 화면의 목록 pane(주인·날짜)을 따로 확인한다.
 
 ### 콜드 스타트 순서
 
