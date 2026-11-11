@@ -5,11 +5,11 @@ import { useIsFocused } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
-import { useIsWeatherSceneRunning } from './use-is-weather-scene-running';
+import { useIsAnimationActive } from './use-is-animation-active';
 
 let mockIsReducedMotion = false;
 
-describe('날씨 장면 시계', () => {
+describe('공용 애니메이션 멈춤 조건', () => {
   let appLifecycle = createAppLifecycleGatewayStub();
 
   function wrapper({ children }: PropsWithChildren) {
@@ -18,8 +18,8 @@ describe('날씨 장면 시계', () => {
     );
   }
 
-  function renderSceneHook() {
-    return renderHook(() => useIsWeatherSceneRunning(), { wrapper });
+  function renderActiveHook() {
+    return renderHook(() => useIsAnimationActive(), { wrapper });
   }
 
   beforeEach(() => {
@@ -30,9 +30,9 @@ describe('날씨 장면 시계', () => {
       .mockImplementation(async () => mockIsReducedMotion);
   });
 
-  it('보이는 화면이 앞에 있으면 장면을 움직인다', async () => {
+  it('보이는 화면이 앞에 있으면 움직인다', async () => {
     // Given
-    const { result } = await renderSceneHook();
+    const { result } = await renderActiveHook();
 
     // When
     const isAnimating = result.current;
@@ -43,7 +43,7 @@ describe('날씨 장면 시계', () => {
 
   it('앱이 백그라운드로 가면 멈추고 돌아오면 다시 움직인다', async () => {
     // Given
-    const { result } = await renderSceneHook();
+    const { result } = await renderActiveHook();
 
     // When
     await act(async () => appLifecycle.emit('background'));
@@ -60,18 +60,18 @@ describe('날씨 장면 시계', () => {
     jest.mocked(useIsFocused).mockReturnValue(false);
 
     // When
-    const { result } = await renderSceneHook();
+    const { result } = await renderActiveHook();
 
     // Then
     expect(result.current).toBe(false);
   });
 
-  it('동작 줄이기를 켜면 정지 장면을 보여 준다', async () => {
+  it('동작 줄이기를 켜면 멈춘다', async () => {
     // Given
     mockIsReducedMotion = true;
 
     // When
-    const { result } = await renderSceneHook();
+    const { result } = await renderActiveHook();
 
     // Then
     expect(result.current).toBe(false);
@@ -79,7 +79,7 @@ describe('날씨 장면 시계', () => {
 
   it('화면이 사라지면 앱 상태 구독을 해제한다', async () => {
     // Given
-    const { unmount } = await renderSceneHook();
+    const { unmount } = await renderActiveHook();
 
     // When
     await unmount();

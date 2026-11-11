@@ -1,4 +1,5 @@
 import { Canvas, Group, LinearGradient, Rect, vec } from '@shopify/react-native-skia';
+import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box, Text } from '@src/shared/ui';
@@ -22,12 +23,13 @@ interface DigestScanPreviewProps extends Omit<ComponentProps<typeof Box>, 'child
 
 export function DigestScanPreview({ paragraphs, className, ...boxProps }: DigestScanPreviewProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
+  const isAnimationActive = useIsAnimationActive();
   const beamColor = useResolvedColor('text-main');
   const size = useSharedValue({ width: 0, height: 0 });
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    if (isReducedMotion) {
+    if (!isAnimationActive) {
       return;
     }
     progress.set(0);
@@ -39,7 +41,7 @@ export function DigestScanPreview({ paragraphs, className, ...boxProps }: Digest
     );
 
     return () => cancelAnimation(progress);
-  }, [isReducedMotion, progress]);
+  }, [isAnimationActive, progress]);
 
   const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
     size.set({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });

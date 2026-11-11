@@ -6,7 +6,7 @@ import {
   SweepGradient,
   vec,
 } from '@shopify/react-native-skia';
-import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { SHEET_RADIUS } from '@src/shared/ui';
 import type { LayoutChangeEvent } from 'react-native';
@@ -31,7 +31,7 @@ interface SheetEdgeGlowProps {
 }
 
 export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
-  const isReducedMotion = useIsReduceMotionEnabled();
+  const isAnimationActive = useIsAnimationActive();
   const mainColor = useResolvedColor('text-main');
   const densityScale = useSkiaDensityScale();
   const size = useSharedValue({ width: 0, height: 0 });
@@ -47,7 +47,7 @@ export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
       (angle.get() + (elapsed / VOICE_EDGE_GLOW.rotationPeriodMs) * FULL_TURN_RADIANS * next) %
         FULL_TURN_RADIANS,
     );
-  }, !isReducedMotion);
+  }, isAnimationActive);
 
   const opacity = useDerivedValue(
     () => VOICE_EDGE_GLOW.minOpacity + (1 - VOICE_EDGE_GLOW.minOpacity) * smoothed.get(),

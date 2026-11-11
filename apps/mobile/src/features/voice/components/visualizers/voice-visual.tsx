@@ -11,6 +11,7 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box } from '@src/shared/ui';
@@ -112,7 +113,8 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
         : 0,
     ),
   );
-  const isMoving = isActive && !isReducedMotion;
+  const isAnimationActive = useIsAnimationActive();
+  const isMoving = isActive && isAnimationActive;
 
   useToggleableFrameCallback((frame) => {
     'worklet';

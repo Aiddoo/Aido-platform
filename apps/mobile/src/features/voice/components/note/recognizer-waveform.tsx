@@ -1,4 +1,5 @@
 import { Canvas, Group, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
+import { useIsAppInBackground } from '@src/shared/hooks/use-is-app-in-background';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
@@ -42,6 +43,8 @@ interface LiveWaveform {
 /** 듣는 동안 UI 스레드에서 음량을 칸으로 모은다. JS가 바빠도 파형이 멈추지 않고 React가 다시 그리지 않는다 */
 function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWaveform {
   const isReducedMotion = useIsReduceMotionEnabled();
+  // 값을 모으는 일이라 동작 줄이기·포커스와 무관하게 앱이 백그라운드일 때만 멈춘다
+  const isInBackground = useIsAppInBackground();
   const bars = useSharedValue<readonly number[]>([]);
   const barCount = useSharedValue(0);
   const shift = useSharedValue(0);
@@ -67,7 +70,7 @@ function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWav
       shift.set(STEP);
       shift.set(withTiming(0, { duration: WAVEFORM_BAR.intervalMs, easing: Easing.linear }));
     }
-  }, isActive);
+  }, isActive && !isInBackground);
 
   return { bars, barCount, shift };
 }

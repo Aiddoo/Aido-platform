@@ -1,5 +1,6 @@
 import { Canvas, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useIsAppInBackground } from '@src/shared/hooks/use-is-app-in-background';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
@@ -58,8 +59,12 @@ export function VoiceNotePlayerBar({
   const dragRatio = useSharedValue<number | null>(null);
   const [dragSeconds, setDragSeconds] = useState<number | null>(null);
 
-  // 재생 위치는 100ms마다 바뀐다. 렌더를 거치지 않고 UI 스레드 값만 바꾼다
+  // 재생 위치는 100ms마다 바뀐다. 렌더를 거치지 않고 UI 스레드 값만 바꾸고, 앱이 백그라운드로 가면 멈췄다가 돌아오면 바로 맞춘다
+  const isInBackground = useIsAppInBackground();
   useEffect(() => {
+    if (isInBackground) {
+      return;
+    }
     const syncPositionRatio = () => {
       const playback = player.getPlayback();
       positionRatio.set(playback.durationMs > 0 ? playback.positionMs / playback.durationMs : 0);
@@ -67,7 +72,7 @@ export function VoiceNotePlayerBar({
     syncPositionRatio();
 
     return player.subscribe(syncPositionRatio);
-  }, [player, positionRatio]);
+  }, [isInBackground, player, positionRatio]);
 
   // 드래그는 터치마다 온다. 글자는 초가 바뀔 때만 JS로 넘겨 다시 그린다
   useAnimatedReaction(

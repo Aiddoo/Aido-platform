@@ -1,5 +1,6 @@
 import { Canvas, Group } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { DEVICE_TOTAL_MEMORY_BYTES } from '@src/shared/infra/device/device-info';
 import { Box } from '@src/shared/ui';
@@ -19,7 +20,6 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 import { useUniwind } from 'uniwind';
 
-import { useIsWeatherSceneRunning } from '../../hooks/use-is-weather-scene-running';
 import { getCelestialCenter } from '../../utils/weather-scene-particles';
 import type { WeatherScene } from '../../utils/weather-scene.view-model';
 import { type CloudLight, CloudLayer } from './cloud-layer';
@@ -88,7 +88,7 @@ export function WeatherSceneCanvas({
   const [layoutSize, handleLayout] = useLayoutSize();
   const { width, height } = layoutSize.width === 0 ? window : layoutSize;
   const { theme } = useUniwind();
-  const isAnimating = useIsWeatherSceneRunning();
+  const isAnimating = useIsAnimationActive();
   const time = useSharedValue(STATIC_SCENE_SECONDS);
   const advanceTime = useCallback(
     (frame: FrameInfo) => {
