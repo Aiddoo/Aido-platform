@@ -1,15 +1,8 @@
-import {
-  SPEECH_ERROR_CODES,
-  type SpeechErrorCode,
-  type SpeechStartOptions,
-} from '@src/core/ports/speech-recognizer';
+import { SPEECH_ERROR_CODES, type SpeechErrorCode } from '@src/core/ports/speech-recognizer';
 import { SECOND_MS } from '@src/shared/constants/time-units';
-import { uniq } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
-import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
-import { AUTO_FINISH_SILENCE_MS, QUICK_CAPTURE_MAX_SECONDS } from '../constants/voice.constants';
 import { voicePlanSchema } from './voice-plan.model';
 import {
   createVoiceTranscript,
@@ -317,7 +310,7 @@ export function canRetryPlanning(state: VoiceCaptureState): boolean {
 export function shouldAutoFinish(
   state: VoiceCaptureState,
   silentMs: number,
-  silenceLimitMs: number = AUTO_FINISH_SILENCE_MS,
+  silenceLimitMs: number,
 ): boolean {
   return canFinish(state) && silentMs >= silenceLimitMs;
 }
@@ -350,18 +343,9 @@ export function getRemainingCaptureMs(
   return Math.max(0, maxSeconds * SECOND_MS - getElapsedMs(state, now));
 }
 
-export function shouldOfferVoiceNote(state: VoiceCaptureState): boolean {
-  return state.status === 'paused' && state.elapsedMs >= QUICK_CAPTURE_MAX_SECONDS * SECOND_MS;
-}
-
-// 네트워크 인식은 음성 인식 서비스로 나가므로 개인 단어(카테고리·할 일 이름)는 기기 안 인식일 때만 넣는다
-export function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
-  const commonHints = COMMON_SPEECH_HINTS[options.locale];
-
-  return {
-    ...options,
-    hintWords: options.isOnDevice ? uniq([...options.hintWords, ...commonHints]) : [...commonHints],
-  };
+// 빠른 말하기의 한 번 길이를 다 써서 멈췄다. 이어 말하려면 말로 메모하기로 넘어간다
+export function shouldOfferVoiceNote(state: VoiceCaptureState, maxSeconds: number): boolean {
+  return state.status === 'paused' && state.elapsedMs >= maxSeconds * SECOND_MS;
 }
 
 export const VoiceCapturePolicy = {
@@ -380,7 +364,5 @@ export const VoiceCapturePolicy = {
   getDismissAction,
   isChargedReview,
   getElapsedMs,
-  createVoiceCaptureState,
   reduceVoiceCapture,
-  getRecognizerStartOptions,
 } as const;

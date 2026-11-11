@@ -1,19 +1,25 @@
 import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
 import type { LocalFileEntry } from '@src/core/ports/local-file-system';
 import { SPEECH_LOCALES, type SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { DAY_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import { DAY_MS, HOUR_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { chunk, maxBy, orderBy, sumBy } from 'es-toolkit';
 import { z } from 'zod';
 
-import {
-  VOICE_NOTE_RETENTION_DAYS,
-  VOICE_RECORDING_ORPHAN_RETENTION_MS,
-} from '../constants/voice-note.constants';
-import { type PlanReviewDraft, planReviewDraftSchema } from '../schemas/plan-review-form.schema';
 import type { VoiceCaptureSeed } from './voice-capture.model';
-import { type PlannedMemo, type VoiceNoteDigestResult, VoicePlanPolicy } from './voice-plan.model';
+import {
+  type PlannedMemo,
+  type PlanReviewDraft,
+  planReviewDraftSchema,
+  type VoiceNoteDigestResult,
+  VoicePlanPolicy,
+} from './voice-plan.model';
 import { createVoiceTranscript } from './voice-transcript.model';
+
+const VOICE_NOTE_RETENTION_DAYS = 30;
+
+/** 글자 없이 실패한 채 앱을 끄면 남는 고아 녹음 파일의 보관 시간. 쓰는 중인 파일만 피하면 되어 짧다 */
+const VOICE_RECORDING_ORPHAN_RETENTION_MS = HOUR_MS;
 
 export const speechLocaleSchema = z.enum(SPEECH_LOCALES);
 
@@ -369,9 +375,6 @@ export function isRecordingFileExpired({ modifiedAt }: LocalFileEntry, now: Inst
 }
 
 export const VoiceNotePolicy = {
-  createVoiceNote,
-  createDigestInput,
-  createDigestMemo,
   withSentences,
   withRecordings,
   withDigestRequest,

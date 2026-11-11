@@ -7,7 +7,11 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
 import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-request.model';
-import { type VoiceNoteDigestInput, VoiceNotePolicy } from '../domains/voice-note.model';
+import {
+  type VoiceNoteDigestInput,
+  VoiceNotePolicy,
+  createDigestInput,
+} from '../domains/voice-note.model';
 import { getVoicePlanFailureCause, type VoicePlanFailureCause } from '../domains/voice.error';
 import { useCreateVoiceNoteDigestMutationOptions } from '../queries/voice.mutations';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
@@ -55,7 +59,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
     }
 
     setFailure(null);
-    const input = VoiceNotePolicy.createDigestInput(note);
+    const input = createDigestInput(note);
     const request: PreparedPlanRequest<VoiceNoteDigestInput> = {
       fingerprint: JSON.stringify(input),
       input,

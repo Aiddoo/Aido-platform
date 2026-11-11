@@ -1,6 +1,7 @@
 import { createDraftKey } from '@src/shared/draft/draft.model';
 
 import {
+  type PlanReviewDraft,
   type PlanSelection,
   VoicePlanPolicy,
   plannedActionSchema,
@@ -9,7 +10,6 @@ import {
 } from '../domains/voice-plan.model';
 import {
   createPlanReviewDraftSchema,
-  type PlanReviewDraft,
   type PlanReviewFormValues,
 } from '../schemas/plan-review-form.schema';
 

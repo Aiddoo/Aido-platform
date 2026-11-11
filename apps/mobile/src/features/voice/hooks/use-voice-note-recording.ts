@@ -12,7 +12,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import type { VoiceCaptureEntry } from '../constants/voice.events';
-import { VoiceNotePolicy, type VoiceNote } from '../domains/voice-note.model';
+import { VoiceNotePolicy, type VoiceNote, createVoiceNote } from '../domains/voice-note.model';
 import { VoiceRecordingIntakeSession } from '../services/voice-recording-intake.session';
 import { useOfferOnDeviceModel } from './use-offer-on-device-model';
 import { useSpeechEvent } from './use-speech-event';
@@ -54,7 +54,7 @@ export function useVoiceNoteRecording({
   const [baseNote] = useState<VoiceNote>(
     () =>
       seedNote ??
-      VoiceNotePolicy.createVoiceNote({
+      createVoiceNote({
         draftId: idGenerator.create(),
         locale,
         createdAt: getNowInstant(),

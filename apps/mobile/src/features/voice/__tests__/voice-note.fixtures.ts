@@ -6,10 +6,10 @@ import {
   voiceNoteDigestSchema,
   type VoiceNoteKeyPoint,
   voiceNoteKeyPointSchema,
-  VoiceNotePolicy,
   voiceNoteSchema,
   type VoiceNoteSentence,
   voiceNoteSentenceSchema,
+  createVoiceNote,
 } from '../domains/voice-note.model';
 
 export function createVoiceNoteSentence(
@@ -57,7 +57,7 @@ export function createSpokenVoiceNote({
   ...overrides
 }: VoiceNoteOverrides = {}): VoiceNote {
   return voiceNoteSchema.parse({
-    ...VoiceNotePolicy.createVoiceNote({
+    ...createVoiceNote({
       draftId,
       locale: 'ko-KR',
       createdAt: toInstant('2026-11-01T00:00:00.000Z'),

@@ -2,7 +2,7 @@ import { useIdGenerator, useVoiceNoteDraftRepository } from '@src/bootstrap/prov
 import { getNowInstant } from '@src/shared/date/clock';
 import { useMutation } from '@tanstack/react-query';
 
-import { VoiceNotePolicy, type VoiceNote } from '../domains/voice-note.model';
+import { VoiceNotePolicy, type VoiceNote, createDigestMemo } from '../domains/voice-note.model';
 import { isPlanKeyConflictError } from '../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../queries/voice.mutations';
 import { useVoiceNoteRoute } from './use-current-voice-note';
@@ -30,7 +30,7 @@ export function useVoiceNoteSaveMemo({ note, onMemoChanged }: UseVoiceNoteSaveMe
       },
     }),
   );
-  const memo = VoiceNotePolicy.createDigestMemo(note);
+  const memo = createDigestMemo(note);
 
   const saveMemoRequest = (idempotencyKey: string | null) => {
     const latest = drafts.find(accountId, draftId);

@@ -15,6 +15,9 @@ import {
   findRecordingIndexAt,
   VoiceNotePolicy,
   VoiceRecordingFilePolicy,
+  createVoiceNote,
+  createDigestInput,
+  createDigestMemo,
 } from './voice-note.model';
 import { voicePlanSchema } from './voice-plan.model';
 
@@ -290,7 +293,7 @@ describe('createDigestInput', () => {
     });
 
     // When
-    const input = VoiceNotePolicy.createDigestInput(note);
+    const input = createDigestInput(note);
 
     // Then
     expect(input).toEqual({
@@ -316,7 +319,7 @@ describe('createDigestInput', () => {
     const note = createSpokenVoiceNote({ sentences });
 
     // When
-    const { segments } = VoiceNotePolicy.createDigestInput(note);
+    const { segments } = createDigestInput(note);
 
     // Then
     expect(segments.length).toBeLessThanOrEqual(ACTION_PLAN_LIMITS.DIGEST_MAX_SEGMENTS);
@@ -406,7 +409,7 @@ describe('createDigestMemo', () => {
     });
 
     // When
-    const memo = VoiceNotePolicy.createDigestMemo(note);
+    const memo = createDigestMemo(note);
 
     // Then
     expect(memo).toMatchObject({ type: 'create-memo', title: '회의', content: '요약\n- 포인트' });
@@ -723,7 +726,7 @@ describe('createVoiceNote', () => {
     const createdAt = toInstant('2026-11-01T00:00:00.000Z');
 
     // When
-    const note = VoiceNotePolicy.createVoiceNote({
+    const note = createVoiceNote({
       draftId: 'draft-1',
       locale: 'ko-KR',
       createdAt,
@@ -753,8 +756,7 @@ describe('createVoiceNote', () => {
     const createdAt = toInstant('2026-11-01T00:00:00.000Z');
 
     // When
-    const create = () =>
-      VoiceNotePolicy.createVoiceNote({ draftId: '', locale: 'ko-KR', createdAt });
+    const create = () => createVoiceNote({ draftId: '', locale: 'ko-KR', createdAt });
 
     // Then
     expect(create).toThrow(ZodError);

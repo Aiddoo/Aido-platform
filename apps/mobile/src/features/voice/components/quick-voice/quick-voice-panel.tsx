@@ -29,7 +29,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { AUTO_FINISH_SILENCE_MS, LISTENING_PANEL_HEIGHT } from '../../constants/voice.constants';
+import {
+  AUTO_FINISH_SILENCE_MS,
+  LISTENING_PANEL_HEIGHT,
+  QUICK_CAPTURE_MAX_SECONDS,
+} from '../../constants/voice.constants';
 import {
   VoiceCapturePolicy,
   type CapturedPlan,
@@ -72,7 +76,7 @@ export function QuickVoiceListening({
   const { t } = useTranslation('voice');
   const isPaused = state.status === 'paused';
   const isListening = state.status === 'listening';
-  const isOverLimit = VoiceCapturePolicy.shouldOfferVoiceNote(state);
+  const isOverLimit = VoiceCapturePolicy.shouldOfferVoiceNote(state, QUICK_CAPTURE_MAX_SECONDS);
   const canFinish = VoiceCapturePolicy.canFinish(state);
 
   return (

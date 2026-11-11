@@ -28,12 +28,15 @@ import {
   type CapturedPlan,
   type VoiceCaptureState,
   type VoicePauseCause,
+  createVoiceCaptureState,
 } from '../domains/voice-capture.model';
 import {
   type VoiceRecognizerLinkEvent,
   VoiceRecognizerLinkPolicy,
+  createVoiceRecognizerLink,
 } from '../domains/voice-recognizer-link.model';
 import { VoiceTranscriptPolicy, type VoiceTranscript } from '../domains/voice-transcript.model';
+import { getRecognizerStartOptions } from '../utils/speech-context';
 import { toCaptureOutcome } from '../utils/voice-analytics';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureTelemetry } from './use-voice-capture-telemetry';
@@ -88,7 +91,7 @@ export function useVoiceCaptureSession({
     isEnabled: mode === 'quick',
     canFinish: () => VoiceCapturePolicy.canFinish(stateRef.current),
     onSilence: (silentMs) => {
-      if (VoiceCapturePolicy.shouldAutoFinish(stateRef.current, silentMs)) {
+      if (VoiceCapturePolicy.shouldAutoFinish(stateRef.current, silentMs, AUTO_FINISH_SILENCE_MS)) {
         finish();
       }
     },
@@ -405,7 +408,7 @@ export function useVoiceCaptureSession({
 
 /** 인식기 이벤트는 렌더를 기다리지 않고 다음 상태를 읽어야 한다. dispatch는 바뀌지 않았으면 같은 객체다 */
 function useVoiceCaptureState() {
-  const [state, setState] = useState<VoiceCaptureState>(VoiceCapturePolicy.createVoiceCaptureState);
+  const [state, setState] = useState<VoiceCaptureState>(createVoiceCaptureState);
   const stateRef = useRef(state);
 
   const dispatch = useCallback((event: VoiceCaptureEvent) => {
@@ -426,7 +429,7 @@ type VoiceCaptureDispatch = ReturnType<typeof useVoiceCaptureState>['dispatch'];
 /** 연결은 그리지 않는 값이라 ref에 두고 VoiceRecognizerLinkPolicy로만 바꾼다 */
 function useRecognizerLink() {
   const speechRecognizer = useSpeechRecognizer();
-  const linkRef = useRef(VoiceRecognizerLinkPolicy.createVoiceRecognizerLink());
+  const linkRef = useRef(createVoiceRecognizerLink());
 
   const update = (event: VoiceRecognizerLinkEvent) => {
     linkRef.current = VoiceRecognizerLinkPolicy.reduceRecognizerLink(linkRef.current, event);
@@ -434,7 +437,7 @@ function useRecognizerLink() {
 
   const start = (options: SpeechStartOptions) => {
     update({ type: 'start-requested', at: Date.now() });
-    speechRecognizer.start(VoiceCapturePolicy.getRecognizerStartOptions(options));
+    speechRecognizer.start(getRecognizerStartOptions(options));
   };
 
   return {
@@ -448,7 +451,7 @@ function useRecognizerLink() {
         return false;
       }
       update({ type: 'segment-restarted', at: now });
-      speechRecognizer.start(VoiceCapturePolicy.getRecognizerStartOptions(options));
+      speechRecognizer.start(getRecognizerStartOptions(options));
       return true;
     },
     /** 지금 구간을 닫는다. 그 구간의 `end`가 오면 실패가 아니라 멈춤 응답으로 본다 */

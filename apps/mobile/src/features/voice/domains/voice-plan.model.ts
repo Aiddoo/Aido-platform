@@ -33,11 +33,11 @@ const plannedMemoShape = {
 };
 
 // 서버가 저장 때 막는 규칙(반복에는 종료일 없음, 종료일은 시작일 이후)을 카드를 고치는 동안에도 지킨다
-export const plannedTodoSchema = z
+const plannedTodoSchema = z
   .object(plannedTodoShape)
   .refine((todo) => todo.repeat == null || todo.endDate == null, { path: ['endDate'] })
   .refine((todo) => todo.endDate == null || todo.startDate <= todo.endDate, { path: ['endDate'] });
-export const plannedMemoSchema = z.object(plannedMemoShape);
+const plannedMemoSchema = z.object(plannedMemoShape);
 
 export const plannedActionSchema = z.discriminatedUnion('type', [
   plannedTodoSchema,
@@ -83,6 +83,22 @@ export interface AppliedPlanResult {
 
 /** 행동별로 추가할지 고른 값. 키는 `actionId` */
 export type PlanSelection = Record<string, boolean>;
+
+const selectedField = { isSelected: z.boolean() };
+
+export const selectablePlannedTodoSchema = plannedTodoSchema.safeExtend(selectedField);
+
+const selectablePlannedActionSchema = z.discriminatedUnion('type', [
+  selectablePlannedTodoSchema,
+  plannedMemoSchema.extend(selectedField),
+]);
+
+// 고르는 중인 카드와 서버가 빼고 준 할 일 수. 말로 메모하기 초안이 이 모양(`form` 포함) 그대로 기기에 남는다
+export const planReviewDraftSchema = z.object({
+  omittedTodoCount: z.int().nonnegative(),
+  form: z.object({ actions: z.array(selectablePlannedActionSchema) }),
+});
+export type PlanReviewDraft = z.infer<typeof planReviewDraftSchema>;
 
 export function isTodoAction(action: PlannedAction): action is PlannedTodo {
   return action.type === 'create-todo';

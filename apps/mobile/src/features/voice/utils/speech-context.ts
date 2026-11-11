@@ -1,5 +1,7 @@
+import type { SpeechStartOptions } from '@src/core/ports/speech-recognizer';
 import { uniq } from 'es-toolkit';
 
+import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
 import {
   SPEECH_CONTEXT_MAX_STRINGS,
   SPEECH_CONTEXT_RECENT_TODO_LIMIT,
@@ -26,4 +28,14 @@ export function getSpeechContextStrings({
     ...toPhrases(categoryNames),
     ...toPhrases(todoTitles).slice(0, SPEECH_CONTEXT_RECENT_TODO_LIMIT),
   ]).slice(0, SPEECH_CONTEXT_MAX_STRINGS);
+}
+
+// 네트워크 인식은 음성 인식 서비스로 나가므로 개인 단어(카테고리·할 일 이름)는 기기 안 인식일 때만 넣는다
+export function getRecognizerStartOptions(options: SpeechStartOptions): SpeechStartOptions {
+  const commonHints = COMMON_SPEECH_HINTS[options.locale];
+
+  return {
+    ...options,
+    hintWords: options.isOnDevice ? uniq([...options.hintWords, ...commonHints]) : [...commonHints],
+  };
 }

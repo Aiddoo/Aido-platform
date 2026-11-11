@@ -16,7 +16,7 @@ import {
   type PreparedPlanRequest,
 } from '@src/features/voice/domains/plan-request.model';
 import type { CapturedPlan } from '@src/features/voice/domains/voice-capture.model';
-import { VoiceNoteCaptionPolicy } from '@src/features/voice/domains/voice-note-caption.model';
+import { createTranscribedVoiceNote } from '@src/features/voice/domains/voice-note-caption.model';
 import { VoiceTranscriptPolicy } from '@src/features/voice/domains/voice-transcript.model';
 import { useEnsureMicrophonePermission } from '@src/features/voice/hooks/use-ensure-microphone-permission';
 import { useReadSpeechContext } from '@src/features/voice/hooks/use-read-speech-context';
@@ -159,7 +159,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
       onSubscribe: onExit,
       onReadyToRecord: () => {
         const { transcript, elapsedMs } = session.state;
-        const note = VoiceNoteCaptionPolicy.createTranscribedVoiceNote({
+        const note = createTranscribedVoiceNote({
           draftId: idGenerator.create(),
           locale,
           createdAt: getNowInstant(),

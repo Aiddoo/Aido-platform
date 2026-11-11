@@ -14,9 +14,11 @@ import { noop } from 'es-toolkit';
 import { Pressable } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
-import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
 import type { CapturedPlan } from '../domains/voice-capture.model';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
+
+/** 모델이 말소리로 보는 음량 기준보다 크다 */
+const SPEAKING_LEVEL = 0.5;
 
 let logger: ReturnType<typeof createLoggerStub>;
 
@@ -444,7 +446,7 @@ describe('useVoiceCaptureSession', () => {
 
     describe('글자 없이 말소리만 들리는 시간을 재서', () => {
       const SAMPLE_MS = 50;
-      const VOICE = SPEAKING_VOLUME_THRESHOLD;
+      const VOICE = SPEAKING_LEVEL;
       const QUIET = 0;
 
       setupFakeTimersPerTest({ advanceTimers: true });
@@ -1300,7 +1302,7 @@ describe('useVoiceCaptureSession', () => {
       await act(async () => {
         for (let elapsed = 0; elapsed < 6_100; elapsed += 50) {
           jest.advanceTimersByTime(50);
-          speechRecognizer.emit({ type: 'volume', level: SPEAKING_VOLUME_THRESHOLD });
+          speechRecognizer.emit({ type: 'volume', level: SPEAKING_LEVEL });
         }
       });
       // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
