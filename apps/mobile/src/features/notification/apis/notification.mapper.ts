@@ -7,7 +7,7 @@ import { type Instant, toInstant, toNullableInstant } from '@src/shared/date/ins
 
 import {
   type Notification,
-  type NotificationListResult,
+  type NotificationPage,
   type NotificationRouting,
 } from '../domains/notification.model';
 import { type MarketingPushOptOutEnvelope } from '../schemas/marketing-push-opt-out-response.schema';
@@ -47,12 +47,9 @@ function toNotificationRouting(metadata: unknown): NotificationRouting | undefin
   return hasRoutingValue ? parsed.data : undefined;
 }
 
-export function toNotificationListResult(
-  server: NotificationInboxResponse,
-): NotificationListResult {
+export function toNotificationPage(server: NotificationInboxResponse): NotificationPage {
   return {
-    notifications: server.notifications.map(toNotification),
-    hasMore: server.hasMore,
-    nextCursor: server.nextCursor,
+    items: server.notifications.map(toNotification),
+    nextCursor: server.hasMore ? server.nextCursor : null,
   };
 }

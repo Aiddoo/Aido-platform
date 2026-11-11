@@ -66,7 +66,7 @@ describe('친구 끊기', () => {
     ];
     const queryClient = createTestQueryClient();
     queryClient.setQueryData(FRIEND_QUERY_KEYS.friends(), {
-      pages: [{ items: [first, second, third], totalCount: 3, hasMore: false }],
+      pages: [{ items: [first, second, third], nextCursor: null, totalCount: 3 }],
       pageParams: [undefined],
     });
     const rejection = createFriendApiError({ code: 'FOLLOW_0904', message: '끊지 못했어요' });
@@ -94,8 +94,8 @@ describe('친구 끊기', () => {
     await expect(removals[0]).resolves.toBe(rejection);
     expect(queryClient.getQueryData(FRIEND_QUERY_KEYS.friends())?.pages[0]).toEqual({
       items: [first, third],
+      nextCursor: null,
       totalCount: 2,
-      hasMore: false,
     });
     expect(queryClient.getQueryState(FRIEND_QUERY_KEYS.friends())?.isInvalidated).toBe(false);
     expect(await screen.findAllByText(rejection.message)).not.toHaveLength(0);

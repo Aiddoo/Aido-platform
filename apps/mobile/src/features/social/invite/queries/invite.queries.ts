@@ -3,8 +3,8 @@ import { useInviteService, useLogger } from '@src/bootstrap/providers/di-context
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { getErrorMessage } from '@src/shared/errors';
-import type { Page } from '@src/shared/types/page.types';
 import {
   queryOptions,
   type InfiniteData,
@@ -18,8 +18,7 @@ import { INVITED_FRIEND_SUMMARY_LIMIT } from '../constants/invite.constants';
 import type { InviteCode } from '../domains/invite-code.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { isInviteDisabledError } from '../domains/invite.error';
-import { InvitedFriendPolicy } from '../domains/invited-friend.model';
-import type { InvitedFriend } from '../domains/invited-friend.model';
+import { InvitedFriendPolicy, type InvitedFriendPage } from '../domains/invited-friend.model';
 import { invalidateInviteAvailability } from './invite-cache';
 import { INVITE_QUERY_KEYS } from './invite-query-keys';
 
@@ -99,17 +98,10 @@ export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFil
         ),
       ),
     initialPageParam: FIRST_PAGE_CURSOR,
-    // 친구 목록과 같이 마지막 userId가 다음 cursor다
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.items.at(-1)?.userId : undefined),
-    select: selectInvitedFriends,
+    getNextPageParam: getNextCursor,
+    // 서버가 이미 최근 가입 순(joinedAt desc, id desc)으로 페이지를 주므로 이어 붙이기만 한다
+    select: selectPageItems,
   });
-}
-
-// 서버가 이미 최근 가입 순(joinedAt desc, id desc)으로 페이지를 주므로 이어 붙이기만 한다
-function selectInvitedFriends(
-  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | undefined>,
-) {
-  return invitedFriendPages.pages.flatMap((page) => page.items);
 }
 
 /**
@@ -117,11 +109,11 @@ function selectInvitedFriends(
  * 받은 페이지 안에서만 고르므로 첫 페이지 밖의 기다리는 친구는 전체 보기에서 본다.
  */
 function selectInvitedFriendSummary(
-  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | undefined>,
+  invitedFriendPages: InfiniteData<InvitedFriendPage, string | undefined>,
 ) {
   const totalCount = selectInvitedFriendTotalCount(invitedFriendPages);
   const invitedFriends = orderBy(
-    invitedFriendPages.pages.flatMap((page) => page.items),
+    selectPageItems(invitedFriendPages),
     [InvitedFriendPolicy.orderByWaitingFirst, InvitedFriendPolicy.orderByJoinedAtDesc],
     ['asc', 'asc'],
   );
@@ -141,7 +133,7 @@ export function useGetInvitedFriendSummaryInfiniteQueryOptions() {
 }
 
 function selectInvitedFriendTotalCount(
-  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | undefined>,
+  invitedFriendPages: InfiniteData<InvitedFriendPage, string | undefined>,
 ) {
   return invitedFriendPages.pages[0]?.totalCount ?? 0;
 }

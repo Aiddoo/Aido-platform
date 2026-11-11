@@ -1,12 +1,13 @@
 import { getNowInstant } from '@src/shared/date/instant';
+import { mapInfiniteItems, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 import { uniq } from 'es-toolkit';
 
-import type { Notification, NotificationListResult } from '../domains/notification.model';
+import type { Notification, NotificationPage } from '../domains/notification.model';
 import type { PushPermission } from '../domains/push-permission.model';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
-type NotificationPages = InfiniteData<NotificationListResult, number | undefined>;
+type NotificationPages = InfiniteData<NotificationPage, number | undefined>;
 
 /** 읽음 처리 하나가 알림함에서 바꾼 것. 실패하면 이것만 되돌려 함께 진행 중인 다른 읽음은 남긴다 */
 export interface NotificationReadChange {
@@ -16,31 +17,19 @@ export interface NotificationReadChange {
   readCount: number;
 }
 
-/** 바뀐 알림이 없는 쪽은 그대로 돌려 그 쪽을 그리는 행이 다시 그려지지 않는다 */
 function withNotificationsPatched(
   pages: NotificationPages,
   isTarget: (notification: Notification) => boolean,
   patch: Pick<Notification, 'isRead' | 'readAt'>,
 ): NotificationPages {
-  return {
-    ...pages,
-    pages: pages.pages.map((page) =>
-      page.notifications.some(isTarget)
-        ? {
-            ...page,
-            notifications: page.notifications.map((notification) =>
-              isTarget(notification) ? { ...notification, ...patch } : notification,
-            ),
-          }
-        : page,
-    ),
-  };
+  return mapInfiniteItems(pages, (notification) =>
+    isTarget(notification) ? { ...notification, ...patch } : notification,
+  );
 }
 
 /** `notificationId`가 없으면 안 읽은 알림 전부 */
 function findUnreadNotificationIds(pages: NotificationPages | undefined, notificationId?: number) {
-  return (pages?.pages ?? [])
-    .flatMap((page) => page.notifications)
+  return selectPageItems(pages ?? { pages: [] })
     .filter(
       (notification) =>
         !notification.isRead && (notificationId == null || notification.id === notificationId),

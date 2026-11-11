@@ -15,8 +15,7 @@ export function toWeeklyAchievement(dto: WeeklyAchievementDto): WeeklyAchievemen
 export function toWeeklyAchievementPage(dto: WeeklyAchievementListResponse): WeeklyAchievementPage {
   return {
     items: dto.items.map(toWeeklyAchievement),
-    nextCursor: dto.pagination.nextCursor,
-    hasNext: dto.pagination.hasNext,
+    nextCursor: dto.pagination.hasNext ? dto.pagination.nextCursor : null,
     summary: pick(dto.summary, [
       'totalWeeks',
       'perfectWeeks',

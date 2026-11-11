@@ -1,16 +1,12 @@
 import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
-import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
+import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import type { MemoPage } from '../domains/memo.model';
 import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
-
-function selectMemos(data: InfiniteData<MemoPage>) {
-  return data.pages.flatMap((page) => page.items);
-}
 
 export function useGetMemoQueryOptions({ memoId }: { memoId: number }) {
   const memoService = useMemoService();
@@ -29,9 +25,8 @@ export function useGetMemosInfiniteQueryOptions() {
     queryFn: async ({ pageParam, signal }) =>
       unwrap(await memoService.getMemos({ cursor: pageParam, size: DEFAULT_PAGE_SIZE }, signal)),
     initialPageParam: FIRST_PAGE_CURSOR,
-    getNextPageParam: ({ hasNext, nextCursor }) =>
-      hasNext ? (nextCursor ?? undefined) : undefined,
-    select: selectMemos,
+    getNextPageParam: getNextCursor,
+    select: selectPageItems,
   });
 }
 

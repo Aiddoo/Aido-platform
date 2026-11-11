@@ -141,7 +141,7 @@ describe('toInvitedFriendsPage', () => {
     const page = toInvitedFriendsPage(dto);
 
     // Then
-    expect(page).toMatchObject({ totalCount: 1, hasMore: false });
+    expect(page).toMatchObject({ totalCount: 1, nextCursor: null });
     expect(invitedFriendSchema.parse(page.items[0])).toEqual(page.items[0]);
     expect(page.items[0]?.qualifiedAt).toBe('2026-11-03T10:30:00.000Z');
   });

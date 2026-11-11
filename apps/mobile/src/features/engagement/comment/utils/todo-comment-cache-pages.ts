@@ -1,3 +1,4 @@
+import { selectPageItems } from '@src/shared/domains/cursor-page.model';
 import type { InfiniteData } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 
@@ -126,7 +127,7 @@ export function findCommentInThreadPages(
   data: TodoCommentThreadPages | undefined,
   commentId: string,
 ): TodoComment | null {
-  for (const thread of data?.pages.flatMap((page) => page.items) ?? []) {
+  for (const thread of selectPageItems(data ?? { pages: [] })) {
     const comment = TodoCommentPolicy.findCommentInThread(thread, commentId);
     if (comment != null) {
       return comment;
@@ -139,7 +140,7 @@ export function findCommentInReplyPages(
   data: TodoCommentReplyPages | undefined,
   commentId: string,
 ): TodoComment | null {
-  return data?.pages.flatMap((page) => page.items).find((reply) => reply.id === commentId) ?? null;
+  return selectPageItems(data ?? { pages: [] }).find((reply) => reply.id === commentId) ?? null;
 }
 
 export function removeCommentFromThreadPages(

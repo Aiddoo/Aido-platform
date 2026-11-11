@@ -3,12 +3,12 @@ import { toInstant } from '@src/shared/date/instant';
 import type { InfiniteData } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 
-import type { NotificationListResult } from '../domains/notification.model';
+import type { NotificationPage } from '../domains/notification.model';
 import { optimisticallyMarkNotificationsRead, revertNotificationsRead } from './notification-cache';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
-const makePage = (id: number): NotificationListResult => ({
-  notifications: [
+const makePage = (id: number): NotificationPage => ({
+  items: [
     {
       id,
       userId: 'user-1',
@@ -20,11 +20,10 @@ const makePage = (id: number): NotificationListResult => ({
       readAt: null,
     },
   ],
-  hasMore: false,
   nextCursor: null,
 });
 
-const makeData = (...ids: number[]): InfiniteData<NotificationListResult, number | undefined> => ({
+const makeData = (...ids: number[]): InfiniteData<NotificationPage, number | undefined> => ({
   pages: ids.map(makePage),
   pageParams: ids.map((_, index) => (index === 0 ? undefined : index)),
 });
@@ -53,25 +52,23 @@ describe('notification cache optimistic update', () => {
     // When
     const change = await optimisticallyMarkNotificationsRead(client);
     const updatedAll =
-      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(allKey);
+      client.getQueryData<InfiniteData<NotificationPage, number | undefined>>(allKey);
     const updatedCategory =
-      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(categoryKey);
+      client.getQueryData<InfiniteData<NotificationPage, number | undefined>>(categoryKey);
     const updatedCategoryCount = client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount());
     if (change != null) {
       revertNotificationsRead(client, change);
     }
 
     // Then
-    expect(
-      updatedAll?.pages.flatMap((page) => page.notifications).every((item) => item.isRead),
-    ).toBe(true);
-    expect(
-      updatedCategory?.pages.flatMap((page) => page.notifications).every((item) => item.isRead),
-    ).toBe(true);
+    expect(updatedAll?.pages.flatMap((page) => page.items).every((item) => item.isRead)).toBe(true);
+    expect(updatedCategory?.pages.flatMap((page) => page.items).every((item) => item.isRead)).toBe(
+      true,
+    );
     expect(updatedCategoryCount).toBe(0);
-    expect(
-      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(allKey),
-    ).toEqual(data);
+    expect(client.getQueryData<InfiniteData<NotificationPage, number | undefined>>(allKey)).toEqual(
+      data,
+    );
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(2);
   });
 
@@ -88,15 +85,14 @@ describe('notification cache optimistic update', () => {
     await optimisticallyMarkNotificationsRead(client, 1);
 
     // Then
-    const all =
-      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(allKey);
+    const all = client.getQueryData<InfiniteData<NotificationPage, number | undefined>>(allKey);
     const category =
-      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(categoryKey);
+      client.getQueryData<InfiniteData<NotificationPage, number | undefined>>(categoryKey);
+    expect(all?.pages.flatMap((page) => page.items).find((item) => item.id === 1)?.isRead).toBe(
+      true,
+    );
     expect(
-      all?.pages.flatMap((page) => page.notifications).find((item) => item.id === 1)?.isRead,
-    ).toBe(true);
-    expect(
-      category?.pages.flatMap((page) => page.notifications).find((item) => item.id === 1)?.isRead,
+      category?.pages.flatMap((page) => page.items).find((item) => item.id === 1)?.isRead,
     ).toBe(true);
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(1);
   });
@@ -105,11 +101,11 @@ describe('notification cache optimistic update', () => {
     // Given
     const allKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
     const page = makePage(1);
-    const data: InfiniteData<NotificationListResult, number | undefined> = {
+    const data: InfiniteData<NotificationPage, number | undefined> = {
       pages: [
         {
           ...page,
-          notifications: page.notifications.map((notification) => ({
+          items: page.items.map((notification) => ({
             ...notification,
             isRead: true,
             readAt: toInstant('2026-07-14T01:00:00.000Z'),

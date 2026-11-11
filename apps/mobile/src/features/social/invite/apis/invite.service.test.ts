@@ -334,7 +334,7 @@ describe('InviteService', () => {
       expect(result.ok && result.value.items[0]?.joinedAt).toEqual(
         toInstant('2026-11-02T10:30:00.000Z'),
       );
-      expect(result.ok && result.value.hasMore).toBe(true);
+      expect(result.ok && result.value.nextCursor).toBe('clz7x5p8k0005qz0z8z8z8z8z');
     });
   });
 

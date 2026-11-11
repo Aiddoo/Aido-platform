@@ -1,7 +1,6 @@
 import type { InvitePreviewResponse } from '@aido/api';
 import { REDEEM_OUTCOME } from '@aido/api/vocabulary';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
-import type { Page } from '@src/shared/types/page.types';
 import { pick } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -9,7 +8,7 @@ import type { InvitePreview } from '../domains/invite-preview.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
 import type { InviteReward } from '../domains/invite-reward.model';
 import type { Invite } from '../domains/invite.model';
-import type { InvitedFriend } from '../domains/invited-friend.model';
+import type { InvitedFriend, InvitedFriendPage } from '../domains/invited-friend.model';
 import type {
   InvitedFriendResponse,
   InvitedFriendsResponse,
@@ -82,10 +81,12 @@ function toInvitedFriend(dto: InvitedFriendResponse): InvitedFriend {
   };
 }
 
-export function toInvitedFriendsPage(dto: InvitedFriendsResponse): Page<InvitedFriend> {
+// 친구 목록과 같이 마지막 userId가 다음 커서다
+export function toInvitedFriendsPage(dto: InvitedFriendsResponse): InvitedFriendPage {
+  const items = dto.items.map(toInvitedFriend);
   return {
-    items: dto.items.map(toInvitedFriend),
+    items,
+    nextCursor: dto.hasMore ? (items.at(-1)?.userId ?? null) : null,
     totalCount: dto.totalCount,
-    hasMore: dto.hasMore,
   };
 }

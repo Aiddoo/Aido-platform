@@ -4,6 +4,7 @@ import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 import type {
   NudgeInteraction,
   NudgeInteractionPage,
+  NudgeThanksCursor,
   NudgeThanksPreview,
 } from '../domains/nudge-interaction.model';
 import type { NudgeThanksPreviewEnvelope } from '../schemas/nudge-response.schema';
@@ -31,9 +32,19 @@ export function toNudgeInteraction(dto: NudgeInteractionResponse): NudgeInteract
 export function toNudgeInteractionPage(dto: NudgeInteractionsResponse): NudgeInteractionPage {
   return {
     items: dto.items.map(toNudgeInteraction),
-    nextCursor: dto.pagination.nextCursor,
-    hasNext: dto.pagination.hasNext,
+    nextCursor: dto.pagination.hasNext ? dto.pagination.nextCursor : null,
   };
+}
+
+function toNudgeThanksCursor({
+  hasNext,
+  nextCursor,
+  throughNudgeId,
+}: NudgeThanksPreviewEnvelope): NudgeThanksCursor | null {
+  if (!hasNext || nextCursor == null || throughNudgeId == null) {
+    return null;
+  }
+  return { cursor: nextCursor, throughNudgeId };
 }
 
 export function toNudgeThanksPreview(dto: NudgeThanksPreviewEnvelope): NudgeThanksPreview {
@@ -41,9 +52,8 @@ export function toNudgeThanksPreview(dto: NudgeThanksPreviewEnvelope): NudgeThan
     todoId: dto.todoId,
     throughNudgeId: dto.throughNudgeId,
     totalRecipients: dto.totalRecipients ?? dto.recipients.length,
-    nextCursor: dto.nextCursor ?? null,
-    hasNext: dto.hasNext ?? false,
-    recipients: dto.recipients.map((recipient) => ({
+    nextCursor: toNudgeThanksCursor(dto),
+    items: dto.recipients.map((recipient) => ({
       id: recipient.id,
       name: recipient.name ?? recipient.userTag,
       profileImage: recipient.profileImage,

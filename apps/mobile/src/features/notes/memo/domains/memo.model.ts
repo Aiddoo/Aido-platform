@@ -1,4 +1,5 @@
 import { instantSchema } from '@src/shared/date/instant';
+import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { z } from 'zod';
 
 export const memoSchema = z.object({
@@ -10,11 +11,7 @@ export const memoSchema = z.object({
 });
 export type Memo = z.infer<typeof memoSchema>;
 
-const memoPageSchema = z.object({
-  items: z.array(memoSchema),
-  nextCursor: z.int().nullable(),
-  hasNext: z.boolean(),
-});
+const memoPageSchema = cursorPageSchema(memoSchema, z.int());
 export type MemoPage = z.infer<typeof memoPageSchema>;
 
 const memoResourceLimitSchema = z.object({

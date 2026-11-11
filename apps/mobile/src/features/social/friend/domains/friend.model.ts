@@ -1,5 +1,6 @@
 import { PREMIUM_FEATURES, USER_SEARCH_QUERY_LENGTH } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
+import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { z } from 'zod';
 
 // 서버 경로 검증(userTagParamSchema)과 같은 규칙이다
@@ -37,16 +38,22 @@ const sendFriendRequestResultSchema = z.object({
 });
 export type SendFriendRequestResult = z.infer<typeof sendFriendRequestResultSchema>;
 
+const friendUserPageSchema = cursorPageSchema(friendUserSchema, z.string()).extend({
+  totalCount: z.number(),
+});
+export type FriendUserPage = z.infer<typeof friendUserPageSchema>;
+
+const friendRequestPageSchema = cursorPageSchema(friendRequestSchema, z.string()).extend({
+  totalCount: z.number(),
+});
+export type FriendRequestPage = z.infer<typeof friendRequestPageSchema>;
+
+const searchedUserPageSchema = cursorPageSchema(searchedUserSchema, z.string());
+export type SearchedUserPage = z.infer<typeof searchedUserPageSchema>;
+
 // 영속 캐시 복원 값을 검증할 때 쓴다
 export const friendUserPagesSchema = z.object({
-  pages: z.array(
-    z.object({
-      items: z.array(friendUserSchema),
-      totalCount: z.number(),
-      hasMore: z.boolean(),
-      nextCursor: z.string().nullable().optional(),
-    }),
-  ),
+  pages: z.array(friendUserPageSchema),
   pageParams: z.array(z.unknown()),
 });
 

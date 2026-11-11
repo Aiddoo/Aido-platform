@@ -1,5 +1,6 @@
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -25,7 +26,7 @@ import { useWindowDimensions } from 'react-native';
 
 import {
   NudgeThanksPreviewPolicy,
-  type NudgeThanksPreview,
+  type NudgeThanksRecipient,
 } from '../../domains/nudge-interaction.model';
 import { isNudgeUnavailableError } from '../../domains/todo-nudge.error';
 import { useSendNudgeThanksMutationOptions } from '../../queries/todo-nudge.mutations';
@@ -84,7 +85,7 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
   );
   const sendThanks = useMutation(useSendNudgeThanksMutationOptions());
   const preview = thanksPreviewQuery.data.pages[0];
-  const recipients = thanksPreviewQuery.data.pages.flatMap((page) => page.recipients);
+  const recipients = selectPageItems(thanksPreviewQuery.data);
 
   if (sendThanks.isSuccess) {
     return (
@@ -153,7 +154,7 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
 NudgeThanksBottomSheet.Recipient = function Recipient({
   recipient,
 }: {
-  recipient: NudgeThanksPreview['recipients'][number];
+  recipient: NudgeThanksRecipient;
 }) {
   return (
     <HStack align="center" gap={12} py={12}>

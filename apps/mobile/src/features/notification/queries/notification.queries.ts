@@ -1,10 +1,11 @@
 import { useNotificationService, usePushDeviceService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { uniqBy } from 'es-toolkit';
 
-import type { NotificationListResult } from '../domains/notification.model';
+import type { NotificationPage } from '../domains/notification.model';
 import type { NotificationListQueryKey } from '../schemas/notification-list-query-key.schema';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
@@ -26,18 +27,14 @@ export function useGetNotificationsInfiniteQueryOptions({
 
     initialPageParam: FIRST_PAGE_CURSOR,
 
-    getNextPageParam: (lastPage) =>
-      lastPage.hasMore && lastPage.nextCursor != null ? lastPage.nextCursor : undefined,
+    getNextPageParam: getNextCursor,
 
     select: selectNotifications,
   });
 }
 
-function selectNotifications(infinitePages: InfiniteData<NotificationListResult>) {
-  return uniqBy(
-    infinitePages.pages.flatMap((page) => page.notifications),
-    (notification) => notification.id,
-  );
+function selectNotifications(infinitePages: InfiniteData<NotificationPage, number | undefined>) {
+  return uniqBy(selectPageItems(infinitePages), (notification) => notification.id);
 }
 
 export function useGetPushPermissionQueryOptions() {

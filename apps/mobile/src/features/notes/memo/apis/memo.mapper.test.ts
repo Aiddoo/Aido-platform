@@ -34,7 +34,6 @@ describe('메모 페이지 응답 매핑', () => {
     const result = toMemoPage(dto);
     // Then
     expect(result.nextCursor).toBe(12);
-    expect(result.hasNext).toBe(true);
     expect(result.items[0]?.createdAt).toBe('2026-10-03T00:00:00Z');
     expect(result.items[0]).not.toHaveProperty('userId');
   });
@@ -43,12 +42,12 @@ describe('메모 페이지 응답 매핑', () => {
     // Given
     const dto = memoListResponseSchema.parse({
       items: [],
-      pagination: { nextCursor: null, hasNext: false, size: 20 },
+      pagination: { nextCursor: 12, hasNext: false, size: 20 },
     });
     // When
     const result = toMemoPage(dto);
     // Then
-    expect(result).toEqual({ items: [], nextCursor: null, hasNext: false });
+    expect(result).toEqual({ items: [], nextCursor: null });
   });
 });
 

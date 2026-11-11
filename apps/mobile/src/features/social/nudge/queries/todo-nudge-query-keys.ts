@@ -3,6 +3,7 @@ import { type InfiniteData, queryOptions } from '@tanstack/react-query';
 import type {
   NudgeInteraction,
   NudgeInteractionPage,
+  NudgeThanksCursor,
   NudgeThanksPreview,
 } from '../domains/nudge-interaction.model';
 import type { NudgeCooldownInfo, NudgeLimitInfo } from '../domains/todo-nudge.model';
@@ -24,7 +25,7 @@ export const TODO_NUDGE_QUERY_KEYS = {
       queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'detail', { nudgeId }],
     }).queryKey,
   thanksPreview: ({ todoId }: { todoId: number }) =>
-    queryOptions<InfiniteData<NudgeThanksPreview, { cursor?: number; throughNudgeId?: number }>>({
+    queryOptions<InfiniteData<NudgeThanksPreview, NudgeThanksCursor | undefined>>({
       queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'thanks', { todoId }],
     }).queryKey,
   limit: () =>

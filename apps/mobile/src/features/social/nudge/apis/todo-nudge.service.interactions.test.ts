@@ -30,7 +30,7 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
       params: { direction: 'sent', cursor: 10, limit: 20 },
       signal,
     });
-    expect(page).toMatchObject({ nextCursor: 1, hasNext: true });
+    expect(page).toMatchObject({ nextCursor: 1 });
     expect(page.items[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
   });
 

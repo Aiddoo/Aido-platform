@@ -1,6 +1,7 @@
 import { NUDGE_REPLY_KINDS } from '@aido/api/vocabulary';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { instantSchema } from '@src/shared/date/instant';
+import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -23,11 +24,7 @@ export const nudgeInteractionSchema = z.object({
 });
 export type NudgeInteraction = z.infer<typeof nudgeInteractionSchema>;
 
-const nudgeInteractionPageSchema = z.object({
-  items: z.array(nudgeInteractionSchema),
-  nextCursor: z.number().nullable(),
-  hasNext: z.boolean(),
-});
+const nudgeInteractionPageSchema = cursorPageSchema(nudgeInteractionSchema, z.number());
 export type NudgeInteractionPage = z.infer<typeof nudgeInteractionPageSchema>;
 
 const nudgeInteractionStatusSchema = z.enum([
@@ -39,19 +36,23 @@ const nudgeInteractionStatusSchema = z.enum([
 ]);
 export type NudgeInteractionStatus = z.infer<typeof nudgeInteractionStatusSchema>;
 
-export const nudgeThanksPreviewSchema = z.object({
+const nudgeThanksRecipientSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  profileImage: z.string().nullable(),
+});
+export type NudgeThanksRecipient = z.infer<typeof nudgeThanksRecipientSchema>;
+
+const nudgeThanksCursorSchema = z.object({ cursor: z.number(), throughNudgeId: z.number() });
+export type NudgeThanksCursor = z.infer<typeof nudgeThanksCursorSchema>;
+
+export const nudgeThanksPreviewSchema = cursorPageSchema(
+  nudgeThanksRecipientSchema,
+  nudgeThanksCursorSchema,
+).extend({
   todoId: z.number(),
   throughNudgeId: z.number().nullable(),
   totalRecipients: z.int().nonnegative(),
-  nextCursor: z.number().nullable(),
-  hasNext: z.boolean(),
-  recipients: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      profileImage: z.string().nullable(),
-    }),
-  ),
   thankedRecipientCount: z.int().nonnegative(),
   lastThankedAt: instantSchema.nullable(),
 });
@@ -91,7 +92,7 @@ export function isReceivedBy(nudge: NudgeInteraction, userId: string): boolean {
 }
 
 export function hasThankableRecipients(preview: NudgeThanksPreview): boolean {
-  return preview.throughNudgeId != null && preview.recipients.length > 0;
+  return preview.throughNudgeId != null && preview.items.length > 0;
 }
 
 export function getThanksSummary(preview: NudgeThanksPreview): NudgeThanksSummary {

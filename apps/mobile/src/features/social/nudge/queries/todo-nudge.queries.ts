@@ -2,23 +2,16 @@ import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
-import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
+import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import type { NudgeInteractionPage } from '../domains/nudge-interaction.model';
+import type { NudgeThanksCursor } from '../domains/nudge-interaction.model';
 import type { NudgeDirection } from '../schemas/nudge-interaction-query-key.schema';
 import { TODO_NUDGE_QUERY_KEYS } from './todo-nudge-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
-
-type ThanksPreviewPageParam = { cursor?: number; throughNudgeId?: number };
-const INITIAL_THANKS_PREVIEW_PAGE_PARAM: ThanksPreviewPageParam = {};
+const FIRST_THANKS_PREVIEW_CURSOR: NudgeThanksCursor | undefined = undefined;
 const NUDGE_STALE_TIME_MS = 30 * SECOND_MS;
-
-function selectNudgeInteractions(
-  infinitePages: InfiniteData<NudgeInteractionPage, number | undefined>,
-) {
-  return infinitePages.pages.flatMap((page) => page.items);
-}
 
 export function useGetNudgeInteractionAvailabilityQueryOptions() {
   const todoNudgeService = useTodoNudgeService();
@@ -60,9 +53,8 @@ export function useGetNudgeInteractionsInfiniteQueryOptions({
         ),
       ),
     initialPageParam: FIRST_PAGE_CURSOR,
-    getNextPageParam: (page) =>
-      page.hasNext && page.nextCursor != null ? page.nextCursor : undefined,
-    select: selectNudgeInteractions,
+    getNextPageParam: getNextCursor,
+    select: selectPageItems,
     staleTime: NUDGE_STALE_TIME_MS,
     meta: { refreshOnTodoChange: true, refreshOnBlockChange: true },
   });
@@ -81,11 +73,8 @@ export function useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }: { todoI
           signal,
         ),
       ),
-    initialPageParam: INITIAL_THANKS_PREVIEW_PAGE_PARAM,
-    getNextPageParam: (lastPage) =>
-      lastPage.hasNext && lastPage.nextCursor != null && lastPage.throughNudgeId != null
-        ? { cursor: lastPage.nextCursor, throughNudgeId: lastPage.throughNudgeId }
-        : undefined,
+    initialPageParam: FIRST_THANKS_PREVIEW_CURSOR,
+    getNextPageParam: getNextCursor,
     staleTime: NUDGE_STALE_TIME_MS,
     meta: { refreshOnTodoChange: true, refreshOnBlockChange: true },
   });

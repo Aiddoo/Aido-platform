@@ -11,12 +11,10 @@ function createMemoList(): InfiniteData<MemoPage, number | undefined> {
     pages: [
       {
         items: [createMemo({ id: 1, content: '첫 메모' }), createMemo({ id: 2, content: '옛 글' })],
-        hasNext: true,
         nextCursor: 2,
       },
       {
         items: [createMemo({ id: 3, content: '다음 쪽 메모' })],
-        hasNext: false,
         nextCursor: null,
       },
     ],

@@ -40,8 +40,8 @@ describe('NotificationService', () => {
       });
       expect(result.ok).toBe(true);
       const page = unwrap(result);
-      expect(page.notifications).toHaveLength(2);
-      expect(page.notifications[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
+      expect(page.items).toHaveLength(2);
+      expect(page.items[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
     });
 
     it('응답이 계약과 다르면 ParseError를 던진다', async () => {

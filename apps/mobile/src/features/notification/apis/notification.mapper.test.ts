@@ -3,7 +3,7 @@ import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
 import { resolveNotificationDestination } from '../utils/notification-destination';
-import { toNotification, toNotificationListResult } from './notification.mapper';
+import { toNotification, toNotificationPage } from './notification.mapper';
 
 setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
 
@@ -102,20 +102,36 @@ describe('toNotification', () => {
   });
 });
 
-describe('toNotificationListResult', () => {
-  it('배열 변환 + unreadCount/hasMore/nextCursor', () => {
+describe('toNotificationPage', () => {
+  it('알림을 쪽 항목으로 바꾸고 마지막 쪽이면 다음 커서를 비운다', () => {
     // Given
     const dto = createNotificationListResponseDto();
 
     // When
-    const result = toNotificationListResult(dto);
+    const result = toNotificationPage(dto);
 
     // Then
-    expect(result.notifications).toHaveLength(2);
-    expect(result.notifications[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
-    expect(result.hasMore).toBe(false);
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
     expect(result.nextCursor).toBeNull();
   });
+
+  it.each([
+    { hasMore: true, nextCursor: 5, expected: 5 },
+    { hasMore: false, nextCursor: 5, expected: null },
+  ])(
+    'hasMore $hasMore·커서 $nextCursor이면 다음 커서는 $expected다',
+    ({ hasMore, nextCursor, expected }) => {
+      // Given
+      const dto = createNotificationListResponseDto({ hasMore, nextCursor });
+
+      // When
+      const result = toNotificationPage(dto);
+
+      // Then
+      expect(result.nextCursor).toBe(expected);
+    },
+  );
 
   it('빈 배열', () => {
     // Given
@@ -124,10 +140,10 @@ describe('toNotificationListResult', () => {
     });
 
     // When
-    const result = toNotificationListResult(dto);
+    const result = toNotificationPage(dto);
 
     // Then
-    expect(result.notifications).toEqual([]);
+    expect(result.items).toEqual([]);
   });
 });
 

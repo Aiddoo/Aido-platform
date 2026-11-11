@@ -10,7 +10,6 @@ import type { InstallationIdGateway } from '@src/core/ports/installation-id-gate
 import type { Logger } from '@src/core/ports/logger';
 import { BusinessError, getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import type { Page } from '@src/shared/types/page.types';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { parseInviteCode } from '../domains/invite-code.model';
@@ -18,7 +17,7 @@ import type { InvitePreview } from '../domains/invite-preview.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { INVITE_ERROR_CODE, type InviteErrorCode } from '../domains/invite.error';
 import type { Invite } from '../domains/invite.model';
-import type { InvitedFriend } from '../domains/invited-friend.model';
+import type { InvitedFriendPage } from '../domains/invited-friend.model';
 import {
   inviteResponseSchema,
   invitedFriendsResponseSchema,
@@ -142,7 +141,7 @@ export class InviteService {
   getInvitedFriends = async (
     params: Partial<GetInvitedFriendsQuery>,
     signal?: AbortSignal,
-  ): Promise<Result<Page<InvitedFriend>, ApiError>> =>
+  ): Promise<Result<InvitedFriendPage, ApiError>> =>
     parseApiResponse(
       await this.#authHttpClient.get('v1/invites/me/invitees', {
         signal,

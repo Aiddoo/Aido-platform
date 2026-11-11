@@ -1,4 +1,5 @@
 import { instantSchema } from '@src/shared/date/instant';
+import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { z } from 'zod';
 
 export const weeklyAchievementSchema = z.object({
@@ -21,10 +22,10 @@ const weeklyAchievementSummarySchema = z.object({
   averageRate: z.number().min(0).max(100),
 });
 
-export const weeklyAchievementPageSchema = z.object({
-  items: z.array(weeklyAchievementSchema),
-  nextCursor: z.int().nullable(),
-  hasNext: z.boolean(),
+export const weeklyAchievementPageSchema = cursorPageSchema(
+  weeklyAchievementSchema,
+  z.int(),
+).extend({
   summary: weeklyAchievementSummarySchema,
 });
 export type WeeklyAchievementPage = z.infer<typeof weeklyAchievementPageSchema>;

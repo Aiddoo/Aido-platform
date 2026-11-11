@@ -15,14 +15,13 @@ import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { BusinessError } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
-import type { Page } from '@src/shared/types/page.types';
 import { noop } from 'es-toolkit';
 
 import { FRIEND_ERROR_CODE, type FriendErrorCode } from '../domains/friend.error';
 import {
   isValidSearchQuery,
   isValidUserTag,
-  type SearchedUser,
+  type SearchedUserPage,
   type SendFriendRequestResult,
 } from '../domains/friend.model';
 import type {
@@ -126,7 +125,7 @@ export class FriendService {
   searchUsers = async (
     params: SearchUsersQuery,
     signal?: AbortSignal,
-  ): Promise<Result<Page<SearchedUser>, FriendServiceError>> => {
+  ): Promise<Result<SearchedUserPage, FriendServiceError>> => {
     const query = params.query.trim();
     // 2자 미만이면 네트워크 요청 없이 실패한다
     if (!isValidSearchQuery(query)) {

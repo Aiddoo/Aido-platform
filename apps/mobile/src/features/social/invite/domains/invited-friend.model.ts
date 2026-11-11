@@ -5,6 +5,7 @@ import {
   REDEMPTION_STATUS_UNKNOWN,
 } from '@aido/api/vocabulary';
 import { instantSchema, toEpochMs } from '@src/shared/date/instant';
+import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -21,6 +22,11 @@ export const invitedFriendSchema = z.object({
   rejectionReason: z.enum(REDEMPTION_REJECTION_REASON).nullable(),
 });
 export type InvitedFriend = z.infer<typeof invitedFriendSchema>;
+
+const invitedFriendPageSchema = cursorPageSchema(invitedFriendSchema, z.string()).extend({
+  totalCount: z.number(),
+});
+export type InvitedFriendPage = z.infer<typeof invitedFriendPageSchema>;
 
 function calculateActiveDaysLeft(activeDays: number, requiredDays: number) {
   return Math.max(requiredDays - activeDays, 0);

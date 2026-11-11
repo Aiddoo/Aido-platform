@@ -1,10 +1,15 @@
-import type { Page } from '@src/shared/types/page.types';
+import { mapInfiniteItems } from '@src/shared/domains/cursor-page.model';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
-import type { FriendUser, SearchedUser } from '../domains/friend.model';
+import type {
+  FriendUser,
+  FriendUserPage,
+  SearchedUser,
+  SearchedUserPage,
+} from '../domains/friend.model';
 import { FRIEND_QUERY_KEYS } from './friend-query-keys';
 
-type FriendPages = InfiniteData<Page<FriendUser>, string | undefined>;
+type FriendPages = InfiniteData<FriendUserPage, string | undefined>;
 
 /** 지운 친구가 있던 자리. 지우기가 실패하면 그 친구만 이 자리에 되돌린다 */
 export interface FriendPlacement {
@@ -80,16 +85,10 @@ export function patchSearchedUser(
   isTarget: (user: SearchedUser) => boolean,
   patch: Partial<SearchedUser>,
 ) {
-  queryClient.setQueriesData<InfiniteData<Page<SearchedUser>>>(
+  queryClient.setQueriesData<InfiniteData<SearchedUserPage, string | undefined>>(
     { queryKey: FRIEND_QUERY_KEYS.searches() },
     (old) =>
-      old && {
-        ...old,
-        pages: old.pages.map((page) => ({
-          ...page,
-          items: page.items.map((user) => (isTarget(user) ? { ...user, ...patch } : user)),
-        })),
-      },
+      old && mapInfiniteItems(old, (user) => (isTarget(user) ? { ...user, ...patch } : user)),
   );
 }
 

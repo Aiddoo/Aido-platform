@@ -89,7 +89,6 @@ async function renderEditor(
     pages: [
       {
         items: [createMemo({ id: MEMO_ID, content: '처음 메모' })],
-        hasNext: false,
         nextCursor: null,
       },
     ],

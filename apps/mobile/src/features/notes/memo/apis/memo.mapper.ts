@@ -31,8 +31,7 @@ export function toMemo(dto: MemoDto): Memo {
 export function toMemoPage(dto: MemoListResponse): MemoPage {
   return {
     items: dto.items.map(toMemo),
-    nextCursor: dto.pagination.nextCursor,
-    hasNext: dto.pagination.hasNext,
+    nextCursor: dto.pagination.hasNext ? dto.pagination.nextCursor : null,
   };
 }
 

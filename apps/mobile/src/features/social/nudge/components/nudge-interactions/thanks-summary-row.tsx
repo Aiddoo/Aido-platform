@@ -35,7 +35,7 @@ import { match } from 'ts-pattern';
 
 import {
   NudgeThanksPreviewPolicy,
-  type NudgeThanksPreview,
+  type NudgeThanksRecipient,
 } from '../../domains/nudge-interaction.model';
 import {
   useGetNudgeInteractionAvailabilityQueryOptions,
@@ -89,7 +89,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onOpenThanks }: ThanksSu
     .with('PENDING', () => (
       <ThanksSummaryCard
         tone="highlighted"
-        left={<RecipientAvatars recipients={preview.recipients} />}
+        left={<RecipientAvatars recipients={preview.items} />}
         title={
           <CardTitle>
             {t('interaction.thanksPendingTitle', { count: pendingRecipientCount })}
@@ -288,7 +288,7 @@ function ThanksButton({
   );
 }
 
-function RecipientAvatars({ recipients }: { recipients: NudgeThanksPreview['recipients'] }) {
+function RecipientAvatars({ recipients }: { recipients: NudgeThanksRecipient[] }) {
   return (
     <HStack accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {recipients.slice(0, VISIBLE_AVATAR_COUNT).map((recipient, index) => (

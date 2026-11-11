@@ -8,12 +8,13 @@
 ```tsx
 import { InfiniteList } from '@src/shared/ui';
 
+// 옵션의 select: selectPageItems(shared/domains/cursor-page.model)가 쪽을 항목 목록으로 편다
 const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
   useSuspenseInfiniteQuery(options);
 const [refreshing, onRefresh] = useRefresh(refetch);
 
 <InfiniteList
-  data={data.pages.flatMap((page) => page.items)}
+  data={data}
   keyExtractor={({ id }) => id}
   renderItem={({ item }) => <Row item={item} />}
   ListEmptyComponent={Empty}

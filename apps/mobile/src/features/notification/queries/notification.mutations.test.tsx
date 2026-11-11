@@ -16,7 +16,7 @@ import {
   createNotification,
   createNotificationApiError,
 } from '../__tests__/notification.fixtures';
-import type { NotificationListResult } from '../domains/notification.model';
+import type { NotificationPage } from '../domains/notification.model';
 import { useNotificationBadgeSync } from '../hooks/use-notification-badge-sync';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 import {
@@ -88,11 +88,10 @@ describe('useMarkAsReadMutationOptions', () => {
     const gateway = createPushNotificationGatewayStub();
     const queryClient = createTestQueryClient();
     const listKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
-    const inbox: InfiniteData<NotificationListResult, number | undefined> = {
+    const inbox: InfiniteData<NotificationPage, number | undefined> = {
       pages: [
         {
-          notifications: [createNotification({ id: 1 }), createNotification({ id: 2 })],
-          hasMore: false,
+          items: [createNotification({ id: 1 }), createNotification({ id: 2 })],
           nextCursor: null,
         },
       ],
@@ -128,8 +127,8 @@ describe('useMarkAsReadMutationOptions', () => {
     // Then
     const readStates = () =>
       queryClient
-        .getQueryData<InfiniteData<NotificationListResult, number | undefined>>(listKey)
-        ?.pages.flatMap((page) => page.notifications)
+        .getQueryData<InfiniteData<NotificationPage, number | undefined>>(listKey)
+        ?.pages.flatMap((page) => page.items)
         .map(({ id, isRead }) => ({ id, isRead }));
     expect(readStates()).toEqual([
       { id: 1, isRead: false },

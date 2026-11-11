@@ -9,6 +9,7 @@ import type { ForegroundPushPresentation } from '@src/core/ports/push-notificati
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { instantSchema } from '@src/shared/date/instant';
+import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { entityIdSchema } from '@src/shared/domains/entity-id.model';
 import { takeRight, without } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -123,12 +124,8 @@ const notificationSchema = z.object({
 });
 export type Notification = z.infer<typeof notificationSchema>;
 
-const notificationListResultSchema = z.object({
-  notifications: z.array(notificationSchema),
-  hasMore: z.boolean(),
-  nextCursor: z.number().nullable(),
-});
-export type NotificationListResult = z.infer<typeof notificationListResultSchema>;
+const notificationPageSchema = cursorPageSchema(notificationSchema, z.number());
+export type NotificationPage = z.infer<typeof notificationPageSchema>;
 
 /** 읽음 응답으로 본 소유. 네트워크·5xx·예산 초과는 모르는 것이라 막지 않는다 */
 export type NotificationOwnership = 'ok' | 'foreign' | 'unknown';
