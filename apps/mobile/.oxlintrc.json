@@ -935,6 +935,201 @@
       "rules": {
         "aido/todo-comment-test-purity": "error"
       }
+    },
+    // 켜기 전 규칙. 1.15.2 [13/32]에서 위반 자리에 disable 지시문을 남기고 규칙이 처음 나오는 블록의 off를 error로 켠다.
+    // 뒤따르는 같은 규칙의 off 블록은 허용 경로라 그대로 둔다. 목록과 위반 수: docs/architecture/migration-status.md
+    {
+      "files": ["src/**", "app/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/query-client-location": "off",
+        "aido/storage-key-location": "off",
+        "aido/http-status-literal": "off",
+        "aido/app-state-location": "off",
+        "aido/back-handler-location": "off",
+        "aido/no-classname-concat": "off",
+        "aido/shared-value-accessor": "off",
+        "aido/menu-item-title-text": "off"
+      }
+    },
+    {
+      "files": [
+        "src/**/queries/*-cache.ts",
+        "src/**/queries/*.mutations.{ts,tsx}",
+        "src/**/queries/*.queries.{ts,tsx}",
+        "src/bootstrap/**",
+        "src/shared/query/**"
+      ],
+      "rules": {
+        "aido/query-client-location": "off"
+      }
+    },
+    {
+      "files": [
+        "src/**/schemas/*-storage.schema.ts",
+        "src/**/repositories/**",
+        "src/shared/storage/**"
+      ],
+      "rules": {
+        "aido/storage-key-location": "off"
+      }
+    },
+    {
+      "files": ["src/shared/infra/http/**"],
+      "rules": {
+        "aido/http-status-literal": "off"
+      }
+    },
+    {
+      "files": ["src/shared/infra/**"],
+      "rules": {
+        "aido/app-state-location": "off"
+      }
+    },
+    {
+      "files": ["src/shared/hooks/use-android-back-handler.ts"],
+      "rules": {
+        "aido/back-handler-location": "off"
+      }
+    },
+    {
+      "files": [
+        "src/**/apis/**",
+        "src/**/services/**",
+        "src/**/repositories/**",
+        "src/**/stores/**",
+        "src/**/*.mapper.ts",
+        "src/**/*.model.ts",
+        "src/**/*-cache.ts"
+      ],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/track-location": "off"
+      }
+    },
+    {
+      "files": ["src/**/domains/*.model.ts", "src/**/*.mapper.ts"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/no-clock-read": "off"
+      }
+    },
+    {
+      "files": ["src/**/*log-events.ts"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/log-event-key": "off"
+      }
+    },
+    {
+      "files": ["src/**/constants/*.events.ts", "src/shared/analytics/event-map.ts"],
+      "rules": {
+        "aido/analytics-event-catalog": [
+          "off",
+          {
+            // GA 대시보드가 보는 기존 이름. 바꿀 때는 별칭 기간을 두고 여기서 지운다
+            "frozenNames": [
+              "ai_parse_used",
+              "ai_suggestion_acted",
+              "auth_login",
+              "auth_logout",
+              "auth_signup",
+              "auth_social_linked",
+              "auth_social_unlinked",
+              "badge_opened_from_notification",
+              "badge_share_attempted",
+              "category_delete_cancelled",
+              "category_reordered",
+              "content_reported",
+              "feature_action_success",
+              "feature_card_cta",
+              "feature_hub_impression",
+              "friend_removed",
+              "friend_reordered",
+              "friend_request_accepted",
+              "friend_request_cancelled",
+              "friend_request_rejected",
+              "friend_request_sent",
+              "invite_link_shared",
+              "invite_redeemed",
+              "memo_converted_to_todo",
+              "memo_converted_to_todos",
+              "nudge_replied",
+              "nudge_sent",
+              "nudge_thanks_sent",
+              "paywall_plan_selected",
+              "profile_edited",
+              "purchase_cancelled",
+              "remind_nudge_sent",
+              "session_expired",
+              "subscription_restored",
+              "subscription_started",
+              "todo_comment_liked",
+              "todo_comment_replies_expanded",
+              "todo_comment_reply_started",
+              "todo_comment_sorted",
+              "todo_edited",
+              "todo_item_added",
+              "todo_item_reordered",
+              "todo_reordered",
+              "todo_series_edited",
+              "todo_series_stopped",
+              "user_blocked",
+              "user_unblocked",
+              "voice_capture_finished",
+              "voice_capture_resumed",
+              "voice_capture_started",
+              "voice_note_key_point_played",
+              "voice_plan_applied",
+              "voice_plan_generated",
+              "voice_recognizer_stalled",
+              "weather_location_permission_result",
+              "weather_location_registered",
+              "weather_reschedule_applied",
+              "weather_reschedule_undone",
+              "whats_new_cta_pressed"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "jest/no-restricted-jest-methods": [
+          "off",
+          {
+            "useFakeTimers": "fake timer는 setupFakeTimersPerTest(config)로만 켭니다. 화면을 내리고 남은 타이머를 흘린 뒤 진짜 타이머로 되돌립니다.",
+            "useRealTimers": "진짜 타이머로 되돌리는 일은 setupFakeTimersPerTest의 afterEach가 합니다. 바로 부르면 화면을 내릴 때 생긴 타이머가 남습니다."
+          }
+        ],
+        "jest/no-restricted-matchers": [
+          "off",
+          {
+            "toMatchSnapshot": "스냅숏을 쓰지 않습니다. 사용자 결과(문구·동작·캐시 상태)를 단언합니다.",
+            "toMatchInlineSnapshot": "스냅숏을 쓰지 않습니다. 사용자 결과(문구·동작·캐시 상태)를 단언합니다.",
+            "toThrowErrorMatchingSnapshot": "스냅숏을 쓰지 않습니다. 오류 종류·코드를 단언합니다.",
+            "toThrowErrorMatchingInlineSnapshot": "스냅숏을 쓰지 않습니다. 오류 종류·코드를 단언합니다."
+          }
+        ],
+        "aido/test-spy-target": "off",
+        "aido/no-real-sleep": "off",
+        "aido/no-style-assertion": "off"
+      }
+    },
+    {
+      "files": ["src/testing/timers.ts"],
+      "rules": {
+        "jest/no-restricted-jest-methods": "off"
+      }
     }
   ]
 }
