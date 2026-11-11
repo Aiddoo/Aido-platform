@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
@@ -24,7 +25,10 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
       expect.objectContaining({ userId: fixture.user.id, type: "PASSWORD_SETUP", usedAt: null }),
     ]);
     expect(
-      await fixture.accountRepository.findByUserIdAndProvider(fixture.user.id, "CREDENTIAL"),
+      await fixture.accountRepository.findByUserIdAndProvider(
+        UserId.reconstitute(fixture.user.id),
+        "CREDENTIAL",
+      ),
     ).toBeNull();
   });
 

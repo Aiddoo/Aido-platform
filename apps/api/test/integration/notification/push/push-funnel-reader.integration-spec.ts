@@ -13,6 +13,8 @@ import {
   pushToken,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -81,7 +83,7 @@ describe("푸시 발송 퍼널 조회 (실제 PostgreSQL)", () => {
   });
 
   async function seed(input: SeededNotification): Promise<void> {
-    const createdAt = input.createdAt ?? IN_RANGE;
+    const createdAt = instantFromDate(input.createdAt ?? IN_RANGE);
     const [created] = await client
       .insert(notificationTable)
       .values({
@@ -106,6 +108,7 @@ describe("푸시 발송 퍼널 조회 (실제 PostgreSQL)", () => {
         campaignKey: input.campaignKey === undefined ? CAMPAIGN : input.campaignKey,
         status: input.dispatch.status,
         skipReason: input.dispatch.skipReason ?? null,
+        updatedAt: nowInstant(),
       })
       .returning({ id: pushDispatch.id });
     const attempts = input.attempts ?? [];
@@ -115,6 +118,7 @@ describe("푸시 발송 퍼널 조회 (실제 PostgreSQL)", () => {
           dispatchId: requireRecord(dispatch).id,
           pushTokenId: tokenIds[attempt.token],
           status: attempt.status,
+          updatedAt: nowInstant(),
         })),
       );
     }

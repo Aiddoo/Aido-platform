@@ -62,7 +62,7 @@ export const parseTodoPrompt: PromptDefinition<
   version: "parse-todo@9",
   taskClass: "interactive",
   // 30개 카테고리(이름 50자)와 500자 입력의 최대 user 턴이 약 3,700자다.
-  maxInputChars: 5_000,
+  maxInputChars: 5000,
   schema: todoDraftSchema,
   build: (input, locale) => ({
     system: SYSTEM[locale],

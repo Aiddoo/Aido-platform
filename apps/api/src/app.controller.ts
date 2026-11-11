@@ -8,11 +8,15 @@ import { AppService } from "./app.service.js";
 @ApiExcludeController()
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  readonly #appService: AppService;
+
+  constructor(appService: AppService) {
+    this.#appService = appService;
+  }
 
   @Get()
   @Public()
   getHello(): string {
-    return this.appService.getHello();
+    return this.#appService.getHello();
   }
 }

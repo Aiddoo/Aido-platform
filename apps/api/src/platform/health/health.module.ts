@@ -5,7 +5,7 @@ import { RuntimeStatsSampler } from "#api/platform/observability/runtime-stats.s
 
 import { HealthController } from "./health.controller.js";
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
-import { JobRuntimeHealthIndicator } from "./indicators/job-runtime.health.js";
+import { JobQueueHealthIndicator } from "./indicators/job-queue.health.js";
 import { OutboundHealthIndicator } from "./indicators/outbound.health.js";
 import { RuntimeStatsHealthIndicator } from "./indicators/runtime-stats.health.js";
 
@@ -14,7 +14,7 @@ import { RuntimeStatsHealthIndicator } from "./indicators/runtime-stats.health.j
   controllers: [HealthController],
   providers: [
     DatabaseHealthIndicator,
-    JobRuntimeHealthIndicator,
+    JobQueueHealthIndicator,
     OutboundHealthIndicator,
     RuntimeStatsSampler,
     RuntimeStatsHealthIndicator,

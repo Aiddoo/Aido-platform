@@ -18,6 +18,8 @@ interface AiSpendWindowLimits {
 
 export const AI_SPEND_TIERS = ["alert", "background", "halt"] as const;
 
+export type AiSpendTier = (typeof AI_SPEND_TIERS)[number];
+
 /** 지금까지 기록된 추정 비용. 진행 중인 호출은 끝날 때 더해진다. */
 export interface AiSpend {
   readonly globalDailyMicroUsd: number;

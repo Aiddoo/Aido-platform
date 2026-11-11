@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -75,24 +76,23 @@ export class LikeTodoCommentUseCase {
   async #like(command: LikeTodoCommentCommand): Promise<LikeOutcome> {
     const { mutationLock, clock, reader, repository, likeRepository, blockReader } =
       this.#dependencies;
+    const todoId = TodoId.reconstitute(command.todoId);
     const commentId = TodoCommentId.reconstitute(command.commentId);
     const userId = UserId.reconstitute(command.userId);
     await mutationLock.acquire([TodoCommentLockKeys.comment(command.commentId)]);
-    if ((await reader.findAccessibleTodoOwnerId(command.todoId, command.userId)) == null) {
+    if ((await reader.findAccessibleTodoOwnerId(todoId, userId)) == null) {
       throw todoNotFound(command.todoId);
     }
-    const comment = await repository.findByIdAndTodoId(commentId, command.todoId);
+    const comment = await repository.findByIdAndTodoId(commentId, todoId);
     if (comment == null) {
       throw commentNotFound(command.commentId);
     }
     comment.assertActive();
-    const blockedIds = await blockReader.findBlockedCounterpartIds(command.userId, [
-      comment.authorId.value,
-    ]);
+    const blockedIds = await blockReader.findBlockedCounterpartIds(userId, [comment.authorId]);
     if (blockedIds.has(comment.authorId.value)) {
       throw blockedCounterpart();
     }
-    const senderName = await reader.findUserDisplayName(command.userId);
+    const senderName = await reader.findUserDisplayName(userId);
     const existing = await likeRepository.findByCommentIdAndUserId(commentId, userId);
     if (existing?.isActive === true) {
       return {
@@ -118,7 +118,10 @@ export class LikeTodoCommentUseCase {
     const commentId = TodoCommentId.reconstitute(command.commentId);
     await unitOfWork.run(async () => {
       await mutationLock.acquire([TodoCommentLockKeys.comment(command.commentId)]);
-      const comment = await repository.findByIdAndTodoId(commentId, command.todoId);
+      const comment = await repository.findByIdAndTodoId(
+        commentId,
+        TodoId.reconstitute(command.todoId),
+      );
       const like = await likeRepository.findByCommentIdAndUserId(
         commentId,
         UserId.reconstitute(command.userId),

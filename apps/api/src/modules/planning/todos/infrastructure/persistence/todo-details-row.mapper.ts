@@ -1,11 +1,6 @@
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
-import {
-  toDateString,
-  toDateStringOrNull,
-  toISOString,
-  toISOStringOrNull,
-} from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { FriendTodoReadModel } from "../../application/read-models/todo.read-model.js";
 
@@ -20,8 +15,8 @@ export function toFriendTodoReadModel(row: TodoDetailsRow): FriendTodoReadModel 
     title: item.title,
     completed: item.completed,
     sortOrder: item.sortOrder,
-    createdAt: toISOString(item.createdAt),
-    updatedAt: toISOString(item.updatedAt),
+    createdAt: toIsoString(item.createdAt),
+    updatedAt: toIsoString(item.updatedAt),
   }));
 
   return {
@@ -30,10 +25,10 @@ export function toFriendTodoReadModel(row: TodoDetailsRow): FriendTodoReadModel 
     title: row.title,
     sortOrder: row.sortOrder,
     completed: row.completed,
-    completedAt: toISOStringOrNull(row.completedAt),
-    startDate: toDateString(row.startDate),
-    endDate: toDateStringOrNull(row.endDate),
-    scheduledTime: toISOStringOrNull(row.scheduledTime),
+    completedAt: row.completedAt == null ? null : toIsoString(row.completedAt),
+    startDate: row.startDate.toString(),
+    endDate: row.endDate?.toString() ?? null,
+    scheduledTime: row.scheduledTime == null ? null : toIsoString(row.scheduledTime),
     scheduledLocalTime: row.scheduledTime == null ? null : row.scheduledLocalTime,
     isAllDay: row.isAllDay,
     visibility: row.visibility,
@@ -46,7 +41,7 @@ export function toFriendTodoReadModel(row: TodoDetailsRow): FriendTodoReadModel 
     },
     items,
     commentCount: row.commentCount,
-    createdAt: toISOString(row.createdAt),
-    updatedAt: toISOString(row.updatedAt),
+    createdAt: toIsoString(row.createdAt),
+    updatedAt: toIsoString(row.updatedAt),
   };
 }

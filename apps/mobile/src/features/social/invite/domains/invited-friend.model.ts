@@ -26,25 +26,25 @@ function calculateActiveDaysLeft(activeDays: number, requiredDays: number) {
   return Math.max(requiredDays - activeDays, 0);
 }
 
-export function orderByJoinedAtDesc(friend: Pick<InvitedFriend, 'joinedAt'>) {
+export function orderByJoinedAtDesc(friend: InvitedFriend) {
   return -toEpochMs(friend.joinedAt);
 }
 
 // 발자국을 기다리는 친구가 먼저 보이게 한다. orderByJoinedAtDesc와 함께 쓴다
-export function orderByWaitingFirst(friend: Pick<InvitedFriend, 'status'>) {
+export function orderByWaitingFirst(friend: InvitedFriend) {
   return friend.status === REDEMPTION_STATUS.JOINED ? 0 : 1;
 }
 
-export function hasStartedActiveDays(friend: Pick<InvitedFriend, 'activeDayCount'>) {
+export function hasStartedActiveDays(friend: InvitedFriend) {
   return friend.activeDayCount > 0;
 }
 
-export function getActiveDaysLeft(friend: Pick<InvitedFriend, 'activeDayCount'>) {
+export function getActiveDaysLeft(friend: InvitedFriend) {
   return calculateActiveDaysLeft(friend.activeDayCount, INVITE_QUALIFICATION.MIN_ACTIVE_DAYS);
 }
 
 // 목록 행 칩: 발자국을 찍었는지, 기다리는 중인지, 보상에서 빠졌는지
-export function getPawPrintState(friend: Pick<InvitedFriend, 'status'>) {
+export function getPawPrintState(friend: InvitedFriend) {
   return match(friend.status)
     .with(REDEMPTION_STATUS.QUALIFIED, REDEMPTION_STATUS.REWARDED, () => 'stamped' as const)
     .with(REDEMPTION_STATUS.JOINED, () => 'waiting' as const)

@@ -8,6 +8,7 @@ import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/applicat
 import type { RetentionEnrollerPort } from "#api/modules/identity/auth/application/ports/retention-enroller.port";
 import type { UserProvisioningSeederPort } from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
 import type { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   StubAccountLifecycleCache,
@@ -37,23 +38,23 @@ export class StubAuthProfileCache
 {
   readonly profiles = new Map<string, AuthCachedUserProfile>();
 
-  override async invalidateUserProfile(userId: string): Promise<void> {
+  override async invalidateUserProfile(userId: UserId): Promise<void> {
     await super.invalidateUserProfile(userId);
-    this.profiles.delete(userId);
+    this.profiles.delete(userId.value);
   }
 
   async wrapUserProfile(
-    userId: string,
+    userId: UserId,
     factory: () => Promise<AuthCachedUserProfile | undefined>,
   ): Promise<AuthCachedUserProfile | undefined> {
-    const cached = this.profiles.get(userId);
+    const cached = this.profiles.get(userId.value);
     if (cached !== undefined) {
       return cached;
     }
     const profile = await factory();
     if (profile !== undefined) {
-      this.profiles.set(userId, profile);
-      this.userIds.add(userId);
+      this.profiles.set(userId.value, profile);
+      this.userIds.add(userId.value);
     }
     return profile;
   }
@@ -82,11 +83,11 @@ export class StubAuthRegistrationNotifier implements AuthRegistrationNotifierPor
 export class StubAuthRetentionEnroller implements RetentionEnrollerPort {
   readonly enrollments: { userId: string; activated: boolean }[] = [];
   readonly activatedUserIds: string[] = [];
-  async enrollNewUser(userId: string, activated: boolean): Promise<void> {
-    this.enrollments.push({ userId, activated });
+  async enrollNewUser(userId: UserId, activated: boolean): Promise<void> {
+    this.enrollments.push({ userId: userId.value, activated });
   }
-  async activateNewUser(userId: string): Promise<void> {
-    this.activatedUserIds.push(userId);
+  async activateNewUser(userId: UserId): Promise<void> {
+    this.activatedUserIds.push(userId.value);
   }
 }
 
@@ -99,16 +100,16 @@ export class StubAuthProvisioningSeeder implements UserProvisioningSeederPort {
   readonly categoryLocales: Parameters<UserProvisioningSeederPort["seedDefaultCategories"]>[1][] =
     [];
   async seedDefaultSettings(
-    userId: string,
+    userId: UserId,
     consent: Parameters<UserProvisioningSeederPort["seedDefaultSettings"]>[1],
   ): Promise<void> {
-    this.settings.push({ userId, consent });
+    this.settings.push({ userId: userId.value, consent });
   }
   async seedDefaultCategories(
-    userId: string,
+    userId: UserId,
     locale?: Parameters<UserProvisioningSeederPort["seedDefaultCategories"]>[1],
   ): Promise<void> {
-    this.categoryUserIds.push(userId);
+    this.categoryUserIds.push(userId.value);
     this.categoryLocales.push(locale);
   }
 }

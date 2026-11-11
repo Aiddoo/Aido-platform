@@ -3,8 +3,9 @@ import { Inject, Injectable } from "@nestjs/common";
 import { uniq } from "es-toolkit";
 
 import { UserPreferenceReaderPort } from "#api/modules/identity/identity-settings.public";
-import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationRecipientLocaleReaderPort } from "../../application/ports/notification-recipient-locale.reader.port.js";
 import type { NotificationRecipientPreferenceReaderPort } from "../../application/ports/notification-recipient-preference.reader.port.js";
@@ -34,7 +35,7 @@ export class CachedNotificationRecipientPreferenceAdapter
     this.#preferenceReader = preferenceReader;
   }
 
-  async getPreference(userId: string): Promise<NotificationDeliveryPreference> {
+  async getPreference(userId: UserId): Promise<NotificationDeliveryPreference> {
     const preference = await this.#preferenceReader.read(userId);
     return {
       ...preference,
@@ -42,7 +43,7 @@ export class CachedNotificationRecipientPreferenceAdapter
     };
   }
 
-  async getLocale(userId: string): Promise<SupportedLocale> {
+  async getLocale(userId: UserId): Promise<SupportedLocale> {
     const preference = await this.#preferenceReader.read(userId);
     // 마지막 요청 언어는 아직 어디에도 저장하지 않는다
     return resolveRecipientLocale({
@@ -51,12 +52,14 @@ export class CachedNotificationRecipientPreferenceAdapter
     });
   }
 
-  async getLocales(userIds: readonly string[]): Promise<ReadonlyMap<string, SupportedLocale>> {
-    const uniqueUserIds = uniq(userIds);
+  async getLocales(userIds: readonly UserId[]): Promise<ReadonlyMap<string, SupportedLocale>> {
+    const uniqueUserIds = uniq(userIds.map((userId) => userId.value));
     if (uniqueUserIds.length === 0) {
       return new Map();
     }
-    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(uniqueUserIds);
+    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(
+      uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
+    );
     const storedLocales = new Map(
       preferences.map((preference) => [preference.userId, preference.locale]),
     );
@@ -76,7 +79,9 @@ export class CachedNotificationRecipientPreferenceAdapter
     if (uniqueUserIds.length === 0) {
       return new Map();
     }
-    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(uniqueUserIds);
+    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(
+      uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
+    );
     const timezones = new Map(
       preferences.map((preference) => [preference.userId, preference.timezone]),
     );

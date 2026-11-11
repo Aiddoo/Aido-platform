@@ -1,7 +1,7 @@
 import { DAY_OF_WEEK_ORDER, type DayOfWeek, dayIndexToDayOfWeek } from "@aido/api/vocabulary";
-import dayjs from "dayjs";
 import { groupBy, isNotNil, orderBy, uniq } from "es-toolkit";
 
+import { sundayBasedDayIndex } from "../../shared/domain/user-calendar.domain-service.js";
 import type { RecordedActivityEvidence, TodoSummaryForAnalysis } from "./suggestion.constants.js";
 
 export function collectRecordedActivities(
@@ -10,7 +10,8 @@ export function collectRecordedActivities(
   return Object.entries(groupBy(todos, (todo) => todo.title)).map(([title, records]) => {
     const recordsByDay: Partial<Record<DayOfWeek, TodoSummaryForAnalysis[]>> = groupBy(
       records,
-      (record) => dayIndexToDayOfWeek(dayjs.utc(record.startDate).day()),
+      (record) =>
+        dayIndexToDayOfWeek(sundayBasedDayIndex(Temporal.PlainDate.from(record.startDate))),
     );
     return {
       title,

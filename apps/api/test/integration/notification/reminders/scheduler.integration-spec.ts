@@ -3,28 +3,28 @@ import { vi } from "vitest";
 
 import { SchedulerPreferenceReaderPort } from "#api/modules/notification/reminders/application/ports/scheduler-preference-reader.port";
 import { TimezoneReminderEnqueuerPort } from "#api/modules/notification/reminders/application/ports/timezone-reminder-enqueuer.port";
-import {
-  SendEveningReminderUseCase,
-  SendLunchNudgeUseCase,
-  SendMonthlyReportUseCase,
-  SendMorningReminderUseCase,
-  SendNudgeSuggestUseCase,
-  SendOnboardingUseCase,
-  SendSocialDigestUseCase,
-  SendStreakAtRiskUseCase,
-  SendWeatherEveningUseCase,
-  SendWeatherMorningUseCase,
-  SendWeeklyAchievementUseCase,
-  SendWeeklyReportUseCase,
-  SendWinbackUseCase,
-} from "#api/modules/notification/reminders/application/use-cases/reminder-strategies.constants";
+import { SendEveningReminderUseCase } from "#api/modules/notification/reminders/application/use-cases/send-evening-reminder.use-case";
+import { SendLunchNudgeUseCase } from "#api/modules/notification/reminders/application/use-cases/send-lunch-nudge.use-case";
+import { SendMonthlyReportUseCase } from "#api/modules/notification/reminders/application/use-cases/send-monthly-report.use-case";
+import { SendMorningReminderUseCase } from "#api/modules/notification/reminders/application/use-cases/send-morning-reminder.use-case";
+import { SendNudgeSuggestUseCase } from "#api/modules/notification/reminders/application/use-cases/send-nudge-suggest.use-case";
+import { SendOnboardingUseCase } from "#api/modules/notification/reminders/application/use-cases/send-onboarding.use-case";
+import { SendSocialDigestUseCase } from "#api/modules/notification/reminders/application/use-cases/send-social-digest.use-case";
+import { SendStreakAtRiskUseCase } from "#api/modules/notification/reminders/application/use-cases/send-streak-at-risk.use-case";
+import { SendWeatherEveningUseCase } from "#api/modules/notification/reminders/application/use-cases/send-weather-evening.use-case";
+import { SendWeatherMorningUseCase } from "#api/modules/notification/reminders/application/use-cases/send-weather-morning.use-case";
+import { SendWeeklyAchievementUseCase } from "#api/modules/notification/reminders/application/use-cases/send-weekly-achievement.use-case";
+import { SendWeeklyReportUseCase } from "#api/modules/notification/reminders/application/use-cases/send-weekly-report.use-case";
+import { SendWinbackUseCase } from "#api/modules/notification/reminders/application/use-cases/send-winback.use-case";
 import { SweepTimezoneRemindersUseCase } from "#api/modules/notification/reminders/application/use-cases/sweep-timezone-reminders.use-case";
 import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/reminders/domain/notification-schedule.domain-service";
 import { provideSweepTimezoneRemindersUseCase } from "#api/modules/notification/reminders/notification-reminders.providers";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 import { InMemorySweepCursor } from "#test/doubles/notification/in-memory-sweep-cursor";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { TEST_CUID } from "#test/fixtures/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -91,6 +91,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
         { provide: TimezoneReminderEnqueuerPort, useValue: mockEnqueuer },
         { provide: SweepCursorPort, useValue: new InMemorySweepCursor() },
         { provide: ClockPort, useValue: new DateClock() },
+        { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         { provide: SendMorningReminderUseCase, useValue: mockMorningReminder },
         { provide: SendEveningReminderUseCase, useValue: mockEveningReminder },
         { provide: SendOnboardingUseCase, useValue: mockOnboarding },

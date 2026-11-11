@@ -1,9 +1,8 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
@@ -104,7 +103,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.STREAK_AT_RISK,
           recipientId: user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
       return {
@@ -130,3 +129,5 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
     return { sent: notifications.length };
   }
 }
+
+// identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다

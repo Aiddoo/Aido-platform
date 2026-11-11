@@ -5,7 +5,7 @@
  */
 
 /** Win-back 단계 정의 (threshold 내림차순, .find()로 첫 매칭 사용) */
-export const WINBACK_STAGES = [
+const WINBACK_STAGES = [
   { threshold: 30, stage: "day30" },
   { threshold: 21, stage: "day21" },
   { threshold: 14, stage: "day14" },

@@ -6,14 +6,15 @@ import {
   marketingReconfirmCutoff,
 } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../reminders/domain/notification-campaign.constants.js";
-import { createMarketingConsentReconfirmNotificationMessage } from "../messages/notification.messages.js";
+import { createMarketingConsentReconfirmNotificationMessage } from "../messages/system-notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type {
   MarketingConsentReconfirmPort,
@@ -24,7 +25,7 @@ import type { NotificationRecipientTimezoneReaderPort } from "../ports/notificat
 import type { PushQuietHoursReaderPort } from "../ports/push-quiet-hours.reader.port.js";
 import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
-export const MARKETING_CONSENT_RECONFIRM = {
+const MARKETING_CONSENT_RECONFIRM = {
   BATCH_SIZE: 500,
   /** 표시와 알림 기록을 한 트랜잭션에 남기는 수 */
   CLAIM_CHUNK_SIZE: 100,
@@ -66,7 +67,7 @@ export class ReconfirmMarketingConsentsUseCase {
 
   async execute(input: ReconfirmMarketingConsentsInput): Promise<ReconfirmMarketingConsentsResult> {
     const cutoff = marketingReconfirmCutoff(input.now);
-    let afterUserId: string | undefined;
+    let afterUserId: UserId | undefined;
     let notifiedCount = 0;
     let hasRemaining = false;
 
@@ -77,8 +78,8 @@ export class ReconfirmMarketingConsentsUseCase {
         limit: MARKETING_CONSENT_RECONFIRM.BATCH_SIZE,
       });
       const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
-        targets.map((target) => target.userId),
-        instantToDate(input.now),
+        targets.map((target) => UserId.reconstitute(target.userId)),
+        input.now,
       );
       const daytimeUserIds = targets
         .map((target) => target.userId)
@@ -90,7 +91,7 @@ export class ReconfirmMarketingConsentsUseCase {
       if (!hasRemaining) {
         break;
       }
-      afterUserId = targets.at(-1)?.userId;
+      afterUserId = targets.map((target) => UserId.reconstitute(target.userId)).at(-1);
     }
 
     this.#dependencies.logger.log({
@@ -106,15 +107,19 @@ export class ReconfirmMarketingConsentsUseCase {
     cutoff: Temporal.Instant,
     now: Temporal.Instant,
   ): Promise<number> {
+    const recipientIds = userIds.map((userId) => UserId.reconstitute(userId));
     const [locales, timezones] = await Promise.all([
-      this.#dependencies.localeReader.getLocales(userIds),
+      this.#dependencies.localeReader.getLocales(recipientIds),
       this.#dependencies.timezoneReader.getTimezones(userIds),
     ]);
     return this.#dependencies.unitOfWork.run(async () => {
-      const claimed = await this.#dependencies.reconfirmAccess.claimMarketingReconfirm(userIds, {
-        cutoff,
-        at: now,
-      });
+      const claimed = await this.#dependencies.reconfirmAccess.claimMarketingReconfirm(
+        recipientIds,
+        {
+          cutoff,
+          at: now,
+        },
+      );
       const notices = claimed.flatMap((recipient) =>
         this.#notice(recipient, {
           locale: locales.get(recipient.userId) ?? DEFAULT_LOCALE,

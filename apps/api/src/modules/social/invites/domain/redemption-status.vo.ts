@@ -7,8 +7,6 @@ import {
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
-export type { RedemptionStatusValue };
-
 const REDEMPTION_STATUS_VALUES: readonly RedemptionStatusValue[] = Object.values(REDEMPTION_STATUS);
 
 // 사용 시작 전 상태에서만 거절되고, 보상 지급 뒤에는 되돌리지 않는다

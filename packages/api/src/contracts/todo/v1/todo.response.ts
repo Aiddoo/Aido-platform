@@ -6,6 +6,7 @@ import {
   nullableDatetimeSchema,
   timeOfDaySchema,
 } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { cursorPageSchema } from "../../../common/pagination.js";
 import { todoCategorySummarySchema } from "../../todo-category/v1/todo-category.response.js";
 import { todoSeriesResponseSchema } from "./todo-series.response.js";
@@ -59,7 +60,7 @@ const todoExample = {
 export const todoSchema = z
   .object({
     id: z.number().int().describe("할 일 고유 ID (양의 정수)"),
-    userId: z.cuid().describe("사용자 ID (CUID 25자)"),
+    userId: entityIdSchema.describe("사용자 ID"),
     title: z.string().describe("할 일 제목"),
     content: z
       .string()

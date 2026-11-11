@@ -4,7 +4,7 @@ import type { UserMutationLockPort } from "#api/modules/identity/users/identity-
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { accessUserNotFound } from "../../../entitlements/application/entitlements.errors.js";
 import type { AccessStateReaderPort } from "../../../entitlements/application/ports/access-state.reader.port.js";
@@ -52,14 +52,14 @@ export class ReserveQuotaUseCase {
   execute(command: ReserveQuotaCommand): Promise<QuotaReservation> {
     const { unitOfWork, userMutationLock, accessStateReader, quotaChargeRepository, clock } =
       this.#dependencies;
-    const userId = UserId.reconstitute(command.userId);
+    const { userId } = command;
     return unitOfWork.run(async () => {
-      if (!(await userMutationLock.lockById(command.userId))) {
-        throw accessUserNotFound(command.userId);
+      if (!(await userMutationLock.lockById(userId))) {
+        throw accessUserNotFound(userId.value);
       }
       const state = await accessStateReader.findAccessState(userId);
       if (state == null) {
-        throw accessUserNotFound(command.userId);
+        throw accessUserNotFound(userId.value);
       }
       const now = clock.now();
       const decision: ReserveDecision = {

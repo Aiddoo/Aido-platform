@@ -1,4 +1,5 @@
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import type { CreateTodoData } from "../ports/staged-todo-creator.port.js";
@@ -27,8 +28,8 @@ export class CreateTodoUseCase {
   async execute(input: CreateTodoInput): Promise<CreateTodoResult> {
     const staged = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        TodoCategoryLockKeys.userCategories(input.userId),
-        TodoLockKeys.sortOrder(input.userId),
+        TodoCategoryLockKeys.userCategories(input.userId.value),
+        TodoLockKeys.sortOrder(input.userId.value),
       ]);
       return this.#dependencies.todoCreator.stage(input);
     });

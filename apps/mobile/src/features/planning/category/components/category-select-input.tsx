@@ -16,6 +16,8 @@ interface CategorySelectInputProps {
   onSubmit: (categoryId: number) => Promise<unknown> | void;
   submitLabel: string;
   isLoading?: boolean;
+  /** 고를 수 없는 카테고리(지우는 카테고리의 할 일을 옮길 곳을 고를 때 그 카테고리) */
+  excludedCategoryId?: number;
 }
 
 export function CategorySelectInput({
@@ -23,10 +25,19 @@ export function CategorySelectInput({
   onSubmit,
   submitLabel,
   isLoading = false,
+  excludedCategoryId,
 }: CategorySelectInputProps) {
   const { t } = useTranslation('todo');
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const [localCategoryId, setLocalCategoryId] = useState(defaultValue);
+  const excludedCategory =
+    excludedCategoryId == null
+      ? null
+      : TodoCategoryPolicy.findCategory(categoriesResult.categories, excludedCategoryId);
+  const categories =
+    excludedCategory == null
+      ? categoriesResult.categories
+      : TodoCategoryPolicy.getMoveTargets(excludedCategory, categoriesResult.categories);
 
   return (
     <VStack gap={20}>
@@ -35,12 +46,16 @@ export function CategorySelectInput({
       </Text>
 
       <VStack gap={8}>
-        {categoriesResult.categories.map((category) => {
+        {categories.map((category) => {
           const isSelected = localCategoryId === category.id;
 
           return (
             <PressableFeedback
               key={category.id}
+              testID={`category-select-option-${category.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={category.name}
+              accessibilityState={{ selected: isSelected }}
               onPress={() => setLocalCategoryId(category.id)}
               isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
               className="rounded-xl"
@@ -67,7 +82,12 @@ export function CategorySelectInput({
         })}
       </VStack>
 
-      <Button size="large" onPress={() => onSubmit(localCategoryId)} isLoading={isLoading}>
+      <Button
+        size="large"
+        testID="category-select-submit"
+        onPress={() => onSubmit(localCategoryId)}
+        isLoading={isLoading}
+      >
         {submitLabel}
       </Button>
     </VStack>

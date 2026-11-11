@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { UserSettingsProvisionerPort } from "#api/modules/identity/identity-settings.public";
 import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
@@ -28,11 +29,11 @@ export class UserProvisioningSeederAdapter implements UserProvisioningSeederPort
     this.#categoryProvisioner = categoryProvisioner;
   }
 
-  seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
+  seedDefaultSettings(userId: UserId, consent: ProvisioningConsent): Promise<void> {
     return this.#userSettingsProvisioner.seedDefaults(userId, consent);
   }
 
-  async seedDefaultCategories(userId: string, locale?: SupportedLocale): Promise<void> {
+  async seedDefaultCategories(userId: UserId, locale?: SupportedLocale): Promise<void> {
     await this.#categoryProvisioner.seed(userId, locale);
   }
 }

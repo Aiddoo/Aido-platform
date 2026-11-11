@@ -1,18 +1,23 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 
+import type { PushFailureKind } from "../../domain/push-failure-kind.constants.js";
 import {
+  PUSH_RECEIPT_FAILURE_MIN_RECEIPTS,
   PUSH_RECEIPT_POLICY,
   type PushReceiptCheckWindow,
 } from "../../domain/push-receipt.domain-service.js";
 import type { PushReceiptResult } from "../ports/push-provider.port.js";
 import type { InvalidPushToken } from "../ports/push-receipt.repository.port.js";
 import type { PushTokenRepositoryPort } from "../ports/push-token.repository.port.js";
+import { PushAlerts } from "../push.alerts.js";
 import { ReconcilePushReceiptsUseCase } from "./reconcile-push-receipts.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-11-10T03:00:00.000Z");
@@ -26,7 +31,7 @@ class StubReceiptRepository implements ReceiptRepository {
   invalidByTicketId = new Map<string, InvalidPushToken>();
   readonly recorded: string[][] = [];
   readonly windows: PushReceiptCheckWindow[] = [];
-  readonly expiredBefore: Date[] = [];
+  readonly expiredBefore: Temporal.Instant[] = [];
   expiredCount = 0;
 
   async findPendingTicketIds(window: PushReceiptCheckWindow, limit: number): Promise<string[]> {
@@ -47,7 +52,7 @@ class StubReceiptRepository implements ReceiptRepository {
     });
   }
 
-  async expireUnreceipted(acceptedBefore: Date): Promise<number> {
+  async expireUnreceipted(acceptedBefore: Temporal.Instant): Promise<number> {
     this.expiredBefore.push(acceptedBefore);
     return this.expiredCount;
   }
@@ -56,6 +61,7 @@ class StubReceiptRepository implements ReceiptRepository {
 function setup(
   options: {
     readonly pushTokenRepository?: Pick<PushTokenRepositoryPort, "deactivateInvalidTokens">;
+    readonly pushProvider?: FakePushProvider;
   } = {},
 ) {
   const repository = new StubReceiptRepository();
@@ -67,10 +73,11 @@ function setup(
   const cache = new PassThroughNotificationCache();
   const transactionEvents: string[] = [];
   const logger = new SilentLogger();
+  const alert = new RecordingOperationalAlert();
   const useCase = new ReconcilePushReceiptsUseCase({
     pushReceiptRepository: repository,
     pushTokenRepository: options.pushTokenRepository ?? pushTokenRepository,
-    pushProvider: new FakePushProvider(),
+    pushProvider: options.pushProvider ?? new FakePushProvider(),
     cache,
     unitOfWork: {
       async run(work) {
@@ -87,8 +94,9 @@ function setup(
     },
     clock: new FixedClock(NOW),
     logger,
+    alert,
   });
-  return { useCase, repository, pushTokenRepository, cache, transactionEvents, logger };
+  return { useCase, repository, pushTokenRepository, cache, transactionEvents, logger, alert };
 }
 
 function ticketIds(count: number): string[] {
@@ -137,6 +145,7 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
       unitOfWork: new ImmediateUnitOfWork(),
       clock,
       logger: new SilentLogger(),
+      alert: new RecordingOperationalAlert(),
     });
 
     // When
@@ -158,7 +167,10 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
     await useCase.execute();
 
     // Then
-    const tokens = await pushTokenRepository.findActivePushTokensByUsers(["user-1", "user-2"]);
+    const tokens = await pushTokenRepository.findActivePushTokensByUsers([
+      UserId.reconstitute("user-1"),
+      UserId.reconstitute("user-2"),
+    ]);
     expect(tokens.map(({ token }) => token)).toEqual(["token-3"]);
     expect(pushTokenRepository.tokenOf("user-1", "device-1")?.updatedAt.equals(NOW)).toBe(true);
     expect(transactionEvents).toEqual(["begin", "commit", "begin", "commit"]);
@@ -196,10 +208,65 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
 
     // Then
     expect(repository.windows[0]).toEqual({
-      acceptedAfter: new Date("2026-11-09T03:00:00.000Z"),
-      acceptedBefore: new Date("2026-11-10T02:45:00.000Z"),
-      checkedBefore: new Date("2026-11-10T02:45:00.000Z"),
+      acceptedAfter: Temporal.Instant.from("2026-11-09T03:00:00.000Z"),
+      acceptedBefore: Temporal.Instant.from("2026-11-10T02:45:00.000Z"),
+      checkedBefore: Temporal.Instant.from("2026-11-10T02:45:00.000Z"),
     });
-    expect(repository.expiredBefore).toEqual([new Date("2026-11-09T03:00:00.000Z")]);
+    expect(repository.expiredBefore).toEqual([Temporal.Instant.from("2026-11-09T03:00:00.000Z")]);
+  });
+});
+
+describe("ReconcilePushReceiptsUseCase — 공급자 쪽 실패 비율 경보", () => {
+  function receiptsWith(failures: number, total: number, kind: PushFailureKind) {
+    const pushProvider = new FakePushProvider();
+    pushProvider.receipts = async (ids) =>
+      ids.map((ticketId, index): PushReceiptResult =>
+        index < failures
+          ? { ticketId, status: "failed", failure: { kind } }
+          : { ticketId, status: "delivered" },
+      );
+    const fixture = setup({ pushProvider });
+    fixture.repository.pendingTicketIds = ticketIds(total);
+    return fixture;
+  }
+
+  it("한 실행에서 받은 receipt의 공급자 실패가 20% 이상이면 가장 많은 실패 종류와 함께 경보한다", async () => {
+    // Given - 받은 25건 중 5건이 자격 증명 문제로 거절됐다
+    const { useCase, alert } = receiptsWith(5, 25, "PROVIDER_REJECTED");
+
+    // When
+    await useCase.execute();
+
+    // Then
+    expect(alert.alerts).toEqual([
+      {
+        ...PushAlerts.RECEIPT_FAILURE_RATIO_HIGH,
+        tags: { topFailureKind: "PROVIDER_REJECTED" },
+        details: { receivedCount: 25, providerFailureCount: 5 },
+      },
+    ]);
+  });
+
+  it("앱 삭제로 생긴 기기 미등록은 실패 비율에 세지 않는다", async () => {
+    // Given
+    const { useCase, alert } = receiptsWith(25, 25, "DEVICE_UNREGISTERED");
+
+    // When
+    await useCase.execute();
+
+    // Then
+    expect(alert.alerts).toEqual([]);
+  });
+
+  it("받은 receipt가 최소 표본보다 적으면 모두 실패여도 판정하지 않는다", async () => {
+    // Given
+    const total = PUSH_RECEIPT_FAILURE_MIN_RECEIPTS - 1;
+    const { useCase, alert } = receiptsWith(total, total, "PROVIDER_REJECTED");
+
+    // When
+    await useCase.execute();
+
+    // Then
+    expect(alert.alerts).toEqual([]);
   });
 });

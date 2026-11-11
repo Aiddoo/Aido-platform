@@ -67,7 +67,7 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
 
     // When - after-commit task가 2초 제한에 도달
     const fastPath = afterCommit.runAll();
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(2000);
 
     // Then - task는 best-effort로 끝나지만 underlying promise는 이후 정상 완료 가능
     await expect(fastPath).resolves.toBeUndefined();

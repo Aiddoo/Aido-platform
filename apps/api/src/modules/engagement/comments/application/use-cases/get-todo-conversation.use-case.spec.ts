@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import {
   createTodoCommentReadModelFixture,
   TODO_COMMENT_FIXTURE_TODO_ID,
@@ -10,6 +11,7 @@ import {
   type TodoCommentsFixture,
 } from "#test/fixtures/engagement/todo-comments.fixture";
 
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoConversationReadModel } from "../read-models/todo-comment.read-model.js";
 import { GetTodoConversationUseCase } from "./get-todo-conversation.use-case.js";
 
@@ -93,13 +95,13 @@ describe("GetTodoConversationUseCase — 1.14.0 이하 앱의 대화", () => {
     // Then
     expect(fixture.reader.conversationParams).toEqual([
       {
-        todoId: TODO_ID,
+        todoId: TodoId.reconstitute(TODO_ID),
         sort: "POPULAR",
         size: 2,
         mode: "AFTER",
         scope: "THREAD",
-        anchorCommentId: REPLY_ID,
-        anchorThreadId: HEAD_ID,
+        anchorCommentId: TodoCommentId.reconstitute(REPLY_ID),
+        anchorThreadId: TodoCommentId.reconstitute(HEAD_ID),
         anchorPosition: POSITION,
       },
     ]);

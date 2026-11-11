@@ -39,7 +39,7 @@ function createTodo(overrides: { scheduledLocalTime?: string | null } = {}): Tod
     categoryId: 1,
     title: TodoTitle.create("새 할 일"),
     schedule: TodoSchedule.create({
-      startDate: new Date("2026-11-10"),
+      startDate: Temporal.PlainDate.from("2026-11-10"),
       endDate: null,
       scheduledLocalTime: overrides.scheduledLocalTime ?? null,
       isAllDay: true,
@@ -52,18 +52,6 @@ function createTodo(overrides: { scheduledLocalTime?: string | null } = {}): Tod
 }
 
 describe("Todo — 할 일 애그리게잇", () => {
-  it("복원 입력의 Date를 바꿔도 Aggregate 일정은 그대로다", () => {
-    // Given
-    const startDate = new Date("2026-11-10");
-    const todo = createTodoFixture({ startDate });
-
-    // When
-    startDate.setUTCFullYear(2030);
-
-    // Then
-    expect(todo.schedule.startDate).toEqual(new Date("2026-11-10"));
-  });
-
   describe("create", () => {
     it("미완료·항목 없음으로 만들고 생성 시각을 수정 시각으로도 쓴다", () => {
       // When
@@ -80,7 +68,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodo({ scheduledLocalTime: "09:00" });
 
       // Then
-      const scheduledTime = new Date("2026-11-10T09:00:00.000Z");
+      const scheduledTime = Temporal.Instant.from("2026-11-10T09:00:00.000Z");
       expect(todo.schedule.isAllDay).toBe(false);
       expect(todo.schedule.scheduledTime).toEqual(scheduledTime);
       const events = todo.pullDomainEvents();
@@ -242,7 +230,7 @@ describe("Todo — 할 일 애그리게잇", () => {
           title: "장보기",
           categoryId: 3,
           visibility: "PRIVATE",
-          startDate: new Date("2026-11-10"),
+          startDate: Temporal.PlainDate.from("2026-11-10"),
           completed: false,
         },
         "UTC",
@@ -269,7 +257,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 
     it("완료→미완료 전이 시 completedAt을 null로 초기화하고 시각이 있으면 리마인더를 다시 잡는다", () => {
       // Given
-      const scheduledTime = new Date("2026-11-10T09:00:00.000Z");
+      const scheduledTime = Temporal.Instant.from("2026-11-10T09:00:00.000Z");
       const todo = createTodoFixture({
         completed: true,
         completedAt: NOW,
@@ -321,7 +309,9 @@ describe("Todo — 할 일 애그리게잇", () => {
       ]);
       const rescheduled = events[1];
       if (rescheduled instanceof TodoRescheduledEvent) {
-        expect(rescheduled.scheduledTime).toEqual(new Date("2026-11-10T18:30:00.000Z"));
+        expect(rescheduled.scheduledTime).toEqual(
+          Temporal.Instant.from("2026-11-10T18:30:00.000Z"),
+        );
       }
     });
 
@@ -338,10 +328,11 @@ describe("Todo — 할 일 애그리게잇", () => {
 
     it("endDate만 패치해도 저장된 startDate와 교차 검증해 역전이면 DomainException(SYS_0002)을 던진다", () => {
       // Given
-      const todo = createTodoFixture({ startDate: new Date("2026-11-10") });
+      const todo = createTodoFixture({ startDate: Temporal.PlainDate.from("2026-11-10") });
 
       // When
-      const update = () => todo.updateDetails({ endDate: new Date("2026-11-08") }, "UTC", LATER);
+      const update = () =>
+        todo.updateDetails({ endDate: Temporal.PlainDate.from("2026-11-08") }, "UTC", LATER);
 
       // Then
       expect(update).toThrow(expect.objectContaining({ errorCode: ErrorCode.SYS_0002 }));
@@ -354,18 +345,22 @@ describe("Todo — 할 일 애그리게잇", () => {
       // Given
       const todo = createTodoFixture({
         title: "이전 제목",
-        startDate: new Date("2026-11-10"),
-        endDate: new Date("2026-11-13"),
+        startDate: Temporal.PlainDate.from("2026-11-10"),
+        endDate: Temporal.PlainDate.from("2026-11-13"),
       });
 
       // When
       const update = () =>
-        todo.updateDetails({ title: "새 제목", startDate: new Date("2026-11-20") }, "UTC", LATER);
+        todo.updateDetails(
+          { title: "새 제목", startDate: Temporal.PlainDate.from("2026-11-20") },
+          "UTC",
+          LATER,
+        );
 
       // Then
       expect(update).toThrow(DomainException);
       expect(todo.title.value).toBe("이전 제목");
-      expect(todo.schedule.startDate).toEqual(new Date("2026-11-10"));
+      expect(todo.schedule.startDate).toEqual(Temporal.PlainDate.from("2026-11-10"));
     });
   });
 
@@ -377,7 +372,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       // When
       const changed = todo.reschedule(
         TodoSchedule.create({
-          startDate: new Date("2026-11-12"),
+          startDate: Temporal.PlainDate.from("2026-11-12"),
           endDate: null,
           scheduledLocalTime: "06:00",
           isAllDay: false,
@@ -391,7 +386,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const event = todo.pullDomainEvents()[0];
       expect(event).toBeInstanceOf(TodoRescheduledEvent);
       if (event instanceof TodoRescheduledEvent) {
-        expect(event.scheduledTime).toEqual(new Date("2026-11-12T06:00:00.000Z"));
+        expect(event.scheduledTime).toEqual(Temporal.Instant.from("2026-11-12T06:00:00.000Z"));
       }
     });
 
@@ -399,14 +394,14 @@ describe("Todo — 할 일 애그리게잇", () => {
       // Given
       const todo = createTodoFixture({
         scheduledLocalTime: "09:00",
-        scheduledTime: new Date("2026-11-10T09:00:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-10T09:00:00.000Z"),
         isAllDay: false,
       });
 
       // When
       todo.reschedule(
         TodoSchedule.create({
-          startDate: new Date("2026-11-11"),
+          startDate: Temporal.PlainDate.from("2026-11-11"),
           endDate: null,
           scheduledLocalTime: null,
           isAllDay: true,
@@ -425,12 +420,12 @@ describe("Todo — 할 일 애그리게잇", () => {
 
     it("같은 일정이면 false이고 이벤트가 없다", () => {
       // Given
-      const todo = createTodoFixture({ startDate: new Date("2026-11-10") });
+      const todo = createTodoFixture({ startDate: Temporal.PlainDate.from("2026-11-10") });
 
       // When
       const changed = todo.reschedule(
         TodoSchedule.create({
-          startDate: new Date("2026-11-10"),
+          startDate: Temporal.PlainDate.from("2026-11-10"),
           endDate: null,
           scheduledLocalTime: null,
           isAllDay: true,
@@ -711,10 +706,10 @@ describe("Todo — 할 일 애그리게잇", () => {
         completed: true,
         completedAt: NOW,
         scheduledLocalTime: "09:00",
-        scheduledTime: new Date("2026-11-10T00:00:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-11-10T00:00:00.000Z"),
         isAllDay: false,
         seriesId: "series-1",
-        occurrenceDate: new Date("2026-11-10"),
+        occurrenceDate: Temporal.PlainDate.from("2026-11-10"),
         items: itemsWithSortOrders(0, 1),
       });
 
@@ -725,20 +720,6 @@ describe("Todo — 할 일 애그리게잇", () => {
       expect(todo.toPrimitives()).toEqual(primitives);
       expect(todo.id.value).toBe(42);
       expect(todo.userId.value).toBe(TODO_FIXTURE_USER_ID);
-    });
-
-    it("반환된 Date를 변조해도 애그리게잇 상태는 영향받지 않는다 (방어 복사)", () => {
-      // Given
-      const todo = createTodoFixture({ occurrenceDate: new Date("2026-11-10") });
-
-      // When
-      todo.toPrimitives().startDate.setUTCFullYear(1999);
-      todo.toPrimitives().occurrenceDate?.setUTCFullYear(1999);
-      todo.schedule.startDate.setUTCFullYear(1999);
-
-      // Then
-      expect(todo.toPrimitives().startDate).toEqual(new Date("2026-11-10"));
-      expect(todo.occurrenceDate).toEqual(new Date("2026-11-10"));
     });
 
     it("순간이 없는 옛 행은 남은 벽시계를 지우고 읽는다", () => {

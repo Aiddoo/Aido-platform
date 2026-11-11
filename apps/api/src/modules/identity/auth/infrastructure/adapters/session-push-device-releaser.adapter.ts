@@ -5,6 +5,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { AuthLogEvent } from "../../application/auth.log-events.js";
 import type { SessionPushDeviceReleaserPort } from "../../application/ports/session-push-device-releaser.port.js";
+import type { SessionId } from "../../domain/session-id.vo.js";
 
 @Injectable()
 export class SessionPushDeviceReleaserAdapter implements SessionPushDeviceReleaserPort {
@@ -19,9 +20,11 @@ export class SessionPushDeviceReleaserAdapter implements SessionPushDeviceReleas
     this.#sessionPushDeviceRelease = sessionPushDeviceRelease;
   }
 
-  async releaseSessions(sessionIds: readonly string[]): Promise<void> {
+  async releaseSessions(sessionIds: readonly SessionId[]): Promise<void> {
     try {
-      await this.#sessionPushDeviceRelease.releaseSessions(sessionIds);
+      await this.#sessionPushDeviceRelease.releaseSessions(
+        sessionIds.map((sessionId) => sessionId.value),
+      );
     } catch (error) {
       this.#logger.warn({
         event: AuthLogEvent.SESSION_PUSH_DEVICE_RELEASE_FAILED,

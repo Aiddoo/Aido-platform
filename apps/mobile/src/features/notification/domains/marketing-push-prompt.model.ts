@@ -25,7 +25,7 @@ function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Instant)
 
 /** 이미 동의했거나 거절한 지 90일이 안 됐으면 제안하지 않는다 */
 function shouldPrompt(
-  consent: Pick<Consent, 'marketingPushAgreedAt'>,
+  consent: Consent,
   promptState: MarketingPushPromptState,
   now: Instant,
 ): boolean {

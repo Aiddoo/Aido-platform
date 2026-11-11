@@ -2,6 +2,7 @@ import { ApiError } from '@src/core/errors/api-error';
 
 import {
   findTodoSeriesFailure,
+  getTodoSeriesLimit,
   shouldRefreshTodos,
   shouldReopenRepeatPicker,
   type TodoSeriesFailure,
@@ -97,4 +98,28 @@ describe('shouldRefreshTodos', () => {
       expect(result).toBe(expected);
     },
   );
+});
+
+describe('getTodoSeriesLimit', () => {
+  it('서버 오류 상세의 한도를 그대로 쓴다', () => {
+    // Given
+    const error = new ApiError('TODO_0842', '거절', 400, { limit: 12, activeCount: 12 });
+
+    // When
+    const limit = getTodoSeriesLimit(error);
+
+    // Then
+    expect(limit).toBe(12);
+  });
+
+  it('상세에 한도가 없으면 공유 상한을 쓴다', () => {
+    // Given
+    const error = new ApiError('TODO_0842', '거절', 400);
+
+    // When
+    const limit = getTodoSeriesLimit(error);
+
+    // Then
+    expect(limit).toBe(30);
+  });
 });

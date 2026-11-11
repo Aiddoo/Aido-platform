@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { PlanResultReplay } from "../../../action-plans/application/ports/plan-result-replay.port.js";
 import type { VoiceNoteDigestReadModel } from "../read-models/voice-note-digest.read-model.js";
 
@@ -8,9 +10,9 @@ export interface VoiceNoteDigestResult extends VoiceNoteDigestReadModel {
 
 export abstract class VoiceNoteDigestResultReplayPort implements PlanResultReplay<VoiceNoteDigestResult> {
   abstract save(
-    userId: string,
+    userId: UserId,
     idempotencyKey: string,
     result: VoiceNoteDigestResult,
   ): Promise<void>;
-  abstract find(userId: string, idempotencyKey: string): Promise<VoiceNoteDigestResult | null>;
+  abstract find(userId: UserId, idempotencyKey: string): Promise<VoiceNoteDigestResult | null>;
 }

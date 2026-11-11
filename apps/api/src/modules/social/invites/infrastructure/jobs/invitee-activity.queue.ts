@@ -1,6 +1,5 @@
 import { todoChangedPayloadSchema } from "#api/modules/planning/todos/planning-todos.public";
-import { defineQueue } from "#api/shared/application/ports/job-queue.port";
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-runtime.port";
+import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 // 할 일 완료와 같은 트랜잭션에 남아 커밋 직후 프로세스가 내려가도 사용 시작 기록을 잃지 않는다.
 // 초대한 사람의 첫날 소식이 몇십 초 늦어도 체감되지 않아 배경 주기로 처리한다

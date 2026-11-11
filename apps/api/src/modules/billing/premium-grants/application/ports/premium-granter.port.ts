@@ -1,7 +1,9 @@
 import type { PremiumGrantSource } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 export interface GrantPremiumInput {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly source: PremiumGrantSource;
   /** 같은 보상을 두 번 지급하지 않게 하는 출처 키 (예: invite:{grantId}) */
   readonly sourceKey: string;

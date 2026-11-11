@@ -1,33 +1,29 @@
-import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
+import type { QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
+import { ACCOUNT_PURGE_QUEUE } from "./account-purge.queue.js";
 import { AccountPurgeScheduler } from "./account-purge.scheduler.js";
 
-class ControlledScheduleRuntime extends FakeJobRuntime {
+class ControlledScheduleQueue extends InMemoryJobQueue {
   scheduleOutcome: () => Promise<void> = async () => undefined;
 
-  override async schedule<T extends JobData>(
-    scheduleKey: string,
-    cron: string,
-    queue: string,
-    data: T,
-    options: EnqueueJobOptions,
-  ): Promise<void> {
+  override async registerSchedules(queue: QueueDefinition<object>): Promise<void> {
     await this.scheduleOutcome();
-    await super.schedule(scheduleKey, cron, queue, data, options);
+    await super.registerSchedules(queue);
   }
 }
 
 describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
-  let runtime: ControlledScheduleRuntime;
-  let clock: FixedClock;
+  let jobQueue: ControlledScheduleQueue;
   let job: AccountPurgeScheduler;
 
   beforeEach(() => {
-    runtime = new ControlledScheduleRuntime();
-    clock = new FixedClock(Temporal.Instant.from("2026-12-31T00:00:00Z"));
-    job = new AccountPurgeScheduler(runtime, clock);
+    jobQueue = new ControlledScheduleQueue();
+    job = new AccountPurgeScheduler(
+      jobQueue,
+      new FixedClock(Temporal.Instant.from("2026-12-31T00:00:00Z")),
+    );
   });
 
   it.each([
@@ -36,49 +32,26 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
     { at: "2027-01-01T14:59:59.999Z", key: "purge_2027-01-01" },
   ])("KST 03:00 경계와 연말 시각 $at에서 기존 스케줄·보정 키를 유지한다", async ({ at, key }) => {
     // Given
-    clock = new FixedClock(Temporal.Instant.from(at));
-    job = new AccountPurgeScheduler(runtime, clock);
-    const options = {
-      retryLimit: 2,
-      retryDelaySeconds: 5,
-      retryBackoff: true,
-      expireInSeconds: 1_800,
-      retentionSeconds: 604_800,
-      deleteAfterSeconds: 86_400,
-      timezone: "Asia/Seoul",
-    };
+    job = new AccountPurgeScheduler(jobQueue, new FixedClock(Temporal.Instant.from(at)));
 
     // When
     job.onModuleInit();
     await job.schedulerRegistration;
 
     // Then
-    expect(runtime.scheduleCalls).toEqual([
-      {
-        scheduleKey: "daily-account-purge-scheduler",
-        cron: "0 3 * * *",
-        queue: "account-purge.v1",
-        data: { name: "purge-accounts", data: {} },
-        options,
-      },
-    ]);
-    expect(runtime.enqueueCalls).toEqual(
-      key == null
-        ? []
-        : [
-            {
-              queue: "account-purge.v1",
-              data: { name: "purge-accounts", data: {} },
-              options: { ...options, idempotencyKey: key },
-            },
-          ],
-    );
+    expect(jobQueue.scheduledQueues).toEqual(["account-purge.v1"]);
+    expect(
+      ACCOUNT_PURGE_QUEUE.schedules?.map(({ key: scheduleKey, cron }) => [scheduleKey, cron]),
+    ).toEqual([["daily-account-purge-scheduler", "0 3 * * *"]]);
+    expect(
+      jobQueue.jobsIn(ACCOUNT_PURGE_QUEUE).map((queued) => queued.options.idempotencyKey),
+    ).toEqual(key == null ? [] : [key]);
   });
 
   it("스케줄 등록이 대기 중이어도 API 부팅은 즉시 계속된다", async () => {
     // Given
     let release = (): void => undefined;
-    runtime.scheduleOutcome = () =>
+    jobQueue.scheduleOutcome = () =>
       new Promise<void>((resolve) => {
         release = resolve;
       });
@@ -89,7 +62,7 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
     // Then
     try {
       expect(result).toBeUndefined();
-      expect(runtime.enqueueCalls).toEqual([]);
+      expect(jobQueue.jobs).toEqual([]);
     } finally {
       release();
       await job.schedulerRegistration;
@@ -99,16 +72,16 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
   it("스케줄 등록 실패는 부팅 실패로 전파하지 않고 보정 잡을 만들지 않는다", async () => {
     // Given
     job = new AccountPurgeScheduler(
-      runtime,
+      jobQueue,
       new FixedClock(Temporal.Instant.from("2026-12-31T18:00:00.000Z")),
     );
-    runtime.scheduleOutcome = () => Promise.reject(new Error("Queue unavailable"));
+    jobQueue.scheduleOutcome = () => Promise.reject(new Error("Queue unavailable"));
 
     // When
     job.onModuleInit();
 
     // Then
     await expect(job.schedulerRegistration).resolves.toBeUndefined();
-    expect(runtime.enqueueCalls).toEqual([]);
+    expect(jobQueue.jobs).toEqual([]);
   });
 });

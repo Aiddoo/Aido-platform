@@ -32,7 +32,6 @@ interface E2eTestStateDependencies {
   drainBackgroundWork?: TestStateResetter;
   cleanupDatabase: TestStateResetter;
   resetCache: TestStateResetter;
-  flushRedis: TestStateResetter;
   sharedResetters: readonly TestStateResetter[];
   additionalResetters?: readonly TestStateResetter[];
   /** 단계별 시간 상한. 이 계약을 검증하는 테스트가 짧게 좁혀 쓴다. */
@@ -43,7 +42,6 @@ export function createE2eTestStateResetter({
   drainBackgroundWork,
   cleanupDatabase,
   resetCache,
-  flushRedis,
   sharedResetters,
   additionalResetters = [],
   timeoutMs = RESETTER_TIMEOUT_MS,
@@ -52,7 +50,6 @@ export function createE2eTestStateResetter({
     withDeadline(label, resetter, timeoutMs);
   const nonDatabaseResetters = [
     named("resetCache", resetCache),
-    named("flushRedis", flushRedis),
     ...sharedResetters.map((resetter, index) => named(`sharedResetters[${index}]`, resetter)),
     ...additionalResetters.map((resetter, index) =>
       named(`additionalResetters[${index}]`, resetter),

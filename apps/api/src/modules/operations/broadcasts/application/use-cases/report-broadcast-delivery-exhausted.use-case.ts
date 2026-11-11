@@ -1,7 +1,7 @@
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import type { BroadcastCampaignId } from "../../domain/broadcast-campaign-id.vo.js";
-import { BroadcastAlert } from "../broadcasts.alerts.js";
+import { BroadcastAlerts } from "../broadcasts.alerts.js";
 
 export interface ReportBroadcastDeliveryExhaustedCommand {
   readonly campaignId: BroadcastCampaignId;
@@ -22,9 +22,7 @@ export class ReportBroadcastDeliveryExhaustedUseCase {
 
   execute(command: ReportBroadcastDeliveryExhaustedCommand): void {
     this.#dependencies.alert.raise({
-      key: BroadcastAlert.DELIVERY_EXHAUSTED,
-      severity: "error",
-      message: "수신자 현지 시각 브로드캐스트 발송이 재시도를 모두 썼습니다",
+      ...BroadcastAlerts.DELIVERY_EXHAUSTED,
       tags: { campaignId: command.campaignId.value },
       details: { recipientCount: command.recipientCount },
     });

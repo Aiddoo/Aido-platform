@@ -1,7 +1,7 @@
 import { userTagParamSchema } from '@aido/api';
 
 import { createSearchedUser } from '../__tests__/friend.fixtures';
-import { FriendPolicy } from './friend.model';
+import { FriendPolicy, isValidSearchQuery, isValidUserTag } from './friend.model';
 
 describe('isValidSearchQuery', () => {
   it.each([
@@ -12,11 +12,8 @@ describe('isValidSearchQuery', () => {
     [' a ', false],
     ['', false],
   ])('검색어 "%s"의 검색 가능 여부는 %s이다', (query, expected) => {
-    // Given
-    const input = { query };
-
     // When
-    const result = FriendPolicy.isValidSearchQuery(input);
+    const result = isValidSearchQuery(query);
 
     // Then
     expect(result).toBe(expected);
@@ -33,11 +30,8 @@ describe('isValidUserTag', () => {
     ['ABCD12345', false],
     ['ABCD-123', false],
   ])('태그 "%s"의 유효 여부는 %s이다', (userTag, expected) => {
-    // Given
-    const user = createSearchedUser({ userTag });
-
     // When
-    const result = FriendPolicy.isValidUserTag(user);
+    const result = isValidUserTag(userTag);
 
     // Then
     expect(result).toBe(expected);
@@ -46,11 +40,8 @@ describe('isValidUserTag', () => {
   it.each(['ABCD1234', 'abcd1234', 'ABCD123', 'ABCD12345', 'ABCD-123', ''])(
     '태그 "%s"를 서버 경로 검증과 같게 판단한다',
     (userTag) => {
-      // Given
-      const user = createSearchedUser({ userTag });
-
       // When
-      const result = FriendPolicy.isValidUserTag(user);
+      const result = isValidUserTag(userTag);
 
       // Then
       expect(result).toBe(userTagParamSchema.safeParse({ userTag }).success);

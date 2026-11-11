@@ -1,10 +1,10 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { userLocationNotFound } from "../../../locations/application/locations.errors.js";
 import type { UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
 import type { UserLocation } from "../../../locations/domain/user-location.entity.js";
+import { localDateTimeAt } from "../../../shared/domain/weather-calendar.domain-service.js";
 import { ForecastLogEvent } from "../forecasts.log-events.js";
 import type { AirQualityProviderPort } from "../ports/air-quality-provider.port.js";
 import type { LifestyleIndexProviderPort } from "../ports/lifestyle-index-provider.port.js";
@@ -106,10 +106,7 @@ export class GetWeatherConditionsUseCase {
   ): Promise<{ currentTemp: number; windSpeed: number }> {
     try {
       const forecast = await this.#dependencies.forecastReader.fetchForLocation(location, date);
-      const currentHour = Number.parseInt(
-        toLocalTimeString(date, this.#dependencies.weatherProvider.timeZone).slice(0, 2),
-        10,
-      );
+      const currentHour = localDateTimeAt(date, this.#dependencies.weatherProvider.timeZone).hour;
       const hourly = forecast.hourlyForecasts.find((h) => h.hour === currentHour);
       return {
         currentTemp: hourly?.temperature ?? forecast.temperatureMax,

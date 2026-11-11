@@ -22,7 +22,6 @@ import type { TimezoneContext } from "#api/modules/notification/reminders/domain
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,
@@ -33,9 +32,9 @@ import {
 } from "#api/platform/database/schema/index";
 import { DrizzleSweepCursorAdapter } from "#api/platform/jobs/drizzle-sweep-cursor.adapter";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -88,13 +87,14 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     const { txHost, uow } = transaction;
     reader = new DrizzleSchedulerReader(
       txHost,
-      new CacheService(new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 })),
+      new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
       { onboardingV2: { enabled: false, treatmentPercent: 50 } },
+      new DateClock(),
     );
     publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({
         notificationRepository: new DrizzleNotificationRepository(txHost),
-        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost),
+        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
         cache: { invalidateUnreadCount: async () => undefined },
         unitOfWork: uow,
         afterCommit: { register: () => undefined },
@@ -105,7 +105,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
           notificationRepository: new DrizzleNotificationRepository(txHost),
-          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost),
+          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
           unitOfWork: uow,
           afterCommitPublisher: { register: () => undefined },
         }),
@@ -177,6 +177,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       weatherMorning: idleStrategy,
       weatherEvening: idleStrategy,
       logger,
+      alert: { raise: () => undefined },
     });
     return { clock, cursor, logger, sweptMinutes, sweep };
   }
@@ -202,7 +203,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       // Then
       expect(worker.sweptMinutes).toEqual(["7:56", "7:57", "7:58", "7:59", "8:00", "8:01"]);
       expect(await morningReminders()).toEqual([
-        { notificationDate: new Date("2026-11-10T00:00:00.000Z") },
+        { notificationDate: Temporal.PlainDate.from("2026-11-10") },
       ]);
       expect(await worker.cursor.findLastCompletedAt(TIMEZONE_REMINDER_SWEEP_CURSOR_KEY)).toEqual(
         BEFORE_MORNING.add({ minutes: 5 }),
@@ -273,9 +274,9 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
           .insert(todo)
           .values({
             ...omit(TodoFixture.create({ userId, categoryId: category?.id ?? 0 }), ["id"]),
-            startDate: new Date("2026-11-10T00:00:00.000Z"),
+            startDate: Temporal.PlainDate.from("2026-11-10"),
             scheduledLocalTime: "09:00",
-            scheduledTime: instantToDate(scheduledAt),
+            scheduledTime: scheduledAt,
             isAllDay: false,
             completed: false,
           })
@@ -291,6 +292,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
           new StubNotificationRecipientLocaleReader(),
           new InMemoryJobQueue(),
           new FixedClock(now),
+          { raise: () => undefined },
         );
       }
 

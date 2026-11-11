@@ -1,6 +1,7 @@
 import type { PlanFeature, PlanLimitFeatureKey } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import {
@@ -35,24 +36,24 @@ export class EntitlementReaderAdapter extends EntitlementReaderPort {
     this.#getResolvedAccess = getResolvedAccess;
   }
 
-  async can(userId: string, feature: PlanFeature): Promise<boolean> {
+  async can(userId: UserId, feature: PlanFeature): Promise<boolean> {
     return (await this.#featureEntitlement(userId, feature, "cached")).allowed;
   }
 
-  async canInTx(userId: string, feature: PlanFeature): Promise<boolean> {
+  async canInTx(userId: UserId, feature: PlanFeature): Promise<boolean> {
     return (await this.#featureEntitlement(userId, feature, "latest")).allowed;
   }
 
-  async getFeatureLimit(userId: string, feature: PlanLimitFeatureKey): Promise<number | null> {
+  async getFeatureLimit(userId: UserId, feature: PlanLimitFeatureKey): Promise<number | null> {
     return (await this.#featureEntitlement(userId, feature, "cached")).limit;
   }
 
-  async getFeatureLimitInTx(userId: string, feature: PlanLimitFeatureKey): Promise<number | null> {
+  async getFeatureLimitInTx(userId: UserId, feature: PlanLimitFeatureKey): Promise<number | null> {
     return (await this.#featureEntitlement(userId, feature, "latest")).limit;
   }
 
   async getFeatureQuotaInTx(
-    userId: string,
+    userId: UserId,
     feature: UnmeteredLimitFeatureKey,
     usage: ReportedFeatureUsage,
   ): Promise<FeatureQuotaDetails> {
@@ -70,13 +71,13 @@ export class EntitlementReaderAdapter extends EntitlementReaderPort {
     );
   }
 
-  async getEntitlements(userId: string): Promise<UserEntitlements> {
+  async getEntitlements(userId: UserId): Promise<UserEntitlements> {
     const { tier, plan, isPremium, grants } = await this.#resolve(userId, "cached");
     return { tier, plan, isPremium, features: resolveFeatureEntitlements({ plan, grants }) };
   }
 
   async #featureEntitlement(
-    userId: string,
+    userId: UserId,
     feature: PlanFeature,
     consistency: AccessReadConsistency,
   ): Promise<FeatureEntitlement> {
@@ -84,7 +85,7 @@ export class EntitlementReaderAdapter extends EntitlementReaderPort {
     return resolveFeatureEntitlement({ plan, feature, grants });
   }
 
-  #resolve(userId: string, consistency: AccessReadConsistency): Promise<ResolvedAccess> {
-    return this.#getResolvedAccess.execute({ userId, consistency });
+  #resolve(userId: UserId, consistency: AccessReadConsistency): Promise<ResolvedAccess> {
+    return this.#getResolvedAccess.execute({ userId: userId.value, consistency });
   }
 }

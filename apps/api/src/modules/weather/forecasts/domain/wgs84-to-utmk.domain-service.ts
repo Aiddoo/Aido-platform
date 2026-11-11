@@ -10,7 +10,7 @@ import { round } from "es-toolkit";
 
 /** GRS80 타원체 상수 */
 const GRS80 = {
-  a: 6378137.0, // 장반경 (m)
+  a: 6_378_137.0, // 장반경 (m)
   f: 1 / 298.257222101, // 편평률
 } as const;
 

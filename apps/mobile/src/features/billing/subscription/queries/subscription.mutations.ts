@@ -17,7 +17,7 @@ import { match } from 'ts-pattern';
 
 import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
 import { type SubscriptionPlan } from '../domains/subscription.model';
-import { SubscriptionPolicy } from '../domains/subscription.model';
+import { hasFreeTrial } from '../domains/subscription.model';
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import { toPurchaseFailedReason } from '../utils/subscription-analytics';
 import { toSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
@@ -54,7 +54,7 @@ export function usePurchaseMutationOptions() {
       trackEvent('subscription_started', {
         product_id: plan.identifier,
         plan_type: plan.planType,
-        is_trial: SubscriptionPolicy.hasFreeTrial(plan),
+        is_trial: hasFreeTrial(plan.freeTrial),
       });
       haptics.notify('success');
       if (!isReflected) {
@@ -67,7 +67,7 @@ export function usePurchaseMutationOptions() {
         .with({ type: 'cancelled' }, () => {
           trackEvent('purchase_cancelled', {
             plan_type: plan.planType,
-            is_trial: SubscriptionPolicy.hasFreeTrial(plan),
+            is_trial: hasFreeTrial(plan.freeTrial),
           });
         })
         .with({ type: 'paymentPending' }, () =>
@@ -81,7 +81,7 @@ export function usePurchaseMutationOptions() {
             trackEvent('purchase_failed', {
               reason,
               plan_type: plan.planType,
-              is_trial: SubscriptionPolicy.hasFreeTrial(plan),
+              is_trial: hasFreeTrial(plan.freeTrial),
             });
           }
           errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SUBSCRIPTION_PURCHASE_FAILED, {

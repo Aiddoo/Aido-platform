@@ -13,7 +13,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 import { INVITE_REWARD_MAX_ATTEMPTS } from "../../domain/invites.constants.js";
 import type { RewardGrant } from "../../domain/reward-grant.entity.js";
-import { InviteAlertKey } from "../invites.alerts.js";
+import { InviteAlerts } from "../invites.alerts.js";
 import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteNotifierPort } from "../ports/invite-notifier.port.js";
@@ -175,9 +175,7 @@ export class GrantInviteRewardsUseCase {
       ...(isErrorCode(errorCode) ? { errorCode } : { errorType: errorCode }),
     });
     this.#dependencies.alert.raise({
-      key: InviteAlertKey.REWARD_RETRY_EXHAUSTED,
-      severity: "error",
-      message: "Invite reward retries exhausted",
+      ...InviteAlerts.REWARD_RETRY_EXHAUSTED,
       tags: { errorCode },
       details: {
         grantId: grant.id.value,

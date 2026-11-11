@@ -1,9 +1,15 @@
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createPendingRedemption, createRedemptionResult } from '../__tests__/invite.fixtures';
-import { InviteRedemptionPolicy } from './invite-redemption.model';
+import {
+  InviteePremiumAccessPolicy,
+  InviteeUserPolicy,
+  InviteRedemptionPolicy,
+  PendingRedemptionPolicy,
+} from './invite-redemption.model';
 
 const inviter = {
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
@@ -18,7 +24,7 @@ describe('isFresh', () => {
     const pending = createPendingRedemption({ savedAt: toInstant('2028-02-23T00:00:00Z') });
 
     // When
-    const result = InviteRedemptionPolicy.isFresh(pending, toInstant('2028-02-29T23:59:59Z'));
+    const result = PendingRedemptionPolicy.isFresh(pending, toInstant('2028-02-29T23:59:59Z'));
 
     // Then
     // 윤년 2월 29일까지 포함해 6일 23시간 59분 59초
@@ -30,7 +36,7 @@ describe('isFresh', () => {
     const pending = createPendingRedemption({ savedAt: toInstant('2028-02-23T00:00:00Z') });
 
     // When
-    const result = InviteRedemptionPolicy.isFresh(pending, toInstant('2028-03-01T00:00:00Z'));
+    const result = PendingRedemptionPolicy.isFresh(pending, toInstant('2028-03-01T00:00:00Z'));
 
     // Then
     // 2월 23일 + 7일 = 3월 1일 (윤년)
@@ -189,7 +195,7 @@ describe('getRewardStart', () => {
     const { premiumAccess } = toUser(me);
 
     // When
-    const result = InviteRedemptionPolicy.getRewardStart(premiumAccess);
+    const result = InviteePremiumAccessPolicy.getRewardStart(premiumAccess);
 
     // Then
     expect(result).toBe(expected);
@@ -199,11 +205,11 @@ describe('getRewardStart', () => {
 describe('isRewardExpected', () => {
   it('가입한 지 7일이 안 됐으면 true를 반환한다', () => {
     // Given
-    const user = { createdAt: toInstant('2026-10-19T00:00:01Z') };
+    const user = createUser({ createdAt: toInstant('2026-10-19T00:00:01Z') });
     const now = toInstant('2026-10-26T00:00:00Z');
 
     // When
-    const result = InviteRedemptionPolicy.isRewardExpected(user, now);
+    const result = InviteeUserPolicy.isRewardExpected(user, now);
 
     // Then
     expect(result).toBe(true);
@@ -211,11 +217,11 @@ describe('isRewardExpected', () => {
 
   it('가입한 지 정확히 7일이 지났으면 false를 반환한다', () => {
     // Given
-    const user = { createdAt: toInstant('2026-10-19T00:00:00Z') };
+    const user = createUser({ createdAt: toInstant('2026-10-19T00:00:00Z') });
     const now = toInstant('2026-10-26T00:00:00Z');
 
     // When
-    const result = InviteRedemptionPolicy.isRewardExpected(user, now);
+    const result = InviteeUserPolicy.isRewardExpected(user, now);
 
     // Then
     // 7일 = 7 × 24시간, 기간 안이 아니다

@@ -7,8 +7,8 @@ import {
 export const PUSH_DEVICE_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T03:00:00Z");
 export const PUSH_DEVICE_FIXTURE_USER_ID = "clz7x5p8k0021qz0z8z8z8z8z";
 export const PUSH_DEVICE_FIXTURE_OTHER_USER_ID = "clz7x5p8k0022qz0z8z8z8z8z";
-export const PUSH_DEVICE_FIXTURE_DEVICE_ID = "ios_device-a";
-export const PUSH_DEVICE_FIXTURE_TOKEN = "ExponentPushToken[device-a]";
+const PUSH_DEVICE_FIXTURE_DEVICE_ID = "ios_device-a";
+const PUSH_DEVICE_FIXTURE_TOKEN = "ExponentPushToken[device-a]";
 export const PUSH_FIXTURE_SESSION_ID = "clz7x5p8k0041qz0z8z8z8z8z";
 export const PUSH_FIXTURE_OTHER_SESSION_ID = "clz7x5p8k0042qz0z8z8z8z8z";
 

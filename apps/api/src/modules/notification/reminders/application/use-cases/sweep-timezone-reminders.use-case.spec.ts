@@ -1,5 +1,6 @@
 import { InMemorySweepCursor } from "#test/doubles/notification/in-memory-sweep-cursor";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TEST_CUID } from "#test/fixtures/index";
 
@@ -10,6 +11,7 @@ import {
   TimezoneReminderEnqueuerPort,
 } from "../ports/timezone-reminder-enqueuer.port.js";
 import type { UserLocaleMap } from "../read-models/scheduler.read-model.js";
+import { ReminderAlerts } from "../reminders.alerts.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 import {
   SweepTimezoneRemindersUseCase,
@@ -105,6 +107,7 @@ function createHarness(nowIso: string) {
   const enqueuer = new RecordingEnqueuer();
   const sweepCursor = new InMemorySweepCursor();
   const logger = new SilentLogger();
+  const alert = new RecordingOperationalAlert();
   const orchestrator = new SweepTimezoneRemindersUseCase({
     ...strategies,
     preferenceReader,
@@ -112,8 +115,18 @@ function createHarness(nowIso: string) {
     sweepCursor,
     clock,
     logger,
+    alert,
   });
-  return { clock, strategies, preferenceReader, enqueuer, sweepCursor, logger, orchestrator };
+  return {
+    clock,
+    strategies,
+    preferenceReader,
+    enqueuer,
+    sweepCursor,
+    logger,
+    alert,
+    orchestrator,
+  };
 }
 
 const localTimes = (contexts: readonly TimezoneContext[]) =>
@@ -135,8 +148,8 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
           localHour: 8,
           localMinute: 0,
           dayOfWeek: 3,
-          today: new Date("2024-01-17T00:00:00.000Z"),
-          tomorrow: new Date("2024-01-18T00:00:00.000Z"),
+          today: Temporal.PlainDate.from("2024-01-17"),
+          tomorrow: Temporal.PlainDate.from("2024-01-18"),
           userId: undefined,
         },
       ]);
@@ -340,7 +353,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         expect(
           strategies.morningReminder.contexts.map(({ localHour, localMinute, today }) => [
             `${localHour}:${localMinute}`,
-            today.toISOString().slice(0, 10),
+            today.toString(),
           ]),
         ).toEqual([
           ["23:58", "2024-01-16"],
@@ -362,9 +375,10 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         expect(strategies.morningReminder.contexts).toHaveLength(1);
       });
 
-      it("15분보다 오래된 분은 보내지 않고 버린 분 수를 사유와 함께 남긴다", async () => {
+      it("15분보다 오래된 분은 보내지 않고 버린 분 수를 사유와 함께 남기고 경보한다", async () => {
         // Given: 40분 동안 멈췄다
-        const { orchestrator, strategies, clock, logger } = createHarness("2024-01-16T22:20:00Z");
+        const { orchestrator, strategies, clock, logger, alert } =
+          createHarness("2024-01-16T22:20:00Z");
         await orchestrator.handleMinuteSweep();
         clock.advanceBy({ minutes: 40 });
 
@@ -381,6 +395,12 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
           reason: "late-over-15m",
           skippedMinutes: 25,
         });
+        expect(alert.alerts).toEqual([
+          {
+            ...ReminderAlerts.SWEEP_CATCH_UP_CAPPED,
+            details: { skippedMinutes: 25, maxCatchUpMinutes: 15 },
+          },
+        ]);
       });
 
       it("시간대 목록을 읽지 못하면 커서를 옮기지 않아 다음 실행이 같은 분부터 처리한다", async () => {
@@ -568,7 +588,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         {
           context: expect.objectContaining({
             tz: "Asia/Seoul",
-            today: new Date("2024-01-16T00:00:00.000Z"),
+            today: Temporal.PlainDate.from("2024-01-16"),
           }),
           recipientUserIds: [TEST_CUID.USER_1],
         },

@@ -27,7 +27,11 @@ export class GetReportByIdUseCase {
   }
 
   async execute(query: GetReportByIdQuery): Promise<AiReport> {
-    await assertEntitled(this.#dependencies.entitlementReader, query.userId, "AI_REPORT");
+    await assertEntitled(
+      this.#dependencies.entitlementReader,
+      UserId.reconstitute(query.userId),
+      "AI_REPORT",
+    );
 
     const reportId = AiReportId.reconstitute(query.reportId);
     const report = await this.#dependencies.aiReportRepository.findByIdAndUserId(

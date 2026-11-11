@@ -64,7 +64,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
   async recordPushReceipts(input: {
     readonly requestedTicketIds: readonly string[];
     readonly results: readonly PushReceiptResult[];
-    readonly checkedAt: Date;
+    readonly checkedAt: Temporal.Instant;
   }): Promise<InvalidPushToken[]> {
     if (input.requestedTicketIds.length === 0) {
       return [];
@@ -72,7 +72,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
     const invalidTokens = await this.#recordTerminalReceipts(input.results, input.checkedAt);
     await this.#db
       .update(pushDeliveryAttempt)
-      .set({ receiptCheckedAt: input.checkedAt })
+      .set({ receiptCheckedAt: input.checkedAt, updatedAt: input.checkedAt })
       .where(
         and(
           inArray(pushDeliveryAttempt.providerTicketId, [...input.requestedTicketIds]),
@@ -82,7 +82,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
     return invalidTokens;
   }
 
-  async expireUnreceipted(acceptedBefore: Date, limit: number): Promise<number> {
+  async expireUnreceipted(acceptedBefore: Temporal.Instant, limit: number): Promise<number> {
     const { rows } = await this.#db.execute<Record<string, unknown>>(sql`
       UPDATE ${pushDeliveryAttempt}
       SET "status" = 'UNKNOWN'::"PushDeliveryStatus",
@@ -104,7 +104,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
 
   async #recordTerminalReceipts(
     results: readonly PushReceiptResult[],
-    checkedAt: Date,
+    checkedAt: Temporal.Instant,
   ): Promise<InvalidPushToken[]> {
     if (results.length === 0) {
       return [];

@@ -123,7 +123,7 @@ export const PLAN_CATALOG = {
     fairUse: { premium: 100 },
     perUse: {
       maxSeconds: { free: 180, premium: 1800 },
-      maxCharacters: { free: 4_000, premium: 40_000 },
+      maxCharacters: { free: 4000, premium: 40_000 },
     },
   },
 } as const satisfies Record<PlanFeature, PlanFeatureDefinition>;

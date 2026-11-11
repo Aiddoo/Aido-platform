@@ -4,6 +4,7 @@ import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AuthVerification } from "../../domain/auth-verification.aggregate.js";
 import { resendCooldownStartsAt } from "../../domain/auth-verification.domain-service.js";
@@ -42,7 +43,8 @@ export class IssueVerificationCodeUseCase {
 
   async execute(command: IssueVerificationCodeCommand): Promise<IssuedVerificationCode> {
     const { verificationRepository, verificationCodeSecurity, clock, logger } = this.#dependencies;
-    const { userId, type } = command;
+    const { type } = command;
+    const userId = UserId.reconstitute(command.userId);
     const now = clock.now();
 
     const recentCount = await verificationRepository.countRecentByUserIdAndType(
@@ -61,14 +63,18 @@ export class IssueVerificationCodeUseCase {
     const generated = verificationCodeSecurity.generate();
     const verification = AuthVerification.create({
       id: await verificationRepository.nextId(),
-      userId,
+      userId: command.userId,
       type,
       tokenHash: generated.digest,
       now,
     });
     await verificationRepository.save(verification);
 
-    logger.log({ event: AuthLogEvent.VERIFICATION_CREATED, userId, verificationType: type });
+    logger.log({
+      event: AuthLogEvent.VERIFICATION_CREATED,
+      userId: command.userId,
+      verificationType: type,
+    });
     return { code: generated.plaintext, expiresAt: verification.expiresAt };
   }
 }

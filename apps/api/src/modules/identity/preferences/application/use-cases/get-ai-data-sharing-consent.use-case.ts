@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { AiDataSharingConsent } from "../../domain/ai-data-sharing-consent.entity.js";
 import type { AiDataSharingConsentReaderPort } from "../ports/ai-data-sharing-consent.reader.port.js";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
@@ -14,7 +16,7 @@ export class GetAiDataSharingConsentUseCase implements AiDataSharingConsentReade
     this.#dependencies = dependencies;
   }
 
-  findAiDataSharingConsent(userId: string): Promise<AiDataSharingConsent> {
+  findAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
     return this.#dependencies.consentRepository.findAiDataSharingConsent(userId);
   }
 }

@@ -1,6 +1,5 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
 import { type PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
@@ -28,9 +27,9 @@ export class RelayPushDeliveryOutboxUseCase {
   }
 
   async execute(): Promise<void> {
-    const processingCutoff = instantToDate(
-      this.#dependencies.clock.now().subtract({ milliseconds: PROCESSING_LEASE_MS }),
-    );
+    const processingCutoff = this.#dependencies.clock
+      .now()
+      .subtract({ milliseconds: PROCESSING_LEASE_MS });
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.lifecycle.recoverStaleProcessing(processingCutoff);
       await this.#dependencies.outbox.recoverStaleProcessing(processingCutoff);

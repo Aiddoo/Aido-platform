@@ -9,7 +9,7 @@ import { databaseConfig } from "#api/platform/config/database.config";
 import { classifyDatabaseError } from "#api/platform/database/database-error.util";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { DatabaseModule } from "#api/platform/database/database.module";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 

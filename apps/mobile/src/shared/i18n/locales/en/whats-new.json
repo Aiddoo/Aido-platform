@@ -121,7 +121,12 @@
   "list": {
     "title": "What's new",
     "newBadge": "New",
-    "updatedOn": "Updated {{date}}",
+    "updatedOn": "v{{version}}\u00a0· Updated {{date}}",
+    "updatedOnLabel": "Version {{version}}, updated {{date}}",
+    "version": "v{{version}}",
+    "versionLabel": "Version {{version}}",
+    "patchNotes": "All updates",
+    "patchNotesDescription": "See every update, fixes included, in the patch notes",
     "unseenLabel": "Not viewed yet"
   },
   "stage": {

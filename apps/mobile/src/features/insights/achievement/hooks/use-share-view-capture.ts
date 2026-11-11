@@ -1,6 +1,5 @@
-import { useViewCapture } from '@src/bootstrap/providers/di-context';
+import { useLogger, useSystemShare, useViewCapture } from '@src/bootstrap/providers/di-context';
 import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
-import { useLogger, useSystemShare } from '@src/shared/di/shared-di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';

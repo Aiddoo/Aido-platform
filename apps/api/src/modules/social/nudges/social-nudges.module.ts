@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
 import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
-import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
 
 import { NudgeUsageReaderPort } from "./application/ports/nudge-usage.reader.port.js";
@@ -15,7 +15,7 @@ import { SOCIAL_NUDGES_PROVIDERS } from "./social-nudges.providers.js";
   imports: [
     AccessEntitlementsModule,
     SocialFriendsModule,
-    NotificationDeliveryModule,
+    NotificationPushModule,
     ConfigModule.forFeature(socialNudgesConfig),
   ],
   controllers: [NudgeController, NudgeInteractionController],

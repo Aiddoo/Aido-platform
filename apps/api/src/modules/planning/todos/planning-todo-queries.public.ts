@@ -3,3 +3,4 @@ export { TodoCompletionGroupReaderPort } from "./application/ports/todo-completi
 export { TodoDetailsReaderPort } from "./application/ports/todo-details.reader.port.js";
 export { TodoScheduleReaderPort } from "./application/ports/todo-schedule.reader.port.js";
 export { PlanningTodoQueriesModule } from "./planning-todo-queries.module.js";
+export { TodoId } from "../shared/domain/todo-id.vo.js";
