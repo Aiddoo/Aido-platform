@@ -84,8 +84,9 @@ errorFeedback: { feature, fallbackKey, isHandledByFeature? } | false
 mutationOptions({
   networkMode: 'always',
   mutationFn: async ({ email, password }: EmailLoginVariables) =>
-    unwrap(await authService.emailLogin(email, password)),
+    unwrap(await signInService.emailLogin({ email, password })),
   onError: (error, variables) => {
+    trackLoginFailure('email', error);
     if (isEmailNotVerifiedError(error)) {
       haptics.notify('error');
       push({ pathname: '/(auth)/verify-email', params: { email: variables.email } });

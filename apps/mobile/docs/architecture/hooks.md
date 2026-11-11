@@ -58,7 +58,7 @@
 | `useLayoutSize()`                                      | `shared/hooks`                        | `[size, onLayout]`                                                                                                       | 4곳                                                  |
 | `useOpenSheet()`                                       | `shared/ui/overlay`                   | `openSheet(render, options)`                                                                                             | 14곳                                                 |
 | `useStoredValue(def, scopeId?)`                        | `shared/storage`                      | `[value, setValue]`                                                                                                      | repository 11개                                      |
-| `useMyAccountId()`                                     | `features/identity/user/hooks`        | `string \| null`                                                                                                         | `useQuery(useGetMeQueryOptions())` 직접 호출 11곳    |
+| `useMyAccountId({ isEnabled })`                        | `features/identity/user/hooks`        | `string \| null`(꺼지면 캐시가 있어도 `null`)                                                                            | id만 쓰는 `me` 직접 조회 12곳                        |
 | `usePushPermissionAction({ source })`                  | `features/notification/hooks`         | `{ runStep(step), isPending }`                                                                                           | 권한 요청·추적 6곳                                   |
 | `useVoiceCaptureReadiness({ feature, surface, mode })` | `features/voice/hooks`                | `({ locale, entry, onSubscribe }) => Promise<{ isReady }>`(한도 → 동의 → 마이크, 답을 기다리는 사이 내려가면 준비 안 됨) | `useStartVoiceNote`·`useAddTodoQuickVoice` 복제      |
 | `useWhatsNewCampaign()`                                | `features/app-config/whats-new/hooks` | `{ release, identity }`                                                                                                  | 3개 훅의 같은 조회                                   |
@@ -95,7 +95,7 @@
 ```tsx
 const stepper = useStepper<SignUpStepContexts>({
   id: 'sign-up',
-  initial: { step: 'userInfo' },
+  initial: { step: 'name' },
   onStepChange: ({ step }) => trackEvent('auth_signup_step_viewed', { step }),
 });
 
@@ -105,12 +105,19 @@ stepper.history.replace('verification', (prev) => ({ ...prev, email: nextEmail }
 ```
 
 - 반환은 `{ step, context, index, historySteps, history: { push, replace, back, go }, Render }`다. 단계와 context는 `{ [단계]: context }` 타입 하나로 정하고, `Render`가 단계를 하나라도 빠뜨리면 컴파일 오류다.
-- context가 빈 단계는 context 인자를 생략한다. `push`·`replace`는 값이나 updater `(prev) => next`를 받는다.
+- context가 빈 단계(`Record<string, never>`)는 context 인자를 생략한다. `push`·`replace`는 값이나 updater `(prev) => next`를 받고, `prev`는 부른 순간의 지금 단계 context다.
 - 단계 추적은 `onStepChange` 하나다(`auth_signup_step_viewed`, `auth_password_reset_step_viewed`). 단계 컴포넌트에서 따로 추적하지 않는다.
 - 단계 안에 `useState`로 또 단계를 두지 않는다. 화면이 바뀌는 입력 묶음은 모두 진짜 단계여서 Android 뒤로 가기가 단계마다 한 칸씩 돈다.
 - 칸이 하나씩 늘어나는 입력(가입의 이름 → 이메일, 새 비밀번호 → 확인)은 이웃 단계에 같은 렌더러 함수를 넘긴다. 같은 렌더러로 이어진 단계는 한 화면이라 다시 마운트되지 않아 입력 포커스와 키보드가 남는다. 렌더러가 다르면 단계마다 새로 마운트된다.
 - `<stepper.Render … />` JSX로만 그린다. 렌더러는 단계 컴포넌트를 돌려주기만 하고 훅은 단계 컴포넌트 안에서 쓴다. 폼은 흐름 컴포넌트가 소유해 앞 단계로 돌아가도 값이 남는다.
 - 단계는 URL로 복원하지 않는다. 네이티브 헤더 제목·툴바가 단계를 따르면 스크린이 `useStepper`를 갖고 폼에 `stepper`를 넘긴다(`app/(auth)/sign-up.tsx`).
+- 같은 렌더러로 이어진 단계는 autoFocus가 다시 돌지 않는다. 뒤로 와도 키보드가 남게 `useFocusOnStepBack`이 앞 칸에 포커스를 준다.
+
+| 흐름            | 단계(같은 렌더러로 이은 단계는 괄호)                                   |
+| --------------- | ---------------------------------------------------------------------- |
+| 가입            | (`name` → `email`) → (`password` → `passwordConfirm`) → `verification` |
+| 비밀번호 찾기   | `email` → `verificationCode` → (`newPassword` → `newPasswordConfirm`)  |
+| 비밀번호 바꾸기 | `currentPassword` → (`newPassword` → `newPasswordConfirm`)             |
 
 `@use-funnel/react-navigation-native`는 쓰지 않는다. Expo Router와 맞지 않기 때문이다.
 

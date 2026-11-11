@@ -20,15 +20,15 @@
 
 라이브러리가 주는 상태를 다시 만들지 않고, 그 훅을 한 번 더 감싸지도 않는다.
 
-| 필요한 것         | 쓰는 것                                                                      | 만들지 않는 것                                           |
-| ----------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------- |
-| 저장 중·저장 실패 | `mutation.isPending`, `error`, `variables`                                   | `useState` 진행·오류 상태                                |
-| 조회 중·조회 실패 | Suspense + 경계, `isError`, `refetch`                                        | 직접 만든 로딩 상태                                      |
-| 무한 목록         | `hasNextPage`, `isFetchingNextPage`, `isFetchNextPageError`, `fetchNextPage` | 페이지 번호 상태                                         |
-| 제출·유효성       | `formState.isSubmitting`, `isValid`, `errors`                                | 폼 값 복사, 같은 규칙의 별도 함수                        |
-| 진행 중인 변경    | `useIsMutating`, `useMutationState`                                          | 전역 플래그                                              |
-| 값 구독           | `useWatch`, `useStoredValue`                                                 | 렌더 경로 `getValues()`, 저장 값의 Query·`useState` 사본 |
-| 당겨서 새로고침   | `useRefresh(() => refresh{Feature}(queryClient))`                            | `isRefetching`(배경 재조회까지 켜진다)                   |
+| 필요한 것         | 쓰는 것                                                                                             | 만들지 않는 것                                           |
+| ----------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| 저장 중·저장 실패 | `mutation.isPending`, `error`, `variables`                                                          | `useState` 진행·오류 상태                                |
+| 조회 중·조회 실패 | Suspense + 경계, `isError`, `refetch`                                                               | 직접 만든 로딩 상태                                      |
+| 무한 목록         | `hasNextPage`, `isFetchingNextPage`, `isFetchNextPageError`, `fetchNextPage`                        | 페이지 번호 상태                                         |
+| 제출·유효성       | `formState.isSubmitting`, `isValid`, `errors`. 단계 폼은 칸별 `getFieldState`의 `isDirty`·`invalid` | 폼 값 복사, 같은 규칙의 별도 함수                        |
+| 진행 중인 변경    | `useIsMutating`, `useMutationState`                                                                 | 전역 플래그                                              |
+| 값 구독           | `useWatch`, `useStoredValue`                                                                        | 렌더 경로 `getValues()`, 저장 값의 Query·`useState` 사본 |
+| 당겨서 새로고침   | `useRefresh(() => refresh{Feature}(queryClient))`                                                   | `isRefetching`(배경 재조회까지 켜진다)                   |
 
 정해 둔 예외는 다음뿐이다.
 

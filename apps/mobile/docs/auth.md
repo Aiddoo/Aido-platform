@@ -1,6 +1,8 @@
 # 인증: 세션 수명주기와 소셜 로그인
 
-세션·토큰 규칙([세션](#세션-수명주기와-불변식))과 소셜 로그인·계정 연결([소셜 로그인](#소셜-로그인))을 다룬다. 인증 상태는 `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn`·`signOut`으로 쓴다. 토큰은 `TokenStore` 포트(SecureStore)에 둔다.
+세션·토큰 규칙([세션](#세션-수명주기와-불변식))과 소셜 로그인·계정 연결([소셜 로그인](#소셜-로그인)), 가입·비밀번호 폼([폼과 단계](#폼과-단계))을 다룬다. 인증 상태는 `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn`·`signOut`으로 쓴다. 토큰은 `TokenStore` 포트(SecureStore)에 둔다.
+
+층은 `features/identity/auth`에 있다. 서버 호출은 `apis/auth.api.ts`(`AuthApi`), 소셜 인증 창·토큰 저장·탈퇴 뒤 토큰 삭제는 `services/sign-in.service.ts`(`SignInService`), 로그아웃은 `LogOutDeviceService`, 오프라인 로그아웃 해제는 `SessionRevocationService`, 미인증 뒤 정리는 `SessionCleanupService`, 인증 상태 기계는 `stores/auth-session.store.ts`다. 추적과 화면 이동은 mutation 옵션(`queries/auth.mutations.ts`)만 한다.
 
 # 세션 수명주기와 불변식
 
@@ -8,7 +10,7 @@
 
 **토큰을 지우는 경로는 두 가지뿐이다.**
 
-1. 사용자의 명시적 로그아웃·탈퇴(`AuthService`)
+1. 사용자의 명시적 로그아웃(`LogOutDeviceService`)·탈퇴(`SignInService.deleteAccount`)
 2. `SessionManager.end()`: 서버의 확정적 refresh 거부, 2xx 응답 파싱 실패, 로컬 토큰 부재
 
 구조가 이 불변식을 강제한다. `TokenRefresher`에는 토큰 삭제도 이벤트 발행도 없다. 갱신기는 `RefreshOutcome`을 돌려줄 뿐이고 세션 수명은 `SessionManager`(`core/session/session-manager.ts`)만 소유한다. 갱신기가 세션을 끝낼 수 있던 것이 v1.4.0 사고의 구조적 원인이었다.
@@ -16,9 +18,7 @@
 그 외 어떤 코드도 토큰을 지우지 않는다. 특히:
 
 - **로컬 휴리스틱(플래그·앱 버전·MMKV 상태 비교)으로 토큰을 선제 삭제하지 않는다.** MMKV 플래그 부재는 재설치뿐 아니라 그 플래그가 없던 구버전에서의 업데이트도 뜻한다. v1.3.5의 첫 실행 가드가 이 오판으로 업데이트한 전체 유저를 강제 로그아웃시켰다(v1.4.0 사고, PR #591의 회귀).
-- **부팅 시 인증 상태를 네트워크 결과에 걸지 않는다.** 오프라인·서버 장애 중에도 리프레시 토큰이 있으면 인증 상태로 시작한다(`resolve-initial-auth-status.ts`).
-
-`resolve-initial-auth-status.test.ts`가 회귀 테스트다.
+- **부팅 시 인증 상태를 네트워크 결과에 걸지 않는다.** 오프라인·서버 장애 중에도 리프레시 토큰이 있으면 인증 상태로 시작한다(`resolve-initial-auth-status.ts`, 회귀 테스트는 같은 이름의 `.test.ts`).
 
 ## 부팅 흐름 (`bootstrap/auth/resolve-initial-auth-status.ts`)
 
@@ -36,7 +36,7 @@
 
 ## 인증 상태 (`features/identity/auth/domains/auth-session.model.ts`)
 
-상태는 순수 전이 함수 `transitionAuthSession`과 DI가 소유하는 저장소(`apis/auth-session.store.ts`)가 관리한다. 화면은 `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn()`, `signOut()`으로 쓴다.
+상태는 순수 전이 함수 `transitionAuthSession`과 DI가 소유하는 저장소(`stores/auth-session.store.ts`)가 관리한다. 화면은 `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn()`, `signOut()`으로 쓴다.
 
 | 이벤트           | 반영되는 상태       | 결과                                      |
 | ---------------- | ------------------- | ----------------------------------------- |
@@ -134,11 +134,7 @@
 | 토큰 키를 읽고 쓰는 곳                                            | `secure-token-store.ts` 한 곳      | 다른 레이어가 키를 직접 참조하면 저장 계약이 흩어진다                                                                                                                          |
 | 해제 대기 키 (`pendingRevocation`, `{ refreshToken, expiresAt }`) | `pending-revocation.repository.ts` | 기록한 세션을 풀지 못한다. 토큰 키와 달리 잃어도 로그아웃되지는 않는다                                                                                                         |
 
-## 서버 측 운영 불변식 (apps/api)
-
-- `JWT_REFRESH_SECRET` 회전은 전체 유저 즉시 로그아웃이다. 불가피하면 이중 키 검증 기간을 두고 회전한다.
-- `JWT_REFRESH_EXPIRES_IN`(기본 7d)은 회전 때마다 새로 계산되어 활성 유저는 만료되지 않는다. 그 기간 이상 접속하지 않은 유저는 다시 로그인한다.
-- 리프레시 토큰 재사용 grace는 10초(`TOKEN_REUSE_GRACE_PERIOD_MS`)다. 클라이언트 타임아웃(8초)보다 항상 길게 둔다.
+서버 쪽 운영 불변식(refresh 비밀 회전, 만료, 재사용 grace)은 [서버 보안](../../api/docs/security.md#세션-토큰-운영-불변식)에 있다.
 
 # 소셜 로그인
 
@@ -154,11 +150,11 @@
 ## Google·Kakao·Naver: 서버 흐름
 
 ```
-AuthService.openKakaoLogin()                  # openGoogleLogin·openNaverLogin도 같다
+SignInService.openKakaoLogin()                # openGoogleLogin·openNaverLogin도 같다
   → WebBrowser.openAuthSessionAsync(GET {API}/v1/auth/{provider}/start?redirect_uri&mode=login, redirectUri)
   → 서버가 공급자 인증을 끝내고 redirectUri로 일회용 code를 돌려준다
-  → POST v1/auth/exchange { code }
-  → 토큰 저장, signIn()
+  → SignInService.exchangeCode: AuthApi.exchangeCode(POST v1/auth/exchange { code }) → 토큰 저장
+  → mutation onSuccess: signIn(), auth_login 또는 auth_signup
 ```
 
 - `redirectUri`는 `makeRedirectUri({ scheme: ENV.SCHEME, path: 'auth/{provider}' })`다. scheme은 환경별로 다르다(`app.config.ts`). 서버가 `start-oauth-authorization.use-case.ts`의 허용 패턴으로 검사하므로 scheme을 바꾸면 거기도 고친다.
@@ -171,35 +167,33 @@ AuthService.openKakaoLogin()                  # openGoogleLogin·openNaverLogin�
 iOS에서만 버튼을 보인다(`process.env.EXPO_OS === 'ios'`). `usesAppleSignIn`은 `app.config.ts`에 있다.
 
 ```
-AuthService.openAppleLogin()
-  → nonce 생성, SHA-256 해시를 AppleAuthentication.signInAsync에 넘김
-  → POST v1/auth/apple/callback { idToken, nonce, userName, deviceType: 'IOS' }
+SignInService.openAppleLogin()
+  → SocialAuthGateway.signInWithApple(): nonce 생성, SHA-256 해시를 AppleAuthentication.signInAsync에 넘김
+  → toAppleSignInRequest → AuthApi.signInWithApple(POST v1/auth/apple/callback { idToken, nonce, userName, deviceType })
   → 토큰 저장
 ```
 
 - Apple은 이름을 최초 로그인에만 준다. `userName`은 `fullName.givenName`이고 없으면 보내지 않는다.
-- SDK 호출과 오류 변환은 `SocialAuthGateway`(`shared/infra/social-auth`)가 맡고, `AuthService`가 결과를 `AUTH_ERROR_CODE`로 옮긴다.
+- SDK 호출과 오류 변환은 `SocialAuthGateway`(`shared/infra/social-auth`)가 맡고, `SignInService`가 결과를 `AUTH_ERROR_CODE`로 옮긴다.
+- 토큰 저장이 실패하면(잠긴 키체인) `SignInService`가 던져 로그인 mutation이 실패로 끝나고 인증 상태는 바뀌지 않는다.
 
 ## 계정 연결
 
-`AuthService.linkAccount(provider)`가 나눈다. 인증된 클라이언트로 부른다.
+`SignInService.linkAccount(provider)`가 나눈다. 인증된 클라이언트로 부르고 토큰은 저장하지 않는다. 성공하면 연결 계정과 내 정보를 다시 받는다(`invalidateLinkedAccounts`·`invalidateMe`).
 
-| 공급자             | 흐름                                                                        |
-| ------------------ | --------------------------------------------------------------------------- |
-| Google·Kakao·Naver | `openAuthSessionAsync(.../start?mode=link)` → `POST v1/auth/link-with-code` |
-| Apple              | `signInAsync` → `POST v1/auth/link { provider: 'APPLE', idToken, nonce }`   |
+| 공급자             | 흐름                                                                                                 |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| Google·Kakao·Naver | `openAuthSessionAsync(.../start?mode=link)` → `POST v1/auth/link-with-code`                          |
+| Apple              | `signInAsync` → `POST v1/auth/link { provider: 'APPLE', idToken, nonce }`(`AuthApi.linkWithIdToken`) |
 
 해제는 `DELETE v1/auth/linked-accounts/{provider}`다. 취소는 `isLoginCancelledError`로 걸러 토스트를 띄우지 않는다.
 
-## 분석
+## 분석·오류·콘솔 설정
 
-성공 한 번에 `auth_signup`·`auth_login` 중 하나만 보낸다. 서버 응답 `isNewUser`로 고른다. [측정 규칙](./observability.md#측정-규칙)을 본다.
+- 성공 한 번에 `auth_signup`·`auth_login` 중 하나만 보낸다. 서버 응답 `isNewUser`로 고른다([측정 규칙](./observability.md#측정-규칙)). 실패·단계·확정 결과 이벤트와 보내는 자리는 [측정 계획](./analytics-measurement-plan.md)에 있다.
+- 공통 소셜 오류는 `@aido/api/errors`의 `SOCIAL_02xx`이고 문구는 i18n `errors` 카탈로그에 있다.
+- 공급자 콘솔 설정(Apple App ID, redirect URI)은 [서버 설정](../../api/docs/configuration.md#소셜-로그인-콘솔)에 있다.
 
-## 오류 코드
+# 폼과 단계
 
-공통 소셜 오류는 `@aido/api/errors`의 `SOCIAL_02xx`다. 문구는 i18n `errors` 카탈로그에 있다. 서버 동작은 서버 문서를 본다.
-
-## 콘솔 설정의 함정
-
-- Apple은 App ID에 Sign In with Apple을 켜야 한다.
-- 공급자 콘솔의 redirect URI는 서버 콜백(`*_CALLBACK_URL`, `apps/api/src/platform/config/schemas/oauth.schema.ts`)이다. 앱의 `redirectUri`를 등록하지 않는다.
+가입(`app/(auth)/sign-up.tsx`), 비밀번호 찾기·바꾸기는 `useStepper` 흐름이다. 단계 표와 같은 렌더러 규칙은 [hooks](./architecture/hooks.md#usestepper), 버튼 상태는 [data](./architecture/data.md#폼)에 있다. 현재 비밀번호가 틀리면(`USER_0602`) `findPasswordFieldError`로 그 칸에 보인다(바꾸기는 `currentPassword` 단계로 돌아가고 탈퇴는 `password` 칸에 포커스). 가입 중복 이메일은 로그인하러 가기 동작이 있는 토스트, 재설정 코드 오류는 코드 입력 부품이 상태를 가져 토스트다.
