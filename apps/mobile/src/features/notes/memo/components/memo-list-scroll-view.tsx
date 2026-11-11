@@ -5,13 +5,13 @@ import { type PropsWithChildren, useRef } from 'react';
 import { RefreshControl } from 'react-native';
 import Animated, { clamp, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
-import { invalidateMemos } from '../queries/memo-cache';
+import { refreshMemos } from '../queries/memo-cache';
 import { ScrollProgressWidget } from './scroll-progress-widget';
 
 /** 당겨서 새로고침과 스크롤 진행 위젯이 달린 메모 탭 본문 */
 export function MemoListScrollView({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
-  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateMemos(queryClient));
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshMemos(queryClient));
   const scrollRef = useRef<Animated.ScrollView>(null);
   const progress = useSharedValue(0);
 

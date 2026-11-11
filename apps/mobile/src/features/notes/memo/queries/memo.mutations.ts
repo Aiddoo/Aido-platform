@@ -45,9 +45,15 @@ import {
   createMemoPlanRequestDraftKey,
   restoreOrCreateMemoPlanIdempotencyKey,
 } from '../utils/memo-plan-draft';
-import { invalidateMemoList, invalidateMemoResourceLimit, replaceMemoInList } from './memo-cache';
+import {
+  getCachedMemo,
+  invalidateMemo,
+  invalidateMemoList,
+  invalidateMemoResourceLimit,
+  setMemoDetailInCache,
+  setMemoInCache,
+} from './memo-cache';
 import { MEMO_MUTATION_KEYS } from './memo-mutation-keys';
-import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 export function useCreateMemoMutationOptions() {
   const memoApi = useMemoApi();
@@ -98,20 +104,17 @@ export function useUpdateMemoMutationOptions() {
     networkMode: 'always',
     mutationFn: async ({ memoId, values }: { memoId: number; values: MemoFormValues }) =>
       unwrap(await memoApi.updateMemo(memoId, values)),
+    // 돌아간 목록에 옛 글자가 보이지 않게 응답으로 상세와 목록을 바꾼다. 글만 바뀌어 목록 순서는 그대로다
     onSuccess: async (memo, { memoId }) => {
-      await Promise.all([
-        queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) }),
-        queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.list() }),
-      ]);
-      queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId }), memo);
-      // 재조회를 기다리지 않고 떠나므로 돌아간 목록에 옛 글자가 보이지 않게 먼저 바꾼다
-      replaceMemoInList(queryClient, memo);
+      await setMemoInCache(queryClient, memo);
       trackEvent('memo_updated', { memo_id: memoId });
     },
-    // 기다리면 mutateAsync가 재조회까지 묶여 저장 후 뒤로 가기가 늦어진다
-    onSettled: (_memo, _error, { memoId }) => {
-      invalidateMemoList(queryClient);
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
+    // 응답으로 바꾼 키는 다시 받지 않는다. 기다리면 mutateAsync가 재조회까지 묶여 뒤로 가기가 늦어진다
+    onSettled: (_memo, error, { memoId }) => {
+      if (error != null) {
+        invalidateMemoList(queryClient);
+        invalidateMemo(queryClient, { memoId });
+      }
     },
     meta: { errorFeedback: { feature: 'memo', fallbackKey: 'memo:toasts.retryLater' } },
   });
@@ -144,8 +147,7 @@ export function useSetMemoPinnedMutationOptions() {
     mutationFn: async ({ memoId, isPinned }: { memoId: number; isPinned: boolean }) =>
       unwrap(await memoApi.setPinned(memoId, isPinned)),
     onSuccess: async (memo, { memoId, isPinned }) => {
-      await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
-      const previousMemo = queryClient.getQueryData(MEMO_QUERY_KEYS.detail({ memoId }));
+      const previousMemo = await setMemoDetailInCache(queryClient, memo);
       const accountId = getCachedMe(queryClient)?.id;
       if (previousMemo != null && accountId != null) {
         const source = { from: toEpochMs(previousMemo.updatedAt), to: toEpochMs(memo.updatedAt) };
@@ -161,14 +163,13 @@ export function useSetMemoPinnedMutationOptions() {
           source,
         );
       }
-      queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId }), memo);
       trackEvent('memo_pin_toggled', { memo_id: memoId, is_pinned: isPinned });
     },
     // 상세는 응답으로 고쳤고 고정 순서만 서버가 정한다
     onSettled: (_memo, error, { memoId }) => {
       invalidateMemoList(queryClient);
       if (error != null) {
-        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
+        invalidateMemo(queryClient, { memoId });
       }
     },
     meta: { errorFeedback: { feature: 'memo', fallbackKey: 'memo:toasts.retryLater' } },
@@ -193,7 +194,7 @@ export function useDeleteMemoMutationOptions() {
     onSettled: (_result, _error, memoId) => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
+      invalidateMemo(queryClient, { memoId });
     },
     meta: { errorFeedback: { feature: 'memo', fallbackKey: 'memo:toasts.deleteRetry' } },
   });
@@ -254,7 +255,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
     content,
     sourceUpdatedAt,
   }: Pick<ParseMemoVariables, 'content' | 'sourceUpdatedAt'>) => {
-    const cachedMemo = queryClient.getQueryData(MEMO_QUERY_KEYS.detail({ memoId }));
+    const cachedMemo = getCachedMemo(queryClient, { memoId });
 
     return cachedMemo?.content === content ? toEpochMs(cachedMemo.updatedAt) : sourceUpdatedAt;
   };

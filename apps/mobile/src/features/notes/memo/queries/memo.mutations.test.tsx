@@ -99,6 +99,24 @@ describe('메모 수정 후 상세 cache', () => {
     );
   });
 
+  it('응답으로 쓴 상세와 목록은 다시 받지 않는다', async () => {
+    // Given
+    client.setQueryData(MEMO_QUERY_KEYS.list(), {
+      pages: [{ items: [toMemo(originalMemo)], nextCursor: null }],
+      pageParams: [undefined],
+    });
+
+    // When
+    await updateMemo(client);
+
+    // Then
+    expect(client.getQueryState(MEMO_QUERY_KEYS.detail({ memoId: 5 }))?.isInvalidated).toBe(false);
+    expect(client.getQueryState(MEMO_QUERY_KEYS.list())?.isInvalidated).toBe(false);
+    expect(client.getQueryData(MEMO_QUERY_KEYS.list())?.pages[0]?.items).toEqual([
+      toMemo(updatedMemo),
+    ]);
+  });
+
   it('저장 이전에 시작한 상세 조회가 늦게 끝나도 수정 내용을 덮어쓰지 않는다', async () => {
     // Given
     let resolveRefresh: (memo: Memo) => void = () => {
