@@ -34,7 +34,7 @@
 - 이벤트는 기능의 `constants/{entity}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다. 기능에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`)만 `shared/analytics/event-map.ts`에 직접 있다. 맨 `string` 이름·파라미터를 쓰지 않는다.
 - 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
 - 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다.
-- 새 이벤트 이름은 `{entity}_{object?}_{verb}`이고 동사는 `shown`·`tapped`·`dismissed`·`toggled`·`failed`·`created`·`updated`·`deleted`·`viewed`(화면)만 쓴다. 안내는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다. 기존 이름은 동결하고 바꿀 때는 별칭 기간을 둔다.
+- 새 이벤트 이름은 `{entity}_{object?}_{verb}`이고 동사는 `shown`·`tapped`·`dismissed`·`toggled`·`failed`·`created`·`updated`·`deleted`·`viewed`(화면)·`requested`·`completed`·`opened`·`submitted`·`changed`·`verified`·`resent`·`opted_in`·`opted_out`만 쓴다. 안내는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다. 기존 이름은 동결하고 바꿀 때는 별칭 기간을 둔다.
 - 파라미터는 snake_case다. 예약어의 뜻은 정해져 있다: `source`(온 UI), `method`, `reason`, `result`.
 - 이름·동사·snake_case·맨 `string` 금지와 로그 키 유일성은 `aido` oxlint 플러그인이 막는다. 앱 이벤트는 GA 예약 구매 이름(`purchase`·`in_app_purchase`·`refund`)을 쓸 수 없다(`AppReservedPurchaseEventGuard` 컴파일 검사).
 

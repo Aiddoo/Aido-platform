@@ -66,6 +66,10 @@
 
 끊지 못한 양방향 쌍 하나(`planning/category <-> planning/todo`)만 `scripts/feature-graph.cjs`의 `ALLOWED_FEATURE_CYCLES`에 이유와 함께 남았다. 새 쌍은 막고, 쌍이 사라지면 목록에서 지우라고 실패한다. 새 항목은 이유와 함께 직접 적는다. 엄격한 없음 비교는 그 줄 위 `// oxlint-disable-next-line aido/no-strict-nullish -- <이유>`로만 끄고, 쓰지 않는 지시문은 Oxlint가 실패시킨다.
 
+## 켜기 전 규칙
+
+위치 이름, 모델·mapper 의존, 추적·`queryClient`·저장 키·HTTP 상태의 자리, 테스트 timer·spy·sleep·스타일 단언, shared value `.value`, `className` 잇기, `Menu.ItemTitle`, `AppState`·`BackHandler`, 이벤트 카탈로그, 로그 키, 역할 폴더 이름은 규칙과 설정이 들어 있지만 꺼져 있다(`.oxlintrc.json` 끝의 `off` 블록, dependency-cruiser `PENDING`, `.ls-lint.pending.yml`). 1.15.2 [13/32]에서 baseline과 함께 켜고 이 표로 옮긴다. 목록과 위반 수는 [migration-status](./migration-status.md#켜기-전-가드레일)에 있다.
+
 ## 리뷰로 지키는 것
 
 이 검사가 막지 않는 규칙이다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, 쿼리·utils 파일 위치, 다른 feature의 `apis/` import, feature 파일 접두사(`nudge`→`todo-nudge`처럼 feature 이름이 entity 이름을 줄인 경우), 댓글 단계별 Stack route(`todo/[todoId]` 아래 `_layout`·`comment`·`comments/[commentId]`).
