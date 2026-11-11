@@ -2,7 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, CheckIcon, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback, RadioGroup, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
@@ -45,42 +45,54 @@ export function CategorySelectInput({
         {t('category.select')}
       </Text>
 
-      <VStack gap={8}>
-        {categories.map((category) => {
-          const isSelected = localCategoryId === category.id;
-
-          return (
-            <PressableFeedback
-              key={category.id}
-              testID={`category-select-option-${category.id}`}
-              accessibilityRole="button"
-              accessibilityLabel={category.name}
-              accessibilityState={{ selected: isSelected }}
-              onPress={() => setLocalCategoryId(category.id)}
-              isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
-              className="rounded-xl"
-            >
-              <PressableFeedback.Highlight className="rounded-xl" />
-              <ListRow
-                left={
-                  <Box
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                }
-                contents={<Text size="b3">{category.name}</Text>}
-                right={
-                  isSelected ? (
-                    <CheckIcon width={18} height={18} colorClassName="text-main" />
-                  ) : undefined
-                }
-                horizontalPadding="medium"
-                className="bg-gray-1 rounded-xl dark:bg-gray-2"
-              />
-            </PressableFeedback>
-          );
-        })}
-      </VStack>
+      {/* 하나만 고르는 목록이라 스크린 리더에 라디오와 선택 상태로 알린다. 눌림 면은 그대로 둔다 */}
+      <RadioGroup
+        value={String(localCategoryId)}
+        onValueChange={(value) => {
+          const category = categories.find(({ id }) => String(id) === value);
+          if (category != null) {
+            setLocalCategoryId(category.id);
+          }
+        }}
+        className="gap-2"
+      >
+        {categories.map((category) => (
+          <RadioGroup.Item
+            key={category.id}
+            value={String(category.id)}
+            isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
+            asChild
+          >
+            {({ isSelected, isDisabled }) => (
+              <PressableFeedback
+                testID={`category-select-option-${category.id}`}
+                accessibilityLabel={category.name}
+                isDisabled={isDisabled}
+                // RadioGroup.Item(asChild)의 radio-group__item(가로 줄·가운데·양끝·gap-3)을 덮어 행이 폭을 채운다
+                className="flex-col items-stretch justify-start gap-0 rounded-xl"
+              >
+                <PressableFeedback.Highlight className="rounded-xl" />
+                <ListRow
+                  left={
+                    <Box
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: category.color }}
+                    />
+                  }
+                  contents={<Text size="b3">{category.name}</Text>}
+                  right={
+                    isSelected ? (
+                      <CheckIcon width={18} height={18} colorClassName="text-main" />
+                    ) : undefined
+                  }
+                  horizontalPadding="medium"
+                  className="bg-gray-1 rounded-xl dark:bg-gray-2"
+                />
+              </PressableFeedback>
+            )}
+          </RadioGroup.Item>
+        ))}
+      </RadioGroup>
 
       <Button
         size="large"
