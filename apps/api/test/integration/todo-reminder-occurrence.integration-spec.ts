@@ -9,14 +9,18 @@ import { PgBoss } from "pg-boss";
 import { z } from "zod";
 
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
-import { TODO_REMINDER_QUEUE } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.constants";
-import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.processor";
-import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
-import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader";
 import { PublishNotificationUseCase } from "#api/modules/notification/notification-delivery.public";
 import { SendNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-notification-todo-target.reader";
 import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
+import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
+import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
+import {
+  TODO_REMINDER_QUEUE as TODO_REMINDER_QUEUE_DEFINITION,
+  todoReminderJobSchema,
+} from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
+import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
+import { notificationRetentionConfig } from "#api/modules/notification/retention/notification-retention.config";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
@@ -25,8 +29,7 @@ import { UpdateTodoScheduleUseCase } from "#api/modules/planning/todos/applicati
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
@@ -38,12 +41,14 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
-import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
+import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
+import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { nowInstant, shiftDateKey, todayIn, wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -53,6 +58,7 @@ import { suppressLogger } from "../setup/suppress-logger.js";
 const SEOUL = "Asia/Seoul";
 const NEW_YORK = "America/New_York";
 const SCHEMA = "pgboss";
+const TODO_REMINDER_QUEUE = TODO_REMINDER_QUEUE_DEFINITION.name;
 
 type Stage = "60min" | "10min";
 type Step =
@@ -73,7 +79,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let boss: PgBoss;
-  let runtime: PgBossJobRuntimeAdapter;
+  let jobQueue: PgBossJobQueueAdapter;
   let reminderAdapter: ReminderSchedulerAdapter;
   let rebase: RebaseTodoTimezoneUseCase;
   let updateSchedule: UpdateTodoScheduleUseCase;
@@ -102,25 +108,29 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       max: 3,
     });
     const { txHost, uow } = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, txHost, { job: { shutdownTimeoutMs: 10_000 } });
-    await runtime.start();
-    reminderAdapter = new ReminderSchedulerAdapter(new TodoReminderSchedulerAdapter(runtime));
+    jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+      shutdownTimeoutMs: 10_000,
+    });
+    await jobQueue.start();
+    reminderAdapter = new ReminderSchedulerAdapter(
+      new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
+    );
     const ownerTimezone = {
-      findTimezone: async (id: string) => {
+      findTimezone: async (id: UserId) => {
         const row = await txHost.tx.query.userPreference.findFirst({
           columns: { timezone: true },
-          where: { userId: id },
+          where: { userId: id.value },
         });
         return row?.timezone ?? null;
       },
     };
     const mutationLock = new PostgresMutationLockAdapter(txHost);
     const todoCache = { invalidateFriendTodos: async () => undefined };
-    const todoRepository = new DrizzleTodoRepository(txHost);
+    const todoRepository = new DrizzleTodoRepository(txHost, new DateClock());
     rebase = new RebaseTodoTimezoneUseCase({
       clock: new DateClock(),
       todoRepository,
-      seriesRepository: new DrizzleTodoSeriesRepository(txHost),
+      seriesRepository: new DrizzleTodoSeriesRepository(txHost, new DateClock()),
       ownerTimezone,
       todoReminder: reminderAdapter,
       todoCache,
@@ -128,7 +138,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       mutationLock,
       logger: silentLogger,
     });
-    const eventPublisher = { publishAll: async () => undefined, publish: async () => undefined };
+    const eventPublisher = { publish: async () => undefined };
     updateSchedule = new UpdateTodoScheduleUseCase({
       todoRepository,
       todoReadRepository: new DrizzleTodoReadRepository(txHost),
@@ -142,13 +152,12 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         eventPublisher,
         clock: new DateClock(),
       }),
-      eventPublisher,
       logger: silentLogger,
     });
     const publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({
         notificationRepository: new DrizzleNotificationRepository(txHost),
-        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost),
+        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
         cache: { invalidateUnreadCount: async () => undefined },
         unitOfWork: uow,
         afterCommit: { register: () => undefined },
@@ -163,15 +172,22 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       providers: [
         DrizzleSchedulerReader,
         { provide: TransactionHost, useValue: txHost },
-        { provide: CacheService, useValue: {} },
-        { provide: TypedConfigService, useValue: {} },
+        { provide: CacheStorePort, useValue: {} },
+        { provide: ClockPort, useValue: new DateClock() },
+        {
+          provide: notificationRetentionConfig.KEY,
+          useValue: { onboardingV2: { enabled: false, treatmentPercent: 50 } },
+        },
       ],
     }).compile();
     processor = new TodoReminderQueueProcessor(
       readerModule.get(DrizzleSchedulerReader),
-      { findDormantSince: async () => null },
+      new StubTodoSeriesOwnerDormancy(),
       publisher,
-      { getLocale: async () => "ko", getLocales: async () => new Map() },
+      new StubNotificationRecipientLocaleReader(),
+      jobQueue,
+      new DateClock(),
+      { raise: () => undefined },
     );
   });
 
@@ -194,27 +210,27 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     categoryId = category?.id ?? 0;
-    today = toDateString(todayInTimezone(SEOUL));
+    today = todayIn(SEOUL).toString();
   });
 
   afterAll(async () => {
-    await runtime?.stop();
+    await jobQueue?.stop();
     await database?.stop();
   });
 
   /** 사흘 뒤를 첫날로 둔다. 어느 시각에 돌려도 모든 단계가 미래다. */
   function dayKey(day: number): string {
-    return addDaysToDateKey(today, 3 + day);
+    return shiftDateKey(today, 3 + day);
   }
 
   async function seedTodo(day: number, time: string, overrides: object = {}) {
     const date = dayKey(day);
-    const scheduledTime = parseLocalDateTime(date, time, SEOUL);
+    const scheduledTime = wallClockInstant(date, time, SEOUL);
     const [row] = await client
       .insert(todo)
       .values({
         ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
-        startDate: parseDateOnly(date),
+        startDate: Temporal.PlainDate.from(date),
         scheduledLocalTime: time,
         scheduledTime,
         isAllDay: false,
@@ -239,12 +255,8 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     if (job == null) {
       return;
     }
-    await processor.process({ name: job.name, ...toJobEnvelope(job.data) });
+    await processor.process(todoReminderJobSchema.parse(job.data));
     await boss.complete(TODO_REMINDER_QUEUE, job.id);
-  }
-
-  function toJobEnvelope(data: unknown): object {
-    return typeof data === "object" && data != null ? data : {};
   }
 
   function moveTo(todoId: number, day: number, time: string | null) {
@@ -252,7 +264,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       id: todoId,
       userId,
       schedule: {
-        startDate: parseDateOnly(dayKey(day)),
+        startDate: Temporal.PlainDate.from(dayKey(day)),
         endDate: null,
         scheduledTime: time,
         isAllDay: time == null,
@@ -427,10 +439,11 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         timezone: SEOUL,
         repeatFrequency: "DAILY",
         repeatInterval: 1,
-        startDate: parseDateOnly(dayKey(0)),
+        startDate: Temporal.PlainDate.from(dayKey(0)),
         checklistTemplate: [],
-        nextOccurrenceDate: parseDateOnly(dayKey(3)),
+        nextOccurrenceDate: Temporal.PlainDate.from(dayKey(3)),
         generatedCount: 3,
+        updatedAt: nowInstant(),
       });
       return [
         await seedTodo(0, "10:00", { seriesId: SERIES_ID }),
@@ -497,7 +510,10 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
   it("같은 작업을 다시 처리하거나 동시에 처리해도 알림과 푸시는 하나다", async () => {
     // Given
     const id = await seedTodo(0, "10:00");
-    const job = { name: "send-reminder", data: { todoId: id, userId, stageLabel: "60min" } };
+    const job = {
+      name: "send-reminder",
+      data: { todoId: id, userId, stageLabel: "60min" },
+    } as const;
     // When
     await Promise.all([processor.process(job), processor.process(job), processor.process(job)]);
     await processor.process(job);
@@ -508,7 +524,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
   it("휴면 안내는 지금처럼 할 일마다 하나이고 단계 알림을 막지 않는다", async () => {
     // Given
     const id = await seedTodo(0, "10:00");
-    const paused = { name: "send-series-paused-notice", data: { todoId: id, userId } };
+    const paused = { name: "send-series-paused-notice", data: { todoId: id, userId } } as const;
     // When
     await processor.process(paused);
     await processor.process(paused);
@@ -619,8 +635,8 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         scheduledTime: null,
         isAllDay: true,
       });
-      const pastDate = addDaysToDateKey(today, -10);
-      const past = await seedTodo(0, "10:00", { startDate: parseDateOnly(pastDate) });
+      const pastDate = shiftDateKey(today, -10);
+      const past = await seedTodo(0, "10:00", { startDate: Temporal.PlainDate.from(pastDate) });
       const allDayRow = await seedLegacyRow(allDay, { stage: "60min", todoDate: dayKey(0) });
       const pastRow = await seedLegacyRow(past, { stage: "60min", todoDate: pastDate });
       // When

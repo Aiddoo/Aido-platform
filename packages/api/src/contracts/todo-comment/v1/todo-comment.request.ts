@@ -1,11 +1,13 @@
 import { z } from "zod";
 
+import { entityIdSchemaWithMessage } from "../../../common/entity-id.js";
 import {
   TODO_COMMENT_LIMITS,
   TODO_COMMENT_SORT,
 } from "../../../vocabulary/todo-comment.constants.js";
 
-export const todoCommentIdSchema = z.cuid("댓글 ID를 확인해주세요.").describe("댓글 ID (CUID)");
+export const todoCommentIdSchema =
+  entityIdSchemaWithMessage("댓글 ID를 확인해주세요.").describe("댓글 ID");
 
 export const todoCommentIdParamSchema = z
   .object({
@@ -14,7 +16,7 @@ export const todoCommentIdParamSchema = z
       .int("할 일 ID를 확인해주세요.")
       .positive("할 일 ID를 확인해주세요.")
       .describe("할 일 ID (양의 정수)"),
-    commentId: todoCommentIdSchema.describe("댓글 ID (CUID)"),
+    commentId: todoCommentIdSchema.describe("댓글 ID"),
   })
   .describe("할 일 댓글 경로 파라미터");
 

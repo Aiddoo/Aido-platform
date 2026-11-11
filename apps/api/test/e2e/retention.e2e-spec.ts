@@ -1,10 +1,7 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import {
-  RETENTION_CONFIG,
-  type RetentionConfigPort,
-} from "#api/modules/notification/application/ports/retention/retention-config.port";
+import { RetentionConfigPort } from "#api/modules/notification/retention/application/ports/retention-config.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   notification,
@@ -23,7 +20,7 @@ describe("신규 사용자 리텐션 V2 E2E", () => {
       treatmentPercent: 100,
     };
     ctx = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(RETENTION_CONFIG).useValue(config),
+      customizeBuilder: (builder) => builder.overrideProvider(RetentionConfigPort).useValue(config),
     });
   }, 60_000);
 
@@ -89,6 +86,7 @@ describe("신규 사용자 리텐션 V2 E2E", () => {
         email: "existing-retention@example.com",
         userTag: "EXIST001",
         status: "ACTIVE",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       })
       .returning();
     if (existing == null) {

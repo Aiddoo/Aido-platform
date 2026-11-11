@@ -1,9 +1,13 @@
 import type { AiDataSharingDecision } from "@aido/api/vocabulary";
 
-import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { resolveAiDataSharingConsent } from "../../domain/ai-data-sharing-consent.domain-service.js";
 import type { UserConsentRecord } from "../../domain/user-consent.constants.js";
+
+function toIsoStringOrNull(instant: Temporal.Instant | null): string | null {
+  return instant == null ? null : toIsoString(instant);
+}
 
 /** 시각은 ISO 문자열이고 기록이 없으면 null이다 */
 export interface ConsentView {
@@ -49,13 +53,13 @@ export function buildConsentView(consent: UserConsentRecord | null): ConsentView
   }
 
   return {
-    termsAgreedAt: toISOStringOrNull(consent.termsAgreedAt),
-    privacyAgreedAt: toISOStringOrNull(consent.privacyAgreedAt),
+    termsAgreedAt: toIsoStringOrNull(consent.termsAgreedAt),
+    privacyAgreedAt: toIsoStringOrNull(consent.privacyAgreedAt),
     agreedTermsVersion: consent.agreedTermsVersion,
-    marketingAgreedAt: toISOStringOrNull(consent.marketingAgreedAt),
-    marketingPushAgreedAt: toISOStringOrNull(consent.marketingPushAgreedAt),
+    marketingAgreedAt: toIsoStringOrNull(consent.marketingAgreedAt),
+    marketingPushAgreedAt: toIsoStringOrNull(consent.marketingPushAgreedAt),
     aiDataSharingDecision: resolveAiDataSharingConsent(consent).decision,
-    aiDataSharingAgreedAt: toISOStringOrNull(consent.aiDataSharingAgreedAt),
+    aiDataSharingAgreedAt: toIsoStringOrNull(consent.aiDataSharingAgreedAt),
     aiDataSharingConsentVersion: consent.aiDataSharingVersion,
   };
 }
@@ -67,7 +71,7 @@ export function buildAiDataSharingConsentView(
 ): AiDataSharingConsentView {
   return {
     aiDataSharingDecision: resolveAiDataSharingConsent(consent).decision,
-    aiDataSharingAgreedAt: toISOStringOrNull(consent.aiDataSharingAgreedAt),
+    aiDataSharingAgreedAt: toIsoStringOrNull(consent.aiDataSharingAgreedAt),
     aiDataSharingConsentVersion: answeredVersion,
   };
 }
@@ -75,22 +79,22 @@ export function buildAiDataSharingConsentView(
 /** 광고성 앱 푸시 동의 변경 응답 뷰. 철회면 처리한 서버 시각을 함께 준다. */
 export function buildMarketingPushConsentView(
   consent: UserConsentRecord,
-  processedAt: Date,
+  processedAt: Temporal.Instant,
 ): MarketingPushConsentView {
   return {
-    marketingPushAgreedAt: toISOStringOrNull(consent.marketingPushAgreedAt),
+    marketingPushAgreedAt: toIsoStringOrNull(consent.marketingPushAgreedAt),
     marketingPushWithdrawnAt:
-      consent.marketingPushAgreedAt == null ? toISOStringOrNull(processedAt) : null,
+      consent.marketingPushAgreedAt == null ? toIsoString(processedAt) : null,
   };
 }
 
 /** 마케팅 동의 변경 응답 뷰. 철회면 처리한 서버 시각을 함께 준다. */
 export function buildMarketingConsentView(
   consent: UserConsentRecord,
-  processedAt: Date,
+  processedAt: Temporal.Instant,
 ): MarketingConsentView {
   return {
-    marketingAgreedAt: toISOStringOrNull(consent.marketingAgreedAt),
-    marketingWithdrawnAt: consent.marketingAgreedAt == null ? toISOStringOrNull(processedAt) : null,
+    marketingAgreedAt: toIsoStringOrNull(consent.marketingAgreedAt),
+    marketingWithdrawnAt: consent.marketingAgreedAt == null ? toIsoString(processedAt) : null,
   };
 }

@@ -16,6 +16,7 @@ import {
 } from "#api/platform/database/database.client";
 import { verification } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { toAuthVerification, toVerificationRow } from "./auth-row.mapper.js";
 
@@ -43,26 +44,26 @@ export class DrizzleVerificationRepository extends AuthVerificationRepositoryPor
   }
 
   async findValidByUserIdAndType(
-    userId: string,
+    userId: UserId,
     type: VerificationType,
     now: Temporal.Instant,
   ): Promise<AuthVerification | null> {
     const row = await this.#db.query.verification.findFirst({
-      where: { userId, type, usedAt: { isNull: true }, expiresAt: { gt: now } },
+      where: { userId: userId.value, type, usedAt: { isNull: true }, expiresAt: { gt: now } },
       orderBy: { createdAt: "desc", id: "desc" },
     });
     return row == null ? null : toAuthVerification(row);
   }
 
   async countRecentByUserIdAndType(
-    userId: string,
+    userId: UserId,
     type: VerificationType,
     since: Temporal.Instant,
   ): Promise<number> {
     return this.#db.$count(
       verification,
       and(
-        eq(verification.userId, userId),
+        eq(verification.userId, userId.value),
         eq(verification.type, type),
         gte(verification.createdAt, since),
       ),
@@ -81,7 +82,7 @@ export class DrizzleVerificationRepository extends AuthVerificationRepositoryPor
   }
 
   async invalidateAllByUserIdAndType(
-    userId: string,
+    userId: UserId,
     type: VerificationType,
     now: Temporal.Instant,
   ): Promise<number> {
@@ -90,7 +91,7 @@ export class DrizzleVerificationRepository extends AuthVerificationRepositoryPor
       .set({ expiresAt: now })
       .where(
         and(
-          eq(verification.userId, userId),
+          eq(verification.userId, userId.value),
           eq(verification.type, type),
           isNull(verification.usedAt),
           gt(verification.expiresAt, now),
@@ -106,9 +107,9 @@ export class DrizzleVerificationRepository extends AuthVerificationRepositoryPor
       .set({ usedAt: input.at })
       .where(
         and(
-          eq(verification.id, input.id),
+          eq(verification.id, input.id.value),
           eq(verification.token, input.tokenHash),
-          eq(verification.userId, input.userId),
+          eq(verification.userId, input.userId.value),
           eq(verification.type, input.type),
           isNull(verification.usedAt),
           gt(verification.expiresAt, input.at),
@@ -120,10 +121,10 @@ export class DrizzleVerificationRepository extends AuthVerificationRepositoryPor
   }
 
   // 브루트포스 보호를 위해 호출자 트랜잭션(CLS)에 참여하지 않고 베이스 클라이언트로 독립 커밋한다
-  async incrementAttempts(verificationId: number): Promise<void> {
+  async incrementAttempts(verificationId: VerificationId): Promise<void> {
     await this.#baseDb
       .update(verification)
       .set({ attempts: sql`${verification.attempts} + 1` })
-      .where(eq(verification.id, verificationId));
+      .where(eq(verification.id, verificationId.value));
   }
 }

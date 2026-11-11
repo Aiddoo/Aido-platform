@@ -33,6 +33,8 @@ import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { memo, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
+import { I18nManager } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
 import type { FriendUser } from '../domains/friend.model';
@@ -47,6 +49,7 @@ const MIN_ITEM_WIDTH = 56;
 /** 이름 칸은 글자 배율이 커져도 한글 네 글자 정도가 보이게 넓힌다 */
 const LABEL_WIDTH_IN_EM = 4.5;
 const DIVIDER_HEIGHT = 32;
+const STRIP_PADDING = 16;
 const LOADING_ITEM_COUNT = 8;
 /** 가로 목록이라 1은 목록 폭 한 번. 끝에서 두 화면 앞에서 다음 페이지를 미리 부른다 */
 const END_REACHED_THRESHOLD = 2;
@@ -58,17 +61,20 @@ interface FriendStripProps {
   onInvite?: () => void;
   /** 사용자가 피드를 내리는 등 다른 일을 시작해 안내를 닫아야 할 때 */
   isHintDismissed?: boolean;
+  /** 먼저 뜰 자동 화면(알림 화면·새로운 기능)이 남았으면 false라 안내를 미룬다 */
+  shouldShowHint?: boolean;
 }
 
 /**
  * 피드 위에서 나와 친구를 골라 그 사람의 피드로 바꾸는 가로 친구 줄.
  * "나"는 왼쪽에 고정하고, 친구는 서버 순서(친구 목록 편집에서 정한 순서)대로 커서 페이지를 이어 붙인다.
  */
-export function FriendStrip({ onInvite, isHintDismissed }: FriendStripProps) {
+export function FriendStrip({ onInvite, isHintDismissed, shouldShowHint }: FriendStripProps) {
   const { t } = useTranslation('friend');
   const listRef = useRef<FlashListRef<FriendUser>>(null);
   const [isListLoaded, setIsListLoaded] = useState(false);
   const { width, height } = useFriendStripItemSize();
+  const edgeInsets = useStripEdgeInsets();
   const friendsQueryOptions = useGetFriendsInfiniteQueryOptions();
   // 아래에서 내 정보를 기다리며 멈추기 전에 친구 목록도 함께 받기 시작한다
   usePrefetchInfiniteQuery(friendsQueryOptions);
@@ -92,7 +98,7 @@ export function FriendStrip({ onInvite, isHintDismissed }: FriendStripProps) {
 
   return (
     <HStack align="start" style={{ height }}>
-      <Box pl={16} pr={ITEM_GAP}>
+      <Box pl={STRIP_PADDING + edgeInsets.start} pr={ITEM_GAP}>
         <FriendStrip.Item
           name={t('friendStrip.me')}
           profileImage={user.profileImage}
@@ -101,7 +107,11 @@ export function FriendStrip({ onInvite, isHintDismissed }: FriendStripProps) {
       </Box>
       <Divider />
       {friends.length === 0 ? (
-        <FriendStrip.Empty onInvite={onInvite} isHintDismissed={isHintDismissed} />
+        <FriendStrip.Empty
+          onInvite={onInvite}
+          isHintDismissed={isHintDismissed}
+          shouldShowHint={shouldShowHint}
+        />
       ) : (
         <>
           <FlashList
@@ -131,7 +141,7 @@ export function FriendStrip({ onInvite, isHintDismissed }: FriendStripProps) {
             onLoad={() => setIsListLoaded(true)}
             showsHorizontalScrollIndicator={false}
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingRight: 16 }}
+            contentContainerStyle={{ paddingRight: STRIP_PADDING + edgeInsets.end }}
           />
           <SelectedFriendReveal listRef={listRef} friends={friends} isListLoaded={isListLoaded} />
         </>
@@ -206,10 +216,11 @@ FriendStrip.Item = memo(function Item({
 
 FriendStrip.Loading = function Loading() {
   const { height } = useFriendStripItemSize();
+  const edgeInsets = useStripEdgeInsets();
 
   return (
     <HStack align="start" className="overflow-hidden" style={{ height }}>
-      <Box pl={16} pr={ITEM_GAP}>
+      <Box pl={STRIP_PADDING + edgeInsets.start} pr={ITEM_GAP}>
         <SkeletonCell />
       </Box>
       <Divider />
@@ -225,9 +236,16 @@ FriendStrip.Loading = function Loading() {
 FriendStrip.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['friend', 'common']);
   const { height } = useFriendStripItemSize();
+  const edgeInsets = useStripEdgeInsets();
 
   return (
-    <HStack px={16} gap={8} align="center" style={{ height }}>
+    <HStack
+      pl={STRIP_PADDING + edgeInsets.start}
+      pr={STRIP_PADDING + edgeInsets.end}
+      gap={8}
+      align="center"
+      style={{ height }}
+    >
       <Text size="b4" shade={6} numberOfLines={2} className="flex-1">
         {t('friend:list.loadFailed')}
       </Text>
@@ -243,7 +261,11 @@ FriendStrip.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
  * 친구가 없으면 "나" 옆에서 초대(초대를 못 쓰면 친구 찾기)로 이끈다. 칸 높이는 친구가 있을 때와 같다.
  * 말풍선은 첫 탭이 칸에 닿도록 통과시키고, 닫으면 계정마다 저장돼 다시 보이지 않는다.
  */
-FriendStrip.Empty = function Empty({ onInvite, isHintDismissed }: FriendStripProps) {
+FriendStrip.Empty = function Empty({
+  onInvite,
+  isHintDismissed,
+  shouldShowHint = true,
+}: FriendStripProps) {
   const { t } = useTranslation('friend');
   const { trackEvent } = useTrack();
   const push = useSingleTap(router.push);
@@ -260,6 +282,7 @@ FriendStrip.Empty = function Empty({ onInvite, isHintDismissed }: FriendStripPro
       description={hint}
       dismissKey={layoutKey}
       isDismissed={isHintDismissed}
+      shouldAutoOpen={shouldShowHint}
       placement="bottom"
       align="start"
       avoidCollisions
@@ -362,6 +385,7 @@ function SelectedFriendReveal({
 }) {
   const [selectedFriendId] = useFeedFriendId();
   const { width } = useFriendStripItemSize();
+  const { end: endInset } = useStripEdgeInsets();
   const hasRevealedRef = useRef(false);
   const selectedIndex = friends.findIndex((friend) => friend.id === selectedFriendId);
 
@@ -378,7 +402,8 @@ function SelectedFriendReveal({
       itemStart: list.getFirstItemOffset() + layout.x,
       itemWidth: layout.width,
       scrollOffset: list.getAbsoluteLastScrollOffset(),
-      viewportWidth: list.getWindowSize().width,
+      // 끝 레일 밑에 든 칸은 보이지 않는 것으로 친다
+      viewportWidth: list.getWindowSize().width - endInset,
       edgePeek: Math.round(width / 2),
     });
     if (offset != null) {
@@ -386,7 +411,7 @@ function SelectedFriendReveal({
       list.scrollToOffset({ offset, animated: hasRevealedRef.current });
     }
     hasRevealedRef.current = true;
-  }, [isListLoaded, listRef, selectedIndex, width]);
+  }, [isListLoaded, listRef, selectedIndex, width, endInset]);
 
   return null;
 }
@@ -494,4 +519,16 @@ function Divider() {
       }}
     />
   );
+}
+
+/**
+ * 줄은 iPhone Duo 세로 레일 밑까지 밀리고 내용만 레일을 피한다. 앞쪽 "나" 칸과 목록 끝 여백에 그쪽 inset을 더한다.
+ * 스타일의 left·right는 RTL에서 앞뒤로 바뀌므로 inset도 앞뒤로 바꿔 읽는다
+ */
+function useStripEdgeInsets() {
+  const insets = useSafeAreaInsets();
+
+  return I18nManager.isRTL
+    ? { start: insets.right, end: insets.left }
+    : { start: insets.left, end: insets.right };
 }

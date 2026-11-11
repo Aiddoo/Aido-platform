@@ -4,7 +4,7 @@ import {
   defineQueue,
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 
 import { NOTIFICATION_MILESTONES } from "../../domain/notification-milestone.constants.js";
 
@@ -44,10 +44,11 @@ export const NOTIFICATION_ENQUEUE_RETRY = {
   delayMs: 200,
 } as const;
 
-// receipt 정리는 실행 예산(45초) 안에서 끝나므로 1분마다 돌려도 겹치지 않는다
+// Expo는 발송 약 15분 뒤 receipt 확인을 권하고 조회 대상도 수락 15분 뒤부터라, 매분 돌면 할 일 없이 작업 행만 쌓인다.
+// 한 실행이 45초 예산 안에서 남은 ticket을 모두 이어 처리하므로 놓친 실행은 다음 실행이 받는다
 const PUSH_RECEIPT_SCHEDULE = {
   key: "push-receipts-scheduler",
-  cron: "* * * * *",
+  cron: "*/5 * * * *",
 } as const;
 
 const FollowNewJobDataSchema = z.object({

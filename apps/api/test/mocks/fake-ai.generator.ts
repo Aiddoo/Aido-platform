@@ -1,13 +1,13 @@
 import {
   AiGenerationError,
   type AiFailureKind,
-} from "#api/modules/ai-assistance/application/ports/generation/ai-generation.errors";
+} from "#api/modules/ai-assistance/generation/application/ai-generation.errors";
 import type {
   AiGenerationRequest,
   AiGenerationResult,
   AiGeneratorPort,
-} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
-import type { TodoDraft } from "#api/modules/ai-assistance/domain/types/parsing/todo-draft.types";
+} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+import type { TodoDraft } from "#api/modules/ai-assistance/shared/domain/todo-draft.constants";
 import { createTodoDraftResponse, type TodoDraftInput } from "#test/fixtures/ai-response.fixture";
 
 export interface FakeAiGeneratorOptions {
@@ -44,52 +44,52 @@ export function createAiGenerationError(kind: AiFailureKind): AiGenerationError 
 
 /** 업체 체인 없이 정해 둔 응답을 스키마로 검증해 돌려주는 생성기. */
 export class FakeAiGenerator implements AiGeneratorPort {
-  private _responses: unknown[] = [];
-  private _defaultResponse: TodoDraft = createTodoDraftResponse();
-  private readonly _initialResponse: TodoDraft;
-  private readonly _initialAvailable: boolean;
-  private readonly _initialDelayMs: number;
-  private _callHistory: CallRecord[] = [];
-  private _isAvailable = true;
-  private _failureError: Error | null | undefined = undefined;
-  private _delayMs = 0;
-  private _tokenUsage: FakeTokenUsage = DEFAULT_TOKEN_USAGE;
+  #responses: unknown[] = [];
+  #defaultResponse: TodoDraft = createTodoDraftResponse();
+  readonly #initialResponse: TodoDraft;
+  readonly #initialAvailable: boolean;
+  readonly #initialDelayMs: number;
+  #callHistory: CallRecord[] = [];
+  #isAvailable = true;
+  #failureError: Error | null | undefined = undefined;
+  #delayMs = 0;
+  #tokenUsage: FakeTokenUsage = DEFAULT_TOKEN_USAGE;
 
   constructor(options?: FakeAiGeneratorOptions) {
     if (options?.defaultResponse) {
-      this._defaultResponse = createTodoDraftResponse({
-        ...this._defaultResponse,
+      this.#defaultResponse = createTodoDraftResponse({
+        ...this.#defaultResponse,
         ...options.defaultResponse,
       });
     }
     if (options?.defaultAvailable !== undefined) {
-      this._isAvailable = options.defaultAvailable;
+      this.#isAvailable = options.defaultAvailable;
     }
     if (options?.defaultDelayMs !== undefined) {
-      this._delayMs = options.defaultDelayMs;
+      this.#delayMs = options.defaultDelayMs;
     }
-    this._initialResponse = structuredClone(this._defaultResponse);
-    this._initialAvailable = this._isAvailable;
-    this._initialDelayMs = this._delayMs;
+    this.#initialResponse = structuredClone(this.#defaultResponse);
+    this.#initialAvailable = this.#isAvailable;
+    this.#initialDelayMs = this.#delayMs;
   }
 
   async generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
-    this._callHistory.push({
+    this.#callHistory.push({
       system: request.system,
       prompt: request.prompt,
       request,
       timestamp: new Date(),
     });
-    if (this._delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, this._delayMs));
+    if (this.#delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, this.#delayMs));
     }
-    if (!this._isAvailable) {
+    if (!this.#isAvailable) {
       throw createAiGenerationError("UNAVAILABLE");
     }
-    if (this._failureError !== undefined) {
-      throw this._failureError ?? new Error("AI parsing failed");
+    if (this.#failureError !== undefined) {
+      throw this.#failureError ?? new Error("AI parsing failed");
     }
-    const response = this._responses.shift() ?? structuredClone(this._defaultResponse);
+    const response = this.#responses.shift() ?? structuredClone(this.#defaultResponse);
     return {
       output: request.schema.parse(response),
       provider: "google",
@@ -97,11 +97,11 @@ export class FakeAiGenerator implements AiGeneratorPort {
       attempts: 1,
       fallbackFrom: null,
       latencyMs: 0,
-      inputTokens: this._tokenUsage.input,
+      inputTokens: this.#tokenUsage.input,
       cachedInputTokens: 0,
       cacheWriteInputTokens: 0,
-      outputTokens: this._tokenUsage.output,
-      reasoningTokens: this._tokenUsage.reasoning,
+      outputTokens: this.#tokenUsage.output,
+      reasoningTokens: this.#tokenUsage.reasoning,
       estimatedCostMicroUsd: 0,
       finishReason: "stop",
     };
@@ -109,7 +109,7 @@ export class FakeAiGenerator implements AiGeneratorPort {
 
   /** 다음 parse-todo 응답(일정 표현). 다른 작업의 출력은 setRawResponse로 넣는다. */
   setResponse(response: TodoDraftInput): this {
-    this._responses.push(createTodoDraftResponse({ ...this._defaultResponse, ...response }));
+    this.#responses.push(createTodoDraftResponse({ ...this.#defaultResponse, ...response }));
     return this;
   }
 
@@ -121,79 +121,79 @@ export class FakeAiGenerator implements AiGeneratorPort {
   }
 
   setDefaultResponse(response: TodoDraftInput): this {
-    this._defaultResponse = createTodoDraftResponse({ ...this._defaultResponse, ...response });
+    this.#defaultResponse = createTodoDraftResponse({ ...this.#defaultResponse, ...response });
     return this;
   }
 
   /** false면 보낼 수 있는 업체가 없는 것처럼 UNAVAILABLE을 던진다. */
   setAvailable(available: boolean): this {
-    this._isAvailable = available;
+    this.#isAvailable = available;
     return this;
   }
 
   /** 다음 호출부터 이 오류(없으면 출력 검증 실패와 같은 일반 오류)를 던진다. */
   setInvalidResponse(error?: Error): this {
-    this._failureError = error ?? null;
+    this.#failureError = error ?? null;
     return this;
   }
 
   setDelay(ms: number): this {
-    this._delayMs = ms;
+    this.#delayMs = ms;
     return this;
   }
 
   setTokenUsage(usage: Partial<FakeTokenUsage>): this {
-    this._tokenUsage = { ...this._tokenUsage, ...usage };
+    this.#tokenUsage = { ...this.#tokenUsage, ...usage };
     return this;
   }
 
   getCallCount(): number {
-    return this._callHistory.length;
+    return this.#callHistory.length;
   }
 
   getLastPrompt(): string | undefined {
-    return this._callHistory.at(-1)?.prompt;
+    return this.#callHistory.at(-1)?.prompt;
   }
 
   getLastSystem(): string | undefined {
-    return this._callHistory.at(-1)?.system;
+    return this.#callHistory.at(-1)?.system;
   }
 
   getLastRequest(): AiGenerationRequest<unknown> | undefined {
-    return this._callHistory.at(-1)?.request;
+    return this.#callHistory.at(-1)?.request;
   }
 
   getCallHistory(): CallRecord[] {
-    return [...this._callHistory];
+    return [...this.#callHistory];
   }
 
   getCall(index: number): CallRecord | undefined {
-    return this._callHistory[index];
+    return this.#callHistory[index];
   }
 
   setRawResponse(response: Record<string, unknown>): this {
-    this._responses.push(structuredClone(response));
+    this.#responses.push(structuredClone(response));
     return this;
   }
 
   clear(): this {
-    this._responses = [];
-    this._callHistory = [];
-    this._defaultResponse = structuredClone(this._initialResponse);
-    this._isAvailable = this._initialAvailable;
-    this._failureError = undefined;
-    this._delayMs = this._initialDelayMs;
-    this._tokenUsage = DEFAULT_TOKEN_USAGE;
+    this.#responses = [];
+    this.#callHistory = [];
+    this.#defaultResponse = structuredClone(this.#initialResponse);
+    this.#isAvailable = this.#initialAvailable;
+    this.#failureError = undefined;
+    this.#delayMs = this.#initialDelayMs;
+    this.#tokenUsage = DEFAULT_TOKEN_USAGE;
     return this;
   }
 
   clearHistory(): this {
-    this._callHistory = [];
+    this.#callHistory = [];
     return this;
   }
 
   clearResponses(): this {
-    this._responses = [];
+    this.#responses = [];
     return this;
   }
 }

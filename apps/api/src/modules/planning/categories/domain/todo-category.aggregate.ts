@@ -4,7 +4,6 @@ import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 import { CategoryColor } from "./category-color.vo.js";
 import { CategoryName } from "./category-name.vo.js";
 import { TodoCategoryId } from "./todo-category-id.vo.js";
-import { TodoCategoryUpdatedEvent } from "./todo-category-updated.event.js";
 
 export interface TodoCategoryPrimitives {
   readonly id: number;
@@ -34,11 +33,7 @@ interface CreateTodoCategoryParams {
   readonly now: Temporal.Instant;
 }
 
-export class TodoCategory extends AggregateRoot<
-  TodoCategoryId,
-  TodoCategoryProps,
-  TodoCategoryUpdatedEvent
-> {
+export class TodoCategory extends AggregateRoot<TodoCategoryId, TodoCategoryProps> {
   static create(params: CreateTodoCategoryParams): TodoCategory {
     return new TodoCategory(params.id, {
       userId: params.userId,
@@ -90,7 +85,6 @@ export class TodoCategory extends AggregateRoot<
     this.props.name = name;
     this.props.color = color;
     this.props.updatedAt = now;
-    this.raise(new TodoCategoryUpdatedEvent(this.props.userId.value, this.id.value));
     return true;
   }
 

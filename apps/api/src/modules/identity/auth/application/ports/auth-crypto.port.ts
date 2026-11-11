@@ -1,5 +1,9 @@
 import type { UserRole } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { SessionId } from "../../domain/session-id.vo.js";
+
 export abstract class AuthPasswordHasherPort {
   abstract hash(password: string): Promise<string>;
   abstract verify(hash: string, password: string): Promise<boolean>;
@@ -14,9 +18,9 @@ export interface TokenPair {
 
 export abstract class AuthTokenIssuerPort {
   abstract generateTokenPair(
-    userId: string,
+    userId: UserId,
     email: string,
-    sessionId: string,
+    sessionId: SessionId,
     role: UserRole,
     tokenFamily?: string,
     tokenVersion?: number,

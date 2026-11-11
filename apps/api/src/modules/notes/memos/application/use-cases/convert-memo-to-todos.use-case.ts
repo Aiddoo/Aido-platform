@@ -1,14 +1,13 @@
+import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
 import type {
   CreateTodoData,
   StagedTodoCreation,
   StagedTodoCreatorPort,
 } from "#api/modules/planning/todos/planning-todos.public";
+import { TodoLockKeys } from "#api/modules/planning/todos/planning-todos.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-} from "#api/shared/application/ports/mutation-lock.port";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { SavepointRunnerPort } from "#api/shared/application/ports/savepoint-runner.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -68,16 +67,15 @@ export class ConvertMemoToTodosUseCase {
 
     const outcome = await unitOfWork.run<ConversionOutcome>(async () => {
       await mutationLock.acquire([
-        MemoLockKeys.memo(memoId),
-        MemoLockKeys.sortOrder(userId),
-        MutationLockKeys.todoCategory(command.userId),
-        MutationLockKeys.todoSortOrder(command.userId),
+        ...MemoLockKeys.existingMemo(memoId, userId),
+        TodoCategoryLockKeys.userCategories(command.userId),
+        TodoLockKeys.sortOrder(command.userId),
       ]);
       const memo = await memoRepository.findByIdAndUserId(memoId, userId);
       if (memo == null) {
         throw memoNotFound(memoId);
       }
-      const staged = await this.#stageInOrder(command);
+      const staged = await this.#stageInOrder(command, userId);
       if (staged.kind === "failed") {
         return staged;
       }
@@ -98,7 +96,10 @@ export class ConvertMemoToTodosUseCase {
     return outcome.todos;
   }
 
-  async #stageInOrder(command: ConvertMemoToTodosCommand): Promise<ConversionOutcome> {
+  async #stageInOrder(
+    command: ConvertMemoToTodosCommand,
+    userId: UserId,
+  ): Promise<ConversionOutcome> {
     const { savepointRunner, afterCommit, todoCreator } = this.#dependencies;
     const todos: ConvertedTodo[] = [];
     for (const draft of command.todos) {
@@ -106,7 +107,7 @@ export class ConvertMemoToTodosUseCase {
         const staged = await savepointRunner.run(() =>
           todoCreator.stage({
             ...draft,
-            userId: command.userId,
+            userId,
             timezone: command.timezone,
             isAllDay: draft.isAllDay ?? true,
             visibility: draft.visibility ?? "PUBLIC",

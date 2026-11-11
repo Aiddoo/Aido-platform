@@ -1,3 +1,4 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -65,7 +66,8 @@ class FailingNotificationRepository extends InMemoryNotificationRepository {
 }
 
 class HangingNotificationCache extends PassThroughNotificationCache {
-  override invalidateUnreadCount(userId: string): Promise<void> {
+  override invalidateUnreadCount(user: UserId): Promise<void> {
+    const userId = user.value;
     this.invalidatedUnreadCountUserIds.push(userId);
     return new Promise(() => undefined);
   }

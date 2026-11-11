@@ -7,13 +7,12 @@ import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/
 import { CategoryColor } from "./category-color.vo.js";
 import { CategoryName } from "./category-name.vo.js";
 import { TodoCategoryId } from "./todo-category-id.vo.js";
-import { TodoCategoryUpdatedEvent } from "./todo-category-updated.event.js";
 import { TodoCategory } from "./todo-category.aggregate.js";
 
 const LATER = TODO_FIXTURE_NOW.add({ hours: 1 });
 
 describe("TodoCategory", () => {
-  it("만들면 두 시각이 지금이고 이벤트가 없다", () => {
+  it("만들면 두 시각이 지금이다", () => {
     // Given
     const params = {
       id: TodoCategoryId.reconstitute(3),
@@ -37,7 +36,6 @@ describe("TodoCategory", () => {
       createdAt: TODO_FIXTURE_NOW,
       updatedAt: TODO_FIXTURE_NOW,
     });
-    expect(category.pullDomainEvents()).toEqual([]);
   });
 
   it("복원한 값을 그대로 꺼낸다", () => {
@@ -65,10 +63,9 @@ describe("TodoCategory", () => {
       color: "#FFB3B3",
       updatedAt: TODO_FIXTURE_NOW,
     });
-    expect(category.pullDomainEvents()).toEqual([]);
   });
 
-  it("이름이나 색상이 바뀌면 true이고 수정 시각과 수정 이벤트를 남긴다", () => {
+  it("이름이나 색상이 바뀌면 true이고 수정 시각을 남긴다", () => {
     // Given
     const category = createTodoCategoryFixture({ id: 7 });
 
@@ -82,12 +79,9 @@ describe("TodoCategory", () => {
       color: "#FF0000",
       updatedAt: LATER,
     });
-    expect(category.pullDomainEvents()).toEqual([
-      new TodoCategoryUpdatedEvent(TODO_FIXTURE_USER_ID, 7),
-    ]);
   });
 
-  it("같은 이름·색상이면 false이고 시각·이벤트가 그대로다", () => {
+  it("같은 이름·색상이면 false이고 시각이 그대로다", () => {
     // Given
     const category = createTodoCategoryFixture();
 
@@ -97,6 +91,5 @@ describe("TodoCategory", () => {
     // Then
     expect(changed).toBe(false);
     expect(category.toPrimitives().updatedAt).toEqual(TODO_FIXTURE_NOW);
-    expect(category.pullDomainEvents()).toEqual([]);
   });
 });

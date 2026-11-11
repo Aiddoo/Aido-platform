@@ -1,10 +1,12 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import { PushQuietHoursReader } from "./push-quiet-hours.reader.js";
 
 function createReader(timezones: Readonly<Record<string, string>>) {
   return new PushQuietHoursReader({
     userSettings: {
-      getPreferenceRecordsByUserIds: async (userIds) =>
-        userIds.flatMap((userId) => {
+      getPreferenceRecordsByUserIds: async (users) =>
+        users.flatMap(({ value: userId }) => {
           const timezone = timezones[userId];
           if (timezone == null) {
             return [];
@@ -42,11 +44,11 @@ describe("PushQuietHoursReader", () => {
       losAngeles: "America/Los_Angeles",
       legacyUtc: "UTC",
     });
-    const at = new Date("2028-02-26T17:00:00.000Z");
+    const at = Temporal.Instant.from("2028-02-26T17:00:00.000Z");
 
     // When
     const quiet = await reader.findUsersInQuietHours(
-      ["seoul", "losAngeles", "legacyUtc", "missing"],
+      ["seoul", "losAngeles", "legacyUtc", "missing"].map((userId) => UserId.reconstitute(userId)),
       at,
     );
 
@@ -71,7 +73,10 @@ describe("PushQuietHoursReader", () => {
     const reader = createReader({ losAngeles: "America/Los_Angeles" });
 
     // When
-    const result = await reader.findUsersInQuietHours(["losAngeles"], new Date(at));
+    const result = await reader.findUsersInQuietHours(
+      [UserId.reconstitute("losAngeles")],
+      Temporal.Instant.from(at),
+    );
 
     // Then
     expect(result.has("losAngeles")).toBe(quiet);

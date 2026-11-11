@@ -1,12 +1,7 @@
 import { ANIMATION } from '@src/shared/constants/animation';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
-import {
-  type DateFormatContext,
-  formatDateKeyLabel,
-  formatDateLabel,
-} from '@src/shared/date/date-format';
+import { type DateFormatContext, formatDateLabel } from '@src/shared/date/date-format';
 import { getDayOfWeek, isSameMonthDateKey } from '@src/shared/date/date-key';
-import { formatWeekOfMonthLabel } from '@src/shared/date/date-labels';
 import { toDateKey } from '@src/shared/date/instant';
 import {
   addLocalDays,
@@ -17,15 +12,11 @@ import {
   toLocalDay,
 } from '@src/shared/date/local-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, getPrimaryPaneWidth, HStack, Result, Text, VStack } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
-import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
-import { PressableFeedback, Tabs } from 'heroui-native';
+import { Box, HStack, Result, Text, usePaneColumns, VStack } from '@src/shared/ui';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { type LayoutChangeEvent, useWindowDimensions } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing,
   ReduceMotion,
@@ -33,28 +24,17 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { useReservedRegions } from 'react-native-reserved-regions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
 import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
-import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-params';
+import { useFeedDate } from '../../hooks/use-feed-params';
 import type { CompletionsByDate } from '../../queries/todo.queries';
-import {
-  type CalendarViewMode,
-  calendarViewModeSchema,
-} from '../../schemas/calendar-view-mode-storage.schema';
 import { getMonthViewDayState } from '../../utils/calendar-day';
-import {
-  diffWeeks,
-  getMonthWeeks,
-  getWeekDates,
-  getWeekStart,
-  shiftCalendarDate,
-} from '../../utils/calendar-grid';
+import { diffWeeks, getMonthWeeks, getWeekDates, getWeekStart } from '../../utils/calendar-grid';
 import { clampCalendarPage } from '../../utils/calendar-pager.geometry';
 import { CALENDAR_DATE_CELL_HEIGHT, CalendarDateCell } from './calendar-date-cell';
-import { CalendarNavigation } from './calendar-navigation';
+import { CalendarHeader } from './calendar-header';
 import { CALENDAR_CENTER_PAGE, CALENDAR_TOTAL_PAGES, CalendarPager } from './calendar-pager';
 import { CalendarWeekdayHeader } from './calendar-weekday-header';
 
@@ -72,11 +52,7 @@ interface CalendarProps {
 }
 
 export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarProps) {
-  const { t } = useTranslation('common');
-  const [selectedDate, setSelectedDate] = useFeedDate();
-  const today = useToday();
   const [viewMode] = useCalendarViewMode();
-  const { timeZone } = useDateFormatContext();
   const [pageWidth, handlePagerLayout] = useCalendarPageWidth();
 
   const pagerHeight = match(viewMode)
@@ -84,33 +60,9 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
     .with('month', () => MONTH_WEEKS * CALENDAR_DATE_CELL_HEIGHT)
     .exhaustive();
 
-  const handlePrevious = () =>
-    setSelectedDate(shiftCalendarDate({ viewMode, date: selectedDate, step: -1, timeZone }));
-  const handleNext = () =>
-    setSelectedDate(shiftCalendarDate({ viewMode, date: selectedDate, step: 1, timeZone }));
-
   return (
     <VStack className="bg-white" gap={8}>
-      {/* 좁은 pane·큰 글자에서는 보기 전환·이동 버튼을 다음 줄 오른쪽으로 내려 잘리지 않게 한다 */}
-      <HStack className="flex-wrap gap-y-2 px-4 py-2" justify="between" align="center">
-        <HStack gap={8} align="center" className="min-w-0 shrink">
-          <CalendarHeaderText />
-          <PressableFeedback
-            onPress={() => setSelectedDate(today)}
-            hitSlop={8}
-            className="px-2 py-0.5 bg-gray-2 rounded-full"
-          >
-            <Text size="e1" weight="medium" shade={7}>
-              {t('dateSections.today')}
-            </Text>
-          </PressableFeedback>
-        </HStack>
-
-        <HStack gap={8} align="center" className="ml-auto">
-          <CalendarViewModeTabs />
-          <CalendarNavigation onPrevious={handlePrevious} onNext={handleNext} />
-        </HStack>
-      </HStack>
+      <CalendarHeader />
 
       <CalendarWeekdayHeader />
 
@@ -134,21 +86,15 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
 
 /** 주·월을 바꿔도 다시 재지 않도록 달력이 쪽 너비를 잰다. 재기 전에는 목록 pane 폭으로 어림해 첫 프레임부터 7칸이 맞는다 */
 function useCalendarPageWidth() {
-  const windowSizeClass = useWindowSizeClass();
-  const { width: windowWidth } = useWindowDimensions();
-  const fold = findVerticalFold(useReservedRegions());
+  const { primaryWidth } = usePaneColumns();
   const insets = useSafeAreaInsets();
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
-  const paneWidth =
-    windowSizeClass === 'compact'
-      ? windowWidth
-      : getPrimaryPaneWidth({ windowSizeClass, foldFrame: fold?.frame });
 
   const handleLayout = (event: LayoutChangeEvent) => {
     setMeasuredWidth(event.nativeEvent.layout.width);
   };
 
-  return [measuredWidth ?? paneWidth - insets.left - insets.right, handleLayout] as const;
+  return [measuredWidth ?? primaryWidth - insets.left - insets.right, handleLayout] as const;
 }
 
 interface CalendarHeightTransitionProps {
@@ -167,63 +113,6 @@ function CalendarHeightTransition({ height, children }: CalendarHeightTransition
   const animatedStyle = useAnimatedStyle(() => ({ height: animatedHeight.get() }));
 
   return <Animated.View style={[{ overflow: 'hidden' }, animatedStyle]}>{children}</Animated.View>;
-}
-
-function CalendarViewModeTabs() {
-  const { t } = useTranslation('todo');
-  const [viewMode, setViewMode] = useCalendarViewMode();
-
-  return (
-    <Tabs
-      value={viewMode}
-      onValueChange={(next) => setViewMode(calendarViewModeSchema.parse(next))}
-    >
-      <Tabs.List className="gap-0 rounded-lg bg-gray-2">
-        <Tabs.Indicator className="rounded-md bg-white shadow-none" />
-        <CalendarViewModeTrigger value="week">{t('calendar.week')}</CalendarViewModeTrigger>
-        <CalendarViewModeTrigger value="month">{t('calendar.month')}</CalendarViewModeTrigger>
-      </Tabs.List>
-    </Tabs>
-  );
-}
-
-function CalendarViewModeTrigger({
-  value,
-  children,
-}: {
-  value: CalendarViewMode;
-  children: string;
-}) {
-  return (
-    <Tabs.Trigger value={value} hitSlop={4} className="p-0">
-      {({ isSelected }) => (
-        // 저장된 보기로 앱을 켜면 Tabs.Indicator가 그려지지 않을 때가 있어 선택 배경을 칸에도 둔다
-        <Box className={cn('h-[22px] justify-center rounded-md px-2.5', isSelected && 'bg-white')}>
-          <Text size="e1" weight="medium" shade={isSelected ? 9 : 5}>
-            {children}
-          </Text>
-        </Box>
-      )}
-    </Tabs.Trigger>
-  );
-}
-
-function CalendarHeaderText() {
-  const [viewMode] = useCalendarViewMode();
-  const [selectedDateKey] = useFeedDateKey();
-  const todayDateKey = useTodayKey();
-  const dateFormatContext = useDateFormatContext();
-
-  const headerText = match(viewMode)
-    .with('week', () => formatWeekOfMonthLabel(selectedDateKey, todayDateKey, dateFormatContext))
-    .with('month', () => formatDateKeyLabel(selectedDateKey, 'yearMonth', dateFormatContext))
-    .exhaustive();
-
-  return (
-    <Text size="b1" weight="semibold" className="shrink">
-      {headerText}
-    </Text>
-  );
 }
 
 interface CalendarWeekPagerProps {

@@ -9,7 +9,8 @@ import {
   userConsent,
   userPreference,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import {
   createE2eApp,
@@ -20,8 +21,8 @@ import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-const now = new Date("2026-12-01T02:00:00.000Z");
-const cutoff = new Date("2024-12-01T02:00:00.000Z");
+const now = Temporal.Instant.from("2026-12-01T02:00:00.000Z");
+const cutoff = Temporal.Instant.from("2024-12-01T02:00:00.000Z");
 
 describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -37,7 +38,7 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
     context = await createE2eApp({ testDatabase: database });
     reconfirm = context.module.get(ReconfirmMarketingConsentsUseCase);
     access = context.module.get(MarketingConsentReconfirmPort);
-    unitOfWork = context.module.get(UNIT_OF_WORK);
+    unitOfWork = context.module.get(UnitOfWorkPort);
   });
 
   beforeEach(async () => {
@@ -84,20 +85,20 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
   it("동의한 지 2년이 지난 사용자에게만 한 번 알리고 재확인 시각을 남긴다", async () => {
     // Given
     const due = await givenUser("RECONF01", {
-      marketingPushAgreedAt: new Date("2024-11-08T16:00:00.000Z"),
+      marketingPushAgreedAt: Temporal.Instant.from("2024-11-08T16:00:00.000Z"),
     });
     const recent = await givenUser("RECONF02", {
-      marketingAgreedAt: new Date("2025-06-01T00:00:00.000Z"),
+      marketingAgreedAt: Temporal.Instant.from("2025-06-01T00:00:00.000Z"),
     });
     const reconfirmedLastYear = await givenUser("RECONF03", {
-      marketingAgreedAt: new Date("2023-01-01T00:00:00.000Z"),
-      marketingReconfirmedAt: new Date("2025-12-01T00:00:00.000Z"),
+      marketingAgreedAt: Temporal.Instant.from("2023-01-01T00:00:00.000Z"),
+      marketingReconfirmedAt: Temporal.Instant.from("2025-12-01T00:00:00.000Z"),
     });
     const withdrawn = await givenUser("RECONF04", {});
     const deleted = await givenUser(
       "RECONF05",
-      { marketingAgreedAt: new Date("2023-01-01T00:00:00.000Z") },
-      { deletedAt: new Date("2026-11-01T00:00:00.000Z") },
+      { marketingAgreedAt: Temporal.Instant.from("2023-01-01T00:00:00.000Z") },
+      { deletedAt: Temporal.Instant.from("2026-11-01T00:00:00.000Z") },
     );
 
     // When
@@ -129,8 +130,8 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
   it("마지막 재확인에서 2년이 지나면 다시 알린다", async () => {
     // Given
     const userId = await givenUser("RECONF06", {
-      marketingAgreedAt: new Date("2020-01-01T00:00:00.000Z"),
-      marketingReconfirmedAt: new Date("2024-11-30T00:00:00.000Z"),
+      marketingAgreedAt: Temporal.Instant.from("2020-01-01T00:00:00.000Z"),
+      marketingReconfirmedAt: Temporal.Instant.from("2024-11-30T00:00:00.000Z"),
     });
 
     // When
@@ -143,24 +144,51 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
     );
   });
 
+  it("10:00 KST가 현지 야간인 사용자는 남겨 두었다가 현지 낮의 매시 실행에서 알린다", async () => {
+    // Given: 런던은 10:00 KST(01:00Z)에 01:00, 19:00 KST(10:00Z)에 10:00이다
+    const userId = await givenUser("RECONF08", {
+      marketingAgreedAt: Temporal.Instant.from("2023-01-01T00:00:00.000Z"),
+    });
+    await client
+      .update(userPreference)
+      .set({ timezone: "Europe/London" })
+      .where(eq(userPreference.userId, userId));
+
+    // When
+    const atTenKst = await reconfirm.execute({
+      now: Temporal.Instant.from("2026-12-01T01:00:00.000Z"),
+    });
+    const atLondonMorning = await reconfirm.execute({
+      now: Temporal.Instant.from("2026-12-01T10:00:00.000Z"),
+    });
+
+    // Then
+    expect(atTenKst.notifiedCount).toBe(0);
+    expect(atLondonMorning.notifiedCount).toBe(1);
+    expect(await reconfirmNotices(userId)).toHaveLength(1);
+  });
+
   it("두 실행이 같은 사용자를 동시에 표시하면 행 잠금 뒤 한 실행만 얻는다", async () => {
     // Given
     const userId = await givenUser("RECONF07", {
-      marketingAgreedAt: new Date("2023-01-01T00:00:00.000Z"),
+      marketingAgreedAt: Temporal.Instant.from("2023-01-01T00:00:00.000Z"),
     });
     const firstClaimed = Promise.withResolvers<void>();
     const releaseFirst = Promise.withResolvers<void>();
 
     // When
     const first = unitOfWork.run(async () => {
-      const claimed = await access.claimMarketingReconfirm([userId], { cutoff, at: now });
+      const claimed = await access.claimMarketingReconfirm([UserId.reconstitute(userId)], {
+        cutoff,
+        at: now,
+      });
       firstClaimed.resolve();
       await releaseFirst.promise;
       return claimed;
     });
     await firstClaimed.promise;
     const second = unitOfWork.run(() =>
-      access.claimMarketingReconfirm([userId], { cutoff, at: now }),
+      access.claimMarketingReconfirm([UserId.reconstitute(userId)], { cutoff, at: now }),
     );
     try {
       await vi.waitFor(

@@ -38,7 +38,7 @@ export class SetMemoPinnedUseCase {
     const memoId = MemoId.reconstitute(command.memoId);
 
     const { memo, isChanged } = await unitOfWork.run(async () => {
-      await mutationLock.acquire([MemoLockKeys.memo(memoId)]);
+      await mutationLock.acquire(MemoLockKeys.existingMemo(memoId, userId));
       const found = await memoRepository.findByIdAndUserId(memoId, userId);
       if (found == null) {
         throw memoNotFound(memoId);

@@ -5,7 +5,8 @@ import {
 } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import type { WeatherDayPart } from "../../../domain/services/reminders/weather-briefing.policy.js";
+import type { WeatherDayPart } from "#api/modules/weather/forecasts/weather-forecasts.public";
+
 import type {
   NotificationCopy,
   NotificationCopyCatalog,

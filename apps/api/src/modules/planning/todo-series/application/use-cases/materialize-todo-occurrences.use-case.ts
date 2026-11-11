@@ -56,7 +56,7 @@ export class MaterializeTodoOccurrencesUseCase {
     }
     const { todoRepository } = this.#dependencies;
     const userId = series.userId.value;
-    const maxSortOrder = await todoRepository.getMaxSortOrder(userId);
+    const maxSortOrder = await todoRepository.getMaxSortOrder(series.userId);
     // 회차 id를 한 문장으로 먼저 받는다
     const ids = await todoRepository.nextIds(drafts.length);
     const created = await todoRepository.insertOccurrences(
@@ -64,7 +64,7 @@ export class MaterializeTodoOccurrencesUseCase {
         const id = ids[index];
         return id == null ? [] : [{ ...draft, id, sortOrder: maxSortOrder + 1 + index }];
       }),
-      series.id.value,
+      series.id,
       series.checklistTemplate,
     );
     await this.#dependencies.todoReminder.scheduleReminders(

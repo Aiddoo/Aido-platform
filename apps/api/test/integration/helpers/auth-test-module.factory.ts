@@ -3,6 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
 import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   AuthCachePort,
@@ -36,19 +38,17 @@ import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
-import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
+import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE } from "#api/platform/database/database.client";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { createMockCacheService } from "#test/mocks/cache-test-utils";
+import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import {
   createDatabaseTransactionFixture,
   type TestDatabaseClient,
@@ -119,7 +119,7 @@ export async function createAuthTestModule(
             unlinkOAuthAccountProvider,
             DrizzleOAuthStateRepository,
             { provide: AuthOAuthStateRepositoryPort, useExisting: DrizzleOAuthStateRepository },
-            { provide: AuthRuntimeConfigPort, useExisting: TypedConfigService },
+            { provide: AuthRuntimeConfigPort, useValue: { allowsDevRedirects: false } },
             { provide: OAuthIdentityProviderRegistryPort, useValue: options.oauthProviderRegistry },
           ]),
       registerProvider,
@@ -173,12 +173,13 @@ export async function createAuthTestModule(
       },
       { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
       { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
-      { provide: AuthEmailSenderPort, useExisting: TransactionalEmailSender },
+      { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
       AuthCacheAdapter,
       { provide: AuthCachePort, useExisting: AuthCacheAdapter },
+      { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
       {
         provide: AuthRegistrationNotifierPort,
-        useExisting: AdminEventNotifier,
+        useExisting: AdminEventNotifierPort,
       },
       DrizzleUserConsentRepository,
       DrizzleUserPreferenceRepository,
@@ -210,45 +211,12 @@ export async function createAuthTestModule(
         },
       },
       {
-        provide: TransactionalEmailSender,
+        provide: SendTransactionalEmailUseCase,
         useValue: fakeEmailService,
       },
       {
-        provide: CacheService,
-        useFactory: () => {
-          const cache = createMockCacheService();
-          cache.wrap.mockImplementation((_key, _schema, factory) => factory());
-          return cache;
-        },
-      },
-      {
-        provide: CACHE_SERVICE,
-        useValue: {
-          get: async () => undefined,
-          set: async () => {},
-          del: async () => {},
-        },
-      },
-      {
-        provide: TypedConfigService,
-        useValue: {
-          get: (key: string) => {
-            const config: Record<string, string> = {
-              JWT_SECRET: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-              JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
-              JWT_REFRESH_SECRET:
-                process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-              JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-            };
-            return config[key];
-          },
-          jwtSecret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-          jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
-          jwtRefreshSecret:
-            process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-          jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-          isDevelopment: false,
-        },
+        provide: CacheStorePort,
+        useValue: new NoCacheStore(),
       },
       {
         provide: ConfigService,
@@ -266,7 +234,7 @@ export async function createAuthTestModule(
         },
       },
       {
-        provide: AdminEventNotifier,
+        provide: AdminEventNotifierPort,
         useValue: {
           notifyUserRegistered: () => {},
           notifySubscriptionEvent: () => {},

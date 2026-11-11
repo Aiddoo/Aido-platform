@@ -1,7 +1,10 @@
 import type { DeviceType, SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { AccountProvider, UserStatus } from "../../domain/auth.constants.js";
+import type { SessionId } from "../../domain/session-id.vo.js";
 
 export interface AuthCachedUserProfile {
   id: string;
@@ -37,12 +40,12 @@ export interface AuthCachedSession {
 }
 
 export abstract class AuthCachePort {
-  abstract getSession(sessionId: string): Promise<AuthCachedSession | undefined>;
-  abstract setSession(sessionId: string, session: AuthCachedSession): Promise<void>;
-  abstract invalidateSession(sessionId: string): Promise<void>;
-  abstract invalidateUserProfile(userId: string): Promise<void>;
+  abstract getSession(sessionId: SessionId): Promise<AuthCachedSession | undefined>;
+  abstract setSession(sessionId: SessionId, session: AuthCachedSession): Promise<void>;
+  abstract invalidateSession(sessionId: SessionId): Promise<void>;
+  abstract invalidateUserProfile(userId: UserId): Promise<void>;
   abstract wrapUserProfile(
-    userId: string,
+    userId: UserId,
     factory: () => Promise<AuthCachedUserProfile | undefined>,
   ): Promise<AuthCachedUserProfile | undefined>;
 }
@@ -87,7 +90,8 @@ export abstract class AuthRegistrationNotifierPort {
 }
 
 export abstract class AuthRuntimeConfigPort {
-  abstract readonly isDevelopment: boolean;
+  /** 개발 빌드의 OAuth 복귀 주소(aido-dev://·localhost·exp://)를 받는다. 스테이징·운영은 false다 */
+  abstract readonly allowsDevRedirects: boolean;
 }
 
 export abstract class AuthUserActivityWriterPort {
@@ -96,7 +100,7 @@ export abstract class AuthUserActivityWriterPort {
    * 요청 헤더가 없는 예약 작업이 사용자의 앱이 지원하는 동작을 고를 수 있게 한다.
    */
   abstract updateLastActiveAt(activity: {
-    readonly userId: string;
+    readonly userId: UserId;
     readonly timezone: string;
     readonly seenAt: Temporal.Instant;
     readonly appVersion?: string;

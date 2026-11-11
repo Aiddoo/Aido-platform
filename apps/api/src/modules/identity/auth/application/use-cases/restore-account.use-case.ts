@@ -34,7 +34,7 @@ export class RestoreAccountUseCase {
     }
     await this.#dependencies.userRepository.saveAccountStatus(input.user);
     await this.#dependencies.securityLogRepository.create({
-      userId: input.user.id.value,
+      userId: input.user.id,
       event: SECURITY_EVENT.ACCOUNT_RESTORED,
       ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
       userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,

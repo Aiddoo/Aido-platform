@@ -1,4 +1,9 @@
-import { evaluateRuntimeSample, RUNTIME_THRESHOLDS, type RuntimeSample } from "./runtime-stats.js";
+import {
+  evaluateRuntimeSample,
+  newlyBreached,
+  RUNTIME_THRESHOLDS,
+  type RuntimeSample,
+} from "./runtime-stats.js";
 
 const MB = 1024 * 1024;
 
@@ -54,7 +59,7 @@ describe("evaluateRuntimeSample — 런타임 포화 판정", () => {
 
   it("풀 대기가 사라지면 시작 시각을 지운다", () => {
     // When
-    const result = evaluateRuntimeSample(sample(), { poolWaitingSinceMs: 1_000 });
+    const result = evaluateRuntimeSample(sample(), { poolWaitingSinceMs: 1000 });
 
     // Then
     expect(result.poolWaitingSinceMs).toBeNull();
@@ -80,5 +85,33 @@ describe("evaluateRuntimeSample — 런타임 포화 판정", () => {
 
     // Then
     expect(result.breaches.some((breach) => breach.kind === "heap-usage")).toBe(breached);
+  });
+});
+
+describe("newlyBreached — 같은 포화의 경보 반복 막기", () => {
+  it("직전 표본에서 이미 넘어 있던 종류는 다시 경보하지 않고 새로 넘은 것만 고른다", () => {
+    // Given
+    const previous = new Set(["heap-usage"] as const);
+    const breaches = [
+      { kind: "heap-usage", details: { heapUsedBytes: 1 } },
+      { kind: "event-loop-delay", details: { eventLoopDelayP99Ms: 250 } },
+    ] as const;
+
+    // When
+    const fresh = newlyBreached(previous, breaches);
+
+    // Then
+    expect(fresh.map((breach) => breach.kind)).toEqual(["event-loop-delay"]);
+  });
+
+  it("기준 아래로 내려갔다가 다시 넘으면 다시 경보한다", () => {
+    // Given
+    const recovered = new Set<never>();
+
+    // When
+    const fresh = newlyBreached(recovered, [{ kind: "heap-usage", details: { heapUsedBytes: 1 } }]);
+
+    // Then
+    expect(fresh).toHaveLength(1);
   });
 });

@@ -22,7 +22,7 @@ import { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.j
 import { RevokePremiumGrantUseCase } from "./revoke-premium-grant.use-case.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
-const DAY = 24 * 60 * 60 * 1_000;
+const DAY = 24 * 60 * 60 * 1000;
 
 function setup(grants: PremiumGrant[]) {
   const premiumGrantRepository = new InMemoryPremiumGrantRepository(grants);

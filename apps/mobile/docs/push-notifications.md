@@ -27,7 +27,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 
 1. OS 권한을 읽는다. iOS 임시 허용(`PROVISIONAL`·`EPHEMERAL`)은 모두 `PROVISIONAL`로 바꾼다. 알림이 조용히 도착하므로 허용으로 본다.
 2. Android 알림 채널은 어댑터가 권한 창을 띄우기 전과 토큰을 받기 전에 만든다. Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 실패해도 권한은 읽고 보고한다.
-3. 허용 상태(`GRANTED`·`PROVISIONAL`)면 Expo 푸시 토큰을 받는다. `Device.isDevice`로 막지 않는다. Expo SDK 58에서는 시뮬레이터·에뮬레이터도 토큰을 받을 수 있다. 오프라인·APNs 없음·Play 서비스 없음으로 실패하면 토큰 없이 권한만 보고한다.
+3. 허용 상태(`GRANTED`·`PROVISIONAL`)면 Expo 푸시 토큰을 받는다. `Device.isDevice`로 막지 않는다. Expo SDK 58에서는 시뮬레이터·에뮬레이터도 토큰을 받을 수 있다. 오프라인·APNs 없음·Play 서비스 없음·15초 초과로 실패하면 마지막으로 보고에 성공한 토큰(키체인 `pushRegistration`)으로 보고해 등록을 지키면서 권한·시간대·언어를 맞춘다. 한 번도 토큰을 받지 못한 허용 기기는 `token: null`로 보고한다. 지울 토큰이 없고, 1.15.1 서버는 허용 상태의 `null`에 저장된 토큰을 지킨다(이 앱은 그 서버 뒤에 나간다). 다음 복귀·토큰 변경·권한 요청 때 토큰을 다시 받는다. 거절·미결정이면 토큰 없이 권한만 보고한다. 판단은 `PushRegistrationPolicy.getReportToken`이다.
 4. `PUT /v1/notifications/push-devices/{deviceId}`로 `{ permission, token, payloadVersion }`을 보낸다. 같은 값을 이번 세션에 이미 보냈으면 요청하지 않는다(`force`로 무시). 웹은 보내지 않는다.
 
 ## 보고 시점
@@ -43,7 +43,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 | 권한 요청 직후             | 바뀐 권한을 바로 보고한다. 실패해도 요청 결과는 그대로 돌려준다        |
 
 - 보고 중에 다시 불리면 끝난 뒤 한 번만 더 보낸다.
-- 권한·토큰이 같아도 시간대가 다르면 다시 보낸다. 요청이 없는 화면에 돌아와도 서버 시간대가 바로 바뀐다. 보고가 성공하면 `useTimezoneChangeNotice`가 처음 알아챈 변경을 한 번 안내한다.
+- 권한·토큰이 같아도 마지막으로 보고한 시간대·언어와 다르면 다시 보낸다. 앱이 뒤에 있는 사이 바뀐 언어의 보고가 실패해도 다음 복귀 때 한 번 다시 보낸다. 시간대·언어는 계정 하나에 마지막으로 보고한 기기 값을 쓴다(기기별 값은 1.15.2에서 다룬다). 요청이 없는 화면에 돌아와도 서버 시간대가 바로 바뀐다. 보고가 성공하면 `useTimezoneChangeNotice`가 처음 알아챈 변경을 한 번 안내한다.
 - 요청 헤더(`X-Request-Id`·`X-Timezone`·`Accept-Language`)는 `shared/infra/http/request-headers.ts`가 요청마다 붙인다.
 
 ## 권한 묻기
@@ -67,14 +67,37 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 - 혜택·소식(광고성) 제안은 첫 할 일 완료 뒤 시트 한 번이다(`useOfferMarketingPushAfterCompletion`). 기기 알림과 앱 푸시가 켜져 있을 때만 띄우고, 거절하면 계정마다 90일 뒤 다시 제안한다.
 - 분석 이벤트는 [observability.md](../.claude/observability.md#푸시-권한-퍼널)를 본다.
 
+## 앱이 앞에 있을 때 받은 알림
+
+`registerForegroundNotificationPresentation`이 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고, `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `PushNotificationPolicy.getForegroundPresentation` 하나다.
+
+| 지금 화면                                                         | 보이는 방식                           | 이유                                                                     |
+| ----------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
+| 알림함(`/notifications`)                                          | `quiet`: 배너·소리 없이 알림 센터에만 | 받을 때마다 알림함을 다시 받아 맨 위에 바로 보인다                       |
+| 알림이 여는 화면 + 받을 때 다시 받는 타입(친구·초대·콕·혜택 종료) | `quiet`                               | `invalidateOnNotificationReceived`가 그 화면을 다시 받는다               |
+| 알림이 여는 화면 + 다시 받지 않는 타입(리마인드·댓글·날씨 등)     | `banner`                              | 화면에 새 내용이 보이지 않는다                                           |
+| 그 밖의 화면, 모르는 타입, 계약에 맞지 않는 data, 판단 실패       | `banner`: 배너·목록·소리              | 앱이 뒤에 있을 때와 같게 알린다. 판단 전(그려지기 전)에 온 알림도 배너다 |
+
+- "여는 화면"은 경로와 보는 대상 id(할 일·친구·콕)가 모두 같을 때다. 날짜·진입 경로·댓글 위치(`date`·`entry`·`comment`)는 비교하지 않는다(`isViewingNotificationDestination`).
+- 어느 쪽이든 받은 즉시 알림함·안 읽은 수와 그 타입의 화면을 다시 받는다(`useForegroundNotificationSync`). 배지는 그 수를 따른다.
+- `shouldSetBadge`는 끈다. 배지는 안 읽은 수 조회 하나가 맞춘다.
+
 ## 로그아웃과 배지
 
 - 로그아웃은 `PushDeviceService.unregister()`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고를 모두 제한 시간 안에서 기다리고, 해제가 시작되면 늦은 보고는 보내지 않는다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`logOutDevice`).
-- 오프라인 로그아웃은 온라인이 되면 `POST v1/auth/logout`으로 서버 세션을 풀고, 서버가 `releaseSessions`로 그 세션의 기기를 함께 푼다([오프라인 로그아웃](authentication_guide.md#오프라인-로그아웃)). 기록이 만료되면(24시간) refresh 만료 또는 다음 로그인의 소유권 이전까지 이전 계정 알림이 올 수 있다.
+- 오프라인 로그아웃은 온라인이 되면 `POST v1/auth/logout`으로 서버 세션을 풀고, 서버가 `releaseSessions`로 그 세션의 기기를 함께 푼다([오프라인 로그아웃](authentication_guide.md#오프라인-로그아웃)).
+- 온라인 로그아웃 없이 세션이 끝나면 서버는 끝난 세션의 토큰을 지우지 않아 이전 계정의 푸시가 계속 온다. 그래서 refresh 만료·거절(`reason: 'expired'`), 오프라인 로그아웃, 인증 해제(`DELETE`)가 실패한 로그아웃은 `PushDeviceService.requestRelease()`로 기기에 해제 기록을 남기고 `POST v1/notifications/push-devices/unregister`(인증 없음, `{ deviceId, token }`, 항상 200)로 푼다. 토큰은 마지막으로 보고한 토큰과 지금 Expo 토큰이고, 보고한 뒤 바뀌었으면 둘 다 보낸다(`PushRegistrationPolicy.getReleaseTokens`).
+  - 연결·서버 장애·429·토큰 발급 실패면 기록을 남겨 로그아웃 상태에서 연결될 때와 앱이 앞으로 올 때 다시 보낸다(`usePushDeviceReleaseFlush`). 앱을 다시 켜도 기록(키체인 `pushRegistration`, 토큰을 담아 평문 MMKV에 두지 않는다)이 남는다. 화면을 막지 않는다.
+  - 이 API가 없는 이전 서버(404)는 다시 보내도 같아 조용히 끝낸다.
+  - 다시 로그인해 보고하면 해제 기록을 버리고, 가는 중인 해제가 있으면 끝난 뒤에 보고해 새 등록이 지워지지 않는다. 같은 값도 다시 보고하도록 보고 기록을 비운다.
+  - 로그인한 적 없는 시작(`none`)과 판정 실패(`boot-failed`)는 등록을 건드리지 않는다. 잠긴 키체인처럼 세션이 살아 있을 수 있어서다.
 - 탈퇴는 앱이 해제하지 않는다. 서버 탈퇴가 전 세션과 기기를 함께 푼다. 탈퇴 전에 풀면 비밀번호 오류에도 이 기기의 알림이 끊긴다.
-- 앱 아이콘 배지는 읽지 않은 알림 수에 맞춘다. 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 지우지 않는다. 로그아웃(`unauthenticated`)일 때만 지운다(`NotificationBadgeService.syncBadge`).
+- 앱 아이콘 배지는 알림함의 안 읽은 수 조회(`useGetUnreadCountQueryOptions`) 하나를 따른다. `NotificationProvider`의 `useNotificationBadgeSync`가 로그인한 동안 이 조회를 구독해, 앱이 앞으로 올 때(`focusManager`, `staleTime: 0`)·다시 연결될 때·푸시 수신과 읽음 처리의 무효화·낙관적 수정 때마다 배지를 그 수로 맞춘다. 그래서 다른 기기에서 읽거나 받은 알림도 이 기기를 열면 배지에 반영된다. 배지만 따로 서버에 묻지 않는다. 읽음 처리(`NOTIFICATION_MUTATION_KEYS.writes()`)는 실패하면 그 알림만 안 읽음으로 되돌리고, 마지막 처리가 끝날 때만 다시 받아 배지가 앞 처리의 값으로 깜빡이지 않는다.
+- 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 배지를 건드리지 않고, 로그아웃(`unauthenticated`)일 때만 지운다(`NotificationBadgePolicy.getBadgeCount`).
 
 ## 눌린 푸시 처리
+
+탭은 읽음(`markAsReadAndCheckOwnership`)과 열림(`POST …/opened`, 읽음 포함)을 기존 API로 남기고, 이동한 뒤 `push_notification_opened`를 한 번 보낸다. `app_state`는 `NotificationResponsePolicy.getOpenAppState`가 정한다. 시작할 때 읽은 마지막 응답은 `cold`, 앱이 뒤에 있었거나 앞으로 온 지 1초 안이면 `background`(응답과 복귀 이벤트의 순서가 플랫폼마다 다르다), 그 밖은 `foreground`다. 개인 정보는 보내지 않는다.
 
 Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNotificationResponse`와 응답 리스너를 받아 슬롯에 넣고, 처리 뒤 `clearLastNotificationResponse`로 재시작 중복을 막는다. 푸시는 URL을 싣지 않으므로 `+native-intent`는 관여하지 않는다.
 
@@ -83,6 +106,7 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 | 인증 확인 중(`loading`·`locked`) | 슬롯에 둔다. `locked`는 스피너로 넘기고 잠금이 풀리면 이어간다                                                                                                        |
 | 로그아웃 상태                    | 슬롯에 둔다(10분). 로그인 뒤 같은 Index 경로로 한 번만 연다                                                                                                           |
 | 연속 두 탭                       | 슬롯이 하나라 마지막 탭만 연다. 앞 탭의 늦은 읽음 응답은 버린다                                                                                                       |
+| 같은 탭이 다시 옴                | 처리한 응답 id를 최근 20개 기억해(`HandledResponsePolicy.rememberHandledResponse`) 콜드 스타트의 마지막 응답·리스너 중복·다시 그린 레이아웃에도 한 번만 연다          |
 | 로그아웃·세션 만료               | 슬롯과 마지막 응답을 지운다. 진행 중 응답은 `SessionEpoch`와 슬롯 id로 버린다                                                                                         |
 | 다른 계정 알림·없는 대상         | 읽음이 403·404면 버리고 머문다. 페이로드에 수신자 id가 없어 이것이 유일한 방어다                                                                                      |
 | 오프라인·5xx·읽음 지연           | `NOTIFICATION_READ_BUDGET_MS`(800ms, 초깃값, Release 측정 뒤 확정) 안에 끝내고 연다. 서버의 `opened`가 읽음도 처리하므로 mutation이 연결될 때까지 멈췄다가 재시도한다 |
@@ -90,11 +114,11 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 | 모르는 타입, `navigation` 없음   | 알림 목록으로 연다                                                                                                                                                    |
 | 서버의 새 kind, 틀린 모양        | 계약이 `navigation`만 버려 구 필드로 간다                                                                                                                             |
 | 수신 거부 버튼                   | 인증 없이 공개 API로 보낸다. 다음 탭에 밀리지 않게 슬롯을 따로 두고 실패하면 포그라운드 복귀 때 다시 보낸다(10분)                                                     |
-| 알림함 항목                      | DTO에 `navigation`이 없어 영구히 구 필드로 간다                                                                                                                       |
+| 알림함 항목                      | 서버(1.15.1+)가 푸시와 같은 계산으로 싣는 `navigation`을 따른다. 서버가 고르지 못한 항목은 구 필드로 간다                                                             |
 
 ### 목적지 대조
 
-구 필드 경로는 알림함이 영구히 쓰므로 지우지 않는다. `packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽어 31개 타입과 19개 kind를 묶는다. 앱은 compact·medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서 두 경로가 같은 곳으로 가는지 본다.
+구 필드 경로는 `navigation`이 없는 푸시와 서버가 목적지를 고르지 못한 알림함 항목이 쓰므로 지우지 않는다. `packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽어 31개 타입과 19개 kind를 묶는다. 앱은 compact·medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서 두 경로가 같은 곳으로 가는지 본다.
 
 서버가 만들지 않는 입력에서만 나는 차이는 `knownDifference`로 적고, 실제로 다른지 테스트한다.
 

@@ -240,8 +240,8 @@ async function provisionFixtureActor(input: {
   ownerId: string;
   jwtSecret: string;
 }): Promise<FixtureActor> {
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
+  const now = Temporal.Now.instant();
+  const expiresAt = now.add({ hours: 1 });
   const provisioned = await input.db.transaction(async (transaction) => {
     const [storedUser] = await transaction
       .insert(user)
@@ -250,6 +250,7 @@ async function provisionFixtureActor(input: {
         userTag: input.person.userTag,
         status: "ACTIVE",
         emailVerifiedAt: now,
+        updatedAt: now,
       })
       .onConflictDoUpdate({
         target: user.email,
@@ -258,6 +259,7 @@ async function provisionFixtureActor(input: {
           status: "ACTIVE",
           emailVerifiedAt: now,
           deletedAt: null,
+          updatedAt: now,
         },
       })
       .returning();
@@ -282,10 +284,10 @@ async function provisionFixtureActor(input: {
     for (const { followerId, followingId } of friendshipDirections) {
       await transaction
         .insert(follow)
-        .values({ followerId, followingId, status: "ACCEPTED" })
+        .values({ followerId, followingId, status: "ACCEPTED", updatedAt: now })
         .onConflictDoUpdate({
           target: [follow.followerId, follow.followingId],
-          set: { status: "ACCEPTED" },
+          set: { status: "ACCEPTED", updatedAt: now },
         });
     }
 
@@ -305,6 +307,7 @@ async function provisionFixtureActor(input: {
         userAgent: FIXTURE_SESSION_USER_AGENT,
         ipAddress: "127.0.0.1",
         expiresAt,
+        updatedAt: now,
       })
       .returning();
 
@@ -334,8 +337,8 @@ async function provisionTodoOwnerActor(input: {
   };
   jwtSecret: string;
 }): Promise<AuthenticatedActor> {
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
+  const now = Temporal.Now.instant();
+  const expiresAt = now.add({ hours: 1 });
   const ownerName = z.string().min(1).parse(input.owner.profile?.name);
   const ownerSession = await input.db.transaction(async (transaction) => {
     // 실제 앱 세션은 건드리지 않고 이 fixture가 만든 owner 세션만 교체합니다.
@@ -359,6 +362,7 @@ async function provisionTodoOwnerActor(input: {
         userAgent: FIXTURE_OWNER_SESSION_USER_AGENT,
         ipAddress: "127.0.0.1",
         expiresAt,
+        updatedAt: now,
       })
       .returning();
     return requireRecord(stored);

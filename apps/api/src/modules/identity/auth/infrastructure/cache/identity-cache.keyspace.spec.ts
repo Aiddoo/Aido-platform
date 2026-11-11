@@ -3,7 +3,7 @@ import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billi
 import { IDENTITY_CACHE_TTL_MS, userProfileTtlMs } from "./identity-cache.keyspace.js";
 
 const AT = new Date("2026-11-03T00:00:00.000Z");
-const SECOND_MS = 1_000;
+const SECOND_MS = 1000;
 
 function isoAfter(ms: number): string {
   return new Date(AT.getTime() + ms).toISOString();

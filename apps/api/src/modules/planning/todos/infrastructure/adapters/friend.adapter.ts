@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { FOLLOW_READER, type FollowReaderPort } from "#api/modules/social/social-friends.public";
+import { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { FriendPort } from "../../application/ports/friend.port.js";
 
@@ -12,7 +13,7 @@ export class FriendAdapter implements FriendPort {
   >;
 
   constructor(
-    @Inject(FOLLOW_READER)
+    @Inject(FollowReaderPort)
     followReader: Pick<
       FollowReaderPort,
       "isMutualFriend" | "getMutualFriendIds" | "getUserDisplayName"
@@ -21,15 +22,15 @@ export class FriendAdapter implements FriendPort {
     this.#followReader = followReader;
   }
 
-  isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
+  isMutualFriend(userId: UserId, targetUserId: UserId): Promise<boolean> {
     return this.#followReader.isMutualFriend(userId, targetUserId);
   }
 
-  getMutualFriendIds(userId: string): Promise<string[]> {
+  getMutualFriendIds(userId: UserId): Promise<string[]> {
     return this.#followReader.getMutualFriendIds(userId);
   }
 
-  getUserDisplayName(userId: string): Promise<string> {
+  getUserDisplayName(userId: UserId): Promise<string> {
     return this.#followReader.getUserDisplayName(userId);
   }
 }

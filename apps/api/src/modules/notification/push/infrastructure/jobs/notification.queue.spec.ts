@@ -36,7 +36,7 @@ describe("알림 큐 계약", () => {
       schedules: [
         {
           key: "push-receipts-scheduler",
-          cron: "* * * * *",
+          cron: "*/5 * * * *",
           missed: "skip",
           payload: { name: NotificationJobName.PUSH_RECEIPTS, data: {} },
         },

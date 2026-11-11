@@ -1,4 +1,3 @@
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { InMemoryNotificationDedupLock } from "#test/doubles/notification/in-memory-notification-dedup-lock";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -73,7 +72,7 @@ describe("SendNotificationWithDedupUseCase — 중복 방지 알림 발송", () 
     const recent = createInboxNotificationFixture({
       type: "FOLLOW_NEW",
       friendId: "friend-1",
-      createdAt: instantToDate(NOTIFICATION_FIXTURE_NOW.subtract({ hours: 23 })),
+      createdAt: NOTIFICATION_FIXTURE_NOW.subtract({ hours: 23 }),
     });
     const { useCase, sendNotification, dedupLock } = setup([recent]);
 
@@ -92,13 +91,13 @@ describe("SendNotificationWithDedupUseCase — 중복 방지 알림 발송", () 
       id: 1,
       type: "FOLLOW_NEW",
       friendId: "friend-1",
-      createdAt: instantToDate(NOTIFICATION_FIXTURE_NOW.subtract({ hours: 25 })),
+      createdAt: NOTIFICATION_FIXTURE_NOW.subtract({ hours: 25 }),
     });
     const otherFriend = createInboxNotificationFixture({
       id: 2,
       type: "FOLLOW_NEW",
       friendId: "friend-2",
-      createdAt: instantToDate(NOTIFICATION_FIXTURE_NOW),
+      createdAt: NOTIFICATION_FIXTURE_NOW,
     });
     const { useCase, sendNotification, dedupLock } = setup([stale, otherFriend]);
 

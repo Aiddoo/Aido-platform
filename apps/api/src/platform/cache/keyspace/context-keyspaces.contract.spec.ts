@@ -5,24 +5,24 @@ import {
 import {
   DAILY_COMPLETION_CACHE_TTL_MS,
   DailyCompletionCacheKey,
-} from "#api/modules/insights/infrastructure/cache/daily-completions/daily-completion-cache.keyspace";
+} from "#api/modules/insights/daily-completions/infrastructure/cache/daily-completion.keyspace";
 import {
   NOTIFICATION_CACHE_TTL_MS,
   NotificationCacheKey,
 } from "#api/modules/notification/inbox/infrastructure/cache/notification-cache.keyspace";
 import {
-  ReminderCacheKey,
-  REMINDER_CACHE_TTL_MS,
-} from "#api/modules/notification/infrastructure/cache/reminders/reminder-cache.keyspace";
-import {
-  SCHEDULER_DEDUP_TTL_MS,
-  SchedulerDedupKey,
-} from "#api/modules/notification/infrastructure/cache/reminders/scheduler-dedup.keyspace";
-import {
   NOTIFICATION_DEDUP_SENTINEL,
   NOTIFICATION_DEDUP_TTL_MS,
   notificationDedupKey,
 } from "#api/modules/notification/push/infrastructure/cache/notification-dedup.keyspace";
+import {
+  ReminderCacheKey,
+  REMINDER_CACHE_TTL_MS,
+} from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
+import {
+  SCHEDULER_DEDUP_TTL_MS,
+  SchedulerDedupKey,
+} from "#api/modules/notification/reminders/infrastructure/cache/scheduler-dedup.keyspace";
 import {
   TodoCategoryCacheKey,
   TODO_CATEGORY_CACHE_TTL_MS,
@@ -34,11 +34,11 @@ import {
 import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
+} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
 import {
   WEATHER_CACHE_TTL_MS,
   WeatherCacheKey,
-} from "#api/modules/weather/infrastructure/cache/forecast/weather-cache.keyspace";
+} from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.keyspace";
 
 describe("Bounded Context별 cache keyspace 계약", () => {
   it("기존 키와 전환한 날짜별 Weather 키를 명시한다", () => {
@@ -63,8 +63,8 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(WeatherCacheKey.conditions(60, 127, "2026-04-01")).toBe(
       "aido:v1:weather:conditions:60:127:2026-04-01",
     );
-    expect(TodoCacheKey.friendTodosFirstPage("user-1", "-", "-", 20)).toBe(
-      "aido:v1:todo:friend-view-v1:user-1:-:-:20",
+    expect(TodoCacheKey.friendTodosFirstPageVersioned("user-1", "generation-1", "-", "-", 20)).toBe(
+      "aido:v1:todo:friend-view-v2:user-1:generation-1:-:-:20",
     );
     expect(
       DailyCompletionCacheKey.range("user-1", "generation-1", "2026-01-01", "2026-01-31"),
@@ -72,7 +72,7 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(NotificationCacheKey.pushTokens("user-1")).toBe(
       "aido:v1:notification:push-tokens:user-1",
     );
-    expect(notificationDedupKey("MORNING_REMINDER", new Date("2026-01-01T00:00:00.000Z"))).toBe(
+    expect(notificationDedupKey("MORNING_REMINDER", Temporal.PlainDate.from("2026-01-01"))).toBe(
       "aido:v1:notification:dedup-notified:MORNING_REMINDER:2026-01-01",
     );
     expect(SchedulerDedupKey.winbackStages("user-1")).toBe(

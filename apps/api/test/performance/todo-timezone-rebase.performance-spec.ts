@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
-import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
+import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
@@ -16,7 +16,8 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
+import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
+import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
@@ -67,10 +68,10 @@ describe("시간대 재계산 규모 측정", () => {
         max: 3,
       });
       const transaction = createDatabaseTransactionFixture(client);
-      const runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, {
-        job: { shutdownTimeoutMs: 10_000 },
+      const jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
+        shutdownTimeoutMs: 10_000,
       });
-      await runtime.start();
+      await jobQueue.start();
       try {
         const user = UserFixture.create({
           id: createEntityId(),
@@ -117,16 +118,18 @@ describe("시간대 재계산 규모 측정", () => {
           FROM generate_series(1, 1000) AS n`);
         }
         await client.execute(sql`ANALYZE "Todo"`);
-        const reminders = new ReminderSchedulerAdapter(new TodoReminderSchedulerAdapter(runtime));
+        const reminders = new ReminderSchedulerAdapter(
+          new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
+        );
         const useCase = new RebaseTodoTimezoneUseCase({
           clock: new DateClock(),
-          todoRepository: new DrizzleTodoRepository(transaction.txHost),
-          seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost),
+          todoRepository: new DrizzleTodoRepository(transaction.txHost, new DateClock()),
+          seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost, new DateClock()),
           ownerTimezone: {
             findTimezone: async (id) => {
               const row = await transaction.txHost.tx.query.userPreference.findFirst({
                 columns: { timezone: true },
-                where: { userId: id },
+                where: { userId: id.value },
               });
               return row?.timezone ?? null;
             },
@@ -182,7 +185,7 @@ describe("시간대 재계산 규모 측정", () => {
         expect(result.rebasedCount).toBe(seriesCount * days + historyRows);
         expect(repeated.rebasedCount).toBe(0);
       } finally {
-        await runtime.stop();
+        await jobQueue.stop();
         await database.stop();
       }
     },

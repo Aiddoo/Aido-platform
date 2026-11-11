@@ -203,5 +203,5 @@ export interface CreateNotificationData {
   metadata?: NotificationMetadataInput | null;
 
   /** 중복 방지용 알림 날짜 (DAILY_COMPLETE, FRIEND_COMPLETED에서 사용) */
-  notificationDate?: Date | null;
+  notificationDate?: Temporal.PlainDate | null;
 }

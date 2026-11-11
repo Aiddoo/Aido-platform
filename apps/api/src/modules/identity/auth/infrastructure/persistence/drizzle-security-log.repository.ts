@@ -20,7 +20,7 @@ export class DrizzleSecurityLogRepository extends AuthSecurityLogRepositoryPort 
 
   async create(entry: NewSecurityLog): Promise<void> {
     await this.#txHost.tx.insert(securityLog).values({
-      userId: entry.userId,
+      userId: entry.userId?.value,
       event: entry.event,
       ipAddress: entry.ipAddress,
       userAgent: entry.userAgent,

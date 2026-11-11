@@ -1,7 +1,9 @@
 import type { PushPermissionStatus } from "@aido/api/vocabulary";
 
 import { PushDeviceRepositoryPort } from "#api/modules/notification/push/application/ports/push-device.repository.port";
+import type { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
 import { PushDevice } from "#api/modules/notification/push/domain/push-device.aggregate";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 type DeviceKey = `${string}:${string}`;
 
@@ -35,11 +37,11 @@ export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
   }
 
   async releasePushDeviceHeldElsewhere(
-    userId: string,
-    deviceId: string,
+    userId: UserId,
+    deviceId: PushDeviceId,
   ): Promise<{ readonly userIds: readonly string[] }> {
     return this.#deleteWhere(
-      (device) => device.id.value === deviceId && device.userId.value !== userId,
+      (device) => device.id.equals(deviceId) && !device.userId.equals(userId),
     );
   }
 
@@ -48,11 +50,14 @@ export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
     this.#devices.set(keyOf(device.userId.value, device.id.value), stored);
   }
 
-  async deletePushDevice(userId: string, deviceId: string): Promise<void> {
+  async deletePushDevice(user: UserId, device: PushDeviceId): Promise<void> {
+    const userId = user.value;
+    const deviceId = device.value;
     this.#devices.delete(keyOf(userId, deviceId));
   }
 
-  async deleteAllPushDevicesByUser(userId: string): Promise<void> {
+  async deleteAllPushDevicesByUser(user: UserId): Promise<void> {
+    const userId = user.value;
     await this.#deleteWhere((device) => device.userId.value === userId);
   }
 
@@ -65,9 +70,10 @@ export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
   }
 
   async findPermissionStatusesByUsers(
-    userIds: readonly string[],
+    users: readonly UserId[],
     reportedSince: Temporal.Instant,
   ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>> {
+    const userIds = users.map((user) => user.value);
     const statusesByUser = new Map<string, PushPermissionStatus[]>();
     for (const device of this.#devices.values()) {
       const userId = device.userId.value;

@@ -2,7 +2,6 @@ import type { Provider } from "@nestjs/common";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -35,12 +34,10 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
   { provide: TodoSeriesOwnerPort, useClass: TodoSeriesOwnerAdapter },
   provideUseCase(PublishTodoCreationUseCase, {
     todoCache: TodoCachePort,
-    eventPublisher: DomainEventPublisherPort,
     logger: loggerFor(PublishTodoCreationUseCase),
   }),
   provideUseCase(PublishTodoSeriesEditUseCase, {
     todoCache: TodoCachePort,
-    eventPublisher: DomainEventPublisherPort,
     logger: loggerFor(PublishTodoSeriesEditUseCase),
   }),
   provideUseCase(MaterializeTodoOccurrencesUseCase, {
