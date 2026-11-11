@@ -10,14 +10,13 @@ import {
 } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 
+import { type RedemptionResult, redemptionResultSchema } from '../domains/invite-redemption.model';
+import { type Invite, inviteSchema } from '../domains/invite.model';
+import { type InvitedFriend, invitedFriendSchema } from '../domains/invited-friend.model';
 import {
   type PendingRedemption,
   pendingRedemptionSchema,
-  type RedemptionResult,
-  redemptionResultSchema,
-} from '../domains/invite-redemption.model';
-import { type Invite, inviteSchema } from '../domains/invite.model';
-import { type InvitedFriend, invitedFriendSchema } from '../domains/invited-friend.model';
+} from '../domains/pending-redemption.model';
 
 export function createPendingRedemption(overrides?: Partial<PendingRedemption>): PendingRedemption {
   return pendingRedemptionSchema.parse({

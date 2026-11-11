@@ -12,7 +12,7 @@ import { act } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import { createPendingRedemption } from '../__tests__/invite.fixtures';
-import type { PendingRedemption } from '../domains/invite-redemption.model';
+import type { PendingRedemption } from '../domains/pending-redemption.model';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
 import { useInviteAppEntry } from './use-invite-app-entry';
 

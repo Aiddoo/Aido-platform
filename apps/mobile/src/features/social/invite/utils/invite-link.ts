@@ -2,7 +2,7 @@ import { INVITE_LINK_BASE_URL } from '@aido/api/vocabulary';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 
 import { parseInviteCode } from '../domains/invite-code.model';
-import type { InviteLinkSource } from '../domains/invite-redemption.model';
+import type { InviteLinkSource } from '../domains/pending-redemption.model';
 
 export interface InviteSystemPathOptions {
   /** 이 빌드의 앱 스킴 (aido, aido-preview, aido-dev) */

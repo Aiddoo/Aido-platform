@@ -1,8 +1,8 @@
 import type { InviteFriendship, RedeemOutcome } from '@aido/api/vocabulary';
 
 import type { InviteShareChannel } from '../apis/invite-share.service';
-import type { InviteLinkSource } from '../domains/invite-redemption.model';
 import type { RedeemFailureReason } from '../domains/invite.error';
+import type { InviteLinkSource } from '../domains/pending-redemption.model';
 
 /** 친구 초대로 들어온 곳. 누른 순간 invite_entry_tapped로 남긴다 */
 export type InviteEntrySource =

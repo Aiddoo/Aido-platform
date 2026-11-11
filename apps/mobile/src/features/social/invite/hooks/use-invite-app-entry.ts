@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { router, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
-import { PendingRedemptionPolicy } from '../domains/invite-redemption.model';
+import { PendingRedemptionPolicy } from '../domains/pending-redemption.model';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
 
 function selectUserId(user: User) {

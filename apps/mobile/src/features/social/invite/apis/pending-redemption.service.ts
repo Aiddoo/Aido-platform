@@ -7,8 +7,8 @@ import {
   writeStoredValue,
 } from '@src/shared/storage/define-stored-value';
 
-import type { PendingRedemption } from '../domains/invite-redemption.model';
 import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invite.error';
+import type { PendingRedemption } from '../domains/pending-redemption.model';
 import { installReferrerCheckedStoredValue } from '../schemas/install-referrer-checked-storage.schema';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
 import { parseInstallReferrerInviteCode } from '../utils/install-referrer';

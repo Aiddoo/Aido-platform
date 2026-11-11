@@ -16,7 +16,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { findFriendLimit } from '../domains/friend.error';
-import { FriendPolicy } from '../domains/friend.model';
+import { getFriendLimit } from '../domains/friend.model';
 import type { ReorderFriendInput } from '../schemas/friend-request.schema';
 import {
   findFriendPlacement,
@@ -226,7 +226,7 @@ export function useSendRequestByTagMutationOptions({
             ? {}
             : {
                 description: t('invite:entry.friendLimitDescription', {
-                  limit: FriendPolicy.getFriendLimit({
+                  limit: getFriendLimit({
                     serverLimit: findFriendLimit(error),
                     knownLimit,
                   }),

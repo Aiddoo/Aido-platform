@@ -44,11 +44,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import {
-  InviteePremiumAccessPolicy,
-  InviteRedemptionPolicy,
-} from '../domains/invite-redemption.model';
+import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
+import { InviteePremiumAccessPolicy } from '../domains/invitee-premium-access.model';
 import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
 import { inviteWelcomeParamsSchema } from '../schemas/invite-params.schema';
 

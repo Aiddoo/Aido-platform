@@ -23,9 +23,10 @@ import { useCallback } from 'react';
 
 import { INVITEE_PREMIUM_DAYS } from '../constants/invite.constants';
 import type { InviteCode } from '../domains/invite-code.model';
-import { InviteeUserPolicy, InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import type { InviteLinkSource } from '../domains/invite-redemption.model';
+import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import { toRedeemFailureReason } from '../domains/invite.error';
+import { InviteeUserPolicy } from '../domains/invitee-user.model';
+import type { InviteLinkSource } from '../domains/pending-redemption.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useRedeemInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
