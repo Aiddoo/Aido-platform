@@ -15,6 +15,7 @@ import {
   createTestDi,
   createTestQueryClient,
 } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { View } from 'react-native';
@@ -62,46 +63,49 @@ describe('QuickVoiceQuota', () => {
     expect(await screen.findByText(/이번 달 \d+회 남았어요/)).toBeTruthy();
   });
 
-  it('이번 달 AI를 다 쓴 칩을 누르면 막힌 순간과 같은 안내를 연다', async () => {
-    // Given
-    // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
-    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-04T00:00:00.000Z'));
-    const httpClient = createHttpClientStub();
-    httpClient.get.mockResolvedValue(
-      ok(createEntitlementSnapshotDto({ used: { AI_PARSE: PLAN_CATALOG.AI_PARSE.free } })),
-    );
-    const analytics = createAnalyticsStub();
-    await render(
-      <GestureHandlerProvider>
-        <FontScaleProvider>
-          <HeroUIProvider
-            config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
-          >
-            <QueryClientProvider client={createTestQueryClient()}>
-              <StaticDIProvider
-                container={createTestDi({ httpClient, analytics, logger: silentLogger })}
-              >
-                <LocalDateProvider>
-                  <OverlayProvider>
-                    <QuickVoiceQuota />
-                  </OverlayProvider>
-                </LocalDateProvider>
-              </StaticDIProvider>
-            </QueryClientProvider>
-          </HeroUIProvider>
-        </FontScaleProvider>
-      </GestureHandlerProvider>,
-    );
+  describe('이번 달 한도를 다 쓴 날', () => {
+    // 고정 초기화 시각이 지난 스냅샷으로 보이지 않게 시계를 맞춘다
+    setupFakeTimersPerTest({ now: new Date('2026-11-04T00:00:00.000Z'), advanceTimers: true });
 
-    // When
-    await fireEvent.press(await screen.findByRole('button', { name: /이번 달 모두 사용/ }));
+    it('이번 달 AI를 다 쓴 칩을 누르면 막힌 순간과 같은 안내를 연다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(
+        ok(createEntitlementSnapshotDto({ used: { AI_PARSE: PLAN_CATALOG.AI_PARSE.free } })),
+      );
+      const analytics = createAnalyticsStub();
+      await render(
+        <GestureHandlerProvider>
+          <FontScaleProvider>
+            <HeroUIProvider
+              config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
+            >
+              <QueryClientProvider client={createTestQueryClient()}>
+                <StaticDIProvider
+                  container={createTestDi({ httpClient, analytics, logger: silentLogger })}
+                >
+                  <LocalDateProvider>
+                    <OverlayProvider>
+                      <QuickVoiceQuota />
+                    </OverlayProvider>
+                  </LocalDateProvider>
+                </StaticDIProvider>
+              </QueryClientProvider>
+            </HeroUIProvider>
+          </FontScaleProvider>
+        </GestureHandlerProvider>,
+      );
 
-    // Then
-    await waitFor(() =>
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'premium_gate_shown',
-        expect.objectContaining({ feature: 'ai_parse', surface: 'add_todo_sheet' }),
-      ),
-    );
+      // When
+      await fireEvent.press(await screen.findByRole('button', { name: /이번 달 모두 사용/ }));
+
+      // Then
+      await waitFor(() =>
+        expect(analytics.trackEvent).toHaveBeenCalledWith(
+          'premium_gate_shown',
+          expect.objectContaining({ feature: 'ai_parse', surface: 'add_todo_sheet' }),
+        ),
+      );
+    });
   });
 });

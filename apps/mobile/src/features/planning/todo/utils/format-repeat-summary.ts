@@ -38,6 +38,11 @@ export function formatRepeatCadence(
     .exhaustive();
 }
 
+/** 반복 회차인데 규칙을 모르면(서버가 규칙을 내려 주지 않은 옛 회차) 주기 없이 반복이라고만 한다 */
+export function formatRepeatRuleLabel(repeat: TodoRepeat | null, language: string): string {
+  return repeat == null ? t('todo:chip.repeat') : formatRepeatCadence(repeat, language);
+}
+
 function formatEnd(
   end: TodoRepeatEnd,
   todayDateKey: string,

@@ -7,7 +7,7 @@ import {
   createTestQueryClient,
 } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
-import { partialMatchKey, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -19,8 +19,7 @@ import { useForegroundPushSync } from './use-foreground-push-sync';
 async function setup(authStatus: AuthStatus) {
   const invalidateByType = jest.fn(async (_type: NotificationType) => {});
   const queryClient = createTestQueryClient();
-  // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
-  const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
+  const fetchUnreadCount = jest.fn(async () => 0);
   const pushNotification = createPushNotificationGatewayStub();
   pushNotification.getPermission.mockResolvedValue({
     status: 'granted',
@@ -37,19 +36,22 @@ async function setup(authStatus: AuthStatus) {
     () => {
       // 알림 설정 행처럼 권한을 보고 있는 화면
       useQuery(useGetPushPermissionQueryOptions());
+      // 안 읽은 수(배지)를 보고 있는 화면
+      useQuery({
+        queryKey: NOTIFICATION_QUERY_KEYS.unreadCount(),
+        queryFn: fetchUnreadCount,
+        staleTime: Infinity,
+      });
       useForegroundPushSync({ authStatus, invalidateByType });
     },
     { wrapper },
   );
+  await act(() => jest.advanceTimersByTimeAsync(0));
+  fetchUnreadCount.mockClear();
   // 안 읽은 수(배지)도 이 무효화로 다시 받는다
-  const invalidatedInbox = () =>
-    invalidateQueries.mock.calls.filter(
-      ([filters]) =>
-        filters?.queryKey != null &&
-        partialMatchKey(filters.queryKey, NOTIFICATION_QUERY_KEYS.unreadCount()),
-    );
+  const refetchedUnreadCount = () => fetchUnreadCount.mock.calls;
   return {
-    invalidatedInbox,
+    refetchedUnreadCount,
     invalidateByType,
     getPermission: pushNotification.getPermission,
     receive: (data: Record<string, unknown>) => pushNotification.emitReceived({ data }),
@@ -62,14 +64,14 @@ describe('useForegroundPushSync', () => {
 
   it('알림이 도착하면 목록과 안 읽은 수를 다시 받는다', async () => {
     // Given
-    const { receive, invalidatedInbox } = await setup('authenticated');
+    const { receive, refetchedUnreadCount } = await setup('authenticated');
 
     // When
     receive({});
     await act(() => jest.advanceTimersByTimeAsync(1000));
 
     // Then
-    expect(invalidatedInbox()).toHaveLength(1);
+    expect(refetchedUnreadCount()).toHaveLength(1);
   });
 
   it('받은 알림 타입으로 다른 기능의 화면을 다시 받는다', async () => {
@@ -102,31 +104,31 @@ describe('useForegroundPushSync', () => {
 
   it('data가 계약에 맞지 않아도 목록과 안 읽은 수는 다시 받는다', async () => {
     // Given
-    const { receive, invalidatedInbox } = await setup('authenticated');
+    const { receive, refetchedUnreadCount } = await setup('authenticated');
 
     // When
     receive({ navigation: 'broken' });
     await act(() => jest.advanceTimersByTimeAsync(1000));
 
     // Then
-    expect(invalidatedInbox()).toHaveLength(1);
+    expect(refetchedUnreadCount()).toHaveLength(1);
   });
 
   it('로그인하지 않았으면 아무것도 하지 않는다', async () => {
     // Given
-    const { receive, invalidatedInbox } = await setup('unauthenticated');
+    const { receive, refetchedUnreadCount } = await setup('unauthenticated');
 
     // When
     receive({});
     await act(() => jest.advanceTimersByTimeAsync(1000));
 
     // Then
-    expect(invalidatedInbox()).toHaveLength(0);
+    expect(refetchedUnreadCount()).toHaveLength(0);
   });
 
   it('1초 안에 여러 알림이 와도 한 번만 다시 받는다', async () => {
     // Given
-    const { receive, invalidatedInbox } = await setup('authenticated');
+    const { receive, refetchedUnreadCount } = await setup('authenticated');
 
     // When
     receive({});
@@ -134,7 +136,7 @@ describe('useForegroundPushSync', () => {
     await act(() => jest.advanceTimersByTimeAsync(1000));
 
     // Then
-    expect(invalidatedInbox()).toHaveLength(1);
+    expect(refetchedUnreadCount()).toHaveLength(1);
   });
 
   it('푸시를 받아도 OS 권한은 다시 묻지 않는다', async () => {

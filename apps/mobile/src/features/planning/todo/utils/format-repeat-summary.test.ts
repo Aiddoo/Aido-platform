@@ -1,6 +1,10 @@
 import '@src/shared/i18n/init';
 import type { TodoRepeat } from '../domains/todo-repeat.model';
-import { formatRepeatCadence, formatRepeatSummary } from './format-repeat-summary';
+import {
+  formatRepeatCadence,
+  formatRepeatRuleLabel,
+  formatRepeatSummary,
+} from './format-repeat-summary';
 
 const NEVER = { type: 'NEVER' } as const;
 
@@ -66,5 +70,23 @@ describe('formatRepeatSummary', () => {
 
     // Then
     expect(label).toBe(`매일 · ${expectedEnd}`);
+  });
+});
+
+describe('formatRepeatRuleLabel', () => {
+  it('규칙을 모르는 반복 회차는 반복이라고만 한다', () => {
+    // When
+    const label = formatRepeatRuleLabel(null, 'ko');
+
+    // Then
+    expect(label).toBe('반복');
+  });
+
+  it('규칙을 알면 주기를 보인다', () => {
+    // When
+    const label = formatRepeatRuleLabel({ frequency: 'DAILY', end: NEVER }, 'ko');
+
+    // Then
+    expect(label).toBe('매일');
   });
 });

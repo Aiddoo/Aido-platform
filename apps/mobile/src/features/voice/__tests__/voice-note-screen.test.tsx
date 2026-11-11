@@ -247,8 +247,8 @@ describe('말로 메모 화면', () => {
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
-    // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
-    const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
+    queryClient.setQueryData(MEMO_QUERY_KEYS.list(), []);
+    queryClient.setQueryData(MEMO_QUERY_KEYS.resourceLimit(), null);
     httpClient.post.mockResolvedValue(
       ok({
         todos: [],
@@ -261,9 +261,9 @@ describe('말로 메모 화면', () => {
 
     // Then
     await waitFor(() =>
-      expect(invalidate).toHaveBeenCalledWith({ queryKey: MEMO_QUERY_KEYS.list() }),
+      expect(queryClient.getQueryState(MEMO_QUERY_KEYS.list())?.isInvalidated).toBe(true),
     );
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: MEMO_QUERY_KEYS.resourceLimit() });
+    expect(queryClient.getQueryState(MEMO_QUERY_KEYS.resourceLimit())?.isInvalidated).toBe(true);
   });
 
   it('메모로 저장에 실패하면 저장한 것으로 바뀌지 않고 같은 키로 다시 저장할 수 있다', async () => {

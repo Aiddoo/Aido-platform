@@ -20,7 +20,7 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { isRecurring } from '../domains/todo.model';
 import { type Todo } from '../domains/todo.model';
-import { formatRepeatCadence } from '../utils/format-repeat-summary';
+import { formatRepeatCadence, formatRepeatRuleLabel } from '../utils/format-repeat-summary';
 
 /** `TodoLabel`의 b3 한 줄 높이. 잠금 아이콘을 첫 줄 가운데에 맞춘다 */
 const TITLE_LINE_HEIGHT = 20;
@@ -185,7 +185,7 @@ export function TodoScheduleLine({
   const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
   const { repeat } = todo;
   const isRepeating = isRecurring(todo.recurrenceGroupId);
-  const ruleLabel = repeat == null ? t('chip.repeat') : formatRepeatCadence(repeat, i18n.language);
+  const ruleLabel = formatRepeatRuleLabel(repeat, i18n.language);
   const spokenRule =
     repeat == null
       ? t('chip.repeat')
