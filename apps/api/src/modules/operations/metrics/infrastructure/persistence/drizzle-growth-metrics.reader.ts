@@ -12,7 +12,7 @@ import {
   userActivityDay,
   userPreference,
 } from "#api/platform/database/schema/index";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import {
   GrowthMetricsReaderPort,
@@ -75,8 +75,7 @@ export class DrizzleGrowthMetricsReader extends GrowthMetricsReaderPort {
   }): Promise<GrowthSummaryCounts> {
     const cohortFrom = input.cohortFrom.toString();
     const cohortTo = input.cohortTo.toString();
-    const asOf = instantToDate(input.asOf);
-    const asOfTimestamp = sql.param(asOf, user.createdAt);
+    const asOfTimestamp = sql.param(input.asOf, user.createdAt);
 
     const { rows } = await this.#txHost.tx.execute<GrowthSummaryRow>(sql`
       WITH measurement AS (

@@ -16,7 +16,7 @@ describe("할 일 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -261,7 +261,7 @@ describe("할 일 E2E", () => {
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({
           title: "테스트",
-          categoryId: 999999,
+          categoryId: 999_999,
           startDate: "2024-01-15",
         })
         .expect(404);
@@ -776,7 +776,7 @@ describe("할 일 E2E", () => {
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/category`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ categoryId: 999999 })
+        .send({ categoryId: 999_999 })
         .expect(404);
 
       // Then - 404 에러 검증
@@ -1062,7 +1062,7 @@ describe("할 일 E2E", () => {
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/reorder`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ targetTodoId: 999999, position: "before" })
+        .send({ targetTodoId: 999_999, position: "before" })
         .expect(404);
 
       // Then - 404 에러 검증

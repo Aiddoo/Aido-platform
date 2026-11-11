@@ -1,5 +1,8 @@
 import { TODO_LIMITS } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 
 export interface TodoResourceLimitResult {
@@ -26,8 +29,8 @@ export class GetTodoResourceLimitUseCase {
   async execute(input: GetTodoResourceLimitInput): Promise<TodoResourceLimitResult> {
     if (input.categoryId != null) {
       const activeCount = await this.#dependencies.todoReadRepository.countCategoryUsage(
-        input.userId,
-        input.categoryId,
+        UserId.reconstitute(input.userId),
+        TodoCategoryId.reconstitute(input.categoryId),
       );
       return { activeCount, maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY };
     }

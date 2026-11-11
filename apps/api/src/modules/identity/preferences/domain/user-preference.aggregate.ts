@@ -28,15 +28,18 @@ export class UserPreference extends AggregateRoot<UserId, UserPreferenceProps> {
     };
   }
 
-  planTodoCompletion(completedAt: Date): StreakCompletionPlan | null {
-    return this.props.streak.planCompletion(completedAt);
+  planTodoCompletion(completedOn: Temporal.PlainDate): StreakCompletionPlan | null {
+    return this.props.streak.planCompletion(completedOn);
   }
 
-  planTodoUncompletion(uncompletedAt: Date, hadPreviousDayCompletion: boolean): StreakState | null {
-    return this.props.streak.planUncompletion(uncompletedAt, hadPreviousDayCompletion);
+  planTodoUncompletion(
+    uncompletedOn: Temporal.PlainDate,
+    hadPreviousDayCompletion: boolean,
+  ): StreakState | null {
+    return this.props.streak.planUncompletion(uncompletedOn, hadPreviousDayCompletion);
   }
 
-  hasTodoCompletionOn(date: Date): boolean {
+  hasTodoCompletionOn(date: Temporal.PlainDate): boolean {
     return this.props.streak.isCompletedOn(date);
   }
 }

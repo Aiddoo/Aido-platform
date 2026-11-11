@@ -18,25 +18,29 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { Timezone } from "#api/platform/http/decorators/index";
-import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
   ApiConflictError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { DomainException } from "#api/shared/domain/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { utcMidnightOf } from "../../../../shared/domain/todo-calendar.domain-service.js";
+import { TodoCategoryId } from "../../../../categories/domain/todo-category-id.vo.js";
+import { localDateAt } from "../../../../shared/domain/todo-calendar.domain-service.js";
 import { toTodoSeriesResponse } from "../../../../todo-series/presentation/http/v1/todo-series-response.mapper.js";
 import { AddTodoItemUseCase } from "../../../application/use-cases/add-todo-item.use-case.js";
 import { ChangeTodoCategoryUseCase } from "../../../application/use-cases/change-todo-category.use-case.js";
@@ -111,6 +115,7 @@ export class TodoController {
   readonly #reorderTodoItemsUseCase: ReorderTodoItemsUseCase;
   readonly #updateTodoItemUseCase: UpdateTodoItemUseCase;
   readonly #deleteTodoItemUseCase: DeleteTodoItemUseCase;
+  readonly #clock: ClockPort;
 
   constructor(
     getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase,
@@ -131,6 +136,7 @@ export class TodoController {
     reorderTodoItemsUseCase: ReorderTodoItemsUseCase,
     updateTodoItemUseCase: UpdateTodoItemUseCase,
     deleteTodoItemUseCase: DeleteTodoItemUseCase,
+    clock: ClockPort,
   ) {
     this.#getTodoResourceLimitUseCase = getTodoResourceLimitUseCase;
     this.#getTodoSummaryUseCase = getTodoSummaryUseCase;
@@ -150,6 +156,7 @@ export class TodoController {
     this.#reorderTodoItemsUseCase = reorderTodoItemsUseCase;
     this.#updateTodoItemUseCase = updateTodoItemUseCase;
     this.#deleteTodoItemUseCase = deleteTodoItemUseCase;
+    this.#clock = clock;
   }
 
   @Get("resource-limit")
@@ -207,11 +214,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Timezone() timezone: string,
     @Query({ schema: TodoSummaryQueryDto }) query: TodoSummaryQueryDto,
   ): Promise<TodoSummaryResponseDto> {
-    // 컨트롤러가 타임존 파싱을 소유: 로컬 "오늘"과 요청 날짜를 UTC midnight으로 변환해 전달
     return this.#getTodoSummaryUseCase.execute({
       userId: user.userId,
-      today: todayInTimezone(timezone),
-      requestedDate: query.date == null ? undefined : utcMidnightOf(query.date),
+      today: localDateAt(this.#clock.now(), timezone),
+      requestedDate: query.date == null ? undefined : Temporal.PlainDate.from(query.date),
     });
   }
 
@@ -282,11 +288,11 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<CreateTodoResponseDto> {
     const { todos, series } = await this.#createTodoUseCase.execute({
-      userId: user.userId,
+      userId: UserId.reconstitute(user.userId),
       title: dto.title,
-      categoryId: dto.categoryId,
-      startDate: utcMidnightOf(dto.startDate),
-      endDate: dto.endDate == null ? undefined : utcMidnightOf(dto.endDate),
+      categoryId: TodoCategoryId.reconstitute(dto.categoryId),
+      startDate: Temporal.PlainDate.from(dto.startDate),
+      endDate: dto.endDate == null ? undefined : Temporal.PlainDate.from(dto.endDate),
       scheduledTime: dto.scheduledTime,
       timezone,
       isAllDay: dto.isAllDay,
@@ -349,10 +355,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   ): Promise<CreateRecurringTodoResponseDto> {
     const { todos } = await this.#createTodoUseCase
       .execute({
-        userId: user.userId,
+        userId: UserId.reconstitute(user.userId),
         title: dto.title,
-        categoryId: dto.categoryId,
-        startDate: utcMidnightOf(dto.startDate),
+        categoryId: TodoCategoryId.reconstitute(dto.categoryId),
+        startDate: Temporal.PlainDate.from(dto.startDate),
         scheduledTime: dto.scheduledTime,
         timezone,
         isAllDay: dto.isAllDay,
@@ -523,8 +529,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       completed: query.completed,
       categoryId: query.categoryId,
       // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-      startDate: query.startDate == null ? undefined : utcMidnightOf(query.startDate),
-      endDate: query.endDate == null ? undefined : utcMidnightOf(query.endDate),
+      startDate: query.startDate == null ? undefined : Temporal.PlainDate.from(query.startDate),
+      endDate: query.endDate == null ? undefined : Temporal.PlainDate.from(query.endDate),
     });
 
     return {
@@ -606,8 +612,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       cursor: query.cursor,
       size: query.size,
       // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-      startDate: query.startDate == null ? undefined : utcMidnightOf(query.startDate),
-      endDate: query.endDate == null ? undefined : utcMidnightOf(query.endDate),
+      startDate: query.startDate == null ? undefined : Temporal.PlainDate.from(query.startDate),
+      endDate: query.endDate == null ? undefined : Temporal.PlainDate.from(query.endDate),
     });
 
     return {
@@ -667,14 +673,14 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       data: {
         title: dto.title,
         categoryId: dto.categoryId,
-        startDate: dto.startDate == null ? undefined : utcMidnightOf(dto.startDate),
+        startDate: dto.startDate == null ? undefined : Temporal.PlainDate.from(dto.startDate),
         // nullish-strict: PATCH라 undefined는 유지, null은 종료일 지우기다
         endDate:
           dto.endDate === undefined
             ? undefined
             : dto.endDate === null
               ? null
-              : utcMidnightOf(dto.endDate),
+              : Temporal.PlainDate.from(dto.endDate),
         scheduledTime: dto.scheduledTime,
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
@@ -821,8 +827,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       id: params.id,
       userId: user.userId,
       schedule: {
-        startDate: utcMidnightOf(dto.startDate),
-        endDate: dto.endDate == null ? null : utcMidnightOf(dto.endDate),
+        startDate: Temporal.PlainDate.from(dto.startDate),
+        endDate: dto.endDate == null ? null : Temporal.PlainDate.from(dto.endDate),
         scheduledTime: dto.scheduledTime ?? null,
         isAllDay: dto.isAllDay ?? true,
       },

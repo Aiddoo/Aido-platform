@@ -4,12 +4,8 @@ import { Test } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 
 import { databaseConfig } from "#api/platform/config/database.config";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  type AfterCommitTaskRegistryPort,
-  UNIT_OF_WORK,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 import { DatabaseModule } from "./database.module.js";
@@ -39,8 +35,8 @@ describe("DatabaseModule", () => {
     }).compile();
 
     const concrete = module.get(ClsUnitOfWork);
-    const unitOfWork = module.get<UnitOfWorkPort>(UNIT_OF_WORK);
-    const registry = module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
+    const unitOfWork = module.get(UnitOfWorkPort);
+    const registry = module.get(AfterCommitTaskRegistryPort);
 
     expect(unitOfWork).toBe(concrete);
     expect(registry).toBe(concrete);

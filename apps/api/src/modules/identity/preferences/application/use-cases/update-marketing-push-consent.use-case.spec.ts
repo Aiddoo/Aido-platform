@@ -11,7 +11,7 @@ describe("UpdateMarketingPushConsent — 광고성 푸시 선택 동의", () => 
     const agreed = await useCase.execute({ userId: fixture.userId, agreed: true });
     const revoked = await useCase.execute({ userId: fixture.userId, agreed: false });
     // Then
-    expect(agreed.marketingPushAgreedAt).toBe(SETTINGS_TIME.toISOString());
+    expect(agreed.marketingPushAgreedAt).toBe("2026-01-16T09:00:00.000Z");
     expect(revoked.marketingPushAgreedAt).toBeNull();
     expect(fixture.consentRepository.stored(fixture.userId)).toEqual({
       ...fixture.consent,

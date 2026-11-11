@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * Google OAuth 설정
  */
-export const googleOAuthSchema = z.object({
+const googleOAuthSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CALLBACK_URL: z.url().optional(),
@@ -12,7 +12,7 @@ export const googleOAuthSchema = z.object({
 /**
  * Apple OAuth 설정
  */
-export const appleOAuthSchema = z.object({
+const appleOAuthSchema = z.object({
   APPLE_CLIENT_ID: z.string().optional(),
   APPLE_JWKS_URL: z.url().optional(),
   APPLE_JWKS_COOLDOWN_DURATION_MS: z.coerce.number().int().nonnegative().optional(),
@@ -26,7 +26,7 @@ export const appleOAuthSchema = z.object({
 /**
  * Kakao OAuth 설정
  */
-export const kakaoOAuthSchema = z.object({
+const kakaoOAuthSchema = z.object({
   KAKAO_CLIENT_ID: z.string().optional(),
   KAKAO_CLIENT_SECRET: z.string().optional(),
   KAKAO_CALLBACK_URL: z.url().optional(),
@@ -35,7 +35,7 @@ export const kakaoOAuthSchema = z.object({
 /**
  * Naver OAuth 설정
  */
-export const naverOAuthSchema = z.object({
+const naverOAuthSchema = z.object({
   NAVER_CLIENT_ID: z.string().optional(),
   NAVER_CLIENT_SECRET: z.string().optional(),
   NAVER_CALLBACK_URL: z.url().optional(),
@@ -52,16 +52,9 @@ export const oauthSchema = z.object({
 });
 
 export type OAuthConfig = z.infer<typeof oauthSchema>;
-export type GoogleOAuthConfig = z.infer<typeof googleOAuthSchema>;
-export type AppleOAuthConfig = z.infer<typeof appleOAuthSchema>;
-export type KakaoOAuthConfig = z.infer<typeof kakaoOAuthSchema>;
-export type NaverOAuthConfig = z.infer<typeof naverOAuthSchema>;
 
-/**
- * Production 환경에서 OAuth 필수 검증
- * Google, Kakao 중 최소 하나는 설정되어야 함
- */
-export function validateOAuthForProduction(config: OAuthConfig): boolean {
+/** 로그인 공급자가 하나라도 갖춰졌는지. 운영은 하나 이상 필요하다(production-readiness.ts). */
+export function hasOAuthProvider(config: OAuthConfig): boolean {
   const hasGoogle = !!(config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET);
   const hasKakao = !!(config.KAKAO_CLIENT_ID && config.KAKAO_CLIENT_SECRET);
   const hasNaver = !!(config.NAVER_CLIENT_ID && config.NAVER_CLIENT_SECRET);
@@ -72,6 +65,5 @@ export function validateOAuthForProduction(config: OAuthConfig): boolean {
     config.APPLE_PRIVATE_KEY
   );
 
-  // Production에서는 최소 하나의 OAuth 프로바이더 필요
   return hasGoogle || hasKakao || hasNaver || hasApple;
 }

@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { todo, user as userTable } from "#api/platform/database/schema/index";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -21,7 +22,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -46,7 +47,8 @@ describe("할 일 리소스 제한 E2E", () => {
         userId,
         title: `활성 할 일 ${i + 1}`,
         categoryId,
-        startDate: new Date("2024-01-15"),
+        startDate: Temporal.PlainDate.from("2024-01-15"),
+        updatedAt: nowInstant(),
         completed: false,
       }));
       await db.insert(todo).values(todos);
@@ -101,7 +103,8 @@ describe("할 일 리소스 제한 E2E", () => {
         userId,
         title: `활성 할 일 ${i + 1}`,
         categoryId,
-        startDate: new Date("2024-01-15"),
+        startDate: Temporal.PlainDate.from("2024-01-15"),
+        updatedAt: nowInstant(),
         completed: false,
       }));
       await db.insert(todo).values(todos);
@@ -158,7 +161,8 @@ describe("할 일 리소스 제한 E2E", () => {
         userId,
         title: `카테고리1 할 일 ${i + 1}`,
         categoryId: fullCategoryId,
-        startDate: new Date("2024-01-15"),
+        startDate: Temporal.PlainDate.from("2024-01-15"),
+        updatedAt: nowInstant(),
         completed: false,
       }));
       await db.insert(todo).values(todos);
@@ -209,7 +213,8 @@ describe("할 일 리소스 제한 E2E", () => {
         userId,
         title: `프리미엄 할 일 ${i + 1}`,
         categoryId,
-        startDate: new Date("2024-01-15"),
+        startDate: Temporal.PlainDate.from("2024-01-15"),
+        updatedAt: nowInstant(),
         completed: false,
       }));
       await db.insert(todo).values(todos);

@@ -2,7 +2,7 @@ import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { UserList } from '@src/features/identity/user/components/user-list';
 import type { BlockTarget } from '@src/features/social/moderation/domains/user-block.model';
-import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
+import { createProfileReportTarget } from '@src/features/social/moderation/domains/user-report.model';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { CAT_HI_CENTER_OFFSET_RATIO } from '@src/shared/constants/mascot';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -268,7 +268,7 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
             Icon={FlagIcon}
             title={t('menu.report')}
             onPress={() => {
-              const target = UserReportPolicy.createProfileReportTarget({ userId });
+              const target = createProfileReportTarget({ userId });
               push({
                 pathname: '/users/[userId]/report',
                 params: { userId, name: displayName, targetType: target.targetType },

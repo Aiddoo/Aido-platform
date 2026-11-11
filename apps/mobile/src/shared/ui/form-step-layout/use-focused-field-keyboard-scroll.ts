@@ -11,13 +11,13 @@ import type Animated from 'react-native-reanimated';
 import {
   measure,
   type MeasuredDimensions,
-  runOnUI,
   scrollTo,
   useAnimatedRef,
   useAnimatedStyle,
   useScrollOffset,
   useSharedValue,
 } from 'react-native-reanimated';
+import { scheduleOnUI } from 'react-native-worklets';
 
 import type { FocusedFieldNode } from '../input/focused-field';
 import {
@@ -244,7 +244,7 @@ export function useFocusedFieldKeyboardScroll() {
       if (!isFocused) {
         if (focusedFieldRef.current === node) {
           focusedFieldRef.current = null;
-          runOnUI(revealFocusedField)(null, false);
+          scheduleOnUI(revealFocusedField, null, false);
         }
         return;
       }
@@ -261,7 +261,8 @@ export function useFocusedFieldKeyboardScroll() {
           if (focusedFieldRef.current !== node) {
             return;
           }
-          runOnUI(revealFocusedField)(
+          scheduleOnUI(
+            revealFocusedField,
             {
               top: fieldSpan.top,
               bottom: fieldSpan.bottom,

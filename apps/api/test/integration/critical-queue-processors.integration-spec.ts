@@ -1,19 +1,25 @@
 import { eq } from "drizzle-orm";
 import { chunk } from "es-toolkit";
-import { assert } from "vitest";
+import { assert, vi } from "vitest";
 
+import { PublishNotificationUseCase } from "#api/modules/notification/push/application/use-cases/publish-notification.use-case";
 import {
   NOTIFICATION_QUEUE,
   NotificationJobName,
-} from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.constants";
+} from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
+import { PushDeliveryQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/push-delivery-queue.processor";
+import {
+  PUSH_DELIVERY_QUEUE,
+  PushDeliveryRuntimeJobSchema,
+} from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
 import {
   RETENTION_QUEUE,
   RetentionJobName,
-} from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
+} from "#api/modules/notification/retention/infrastructure/jobs/retention.queue";
 import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
-import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
@@ -21,19 +27,9 @@ import {
   type CriticalQueueProcessorHarness,
   createCriticalQueueProcessorHarness,
 } from "./helpers/critical-queue-processor.harness.js";
-
-const JOB_OPTIONS: EnqueueJobOptions = {
-  retryLimit: 1,
-  retryDelaySeconds: 1,
-  retryBackoff: false,
-  expireInSeconds: 30,
-  retentionSeconds: 60 * 60,
-  deleteAfterSeconds: 60 * 60,
-};
+import { WORKER_WAIT } from "./helpers/fast-job-timing.js";
 
 const BROADCAST_TIMEOUT_MS = 180_000;
-/** retention worker는 정해진 시각 작업이라 15초마다 polling한다. */
-const SCHEDULED_WORKER_TIMEOUT_MS = 40_000;
 
 describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg-boss)", () => {
   let harness: CriticalQueueProcessorHarness;
@@ -75,7 +71,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     });
 
     // When
-    const jobId = await harness.runtime.enqueue(
+    const jobId = await harness.jobQueue.enqueue(
       NOTIFICATION_QUEUE,
       {
         name: NotificationJobName.FRIEND_COMPLETED,
@@ -86,12 +82,12 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
           timezone: "Asia/Seoul",
         },
       },
-      { ...JOB_OPTIONS, idempotencyKey: `friend-completed:${friend.id}` },
+      { idempotencyKey: `friend-completed:${friend.id}` },
     );
 
     // Then
     expect(jobId).not.toBeNull();
-    await harness.eventually(async () => {
+    await vi.waitFor(async () => {
       const friendCompleted = { type: "FRIEND_COMPLETED" as const, friendId: friend.id };
       const [notifications, dispatches, attempts, jobs] = await Promise.all([
         harness.client.query.notification.findMany({
@@ -102,7 +98,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
         harness.client.query.pushDeliveryAttempt.findMany({
           where: { dispatch: { notification: friendCompleted } },
         }),
-        harness.boss.findJobs(NOTIFICATION_QUEUE, {
+        harness.boss.findJobs(NOTIFICATION_QUEUE.name, {
           id: jobId ?? undefined,
         }),
       ]);
@@ -117,7 +113,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       expect(attempts).toHaveLength(2);
       expect(attempts.every(({ status }) => status === "TICKET_ACCEPTED")).toBe(true);
       expect(jobs[0]?.state).toBe("completed");
-    });
+    }, WORKER_WAIT);
     expect(
       harness.pushProvider
         .getSentPayloads()
@@ -126,63 +122,120 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     ).toEqual(["fake-queue-en-token", "fake-queue-ko-token"]);
   });
 
-  it(
-    "retention sweep 잡은 공용 outbox와 push-delivery worker로 ENGAGEMENT 푸시를 보낸다",
-    async () => {
-      // Given: 가입 3시간 뒤 할 일이 없는 D0 대상
-      const recipient = await createPushReadyUser(harness.client, {
-        email: "queue-retention@example.com",
-        userTag: "RETENT01",
-        name: "리텐션 수신자",
-        locale: "ko",
-        token: "fake-retention-token",
-        timezone: harness.daytimeTimezone,
-      });
-      await harness.retentionRepository.enroll({
-        userId: recipient.id,
-        variant: "TREATMENT",
-        startedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-      });
+  it("거래성 푸시는 우선순위 10, 마케팅 푸시는 0으로 발송 작업에 오르고 같은 작업을 다시 처리해도 한 번만 보낸다", async () => {
+    // Given
+    const recipient = await createPushReadyUser(harness.client, {
+      email: "queue-lane@example.com",
+      userTag: "QLANE001",
+      name: "차선 수신자",
+      locale: "ko",
+      token: "fake-lane-token",
+      timezone: harness.daytimeTimezone,
+    });
+    const publisher = harness.module.get(PublishNotificationUseCase);
 
-      // When
-      await harness.runtime.enqueue(
-        RETENTION_QUEUE,
-        { name: RetentionJobName.STAGE_SWEEP, data: {} },
-        { ...JOB_OPTIONS, idempotencyKey: `retention-sweep:${recipient.id}` },
+    // When
+    await publisher.publish({
+      userId: recipient.id,
+      type: "SYSTEM_NOTICE",
+      title: "결제 확인",
+      body: "결제 수단을 확인해 주세요",
+    });
+    await publisher.publish({
+      userId: recipient.id,
+      type: "SYSTEM_NOTICE",
+      title: "새 기능",
+      body: "새 기능을 써 보세요",
+      purpose: "ENGAGEMENT",
+    });
+
+    // Then
+    let deliveryJobs: Awaited<ReturnType<typeof harness.boss.findJobs>> = [];
+    await vi.waitFor(async () => {
+      const dispatches = await harness.client.query.pushDispatch.findMany({
+        where: { userId: recipient.id },
+      });
+      expect(dispatches.map(({ status }) => status)).toEqual(["SENT", "SENT"]);
+      deliveryJobs = (await harness.boss.findJobs(PUSH_DELIVERY_QUEUE.name)).filter(
+        (job) =>
+          job.state === "completed" &&
+          PushDeliveryRuntimeJobSchema.safeParse(job.data).data?.name === "deliver-dispatches",
       );
+      expect(deliveryJobs).toHaveLength(2);
+    }, WORKER_WAIT);
+    expect(deliveryJobs.map(({ priority }) => priority).sort()).toEqual([0, 10]);
+    expect(harness.pushProvider.getSentPayloads()).toHaveLength(2);
 
-      // Then
-      await harness.eventually(async () => {
-        const dispatch = await harness.client.query.pushDispatch.findFirst({
-          where: { userId: recipient.id },
-          with: { notification: true },
-        });
-        assert.exists(dispatch);
-        expect(dispatch).toMatchObject({ status: "SENT", purpose: "ENGAGEMENT" });
-        const stage = await harness.client.query.retentionExperimentStage.findFirst({
-          where: { stage: "D0", assignment: { userId: recipient.id } },
-        });
-        expect(stage).toMatchObject({
-          status: "OUTBOXED",
-          notificationId: dispatch.notificationId,
-        });
-      }, SCHEDULED_WORKER_TIMEOUT_MS);
-      expect(harness.pushProvider.getSentPayloads()).toEqual([
-        expect.objectContaining({
-          token: "fake-retention-token",
-          categoryId: "MARKETING",
-          data: expect.objectContaining({ purpose: "ENGAGEMENT", type: "SYSTEM_NOTICE" }),
-        }),
-      ]);
-    },
-    SCHEDULED_WORKER_TIMEOUT_MS + 10_000,
-  );
+    // When: at-least-once 재전달처럼 끝난 작업을 같은 id·attempt로 다시 처리한다
+    const processor = harness.module.get(PushDeliveryQueueProcessor);
+    for (const job of deliveryJobs) {
+      const payload = PushDeliveryRuntimeJobSchema.parse(job.data);
+      await processor.process(job.id, job.retryCount + 1, payload);
+      await processor.process(job.id, job.retryCount + 2, payload);
+    }
+
+    // Then: dispatch 상태 fence가 다시 claim하지 않아 기기마다 한 번만 보낸다
+    expect(harness.pushProvider.getSentPayloads()).toHaveLength(2);
+    await expect(
+      harness.client.query.pushDeliveryAttempt.findMany({
+        where: { dispatch: { userId: recipient.id } },
+      }),
+    ).resolves.toHaveLength(2);
+  });
+
+  it("retention sweep 잡은 공용 outbox와 push-delivery worker로 ENGAGEMENT 푸시를 보낸다", async () => {
+    // Given: 가입 3시간 뒤 할 일이 없는 D0 대상
+    const recipient = await createPushReadyUser(harness.client, {
+      email: "queue-retention@example.com",
+      userTag: "RETENT01",
+      name: "리텐션 수신자",
+      locale: "ko",
+      token: "fake-retention-token",
+      timezone: harness.daytimeTimezone,
+    });
+    await harness.retentionRepository.enroll({
+      userId: UserId.reconstitute(recipient.id),
+      variant: "TREATMENT",
+      startedAt: Temporal.Instant.fromEpochMilliseconds(Date.now() - 3 * 60 * 60 * 1000),
+    });
+
+    // When
+    await harness.jobQueue.enqueue(
+      RETENTION_QUEUE,
+      { name: RetentionJobName.STAGE_SWEEP, data: {} },
+      { idempotencyKey: `retention-sweep:${recipient.id}` },
+    );
+
+    // Then
+    await vi.waitFor(async () => {
+      const dispatch = await harness.client.query.pushDispatch.findFirst({
+        where: { userId: recipient.id },
+        with: { notification: true },
+      });
+      assert.exists(dispatch);
+      expect(dispatch).toMatchObject({ status: "SENT", purpose: "ENGAGEMENT" });
+      const stage = await harness.client.query.retentionExperimentStage.findFirst({
+        where: { stage: "D0", assignment: { userId: recipient.id } },
+      });
+      expect(stage).toMatchObject({
+        status: "OUTBOXED",
+        notificationId: dispatch.notificationId,
+      });
+    }, WORKER_WAIT);
+    expect(harness.pushProvider.getSentPayloads()).toEqual([
+      expect.objectContaining({
+        token: "fake-retention-token",
+        categoryId: "MARKETING",
+        data: expect.objectContaining({ purpose: "ENGAGEMENT", type: "SYSTEM_NOTICE" }),
+      }),
+    ]);
+  });
 
   it(
     "브로드캐스트는 같은 요청을 한 번만 분배하고 대상 전원에게 발송한다",
     async () => {
       // Given
-      const recipientCount = Number(process.env.BROADCAST_RECIPIENT_COUNT ?? 1_200);
+      const recipientCount = Number(process.env.BROADCAST_RECIPIENT_COUNT ?? 1200);
       await seedPushReadyUsers(harness.client, recipientCount);
       const createCampaign = harness.module.get(CreateBroadcastCampaignUseCase);
       const request = {
@@ -202,20 +255,23 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 
       // Then
       expect(replay.campaign.id.value).toBe(first.campaign.id.value);
-      await harness.eventually(async () => {
-        const [campaign, sentDispatches] = await Promise.all([
-          harness.client.query.broadcastCampaign.findFirst({
-            where: { id: first.campaign.id.value },
-          }),
-          harness.client.$count(pushDispatch, eq(pushDispatch.status, "SENT")),
-        ]);
-        expect(campaign).toMatchObject({
-          status: "COMPLETED",
-          processedCount: recipientCount,
-          queuedCount: recipientCount,
-        });
-        expect(sentDispatches).toBe(recipientCount);
-      }, BROADCAST_TIMEOUT_MS);
+      await vi.waitFor(
+        async () => {
+          const [campaign, sentDispatches] = await Promise.all([
+            harness.client.query.broadcastCampaign.findFirst({
+              where: { id: first.campaign.id.value },
+            }),
+            harness.client.$count(pushDispatch, eq(pushDispatch.status, "SENT")),
+          ]);
+          expect(campaign).toMatchObject({
+            status: "COMPLETED",
+            processedCount: recipientCount,
+            queuedCount: recipientCount,
+          });
+          expect(sentDispatches).toBe(recipientCount);
+        },
+        { timeout: BROADCAST_TIMEOUT_MS, interval: 500 },
+      );
       const elapsedMs = Math.round(performance.now() - startedAt);
       const fanOutJobs = await harness.boss.findJobs(BROADCAST_FAN_OUT_QUEUE.name);
       expect(new Set(harness.pushProvider.getSentPayloads().map(({ token }) => token)).size).toBe(
@@ -238,7 +294,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 async function seedPushReadyUsers(client: TestDatabaseClient, count: number): Promise<void> {
   for (const page of chunk(
     Array.from({ length: count }, (_, index) => index),
-    1_000,
+    1000,
   )) {
     const users = await client
       .insert(user)
@@ -247,6 +303,7 @@ async function seedPushReadyUsers(client: TestDatabaseClient, count: number): Pr
           email: `broadcast-${index}@example.com`,
           userTag: `B${String(index).padStart(7, "0")}`,
           status: "ACTIVE" as const,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
         })),
       )
       .returning({ id: user.id });
@@ -259,6 +316,7 @@ async function seedPushReadyUsers(client: TestDatabaseClient, count: number): Pr
         token: `fake-broadcast-${id}`,
         deviceId: `broadcast-device-${id}`,
         platform: "IOS" as const,
+        updatedAt: Temporal.Now.instant(),
       })),
     );
   }
@@ -286,12 +344,13 @@ async function createPushReadyUser(
         timezone: input.timezone ?? "Asia/Seoul",
         locale: input.locale,
       },
-      consent: { marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z") },
+      consent: { marketingPushAgreedAt: Temporal.Instant.from("2026-07-01T00:00:00.000Z") },
       pushTokens: {
         token: input.token,
         deviceId: `${input.userTag}-device`,
         platform: "IOS",
         appVersion: "1.8.0",
+        updatedAt: Temporal.Now.instant(),
       },
     },
   );

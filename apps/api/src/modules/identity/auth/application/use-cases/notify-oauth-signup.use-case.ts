@@ -1,7 +1,8 @@
 import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { toISOString } from "#api/shared/domain/date/utils/format";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type {
@@ -48,7 +49,9 @@ export class NotifyOAuthSignupUseCase {
   /** 토큰이 이미 발급된 뒤에 불리므로 실패해도 던지지 않는다. 알림 때문에 로그인을 잃으면 안 된다. */
   async notify(input: NotifyOAuthSignupCommand): Promise<void> {
     try {
-      const user = await this.#dependencies.userRepository.findByIdWithProfile(input.userId);
+      const user = await this.#dependencies.userRepository.findByIdWithProfile(
+        UserId.reconstitute(input.userId),
+      );
       if (user == null) {
         this.#dependencies.logger.warn({
           event: AuthLogEvent.SIGNUP_NOTIFICATION_SKIPPED,
@@ -61,7 +64,7 @@ export class NotifyOAuthSignupUseCase {
         userId: user.id,
         email: user.email,
         provider: ACCOUNT_PROVIDER_TO_EVENT[input.provider],
-        registeredAt: toISOString(user.createdAt),
+        registeredAt: toIsoString(user.createdAt),
         name: user.profile?.name ?? undefined,
         ...input.device,
       } satisfies AuthUserRegisteredNotification);

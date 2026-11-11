@@ -1,10 +1,10 @@
 import { getMyPageDetailOptions } from '@src/features/identity/user/utils/my-page-detail-options';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import {
   Box,
   getPaneEdgeInsets,
-  getPrimaryPaneWidth,
   HStack,
+  usePaneColumns,
+  usePaneSizeClass,
   useStackScreenOptions,
 } from '@src/shared/ui';
 import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
@@ -23,7 +23,7 @@ import {
  * 그래서 메뉴는 헤더 위가 아니라 화면마다 본문 왼쪽 칸에 그린다
  */
 export function MyPageStack({ menu, children }: { menu: ReactNode; children?: ReactNode }) {
-  const isCompact = useWindowSizeClass() === 'compact';
+  const isCompact = usePaneSizeClass() === 'compact';
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
 
   // 화면 안 칸들이 탭 안 영역 기준 inset을 받게 Stack 바깥에서 한 번 잰다
@@ -59,16 +59,16 @@ function MyPageScreenLayout({ menu, children }: MyPageScreenLayoutProps) {
 
 /** 접고 펼 때 화면이 다시 마운트되지 않게 상세는 늘 같은 트리 슬롯에 둔다. 칸마다 닿는 가장자리의 inset만 넘긴다 */
 function MyPageScreenColumns({ menu, children }: MyPageScreenLayoutProps) {
-  const windowSizeClass = useWindowSizeClass();
+  const { isSplit, primaryWidth } = usePaneColumns();
   const fold = findVerticalFold(useReservedRegions());
   const insets = useSafeAreaInsets();
   const { isRTL } = I18nManager;
 
   return (
     <HStack flex={1}>
-      {windowSizeClass !== 'compact' && (
+      {isSplit && (
         <>
-          <Box style={{ width: getPrimaryPaneWidth({ windowSizeClass, foldFrame: fold?.frame }) }}>
+          <Box style={{ width: primaryWidth }}>
             <SafeAreaInsetsContext value={getPaneEdgeInsets(insets, 'primary', { isRTL })}>
               {menu}
             </SafeAreaInsetsContext>
@@ -82,11 +82,7 @@ function MyPageScreenColumns({ menu, children }: MyPageScreenLayoutProps) {
       )}
       <Box flex={1}>
         <SafeAreaInsetsContext
-          value={
-            windowSizeClass === 'compact'
-              ? insets
-              : getPaneEdgeInsets(insets, 'secondary', { isRTL })
-          }
+          value={isSplit ? getPaneEdgeInsets(insets, 'secondary', { isRTL }) : insets}
         >
           {children}
         </SafeAreaInsetsContext>

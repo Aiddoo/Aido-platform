@@ -4,7 +4,7 @@ import { Logger } from "@nestjs/common";
 import { ClsService } from "nestjs-cls";
 import { vi } from "vitest";
 
-import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/index";
+import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 
@@ -14,19 +14,23 @@ class FakeTransactionHost {
   commitError: Error | undefined;
   readonly tx = { execute: async () => [] };
 
-  constructor(private readonly cls: ClsService) {}
+  readonly #cls: ClsService;
+
+  constructor(cls: ClsService) {
+    this.#cls = cls;
+  }
 
   isTransactionActive(): boolean {
-    return this.cls.get<boolean>(TRANSACTION_ACTIVE) ?? false;
+    return this.#cls.get<boolean>(TRANSACTION_ACTIVE) ?? false;
   }
 
   withTransaction<T>(work: () => Promise<T>): Promise<T> {
     if (this.isTransactionActive()) {
-      return this.cls.run({ ifNested: "inherit" }, work);
+      return this.#cls.run({ ifNested: "inherit" }, work);
     }
 
-    return this.cls.run({ ifNested: "inherit" }, async () => {
-      this.cls.set(TRANSACTION_ACTIVE, true);
+    return this.#cls.run({ ifNested: "inherit" }, async () => {
+      this.#cls.set(TRANSACTION_ACTIVE, true);
       const result = await work();
       if (this.commitError) {
         throw this.commitError;

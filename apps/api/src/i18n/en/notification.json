@@ -1,0 +1,739 @@
+{
+  "scheduler": {
+    "TODO_REMINDER_60MIN": {
+      "v1": { "title": "Coming up in 1 hour ⏰", "body": "“{todoTitle}” is on deck" },
+      "v2": { "title": "One-hour heads-up", "body": "Time to get ready for “{todoTitle}”" },
+      "v3": { "title": "Next up in an hour", "body": "“{todoTitle}” starts in 60 minutes" }
+    },
+    "TODO_REMINDER_10MIN": {
+      "v1": { "title": "Starting in 10 minutes ⏰", "body": "Get set for “{todoTitle}”" },
+      "v2": { "title": "10-minute heads-up", "body": "“{todoTitle}” is almost here" },
+      "v3": { "title": "Almost time 🐾", "body": "“{todoTitle}” starts in 10 minutes" }
+    },
+    "TODO_SERIES_PAUSED": {
+      "v1": {
+        "title": "Repeating to-do reminders paused",
+        "body": "Open the app to start them again"
+      }
+    },
+    "MORNING_REMINDER": {
+      "v1": {
+        "title": { "one": "{count} to-do today ☀️", "other": "{count} to-dos today ☀️" },
+        "body": "Start with the easiest one"
+      },
+      "v2": {
+        "title": {
+          "one": "Morning! {count} to-do on deck",
+          "other": "Morning! {count} to-dos on deck"
+        },
+        "body": "One check gets the day rolling"
+      },
+      "v3": {
+        "title": {
+          "one": "{count} to-do on today’s list",
+          "other": "{count} to-dos on today’s list"
+        },
+        "body": "Pick an order and you’re halfway there"
+      },
+      "v4": {
+        "title": { "one": "{count} to-do, at your pace", "other": "{count} to-dos, at your pace" },
+        "body": "Aido’s right here with you 🐾"
+      },
+      "v5": {
+        "title": { "one": "Today’s list: {count} to-do", "other": "Today’s list: {count} to-dos" },
+        "body": "Knock out one and you’re rolling"
+      }
+    },
+    "EVENING_COMPLETE": {
+      "v1": { "title": "All done for today 🎉", "body": "You’ve earned a cozy evening" },
+      "v2": { "title": "You crushed it today", "body": "Every box checked, nothing left" },
+      "v3": { "title": "A perfect day", "body": "Aido is purring with pride 🐾" },
+      "v4": { "title": "Your to-do list is clear", "body": "Take a peek at everything you did" },
+      "v5": { "title": "Nice work today", "body": "Your finished to-dos filled the day" }
+    },
+    "EVENING_PARTIAL": {
+      "v1": {
+        "title": { "one": "{count} to-do left today", "other": "{count} to-dos left today" },
+        "body": "Got a minute? Try one more"
+      },
+      "v2": {
+        "title": { "one": "{count} to-do still open", "other": "{count} to-dos still open" },
+        "body": "Check your to-do list and pick what’s next"
+      },
+      "v3": {
+        "title": { "one": "{count} to-do to go", "other": "{count} to-dos to go" },
+        "body": "Wrap up an easy one first 🐾"
+      },
+      "v4": { "title": "{count} left on today’s list", "body": "Do what you can. That’s enough" }
+    },
+    "EVENING_NONE": {
+      "v1": { "title": "Check your to-do list? 🌙", "body": "One before bed is plenty" },
+      "v2": { "title": "Revisit today’s plan?", "body": "It’s fine to push things to tomorrow" },
+      "v3": { "title": "Just one small thing tonight?", "body": "Start with a 5-minute task" },
+      "v4": { "title": "Rest day? That’s okay", "body": "Maybe jot down tomorrow’s plans" }
+    },
+    "MORNING_NO_TODO": {
+      "v1": {
+        "title": "What’s one thing for today? ☀️",
+        "body": "One small to-do sets up your day"
+      },
+      "v2": {
+        "title": "Your to-do list is empty today",
+        "body": "Add one thing that comes to mind"
+      },
+      "v3": { "title": "What’s first today?", "body": "Let’s plan it with Aido 🐾" }
+    },
+    "EVENING_STREAK": {
+      "v1": { "title": "{streak}-day streak 🔥", "body": "Keep it up and tomorrow makes {next}" },
+      "v2": { "title": "{streak} days in a row", "body": "See you on day {next} tomorrow" },
+      "v3": { "title": "{streak}-day streak and counting", "body": "Aido saw every check today 🐾" }
+    },
+    "EVENING_STREAK_7": {
+      "default": { "title": "7-day streak 🎉", "body": "Every to-do done, all week long" }
+    },
+    "EVENING_STREAK_14": {
+      "default": { "title": "14-day streak 🏆", "body": "Two weeks straight. It’s a habit now" }
+    },
+    "EVENING_STREAK_30": {
+      "default": {
+        "title": "{streak}-day streak 🐾",
+        "body": "Consistency is officially your thing"
+      }
+    },
+    "EVENING_STREAK_RISK_PARTIAL": {
+      "v1": {
+        "title": "{streak}-day streak, {remaining} to go",
+        "body": "Finish them all to keep it going"
+      },
+      "v2": {
+        "title": "Finish {remaining} to keep your streak",
+        "body": "{streak} days strong. No rush 🔥"
+      },
+      "v3": { "title": "{remaining} left for today", "body": "Start with the easiest one" }
+    },
+    "EVENING_STREAK_RISK_NONE": {
+      "v1": {
+        "title": "Keep your {streak}-day streak going?",
+        "body": "See what’s left on your to-do list"
+      },
+      "v2": {
+        "title": "Your {streak}-day streak is waiting 🐾",
+        "body": "Finish what’s left to keep it going"
+      },
+      "v3": {
+        "title": "{streak} days strong so far",
+        "body": "Wrap up today’s to-dos to keep it going"
+      }
+    },
+    "LUNCH_NUDGE": {
+      "v1": { "title": "Post-lunch to-do?", "body": "Pick something you can do now" },
+      "v2": { "title": "First check of the afternoon?", "body": "Your easiest to-do is enough" },
+      "v3": {
+        "title": "Peek at your to-do list? 🐾",
+        "body": "One done makes the afternoon lighter"
+      },
+      "v4": { "title": "Start small today", "body": "Finish one and find your rhythm" }
+    },
+    "STREAK_AT_RISK": {
+      "v1": {
+        "title": "Keep your {streak}-day streak alive 🔥",
+        "body": "Check what’s left on your to-do list"
+      },
+      "v2": {
+        "title": "Finish what’s left today?",
+        "body": "Wrap it all up to keep your {streak}-day streak"
+      },
+      "v3": { "title": "{streak} days and counting", "body": "Tidy up what’s left before bed" }
+    }
+  },
+  "weather": {
+    "MORNING_TODO_RAIN": {
+      "default": {
+        "title": "Rain likely at {time} for “{todoTitle}” ☔",
+        "body": "{precipChance}% chance · Move to a dry time",
+        "bodyWithOthers": {
+          "one": "{count} more to-do overlaps · Move to a dry time",
+          "other": "{count} more to-dos overlap · Move to a dry time"
+        }
+      }
+    },
+    "MORNING_TODO_STORM": {
+      "default": {
+        "title": "Lightning risk at {time} for “{todoTitle}” ⚡",
+        "body": "Do it indoors or move the time"
+      }
+    },
+    "MORNING_TODO_SNOW": {
+      "default": {
+        "title": "Snow at {time} for “{todoTitle}” ❄️",
+        "body": "Leave 20 min early for the snow"
+      }
+    },
+    "MORNING_TODO_HEAT": {
+      "default": {
+        "title": "Feels like {apparentTemp}°C at {time} for “{todoTitle}” ☀️",
+        "body": "Move it to cooler hours"
+      }
+    },
+    "MORNING_RAIN_LATER": {
+      "default": {
+        "title": "Rain from {time} today ☔",
+        "body": "Take an umbrella when you head out"
+      }
+    },
+    "MORNING_SNOW_LATER": {
+      "default": {
+        "title": "Snow from {time} today ❄️",
+        "body": "Roads may be slippery. Dress warm"
+      }
+    },
+    "MORNING_SUMMARY": {
+      "default": {
+        "title": "{condition} today, {tempMin}–{tempMax}°C",
+        "body": "{precipChance}% chance of precipitation. Have a good day"
+      }
+    },
+    "EVENING_RAIN": {
+      "default": {
+        "title": "Rain expected tomorrow ☔",
+        "titleWithDayPart": "Rain starting {dayPart} ☔",
+        "body": "Keep an umbrella handy",
+        "bodyChilly": "A chilly {chillyTemp}°C morning. Bring an umbrella and a jacket"
+      }
+    },
+    "EVENING_SNOW": {
+      "default": {
+        "title": "Snow expected tomorrow ❄️",
+        "titleWithDayPart": "Snow starting {dayPart} ❄️",
+        "body": "Allow extra travel time",
+        "bodyChilly": "{chillyTemp}°C in the morning. Dress warm and leave early"
+      }
+    },
+    "EVENING_SUMMARY": {
+      "default": {
+        "title": "{condition} tomorrow, {tempMin}–{tempMax}°C 🌙",
+        "body": "Plan your day with it",
+        "titleChilly": "Chilly {tempMin}°C tomorrow morning 🌙",
+        "bodyChilly": "Bring a jacket. It warms to {tempMax}°C later"
+      }
+    }
+  },
+  "weatherFallback": {
+    "MORNING": {
+      "default": {
+        "title": "Add weather to your plans? ☀️",
+        "body": "Set a weather location for daily updates"
+      }
+    },
+    "EVENING": {
+      "default": {
+        "title": "Plan with tomorrow’s weather 🌙",
+        "body": "Set a weather location for forecasts"
+      }
+    },
+    "MORNING_UNAVAILABLE": {
+      "default": {
+        "title": "Check today’s weather ☀️",
+        "body": "See the hourly forecast in the app"
+      }
+    },
+    "EVENING_UNAVAILABLE": {
+      "default": {
+        "title": "Check tomorrow’s weather 🌙",
+        "body": "See tomorrow’s forecast in the app"
+      }
+    }
+  },
+  "social": {
+    "NUDGE_REPLIED": {
+      "default": {
+        "title": "{senderSubject} replied to your nudge",
+        "body": "“{todoTitle}” · “{reply}”"
+      }
+    },
+    "NUDGE_THANKED": {
+      "default": {
+        "title": "{senderSubject} says thanks 🐾",
+        "body": "“{todoTitle}” is done. Your cheer worked!"
+      }
+    },
+    "FOLLOW_NEW": {
+      "v1": {
+        "title": "{senderSubject} sent you a friend request",
+        "body": "Accept to cheer each other on"
+      },
+      "v2": {
+        "title": "{senderSubject} wants to be friends",
+        "body": "To-dos are easier with a buddy 🐾"
+      },
+      "v3": {
+        "title": "New friend request",
+        "body": "Connect with {senderWith} and cheer each other on"
+      }
+    },
+    "FOLLOW_ACCEPTED": {
+      "v1": {
+        "title": "{senderSubject} accepted your friend request",
+        "body": "Now you can cheer each other on"
+      },
+      "v2": {
+        "title": "You and {senderWith} are friends now 🎉",
+        "body": "Why not send the first cheer?"
+      },
+      "v3": { "title": "You’ve got a new friend", "body": "Say hi to {sender} with a nudge 🐾" }
+    },
+    "INVITE_PROGRESS": {
+      "default": {
+        "title": "{inviteeSubject} finished day one 🐾",
+        "body": "Nudge them to keep it going tomorrow"
+      }
+    },
+    "INVITE_QUALIFY_REMINDER": {
+      "default": {
+        "title": "Just one more day 🐾",
+        "body": "Finish a to-do today and {inviterActor} gets a paw print"
+      }
+    },
+    "INVITE_JOINED": {
+      "default": {
+        "title": "{inviteeSubject} accepted your invite 🐾",
+        "body": "You’re friends now. Send a welcome cheer"
+      }
+    },
+    "INVITE_REWARDED": {
+      "default": {
+        "title": "You got a paw print 🐾",
+        "premium": {
+          "one": "You got {count} day of Premium",
+          "other": "You got {count} days of Premium"
+        },
+        "friends": { "one": "{count} more friend", "other": "{count} more friends" },
+        "bodyBoth": "{premium} and can add {friends}",
+        "bodyPremium": "{premium}",
+        "bodyFriends": "You can now add {friends}"
+      }
+    },
+    "NUDGE_RECEIVED": {
+      "v1": {
+        "title": "{senderSubject} nudged you 🐾",
+        "bodyWithTodo": "Let’s get “{todoTitle}” started",
+        "body": "Let’s get today’s to-dos started"
+      },
+      "v2": {
+        "title": "A nudge from {sender}",
+        "bodyWithTodo": "Ready to start “{todoTitle}”?",
+        "body": "Pick one thing you can do now"
+      },
+      "v3": {
+        "title": "A friend is cheering you on",
+        "bodyWithTodo": "{senderSubject} is rooting for “{todoTitle}”",
+        "body": "{senderSubject} is rooting for you today"
+      }
+    },
+    "NUDGE_RECEIVED_WITH_MESSAGE": {
+      "default": {
+        "title": "{senderActor} sent a nudge and a note",
+        "bodyWithTodo": "“{todoTitle}” · {message}",
+        "body": "{message}"
+      }
+    },
+    "REMIND_NUDGE_RECEIVED": {
+      "v1": {
+        "title": "{senderSubject} wants to get started with you 🐾",
+        "body": "Add one to-do for today?"
+      },
+      "v2": { "title": "A nudge from {sender}", "body": "Jot down one thing on your mind" },
+      "v3": {
+        "title": "A friend is cheering you on",
+        "body": "{senderSubject} sent a little check-in"
+      }
+    },
+    "REMIND_NUDGE_RECEIVED_WITH_MESSAGE": {
+      "default": { "title": "A nudge and a note from {sender}", "body": "{message}" }
+    },
+    "CHEER_RECEIVED": {
+      "default": { "title": "A cheer from {sender}", "body": "{message}" }
+    },
+    "CHEER_RECEIVED_NO_MESSAGE": {
+      "v1": {
+        "title": "{senderSubject} sent you a cheer 🐾",
+        "body": "Keep going at your own pace"
+      },
+      "v2": { "title": "{senderActor} is cheering you on", "body": "You’ve got this today" },
+      "v3": { "title": "A friend is in your corner", "body": "{senderSubject} is rooting for you" }
+    },
+    "FRIEND_COMPLETED": {
+      "v1": {
+        "title": "{friendSubject} finished all of today’s to-dos ✨",
+        "body": "Send a quick congrats?"
+      },
+      "v2": {
+        "title": "{friendActor} is all done for today",
+        "body": "A little cheer goes a long way"
+      },
+      "v3": { "title": "Your friend wrapped up the day", "body": "Tell {friend} nice job 🐾" }
+    },
+    "SOCIAL_DIGEST_MULTI": {
+      "v1": {
+        "title": {
+          "one": "{count} friend finished today ✨",
+          "other": "{count} friends finished today ✨"
+        },
+        "body": "Knock out one too and send a cheer?"
+      },
+      "v2": {
+        "title": {
+          "one": "{count} friend wrapped up their to-dos",
+          "other": "{count} friends wrapped up their to-dos"
+        },
+        "body": "Send them a quick congrats"
+      },
+      "v3": {
+        "title": {
+          "one": "{count} friend crossed everything off",
+          "other": "{count} friends crossed everything off"
+        },
+        "body": "Peek at their progress, then do one 🐾"
+      }
+    },
+    "SOCIAL_DIGEST_SINGLE": {
+      "v1": {
+        "title": "{friendSubject} is all done today ✨",
+        "body": "Cheer them on, then knock out one?"
+      },
+      "v2": { "title": "{friendActor} finished today’s to-dos", "body": "Send a quick congrats?" },
+      "v3": {
+        "title": "Your friend wrapped up the day",
+        "body": "Cheer on {friend} and keep pace 🐾"
+      }
+    },
+    "NUDGE_SUGGEST": {
+      "v1": { "title": "Check in on {friend}?", "body": "A quick nudge goes a long way 🐾" },
+      "v2": { "title": "Send a friend some cheer?", "body": "Say hi to {friend} with a nudge" },
+      "v3": { "title": "How’s {friendTopic} doing?", "body": "Send a nudge to say hi" }
+    },
+    "TODO_COMMENT": {
+      "v1": {
+        "title": "{senderSubject} commented on your to-do",
+        "body": "Tap to read the new comment"
+      },
+      "v2": { "title": "New comment from {sender}", "body": "See what they said 🐾" },
+      "v3": { "title": "Your to-do has a new comment", "body": "See what {sender} said" }
+    },
+    "TODO_COMMENT_CHAIN": {
+      "v1": {
+        "title": {
+          "one": "{count} comment from {senderAuthor}",
+          "other": "{count} comments from {senderAuthor}"
+        },
+        "body": "Catch up on the new comments"
+      },
+      "v2": {
+        "title": {
+          "one": "{senderActor} left {count} comment",
+          "other": "{senderActor} left {count} comments"
+        },
+        "body": "The conversation’s going 🐾"
+      },
+      "v3": {
+        "title": { "one": "{count} new comment to read", "other": "{count} new comments to read" },
+        "body": "See what {sender} said"
+      }
+    },
+    "TODO_COMMENT_REPLY": {
+      "v1": { "title": "{senderSubject} replied to your comment", "body": "Tap to read the reply" },
+      "v2": { "title": "New reply from {sender}", "body": "Keep the conversation going 🐾" },
+      "v3": { "title": "Your comment got a reply", "body": "See what {sender} said" }
+    },
+    "TODO_COMMENT_REPLY_TO_REPLY": {
+      "v1": { "title": "{senderSubject} replied to your reply", "body": "Tap to read the reply" },
+      "v2": { "title": "New reply from {sender}", "body": "Keep the conversation going 🐾" },
+      "v3": { "title": "Your reply got a reply", "body": "See what {sender} said" }
+    },
+    "TODO_COMMENT_REPLY_CHAIN": {
+      "v1": {
+        "title": {
+          "one": "{count} reply from {senderAuthor}",
+          "other": "{count} replies from {senderAuthor}"
+        },
+        "body": "Catch up on the conversation"
+      },
+      "v2": {
+        "title": {
+          "one": "{senderActor} left {count} reply",
+          "other": "{senderActor} left {count} replies"
+        },
+        "body": "Catch up on the new replies 🐾"
+      },
+      "v3": {
+        "title": { "one": "{count} new reply to read", "other": "{count} new replies to read" },
+        "body": "{senderPartner} kept the conversation going"
+      }
+    },
+    "TODO_COMMENT_LIKE": {
+      "v1": {
+        "title": "{senderSubject} liked your comment",
+        "body": "Your words got a little love ❤️"
+      },
+      "v2": {
+        "title": "{senderSubject} liked what you shared",
+        "body": "Your comment got a heart"
+      },
+      "v3": { "title": "Your comment got a heart", "body": "It’s from {senderAuthor}" }
+    }
+  },
+  "system": {
+    "WINBACK_DAY3": {
+      "v1": { "title": "Ready to ease back in?", "body": "Add just one to-do for today" },
+      "v2": { "title": "Plan today together?", "body": "One small thing is enough" },
+      "v3": { "title": "One small step with Aido? 🐾", "body": "Pick your first to-do for today" }
+    },
+    "WINBACK_DAY7": {
+      "v1": { "title": "One thing for today?", "body": "No big plan needed to restart" },
+      "v2": { "title": "Start again, nice and slow", "body": "One small to-do is plenty" },
+      "v3": { "title": "Blank list, fresh start 🐾", "body": "Add one to-do that’s on your mind" }
+    },
+    "WINBACK_DAY14": {
+      "v1": { "title": "A good day for a fresh plan", "body": "Start with what you need today" },
+      "v2": { "title": "Restarts count too", "body": "One small to-do is a great start" },
+      "v3": { "title": "Plan today with Aido 🐾", "body": "Skip the backlog. Start with today" }
+    },
+    "WINBACK_DAY21": {
+      "v1": { "title": "Come back anytime", "body": "Add one thing you can do now" },
+      "v2": { "title": "There’s room for a new plan", "body": "Start with what you need today" },
+      "v3": { "title": "Aido’s still here 🐾", "body": "Let’s pick up with one small plan" }
+    },
+    "WINBACK_DAY30": {
+      "v1": { "title": "Plan something new today?", "body": "Start with what matters now" },
+      "v2": { "title": "Familiar place, fresh start", "body": "Write one to-do and take it slow" },
+      "v3": { "title": "Fresh start, with Aido 🐾", "body": "Plan only what fits today" }
+    },
+    "WEEKLY_ACHIEVEMENT": {
+      "v1": {
+        "title": {
+          "one": "{count} to-do done last week 🐾",
+          "other": "{count} to-dos done last week 🐾"
+        },
+        "body": "Look back at your progress"
+      },
+      "v2": {
+        "title": {
+          "one": "Last week: {count} to-do done",
+          "other": "Last week: {count} to-dos done"
+        },
+        "body": "Keep that momentum this week"
+      },
+      "v3": {
+        "title": {
+          "one": "You finished {count} to-do last week",
+          "other": "You finished {count} to-dos last week"
+        },
+        "body": "Your small wins, in one place"
+      }
+    },
+    "WEEKLY_ACHIEVEMENT_PERFECT": {
+      "v1": { "title": "100% done last week 🏆", "body": "You finished every to-do. Amazing" },
+      "v2": { "title": "Every to-do done last week", "body": "Carry that energy into this week" },
+      "v3": { "title": "Last week: all done", "body": "Even Aido is impressed 🐾" }
+    },
+    "WEEKLY_ACHIEVEMENT_ALMOST": {
+      "v1": { "title": "{rate}% done last week", "body": "So close! Take a look back" },
+      "v2": { "title": "{rate}% of last week’s plans done 🐾", "body": "Go for 100% this week?" },
+      "v3": { "title": "Last week: {rate}% complete", "body": "Start with what went well" }
+    },
+    "WEEKLY_REPORT": {
+      "default": { "title": "How did last week go? 📊", "body": "Explore last week in Reports" }
+    },
+    "MONTHLY_REPORT": {
+      "default": { "title": "How did last month go? 📈", "body": "Explore last month in Reports" }
+    },
+    "AI_SUGGESTION": {
+      "default": {
+        "title": "New to-do ideas for you ✨",
+        "body": "Based on your recent to-dos. Take a look"
+      }
+    },
+    "BILLING_ISSUE": {
+      "default": {
+        "title": "Check your payment details",
+        "body": "Update payment to keep your plan active."
+      }
+    },
+    "PREMIUM_GRANT_ENDING": {
+      "default": {
+        "title": "Your Premium ends tomorrow",
+        "body": "See details on the Subscription screen"
+      }
+    },
+    "PREMIUM_TRIAL_ENDING_RENEWING": {
+      "default": {
+        "title": "Your {plan} starts {day}",
+        "body": "Billing on {date} · Cancel in your store"
+      }
+    },
+    "PREMIUM_TRIAL_ENDING_CANCELLED": {
+      "default": {
+        "titleToday": "Your free trial ends today",
+        "titleTomorrow": "Your free trial ends tomorrow",
+        "title": "Your free trial ends in {days} days",
+        "body": "Use it until {date} · No charge"
+      }
+    },
+    "PREMIUM_RENEWAL_UPCOMING": {
+      "default": {
+        "title": "Your annual plan renews {day}",
+        "body": "Billing on {date} · Cancel in your store"
+      }
+    },
+    "MARKETING_CONSENT_RECONFIRM": {
+      "default": {
+        "title": "You’re opted in to marketing alerts",
+        "body": "Agreed {agreedOn} · Change in Settings"
+      }
+    },
+    "ONBOARDING_DAY0": {
+      "default": {
+        "title": "Let’s add your first to-do 🌱",
+        "body": "One small thing is all it takes"
+      }
+    },
+    "ONBOARDING_DAY1": {
+      "default": {
+        "title": "Start today with one to-do",
+        "body": "Write it, do it, check it off 🐾"
+      }
+    },
+    "ONBOARDING_DAY2": {
+      "default": {
+        "title": "To-dos are better with friends",
+        "body": "See each other’s lists and send nudges"
+      }
+    },
+    "ONBOARDING_DAY3": {
+      "default": {
+        "title": "Reminders that fit your day ⏰",
+        "body": "Set up notifications your way"
+      }
+    },
+    "ONBOARDING_DAY5": {
+      "default": {
+        "titleNone": "Peek at your to-do list? 🐾",
+        "bodyNone": "Pick what’s next from the list",
+        "title": { "one": "{count} to-do done so far", "other": "{count} to-dos done so far" },
+        "body": "See everything you’ve checked off 🐾"
+      }
+    },
+    "ONBOARDING_DAY7": {
+      "default": {
+        "title": "Your first week with Aido 🎉",
+        "bodyNone": "Take a look at your first week",
+        "body": {
+          "one": "Look back at {count} finished to-do",
+          "other": "Look back at {count} finished to-dos"
+        }
+      }
+    },
+    "MILESTONE_FIRST_COMPLETE": {
+      "default": {
+        "title": "First to-do done! ✨",
+        "body": "Starting is the hardest part. You did it"
+      }
+    },
+    "MILESTONE_10": {
+      "default": { "title": "10 to-dos done 🐾", "body": "Your small wins are stacking up" }
+    },
+    "MILESTONE_50": {
+      "default": { "title": "50 to-dos done already 🎉", "body": "Your consistency is showing" }
+    },
+    "MILESTONE_100": {
+      "default": { "title": "100 to-dos done 🏆", "body": "One at a time got you here" }
+    },
+    "MILESTONE_STREAK_3": {
+      "default": { "title": "3 days in a row 🔥", "body": "Nice rhythm. Keep it going tomorrow" }
+    },
+    "MILESTONE_FIRST_FRIEND": {
+      "default": {
+        "title": "You made your first friend 🐾",
+        "body": "Now you can cheer each other on"
+      }
+    }
+  },
+  "retention": {
+    "D0:d0_no_todo": {
+      "v1": { "title": "Start with one tiny to-do 🌱", "body": "Whatever’s on your mind works" },
+      "v2": {
+        "title": "Make a first plan with Aido?",
+        "body": "Jot down one thing to remember 🐾"
+      },
+      "v3": { "title": "Create your first to-do", "body": "Even “drink water” counts" }
+    },
+    "D1:d1_no_todo": {
+      "v1": { "title": "What’s on for today?", "body": "Write down one thing you want to do" },
+      "v2": { "title": "No big plans needed", "body": "Start with whatever comes to mind 🐾" },
+      "v3": { "title": "Anything you can’t forget?", "body": "Jot it down and clear your head" }
+    },
+    "D1:d1_has_todo_no_completion": {
+      "v1": { "title": "Ready for your first check? ✅", "body": "Pick your easiest to-do" },
+      "v2": { "title": "Start with what you wrote", "body": "Choose one to-do from your list" },
+      "v3": { "title": "Try that first checkmark 🐾", "body": "Finishing one changes the day" }
+    },
+    "D3:d3_restart": {
+      "v1": { "title": "Start fresh today 🌱", "body": "Add one thing you need right now" },
+      "v2": { "title": "Keep today’s plan simple", "body": "One small to-do is a fine restart" },
+      "v3": { "title": "Another step with Aido 🐾", "body": "Start with what fits today" }
+    },
+    "D7:d7_has_progress": {
+      "v1": {
+        "title": "Your first week, wrapped up 🎉",
+        "body": "See what you got done this week"
+      },
+      "v2": { "title": "Here’s your first week", "body": "Use it to plan the week ahead 🐾" },
+      "v3": {
+        "title": "How did your first week go?",
+        "body": "Check your progress and plan what’s next"
+      }
+    },
+    "D7:d7_restart": {
+      "v1": { "title": "A small plan for today?", "body": "Add one thing you can do now" },
+      "v2": { "title": "It’s never too late to restart", "body": "One to-do is all it takes" },
+      "v3": { "title": "Plan today with Aido? 🐾", "body": "Pick one to-do to start" }
+    }
+  },
+  "parts": {
+    "name": { "known": "{name}", "unknownActor": "A friend", "unknownMention": "your friend" },
+    "nudgeReply": {
+      "STARTING": "I’ll get started",
+      "THANKFUL": "Thanks for cheering me on",
+      "LATER": "I’ll do it later"
+    },
+    "weatherCondition": {
+      "CLEAR": "Clear",
+      "MOSTLY_CLEAR": "Mostly clear",
+      "PARTLY_CLOUDY": "Partly cloudy",
+      "MOSTLY_CLOUDY": "Mostly cloudy",
+      "CLOUDY": "Cloudy",
+      "FOGGY": "Foggy",
+      "HAZY": "Hazy",
+      "WINDY": "Windy",
+      "DRIZZLE": "Drizzle",
+      "RAIN": "Rain",
+      "HEAVY_RAIN": "Heavy rain",
+      "THUNDERSTORMS": "Thunderstorms",
+      "SLEET": "Sleet",
+      "SNOW": "Snow",
+      "HEAVY_SNOW": "Heavy snow",
+      "HAIL": "Hail",
+      "HOT": "Hot",
+      "FRIGID": "Freezing"
+    },
+    "weatherDayPart": {
+      "dawn": "before dawn tomorrow",
+      "morning": "tomorrow morning",
+      "afternoon": "tomorrow afternoon",
+      "evening": "tomorrow evening"
+    },
+    "remainingDays": { "today": "today", "tomorrow": "tomorrow", "later": "in {days} days" },
+    "plan": { "ANNUAL": "annual plan", "MONTHLY": "monthly plan", "UNKNOWN": "subscription" },
+    "marketing": { "titlePrefix": "(Ad) ", "optOut": "Opt out: Settings > Notifications" }
+  }
+}

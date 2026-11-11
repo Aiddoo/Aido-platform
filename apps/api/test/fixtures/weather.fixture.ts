@@ -1,15 +1,13 @@
-import type { WeatherReportAttribution } from "#api/modules/weather/application/models/forecast/weather-report.model";
-import type {
-  WeatherReport,
-  WeatherReportHour,
-} from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type {
   WeatherConditions,
   WeatherForecast,
-} from "#api/modules/weather/application/ports/forecast/weather-provider.port";
-import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
-import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
-import { UserLocationBuilder } from "#test/builders/user-location.builder";
+} from "#api/modules/weather/forecasts/application/read-models/weather-forecast.read-model";
+import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/kma-forecast-availability.domain-service";
+import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/domain/weather-report.vo";
+import type {
+  WeatherReport,
+  WeatherReportHour,
+} from "#api/modules/weather/forecasts/domain/weather-report.vo";
 
 /** WeatherKit attribution API처럼 언어별로 다른 상표 로고 경로를 돌려준다. */
 export function weatherAttributionFixture(language = "ko"): WeatherReportAttribution {
@@ -76,19 +74,6 @@ export function weatherConditionsFixture(
     pm25: 0,
     ...overrides,
   };
-}
-
-export function weatherLocationFixture(
-  userId = "weather-user",
-  city: "서울" | "부산" | "도쿄" = "서울",
-) {
-  const builder = UserLocationBuilder.create(userId);
-  const presets = {
-    서울: () => builder,
-    부산: () => builder.asBusan(),
-    도쿄: () => builder.asTokyo(),
-  } as const;
-  return UserLocation.reconstitute(presets[city]().build());
 }
 
 const HOUR_MS = 60 * 60_000;

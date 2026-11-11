@@ -7,7 +7,7 @@ export const USER_SETTINGS_FIXTURE_OTHER_USER_ID = "clz7x5p8k0012qz0z8z8z8z8z";
 export const USER_SETTINGS_FIXTURE_INACTIVE_USER_ID = "clz7x5p8k0013qz0z8z8z8z8z";
 export const USER_SETTINGS_FIXTURE_DELETED_USER_ID = "clz7x5p8k0014qz0z8z8z8z8z";
 
-export const USER_SETTINGS_FIXTURE_NOW = new Date("2026-11-10T00:00:00.000Z");
+export const USER_SETTINGS_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T00:00:00.000Z");
 
 /** 활성 사용자가 아니어서 광고성 동의 재확인 대상에서 빠지는 사용자 */
 export const USER_SETTINGS_FIXTURE_INACTIVE_USER_IDS = [

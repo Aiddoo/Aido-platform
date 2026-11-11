@@ -1,11 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import {
   type ConsentSeedInput,
   type FindMarketingReconfirmTargetsParams,
   type MarketingReconfirmTarget,
-  USER_CONSENT_REPOSITORY,
-  type UserConsentRepositoryPort,
+  UserConsentRepositoryPort,
 } from "../../application/ports/user-consent.repository.port.js";
 import type {
   UserNotificationSettingsAccessPort,
@@ -56,7 +57,7 @@ export class UserSettingsAccessAdapter
     upsertPushTimezoneUseCase: UpsertPushTimezoneUseCase,
     upsertPushLocaleUseCase: UpsertPushLocaleUseCase,
     updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase,
-    @Inject(USER_CONSENT_REPOSITORY)
+    @Inject(UserConsentRepositoryPort)
     consentRepository: Pick<
       UserConsentRepositoryPort,
       "findMarketingReconfirmTargets" | "claimMarketingReconfirm"
@@ -74,45 +75,49 @@ export class UserSettingsAccessAdapter
     this.#consentRepository = consentRepository;
   }
 
-  seedDefaults(userId: string, consent: ConsentSeedInput): Promise<void> {
-    return this.#seedUserSettingsUseCase.execute({ userId, consent });
+  seedDefaults(userId: UserId, consent: ConsentSeedInput): Promise<void> {
+    return this.#seedUserSettingsUseCase.execute({ userId: userId.value, consent });
   }
 
-  recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void> {
-    return this.#onTodoToggledUseCase.execute({ userId, completed, timezone });
+  recordTodoToggle(userId: UserId, completed: boolean, timezone: string): Promise<void> {
+    return this.#onTodoToggledUseCase.execute({ userId: userId.value, completed, timezone });
   }
 
-  getPreferenceRecord(userId: string) {
-    return this.#getPreferenceRecordUseCase.execute({ userId });
+  getPreferenceRecord(userId: UserId) {
+    return this.#getPreferenceRecordUseCase.execute({ userId: userId.value });
   }
 
-  async findStoredTimezone(userId: string): Promise<string | null> {
-    const record = await this.#getPreferenceRecordUseCase.execute({ userId });
+  async findStoredTimezone(userId: UserId): Promise<string | null> {
+    const record = await this.#getPreferenceRecordUseCase.execute({ userId: userId.value });
     return record?.timezone ?? null;
   }
 
-  getPreferenceRecordsByUserIds(userIds: string[]) {
-    return this.#getPreferenceRecordsUseCase.execute({ userIds });
+  getPreferenceRecordsByUserIds(userIds: readonly UserId[]) {
+    return this.#getPreferenceRecordsUseCase.execute({
+      userIds: userIds.map((userId) => userId.value),
+    });
   }
 
-  getConsentRecord(userId: string) {
-    return this.#getConsentRecordUseCase.execute({ userId });
+  getConsentRecord(userId: UserId) {
+    return this.#getConsentRecordUseCase.execute({ userId: userId.value });
   }
 
-  getConsentRecordsByUserIds(userIds: string[]) {
-    return this.#getConsentRecordsUseCase.execute({ userIds });
+  getConsentRecordsByUserIds(userIds: readonly UserId[]) {
+    return this.#getConsentRecordsUseCase.execute({
+      userIds: userIds.map((userId) => userId.value),
+    });
   }
 
-  upsertPushTimezone(userId: string, timezone: string): Promise<void> {
-    return this.#upsertPushTimezoneUseCase.execute({ userId, timezone });
+  upsertPushTimezone(userId: UserId, timezone: string): Promise<void> {
+    return this.#upsertPushTimezoneUseCase.execute({ userId: userId.value, timezone });
   }
 
-  upsertPushLocale(userId: string, locale: string): Promise<void> {
-    return this.#upsertPushLocaleUseCase.execute({ userId, locale });
+  upsertPushLocale(userId: UserId, locale: string): Promise<void> {
+    return this.#upsertPushLocaleUseCase.execute({ userId: userId.value, locale });
   }
 
-  async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
-    await this.#updateMarketingPushConsentUseCase.execute({ userId, agreed });
+  async updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void> {
+    await this.#updateMarketingPushConsentUseCase.execute({ userId: userId.value, agreed });
   }
 
   findMarketingReconfirmTargets(
@@ -122,8 +127,8 @@ export class UserSettingsAccessAdapter
   }
 
   claimMarketingReconfirm(
-    userIds: readonly string[],
-    params: { readonly cutoff: Date; readonly at: Date },
+    userIds: readonly UserId[],
+    params: { readonly cutoff: Temporal.Instant; readonly at: Temporal.Instant },
   ): Promise<MarketingReconfirmTarget[]> {
     return this.#consentRepository.claimMarketingReconfirm(userIds, params);
   }

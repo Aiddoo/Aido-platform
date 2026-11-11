@@ -63,9 +63,9 @@
     "off": "Off",
     "deviceOff": "Off on device",
     "pushLabel": "Push notifications",
-    "pushDescription": "Get to-do and billing updates. Promotions need separate consent",
+    "pushDescription": "Get to-do and billing alerts on every device signed in to this account. Promotions need separate consent",
     "nightPushLabel": "Night push notifications",
-    "nightPushDescription": "Also receive notifications between 9 PM and 8 AM",
+    "nightPushDescription": "Get offer and friend alerts from 9 PM to 8 AM too. Reminders you set always arrive on time",
     "marketingLabel": "Marketing communications",
     "marketingDescription": "Receive events, benefits, and promotions",
     "marketingPushLabel": "Promotional push",
@@ -104,7 +104,7 @@
     },
     "deviceOff": {
       "title": "Device notifications are off",
-      "description": "Turn them on to get the notifications below"
+      "description": "Turn them on to get the notifications below on this device"
     },
     "todoTime": {
       "off": "Notifications are off, so we can't remind you"
