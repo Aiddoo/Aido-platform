@@ -10,7 +10,6 @@ import {
   notificationCategoryParamSchema,
   notificationDirectionParamSchema,
 } from '@src/features/notification/schemas/notification-params.schema';
-import type { NudgeDirection } from '@src/features/social/nudge/schemas/nudge-interaction-query-key.schema';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -27,6 +26,7 @@ import { match } from 'ts-pattern';
 
 export default function NotificationsScreen() {
   const { t } = useTranslation('notification');
+
   const [category, setCategory] = useNotificationCategory();
   const [{ direction, isDirectionSelectable }, setDirection] = useNotificationDirection();
 
@@ -61,7 +61,20 @@ export default function NotificationsScreen() {
 
           {/* 콕 상호작용을 쓰는 사용자에게만 보이는 줄이라 응답 전에는 자리를 잡지 않는다. 자리를 잡으면 대부분의 사용자에게서 나타났다 사라진다 */}
           {isDirectionSelectable && (
-            <DirectionTabs value={direction} onValueChange={setDirection} />
+            <Box px={16} pt={12} pb={4}>
+              <ViewTabs
+                schema={notificationDirectionParamSchema}
+                value={direction}
+                onValueChange={setDirection}
+                variant="primary"
+              >
+                <Tabs.List className="self-start">
+                  <Tabs.Indicator />
+                  <SegmentTabTrigger value="received">{t('directions.received')}</SegmentTabTrigger>
+                  <SegmentTabTrigger value="sent">{t('directions.sent')}</SegmentTabTrigger>
+                </Tabs.List>
+              </ViewTabs>
+            </Box>
           )}
 
           {match(direction)
@@ -98,32 +111,5 @@ export default function NotificationsScreen() {
         </ViewTabs>
       </ReadableContent>
     </StyledSafeAreaView>
-  );
-}
-
-function DirectionTabs({
-  value,
-  onValueChange,
-}: {
-  value: NudgeDirection;
-  onValueChange: (direction: NudgeDirection) => void;
-}) {
-  const { t } = useTranslation('notification');
-
-  return (
-    <Box px={16} pt={12} pb={4}>
-      <ViewTabs
-        schema={notificationDirectionParamSchema}
-        value={value}
-        onValueChange={onValueChange}
-        variant="primary"
-      >
-        <Tabs.List className="self-start">
-          <Tabs.Indicator />
-          <SegmentTabTrigger value="received">{t('directions.received')}</SegmentTabTrigger>
-          <SegmentTabTrigger value="sent">{t('directions.sent')}</SegmentTabTrigger>
-        </Tabs.List>
-      </ViewTabs>
-    </Box>
   );
 }
