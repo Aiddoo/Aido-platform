@@ -65,6 +65,20 @@ export function isViewingNotificationDestination(
   );
 }
 
+/**
+ * 알림함과 같은 루트 Stack에 쌓이는 상세 화면의 경로. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은
+ * 미리보기가 그 navigator에 화면을 미리 넣어 탭에 params가 남을 수 있다. 없으면 null이다
+ */
+export function findRootStackDetailHref(destination: NotificationDestination): Href | null {
+  if (destination.kind !== 'route') {
+    return null;
+  }
+  const { href } = destination;
+  const pathname = typeof href === 'string' ? href.split('?')[0] : href.pathname;
+  const isRootStackDetail = pathname === '/todo/[todoId]' || pathname === '/nudges/[nudgeId]';
+  return isRootStackDetail ? href : null;
+}
+
 interface NotificationDestinationContext {
   /** 할 일 목적지를 상세 화면으로 열지 펼친 피드의 상세 pane으로 열지 정한다 */
   windowSizeClass: WindowSizeClass;

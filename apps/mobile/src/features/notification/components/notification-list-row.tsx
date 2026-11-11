@@ -4,8 +4,9 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { Box, HStack, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { type Href, Link } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactElement } from 'react';
 
 interface NotificationListRowProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
@@ -16,6 +17,12 @@ interface NotificationListRowProps extends Omit<
   body: string;
   createdAt: Instant;
   isUnread?: boolean;
+}
+
+interface NotificationListRowLinkProps {
+  /** 없으면 행만 그린다 */
+  href: Href | null;
+  children: ReactElement;
 }
 
 export function NotificationListRow({
@@ -70,6 +77,23 @@ export function NotificationListRow({
     </PressableFeedback>
   );
 }
+
+/**
+ * 화면으로 가는 행을 Link로 감싸 길게 누르면 목적지를 미리본다(iOS, 다른 플랫폼은 행만 그린다).
+ * 탭은 행의 onPress(연타 막기·읽음·추적)가 맡고 Link는 미리보기를 눌러 가는 이동만 맡는다
+ */
+NotificationListRow.Link = function RowLink({ href, children }: NotificationListRowLinkProps) {
+  if (href == null) {
+    return children;
+  }
+
+  return (
+    <Link href={href} asChild onPress={(event) => event.preventDefault()}>
+      <Link.Trigger>{children}</Link.Trigger>
+      <Link.Preview />
+    </Link>
+  );
+};
 
 /** 받은 뒤의 행과 같은 여백·글자 줄로 그려 목록이 채워질 때 행 높이가 바뀌지 않는다 */
 NotificationListRow.Loading = function Loading() {

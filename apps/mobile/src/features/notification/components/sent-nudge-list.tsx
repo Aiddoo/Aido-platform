@@ -5,6 +5,7 @@ import { isSentNudgeListDisabledError } from '@src/features/social/nudge/domains
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
@@ -16,7 +17,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { type Href, router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
@@ -30,6 +31,8 @@ export function SentNudgeList() {
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
   const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
+  // 알림 행과 같이 좁은 화면에서만 길게 눌러 미리본다
+  const hasPreview = useWindowSizeClass() === 'compact';
 
   return (
     <InfiniteList
@@ -45,7 +48,9 @@ export function SentNudgeList() {
           .with({ type: 'header' }, ({ section }) => (
             <NotificationList.SectionHeader section={section} />
           ))
-          .with({ type: 'item' }, ({ entry }) => <SentNudgeList.Item nudge={entry} />)
+          .with({ type: 'item' }, ({ entry }) => (
+            <SentNudgeList.Item nudge={entry} hasPreview={hasPreview} />
+          ))
           .exhaustive()
       }
       getItemType={(item) => item.type}
@@ -62,11 +67,16 @@ export function SentNudgeList() {
   );
 }
 
-SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
+SentNudgeList.Item = function Item({
+  nudge,
+  hasPreview,
+}: {
+  nudge: NudgeInteraction;
+  hasPreview: boolean;
+}) {
   const { t } = useTranslation('todo');
-  const openDetail = useSingleTap(() =>
-    router.navigate({ pathname: '/nudges/[nudgeId]', params: { nudgeId: nudge.id } }),
-  );
+  const detailHref: Href = { pathname: '/nudges/[nudgeId]', params: { nudgeId: nudge.id } };
+  const openDetail = useSingleTap(() => router.navigate(detailHref));
   const status = match(NudgeInteractionPolicy.getNudgeInteractionStatus(nudge))
     .with('UNAVAILABLE', () => t('interaction.unavailable'))
     .with('THANKED', () => t('interaction.thanked'))
@@ -80,13 +90,15 @@ SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
     .exhaustive();
 
   return (
-    <NotificationListRow
-      label={nudge.receiverName}
-      title={nudge.todoTitle ?? t('interaction.unavailableTodo')}
-      body={status}
-      createdAt={nudge.createdAt}
-      onPress={openDetail}
-    />
+    <NotificationListRow.Link href={hasPreview ? detailHref : null}>
+      <NotificationListRow
+        label={nudge.receiverName}
+        title={nudge.todoTitle ?? t('interaction.unavailableTodo')}
+        body={status}
+        createdAt={nudge.createdAt}
+        onPress={openDetail}
+      />
+    </NotificationListRow.Link>
   );
 };
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { Children, cloneElement, isValidElement, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -94,11 +94,82 @@ Toolbar.MenuAction = function ToolbarMenuAction({
   children: ReactNode;
   onPress?: () => void;
 }) {
-  return (
+  return process.env.EXPO_OS === 'ios' ? (
     <Pressable accessibilityRole="menuitem" onPress={onPress}>
       <Text>{children}</Text>
     </Pressable>
-  );
+  ) : null;
+};
+
+interface LinkPressEvent {
+  defaultPrevented: boolean;
+  preventDefault: () => void;
+}
+
+/**
+ * 실제 Link(asChild)처럼 행의 onPress → Link의 onPress 순서로 부르고, 막지 않았으면 router.navigate로 간다.
+ * 미리보기·메뉴는 실제처럼 iOS에서만 그린다. 미리보기는 붙었는지만 보이게 testID로, 메뉴는 눌러 볼 수 있게
+ * 메뉴 항목 버튼으로 바꾼다
+ */
+export function Link({
+  href,
+  onPress,
+  children,
+}: {
+  href: unknown;
+  onPress?: (event: LinkPressEvent) => void;
+  children: ReactNode;
+}) {
+  return Children.map(children, (child) => {
+    if (!isValidElement<{ children?: ReactNode }>(child) || child.type !== Link.Trigger) {
+      return child;
+    }
+    const trigger = child.props.children;
+    if (!isValidElement<{ onPress?: () => void }>(trigger)) {
+      return trigger;
+    }
+    return cloneElement(trigger, {
+      onPress: () => {
+        trigger.props.onPress?.();
+        const event: LinkPressEvent = {
+          defaultPrevented: false,
+          preventDefault: () => {
+            event.defaultPrevented = true;
+          },
+        };
+        onPress?.(event);
+        if (!event.defaultPrevented) {
+          router.navigate(href);
+        }
+      },
+    });
+  });
+}
+
+Link.Trigger = function LinkTrigger({ children }: { children: ReactNode }) {
+  return children;
+};
+
+Link.Preview = function LinkPreview() {
+  return process.env.EXPO_OS === 'ios' ? <View testID="link-preview" /> : null;
+};
+
+Link.Menu = function LinkMenu({ children }: { children: ReactNode }) {
+  return process.env.EXPO_OS === 'ios' ? <View accessibilityRole="menu">{children}</View> : null;
+};
+
+Link.MenuAction = function LinkMenuAction({
+  children,
+  onPress,
+}: {
+  children: ReactNode;
+  onPress?: () => void;
+}) {
+  return process.env.EXPO_OS === 'ios' ? (
+    <Pressable accessibilityRole="menuitem" onPress={onPress}>
+      <Text>{children}</Text>
+    </Pressable>
+  ) : null;
 };
 
 function StackScreen({ options }: { options?: { title?: string; headerTitle?: () => ReactNode } }) {
