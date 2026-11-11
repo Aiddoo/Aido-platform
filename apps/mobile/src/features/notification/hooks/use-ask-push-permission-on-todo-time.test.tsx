@@ -12,7 +12,7 @@ import { act, waitFor } from '@testing-library/react-native';
 import { createPushDeviceResponseDto } from '../__tests__/notification.fixtures';
 import type { PushPermission } from '../domains/push-permission.model';
 import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
-import { usePromptPushPermission } from './use-prompt-push-permission';
+import { useAskPushPermissionOnTodoTime } from './use-ask-push-permission-on-todo-time';
 
 async function renderPrompt(permission: PushPermission) {
   const queryClient = createTestQueryClient({
@@ -22,7 +22,7 @@ async function renderPrompt(permission: PushPermission) {
   const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const pushNotification = createPushNotificationGatewayStub();
-  const { result } = await renderScreenHook(usePromptPushPermission, {
+  const { result } = await renderScreenHook(useAskPushPermissionOnTodoTime, {
     queryClient,
     di: {
       httpClient,
@@ -31,19 +31,19 @@ async function renderPrompt(permission: PushPermission) {
       logger: createLoggerStub(),
     },
   });
-  return { promptPushPermission: result.current, pushNotification, queryClient };
+  return { askPushPermission: result.current, pushNotification, queryClient };
 }
 
-describe('usePromptPushPermission — 할 일 시간을 정한 순간', () => {
+describe('useAskPushPermissionOnTodoTime — 할 일 시간을 정한 순간', () => {
   it('아직 묻지 않았으면 그 자리에서 시스템 창을 띄우고 답을 캐시에 남긴다', async () => {
     // Given
-    const { promptPushPermission, pushNotification, queryClient } = await renderPrompt({
+    const { askPushPermission, pushNotification, queryClient } = await renderPrompt({
       status: 'NOT_DETERMINED',
       canAskAgain: true,
     });
 
     // When
-    await act(async () => promptPushPermission());
+    await act(async () => askPushPermission());
 
     // Then
     await waitFor(() => expect(pushNotification.requestPermission).toHaveBeenCalledTimes(1));
@@ -60,10 +60,10 @@ describe('usePromptPushPermission — 할 일 시간을 정한 순간', () => {
     ['이미 허용했으면', { status: 'GRANTED', canAskAgain: false }],
   ] as const)('%s 시스템 창을 띄우지 않는다', async (_label, permission) => {
     // Given
-    const { promptPushPermission, pushNotification } = await renderPrompt(permission);
+    const { askPushPermission, pushNotification } = await renderPrompt(permission);
 
     // When
-    await act(async () => promptPushPermission());
+    await act(async () => askPushPermission());
 
     // Then
     expect(pushNotification.requestPermission).not.toHaveBeenCalled();

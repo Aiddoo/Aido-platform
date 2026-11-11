@@ -1,6 +1,7 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { PUSH_PERMISSION_STEP } from '@src/features/notification/constants/notification.constants';
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
-import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/push-permission.mutations';
+import { usePushPermissionAction } from '@src/features/notification/hooks/use-push-permission-action';
 import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/push-permission.queries';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
@@ -27,8 +28,8 @@ import {
   Mascot,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { type ComponentProps, Suspense, useEffect } from 'react';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { type ComponentProps, Suspense, useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -251,14 +252,15 @@ InviteWelcomeBottomSheet.Actions = function Actions({
 /** 친구 소식을 받으려면 알림이 필요하다는 맥락을 이 순간에 한 번 알린다. 이미 켰으면 보여 주지 않는다 */
 function WelcomeNotificationPrompt({ className }: { className?: string }) {
   const { t } = useTranslation('invite');
-  const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
   const { data: permission } = useQuery({
     ...useGetPushPermissionQueryOptions(),
     throwOnError: false,
   });
+  const [hasAsked, setHasAsked] = useState(false);
+  const { runStep, isPending } = usePushPermissionAction({ source: 'invite_welcome' });
+  // 이 시트에서 물어 켰을 때만 켜졌다고 알린다. 이미 켠 사용자에게는 카드를 보이지 않는다
   const isTurnedOn =
-    requestPermission.data != null &&
-    PushPermissionPolicy.isPushDeliverable(requestPermission.data);
+    hasAsked && permission != null && PushPermissionPolicy.isPushDeliverable(permission);
 
   // 권한을 확인하기 전에는 그리지 않아 이미 켠 사용자에게 잠깐 보였다 사라지지 않게 한다.
   // 시스템 창을 다시 띄울 수 없으면 버튼이 아무 일도 하지 않으므로 보여 주지 않는다
@@ -284,8 +286,11 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
       {!isTurnedOn && (
         <TextButton
           size="small"
-          onPress={() => requestPermission.mutate({ source: 'invite_welcome' })}
-          isDisabled={requestPermission.isPending}
+          onPress={() => {
+            setHasAsked(true);
+            runStep(PUSH_PERMISSION_STEP.REQUEST_SYSTEM);
+          }}
+          isDisabled={isPending}
         >
           {t('welcome.notificationButton')}
         </TextButton>

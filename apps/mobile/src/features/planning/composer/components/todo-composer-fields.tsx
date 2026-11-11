@@ -1,6 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { TodoTimePushNotice } from '@src/features/notification/components/todo-time-push-notice';
-import { usePromptPushPermission } from '@src/features/notification/hooks/use-prompt-push-permission';
+import { useAskPushPermissionOnTodoTime } from '@src/features/notification/hooks/use-ask-push-permission-on-todo-time';
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
@@ -261,7 +261,7 @@ function TimeChip({ form }: { form: ComposerForm }) {
   // 설정을 아직 모르면 칩이 경계로 터지지 않게 24시간 표기로 먼저 보인다
   const { data: preference } = useQuery(useGetPreferenceQueryOptions());
   const { setFocus, setValue } = form;
-  const promptPushPermission = usePromptPushPermission();
+  const askPushPermission = useAskPushPermissionOnTodoTime();
   const [startDate, scheduledTime, isAllDay] = useWatch({
     control: form.control,
     name: ['startDate', 'scheduledTime', 'isAllDay'],
@@ -287,7 +287,7 @@ function TimeChip({ form }: { form: ComposerForm }) {
                 setValue('isAllDay', nextTime.isAllDay);
                 close();
                 if (!nextTime.isAllDay && nextTime.scheduledTime != null) {
-                  promptPushPermission();
+                  askPushPermission();
                 }
               }}
               onCancel={close}

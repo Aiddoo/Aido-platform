@@ -6,10 +6,8 @@ import { match } from 'ts-pattern';
 import { PUSH_PERMISSION_STEP } from '../../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../../constants/notification.events';
 import { PushPermissionPolicy } from '../../domains/push-permission.model';
-import {
-  useOpenPushSettingsMutationOptions,
-  useRequestPushPermissionMutationOptions,
-} from '../../queries/push-permission.mutations';
+import { usePushPermissionAction } from '../../hooks/use-push-permission-action';
+import { useOpenPushSettingsMutationOptions } from '../../queries/push-permission.mutations';
 import { useGetPushPermissionQueryOptions } from '../../queries/push-permission.queries';
 
 const SOURCE: PushPermissionPromptSource = 'settings';
@@ -18,7 +16,8 @@ const SOURCE: PushPermissionPromptSource = 'settings';
 export function PushPermissionSettings() {
   const { t } = useTranslation('notification');
   const { data: permission } = useSuspenseQuery(useGetPushPermissionQueryOptions());
-  const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
+  const { runStep, isPending } = usePushPermissionAction({ source: SOURCE });
+  // 허용한 뒤 기기 설정을 여는 것은 권한을 되찾는 단계가 아니라 source 없이 열어 추적하지 않는다
   const openSettings = useMutation(useOpenPushSettingsMutationOptions());
 
   return (
@@ -33,11 +32,11 @@ export function PushPermissionSettings() {
                 {t('permission.status.granted')}
               </Text>
             }
-            // 허용한 뒤 기기 설정을 여는 것은 권한을 되찾는 단계가 아니라 source 없이 열어 추적하지 않는다
             onPress={() => openSettings.mutate({})}
+            isDisabled={openSettings.isPending}
           />
         ))
-        .with(PUSH_PERMISSION_STEP.ASK, PUSH_PERMISSION_STEP.REQUEST_SYSTEM, () => (
+        .with(PUSH_PERMISSION_STEP.ASK, PUSH_PERMISSION_STEP.REQUEST_SYSTEM, (step) => (
           <SettingsListGroup.Item
             label={t('permission.deviceOff.title')}
             description={t('permission.deviceOff.description')}
@@ -51,8 +50,8 @@ export function PushPermissionSettings() {
                 {t('permission.continue')}
               </Text>
             }
-            onPress={() => requestPermission.mutate({ source: SOURCE })}
-            isDisabled={requestPermission.isPending}
+            onPress={() => runStep(step)}
+            isDisabled={isPending}
           />
         ))
         .with(PUSH_PERMISSION_STEP.OPEN_SETTINGS, () => (
@@ -69,7 +68,8 @@ export function PushPermissionSettings() {
                 {t('permission.card.openSettings')}
               </Text>
             }
-            onPress={() => openSettings.mutate({ source: SOURCE })}
+            onPress={() => runStep(PUSH_PERMISSION_STEP.OPEN_SETTINGS)}
+            isDisabled={isPending}
           />
         ))
         .exhaustive()}

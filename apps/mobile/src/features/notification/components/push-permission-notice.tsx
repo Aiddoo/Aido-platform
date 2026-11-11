@@ -11,17 +11,14 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, InlineAlert } from '@src/shared/ui';
-import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { match } from 'ts-pattern';
 
 import { PUSH_ASK_MOMENT, PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import {
-  useOpenPushSettingsMutationOptions,
-  useRequestPushPermissionMutationOptions,
-} from '../queries/push-permission.mutations';
+import { usePushPermissionAction } from '../hooks/use-push-permission-action';
 import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 import { pushNoticeDismissedAtStoredValue } from '../schemas/push-notice-dismissed-at-storage.schema';
 
@@ -104,7 +101,7 @@ PushPermissionNotice.RequestSystem = function RequestSystem({
   onDismiss,
 }: StepNoticeProps) {
   const { t } = useTranslation('notification');
-  const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
+  const { runStep, isPending } = usePushPermissionAction({ source: SOURCE });
 
   return (
     <InlineAlert
@@ -117,8 +114,8 @@ PushPermissionNotice.RequestSystem = function RequestSystem({
           size="small"
           variant="weak"
           display="inline"
-          isLoading={requestPermission.isPending}
-          onPress={() => requestPermission.mutate({ source: SOURCE })}
+          isLoading={isPending}
+          onPress={() => runStep(PUSH_PERMISSION_STEP.REQUEST_SYSTEM)}
         >
           {t('permission.continue')}
         </Button>
@@ -134,7 +131,7 @@ PushPermissionNotice.OpenSettings = function OpenSettings({
   onDismiss,
 }: StepNoticeProps) {
   const { t } = useTranslation('notification');
-  const openSettings = useMutation(useOpenPushSettingsMutationOptions());
+  const { runStep, isPending } = usePushPermissionAction({ source: SOURCE });
 
   return (
     <InlineAlert
@@ -147,7 +144,8 @@ PushPermissionNotice.OpenSettings = function OpenSettings({
           size="small"
           variant="weak"
           display="inline"
-          onPress={() => openSettings.mutate({ source: SOURCE })}
+          isLoading={isPending}
+          onPress={() => runStep(PUSH_PERMISSION_STEP.OPEN_SETTINGS)}
         >
           {t('permission.card.openSettings')}
         </Button>

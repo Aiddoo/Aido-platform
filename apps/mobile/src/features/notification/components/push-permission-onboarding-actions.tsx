@@ -5,13 +5,13 @@ import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handle
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, STACK_CLOSE_ICON } from '@src/shared/ui';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect } from 'react';
 
 import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
-import { useRequestPushPermissionMutationOptions } from '../queries/push-permission.mutations';
+import { usePushPermissionAction } from '../hooks/use-push-permission-action';
 import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
 
 const SOURCE: PushPermissionPromptSource = 'onboarding';
@@ -22,7 +22,7 @@ export function PushPermissionOnboardingActions() {
   const { trackEvent } = useTrack();
   const { data: me } = useQuery(useGetMeQueryOptions());
   const [_deferredAt, setDeferredAt] = useStoredValue(pushPermissionDeferredAtStoredValue, me?.id);
-  const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
+  const { runStep, isPending } = usePushPermissionAction({ source: SOURCE });
 
   useEffect(() => {
     trackEvent('push_permission_prompt_shown', { source: SOURCE, step: PUSH_PERMISSION_STEP.ASK });
@@ -45,13 +45,10 @@ export function PushPermissionOnboardingActions() {
   });
 
   const handleContinue = () => {
-    requestPermission.mutate(
-      { source: SOURCE },
-      {
-        // 권한 창을 띄우지 못하면 권한이 그대로라 화면이 닫히지 않는다. 앱은 알림 없이도 쓸 수 있게 넘긴다
-        onError: () => setDeferredAt(getNowInstant()),
-      },
-    );
+    runStep(PUSH_PERMISSION_STEP.ASK, {
+      // 권한 창을 띄우지 못하면 권한이 그대로라 화면이 닫히지 않는다. 앱은 알림 없이도 쓸 수 있게 넘긴다
+      onError: () => setDeferredAt(getNowInstant()),
+    });
   };
 
   return (
@@ -60,11 +57,11 @@ export function PushPermissionOnboardingActions() {
         <Stack.Toolbar.Button
           icon={STACK_CLOSE_ICON}
           accessibilityLabel={t('common:actions.close')}
-          disabled={requestPermission.isPending}
+          disabled={isPending}
           onPress={handleClose}
         />
       </Stack.Toolbar>
-      <Button size="large" isLoading={requestPermission.isPending} onPress={handleContinue}>
+      <Button size="large" isLoading={isPending} onPress={handleContinue}>
         {t('notification:permission.continue')}
       </Button>
     </>
