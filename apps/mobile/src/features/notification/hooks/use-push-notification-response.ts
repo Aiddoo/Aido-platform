@@ -137,7 +137,7 @@ function useMarketingOptOut(
   const showConsentResult = useConsentResultToast();
   const inFlightIdRef = useRef<string | null>(null);
 
-  const send = useEffectEvent(async (target: PushNotificationResponse) => {
+  const send = useEffectEvent(async (target: PushNotificationResponse, signal: AbortSignal) => {
     if (inFlightIdRef.current === target.id) {
       return;
     }
@@ -160,6 +160,10 @@ function useMarketingOptOut(
     } finally {
       inFlightIdRef.current = null;
     }
+    // 보내는 사이 로그아웃으로 슬롯이 비었거나 훅이 내려갔으면 끝난 화면·캐시에 안내와 무효화를 남기지 않는다
+    if (signal.aborted) {
+      return;
+    }
     try {
       trackEvent('marketing_push_opted_out', { source: 'push_action' });
     } catch (error) {
@@ -177,12 +181,17 @@ function useMarketingOptOut(
     if (response == null) {
       return;
     }
-    send(response);
-    return appLifecycle.subscribe((state) => {
+    const controller = new AbortController();
+    send(response, controller.signal);
+    const removeAppStateListener = appLifecycle.subscribe((state) => {
       if (state === 'active') {
-        send(response);
+        send(response, controller.signal);
       }
     });
+    return () => {
+      controller.abort();
+      removeAppStateListener();
+    };
   }, [appLifecycle, response]);
 }
 
@@ -230,7 +239,10 @@ function useResolveResponse(
       );
     } catch (error) {
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
-      finishResponse(target.id);
+      // 끝난 세션이나 밀려난 탭의 실패로 새 탭의 마지막 응답을 지우지 않는다
+      if (isCurrent()) {
+        finishResponse(target.id);
+      }
     } finally {
       if (inFlightIdRef.current === target.id) {
         inFlightIdRef.current = null;

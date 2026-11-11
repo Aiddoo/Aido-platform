@@ -3,6 +3,7 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createLoggerStub,
   createPushNotificationGatewayStub,
@@ -31,11 +32,13 @@ async function setup({ status }: { status: AuthStatus }) {
   const logger = createLoggerStub();
   const authSessionStore = createAuthSessionStoreStub(status);
   const httpClient = createHttpClientStub();
+  const analytics = createAnalyticsStub();
   const container = createTestDi({
     httpClient,
     pushNotification: gateway,
     logger,
     authSessionStore,
+    analytics,
   });
   const queryClient = createTestQueryClient();
 
@@ -61,6 +64,7 @@ async function setup({ status }: { status: AuthStatus }) {
   return {
     gateway,
     httpClient,
+    analytics,
     logger,
     store: container.pushNotificationEntryStore,
     changeStatus: (next: AuthStatus) => act(async () => authSessionStore.setStatus(next)),
@@ -176,6 +180,45 @@ describe('usePushNotificationResponse', () => {
       timeout: NOTIFICATION_ENTRY_HOLD_MAX_MS + 1000,
     });
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledWith('v1/notifications/75/opened'));
+  });
+
+  it('수신 거부를 보내는 사이 로그아웃하면 끝난 결과를 기록하거나 응답을 다시 지우지 않는다', async () => {
+    // Given
+    const { gateway, httpClient, analytics, changeStatus } = await setup({
+      status: 'authenticated',
+    });
+    let resolveOptOut: ((value: { ok: true; value: unknown }) => void) | undefined;
+    httpClient.post.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveOptOut = resolve;
+        }),
+    );
+    await act(async () =>
+      gateway.emitResponse({
+        ...RESPONSE,
+        id: 'opt-out',
+        actionIdentifier: 'MARKETING_OPT_OUT',
+        data: { ...RESPONSE.data, marketingOptOutToken: 'token-1' },
+      }),
+    );
+    await changeStatus('unauthenticated');
+    gateway.clearLastResponse.mockClear();
+
+    // When
+    await act(async () =>
+      resolveOptOut?.({
+        ok: true,
+        value: { optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' },
+      }),
+    );
+
+    // Then
+    expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+      'marketing_push_opted_out',
+      expect.anything(),
+    );
+    expect(gateway.clearLastResponse).not.toHaveBeenCalled();
   });
 
   it('언마운트 전까지 응답 리스너는 하나다', async () => {
