@@ -109,7 +109,6 @@ export {
   RepeatIcon,
   RobotIcon,
   RobotPixelIcon,
-  SearchIcon,
   SendIcon,
   ShareIcon,
   type StyledIcon,

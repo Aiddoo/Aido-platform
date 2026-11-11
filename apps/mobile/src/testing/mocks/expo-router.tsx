@@ -176,14 +176,18 @@ function StackScreen({ options }: { options?: { title?: string; headerTitle?: ()
   return options?.headerTitle?.() ?? <Text>{options?.title}</Text>;
 }
 
-export const Stack = { Toolbar, Screen: StackScreen };
+function StackSearchBar() {
+  return null;
+}
+
+export const Stack = { Toolbar, Screen: StackScreen, SearchBar: StackSearchBar };
 
 export function useRouter() {
   return router;
 }
 
 export function useNavigation() {
-  return { isFocused: () => true, getParent: () => undefined };
+  return { isFocused: () => true, getParent: () => undefined, addListener: () => () => undefined };
 }
 
 export function Redirect() {
