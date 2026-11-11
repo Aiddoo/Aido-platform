@@ -1,5 +1,6 @@
 import {
   DAYS_OF_WEEK,
+  type DayOfWeek,
   TODO_EDIT_SCOPES,
   TODO_REPEAT_INTERVALS,
   TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
@@ -10,11 +11,12 @@ import {
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
-  diffDateKeysInDays,
+  addMonthsToDateKey,
   getDayOfMonth,
   getDaysInDateKeyMonth,
   getMondayOfDateKey,
   getMonthEndDateKey,
+  getMonthStartDateKey,
 } from '@src/shared/date/date-key';
 import {
   getDateKeyDayOfWeek,
@@ -193,24 +195,81 @@ export function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEdit
   return hasRepeatRule(occurrence) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
 }
 
-// 서버 RepeatRule과 같은 규칙: 격주는 시작일이 속한 월요일 시작 주 기준, 매월 n일은 없는 달이면 말일
-function isOccurrenceDateKey(repeat: TodoRepeat, startDate: string, dateKey: string): boolean {
+// 서버 RepeatRule과 같은 걷기: 하루씩 보지 않고 규칙이 맞는 날로 건너뛴다. 격주는 시작일이 속한 월요일 시작 주 기준이다
+function* walkDailyDateKeys(startDate: string, upper: string): Generator<string> {
+  for (let date = startDate; date <= upper; date = addDaysToDateKey(date, 1)) {
+    yield date;
+  }
+}
+
+interface WeeklyWalk {
+  startDate: string;
+  upper: string;
+  interval: number;
+  weekdays: readonly DayOfWeek[];
+}
+
+function* walkWeeklyDateKeys({
+  startDate,
+  upper,
+  interval,
+  weekdays,
+}: WeeklyWalk): Generator<string> {
+  const offsets = sortDaysOfWeek(weekdays).map((weekday) => DAYS_OF_WEEK.indexOf(weekday));
+  for (
+    let monday = getMondayOfDateKey(startDate);
+    monday <= upper;
+    monday = addDaysToDateKey(monday, interval * DAYS_PER_WEEK)
+  ) {
+    for (const offset of offsets) {
+      const date = addDaysToDateKey(monday, offset);
+      if (date > upper) {
+        return;
+      }
+      if (date >= startDate) {
+        yield date;
+      }
+    }
+  }
+}
+
+// 매월 n일은 그날이 없는 달이면 말일이다
+function* walkMonthlyDateKeys(
+  startDate: string,
+  upper: string,
+  monthDay: number,
+): Generator<string> {
+  for (
+    let monthStart = getMonthStartDateKey(startDate);
+    monthStart <= upper;
+    monthStart = addMonthsToDateKey(monthStart, 1)
+  ) {
+    const date = addDaysToDateKey(
+      monthStart,
+      Math.min(monthDay, getDaysInDateKeyMonth(monthStart)) - 1,
+    );
+    if (date > upper) {
+      return;
+    }
+    if (date >= startDate) {
+      yield date;
+    }
+  }
+}
+
+function walkRuleDateKeys(repeat: TodoRepeat, startDate: string, upper: string): Generator<string> {
   return match(repeat)
-    .with({ frequency: 'DAILY' }, () => true)
-    .with({ frequency: 'WEEKLY' }, ({ interval, weekdays }) => {
-      const weeks =
-        diffDateKeysInDays(getMondayOfDateKey(startDate), getMondayOfDateKey(dateKey)) /
-        DAYS_PER_WEEK;
-      return weekdays.includes(getDateKeyDayOfWeek(dateKey)) && weeks % interval === 0;
-    })
-    .with(
-      { frequency: 'MONTHLY' },
-      ({ monthDay }) =>
-        getDayOfMonth(dateKey) === Math.min(monthDay, getDaysInDateKeyMonth(dateKey)),
+    .with({ frequency: 'DAILY' }, () => walkDailyDateKeys(startDate, upper))
+    .with({ frequency: 'WEEKLY' }, ({ interval, weekdays }) =>
+      walkWeeklyDateKeys({ startDate, upper, interval, weekdays }),
+    )
+    .with({ frequency: 'MONTHLY' }, ({ monthDay }) =>
+      walkMonthlyDateKeys(startDate, upper, monthDay),
     )
     .exhaustive();
 }
 
+// 횟수 종료는 시작일부터 센다
 function* walkOccurrenceDateKeys(
   repeat: TodoRepeat,
   startDate: string,
@@ -219,11 +278,12 @@ function* walkOccurrenceDateKeys(
   const last = repeat.end.type === 'UNTIL' && repeat.end.date < limit ? repeat.end.date : limit;
   const maxCount = repeat.end.type === 'COUNT' ? repeat.end.count : Number.POSITIVE_INFINITY;
   let count = 0;
-  for (let date = startDate; date <= last && count < maxCount; date = addDaysToDateKey(date, 1)) {
-    if (isOccurrenceDateKey(repeat, startDate, date)) {
-      count += 1;
-      yield date;
+  for (const date of walkRuleDateKeys(repeat, startDate, last)) {
+    if (count >= maxCount) {
+      return;
     }
+    count += 1;
+    yield date;
   }
 }
 

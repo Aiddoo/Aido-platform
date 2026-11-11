@@ -1,6 +1,7 @@
 import { todoRepeatSchema as todoRepeatDtoSchema } from '@aido/api';
 import { z } from 'zod';
 
+import repeatLastOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-last-occurrence-cases.json';
 import repeatOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-occurrence-cases.json';
 import { toRepeat } from '../apis/todo-repeat.mapper';
 import { type TodoRepeat, todoRepeatSchema } from './todo-repeat.model';
@@ -18,6 +19,19 @@ const SHARED_OCCURRENCE_CASES = z
     }),
   )
   .parse(repeatOccurrenceCases);
+
+/** 서버 RepeatRule이 같은 표로 끝까지 센 회차와 비교한다. 미리보기의 간격 점프 걷기를 지킨다 */
+const SHARED_LAST_OCCURRENCE_CASES = z
+  .array(
+    z.object({
+      name: z.string(),
+      startDate: z.iso.date(),
+      repeat: todoRepeatDtoSchema,
+      expectedCount: z.int().positive(),
+      expectedLast: z.iso.date(),
+    }),
+  )
+  .parse(repeatLastOccurrenceCases);
 
 const MONDAY = '2026-11-02';
 const WEDNESDAY = '2026-11-04';
@@ -417,6 +431,26 @@ describe('getDeleteScopes', () => {
     // Then
     expect(scopes).toEqual(expected);
   });
+});
+
+describe('서버와 같은 마지막 회차 표', () => {
+  it.each(SHARED_LAST_OCCURRENCE_CASES)(
+    '$name',
+    ({ startDate, repeat, expectedCount, expectedLast }) => {
+      // Given
+      const appRepeat = toRepeat(repeat);
+
+      // When
+      const last = TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(appRepeat, startDate);
+      const count = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(appRepeat, startDate, {
+        from: startDate,
+        to: expectedLast,
+      }).length;
+
+      // Then
+      expect({ count, last }).toEqual({ count: expectedCount, last: expectedLast });
+    },
+  );
 });
 
 describe('서버와 같은 회차 표', () => {
