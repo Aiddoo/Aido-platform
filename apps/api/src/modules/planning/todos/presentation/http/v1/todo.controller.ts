@@ -48,6 +48,7 @@ import { CreateTodoUseCase } from "../../../application/use-cases/create-todo.us
 import { DeleteTodoItemUseCase } from "../../../application/use-cases/delete-todo-item.use-case.js";
 import { DeleteTodoUseCase } from "../../../application/use-cases/delete-todo.use-case.js";
 import { EditTodoUseCase } from "../../../application/use-cases/edit-todo.use-case.js";
+import { GetTodoOverviewUseCase } from "../../../application/use-cases/get-todo-overview.use-case.js";
 import { GetTodoResourceLimitUseCase } from "../../../application/use-cases/get-todo-resource-limit.use-case.js";
 import { GetTodoSummaryUseCase } from "../../../application/use-cases/get-todo-summary.use-case.js";
 import { GetTodoUseCase } from "../../../application/use-cases/get-todo.use-case.js";
@@ -79,6 +80,7 @@ import {
   TodoIdParamDto,
   TodoItemIdParamDto,
   TodoListResponseDto,
+  TodoOverviewResponseDto,
   TodoResourceLimitQueryDto,
   TodoResourceLimitResponseDto,
   TodoResponseDto,
@@ -99,6 +101,7 @@ import {
 export class TodoController {
   readonly #getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase;
   readonly #getTodoSummaryUseCase: GetTodoSummaryUseCase;
+  readonly #getTodoOverviewUseCase: GetTodoOverviewUseCase;
   readonly #getTodosUseCase: ListTodosUseCase;
   readonly #getTodoByIdUseCase: GetTodoUseCase;
   readonly #getFriendTodosUseCase: ListFriendTodosUseCase;
@@ -120,6 +123,7 @@ export class TodoController {
   constructor(
     getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase,
     getTodoSummaryUseCase: GetTodoSummaryUseCase,
+    getTodoOverviewUseCase: GetTodoOverviewUseCase,
     getTodosUseCase: ListTodosUseCase,
     getTodoByIdUseCase: GetTodoUseCase,
     getFriendTodosUseCase: ListFriendTodosUseCase,
@@ -140,6 +144,7 @@ export class TodoController {
   ) {
     this.#getTodoResourceLimitUseCase = getTodoResourceLimitUseCase;
     this.#getTodoSummaryUseCase = getTodoSummaryUseCase;
+    this.#getTodoOverviewUseCase = getTodoOverviewUseCase;
     this.#getTodosUseCase = getTodosUseCase;
     this.#getTodoByIdUseCase = getTodoByIdUseCase;
     this.#getFriendTodosUseCase = getFriendTodosUseCase;
@@ -219,6 +224,26 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       today: localDateAt(this.#clock.now(), timezone),
       requestedDate: query.date == null ? undefined : Temporal.PlainDate.from(query.date),
     });
+  }
+
+  @Get("overview")
+  @ApiDoc({
+    summary: "할 일 개요 조회 (할 일·완료·진행 중 반복이 있는지)",
+    operationId: "getTodoOverview",
+    description: `날짜와 상관없이 이 계정에 할 일·완료한 할 일·진행 중인 반복이 있는지 한 번에 조회합니다.
+목록을 받아 앱이 다시 판단하지 않도록 서버가 계산한 값입니다. 날짜 경계가 없어 \`X-Timezone\`을 읽지 않습니다.
+
+**응답 필드**
+- \`hasTodo\`: 할 일이 하나라도 있는지 (지운 할 일은 세지 않음)
+- \`hasCompletedTodo\`: 완료한 할 일이 하나라도 있는지 (완료를 풀면 세지 않음)
+- \`hasActiveRepeat\`: 진행 중인 반복이 하나라도 있는지. 앞으로 만들 회차가 남은 반복 규칙이고, 진행 중 반복 상한(\`TODO_0842\`)이 세는 규칙과 같습니다.
+  - 그만뒀거나 남은 회차를 이미 모두 만든 규칙(종료일·횟수가 미리 만드는 ${TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS}일 안에서 끝남)은 세지 않습니다.
+  - 오래 앱을 열지 않아 멈춘(휴면) 규칙은 끝난 것이 아니라 셉니다. 응답 전에 복귀 처리를 기다려 휴면 중 종료일·횟수가 지난 규칙은 끝난 것으로 답합니다.`,
+  })
+  @ApiSuccessResponse({ type: TodoOverviewResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getOverview(@CurrentUser() user: CurrentUserPayload): Promise<TodoOverviewResponseDto> {
+    return this.#getTodoOverviewUseCase.execute({ userId: user.userId });
   }
 
   @Post()

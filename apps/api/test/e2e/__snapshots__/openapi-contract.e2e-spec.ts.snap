@@ -21308,6 +21308,33 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "TodoOverviewResponseDto": {
+      "example": {
+        "hasActiveRepeat": true,
+        "hasCompletedTodo": false,
+        "hasTodo": true,
+      },
+      "properties": {
+        "hasActiveRepeat": {
+          "description": "진행 중인 반복이 하나라도 있는지. 앞으로 만들 회차가 남은 반복 규칙을 센다(진행 중 반복 상한과 같은 기준). 그만뒀거나 남은 회차를 이미 모두 만든 규칙(종료일·횟수가 미리 만드는 90일 안에서 끝남)은 세지 않고, 오래 앱을 열지 않아 멈춘(휴면) 규칙은 끝난 것이 아니라 센다",
+          "type": "boolean",
+        },
+        "hasCompletedTodo": {
+          "description": "완료한 할 일이 하나라도 있는지 (날짜와 무관, 완료를 풀면 세지 않음)",
+          "type": "boolean",
+        },
+        "hasTodo": {
+          "description": "할 일이 하나라도 있는지 (날짜·완료 여부와 무관, 지운 할 일은 세지 않음)",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "hasTodo",
+        "hasCompletedTodo",
+        "hasActiveRepeat",
+      ],
+      "type": "object",
+    },
     "TodoResourceLimitResponseDto": {
       "example": {
         "activeCount": 15,
@@ -56349,6 +56376,127 @@ TODO_0842: 반복 할 일은 최대 30개까지 만들 수 있습니다.",
         },
       ],
       "summary": "친구의 할 일 목록 조회",
+      "tags": [
+        "Todos",
+      ],
+    },
+  },
+  "/v1/todos/overview": {
+    "get": {
+      "description": "날짜와 상관없이 이 계정에 할 일·완료한 할 일·진행 중인 반복이 있는지 한 번에 조회합니다.
+목록을 받아 앱이 다시 판단하지 않도록 서버가 계산한 값입니다. 날짜 경계가 없어 \`X-Timezone\`을 읽지 않습니다.
+
+**응답 필드**
+- \`hasTodo\`: 할 일이 하나라도 있는지 (지운 할 일은 세지 않음)
+- \`hasCompletedTodo\`: 완료한 할 일이 하나라도 있는지 (완료를 풀면 세지 않음)
+- \`hasActiveRepeat\`: 진행 중인 반복이 하나라도 있는지. 앞으로 만들 회차가 남은 반복 규칙이고, 진행 중 반복 상한(\`TODO_0842\`)이 세는 규칙과 같습니다.
+  - 그만뒀거나 남은 회차를 이미 모두 만든 규칙(종료일·횟수가 미리 만드는 90일 안에서 끝남)은 세지 않습니다.
+  - 오래 앱을 열지 않아 멈춘(휴면) 규칙은 끝난 것이 아니라 셉니다. 응답 전에 복귀 처리를 기다려 휴면 중 종료일·횟수가 지난 규칙은 끝난 것으로 답합니다.",
+      "operationId": "getTodoOverview",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoOverviewResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "할 일 개요 조회 (할 일·완료·진행 중 반복이 있는지)",
       "tags": [
         "Todos",
       ],

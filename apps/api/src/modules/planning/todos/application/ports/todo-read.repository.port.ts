@@ -55,6 +55,10 @@ export abstract class TodoReadRepositoryPort {
 
   abstract countCompletedByUser(userId: UserId): Promise<number>;
 
+  abstract existsByUserId(userId: UserId): Promise<boolean>;
+
+  abstract existsCompletedByUserId(userId: UserId): Promise<boolean>;
+
   abstract getTodayTodoStats(
     userId: UserId,
     today: Temporal.PlainDate,
