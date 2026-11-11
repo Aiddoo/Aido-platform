@@ -25221,6 +25221,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       },
       "properties": {
         "airQuality": {
+          "default": null,
           "description": "대기질. 제공하지 않는 지역은 null",
           "nullable": true,
           "properties": {
@@ -25284,6 +25285,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "type": "string",
               },
               "severity": {
+                "default": "UNKNOWN",
                 "description": "심각도",
                 "enum": [
                   "EXTREME",
@@ -25416,6 +25418,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "array",
             },
             "reason": {
+              "default": null,
               "description": "영향받는 할 일이 있을 때 무엇을 피해 옮길지. 비·눈(rain)이 더위(heat)보다 먼저다",
               "enum": [
                 "rain",
@@ -25500,6 +25503,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "integer",
             },
             "condition": {
+              "default": "CLOUDY",
               "description": "날씨 상태",
               "enum": [
                 "CLEAR",
@@ -25554,6 +25558,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "number",
             },
             "pressureTrend": {
+              "default": "STEADY",
               "description": "기압 추세",
               "enum": [
                 "RISING",
@@ -25621,6 +25626,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "items": {
             "properties": {
               "condition": {
+                "default": "CLOUDY",
                 "description": "날씨 상태",
                 "enum": [
                   "CLEAR",
@@ -25655,6 +25661,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "nullable": true,
                 "properties": {
                   "condition": {
+                    "default": "CLOUDY",
                     "description": "날씨 상태",
                     "enum": [
                       "CLEAR",
@@ -25690,6 +25697,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "type": "integer",
                   },
                   "precipitationType": {
+                    "default": "MIXED",
                     "description": "강수 형태",
                     "enum": [
                       "NONE",
@@ -25727,6 +25735,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "type": "object",
               },
               "moonPhase": {
+                "default": "NEW",
                 "description": "달 위상",
                 "enum": [
                   "NEW",
@@ -25759,6 +25768,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "nullable": true,
                 "properties": {
                   "condition": {
+                    "default": "CLOUDY",
                     "description": "날씨 상태",
                     "enum": [
                       "CLEAR",
@@ -25794,6 +25804,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "type": "integer",
                   },
                   "precipitationType": {
+                    "default": "MIXED",
                     "description": "강수 형태",
                     "enum": [
                       "NONE",
@@ -25842,6 +25853,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "type": "integer",
               },
               "precipitationType": {
+                "default": "MIXED",
                 "description": "강수 형태",
                 "enum": [
                   "NONE",
@@ -25858,6 +25870,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "nullable": true,
                 "properties": {
                   "condition": {
+                    "default": "CLOUDY",
                     "description": "날씨 상태",
                     "enum": [
                       "CLEAR",
@@ -25893,6 +25906,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "type": "integer",
                   },
                   "precipitationType": {
+                    "default": "MIXED",
                     "description": "강수 형태",
                     "enum": [
                       "NONE",
@@ -26016,6 +26030,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "type": "number",
               },
               "condition": {
+                "default": "CLOUDY",
                 "description": "날씨 상태",
                 "enum": [
                   "CLEAR",
@@ -26061,6 +26076,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "type": "integer",
               },
               "precipitationType": {
+                "default": "MIXED",
                 "description": "강수 형태",
                 "enum": [
                   "NONE",
@@ -26210,6 +26226,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "type": "number",
                   },
                   "precipitationType": {
+                    "default": null,
                     "description": "강수 형태. 맑음 구간은 NONE, 공급자가 형태 없이 '강수'로만 알리면 null",
                     "enum": [
                       "NONE",
