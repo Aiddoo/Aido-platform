@@ -2,7 +2,7 @@ import {
   createAnalyticsStub,
   createLoggerStub,
   createPurchasesGatewayStub,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
 
 import { SUBSCRIPTION_ERROR_CODE } from '../domains/subscription.error';
 import { PurchasesSession } from './purchases-session';

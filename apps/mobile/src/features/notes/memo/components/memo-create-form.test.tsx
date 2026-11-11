@@ -2,7 +2,8 @@ import { ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
+import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { Suspense } from 'react';
@@ -25,7 +26,7 @@ async function renderForm() {
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
   const httpClient = createHttpClientStub();
-  await renderUi(
+  await renderScreen(
     <Suspense fallback={null}>
       <MemoCreateForm />
     </Suspense>,

@@ -8,14 +8,14 @@ import {
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { i18n } from '@src/shared/i18n';
 import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createHttpClientStub,
   createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
-import { i18n } from '@src/shared/i18n';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
@@ -34,12 +34,15 @@ describe('useSendTodoNudgeMutationOptions', () => {
     });
     queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), createEntitlementSnapshot());
     queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
-    const { result } = await renderUiHook(() => useMutation(useSendTodoNudgeMutationOptions()), {
-      di: { httpClient, haptics, errorReporter },
-      queryClient,
-      withOverlay: true,
-      withLocalDate: true,
-    });
+    const { result } = await renderScreenHook(
+      () => useMutation(useSendTodoNudgeMutationOptions()),
+      {
+        di: { httpClient, haptics, errorReporter },
+        queryClient,
+        withOverlay: true,
+        withLocalDate: true,
+      },
+    );
 
     // When
     await act(async () => {

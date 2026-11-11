@@ -1,4 +1,4 @@
-import { stubWindowDimensions } from '@src/shared/__tests__';
+import { stubWindowDimensions } from '@src/testing/core';
 import { renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 

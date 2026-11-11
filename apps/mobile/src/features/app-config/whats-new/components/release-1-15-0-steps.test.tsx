@@ -4,6 +4,7 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import {
   createAnalyticsStub,
   createAppLifecycleGatewayStub,
@@ -13,10 +14,9 @@ import {
   createMemoryObservableSyncStorage,
   createSpeechRecognizerStub,
   createTestQueryClient,
-  renderUi,
   setupFakeTimersPerTest,
-} from '@src/shared/__tests__';
-import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -48,7 +48,7 @@ async function renderSteps() {
     }),
   );
 
-  const view = await renderUi(<Release1150Steps />, {
+  const view = await renderScreen(<Release1150Steps />, {
     queryClient,
     withLocalDate: true,
     withOverlay: true,

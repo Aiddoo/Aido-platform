@@ -1,4 +1,4 @@
-import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
+import { createMemoryObservableSyncStorage } from '@src/testing/core';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { Uniwind } from 'uniwind';

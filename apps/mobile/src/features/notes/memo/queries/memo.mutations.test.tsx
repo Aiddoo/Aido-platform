@@ -4,17 +4,17 @@ import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { voicePlanSchema } from '@src/features/voice/domains/voice-plan.model';
+import { fromDate, toEpochMs } from '@src/shared/date/instant';
+import { NetworkError } from '@src/shared/errors/infra-error';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
   createLoggerStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { fromDate, toEpochMs } from '@src/shared/date/instant';
-import { NetworkError } from '@src/shared/errors/infra-error';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
@@ -55,7 +55,7 @@ async function updateMemo(client: QueryClient) {
     options = useUpdateMemoMutationOptions();
     return null;
   }
-  const { unmount } = await renderUi(<CaptureOptions />, {
+  const { unmount } = await renderScreen(<CaptureOptions />, {
     queryClient: client,
     di: {
       httpClient,
@@ -153,7 +153,7 @@ describe('메모 고정', () => {
       draftService = useDraftService();
       return null;
     }
-    await renderUi(<Capture />, {
+    await renderScreen(<Capture />, {
       queryClient: client,
       withLocalDate: true,
       di: { httpClient, haptics: createHapticsGatewayStub(), analytics: createAnalyticsStub() },
@@ -200,7 +200,7 @@ describe('메모 고정', () => {
       mutateAsync = useMutationCapture();
       return null;
     }
-    await renderUi(<Capture />, {
+    await renderScreen(<Capture />, {
       withLocalDate: true,
       di: { httpClient, haptics: createHapticsGatewayStub() },
     });
@@ -248,7 +248,7 @@ describe('AI 정리 중 메모 고정', () => {
       timeZone = useDateFormatContext().timeZone;
       return null;
     }
-    await renderUi(<Capture />, {
+    await renderScreen(<Capture />, {
       queryClient: client,
       withLocalDate: true,
       withOverlay: true,
@@ -290,7 +290,7 @@ describe('오프라인에서 AI 정리', () => {
       mutateAsync = useMutationCapture();
       return null;
     }
-    await renderUi(<Capture />, {
+    await renderScreen(<Capture />, {
       withLocalDate: true,
       withOverlay: true,
       di: {
@@ -326,7 +326,7 @@ describe('오프라인에서 할 일로 바꾸기', () => {
       mutateAsync = useMutationCapture();
       return null;
     }
-    await renderUi(<Capture />, {
+    await renderScreen(<Capture />, {
       withOverlay: true,
       di: {
         httpClient,
@@ -374,7 +374,7 @@ describe('오프라인에서 메모 삭제', () => {
       mutateAsync = useMutationCapture();
       return null;
     }
-    await renderUi(<Capture />, {
+    await renderScreen(<Capture />, {
       di: { httpClient, haptics: createHapticsGatewayStub() },
     });
 

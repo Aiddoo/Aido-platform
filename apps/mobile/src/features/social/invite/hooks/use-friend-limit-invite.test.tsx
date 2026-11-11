@@ -1,6 +1,7 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createAnalyticsStub, createHttpClientStub, renderUi } from '@src/shared/__tests__';
+import { createAnalyticsStub, createHttpClientStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { waitFor } from '@testing-library/react-native';
 
 import { useFriendLimitInvite } from './use-friend-limit-invite';
@@ -16,7 +17,7 @@ async function renderFriendLimitInvite(isEnabled: boolean) {
     renderCount += 1;
     return null;
   }
-  await renderUi(<Capture />, {
+  await renderScreen(<Capture />, {
     di: {
       analytics,
       httpClient: publicHttpClient,

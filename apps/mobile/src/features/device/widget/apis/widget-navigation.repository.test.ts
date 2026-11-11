@@ -1,4 +1,4 @@
-import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
+import { createMemoryObservableSyncStorage } from '@src/testing/core';
 
 import type { WidgetNavigationCommand } from '../domains/widget-navigation.model';
 import {

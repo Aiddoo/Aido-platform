@@ -1,12 +1,12 @@
 import '@src/shared/i18n/init';
 import { isCodedError } from '@src/core/errors/result';
+import { getUserFacingMessage } from '@src/shared/errors';
 import {
   createHttpClientStub,
   createLoggerStub,
   createMemoryTokenStore,
   createSocialAuthGatewayStub,
-} from '@src/shared/__tests__';
-import { getUserFacingMessage } from '@src/shared/errors';
+} from '@src/testing/core';
 
 import { createAuthApiError, createAuthTokensDto } from '../__tests__/auth.fixtures';
 import { AuthService } from './auth.service';

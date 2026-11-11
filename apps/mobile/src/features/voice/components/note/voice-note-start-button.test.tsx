@@ -4,16 +4,16 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import {
   createHttpClientStub,
   createRouteParamsFake,
   createSpeechRecognizerStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -34,7 +34,7 @@ async function renderButton(routeParams: Record<string, string>) {
   // 아직 AI 데이터 이용에 답하지 않은 계정
   queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent());
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <VoiceNoteStartButton coachmarkPlacement="bottom" />

@@ -5,8 +5,8 @@ import {
   createLoggerStub,
   createPushNotificationGatewayStub,
   createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
 
 import { createPushDeviceResponseDto } from '../__tests__/notification.fixtures';
@@ -22,7 +22,7 @@ async function renderPrompt(permission: PushPermission) {
   const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const pushNotification = createPushNotificationGatewayStub();
-  const { result } = await renderUiHook(usePromptPushPermission, {
+  const { result } = await renderScreenHook(usePromptPushPermission, {
     queryClient,
     di: {
       httpClient,

@@ -8,8 +8,8 @@ import {
   createAppIconGatewayStub,
   createErrorReporterStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
@@ -28,7 +28,7 @@ async function renderSelector(snapshot: EntitlementSnapshot, currentIcon: AppIco
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser());
 
-  await renderUi(
+  await renderScreen(
     <Suspense>
       <AppIconSelector />
     </Suspense>,

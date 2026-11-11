@@ -10,10 +10,10 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { render, renderHook } from '@testing-library/react-native';
 import type { ReactElement, ReactNode } from 'react';
 
-import { createTestDi, type TestDiOverrides } from './create-test-di';
+import { createTestDi, type TestDiOverrides } from './di';
 import { createTestQueryClient } from './query-client';
 
-interface RenderUiOptions {
+interface RenderScreenOptions {
   /**
    * 이 렌더가 바꾸는 포트와 `httpClient` 같은 조립 재료만 넣는다. 나머지는 `createTestDi`가 운영처럼 조립한다.
    * `di: ...`처럼 조립한 컨테이너를 다시 넘기지 않는다.
@@ -32,7 +32,7 @@ function createHarness({
   queryClient,
   withLocalDate = false,
   withOverlay = false,
-}: RenderUiOptions) {
+}: RenderScreenOptions) {
   const client = queryClient ?? createTestQueryClient();
   const container = createTestDi({ queryClient: client, ...di });
 
@@ -70,12 +70,12 @@ export function TestUiProvider({ children }: { children: ReactNode }) {
   );
 }
 
-type RenderUiResult = Awaited<ReturnType<typeof render>> & { queryClient: QueryClient };
+type RenderScreenResult = Awaited<ReturnType<typeof render>> & { queryClient: QueryClient };
 
-export async function renderUi(
+export async function renderScreen(
   ui: ReactElement,
-  options: RenderUiOptions = {},
-): Promise<RenderUiResult> {
+  options: RenderScreenOptions = {},
+): Promise<RenderScreenResult> {
   const { Harness, client } = createHarness(options);
 
   // RTL 14의 render는 비동기다. 그리고 반환 객체는 전개하면 쿼리 메서드가 떨어져 나가므로
@@ -83,15 +83,15 @@ export async function renderUi(
   return Object.assign(await render(ui, { wrapper: Harness }), { queryClient: client });
 }
 
-type RenderUiHookResult<TResult> = Awaited<ReturnType<typeof renderHook<TResult, unknown>>> & {
+type RenderScreenHookResult<TResult> = Awaited<ReturnType<typeof renderHook<TResult, unknown>>> & {
   queryClient: QueryClient;
 };
 
-/** `renderUi`와 같은 provider 위에서 훅을 돌린다. 훅이 읽는 DI는 `di`로 정한다 */
-export async function renderUiHook<TResult>(
+/** `renderScreen`와 같은 provider 위에서 훅을 돌린다. 훅이 읽는 DI는 `di`로 정한다 */
+export async function renderScreenHook<TResult>(
   useHook: () => TResult,
-  options: RenderUiOptions = {},
-): Promise<RenderUiHookResult<TResult>> {
+  options: RenderScreenOptions = {},
+): Promise<RenderScreenHookResult<TResult>> {
   const { Harness, client } = createHarness(options);
 
   return Object.assign(await renderHook(useHook, { wrapper: Harness }), { queryClient: client });

@@ -1,5 +1,5 @@
-import { createMemoryObservableSyncStorage, createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
+import { createMemoryObservableSyncStorage, createMemorySyncStorage } from '@src/testing/core';
 import { noop } from 'es-toolkit';
 
 import { createWhatsNewRepository } from './whats-new.repository';

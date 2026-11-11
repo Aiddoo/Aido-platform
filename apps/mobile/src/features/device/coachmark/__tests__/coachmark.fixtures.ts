@@ -1,5 +1,5 @@
-import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import { getNowInstant } from '@src/shared/date/instant';
+import { createMemoryObservableSyncStorage } from '@src/testing/core';
 
 import { createCoachmarkRepository } from '../apis/coachmark.repository';
 import { type CoachmarkInput, coachmarkKindSchema } from '../domains/coachmark.model';

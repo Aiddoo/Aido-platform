@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDi, createHttpClientStub, createTestQueryClient } from '@src/shared/__tests__';
+import { createTestDi, createHttpClientStub, createTestQueryClient } from '@src/testing/core';
 import { QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';

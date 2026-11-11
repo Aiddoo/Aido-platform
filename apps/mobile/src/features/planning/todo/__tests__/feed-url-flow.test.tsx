@@ -1,12 +1,12 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
   createTestDi,
   stubWindowDimensions,
-} from '@src/shared/__tests__';
-import { renderRouteHook } from '@src/shared/__tests__/render-route-hook';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+} from '@src/testing/core';
+import { renderRouteHook } from '@src/testing/render-route-hook';
 import { act } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import type { PropsWithChildren } from 'react';

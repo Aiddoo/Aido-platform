@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { renderUi } from '@src/shared/__tests__';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { State } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
@@ -39,7 +39,7 @@ function createPlayerStub(initial: Partial<VoiceNotePlayback> = {}) {
 }
 
 async function renderBar(player: VoiceNotePlayer) {
-  const view = await renderUi(
+  const view = await renderScreen(
     <VoiceNotePlayerBar player={player} levels={LEVELS} flagIndexes={[1]} isRecordingAvailable />,
   );
   // 칸 계산은 화면 폭을 받은 뒤에 한다
@@ -121,7 +121,7 @@ describe('VoiceNotePlayerBar', () => {
     const { player } = createPlayerStub();
 
     // When
-    await renderUi(
+    await renderScreen(
       <VoiceNotePlayerBar
         player={player}
         levels={LEVELS}

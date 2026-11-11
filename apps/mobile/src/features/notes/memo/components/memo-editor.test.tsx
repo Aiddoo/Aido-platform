@@ -11,15 +11,15 @@ import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/conse
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
+import { toInstant } from '@src/shared/date/instant';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createHttpClientStub,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { toInstant } from '@src/shared/date/instant';
-import { NetworkError } from '@src/shared/errors/infra-error';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
@@ -107,7 +107,7 @@ async function renderEditor(
   });
   const onLeave = jest.fn();
 
-  await renderUi(
+  await renderScreen(
     <Suspense fallback={null}>
       {withList && <MemoList />}
       <MemoEditor

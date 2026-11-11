@@ -1,13 +1,13 @@
+import { fromDate } from '@src/shared/date/instant';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import '@src/shared/i18n/init';
 import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createAnalyticsStub,
-  renderUi,
-} from '@src/shared/__tests__';
-import '@src/shared/i18n/init';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
-import { fromDate } from '@src/shared/date/instant';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { screen, userEvent } from '@testing-library/react-native';
 
 import type { TodoRepeat } from '../domains/todo-repeat.model';
@@ -30,7 +30,7 @@ async function renderSheet({
   const onCancel = jest.fn();
   const haptics = createHapticsGatewayStub();
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <TodoRepeatPickerContent
         value={{ startDate: fromDate(startDate), repeat }}

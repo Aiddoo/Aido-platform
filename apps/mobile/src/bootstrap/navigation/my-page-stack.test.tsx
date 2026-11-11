@@ -1,4 +1,5 @@
-import { stubWindowDimensions, TestUiProvider } from '@src/shared/__tests__';
+import { stubWindowDimensions } from '@src/testing/core';
+import { TestUiProvider } from '@src/testing/render';
 import { router } from 'expo-router';
 import { act, renderRouter, screen } from 'expo-router/testing-library';
 import { useEffect } from 'react';

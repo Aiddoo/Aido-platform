@@ -1,6 +1,7 @@
 import '@src/shared/i18n/init';
-import { createClipboardGatewayStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { i18n } from '@src/shared/i18n';
+import { createClipboardGatewayStub, createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { createCurrentUserDto } from '../__tests__/user.fixtures';
@@ -12,7 +13,7 @@ import { ProfileRow } from './profile-row';
 async function renderProfileRow(clipboard: ReturnType<typeof createClipboardGatewayStub>) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(createCurrentUserDto()));
-  await renderUi(
+  await renderScreen(
     <MyPageMenuNavigationProvider>
       <ProfileRow tierChip={null} />
     </MyPageMenuNavigationProvider>,

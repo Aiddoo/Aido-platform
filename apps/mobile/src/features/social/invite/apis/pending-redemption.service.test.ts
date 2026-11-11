@@ -1,6 +1,6 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
+import { createMemorySyncStorage } from '@src/testing/core';
 
 import { createPendingRedemption } from '../__tests__/invite.fixtures';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';

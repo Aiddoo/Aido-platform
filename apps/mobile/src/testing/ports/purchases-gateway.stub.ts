@@ -1,6 +1,6 @@
 import type { PurchaseStatus, PurchasesGateway } from '@src/core/ports/purchases-gateway';
 
-import { mockMethod } from './mock-method';
+import { mockMethod } from '../mock-method';
 
 const NO_SUBSCRIPTION: PurchaseStatus = { activeEntitlements: [] };
 

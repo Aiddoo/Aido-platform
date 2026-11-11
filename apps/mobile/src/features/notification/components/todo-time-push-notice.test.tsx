@@ -4,8 +4,8 @@ import {
   createExternalLinkGatewayStub,
   createLoggerStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import type { PushPermission } from '../domains/push-permission.model';
@@ -20,7 +20,7 @@ async function renderNotice(permission: PushPermission, { isTimed }: { isTimed: 
   });
   queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), permission);
   const externalLink = createExternalLinkGatewayStub();
-  await renderUi(<TodoTimePushNotice isTimed={isTimed} />, {
+  await renderScreen(<TodoTimePushNotice isTimed={isTimed} />, {
     queryClient,
     di: { externalLink, analytics: createAnalyticsStub(), logger: createLoggerStub() },
   });

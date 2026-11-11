@@ -1,14 +1,14 @@
 import '@src/shared/i18n/init';
 import { ClipboardCopyError } from '@src/core/ports/clipboard-gateway';
+import { i18n } from '@src/shared/i18n';
 import {
   createClipboardGatewayStub,
   createErrorReporterStub,
   createHapticsGatewayStub,
   createSocialShareGatewayStub,
   createSystemShareGatewayStub,
-  renderUiHook,
-} from '@src/shared/__tests__';
-import { i18n } from '@src/shared/i18n';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
@@ -40,7 +40,7 @@ describe('useShareInviteMutationOptions', () => {
     clipboard.copy.mockRejectedValue(new ClipboardCopyError(sdkError));
     const haptics = createHapticsGatewayStub();
     const errorReporter = createErrorReporterStub();
-    const { result } = await renderUiHook(() => useMutation(useShareInviteMutationOptions()), {
+    const { result } = await renderScreenHook(() => useMutation(useShareInviteMutationOptions()), {
       di: { socialShareGateway, systemShare, clipboard, haptics, errorReporter },
     });
 

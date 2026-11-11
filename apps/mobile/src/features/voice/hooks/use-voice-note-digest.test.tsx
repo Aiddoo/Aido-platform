@@ -6,6 +6,9 @@ import { createEntitlementSnapshot } from '@src/features/billing/subscription/__
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createAllSeenCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
+import { NetworkError } from '@src/shared/errors';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider, Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -15,11 +18,8 @@ import {
   createMemoryStorage,
   createVoiceNoteStorageFake,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { NetworkError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider, Text } from '@src/shared/ui';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
@@ -64,7 +64,7 @@ async function renderDigest() {
   });
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), createEntitlementSnapshot());
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <DigestProbe />
@@ -256,7 +256,7 @@ describe('VoiceNoteDigestButton', () => {
       defaultOptions: { queries: { staleTime: Infinity } },
     });
     queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
-    await renderUi(<VoiceNoteDigestButton label="정리하기" />, {
+    await renderScreen(<VoiceNoteDigestButton label="정리하기" />, {
       queryClient,
       di: {
         entitlementService: new EntitlementService(createHttpClientStub(), logger),

@@ -1,8 +1,9 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createAnalyticsStub, createHttpClientStub, renderUi } from '@src/shared/__tests__';
 import { Text } from '@src/shared/ui';
+import { createAnalyticsStub, createHttpClientStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, screen, waitFor } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -20,7 +21,7 @@ async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
   );
   const analytics = createAnalyticsStub();
 
-  await renderUi(
+  await renderScreen(
     <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명">
       <Text testID="target">마이크</Text>
     </CoachmarkPopover>,
@@ -52,7 +53,7 @@ async function renderCoachmarkOnHiddenTab() {
       <PressableFeedback testID="target" />
     </CoachmarkPopover>
   );
-  const { rerender } = await renderUi(coachmark(), {
+  const { rerender } = await renderScreen(coachmark(), {
     di: { httpClient, syncStorage, analytics },
   });
 
@@ -103,7 +104,7 @@ describe('CoachmarkPopover', () => {
 
       return <Text testID="target">마이크</Text>;
     };
-    await renderUi(
+    await renderScreen(
       <CoachmarkPopover kind="voice-note-start" title="안내 제목" description="안내 설명">
         <Target />
       </CoachmarkPopover>,
@@ -128,7 +129,7 @@ describe('CoachmarkPopover', () => {
     const analytics = createAnalyticsStub();
 
     // When
-    await renderUi(
+    await renderScreen(
       <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명" isForced>
         <Text testID="target">마이크</Text>
       </CoachmarkPopover>,
@@ -244,7 +245,7 @@ describe('CoachmarkPopover', () => {
           <PressableFeedback testID="target" />
         </CoachmarkPopover>
       );
-      const { rerender } = await renderUi(coachmark(false), {
+      const { rerender } = await renderScreen(coachmark(false), {
         di: { httpClient, syncStorage, analytics },
       });
       await act(async () => {
@@ -306,7 +307,7 @@ describe('CoachmarkPopover', () => {
     const analytics = createAnalyticsStub();
 
     // When
-    await renderUi(
+    await renderScreen(
       <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명" isForced>
         <Text testID="target">마이크</Text>
       </CoachmarkPopover>,
@@ -351,7 +352,7 @@ describe('CoachmarkPopover', () => {
         <Text testID="target">마이크</Text>
       </CoachmarkPopover>
     );
-    const { rerender } = await renderUi(renderHint(false), {
+    const { rerender } = await renderScreen(renderHint(false), {
       di: { httpClient, syncStorage, analytics },
     });
     await waitFor(() =>
@@ -390,7 +391,7 @@ describe('CoachmarkPopover', () => {
           <Text testID="target">대상</Text>
         </CoachmarkPopover>
       );
-      const { rerender } = await renderUi(coachmark('2027-03-01'), {
+      const { rerender } = await renderScreen(coachmark('2027-03-01'), {
         di: { httpClient, syncStorage, analytics },
       });
       await waitFor(() =>

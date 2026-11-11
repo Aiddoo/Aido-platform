@@ -1,4 +1,4 @@
-import { router } from '@src/shared/__tests__/mocks/expo-router';
+import { router } from '@src/testing/mocks/expo-router';
 import { renderHook } from '@testing-library/react-native';
 
 import { useGoBack } from './use-go-back';

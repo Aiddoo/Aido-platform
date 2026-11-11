@@ -1,7 +1,8 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
-import { createHapticsGatewayStub, createHttpClientStub, renderUi } from '@src/shared/__tests__';
+import { createHapticsGatewayStub, createHttpClientStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
@@ -13,7 +14,7 @@ async function renderSheet() {
   httpClient.get.mockResolvedValue(ok({ categories: [] }));
   const onClose = jest.fn();
   const onConverted = jest.fn();
-  await renderUi(
+  await renderScreen(
     <MemoConvertBottomSheet
       memo={MEMO}
       selectedDate={new Date(2026, 10, 7)}

@@ -1,12 +1,12 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { NetworkError } from '@src/shared/errors/infra-error';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
@@ -37,7 +37,7 @@ async function renderMarketing(httpClient = createHttpClientStub()) {
     marketingPush = useMarketingPush();
     return null;
   }
-  await renderUi(<Capture />, { queryClient, di: { httpClient }, withLocalDate: true });
+  await renderScreen(<Capture />, { queryClient, di: { httpClient }, withLocalDate: true });
 
   return {
     cached: () => queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail()),

@@ -1,12 +1,12 @@
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
+import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
 import {
   createErrorReporterStub,
   createLoggerStub,
   createPendingResponse,
-} from '@src/shared/__tests__';
-import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
+} from '@src/testing/core';
 import { waitFor } from '@testing-library/react-native';
 import ky, { type KyInstance } from 'ky';
 

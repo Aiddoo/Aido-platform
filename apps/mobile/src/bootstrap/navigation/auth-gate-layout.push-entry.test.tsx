@@ -6,6 +6,9 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createMarkReadResponseDto } from '@src/features/notification/__tests__/notification.fixtures';
 import { NOTIFICATION_READ_BUDGET_MS } from '@src/features/notification/constants/notification.constants';
+import { ApiError, NetworkError } from '@src/shared/errors';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import {
   createAppLifecycleGatewayStub,
   createExternalLinkGatewayStub,
@@ -16,11 +19,8 @@ import {
   createTestDi,
   stubWindowDimensions,
   createTestQueryClient,
-  TestUiProvider,
-} from '@src/shared/__tests__';
-import { ApiError, NetworkError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { ThemeProvider } from '@src/shared/providers/theme-provider';
+} from '@src/testing/core';
+import { TestUiProvider } from '@src/testing/render';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { userEvent } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';

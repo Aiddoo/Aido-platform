@@ -1,4 +1,4 @@
-import { stubWindowDimensions } from '@src/shared/__tests__';
+import { stubWindowDimensions } from '@src/testing/core';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
 import { Text } from 'react-native';

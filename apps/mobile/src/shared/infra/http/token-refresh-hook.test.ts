@@ -1,13 +1,13 @@
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type { RefreshOutcome } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, type SessionEpoch } from '@src/core/session/session-epoch';
+import { NetworkError } from '@src/shared/errors';
 import {
   createErrorReporterStub,
   createLoggerStub,
   createMemoryTokenStore,
   runKyAfterResponseHook,
-} from '@src/shared/__tests__';
-import { NetworkError } from '@src/shared/errors';
+} from '@src/testing/core';
 
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
 

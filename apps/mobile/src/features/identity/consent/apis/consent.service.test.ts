@@ -2,8 +2,8 @@ import {
   createAuthApiError,
   INVALID_DTO,
 } from '@src/features/identity/auth/__tests__/auth.fixtures';
-import { createHttpClientStub } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
+import { createHttpClientStub } from '@src/testing/core';
 
 import { createConsentDto, createUpdateMarketingConsentDto } from '../__tests__/consent.fixtures';
 import { ConsentService } from './consent.service';

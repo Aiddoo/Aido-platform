@@ -5,17 +5,17 @@ import {
   createUser,
 } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
+import { toInstant } from '@src/shared/date/instant';
 import {
   createAppLifecycleGatewayStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
   createTestQueryClient,
-  renderUiHook,
   setupFakeTimersPerTest,
-} from '@src/shared/__tests__';
-import { MINUTE_MS } from '@src/shared/constants/time-units';
-import { toInstant } from '@src/shared/date/instant';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
 
 import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
@@ -46,7 +46,7 @@ async function renderGuard() {
     iosStatus: null,
   });
   let renderCount = 0;
-  const hook = await renderUiHook(
+  const hook = await renderScreenHook(
     () => {
       renderCount += 1;
       return useIsPushOnboardingDue();
@@ -129,7 +129,7 @@ describe('useIsPushOnboardingDue — 알림 권한을 이미 답한 사용자', 
       const renderedValues: (boolean | null)[] = [];
 
       // When
-      const { queryClient } = await renderUiHook(
+      const { queryClient } = await renderScreenHook(
         () => {
           const isDue = useIsPushOnboardingDue();
           renderedValues.push(isDue);

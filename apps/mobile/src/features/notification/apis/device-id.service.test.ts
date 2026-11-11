@@ -2,7 +2,7 @@ import {
   createIdGeneratorStub,
   createMemoryDeviceIdStore,
   createVendorIdGatewayStub,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
 
 import { DeviceIdService } from './device-id.service';
 

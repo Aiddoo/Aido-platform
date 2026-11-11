@@ -6,15 +6,15 @@ import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
+import { i18n } from '@src/shared/i18n';
 import {
   createHttpClientStub,
   createPurchasesGatewayStub,
   createTestDi,
   createTestQueryClient,
-  renderUiHook,
   setupFakeTimersPerTest,
-} from '@src/shared/__tests__';
-import { i18n } from '@src/shared/i18n';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
@@ -81,7 +81,7 @@ async function renderPurchase({
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(previousMe));
 
   // 결제 화면처럼 내 정보를 구독해 두어야 결제 뒤 다시 받을 수 있다
-  const { result } = await renderUiHook(
+  const { result } = await renderScreenHook(
     () => {
       useQuery(useGetMeQueryOptions());
       return useMutation(usePurchaseMutationOptions());

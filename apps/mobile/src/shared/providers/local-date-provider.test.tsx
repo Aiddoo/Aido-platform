@@ -4,7 +4,7 @@ import {
   createAppLifecycleGatewayStub,
   createErrorReporterStub,
   createTestDi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 

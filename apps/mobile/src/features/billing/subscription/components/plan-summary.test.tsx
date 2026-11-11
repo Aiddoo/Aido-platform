@@ -4,7 +4,8 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { MyPageMenuNavigationProvider } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { createTestQueryClient, renderUi } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
@@ -39,7 +40,7 @@ async function renderPlanSummary(tier: AccessTier) {
     ),
   );
 
-  await renderUi(
+  await renderScreen(
     <MyPageMenuNavigationProvider>
       <Suspense fallback={null}>
         <PlanSummary />

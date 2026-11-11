@@ -4,8 +4,8 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
@@ -27,7 +27,7 @@ async function renderUpdateProfile(httpClient = createHttpClientStub()) {
     mutateAsync = useUpdate();
     return null;
   }
-  await renderUi(<Capture />, {
+  await renderScreen(<Capture />, {
     queryClient,
     di: { httpClient, haptics: createHapticsGatewayStub() },
   });

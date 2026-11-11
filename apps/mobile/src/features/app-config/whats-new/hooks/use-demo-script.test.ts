@@ -1,4 +1,4 @@
-import { setupFakeTimersPerTest } from '@src/shared/__tests__';
+import { setupFakeTimersPerTest } from '@src/testing/core';
 import { act, renderHook } from '@testing-library/react-native';
 import { range } from 'es-toolkit';
 import { AccessibilityInfo } from 'react-native';

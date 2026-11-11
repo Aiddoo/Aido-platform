@@ -1,7 +1,8 @@
 import type { NotificationInboxItem } from '@aido/api';
 import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
-import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
+import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -9,7 +10,7 @@ import NotificationsScreen from '../../../../app/(app)/notifications/index';
 import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { createNotificationInboxResponseDto } from './notification.fixtures';
 
-async function renderScreen(category: string) {
+async function renderNotificationsCategory(category: string) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ category });
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
@@ -18,13 +19,13 @@ async function renderScreen(category: string) {
   });
   queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), 1);
 
-  await renderUi(<NotificationsScreen />, { queryClient, di: { httpClient } });
+  await renderScreen(<NotificationsScreen />, { queryClient, di: { httpClient } });
 }
 
 describe('알림 화면의 안 읽은 알림 줄', () => {
   it('안 읽은 수는 모든 분류를 합친 값이라 전체 탭에서 보인다', async () => {
     // When
-    await renderScreen(NOTIFICATION_CATEGORY.ALL);
+    await renderNotificationsCategory(NOTIFICATION_CATEGORY.ALL);
 
     // Then
     expect(await screen.findByText('읽지 않은 알림')).toBeOnTheScreen();
@@ -35,7 +36,7 @@ describe('알림 화면의 안 읽은 알림 줄', () => {
     '%s 탭에서는 다른 분류의 안 읽은 수를 보이지 않는다',
     async (category) => {
       // When
-      await renderScreen(category);
+      await renderNotificationsCategory(category);
 
       // Then
       expect(screen.queryByText('읽지 않은 알림')).toBeNull();
@@ -65,7 +66,7 @@ describe('알림함 항목을 누르면', () => {
         ? ok(createNotificationInboxResponseDto([item]))
         : new Promise(() => undefined),
     );
-    await renderUi(<NotificationsScreen />, {
+    await renderScreen(<NotificationsScreen />, {
       withLocalDate: true,
       withOverlay: true,
       di: { httpClient },

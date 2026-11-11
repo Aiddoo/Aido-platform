@@ -4,8 +4,8 @@ import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
@@ -26,7 +26,7 @@ async function updateFollowing(error: ApiError) {
     return null;
   }
 
-  const { queryClient } = await renderUi(<Probe />, {
+  const { queryClient } = await renderScreen(<Probe />, {
     di: {
       httpClient,
       analytics: createAnalyticsStub(),

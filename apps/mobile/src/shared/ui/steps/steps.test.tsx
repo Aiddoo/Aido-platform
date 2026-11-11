@@ -1,4 +1,4 @@
-import { renderUi } from '@src/shared/__tests__';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { Steps } from './steps';
@@ -6,7 +6,7 @@ import { Steps } from './steps';
 async function renderButtons(props: { index: number; isLast: boolean }) {
   const onBack = jest.fn();
   const onNext = jest.fn();
-  await renderUi(
+  await renderScreen(
     <Steps.Buttons {...props} backLabel="이전" nextLabel="다음" onBack={onBack} onNext={onNext} />,
   );
   return { onBack, onNext };

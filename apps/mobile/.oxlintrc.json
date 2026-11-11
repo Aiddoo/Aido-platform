@@ -39,7 +39,7 @@
       }
     },
     {
-      "files": ["**/*.test.{ts,tsx}", "src/shared/__tests__/**", "jest.setup.ts"],
+      "files": ["**/*.test.{ts,tsx}", "src/testing/**", "jest.setup.ts"],
       "rules": {
         "typescript/no-explicit-any": "off",
         "typescript/ban-ts-comment": [
@@ -104,7 +104,11 @@
     },
     {
       "files": ["src/**", "app/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -147,7 +151,11 @@
     },
     {
       "files": ["app/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -195,7 +203,11 @@
     },
     {
       "files": ["src/features/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -253,7 +265,11 @@
     },
     {
       "files": ["src/features/**/*.error.ts"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -306,7 +322,11 @@
     },
     {
       "files": ["src/shared/ui/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -335,7 +355,11 @@
       }
     },
     {
-      "files": ["src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "src/**/__tests__/**"],
+      "files": [
+        "src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -358,7 +382,7 @@
                 "name": "@tanstack/react-query",
                 "importNames": ["QueryClient"],
                 "allowTypeImports": true,
-                "message": "테스트에서 new QueryClient를 직접 만들지 말고 @src/shared/__tests__의 createTestQueryClient를 쓰세요. 각 테스트가 만들면 정리 타이머가 남아 Jest 종료를 붙잡습니다."
+                "message": "테스트에서 new QueryClient를 직접 만들지 말고 @src/testing의 createTestQueryClient를 쓰세요. 각 테스트가 만들면 정리 타이머가 남아 Jest 종료를 붙잡습니다."
               }
             ]
           }
@@ -376,7 +400,7 @@
                 "name": "@tanstack/react-query",
                 "importNames": ["QueryClient"],
                 "allowTypeImports": true,
-                "message": "테스트에서 new QueryClient를 직접 만들지 말고 @src/shared/__tests__의 createTestQueryClient를 쓰세요. 각 테스트가 만들면 정리 타이머가 남아 Jest 종료를 붙잡습니다."
+                "message": "테스트에서 new QueryClient를 직접 만들지 말고 @src/testing의 createTestQueryClient를 쓰세요. 각 테스트가 만들면 정리 타이머가 남아 Jest 종료를 붙잡습니다."
               }
             ]
           }
@@ -384,7 +408,7 @@
       }
     },
     {
-      "files": ["src/shared/__tests__/query-client.ts"],
+      "files": ["src/testing/query-client.ts"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -427,7 +451,11 @@
     },
     {
       "files": ["src/**", "app/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-properties": [
           "error",
@@ -460,7 +488,11 @@
     },
     {
       "files": ["src/features/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-properties": [
           "error",
@@ -497,7 +529,11 @@
     },
     {
       "files": ["src/features/**/*.error.ts"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-properties": [
           "error",
@@ -557,7 +593,11 @@
     },
     {
       "files": ["**/hooks/use-*-param.{ts,tsx}", "**/hooks/use-*-params.{ts,tsx}"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-properties": [
           "error",
@@ -593,7 +633,11 @@
         "src/features/**/hooks/use-*-param.{ts,tsx}",
         "src/features/**/hooks/use-*-params.{ts,tsx}"
       ],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "no-restricted-properties": [
           "error",
@@ -674,7 +718,11 @@
     },
     {
       "files": ["src/**", "app/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "aido/function-declaration": "error",
         "aido/policy-facade": "error",
@@ -715,28 +763,44 @@
     },
     {
       "files": ["src/features/**", "app/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "aido/component-name": "error"
       }
     },
     {
       "files": ["src/**/domains/**", "app/**/domains/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "aido/no-this-outside-class": "error"
       }
     },
     {
       "files": ["src/features/**/domains/**/*.model.ts"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "aido/model-exports": "error"
       }
     },
     {
       "files": ["src/**/queries/*.mutations.ts", "app/**/queries/*.mutations.ts"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "aido/type-name": [
           "error",
@@ -748,21 +812,33 @@
     },
     {
       "files": ["src/**/queries/*.mutations.{ts,tsx}", "app/**/queries/*.mutations.{ts,tsx}"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "aido/mutation-error-feedback": "error"
       }
     },
     {
       "files": ["app/**"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "aido/sheet-route-params": "error"
       }
     },
     {
       "files": ["src/features/**/*-card.tsx", "src/shared/ui/**/*-card.tsx"],
-      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
       "rules": {
         "aido/card-uses-heroui-card": "error"
       }
@@ -777,6 +853,7 @@
       "files": [
         "src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "src/**/__tests__/**",
+        "src/testing/**",
         "app/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "app/**/__tests__/**"
       ],

@@ -1,4 +1,4 @@
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
+import { createLoggerStub } from '@src/testing/ports/logger.stub';
 import { TimeoutError } from 'es-toolkit';
 import { PermissionStatus } from 'expo';
 import * as Notifications from 'expo-notifications';

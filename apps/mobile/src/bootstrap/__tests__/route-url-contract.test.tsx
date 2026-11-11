@@ -12,9 +12,9 @@ import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-
 import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
 import { voiceNoteTabSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
-import { stubWindowDimensions } from '@src/shared/__tests__';
-import { renderRouteHook } from '@src/shared/__tests__/render-route-hook';
 import { useView } from '@src/shared/hooks/use-view';
+import { stubWindowDimensions } from '@src/testing/core';
+import { renderRouteHook } from '@src/testing/render-route-hook';
 
 jest.unmock('expo-router');
 

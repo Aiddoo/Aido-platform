@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createAnalyticsStub, createTestDi } from '@src/shared/__tests__';
+import { createAnalyticsStub, createTestDi } from '@src/testing/core';
 import { renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 

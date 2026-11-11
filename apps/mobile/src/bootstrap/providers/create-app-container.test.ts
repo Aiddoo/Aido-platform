@@ -6,9 +6,9 @@ import { pushNoticeDismissedAtStoredValue } from '@src/features/notification/sch
 import { pushPermissionDeferredAtStoredValue } from '@src/features/notification/schemas/push-permission-deferred-at-storage.schema';
 import { createPendingRedemption } from '@src/features/social/invite/__tests__/invite.fixtures';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
-import { createLoggerStub, createMemorySyncStorage, createTestDi } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { createLoggerStub, createMemorySyncStorage, createTestDi } from '@src/testing/core';
 
 const DISMISSED_AT = toInstant('2026-11-09T01:02:03.000Z');
 

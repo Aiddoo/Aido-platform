@@ -8,6 +8,8 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { toTodo } from '@src/features/planning/todo/apis/todo.mapper';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
+import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
 import {
   createAnalyticsStub,
   createExternalLinkGatewayStub,
@@ -16,10 +18,8 @@ import {
   createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
-import { readDeviceLocalDateState } from '@src/shared/date/local-date-clock';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import type { PushPermission } from '../domains/push-permission.model';
@@ -58,7 +58,7 @@ async function renderCard(
     nextCursor: null,
   });
 
-  await renderUi(<PushPermissionNotice />, {
+  await renderScreen(<PushPermissionNotice />, {
     di: {
       httpClient: createHttpClientStub(),
       syncStorage,

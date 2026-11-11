@@ -22,13 +22,13 @@ import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/que
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { useDeleteTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 
@@ -79,7 +79,7 @@ async function renderMutations() {
     return null;
   }
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <Probe
         onRender={(mutations) => {

@@ -1,5 +1,5 @@
-import { createLocalFileSystemFake, createLoggerStub } from '@src/shared/__tests__';
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
+import { createLocalFileSystemFake, createLoggerStub } from '@src/testing/core';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { createVoiceRecordingRepository } from './voice-recording.repository';

@@ -1,4 +1,4 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { createMemorySyncStorage } from '@src/testing/core';
 
 import { createWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { ANDROID_WIDGET_STORAGE_KEYS } from '../constants/widget.constants';

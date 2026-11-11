@@ -1,4 +1,4 @@
-import { createLoggerStub } from '@src/shared/__tests__';
+import { createLoggerStub } from '@src/testing/core';
 
 import { UserDeviceDataService } from './user-device-data.service';
 

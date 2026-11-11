@@ -1,8 +1,9 @@
 import '@src/shared/i18n/init';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
-import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 
 import {
@@ -24,7 +25,7 @@ async function renderSummary(snapshot: EntitlementSnapshot) {
   });
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
 
-  return renderUi(
+  return renderScreen(
     <LocalDateProvider>
       <QuotaSummary />
     </LocalDateProvider>,

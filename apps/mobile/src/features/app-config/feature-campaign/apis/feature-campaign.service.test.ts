@@ -1,6 +1,6 @@
 import { unwrap } from '@src/core/errors/result';
-import { createJsonFetcherStub } from '@src/shared/__tests__';
 import { ParseError } from '@src/shared/errors/infra-error';
+import { createJsonFetcherStub } from '@src/testing/core';
 
 import { FeatureCampaignService } from './feature-campaign.service';
 

@@ -1,4 +1,4 @@
-import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
+import { createMemoryObservableSyncStorage } from '@src/testing/core';
 import { act, renderHook } from '@testing-library/react-native';
 
 import { useSyncStorageString } from './use-sync-storage-string';

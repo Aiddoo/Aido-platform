@@ -1,4 +1,4 @@
-import { createMemoryStorage } from '@src/shared/__tests__/create-memory-storage';
+import { createMemoryStorage } from '@src/testing/fakes/memory-storage.fake';
 import { type createMMKV, deleteMMKV, existsMMKV } from 'react-native-mmkv';
 
 import { disabledDraftStorage, openEncryptedStorage } from './encrypted-draft-storage';

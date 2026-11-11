@@ -1,5 +1,5 @@
 import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
+import { createLoggerStub } from '@src/testing/ports/logger.stub';
 import Purchases, {
   INTRO_ELIGIBILITY_STATUS,
   PACKAGE_TYPE,

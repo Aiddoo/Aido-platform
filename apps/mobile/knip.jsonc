@@ -9,6 +9,8 @@
         "src/features/**/constants/*.events.ts",
         "plugins/*.js",
         "scripts/*.mjs",
+        // jest 설정이 문자열 경로로만 가리키는 SDK 대체
+        "src/testing/mocks/*",
       ],
       "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
       "ignore": ["src/shared/constants/query-meta.ts"],

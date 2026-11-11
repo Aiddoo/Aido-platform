@@ -20,13 +20,13 @@ import { toFriendsPage } from '@src/features/social/friend/apis/friend.mapper';
 import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';
 import { createWeatherReport } from '@src/features/weather/__tests__/weather-report.fixtures';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/queries/weather-query-keys';
+import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
+import { setGlobalLogger } from '@src/shared/infra/logger/global-logger';
 import {
   createLoggerStub,
   createMemorySyncStorage,
   createTestQueryClient,
-} from '@src/shared/__tests__';
-import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { setGlobalLogger } from '@src/shared/infra/logger/global-logger';
+} from '@src/testing/core';
 import { partialMatchKey, type QueryKey } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,

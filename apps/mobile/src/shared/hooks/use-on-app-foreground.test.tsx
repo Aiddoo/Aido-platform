@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createAppLifecycleGatewayStub, createTestDi } from '@src/shared/__tests__';
+import { createAppLifecycleGatewayStub, createTestDi } from '@src/testing/core';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 

@@ -1,6 +1,7 @@
-import { createLoggerStub, renderUi } from '@src/shared/__tests__';
-import { getLastAudioPlaylist } from '@src/shared/__tests__/mocks/expo-audio';
 import { Text } from '@src/shared/ui';
+import { createLoggerStub } from '@src/testing/core';
+import { getLastAudioPlaylist } from '@src/testing/mocks/expo-audio';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
@@ -50,7 +51,7 @@ function PlayerProbe() {
 }
 
 const renderPlayer = async () => {
-  await renderUi(<PlayerProbe />, { di: { logger } });
+  await renderScreen(<PlayerProbe />, { di: { logger } });
   return getLastAudioPlaylist();
 };
 

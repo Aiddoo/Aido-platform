@@ -2,8 +2,8 @@ import {
   createLocalFileSystemFake,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
-} from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+} from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
 import { VoiceRecordingIntake } from './voice-recording-intake';

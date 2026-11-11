@@ -5,15 +5,15 @@ import { PreferenceService } from '@src/features/identity/preference/apis/prefer
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -115,7 +115,7 @@ async function renderPlan(
     createPreference({ timeFormat: 'TWELVE_HOUR' }),
   );
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <Suspense fallback={null}>

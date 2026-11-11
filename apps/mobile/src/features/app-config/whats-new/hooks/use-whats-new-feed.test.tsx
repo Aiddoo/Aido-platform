@@ -4,12 +4,9 @@ import { FEATURE_CAMPAIGN_QUERY_KEYS } from '@src/features/app-config/feature-ca
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import {
-  createMemoryObservableSyncStorage,
-  createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
+import { createMemoryObservableSyncStorage, createTestQueryClient } from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -43,7 +40,7 @@ async function renderFeed({
   };
   queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);
   const onboarding = { isSettled: isOnboardingSettled };
-  const hook = await renderUiHook(
+  const hook = await renderScreenHook(
     () => useWhatsNewFeed({ isStable: true, isOnboardingSettled: onboarding.isSettled }),
     {
       queryClient,

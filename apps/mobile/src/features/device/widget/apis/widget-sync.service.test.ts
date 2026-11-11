@@ -1,6 +1,6 @@
-import { createErrorReporterStub, createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { createErrorReporterStub, createMemorySyncStorage } from '@src/testing/core';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';

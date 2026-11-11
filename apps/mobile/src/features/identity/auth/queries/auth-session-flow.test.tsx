@@ -18,15 +18,6 @@ import { useCreateTodoMutationOptions } from '@src/features/planning/composer/qu
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
-import {
-  createErrorReporterStub,
-  createLoggerStub,
-  createMemoryTokenStore,
-  createHttpClientStub,
-  createAnalyticsStub,
-  createPendingResponse,
-  createSocialAuthGatewayStub,
-} from '@src/shared/__tests__';
 import { getNowInstant, toInstant } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
@@ -35,6 +26,15 @@ import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { RETRY_MARKER_HEADER } from '@src/shared/infra/http/token-refresh-hook';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import {
+  createErrorReporterStub,
+  createLoggerStub,
+  createMemoryTokenStore,
+  createHttpClientStub,
+  createAnalyticsStub,
+  createPendingResponse,
+  createSocialAuthGatewayStub,
+} from '@src/testing/core';
 import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 import { z } from 'zod';

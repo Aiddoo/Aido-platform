@@ -1,4 +1,5 @@
 import { createSessionEpoch } from '@src/core/session/session-epoch';
+import { NetworkError, ok } from '@src/shared/errors';
 import {
   createHttpClientStub,
   createIdGeneratorStub,
@@ -8,8 +9,7 @@ import {
   createPendingResponse,
   createPushNotificationGatewayStub,
   createVendorIdGatewayStub,
-} from '@src/shared/__tests__';
-import { NetworkError, ok } from '@src/shared/errors';
+} from '@src/testing/core';
 
 import {
   createNotificationApiError,

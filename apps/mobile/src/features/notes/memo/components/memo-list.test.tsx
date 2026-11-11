@@ -7,8 +7,8 @@ import {
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
@@ -34,7 +34,7 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
     voiceNoteStorage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote());
   }
 
-  await renderUi(
+  await renderScreen(
     <Suspense fallback={null}>
       <MemoList />
     </Suspense>,

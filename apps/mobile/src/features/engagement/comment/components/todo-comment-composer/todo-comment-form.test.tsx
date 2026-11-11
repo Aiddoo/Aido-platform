@@ -1,6 +1,7 @@
 import '@src/shared/i18n/init';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createHttpClientStub, renderUi } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
@@ -46,7 +47,7 @@ function EditingForm() {
 async function renderEditingForm() {
   const httpClient = createHttpClientStub();
   jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
-  await renderUi(<EditingForm />, {
+  await renderScreen(<EditingForm />, {
     withLocalDate: true,
     withOverlay: true,
     di: { httpClient },

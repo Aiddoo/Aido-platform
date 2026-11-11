@@ -1,6 +1,6 @@
 import type { HttpClient } from '@src/core/ports/http-client';
 
-import { mockMethod } from './mock-method';
+import { mockMethod } from '../mock-method';
 
 function failUnset(method: keyof HttpClient) {
   return async (): Promise<never> => {

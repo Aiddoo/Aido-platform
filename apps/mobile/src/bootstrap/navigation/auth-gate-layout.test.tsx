@@ -4,15 +4,15 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import {
   createHttpClientStub,
   createTestDi,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
-  TestUiProvider,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { ThemeProvider } from '@src/shared/providers/theme-provider';
+} from '@src/testing/core';
+import { TestUiProvider } from '@src/testing/render';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';

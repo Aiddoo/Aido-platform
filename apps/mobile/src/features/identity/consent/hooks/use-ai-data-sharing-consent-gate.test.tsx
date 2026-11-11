@@ -5,10 +5,11 @@ import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/u
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { Button, Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
@@ -76,7 +77,7 @@ async function renderGate(
     queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser(me));
   }
 
-  await renderUi(
+  await renderScreen(
     <OverlayProvider>
       <ConsentGateProbe />
     </OverlayProvider>,

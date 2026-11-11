@@ -1,5 +1,5 @@
-import { createLoggerStub, createMemorySyncStorage } from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+import { createLoggerStub, createMemorySyncStorage } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';

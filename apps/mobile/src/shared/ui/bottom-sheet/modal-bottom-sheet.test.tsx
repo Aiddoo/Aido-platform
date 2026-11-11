@@ -1,6 +1,6 @@
-import { renderUi } from '@src/shared/__tests__';
-import { getLastGorhomSheetProps } from '@src/shared/__tests__/mocks/gorhom-bottom-sheet';
 import { Text } from '@src/shared/ui';
+import { getLastGorhomSheetProps } from '@src/testing/mocks/gorhom-bottom-sheet';
+import { renderScreen } from '@src/testing/render';
 import { act } from '@testing-library/react-native';
 
 import { ModalBottomSheet } from './modal-bottom-sheet';
@@ -10,7 +10,7 @@ describe('ModalBottomSheet', () => {
     // Given
     const onOpenChange = jest.fn();
     const onCloseStart = jest.fn();
-    await renderUi(
+    await renderScreen(
       <ModalBottomSheet
         isOpen
         onOpenChange={onOpenChange}
@@ -35,7 +35,7 @@ describe('ModalBottomSheet', () => {
     const onExit = jest.fn();
 
     // When
-    await renderUi(
+    await renderScreen(
       <ModalBottomSheet isOpen onOpenChange={jest.fn()} onExit={onExit}>
         <Text>내용</Text>
       </ModalBottomSheet>,

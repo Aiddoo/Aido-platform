@@ -1,14 +1,14 @@
 import '@src/shared/i18n/init';
+import { Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createAppLifecycleGatewayStub,
   createErrorReporterStub,
   createLoggerStub,
   createSpeechRecognizerStub,
-  renderUi,
-} from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
-import { Text } from '@src/shared/ui';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { Pressable } from 'react-native';
@@ -97,7 +97,7 @@ async function renderSession({
   const analytics = createAnalyticsStub();
   const errorReporter = createErrorReporterStub();
   const onCaptured = jest.fn().mockResolvedValue(null);
-  const { unmount } = await renderUi(
+  const { unmount } = await renderScreen(
     <SessionProbe
       onCaptured={onCaptured}
       mode={mode}
@@ -645,7 +645,7 @@ describe('useVoiceCaptureSession', () => {
     // Given
     const user = userEvent.setup();
     const speechRecognizer = createSpeechRecognizerStub();
-    const { unmount } = await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
+    const { unmount } = await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
       di: {
         speechRecognizer,
         analytics: createAnalyticsStub(),
@@ -1209,7 +1209,7 @@ describe('useVoiceCaptureSession', () => {
       const speechRecognizer = createSpeechRecognizerStub();
       speechRecognizer.getCapabilities.mockRejectedValue(new Error('native'));
       logger.error.mockClear();
-      await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
+      await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
         di: {
           speechRecognizer,
           analytics: createAnalyticsStub(),
@@ -1242,7 +1242,7 @@ describe('useVoiceCaptureSession', () => {
         canSaveRecording: false,
         canContinue: false,
       });
-      await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
+      await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
         di: {
           speechRecognizer,
           analytics: createAnalyticsStub(),
@@ -1270,7 +1270,7 @@ describe('useVoiceCaptureSession', () => {
         canSaveRecording: false,
         canContinue: false,
       });
-      await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
+      await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
         di: {
           speechRecognizer,
           analytics: createAnalyticsStub(),

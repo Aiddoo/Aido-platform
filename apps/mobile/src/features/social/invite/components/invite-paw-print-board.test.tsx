@@ -1,13 +1,13 @@
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createHapticsGatewayStub,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
@@ -34,7 +34,7 @@ async function renderBoard({
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: USER_ID }));
   queryClient.setQueryData(INVITE_QUERY_KEYS.me(), createInvite({ qualifiedCount }));
 
-  await renderUi(
+  await renderScreen(
     <Suspense fallback={null}>
       <InvitePawPrintBoard />
     </Suspense>,

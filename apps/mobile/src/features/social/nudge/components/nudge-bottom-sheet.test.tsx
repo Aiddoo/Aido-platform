@@ -1,7 +1,8 @@
 import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
 import { createAuthApiError } from '@src/features/identity/auth/__tests__/auth.fixtures';
-import { createHttpClientStub, renderUi } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { RemindNudgeBottomSheet } from './nudge-bottom-sheet';
@@ -9,7 +10,7 @@ import { RemindNudgeBottomSheet } from './nudge-bottom-sheet';
 async function renderSheet() {
   const httpClient = createHttpClientStub();
   const onOpenChange = jest.fn();
-  await renderUi(
+  await renderScreen(
     <RemindNudgeBottomSheet
       receiver={{ id: 'friend-1', displayName: '민지' }}
       isOpen

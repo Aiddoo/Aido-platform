@@ -5,18 +5,18 @@ import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { readStoredValue } from '@src/shared/storage/define-stored-value';
+import { Button } from '@src/shared/ui';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { readStoredValue } from '@src/shared/storage/define-stored-value';
-import { Button } from '@src/shared/ui';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -69,7 +69,7 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <AiParseGate error={error} onAlternative={onAlternative} />

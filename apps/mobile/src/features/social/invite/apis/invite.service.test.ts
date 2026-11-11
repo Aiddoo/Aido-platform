@@ -1,11 +1,7 @@
-import {
-  createHttpClientStub,
-  createLoggerStub,
-  createMemorySyncStorage,
-} from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { createHttpClientStub, createLoggerStub, createMemorySyncStorage } from '@src/testing/core';
 
 import {
   createInviteApiError,

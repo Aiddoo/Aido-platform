@@ -4,16 +4,17 @@ import { ok, unwrap } from '@src/core/errors/result';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
+import { getNowInstant } from '@src/shared/date/instant';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestDi,
-} from '@src/shared/__tests__';
-import { createTestQueryClient, renderUi } from '@src/shared/__tests__';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
-import { getNowInstant } from '@src/shared/date/instant';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+} from '@src/testing/core';
+import { createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
@@ -68,7 +69,7 @@ async function renderHint({
       </LocalDateProvider>
     );
   };
-  const { rerender } = await renderUi(hint('2027-03-01'), {
+  const { rerender } = await renderScreen(hint('2027-03-01'), {
     di: {
       httpClient,
       syncStorage,

@@ -1,7 +1,8 @@
 import '@src/shared/i18n/init';
-import { createErrorReporterStub, createAnalyticsStub, renderUi } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { Text } from '@src/shared/ui';
+import { createErrorReporterStub, createAnalyticsStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
 import { Pressable, TextInput } from 'react-native';
@@ -28,7 +29,7 @@ function SheetProbe({ onSettled }: { onSettled: (scope: TodoEditScope | null) =>
 
 async function renderSheet() {
   const onSettled = jest.fn();
-  const { unmount } = await renderUi(
+  const { unmount } = await renderScreen(
     <LocalDateProvider>
       <SheetProbe onSettled={onSettled} />
     </LocalDateProvider>,

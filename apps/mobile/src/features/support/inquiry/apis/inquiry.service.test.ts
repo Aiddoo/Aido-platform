@@ -1,5 +1,5 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
-import { createHttpClientStub } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/testing/core';
 
 import {
   createInquiryApiError,

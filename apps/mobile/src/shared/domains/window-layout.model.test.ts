@@ -2,7 +2,7 @@ import {
   createAppWindow,
   DEVICE_WINDOW,
   IPAD_SIDEBAR_WIDTH,
-} from '@src/shared/__tests__/window-layout.fixtures';
+} from '@src/testing/window-layout.fixtures';
 
 import { WindowLayoutPolicy } from './window-layout.model';
 

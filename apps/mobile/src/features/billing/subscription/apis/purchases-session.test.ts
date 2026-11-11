@@ -2,7 +2,7 @@ import {
   createAnalyticsStub,
   createLoggerStub,
   createPurchasesGatewayStub,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { PurchasesSession } from './purchases-session';

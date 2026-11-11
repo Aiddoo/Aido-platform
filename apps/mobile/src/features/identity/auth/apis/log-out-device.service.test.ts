@@ -1,7 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import type { RequestConfig } from '@src/core/ports/http-client';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
-import { createLoggerStub } from '@src/shared/__tests__';
 import {
   ApiError,
   err,
@@ -11,6 +10,7 @@ import {
   ServerError,
   TimeoutError,
 } from '@src/shared/errors';
+import { createLoggerStub } from '@src/testing/core';
 
 import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from './log-out-device.service';
 

@@ -10,6 +10,10 @@ import { type Consent } from '@src/features/identity/consent/domains/consent.mod
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { fromDate, getNowInstant } from '@src/shared/date/instant';
+import { NetworkError } from '@src/shared/errors';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider, Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -20,13 +24,9 @@ import {
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
-import { fromDate, getNowInstant } from '@src/shared/date/instant';
-import { NetworkError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider, Text } from '@src/shared/ui';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -166,7 +166,7 @@ async function renderQuickVoice({
     );
   }
 
-  const { rerender } = await renderUi(
+  const { rerender } = await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <QuickVoiceProbe onExit={onExit} />

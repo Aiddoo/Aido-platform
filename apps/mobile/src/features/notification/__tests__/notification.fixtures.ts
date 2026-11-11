@@ -15,14 +15,12 @@ import {
 import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 import { toInstant } from '@src/shared/date/instant';
+import { defineFixture } from '@src/testing/fixture';
 
 import type { Notification, PendingNotificationResponse } from '../domains/notification.model';
 import type { PushPermission } from '../domains/push-permission.model';
-import { type PushRegistration, pushRegistrationSchema } from '../domains/push-registration.model';
-import {
-  type PushNotificationPayload,
-  pushNotificationPayloadSchema,
-} from '../schemas/push-notification-payload.schema';
+import { pushRegistrationSchema } from '../domains/push-registration.model';
+import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
 
 function generateNotificationListResponseDto(): NotificationListResponse {
   return {
@@ -160,28 +158,16 @@ export function createNotificationApiError(
 
 export const INVALID_DTO = { invalid: 'data' };
 
-const DEFAULT_PUSH_NOTIFICATION_PAYLOAD = pushNotificationPayloadSchema.parse({
+export const createPushNotificationPayload = defineFixture(pushNotificationPayloadSchema, {
   notificationId: 7,
   type: 'FOLLOW_NEW',
   action: { type: 'DEEP_LINK' },
 });
 
-export function createPushNotificationPayload(
-  overrides: Partial<PushNotificationPayload> = {},
-): PushNotificationPayload {
-  return { ...DEFAULT_PUSH_NOTIFICATION_PAYLOAD, ...overrides };
-}
-
-const DEFAULT_PUSH_REGISTRATION = pushRegistrationSchema.parse({
+export const createPushRegistration = defineFixture(pushRegistrationSchema, {
   reportedToken: null,
   releaseRequestedAt: null,
 });
-
-export function createPushRegistration(
-  overrides: Partial<PushRegistration> = {},
-): PushRegistration {
-  return { ...DEFAULT_PUSH_REGISTRATION, ...overrides };
-}
 
 export function createPendingNotificationResponse(
   overrides: Partial<PendingNotificationResponse> = {},
@@ -189,7 +175,7 @@ export function createPendingNotificationResponse(
   return {
     id: 'response-1',
     actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
-    data: DEFAULT_PUSH_NOTIFICATION_PAYLOAD,
+    data: createPushNotificationPayload(),
     receivedAt: 0,
     isLaunchResponse: false,
     appState: 'background',

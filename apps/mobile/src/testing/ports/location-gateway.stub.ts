@@ -1,6 +1,6 @@
 import type { LocationGateway } from '@src/core/ports/location-gateway';
 
-import { mockMethod } from './mock-method';
+import { mockMethod } from '../mock-method';
 
 function failUnset(method: 'getCoordinates' | 'getPlace') {
   return async (): Promise<never> => {

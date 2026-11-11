@@ -1,12 +1,12 @@
 import '@src/shared/i18n/init';
+import { ParseError } from '@src/shared/errors';
+import { i18n } from '@src/shared/i18n';
 import {
   createHapticsGatewayStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
-import { ParseError } from '@src/shared/errors';
-import { i18n } from '@src/shared/i18n';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { act, screen } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 
@@ -42,7 +42,7 @@ describe('createSessionQueryCache', () => {
   it('끝난 세션의 실패는 다음 화면에 햅틱·토스트로 알리지 않는다', async () => {
     // Given
     const haptics = createHapticsGatewayStub();
-    const { queryClient } = await renderUiHook(() => null, { di: { haptics } });
+    const { queryClient } = await renderScreenHook(() => null, { di: { haptics } });
     let fail: () => void = noop;
     const response = new Promise<string>((_resolve, reject) => {
       fail = () => reject(new ParseError());

@@ -1,13 +1,13 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
+import { Button } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { Button } from '@src/shared/ui';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
@@ -65,7 +65,7 @@ async function renderApply(
   const queryClient = createTestQueryClient();
   const onMemoChanged = jest.fn();
 
-  await renderUi(<ApplyProbe sourceMemoId={sourceMemoId} onMemoChanged={onMemoChanged} />, {
+  await renderScreen(<ApplyProbe sourceMemoId={sourceMemoId} onMemoChanged={onMemoChanged} />, {
     di: { httpClient, analytics },
     queryClient,
   });

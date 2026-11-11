@@ -1,4 +1,5 @@
-import { createTestQueryClient, renderUi } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
@@ -38,7 +39,7 @@ async function renderFooter(queryFn: (page: number) => Promise<number>) {
     );
   }
 
-  await renderUi(<Harness />, { queryClient });
+  await renderScreen(<Harness />, { queryClient });
   return probe;
 }
 

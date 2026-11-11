@@ -3,11 +3,8 @@ import type { PushPermissionResponse } from '@src/core/ports/push-notification-g
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
-import {
-  createPushNotificationGatewayStub,
-  createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+import { createPushNotificationGatewayStub, createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 
 import { PushStatusValue } from './push-status-value';
@@ -29,7 +26,7 @@ async function renderValue({
     toPreference(createPreferenceDto({ pushEnabled })),
   );
 
-  await renderUi(<PushStatusValue />, { di: { pushNotification }, queryClient });
+  await renderScreen(<PushStatusValue />, { di: { pushNotification }, queryClient });
 
   return screen.findByTestId('push-status-value');
 }

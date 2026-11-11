@@ -1,10 +1,10 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { fromEpochMs, toEpochMs, type Instant } from '@src/shared/date/instant';
 import {
   createAppLifecycleGatewayStub,
   createTestDi,
   setupFakeTimersPerTest,
-} from '@src/shared/__tests__';
-import { fromEpochMs, toEpochMs, type Instant } from '@src/shared/date/instant';
+} from '@src/testing/core';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 

@@ -1,14 +1,15 @@
 import { TODO_EDIT_SCOPES, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
-import { createErrorReporterStub, createAnalyticsStub, renderUi } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { createErrorReporterStub, createAnalyticsStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 
 import { TodoScopeSelectContent } from './todo-scope-select-content';
 
 const renderScope = (ui: ReactElement) =>
-  renderUi(<LocalDateProvider>{ui}</LocalDateProvider>, {
+  renderScreen(<LocalDateProvider>{ui}</LocalDateProvider>, {
     di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
   });
 

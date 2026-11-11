@@ -1,5 +1,5 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { getNowInstant } from '@src/shared/date/instant';
+import { createMemorySyncStorage } from '@src/testing/core';
 
 import { createCoachmarkKey, createCoachmarkRepository } from './coachmark.repository';
 

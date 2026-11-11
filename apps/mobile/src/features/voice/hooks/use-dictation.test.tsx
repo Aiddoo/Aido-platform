@@ -1,7 +1,8 @@
 import '@src/shared/i18n/init';
-import { createLoggerStub, createSpeechRecognizerStub, renderUi } from '@src/shared/__tests__';
 import { Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { createLoggerStub, createSpeechRecognizerStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
@@ -25,7 +26,7 @@ describe('useDictation', () => {
   it('내가 시작한 받아쓰기 결과만 입력에 넣는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    await renderUi(
+    await renderScreen(
       <OverlayProvider>
         <DictationProbe />
       </OverlayProvider>,
@@ -61,7 +62,7 @@ describe('useDictation', () => {
   it('받아쓰기를 시작한 직후 시작 이벤트 전에 다시 눌러도 인식기를 한 번만 시작한다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    await renderUi(
+    await renderScreen(
       <OverlayProvider>
         <DictationProbe />
       </OverlayProvider>,
@@ -85,7 +86,7 @@ describe('useDictation', () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const onEnd = jest.fn();
-    await renderUi(
+    await renderScreen(
       <OverlayProvider>
         <DictationProbe onEnd={onEnd} />
       </OverlayProvider>,
@@ -112,7 +113,7 @@ describe('useDictation', () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const onEnd = jest.fn();
-    await renderUi(
+    await renderScreen(
       <OverlayProvider>
         <DictationProbe onEnd={onEnd} />
       </OverlayProvider>,
@@ -137,7 +138,7 @@ describe('useDictation', () => {
   it('화면이 내려가면 듣던 세션을 끊고 구독을 푼다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    const { unmount } = await renderUi(
+    const { unmount } = await renderScreen(
       <OverlayProvider>
         <DictationProbe />
       </OverlayProvider>,

@@ -19,16 +19,16 @@ tester.run('no-jest-module-mock', rules['no-jest-module-mock'], {
 tester.run('todo-comment-test-location', rules['todo-comment-test-location'], {
   valid: [
     {
-      code: "import { renderUi } from '@src/shared/__tests__/render-ui';",
+      code: "import { renderScreen } from '@src/testing/render';",
       options: [{ allowRenderUi: true }],
     },
     {
-      code: "import { renderUiWithDi } from '@src/shared/__tests__';",
+      code: "import { renderScreenWithDi } from '@src/testing/core';",
       options: [{ allowRenderUi: true }],
     },
   ],
   invalid: [
-    { code: "import { renderUi } from '@src/shared/__tests__/render-ui';", errors: 1 },
+    { code: "import { renderScreen } from '@src/testing/render';", errors: 1 },
     {
       code: "import { render } from '@testing-library/react-native';",
       options: [{ allowRenderUi: true }],

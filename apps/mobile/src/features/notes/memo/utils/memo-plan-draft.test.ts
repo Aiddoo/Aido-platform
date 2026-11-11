@@ -1,6 +1,6 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
+import { createMemorySyncStorage } from '@src/testing/core';
 
 import {
   createMemoPlanRequestDraftKey,

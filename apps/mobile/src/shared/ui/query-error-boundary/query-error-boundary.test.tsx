@@ -1,6 +1,7 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createErrorReporterStub, renderUi } from '@src/shared/__tests__';
 import { ApiError, ServerError } from '@src/shared/errors';
+import { createErrorReporterStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
@@ -60,7 +61,7 @@ describe('QueryErrorBoundary 관측', () => {
   });
 
   const renderWithBoundary = (error: Error) =>
-    renderUi(
+    renderScreen(
       <QueryErrorBoundary>
         <Thrower error={error} />
       </QueryErrorBoundary>,
@@ -130,7 +131,7 @@ describe('QueryErrorBoundary 관측', () => {
 
   it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', async () => {
     // Given
-    const screen = await renderUi(
+    const screen = await renderScreen(
       <QueryErrorBoundary resetKeys={['2026-07-14']}>
         <MaybeThrower shouldThrow />
       </QueryErrorBoundary>,
@@ -152,7 +153,7 @@ describe('QueryErrorBoundary 관측', () => {
   it('화면의 useErrorBoundary에 context를 제공하고 제출 오류를 기존 fallback에서 처리한다', async () => {
     // Given
     const error = new ServerError(503);
-    const screen = await renderUi(
+    const screen = await renderScreen(
       <QueryErrorBoundary fallback={() => <Text testID="submit-fallback">Retry</Text>}>
         <AsyncErrorScreen error={error} />
       </QueryErrorBoundary>,
@@ -173,7 +174,7 @@ describe('QueryErrorBoundary 관측', () => {
   it('OverlayProvider가 별도로 마운트한 overlay에도 오류 context를 전달한다', async () => {
     // Given
     const error = new ServerError(503);
-    const screen = await renderUi(
+    const screen = await renderScreen(
       <QueryErrorBoundary fallback={() => <Text testID="overlay-fallback">Retry</Text>}>
         <OverlayProvider>
           <OverlayErrorScreen error={error} />

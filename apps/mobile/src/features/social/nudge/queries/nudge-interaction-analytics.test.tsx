@@ -1,11 +1,11 @@
 import { ok } from '@src/core/errors/result';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
-  renderUi,
-} from '@src/shared/__tests__';
-import { NetworkError } from '@src/shared/errors/infra-error';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 
@@ -46,7 +46,7 @@ async function setup() {
     reply = replyMutation;
     thanks = thanksMutation;
   };
-  await renderUi(<Capture onRender={capture} />, {
+  await renderScreen(<Capture onRender={capture} />, {
     withOverlay: true,
     di: { httpClient, analytics, haptics: createHapticsGatewayStub() },
   });

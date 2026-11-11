@@ -32,13 +32,13 @@ import {
   useGetTodosByDateQueryOptions,
   useGetTodoSummaryQueryOptions,
 } from '@src/features/planning/todo/queries/todo.queries';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
 import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { MINUTE_MS } from '@src/shared/constants/time-units';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { hashKey, type QueryKey, useMutation, useQuery } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
@@ -334,7 +334,7 @@ async function renderFeed() {
     return null;
   }
 
-  await renderUi(
+  await renderScreen(
     <>
       <Profiler id="calendar" onRender={() => (renders.calendar += 1)}>
         <CalendarProbe />

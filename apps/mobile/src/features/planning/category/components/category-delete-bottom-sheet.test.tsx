@@ -6,8 +6,8 @@ import {
   createHapticsGatewayStub,
   createHttpClientStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
@@ -76,7 +76,7 @@ async function renderDeleteSheet({
   queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), { categories });
   jest.mocked(useLocalSearchParams).mockReturnValue({ categoryId: String(DELETING_CATEGORY_ID) });
 
-  await renderUi(
+  await renderScreen(
     <Suspense fallback={null}>
       <CategoryDeleteBottomSheet />
     </Suspense>,

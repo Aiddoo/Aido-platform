@@ -1,5 +1,5 @@
-import { createMemoryStorage } from '@src/shared/__tests__/create-memory-storage';
 import { STORAGE_KEYS } from '@src/shared/constants/storage-keys';
+import { createMemoryStorage } from '@src/testing/fakes/memory-storage.fake';
 
 import { createSecureTokenStore } from './secure-token-store';
 

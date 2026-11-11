@@ -6,17 +6,17 @@ import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/conse
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
-  renderUi,
   setupFakeTimersPerTest,
-} from '@src/shared/__tests__';
-import { getLastGorhomSheetProps } from '@src/shared/__tests__/mocks/gorhom-bottom-sheet';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+} from '@src/testing/core';
+import { getLastGorhomSheetProps } from '@src/testing/mocks/gorhom-bottom-sheet';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { createMarketingPushPromptRepository } from '../apis/marketing-push-prompt.repository';
@@ -48,7 +48,7 @@ async function renderOffer() {
   const analytics = createAnalyticsStub();
   const syncStorage = createMemoryObservableSyncStorage();
   // 앱처럼 Overlay 호스트를 LocalDateProvider 안에 둔다(제안 시트가 날짜 형식을 쓴다)
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <OfferProbe />

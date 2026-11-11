@@ -11,6 +11,10 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { createMemo } from '@src/features/notes/memo/__tests__/memo.fixtures';
 import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/queries/memo-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
+import { toInstant } from '@src/shared/date/instant';
+import { NetworkError } from '@src/shared/errors';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -20,14 +24,10 @@ import {
   createMemoryStorage,
   createVoiceNoteStorageFake,
   createTestQueryClient,
-  renderUi,
   stubWindowDimensions,
-} from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
-import { toInstant } from '@src/shared/date/instant';
-import { NetworkError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -79,7 +79,7 @@ const emptyPlanDraft = createPlanReviewDraft(
   }),
 );
 
-async function renderScreen(note: Parameters<typeof createSpokenVoiceNote>[0], tab?: string) {
+async function renderVoiceNote(note: Parameters<typeof createSpokenVoiceNote>[0], tab?: string) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ draftId: DRAFT_ID, tab });
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
@@ -98,7 +98,7 @@ async function renderScreen(note: Parameters<typeof createSpokenVoiceNote>[0], t
     createPreference({ timeFormat: 'TWELVE_HOUR' }),
   );
 
-  const { unmount } = await renderUi(
+  const { unmount } = await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <VoiceNoteRoute />
@@ -128,7 +128,7 @@ describe('말로 메모 화면', () => {
 
   it('정리 전에는 들은 글자와 정리하기, 쓰게 될 횟수를 보여 준다', async () => {
     // Given
-    await renderScreen({});
+    await renderVoiceNote({});
 
     // When
     const button = await screen.findByRole('button', { name: '정리하기' });
@@ -143,7 +143,7 @@ describe('말로 메모 화면', () => {
   it('정리에 실패하면 글자를 남기고 차감되지 않았을 때만 그렇게 말하며 다시 정리를 보인다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient } = await renderScreen({});
+    const { httpClient } = await renderVoiceNote({});
     httpClient.post.mockResolvedValue(
       err(new ApiError('AI_1301', '실패', 503, { charged: false })),
     );
@@ -161,7 +161,7 @@ describe('말로 메모 화면', () => {
   it('연결이 안 돼 정리하지 못하면 연결되면 다시 정리할 수 있다고 알린다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient } = await renderScreen({});
+    const { httpClient } = await renderVoiceNote({});
     httpClient.post.mockRejectedValue(new NetworkError());
 
     // When
@@ -177,7 +177,7 @@ describe('말로 메모 화면', () => {
   it('너무 길어 정리하지 못하면 이유를 알리고 소용없는 다시 정리를 보이지 않는다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient } = await renderScreen({});
+    const { httpClient } = await renderVoiceNote({});
     httpClient.post.mockResolvedValue(err(new ApiError('AI_1312', '너무 김', 422)));
 
     // When
@@ -194,7 +194,7 @@ describe('말로 메모 화면', () => {
   it('정리가 끝나면 결과로 바뀌고 할 일이 없으면 요약을 남겼다고 알린다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient } = await renderScreen({});
+    const { httpClient } = await renderVoiceNote({});
     httpClient.post.mockResolvedValue(ok(createVoiceNoteDigestDto({ keyPoints: [] })));
 
     // When
@@ -210,7 +210,7 @@ describe('말로 메모 화면', () => {
   it('메모로 저장하면 요약을 메모로 보내고 저장했다고 바뀐다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient } = await renderScreen({
+    const { httpClient } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
@@ -227,7 +227,7 @@ describe('말로 메모 화면', () => {
   it('메모로 저장하면 메모 목록과 개수 한도를 다시 읽는다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, queryClient } = await renderScreen({
+    const { httpClient, queryClient } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
@@ -252,7 +252,7 @@ describe('말로 메모 화면', () => {
   it('메모로 저장에 실패하면 저장한 것으로 바뀌지 않고 같은 키로 다시 저장할 수 있다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage } = await renderScreen({
+    const { httpClient, storage } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
@@ -274,7 +274,7 @@ describe('말로 메모 화면', () => {
   it('삭제를 확인하면 기기에서 지우고 화면을 닫는다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { storage } = await renderScreen({
+    const { storage } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
@@ -294,7 +294,7 @@ describe('말로 메모 화면', () => {
     const digest = createVoiceNoteDigest({ summary: '남아 있는 요약', keyPoints: [] });
 
     // When
-    await renderScreen({ digest, planDraft: emptyPlanDraft, recordings: [] });
+    await renderVoiceNote({ digest, planDraft: emptyPlanDraft, recordings: [] });
 
     // Then
     expect(await screen.findByText('남아 있는 요약')).toBeOnTheScreen();
@@ -306,7 +306,7 @@ describe('말로 메모 화면', () => {
     const appliedAt = toInstant('2026-11-02T00:00:00.000Z');
 
     // When
-    await renderScreen({ digest: createVoiceNoteDigest(), planDraft: null, appliedAt }, 'todos');
+    await renderVoiceNote({ digest: createVoiceNoteDigest(), planDraft: null, appliedAt }, 'todos');
 
     // Then
     expect(await screen.findByTestId('voice-note-applied')).toHaveTextContent('할 일을 추가했어요');
@@ -318,7 +318,7 @@ describe('말로 메모 화면', () => {
     const appliedAt = toInstant('2026-11-02T00:00:00.000Z');
 
     // When
-    await renderScreen(
+    await renderVoiceNote(
       { digest: createVoiceNoteDigest(), planDraft: null, appliedAt, appliedTodoCount: 2 },
       'todos',
     );
@@ -333,7 +333,7 @@ describe('말로 메모 화면', () => {
   it('할 일 저장을 누르고 화면을 떠나도 응답이 오면 저장했다고 초안에 남긴다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage, unmount } = await renderScreen(
+    const { httpClient, storage, unmount } = await renderVoiceNote(
       { digest: createVoiceNoteDigest(), planDraft: planDraftWithTodo },
       'todos',
     );
@@ -360,7 +360,7 @@ describe('말로 메모 화면', () => {
   it('할 일 저장 응답을 놓치고 다시 열어 눌러도 같은 키로 보낸다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage, unmount } = await renderScreen(
+    const { httpClient, storage, unmount } = await renderVoiceNote(
       { digest: createVoiceNoteDigest(), planDraft: planDraftWithTodo },
       'todos',
     );
@@ -382,7 +382,7 @@ describe('말로 메모 화면', () => {
   it('메모로 저장을 누르고 화면을 떠나도 응답이 오면 저장했다고 초안에 남기고 키를 지운다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage, unmount } = await renderScreen({
+    const { httpClient, storage, unmount } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
@@ -412,7 +412,7 @@ describe('말로 메모 화면', () => {
   it('응답을 놓친 뒤 메모로 저장을 다시 누르면 같은 키로 다시 보낸다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient } = await renderScreen({
+    const { httpClient } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
@@ -434,7 +434,7 @@ describe('말로 메모 화면', () => {
   it('서버가 같은 키로 다른 내용이라고 거절하면 저장해 둔 키를 지운다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage } = await renderScreen({
+    const { httpClient, storage } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });

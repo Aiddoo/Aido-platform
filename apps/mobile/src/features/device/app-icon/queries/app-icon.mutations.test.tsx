@@ -2,8 +2,8 @@ import {
   createAppIconGatewayStub,
   createErrorReporterStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
@@ -24,7 +24,7 @@ async function renderChange(gateway = createAppIconGatewayStub()) {
     mutateAsync = useChange();
     return null;
   }
-  await renderUi(<Capture />, {
+  await renderScreen(<Capture />, {
     queryClient,
     di: { appIconService: new AppIconService(gateway), errorReporter },
   });

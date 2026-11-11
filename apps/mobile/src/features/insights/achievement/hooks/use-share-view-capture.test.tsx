@@ -1,9 +1,6 @@
 import '@src/shared/i18n/init';
-import {
-  createSystemShareGatewayStub,
-  createViewCaptureGatewayStub,
-  renderUiHook,
-} from '@src/shared/__tests__';
+import { createSystemShareGatewayStub, createViewCaptureGatewayStub } from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { act } from '@testing-library/react-native';
 
 import { useShareViewCapture } from './use-share-view-capture';
@@ -12,7 +9,7 @@ async function setup() {
   const systemShare = createSystemShareGatewayStub();
   const viewCapture = createViewCaptureGatewayStub();
   const viewRef = { current: { capture: async () => 'file:///ref.png' } };
-  const hook = await renderUiHook(() => useShareViewCapture(viewRef), {
+  const hook = await renderScreenHook(() => useShareViewCapture(viewRef), {
     di: { systemShare, viewCapture },
   });
   return { ...hook, systemShare, viewCapture, viewRef };

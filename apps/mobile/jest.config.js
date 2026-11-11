@@ -21,9 +21,9 @@ const base = {
     // packages/api 소스가 `./x/index.js`로 import해 TS 원본으로 풀어야 한다
     '^(\\.{1,2}/.*)\\.js$': '$1',
     // .svg는 별칭보다 먼저 잡아야 한다 — @assets/... 규칙이 먼저 걸리면 에셋으로 새어 나간다
-    '\\.svg$': '<rootDir>/src/shared/__tests__/mocks/svg.tsx',
+    '\\.svg$': '<rootDir>/src/testing/mocks/svg.tsx',
 
-    '^@shopify/react-native-skia$': '<rootDir>/src/shared/__tests__/mocks/react-native-skia.tsx',
+    '^@shopify/react-native-skia$': '<rootDir>/src/testing/mocks/react-native-skia.tsx',
 
     // Path aliases
     '^@src/(.*)$': '<rootDir>/src/$1',
@@ -37,20 +37,18 @@ const base = {
     '^@aido/api/contracts/(.*)$': '<rootDir>/../../packages/api/src/contracts/$1',
 
     // Native module mocks
-    '^expo-secure-store$': '<rootDir>/src/shared/__tests__/mocks/expo-secure-store.ts',
-    '^expo-localization$': '<rootDir>/src/shared/__tests__/mocks/expo-localization.ts',
-    '^expo-audio$': '<rootDir>/src/shared/__tests__/mocks/expo-audio.ts',
+    '^expo-secure-store$': '<rootDir>/src/testing/mocks/expo-secure-store.ts',
+    '^expo-localization$': '<rootDir>/src/testing/mocks/expo-localization.ts',
+    '^expo-audio$': '<rootDir>/src/testing/mocks/expo-audio.ts',
     // v4(Nitro)는 import 시 NitroModules를 eager 로드해 jest에서 크래시 — 인메모리 목으로 대체
-    '^react-native-mmkv$': '<rootDir>/src/shared/__tests__/mocks/react-native-mmkv.ts',
+    '^react-native-mmkv$': '<rootDir>/src/testing/mocks/react-native-mmkv.ts',
     // 위젯 트리는 네이티브 렌더러가 그린다. 테스트는 요소 이름과 props로 트리를 읽는다
-    '^react-native-android-widget$':
-      '<rootDir>/src/shared/__tests__/mocks/react-native-android-widget.ts',
-    '^@expo/ui/swift-ui$': '<rootDir>/src/shared/__tests__/mocks/expo-ui-swift-ui.ts',
-    '^@expo/ui/swift-ui/modifiers$':
-      '<rootDir>/src/shared/__tests__/mocks/expo-ui-swift-ui-modifiers.ts',
+    '^react-native-android-widget$': '<rootDir>/src/testing/mocks/react-native-android-widget.ts',
+    '^@expo/ui/swift-ui$': '<rootDir>/src/testing/mocks/expo-ui-swift-ui.ts',
+    '^@expo/ui/swift-ui/modifiers$': '<rootDir>/src/testing/mocks/expo-ui-swift-ui-modifiers.ts',
     // SDK가 ESM이라 jest가 읽지 못한다. 보고는 목 호출로 확인한다
-    '^@sentry/react-native$': '<rootDir>/src/shared/__tests__/mocks/sentry-react-native.ts',
-    '^expo-widgets$': '<rootDir>/src/shared/__tests__/mocks/expo-widgets.ts',
+    '^@sentry/react-native$': '<rootDir>/src/testing/mocks/sentry-react-native.ts',
+    '^expo-widgets$': '<rootDir>/src/testing/mocks/expo-widgets.ts',
   },
 };
 

@@ -11,8 +11,8 @@ import { pawPrintCelebrationStoredValue } from '@src/features/social/invite/sche
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { offlineModelDeclinedStoredValue } from '@src/features/voice/schemas/offline-model-declined-storage.schema';
 import { recognitionLanguageStoredValue } from '@src/features/voice/schemas/recognition-language-storage.schema';
-import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
+import { createMemorySyncStorage } from '@src/testing/core';
 
 import {
   readStoredValue,

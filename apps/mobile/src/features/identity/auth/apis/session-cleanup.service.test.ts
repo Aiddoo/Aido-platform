@@ -1,4 +1,4 @@
-import { createLoggerStub } from '@src/shared/__tests__';
+import { createLoggerStub } from '@src/testing/core';
 
 import { SessionCleanupService } from './session-cleanup.service';
 

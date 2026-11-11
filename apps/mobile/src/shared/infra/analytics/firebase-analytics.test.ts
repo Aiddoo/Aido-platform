@@ -4,7 +4,7 @@ import {
   setUserProperties,
   setUserProperty,
 } from '@react-native-firebase/analytics';
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
+import { createLoggerStub } from '@src/testing/ports/logger.stub';
 
 import { createFirebaseAnalytics } from './firebase-analytics';
 

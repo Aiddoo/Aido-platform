@@ -1,5 +1,5 @@
 import { unwrap } from '@src/core/errors/result';
-import { createHttpClientStub } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/testing/core';
 
 import {
   createTodoCategoryApiError,

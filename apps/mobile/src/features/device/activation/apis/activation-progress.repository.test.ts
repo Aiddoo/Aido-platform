@@ -1,5 +1,5 @@
-import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
+import { createMemoryObservableSyncStorage } from '@src/testing/core';
 
 import { createActivationProgressRepository } from './activation-progress.repository';
 

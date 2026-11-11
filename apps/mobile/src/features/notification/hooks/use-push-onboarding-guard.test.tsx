@@ -2,13 +2,13 @@ import type { PushPermissionResponse } from '@src/core/ports/push-notification-g
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { getNowInstant } from '@src/shared/date/instant';
 import {
   createMemoryObservableSyncStorage,
   createPushNotificationGatewayStub,
   createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
-import { getNowInstant } from '@src/shared/date/instant';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { waitFor } from '@testing-library/react-native';
 
 import { createPushPermissionResponse } from '../__tests__/notification.fixtures';
@@ -27,7 +27,7 @@ async function renderGuard(getPermission: () => Promise<PushPermissionResponse>)
   const pushNotification = createPushNotificationGatewayStub();
   pushNotification.getPermission.mockImplementation(getPermission);
 
-  return renderUiHook(
+  return renderScreenHook(
     () => {
       usePushOnboardingGuard();
       return { isOpen: useIsPushOnboardingGuardOpen(), isClosed: useIsPushOnboardingGuardClosed() };

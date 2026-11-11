@@ -1,4 +1,4 @@
-import { createHttpClientStub, createLoggerStub } from '@src/shared/__tests__';
+import { createHttpClientStub, createLoggerStub } from '@src/testing/core';
 
 import { VoiceService } from './voice.service';
 

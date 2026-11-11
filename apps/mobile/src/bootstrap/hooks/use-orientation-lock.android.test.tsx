@@ -1,9 +1,6 @@
-import {
-  createScreenOrientationGatewayStub,
-  renderUiHook,
-  stubWindowDimensions,
-} from '@src/shared/__tests__';
-import { DEVICE_WINDOW } from '@src/shared/__tests__/window-layout.fixtures';
+import { createScreenOrientationGatewayStub, stubWindowDimensions } from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
+import { DEVICE_WINDOW } from '@src/testing/window-layout.fixtures';
 
 import { useOrientationLock } from './use-orientation-lock';
 
@@ -12,7 +9,7 @@ describe('useOrientationLock (Android)', () => {
     // Given
     const screenOrientation = createScreenOrientationGatewayStub();
     stubWindowDimensions(DEVICE_WINDOW.phone.width, DEVICE_WINDOW.phone.height);
-    const { rerender } = await renderUiHook(() => useOrientationLock(), {
+    const { rerender } = await renderScreenHook(() => useOrientationLock(), {
       di: { screenOrientation },
     });
 
@@ -30,7 +27,7 @@ describe('useOrientationLock (Android)', () => {
     const screenOrientation = createScreenOrientationGatewayStub();
     const { width, height } = DEVICE_WINDOW.phoneSplitScreenHalf;
     stubWindowDimensions(width, height);
-    const { rerender } = await renderUiHook(() => useOrientationLock(), {
+    const { rerender } = await renderScreenHook(() => useOrientationLock(), {
       di: { screenOrientation },
     });
 
@@ -46,7 +43,7 @@ describe('useOrientationLock (Android)', () => {
     // Given
     const screenOrientation = createScreenOrientationGatewayStub();
     stubWindowDimensions(DEVICE_WINDOW.foldedOuter.width, DEVICE_WINDOW.foldedOuter.height);
-    const { rerender } = await renderUiHook(() => useOrientationLock(), {
+    const { rerender } = await renderScreenHook(() => useOrientationLock(), {
       di: { screenOrientation },
     });
 

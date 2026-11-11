@@ -1,9 +1,9 @@
+import { toInstant } from '@src/shared/date/instant';
 import {
   createLocalFileSystemFake,
   createLoggerStub,
   createMemorySyncStorage,
-} from '@src/shared/__tests__';
-import { toInstant } from '@src/shared/date/instant';
+} from '@src/testing/core';
 
 import { createVoiceNoteDigest, createSpokenVoiceNote } from '../__tests__/voice-note.fixtures';
 import { VoiceNotePolicy } from '../domains/voice-note.model';

@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { renderUi } from '@src/shared/__tests__';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
@@ -18,7 +18,7 @@ describe('ReorderCoachmark', () => {
     const { syncStorage, repository } = createCoachmarkStorage();
 
     // When
-    await renderUi(<ReorderCoachmark.Contents kind="todo" accountId={INPUT.accountId} />, {
+    await renderScreen(<ReorderCoachmark.Contents kind="todo" accountId={INPUT.accountId} />, {
       di: { syncStorage },
     });
 
@@ -32,7 +32,7 @@ describe('ReorderCoachmark', () => {
     const { syncStorage } = createCoachmarkStorage([INPUT]);
 
     // When
-    await renderUi(<ReorderCoachmark.Contents kind="todo" accountId={INPUT.accountId} />, {
+    await renderScreen(<ReorderCoachmark.Contents kind="todo" accountId={INPUT.accountId} />, {
       di: { syncStorage },
     });
 
@@ -45,7 +45,7 @@ describe('ReorderCoachmark', () => {
     const { syncStorage, repository } = createCoachmarkStorage();
 
     // When
-    await renderUi(
+    await renderScreen(
       <Suspense fallback={null}>
         <ReorderCoachmark.Contents kind="todo" accountId={INPUT.accountId} />
         <NeverResolves />

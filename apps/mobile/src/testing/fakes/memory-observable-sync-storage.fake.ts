@@ -1,4 +1,4 @@
-import { createMemorySyncStorage, type MemorySyncStorage } from './create-memory-sync-storage';
+import { createMemorySyncStorage, type MemorySyncStorage } from './memory-sync-storage.fake';
 
 export type MemoryObservableSyncStorage = MemorySyncStorage;
 

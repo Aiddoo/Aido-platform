@@ -12,9 +12,9 @@ import {
   createTestDi,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
 // 생성된 typed routes가 없는 CI에서는 useSegments 반환이 [string]으로 좁아져 공용 mock의 jest.fn을 직접 쓴다
-import { useSegments } from '@src/shared/__tests__/mocks/expo-router';
+import { useSegments } from '@src/testing/mocks/expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';

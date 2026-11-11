@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
-import { createTestQueryClient, renderUi } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { Suspense } from 'react';
@@ -15,7 +16,7 @@ describe('MemoCreateButton', () => {
       defaultOptions: { queries: { staleTime: Infinity } },
     });
     queryClient.setQueryData(MEMO_QUERY_KEYS.resourceLimit(), { currentCount: 20, maxPerUser: 20 });
-    await renderUi(
+    await renderScreen(
       <Suspense fallback={null}>
         <MemoCreateButton />
       </Suspense>,

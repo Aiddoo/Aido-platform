@@ -1,6 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createAnalyticsStub, createErrorReporterStub, createTestDi } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { createAnalyticsStub, createErrorReporterStub, createTestDi } from '@src/testing/core';
 import { act, renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { PropsWithChildren } from 'react';

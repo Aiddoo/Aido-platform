@@ -1,9 +1,6 @@
 import '@src/shared/i18n/init';
-import {
-  createHapticsGatewayStub,
-  createSpeechRecognizerStub,
-  renderUi,
-} from '@src/shared/__tests__';
+import { createHapticsGatewayStub, createSpeechRecognizerStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useSharedValue } from 'react-native-reanimated';
 
@@ -39,7 +36,7 @@ function Panel({
 async function renderPanel(state: VoiceCaptureState) {
   const onContinueAsVoiceNote = jest.fn();
   const onFinish = jest.fn();
-  await renderUi(
+  await renderScreen(
     <Panel state={state} onContinueAsVoiceNote={onContinueAsVoiceNote} onFinish={onFinish} />,
     { di: { haptics: createHapticsGatewayStub(), speechRecognizer: createSpeechRecognizerStub() } },
   );
@@ -113,7 +110,7 @@ describe('QuickVoiceFailed', () => {
 
   it('정리가 동의 때문에 막혔으면 들은 글자 안내 대신 동의가 필요하다고 보인다', async () => {
     // When
-    await renderUi(
+    await renderScreen(
       <QuickVoiceFailed
         state={planningFailed}
         isConsentRequired
@@ -131,7 +128,7 @@ describe('QuickVoiceFailed', () => {
     const nothingHeard = createCaptureState({ status: 'failed', reason: 'audio-capture' });
 
     // When
-    await renderUi(
+    await renderScreen(
       <QuickVoiceFailed state={nothingHeard} onResume={jest.fn()} onRetryPlanning={jest.fn()} />,
     );
 
@@ -142,7 +139,7 @@ describe('QuickVoiceFailed', () => {
 
   it('다른 이유로 실패했으면 들은 글자를 남겼다고 보인다', async () => {
     // When
-    await renderUi(
+    await renderScreen(
       <QuickVoiceFailed state={planningFailed} onResume={jest.fn()} onRetryPlanning={jest.fn()} />,
     );
 
@@ -152,7 +149,7 @@ describe('QuickVoiceFailed', () => {
 
   it('입력 칸에 친 글자를 그대로 뒀으면 들은 글자가 칸에 있다고 말하지 않는다', async () => {
     // When
-    await renderUi(
+    await renderScreen(
       <QuickVoiceFailed
         state={planningFailed}
         isTypedTextKept

@@ -1,12 +1,12 @@
 import { ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createHapticsGatewayStub,
   createHttpClientStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { NetworkError } from '@src/shared/errors/infra-error';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -18,7 +18,7 @@ import { createUpdateProfileDto } from './user.fixtures';
 async function renderEditName(httpClient: ReturnType<typeof createHttpClientStub>) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ name: '테스트' }));
-  await renderUi(<EditNameRoute />, {
+  await renderScreen(<EditNameRoute />, {
     queryClient,
     di: { httpClient, haptics: createHapticsGatewayStub() },
   });

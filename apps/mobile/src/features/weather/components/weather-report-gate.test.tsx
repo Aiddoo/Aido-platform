@@ -1,12 +1,12 @@
 import { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
+import { QueryErrorBoundary } from '@src/shared/ui';
 import {
   createErrorReporterStub,
   createHttpClientStub,
   createLocationGatewayStub,
-  renderUi,
-} from '@src/shared/__tests__';
-import { QueryErrorBoundary } from '@src/shared/ui';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
@@ -25,7 +25,7 @@ async function renderGate(response: Result<unknown, ApiError>) {
   httpClient.get.mockResolvedValue(response);
   const errorReporter = createErrorReporterStub();
 
-  await renderUi(
+  await renderScreen(
     <QueryErrorBoundary fallback={() => <Text>리포트 오류</Text>}>
       <WeatherReportGate fallback={() => <Text>위치 안내</Text>}>
         <WeatherReportGate.Suspense fallback={<Text>불러오는 중</Text>}>

@@ -10,6 +10,7 @@ import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createErrorReporterStub,
   createHttpClientStub,
@@ -21,8 +22,7 @@ import {
   createSocialAuthGatewayStub,
   createTestDi,
   createTestQueryClient,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+} from '@src/testing/core';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';

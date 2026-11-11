@@ -1,13 +1,13 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
@@ -37,7 +37,7 @@ describe('SubTodoActionsBottomSheet', () => {
       .mocked(useLocalSearchParams)
       .mockReturnValue({ todoId: String(todo.id), subTodoId: '1', date: todo.startDate });
 
-    await renderUi(
+    await renderScreen(
       <LocalDateProvider>
         <OverlayProvider>
           <SubTodoActionsBottomSheet />

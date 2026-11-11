@@ -2,7 +2,8 @@ import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createAnalyticsStub, createHttpClientStub, renderUi } from '@src/shared/__tests__';
+import { createAnalyticsStub, createHttpClientStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { createVoiceNoteDigest } from '../../__tests__/voice-note.fixtures';
@@ -23,7 +24,7 @@ describe('KeyPointList', () => {
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const analytics = createAnalyticsStub();
     const onPressKeyPoint = jest.fn();
-    await renderUi(
+    await renderScreen(
       <KeyPointList hasTimeCoachmark keyPoints={keyPoints} onPressKeyPoint={onPressKeyPoint} />,
       {
         di: { httpClient, analytics },
@@ -45,7 +46,7 @@ describe('KeyPointList', () => {
   it('같은 초의 포인트가 이어지면 시간 칩은 첫 포인트에만 보이고 둘 다 눌러서 들을 수 있다', async () => {
     // Given
     const onPressKeyPoint = jest.fn();
-    await renderUi(
+    await renderScreen(
       <KeyPointList keyPoints={createSameTimeKeyPoints()} onPressKeyPoint={onPressKeyPoint} />,
     );
 
@@ -66,7 +67,7 @@ describe('KeyPointList', () => {
     const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
 
     // When
-    await renderUi(<KeyPointList hasTimeCoachmark keyPoints={keyPoints} />, {
+    await renderScreen(<KeyPointList hasTimeCoachmark keyPoints={keyPoints} />, {
       di: { httpClient, analytics, syncStorage },
     });
     await new Promise((resolve) => {
@@ -88,7 +89,7 @@ describe('KeyPointList', () => {
     const { keyPoints } = createVoiceNoteDigest();
 
     // When
-    await renderUi(<KeyPointList keyPoints={keyPoints} />);
+    await renderScreen(<KeyPointList keyPoints={keyPoints} />);
 
     // Then
     expect(screen.queryByLabelText('0:41부터 듣기')).toBeNull();

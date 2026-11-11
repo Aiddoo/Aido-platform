@@ -1,15 +1,15 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { NetworkError } from '@src/shared/errors/infra-error';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { screen, waitFor } from '@testing-library/react-native';
 
@@ -59,7 +59,7 @@ async function renderMutations() {
     actions.update = useUpdate();
     return null;
   }
-  await renderUi(<Capture />, {
+  await renderScreen(<Capture />, {
     queryClient,
     di: { httpClient, analytics, haptics: createHapticsGatewayStub() },
   });

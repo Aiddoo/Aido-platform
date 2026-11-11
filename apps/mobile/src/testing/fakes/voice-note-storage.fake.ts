@@ -12,12 +12,9 @@ import {
 } from '@src/features/voice/apis/voice-recording.repository';
 import { getNowInstant } from '@src/shared/date/instant';
 
-import {
-  createLocalFileSystemFake,
-  type LocalFileSystemFake,
-} from './create-local-file-system-fake';
-import { createLoggerStub } from './create-logger-stub';
-import { createMemorySyncStorage } from './create-memory-sync-storage';
+import { createLoggerStub } from '../ports/logger.stub';
+import { createLocalFileSystemFake, type LocalFileSystemFake } from './local-file-system.fake';
+import { createMemorySyncStorage } from './memory-sync-storage.fake';
 
 export interface VoiceNoteStorageFake {
   service: VoiceNoteStorageService;

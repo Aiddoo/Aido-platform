@@ -9,8 +9,8 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 
 import { SuggestionEntry } from './suggestion-entry';
@@ -35,7 +35,7 @@ describe('SuggestionEntry', () => {
     );
 
     // When
-    await renderUi(<SuggestionEntry />, {
+    await renderScreen(<SuggestionEntry />, {
       di: { httpClient, errorReporter: createErrorReporterStub() },
       queryClient,
     });
@@ -52,7 +52,7 @@ describe('SuggestionEntry', () => {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1', name: '아이도' }));
 
     // When
-    await renderUi(<SuggestionEntry />, {
+    await renderScreen(<SuggestionEntry />, {
       di: { httpClient, errorReporter: createErrorReporterStub() },
       queryClient,
     });

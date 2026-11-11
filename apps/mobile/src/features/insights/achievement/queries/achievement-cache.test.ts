@@ -1,5 +1,5 @@
-import { createTestQueryClient } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
+import { createTestQueryClient } from '@src/testing/core';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { invalidateWeeklyAchievements } from './achievement-cache';

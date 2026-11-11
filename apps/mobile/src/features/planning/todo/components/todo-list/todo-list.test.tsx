@@ -3,13 +3,13 @@ import { createPreference } from '@src/features/identity/preference/__tests__/pr
 import '@src/shared/i18n/init';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Suspense } from 'react';
@@ -43,7 +43,7 @@ async function renderTodoList(todo: Todo) {
     createPreference({ timeFormat: 'TWELVE_HOUR' }),
   );
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <ScrollViewContainer>
         <Suspense fallback={<Text>loading</Text>}>

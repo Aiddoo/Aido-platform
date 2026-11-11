@@ -1,4 +1,4 @@
-import { createMemoryObservableSyncStorage } from './create-memory-observable-sync-storage';
+import { createMemoryObservableSyncStorage } from './memory-observable-sync-storage.fake';
 
 describe('createMemoryObservableSyncStorage', () => {
   it('구독한 키가 바뀔 때만 그 구독자에게 알린다', () => {

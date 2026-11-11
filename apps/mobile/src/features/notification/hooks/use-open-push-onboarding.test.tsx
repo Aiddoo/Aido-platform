@@ -5,6 +5,8 @@ import type { PushPermissionResponse } from '@src/core/ports/push-notification-g
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
@@ -13,11 +15,9 @@ import {
   createTestDi,
   createTestQueryClient,
   stubWindowDimensions,
-  TestUiProvider,
-} from '@src/shared/__tests__';
-import { Stack as TestStack } from '@src/shared/__tests__/mocks/expo-router';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+} from '@src/testing/core';
+import { Stack as TestStack } from '@src/testing/mocks/expo-router';
+import { TestUiProvider } from '@src/testing/render';
 import { QueryClientProvider, useSuspenseQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';

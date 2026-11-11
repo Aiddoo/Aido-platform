@@ -1,11 +1,11 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
 import {
   type AppLifecycleGatewayStub,
   createAppLifecycleGatewayStub,
   createIncomingLinkGatewayStub,
   createTestDi,
-} from '@src/shared/__tests__';
-import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
+} from '@src/testing/core';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';

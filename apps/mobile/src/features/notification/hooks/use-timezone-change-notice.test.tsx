@@ -2,13 +2,13 @@ import {
   createTodoDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
-  renderUi,
-} from '@src/shared/__tests__';
-import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, screen } from '@testing-library/react-native';
 import { getCalendars } from 'expo-localization';
 
@@ -66,7 +66,7 @@ function setup(todos: ReturnType<typeof createTodoDto>[]) {
 }
 
 async function report(di: ReturnType<typeof setup>['di'], accountId: string | null = USER_ID) {
-  const rendered = await renderUi(<Probe accountId={accountId} reportCount={1} />, { di });
+  const rendered = await renderScreen(<Probe accountId={accountId} reportCount={1} />, { di });
   await act(() => jest.advanceTimersByTimeAsync(0));
   return {
     rerender: async (props: ProbeProps) => {

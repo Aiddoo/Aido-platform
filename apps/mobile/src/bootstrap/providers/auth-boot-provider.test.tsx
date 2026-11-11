@@ -12,6 +12,16 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { createDraftKey } from '@src/shared/draft/draft.model';
+import { createDraftRepository } from '@src/shared/draft/draft.repository';
+import { DraftService } from '@src/shared/draft/draft.service';
+import { KeychainLockedError } from '@src/shared/errors';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import {
+  readStoredValue,
+  removeStoredValue,
+  writeStoredValue,
+} from '@src/shared/storage/define-stored-value';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -25,17 +35,7 @@ import {
   createTestDi,
   createVoiceNoteStorageFake,
   createTestQueryClient,
-} from '@src/shared/__tests__';
-import { createDraftKey } from '@src/shared/draft/draft.model';
-import { createDraftRepository } from '@src/shared/draft/draft.repository';
-import { DraftService } from '@src/shared/draft/draft.service';
-import { KeychainLockedError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import {
-  readStoredValue,
-  removeStoredValue,
-  writeStoredValue,
-} from '@src/shared/storage/define-stored-value';
+} from '@src/testing/core';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';

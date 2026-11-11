@@ -5,8 +5,8 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
@@ -29,7 +29,7 @@ describe('초대 코드 입력 화면', () => {
     const queryClient = createTestQueryClient();
     onlineManager.setOnline(false);
     const user = userEvent.setup();
-    await renderUi(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryRoute />, {
       di: {
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
@@ -55,7 +55,7 @@ describe('초대 코드 입력 화면', () => {
     httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
     const queryClient = createTestQueryClient();
     const user = userEvent.setup();
-    await renderUi(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryRoute />, {
       di: {
         httpClient,
         analytics: createAnalyticsStub(),
@@ -84,7 +84,7 @@ describe('초대 코드 입력 화면', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockReturnValue(new Promise(noop));
     const user = userEvent.setup();
-    await renderUi(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryRoute />, {
       di: {
         httpClient,
         analytics: createAnalyticsStub(),
@@ -106,7 +106,7 @@ describe('초대 코드 입력 화면', () => {
   it('채운 칸 뒤에 다른 코드를 붙여 넣으면 붙여 넣은 코드로 바꾼다', async () => {
     // Given
     const user = userEvent.setup();
-    await renderUi(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryRoute />, {
       di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
       queryClient: createTestQueryClient(),
     });

@@ -1,7 +1,7 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
-import { createHttpClientStub, createLoggerStub } from '@src/shared/__tests__';
 import { ParseError } from '@src/shared/errors/infra-error';
+import { createHttpClientStub, createLoggerStub } from '@src/testing/core';
 
 import { MemoService } from './memo.service';
 

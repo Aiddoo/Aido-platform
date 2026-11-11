@@ -1,11 +1,8 @@
 import '@src/shared/i18n/init';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
-import {
-  createPushNotificationGatewayStub,
-  createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
 import { Text } from '@src/shared/ui';
+import { createPushNotificationGatewayStub, createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 
 import { MarketingPushDescription } from './marketing-push-description';
@@ -14,7 +11,7 @@ async function renderDescription(permission: PushPermissionResponse) {
   const pushNotification = createPushNotificationGatewayStub();
   pushNotification.getPermission.mockResolvedValue(permission);
 
-  await renderUi(
+  await renderScreen(
     <Text testID="marketing-push-description">
       <MarketingPushDescription />
     </Text>,

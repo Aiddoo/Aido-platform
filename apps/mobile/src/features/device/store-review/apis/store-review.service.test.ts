@@ -1,5 +1,5 @@
-import { createAppStoreReviewGatewayStub, createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
+import { createAppStoreReviewGatewayStub, createMemorySyncStorage } from '@src/testing/core';
 
 import { StoreReviewPolicy } from '../domains/store-review.model';
 import { createStoreReviewRepository } from './store-review.repository';

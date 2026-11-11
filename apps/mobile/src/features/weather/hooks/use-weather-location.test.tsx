@@ -12,8 +12,8 @@ import {
   createLocationGatewayStub,
   createLoggerStub,
   createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
@@ -56,7 +56,7 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
   const queryClient = createTestQueryClient();
   const di = { httpClient, deviceLocation: gateway, logger, errorReporter, analytics };
   const renderHook = <TResult,>(useHook: () => TResult) =>
-    renderUiHook(useHook, { di, queryClient });
+    renderScreenHook(useHook, { di, queryClient });
   return { httpClient, queryClient, renderHook, logger, errorReporter, analytics };
 }
 

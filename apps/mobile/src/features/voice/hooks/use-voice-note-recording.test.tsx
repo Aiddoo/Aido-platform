@@ -1,5 +1,7 @@
 import '@src/shared/i18n/init';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { OverlayProvider, Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -9,11 +11,9 @@ import {
   createMemorySyncStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
-  renderUi,
-} from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
-import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
-import { OverlayProvider, Text } from '@src/shared/ui';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
@@ -114,7 +114,7 @@ async function renderRecording({
     onEmpty: jest.fn(),
   };
 
-  await renderUi(
+  await renderScreen(
     <OverlayProvider>
       <RecordingProbe maxSeconds={maxSeconds} {...handlers} />
     </OverlayProvider>,
@@ -373,7 +373,7 @@ describe('useVoiceNoteRecording', () => {
       sentences: [createVoiceNoteSentence({ text: '앞에서 한 말.', startMs: 0, endMs: 90_000 })],
     });
     storage.drafts.save(ACCOUNT_ID, seed);
-    await renderUi(
+    await renderScreen(
       <OverlayProvider>
         <RecordingProbe
           seedDraftId="seed-1"
@@ -559,7 +559,7 @@ describe('useVoiceNoteRecording', () => {
   it('화면이 사라지면 구독을 풀고 듣던 세션을 끊는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    const { unmount } = await renderUi(
+    const { unmount } = await renderScreen(
       <OverlayProvider>
         <RecordingProbe
           maxSeconds={null}
@@ -706,7 +706,7 @@ describe('useVoiceNoteRecording', () => {
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
     const storage = createVoiceNoteStorageFake(files);
     const onFinished = jest.fn();
-    const { unmount } = await renderUi(
+    const { unmount } = await renderScreen(
       <OverlayProvider>
         <RecordingProbe
           maxSeconds={null}
@@ -775,7 +775,7 @@ describe('useVoiceNoteRecording', () => {
           onEmpty={jest.fn()}
         />
       );
-      const { rerender } = await renderUi(<OverlayProvider>{probe}</OverlayProvider>, {
+      const { rerender } = await renderScreen(<OverlayProvider>{probe}</OverlayProvider>, {
         di: {
           speechRecognizer,
           ...createVoiceNoteStorageFake().di,
@@ -838,7 +838,7 @@ describe('useVoiceNoteRecording', () => {
     const speechRecognizer = createSpeechRecognizerStub();
     const storage = createVoiceNoteStorageFake();
     const onFinished = jest.fn();
-    const { unmount } = await renderUi(
+    const { unmount } = await renderScreen(
       <OverlayProvider>
         <RecordingProbe
           maxSeconds={null}
@@ -886,7 +886,7 @@ describe('useVoiceNoteRecording', () => {
     const newRecordingUri = files.addFile(RECORDING_DIRECTORY, 'recording_new.wav');
     const storage = createVoiceNoteStorageFake(files);
     const onFinished = jest.fn();
-    const { unmount } = await renderUi(
+    const { unmount } = await renderScreen(
       <OverlayProvider>
         <RecordingProbe
           maxSeconds={null}
@@ -940,7 +940,7 @@ describe('useVoiceNoteRecording', () => {
       const files = createLocalFileSystemFake();
       const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
       const storage = createVoiceNoteStorageFake(files);
-      const { unmount } = await renderUi(
+      const { unmount } = await renderScreen(
         <OverlayProvider>
           <RecordingProbe
             maxSeconds={null}
@@ -1045,7 +1045,7 @@ describe('useVoiceNoteRecording', () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const storage = createVoiceNoteStorageFake();
-    const { unmount } = await renderUi(
+    const { unmount } = await renderScreen(
       <OverlayProvider>
         <RecordingProbe
           maxSeconds={null}
@@ -1094,7 +1094,7 @@ describe('useVoiceNoteRecording', () => {
     );
 
     // When
-    await renderUi(
+    await renderScreen(
       <OverlayProvider>
         <RecordingProbe
           seedDraftId="restored-1"

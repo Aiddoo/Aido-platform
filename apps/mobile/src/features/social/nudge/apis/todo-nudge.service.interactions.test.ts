@@ -1,5 +1,5 @@
-import { createHttpClientStub } from '@src/shared/__tests__';
 import { ApiError, ParseError, unwrap } from '@src/shared/errors';
+import { createHttpClientStub } from '@src/testing/core';
 
 import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtures';
 import { TodoNudgeService } from './todo-nudge.service';

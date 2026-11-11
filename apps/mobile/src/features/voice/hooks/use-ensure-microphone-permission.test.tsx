@@ -1,7 +1,8 @@
 import '@src/shared/i18n/init';
 import type { MissingSpeechPermission } from '@src/core/ports/speech-recognizer';
-import { createLoggerStub, createSpeechRecognizerStub, renderUi } from '@src/shared/__tests__';
 import { Button, OverlayProvider } from '@src/shared/ui';
+import { createLoggerStub, createSpeechRecognizerStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
@@ -28,7 +29,7 @@ async function renderBlocked(missing: MissingSpeechPermission) {
     missing,
   });
   const onResult = jest.fn();
-  await renderUi(
+  await renderScreen(
     <OverlayProvider>
       <PermissionProbe onResult={onResult} />
     </OverlayProvider>,

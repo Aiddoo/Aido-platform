@@ -6,6 +6,8 @@ import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/queries/notification-query-keys';
+import { QUERY_CACHE_MAX_AGE_MS } from '@src/shared/constants/query-persistence';
+import { NetworkError } from '@src/shared/errors';
 import {
   type AppLifecycleGatewayStub,
   createAnalyticsStub,
@@ -25,9 +27,7 @@ import {
   type PurchasesGatewayStub,
   type PushNotificationGatewayStub,
   setupFakeTimersPerTest,
-} from '@src/shared/__tests__';
-import { QUERY_CACHE_MAX_AGE_MS } from '@src/shared/constants/query-persistence';
-import { NetworkError } from '@src/shared/errors';
+} from '@src/testing/core';
 import { focusManager, onlineManager, useQueryClient } from '@tanstack/react-query';
 import { act, render } from '@testing-library/react-native';
 import { StrictMode } from 'react';

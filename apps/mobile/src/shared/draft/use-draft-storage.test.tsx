@@ -1,5 +1,5 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createMemorySyncStorage, createTestDi } from '@src/shared/__tests__';
+import { createMemorySyncStorage, createTestDi } from '@src/testing/core';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { useForm } from 'react-hook-form';

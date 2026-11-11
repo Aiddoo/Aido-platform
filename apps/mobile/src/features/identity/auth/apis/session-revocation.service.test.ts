@@ -1,14 +1,14 @@
 import { ErrorCode } from '@aido/api/errors';
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
+import { ApiError, err, NetworkError, ok, ServerError } from '@src/shared/errors';
+import { KyHttpClient } from '@src/shared/infra/http/ky-client';
+import { createPublicClient } from '@src/shared/infra/http/public-client';
 import {
   createErrorReporterStub,
   createMemoryStorage,
   createMemoryTokenStore,
   createHttpClientStub,
-} from '@src/shared/__tests__';
-import { ApiError, err, NetworkError, ok, ServerError } from '@src/shared/errors';
-import { KyHttpClient } from '@src/shared/infra/http/ky-client';
-import { createPublicClient } from '@src/shared/infra/http/public-client';
+} from '@src/testing/core';
 
 import { createPendingRevocationRepository } from './pending-revocation.repository';
 import { PENDING_REVOCATION_TTL_MS, SessionRevocationService } from './session-revocation.service';

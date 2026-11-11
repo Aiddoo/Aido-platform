@@ -1,5 +1,5 @@
 import { REPORT_QUERY_KEYS } from '@src/features/insights/report/queries/report-query-keys';
-import { createTestQueryClient } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/testing/core';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { invalidateAiSuggestions } from './suggestion-cache';

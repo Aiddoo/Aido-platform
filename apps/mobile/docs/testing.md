@@ -66,21 +66,23 @@ Jest + `jest-expo`(Expo 권장, Vitest로 바꾸지 않는다), React Native Tes
 ## Jest 설정
 
 - 유지: `randomize`+`showSeed`, `workerIdleMemoryLimit`, `maxWorkers` 50%(`AIDO_TEST_WORKERS`로 조절), `clearMocks`·`restoreMocks`, 테스트에서도 React Compiler.
-- 추가: `errorOnDeprecated`, `cacheDirectory`, CI의 `--ci --logHeapUsage`, `test:handles`, RNTL `asyncUtilTimeout`.
+- 추가한 것: `errorOnDeprecated`, `cacheDirectory`(`node_modules/.cache/jest`), CI(`CI=true`)에서 `logHeapUsage`(`--ci`는 Jest가 CI 환경에서 스스로 켠다), `test:handles`(`--runInBand --detectOpenHandles`), RNTL `asyncUtilTimeout` 3초, 테스트마다 `clearTestQueryClients`.
+- Node 내장 러너 테스트(`scripts/**/__tests__`, `plugins/**/__tests__`, 스토어 그림 `store-metadata/art`)는 `pnpm test:node`가 돌리고 turbo `test:node` 태스크로 CI에 걸린다. `store-listing.test.mjs`는 릴리스 `release.json`이 있어야 해 `test:store-listing`으로 따로 돈다.
 - `moduleNameMapper`의 `@aido/api*`는 한 줄이다. `jest.resolver.cjs`는 RN 0.88 preset의 경로 해석을 유지하고 실제 Reanimated·Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다([Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/)).
 - `jest.setup.ts`는 Hermes에 없는 `toSorted`·`Array.fromAsync`를 Node에서 지워 앱에서만 죽는 호출을 테스트에서도 드러낸다.
 - jest는 앱과 달리 렌더 중 컴파일러 버그(`getValues()` 등)를 잡지 못한다. 시뮬레이터에서만 보인다.
 
 ## `src/testing/`
 
-| 위치                                                        | 내용                                                                                                                     |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `ports/{port}.stub.ts`                                      | 포트 하나에 도구 하나. `create{Port}Stub()`(`jest.fn`으로 호출을 기록하는 빈 구현)                                       |
-| `fakes/{name}.fake.ts`                                      | 동작을 흉내 내는 구현. `create{Port}Fake`, `createMemory{X}`(메모리에 저장)                                              |
-| `mocks/{module}.ts`                                         | `moduleNameMapper`·`jest.setup.ts`가 가리키는 SDK 대체(expo-router, MMKV, Skia 등). 테스트 파일이 직접 import하지 않는다 |
-| `render.tsx`                                                | `renderScreen`, `renderAppRoute`, `renderRouteHook`                                                                      |
-| `di.ts`                                                     | `createTestPorts`, `createTestDi({ ports, services })`                                                                   |
-| `query-client.ts`, `timers.ts`, `mock-method.ts`, `core.ts` | `createTestQueryClient`, `setupFakeTimersPerTest`, `mockMethod`, 가벼운 공용 export                                      |
+| 위치                                                                      | 내용                                                                                                                     |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `ports/{port}.stub.ts`                                                    | 포트 하나에 도구 하나. `create{Port}Stub()`(`jest.fn`으로 호출을 기록하는 빈 구현)                                       |
+| `fakes/{name}.fake.ts`                                                    | 동작을 흉내 내는 구현. `create{Port}Fake`, `createMemory{X}`(메모리에 저장)                                              |
+| `mocks/{module}.ts`                                                       | `moduleNameMapper`·`jest.setup.ts`가 가리키는 SDK 대체(expo-router, MMKV, Skia 등). 테스트 파일이 직접 import하지 않는다 |
+| `render.tsx`                                                              | `renderScreen`, `renderScreenHook`, `TestUiProvider`                                                                     |
+| `di.ts`                                                                   | `createTestPorts`, `createTestDi(overrides)`                                                                             |
+| `render-route-hook.tsx`                                                   | `renderRouteHook`(진짜 Expo Router 위에서 훅을 돌린다)                                                                   |
+| `query-client.ts`, `timers.ts`, `mock-method.ts`, `fixture.ts`, `core.ts` | `createTestQueryClient`, `setupFakeTimersPerTest`, `mockMethod`, `defineFixture`, 가벼운 공용 export(`render.tsx` 제외)  |
 
 - 도구는 `function` 선언이고 `jest.Mocked<포트>`를 돌려준다. 메서드는 `mockMethod<Port['method']>(구현)`으로 포트에서 타입을 가져와, 포트가 바뀌면 기본값도 컴파일되지 않게 한다. 같은 일을 하는 도구를 따로 만들지 않는다. feature 전용 도구는 이유가 있을 때만 그 feature의 `__tests__`에 둔다.
 - **stub 기본값**은 정상 기기와 빈 데이터다(알림 허용, 클립보드 비어 있음, 요금제·구독 없음, 로그인 창 닫음). 값이 있어야 하는 메서드(`HttpClient`, `JsonFetcher`, 좌표)는 정하지 않고 부르면 `createXStub: get 응답을 정하지 않았습니다`처럼 이름을 대며 실패한다. 어긋난 기본값은 테스트가 반환된 `jest.fn`을 바꿔 준다. 포트를 넓히면 stub도 같은 커밋에서 넓힌다.
@@ -135,7 +137,7 @@ expect(screen.getByTestId('inquiry-content-input').props.value).toBe(CONTENT);
 
 - `di`에는 이 테스트가 바꾸는 **포트만** 더한다(`di: { httpClient, analytics }`). 포트는 `createAppContainer`를 거쳐 그 포트를 쓰는 모든 Service에 들어간다. Service를 직접 조립해 넣으면 그 키만 바뀌고 다른 Service는 원래 것을 써서 운영과 다른 그래프가 된다. 값을 미리 넣을 때는 `syncStorage`에 넣는다. 새 Service는 `createAppContainer`에 더하면 테스트에도 생긴다.
 - 오늘 날짜를 읽거나 시트를 띄우면 `withLocalDate`·`withOverlay` 옵션을 켠다. 시트는 Portal로 `OverlayProvider`의 PortalHost에 그려지고 `useOverlay`는 Provider 밖에서 던진다.
-- `renderAppRoute`는 실제 Expo Router로 route를 올린다. `renderRouteHook(useHook, { url })`는 진짜 라우터 위에서 훅을 돌려 URL을 본다(`jest.unmock('expo-router')`). 둘 다 `core.ts`가 아니라 `render.tsx`를 직접 import한다.
+- `renderRouteHook(useHook, { url })`는 진짜 라우터 위에서 훅을 돌려 URL을 본다(`jest.unmock('expo-router')`). 실제 Router가 필요한 화면 테스트는 `renderRouter`를 `TestUiProvider`로 감싼다. `render-route-hook.tsx`는 `expo-router/testing-library`를 읽어 gesture·reanimated 목보다 먼저 실제 모듈을 끌어오므로 `render.tsx`·`core.ts`에 합치지 않고 직접 import한다. `render.tsx`도 `core.ts`에 다시 내보내지 않는다.
 - 앱 Provider 트리(`AppProviders`)는 `createCompositionRoot`에 `createTestPorts`를 넘겨 올린다. 루트 "다시 시도"가 프로세스 수명 객체를 재사용하는지, 내린 뒤 구독·타이머가 남지 않는지를 여기서 본다.
 
 ### expo-router 공용 mock

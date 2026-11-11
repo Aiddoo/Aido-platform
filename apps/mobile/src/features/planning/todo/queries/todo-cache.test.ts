@@ -1,5 +1,5 @@
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
-import { createPendingResponse, createTestQueryClient } from '@src/shared/__tests__';
+import { createPendingResponse, createTestQueryClient } from '@src/testing/core';
 import { QueryObserver, type QueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 

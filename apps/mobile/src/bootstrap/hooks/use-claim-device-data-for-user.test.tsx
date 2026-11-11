@@ -8,6 +8,9 @@ import { ok } from '@src/core/errors/result';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
+import { createDraftKey } from '@src/shared/draft/draft.model';
+import { createDraftRepository } from '@src/shared/draft/draft.repository';
+import { DraftService } from '@src/shared/draft/draft.service';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -15,10 +18,7 @@ import {
   createMemorySyncStorage,
   createTestDi,
   createTestQueryClient,
-} from '@src/shared/__tests__';
-import { createDraftKey } from '@src/shared/draft/draft.model';
-import { createDraftRepository } from '@src/shared/draft/draft.repository';
-import { DraftService } from '@src/shared/draft/draft.service';
+} from '@src/testing/core';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';

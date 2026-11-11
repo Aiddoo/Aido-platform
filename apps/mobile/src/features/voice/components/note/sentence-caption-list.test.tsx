@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { renderUi } from '@src/shared/__tests__';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 
 import { createVoiceNoteSentence } from '../../__tests__/voice-note.fixtures';
@@ -14,7 +14,7 @@ describe('SentenceCaptionList', () => {
     });
 
     // When
-    await renderUi(<SentenceCaptionList sentences={[sentence]} />);
+    await renderScreen(<SentenceCaptionList sentences={[sentence]} />);
 
     // Then
     expect(screen.getByTestId('caption-low-confidence-hint')).toHaveTextContent(
@@ -28,7 +28,7 @@ describe('SentenceCaptionList', () => {
     const sentence = createVoiceNoteSentence({ text: '시안 두 개' });
 
     // When
-    await renderUi(<SentenceCaptionList sentences={[sentence]} />);
+    await renderScreen(<SentenceCaptionList sentences={[sentence]} />);
 
     // Then
     expect(screen.queryByTestId('caption-low-confidence-hint')).toBeNull();

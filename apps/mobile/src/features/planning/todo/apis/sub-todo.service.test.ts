@@ -1,4 +1,4 @@
-import { createHttpClientStub } from '@src/shared/__tests__';
+import { createHttpClientStub } from '@src/testing/core';
 
 import { createTodoApiError, createTodoDto, INVALID_DTO } from '../__tests__/todo.fixtures';
 import { SubTodoService } from './sub-todo.service';

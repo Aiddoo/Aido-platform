@@ -1,8 +1,8 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createAnalyticsStub, createHapticsGatewayStub } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
+import { createAnalyticsStub, createHapticsGatewayStub } from '@src/testing/core';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 

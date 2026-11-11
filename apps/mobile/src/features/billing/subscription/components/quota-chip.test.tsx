@@ -1,7 +1,8 @@
 import '@src/shared/i18n/init';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
-import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
+import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 
 import {
@@ -20,7 +21,7 @@ async function renderChip(snapshot: EntitlementSnapshot, feature: EntitlementFea
   });
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
 
-  return renderUi(<QuotaChip feature={feature} />, {
+  return renderScreen(<QuotaChip feature={feature} />, {
     di: { httpClient },
     queryClient,
   });

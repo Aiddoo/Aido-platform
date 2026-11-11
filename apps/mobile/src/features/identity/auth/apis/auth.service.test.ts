@@ -3,7 +3,7 @@ import {
   createLoggerStub,
   createMemoryTokenStore,
   createSocialAuthGatewayStub,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
 
 import {
   createAuthApiError,

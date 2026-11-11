@@ -3,13 +3,13 @@ import { ErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
+import { QueryErrorBoundary } from '@src/shared/ui';
 import {
   createErrorReporterStub,
   createHttpClientStub,
   createRouteParamsFake,
-  renderUi,
-} from '@src/shared/__tests__';
-import { QueryErrorBoundary } from '@src/shared/ui';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
@@ -40,7 +40,7 @@ describe('FriendTodoList', () => {
     const errorReporter = createErrorReporterStub();
 
     // When
-    await renderUi(
+    await renderScreen(
       <>
         <FriendCalendar friendId={FRIEND_ID} />
         <QueryErrorBoundary fallback={FriendTodoList.Error}>

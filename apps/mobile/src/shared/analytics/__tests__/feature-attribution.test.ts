@@ -1,8 +1,4 @@
-import {
-  createAnalyticsStub,
-  createLoggerStub,
-  createMemorySyncStorage,
-} from '@src/shared/__tests__';
+import { createAnalyticsStub, createLoggerStub, createMemorySyncStorage } from '@src/testing/core';
 
 import {
   createFeatureAttributionStore,

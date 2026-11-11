@@ -12,14 +12,14 @@ import {
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { updateCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
+import { NetworkError, ServerError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
   createClipboardGatewayStub,
   createHttpClientStub,
   createPendingResponse,
-  renderUi,
-} from '@src/shared/__tests__';
-import { NetworkError, ServerError } from '@src/shared/errors/infra-error';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -162,7 +162,7 @@ async function renderTodoDetail({
   });
   jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
 
-  const view = await renderUi(<TodoDetailRoute />, {
+  const view = await renderScreen(<TodoDetailRoute />, {
     withLocalDate: true,
     withOverlay: true,
     di: {
@@ -378,7 +378,7 @@ describe('할 일 상세 카드', () => {
     jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
 
     // When
-    await renderUi(<TodoDetailRoute />, {
+    await renderScreen(<TodoDetailRoute />, {
       withLocalDate: true,
       withOverlay: true,
       di: { httpClient },

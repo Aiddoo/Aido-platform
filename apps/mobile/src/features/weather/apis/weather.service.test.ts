@@ -1,6 +1,6 @@
 import { ApiError } from '@src/core/errors/api-error';
-import { createHttpClientStub } from '@src/shared/__tests__';
 import { ParseError } from '@src/shared/errors/infra-error';
+import { createHttpClientStub } from '@src/testing/core';
 
 import { createWeatherReportDto } from '../__tests__/weather-report.fixtures';
 import { WeatherService } from './weather.service';

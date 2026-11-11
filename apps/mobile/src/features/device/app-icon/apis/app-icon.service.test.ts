@@ -1,4 +1,4 @@
-import { createAppIconGatewayStub } from '@src/shared/__tests__';
+import { createAppIconGatewayStub } from '@src/testing/core';
 
 import { AppIconService } from './app-icon.service';
 

@@ -1,14 +1,14 @@
-import {
-  createErrorReporterStub,
-  createMemorySyncStorage,
-  createTestPorts,
-  createTestQueryClient,
-} from '@src/shared/__tests__';
 import { KeychainLockedError } from '@src/shared/errors';
 import {
   disabledDraftStorage,
   type EncryptedStorageBootstrap,
 } from '@src/shared/infra/storage/encrypted-draft-storage';
+import {
+  createErrorReporterStub,
+  createMemorySyncStorage,
+  createTestPorts,
+  createTestQueryClient,
+} from '@src/testing/core';
 
 import { createCompositionRoot } from './create-composition-root';
 

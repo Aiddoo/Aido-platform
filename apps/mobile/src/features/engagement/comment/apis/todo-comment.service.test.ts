@@ -1,7 +1,7 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { err } from '@src/core/errors/result';
-import { createHttpClientStub } from '@src/shared/__tests__';
 import { ParseError } from '@src/shared/errors/infra-error';
+import { createHttpClientStub } from '@src/testing/core';
 
 import { TodoCommentService } from './todo-comment.service';
 

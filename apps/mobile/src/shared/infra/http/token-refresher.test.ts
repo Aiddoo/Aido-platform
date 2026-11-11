@@ -1,11 +1,7 @@
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
-import {
-  createLoggerStub,
-  createMemoryTokenStore,
-  createPendingResponse,
-} from '@src/shared/__tests__';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+import { createLoggerStub, createMemoryTokenStore, createPendingResponse } from '@src/testing/core';
 import { TimeoutError as KyTimeoutError } from 'ky';
 
 import { createTokenRefresher } from './token-refresher';

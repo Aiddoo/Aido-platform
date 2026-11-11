@@ -1,8 +1,9 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 import { ok } from '@src/core/errors/result';
-import { createHapticsGatewayStub, createHttpClientStub, renderUi } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors/infra-error';
+import { createHapticsGatewayStub, createHttpClientStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -21,7 +22,7 @@ async function renderSubmit(httpClient: ReturnType<typeof createHttpClientStub>)
     submit = useMutation(useCreateInquiryMutationOptions()).mutateAsync;
     return null;
   }
-  await renderUi(<Capture />, {
+  await renderScreen(<Capture />, {
     withOverlay: true,
     di: { httpClient, haptics: createHapticsGatewayStub() },
   });

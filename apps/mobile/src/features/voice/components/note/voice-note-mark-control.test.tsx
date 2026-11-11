@@ -2,7 +2,8 @@ import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createAnalyticsStub, createHttpClientStub, renderUi } from '@src/shared/__tests__';
+import { createAnalyticsStub, createHttpClientStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
 import { View } from 'react-native';
@@ -35,7 +36,7 @@ async function renderMarkControl({
   const analytics = createAnalyticsStub();
   const onPress = jest.fn();
 
-  await renderUi(
+  await renderScreen(
     <Suspense>
       <VoiceNoteMarkControl markCount={markCount} isListening={isListening} onPress={onPress} />
     </Suspense>,

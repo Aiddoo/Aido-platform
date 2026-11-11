@@ -3,9 +3,9 @@ import type { DailyCompletionsResult } from '@src/features/planning/todo/domains
 import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import { syncDailyCompletionWithList } from '@src/features/planning/todo/queries/todo-cache';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
-import { createMemorySyncStorage, createTestQueryClient } from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
+import { createMemorySyncStorage, createTestQueryClient } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import type { QueryClient } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,

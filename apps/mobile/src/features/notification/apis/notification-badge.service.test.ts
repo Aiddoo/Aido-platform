@@ -1,4 +1,4 @@
-import { createLoggerStub, createPushNotificationGatewayStub } from '@src/shared/__tests__';
+import { createLoggerStub, createPushNotificationGatewayStub } from '@src/testing/core';
 
 import { NotificationBadgeService } from './notification-badge.service';
 

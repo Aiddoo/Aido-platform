@@ -1,4 +1,4 @@
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';

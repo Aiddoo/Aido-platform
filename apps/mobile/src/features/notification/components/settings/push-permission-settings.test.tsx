@@ -5,8 +5,8 @@ import {
   createExternalLinkGatewayStub,
   createPushNotificationGatewayStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
@@ -18,7 +18,7 @@ async function renderSettings(permission: PushPermissionResponse) {
   const externalLink = createExternalLinkGatewayStub();
   const analytics = createAnalyticsStub();
 
-  await renderUi(
+  await renderScreen(
     <Suspense fallback={null}>
       <PushPermissionSettings />
     </Suspense>,

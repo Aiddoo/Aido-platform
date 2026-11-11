@@ -1,15 +1,15 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createHttpClientStub,
   createLoggerStub,
   createPushNotificationGatewayStub,
   createTestDi,
   createTestQueryClient,
-  TestUiProvider,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+} from '@src/testing/core';
+import { TestUiProvider } from '@src/testing/render';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Slot } from 'expo-router';
 import { act, renderRouter, waitFor } from 'expo-router/testing-library';

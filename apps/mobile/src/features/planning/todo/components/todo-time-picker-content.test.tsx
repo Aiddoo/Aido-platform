@@ -1,14 +1,14 @@
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import '@src/shared/i18n/init';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createAnalyticsStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { TodoTimePickerContent } from './todo-time-picker-content';
@@ -22,7 +22,7 @@ async function renderSheet({ isAllDay }: { isAllDay: boolean }) {
     createPreference({ timeFormat: 'TWELVE_HOUR' }),
   );
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <TodoTimePickerContent
         date={new Date(2026, 10, 6, 12)}

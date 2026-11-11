@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { renderUi } from '@src/shared/__tests__';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { WhatsNewEntryNotice } from './whats-new-entry-notice';
@@ -9,7 +9,7 @@ describe('WhatsNewEntryNotice', () => {
     // Given
     const onPress = jest.fn();
     const onClose = jest.fn();
-    await renderUi(<WhatsNewEntryNotice onPress={onPress} onClose={onClose} />);
+    await renderScreen(<WhatsNewEntryNotice onPress={onPress} onClose={onClose} />);
 
     // When
     await fireEvent.press(screen.getByLabelText('새로운 기능 카드 닫기'));

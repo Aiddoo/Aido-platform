@@ -4,14 +4,14 @@ import { createStoreReviewRepository } from '@src/features/device/store-review/a
 import '@src/shared/i18n/init';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAppStoreReviewGatewayStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createPendingResponse,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 import { AppState } from 'react-native';
@@ -60,7 +60,7 @@ async function renderToggle() {
     return null;
   }
 
-  const { queryClient } = await renderUi(
+  const { queryClient } = await renderScreen(
     <LocalDateProvider useDeviceCalendar={() => DEVICE_CALENDAR}>
       <Probe />
     </LocalDateProvider>,
@@ -297,7 +297,7 @@ describe('useUpdateTodoScheduleMutationOptions 반복 상한', () => {
       current.value = useUpdateSchedule();
       return null;
     }
-    await renderUi(<Probe />, { di: { httpClient } });
+    await renderScreen(<Probe />, { di: { httpClient } });
 
     // When
     await act(async () => {

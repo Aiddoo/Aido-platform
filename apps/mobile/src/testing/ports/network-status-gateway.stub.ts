@@ -1,6 +1,6 @@
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
 
-import { mockMethod } from './mock-method';
+import { mockMethod } from '../mock-method';
 
 export type NetworkStatusGatewayStub = jest.Mocked<NetworkStatusGateway> & {
   /** 연결 상태가 바뀐 것처럼 구독자에게 알린다 */

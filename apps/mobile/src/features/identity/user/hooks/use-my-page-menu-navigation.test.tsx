@@ -1,4 +1,4 @@
-import { stubWindowDimensions } from '@src/shared/__tests__';
+import { stubWindowDimensions } from '@src/testing/core';
 import { act, render, renderHook } from '@testing-library/react-native';
 import { router, usePathname } from 'expo-router';
 import type { PropsWithChildren } from 'react';

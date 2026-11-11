@@ -1,4 +1,4 @@
-import { renderUi } from '@src/shared/__tests__';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 
 import { Box } from '../box';
@@ -26,7 +26,7 @@ describe('StampPress', () => {
   // 높이가 정해지지 않은 세로 목록(ScrollView 안 VStack)에서 도장이 늘어나면 아래 제목·목록이 스크롤 밖으로 밀려 안 보인다
   it('도장 자리는 children 크기만 차지하고 남는 세로 공간으로 늘어나지 않는다', async () => {
     // When
-    await renderUi(
+    await renderScreen(
       <StampPress>
         <Box testID="stamp-seal" style={{ width: 72, height: 72 }} />
       </StampPress>,

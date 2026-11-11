@@ -1,5 +1,5 @@
-import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
+import { createMemoryObservableSyncStorage } from '@src/testing/core';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';

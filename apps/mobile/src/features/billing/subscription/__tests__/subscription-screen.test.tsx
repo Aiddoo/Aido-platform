@@ -11,6 +11,9 @@ import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { type User, userSchema } from '@src/features/identity/user/domains/user.model';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
+import { i18n } from '@src/shared/i18n';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -18,11 +21,8 @@ import {
   createRouteParamsFake,
   createTestDi,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { i18n } from '@src/shared/i18n';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
 
@@ -161,7 +161,7 @@ async function renderSubscriptionScreen(
     );
   }
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <SubscriptionRoute />

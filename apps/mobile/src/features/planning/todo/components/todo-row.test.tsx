@@ -1,12 +1,13 @@
 import '@src/shared/i18n/init';
-import { createErrorReporterStub, createAnalyticsStub, renderUi } from '@src/shared/__tests__';
+import { createErrorReporterStub, createAnalyticsStub } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { TodoScheduleLine } from './todo-row';
 
 const renderLine = (timeLabel: string | null, todo: Parameters<typeof createParentTodo>[0]) =>
-  renderUi(<TodoScheduleLine todo={createParentTodo(todo)} timeLabel={timeLabel} />, {
+  renderScreen(<TodoScheduleLine todo={createParentTodo(todo)} timeLabel={timeLabel} />, {
     di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
   });
 

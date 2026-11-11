@@ -7,6 +7,8 @@ import {
 } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -14,10 +16,8 @@ import {
   createPendingResponse,
   createSpeechRecognizerStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
@@ -50,7 +50,7 @@ async function renderEditSheet() {
     .mocked(useLocalSearchParams)
     .mockReturnValue({ todoId: String(todo.id), subTodoId: '1', date: todo.startDate });
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <EditSubTodoBottomSheet />
@@ -173,7 +173,7 @@ describe('AddSubTodoBottomSheet', () => {
     jest
       .mocked(useLocalSearchParams)
       .mockReturnValue({ todoId: String(todo.id), date: viewingDate });
-    await renderUi(
+    await renderScreen(
       <LocalDateProvider>
         <OverlayProvider>
           <AddSubTodoBottomSheet />
@@ -220,7 +220,7 @@ describe('AddSubTodoBottomSheet', () => {
     jest
       .mocked(useLocalSearchParams)
       .mockReturnValue({ todoId: String(todo.id), date: viewingDate });
-    await renderUi(
+    await renderScreen(
       <LocalDateProvider>
         <OverlayProvider>
           <AddSubTodoBottomSheet />

@@ -55,16 +55,14 @@ jest.mock('expo-crypto', () => {
 });
 // 공식 mock은 CommonJS라 __esModule 표시가 없다. 그대로 두면 default import가
 // 모듈 객체 전체로 잡혀 "Element type is invalid: got object"로 죽어 감싼 모듈을 쓴다.
-jest.mock('@gorhom/bottom-sheet', () =>
-  require('./src/shared/__tests__/mocks/gorhom-bottom-sheet'),
-);
+jest.mock('@gorhom/bottom-sheet', () => require('./src/testing/mocks/gorhom-bottom-sheet'));
 jest.mock('react-native-keyboard-controller', () =>
-  require('./src/shared/__tests__/mocks/react-native-keyboard-controller'),
+  require('./src/testing/mocks/react-native-keyboard-controller'),
 );
 jest.mock('react-native-reserved-regions', () =>
-  require('./src/shared/__tests__/mocks/react-native-reserved-regions'),
+  require('./src/testing/mocks/react-native-reserved-regions'),
 );
-jest.mock('expo-router', () => require('./src/shared/__tests__/mocks/expo-router'));
+jest.mock('expo-router', () => require('./src/testing/mocks/expo-router'));
 // 네이티브 이벤트 스트림을 읽는 훅이라 Jest에서는 값이 오지 않는다. 링크로 들어오는 흐름은 테스트가 값을 정한다.
 jest.mock('expo-linking', () => ({
   ...jest.requireActual('expo-linking'),
@@ -97,7 +95,7 @@ jest.mock('react-native-svg', () => {
 // 화면을 먼저 정리(unmount)한 뒤 테스트 QueryClient를 비운다.
 // 순서가 반대면 unmount 때 쿼리별 gcTime으로 정리 타이머가 다시 걸려 Jest 종료를 붙잡는다.
 const { cleanup } = require('@testing-library/react-native');
-const { clearTestQueryClients } = require('./src/shared/__tests__/query-client');
+const { clearTestQueryClients } = require('./src/testing/query-client');
 afterEach(async () => {
   await cleanup();
   clearTestQueryClients();
@@ -121,7 +119,7 @@ timeoutManager.setTimeoutProvider({
   clearInterval: (timer: ReturnType<typeof setInterval>) => clearInterval(timer),
 });
 
-const { resetExpoRouterMock } = require('./src/shared/__tests__/mocks/expo-router');
+const { resetExpoRouterMock } = require('./src/testing/mocks/expo-router');
 beforeEach(() => {
   resetExpoRouterMock();
 });

@@ -2,7 +2,8 @@
 // 규칙으로 쓸 수 없는 feature 그래프(di-context 훅의 주인, 양방향 쌍)는 scripts/feature-graph.cjs 리포터가 본다.
 const { FEATURE_LAYERS, FEATURE_PATTERN } = require('./scripts/feature-graph.cjs');
 
-const TEST = '\\.(?:spec|test)\\.[cm]?[jt]sx?$|/__tests__/';
+// src/testing은 테스트 전용이라 앱 층 규칙을 받지 않는다. 대신 아래 testing-from-production이 운영 코드의 import를 막는다
+const TEST = '\\.(?:spec|test)\\.[cm]?[jt]sx?$|/__tests__/|^src/testing/';
 const FEATURE = `^src/features/(${FEATURE_PATTERN})/`;
 const KNOWN_FEATURE = `^src/features/(?:${Object.keys(FEATURE_LAYERS).join('|')})/`;
 // 다른 층 어디서든 가져와도 되는 것: 타입(규칙에서 type-only로 뺀다), Policy가 있는 모델, 캐시 무효화 함수
@@ -289,6 +290,14 @@ module.exports = {
       to: { path: '^src/(?:features|bootstrap)/' },
     },
     ...upwardRules,
+    {
+      name: 'testing-from-production',
+      comment:
+        'src/testing은 테스트에서만 import한다. 운영 코드가 테스트 stub·fake·mock을 가져오면 번들에 섞이고 층 규칙이 무너진다.',
+      severity: 'error',
+      from: { path: '^(?:src|app)/', pathNot: TEST },
+      to: { path: '^src/testing/' },
+    },
     {
       name: 'feature-unknown-layer',
       comment:

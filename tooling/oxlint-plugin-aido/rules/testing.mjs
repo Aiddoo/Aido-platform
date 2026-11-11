@@ -46,15 +46,15 @@ const noJestModuleMock = {
         }
         context.report({
           node,
-          message: `${moduleName}를 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderUi를 쓰고, 네이티브 모듈은 jest.setup이나 moduleNameMapper에 둡니다.`,
+          message: `${moduleName}를 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderScreen를 쓰고, 네이티브 모듈은 jest.setup이나 moduleNameMapper에 둡니다.`,
         });
       },
     };
   },
 };
 
-const RENDER_UI_MODULE = '@src/shared/__tests__/render-ui';
-const TEST_TOOLS_MODULE = '@src/shared/__tests__';
+const RENDER_UI_MODULE = '@src/testing/render';
+const TEST_TOOLS_MODULE = '@src/testing/core';
 const UI_TEST_MODULE_PREFIXES = [
   '@shopify/flash-list',
   '@src/shared/ui',
@@ -74,7 +74,7 @@ function isRenderUiImport(statement) {
     (moduleName === TEST_TOOLS_MODULE &&
       statement.specifiers.some(
         (specifier) =>
-          specifier.type === 'ImportSpecifier' && specifier.local.name.startsWith('renderUi'),
+          specifier.type === 'ImportSpecifier' && specifier.local.name.startsWith('renderScreen'),
       ))
   );
 }
@@ -87,11 +87,11 @@ function isUiTestModule(moduleName) {
     moduleName.includes('/components/') ||
     moduleName.includes('/hooks/') ||
     moduleName.includes('/providers/') ||
-    moduleName.includes('/__tests__/render-ui')
+    moduleName.includes('/testing/render')
   );
 }
 
-// 댓글 테스트는 model, service/mapper, 순수 navigation·util·view-model 옆에 둔다. 컴포넌트 옆 테스트는 공용 renderUi로만 쓴다
+// 댓글 테스트는 model, service/mapper, 순수 navigation·util·view-model 옆에 둔다. 컴포넌트 옆 테스트는 공용 renderScreen로만 쓴다
 const todoCommentTestLocation = {
   meta: {
     type: 'suggestion',
@@ -113,7 +113,7 @@ const todoCommentTestLocation = {
         context.report({
           node: program,
           message:
-            '댓글 클라이언트 테스트는 model, service/mapper, pure navigation/util/view-model에만 둡니다. 컴포넌트 동작은 공용 renderUi로만 확인하고, hook, Provider, Query Options 배선을 테스트 코드로 복제하지 마세요.',
+            '댓글 클라이언트 테스트는 model, service/mapper, pure navigation/util/view-model에만 둡니다. 컴포넌트 동작은 공용 renderScreen로만 확인하고, hook, Provider, Query Options 배선을 테스트 코드로 복제하지 마세요.',
         });
       },
     };

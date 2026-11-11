@@ -1,15 +1,15 @@
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { toInstant } from '@src/shared/date/instant';
+import { NetworkError } from '@src/shared/errors';
 import {
   createJsonFetcherStub,
   createMemoryObservableSyncStorage,
   createPendingResponse,
   createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
-import { toInstant } from '@src/shared/date/instant';
-import { NetworkError } from '@src/shared/errors';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
@@ -39,7 +39,7 @@ async function renderAutoOpen({
     createUser({ id: USER_ID, createdAt: toInstant('2026-11-06T00:00:00.000Z') }),
   );
 
-  const hook = await renderUiHook(() => useWhatsNewAutoOpen({ isOnboardingSettled: true }), {
+  const hook = await renderScreenHook(() => useWhatsNewAutoOpen({ isOnboardingSettled: true }), {
     queryClient,
     di: {
       authSessionStore: createAuthSessionStoreStub('authenticated'),

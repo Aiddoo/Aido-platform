@@ -1,6 +1,6 @@
 import type { AppLifecycleGateway, AppLifecycleState } from '@src/core/ports/app-lifecycle-gateway';
 
-import { mockMethod } from './mock-method';
+import { mockMethod } from '../mock-method';
 
 export type AppLifecycleGatewayStub = jest.Mocked<AppLifecycleGateway> & {
   /** 상태를 바꾸고 구독자에게 알린다 */

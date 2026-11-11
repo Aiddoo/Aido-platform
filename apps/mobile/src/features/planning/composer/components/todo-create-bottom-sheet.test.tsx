@@ -4,6 +4,8 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createTodoApiError } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -13,10 +15,8 @@ import {
   createSpeechRecognizerStub,
   createTestQueryClient,
   createVoiceNoteStorageFake,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
@@ -33,7 +33,7 @@ async function renderCreateSheet(routeParams: Record<string, string> = {}) {
   queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent());
   const speechRecognizer = createSpeechRecognizerStub();
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <TodoCreateBottomSheet onMemoChanged={jest.fn()} />
