@@ -153,7 +153,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - **SDK는 `shared/infra`에서만 import한다.** 어댑터는 `shared/infra/{영역}/{공급자}-{포트 파일 이름}.ts`이고 포트 하나에 파일 하나다(`expo-clipboard-gateway.ts` → `expoClipboardGateway`). 플랫폼·OS 버전 차이는 어댑터 안에 숨긴다. 어댑터의 상태는 인스턴스 필드에 두고, `logger`·`errorReporter`는 팩토리 인자로 받는다.
 - **조립은 `createAppContainer(ports)` 한 함수다.** 운영은 기기 어댑터, 테스트는 stub 포트를 넘긴다. 객체만 만들고 SDK import, 구독, 타이머, 전역 값 변경, 저장소 쓰기를 하지 않는다. 연결은 쓰는 Provider·훅의 effect가 맡는다.
 - **컨테이너에는 화면이 꺼내는 것만 둔다.** Api·service를 만드는 데만 쓰는 포트(`Storage`, `PurchasesGateway`, HTTP 클라이언트, 토큰 갱신기)는 `AppContainerPorts`에만 있다. mapper·Policy·view-model은 순수 함수라 DI에 넣지 않고 직접 import한다.
-- **꺼내는 입구는 `bootstrap/providers/di-context.tsx` 하나다.** DI 훅은 `use{Entity}Api`, `use{Name}Service`, `use{Name}Repository`, `use{Name}Gateway`다. `shared/di/shared-di-context.tsx`는 `shared`만 쓰고 `di-context`가 다시 내보낸다.
+- **꺼내는 입구는 `bootstrap/providers/di-context.tsx` 하나다.** DI 훅은 `use{Entity}Api`, `use{Name}Service`, `use{Name}Repository`, `use{Name}Store`, `use{Name}Gateway`다. `shared/di/shared-di-context.tsx`는 `shared`만 쓰고 `di-context`가 다시 내보낸다.
 - **라이브러리 교체는 어댑터 하나와 `create-device-ports` 한 줄이다.** 어댑터 밖이 바뀌면 포트 설계가 틀린 것이다. 새 포트는 `core/ports` → 어댑터 → `create-device-ports` → `createTestPorts` stub 기본값을 함께 더한다.
 
 | 수명     | 무엇                                                                                                                                                         | 만드는 곳                                             |
