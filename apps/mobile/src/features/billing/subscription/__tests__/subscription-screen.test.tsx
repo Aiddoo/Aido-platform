@@ -482,7 +482,7 @@ describe('구독 화면', () => {
       // 스토어 결제는 끝났지만 권한이 아직 안 보여 서버 반영을 기다리지 못한 경우
       purchases.purchase.mockResolvedValue({
         type: 'purchased',
-        status: { activeEntitlements: [] },
+        status: { activeEntitlements: [], managementUrl: null },
       });
 
       // When
@@ -510,7 +510,7 @@ describe('구독 화면', () => {
       );
       purchases.purchase.mockResolvedValue({
         type: 'purchased',
-        status: { activeEntitlements: [] },
+        status: { activeEntitlements: [], managementUrl: null },
       });
       await user.press(await screen.findByText('월간 구독'));
 

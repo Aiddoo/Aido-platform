@@ -6,6 +6,7 @@ describe('toCustomerInfo', () => {
     // Given
     const status = {
       activeEntitlements: [{ store: 'APP_STORE' as const, productIdentifier: 'aido.monthly' }],
+      managementUrl: null,
     };
 
     // When

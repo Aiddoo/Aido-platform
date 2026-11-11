@@ -27,14 +27,16 @@ export function useOpenSubscriptionManagement() {
   const openInquiry = useOpenSubscriptionInquiry();
 
   return useSingleTap(async () => {
-    const productId =
-      process.env.EXPO_OS === 'android'
-        ? await subscriptionService.findActiveStoreProductId('PLAY_STORE')
-        : null;
-    const url = createManagementUrl(process.env.EXPO_OS, {
-      productId,
-      applicationId: applicationMetadata.getInstallation()?.applicationId ?? null,
-    });
+    const { managementUrl, productId } = await subscriptionService.findManagementSource(
+      process.env.EXPO_OS === 'android' ? 'PLAY_STORE' : 'APP_STORE',
+    );
+    // 스토어 구독이 없거나 서버가 준 프리미엄(프로모션·초대)이면 RevenueCat이 주소를 주지 않아 직접 만든다
+    const url =
+      managementUrl ??
+      createManagementUrl(process.env.EXPO_OS, {
+        productId,
+        applicationId: applicationMetadata.getInstallation()?.applicationId ?? null,
+      });
 
     const handleOpenFailed = (message: string) => {
       errorReporter.addBreadcrumb({

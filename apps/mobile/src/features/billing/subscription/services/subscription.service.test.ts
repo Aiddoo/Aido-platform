@@ -41,6 +41,7 @@ describe('SubscriptionService', () => {
     const { service, purchases } = createConfiguredService();
     purchases.restore.mockResolvedValue({
       activeEntitlements: [{ store: 'PROMOTIONAL', productIdentifier: 'rc_promo_premium' }],
+      managementUrl: null,
     });
 
     // When
@@ -58,7 +59,7 @@ describe('SubscriptionService', () => {
 
     // When
     unsubscribe();
-    purchases.emitCustomerInfo({ activeEntitlements: [] });
+    purchases.emitCustomerInfo({ activeEntitlements: [], managementUrl: null });
 
     // Then
     expect(listener).not.toHaveBeenCalled();

@@ -68,7 +68,10 @@ async function renderPurchase({
   const purchases = createPurchasesGatewayStub();
   purchases.purchase.mockResolvedValue({
     type: 'purchased',
-    status: { activeEntitlements: [{ store: 'APP_STORE', productIdentifier: 'aido.annual' }] },
+    status: {
+      activeEntitlements: [{ store: 'APP_STORE', productIdentifier: 'aido.annual' }],
+      managementUrl: null,
+    },
   });
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(serverMe));

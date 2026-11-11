@@ -9,6 +9,8 @@ interface PurchaseEntitlement {
 
 export interface PurchaseStatus {
   activeEntitlements: readonly PurchaseEntitlement[];
+  /** 스토어가 알려 준 구독 관리 주소. 스토어 구독이 없으면 null */
+  managementUrl: string | null;
 }
 
 export type PurchasePackageType = SubscriptionPlanType | 'OTHER';

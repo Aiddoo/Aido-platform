@@ -2,7 +2,7 @@ import type { PurchaseStatus, PurchasesGateway } from '@src/core/ports/purchases
 
 import { mockMethod } from '../mock-method';
 
-const NO_SUBSCRIPTION: PurchaseStatus = { activeEntitlements: [] };
+const NO_SUBSCRIPTION: PurchaseStatus = { activeEntitlements: [], managementUrl: null };
 
 export interface PurchasesGatewayStub extends jest.Mocked<PurchasesGateway> {
   /** 스토어가 고객 정보를 바꾼 것처럼 구독자에게 알린다 */

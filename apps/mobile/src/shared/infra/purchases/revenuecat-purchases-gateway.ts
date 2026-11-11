@@ -107,6 +107,7 @@ function toPurchaseStatus(info: CustomerInfo): PurchaseStatus {
       store: PURCHASE_STORE[entitlement.store],
       productIdentifier: entitlement.productIdentifier,
     })),
+    managementUrl: info.managementURL,
   };
 }
 

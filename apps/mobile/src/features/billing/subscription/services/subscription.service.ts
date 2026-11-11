@@ -15,6 +15,14 @@ import { type SubscriptionError, SubscriptionErrors } from '../domains/subscript
 import { type SubscriptionOffering } from '../domains/subscription.model';
 import type { PurchasesSession } from './purchases.session';
 
+interface ManagementSource {
+  /** 스토어가 알려 준 구독 관리 주소. 스토어 구독이 없거나 서버가 준 프리미엄이면 null이다 */
+  managementUrl: string | null;
+  productId: string | null;
+}
+
+const NO_MANAGEMENT_SOURCE: ManagementSource = { managementUrl: null, productId: null };
+
 export class SubscriptionService {
   readonly #session: Pick<PurchasesSession, 'isConfigured'>;
   readonly #purchases: PurchasesGateway;
@@ -68,20 +76,23 @@ export class SubscriptionService {
     }
   };
 
-  // null이면 호출부가 구독 목록을 열므로 조회 실패도 "없음"과 구분하지 않고 경고만 남긴다
-  findActiveStoreProductId = async (store: SubscriptionStore): Promise<string | null> => {
+  // 조회 실패도 "없음"과 구분하지 않고 경고만 남긴다. 호출부는 모두 null이면 구독 목록을 연다
+  findManagementSource = async (store: SubscriptionStore): Promise<ManagementSource> => {
     if (!this.#session.isConfigured()) {
-      return null;
+      return NO_MANAGEMENT_SOURCE;
     }
 
     try {
       const customerInfo = toCustomerInfo(await this.#purchases.getStatus());
-      return CustomerInfoPolicy.findStoreProductId(customerInfo, store);
+      return {
+        managementUrl: customerInfo.managementUrl,
+        productId: CustomerInfoPolicy.findStoreProductId(customerInfo, store),
+      };
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.CUSTOMER_INFO_FETCH_FAILED, {
         error: getErrorMessage(error),
       });
-      return null;
+      return NO_MANAGEMENT_SOURCE;
     }
   };
 
