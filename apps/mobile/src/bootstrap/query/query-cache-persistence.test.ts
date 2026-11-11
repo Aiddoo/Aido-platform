@@ -171,16 +171,16 @@ describe('createQueryPersistOptions', () => {
     expect(restored).toEqual({ savedAt: '2026-11-02T00:00:00.000Z' });
   });
 
-  it('옛 캐시 스키마 버전(4)이 저장한 $date 캐시는 복원하지 않고 다시 조회하게 둔다', async () => {
+  it('옛 캐시 스키마 버전(5)이 옛 쿼리 키로 저장한 캐시는 복원하지 않고 다시 조회하게 둔다', async () => {
     // Given
-    const legacyBuster = '4:1.14.0:ko';
+    const legacyBuster = '5:1.14.0:ko';
     const currentBuster = createQueryCacheBuster({ appVersion: '1.14.0', language: 'ko' });
 
     // When
     const restored = await saveAndRestore(legacyBuster, currentBuster);
 
     // Then
-    expect(currentBuster.startsWith('5:')).toBe(true);
+    expect(currentBuster.startsWith('6:')).toBe(true);
     expect(restored).toBeUndefined();
   });
 

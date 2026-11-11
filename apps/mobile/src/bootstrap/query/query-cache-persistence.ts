@@ -21,8 +21,8 @@ import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
 export const QUERY_CACHE_STORAGE_KEY = 'aido.query-cache';
 const QUERY_CACHE_OWNER_KEY = 'aido.query-cache.owner';
 
-/** 저장한 클라이언트 모델의 모양이 바뀌면 올려 이전 캐시를 버린다 */
-const QUERY_CACHE_SCHEMA_VERSION = 5;
+/** 영속 쿼리의 키나 클라이언트 모델의 모양이 바뀌면 올려 이전 캐시를 버린다 */
+const QUERY_CACHE_SCHEMA_VERSION = 6;
 
 /** persister가 쓰는 저장소. 캐시는 주인(사용자 id)별 키에 두고, 주인이 없으면 읽지도 쓰지도 않는다 */
 export interface QueryCacheStorage {
