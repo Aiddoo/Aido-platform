@@ -1,7 +1,6 @@
 import { useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { useSyncExternalStore } from 'react';
 
 import { VoiceNotePolicy, type VoiceNote } from '../domains/voice-note.model';
@@ -12,9 +11,9 @@ type VoiceNoteStage = 'missing' | 'recorded' | 'digested';
 /** 초안 저장소를 구독하지 않아 녹음·정리로 초안이 바뀌어도 id만 쓰는 컴포넌트는 다시 그려지지 않는다 */
 export function useVoiceNoteRoute() {
   const [{ draftId }] = useRouteParams(voiceNoteParamsSchema);
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const accountId = useSuspenseMyAccountId();
 
-  return [{ accountId: me.id, draftId }] as const;
+  return [{ accountId, draftId }] as const;
 }
 
 /** 지금 화면이 그릴 단계. 자동 저장으로 내용이 바뀌어도 단계가 같으면 다시 그려지지 않는다 */

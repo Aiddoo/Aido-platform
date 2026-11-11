@@ -1,5 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -17,7 +17,6 @@ import {
   SurfaceCard,
   LabelChip,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -30,8 +29,8 @@ import { formatMediaTime } from '../../utils/format-media-time';
 
 export function VoiceNoteDraftList() {
   const { t } = useTranslation('voiceNote');
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  const [notes] = useVoiceNotes(me.id);
+  const accountId = useSuspenseMyAccountId();
+  const [notes] = useVoiceNotes(accountId);
   const push = useSingleTap(router.push);
 
   if (notes.length === 0) {
@@ -66,8 +65,8 @@ export function VoiceNoteDraftList() {
 /** 전용 화면의 전체 목록. 30일 동안 쌓이면 많아질 수 있어 가상화한다 */
 VoiceNoteDraftList.All = function All() {
   const { t } = useTranslation('voiceNote');
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
-  const [notes] = useVoiceNotes(me.id);
+  const accountId = useSuspenseMyAccountId();
+  const [notes] = useVoiceNotes(accountId);
 
   return (
     <FlashList

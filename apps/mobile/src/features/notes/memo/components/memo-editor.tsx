@@ -5,6 +5,7 @@ import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quo
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
@@ -478,11 +479,11 @@ function MemoMoreMenu({
 }: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDeleted'>) {
   const { t } = useTranslation(['memo', 'common']);
 
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const accountId = useSuspenseMyAccountId();
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const aiParse = useMemoAiParse({ accountId: me.id, onSaveChanges });
+  const aiParse = useMemoAiParse({ accountId, onSaveChanges });
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
   const openDeleteDialog = useOpenMemoDeleteDialog({ onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');

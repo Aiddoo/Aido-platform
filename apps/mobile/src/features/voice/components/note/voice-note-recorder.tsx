@@ -5,7 +5,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { getPremiumBenefitAmounts } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
@@ -31,7 +31,7 @@ import {
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
@@ -62,14 +62,14 @@ export function VoiceNoteRecorder() {
   const { t } = useTranslation('voiceNote');
   const isCompact = useWindowSizeClass() === 'compact';
   const toast = useAppToast();
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const accountId = useSuspenseMyAccountId();
   const { maxSeconds, limitMs, finishOrPromptLimit } = useVoiceNoteRecordLimit();
   const getSpeechContext = useReadSpeechContext();
   const [locale] = useRecognitionLanguage();
   const [{ draftId: seedDraftId, entry }] = useRouteParams(voiceNoteRecordParamsSchema);
 
   const recording = useVoiceNoteRecording({
-    accountId: me.id,
+    accountId,
     locale,
     seedDraftId,
     entry,

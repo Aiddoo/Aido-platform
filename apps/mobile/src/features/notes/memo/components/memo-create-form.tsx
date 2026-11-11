@@ -1,12 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_BACK_ICON, StyledSafeAreaView, TextArea } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Stack, router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
@@ -22,9 +22,9 @@ export function MemoCreateForm() {
   const goBack = useSingleTap(router.back);
   const { t } = useTranslation(['memo', 'common']);
   const navigation = useNavigation();
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const accountId = useSuspenseMyAccountId();
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
-    createMemoDraftKey({ userId: me.id }),
+    createMemoDraftKey({ userId: accountId }),
   );
   const form = useForm({
     resolver: zodResolver(memoFormSchema),

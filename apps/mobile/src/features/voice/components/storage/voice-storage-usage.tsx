@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useTrack } from '@src/shared/analytics';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -24,7 +24,6 @@ import {
   useConfirmDialog,
 } from '@src/shared/ui';
 import { formatFileSize } from '@src/shared/utils/number-format';
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
@@ -38,10 +37,10 @@ export function VoiceStorageUsage() {
   const todayKey = useTodayKey();
   // 저장 용량은 기기의 동기 값이라 쿼리 없이 읽고, 기다리는 것은 계정(me)뿐이다
   const storage = useVoiceNoteStorageService();
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const accountId = useSuspenseMyAccountId();
   // 파일 크기는 구독할 수 없지만 녹음은 이 화면 밖에서만 늘어 들어올 때와 지운 뒤에만 다시 읽는다
-  const [usage, setUsage] = useState(() => storage.getRecordingUsage(me.id));
-  const refreshUsage = () => setUsage(storage.getRecordingUsage(me.id));
+  const [usage, setUsage] = useState(() => storage.getRecordingUsage(accountId));
+  const refreshUsage = () => setUsage(storage.getRecordingUsage(accountId));
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
@@ -165,7 +164,7 @@ function RemoveRecordingButton({ draftId, onRemoved }: RemoveRecordingButtonProp
   const { trackEvent } = useTrack();
   const confirmDialog = useConfirmDialog();
   const storage = useVoiceNoteStorageService();
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const accountId = useSuspenseMyAccountId();
 
   const handleRemove = async () => {
     const isConfirmed = await confirmDialog.openAsync({
@@ -180,9 +179,9 @@ function RemoveRecordingButton({ draftId, onRemoved }: RemoveRecordingButtonProp
     }
 
     if (draftId == null) {
-      storage.removeAllRecordings(me.id);
+      storage.removeAllRecordings(accountId);
     } else {
-      storage.removeRecordings(me.id, draftId);
+      storage.removeRecordings(accountId, draftId);
     }
     onRemoved();
     trackEvent('settings_changed', {
