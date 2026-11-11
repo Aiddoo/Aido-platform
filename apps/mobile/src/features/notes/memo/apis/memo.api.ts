@@ -35,7 +35,7 @@ import {
 // 서버 업체 체인 제한(AI_DEADLINE_PARSE_MEMO_MS 25초)보다 길게 기다려야 앱이 먼저 끊어 차감된 결과를 잃지 않는다
 const PARSE_MEMO_TIMEOUT_MS = 30_000;
 
-export class MemoService {
+export class MemoApi {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
 
@@ -49,7 +49,7 @@ export class MemoService {
       await this.#httpClient.get(`v1/memos/${memoId}`, { signal }),
       memoDetailResponseSchema,
       ({ memo }) => toMemo(memo),
-      '[MemoService] Invalid getMemo response',
+      '[MemoApi] Invalid getMemo response',
     );
 
   getMemos = async (
@@ -63,7 +63,7 @@ export class MemoService {
       }),
       memoListResponseSchema,
       toMemoPage,
-      '[MemoService] Invalid getMemos response',
+      '[MemoApi] Invalid getMemos response',
     );
 
   getResourceLimit = async (signal?: AbortSignal) =>
@@ -71,7 +71,7 @@ export class MemoService {
       await this.#httpClient.get('v1/memos/resource-limit', { signal }),
       memoResourceLimitResponseSchema,
       toMemoResourceLimit,
-      '[MemoService] Invalid getResourceLimit response',
+      '[MemoApi] Invalid getResourceLimit response',
     );
 
   createMemo = async (values: MemoFormValues, idempotencyKey: string) =>
@@ -81,7 +81,7 @@ export class MemoService {
       }),
       memoMutationResponseSchema,
       ({ memo }) => toMemo(memo),
-      '[MemoService] Invalid createMemo response',
+      '[MemoApi] Invalid createMemo response',
     );
 
   updateMemo = async (memoId: number, values: MemoFormValues) =>
@@ -89,7 +89,7 @@ export class MemoService {
       await this.#httpClient.patch(`v1/memos/${memoId}`, toMemoRequest(values)),
       memoMutationResponseSchema,
       ({ memo }) => toMemo(memo),
-      '[MemoService] Invalid updateMemo response',
+      '[MemoApi] Invalid updateMemo response',
     );
 
   setPinned = async (memoId: number, isPinned: boolean) =>
@@ -97,7 +97,7 @@ export class MemoService {
       await this.#httpClient.patch(`v1/memos/${memoId}/pin`, { isPinned }),
       memoMutationResponseSchema,
       ({ memo }) => toMemo(memo),
-      '[MemoService] Invalid setPinned response',
+      '[MemoApi] Invalid setPinned response',
     );
 
   deleteMemo = async (memoId: number) =>
@@ -105,7 +105,7 @@ export class MemoService {
       await this.#httpClient.delete(`v1/memos/${memoId}`),
       memoDeleteResponseSchema,
       noop,
-      '[MemoService] Invalid deleteMemo response',
+      '[MemoApi] Invalid deleteMemo response',
     );
 
   convertToTodos = async (memoId: number, values: TodoFormValues) =>
@@ -116,7 +116,7 @@ export class MemoService {
       ),
       convertMemoToTodosResponseSchema,
       noop,
-      '[MemoService] Invalid convertToTodos response',
+      '[MemoApi] Invalid convertToTodos response',
     );
 
   parseMemo = async (
@@ -142,10 +142,10 @@ export class MemoService {
             method: 'parseMemo',
             zodError: error instanceof Error ? error.message : undefined,
           });
-          throw new ParseError('[MemoService] Invalid parseMemo plan');
+          throw new ParseError('[MemoApi] Invalid parseMemo plan');
         }
       },
-      '[MemoService] Invalid parseMemo response',
+      '[MemoApi] Invalid parseMemo response',
       (zodError) =>
         this.#logger.error(MEMO_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
           method: 'parseMemo',

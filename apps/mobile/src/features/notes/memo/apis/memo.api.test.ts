@@ -3,14 +3,14 @@ import { err, ok } from '@src/core/errors/result';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { createHttpClientStub, createLoggerStub } from '@src/testing/core';
 
-import { MemoService } from './memo.service';
+import { MemoApi } from './memo.api';
 
-describe('MemoService.parseMemo', () => {
+describe('MemoApi.parseMemo', () => {
   it('서버 체인 제한 25초보다 오래 기다려 앱이 먼저 끊지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(err(new ApiError('INTERNAL', '서버 오류', 500)));
-    const service = new MemoService(httpClient, createLoggerStub());
+    const service = new MemoApi(httpClient, createLoggerStub());
 
     // When
     await service.parseMemo('메모', 1, 'memo-key');
@@ -28,7 +28,7 @@ describe('MemoService.parseMemo', () => {
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(ok({ unexpected: true }));
     const error = jest.fn();
-    const service = new MemoService(httpClient, { ...createLoggerStub(), error });
+    const service = new MemoApi(httpClient, { ...createLoggerStub(), error });
 
     // When
     const parsing = service.parseMemo('메모', 1, 'memo-key');

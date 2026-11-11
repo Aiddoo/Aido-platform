@@ -35,7 +35,7 @@ import type { PreferenceService } from '@src/features/identity/preference/apis/p
 import type { UserService } from '@src/features/identity/user/apis/user.service';
 import type { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
 import type { ReportService } from '@src/features/insights/report/apis/report.service';
-import type { MemoService } from '@src/features/notes/memo/apis/memo.service';
+import type { MemoApi } from '@src/features/notes/memo/apis/memo.api';
 import type { NotificationApi } from '@src/features/notification/apis/notification.api';
 import type { MarketingPushPromptRepository } from '@src/features/notification/repositories/marketing-push-prompt.repository';
 import type { NotificationBadgeService } from '@src/features/notification/services/notification-badge.service';
@@ -104,7 +104,7 @@ export interface DIContainer extends SharedDependencies {
   featureCampaignService: FeatureCampaignService;
   whatsNewRepository: WhatsNewRepository;
   inquiryService: InquiryService;
-  memoService: MemoService;
+  memoApi: MemoApi;
   voiceService: VoiceService;
   moderationService: ModerationService;
   subTodoApi: SubTodoApi;
@@ -272,8 +272,8 @@ export function useWhatsNewRepository() {
 export function useInquiryService() {
   return useDI().inquiryService;
 }
-export function useMemoService() {
-  return useDI().memoService;
+export function useMemoApi() {
+  return useDI().memoApi;
 }
 export function useVoiceService() {
   return useDI().voiceService;

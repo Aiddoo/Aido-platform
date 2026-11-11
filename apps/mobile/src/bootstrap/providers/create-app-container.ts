@@ -66,7 +66,7 @@ import { PreferenceService } from '@src/features/identity/preference/apis/prefer
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
 import { ReportService } from '@src/features/insights/report/apis/report.service';
-import { MemoService } from '@src/features/notes/memo/apis/memo.service';
+import { MemoApi } from '@src/features/notes/memo/apis/memo.api';
 import { NotificationApi } from '@src/features/notification/apis/notification.api';
 import { PushDeviceApi } from '@src/features/notification/apis/push-device.api';
 import { createMarketingPushPromptRepository } from '@src/features/notification/repositories/marketing-push-prompt.repository';
@@ -334,7 +334,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     featureCampaignService: new FeatureCampaignService(ports.jsonFetcher),
     whatsNewRepository,
     inquiryService: new InquiryService(authHttpClient),
-    memoService: new MemoService(authHttpClient, logger),
+    memoApi: new MemoApi(authHttpClient, logger),
     voiceService: new VoiceService(authHttpClient, logger),
     moderationService: new ModerationService(authHttpClient),
     subTodoApi: new SubTodoApi(authHttpClient),

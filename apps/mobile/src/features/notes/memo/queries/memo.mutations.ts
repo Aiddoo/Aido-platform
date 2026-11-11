@@ -2,7 +2,7 @@ import {
   useDraftService,
   useHaptics,
   useIdGenerator,
-  useMemoService,
+  useMemoApi,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
@@ -50,7 +50,7 @@ import { MEMO_MUTATION_KEYS } from './memo-mutation-keys';
 import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 export function useCreateMemoMutationOptions() {
-  const memoService = useMemoService();
+  const memoApi = useMemoApi();
   const draftService = useDraftService();
   const idGenerator = useIdGenerator();
   const { trackEvent } = useTrack();
@@ -70,7 +70,7 @@ export function useCreateMemoMutationOptions() {
               content: values.content,
               createIdempotencyKey: () => idGenerator.create(),
             });
-      return unwrap(await memoService.createMemo(values, idempotencyKey));
+      return unwrap(await memoApi.createMemo(values, idempotencyKey));
     },
     onSuccess: () => {
       const accountId = getCachedMe(queryClient)?.id;
@@ -89,7 +89,7 @@ export function useCreateMemoMutationOptions() {
 }
 
 export function useUpdateMemoMutationOptions() {
-  const memoService = useMemoService();
+  const memoApi = useMemoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -97,7 +97,7 @@ export function useUpdateMemoMutationOptions() {
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
     networkMode: 'always',
     mutationFn: async ({ memoId, values }: { memoId: number; values: MemoFormValues }) =>
-      unwrap(await memoService.updateMemo(memoId, values)),
+      unwrap(await memoApi.updateMemo(memoId, values)),
     onSuccess: async (memo, { memoId }) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) }),
@@ -130,7 +130,7 @@ function rebaseDraftSource<TValue>(
 }
 
 export function useSetMemoPinnedMutationOptions() {
-  const memoService = useMemoService();
+  const memoApi = useMemoApi();
   const draftService = useDraftService();
   const haptics = useHaptics();
   const { trackEvent } = useTrack();
@@ -142,7 +142,7 @@ export function useSetMemoPinnedMutationOptions() {
     networkMode: 'always',
     onMutate: () => haptics.impact('light'),
     mutationFn: async ({ memoId, isPinned }: { memoId: number; isPinned: boolean }) =>
-      unwrap(await memoService.setPinned(memoId, isPinned)),
+      unwrap(await memoApi.setPinned(memoId, isPinned)),
     onSuccess: async (memo, { memoId, isPinned }) => {
       await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
       const previousMemo = queryClient.getQueryData(MEMO_QUERY_KEYS.detail({ memoId }));
@@ -176,7 +176,7 @@ export function useSetMemoPinnedMutationOptions() {
 }
 
 export function useDeleteMemoMutationOptions() {
-  const memoService = useMemoService();
+  const memoApi = useMemoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -184,7 +184,7 @@ export function useDeleteMemoMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈춰 두면 진행 중인 다이얼로그를 닫을 수 없다. 바로 실패해 안내한다
     networkMode: 'always',
-    mutationFn: async (memoId: number) => unwrap(await memoService.deleteMemo(memoId)),
+    mutationFn: async (memoId: number) => unwrap(await memoApi.deleteMemo(memoId)),
     onSuccess: (_result, memoId) => {
       toast.success(t('memo:toasts.deleted'));
       trackEvent('memo_deleted', { memo_id: memoId });
@@ -200,7 +200,7 @@ export function useDeleteMemoMutationOptions() {
 }
 
 export function useConvertMemoToTodosMutationOptions() {
-  const memoService = useMemoService();
+  const memoApi = useMemoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -209,7 +209,7 @@ export function useConvertMemoToTodosMutationOptions() {
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 시트와 입력값을 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ memoId, values }: { memoId: number; values: TodoFormValues }) =>
-      unwrap(await memoService.convertToTodos(memoId, values)),
+      unwrap(await memoApi.convertToTodos(memoId, values)),
     onSuccess: (_result, { memoId }) => {
       emitTodoCreated();
       toast.success(t('memo:toasts.convertedOne'));
@@ -233,7 +233,7 @@ interface ParseMemoVariables {
 
 export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
   const haptics = useHaptics();
-  const memoService = useMemoService();
+  const memoApi = useMemoApi();
   const draftService = useDraftService();
   const idGenerator = useIdGenerator();
   const queryClient = useQueryClient();
@@ -280,7 +280,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
               sourceUpdatedAt: getCurrentSourceUpdatedAt({ content, sourceUpdatedAt }),
               createIdempotencyKey: () => idGenerator.create(),
             });
-      return unwrap(await memoService.parseMemo(content, categoryId, idempotencyKey));
+      return unwrap(await memoApi.parseMemo(content, categoryId, idempotencyKey));
     },
     onSuccess: ({ plan, featureQuota }, variables) => {
       forgetIdempotencyKey();

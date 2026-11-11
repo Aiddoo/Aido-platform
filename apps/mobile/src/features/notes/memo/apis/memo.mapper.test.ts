@@ -1,8 +1,10 @@
-import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
+import { type MemoListResponse, memoListResponseSchema, updateMemoSchema } from '@aido/api';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { createTestQueryClient } from '@src/testing/core';
 import { ZodError } from 'zod';
 
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
+import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
 import { memoFormSchema } from '../schemas/memo-form.schema';
 import {
   toConvertMemoToTodosRequest,
@@ -284,5 +286,51 @@ describe('toMemoVoicePlan', () => {
     expect(plan.actions[0]).toMatchObject({
       repeat: { frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } },
     });
+  });
+});
+
+const MEMO_COUNT = 18;
+
+function createMemoListResponse(): MemoListResponse {
+  return {
+    items: Array.from({ length: MEMO_COUNT }, (_, index) => ({
+      id: index + 1,
+      userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+      content: `메모 ${index + 1}`,
+      isPinned: false,
+      sortOrder: index,
+      createdAt: '2026-10-02T00:00:00.000Z',
+      updatedAt: '2026-10-02T00:00:00.000Z',
+    })),
+    pagination: { hasNext: false, nextCursor: null, size: MEMO_COUNT },
+  };
+}
+
+describe('toMemoPage 재조회의 구조 공유', () => {
+  it('서버 값이 같으면 재조회해도 메모 항목의 참조가 그대로라 행이 다시 그려지지 않는다', async () => {
+    // Given
+    const client = createTestQueryClient();
+    const queryKey = MEMO_QUERY_KEYS.list();
+    const fetchPage = async () => {
+      await client.query({
+        queryKey,
+        queryFn: () => ({
+          pages: [toMemoPage(createMemoListResponse())],
+          pageParams: [undefined],
+        }),
+        staleTime: 0,
+      });
+      return client.getQueryData(queryKey);
+    };
+    const first = await fetchPage();
+
+    // When
+    const second = await fetchPage();
+
+    // Then
+    const keptCount =
+      second?.pages[0]?.items.filter((item, index) => item === first?.pages[0]?.items[index])
+        .length ?? 0;
+    expect(keptCount).toBe(MEMO_COUNT);
   });
 });

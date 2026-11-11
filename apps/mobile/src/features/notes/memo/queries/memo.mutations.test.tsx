@@ -18,8 +18,8 @@ import { renderScreen } from '@src/testing/render';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
+import { MemoApi } from '../apis/memo.api';
 import { toMemo } from '../apis/memo.mapper';
-import { MemoService } from '../apis/memo.service';
 import type { Memo } from '../domains/memo.model';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemoPlanDraftKey, createMemoPlanRequestDraftKey } from '../utils/memo-plan-draft';
@@ -221,7 +221,7 @@ describe('AI 정리 중 메모 고정', () => {
     client.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
     client.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: 5 }), toMemo(originalMemo));
     const logger = createLoggerStub();
-    const memoService = new MemoService(createHttpClientStub(), logger);
+    const memoApi = new MemoApi(createHttpClientStub(), logger);
     const plan = voicePlanSchema.parse({
       planId: 'plan-1',
       source: 'memo',
@@ -229,7 +229,7 @@ describe('AI 정리 중 메모 고정', () => {
       omittedTodoCount: 0,
       actions: [],
     });
-    jest.spyOn(memoService, 'parseMemo').mockImplementation(async () => {
+    jest.spyOn(memoApi, 'parseMemo').mockImplementation(async () => {
       client.setQueryData(
         MEMO_QUERY_KEYS.detail({ memoId: 5 }),
         toMemo({ ...originalMemo, isPinned: true, updatedAt: '2026-10-02T00:05:00.000Z' }),
@@ -252,7 +252,7 @@ describe('AI 정리 중 메모 고정', () => {
       queryClient: client,
       withLocalDate: true,
       withOverlay: true,
-      di: { logger, memoService, haptics: createHapticsGatewayStub() },
+      di: { logger, memoApi, haptics: createHapticsGatewayStub() },
     });
 
     // When
