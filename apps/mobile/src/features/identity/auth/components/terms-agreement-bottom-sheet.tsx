@@ -11,8 +11,9 @@ import {
   IconButton,
   Text,
   VStack,
+  Checkbox,
 } from '@src/shared/ui';
-import { Checkbox, ControlField, Label, Separator } from 'heroui-native';
+import { ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
@@ -68,7 +69,7 @@ export function TermsAgreementBottomSheet({
             onSelectedChange={setAllAgreed}
           >
             <ControlField.Indicator>
-              <Checkbox className="shadow-none border border-main size-5 rounded-md" />
+              <Checkbox />
             </ControlField.Indicator>
             <Label>
               <Text size="b2" weight="semibold">
@@ -146,7 +147,7 @@ TermsAgreementBottomSheet.Item = function Item({
   return (
     <ControlField {...props}>
       <ControlField.Indicator>
-        <Checkbox className="shadow-none border border-main size-5 rounded-md" />
+        <Checkbox />
       </ControlField.Indicator>
       <HStack flex={1} justify="between" align="center">
         <Label>

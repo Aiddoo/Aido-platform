@@ -86,7 +86,15 @@
             "paths": [
               {
                 "name": "heroui-native",
-                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "importNames": [
+                  "Avatar",
+                  "BottomSheet",
+                  "Button",
+                  "Checkbox",
+                  "Input",
+                  "Text",
+                  "TextArea"
+                ],
                 "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
               }
             ]
@@ -104,7 +112,15 @@
             "paths": [
               {
                 "name": "heroui-native",
-                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "importNames": [
+                  "Avatar",
+                  "BottomSheet",
+                  "Button",
+                  "Checkbox",
+                  "Input",
+                  "Text",
+                  "TextArea"
+                ],
                 "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
               },
               {
@@ -139,7 +155,15 @@
             "paths": [
               {
                 "name": "heroui-native",
-                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "importNames": [
+                  "Avatar",
+                  "BottomSheet",
+                  "Button",
+                  "Checkbox",
+                  "Input",
+                  "Text",
+                  "TextArea"
+                ],
                 "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
               },
               {
@@ -179,7 +203,15 @@
             "paths": [
               {
                 "name": "heroui-native",
-                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "importNames": [
+                  "Avatar",
+                  "BottomSheet",
+                  "Button",
+                  "Checkbox",
+                  "Input",
+                  "Text",
+                  "TextArea"
+                ],
                 "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
               },
               {
@@ -229,7 +261,15 @@
             "paths": [
               {
                 "name": "heroui-native",
-                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "importNames": [
+                  "Avatar",
+                  "BottomSheet",
+                  "Button",
+                  "Checkbox",
+                  "Input",
+                  "Text",
+                  "TextArea"
+                ],
                 "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
               },
               {
@@ -303,7 +343,15 @@
             "paths": [
               {
                 "name": "heroui-native",
-                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "importNames": [
+                  "Avatar",
+                  "BottomSheet",
+                  "Button",
+                  "Checkbox",
+                  "Input",
+                  "Text",
+                  "TextArea"
+                ],
                 "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
               },
               {
@@ -344,7 +392,15 @@
             "paths": [
               {
                 "name": "heroui-native",
-                "importNames": ["Avatar", "BottomSheet", "Button", "Input", "Text", "TextArea"],
+                "importNames": [
+                  "Avatar",
+                  "BottomSheet",
+                  "Button",
+                  "Checkbox",
+                  "Input",
+                  "Text",
+                  "TextArea"
+                ],
                 "message": "heroui-native의 같은 이름 대신 @src/shared/ui의 부품을 씁니다. 앱 안에서 같은 이름은 하나의 뜻만 갖습니다."
               }
             ]

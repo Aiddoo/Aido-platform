@@ -25,6 +25,7 @@ export {
 } from './bottom-sheet';
 export { Box } from './box';
 export { Button, KeyboardAdaptiveButton } from './button';
+export { Checkbox } from './checkbox';
 export { ChoiceRadio } from './choice-radio';
 export { ConfirmDialog, useConfirmDialog } from './confirm-dialog';
 export { DashedDivider } from './dashed-divider';

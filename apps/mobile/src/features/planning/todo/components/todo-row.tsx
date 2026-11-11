@@ -11,10 +11,11 @@ import {
   Text,
   TextSkeleton,
   VStack,
+  Checkbox,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { isNotNil } from 'es-toolkit';
-import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
 import { isRecurring } from '../domains/todo.model';
@@ -115,7 +116,7 @@ export function TodoCheckbox({
   return (
     <Checkbox
       {...props}
-      className={cn('size-5 rounded-md border border-main shadow-none', className)}
+      className={className}
       isSelected={isSelected}
       onSelectedChange={onSelectedChange}
       isDisabled={isDisabled || onSelectedChange == null}
