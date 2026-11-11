@@ -15,16 +15,27 @@ toast.success(t('profile.tagCopied'), { description: t('profile.tagCopiedDescrip
 
 ## Props (`AppToast`)
 
-| Prop          | 타입                                              | 기본값      | 설명                            |
-| ------------- | ------------------------------------------------- | ----------- | ------------------------------- |
-| `label`       | `string`                                          | -           | 제목                            |
-| `description` | `string`                                          | -           | 보조 문구                       |
-| `variant`     | `'default' \| 'success' \| 'warning' \| 'danger'` | `'default'` | variant별 아이콘                |
-| `icon`        | `ReactNode`                                       | -           | variant 아이콘 대신 쓸 아이콘   |
-| `action`      | `{ label: string; onPress?: () => void }`         | -           | 오른쪽 액션. 누르면 토스트 닫힘 |
-| `toastProps`  | HeroUI `Toast` props                              | -           | HeroUI가 넘기는 값              |
+| Prop          | 타입                                              | 기본값      | 설명                                           |
+| ------------- | ------------------------------------------------- | ----------- | ---------------------------------------------- |
+| `label`       | `string`                                          | -           | 제목                                           |
+| `description` | `string`                                          | -           | 보조 문구                                      |
+| `variant`     | `'default' \| 'success' \| 'warning' \| 'danger'` | `'default'` | variant별 아이콘                               |
+| `icon`        | `ReactNode`                                       | -           | variant 아이콘 대신 쓸 아이콘                  |
+| `action`      | `{ label: string; onPress?: () => void }`         | -           | 오른쪽 액션. 누르면 토스트 닫힘                |
+| `isMoved`     | `boolean`                                         | `false`     | 닫힌 시트에서 옮겨 온 토스트. 등장 움직임 없음 |
+| `toastProps`  | HeroUI `Toast` props                              | -           | HeroUI가 넘기는 값                             |
 
 `getToastTopInset`은 상단 safe area를 피한 토스트 위치를 계산합니다.
+
+## 토스트 면
+
+iOS 시트 route(`transparentModal`)는 루트 위에 따로 뜨는 모달이라, 루트에 그린 토스트가 시트 배경 아래에 깔리고 VoiceOver가 읽지 못합니다.
+그래서 토스트를 그리는 면을 쌓습니다.
+
+- 앱 루트 면은 `HeroUIProvider`가 둡니다(`ToastLayersProvider` + `ToastLayerRegistration isBase`).
+- `SheetRouteScreen`은 `SheetToastLayer`로 자기 면을 그 위에 쌓습니다. 모달 안의 보통 View에 시트보다 뒤에 그려 시트 위에 보입니다.
+- `useAppToast()`는 어디서 부르든(전역 mutation 오류 피드백 포함) 가장 위 면에 띄웁니다.
+- 시트가 닫히면 아직 보이는 토스트를 남은 시간만큼 아래 면으로 옮깁니다. 같은 자리라 다시 내려오지 않습니다.
 
 ## 파일 구조
 
@@ -32,8 +43,9 @@ toast.success(t('profile.tagCopied'), { description: t('profile.tagCopiedDescrip
 toast/
 ├── app-toast.tsx                  # 컴포넌트
 ├── use-app-toast.tsx              # 토스트 띄우기 훅
+├── toast-layer.tsx                # 면 Provider·등록·시트 면, 자리(useToastPlacement)
+├── toast-layers.ts                # 면 쌓기와 옮기기(순수)
 ├── get-toast-top-inset.ts         # 상단 여백 계산
-├── get-toast-top-inset.test.ts    # 테스트
 ├── toast.md                       # 이 문서
-└── index.ts                       # 배럴
+└── index.ts                       # 공개 면
 ```

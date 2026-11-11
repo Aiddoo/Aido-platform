@@ -1,9 +1,10 @@
 import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { useToast } from 'heroui-native';
-import { type ReactNode, useCallback, useMemo } from 'react';
+import { type ReactNode, use, useCallback, useMemo } from 'react';
 
 import { AppToast, type AppToastAction, type AppToastVariant } from './app-toast';
+import { ToastLayersContext } from './toast-layer';
+import { TOAST_DURATION_MS } from './toast-layers';
 
 export interface ToastOptions {
   description?: string;
@@ -29,26 +30,31 @@ function getToastErrorMessage(
   return getUserFacingMessage(input) ?? fallback;
 }
 
+/** 가장 위 토스트 면(열린 시트 route, 없으면 앱 루트)에 띄운다 */
 export function useAppToast() {
-  const { toast: heroUIToast } = useToast();
+  const layers = use(ToastLayersContext);
+  if (layers == null) {
+    throw new Error('useAppToast는 ToastLayersProvider 안에서 쓴다');
+  }
 
   const toast = useCallback(
     (label: string, options?: ToastOptions) => {
-      heroUIToast.show({
-        duration: options?.duration,
-        component: (props) => (
+      layers.show(
+        (toastProps, { isMoved }) => (
           <AppToast
             label={label}
             description={options?.description}
             variant={options?.variant}
             icon={options?.icon}
             action={options?.action}
-            toastProps={props}
+            isMoved={isMoved}
+            toastProps={toastProps}
           />
         ),
-      });
+        options?.duration ?? TOAST_DURATION_MS,
+      );
     },
-    [heroUIToast],
+    [layers],
   );
 
   const success = useCallback(
@@ -73,12 +79,5 @@ export function useAppToast() {
     [toast],
   );
 
-  const hide = useCallback(() => {
-    heroUIToast.hide();
-  }, [heroUIToast]);
-
-  return useMemo(
-    () => ({ toast, success, warning, error, hide }),
-    [toast, success, warning, error, hide],
-  );
+  return useMemo(() => ({ toast, success, warning, error }), [toast, success, warning, error]);
 }

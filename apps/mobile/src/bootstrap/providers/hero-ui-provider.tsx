@@ -1,39 +1,40 @@
-import { getToastTopInset } from '@src/shared/ui/toast';
+import {
+  ToastLayerRegistration,
+  ToastLayersProvider,
+  useToastPlacement,
+} from '@src/shared/ui/toast';
 import { HeroUINativeProvider } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+/** 루트 토스트 면을 쌓는다. 열린 시트 route는 자기 면을 그 위에 쌓는다(`SheetToastLayer`) */
 export function HeroUIProvider({
   children,
   config,
   ...props
 }: ComponentProps<typeof HeroUINativeProvider>) {
   const toastConfig = typeof config?.toast === 'object' ? config.toast : undefined;
-  const { top: safeAreaTop } = useSafeAreaInsets();
+  const placement = useToastPlacement();
 
   return (
-    <HeroUINativeProvider
-      {...props}
-      config={{
-        ...config,
-        textProps: { allowFontScaling: false, ...config?.textProps },
-        toast:
-          config?.toast === false || config?.toast === 'disabled'
-            ? config.toast
-            : {
-                ...toastConfig,
-                insets: {
-                  top: getToastTopInset(safeAreaTop, process.env.EXPO_OS),
-                  ...toastConfig?.insets,
+    <ToastLayersProvider>
+      <HeroUINativeProvider
+        {...props}
+        config={{
+          ...config,
+          textProps: { allowFontScaling: false, ...config?.textProps },
+          toast:
+            config?.toast === false || config?.toast === 'disabled'
+              ? config.toast
+              : {
+                  ...toastConfig,
+                  insets: { ...placement.insets, ...toastConfig?.insets },
+                  defaultProps: { ...placement.defaultProps, ...toastConfig?.defaultProps },
                 },
-                defaultProps: {
-                  placement: 'top',
-                  ...toastConfig?.defaultProps,
-                },
-              },
-      }}
-    >
-      {children}
-    </HeroUINativeProvider>
+        }}
+      >
+        <ToastLayerRegistration isBase />
+        {children}
+      </HeroUINativeProvider>
+    </ToastLayersProvider>
   );
 }
