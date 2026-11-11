@@ -19,7 +19,7 @@ import {
   createPushDeviceResponseDto,
 } from '../__tests__/notification.fixtures';
 import { PushDeviceService } from '../apis/push-device.service';
-import { createPushRegistrationRepository } from '../apis/push-registration.repository';
+import { createPushRegistrationRepository } from '../repositories/push-registration.repository';
 import { usePushDeviceSync } from './use-push-device-sync';
 
 describe('usePushDeviceSync', () => {

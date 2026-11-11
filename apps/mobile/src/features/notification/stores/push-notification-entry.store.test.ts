@@ -1,13 +1,13 @@
 import { createPushNotificationResponse } from '../__tests__/notification.fixtures';
-import { createNotificationEntryStore } from './notification-entry.store';
+import { createPushNotificationEntryStore } from './push-notification-entry.store';
 
 const tap = (id: string, actionIdentifier = 'default') =>
   createPushNotificationResponse({ id, actionIdentifier });
 
-describe('createNotificationEntryStore', () => {
+describe('createPushNotificationEntryStore', () => {
   it('연속 두 탭은 마지막 탭만 슬롯에 남는다', () => {
     // Given
-    const store = createNotificationEntryStore();
+    const store = createPushNotificationEntryStore();
 
     // When
     store.receive(tap('a'));
@@ -19,7 +19,7 @@ describe('createNotificationEntryStore', () => {
 
   it('끝난 응답이 다시 와도 슬롯에 넣지 않는다', () => {
     // Given
-    const store = createNotificationEntryStore();
+    const store = createPushNotificationEntryStore();
     store.receive(tap('a'));
     store.settle('a');
 
@@ -32,7 +32,7 @@ describe('createNotificationEntryStore', () => {
 
   it('끝난 응답이 다른 탭 뒤에 다시 와도 슬롯에 넣지 않는다', () => {
     // Given
-    const store = createNotificationEntryStore();
+    const store = createPushNotificationEntryStore();
     store.receive(tap('a'));
     store.settle('a');
     store.receive(tap('b'));
@@ -47,7 +47,7 @@ describe('createNotificationEntryStore', () => {
 
   it('수신 거부는 다음 탭에 밀리지 않는다', () => {
     // Given
-    const store = createNotificationEntryStore();
+    const store = createPushNotificationEntryStore();
     store.receive(tap('opt-out', 'MARKETING_OPT_OUT'));
 
     // When
@@ -60,7 +60,7 @@ describe('createNotificationEntryStore', () => {
 
   it('같은 응답이 다시 오면 구독자를 깨우지 않는다', () => {
     // Given
-    const store = createNotificationEntryStore();
+    const store = createPushNotificationEntryStore();
     store.receive(tap('a'));
     const listener = jest.fn();
     store.subscribe(listener);
@@ -74,7 +74,7 @@ describe('createNotificationEntryStore', () => {
 
   it('소유 확인이 끝나기 전에 새 탭이 오면 앞 탭의 목적지를 버린다', () => {
     // Given
-    const store = createNotificationEntryStore();
+    const store = createPushNotificationEntryStore();
     store.receive(tap('a'));
     store.receive(tap('b'));
 
@@ -88,7 +88,7 @@ describe('createNotificationEntryStore', () => {
 
   it('목적지가 정해진 뒤 새 탭이 오면 새 탭이 이긴다', () => {
     // Given
-    const store = createNotificationEntryStore();
+    const store = createPushNotificationEntryStore();
     store.receive(tap('a'));
     store.markReady('a', { kind: 'none' });
 

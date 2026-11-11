@@ -62,7 +62,7 @@ async function setup({ status }: { status: AuthStatus }) {
     gateway,
     httpClient,
     logger,
-    store: container.notificationEntryStore,
+    store: container.pushNotificationEntryStore,
     changeStatus: (next: AuthStatus) => act(async () => authSessionStore.setStatus(next)),
   };
 }

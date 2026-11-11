@@ -23,9 +23,9 @@ import {
   type PushRegistration,
   PushRegistrationPolicy,
 } from '../domains/push-registration.model';
-import type { DeviceIdService } from './device-id.service';
+import type { PushRegistrationRepository } from '../repositories/push-registration.repository';
+import type { DeviceIdService } from '../services/device-id.service';
 import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-permission.mapper';
-import type { PushRegistrationRepository } from './push-registration.repository';
 
 const REPORT_WAIT_TIMEOUT_MS = 3_000;
 // oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400

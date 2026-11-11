@@ -36,11 +36,11 @@ import type { UserService } from '@src/features/identity/user/apis/user.service'
 import type { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
 import type { ReportService } from '@src/features/insights/report/apis/report.service';
 import type { MemoService } from '@src/features/notes/memo/apis/memo.service';
-import type { MarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
-import type { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
-import type { NotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import type { NotificationApi } from '@src/features/notification/apis/notification.api';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
+import type { MarketingPushPromptRepository } from '@src/features/notification/repositories/marketing-push-prompt.repository';
+import type { NotificationBadgeService } from '@src/features/notification/services/notification-badge.service';
+import type { PushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
 import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
@@ -113,7 +113,7 @@ export interface DIContainer extends SharedDependencies {
   notificationApi: NotificationApi;
   notificationBadgeService: NotificationBadgeService;
   /** 눌린 푸시 응답 슬롯 */
-  notificationEntryStore: NotificationEntryStore;
+  pushNotificationEntryStore: PushNotificationEntryStore;
   pushDeviceService: PushDeviceService;
   marketingPushPromptRepository: MarketingPushPromptRepository;
   todoNudgeService: TodoNudgeService;
@@ -296,8 +296,8 @@ export function useNotificationBadgeService() {
 export function useNotificationApi() {
   return useDI().notificationApi;
 }
-export function useNotificationEntryStore() {
-  return useDI().notificationEntryStore;
+export function usePushNotificationEntryStore() {
+  return useDI().pushNotificationEntryStore;
 }
 export function usePushDeviceService() {
   return useDI().pushDeviceService;

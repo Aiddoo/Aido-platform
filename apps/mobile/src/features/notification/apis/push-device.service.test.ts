@@ -17,9 +17,9 @@ import {
   createPushPermissionResponse,
   INVALID_DTO,
 } from '../__tests__/notification.fixtures';
-import { DeviceIdService } from './device-id.service';
+import { createPushRegistrationRepository } from '../repositories/push-registration.repository';
+import { DeviceIdService } from '../services/device-id.service';
 import { PushDeviceService } from './push-device.service';
-import { createPushRegistrationRepository } from './push-registration.repository';
 
 const DEVICE_ID = 'ios_device-123';
 const RELEASE_PATH = 'v1/notifications/push-devices/unregister';

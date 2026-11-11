@@ -7,22 +7,22 @@ import {
 } from '../domains/push-notification-response.model';
 import type { NotificationDestination } from '../utils/notification-destination';
 
-interface NotificationEntryState {
+interface PushNotificationEntryState {
   /** 아직 열지 못한 탭 하나. 마지막 탭이 이긴다 */
   pending: PushNotificationResponse | null;
   /** 소유 확인이 끝나 열 곳이 정해진 탭 */
-  ready: ReadyNotificationEntry | null;
+  ready: ReadyPushNotificationEntry | null;
   /** 아직 보내지 못한 수신 거부. 다음 탭에 밀려 사라지면 안 되어 따로 둔다 */
   optOut: PushNotificationResponse | null;
 }
 
-export interface ReadyNotificationEntry {
+export interface ReadyPushNotificationEntry {
   response: PushNotificationResponse;
   destination: NotificationDestination;
 }
 
-export interface NotificationEntryStore {
-  getState(): NotificationEntryState;
+export interface PushNotificationEntryStore {
+  getState(): PushNotificationEntryState;
   subscribe(listener: () => void): () => void;
   receive(response: PushNotificationResponse): void;
   /** 소유 확인이 끝난 탭의 목적지를 정한다. 그 사이 새 탭이 왔으면 무시한다 */
@@ -32,15 +32,15 @@ export interface NotificationEntryStore {
   clear(): void;
 }
 
-const EMPTY_STATE: NotificationEntryState = { pending: null, ready: null, optOut: null };
+const EMPTY_STATE: PushNotificationEntryState = { pending: null, ready: null, optOut: null };
 
 /** 응답 슬롯. 라우트 경계가 다시 그려도 남도록 DI가 소유한다 */
-export function createNotificationEntryStore(): NotificationEntryStore {
+export function createPushNotificationEntryStore(): PushNotificationEntryStore {
   let state = EMPTY_STATE;
   let handledResponseIds: HandledResponseIds = [];
   const listeners = new Set<() => void>();
 
-  function setState(next: NotificationEntryState) {
+  function setState(next: PushNotificationEntryState) {
     state = next;
     for (const listener of Array.from(listeners)) {
       listener();

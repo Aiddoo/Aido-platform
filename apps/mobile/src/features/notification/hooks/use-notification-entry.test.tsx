@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { createPushNotificationResponse } from '../__tests__/notification.fixtures';
-import { createNotificationEntryStore } from '../apis/notification-entry.store';
+import { createPushNotificationEntryStore } from '../stores/push-notification-entry.store';
 import { useHasPendingNotificationEntry } from './use-notification-entry';
 
 const RESPONSE = createPushNotificationResponse({
@@ -15,8 +15,8 @@ const RESPONSE = createPushNotificationResponse({
 });
 
 async function setup() {
-  const store = createNotificationEntryStore();
-  const container = createTestDi({ notificationEntryStore: store });
+  const store = createPushNotificationEntryStore();
+  const container = createTestDi({ pushNotificationEntryStore: store });
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>{children}</StaticDIProvider>
   );

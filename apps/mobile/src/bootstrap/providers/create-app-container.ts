@@ -67,16 +67,16 @@ import { UserService } from '@src/features/identity/user/apis/user.service';
 import { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
 import { ReportService } from '@src/features/insights/report/apis/report.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
-import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
-import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
-import { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
-import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { NotificationApi } from '@src/features/notification/apis/notification.api';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import { createPushRegistrationRepository } from '@src/features/notification/apis/push-registration.repository';
+import { createMarketingPushPromptRepository } from '@src/features/notification/repositories/marketing-push-prompt.repository';
+import { createPushRegistrationRepository } from '@src/features/notification/repositories/push-registration.repository';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
 import { pushNoticeDismissedAtStoredValue } from '@src/features/notification/schemas/push-notice-dismissed-at-storage.schema';
 import { pushPermissionDeferredAtStoredValue } from '@src/features/notification/schemas/push-permission-deferred-at-storage.schema';
+import { DeviceIdService } from '@src/features/notification/services/device-id.service';
+import { NotificationBadgeService } from '@src/features/notification/services/notification-badge.service';
+import { createPushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
@@ -344,7 +344,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       badgeGateway: pushNotification,
       logger,
     }),
-    notificationEntryStore: createNotificationEntryStore(),
+    pushNotificationEntryStore: createPushNotificationEntryStore(),
     pushDeviceService,
     marketingPushPromptRepository,
     todoNudgeService: new TodoNudgeService(authHttpClient),

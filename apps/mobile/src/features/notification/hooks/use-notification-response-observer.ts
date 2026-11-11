@@ -1,7 +1,7 @@
 import {
   useAppLifecycle,
   useLogger,
-  useNotificationEntryStore,
+  usePushNotificationEntryStore,
   useNotificationApi,
   usePushNotification,
   useSessionEpoch,
@@ -25,7 +25,6 @@ import {
   useSyncExternalStore,
 } from 'react';
 
-import type { ReadyNotificationEntry } from '../apis/notification-entry.store';
 import { parsePushNotification } from '../apis/push-notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
@@ -38,6 +37,7 @@ import {
   PushNotificationPolicy,
 } from '../domains/push-notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
+import type { ReadyPushNotificationEntry } from '../stores/push-notification-entry.store';
 import { toNotificationDestination } from '../utils/notification-destination';
 import { useNotificationEntry } from './use-notification-entry';
 import { useNotificationNavigation } from './use-notification-navigation';
@@ -47,7 +47,7 @@ export function useNotificationResponseObserver(): void {
   const status = useAuthStatus();
   const gateway = usePushNotification();
   const appLifecycle = useAppLifecycle();
-  const store = useNotificationEntryStore();
+  const store = usePushNotificationEntryStore();
   const logger = useLogger();
   const { pending, ready, optOut } = useSyncExternalStore(store.subscribe, store.getState);
   const clearLastResponse = useCallback(() => {
@@ -193,7 +193,7 @@ function useResolveResponse(
 ) {
   const status = useAuthStatus();
   const isRestoring = useIsRestoring();
-  const store = useNotificationEntryStore();
+  const store = usePushNotificationEntryStore();
   const notificationApi = useNotificationApi();
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
@@ -261,7 +261,7 @@ function useResolveResponse(
 
 /** 앱에 들어가는 중이면 Index가 경로를 열고, 앱 안이면 여기서 연다 */
 function useOpenReadyEntry(
-  entry: ReadyNotificationEntry | null,
+  entry: ReadyPushNotificationEntry | null,
   finishResponse: (responseId: string) => void,
 ) {
   const { isEnteringApp } = useNotificationEntry();
@@ -272,7 +272,7 @@ function useOpenReadyEntry(
   const openedByIndexIdRef = useRef<string | null>(null);
   const inFlightIdRef = useRef<string | null>(null);
 
-  const open = useEffectEvent(async ({ response, destination }: ReadyNotificationEntry) => {
+  const open = useEffectEvent(async ({ response, destination }: ReadyPushNotificationEntry) => {
     if (inFlightIdRef.current === response.id) {
       return;
     }
@@ -312,7 +312,7 @@ function useOpenReadyEntry(
   });
 
   // 목적지로 못 가 피드로 보내도 사용자는 알림을 열었으므로 열람(읽음 포함)은 남긴다
-  const abandon = useEffectEvent(({ response }: ReadyNotificationEntry) => {
+  const abandon = useEffectEvent(({ response }: ReadyPushNotificationEntry) => {
     logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { responseId: response.id });
     if (PushNotificationPolicy.hasServerRecord(response.notification)) {
       recordOpened(response.notification.notificationId);
