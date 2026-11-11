@@ -16,16 +16,14 @@ import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mut
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import type {
   DomainEventPublisherPort,
   PublishedDomainEvent,
 } from "#api/shared/application/ports/domain-event-publisher.port";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -51,7 +49,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let boss: PgBoss;
-  let runtime: PgBossJobRuntimeAdapter;
+  let jobQueue: PgBossJobQueueAdapter;
   let reminderAdapter: ReminderSchedulerAdapter;
   let publisher: SwitchablePublisher;
   let updateSchedule: UpdateTodoScheduleUseCase;
@@ -68,11 +66,13 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await migrator.stop({ graceful: true, timeout: 10_000, close: true });
     boss = new PgBoss({ connectionString, schema: SCHEMA, migrate: false, max: 3 });
     const { txHost, uow } = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, txHost, { shutdownTimeoutMs: 10_000 });
-    await runtime.start();
+    jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+      shutdownTimeoutMs: 10_000,
+    });
+    await jobQueue.start();
     reminderAdapter = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(
-        new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry()),
+        jobQueue,
         new FixedClock(Temporal.Instant.from("2026-11-10T00:00:00Z")),
       ),
     );
@@ -134,7 +134,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
   });
 
   afterAll(async () => {
-    await runtime?.stop();
+    await jobQueue?.stop();
     await database?.stop();
   });
 
@@ -145,9 +145,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
         ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
         startDate: Temporal.PlainDate.from(FUTURE_DATE),
         scheduledLocalTime: scheduled ? "10:00" : null,
-        scheduledTime: scheduled
-          ? instantFromDate(parseLocalDateTime(FUTURE_DATE, "10:00", SEOUL))
-          : null,
+        scheduledTime: scheduled ? wallClockInstant(FUTURE_DATE, "10:00", SEOUL) : null,
         isAllDay: !scheduled,
         completed: false,
       })
@@ -217,7 +215,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await reminderAdapter.scheduleReminders([
       {
         todoId,
-        scheduledTime: instantFromDate(parseLocalDateTime(FUTURE_DATE, "10:00", SEOUL)),
+        scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
         userId,
       },
     ]);
@@ -244,7 +242,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await reminderAdapter.scheduleReminders([
       {
         todoId,
-        scheduledTime: instantFromDate(parseLocalDateTime(FUTURE_DATE, "10:00", SEOUL)),
+        scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
         userId,
       },
     ]);

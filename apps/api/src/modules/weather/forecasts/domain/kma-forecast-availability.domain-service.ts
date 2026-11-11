@@ -15,7 +15,7 @@ export const KMA_TIMEZONE = "Asia/Seoul";
  * - 아직 하지 않은 발표는 줄 수 없다(resultCode 10 "현재 이후의 base_time은 호출할 수 없습니다").
  * - 한 발표는 발표일부터 이틀 뒤(모레)까지의 예보를 담는다.
  */
-export const KMA_FORECAST_AVAILABILITY = {
+const KMA_FORECAST_AVAILABILITY = {
   ISSUANCE_RETENTION_DAYS: 3,
   FORECAST_DAYS_AFTER_ISSUANCE: 2,
   /** 하루 첫 발표(02:00)와 제공 지연 15분 */

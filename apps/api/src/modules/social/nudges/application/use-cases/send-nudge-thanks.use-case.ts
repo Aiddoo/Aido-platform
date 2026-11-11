@@ -7,11 +7,11 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
+import { judgeNudgeThanks } from "../../domain/nudge-interaction.domain-service.js";
 import { NUDGE_THANKS_BATCH_SIZE } from "../../domain/nudges.constants.js";
 import {
-  nudgeInteractionClosed,
   nudgeInteractionNotFound,
-  thanksTodoNotCompleted,
+  nudgeThanksRejected,
   thanksTodoNotFound,
 } from "../nudges.errors.js";
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
@@ -74,11 +74,12 @@ export class SendNudgeThanksUseCase {
       if (todo == null) {
         throw thanksTodoNotFound();
       }
-      if (!todo.completed) {
-        throw thanksTodoNotCompleted();
-      }
-      if (todo.visibility !== "PUBLIC") {
-        throw nudgeInteractionClosed();
+      const judgement = judgeNudgeThanks({
+        isTodoCompleted: todo.completed,
+        todoVisibility: todo.visibility,
+      });
+      if (!judgement.ok) {
+        throw nudgeThanksRejected(judgement.reason);
       }
 
       const cutoff = await nudgeReader.findInteraction(throughNudgeId, ownerId);

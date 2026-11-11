@@ -17,10 +17,10 @@ export class RetentionEnrollerAdapter implements RetentionEnrollerPort {
   }
 
   enrollNewUser(userId: UserId, activated: boolean): Promise<void> {
-    return this.#retentionEnrollment.enrollNewUser(userId.value, activated);
+    return this.#retentionEnrollment.enrollNewUser(userId, activated);
   }
 
   activateNewUser(userId: UserId): Promise<void> {
-    return this.#retentionEnrollment.activateNewUser(userId.value);
+    return this.#retentionEnrollment.activateNewUser(userId);
   }
 }

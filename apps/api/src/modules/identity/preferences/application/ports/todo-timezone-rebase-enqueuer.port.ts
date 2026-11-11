@@ -5,5 +5,5 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
  * 이벤트 발행은 내구성이 없어 변경을 놓칠 수 있으므로 시간대 변경과 한 트랜잭션에서 호출한다.
  */
 export abstract class TodoTimezoneRebaseEnqueuerPort {
-  abstract enqueueRebase(userId: UserId, at: Date): Promise<void>;
+  abstract enqueueRebase(userId: UserId, at: Temporal.Instant): Promise<void>;
 }

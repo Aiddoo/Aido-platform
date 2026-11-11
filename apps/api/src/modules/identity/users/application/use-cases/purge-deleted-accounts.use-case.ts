@@ -2,8 +2,8 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";

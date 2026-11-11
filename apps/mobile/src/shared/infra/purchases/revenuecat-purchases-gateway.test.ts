@@ -395,9 +395,10 @@ describe('createRevenueCatPurchasesGateway', () => {
   it('이 빌드에 결제 키가 있으면 SDK를 초기화한다', () => {
     // Given
     mockExtra.revenueCatAppleApiKey = 'appl_fixture';
+    const gateway = createRevenueCatPurchasesGateway({ isLogEnabled: false, logger });
 
     // When
-    const result = revenueCatPurchasesGateway.configure();
+    const result = gateway.configure();
 
     // Then
     expect(result).toBe('configured');
@@ -405,11 +406,45 @@ describe('createRevenueCatPurchasesGateway', () => {
   });
 
   it('결제 키가 없는 빌드는 SDK를 초기화하지 않는다', () => {
+    // Given
+    const gateway = createRevenueCatPurchasesGateway({ isLogEnabled: false, logger });
+
     // When
-    const result = revenueCatPurchasesGateway.configure();
+    const result = gateway.configure();
 
     // Then
     expect(result).toBe('missing-api-key');
     expect(purchases.configure).not.toHaveBeenCalled();
+  });
+
+  it('다시 불러도 SDK는 한 번만 초기화하고 처음 결과를 돌려준다', () => {
+    // Given
+    mockExtra.revenueCatAppleApiKey = 'appl_fixture';
+    const gateway = createRevenueCatPurchasesGateway({ isLogEnabled: false, logger });
+    gateway.configure();
+
+    // When
+    const result = gateway.configure();
+
+    // Then
+    expect(result).toBe('configured');
+    expect(purchases.configure).toHaveBeenCalledTimes(1);
+  });
+
+  it('초기화가 실패하면 다음 호출이 다시 초기화한다', () => {
+    // Given
+    mockExtra.revenueCatAppleApiKey = 'appl_fixture';
+    const gateway = createRevenueCatPurchasesGateway({ isLogEnabled: false, logger });
+    purchases.configure.mockImplementationOnce(() => {
+      throw new Error('native module not ready');
+    });
+    expect(() => gateway.configure()).toThrow('native module not ready');
+
+    // When
+    const result = gateway.configure();
+
+    // Then
+    expect(result).toBe('configured');
+    expect(purchases.configure).toHaveBeenCalledTimes(2);
   });
 });

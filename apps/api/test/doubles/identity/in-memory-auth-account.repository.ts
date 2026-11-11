@@ -11,7 +11,7 @@ import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.con
 import { IdentityAccounts } from "#api/modules/identity/auth/domain/identity-accounts.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-export const IN_MEMORY_ACCOUNT_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
+const IN_MEMORY_ACCOUNT_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
 export class InMemoryAuthAccountRepository extends AuthAccountRepositoryPort {
   readonly #accounts = new Map<number, AuthAccountRecord>();

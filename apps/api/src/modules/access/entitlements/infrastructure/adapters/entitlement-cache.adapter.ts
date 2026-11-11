@@ -2,7 +2,11 @@ import { GRANTABLE_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import {
+  GenerationGuardedCache,
+  type GenerationGuardedCacheKey,
+} from "#api/platform/cache/generation-guarded-cache";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { EntitlementCacheInvalidatorPort } from "../../application/ports/entitlement-cache-invalidator.port.js";
@@ -22,25 +26,32 @@ const CACHED_ACCESS_STATE_SCHEMA = z.looseObject({
   resourceBonuses: z.partialRecord(z.enum(GRANTABLE_FEATURE_KEYS), z.number()),
 }) satisfies z.ZodType<CachedAccessState>;
 
+function subscriptionKey(userId: UserId): GenerationGuardedCacheKey {
+  return {
+    valueKey: EntitlementCacheKey.subscription(userId.value),
+    generationKey: EntitlementCacheKey.subscriptionGeneration(userId.value),
+  };
+}
+
 // 다른 Context(billing)가 비우는 문도 같은 key를 쓰므로 한 어댑터가 두 포트를 맡는다
 @Injectable()
 export class EntitlementCacheAdapter
   extends EntitlementCachePort
   implements EntitlementCacheInvalidatorPort
 {
-  readonly #cacheService: CacheService;
+  readonly #cache: GenerationGuardedCache;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort) {
     super();
-    this.#cacheService = cacheService;
+    this.#cache = new GenerationGuardedCache(cacheService, ENTITLEMENT_CACHE_TTL_MS);
   }
 
   wrap(
     userId: UserId,
     factory: () => Promise<CachedAccessState>,
   ): Promise<CachedAccessState | null> {
-    return this.#cacheService.wrap(
-      EntitlementCacheKey.subscription(userId.value),
+    return this.#cache.wrap(
+      subscriptionKey(userId),
       CACHED_ACCESS_STATE_SCHEMA,
       factory,
       ENTITLEMENT_CACHE_TTL_MS,
@@ -52,6 +63,6 @@ export class EntitlementCacheAdapter
   }
 
   async invalidateEntitlements(userId: UserId): Promise<void> {
-    await this.#cacheService.del(EntitlementCacheKey.subscription(userId.value));
+    await this.#cache.invalidate(subscriptionKey(userId));
   }
 }

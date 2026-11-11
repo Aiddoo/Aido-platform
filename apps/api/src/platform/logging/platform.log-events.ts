@@ -8,6 +8,7 @@ export const PlatformLogEvent = {
   DATABASE_ERROR_UNHANDLED: "database.error.unhandled",
   DATABASE_UNIQUE_CONSTRAINT_UNKNOWN: "database.unique-constraint.unknown",
   DATABASE_TRANSIENT_FAILURE: "database.transient-failure.rejected",
+  DATABASE_IDLE_CONNECTION_FAILED: "database.idle-connection.failed",
   REDIS_CONNECTED: "redis.connection.connected",
   REDIS_ERRORED: "redis.connection.errored",
   REDIS_CLOSED: "redis.connection.closed",

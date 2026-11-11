@@ -1,3 +1,6 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { NotificationId } from "../../../inbox/domain/notification-id.vo.js";
 import type { RetentionVariant } from "../../domain/retention.constants.js";
 import type {
   RetentionStageCandidate,
@@ -7,11 +10,11 @@ import type {
 export abstract class RetentionRepositoryPort {
   // 이미 등록한 사용자면 바꾸지 않는다. startedAt이 있으면 네 단계를 함께 만든다
   abstract enroll(input: {
-    readonly userId: string;
+    readonly userId: UserId;
     readonly variant: RetentionVariant;
     readonly startedAt: Temporal.Instant | null;
   }): Promise<void>;
-  abstract activate(userId: string, startedAt: Temporal.Instant): Promise<boolean>;
+  abstract activate(userId: UserId, startedAt: Temporal.Instant): Promise<boolean>;
   // dueAt까지 결정할 때가 된 SCHEDULED 단계를 생성 순서로 읽는다. 처리 시각 구간이 아니라 상태로 고르므로 늦은 실행도 빠뜨리지 않는다
   abstract findDueStages(params: {
     readonly dueAt: Temporal.Instant;
@@ -27,7 +30,7 @@ export abstract class RetentionRepositoryPort {
   abstract markStageOutboxed(stageId: string, processedAt: Temporal.Instant): Promise<boolean>;
   abstract linkStageNotification(
     stageId: string,
-    notificationId: number,
+    notificationId: NotificationId,
     linkedAt: Temporal.Instant,
   ): Promise<void>;
   abstract recordD7Result(input: {

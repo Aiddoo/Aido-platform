@@ -10,9 +10,14 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import type { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { now } from "#api/shared/domain/date/utils/core";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import {
+  GenerationGuardedCache,
+  type GenerationGuardedCacheKey,
+} from "#api/platform/cache/generation-guarded-cache";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
   AuthCachedSession,
@@ -60,13 +65,27 @@ const AUTH_CACHED_USER_PROFILE_SCHEMA = z.looseObject({
   premiumPlanType: subscriptionPlanTypeSchema.nullable().optional(),
 }) satisfies z.ZodType<AuthCachedUserProfile>;
 
+function userProfileKey(userId: UserId): GenerationGuardedCacheKey {
+  return {
+    valueKey: IdentityCacheKey.userProfile(userId.value),
+    generationKey: IdentityCacheKey.userProfileGeneration(userId.value),
+  };
+}
+
 @Injectable()
 // 사용자 프로필 무효화 포트로도 같은 인스턴스를 쓴다(useExisting)
 export class AuthCacheAdapter implements AuthCachePort, UserProfileInvalidatorPort {
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
+  readonly #userProfiles: GenerationGuardedCache;
+  readonly #clock: ClockPort;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort, clock: ClockPort) {
     this.#cacheService = cacheService;
+    this.#userProfiles = new GenerationGuardedCache(
+      cacheService,
+      IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+    );
+    this.#clock = clock;
   }
 
   getSession(sessionId: SessionId): Promise<AuthCachedSession | undefined> {
@@ -89,18 +108,18 @@ export class AuthCacheAdapter implements AuthCachePort, UserProfileInvalidatorPo
   }
 
   invalidateUserProfile(userId: UserId): Promise<void> {
-    return this.#cacheService.del(IdentityCacheKey.userProfile(userId.value));
+    return this.#userProfiles.invalidate(userProfileKey(userId));
   }
 
   wrapUserProfile(
     userId: UserId,
     factory: () => Promise<AuthCachedUserProfile | undefined>,
   ): Promise<AuthCachedUserProfile | undefined> {
-    return this.#cacheService.wrap(
-      IdentityCacheKey.userProfile(userId.value),
+    return this.#userProfiles.wrap(
+      userProfileKey(userId),
       AUTH_CACHED_USER_PROFILE_SCHEMA.optional(),
       factory,
-      (profile) => userProfileTtlMs(profile, now()),
+      (profile) => userProfileTtlMs(profile, instantToDate(this.#clock.now())),
     );
   }
 }

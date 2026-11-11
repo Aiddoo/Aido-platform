@@ -14,7 +14,7 @@ import type { SessionId } from "../../domain/session-id.vo.js";
 
 const JWT_TOKEN_TYPES = ["access", "refresh"] as const;
 
-export interface JwtPayload {
+interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;

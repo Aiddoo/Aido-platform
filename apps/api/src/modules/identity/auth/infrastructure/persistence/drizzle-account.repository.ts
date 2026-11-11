@@ -16,7 +16,7 @@ import type { IdentityAccounts } from "#api/modules/identity/auth/domain/identit
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account } from "#api/platform/database/schema/index";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -89,7 +89,7 @@ export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
         updatedAt: this.#clock.now(),
       });
     } catch (error) {
-      // Account_userId_provider_key·Account_provider_providerAccountId_key: 필터의 옛 제약 표와 같은 USER_0604
+      // Account_userId_provider_key·Account_provider_providerAccountId_key: 출시 앱이 받던 USER_0604
       if (isUniqueConstraintViolation(error)) {
         throw accountAlreadyExists();
       }

@@ -1,5 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NotificationDeliveryLogEvent } from "../../../push/application/notification-delivery.log-events.js";
 import { visibleNotificationTypes } from "../../../push/domain/notification-client-capability.domain-service.js";
@@ -28,12 +29,13 @@ export class MarkAllNotificationsReadUseCase {
   async execute(command: MarkAllNotificationsReadCommand): Promise<{ count: number }> {
     const { notificationRepository, cache, clock, logger } = this.#dependencies;
     // 이 앱이 볼 수 없는 알림은 읽음으로 바꾸지 않는다(새 앱으로 올리면 미읽음으로 보인다)
+    const userId = UserId.reconstitute(command.userId);
     const result = await notificationRepository.markAllAsRead(
-      command.userId,
+      userId,
       visibleNotificationTypes(command.appVersion),
       clock.now(),
     );
-    await cache.invalidateUnreadCount(command.userId);
+    await cache.invalidateUnreadCount(userId);
 
     logger.debug({
       event: NotificationDeliveryLogEvent.MARK_ALL_AS_READ_READ_ALL_PROCESSED,

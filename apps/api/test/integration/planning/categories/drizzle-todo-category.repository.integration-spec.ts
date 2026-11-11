@@ -40,10 +40,17 @@ describe("DrizzleTodoCategoryRepository (실제 PostgreSQL)", () => {
       createDatabaseTransactionFixture(client).txHost,
       new DateClock(),
     ),
-    async seedTodo(categoryId) {
-      await client
-        .insert(todo)
-        .values(omit(TodoFixture.create({ userId: TODO_FIXTURE_USER_ID, categoryId }), ["id"]));
+    async seedTodo(categoryId, options) {
+      await client.insert(todo).values(
+        omit(
+          TodoFixture.create({
+            userId: TODO_FIXTURE_USER_ID,
+            categoryId,
+            completed: options?.completed ?? false,
+          }),
+          ["id"],
+        ),
+      );
     },
   }));
 });

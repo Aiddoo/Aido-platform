@@ -4,7 +4,7 @@ import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/com
 import type { Request } from "express";
 
 import { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
-import { RequestClientReader } from "#api/platform/http/request-client/index";
+import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

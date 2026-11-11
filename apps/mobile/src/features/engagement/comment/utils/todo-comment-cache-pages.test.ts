@@ -9,9 +9,11 @@ import {
   appendRepliesToReplyPages,
   findCommentInReplyPages,
   findCommentInThreadPages,
+  findThreadPlacement,
   patchCommentInThreadPages,
   removeCommentFromReplyPages,
   removeCommentFromThreadPages,
+  restoreCommentInThreadPages,
   type TodoCommentReplyPages,
   type TodoCommentThreadPages,
 } from './todo-comment-cache-pages';
@@ -143,5 +145,48 @@ describe('todo-comment-cache-pages', () => {
     // Then
     expect(next?.pages[0]?.items[0]?.replySummary.totalCount).toBe(2);
     expect(next?.pages[0]?.items[1]).toBe(other);
+  });
+
+  const repliedThread = createTodoCommentThread({
+    comment: createTodoComment({ id: 'replied', replyCount: 1 }),
+  });
+  const lonelyThread = createTodoCommentThread({
+    comment: createTodoComment({ id: 'lonely', replyCount: 0 }),
+    previewReply: null,
+  });
+
+  it.each([
+    {
+      title: '지운 대표 답글을 되돌리면 그 묶음의 답글 수와 대표 답글이 돌아온다',
+      thread: repliedThread,
+      removed: repliedThread.previewReply ?? repliedThread.comment,
+    },
+    {
+      title: '답글 없는 댓글을 되돌리면 빠진 묶음이 원래 자리로 돌아온다',
+      thread: lonelyThread,
+      removed: lonelyThread.comment,
+    },
+  ])('$title', ({ thread, removed }) => {
+    // Given
+    const other = createTodoCommentThread({
+      comment: createTodoComment({ id: 'other', replyCount: 0 }),
+      previewReply: null,
+    });
+    const data = threadPages([thread, other]);
+    const placement = findThreadPlacement(data, removed);
+    // 지운 뒤 그사이 다른 댓글에 하트를 눌렀다
+    const changed = patchCommentInThreadPages(
+      removeCommentFromThreadPages(data, removed),
+      other.comment.id,
+      (comment) => ({ ...comment, likeCount: 1 }),
+    );
+
+    // When
+    const next =
+      placement == null ? null : restoreCommentInThreadPages(changed, removed, placement);
+
+    // Then
+    expect(next?.pages[0]?.items[0]).toEqual(thread);
+    expect(next?.pages[0]?.items[1]?.comment.likeCount).toBe(1);
   });
 });

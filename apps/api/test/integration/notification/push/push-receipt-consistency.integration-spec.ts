@@ -4,6 +4,7 @@ import { vi } from "vitest";
 
 import type { PushReceiptResult } from "#api/modules/notification/push/application/ports/push-provider.port";
 import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case";
+import { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
 import { pushReceiptCheckWindow } from "#api/modules/notification/push/domain/push-receipt.domain-service";
 import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-lifecycle.repository";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
@@ -17,6 +18,7 @@ import {
   pushDispatch,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
@@ -69,9 +71,9 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const tokens = new DrizzlePushTokenRepository(txHost);
     const receipts = new DrizzlePushReceiptRepository(txHost);
     const token = await tokens.registerPushToken({
-      userId: user.id,
+      userId: UserId.reconstitute(user.id),
       token: `ExponentPushToken[${suffix}-old]`,
-      deviceId: "device",
+      deviceId: PushDeviceId.reconstitute("device"),
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
@@ -139,9 +141,9 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     // Given
     const f = await fixture("rotation");
     await f.tokens.registerPushToken({
-      userId: f.user.id,
+      userId: UserId.reconstitute(f.user.id),
       token: "ExponentPushToken[rotation-new]",
-      deviceId: "device",
+      deviceId: PushDeviceId.reconstitute("device"),
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
@@ -158,13 +160,15 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // Then
     expect(invalid).toEqual([]);
-    expect(await f.tokens.findPushTokensByUser({ userId: f.user.id })).toEqual([
-      expect.objectContaining({
-        id: f.token.id,
-        token: "ExponentPushToken[rotation-new]",
-        isActive: true,
-      }),
-    ]);
+    expect(await f.tokens.findPushTokensByUser({ userId: UserId.reconstitute(f.user.id) })).toEqual(
+      [
+        expect.objectContaining({
+          id: f.token.id,
+          token: "ExponentPushToken[rotation-new]",
+          isActive: true,
+        }),
+      ],
+    );
     expect((await readAttempt(f.ticketId)).status).toBe("FAILED");
   });
 
@@ -181,9 +185,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // Then
     expect(invalid).toEqual([{ userId: f.user.id, token: f.token.token }]);
-    expect(await f.tokens.findPushTokensByUser({ userId: f.user.id, activeOnly: true })).toEqual(
-      [],
-    );
+    expect(
+      await f.tokens.findPushTokensByUser({
+        userId: UserId.reconstitute(f.user.id),
+        activeOnly: true,
+      }),
+    ).toEqual([]);
   });
 
   it("receipt 확인 뒤 등록이 토큰을 회전해도 이전 문자열의 비활성화는 새 토큰을 건드리지 않는다", async () => {
@@ -193,9 +200,9 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // When
     await f.tokens.registerPushToken({
-      userId: f.user.id,
+      userId: UserId.reconstitute(f.user.id),
       token: "ExponentPushToken[between-new]",
-      deviceId: "device",
+      deviceId: PushDeviceId.reconstitute("device"),
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
@@ -209,9 +216,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // Then
     expect(result.count).toBe(0);
-    expect(await f.tokens.findPushTokensByUser({ userId: f.user.id, activeOnly: true })).toEqual([
-      expect.objectContaining({ token: "ExponentPushToken[between-new]" }),
-    ]);
+    expect(
+      await f.tokens.findPushTokensByUser({
+        userId: UserId.reconstitute(f.user.id),
+        activeOnly: true,
+      }),
+    ).toEqual([expect.objectContaining({ token: "ExponentPushToken[between-new]" })]);
   });
 
   it("fingerprint 없는 기존 이력은 상태만 반영하고 현재 토큰을 추측해 비활성화하지 않는다", async () => {
@@ -225,7 +235,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     expect(invalid).toEqual([]);
     expect((await readAttempt(f.ticketId)).status).toBe("FAILED");
     expect(
-      await f.tokens.findPushTokensByUser({ userId: f.user.id, activeOnly: true }),
+      await f.tokens.findPushTokensByUser({
+        userId: UserId.reconstitute(f.user.id),
+        activeOnly: true,
+      }),
     ).toHaveLength(1);
   });
 
@@ -471,7 +484,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     expect.soft(afterFailure.status).toBe("TICKET_ACCEPTED");
     expect.soft(requests).toEqual([[f.ticketId], [f.ticketId]]);
     expect
-      .soft(await f.tokens.findPushTokensByUser({ userId: f.user.id, activeOnly: true }))
+      .soft(
+        await f.tokens.findPushTokensByUser({
+          userId: UserId.reconstitute(f.user.id),
+          activeOnly: true,
+        }),
+      )
       .toEqual([]);
     expect((await readAttempt(f.ticketId)).status).toBe("FAILED");
   });

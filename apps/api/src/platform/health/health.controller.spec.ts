@@ -5,7 +5,7 @@ import { appConfig } from "#api/platform/config/app.config";
 
 import { HealthController } from "./health.controller.js";
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
-import { JobRuntimeHealthIndicator } from "./indicators/job-runtime.health.js";
+import { JobQueueHealthIndicator } from "./indicators/job-queue.health.js";
 import { OutboundHealthIndicator } from "./indicators/outbound.health.js";
 import { RuntimeStatsHealthIndicator } from "./indicators/runtime-stats.health.js";
 
@@ -20,7 +20,7 @@ async function createController(
     controllers: [HealthController],
     providers: [
       { provide: DatabaseHealthIndicator, useValue: upIndicator },
-      { provide: JobRuntimeHealthIndicator, useValue: upIndicator },
+      { provide: JobQueueHealthIndicator, useValue: upIndicator },
       { provide: OutboundHealthIndicator, useValue: upIndicator },
       { provide: RuntimeStatsHealthIndicator, useValue: upIndicator },
       { provide: appConfig.KEY, useValue: { instanceId, exposeHealthDetails } },

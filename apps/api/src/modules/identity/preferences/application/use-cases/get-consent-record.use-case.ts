@@ -1,9 +1,7 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  UserConsentRepositoryPort,
-  UserConsentRecord,
-} from "../ports/user-consent.repository.port.js";
+import type { UserConsentRecord } from "../../domain/user-consent.constants.js";
+import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
 
 export interface GetConsentRecordQuery {
   readonly userId: string;

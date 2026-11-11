@@ -9,10 +9,9 @@ import { assembleAggregatedData } from "#api/modules/ai-assistance/reports/domai
 import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-todo-stats.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
-import { parseLocalDateTime, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate, plainDateToDate } from "#api/shared/domain/time/plain-date";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
@@ -76,7 +75,8 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
     // 같은 날짜 계약의 8조회 기준이다. 과거 날짜 버그나 서로 다른 ORM 버전의 성능을 비교하지 않는다.
     const baseline = async (params: AggregateParams) => {
       const { userId, startDate, endDate, prevStartDate, prevEndDate } = params;
-      const day = (value: Date) => plainDateFromDate(startOfDayInTimezone(value, params.timezone));
+      const day = (value: Date) =>
+        instantFromDate(value).toZonedDateTimeISO(params.timezone).toPlainDate();
       const inRange = (from: Date, to: Date) =>
         and(eq(todo.userId, userId), gte(todo.startDate, day(from)), lt(todo.startDate, day(to)));
       const [
@@ -194,7 +194,7 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
               completedAt:
                 i % 3 !== 0
                   ? instantFromDate(
-                      new Date(startDate.getTime() + (i % 24) * 3600_000 + (i % 3600) * 1000),
+                      new Date(startDate.getTime() + (i % 24) * 3_600_000 + (i % 3600) * 1000),
                     )
                   : null,
               updatedAt: nowInstant(),
@@ -204,10 +204,10 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
       }
       const params = {
         userId: user.id,
-        startDate: parseLocalDateTime("2026-02-23", "00:00", "Asia/Seoul"),
-        endDate: parseLocalDateTime("2026-03-02", "00:00", "Asia/Seoul"),
-        prevStartDate: parseLocalDateTime("2026-02-16", "00:00", "Asia/Seoul"),
-        prevEndDate: parseLocalDateTime("2026-02-23", "00:00", "Asia/Seoul"),
+        startDate: instantToDate(wallClockInstant("2026-02-23", "00:00", "Asia/Seoul")),
+        endDate: instantToDate(wallClockInstant("2026-03-02", "00:00", "Asia/Seoul")),
+        prevStartDate: instantToDate(wallClockInstant("2026-02-16", "00:00", "Asia/Seoul")),
+        prevEndDate: instantToDate(wallClockInstant("2026-02-23", "00:00", "Asia/Seoul")),
         timezone: "Asia/Seoul",
       };
       const legacy = await baseline(params);

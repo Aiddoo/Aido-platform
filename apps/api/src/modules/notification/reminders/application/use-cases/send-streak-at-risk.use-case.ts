@@ -1,9 +1,8 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
@@ -60,10 +59,10 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
 
         const { streak, isAtRisk } = computeEffectiveStreak({
           currentStreak: user.preference?.currentStreak ?? 0,
-          lastCompletedDate: toStreakDate(user.preference?.lastCompletedDate),
+          lastCompletedDate: user.preference?.lastCompletedDate ?? null,
           todosCompleted: completed,
           todosTotal: total,
-          today: plainDateToDate(today),
+          today,
         });
 
         return isAtRisk && streak >= 3
@@ -132,6 +131,3 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
 }
 
 // identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
-function toStreakDate(date: Temporal.PlainDate | null | undefined): Date | null {
-  return date == null ? null : plainDateToDate(date);
-}

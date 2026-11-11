@@ -72,6 +72,24 @@ describe("MarkNotificationOpenedUseCase — 푸시 열기 기록", () => {
     expect(cache.invalidatedUnreadCountUserIds).toEqual([]);
   });
 
+  it("같은 알림을 두 번 열어도 열림 로그는 처음 한 번만 남긴다", async () => {
+    // Given
+    const notificationRepository = new InMemoryNotificationRepository([
+      createInboxNotificationFixture({ userId: USER_ID, id: 42, isRead: false, readAt: null }),
+    ]);
+    const logger = new SilentLogger();
+    const useCase = createMarkNotificationOpenedUseCase({ notificationRepository, logger });
+    await useCase.execute({ userId: USER_ID, notificationId: 42 });
+
+    // When
+    await useCase.execute({ userId: USER_ID, notificationId: 42 });
+
+    // Then
+    expect(logger.messages).toEqual([
+      { event: "notification.push.opened", userId: USER_ID, notificationId: 42 },
+    ]);
+  });
+
   it("없는 알림도 오류 없이 false를 준다", async () => {
     // Given
     const useCase = createMarkNotificationOpenedUseCase();

@@ -7,7 +7,7 @@ import type {
   AggregateParams,
   AggregationInputs,
 } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
-import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type {
   WeatherForecastReaderPort,
   GridInput,
@@ -41,7 +41,11 @@ export class StubAiGenerationAccess
   exists = true;
   readonly reads: Array<{ inUnitOfWork: boolean; eligible: boolean }> = [];
   readonly locks: boolean[] = [];
-  constructor(readonly unitOfWork: StubAiGenerationUnitOfWork) {}
+  readonly unitOfWork: StubAiGenerationUnitOfWork;
+
+  constructor(unitOfWork: StubAiGenerationUnitOfWork) {
+    this.unitOfWork = unitOfWork;
+  }
   async canInTx(_userId: UserId, _feature: PremiumFeature): Promise<boolean> {
     const eligible =
       this.exists &&

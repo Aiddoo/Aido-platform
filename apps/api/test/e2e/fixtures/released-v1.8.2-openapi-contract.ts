@@ -90,11 +90,17 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.15.0: /me(CurrentUserResponseDto)에 선택 칸 premiumPlanType(지금 기간을 정하는 스토어 구독의 요금제 ANNUAL·MONTHLY, 모르면 null)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/subscription.e2e-spec.ts가 공유 스키마 파싱으로 확인한다. */
 	prePremiumPlanTypeSchemasFingerprint:
 		"15e0ac7a358eb8af1d5c278a7ec8da1d4d4b8e9afc574195f2fbe9119f3e14fc",
+	/** 1.15.1: 관리자 성장 지표 응답(GrowthSummaryResponseDto)에 stickiness(DAU/MAU %)만 추가했다. 관리자 도구 전용 API라 모바일 앱은 읽지 않고, 출시 앱에 영향이 없다. 관리자 v2 캠페인 생성 요청의 선택 필드(localizedContent·delivery)는 출시 이후 추가된 CreateBroadcastCampaignDto라 이 목록에 없다. */
 	preStickinessSchemasFingerprint:
 		"7988969bc7885aeca14571a4d287d1e96a9111f59310093ef085317822708b0e",
-	/** 1.15.1: 관리자 성장 지표 응답(GrowthSummaryResponseDto)에 stickiness(DAU/MAU %)만 추가했다. 관리자 도구 전용 API라 모바일 앱은 읽지 않고, 출시 앱에 영향이 없다. 관리자 v2 캠페인 생성 요청의 선택 필드(localizedContent·delivery)는 출시 이후 추가된 CreateBroadcastCampaignDto라 이 목록에 없다. */
-	schemasFingerprint:
+	/** 1.15.1: 엔티티 ID를 z.cuid()(format cuid, pattern ^[cC][0-9a-z]{6,}$) 대신 공유 ENTITY_ID_PATTERN(^c[0-9a-z]{8,63}$)으로 검증한다. 서버가 발급한 ID(c + 24 hex, CUID v1 25자, 29자 옛 사용자 ID)는 모두 통과하고 필드·필수 여부·상태 코드는 같다. packages/api/test/entity-id.spec.ts가 출시 앱 요청(세션 해제·관리자 캠페인·대상 사용자 ID)으로 증명한다. */
+	preEntityIdPatternSchemasFingerprint:
 		"bd078cfb52caf6819ff0656718530b561161991caf95d90ca8152090b0850505",
+	/** 1.15.1: 카테고리 삭제 응답(DeleteTodoCategoryResponseDto)에 선택 칸 result(todoHandling·todoCount·seriesCount·moveToCategoryId)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/todo-category-deletion.e2e-spec.ts가 출시 앱 요청·응답 모양을 고정한다. */
+	preCategoryDeletionChoiceSchemasFingerprint:
+		"eeb2d08c05871cc7332798c07f2c919943981564f4cc2f4ff5a223e214deed27",
+	schemasFingerprint:
+		"e35b6d7f7afddf748ad686a2ff3abf9d63f57f5947316d2206f3c6d7a47d4780",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",
@@ -134,6 +140,12 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.15.0: parse-memo에 선택 Idempotency-Key 헤더만 추가. 생략 시 기존과 같이 요청마다 차감해 출시 앱은 영향이 없다. */
 	preMemoIdempotencyPathsFingerprint:
 		"4d687195af930d753c79f970bf0027e82c7e07d73fe9ace834775ef541894df5",
-	pathsFingerprint:
+	/** 1.15.1: path·query의 엔티티 ID(세션·사용자·팔로우·캠페인)를 같은 ENTITY_ID_PATTERN으로 검증한다. 서버가 발급한 ID는 모두 통과하고 경로·응답·상태 코드는 같다. */
+	preEntityIdPatternPathsFingerprint:
 		"06eceb89d5129e383e9c583a1292deb89f9af15af59fc71f9c72fc78d8b627a0",
+	/** 1.15.1: DELETE /todo-categories/{id}에 선택 query todoHandling(move·delete)만 추가. 생략하면 할 일이 있을 때 moveToCategoryId가 필요한 지금 규칙과 응답(0855 details 포함) 그대로다. 상태 코드·오류 코드는 같고, 새 400은 todoHandling을 보낸 요청에서만 닿는다. test/e2e/todo-category-deletion.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
+	preCategoryDeletionChoicePathsFingerprint:
+		"9c95228065d0964c9f4d2abf2974c67d7c99f40869dd3477470d19053c358d62",
+	pathsFingerprint:
+		"d8082541a9af945dde0d4f9fa32e6e040b7d631fce31981f07a16299967f9492",
 } as const;

@@ -23,7 +23,7 @@ jest.mock('expo-file-system', () => {
     uri: string;
     name = 'file';
     size = 0;
-    modificationTime: number | null = null;
+    lastModified: number | null = null;
     constructor(...parts: (string | { uri: string })[]) {
       this.uri = toUri(parts);
     }
@@ -32,7 +32,7 @@ jest.mock('expo-file-system', () => {
   return { Directory, File, Paths: { document: { uri: 'file:///documents' } } };
 });
 
-function createFile(fields: { name: string; size: number; modificationTime: number | null }) {
+function createFile(fields: { name: string; size: number; lastModified: number | null }) {
   return Object.assign(new File(`file:///documents/${fields.name}`), fields);
 }
 
@@ -57,8 +57,8 @@ describe('expoLocalFileSystem', () => {
     // Given
     mockList.mockReturnValue([
       new Directory('sub'),
-      createFile({ name: 'a.wav', size: 1_900, modificationTime: Date.UTC(2026, 10, 1) }),
-      createFile({ name: 'b.wav', size: 0, modificationTime: null }),
+      createFile({ name: 'a.wav', size: 1_900, lastModified: Date.UTC(2026, 10, 1) }),
+      createFile({ name: 'b.wav', size: 0, lastModified: null }),
     ]);
 
     // When

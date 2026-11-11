@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -47,7 +48,7 @@ describe("오늘의 할 일 요약", () => {
       topTodos: fixture.todoReadRepository.topTodos,
     });
     expect(topQuery).toHaveBeenCalledWith(
-      fixture.userId,
+      UserId.reconstitute(fixture.userId),
       Temporal.PlainDate.from("2026-05-15"),
       10,
     );
@@ -99,6 +100,9 @@ describe("오늘의 할 일 요약", () => {
     });
     // Then
     expect(result).toMatchObject({ date: "2026-05-16", totalTodos: 2, currentStreak: 6 });
-    expect(statsQuery).toHaveBeenCalledWith(fixture.userId, Temporal.PlainDate.from("2026-05-16"));
+    expect(statsQuery).toHaveBeenCalledWith(
+      UserId.reconstitute(fixture.userId),
+      Temporal.PlainDate.from("2026-05-16"),
+    );
   });
 });

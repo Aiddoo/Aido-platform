@@ -26,8 +26,8 @@ import {
 } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import type { UserStatus } from "../../../auth/domain/auth.constants.js";
 import { toIdentityUser } from "../../../auth/infrastructure/persistence/auth-row.mapper.js";
@@ -121,8 +121,13 @@ export class DrizzleUserRepository
         .returning();
       return toIdentityUser(requireRecord(row));
     } catch (error) {
-      if (uniqueConstraintTargets(error)?.includes("email")) {
+      const targets = uniqueConstraintTargets(error);
+      if (targets?.includes("email")) {
         throw new AuthPersistenceConflict("EMAIL_ALREADY_EXISTS");
+      }
+      // 확인 뒤 다른 가입이 같은 태그를 먼저 넣었다. 1.15.0 필터가 이 제약에 주던 500 응답을 유지한다
+      if (targets?.includes("userTag")) {
+        throw new ApplicationException(ErrorCode.SYS_0001, { detail: "userTag collision" });
       }
       throw error;
     }
@@ -191,7 +196,7 @@ export class DrizzleUserRepository
   ): Promise<void> {
     const { timezone, appVersion, seenAt } = activity;
     const id = activity.userId.value;
-    const localDate = seenAt.toZonedDateTimeISO(resolveTimezone(timezone)).toPlainDate();
+    const localDate = localDateIn(seenAt, timezone);
 
     await this.#db.execute(sql`
       WITH updated_user AS (

@@ -6,7 +6,9 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoView } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type {
   TodoCommentCount,
   TodoEngagementCounterPort,
@@ -28,52 +30,60 @@ export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounte
     return this.#txHost.tx;
   }
 
-  async increaseCommentCount(todoId: number, amount: number): Promise<void> {
+  async increaseCommentCount(todoId: TodoId, amount: number): Promise<void> {
     const [row] = await this.#db
       .update(todo)
       .set({ commentCount: sql`${todo.commentCount} + ${amount}`, updatedAt: this.#clock.now() })
-      .where(eq(todo.id, todoId))
+      .where(eq(todo.id, todoId.value))
       .returning({ id: todo.id });
     requireRecord(row);
   }
 
-  async decrementCommentCount(todoId: number): Promise<boolean> {
+  async decrementCommentCount(todoId: TodoId): Promise<boolean> {
     const changed = await this.#db
       .update(todo)
       .set({ commentCount: sql`${todo.commentCount} - ${1}`, updatedAt: this.#clock.now() })
-      .where(and(eq(todo.id, todoId), gt(todo.commentCount, 0)))
+      .where(and(eq(todo.id, todoId.value), gt(todo.commentCount, 0)))
       .returning({ id: todo.id });
     return changed.length === 1;
   }
 
-  async recordView(todoId: number, viewerId: string): Promise<TodoViewRecord> {
+  async recordView(todoId: TodoId, viewerId: UserId): Promise<TodoViewRecord> {
     const inserted = await this.#db
       .insert(todoView)
-      .values({ todoId, viewerId })
+      .values({ todoId: todoId.value, viewerId: viewerId.value })
       .onConflictDoNothing()
       .returning({ todoId: todoView.todoId });
     if (inserted.length === 1) {
       const [updated] = await this.#db
         .update(todo)
         .set({ viewCount: sql`${todo.viewCount} + ${1}`, updatedAt: this.#clock.now() })
-        .where(eq(todo.id, todoId))
+        .where(eq(todo.id, todoId.value))
         .returning({ viewCount: todo.viewCount });
       return { recorded: true, viewCount: requireRecord(updated).viewCount };
     }
     const existing = requireRecord(
-      await this.#db.query.todo.findFirst({ columns: { viewCount: true }, where: { id: todoId } }),
+      await this.#db.query.todo.findFirst({
+        columns: { viewCount: true },
+        where: { id: todoId.value },
+      }),
     );
     return { recorded: false, viewCount: existing.viewCount };
   }
 
-  async lockCounters(todoIds: readonly number[]): Promise<void> {
+  async lockCounters(todoIds: readonly TodoId[]): Promise<void> {
     if (todoIds.length === 0) {
       return;
     }
     await this.#db
       .select({ id: todo.id })
       .from(todo)
-      .where(inArray(todo.id, [...todoIds]))
+      .where(
+        inArray(
+          todo.id,
+          todoIds.map((todoId) => todoId.value),
+        ),
+      )
       .orderBy(asc(todo.id))
       .for("update");
   }

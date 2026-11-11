@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { TodoEngagementCounterPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -42,7 +43,9 @@ export class CleanUpAccountTodoCommentsUseCase {
       await mutationLock.acquire(plan.commentIdsToLock.map(TodoCommentLockKeys.comment));
     }
     if (plan.affectedTodoIds.length > 0) {
-      await engagementCounter.lockCounters(plan.affectedTodoIds);
+      await engagementCounter.lockCounters(
+        plan.affectedTodoIds.map((todoId) => TodoId.reconstitute(todoId)),
+      );
       const commentCounts = await purgeRepository.purge(userId, plan, clock.now());
       await engagementCounter.replaceCommentCounts(commentCounts);
     }

@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryMemoRepository } from "#test/doubles/notes/in-memory-memo.repository";
 import { FakeStagedTodoCreator } from "#test/doubles/planning/fake-staged-todo-creator";
@@ -19,7 +20,7 @@ import {
 } from "./convert-memo-to-todo.use-case.js";
 
 const USER_ID = UserId.reconstitute(MEMO_FIXTURE_USER_ID);
-const START_DATE = new Date("2026-11-10T00:00:00.000Z");
+const START_DATE = Temporal.PlainDate.from("2026-11-10");
 
 function createConvertMemoToTodoUseCase(overrides: Partial<ConvertMemoToTodoDependencies> = {}) {
   return new ConvertMemoToTodoUseCase({
@@ -47,7 +48,7 @@ describe("ConvertMemoToTodoUseCase — 메모를 할 일 하나로", () => {
       userId: MEMO_FIXTURE_USER_ID,
       memoId: foreign.id.value,
       timezone: "Asia/Seoul",
-      todo: { categoryId: 1, startDate: START_DATE },
+      todo: { categoryId: TodoCategoryId.reconstitute(1), startDate: START_DATE },
     });
 
     // Then
@@ -70,15 +71,19 @@ describe("ConvertMemoToTodoUseCase — 메모를 할 일 하나로", () => {
       userId: MEMO_FIXTURE_USER_ID,
       memoId: memo.id.value,
       timezone: "Asia/Seoul",
-      todo: { categoryId: 1, startDate: START_DATE, items: [{ title: "준비" }] },
+      todo: {
+        categoryId: TodoCategoryId.reconstitute(1),
+        startDate: START_DATE,
+        items: [{ title: "준비" }],
+      },
     });
 
     // Then
     expect(todoCreator.inputs).toEqual([
       {
-        userId: MEMO_FIXTURE_USER_ID,
+        userId: UserId.reconstitute(MEMO_FIXTURE_USER_ID),
         title: "가".repeat(200),
-        categoryId: 1,
+        categoryId: TodoCategoryId.reconstitute(1),
         startDate: START_DATE,
         timezone: "Asia/Seoul",
         isAllDay: true,
@@ -107,7 +112,7 @@ describe("ConvertMemoToTodoUseCase — 메모를 할 일 하나로", () => {
       userId: MEMO_FIXTURE_USER_ID,
       memoId: memo.id.value,
       timezone: "Asia/Seoul",
-      todo: { categoryId: 1, startDate: START_DATE },
+      todo: { categoryId: TodoCategoryId.reconstitute(1), startDate: START_DATE },
     });
 
     // Then

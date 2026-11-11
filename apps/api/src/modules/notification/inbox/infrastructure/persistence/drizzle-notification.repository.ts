@@ -9,6 +9,7 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification, pushDispatch } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { CreateNotificationData } from "../../application/ports/notification-draft.port.js";
 import {
@@ -119,10 +120,11 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
 
   async markAsOpened(
     notificationId: NotificationId,
-    userId: string,
+    owner: UserId,
     now: Temporal.Instant,
   ): Promise<boolean> {
     const id = notificationId.value;
+    const userId = owner.value;
     const updated = await this.#db
       .update(notification)
       .set({ openedAt: now, isRead: true, readAt: now })
@@ -150,7 +152,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
   }
 
   async markAllAsRead(
-    userId: string,
+    userId: UserId,
     types: readonly NotificationType[] | undefined,
     now: Temporal.Instant,
   ): Promise<{ count: number }> {
@@ -159,7 +161,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
       .set({ isRead: true, readAt: now })
       .where(
         and(
-          eq(notification.userId, userId),
+          eq(notification.userId, userId.value),
           eq(notification.isRead, false),
           types ? inArray(notification.type, [...types]) : undefined,
         ),
@@ -169,8 +171,9 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
   }
 
   async deleteNotificationsByActorId(
-    actorId: string,
+    actor: UserId,
   ): Promise<{ count: number; affectedUserIds: string[] }> {
+    const actorId = actor.value;
     const deletedRows = await this.#db
       .delete(notification)
       .where(

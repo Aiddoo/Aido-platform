@@ -40,7 +40,7 @@ import {
 } from "./apply-store-subscription-event.use-case.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
-const DAY = 24 * 60 * 60 * 1_000;
+const DAY = 24 * 60 * 60 * 1000;
 const EXPIRES_AT = NOW.add({ milliseconds: 30 * DAY });
 const NEXT_EXPIRES_AT = NOW.add({ milliseconds: 60 * DAY });
 const USER = {

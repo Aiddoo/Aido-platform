@@ -6,12 +6,12 @@ import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/p
 import { NotifyEndingPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";
 import { RevokePremiumGrantUseCase } from "#api/modules/billing/premium-grants/application/use-cases/revoke-premium-grant.use-case";
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
-import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import {
   PremiumAccessReaderPort,
   PremiumGranterPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
+import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";
@@ -37,7 +37,7 @@ import {
 const AT = new Date("2028-02-26T04:00:00.000Z");
 const STORE_EXPIRY = new Date("2028-03-10T04:00:00.000Z");
 const TRANSACTION_ID = "premium-grant-store-chain";
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -373,7 +373,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       body: {
         event: {
           app_id: "1234567890",
-          event_timestamp_ms: 78789789798798,
+          event_timestamp_ms: 78_789_789_798_798,
           id: "CD489E0E-5D52-4E03-966B-A7F17788E432",
           store: "APP_STORE",
           transferred_from: [giverAppUserId],
@@ -552,7 +552,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
         sourceKey: "invite:grace",
         status: "ACTIVE",
         startsAt: afterGrace,
-        endsAt: new Date(afterGrace.getTime() + 7 * 24 * 60 * 60 * 1_000),
+        endsAt: new Date(afterGrace.getTime() + 7 * 24 * 60 * 60 * 1000),
       },
     ]);
   });
@@ -593,7 +593,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       durationDays: 7,
     });
     // 받은 순서가 createdAt이라 같은 시각에 받으면 순서가 id로 갈린다. 실제 지급처럼 시각을 띄운다
-    vi.setSystemTime(new Date(AT.getTime() + 1_000));
+    vi.setSystemTime(new Date(AT.getTime() + 1000));
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -729,7 +729,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const premiumJustBefore = await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
     vi.setSystemTime(STORE_EXPIRY);
     const premiumAtHandoff = await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
-    const lateSweepAt = new Date(STORE_EXPIRY.getTime() + 10 * 60 * 1_000);
+    const lateSweepAt = new Date(STORE_EXPIRY.getTime() + 10 * 60 * 1000);
     vi.setSystemTime(lateSweepAt);
     await sweep.execute({ now: instantFromDate(lateSweepAt) });
     const beforeFinalEnd = await notify.execute({

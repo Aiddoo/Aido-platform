@@ -6,7 +6,7 @@ import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants"
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";

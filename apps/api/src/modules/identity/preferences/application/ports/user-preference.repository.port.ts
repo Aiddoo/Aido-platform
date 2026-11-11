@@ -7,8 +7,6 @@ import type {
   UserPreferenceRecord,
 } from "../../domain/user-preference.constants.js";
 
-export type { UserPreferenceRecord };
-
 /** 배치 조회용 설정 레코드 (사용자 식별자 포함). */
 export type UserPreferenceRecordWithId = UserPreferenceRecord & {
   userId: string;

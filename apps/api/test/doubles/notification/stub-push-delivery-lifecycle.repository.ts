@@ -9,7 +9,7 @@ import {
   type ReservePushDeliveryRateLimitInput,
 } from "#api/modules/notification/push/application/ports/push-delivery-lifecycle.repository.port";
 
-export const PUSH_DELIVERY_LIFECYCLE_OPERATIONS = [
+const PUSH_DELIVERY_LIFECYCLE_OPERATIONS = [
   "claim",
   "reopenAfterFinalClaimFailure",
   "reopenFailedPublications",

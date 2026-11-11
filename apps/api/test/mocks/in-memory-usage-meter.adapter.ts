@@ -5,7 +5,7 @@ import type {
   UsageKey,
   UsageMeterPort,
   UsageReservation,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+} from "#api/platform/metering/usage-meter.port";
 
 interface Entry {
   used: number;

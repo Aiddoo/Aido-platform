@@ -2,9 +2,9 @@ import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
 import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
-import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -60,7 +60,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .withAppUserId(userId)
       .withOriginalTransactionId(transactionId)
       .withEventId(`${transactionId}-purchase`)
-      .withPurchasedAtMs(pastExpiry.getTime() - 30 * 24 * 60 * 60 * 1_000)
+      .withPurchasedAtMs(pastExpiry.getTime() - 30 * 24 * 60 * 60 * 1000)
       .withExpirationAtMs(expiresAt.getTime())
       .build();
   }
@@ -367,7 +367,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       sourceKey: "invite:ended",
       durationDays: 1,
     });
-    const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1_000);
+    const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const authCache = context.module.get<AuthCachePort>(AuthCachePort, { strict: false });
     const meAt = async (time: Date) => {
       vi.setSystemTime(time);
@@ -382,8 +382,8 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
 
     // When
     const justEnded = await meAt(endsAt);
-    const lastMoment = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000 - 1));
-    const afterWindow = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000));
+    const lastMoment = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1000 - 1));
+    const afterWindow = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1000));
 
     // Then
     expect(justEnded).toMatchObject({

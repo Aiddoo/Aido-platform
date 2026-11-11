@@ -9,8 +9,8 @@ import type {
 } from "#api/modules/notification/push/application/read-models/push-delivery.read-model";
 import type { PushDeliveryLane } from "#api/modules/notification/push/domain/push-delivery-lane.domain-service";
 
-export const PUSH_DELIVERY_OUTBOX_STATUSES = ["PENDING", "PROCESSING", "PUBLISHED"] as const;
-export type PushDeliveryOutboxStatus = (typeof PUSH_DELIVERY_OUTBOX_STATUSES)[number];
+const PUSH_DELIVERY_OUTBOX_STATUSES = ["PENDING", "PROCESSING", "PUBLISHED"] as const;
+type PushDeliveryOutboxStatus = (typeof PUSH_DELIVERY_OUTBOX_STATUSES)[number];
 
 export interface InMemoryPushDeliveryOutboxRow {
   readonly dispatchId: number;

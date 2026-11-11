@@ -871,38 +871,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     });
   });
 
-  it("지문이 없는 구버전 행도 구조와 내용이 같으면 안전하게 replay한다", async () => {
-    // Given
-    const input = {
-      todoId,
-      authorId: "conversation-author",
-      parentId: null,
-      items: [
-        {
-          clientRequestId: "00000000-0000-4000-8000-000000000001",
-          content: "오래된 루트",
-        },
-        {
-          clientRequestId: "00000000-0000-4000-8000-000000000004",
-          content: "같은 시각 id가 앞인 형제",
-        },
-      ],
-    };
-
-    // When
-    const replayed = matchTodoCommentChainReplay({
-      request: input,
-      stored: await repository.listByAuthorIdAndClientRequestIds(
-        UserId.reconstitute(input.authorId),
-        input.items.map((item) => item.clientRequestId),
-      ),
-    });
-
-    // Then
-    expect(replayed).toEqual({ ok: true, commentIds: [ROOT_A, CHILD_A] });
-  });
-
-  it("지문이 없는 멱등 키의 내용이 다르면 replay하지 않는다", async () => {
+  it("지문이 없는 행은 replay하지 않는다", async () => {
     // Given
     const input = {
       todoId,

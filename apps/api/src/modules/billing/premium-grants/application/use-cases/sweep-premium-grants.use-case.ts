@@ -12,7 +12,7 @@ import type { UserSubscriptionProjectionRepositoryPort } from "../ports/user-sub
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
 import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
-export const PREMIUM_GRANT_SWEEP = {
+const PREMIUM_GRANT_SWEEP = {
   BATCH_SIZE: 500,
   // 한 번 실행이 job 만료 시간 안에 끝나도록 상한을 두고 남은 사용자는 다음 실행이 이어 받는다
   MAX_BATCHES_PER_RUN: 20,

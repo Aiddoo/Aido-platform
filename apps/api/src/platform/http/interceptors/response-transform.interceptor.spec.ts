@@ -2,7 +2,7 @@ import { Reflector } from "@nestjs/core";
 import { lastValueFrom, of } from "rxjs";
 
 import { createMockExecutionContext } from "../../../../test/mocks/execution-context.mock.js";
-import { RawResponse } from "../decorators/index.js";
+import { RawResponse } from "../decorators/raw-response.decorator.js";
 import { ResponseTransformInterceptor } from "./response-transform.interceptor.js";
 
 class ResponseFixture {

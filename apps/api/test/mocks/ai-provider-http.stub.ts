@@ -13,7 +13,7 @@ import {
 } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
 import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
 import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
-import type { UsageMeterPort } from "#api/platform/metering/interfaces/usage-meter.interface";
+import type { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
@@ -32,7 +32,7 @@ export function aiProviderErrorResponse(vendor: AiProviderFixtureVendor, fileNam
   return new Response(body, { status, headers: { "content-type": "application/json" } });
 }
 
-export const AI_FIXTURE_KEYS = {
+const AI_FIXTURE_KEYS = {
   ANTHROPIC_API_KEY: `sk-ant-fixture-${"a".repeat(30)}`,
   GOOGLE_GENERATIVE_AI_API_KEY: `fixture-${"g".repeat(30)}`,
   OPENAI_API_KEY: `sk-proj-fixture-${"o".repeat(30)}`,

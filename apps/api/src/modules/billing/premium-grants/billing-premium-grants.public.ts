@@ -1,3 +1,4 @@
+export { BillingPremiumGrantsModule } from "./billing-premium-grants.module.js";
 export {
   PremiumAccessReaderPort,
   type PremiumAccess,

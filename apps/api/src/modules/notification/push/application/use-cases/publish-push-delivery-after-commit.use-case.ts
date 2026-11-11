@@ -1,12 +1,12 @@
 import { withTimeout } from "es-toolkit";
 
+import { type AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { type AfterCommitTaskRegistryPort } from "#api/shared/application/ports/index";
 
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type { PublishPushDeliveryOutboxUseCase } from "./publish-push-delivery-outbox.use-case.js";
 
-const FAST_PATH_TIMEOUT_MS = 2_000;
+const FAST_PATH_TIMEOUT_MS = 2000;
 
 /** 커밋된 dispatch ID만 캡처해 durable outbox 발행 fast path를 등록한다. */
 interface PushDeliveryAfterCommitPublisherDependencies {

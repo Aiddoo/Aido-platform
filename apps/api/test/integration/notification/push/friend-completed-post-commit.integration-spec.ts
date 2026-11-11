@@ -24,12 +24,13 @@ import {
 import { SendFriendCompletionNotificationsUseCase } from "#api/modules/notification/push/application/use-cases/send-friend-completion-notifications.use-case";
 import { NOTIFICATION_PUSH_USE_CASE_PROVIDERS } from "#api/modules/notification/push/notification-push.providers";
 import { SystemClock } from "#api/platform/time/system-clock";
-import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   type AfterCommitTask,
   AfterCommitTaskRegistryPort,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/after-commit-task.registry.port";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { pickProviders } from "#test/integration/helpers/pick-providers";
@@ -103,9 +104,10 @@ class EventRecordingNotificationCache extends PassThroughNotificationCache {
     this.#events = events;
   }
 
-  override async invalidateUnreadCount(userId: string): Promise<void> {
+  override async invalidateUnreadCount(user: UserId): Promise<void> {
+    const userId = user.value;
     this.#events.push(`invalidate-cache:${userId}`);
-    await super.invalidateUnreadCount(userId);
+    await super.invalidateUnreadCount(user);
   }
 }
 

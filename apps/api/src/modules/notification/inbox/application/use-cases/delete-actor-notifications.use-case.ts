@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NotificationDeliveryLogEvent } from "../../../push/application/notification-delivery.log-events.js";
 import { type NotificationCachePort } from "../ports/notification-cache.port.js";
@@ -23,14 +24,16 @@ export class DeleteActorNotificationsUseCase {
   }
 
   async cleanupInTransaction(userId: string): Promise<NotificationAccountCleanupResult> {
-    const result = await this.#dependencies.repository.deleteNotificationsByActorId(userId);
+    const result = await this.#dependencies.repository.deleteNotificationsByActorId(
+      UserId.reconstitute(userId),
+    );
     return { affectedUserIds: result.affectedUserIds };
   }
 
   async settleAfterCommit(result: NotificationAccountCleanupResult): Promise<void> {
     const settlements = await Promise.allSettled(
       result.affectedUserIds.map((userId) =>
-        this.#dependencies.cache.invalidateUnreadCount(userId),
+        this.#dependencies.cache.invalidateUnreadCount(UserId.reconstitute(userId)),
       ),
     );
     for (const [index, settlement] of settlements.entries()) {

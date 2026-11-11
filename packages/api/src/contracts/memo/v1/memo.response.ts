@@ -1,13 +1,14 @@
 import { z } from "zod";
 
 import { datetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { cursorPageSchema } from "../../../common/pagination.js";
 import { todoSchema } from "../../todo/v1/todo.response.js";
 
 export const memoSchema = z
   .object({
     id: z.number().int().positive().describe("메모 ID (양의 정수)"),
-    userId: z.cuid().describe("사용자 ID (CUID 25자)"),
+    userId: entityIdSchema.describe("사용자 ID"),
     content: z.string().describe("메모 내용"),
     isPinned: z.boolean().describe("고정 여부"),
     sortOrder: z.number().int().describe("정렬 순서"),
