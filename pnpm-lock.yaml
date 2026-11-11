@@ -251,9 +251,6 @@ catalogs:
     d3-shape:
       specifier: 3.2.1
       version: 3.2.1
-    dayjs:
-      specifier: 1.11.23
-      version: 1.11.23
     dependency-cruiser:
       specifier: 18.7.2
       version: 18.7.2
@@ -951,9 +948,6 @@ importers:
       d3-shape:
         specifier: 'catalog:'
         version: 3.2.1
-      dayjs:
-        specifier: 'catalog:'
-        version: 1.11.23
       es-toolkit:
         specifier: 'catalog:'
         version: 1.53.2
@@ -7334,9 +7328,6 @@ packages:
 
   dateformat@4.6.3:
     resolution: {integrity: sha512-2P0p0pFGzHS5EMnhdxQi7aJN+iMheud0UhG4dlE1DLAlvL8JHjJJTX/CSm4JXwV0Ka5nGk3zC5mcb5bUQUxxMA==}
-
-  dayjs@1.11.23:
-    resolution: {integrity: sha512-QDTCU0M0MxR3hQfnlDJfwekQiaanm1ubOD231u73WBckQ/fsamwRLiE2GBz6D3a/xF1NgfiDLJjXBa1hYOYTtQ==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -18195,8 +18186,6 @@ snapshots:
       whatwg-url: 14.2.0
 
   dateformat@4.6.3: {}
-
-  dayjs@1.11.23: {}
 
   debug@2.6.9(supports-color@8.1.1):
     dependencies:

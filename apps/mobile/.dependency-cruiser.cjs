@@ -355,6 +355,22 @@ module.exports = {
       to: { path: '(?:^|/node_modules/)es-toolkit/(?:dist/)?compat(?:/|\\.|$)' },
     },
     {
+      name: 'date-library-dayjs',
+      comment:
+        'dayjs를 쓰지 않는다. 날짜 값은 shared/date의 Instant·날짜 key·TimeOfDay, 계산은 shared/date다.',
+      severity: 'error',
+      from: { path: '^(?:src|app)/' },
+      to: { path: npm(['dayjs']) },
+    },
+    {
+      name: 'date-library-temporal',
+      comment:
+        'temporal-polyfill을 쓰지 않는다(Hermes 바이트코드 +137KB, 시간대 이름 대문자 문제). 날짜 key는 shared/date의 순수 계산, 시간대는 Intl이다.',
+      severity: 'error',
+      from: { path: '^(?:src|app)/' },
+      to: { path: npm(['temporal-polyfill']) },
+    },
+    {
       name: 'di-entry',
       comment:
         'feature와 app/은 DI 훅을 @src/bootstrap/providers/di-context에서 꺼낸다. 빠진 훅은 di-context가 다시 내보내게 한다.',

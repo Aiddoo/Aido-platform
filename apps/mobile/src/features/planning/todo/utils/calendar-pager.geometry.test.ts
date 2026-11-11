@@ -1,9 +1,7 @@
-import { toDateKey } from '@src/shared/date/zoned';
-import dayjs from 'dayjs';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
+import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
 
 import { clampCalendarPage, getCalendarPageAtOffset } from './calendar-pager.geometry';
-
-const SYSTEM_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 describe('clampCalendarPage', () => {
   it('페이지 범위 밖의 값을 처음과 마지막 페이지로 맞춘다', () => {
@@ -47,10 +45,9 @@ describe('getCalendarPageAtOffset', () => {
     // Then
     // 2026-10-25 주에서 시작한 페이저라면 사용자가 본 2031년 날짜가 선택된다
     expect(page).toBe(TOTAL_PAGES - 1);
-    const monday = dayjs(new Date(2026, 9, 25))
-      .add(page - CENTER_PAGE, 'week')
-      .day(1)
-      .toDate();
-    expect(toDateKey(monday, SYSTEM_TIME_ZONE)).toBe('2031-10-20');
+    const weekStart = getCalendarWeek(
+      addDaysToDateKey('2026-10-25', (page - CENTER_PAGE) * DAYS_PER_WEEK),
+    ).startDateKey;
+    expect(addDaysToDateKey(weekStart, 1)).toBe('2031-10-20');
   });
 });

@@ -17,7 +17,7 @@
 - 달력 날짜를 process 시간대의 `Date`로 바꾼 뒤 요일·자정을 계산하지 않는다. 날짜 산술은 `YYYY-MM-DD` key로 한다.
 - 서버 process(Docker `ENV TZ=UTC`·CI `TZ: UTC`)와 PostgreSQL 세션(`TimeZone=UTC`)은 UTC로 고정한다. 그래도 코드는 process 시간대에 의존하지 않는다.
 - **서버 날짜 계산은 Temporal이다.** 순간은 `Temporal.Instant`, 달력 날짜는 `Temporal.PlainDate`, 벽시계는 `Temporal.PlainTime`(분 단위), 시간대 계산은 IANA 이름을 명시한 `ZonedDateTime`이다. 서버의 현재 시각은 `ClockPort.now()` 하나다. 계약(`@aido/api`)은 문자열을 유지하고(Hermes에는 Temporal이 없다) 변환은 서버 presentation 경계에서만 한다. 순간 직렬화는 `toIsoString`(ms 3자리)으로 `Date#toISOString()`과 바이트 단위로 같다. `Temporal.Instant`는 `<`·`>`로 비교하지 않고 `Temporal.Instant.compare`를 쓴다. 서버 상세는 [영속성](../../apps/api/docs/persistence.md#시간-칼럼)에 있다.
-- 서버에는 dayjs가 없다. 모바일은 Hermes에 Temporal이 없어 `temporal-polyfill`로 계산한다. import는 `shared/date/temporal.ts` 한 곳이고 이름은 서버 `shared/domain/time`과 같게 둔다. Hermes iOS·Android에서 시간대·DST·윤일·53주 해를 확인하는 spike가 먼저다([날짜·언어](../../apps/mobile/docs/dates-and-i18n.md)). 표시는 캐시된 `Intl.DateTimeFormat`이다.
+- 서버와 모바일 모두 dayjs가 없다. 모바일은 Hermes에 Temporal이 없고 폴리필도 쓰지 않는다. 날짜 key 산술은 `shared/date/date-key.ts`의 순수 계산, 순간 직렬화는 `Date#toISOString`(서버 `toIsoString`과 같은 글자), 시간대 변환과 표시는 캐시된 `Intl.DateTimeFormat`이다. 이름과 규칙은 서버 `shared/domain/time`과 같고(`toZonedInstant`) 테스트가 Node 26 Temporal과 결과를 비교한다([Temporal spike](../../apps/mobile/docs/dates-and-i18n.md#temporal-spike)).
 
 ## 2. "오늘"과 시간대의 출처
 
@@ -37,7 +37,7 @@
 - 음성 인식 언어는 사용자가 고른 값이고 없으면 앱 언어다(`useRecognitionLanguage`). 기기 언어와 달라도 된다.
 - AI 출력 언어는 ai-assistance `language-policy.messages.ts` 한 곳이다. 할 일 제목은 말한 언어 그대로, 요약·핵심 포인트는 요청 언어(없으면 저장된 사용자 언어)다.
 - 푸시 문구(`series-paused` 포함)의 언어는 저장된 `UserPreference.locale`이다(없으면 `ko`, 지원하지 않는 값은 `en`, `resolveRecipientLocale`). 앱이 언어를 바꿀 때 보고한다.
-- 표시 언어는 글자 모양만 바꾼다. 언어로 시간대·오늘·주 시작·날짜 key를 바꾸지 않는다(dayjs 전역 locale로 주 시작을 바꾸는 경로 포함).
+- 표시 언어는 글자 모양만 바꾼다. 언어로 시간대·오늘·주 시작·날짜 key를 바꾸지 않는다.
 - 유료 기능 사용량 창: 응원·찌르기 일간 한도는 요청 `X-Timezone`의 하루(자정 초기화), AI 할 일 만들기·말로 메모하기 월간 한도는 계약에 고정된 KST 달력 월(매월 1일 00:00 KST)이다. 서버가 응답의 `resetsAt`으로 다음 초기화 순간을 준다.
 - 반복 할 일의 시간을 고치면 고른 시각을 요청 시간대(없으면 저장값)로 해석하고 규칙의 시간대도 그 값으로 저장한다. 반복을 만들 때도 같다. 이관에서 사용자 시간대가 없거나 잘못되면 `Asia/Seoul`이고 저장된 `UTC`는 유지한다.
 - 주 시작은 사용자 설정을 따른다. 현재는 설정이 없어 일요일 시작 규칙 하나(`apps/mobile/src/shared/date/date-key.ts`의 `getCalendarWeek`)이고, 서버 리포트 기간은 각 기능의 명시한 규칙(ISO 주 등)을 쓴다. 같은 화면에서 두 주 규칙을 섞지 않는다.

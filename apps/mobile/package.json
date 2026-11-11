@@ -82,7 +82,6 @@
     "@tanstack/react-query-persist-client": "catalog:",
     "clsx": "2.1.1",
     "d3-shape": "catalog:",
-    "dayjs": "catalog:",
     "es-toolkit": "catalog:",
     "expo": "catalog:expo58",
     "expo-apple-authentication": "catalog:expo58",

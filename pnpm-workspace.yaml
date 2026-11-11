@@ -93,7 +93,6 @@ catalog:
   'cockatiel': '4.0.0'
   'countries-and-timezones': '3.11.0'
   'd3-shape': '3.2.1'
-  'dayjs': '1.11.23'
   'dependency-cruiser': '18.7.2'
   'es-toolkit': '1.53.2'
   'expo-server-sdk': '8.0.0'
