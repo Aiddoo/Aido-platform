@@ -19,6 +19,7 @@ import {
   createTestQueryClient,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useIsFocused } from 'expo-router';
 
@@ -192,22 +193,22 @@ describe('녹음 화면', () => {
     expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
-  it('들은 내용 없이 한도를 다 쓰면 정리해준다고 말하지 않고 정리 버튼도 두지 않는다', async () => {
-    // Given
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers({ advanceTimers: true });
-    await renderRecordScreen(createEntitlementSnapshot({ tier: 'FREE' }));
+  describe('한도를 다 쓴 녹음', () => {
+    setupFakeTimersPerTest({ advanceTimers: true });
 
-    // When
-    await act(async () => jest.advanceTimersByTime(181_000));
+    it('들은 내용 없이 한도를 다 쓰면 정리해준다고 말하지 않고 정리 버튼도 두지 않는다', async () => {
+      // Given
+      await renderRecordScreen(createEntitlementSnapshot({ tier: 'FREE' }));
 
-    // Then
-    expect(await screen.findByText(/정리할 게 없어요. 프리미엄은/)).toBeTruthy();
-    expect(screen.queryByText(/정리해드릴게요/)).toBeNull();
-    expect(screen.queryByTestId('voice-note-summarize')).toBeNull();
-    expect(screen.getByTestId('voice-note-stopped-close')).toBeTruthy();
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
+      // When
+      await act(async () => jest.advanceTimersByTime(181_000));
+
+      // Then
+      expect(await screen.findByText(/정리할 게 없어요. 프리미엄은/)).toBeTruthy();
+      expect(screen.queryByText(/정리해드릴게요/)).toBeNull();
+      expect(screen.queryByTestId('voice-note-summarize')).toBeNull();
+      expect(screen.getByTestId('voice-note-stopped-close')).toBeTruthy();
+    });
   });
 
   it('끝내면 초안을 저장하고 정리 화면으로 바꾼다', async () => {
@@ -299,23 +300,23 @@ describe('녹음 화면', () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  it('인식기가 시작 신호를 주지 않으면 잠시 뒤 멈추지 않고 실패로 알린다', async () => {
-    // Given
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers({ advanceTimers: true });
-    const { speechRecognizer } = await renderRecordScreen();
-    await say(speechRecognizer, '첫 문장.');
-    await fireEvent.press(screen.getByTestId('voice-note-pause'));
-    await act(async () => speechRecognizer.emit({ type: 'end' }));
-    await fireEvent.press(screen.getByTestId('voice-note-resume'));
+  describe('시작 신호가 없는 이어 듣기', () => {
+    setupFakeTimersPerTest({ advanceTimers: true });
 
-    // When
-    await act(async () => jest.advanceTimersByTime(11_000));
+    it('인식기가 시작 신호를 주지 않으면 잠시 뒤 멈추지 않고 실패로 알린다', async () => {
+      // Given
+      const { speechRecognizer } = await renderRecordScreen();
+      await say(speechRecognizer, '첫 문장.');
+      await fireEvent.press(screen.getByTestId('voice-note-pause'));
+      await act(async () => speechRecognizer.emit({ type: 'end' }));
+      await fireEvent.press(screen.getByTestId('voice-note-resume'));
 
-    // Then
-    expect(screen.getByTestId('voice-note-summarize')).toBeTruthy();
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
+      // When
+      await act(async () => jest.advanceTimersByTime(11_000));
+
+      // Then
+      expect(screen.getByTestId('voice-note-summarize')).toBeTruthy();
+    });
   });
 
   it('언어를 바꿀 때 그 언어에 필요한 권한을 거절하면 듣던 언어로 이어 간다', async () => {
