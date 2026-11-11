@@ -1,5 +1,4 @@
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
@@ -9,17 +8,14 @@ import {
   type QueryErrorFallbackProps,
   useSheetRoute,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { type ComponentProps, Suspense, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { type ComponentProps, Suspense } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
-import { TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useTodoId } from '../../hooks/use-todo-params';
-import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
+import { useSheetTodo } from '../../hooks/use-sheet-todo';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutations';
-import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { TodoScopeStep } from '../todo-scope-step';
 
 type TodoCategoryBottomSheetProps = Omit<
@@ -50,19 +46,10 @@ export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
 
 TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation('todo');
-  const [todoId] = useTodoId();
-  const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
+  const todo = useSheetTodo({ onMissing: onClose });
   const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());
   const scopeSelector = useSelectTodoScope();
   const { selectEditScope } = scopeSelector;
-
-  useEffect(() => {
-    if (todo == null) {
-      onClose();
-    }
-  }, [todo, onClose]);
 
   if (todo == null) {
     return null;

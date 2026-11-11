@@ -1,6 +1,5 @@
 import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -22,23 +21,22 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, type ComponentType, Suspense, useEffect } from 'react';
+import { type ComponentProps, type ComponentType, Suspense } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
 import type { Todo } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useTodoId } from '../../hooks/use-todo-params';
+import { useSheetTodo } from '../../hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useStopTodoSeriesMutationOptions } from '../../queries/todo-series.mutations';
 import {
   useDeleteTodoMutationOptions,
   useUpdateTodoScheduleMutationOptions,
 } from '../../queries/todo.mutations';
-import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { formatTodoPeriod } from '../../utils/todo-period.view-model';
 import { TodoActionRow } from '../todo-action-row';
 import { TodoScopeStep } from '../todo-scope-step';
@@ -88,10 +86,8 @@ TodoActionsBottomSheet.ActionList = function ActionList({
 }: TodoActionListProps) {
   const { t } = useTranslation(['todo', 'common']);
   const today = useToday();
-  const [todoId] = useTodoId();
   const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
+  const todo = useSheetTodo({ onMissing: onClose });
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
   const stopSeriesMutation = useMutation(useStopTodoSeriesMutationOptions());
@@ -99,12 +95,6 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   const { selectDeleteScope } = scopeSelector;
   const confirmDialog = useConfirmDialog();
   const dateFormatContext = useDateFormatContext();
-
-  useEffect(() => {
-    if (todo == null) {
-      onClose();
-    }
-  }, [todo, onClose]);
 
   if (todo == null) {
     return null;

@@ -1,19 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { SubTodo } from '@src/features/planning/todo/domains/sub-todo.model';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import { useSubTodoId, useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useSheetSubTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
-import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { type ComponentProps, useEffect } from 'react';
+import { type ComponentProps } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
 import { useUpdateSubTodoMutationOptions } from '../queries/todo-composer.mutations';
@@ -32,22 +29,12 @@ export function EditSubTodoBottomSheet(props: EditSubTodoBottomSheetProps) {
 }
 
 EditSubTodoBottomSheet.Form = function Form({ onClose }: { onClose: () => void }) {
-  const [todoId] = useTodoId();
-  const [subTodoId] = useSubTodoId();
-  const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
-  const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));
+  const target = useSheetSubTodo({ onMissing: onClose });
 
-  useEffect(() => {
-    if (todo == null || subTodo == null) {
-      onClose();
-    }
-  }, [todo, subTodo, onClose]);
-
-  if (todo == null || subTodo == null) {
+  if (target == null) {
     return null;
   }
+  const { todo, subTodo } = target;
 
   return <EditSubTodoForm todo={todo} subTodo={subTodo} onClose={onClose} />;
 };

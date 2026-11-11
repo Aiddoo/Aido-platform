@@ -7,13 +7,10 @@ import { type TodoUpdateScope } from '@src/features/planning/todo/domains/todo-r
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { type Todo } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
-import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
-import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { useSheetTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
@@ -29,9 +26,9 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
@@ -63,16 +60,7 @@ export function TodoEditBottomSheet() {
 
 TodoEditBottomSheet.Form = function Form() {
   const sheet = useSheetRoute('/feed');
-  const [todoId] = useTodoId();
-  const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
-
-  useEffect(() => {
-    if (todo == null) {
-      sheet.exit();
-    }
-  }, [todo, sheet]);
+  const todo = useSheetTodo({ onMissing: () => sheet.exit() });
 
   if (todo == null) {
     return null;

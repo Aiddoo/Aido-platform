@@ -1,4 +1,3 @@
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
@@ -12,16 +11,14 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, Suspense, useEffect } from 'react';
+import { type ComponentProps, Suspense } from 'react';
 
-import { TodoPolicy } from '../../domains/todo.model';
-import { useSubTodoId, useTodoId } from '../../hooks/use-todo-params';
+import { useSheetSubTodo } from '../../hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useDeleteSubTodoMutationOptions } from '../../queries/sub-todo.mutations';
-import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { TodoActionRow } from '../todo-action-row';
 
 type SubTodoActionsBottomSheetProps = Omit<
@@ -56,24 +53,15 @@ interface SubTodoActionListProps {
 
 SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoActionListProps) {
   const { t } = useTranslation('todo');
-  const [todoId] = useTodoId();
-  const [subTodoId] = useSubTodoId();
   const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
-  const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));
+  const target = useSheetSubTodo({ onMissing: onClose });
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
   const isDeleting = deleteSubTodo.isPending;
 
-  useEffect(() => {
-    if (todo == null || subTodo == null) {
-      onClose();
-    }
-  }, [todo, subTodo, onClose]);
-
-  if (todo == null || subTodo == null) {
+  if (target == null) {
     return null;
   }
+  const { todo, subTodo } = target;
 
   const handleDelete = async () => {
     if (isDeleting) {

@@ -1,5 +1,4 @@
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import {
   BottomSheet,
   INQUIRY_SHEET_EXIT,
@@ -8,15 +7,13 @@ import {
   type QueryErrorFallbackProps,
   useSheetRoute,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, Suspense, useEffect } from 'react';
+import { type ComponentProps, Suspense } from 'react';
 
 import { getShiftedEndDate, TodoPolicy } from '../../domains/todo.model';
-import { useTodoId } from '../../hooks/use-todo-params';
-import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
+import { useSheetTodo } from '../../hooks/use-sheet-todo';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
-import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { TodoDatePickerContent } from '../todo-date-picker-content';
 
 type TodoDateBottomSheetProps = Omit<
@@ -47,17 +44,8 @@ export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
 
 TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => void }) {
   const { timeZone } = useDateFormatContext();
-  const [todoId] = useTodoId();
-  const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
+  const todo = useSheetTodo({ onMissing: onClose });
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
-
-  useEffect(() => {
-    if (todo == null) {
-      onClose();
-    }
-  }, [todo, onClose]);
 
   if (todo == null) {
     return null;
