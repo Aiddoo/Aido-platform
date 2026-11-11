@@ -159,6 +159,31 @@ describe('피드 URL 플로우', () => {
     });
   });
 
+  describe('다른 화면이 보낸 할 일 추가 요청', () => {
+    it('위 화면을 닫고 피드로 오면 날짜·친구·고른 할 일을 지워 오늘의 내 피드에서 요청을 받는다', async () => {
+      // Given
+      const feed = await renderFeed(
+        `/feed?date=2030-01-02&friendId=${FRIEND}&todoId=5&comment=${COMMENT}`,
+        { routes: ['whats-new'] },
+      );
+      await act(async () => router.push('/whats-new'));
+
+      // When
+      await act(async () =>
+        router.dismissTo({ pathname: '/feed', params: { action: 'add-voice-todo' } }),
+      );
+
+      // Then
+      expect(feed.url()).toBe('/feed?action=add-voice-todo');
+      expect(feed.hook()).toMatchObject({
+        selectedDateKey: toKey(new Date()),
+        friendId: undefined,
+        selectedTodoId: undefined,
+        action: 'add-voice-todo',
+      });
+    });
+  });
+
   describe('폴드 접고 펴기', () => {
     it('고른 할 일이 있는 채로 접히면 상세로 넘어가고, 뒤로 오면 다시 열리지 않는다', async () => {
       // Given

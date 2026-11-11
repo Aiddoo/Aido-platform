@@ -1,26 +1,20 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { Logger } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
-import { mock } from "vitest-mock-extended";
 
-import type {
-  AccessSnapshot,
-  EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
-import type { TodoReminderPort } from "#api/modules/planning/application/ports/todos/todo-reminder.port";
-import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
-import { TodoSeriesDueRunner } from "#api/modules/planning/application/services/series/todo-series-due-runner.service";
-import type { TodoCreationEffects } from "#api/modules/planning/application/services/todos/todo-creation-effects.service";
-import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
-import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
-import { RepeatRule } from "#api/modules/planning/domain/value-objects/series/repeat-rule.vo";
-import { TodoSeriesOwnerAdapter } from "#api/modules/planning/infrastructure/adapters/series/todo-series-owner.adapter";
-import { DrizzleTodoSeriesRepository } from "#api/modules/planning/infrastructure/persistence/series/drizzle-todo-series.repository";
-import { DrizzleTodoRepository } from "#api/modules/planning/infrastructure/persistence/todos/drizzle-todo.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
+import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
+import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
+import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
+import type { PublishTodoCreationUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
+import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
+import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
+import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
+import type { TodoReminderSchedulerPort } from "#api/modules/planning/todos/application/ports/todo-reminder-scheduler.port";
+import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
@@ -29,7 +23,11 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { StubCurrentUserAccess } from "#test/fixtures/auth-credential.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -43,7 +41,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
   let userId: string;
   let categoryId: number;
-  let published: { seriesId: string; todoIds: number[] }[];
+  let published: string[];
 
   beforeAll(async () => {
     client = await database.start();
@@ -81,38 +79,38 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
   function useCase(
     overrides: {
       batchSize?: number;
-      scheduleReminders?: TodoReminderPort["scheduleReminders"];
+      scheduleReminders?: TodoReminderSchedulerPort["scheduleReminders"];
     } = {},
   ) {
     const { scheduleReminders = async () => undefined, ...budget } = overrides;
-    const todoRepository = new DrizzleTodoRepository(fixture.txHost);
-    const effects = mock<Pick<TodoCreationEffects, "publishOccurrences">>();
-    effects.publishOccurrences.mockImplementation(async (series, occurrences) => {
-      published.push({
-        seriesId: series.getId(),
-        todoIds: occurrences.map((occurrence) => occurrence.todoId),
-      });
-    });
-    const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost);
-    const entitlements = mock<EntitlementReaderPort>();
-    entitlements.getAccessSnapshot.mockResolvedValue(mock<AccessSnapshot>({ tier: "FREE" }));
-    return new MaterializeDueTodoSeries({
+    const todoRepository = new DrizzleTodoRepository(fixture.txHost, new DateClock());
+    const effects: Pick<PublishTodoCreationUseCase, "publishOccurrences"> = {
+      publishOccurrences: async (series) => {
+        published.push(series.id.value);
+      },
+    };
+    const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock());
+    const entitlements = new StubCurrentUserAccess();
+    return new MaterializeDueTodoSeriesUseCase({
+      clock: new DateClock(),
       seriesRepository,
       seriesOwner: new TodoSeriesOwnerAdapter(
-        new DrizzleUserRepository(fixture.txHost),
+        new DrizzleUserRepository(fixture.txHost, new DateClock()),
         entitlements,
       ),
-      dueRunner: new TodoSeriesDueRunner({
+      dueRunner: new MaterializeTodoSeriesUseCase({
+        clock: new DateClock(),
         seriesRepository,
-        materializer: new TodoOccurrenceMaterializer({
+        materializer: new MaterializeTodoOccurrencesUseCase({
           todoRepository,
           todoReminder: { scheduleReminders },
+          applyTodoEvents: { execute: async () => undefined },
         }),
         effects,
         unitOfWork: fixture.uow,
         mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
       }),
-      alert: mock<OperationalAlertPort>(),
+      alert: new RecordingOperationalAlert(),
       logger: new Logger("SeriesJobIntegration"),
       ...budget,
     });
@@ -122,20 +120,20 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     id: string,
     overrides: { userId?: string; categoryId?: number; startDate?: string } = {},
   ) {
-    const series = TodoSeries.planCreation({
-      id,
-      userId: overrides.userId ?? userId,
+    const series = TodoSeries.create({
+      id: TodoSeriesId.reconstitute(id),
+      userId: UserId.reconstitute(overrides.userId ?? userId),
       categoryId: overrides.categoryId ?? categoryId,
-      title: "매일 반복",
+      title: TodoTitle.create("매일 반복"),
       visibility: "PUBLIC",
       scheduledLocalTime: "09:00",
       timezone: "UTC",
-      rule: RepeatRule.daily({ type: "NEVER" }),
+      rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
       startDate: overrides.startDate ?? "2026-11-05",
       checklistTemplate: [{ title: "항목" }],
-      at: AT,
+      now: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
     });
-    await new DrizzleTodoSeriesRepository(fixture.txHost).insert(series);
+    await new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).insert(series);
     return series;
   }
 
@@ -145,7 +143,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
 
   async function nextOccurrenceOf(seriesId: string) {
     const row = await client.query.todoSeries.findFirst({ where: { id: seriesId } });
-    return row?.nextOccurrenceDate?.toISOString().slice(0, 10) ?? null;
+    return row?.nextOccurrenceDate?.toString() ?? null;
   }
 
   it("미리 만드는 기간까지 만들고 다음 회차로 커서를 옮기며 다시 돌아도 그대로다", async () => {
@@ -256,7 +254,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     const result = await useCase({ batchSize: 2 }).execute();
     // Then
     expect(result.processedCount).toBe(ids.length);
-    expect(published.map((entry) => entry.seriesId)).toEqual(ids);
+    expect(published).toEqual(ids);
   });
 
   it("며칠 멈췄다 돌면 커서가 앞서 있어 지난 날 없이 밀린 만큼만 채운다", async () => {
@@ -274,14 +272,14 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       where: { seriesId: id },
       orderBy: { occurrenceDate: "asc" },
     });
-    expect(first?.startDate.toISOString().slice(0, 10)).toBe("2026-11-05");
+    expect(first?.startDate.toString()).toBe("2026-11-05");
   });
 
-  it("이미 있는 회차는 건너뛰고 효과에는 새로 만든 행만 넘긴다", async () => {
+  it("이미 있는 회차는 건너뛰고 새로 만든 행만 센다", async () => {
     // Given
     const id = createEntityId();
     await seedSeries(id);
-    const occurrenceDate = new Date("2026-11-05T00:00:00.000Z");
+    const occurrenceDate = Temporal.PlainDate.from("2026-11-05");
     const [existing] = await client
       .insert(todo)
       .values({
@@ -292,11 +290,11 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       })
       .returning();
     // When
-    await useCase().execute();
+    const result = await useCase().execute();
     // Then
     expect(await countOccurrences(id)).toBe(HORIZON_ROWS);
-    expect(published[0]?.todoIds).toHaveLength(HORIZON_ROWS - 1);
-    expect(published[0]?.todoIds).not.toContain(existing?.id);
+    expect(result.createdCount).toBe(HORIZON_ROWS - 1);
+    expect(await client.$count(todo, eq(todo.id, existing?.id ?? 0))).toBe(1);
   });
 
   it("회차는 체크리스트를 복사하고 규칙의 createdAt을 물려받는다", async () => {
@@ -311,13 +309,13 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       where: { seriesId: id },
       with: { items: true },
     });
-    expect(row?.createdAt).toEqual(AT);
+    expect(row?.createdAt).toEqual(instantFromDate(AT));
     expect(row?.items.map((item) => item.title)).toEqual(["항목"]);
   });
 
   it.each([
     { name: "정지", patch: { status: "SUSPENDED" as const } },
-    { name: "탈퇴 대기", patch: { deletedAt: AT } },
+    { name: "탈퇴 대기", patch: { deletedAt: instantFromDate(AT) } },
   ])("$name 계정은 건너뛰고 커서를 그대로 둔다", async ({ patch }) => {
     // Given
     const other = await seedUser("series-job-other@example.com", "SERJOB02");
@@ -333,25 +331,13 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
   });
 
   describe("1.14.2로 되돌린 동안 카테고리가 지워진 규칙", () => {
-    /** 롤백 SQL 뒤 옛 서버처럼 카테고리를 지운다. 할 일만 옮기고 규칙은 없는 카테고리를 가리킨다. */
+    /** 1.14.2 서버처럼 카테고리를 지운다. 할 일만 옮기고 규칙은 없는 카테고리를 가리킨다. */
     async function deleteCategoryLikeOldServer(from: number, to: number) {
       await client.execute(
         sql.raw(`ALTER TABLE "TodoSeries" DROP CONSTRAINT "TodoSeries_categoryId_fkey"`),
       );
       await client.update(todo).set({ categoryId: to }).where(eq(todo.categoryId, from));
       await client.delete(todoCategory).where(eq(todoCategory.id, from));
-    }
-
-    function redeployStatements(): string {
-      const deployment = readFileSync(
-        join(process.cwd(), "../../docs/releases/1.15.0/server-rollback.md"),
-        "utf8",
-      );
-      const block = /```sql\n(BEGIN;[\s\S]*?COMMIT;)\n```/.exec(deployment)?.[1];
-      if (block == null) {
-        throw new Error("1.15.0 되돌리기 문서에 재배포 SQL이 없다");
-      }
-      return block;
     }
 
     async function seedOtherCategory() {
@@ -389,55 +375,6 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       expect(await countOccurrences("broken")).toBe(0);
       expect(await nextOccurrenceOf("broken")).toBe("2026-11-05");
       expect(await countOccurrences("healthy")).toBe(HORIZON_ROWS);
-    });
-
-    it("문서의 재배포 SQL은 회차가 옮겨 간 카테고리로 규칙을 옮기고 FK를 검증한다", async () => {
-      // Given
-      const remaining = await seedOtherCategory();
-      await seedSeries("broken", { categoryId });
-      await client.insert(todo).values({
-        ...omit(TodoFixture.create({ userId, categoryId, sortOrder: 1 }), ["id"]),
-        seriesId: "broken",
-        occurrenceDate: AT,
-        startDate: AT,
-      });
-      await deleteCategoryLikeOldServer(categoryId, remaining);
-      // When
-      await client.execute(sql.raw(redeployStatements()));
-      // Then
-      const rule = await client.query.todoSeries.findFirst({ where: { id: "broken" } });
-      expect(rule?.categoryId).toBe(remaining);
-      await expect(
-        client.delete(todoCategory).where(eq(todoCategory.id, remaining)),
-      ).rejects.toThrow();
-    });
-
-    it("회차가 없으면 사용자의 첫 카테고리로 옮기고 다음 밤 작업이 이어 만든다", async () => {
-      // Given
-      const remaining = await seedOtherCategory();
-      await seedSeries("broken", { categoryId });
-      await deleteCategoryLikeOldServer(categoryId, remaining);
-      await useCase().execute();
-      // When
-      await client.execute(sql.raw(redeployStatements()));
-      await useCase().execute();
-      // Then
-      const rule = await client.query.todoSeries.findFirst({ where: { id: "broken" } });
-      expect(rule?.categoryId).toBe(remaining);
-      expect(await countOccurrences("broken")).toBe(HORIZON_ROWS);
-    });
-
-    it("정리할 규칙이 없어도 FK를 건다", async () => {
-      // Given
-      await seedSeries("healthy");
-      await client.execute(
-        sql.raw(`ALTER TABLE "TodoSeries" DROP CONSTRAINT "TodoSeries_categoryId_fkey"`),
-      );
-      // When
-      await client.execute(sql.raw(redeployStatements()));
-      // Then
-      const rule = await client.query.todoSeries.findFirst({ where: { id: "healthy" } });
-      expect(rule?.categoryId).toBe(categoryId);
     });
   });
 

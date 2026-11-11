@@ -3,50 +3,52 @@ import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
+import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
-  AUTH_ACCOUNT_REPOSITORY,
-  AUTH_CACHE,
-  AUTH_EMAIL_SENDER,
-  AUTH_LOGIN_ATTEMPT_REPOSITORY,
-  AUTH_OAUTH_STATE_REPOSITORY,
-  AUTH_RUNTIME_CONFIG,
-  AUTH_PASSWORD_HASHER,
-  AUTH_REGISTRATION_NOTIFIER,
-  AUTH_SECURITY_LOG_REPOSITORY,
-  AUTH_SESSION_REPOSITORY,
-  AUTH_TOKEN_ISSUER,
-  AUTH_USER_REPOSITORY,
-  AUTH_VERIFICATION_REPOSITORY,
-} from "#api/modules/identity/application/ports/auth/index";
+  AuthCachePort,
+  AuthEmailSenderPort,
+  AuthRuntimeConfigPort,
+  AuthRegistrationNotifierPort,
+} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import {
-  OAUTH_IDENTITY_PROVIDER_REGISTRY,
-  type OAuthIdentityProviderRegistry,
-} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/application/ports/auth/verification-code-security.port";
-import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/auth/auth-cache.adapter";
-import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
-import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
-import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
-import { DrizzleAccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-account.repository";
-import { DrizzleLoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-login-attempt.repository";
-import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-oauth-state.repository";
-import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
-import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
-import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
-import { DrizzleVerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-verification.repository";
-import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
-import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
-import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+  AuthPasswordHasherPort,
+  AuthTokenIssuerPort,
+} from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import { AuthLoginAttemptRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-login-attempt.repository.port";
+import { AuthOAuthStateRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-oauth-state.repository.port";
+import { AuthSecurityLogRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
+import { AuthSessionRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-session.repository.port";
+import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
+import { AuthVerificationRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-verification.repository.port";
+import { OAuthIdentityProviderRegistryPort } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
+import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
+import { AuthCacheAdapter } from "#api/modules/identity/auth/infrastructure/adapters/auth-cache.adapter";
+import { JwtTokenIssuerAdapter } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
+import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
+import { DrizzleLoginAttemptRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-login-attempt.repository";
+import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
+import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
+import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
+import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
+import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import { jwtConfig } from "#api/platform/config/jwt.config";
 import { DRIZZLE } from "#api/platform/database/database.client";
-import { EncryptionService } from "#api/platform/encryption/index";
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
-import { createMockCacheService } from "#test/mocks/cache-test-utils";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import {
   createDatabaseTransactionFixture,
   type TestDatabaseClient,
@@ -76,9 +78,11 @@ import {
   restoreAccountProvider,
   issueLoginProvider,
   provisionUserProvider,
-  sessionServiceProvider,
-  verificationServiceProvider,
-} from "../../../src/modules/identity/identity-auth-application.providers.js";
+  createSessionProvider,
+  issueVerificationCodeProvider,
+  sendVerificationCodeProvider,
+  consumeVerificationCodeProvider,
+} from "../../../src/modules/identity/auth/identity-auth.providers.js";
 import type { FakeEmailService } from "../../mocks/fake-email.service.js";
 import { provisioningSeederTestProvider } from "./provisioning-seeder.provider.js";
 import { retentionEnrollerTestProvider } from "./retention-enroller.provider.js";
@@ -87,7 +91,7 @@ import { sessionPushDeviceReleaserTestProvider } from "./session-push-device-rel
 export async function createAuthTestModule(
   client: TestDatabaseClient,
   fakeEmailService: FakeEmailService,
-  options: { readonly oauthProviderRegistry?: OAuthIdentityProviderRegistry } = {},
+  options: { readonly oauthProviderRegistry?: OAuthIdentityProviderRegistryPort } = {},
 ): Promise<TestingModule> {
   const transaction = createDatabaseTransactionFixture(client);
   return Test.createTestingModule({
@@ -114,9 +118,9 @@ export async function createAuthTestModule(
             startOAuthAuthorizationProvider,
             unlinkOAuthAccountProvider,
             DrizzleOAuthStateRepository,
-            { provide: AUTH_OAUTH_STATE_REPOSITORY, useExisting: DrizzleOAuthStateRepository },
-            { provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
-            { provide: OAUTH_IDENTITY_PROVIDER_REGISTRY, useValue: options.oauthProviderRegistry },
+            { provide: AuthOAuthStateRepositoryPort, useExisting: DrizzleOAuthStateRepository },
+            { provide: AuthRuntimeConfigPort, useValue: { allowsDevRedirects: false } },
+            { provide: OAuthIdentityProviderRegistryPort, useValue: options.oauthProviderRegistry },
           ]),
       registerProvider,
       verifyEmailProvider,
@@ -129,12 +133,14 @@ export async function createAuthTestModule(
       restoreAccountProvider,
       issueLoginProvider,
       provisionUserProvider,
-      PasswordService,
-      sessionServiceProvider,
-      TokenService,
-      verificationServiceProvider,
+      Argon2PasswordHasherAdapter,
+      createSessionProvider,
+      JwtTokenIssuerAdapter,
+      issueVerificationCodeProvider,
+      sendVerificationCodeProvider,
+      consumeVerificationCodeProvider,
       {
-        provide: VERIFICATION_CODE_SECURITY,
+        provide: VerificationCodeSecurityPort,
         useClass: NodeVerificationCodeSecurityAdapter,
       },
       {
@@ -150,33 +156,34 @@ export async function createAuthTestModule(
       DrizzleSecurityLogRepository,
       DrizzleLoginAttemptRepository,
       DrizzleVerificationRepository,
-      { provide: AUTH_USER_REPOSITORY, useExisting: DrizzleUserRepository },
-      { provide: AUTH_ACCOUNT_REPOSITORY, useExisting: DrizzleAccountRepository },
-      { provide: AUTH_SESSION_REPOSITORY, useExisting: DrizzleSessionRepository },
+      { provide: AuthUserRepositoryPort, useExisting: DrizzleUserRepository },
+      { provide: AuthAccountRepositoryPort, useExisting: DrizzleAccountRepository },
+      { provide: AuthSessionRepositoryPort, useExisting: DrizzleSessionRepository },
       {
-        provide: AUTH_VERIFICATION_REPOSITORY,
+        provide: AuthVerificationRepositoryPort,
         useExisting: DrizzleVerificationRepository,
       },
       {
-        provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
+        provide: AuthLoginAttemptRepositoryPort,
         useExisting: DrizzleLoginAttemptRepository,
       },
       {
-        provide: AUTH_SECURITY_LOG_REPOSITORY,
+        provide: AuthSecurityLogRepositoryPort,
         useExisting: DrizzleSecurityLogRepository,
       },
-      { provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
-      { provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
-      { provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
+      { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
+      { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
+      { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
       AuthCacheAdapter,
-      { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
+      { provide: AuthCachePort, useExisting: AuthCacheAdapter },
+      { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
       {
-        provide: AUTH_REGISTRATION_NOTIFIER,
-        useExisting: AdminEventNotifier,
+        provide: AuthRegistrationNotifierPort,
+        useExisting: AdminEventNotifierPort,
       },
       DrizzleUserConsentRepository,
       DrizzleUserPreferenceRepository,
-      DefaultTodoCategorySeeder,
+      DefaultTodoCategoryProvisionerAdapter,
       provisioningSeederTestProvider,
       retentionEnrollerTestProvider,
       sessionPushDeviceReleaserTestProvider,
@@ -189,49 +196,27 @@ export async function createAuthTestModule(
         useValue: transaction.txHost,
       },
       {
-        provide: UNIT_OF_WORK,
+        provide: UnitOfWorkPort,
         useValue: transaction.uow,
       },
+      { provide: ClockPort, useClass: DateClock },
       {
-        provide: TransactionalEmailSender,
+        provide: jwtConfig.KEY,
+        useValue: {
+          secret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+          refreshSecret:
+            process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
+          expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
+          refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
+        },
+      },
+      {
+        provide: SendTransactionalEmailUseCase,
         useValue: fakeEmailService,
       },
       {
-        provide: CacheService,
-        useFactory: () => {
-          const cache = createMockCacheService();
-          cache.wrap.mockImplementation((_key, _schema, factory) => factory());
-          return cache;
-        },
-      },
-      {
-        provide: CACHE_SERVICE,
-        useValue: {
-          get: async () => undefined,
-          set: async () => {},
-          del: async () => {},
-        },
-      },
-      {
-        provide: TypedConfigService,
-        useValue: {
-          get: (key: string) => {
-            const config: Record<string, string> = {
-              JWT_SECRET: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-              JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
-              JWT_REFRESH_SECRET:
-                process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-              JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-            };
-            return config[key];
-          },
-          jwtSecret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-          jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
-          jwtRefreshSecret:
-            process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-          jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-          isDevelopment: false,
-        },
+        provide: CacheStorePort,
+        useValue: new NoCacheStore(),
       },
       {
         provide: ConfigService,
@@ -249,14 +234,14 @@ export async function createAuthTestModule(
         },
       },
       {
-        provide: AdminEventNotifier,
+        provide: AdminEventNotifierPort,
         useValue: {
           notifyUserRegistered: () => {},
           notifySubscriptionEvent: () => {},
         },
       },
       {
-        provide: NotificationQueueService,
+        provide: NotificationQueueAdapter,
         useValue: {
           enqueueFollowNew: () => {},
           enqueueFollowMutual: () => {},

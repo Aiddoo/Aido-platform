@@ -1,123 +1,12 @@
 import type {
-  AuthOAuthStateRecord,
-  AuthOAuthStateRepositoryPort,
-  ConsumeAuthOAuthStateInput,
-} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
-import type {
   GenerateAuthUrlParams,
-  OAuthIdentityProvider,
+  OAuthIdentityProviderPort,
   SocialLoginOptions,
   VerifiedProfile,
-} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
-import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
+} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
 
-export class StubAuthOAuthStateRepository implements AuthOAuthStateRepositoryPort {
-  readonly states: Map<number, AuthOAuthStateRecord>;
-  #exchangeSequence = 0;
-
-  constructor(states: readonly AuthOAuthStateRecord[] = []) {
-    this.states = new Map(states.map((state) => [state.id, { ...state }]));
-  }
-
-  async create(
-    state: string,
-    provider: AccountProvider,
-    redirectUri: string,
-    options: Parameters<AuthOAuthStateRepositoryPort["create"]>[3] = {},
-  ): Promise<AuthOAuthStateRecord> {
-    const record = OAuthStateFixture.create({
-      id: Math.max(0, ...this.states.keys()) + 1,
-      state,
-      provider,
-      redirectUri,
-      mode: options.mode ?? "login",
-      initiatingUserId: options.initiatingUserId ?? null,
-      expiresAt: new Date(Date.now() + (options.expiresInMinutes ?? 10) * 60_000),
-    });
-    this.states.set(record.id, record);
-    return { ...record };
-  }
-
-  async findByState(state: string): Promise<AuthOAuthStateRecord | null> {
-    const record = [...this.states.values()].find(
-      (record) => record.state === state && record.expiresAt.getTime() > Date.now(),
-    );
-    return record === undefined ? null : { ...record };
-  }
-
-  async findByExchangeCode(code: string, at = new Date()): Promise<AuthOAuthStateRecord | null> {
-    const record = [...this.states.values()].find(
-      (record) =>
-        record.exchangeCode === code && record.exchangedAt === null && record.expiresAt > at,
-    );
-    return record === undefined ? null : { ...record };
-  }
-
-  async saveExchangeData(
-    id: number,
-    data: Parameters<AuthOAuthStateRepositoryPort["saveExchangeData"]>[1],
-  ): Promise<void> {
-    const record = this.#requireState(id);
-    this.states.set(id, {
-      ...record,
-      ...data,
-      userName: data.userName ?? null,
-      profileImage: data.profileImage ?? null,
-      accountRestored: data.accountRestored ?? null,
-    });
-  }
-
-  async saveLinkingData(
-    id: number,
-    data: Parameters<AuthOAuthStateRepositoryPort["saveLinkingData"]>[1],
-  ): Promise<void> {
-    this.states.set(id, {
-      ...this.#requireState(id),
-      exchangeCode: data.exchangeCode,
-      provider: data.provider,
-      userId: data.providerAccountId,
-    });
-  }
-
-  async consumeExchangeCode(input: ConsumeAuthOAuthStateInput): Promise<boolean> {
-    const record = this.states.get(input.id);
-    if (
-      record === undefined ||
-      record.exchangeCode !== input.exchangeCode ||
-      record.exchangedAt !== null ||
-      record.expiresAt <= input.at ||
-      (input.purpose === "link" &&
-        (record.mode !== "link" ||
-          (record.initiatingUserId !== null &&
-            record.initiatingUserId !== "" &&
-            record.initiatingUserId !== input.actorUserId)))
-    ) {
-      return false;
-    }
-    this.states.set(input.id, {
-      ...record,
-      exchangedAt: new Date(input.at),
-      accessToken: null,
-      refreshToken: null,
-    });
-    return true;
-  }
-
-  generateExchangeCode(): string {
-    return `exchange-code-${++this.#exchangeSequence}`;
-  }
-
-  #requireState(id: number): AuthOAuthStateRecord {
-    const record = this.states.get(id);
-    if (record === undefined) {
-      throw new Error(`OAuth state가 없습니다: ${id}`);
-    }
-    return record;
-  }
-}
-
-export class CountingOAuthIdentityProvider implements OAuthIdentityProvider {
+export class CountingOAuthIdentityProvider implements OAuthIdentityProviderPort {
   readonly failureEmail: string;
   readonly exchanges: { code: string; state: string | undefined }[] = [];
   readonly verifications: { token: string; nonce: string | undefined }[] = [];
@@ -126,8 +15,10 @@ export class CountingOAuthIdentityProvider implements OAuthIdentityProvider {
   exchangeError: Error | null = null;
   exchangedToken: string | null = "provider-token";
 
+  readonly provider: AccountProvider;
+
   constructor(
-    readonly provider: AccountProvider = "GOOGLE",
+    provider: AccountProvider = "GOOGLE",
     profile: VerifiedProfile = {
       id: "provider-account",
       email: "social@example.com",
@@ -136,6 +27,7 @@ export class CountingOAuthIdentityProvider implements OAuthIdentityProvider {
       picture: "https://example.com/avatar.png",
     },
   ) {
+    this.provider = provider;
     this.failureEmail = `${provider.toLowerCase()}@oauth.failed`;
     this.profile = { ...profile };
   }

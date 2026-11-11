@@ -1,26 +1,26 @@
-import { vi } from "vitest";
-
-import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-user-directory.adapter";
-import { DrizzleSignupStatsReader } from "#api/modules/operations/infrastructure/adapters/notifications/drizzle-signup-stats.reader";
+import { DrizzleSignupStatsReader } from "#api/modules/operations/admin-notices/infrastructure/persistence/drizzle-signup-stats.reader";
+import { DrizzleAdminUserDirectoryReader } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-admin-user-directory.reader";
 import { account, user } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-const START = new Date("2026-10-07T15:00:00.000Z");
-const END = new Date("2026-10-08T15:00:00.000Z");
+const START = Temporal.Instant.from("2026-10-07T15:00:00Z");
+const END = Temporal.Instant.from("2026-10-08T15:00:00Z");
 
 describe("운영 조회 계약 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
-  let directory: DrizzleAdminUserDirectoryAdapter;
+  let directory: DrizzleAdminUserDirectoryReader;
   let signupStats: DrizzleSignupStatsReader;
 
   beforeAll(async () => {
     database = new TestDatabase();
     client = await database.start();
     const { txHost } = createDatabaseTransactionFixture(client);
-    directory = new DrizzleAdminUserDirectoryAdapter(txHost);
+    directory = new DrizzleAdminUserDirectoryReader(txHost, new FixedClock(END));
     signupStats = new DrizzleSignupStatsReader(txHost);
   });
   afterAll(async () => database?.stop());
@@ -28,16 +28,14 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
     await database.cleanup();
     UserFixture.reset();
     AccountFixture.reset();
-    vi.setSystemTime(END);
   });
-  afterEach(() => vi.useRealTimers());
 
   it("한국 날짜의 시작은 포함하고 끝은 제외하며 인증 계정 없는 내부 사용자는 전체 가입자에서 제외한다", async () => {
     // Given
     const accounts = [
-      { provider: "CREDENTIAL", createdAt: new Date(START.getTime() - 1) },
+      { provider: "CREDENTIAL", createdAt: START.subtract({ milliseconds: 1 }) },
       { provider: "CREDENTIAL", createdAt: START },
-      { provider: "GOOGLE", createdAt: new Date(START.getTime() + 1) },
+      { provider: "GOOGLE", createdAt: START.add({ milliseconds: 1 }) },
       { provider: "GOOGLE", createdAt: END },
     ] as const;
     for (const item of accounts) {
@@ -74,13 +72,23 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
       ]);
 
     // When
-    const firstPage = await directory.findTargetUserIdsAfter("ALL", null, 500);
-    const secondPage = await directory.findTargetUserIdsAfter("ALL", firstPage.at(-1) ?? null, 500);
+    const firstPage = await directory.listTargetUserIdsAfter({
+      filter: "ALL",
+      cursorUserId: null,
+      limit: 500,
+    });
+    const secondPage = await directory.listTargetUserIdsAfter({
+      filter: "ALL",
+      cursorUserId: firstPage.at(-1) ?? null,
+      limit: 500,
+    });
     const total = await directory.countTargets("ALL");
 
     // Then
     expect([firstPage.length, secondPage.length]).toEqual([500, 1]);
-    expect([...firstPage, ...secondPage]).toEqual(activeUsers.map((item) => item.id));
+    expect([...firstPage, ...secondPage].map((userId) => userId.value)).toEqual(
+      activeUsers.map((item) => item.id),
+    );
     expect(total).toBe(501);
   });
 
@@ -92,13 +100,13 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
     await client.insert(user).values([active, suspended, deleted]);
 
     // When
-    const ids = await directory.findExistingUserIds([
-      active.id,
-      suspended.id,
-      deleted.id,
-      "missing-user",
-      active.id,
-    ]);
+    const ids = (
+      await directory.listExistingUserIds(
+        [active.id, suspended.id, deleted.id, "missing-user", active.id].map((id) =>
+          UserId.reconstitute(id),
+        ),
+      )
+    ).map((userId) => userId.value);
 
     // Then
     expect(ids.toSorted()).toEqual([active.id, suspended.id].toSorted());

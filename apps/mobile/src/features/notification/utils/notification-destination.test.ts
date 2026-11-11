@@ -3,7 +3,11 @@ import { NOTICE_DEEP_LINK_PATH, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { toNotification } from '../apis/notification.mapper';
 import type { NotificationContext, NotificationType } from '../domains/notification.model';
-import { resolveNotificationDestination } from './notification-destination';
+import {
+  isViewingNotificationDestination,
+  type NotificationDestination,
+  resolveNotificationDestination,
+} from './notification-destination';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 const COMPACT = { windowSizeClass: 'compact' } as const;
@@ -573,5 +577,61 @@ describe('연간 구독 갱신 7일 전 알림', () => {
 
     // Then
     expect(result).toEqual({ kind: 'route', href: { pathname: '/settings/subscription' } });
+  });
+});
+
+describe('isViewingNotificationDestination', () => {
+  const TODO_42: NotificationDestination = {
+    kind: 'route',
+    href: { pathname: '/todo/[todoId]', params: { todoId: 42, comment: COMMENT_ID } },
+  };
+  const FRIEND_FEED_TODO_42: NotificationDestination = {
+    kind: 'route',
+    href: { pathname: '/feed', params: { friendId: 'friend-1', date: 'today', todoId: 42 } },
+  };
+
+  it.each([
+    [
+      '같은 할 일 상세면 댓글 위치가 달라도 이미 보고 있는 것이다',
+      TODO_42,
+      '/todo/42',
+      { todoId: '42' },
+      true,
+    ],
+    ['다른 할 일 상세면 보고 있지 않은 것이다', TODO_42, '/todo/7', { todoId: '7' }, false],
+    [
+      '펼친 화면의 같은 친구 피드 같은 할 일이면 날짜가 달라도 보고 있는 것이다',
+      FRIEND_FEED_TODO_42,
+      '/feed',
+      { friendId: 'friend-1', date: '2026-11-10', todoId: '42' },
+      true,
+    ],
+    [
+      '펼친 화면이라도 친구가 아닌 내 피드면 보고 있지 않은 것이다',
+      FRIEND_FEED_TODO_42,
+      '/feed',
+      { todoId: '42' },
+      false,
+    ],
+    [
+      '알림함이면 알림함 목적지를 보고 있는 것이다',
+      { kind: 'route', href: '/notifications' },
+      '/notifications',
+      {},
+      true,
+    ],
+    [
+      '외부 링크는 앱 화면이 아니라 보고 있을 수 없다',
+      { kind: 'browser', url: 'https://aido.app' },
+      '/feed',
+      {},
+      false,
+    ],
+  ] as const)('%s', (_case, destination, pathname, params, expected) => {
+    // When
+    const isViewing = isViewingNotificationDestination(destination, { pathname, params });
+
+    // Then
+    expect(isViewing).toBe(expected);
   });
 });

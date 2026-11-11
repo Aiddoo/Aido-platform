@@ -86,70 +86,6 @@
       }
     },
     {
-      "files": ["apps/api/src/modules/*/domain/**/*.ts", "apps/api/src/shared/domain/**/*.ts"],
-      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "regex": "^@nestjs/|(?:^|/)platform(?:/|$)",
-                "message": "Domain은 framework·ORM·platform 구현에 의존할 수 없습니다."
-              },
-              {
-                "regex": "(?:^|/)(?:application|infrastructure|presentation)(?:/|$)",
-                "message": "Domain은 Application·Infrastructure·Presentation에 의존할 수 없습니다."
-              },
-              {
-                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
-                "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "files": [
-        "apps/api/src/modules/*/application/**/*.ts",
-        "apps/api/src/shared/application/**/*.ts"
-      ],
-      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "regex": "^@nestjs/|(?:^|/)platform(?:/|$)",
-                "message": "Application은 framework·ORM·platform 구현에 의존할 수 없습니다."
-              },
-              {
-                "regex": "(?:^|/)(?:infrastructure|presentation)(?:/|$)",
-                "message": "Application은 Infrastructure·Presentation 구현에 의존할 수 없습니다."
-              },
-              {
-                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
-                "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "files": [
-        "apps/api/src/modules/*/domain/**/*.ts",
-        "apps/api/src/modules/*/application/**/*.ts",
-        "apps/api/src/modules/*/infrastructure/**/*.ts"
-      ],
-      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
-      "rules": {
-        "typescript/no-non-null-assertion": "error"
-      }
-    },
-    {
       "files": ["apps/api/**/*.ts", "packages/api/**/*.ts"],
       "rules": {
         "unicorn/filename-case": [
@@ -207,7 +143,7 @@
                 "message": "Shared Domain/Application은 framework·구현·개별 Context에 의존할 수 없습니다."
               },
               {
-                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk)(?:/|$)|^@(?:ai-sdk|sentry)/",
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               }
             ]
@@ -216,33 +152,21 @@
       }
     },
     {
-      "files": [
-        "apps/api/src/modules/*/domain/**/*.ts",
-        "apps/api/src/modules/*/application/**/*.ts",
-        "apps/api/src/shared/domain/**/*.ts",
-        "apps/api/src/shared/application/**/*.ts"
-      ],
+      "files": ["apps/api/src/shared/domain/**/*.ts", "apps/api/src/shared/application/**/*.ts"],
       "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
       "rules": {
         "typescript/consistent-type-imports": "error"
       }
     },
     {
-      "files": [
-        "apps/api/src/modules/*/*-application.providers.ts",
-        "apps/api/src/platform/pagination/pagination-application.providers.ts"
-      ],
+      "files": ["apps/api/src/**/*.providers.ts"],
       "rules": {
         "eslint/object-shorthand": "error"
       }
     },
     {
       "files": ["apps/api/src/modules/*/*/domain/**/*.ts", "apps/api/src/modules/*/shared/**/*.ts"],
-      "excludeFiles": [
-        "**/*.spec.ts",
-        "**/*.test.ts",
-        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
-      ],
+      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -257,7 +181,7 @@
                 "message": "Domain은 Application·Infrastructure·Presentation에 의존할 수 없습니다."
               },
               {
-                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk)(?:/|$)|^@(?:ai-sdk|sentry)/",
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               },
               {
@@ -272,11 +196,7 @@
     },
     {
       "files": ["apps/api/src/modules/*/*/application/**/*.ts"],
-      "excludeFiles": [
-        "**/*.spec.ts",
-        "**/*.test.ts",
-        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
-      ],
+      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -291,7 +211,7 @@
                 "message": "Application은 Infrastructure·Presentation 구현에 의존할 수 없습니다."
               },
               {
-                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk)(?:/|$)|^@(?:ai-sdk|sentry)/",
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               },
               {
@@ -305,15 +225,52 @@
       }
     },
     {
-      "files": ["apps/api/src/modules/*/*/**/*.ts"],
-      "excludeFiles": [
-        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
-      ],
+      "files": ["apps/api/**/*.ts"],
       "rules": {
         "typescript/parameter-properties": [
           "error",
           {
             "prefer": "class-property"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/api/**/*.ts", "packages/api/**/*.ts"],
+      "rules": {
+        "unicorn/numeric-separators-style": [
+          "error",
+          {
+            "number": {
+              "minimumDigits": 5,
+              "groupLength": 3
+            },
+            "hexadecimal": {
+              "onlyIfContainsSeparator": true
+            },
+            "binary": {
+              "onlyIfContainsSeparator": true
+            },
+            "octal": {
+              "onlyIfContainsSeparator": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.ts"],
+      "excludeFiles": [
+        "apps/api/src/**/*.public.ts",
+        "apps/api/src/platform/database/schema/index.ts",
+        "apps/api/src/platform/database/schema/tables.schema.ts"
+      ],
+      "plugins": ["oxc"],
+      "rules": {
+        "oxc/no-barrel-file": [
+          "error",
+          {
+            "threshold": 0
           }
         ]
       }

@@ -13,12 +13,6 @@ import type {
 
 let userCounter = 0;
 
-/** 지난 migration 검증이 직전 계약의 User에 쓰지 못하는, 이후에 추가된 열 */
-export const USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS = [
-  "lastSeenAppVersion",
-  "lastSeenAppVersionAt",
-] as const;
-
 /** 사용자 record. nullable override의 null은 보존하며 undefined는 기본값을 쓴다. */
 export const UserFixture = {
   /**
@@ -26,7 +20,7 @@ export const UserFixture = {
    */
   create: (overrides: Partial<User> = {}): User => {
     const id = ++userCounter;
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? `user-${id}`,
@@ -126,7 +120,7 @@ export const AccountFixture = {
    */
   create: (overrides: Partial<Account> = {}): Account => {
     const id = ++accountCounter;
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? id,

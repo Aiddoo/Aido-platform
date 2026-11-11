@@ -108,7 +108,7 @@ describe('메모 수정 후 상세 cache', () => {
       resolveRefresh = resolve;
     });
     const refresh = client
-      .fetchQuery({
+      .query({
         queryKey: MEMO_QUERY_KEYS.detail({ memoId: 5 }),
         queryFn: () => staleResponse,
       })

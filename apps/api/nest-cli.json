@@ -7,6 +7,12 @@
     "deleteOutDir": true,
     "builder": "swc",
     "typeCheck": true,
-    "assets": [{ "include": "i18n/**/*.json", "watchAssets": true }]
+    "assets": [
+      { "include": "i18n/**/*.json", "watchAssets": true },
+      {
+        "include": "modules/notification/email/infrastructure/templates/**/*.{html,txt}",
+        "watchAssets": true
+      }
+    ]
   }
 }

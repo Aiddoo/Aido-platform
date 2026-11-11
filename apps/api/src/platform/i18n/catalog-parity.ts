@@ -1,3 +1,5 @@
+import { uniq } from "es-toolkit";
+
 type CatalogValue = string | { readonly [key: string]: CatalogValue };
 
 export interface CatalogNode {
@@ -11,7 +13,7 @@ function placeholdersOf(messages: readonly string[]): string {
   const names = messages.flatMap((message) =>
     Array.from(message.matchAll(PLACEHOLDER), (match) => match[1] ?? ""),
   );
-  return [...new Set(names)].sort().join(",");
+  return uniq(names).sort().join(",");
 }
 
 function isPluralForms(value: CatalogValue): value is { readonly [key: string]: string } {

@@ -11,7 +11,7 @@ export const AI_THINKING_LEVELS = ["minimal", "low", "medium"] as const;
 export type AiThinking = (typeof AI_THINKING_LEVELS)[number];
 
 /** 킬 스위치. interactive-only는 리포트·제안 같은 배경 생성만 멈춘다. 바꾸면 재시작해야 반영된다. */
-export const AI_GENERATION_MODES = ["on", "interactive-only", "off"] as const;
+const AI_GENERATION_MODES = ["on", "interactive-only", "off"] as const;
 
 const thinkingLevel = (fallback: AiThinking) => z.enum(AI_THINKING_LEVELS).default(fallback);
 const milliseconds = (fallback: number) => z.coerce.number().int().positive().default(fallback);
@@ -94,7 +94,7 @@ export type AiConfig = z.infer<typeof aiSchema>;
 
 export const AI_CONFIG_KEYS = aiSchema.keyof().options;
 
-export interface AiProviderSettings {
+interface AiProviderSettings {
   /** 미설정이면 null이며 그 업체는 쓰지 않는다 */
   readonly apiKey: string | null;
   readonly model: string;
@@ -127,13 +127,13 @@ export interface AiSettings {
   readonly budget: AiBudgetSettings;
 }
 
-export interface AiBudgetWindow {
+interface AiBudgetWindow {
   readonly dailyMicroUsd: number;
   readonly monthlyMicroUsd: number;
 }
 
 /** 추정 비용 기준선(micro-USD) */
-export interface AiBudgetSettings {
+interface AiBudgetSettings {
   readonly alert: AiBudgetWindow;
   readonly background: AiBudgetWindow;
   readonly halt: AiBudgetWindow;

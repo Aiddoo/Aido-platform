@@ -11,7 +11,7 @@ const REPORT_TYPES = {
 
 export function toAiReport(dto: AiReportDto): AiReport {
   return {
-    ...pick(dto, ['id', 'year', 'period', 'periodLabel', 'aiSummary', 'aiTips', 'hasActivity']),
+    ...pick(dto, ['id', 'year', 'period', 'aiSummary', 'aiTips', 'hasActivity']),
     type: REPORT_TYPES[dto.type],
     dateRange: pick(dto.dateRange, ['startDate', 'endDate']),
     stats: pick(dto.stats, [

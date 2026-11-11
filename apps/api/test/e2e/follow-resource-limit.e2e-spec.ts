@@ -10,13 +10,12 @@ import request from "supertest";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { SweepPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/sweep-premium-grants.use-case";
-import {
-  PREMIUM_GRANTER,
-  type PremiumGranterPort,
-} from "#api/modules/billing/billing-subscriptions.public";
+import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { resourceBonus, user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -28,7 +27,7 @@ describe("팔로우 리소스 제한 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -150,16 +149,16 @@ describe("팔로우 리소스 제한 E2E", () => {
           quantity: 1,
           sourceKey: "invite:follow-limit-grant",
         });
-        await ctx.module.get<PremiumGranterPort>(PREMIUM_GRANTER).grant({
-          userId: user.userId,
+        await ctx.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+          userId: UserId.reconstitute(user.userId),
           source: "INVITE",
           sourceKey: "invite:limit",
           durationDays: 7,
         });
-        const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
+        const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         const maxCountAt = async (at: Date) => {
           vi.setSystemTime(at);
-          await ctx.module.get(SweepPremiumGrants).execute({ now: at });
+          await ctx.module.get(SweepPremiumGrantsUseCase).execute({ now: instantFromDate(at) });
           const { accessToken } = await ctx.helpers.loginUser(email, password);
           const response = await request(ctx.app.getHttpServer())
             .get("/v1/follows/resource-limit")

@@ -2,19 +2,11 @@ import { type DynamicModule, Global, Module, type Provider } from "@nestjs/commo
 import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { cacheConfig } from "../config/cache.config.js";
+import { cacheConfig, selectSharedRedis } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryCacheStore } from "./adapters/in-memory-cache.store.js";
 import { RedisCacheStore } from "./adapters/redis-cache.store.js";
 import { CacheStorePort } from "./cache-store.port.js";
-import { CacheService } from "./cache.service.js";
-import { CACHE_SERVICE } from "./interfaces/cache.interface.js";
-
-// 옛 토큰(CACHE_SERVICE)과 옛 진입점(CacheService)은 Context가 CacheStorePort로 옮길 때까지 같은 저장소를 쓴다
-const LEGACY_ALIASES: Provider[] = [
-  { provide: CACHE_SERVICE, useExisting: CacheStorePort },
-  CacheService,
-];
 
 /** `CACHE_TYPE=redis`이고 Redis 연결이 있으면 Redis·Valkey, 아니면 프로세스 안 lru-cache를 쓴다. */
 @Global()
@@ -23,25 +15,27 @@ export class CacheModule {
   static forRoot(): DynamicModule {
     const storeProvider: Provider = {
       provide: CacheStorePort,
-      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis | null): CacheStorePort =>
-        cache.type === "redis" && redis != null
-          ? new RedisCacheStore(redis, cache.defaultTtlMs)
-          : new InMemoryCacheStore({ defaultTtlMs: cache.defaultTtlMs, maxItems: cache.maxItems }),
+      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis | null): CacheStorePort => {
+        const shared = selectSharedRedis(cache, redis);
+        return shared == null
+          ? new InMemoryCacheStore({ defaultTtlMs: cache.defaultTtlMs, maxItems: cache.maxItems })
+          : new RedisCacheStore(shared, cache.defaultTtlMs);
+      },
       inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };
 
     return {
       module: CacheModule,
-      providers: [storeProvider, ...LEGACY_ALIASES],
-      exports: [CacheStorePort, CACHE_SERVICE, CacheService],
+      providers: [storeProvider],
+      exports: [CacheStorePort],
     };
   }
 
   static forTesting(store: CacheStorePort): DynamicModule {
     return {
       module: CacheModule,
-      providers: [{ provide: CacheStorePort, useValue: store }, ...LEGACY_ALIASES],
-      exports: [CacheStorePort, CACHE_SERVICE, CacheService],
+      providers: [{ provide: CacheStorePort, useValue: store }],
+      exports: [CacheStorePort],
     };
   }
 }

@@ -8,7 +8,7 @@ import { Skeleton } from 'heroui-native';
 
 import { REPORT_TYPE_LABEL_KEYS } from '../constants/report-labels';
 import { getSampleReport, SAMPLE_REPORT_IDS } from '../constants/sample-reports.constants';
-import { ReportPolicy } from '../domains/report.model';
+import { ReportStatusPolicy } from '../domains/report.model';
 import { useReportType } from '../hooks/use-report-type';
 import {
   useGetReportsQueryOptions,
@@ -64,7 +64,7 @@ function PremiumPendingPreview() {
   const [reportType] = useReportType();
   const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
   const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
-  const daysUntil = ReportPolicy.getDaysUntilReport(status, reportType);
+  const daysUntil = ReportStatusPolicy.getDaysUntilReport(status, reportType);
   const reportLabel = t(REPORT_TYPE_LABEL_KEYS[reportType]);
 
   return (

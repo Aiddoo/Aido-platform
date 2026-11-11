@@ -4,6 +4,7 @@ import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime
 import { PUSH_DEVICE_PLATFORM } from "../../../vocabulary/notification.constants.js";
 import { notificationTypeSchema } from "./notification.common.js";
 import { notificationBodySchema, notificationTitleSchema } from "./notification.content.js";
+import { notificationNavigationSchema } from "./notification.navigation.js";
 import { notificationActionSchema, notificationContextSchema } from "./notification.payload.js";
 import { pushPermissionSchema } from "./notification.request.js";
 
@@ -14,7 +15,7 @@ export type NotificationMetadata = z.infer<typeof notificationMetadataSchema>;
 export const notificationSchema = z
   .object({
     id: z.number().int().positive().describe("알림 ID (양의 정수)"),
-    userId: z.string().describe("사용자 ID (CUID 25자)"),
+    userId: z.string().describe("사용자 ID"),
     type: notificationTypeSchema
       .exclude([
         "NUDGE_REPLIED",
@@ -94,6 +95,11 @@ export type NotificationListResponse = z.infer<typeof notificationListResponseSc
 
 export const notificationInboxItemSchema = notificationSchema.extend({
   type: notificationTypeSchema,
+  // 모양이 맞지 않으면 navigation만 버려 type·action으로 이동하던 기존 경로를 잃지 않는다
+  navigation: notificationNavigationSchema
+    .optional()
+    .catch(undefined)
+    .describe("푸시 data의 navigation과 같은 목적지. 계산할 수 없으면 싣지 않는다"),
 });
 export type NotificationInboxItem = z.infer<typeof notificationInboxItemSchema>;
 
@@ -127,6 +133,14 @@ export const registerTokenResponseSchema = z
   });
 
 export type RegisterTokenResponse = z.infer<typeof registerTokenResponseSchema>;
+
+export const unregisterPushDeviceByTokenResponseSchema = z.object({
+  unregistered: z.literal(true).describe("항상 true. 일치하는 등록이 있었는지는 알려 주지 않는다"),
+});
+
+export type UnregisterPushDeviceByTokenResponse = z.infer<
+  typeof unregisterPushDeviceByTokenResponseSchema
+>;
 
 export const pushDeviceResponseSchema = z
   .object({

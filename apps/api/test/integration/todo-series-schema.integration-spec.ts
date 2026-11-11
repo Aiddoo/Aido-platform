@@ -4,9 +4,11 @@ import { join } from "node:path";
 import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
-import { RepeatRule } from "#api/modules/planning/domain/value-objects/series/repeat-rule.vo";
-import { DrizzleTodoSeriesRepository } from "#api/modules/planning/infrastructure/persistence/series/drizzle-todo-series.repository";
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
+import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
+import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
+import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
@@ -16,10 +18,10 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import {
-  DEFAULT_DELIVERY_TIMEZONE,
-  parseLocalDateTime,
-} from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -85,7 +87,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         title: "옛 반복",
         seriesId,
         occurrenceDate: null,
-        startDate: new Date(`${date}T00:00:00.000Z`),
+        startDate: Temporal.PlainDate.from(date),
         ...overrides,
       })
       .returning();
@@ -126,9 +128,9 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       const rows = await client.query.todo.findMany({ where: { userId }, orderBy: { id: "asc" } });
       const byId = new Map(rows.map((row) => [row.id, row]));
       expect(byId.get(kept.id)?.seriesId).toBe("group-a");
-      expect(byId.get(kept.id)?.occurrenceDate).toEqual(new Date("2026-03-02T00:00:00.000Z"));
+      expect(byId.get(kept.id)?.occurrenceDate).toEqual(Temporal.PlainDate.from("2026-03-02"));
       expect(byId.get(duplicate.id)).toMatchObject({ seriesId: null, occurrenceDate: null });
-      expect(byId.get(other.id)?.occurrenceDate).toEqual(new Date("2026-03-04T00:00:00.000Z"));
+      expect(byId.get(other.id)?.occurrenceDate).toEqual(Temporal.PlainDate.from("2026-03-04"));
       expect(byId.get(single.id)).toMatchObject({ seriesId: null, occurrenceDate: null });
     });
 
@@ -139,20 +141,20 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         title: "월수 반복",
         visibility: "PUBLIC",
         sortOrder: 7,
-        scheduledTime: new Date("2026-03-02T00:30:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-03-02T00:30:00.000Z"),
         isAllDay: false,
-        createdAt: new Date("2026-03-01T00:00:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-03-01T00:00:00.000Z"),
       });
       await seedLegacy("group-b", "2026-03-04", {
         title: "월수 반복",
         visibility: "PUBLIC",
         sortOrder: 8,
-        scheduledTime: new Date("2026-03-04T00:30:00.000Z"),
+        scheduledTime: Temporal.Instant.from("2026-03-04T00:30:00.000Z"),
         isAllDay: false,
       });
       await client.insert(todoItem).values([
-        { todoId: first.id, title: "둘째", sortOrder: 1 },
-        { todoId: first.id, title: "첫째", sortOrder: 0 },
+        { todoId: first.id, title: "둘째", sortOrder: 1, updatedAt: nowInstant() },
+        { todoId: first.id, title: "첫째", sortOrder: 0, updatedAt: nowInstant() },
       ]);
       // When
       await runDataMigration();
@@ -170,12 +172,12 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         repeatWeekdays: ["MON", "WED"],
         repeatMonthDay: null,
         repeatCount: null,
-        startDate: new Date("2026-03-02T00:00:00.000Z"),
-        repeatUntil: new Date("2026-03-04T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2026-03-02"),
+        repeatUntil: Temporal.PlainDate.from("2026-03-04"),
         nextOccurrenceDate: null,
         generatedCount: 2,
         originSeriesId: "group-b",
-        createdAt: new Date("2026-03-01T00:00:00.000Z"),
+        createdAt: Temporal.Instant.from("2026-03-01T00:00:00.000Z"),
         checklistTemplate: [{ title: "첫째" }, { title: "둘째" }],
       });
     });
@@ -211,7 +213,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         await client.insert(userPreference).values({ userId, timezone: stored });
       }
       const row = await seedLegacy("group-zone", "2026-03-02", {
-        scheduledTime: parseLocalDateTime("2026-03-02", time, zone),
+        scheduledTime: wallClockInstant("2026-03-02", time, zone),
         isAllDay: false,
       });
       // When
@@ -222,7 +224,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       const migrated = await client.query.todo.findFirst({ where: { id: row.id } });
       expect(migrated?.scheduledTime).toEqual(row.scheduledTime);
       expect(
-        parseLocalDateTime("2026-03-02", series?.scheduledLocalTime ?? "", series?.timezone ?? ""),
+        wallClockInstant("2026-03-02", series?.scheduledLocalTime ?? "", series?.timezone ?? ""),
       ).toEqual(row.scheduledTime);
     });
 
@@ -231,7 +233,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       await client.insert(userPreference).values({ userId, timezone: "America/New_York" });
       for (const date of ["2026-03-02", "2026-03-09", "2026-03-16"]) {
         await seedLegacy("group-dst", date, {
-          scheduledTime: parseLocalDateTime(date, "09:00", "America/New_York"),
+          scheduledTime: wallClockInstant(date, "09:00", "America/New_York"),
           isAllDay: false,
         });
       }
@@ -244,11 +246,11 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
   });
 
   describe("이관 규칙 유추", () => {
-    const CREATED_AT = new Date("2026-02-01T00:00:00.000Z");
-    const UNTOUCHED = { createdAt: CREATED_AT, updatedAt: new Date(CREATED_AT.getTime() + 1) };
+    const CREATED_AT = Temporal.Instant.from("2026-02-01T00:00:00.000Z");
+    const UNTOUCHED = { createdAt: CREATED_AT, updatedAt: CREATED_AT.add({ milliseconds: 1 }) };
     const TOUCHED = {
       createdAt: CREATED_AT,
-      updatedAt: new Date(CREATED_AT.getTime() + 24 * 60 * 60 * 1000),
+      updatedAt: CREATED_AT.add({ hours: 24 }),
     };
 
     type LegacyRow = readonly [date: string, overrides?: Partial<typeof todo.$inferInsert>];
@@ -276,7 +278,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
             ...TOUCHED,
             title: "첫 회차만 바꾼 제목",
             categoryId: other?.id ?? 0,
-            scheduledTime: new Date("2026-03-01T22:15:00.000Z"),
+            scheduledTime: Temporal.Instant.from("2026-03-01T22:15:00.000Z"),
             isAllDay: false,
           },
         ],
@@ -306,7 +308,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
           "2026-03-02",
           {
             title: "앞",
-            scheduledTime: new Date("2026-03-02T00:00:00.000Z"),
+            scheduledTime: Temporal.Instant.from("2026-03-02T00:00:00.000Z"),
             isAllDay: false,
           },
         ],
@@ -315,7 +317,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
           {
             title: "뒤",
             categoryId: other?.id ?? 0,
-            scheduledTime: new Date("2026-03-09T01:00:00.000Z"),
+            scheduledTime: Temporal.Instant.from("2026-03-09T01:00:00.000Z"),
             isAllDay: false,
           },
         ],
@@ -453,14 +455,15 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         title: "규칙",
         timezone: "UTC",
         repeatFrequency: "DAILY" as const,
-        startDate: new Date("2026-03-02T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2026-03-02"),
+        updatedAt: nowInstant(),
         ...overrides,
       };
     }
 
     it("같은 묶음의 같은 회차 날짜는 한 행만 들어가고 ON CONFLICT로 건너뛸 수 있다", async () => {
       // Given
-      const occurrenceDate = new Date("2026-03-02T00:00:00.000Z");
+      const occurrenceDate = Temporal.PlainDate.from("2026-03-02");
       await seedLegacy("group-e", "2026-03-02", { occurrenceDate });
       // When
       const inserted = await client
@@ -502,7 +505,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       { name: "횟수 366", row: { repeatCount: 366 } },
       {
         name: "날짜와 횟수 종료를 함께",
-        row: { repeatCount: 2, repeatUntil: new Date("2026-03-09T00:00:00.000Z") },
+        row: { repeatCount: 2, repeatUntil: Temporal.PlainDate.from("2026-03-09") },
       },
     ])("$name 규칙은 CHECK에서 거부한다", async ({ row }) => {
       // Given
@@ -516,79 +519,110 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
 
   describe("리포지토리", () => {
     function repository() {
-      return new DrizzleTodoSeriesRepository(createDatabaseTransactionFixture(client).txHost);
+      return new DrizzleTodoSeriesRepository(
+        createDatabaseTransactionFixture(client).txHost,
+        new DateClock(),
+      );
     }
 
     function plan(id: string, rule: RepeatRule) {
-      return TodoSeries.planCreation({
-        id,
-        userId,
+      return TodoSeries.create({
+        id: TodoSeriesId.reconstitute(id),
+        userId: UserId.reconstitute(userId),
         categoryId,
-        title: "규칙",
+        title: TodoTitle.create("규칙"),
         visibility: "PUBLIC",
         scheduledLocalTime: "09:00",
         timezone: "Asia/Seoul",
         rule,
         startDate: "2026-11-02",
         checklistTemplate: [{ title: "항목" }],
-        at: new Date("2026-11-01T00:00:00.000Z"),
+        now: Temporal.Instant.fromEpochMilliseconds(new Date("2026-11-01T00:00:00.000Z").getTime()),
       });
     }
 
     it.each([
-      { name: "매일·계속", rule: RepeatRule.daily({ type: "NEVER" }) },
+      {
+        name: "매일·계속",
+        rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
+      },
       {
         name: "격주·날짜까지",
-        rule: RepeatRule.weekly(["MON", "WED"], 2, { type: "UNTIL", date: "2027-01-01" }),
+        rule: RepeatRule.create({
+          frequency: "WEEKLY",
+          weekdays: ["MON", "WED"],
+          interval: 2,
+          end: { type: "UNTIL", date: "2027-01-01" },
+        }),
       },
-      { name: "매월·횟수", rule: RepeatRule.monthly(31, { type: "COUNT", count: 10 }) },
+      {
+        name: "매월·횟수",
+        rule: RepeatRule.create({
+          frequency: "MONTHLY",
+          monthDay: 31,
+          end: { type: "COUNT", count: 10 },
+        }),
+      },
     ])("$name 규칙을 저장하고 그대로 복원한다", async ({ rule }) => {
       // Given
       const id = createEntityId();
       const series = plan(id, rule);
       // When
       await repository().insert(series);
-      const restored = await repository().findByIdAndUserId(id, userId);
+      const restored = await repository().findByIdAndUserId(
+        TodoSeriesId.reconstitute(id),
+        UserId.reconstitute(userId),
+      );
       // Then
-      expect(restored?.getRule().equals(rule)).toBe(true);
-      expect(restored?.getChecklistTemplate()).toEqual([{ title: "항목" }]);
-      expect(restored?.getScheduledLocalTime()).toBe("09:00");
-      expect(restored?.getNextOccurrenceDate()).toBe(series.getNextOccurrenceDate());
+      expect(restored?.rule.equals(rule)).toBe(true);
+      expect(restored?.checklistTemplate).toEqual([{ title: "항목" }]);
+      expect(restored?.scheduledLocalTime).toBe("09:00");
+      expect(restored?.nextOccurrenceDate).toBe(series.nextOccurrenceDate);
     });
 
     it("커서를 옮긴 규칙을 저장하면 끝난 규칙은 진행 중 개수에서 빠진다", async () => {
       // Given
-      const active = plan(createEntityId(), RepeatRule.daily({ type: "NEVER" }));
-      const finished = plan(createEntityId(), RepeatRule.daily({ type: "COUNT", count: 1 }));
+      const active = plan(
+        createEntityId(),
+        RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
+      );
+      const finished = plan(
+        createEntityId(),
+        RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 1 } }),
+      );
       await repository().insert(active);
       await repository().insert(finished);
       // When
       finished.planOccurrences("2026-12-31");
       await repository().update(finished);
       // Then
-      expect(await repository().countActiveByUserId(userId)).toBe(1);
+      expect(await repository().countActiveByUserId(UserId.reconstitute(userId))).toBe(1);
     });
 
     it("다음 회차가 through 이하인 규칙만 id 순 커서로 돌려준다", async () => {
       // Given
       const ids = ["a", "b", "c"].map((prefix) => `${prefix}-${createEntityId()}`);
       for (const id of ids) {
-        await repository().insert(plan(id, RepeatRule.daily({ type: "NEVER" })));
+        await repository().insert(
+          plan(id, RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } })),
+        );
       }
       const future = `d-${createEntityId()}`;
       await repository().insert(
-        TodoSeries.planCreation({
-          id: future,
-          userId,
+        TodoSeries.create({
+          id: TodoSeriesId.reconstitute(future),
+          userId: UserId.reconstitute(userId),
           categoryId,
-          title: "먼 규칙",
+          title: TodoTitle.create("먼 규칙"),
           visibility: "PUBLIC",
           scheduledLocalTime: null,
           timezone: "UTC",
-          rule: RepeatRule.daily({ type: "NEVER" }),
+          rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
           startDate: "2027-06-01",
           checklistTemplate: [],
-          at: new Date("2026-11-01T00:00:00.000Z"),
+          now: Temporal.Instant.fromEpochMilliseconds(
+            new Date("2026-11-01T00:00:00.000Z").getTime(),
+          ),
         }),
       );
       // When
@@ -599,7 +633,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       });
       const second = await repository().findDueBatch({
         through: "2026-12-01",
-        afterId: first.at(-1)?.id ?? null,
+        afterId: first.map((due) => TodoSeriesId.reconstitute(due.id)).at(-1) ?? null,
         limit: 2,
       });
       // Then
@@ -610,13 +644,15 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
     it("다른 트랜잭션이 잡고 있으면 SKIP LOCKED는 건너뛴다", async () => {
       // Given
       const id = createEntityId();
-      await repository().insert(plan(id, RepeatRule.daily({ type: "NEVER" })));
+      await repository().insert(
+        plan(id, RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } })),
+      );
       const { txHost, uow } = createDatabaseTransactionFixture(client);
-      const locking = new DrizzleTodoSeriesRepository(txHost);
+      const locking = new DrizzleTodoSeriesRepository(txHost, new DateClock());
       const held = Promise.withResolvers<void>();
       const release = Promise.withResolvers<void>();
       const holder = uow.run(async () => {
-        await locking.lockForUpdate(id);
+        await locking.lockForUpdate(TodoSeriesId.reconstitute(id));
         held.resolve();
         await release.promise;
       });
@@ -625,7 +661,12 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         // When
         const fixture = createDatabaseTransactionFixture(client);
         const skipped = await fixture.uow.run(() =>
-          new DrizzleTodoSeriesRepository(fixture.txHost).lockForUpdate(id, { skipLocked: true }),
+          new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).lockForUpdate(
+            TodoSeriesId.reconstitute(id),
+            {
+              skipLocked: true,
+            },
+          ),
         );
         // Then
         expect(skipped).toBeNull();

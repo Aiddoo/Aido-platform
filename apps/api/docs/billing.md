@@ -1,6 +1,6 @@
 # 구독 결제 처리
 
-RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)과 보상 기간이 프리미엄을 정하는 규칙은 [유료 기능과 권한](entitlements.md)에 있다. 이 문서는 운영 결정만 적는다.
+RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)·스토어 상태 대조·보상 기간 처리를 바꿀 때 읽는다. 프리미엄 판단·한도는 [유료 기능과 권한](entitlements.md)에 있다.
 
 ## SANDBOX 결제
 
@@ -8,7 +8,7 @@ RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)과 보상 기간이 프리미�
 - **SANDBOX 구매도 프리미엄을 준다.** App Review는 운영 서버에 sandbox 결제로 구매를 확인하므로 막으면 심사가 거절될 수 있다. TestFlight 테스터도 같은 경로다.
 - SANDBOX는 매출이 아니다. 시작·완료 로그(`billing.subscription.webhook.*`)와 운영 알림 payload에 `environment`를 싣고, 알림은 샌드박스임을 표시한다. 현재 서버는 매출·구독자 지표를 계산하지 않으며, 새 지표를 만들면 `environment = 'SANDBOX'` 행을 뺀다.
 - 운영 알림의 RevenueCat 고객 링크는 공개 프로젝트 ID `REVENUECAT_PROJECT_ID`가 있을 때만 붙는다.
-- 운영 알림 payload(`SubscriptionEventPayload`)는 웹훅 값(금액·통화·국가·만료·기간 유형·사유·바뀔 상품·이전 계정)을 이벤트 종류와 상관없이 같은 이름으로 싣고, 반영 뒤 프리미엄 상태(`premium`: 출처·쌓아 둔 보상 일수)를 붙인다. 사용자 블록 조회와 표시는 operations가 맡는다([관리자 알림](admin-notifications.md#결제-알림)).
+- 운영 알림 payload(`SubscriptionEventPayload`)는 웹훅 값(금액·통화·국가·만료·기간 유형·사유·바뀔 상품·이전 계정)을 이벤트 종류와 상관없이 같은 이름으로 싣고, 반영 뒤 프리미엄 상태(`premium`: 출처·쌓아 둔 보상 일수)를 붙인다. 알림 어댑터가 이 값을 operations가 소유한 `SubscriptionAlertInput`으로 필드마다 옮겨 `AdminEventNotifierPort`(`operations-admin-notices.public`)에 넘기며, 앱 사용자 ID는 싣지 않는다. 의존은 billing → operations 한 방향이다. 사용자 블록 조회와 표시는 operations가 맡는다([관리자 알림](admin-notifications.md#결제-알림)).
 - **운영(`APP_ENV=production`, 미설정이면 `NODE_ENV=production`)은 RevenueCat Test Store(`store: TEST_STORE`) 이벤트를 처리하지 않는다.** Test Store 구매는 실제 결제가 없고 개발 빌드의 로컬 사용자로 오므로, 번역기가 `skipped`로 거르고 200으로 받은 뒤 `billing.subscription.webhook.skipped`(`reason: TEST_STORE`) info 로그만 남긴다. 경보는 올리지 않는다. 대시보드 웹훅 연동은 하나(Environment Both·App All)이고 앱 필터는 "한 앱 또는 전체"뿐이라 Test Store만 거를 수 없으므로 서버 ACL이 유일한 방어선이다. App Store·Play SANDBOX는 위처럼 그대로 처리하고, 개발·스테이징·로컬 서버는 Test Store도 처리한다.
 
 ## 결제 실패와 결제 유예
@@ -22,7 +22,7 @@ RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)과 보상 기간이 프리미�
 | 결제 복구(`RENEWAL`)             | 유예를 지우고 새 만료 시각까지 프리미엄. 보상은 시작한 적이 없어 다시 쌓거나 일수를 올리지 않는다                                         |
 | 유예 끝(`EXPIRATION` 또는 sweep) | 쌓아 둔 보상이 유예 끝 시각부터 한 번 시작한다. `EXPIRATION`은 유예를 지우고 만료 시각을 유예가 실제로 끝난 시각으로 남긴다               |
 
-TS 판단(Billing `isStoreEntitlementValid`, Access `resolvePremiumAccessDeadline`)과 SQL(`validStoreEntitlementCondition`)은 같은 규칙(`storeEntitlementEndsAt`)을 쓴다.
+TS 판단(Billing `isStoreEntitlementValid`, Access `resolvePaidAccessDeadline`)과 SQL(`validStoreEntitlementCondition`)은 같은 규칙(`storeEntitlementEndsAt`)을 쓴다.
 
 ## 끊은 보상 기간
 
@@ -42,7 +42,7 @@ RevenueCat `TRANSFER`에는 `app_user_id`·`product_id`가 없고 `transferred_f
 
 ## 보상 취소
 
-`RevokePremiumGrant`(출처 키 기준)는 기간을 지우지 않고 REVOKED로 남기며, 진행 중이면 지금 끝내고 다시 쌓아 둔 남은 기간도 함께 취소한다. 공개·관리자 HTTP 경로는 없고 운영 작업에서 UseCase로 호출한다.
+`RevokePremiumGrantUseCase`(출처 키 기준)는 기간을 지우지 않고 REVOKED로 남기며, 진행 중이면 지금 끝내고 다시 쌓아 둔 남은 기간도 함께 취소한다. 공개·관리자 HTTP 경로는 없고 운영 작업에서 UseCase로 호출한다.
 
 ## 상품 변경
 
@@ -68,7 +68,7 @@ RevenueCat은 non-2xx 응답이면 웹훅을 다시 보낸다([웹훅](https://w
 
 RevenueCat은 웹훅을 받은 뒤 REST API로 구독자 상태를 다시 읽기를 권한다([웹훅](https://www.revenuecat.com/docs/integrations/webhooks): "we recommend calling the GET /subscribers REST API endpoint after receiving any webhook"). 서버는 웹훅을 신호로 보고, 처리 원장에 새로 기록된 이벤트마다 같은 트랜잭션에 `store-subscription-reconcile.v1` 잡을 넣는다. 1분 구간마다 사용자당 잡 하나로 묶고(idempotency key `store-subscription-reconcile_<userId>_<구간 시작>`, 구간이 끝난 뒤 시작), 재시도 3회·backoff·만료 5분이다.
 
-`ReconcileStoreSubscriptions`는 사용자의 ACTIVE·CANCELLED 체인 행을 스토어 상태로 맞춘다. 스토어 읽기는 트랜잭션 밖에서 하고, 실패하면 아무것도 바꾸지 않고 던져 잡이 다시 시도한다. 재시도가 끝나면 운영 경보 `billing.subscription.reconcile.failed`를 올린다.
+`ReconcileStoreSubscriptionsUseCase`는 사용자의 ACTIVE·CANCELLED 체인 행을 스토어 상태로 맞춘다. 스토어 읽기는 트랜잭션 밖에서 하고, 실패하면 아무것도 바꾸지 않고 던져 잡이 다시 시도한다. 재시도가 끝나면 운영 경보 `billing.subscription.reconcile.failed`를 올린다.
 
 | 스토어 상태                     | 우리 행                                                                                             |
 | ------------------------------- | --------------------------------------------------------------------------------------------------- |
@@ -76,7 +76,7 @@ RevenueCat은 웹훅을 받은 뒤 REST API로 구독자 상태를 다시 읽기
 | 접근 있음                       | 만료(`current_period_ends_at`)·자동 갱신(ACTIVE/CANCELLED)·체험 여부·상품을 스토어 값으로 맞춘다    |
 | 스토어가 모르는 체인            | 바꾸지 않는다                                                                                       |
 
-바뀐 칸이 있을 때만 프리미엄을 다시 계산하고 캐시를 비운다. 로그는 잡 묶음마다 사용자 ID 없는 요약 한 건 `billing.subscription.reconcile.completed`(`jobCount`·`correctedUserCount`·`correctedChainCount`·`unchangedCount`·`fields`·`invalidCount`·`failedCount`·`errorTypes`)이고, 실패나 형식이 틀린 잡이 있으면 warn이다. 어느 사용자가 실패했는지는 재시도가 끝난 뒤의 운영 경보에만 싣는다. 대조 결과는 Discord로 보내지 않는다. 결제 채널은 RevenueCat 이벤트 카탈로그만 다루고, 고침은 사람이 손댈 일이 없으며 반복 실패만 운영 경보로 올린다.
+바뀐 칸이 있을 때만 프리미엄을 다시 계산하고 캐시를 비운다. 로그는 잡 묶음마다 사용자 ID 없는 요약 한 건 `billing.subscription.reconcile.completed`(`jobCount`·`correctedUserCount`·`correctedChainCount`·`unchangedCount`·`fields`·`failedCount`·`errorTypes`)이고, 실패나 형식이 틀린 잡이 있으면 warn이다. 어느 사용자가 실패했는지는 재시도가 끝난 뒤의 운영 경보에만 싣는다. 대조 결과는 Discord로 보내지 않는다. 결제 채널은 RevenueCat 이벤트 카탈로그만 다루고, 고침은 사람이 손댈 일이 없으며 반복 실패만 운영 경보로 올린다.
 
 API는 REST v2 [구독 검색](https://www.revenuecat.com/docs/api-v2/subscription)(`GET /projects/{project_id}/subscriptions?store_subscription_identifier=`)을 쓴다. 이 검색은 App Store 체인의 어떤 거래 ID나 Play의 어떤 주문 ID도 받으므로, 우리 체인 키 `Subscription.storeSubscriptionId`(DB 칼럼 `revenueCatId`, 웹훅의 `original_transaction_id`)로 행과 1:1로 맞는다. 응답의 [Subscription](https://www.revenuecat.com/docs/api-v2/subscription-data-model)은 `gives_access`·`auto_renewal_status`·`status`(`trialing` 등)·`current_period_ends_at`을 주므로 교체된 Play 체인·환불·체험을 웹훅 없이 판별한다. 상품 ID는 RevenueCat 내부 ID라 [상품 조회](https://www.revenuecat.com/docs/api-v2/product)의 `store_identifier`(Play는 `상품:기본요금제`)로 바꾸고 프로세스 안에서 한 번만 읽는다.
 
@@ -88,6 +88,14 @@ API는 REST v2 [구독 검색](https://www.revenuecat.com/docs/api-v2/subscripti
 
 ## 공급자 경계
 
-RevenueCat이 보내는 모양은 `infrastructure/revenuecat`에만 있다. 웹훅 원문은 `translateRevenueCatWebhook`이 검증해 공급자를 모르는 `StoreSubscriptionEvent`(kind: `STARTED`·`RENEWED`·`CANCELLED`·`REFUNDED`·`UNCANCELLED`·`EXPIRED`·`BILLING_ISSUE`·`PRODUCT_CHANGE_SCHEDULED`·`EXTENDED`·`TRANSFERRED`·`IGNORED`)로 바꾸고, `ApplyStoreSubscriptionEvent`가 구독 행과 프리미엄에 반영한다. 환불(`CANCELLATION` + `CUSTOMER_SUPPORT`)·`RC_BILLING`→`WEB_BILLING`·빠진 시각(0)·원 거래 ID 대체 같은 공급자 규칙은 번역기 한 곳이다. 같은 폴더에 서명 Guard와 상태 대조 REST 어댑터가 있다. 웹훅 경로·응답·DB 칼럼 `revenueCatId`·`@aido/api`의 웹훅 스키마는 운영 계약이라 그대로 둔다.
+RevenueCat이 보내는 모양은 `subscriptions/infrastructure/adapters/revenuecat`에만 있다(`*.wire.ts`·번역기·서명 가드·상태 조회 어댑터·수신기). 웹훅 원문은 `translateRevenueCatWebhook`이 검증해 공급자를 모르는 `StoreSubscriptionEvent`(kind: `STARTED`·`RENEWED`·`CANCELLED`·`REFUNDED`·`UNCANCELLED`·`EXPIRED`·`BILLING_ISSUE`·`PRODUCT_CHANGE_SCHEDULED`·`EXTENDED`·`TRANSFERRED`·`IGNORED`)로 바꾸고, `ApplyStoreSubscriptionEventUseCase`가 구독 행과 프리미엄에 반영한다. 환불(`CANCELLATION` + `CUSTOMER_SUPPORT`)·`RC_BILLING`→`WEB_BILLING`·빠진 시각(0)·원 거래 ID 대체 같은 공급자 규칙은 번역기 한 곳이다. 같은 폴더에 서명 Guard와 상태 대조 REST 어댑터가 있다. 웹훅 경로·응답·DB 칼럼 `revenueCatId`·`@aido/api`의 웹훅 스키마는 운영 계약이라 그대로 둔다.
 
 두 번째 공급자(예: 토스 웹 정기결제)를 붙일 때는 그 공급자의 번역기·컨트롤러가 같은 `StoreSubscriptionEvent`를 만들면 도메인·`/me`·알림은 그대로다. `SUBSCRIPTION_PROVIDERS`에 값을 더하고, 행마다 공급자를 저장해야 하면 그때 칼럼을 추가한다. 스토어가 갱신을 대신해 주지 않는 정기결제는 결제를 우리가 일으키므로 `RecurringPaymentGateway` 포트(빌링키 결제·취소)와 자체 갱신 스케줄러가 필요하고, 결제 결과를 같은 이벤트(`RENEWED`·`BILLING_ISSUE`·`EXPIRED`)로 넣는다. 공급자가 둘이 되어 고르는 규칙이 생기기 전에는 레지스트리·전략을 만들지 않는다.
+
+## 구조
+
+billing은 slice 둘이다. `premium-grants`는 보상 기간 Aggregate와 프리미엄 판단·projection(`ProjectPremiumAccessUseCase`)을 소유하고, `subscriptions`는 스토어 구독 체인·웹훅·RevenueCat ACL·상태 대조·체험/갱신 안내를 소유한다. 두 slice가 함께 쓰는 순수 판단(프리미엄 규칙, 요금제, 안내 기간, 스토어 갱신 유예)은 `billing/shared`에 있다. Nest 모듈은 `subscriptions → premium-grants` 한 방향이다.
+
+- 모든 시각은 `Temporal.Instant`이고 UseCase는 `ClockPort`로 지금을 읽는다. 처리기·스케줄이 시각을 따로 넘기는 UseCase(`Sweep*`·`Reconcile*`·`Revoke*`·안내)는 `now` 명령 필드를 받는다.
+- 다른 Context에 여는 문: `billing-premium-grants.public`(`BillingPremiumGrantsModule`·`PremiumAccessReaderPort`·`PremiumGranterPort`. `PremiumAccess`의 시각은 identity가 옮길 때까지 Date), `billing-subscriptions-entitlement.public`(스토어 엔타이틀먼트 끝 판단과 `STORE_RENEWAL_GRACE_MS`). 소비자는 클래스 토큰으로 주입받는다.
+- 큐 `premium-grant-sweep.v1`(10분, `missed: skip`)과 `store-subscription-reconcile.v1`은 `defineQueue`로 정의한다. 대조 큐는 스케줄이 없고 웹훅이 넣는다. payload는 배포 순간 쌓인 작업과 같은 `{ name, data }` 모양이다. 형식이 틀린 작업은 큐 어댑터가 그 작업만 실패시킨다.

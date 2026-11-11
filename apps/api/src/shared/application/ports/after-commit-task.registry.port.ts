@@ -1,5 +1,3 @@
-export const AFTER_COMMIT_TASK_REGISTRY = Symbol("AFTER_COMMIT_TASK_REGISTRY");
-
 export type AfterCommitTask = () => Promise<void>;
 
 /**

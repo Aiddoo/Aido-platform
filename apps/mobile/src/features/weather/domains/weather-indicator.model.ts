@@ -24,7 +24,7 @@ const POLLUTANT_UPPER_BOUNDS = {
 
 /** 오염 물질 하나의 등급. 그 물질의 값이 없으면 null이다. */
 function getPollutantGrade(
-  airQuality: Pick<AirQuality, AirPollutant>,
+  airQuality: AirQuality,
   pollutant: AirPollutant,
 ): AirQualityGrade | null {
   const value = airQuality[pollutant];
@@ -46,7 +46,7 @@ const UV_LEVELS = [
 /** WHO 자외선 지수 기준. 각 값 이하가 해당 단계다. */
 const UV_UPPER_BOUNDS = [2, 5, 7, 10] as const;
 
-function getUvLevel({ uvIndex }: Pick<CurrentWeather, 'uvIndex'>): UvLevel {
+function getUvLevel({ uvIndex }: CurrentWeather): UvLevel {
   return UV_LEVELS[getGradeIndex(uvIndex, UV_UPPER_BOUNDS)] ?? 'extreme';
 }
 
@@ -56,9 +56,7 @@ export type CompassDirection = (typeof COMPASS_DIRECTIONS)[number];
 const DEGREES_PER_DIRECTION = FULL_TURN_DEGREES / COMPASS_DIRECTIONS.length;
 
 /** 바람이 불어오는 방향(북=0도)을 8방위로 나눈다. 무풍 등으로 방향이 없으면 null이다. */
-function getCompassDirection({
-  windDirection,
-}: Pick<CurrentWeather, 'windDirection'>): CompassDirection | null {
+function getCompassDirection({ windDirection }: CurrentWeather): CompassDirection | null {
   if (windDirection == null) {
     return null;
   }
@@ -71,9 +69,7 @@ export type FeelsLikeComparison = 'colder' | 'similar' | 'warmer';
 /** 체감 온도와 실제 기온의 차이가 이 값(°C) 미만이면 비슷하다고 본다. */
 const FEELS_LIKE_SIMILAR_RANGE = 2;
 
-function getFeelsLikeComparison(
-  current: Pick<CurrentWeather, 'temperature' | 'apparentTemperature'>,
-): FeelsLikeComparison {
+function getFeelsLikeComparison(current: CurrentWeather): FeelsLikeComparison {
   const difference = current.apparentTemperature - current.temperature;
   if (Math.abs(difference) < FEELS_LIKE_SIMILAR_RANGE) {
     return 'similar';
@@ -87,7 +83,7 @@ const METERS_PER_KILOMETER = 1000;
 const CLEAR_VISIBILITY_KM = 10;
 const MODERATE_VISIBILITY_KM = 5;
 
-function getVisibilityLevel({ visibility }: Pick<CurrentWeather, 'visibility'>): VisibilityLevel {
+function getVisibilityLevel({ visibility }: CurrentWeather): VisibilityLevel {
   const kilometers = visibility / METERS_PER_KILOMETER;
   if (kilometers >= CLEAR_VISIBILITY_KM) {
     return 'clear';
@@ -100,7 +96,7 @@ const MOSTLY_CLOUDY_CLOUD_COVER = 40;
 
 export type CloudCoverLevel = 'overcast' | 'mostlyCloudy' | 'mostlyClear';
 
-function getCloudCoverLevel({ cloudCover }: Pick<CurrentWeather, 'cloudCover'>): CloudCoverLevel {
+function getCloudCoverLevel({ cloudCover }: CurrentWeather): CloudCoverLevel {
   if (cloudCover >= OVERCAST_CLOUD_COVER) {
     return 'overcast';
   }
@@ -113,7 +109,7 @@ export type WindLevel = 'calm' | 'breeze' | 'strong';
 const CALM_WIND_MPS = 1.5;
 const STRONG_WIND_MPS = 5.5;
 
-function getWindLevel({ windSpeed }: Pick<CurrentWeather, 'windSpeed'>): WindLevel {
+function getWindLevel({ windSpeed }: CurrentWeather): WindLevel {
   if (windSpeed < CALM_WIND_MPS) {
     return 'calm';
   }
@@ -123,7 +119,7 @@ function getWindLevel({ windSpeed }: Pick<CurrentWeather, 'windSpeed'>): WindLev
 /** 상대 습도가 이 값(%) 이상이면 눅눅하다고 안내한다. */
 const MUGGY_HUMIDITY = 80;
 
-function isMuggy({ humidity }: Pick<CurrentWeather, 'humidity'>): boolean {
+function isMuggy({ humidity }: CurrentWeather): boolean {
   return humidity >= MUGGY_HUMIDITY;
 }
 
