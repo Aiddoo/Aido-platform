@@ -56,16 +56,22 @@ interface SyncStorePremiumOptions {
   wait?: (ms: number) => Promise<void>;
 }
 
-/** 캐시에 낙관적으로 쓰지 않고 서버 값이 STORE가 될 때까지만 기다린다. 끝내 반영되지 않으면 false다 */
+/** 캐시에 낙관적으로 쓰지 않고 서버 값이 STORE가 될 때까지만 기다린다. 끝내 반영되지 않거나 기다리는 동안 사용자가 바뀌면 false다 */
 export async function syncMeUntilStorePremium(
   queryClient: QueryClient,
   { delays = STORE_PREMIUM_SYNC_DELAYS, wait = delay }: SyncStorePremiumOptions = {},
 ) {
+  const userId = getCachedMe(queryClient)?.id;
+
   for (const ms of delays) {
     if (isStorePremiumReflected(queryClient)) {
       return true;
     }
     await wait(ms);
+    // 기다리는 동안 로그아웃·계정 전환으로 사용자가 바뀌었으면 다른 사용자의 내 정보를 건드리지 않고 멈춘다
+    if (getCachedMe(queryClient)?.id !== userId) {
+      return false;
+    }
     await refetchMe(queryClient);
   }
 

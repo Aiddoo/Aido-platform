@@ -210,4 +210,42 @@ describe('syncMeUntilStorePremium', () => {
     expect(fetchMe).toHaveBeenCalledTimes(1);
     expect(wait).not.toHaveBeenCalled();
   });
+
+  it('기다리는 동안 로그아웃으로 캐시가 비워지면 더 다시 불러오지 않고 false를 반환한다', async () => {
+    // Given
+    const fetchMe = await serveMe(FREE_ME);
+    const clearDuringWait = jest.fn(async (_ms: number) => {
+      queryClient.clear();
+    });
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, {
+      delays: DELAYS,
+      wait: clearDuringWait,
+    });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(clearDuringWait).toHaveBeenCalledTimes(1);
+    expect(fetchMe).toHaveBeenCalledTimes(1);
+  });
+
+  it('기다리는 동안 다른 계정으로 바뀌면 그 계정의 내 정보를 다시 불러오지 않고 false를 반환한다', async () => {
+    // Given
+    const fetchMe = await serveMe(FREE_ME);
+    const switchAccount = jest.fn(async (_ms: number) => {
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), { ...FREE_ME, id: 'other-user' });
+    });
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, {
+      delays: DELAYS,
+      wait: switchAccount,
+    });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(switchAccount).toHaveBeenCalledTimes(1);
+    expect(fetchMe).toHaveBeenCalledTimes(1);
+  });
 });

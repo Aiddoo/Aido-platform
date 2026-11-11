@@ -153,6 +153,10 @@ export function useRestoreMutationOptions() {
         // 복원 버튼은 화면에 그대로 남아 다시 누를 수 있으니 토스트에서 문의로만 잇는다
         .with({ type: 'contactSupport' }, (failure) => {
           haptics.notify('error');
+          const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.getFailureCause(error));
+          if (reason != null) {
+            trackEvent('subscription_restore_failed', { reason });
+          }
           errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SUBSCRIPTION_RESTORE_FAILED, {
             feature: 'subscription',
             severity: 'warning',
