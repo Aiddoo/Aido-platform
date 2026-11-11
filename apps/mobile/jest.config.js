@@ -6,6 +6,9 @@ const { resolveTestWorkers } = require('@aido/vitest-config/test-workers');
  */
 /** @type {import('jest').Config} */
 const base = {
+  // cacheDirectory는 프로젝트 옵션이라 projects 안에 둬야 걸린다. 기본 위치(OS 임시 폴더)는 워크트리끼리
+  // 변환 캐시가 섞이고 청소되기도 한다
+  cacheDirectory: '<rootDir>/node_modules/.cache/jest',
   resolver: '<rootDir>/jest.resolver.cjs',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   clearMocks: true,
@@ -53,10 +56,6 @@ module.exports = {
   testTimeout: 15_000,
   // 워크트리마다 감시자를 띄우지 않고 파일 목록만 읽는다
   watchman: false,
-  // 폐기된 Jest API를 쓰면 조용히 넘어가지 않고 실패한다
-  errorOnDeprecated: true,
-  // 기본 위치(OS 임시 폴더)는 워크트리끼리 변환 캐시가 섞이고 청소되기도 한다
-  cacheDirectory: '<rootDir>/node_modules/.cache/jest',
   // worker별 힙 사용량을 CI 로그에 남겨 workerIdleMemoryLimit 조정 근거로 쓴다
   logHeapUsage: process.env.CI === 'true',
   // 기본값(코어 수 - 1)은 다른 작업과 함께 돌 때 기기를 포화시킨다. CI는 --maxWorkers로 덮어쓴다

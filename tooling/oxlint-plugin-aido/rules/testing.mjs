@@ -46,15 +46,14 @@ const noJestModuleMock = {
         }
         context.report({
           node,
-          message: `${moduleName}를 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderScreen를 쓰고, 네이티브 모듈은 jest.setup이나 moduleNameMapper에 둡니다.`,
+          message: `${moduleName}를 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderScreen을 쓰고, 네이티브 모듈은 jest.setup이나 moduleNameMapper에 둡니다.`,
         });
       },
     };
   },
 };
 
-const RENDER_UI_MODULE = '@src/testing/render';
-const TEST_TOOLS_MODULE = '@src/testing/core';
+const RENDER_SCREEN_MODULE = '@src/testing/render';
 const UI_TEST_MODULE_PREFIXES = [
   '@shopify/flash-list',
   '@src/shared/ui',
@@ -64,19 +63,8 @@ const UI_TEST_MODULE_PREFIXES = [
   'react-native',
 ];
 
-function isRenderUiImport(statement) {
-  if (statement.type !== 'ImportDeclaration') {
-    return false;
-  }
-  const moduleName = statement.source.value;
-  return (
-    moduleName === RENDER_UI_MODULE ||
-    (moduleName === TEST_TOOLS_MODULE &&
-      statement.specifiers.some(
-        (specifier) =>
-          specifier.type === 'ImportSpecifier' && specifier.local.name.startsWith('renderScreen'),
-      ))
-  );
+function isRenderScreenImport(statement) {
+  return statement.type === 'ImportDeclaration' && statement.source.value === RENDER_SCREEN_MODULE;
 }
 
 function isUiTestModule(moduleName) {
@@ -98,16 +86,16 @@ const todoCommentTestLocation = {
     schema: [
       {
         type: 'object',
-        properties: { allowRenderUi: { type: 'boolean' } },
+        properties: { allowRenderScreen: { type: 'boolean' } },
         additionalProperties: false,
       },
     ],
   },
   create(context) {
-    const allowRenderUi = context.options[0]?.allowRenderUi ?? false;
+    const allowRenderScreen = context.options[0]?.allowRenderScreen ?? false;
     return {
       Program(program) {
-        if (allowRenderUi && program.body.some(isRenderUiImport)) {
+        if (allowRenderScreen && program.body.some(isRenderScreenImport)) {
           return;
         }
         context.report({
@@ -129,7 +117,7 @@ const todoCommentTestPurity = {
         const importsUi = program.body.some(
           (statement) =>
             statement.type === 'ImportDeclaration' &&
-            (isUiTestModule(statement.source.value) || isRenderUiImport(statement)),
+            (isUiTestModule(statement.source.value) || isRenderScreenImport(statement)),
         );
         if (context.filename.endsWith('x') || importsUi) {
           context.report({

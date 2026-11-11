@@ -101,7 +101,7 @@ mutationOptions({
 });
 ```
 
-- **어디서 도나.** 앱 `MutationCache`(`bootstrap/query/mutation-error-feedback-cache.ts`)의 캐시 단계 `onError`가 `meta.errorFeedback`을 읽어 실패를 내보내고, DI·UI Provider 안에 한 번 둔 `bootstrap/query/mutation-error-feedback.tsx`가 받아 햅틱·토스트·보고를 한다. 토스트와 햅틱이 Provider 안의 훅이라 캐시가 직접 부르지 못한다. 언마운트하면 구독을 푼다. 테스트의 `createTestQueryClient`와 `renderUi`도 같은 캐시와 컴포넌트를 쓴다.
+- **어디서 도나.** 앱 `MutationCache`(`bootstrap/query/mutation-error-feedback-cache.ts`)의 캐시 단계 `onError`가 `meta.errorFeedback`을 읽어 실패를 내보내고, DI·UI Provider 안에 한 번 둔 `bootstrap/query/mutation-error-feedback.tsx`가 받아 햅틱·토스트·보고를 한다. 토스트와 햅틱이 Provider 안의 훅이라 캐시가 직접 부르지 못한다. 언마운트하면 구독을 푼다. 테스트의 `createTestQueryClient`와 `renderScreen`도 같은 캐시와 컴포넌트를 쓴다.
 - **왜 `MutationCache.subscribe`가 아닌가.** TanStack은 `await options.onSettled`가 끝난 뒤에야 `error` 상태를 알린다. `onSettled`가 재조회 Promise를 돌려주는 mutation(카테고리 순서, 모두 읽음, 댓글 삭제)은 토스트가 재조회를 기다리고, 오프라인이면 재조회가 멈춰 끝내 뜨지 않는다. 캐시 단계 `onError`는 기능 `onError`·`onSettled`보다 먼저 돈다. 그래서 칸 오류처럼 기능이 보일 오류는 미리 `isHandledByFeature`로 알려야 한다.
 - **문구와 보고.** `getUserFacingMessage`는 사용자 문구가 있는 오류(`ApiError`, 카탈로그의 `BusinessError`, 번역된 통신 오류)만 그대로 보이고 `ParseError`·SDK 오류(문자열 `code`가 있어도)의 개발용 message는 `fallbackKey`로 바꾼다. 보고 기준은 `isUnexpectedError`다. 코드를 지닌 오류와 연결 문제는 보고하지 않는다. 그래서 SDK 오류는 어댑터가 코드 없는 포트 오류(`ClipboardCopyError`처럼 원본은 `cause`)로 바꿔야 보고된다. 보고에는 `getErrorReportTags`가 `ServerError`의 상태·method·endpoint를 태그로 붙인다([관측](./observability.md#mutation-오류-피드백)).
 - **기능 `onError`.** 낙관적 갱신을 되돌리고, 이미 지워진 대상(`TODO_0833` 등)은 캐시에서 빼 서버 상태에 맞추고, `isHandledByFeature`로 뺀 오류만 보인다. 판별 함수는 `domains/{feature}.error.ts`의 것을 그대로 넘긴다(`isLimitedFeatureError`, `isTodoSeriesFailure`, `isLoginCancelledError`). 서버가 확정한 실패의 분석 이벤트만 함께 둔다([관측](./observability.md#어디서-추적하나)). 다시 던지지 않는다.

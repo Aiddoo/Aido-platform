@@ -919,7 +919,7 @@
         "aido/todo-comment-test-location": [
           "error",
           {
-            "allowRenderUi": true
+            "allowRenderScreen": true
           }
         ]
       }

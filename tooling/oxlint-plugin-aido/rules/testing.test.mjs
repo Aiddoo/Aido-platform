@@ -20,18 +20,14 @@ tester.run('todo-comment-test-location', rules['todo-comment-test-location'], {
   valid: [
     {
       code: "import { renderScreen } from '@src/testing/render';",
-      options: [{ allowRenderUi: true }],
-    },
-    {
-      code: "import { renderScreenWithDi } from '@src/testing/core';",
-      options: [{ allowRenderUi: true }],
+      options: [{ allowRenderScreen: true }],
     },
   ],
   invalid: [
     { code: "import { renderScreen } from '@src/testing/render';", errors: 1 },
     {
       code: "import { render } from '@testing-library/react-native';",
-      options: [{ allowRenderUi: true }],
+      options: [{ allowRenderScreen: true }],
       errors: 1,
     },
   ],
