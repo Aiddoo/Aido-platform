@@ -1,10 +1,11 @@
 import { z } from "zod";
 
 import { datetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 
 export const blockedUserSchema = z
   .object({
-    id: z.cuid().describe("차단한 사용자 ID (CUID 25자)"),
+    id: entityIdSchema.describe("차단한 사용자 ID"),
     userTag: z.string().length(8).describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z
@@ -34,7 +35,7 @@ export const blockedUsersResponseSchema = z
       .nonnegative()
       .describe("차단한 전체 사용자 수 (탈퇴 중인 사용자 제외)"),
     hasMore: z.boolean().describe("다음 페이지 존재 여부"),
-    nextCursor: z.cuid().nullable().describe("다음 페이지 커서 (없으면 null)"),
+    nextCursor: entityIdSchema.nullable().describe("다음 페이지 커서 (없으면 null)"),
   })
   .meta({
     example: {
@@ -58,7 +59,7 @@ export type BlockedUsersResponse = z.infer<typeof blockedUsersResponseSchema>;
 export const blockUserResponseSchema = z
   .object({
     message: z.string().describe("결과 메시지"),
-    blockedUserId: z.cuid().describe("차단한 사용자 ID (CUID 25자)"),
+    blockedUserId: entityIdSchema.describe("차단한 사용자 ID"),
     blockedAt: datetimeSchema.describe("차단한 시각 (이미 차단한 사용자면 처음 차단한 시각)"),
   })
   .meta({

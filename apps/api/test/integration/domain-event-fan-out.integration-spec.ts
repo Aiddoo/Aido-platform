@@ -9,21 +9,20 @@ import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { databaseConfig } from "#api/platform/config/database.config";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { DatabaseModule } from "#api/platform/database/database.module";
-import { EventEmitterDomainEventPublisher } from "#api/platform/events/event-emitter-domain-event.publisher";
 import { EventSubscriptionCatalog } from "#api/platform/events/event-subscription.catalog";
 import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import {
-  AfterCommitTaskRegistryPort,
   defineEventSubscription,
-  defineQueue,
-  UnitOfWorkPort,
   type PublishedDomainEvent,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/domain-event-publisher.port";
+import { defineQueue } from "#api/shared/application/ports/job-queue.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { TestDatabase } from "#test/setup/test-database";
 
 const SCHEMA = "pgboss";
@@ -89,13 +88,11 @@ function memoPinned(eventId: string, memoId: string): PublishedDomainEvent {
 @Module({
   providers: [
     {
-      provide: TypedConfigService,
-      useValue: {
-        database: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
-      },
+      provide: databaseConfig.KEY,
+      useValue: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
     },
   ],
-  exports: [TypedConfigService],
+  exports: [databaseConfig.KEY],
 })
 class TestConfigModule {}
 
@@ -146,9 +143,10 @@ describe("도메인 이벤트 fan-out (실제 PostgreSQL·pg-boss)", () => {
     txHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     eventEmitter = new EventEmitter2();
     publisher = new FanOutDomainEventPublisher(
-      new EventEmitterDomainEventPublisher(eventEmitter),
       new EventSubscriptionCatalog(SUBSCRIPTIONS),
-      new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry()),
+      new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+        shutdownTimeoutMs: 10_000,
+      }),
       module.get(AfterCommitTaskRegistryPort),
       eventEmitter,
     );

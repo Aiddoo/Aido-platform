@@ -1,81 +1,17 @@
-import type {
-  NotificationActionType as VocabularyNotificationActionType,
-  PushDevicePlatform,
-  SecurityEvent as VocabularySecurityEvent,
-  UserRole as VocabularyUserRole,
-  VERIFICATION_TYPE,
-} from "@aido/api/vocabulary";
-
 import type * as tables from "#api/platform/database/schema/index";
 
 export type Account = typeof tables.account.$inferSelect;
-export type AiReport = typeof tables.aiReport.$inferSelect;
 export type Cheer = typeof tables.cheer.$inferSelect;
-export type DailyCompletion = typeof tables.dailyCompletion.$inferSelect;
 export type Follow = typeof tables.follow.$inferSelect;
-export type LoginAttempt = typeof tables.loginAttempt.$inferSelect;
-export type Memo = typeof tables.memo.$inferSelect;
-export type Notification = typeof tables.notification.$inferSelect;
 export type Nudge = typeof tables.nudge.$inferSelect;
-export type OAuthState = typeof tables.oAuthState.$inferSelect;
-export type PushDailyBudget = typeof tables.pushDailyBudget.$inferSelect;
-export type PushDeliveryAttempt = typeof tables.pushDeliveryAttempt.$inferSelect;
-export type PushDispatch = typeof tables.pushDispatch.$inferSelect;
-export type PushDispatchOutbox = typeof tables.pushDispatchOutbox.$inferSelect;
-export type PushRateLimitReservation = typeof tables.pushRateLimitReservation.$inferSelect;
-export type PushDevice = typeof tables.pushDevice.$inferSelect;
-export type PushToken = typeof tables.pushToken.$inferSelect;
-export type RecurringSuggestion = typeof tables.recurringSuggestion.$inferSelect;
-export type ReminderNudge = typeof tables.reminderNudge.$inferSelect;
-export type RetentionExperimentAssignment =
-  typeof tables.retentionExperimentAssignment.$inferSelect;
-export type RetentionExperimentResult = typeof tables.retentionExperimentResult.$inferSelect;
-export type RetentionExperimentStage = typeof tables.retentionExperimentStage.$inferSelect;
-export type SecurityLog = typeof tables.securityLog.$inferSelect;
 export type Session = typeof tables.session.$inferSelect;
-export type Subscription = typeof tables.subscription.$inferSelect;
 export type Todo = typeof tables.todo.$inferSelect;
 export type TodoCategory = typeof tables.todoCategory.$inferSelect;
-export type TodoComment = typeof tables.todoComment.$inferSelect;
-export type TodoCommentLike = typeof tables.todoCommentLike.$inferSelect;
-export type TodoItem = typeof tables.todoItem.$inferSelect;
-export type TodoView = typeof tables.todoView.$inferSelect;
 export type User = typeof tables.user.$inferSelect;
-export type UserActivityDay = typeof tables.userActivityDay.$inferSelect;
-export type UserBlock = typeof tables.userBlock.$inferSelect;
 export type UserConsent = typeof tables.userConsent.$inferSelect;
-export type UserLocation = typeof tables.userLocation.$inferSelect;
 export type UserPreference = typeof tables.userPreference.$inferSelect;
 export type UserProfile = typeof tables.userProfile.$inferSelect;
-export type UserReport = typeof tables.userReport.$inferSelect;
 export type Verification = typeof tables.verification.$inferSelect;
-export type WeeklyAchievement = typeof tables.weeklyAchievement.$inferSelect;
 
 export type AccountProvider = (typeof tables.accountProvider.enumValues)[number];
-export type FollowStatus = (typeof tables.followStatus.enumValues)[number];
-// 객체 형태 vocabulary로 만든 pgEnum은 enumValues가 string[]이라 vocabulary 타입을 쓴다
-export type NotificationActionType = VocabularyNotificationActionType;
-export type NotificationPurpose = (typeof tables.notificationPurpose.enumValues)[number];
-export type NotificationType = (typeof tables.notificationType.enumValues)[number];
-export type NudgeReplyKind = (typeof tables.nudgeReplyKind.enumValues)[number];
-export type Platform = PushDevicePlatform;
-export type PushDeliveryMode = (typeof tables.pushDeliveryMode.enumValues)[number];
-export type PushDeliveryStatus = (typeof tables.pushDeliveryStatus.enumValues)[number];
-export type PushDispatchOutboxStatus = (typeof tables.pushDispatchOutboxStatus.enumValues)[number];
-export type PushDispatchStatus = (typeof tables.pushDispatchStatus.enumValues)[number];
-export type PushRateLimitPhase = (typeof tables.pushRateLimitPhase.enumValues)[number];
-export type ReportType = (typeof tables.reportType.enumValues)[number];
-export type RetentionExperimentStageName =
-  (typeof tables.retentionExperimentStageName.enumValues)[number];
-export type RetentionExperimentStageStatus =
-  (typeof tables.retentionExperimentStageStatus.enumValues)[number];
-export type RetentionExperimentVariant =
-  (typeof tables.retentionExperimentVariant.enumValues)[number];
-export type SecurityEvent = VocabularySecurityEvent;
-export type SubscriptionStatus = (typeof tables.subscriptionStatus.enumValues)[number];
-export type SuggestionStatus = (typeof tables.suggestionStatus.enumValues)[number];
 export type TimeFormat = (typeof tables.timeFormat.enumValues)[number];
-export type TodoVisibility = (typeof tables.todoVisibility.enumValues)[number];
-export type UserRole = VocabularyUserRole;
-export type UserStatus = (typeof tables.userStatus.enumValues)[number];
-export type VerificationType = (typeof VERIFICATION_TYPE)[keyof typeof VERIFICATION_TYPE];

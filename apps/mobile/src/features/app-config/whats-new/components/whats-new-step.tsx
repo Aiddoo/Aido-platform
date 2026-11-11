@@ -2,7 +2,7 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, H3, STACK_CLOSE_ICON, Spacing, Text } from '@src/shared/ui';
+import { Box, H3, HStack, STACK_CLOSE_ICON, Spacing, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { Stack } from 'expo-router';
 import { Chip, PressableFeedback } from 'heroui-native';
@@ -79,8 +79,15 @@ export function WhatsNewStep({
   );
 }
 
-/** 닫기는 흐름형 화면 규칙대로 네이티브 헤더 오른쪽(Duo 레일 포함)에 두고, 본문에는 새 기능 표시만 둔다 */
-WhatsNewStep.Header = function Header({ isNew, onClose }: { isNew: boolean; onClose: () => void }) {
+interface HeaderProps {
+  isNew: boolean;
+  /** 패치 노트의 버전 */
+  version: string;
+  onClose: () => void;
+}
+
+/** 닫기는 흐름형 화면 규칙대로 네이티브 헤더 오른쪽(Duo 레일 포함)에 두고, 본문에는 새 기능 표시와 버전만 둔다 */
+WhatsNewStep.Header = function Header({ isNew, version, onClose }: HeaderProps) {
   const { t } = useTranslation(['whatsNew', 'common']);
 
   return (
@@ -92,13 +99,18 @@ WhatsNewStep.Header = function Header({ isNew, onClose }: { isNew: boolean; onCl
           onPress={onClose}
         />
       </Stack.Toolbar>
-      {isNew && (
-        <Chip size="sm" className="self-start bg-highlight">
-          <Text size="e1" weight="semibold" tone="brand">
-            {t('list.newBadge')}
-          </Text>
-        </Chip>
-      )}
+      <HStack align="center" gap={8}>
+        {isNew && (
+          <Chip size="sm" className="bg-highlight">
+            <Text size="e1" weight="semibold" tone="brand">
+              {t('list.newBadge')}
+            </Text>
+          </Chip>
+        )}
+        <Text size="e1" shade={6} accessibilityLabel={t('list.versionLabel', { version })}>
+          {t('list.version', { version })}
+        </Text>
+      </HStack>
     </>
   );
 };

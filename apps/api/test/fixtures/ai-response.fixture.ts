@@ -5,7 +5,7 @@ import type {
   ScheduleDraft,
   TimeRef,
   TodoDraft,
-} from "#api/modules/ai-assistance/domain/types/parsing/todo-draft.types";
+} from "#api/modules/ai-assistance/shared/domain/todo-draft.constants";
 
 /** 테스트가 말한 칸만 쓰면 나머지는 모델처럼 null로 채운다. */
 export type DateRefInput = Partial<DateRef> & Pick<DateRef, "kind">;
@@ -34,7 +34,7 @@ export function dateRefFixture(input: DateRefInput): DateRef {
   };
 }
 
-export function timeRefFixture(input: Partial<TimeRef>): TimeRef {
+function timeRefFixture(input: Partial<TimeRef>): TimeRef {
   return {
     hour: null,
     minute: null,

@@ -558,8 +558,8 @@ describe('할 일 쓰기의 낙관적 값과 렌더', () => {
       w.toggleSubTodo.mutateAsync({ todoId: 1, subTodoId: 11, isCompleted: true, date: DAY }),
     );
     const optimistic = {
-      row: SubTodoPolicy.getSubTodoStats({ subTodos: listTodo(1)?.subTodos ?? [] }),
-      detail: SubTodoPolicy.getSubTodoStats({ subTodos: detailTodo()?.subTodos ?? [] }),
+      row: SubTodoPolicy.getSubTodoStats(listTodo(1)?.subTodos ?? []),
+      detail: SubTodoPolicy.getSubTodoStats(detailTodo()?.subTodos ?? []),
     };
     await settleWrites();
 
@@ -568,7 +568,7 @@ describe('할 일 쓰기의 낙관적 값과 렌더', () => {
       row: { total: 2, completed: 2 },
       detail: { total: 2, completed: 2 },
     });
-    expect(SubTodoPolicy.getSubTodoStats({ subTodos: listTodo(1)?.subTodos ?? [] })).toEqual(
+    expect(SubTodoPolicy.getSubTodoStats(listTodo(1)?.subTodos ?? [])).toEqual(
       server.find(1)?.itemStats,
     );
     expect(renders).toEqual({ calendar: 0, list: 1 });
@@ -627,8 +627,8 @@ describe('할 일 쓰기의 되돌리기와 겹친 쓰기', () => {
 
     // Then
     expect({
-      row: SubTodoPolicy.getSubTodoStats({ subTodos: listTodo(1)?.subTodos ?? [] }),
-      detail: SubTodoPolicy.getSubTodoStats({ subTodos: detailTodo()?.subTodos ?? [] }),
+      row: SubTodoPolicy.getSubTodoStats(listTodo(1)?.subTodos ?? []),
+      detail: SubTodoPolicy.getSubTodoStats(detailTodo()?.subTodos ?? []),
     }).toEqual({ row: { total: 2, completed: 1 }, detail: { total: 2, completed: 1 } });
   });
 

@@ -4,17 +4,18 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 ## 정본
 
-`drizzle-orm`·`drizzle-kit` `1.0.0-rc.5`(catalog `drizzle1`)와 공식 트랜잭션 어댑터 `@nestjs-cls/transactional-adapter-drizzle-orm`을 쓴다.
+`drizzle-orm`·`drizzle-kit` `1.0.0-rc.5`(catalog `drizzle1`), `@nestjs/drizzle`(Pool 수명주기), 공식 트랜잭션 어댑터 `@nestjs-cls/transactional-adapter-drizzle-orm`을 쓴다.
 
-| 항목            | 경로/명령                                                             |
-| --------------- | --------------------------------------------------------------------- |
-| 테이블·enum     | `src/platform/database/schema/<context>.schema.ts`, `enums.schema.ts` |
-| relations (RQB) | `src/platform/database/schema/relations.ts` (`defineRelations`)       |
-| 클라이언트·풀   | `src/platform/database/database.client.ts`, `postgres-pool.ts`        |
-| 설정            | `drizzle.config.ts`                                                   |
-| 마이그레이션    | `drizzle/<timestamp>_<name>/{migration.sql,snapshot.json}`            |
-| 생성·검사       | `pnpm --filter @aido/server db:generate --name <name>`, `db:check`    |
-| 적용(로컬·배포) | `pnpm db:migrate` (`tooling/database-migrate/migrate.mjs`)            |
+| 항목            | 경로/명령                                                                            |
+| --------------- | ------------------------------------------------------------------------------------ |
+| 테이블·enum     | `src/platform/database/schema/<context>.schema.ts`, `enums.schema.ts`                |
+| relations (RQB) | `src/platform/database/schema/relations.ts` (`defineRelations`)                      |
+| Temporal 칼럼   | `src/platform/database/columns/temporal-columns.ts` (`instant`, `plainDate`)         |
+| 클라이언트·풀   | `src/platform/database/database.module.ts`, `database.client.ts`, `postgres-pool.ts` |
+| 설정            | `drizzle.config.ts`                                                                  |
+| 마이그레이션    | `drizzle/<timestamp>_<name>/{migration.sql,snapshot.json}`                           |
+| 생성·검사       | `pnpm --filter @aido/server db:generate --name <name>`, `db:check`                   |
+| 적용(로컬·배포) | `pnpm db:migrate` (`tooling/database-migrate/migrate.mjs`)                           |
 
 ## Repository와 Reader
 
@@ -23,60 +24,68 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 | Aggregate 상태       | Repository Port + `*-row.mapper.ts`(행 → 도메인 복원은 매퍼 한 곳)    |
 | join·집계 projection | Reader Port + Read Model(CQRS-lite). 트랜잭션 밖 조회는 복제본 후보다 |
 
-- 구현은 `TransactionHost<DrizzleTransactionalAdapter>`를 받아 `txHost.tx`만 쓴다. 중첩 `Propagation.Nested`는 savepoint다.
-- 조회는 RQB v2(`tx.query.<table>.findFirst/findMany`)나 query builder, 변경은 `insert/update/delete … returning()`, 충돌은 `onConflictDoUpdate`/`onConflictDoNothing`이다.
+- 구현은 `TransactionHost<DrizzleTransactionalAdapter>`를 받아 `txHost.tx`만 쓴다. 중첩은 `SavepointRunnerPort`(savepoint)다.
+- 조회는 RQB v2(`tx.query.<table>.findFirst`·`findMany`)나 query builder, 변경은 `insert/update/delete … returning()`, 충돌은 `onConflictDoUpdate`/`onConflictDoNothing`이다.
 - 조건은 ORM 연산자(`eq`·`and`·`inArray`), 개수는 `$count`, 존재는 `exists`다. 여러 행 upsert는 한 문장(``set: { col: sql`excluded.col` }``)이다.
 - 항목 수에 비례해 쿼리를 퍼뜨리지 않는다. N번 조회는 `inArray` 한 번 + `keyBy`/`groupBy`다. `Promise.all`은 트랜잭션 밖의 독립 읽기에만 쓴다.
 - 행 타입은 `$inferSelect`/`$inferInsert`로 유도한다. ORM 타입은 infrastructure 밖으로 나가지 않는다.
-- Reader 사례: 댓글 overview·대화는 [DrizzleTodoCommentReader](../src/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader.ts)가 root keyset을 SQL로 읽고 page 단위 좋아요를 합친다. viewer 상태·cursor 문맥이 있어 공유 캐시를 쓰지 않는다. 리마인더 스케줄러의 [DrizzleSchedulerReader](../src/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader.ts)는 발송 대상 판정을 위해 다른 Context 테이블을 한 SQL로 읽는 배치 Read Model이다(쓰기와 판단은 소유 Context).
+- Reader 사례: [DrizzleTodoCommentReader](../src/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader.ts)는 댓글 overview·대화를 root keyset으로 읽고 page 단위 좋아요를 합친다(viewer 상태·cursor 문맥이 있어 공유 캐시를 쓰지 않는다).
+- 다른 Context의 테이블은 읽지도 쓰지도 않는다. 필요한 projection은 소유 Context가 public 조회 포트로 열고 그 Context의 Reader가 SQL을 가진다([아키텍처](architecture.md#의존-규칙과-강제)).
+
+## 저장과 잠금
+
+`save(aggregate)`는 읽어 온 Aggregate의 바뀔 수 있는 칸을 모두 쓴다. 그래서 같은 Aggregate를 바꾸는 UseCase는 모두 하나의 공통 잠금을 UoW 안에서 읽기 전에 잡는다. 잡지 않으면 동시에 읽은 두 요청 중 나중 `save`가 앞 요청의 변경을 덮는다(lost update). 다른 행을 미는 집합 update(순서 밀기)도 같은 잠금 아래에서 한다.
+
+- 사례: 메모 수정(`UpdateMemoUseCase`)·고정(`SetMemoPinnedUseCase`)·순서 이동(`ReorderMemoUseCase`)은 같은 메모 행을 `save`하고 순서 이동은 다른 메모의 `sortOrder`도 `shiftSortOrders`로 민다. 셋은 같은 잠금 키([memos.lock-keys.ts](../src/modules/notes/memos/application/memos.lock-keys.ts))를 잡는다.
+- 예외: 한 칸만 조건부로 바꾸는 갱신(`readAt`을 `WHERE "readAt" IS NULL`일 때만 채우기)은 잠금 없이 저장소의 전용 메서드로 둔다. 조건이 경합을 막고 다른 칸을 덮지 않기 때문이다.
 
 ## raw SQL
 
-허용은 네 경우뿐이다. Drizzle `sql` 템플릿에 테이블·컬럼을 참조로 넘긴다(`${todo.id}`).
+기본은 ORM API다: `leftJoinLateral`, `$with`(CTE), `.for("update", { skipLocked: true })`, `$count`, `exists`. 튜플 keyset 비교는 `platform/database/keyset.ts`의 `tupleLessThan(columns, values)` 하나다.
 
-1. `pg_advisory_xact_lock`
-2. 시퀀스 `nextval`
-3. `UPDATE … FROM (VALUES …)`
-4. pg-boss SQL 브리지(`drizzle-pg-boss.database.ts`)
-
-나머지는 ORM API로 쓴다: `leftJoinLateral`, `$with`(CTE), `.for("update", { skipLocked: true })`, `$count`, `exists`. 튜플 keyset 비교는 `platform/database/keyset.ts`의 `tupleLessThan(columns, values)` 하나다.
+raw SQL은 ORM으로 쓸 수 없을 때만 Drizzle `sql` 템플릿에 테이블·칼럼을 참조로 넘겨(`${todo.id}`, `sql.identifier(col.name)`) 쓰고 이유를 한 줄 남긴다. 지금 쓰는 경우는 `pg_advisory_xact_lock`(`PostgresMutationLockAdapter`), 시퀀스 `nextval`(`sequence.ts`), `UPDATE … FROM (VALUES …)`(푸시 receipt·보상 기간 묶음 갱신), pg-boss SQL 브리지(`platform/jobs/drizzle-pg-boss.database.ts`)다.
 
 ## 시간 칼럼
 
-| 값        | DB                                | 서버 타입(목표)      |
+| 값        | DB                                | 서버 타입            |
 | --------- | --------------------------------- | -------------------- |
 | 순간      | `timestamp(3)` / `timestamptz(3)` | `Temporal.Instant`   |
 | 달력 날짜 | `date`                            | `Temporal.PlainDate` |
-| 벽시계    | `varchar(5)`                      | `Temporal.PlainTime` |
+| 벽시계    | `varchar(5)`                      | 문자열 `HH:mm`       |
 
-- Drizzle `customType` 두 개(`instant`, `plainDate`)가 Temporal을 주고받는다. `dataType()`은 기존 문자열(`"timestamp(3)"`, `"timestamp(3) with time zone"`, `"date"`)을 정확히 돌려줘 `db:generate`가 빈 diff여야 한다. `codec`은 문자열을 받고 RQB `with`용 `fromJson`을 둔다. custom column은 `.defaultNow()`가 없어 ``.default(sql`now()`)``를 쓴다.
+- `instant`·`plainDate` customType이 Temporal을 주고받는다. `dataType()`은 기존 문자열(`"timestamp(3)"`, `"timestamp(3) with time zone"`, `"date"`)을 정확히 돌려줘 `db:generate`가 빈 diff여야 한다. custom column은 `.defaultNow()`가 없어 ``.default(sql`now()`)``를 쓴다.
 - 풀은 세션 `TimeZone=UTC`를 고정한다. 규칙은 [날짜](../../../docs/conventions/dates.md)다.
-- `updatedAt`은 도메인이 `ClockPort` 값으로 직접 둔다. 스키마 `$onUpdate`로 숨겨 채우지 않는다. 집합 update(순서 이동 등)도 지금처럼 `updatedAt: now`를 명시한다.
+- `updatedAt`은 도메인이 `ClockPort` 값으로 직접 둔다. 스키마 `$onUpdate`·`$defaultFn`으로 숨겨 채우지 않는다(DB 기본값이 없으면 테스트 seed도 값을 넣는다). 집합 update도 `updatedAt: now`를 명시한다. 사례: [Memo 테이블](../src/platform/database/schema/notes.schema.ts)·[DrizzleMemoRepository](../src/modules/notes/memos/infrastructure/persistence/drizzle-memo.repository.ts).
+- 새 시각 칸은 `instant`·`plainDate`만 쓴다. `timestamp(…, { mode: "date" })`·`date(…, { mode: "date" })`와 `$onUpdate`를 쓰지 않는다. 칸을 바꿀 때 그 테이블의 저장소·Reader·테스트 seed를 같은 커밋에서 Temporal로 바꾼다.
 
 ## 풀 설정
 
-`platform/database/postgres-pool.ts`의 목표 값이다.
+[postgres-pool.ts](../src/platform/database/postgres-pool.ts)가 세션 옵션을 고정하고 값은 env([설정](configuration.md))다.
 
-| 설정                                  | 값                                                                                                      |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `application_name`                    | `aido-api`                                                                                              |
-| `statement_timeout`·`lock_timeout`    | 15s · 5s (배치는 `unitOfWork.run(work, { statementTimeoutMs })`가 그 트랜잭션에만 `SET LOCAL`로 늘린다) |
-| `idle_in_transaction_session_timeout` | 60s                                                                                                     |
-| `connectionTimeoutMillis`             | 약 5s, 넘으면 503으로 빨리 실패                                                                         |
-| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3. 메모리 때문에 늘리지 않는다                                      |
-| TLS                                   | `sslmode=verify-full`(RDS CA는 이미지에 있다)                                                           |
+| 설정                                  | 값                                                                                                                                           |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `application_name`                    | `aido-api`                                                                                                                                   |
+| `statement_timeout`·`lock_timeout`    | 15s · 5s (배치는 `unitOfWork.run(work, { statementTimeoutMs })`가 그 트랜잭션에만 `set_config(…, true)`로 늘린다)                            |
+| `idle_in_transaction_session_timeout` | 60s                                                                                                                                          |
+| 연결 대기                             | `DATABASE_POOL_CONNECTION_TIMEOUT_MS` 5s, 넘으면 503으로 빨리 실패                                                                           |
+| `query_timeout`(클라이언트)           | 20s. 서버 `statement_timeout`보다 길어 평소에는 서버가 먼저 취소하고, DB가 답하지 않을 때만 끊는다                                           |
+| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3(연결·쿼리 상한은 앱 풀과 같다). 메모리 때문에 늘리지 않는다                                            |
+| TLS                                   | URL에 `sslmode`(운영 `require`)가 있으면 TLS로 연결하고 인증서를 검증한다(이미지의 RDS CA `NODE_EXTRA_CA_CERTS`). 규칙은 [보안](security.md) |
 
 ## DB 오류 번역
 
-| SQLSTATE                | 분류                     | 처리                                                                                     |
-| ----------------------- | ------------------------ | ---------------------------------------------------------------------------------------- |
-| `23505`·`23503`·`23514` | unique·FK·check          | 저장소가 `isUniqueConstraintViolation(error, "<제약>")`으로 자기 제약만 업무 오류로 번역 |
-| `40001`·`40P01`         | 직렬화·교착              | 멱등한 UoW만 `run(work, { retryOnConflict: true })`로 1회 재실행                         |
-| `55P03`·`57014`         | lock·statement 시간 초과 | `TransientInfrastructureError` → 409 `SYS_0004` 또는 503                                 |
-| `08***`·`57P01`         | 연결                     | 같음                                                                                     |
+| SQLSTATE                                | 분류                      | 처리                                                                                       |
+| --------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------ |
+| `23505`                                 | unique                    | 저장소가 `isUniqueConstraintViolation(error)`로 잡아 자기 제약만 업무 오류로 번역          |
+| `23503`                                 | FK                        | 400 `SYS_0002`, 로그 `database.foreign-key.violated`                                       |
+| `40001`·`40P01`                         | 직렬화·교착               | 멱등한 호출자만 `isTransactionWriteConflict`로 다시 시도(예: Postgres 푸시 rate limiter)   |
+| `55P03`·`57014`                         | lock·statement 시간 초과  | 503 `SYS_0005`(잠시 후 다시 시도)                                                          |
+| `08***`·`57P01`, 풀 대기 초과·연결 끊김 | 연결                      | 같음. SQLSTATE가 없는 pg·pg-pool 고정 문구와 Drizzle 쿼리 아래 네트워크 오류도 연결로 본다 |
+| 없음(`Query read timeout`)              | 클라이언트 쿼리 시간 초과 | 같음                                                                                       |
 
-- 분류표는 `platform/database/database-error.ts` 한 곳이다. `GlobalExceptionFilter`는 제약 이름을 모르고 SQLSTATE 폴백만 한다. 미지의 unique는 409 `SYS_0004`에 `OPERATIONAL_ALERT`를 올린다.
-- 단건 변경 결과가 없으면 부재 오류를 낸다. 잠금·CAS·rollback은 실제 PostgreSQL integration으로 확인한다.
+- 분류표는 [classifyDatabaseError](../src/platform/database/database-error.util.ts) 한 곳이다. `GlobalExceptionFilter`가 이 분류로 응답을 정한다. 플랫폼 필터는 Context의 제약 이름을 모른다. 저장소가 번역하지 않은 unique는 409 `SYS_0004`와 경보(`database.unique-constraint.unknown`)이므로, 업무 의미가 있는 제약은 그 저장소가 `isUniqueConstraintViolation(error)`와 `databaseConstraint(error)`로 자기 제약인지 확인해 기존 코드·details를 내게 한다.
+- 유휴 연결이 끊기면 pg-pool이 그 연결을 빼고, 풀은 같은 분류로 `database.idle-connection.failed`를 warn으로 남긴다(듣는 쪽이 없으면 프로세스가 죽는다).
+- 단건 변경 결과가 없으면 부재 오류(`requireRecord`)를 낸다. 잠금·CAS·rollback은 실제 PostgreSQL integration으로 확인한다.
 
 ## 마이그레이션
 
@@ -88,7 +97,3 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 6. 큰 테이블 잠금은 배포 전 운영 건수를 읽기 전용으로 확인하고, 수만 행을 넘으면 칼럼 추가·나눠 채우기·`CREATE INDEX CONCURRENTLY`로 나눈다.
 
 `db:deploy`(migrate 이미지)는 URL guard → pg-boss migrate → Drizzle migrate 순서이고 원격 DB는 `AIDO_ALLOW_REMOTE_DB=1`일 때만 허용한다. 이미지 롤백은 DB를 되돌리지 않는다([배포](deployment.md#롤백의-범위)).
-
-## 전환 중
-
-아직 옮기지 않은 Context의 저장소는 `mode: "date"`(`date`는 UTC 자정 `Date`), `$onUpdate`, raw SQL(LATERAL·윈도 집계·`FOR UPDATE SKIP LOCKED`), 필터의 제약 이름 map을 그대로 쓴다. customType·`$onUpdate` 제거·raw SQL 정리는 각 Context를 옮길 때 자기 테이블과 그 테이블을 읽는 다른 Context reader를 함께 바꾼다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

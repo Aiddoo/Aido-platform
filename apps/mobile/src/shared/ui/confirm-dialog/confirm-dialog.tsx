@@ -89,23 +89,24 @@ function ConfirmDialogActions({
   );
 }
 
+// HeroUI Title·Description은 Text라 안쪽 글자는 중첩 Text가 된다. iOS는 바깥 Text의 줄바꿈 규칙만 따라 규칙을 바깥에 준다
 ConfirmDialog.Title = function Title({ children }: { children: ReactNode }) {
   return (
-    <Dialog.Title>
-      <H4 lineBreakStrategyIOS="hangul-word">{children}</H4>
+    <Dialog.Title lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+      <H4>{children}</H4>
     </Dialog.Title>
   );
 };
 
 ConfirmDialog.Description = function Description({ children }: { children: ReactNode }) {
   return (
-    <Dialog.Description>
+    <Dialog.Description lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
       {typeof children === 'string' ? (
         <WordWrapText size="b3" shade={6}>
           {children}
         </WordWrapText>
       ) : (
-        <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+        <Text size="b3" shade={6}>
           {children}
         </Text>
       )}

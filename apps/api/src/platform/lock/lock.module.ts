@@ -1,11 +1,12 @@
 import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service.js";
+import { cacheConfig, selectSharedRedis } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryLockAdapter } from "./adapters/in-memory-lock.adapter.js";
 import { RedisLockAdapter } from "./adapters/redis-lock.adapter.js";
-import { type ILockProvider, LOCK_PROVIDER } from "./interfaces/lock.interface.js";
+import { LockProviderPort } from "./lock-provider.port.js";
 
 /**
  * 잠금 모듈
@@ -32,23 +33,18 @@ export class LockModule {
    */
   static forRoot(): DynamicModule {
     const lockProvider: Provider = {
-      provide: LOCK_PROVIDER,
-      useFactory: (configService: TypedConfigService, redis?: Redis): ILockProvider => {
-        const cacheType = configService.cache.type;
-
-        if (cacheType === "redis" && redis) {
-          return new RedisLockAdapter(redis);
-        }
-
-        return new InMemoryLockAdapter();
+      provide: LockProviderPort,
+      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis): LockProviderPort => {
+        const shared = selectSharedRedis(cache, redis);
+        return shared == null ? new InMemoryLockAdapter() : new RedisLockAdapter(shared);
       },
-      inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
+      inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };
 
     return {
       module: LockModule,
-      providers: [TypedConfigService, lockProvider],
-      exports: [LOCK_PROVIDER],
+      providers: [lockProvider],
+      exports: [LockProviderPort],
     };
   }
 
@@ -63,11 +59,11 @@ export class LockModule {
    *   imports: [LockModule.forTesting(mockAdapter)],
    * }).compile();
    */
-  static forTesting(adapter: ILockProvider): DynamicModule {
+  static forTesting(adapter: LockProviderPort): DynamicModule {
     return {
       module: LockModule,
-      providers: [{ provide: LOCK_PROVIDER, useValue: adapter }],
-      exports: [LOCK_PROVIDER],
+      providers: [{ provide: LockProviderPort, useValue: adapter }],
+      exports: [LockProviderPort],
     };
   }
 }

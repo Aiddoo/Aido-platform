@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/api/errors";
 /**
  * resolveSentryOptions 단위 테스트
  *
@@ -11,7 +12,20 @@
  * pnpm --filter @aido/server test sentry-options
  * ```
  */
-import { isRequestBodyIgnored, resolveSentryOptions } from "./sentry-options.js";
+import * as Sentry from "@sentry/nestjs";
+
+import { ApplicationException } from "#api/shared/application/application.exception";
+
+import {
+  beforeSendError,
+  DEFAULT_HTTP_TRACE_RATE,
+  DEFAULT_JOB_TRACE_RATE,
+  JOB_QUEUE_SPAN_ATTRIBUTE,
+  resolveSentryOptions,
+  sampleTrace,
+  scrubErrorEvent,
+  SENTRY_DATA_COLLECTION,
+} from "./sentry-options.js";
 
 const DSN = "https://key@o0.ingest.sentry.io/0";
 
@@ -90,17 +104,13 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
     expect(options.environment).toBe("staging");
   });
 
-  it("잘못된 APP_ENV 값은 NODE_ENV 폴백을 따른다", () => {
+  it("잘못된 APP_ENV 값은 설정 검증과 같이 거절한다", () => {
     // When
-    const options = resolveSentryOptions({
-      APP_ENV: "prod-typo",
-      NODE_ENV: "production",
-      SENTRY_DSN: DSN,
-    });
+    const resolve = () =>
+      resolveSentryOptions({ APP_ENV: "prod-typo", NODE_ENV: "production", SENTRY_DSN: DSN });
 
     // Then
-    expect(options.environment).toBe("production");
-    expect(options.enabled).toBe(true);
+    expect(resolve).toThrow();
   });
 
   describe("tracePropagationTargets — 외부 API 추적 헤더 차단", () => {
@@ -136,32 +146,164 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
     });
   });
 
-  describe("tracesSampleRate", () => {
-    it("명시된 SENTRY_TRACES_SAMPLE_RATE가 최우선이다", () => {
-      const options = resolveSentryOptions({
+  describe("tracesSampler", () => {
+    it("SENTRY_TRACES_SAMPLE_RATE는 기본 HTTP 비율만 바꾸고 경로별 비율은 그대로 둔다", () => {
+      // Given
+      const { tracesSampler } = resolveSentryOptions({
         APP_ENV: "production",
         SENTRY_TRACES_SAMPLE_RATE: "0.05",
       });
-      expect(options.tracesSampleRate).toBe(0.05);
-    });
 
-    it("production 기본값은 0.2, 그 외는 1.0이다", () => {
-      expect(resolveSentryOptions({ APP_ENV: "production" }).tracesSampleRate).toBe(0.2);
-      expect(resolveSentryOptions({ APP_ENV: "development" }).tracesSampleRate).toBe(1.0);
+      // When
+      const todos = tracesSampler({ attributes: { "url.path": "/v1/todos" } });
+      const webhook = tracesSampler({
+        attributes: { "url.path": "/v1/webhooks/revenuecat", "http.request.method": "POST" },
+      });
+
+      // Then
+      expect(todos).toBe(0.05);
+      expect(webhook).toBe(1);
     });
   });
 });
 
-describe("isRequestBodyIgnored — 5xx 이벤트의 요청 본문", () => {
+describe("sampleTrace — 무료 플랜 span 한도 안의 경로·큐별 비율", () => {
+  const http = (path: string, method = "GET") => ({
+    attributes: { "url.path": path, "http.request.method": method },
+  });
+
   it.each([
-    ["https://api.aido.kr/v1/ai/parse-todo", true],
-    ["https://api.aido.kr/v1/ai/parse-memo?x=1", true],
-    ["https://api.aido.kr/v1/quick-plans", true],
-    ["https://api.aido.kr/v1/voice-notes/digest", true],
-    ["https://api.aido.kr/v1/action-plans/apply", true],
-    ["https://api.aido.kr/v1/todos", false],
-  ])("%s 본문 제외 여부는 %s다", (url, expected) => {
-    // Given / When / Then
-    expect(isRequestBodyIgnored(url)).toBe(expected);
+    { name: "상태 확인", input: http("/health"), rate: 0 },
+    { name: "안 읽은 알림 수 조회", input: http("/v1/notifications/unread-count"), rate: 0 },
+    { name: "앱 버전 조회", input: http("/v1/app-config/app-version"), rate: 0 },
+    { name: "결제 웹훅", input: http("/v1/webhooks/revenuecat", "POST"), rate: 1 },
+    { name: "계정 삭제", input: http("/v1/auth/account", "DELETE"), rate: 1 },
+    { name: "토큰 갱신", input: http("/v1/auth/refresh", "POST"), rate: 0.25 },
+    { name: "AI 할 일 파싱", input: http("/v1/ai/parse-todo", "POST"), rate: 0.5 },
+    { name: "그 밖의 경로", input: http("/v1/todos"), rate: DEFAULT_HTTP_TRACE_RATE },
+    {
+      name: "매분 도는 시간대 리마인더 큐",
+      input: { attributes: { [JOB_QUEUE_SPAN_ATTRIBUTE]: "timezone-reminder.v1" } },
+      rate: 0.01,
+    },
+    {
+      name: "계정 영구 삭제 큐",
+      input: { attributes: { [JOB_QUEUE_SPAN_ATTRIBUTE]: "account-purge.v1" } },
+      rate: 1,
+    },
+    {
+      name: "비율을 정하지 않은 큐",
+      input: { attributes: { [JOB_QUEUE_SPAN_ATTRIBUTE]: "new-queue.v1" } },
+      rate: DEFAULT_JOB_TRACE_RATE,
+    },
+  ])("$name → $rate", ({ input, rate }) => {
+    // When
+    const sampled = sampleTrace(input, DEFAULT_HTTP_TRACE_RATE);
+
+    // Then
+    expect(sampled).toBe(rate);
+  });
+
+  it("앱이 이어 보낸 추적은 앱의 결정을 따른다", () => {
+    // When
+    const continued = sampleTrace({ ...http("/v1/todos"), parentSampled: true }, 0.1);
+    const dropped = sampleTrace({ ...http("/v1/todos"), parentSampled: false }, 0.1);
+
+    // Then
+    expect([continued, dropped]).toEqual([1, 0]);
+  });
+
+  it("상태 확인처럼 비율 0인 경로는 Uptime·앱이 보낸 추적 헤더가 표본으로 골라도 남기지 않는다", () => {
+    // When
+    const sampled = sampleTrace({ ...http("/health"), parentSampled: true }, 0.1);
+
+    // Then
+    expect(sampled).toBe(0);
+  });
+});
+
+describe("Sentry 수집 범위 — 사용자 원문이 나가지 않게", () => {
+  afterEach(async () => {
+    await Sentry.close();
+  });
+
+  it("본문·DB 바인딩 값·스택 지역 변수·쿠키·쿼리를 모으지 않는다", () => {
+    // Given
+    Sentry.init({
+      dsn: "https://public@o0.ingest.sentry.io/0",
+      dataCollection: SENTRY_DATA_COLLECTION,
+      transport: () => ({ send: async () => ({}), flush: async () => true }),
+    });
+
+    // When
+    const collected = Sentry.getClient()?.getDataCollectionOptions();
+
+    // Then
+    expect(collected).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      databaseQueryData: false,
+      queues: false,
+      stackFrameVariables: false,
+      genAI: { inputs: false, outputs: false },
+    });
+  });
+
+  it("보내기 직전에 인증 헤더·IP·본문·이메일을 한 번 더 지운다", () => {
+    // Given
+    const event: Sentry.ErrorEvent = {
+      type: undefined,
+      request: {
+        headers: { authorization: "Bearer secret", "x-real-ip": "1.2.3.4", "user-agent": "app" },
+        data: { title: "병원 예약" },
+        query_string: "token=abc&page=1",
+      },
+      user: { id: "user-1", email: "a@b.c", ip_address: "1.2.3.4" },
+    };
+
+    // When
+    const scrubbed = scrubErrorEvent(event);
+
+    // Then
+    expect(scrubbed.request).toEqual({
+      headers: { "user-agent": "app" },
+      query_string: "token=[FILTERED]&page=1",
+    });
+    expect(scrubbed.user).toEqual({ id: "user-1" });
+  });
+});
+
+describe("beforeSendError — 업무 거부는 어느 경로에서도 오류로 보내지 않는다", () => {
+  afterEach(async () => {
+    await Sentry.close();
+  });
+
+  it("@OnEvent handler·작업에서 자동 수집된 4xx 업무 거부는 버리고 장애는 보낸다", async () => {
+    // Given - @sentry/nestjs가 이벤트 handler 예외를 잡는 것과 같은 captureException 경로다
+    const passed: unknown[] = [];
+    Sentry.init({
+      dsn: "https://public@o0.ingest.sentry.io/0",
+      beforeSend: (event, hint) => {
+        if (beforeSendError(event, hint) != null) {
+          passed.push(hint.originalException);
+        }
+        return null;
+      },
+    });
+    const rejected = new ApplicationException(ErrorCode.SUBSCRIPTION_1602);
+    const outage = new ApplicationException(ErrorCode.AI_1301);
+    const bug = new TypeError("boom");
+
+    // When
+    for (const error of [rejected, outage, bug]) {
+      Sentry.captureException(error);
+    }
+    await Sentry.flush(1000);
+
+    // Then - 이벤트 처리는 비동기라 순서는 보지 않는다
+    expect(passed).toHaveLength(2);
+    expect(passed).toEqual(expect.arrayContaining([outage, bug]));
   });
 });

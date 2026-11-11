@@ -1,80 +1,41 @@
 import { type DynamicModule, Global, Module, type Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "../config/services/config.service.js";
+import { cacheConfig, selectSharedRedis } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
-import { InMemoryCacheAdapter } from "./adapters/in-memory-cache.adapter.js";
-import { RedisCacheAdapter } from "./adapters/redis-cache.adapter.js";
-import { CacheService } from "./cache.service.js";
-import { CACHE_SERVICE, type ICacheService } from "./interfaces/cache.interface.js";
+import { InMemoryCacheStore } from "./adapters/in-memory-cache.store.js";
+import { RedisCacheStore } from "./adapters/redis-cache.store.js";
+import { CacheStorePort } from "./cache-store.port.js";
 
-/**
- * 캐시 모듈
- *
- * 환경변수 기반으로 인메모리/Redis 어댑터 선택
- *
- * @example
- * // app.module.ts
- * imports: [CacheModule.forRoot()]
- *
- * @example
- * // 테스트에서
- * imports: [CacheModule.forTesting(mockAdapter)]
- */
+/** `CACHE_TYPE=redis`이고 Redis 연결이 있으면 Redis·Valkey, 아니면 프로세스 안 lru-cache를 쓴다. */
 @Global()
 @Module({})
 export class CacheModule {
-  /**
-   * 프로덕션용 모듈 설정
-   *
-   * 환경변수:
-   * - CACHE_TYPE: 'memory' | 'redis' (기본값: 'memory')
-   * - CACHE_DEFAULT_TTL_MS: 기본 TTL (기본값: 60000)
-   * - CACHE_MAX_ITEMS: 최대 항목 수 (기본값: 1000, 인메모리 전용)
-   * - CACHE_CLEANUP_INTERVAL_MS: 만료된 항목 정리 주기 (기본값: 30000, 최소: 1000)
-   */
   static forRoot(): DynamicModule {
-    const cacheProvider: Provider = {
-      provide: CACHE_SERVICE,
-      useFactory: (configService: TypedConfigService, redis?: Redis): ICacheService => {
-        const cacheConfig = configService.cache;
-
-        if (cacheConfig.type === "redis" && redis) {
-          return new RedisCacheAdapter(redis, cacheConfig.defaultTtlMs);
-        }
-
-        return new InMemoryCacheAdapter({
-          defaultTtlMs: cacheConfig.defaultTtlMs,
-          maxItems: cacheConfig.maxItems,
-          cleanupIntervalMs: cacheConfig.cleanupIntervalMs,
-        });
+    const storeProvider: Provider = {
+      provide: CacheStorePort,
+      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis | null): CacheStorePort => {
+        const shared = selectSharedRedis(cache, redis);
+        return shared == null
+          ? new InMemoryCacheStore({ defaultTtlMs: cache.defaultTtlMs, maxItems: cache.maxItems })
+          : new RedisCacheStore(shared, cache.defaultTtlMs);
       },
-      inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
+      inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };
 
     return {
       module: CacheModule,
-      providers: [TypedConfigService, cacheProvider, CacheService],
-      exports: [CACHE_SERVICE, CacheService],
+      providers: [storeProvider],
+      exports: [CacheStorePort],
     };
   }
 
-  /**
-   * 테스트용 모듈 설정
-   *
-   * 특정 어댑터를 직접 주입하여 사용
-   *
-   * @example
-   * const mockAdapter = createMockCacheService();
-   * const module = await Test.createTestingModule({
-   *   imports: [CacheModule.forTesting(mockAdapter)],
-   * }).compile();
-   */
-  static forTesting(adapter: ICacheService): DynamicModule {
+  static forTesting(store: CacheStorePort): DynamicModule {
     return {
       module: CacheModule,
-      providers: [{ provide: CACHE_SERVICE, useValue: adapter }, CacheService],
-      exports: [CACHE_SERVICE, CacheService],
+      providers: [{ provide: CacheStorePort, useValue: store }],
+      exports: [CacheStorePort],
     };
   }
 }

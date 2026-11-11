@@ -9,7 +9,7 @@
  * pnpm --filter @aido/server test:integration -- cache
  * ```
  */
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, registerAs } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 import { z } from "zod";
@@ -17,27 +17,27 @@ import { z } from "zod";
 import {
   EntitlementCacheKey,
   ENTITLEMENT_CACHE_TTL_MS,
-} from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+} from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import {
   IdentityCacheKey,
   IDENTITY_CACHE_TTL_MS,
-} from "#api/modules/identity/infrastructure/cache/auth/identity-cache.keyspace";
+} from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
 import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
+} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE, ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
+import { cacheConfig } from "#api/platform/config/cache.config";
 
-import { createMockUserProfile, MockCacheAdapter } from "../mocks/cache-test-utils.js";
+import { createMockUserProfile } from "../mocks/cache-test-utils.js";
 
 describe("CacheModule 통합 테스트", () => {
   describe("인메모리 어댑터 (기본 설정)", () => {
     let module: TestingModule;
-    let cacheService: CacheService;
-    let cacheAdapter: ICacheService;
+    let cacheService: CacheStorePort;
 
     beforeAll(async () => {
       module = await Test.createTestingModule({
@@ -45,19 +45,20 @@ describe("CacheModule 통합 테스트", () => {
           ConfigModule.forRoot({
             isGlobal: true,
             load: [
-              () => ({
-                CACHE_TYPE: "memory",
-                CACHE_DEFAULT_TTL_MS: 60000,
-                CACHE_MAX_ITEMS: 1000,
-              }),
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 60_000,
+                  CACHE_MAX_ITEMS: 1000,
+                }),
+              ),
             ],
           }),
           CacheModule.forRoot(),
         ],
       }).compile();
 
-      cacheService = module.get<CacheService>(CacheService);
-      cacheAdapter = module.get<ICacheService>(CACHE_SERVICE);
+      cacheService = module.get(CacheStorePort);
     });
 
     afterAll(async () => {
@@ -69,7 +70,7 @@ describe("CacheModule 통합 테스트", () => {
     });
 
     describe("모듈 설정", () => {
-      it("CacheService가 제공된다", () => {
+      it("CacheStorePort가 제공된다", () => {
         // Given
         // 모듈이 컴파일되었음
 
@@ -78,17 +79,6 @@ describe("CacheModule 통합 테스트", () => {
 
         // Then
         expect(service).toBeDefined();
-      });
-
-      it("ICacheService 어댑터가 제공된다", () => {
-        // Given
-        // 모듈이 컴파일되었음
-
-        // When
-        const adapter = cacheAdapter;
-
-        // Then
-        expect(adapter).toBeDefined();
       });
     });
 
@@ -133,11 +123,13 @@ describe("CacheModule 통합 테스트", () => {
             ConfigModule.forRoot({
               isGlobal: true,
               load: [
-                () => ({
-                  CACHE_TYPE: "memory",
-                  CACHE_DEFAULT_TTL_MS: 50,
-                  CACHE_MAX_ITEMS: 100,
-                }),
+                registerAs(cacheConfig.namespace, () =>
+                  cacheConfig.parse({
+                    CACHE_TYPE: "memory",
+                    CACHE_DEFAULT_TTL_MS: 50,
+                    CACHE_MAX_ITEMS: 100,
+                  }),
+                ),
               ],
             }),
             CacheModule.forRoot(),
@@ -145,7 +137,7 @@ describe("CacheModule 통합 테스트", () => {
         }).compile();
 
         try {
-          const shortTtlService = shortTtlModule.get<CacheService>(CacheService);
+          const shortTtlService = shortTtlModule.get(CacheStorePort);
           await shortTtlService.set("test-key", "test-value");
 
           // When - 값이 설정됨을 확인
@@ -360,19 +352,6 @@ describe("CacheModule 통합 테스트", () => {
         expect(stats.misses).toBe(2);
         expect(stats.keys).toBe(2);
       });
-
-      it("인메모리 어댑터에서 메모리 사용량을 포함한다", async () => {
-        // Given
-        const largeObject = { large: "object".repeat(100) };
-
-        // When
-        await cacheService.set("key_1", largeObject);
-        const stats = cacheService.getStats();
-
-        // Then
-        expect(stats.memoryUsage).toBeDefined();
-        expect(stats.memoryUsage).toBeGreaterThan(0);
-      });
     });
 
     describe("리셋 작업", () => {
@@ -413,30 +392,6 @@ describe("CacheModule 통합 테스트", () => {
         const cachedResult = await cacheService.wrap(key, z.unknown(), factory);
         expect(cachedResult).toBe("factory-value");
         expect(factory).toHaveBeenCalledTimes(1); // factory는 다시 호출되지 않음
-      });
-
-      it("TTL shorthand를 지원한다", async () => {
-        // Given
-        const baseTime = Date.now();
-        const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
-        const key = "wrap-ttl-test";
-        const factory = vi.fn().mockResolvedValue("value");
-
-        try {
-          // When
-          await cacheService.wrap(key, z.unknown(), factory, "1s");
-
-          // Then - 즉시 조회
-          const beforeExpiry = await cacheService.get(key, z.unknown());
-          expect(beforeExpiry).toBe("value");
-
-          // TTL 만료 후로 시간 이동
-          now.mockReturnValue(baseTime + 1100);
-          const afterExpiry = await cacheService.get(key, z.unknown());
-          expect(afterExpiry).toBeUndefined();
-        } finally {
-          now.mockRestore();
-        }
       });
 
       it("wrapSession이 실제로 캐시에 저장한다", async () => {
@@ -553,32 +508,6 @@ describe("CacheModule 통합 테스트", () => {
         // Then
         expect(results).toEqual(["value-1", "value-2", undefined]);
       });
-
-      it("mset에서 TTL shorthand를 지원한다", async () => {
-        // Given
-        const baseTime = Date.now();
-        const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
-        const entries = [
-          { key: "mset-ttl-1", value: "value-1", ttl: "1s" as const },
-          { key: "mset-ttl-2", value: "value-2", ttl: "1s" as const },
-        ];
-
-        try {
-          // When
-          await cacheService.mset(entries);
-
-          // Then - 즉시 조회
-          const beforeExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"], z.unknown());
-          expect(beforeExpiry).toEqual(["value-1", "value-2"]);
-
-          // TTL 만료 후로 시간 이동
-          now.mockReturnValue(baseTime + 1100);
-          const afterExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"], z.unknown());
-          expect(afterExpiry).toEqual([undefined, undefined]);
-        } finally {
-          now.mockRestore();
-        }
-      });
     });
 
     describe("TTL 관리 메서드 (has/ttl/touch)", () => {
@@ -616,7 +545,7 @@ describe("CacheModule 통합 테스트", () => {
         await cacheService.set("touch-test", "value", 1000);
 
         // When
-        const success = await cacheService.touch("touch-test", 10000);
+        const success = await cacheService.touch("touch-test", 10_000);
 
         // Then
         expect(success).toBe(true);
@@ -631,30 +560,17 @@ describe("CacheModule 통합 테스트", () => {
         // Then
         expect(result).toBe(false);
       });
-
-      it("touch에서 TTL shorthand를 지원한다", async () => {
-        // Given
-        await cacheService.set("touch-shorthand", "value", 1000);
-
-        // When
-        const success = await cacheService.touch("touch-shorthand", "1m");
-
-        // Then
-        expect(success).toBe(true);
-        const newTtl = await cacheService.ttl("touch-shorthand");
-        expect(newTtl).toBeGreaterThan(50000); // 약 1분
-      });
     });
   });
 
   describe("forTesting 헬퍼", () => {
     it("커스텀 어댑터를 주입할 수 있다", async () => {
       // Given
-      const mockAdapter = new MockCacheAdapter();
+      const mockAdapter = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
       const module = await Test.createTestingModule({
         imports: [CacheModule.forTesting(mockAdapter)],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When
@@ -663,7 +579,7 @@ describe("CacheModule 통합 테스트", () => {
 
         // Then
         expect(result).toBe("value");
-        expect(mockAdapter.hasKey("key")).toBe(true);
+        expect(await mockAdapter.has("key")).toBe(true);
       } finally {
         await module.close();
       }
@@ -671,7 +587,7 @@ describe("CacheModule 통합 테스트", () => {
 
     it("Jest 모킹된 어댑터를 사용할 수 있다", async () => {
       // Given
-      const mockAdapter: ICacheService = {
+      const mockAdapter: CacheStorePort = {
         get: vi.fn().mockResolvedValue("mocked-value"),
         set: vi.fn(),
         del: vi.fn(),
@@ -688,7 +604,7 @@ describe("CacheModule 통합 테스트", () => {
       const module = await Test.createTestingModule({
         imports: [CacheModule.forTesting(mockAdapter)],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When
@@ -704,7 +620,7 @@ describe("CacheModule 통합 테스트", () => {
 
     it("모킹된 wrap 메서드를 사용할 수 있다", async () => {
       // Given
-      const mockAdapter: ICacheService = {
+      const mockAdapter: CacheStorePort = {
         get: vi.fn(),
         set: vi.fn(),
         del: vi.fn(),
@@ -721,16 +637,16 @@ describe("CacheModule 통합 테스트", () => {
       const module = await Test.createTestingModule({
         imports: [CacheModule.forTesting(mockAdapter)],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When
         const factory = vi.fn();
-        const result = await service.wrap("key", z.unknown(), factory, "5m");
+        const result = await service.wrap("key", z.unknown(), factory, 300_000);
 
         // Then
         expect(result).toBe("wrapped-value");
-        expect(mockAdapter.wrap).toHaveBeenCalledWith("key", expect.anything(), factory, "5m");
+        expect(mockAdapter.wrap).toHaveBeenCalledWith("key", expect.anything(), factory, 300_000);
       } finally {
         await module.close();
       }
@@ -744,12 +660,12 @@ describe("CacheModule 통합 테스트", () => {
         imports: [
           ConfigModule.forRoot({
             isGlobal: true,
-            load: [() => ({})],
+            load: [registerAs(cacheConfig.namespace, () => cacheConfig.parse({}))],
           }),
           CacheModule.forRoot(),
         ],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When
@@ -770,17 +686,19 @@ describe("CacheModule 통합 테스트", () => {
           ConfigModule.forRoot({
             isGlobal: true,
             load: [
-              () => ({
-                CACHE_TYPE: "memory",
-                CACHE_DEFAULT_TTL_MS: 100,
-                CACHE_MAX_ITEMS: 5,
-              }),
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 100,
+                  CACHE_MAX_ITEMS: 5,
+                }),
+              ),
             ],
           }),
           CacheModule.forRoot(),
         ],
       }).compile();
-      const service = module.get<CacheService>(CacheService);
+      const service = module.get(CacheStorePort);
 
       try {
         // When - 최대 항목 수를 초과하여 저장
@@ -804,7 +722,9 @@ describe("CacheModule 통합 테스트", () => {
         imports: [
           ConfigModule.forRoot({
             isGlobal: true,
-            load: [() => ({ CACHE_TYPE: "memory" })],
+            load: [
+              registerAs(cacheConfig.namespace, () => cacheConfig.parse({ CACHE_TYPE: "memory" })),
+            ],
           }),
           CacheModule.forRoot(),
         ],
@@ -812,8 +732,8 @@ describe("CacheModule 통합 테스트", () => {
 
       try {
         // When
-        const service = module.get<CacheService>(CacheService);
-        const adapter = module.get<ICacheService>(CACHE_SERVICE);
+        const service = module.get(CacheStorePort);
+        const adapter = module.get(CacheStorePort);
 
         // Then
         expect(service).toBeDefined();

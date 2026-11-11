@@ -1,5 +1,4 @@
-import { useSessionRevocationService } from '@src/bootstrap/providers/di-context';
-import { useAppLifecycle } from '@src/shared/di/shared-di-context';
+import { useAppLifecycle, useSessionRevocationService } from '@src/bootstrap/providers/di-context';
 import { onlineManager } from '@tanstack/react-query';
 import { useEffect, useEffectEvent } from 'react';
 

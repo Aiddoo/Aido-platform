@@ -1,6 +1,7 @@
 import {
   DAYS_OF_WEEK,
   TODO_EDIT_SCOPES,
+  TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
   TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
@@ -24,7 +25,6 @@ import { z } from 'zod';
 
 import {
   TODO_REPEAT_COUNT,
-  TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
   TODO_REPEAT_WEEKDAYS as WEEKDAYS,
   TODO_REPEAT_WEEKEND_DAYS as WEEKEND_DAYS,
 } from '../constants/todo-repeat.constants';
@@ -267,17 +267,6 @@ export function findLastRepeatOccurrenceDateKey(
   return [...walkOccurrenceDateKeys(repeat, startDate, limit)].at(-1) ?? null;
 }
 
-/** 출시된 서버는 "이번 주말 X"를 토·일 + 그 주 일요일까지로 준다. 끝이 다음 날까지인 주말 반복은 한 번으로 본다 */
-export function isSingleWeekendRepeat(repeat: TodoRepeat, startDate: string): boolean {
-  return (
-    repeat.frequency === 'WEEKLY' &&
-    repeat.weekdays?.includes('SAT') === true &&
-    repeat.weekdays.includes('SUN') &&
-    repeat.end.type === 'UNTIL' &&
-    diffDateKeysInDays(startDate, repeat.end.date) <= 1
-  );
-}
-
 // 서버가 반복 회차를 미리 만드는 범위(오늘 + VISIBLE_AHEAD_DAYS, 그 날 포함)를 넘어간 날짜인지
 export function isBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
   return dateKey > addDaysToDateKey(todayKey, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS);
@@ -302,5 +291,4 @@ export const TodoRepeatPolicy = {
   getRepeatOccurrenceDateKeys,
   findFirstRepeatOccurrenceDateKey,
   findLastRepeatOccurrenceDateKey,
-  isSingleWeekendRepeat,
 } as const;

@@ -1,17 +1,26 @@
 import { z } from "zod";
 
+/** 런타임 모드. 개발서버도 production 빌드라 배포 환경 구분에는 쓰지 않는다. */
+const NODE_ENVIRONMENTS = ["development", "production", "test"] as const;
+
+export type NodeEnvironment = (typeof NODE_ENVIRONMENTS)[number];
+
+/** 배포 환경. 판정은 `resolveAppEnvironment` 한 곳이 한다. */
+const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
+
+export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
+
 /**
  * 애플리케이션 기본 설정 스키마
  */
 export const appSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z.enum(NODE_ENVIRONMENTS).default("development"),
   /**
    * 배포 환경 — NODE_ENV(런타임 모드)와 분리된 개념.
    * 개발서버도 production 빌드(NODE_ENV=production)로 돌기 때문에
    * "실제 프로덕션" 구분은 이 값이 단일 진실이다 (Sentry 발송 게이트 등).
-   * 미설정 시 NODE_ENV 기준 폴백 (config.service.appEnv 참조).
    */
-  APP_ENV: z.enum(["development", "staging", "production"]).optional(),
+  APP_ENV: z.enum(APP_ENVIRONMENTS).optional(),
   /** 헬스 체크 응답에 노출할 인스턴스 식별자. 미설정 시 기동마다 임의 값을 생성한다. */
   INSTANCE_ID: z.string().min(1).optional(),
   PORT: z.coerce.number().int().positive().default(8080),
@@ -21,3 +30,11 @@ export const appSchema = z.object({
 });
 
 export type AppConfig = z.infer<typeof appSchema>;
+
+/** APP_ENV가 없던 기존 운영 배포와 로컬·테스트는 NODE_ENV로 정한다(production이 아니면 development). */
+export function resolveAppEnvironment(env: {
+  readonly NODE_ENV: NodeEnvironment;
+  readonly APP_ENV?: AppEnvironment | undefined;
+}): AppEnvironment {
+  return env.APP_ENV ?? (env.NODE_ENV === "production" ? "production" : "development");
+}

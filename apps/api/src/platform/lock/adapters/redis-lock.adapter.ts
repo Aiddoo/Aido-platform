@@ -3,10 +3,10 @@ import { randomUUID } from "node:crypto";
 import { Injectable, Logger } from "@nestjs/common";
 import type { Redis } from "ioredis";
 
-import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
-import type { ILockProvider } from "../interfaces/lock.interface.js";
+import { LockProviderPort } from "../lock-provider.port.js";
 
 /**
  * Lua 스크립트: compare-and-delete
@@ -29,7 +29,7 @@ const RELEASE_SCRIPT = `
  * - TTL 자동 만료로 데드락 방지
  * - 멀티 인스턴스 환경에서 안전
  *
- * 장애 정책 — fail-closed (ILockProvider 계약):
+ * 장애 정책 — fail-closed (LockProviderPort 계약):
  * 락은 fail-open(장애인데 획득 성공 취급)이면 중복 알림 발송, 웹훅 동시
  * 처리 같은 사고로 이어진다. 장애 시 "잠겨있음"으로 취급해 소비처가
  * busy 경로(스킵/재시도)를 타게 한다:
@@ -38,13 +38,14 @@ const RELEASE_SCRIPT = `
  * - isLocked: 실패 시 true
  */
 @Injectable()
-export class RedisLockAdapter implements ILockProvider {
+export class RedisLockAdapter extends LockProviderPort {
   readonly #logger = new Logger(RedisLockAdapter.name);
   readonly #redis: Redis;
   readonly #keyPrefix = "lock:";
   readonly #errorSampler: RedisErrorLogSampler;
 
   constructor(redis: Redis, errorSampler?: RedisErrorLogSampler) {
+    super();
     this.#redis = redis;
     this.#errorSampler = errorSampler ?? new RedisErrorLogSampler(this.#logger);
   }

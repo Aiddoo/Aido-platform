@@ -1,13 +1,14 @@
 import { z } from "zod";
 
 import { datetimeSchema } from "../../../common/datetime.js";
-import { numberCursorPaginationInfoSchema } from "../../../common/pagination.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
+import { cursorPageSchema } from "../../../common/pagination.js";
 import { todoSchema } from "../../todo/v1/todo.response.js";
 
 export const memoSchema = z
   .object({
     id: z.number().int().positive().describe("메모 ID (양의 정수)"),
-    userId: z.cuid().describe("사용자 ID (CUID 25자)"),
+    userId: entityIdSchema.describe("사용자 ID"),
     content: z.string().describe("메모 내용"),
     isPinned: z.boolean().describe("고정 여부"),
     sortOrder: z.number().int().describe("정렬 순서"),
@@ -48,31 +49,29 @@ export const memoDetailResponseSchema = z
 
 export type MemoDetailResponse = z.infer<typeof memoDetailResponseSchema>;
 
-export const memoListResponseSchema = z
-  .object({
-    items: z.array(memoSchema).describe("메모 목록"),
-    pagination: numberCursorPaginationInfoSchema.describe("페이지네이션 정보"),
-  })
-  .meta({
-    example: {
-      items: [
-        {
-          id: 1,
-          userId: "clz7x5p8k0001qz0z8z8z8z8z",
-          content: "장보기: 우유, 계란, 빵",
-          isPinned: true,
-          sortOrder: 0,
-          createdAt: "2026-01-17T10:00:00.000Z",
-          updatedAt: "2026-01-17T10:00:00.000Z",
-        },
-      ],
-      pagination: {
-        nextCursor: null,
-        hasNext: false,
-        size: 20,
+export const memoListResponseSchema = cursorPageSchema(memoSchema, z.number().int(), {
+  items: "메모 목록",
+  pagination: "페이지네이션 정보",
+}).meta({
+  example: {
+    items: [
+      {
+        id: 1,
+        userId: "clz7x5p8k0001qz0z8z8z8z8z",
+        content: "장보기: 우유, 계란, 빵",
+        isPinned: true,
+        sortOrder: 0,
+        createdAt: "2026-01-17T10:00:00.000Z",
+        updatedAt: "2026-01-17T10:00:00.000Z",
       },
+    ],
+    pagination: {
+      nextCursor: null,
+      hasNext: false,
+      size: 20,
     },
-  });
+  },
+});
 
 export type MemoListResponse = z.infer<typeof memoListResponseSchema>;
 

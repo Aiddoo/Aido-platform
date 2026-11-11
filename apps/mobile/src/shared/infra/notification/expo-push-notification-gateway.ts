@@ -1,9 +1,11 @@
 import type { Logger } from '@src/core/ports/logger';
 import type {
+  ForegroundPushPresentation,
   IosPushAuthorizationStatus,
   PushNotificationGateway,
   PushNotificationResponse,
   PushPermissionResponse,
+  ReceivedPushNotification,
 } from '@src/core/ports/push-notification-gateway';
 import { getErrorMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
@@ -50,15 +52,42 @@ function toPushNotificationResponse(
   };
 }
 
-/** 첫 알림을 놓치지 않게 앱이 그려지기 전에 부른다 */
+// 앱 아이콘 배지는 안 읽은 수 조회 하나가 맞추므로 알림의 badge 값을 쓰지 않는다
+const FOREGROUND_BEHAVIOR = {
+  banner: {
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  },
+  quiet: {
+    shouldShowBanner: false,
+    shouldShowList: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  },
+} as const satisfies Record<ForegroundPushPresentation, Notifications.NotificationBehavior>;
+
+function presentAsBanner(): ForegroundPushPresentation {
+  return 'banner';
+}
+
+let decideForegroundPresentation: (
+  notification: ReceivedPushNotification,
+) => ForegroundPushPresentation = presentAsBanner;
+
+/** 첫 알림을 놓치지 않게 앱이 그려지기 전에 부른다. 화면이 정하기 전과 판단이 실패하면 배너로 보인다 */
 export function registerForegroundNotificationPresentation() {
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
+    handleNotification: async (notification) => {
+      try {
+        return FOREGROUND_BEHAVIOR[
+          decideForegroundPresentation({ data: notification.request.content.data ?? {} })
+        ];
+      } catch {
+        return FOREGROUND_BEHAVIOR.banner;
+      }
+    },
   });
 }
 
@@ -136,6 +165,14 @@ export function createExpoPushNotificationGateway(logger: Logger): PushNotificat
     },
     setBadgeCount: async (count) => {
       await Notifications.setBadgeCountAsync(count);
+    },
+    setForegroundPresentation: (decide) => {
+      decideForegroundPresentation = decide;
+      return () => {
+        if (decideForegroundPresentation === decide) {
+          decideForegroundPresentation = presentAsBanner;
+        }
+      };
     },
   };
 }

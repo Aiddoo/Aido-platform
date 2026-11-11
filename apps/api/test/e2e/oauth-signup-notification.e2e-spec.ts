@@ -1,6 +1,6 @@
 import request from "supertest";
 
-import { AUTH_REGISTRATION_NOTIFIER } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+import { AuthRegistrationNotifierPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { StubAuthRegistrationNotifier } from "#test/mocks/ports/auth-credentials.stub";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -23,7 +23,7 @@ describe("소셜 가입 관리자 알림 E2E", () => {
   beforeAll(async () => {
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AUTH_REGISTRATION_NOTIFIER).useValue(notifier),
+        builder.overrideProvider(AuthRegistrationNotifierPort).useValue(notifier),
       additionalResetters: [
         () => {
           notifier.notifications.length = 0;

@@ -5,11 +5,11 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { sql } from "drizzle-orm";
 import { ClsModule } from "nestjs-cls";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { databaseConfig } from "#api/platform/config/database.config";
 import { classifyDatabaseError } from "#api/platform/database/database-error.util";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { DatabaseModule } from "#api/platform/database/database.module";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
@@ -18,13 +18,11 @@ import { TestDatabase } from "#test/setup/test-database";
 @Module({
   providers: [
     {
-      provide: TypedConfigService,
-      useValue: {
-        database: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
-      },
+      provide: databaseConfig.KEY,
+      useValue: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
     },
   ],
-  exports: [TypedConfigService],
+  exports: [databaseConfig.KEY],
 })
 class TestConfigModule {}
 

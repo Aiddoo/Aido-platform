@@ -1,12 +1,13 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/notification-delivery-jobs.public";
-import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/operations-admin-jobs.public";
+import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
+import { BROADCAST_DELIVERY_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-delivery.queue";
+import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
-import { user as userTable } from "#api/platform/database/schema/index";
-import { JOB_RUNTIME } from "#api/shared/application/ports/index";
-import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+import { user as userTable, userPreference } from "#api/platform/database/schema/index";
+import { JobQueuePort, type QueueDefinition } from "#api/shared/application/ports/job-queue.port";
+import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -15,7 +16,7 @@ describe("관리자 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -133,25 +134,23 @@ describe("관리자 E2E", () => {
       force: true,
     };
 
-    function jobRuntime(): FakeJobRuntime {
-      return ctx.module.get<FakeJobRuntime>(JOB_RUNTIME);
+    function jobQueue(): InMemoryJobQueue {
+      return ctx.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
     }
 
-    async function runEnqueued(queue: string): Promise<number> {
-      const runtime = jobRuntime();
-      const jobs = runtime.enqueueCalls.filter((call) => call.queue === queue);
-      runtime.enqueueCalls.splice(0, runtime.enqueueCalls.length);
-      for (const job of jobs) {
-        await runtime.run(queue, job.data);
-      }
-      return jobs.length;
+    // 분배·현지 시각 발송·푸시 발송 작업을 모두 새 큐 포트(메모리)에서 돌린다
+    async function runQueued(queue: QueueDefinition<object>): Promise<number> {
+      const count = jobQueue().jobsIn(queue).length;
+      await jobQueue().drain(queue);
+      return count;
     }
 
-    async function registerRecipient(email: string, deviceId: string) {
+    async function registerRecipient(email: string, deviceId: string, acceptLanguage = "ko-KR") {
       const recipient = await ctx.helpers.createVerifiedUser(email, "Test1234!");
       await request(ctx.app.getHttpServer())
         .post("/v1/notifications/token")
         .set("Authorization", `Bearer ${recipient.accessToken}`)
+        .set("Accept-Language", acceptLanguage)
         .send({ token: `ExponentPushToken[${deviceId}-e2e-token]`, deviceId })
         .expect(201);
       return recipient;
@@ -162,7 +161,7 @@ describe("관리자 E2E", () => {
       const admin = await createAdminUser("admin-campaign@example.com", "Test1234!");
       await registerRecipient("campaign-recipient-1@example.com", "ios_device-one");
       await registerRecipient("campaign-recipient-2@example.com", "android_device-two");
-      jobRuntime().enqueueCalls.splice(0);
+      jobQueue().clear();
 
       // When
       const accepted = await request(ctx.app.getHttpServer())
@@ -174,8 +173,8 @@ describe("관리자 E2E", () => {
         .get(`/v2/admin/notifications/broadcasts/${accepted.body.data.campaignId}`)
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .expect(200);
-      expect(await runEnqueued(BROADCAST_FAN_OUT_QUEUE)).toBe(1);
-      await runEnqueued(PUSH_DELIVERY_QUEUE);
+      expect(await runQueued(BROADCAST_FAN_OUT_QUEUE)).toBe(1);
+      await runQueued(PUSH_DELIVERY_QUEUE);
       const delivered = await request(ctx.app.getHttpServer())
         .get(`/v2/admin/notifications/broadcasts/${accepted.body.data.campaignId}`)
         .set("Authorization", `Bearer ${admin.accessToken}`)
@@ -199,7 +198,7 @@ describe("관리자 E2E", () => {
       // Given
       const admin = await createAdminUser("admin-replay@example.com", "Test1234!");
       await registerRecipient("replay-recipient@example.com", "ios_device-replay");
-      jobRuntime().enqueueCalls.splice(0);
+      jobQueue().clear();
       const send = () =>
         request(ctx.app.getHttpServer())
           .post("/v2/admin/notifications/broadcasts")
@@ -213,9 +212,94 @@ describe("관리자 E2E", () => {
 
       // Then
       expect(replay.body.data.campaignId).toBe(first.body.data.campaignId);
+      expect(jobQueue().jobsIn(BROADCAST_FAN_OUT_QUEUE)).toHaveLength(1);
+    });
+
+    it("언어별 문구를 주면 수신자 언어로 알림을 만들고 없는 언어는 기본 문구로 보낸다", async () => {
+      // Given
+      const admin = await createAdminUser("admin-localized@example.com", "Test1234!");
+      const korean = await registerRecipient("localized-ko@example.com", "ios_device-ko");
+      const english = await registerRecipient("localized-en@example.com", "ios_device-en", "en-US");
+      jobQueue().clear();
+
+      // When
+      await request(ctx.app.getHttpServer())
+        .post("/v2/admin/notifications/broadcasts")
+        .set("Authorization", `Bearer ${admin.accessToken}`)
+        .send({
+          ...campaignBody,
+          localizedContent: { en: { title: "New feature", body: "Check it out." } },
+        })
+        .expect(202);
+      await runQueued(BROADCAST_FAN_OUT_QUEUE);
+
+      // Then
+      const client = ctx.testDatabase.getClient();
+      const notifications = await client.query.notification.findMany({
+        where: { type: "ADMIN_BROADCAST" },
+      });
+      const titleOf = (userId: string) =>
+        notifications.find((notification) => notification.userId === userId)?.title;
+      expect(titleOf(english.userId)).toBe("New feature");
+      expect(titleOf(korean.userId)).toBe("새 기능 안내");
+    });
+
+    it("수신자 현지 시각 발송은 분배 때 알림을 만들지 않고 그 시각의 작업을 남긴다", async () => {
+      // Given
+      const admin = await createAdminUser("admin-local-time@example.com", "Test1234!");
+      const seoul = await registerRecipient("local-seoul@example.com", "ios_device-seoul");
+      const losAngeles = await registerRecipient("local-la@example.com", "ios_device-la");
+      const client = ctx.testDatabase.getClient();
+      await client
+        .update(userPreference)
+        .set({ timezone: "Asia/Seoul" })
+        .where(eq(userPreference.userId, seoul.userId));
+      await client
+        .update(userPreference)
+        .set({ timezone: "America/Los_Angeles" })
+        .where(eq(userPreference.userId, losAngeles.userId));
+      jobQueue().clear();
+
+      // When
+      const accepted = await request(ctx.app.getHttpServer())
+        .post("/v2/admin/notifications/broadcasts")
+        .set("Authorization", `Bearer ${admin.accessToken}`)
+        .send({
+          ...campaignBody,
+          delivery: { mode: "RECIPIENT_LOCAL_TIME", localTime: "10:00", date: "2099-01-01" },
+        })
+        .expect(202);
+      await runQueued(BROADCAST_FAN_OUT_QUEUE);
+
+      // Then - 분배가 끝나도 알림은 아직 없고 시간대별 발송 작업이 남는다
       expect(
-        jobRuntime().enqueueCalls.filter((call) => call.queue === BROADCAST_FAN_OUT_QUEUE),
-      ).toHaveLength(1);
+        await client.query.notification.findMany({ where: { type: "ADMIN_BROADCAST" } }),
+      ).toEqual([]);
+      const scheduled = jobQueue().jobsIn(BROADCAST_DELIVERY_QUEUE);
+      expect(scheduled.map((job) => job.options.startAfter?.toString()).toSorted()).toEqual([
+        "2099-01-01T01:00:00Z",
+        "2099-01-01T18:00:00Z",
+      ]);
+      expect(scheduled.every((job) => job.options.priority === 0)).toBe(true);
+
+      // When - 그 시각이 되어 작업이 돌면
+      expect(await runQueued(BROADCAST_DELIVERY_QUEUE)).toBe(2);
+
+      // Then
+      const notifications = await client.query.notification.findMany({
+        where: { type: "ADMIN_BROADCAST" },
+      });
+      expect(notifications.map(({ userId }) => userId).toSorted()).toEqual(
+        [seoul.userId, losAngeles.userId].toSorted(),
+      );
+      const detail = await request(ctx.app.getHttpServer())
+        .get(`/v2/admin/notifications/broadcasts/${accepted.body.data.campaignId}`)
+        .set("Authorization", `Bearer ${admin.accessToken}`)
+        .expect(200);
+      expect(detail.body.data).toMatchObject({
+        status: "COMPLETED",
+        recipients: { processed: 2, queued: 2 },
+      });
     });
 
     it("같은 요청 ID로 다른 내용을 보내면 409를 반환한다", async () => {
@@ -263,6 +347,28 @@ describe("관리자 E2E", () => {
       // Then
       expect(empty.body.error.code).toBe("ADMIN_1402");
       expect(missing.body.error.code).toBe("ADMIN_1404");
+    });
+  });
+
+  describe("GET /v1/admin/growth/summary — 성장 지표", () => {
+    it("활성 사용자 수와 함께 stickiness(DAU/MAU %)를 돌려준다", async () => {
+      // Given
+      const admin = await createAdminUser("admin-growth@example.com", "Test1234!");
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get("/v1/admin/growth/summary")
+        .set("Authorization", `Bearer ${admin.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.data).toEqual(
+        expect.objectContaining({
+          dau: expect.any(Number),
+          mau: expect.any(Number),
+          stickiness: expect.any(Number),
+        }),
+      );
     });
   });
 });
