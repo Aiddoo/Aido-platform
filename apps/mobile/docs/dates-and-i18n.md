@@ -53,7 +53,7 @@ shared/date/
 - **결정.** 폴리필을 쓰지 않는다. 날짜 key 산술은 순수 계산, 순간 직렬화는 `Date#toISOString`, 시간대 변환은 Intl이다. 서버와 같은지는 Node 26 Temporal을 정답으로 테스트한다(1900~2200년 날짜 key 36,646개 × 8개 연산, 서머타임 날 벽시계 320개). Intl 벽시계 변환의 서머타임 틈·겹침은 서버 규칙으로 고쳤다. 출력 글자는 49만 개 조합(7개 시간대 × ko·en)에서 바이트 단위로 같다.
 - **Android.** 개발 빌드 APK가 없어 기기에서 돌리지 못했다. 날짜 key 산술은 Intl을 쓰지 않아 플랫폼과 무관하다. 출시 전에 Android Hermes에서 아래를 확인한다.
   1. `toDateKey`·`toHHmm`·`toZonedInstant`가 Node 결과와 같다: 서울·뉴욕·런던·산티아고·`Asia/Kolkata`, 2026 서머타임 날 전후 매시와 02:30.
-  2. 화면 글자가 iOS와 같다: `formatDateLabel` 9종·`formatClockTime`·상대 시간을 ko·en으로, 특히 오전/오후 앞 공백과 `dayNumber`·`dottedMonthDay`의 en-US 파트.
+  2. 화면 글자가 iOS와 같다: `formatDateLabel` 10종(`monthDayYear`·`day` 포함)·`formatClockTime`·상대 시간을 ko·en으로, 특히 오전/오후 앞 공백과 `dayNumber`·`dottedMonthDay`의 en-US 파트.
   3. 시간 피커(`openAndroidTimePicker`·설정 알림 시각)가 고른 시와 분을 그대로 돌려준다(`toPickerDate`의 고정 날짜, 서머타임 시작일 포함).
   4. 자정 전환: 앱을 켠 채 자정을 넘기면 오늘 key·피드·위젯(`readLocalDateKey`)이 함께 바뀐다.
   5. 기기 시간대를 바꾸면 오늘·달력 칸·할 일 시각이 새 시간대로 다시 계산된다(`expo-localization` 달력 시간대와 JS 런타임 시간대가 같은지).
