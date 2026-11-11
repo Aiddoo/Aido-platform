@@ -17,9 +17,9 @@ import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { CalendarIcon } from '@src/shared/ui/icon';
 import { cn } from '@src/shared/utils/cn';
 import { usePrefetchQuery, useQuery, useSuspenseQueries } from '@tanstack/react-query';
-import { compact, range, round, zip } from 'es-toolkit';
+import { range, round, zip } from 'es-toolkit';
 import { Accordion, PressableFeedback } from 'heroui-native';
-import { memo, useMemo } from 'react';
+import { memo, type PropsWithChildren, useMemo } from 'react';
 import { Easing, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -189,15 +189,6 @@ DailyForecast.Item = memo(function Item({
   const clock = (date: Instant) => formatClockTime(date, format.timeFormat, format.dateFormat);
   const hour = (value: number) => formatHourLabel(value, format.timeFormat, format.dateFormat);
   const wind = day.windSpeedMax ?? day.windGustMax;
-  // 계약에 없는 값은 칸째 뺀다
-  const facts = compact([
-    t('daily.precipitation', { amount: round(day.precipitationAmount, 1) }),
-    t('daily.uvMax', { value: day.uvIndexMax }),
-    wind == null ? null : t('daily.windMax', { speed: round(wind, 1) }),
-    day.sunrise == null || day.sunset == null
-      ? null
-      : t('daily.sun', { sunrise: clock(day.sunrise), sunset: clock(day.sunset) }),
-  ]);
 
   return (
     <Accordion.Item
@@ -292,16 +283,16 @@ DailyForecast.Item = memo(function Item({
             />
           )}
         </HStack>
+        {/* 계약에 없는 값은 칸째 뺀다 */}
         <HStack className="flex-wrap gap-x-3 gap-y-1">
-          {facts.map((fact) => (
-            <Text
-              key={fact}
-              size="b4"
-              className="min-w-[45%] flex-1 text-on-sky/[0.78] tabular-nums"
-            >
-              {fact}
-            </Text>
-          ))}
+          <Fact>{t('daily.precipitation', { amount: round(day.precipitationAmount, 1) })}</Fact>
+          <Fact>{t('daily.uvMax', { value: day.uvIndexMax })}</Fact>
+          {wind != null && <Fact>{t('daily.windMax', { speed: round(wind, 1) })}</Fact>}
+          {day.sunrise != null && day.sunset != null && (
+            <Fact>
+              {t('daily.sun', { sunrise: clock(day.sunrise), sunset: clock(day.sunset) })}
+            </Fact>
+          )}
         </HStack>
       </Accordion.Content>
     </Accordion.Item>
@@ -350,6 +341,14 @@ DailyForecast.TemperatureBar = function TemperatureBar({
     </Box>
   );
 };
+
+function Fact({ children }: PropsWithChildren) {
+  return (
+    <Text size="b4" className="min-w-[45%] flex-1 text-on-sky/[0.78] tabular-nums">
+      {children}
+    </Text>
+  );
+}
 
 function PartCard({ title, value }: { title: string; value: string }) {
   return (

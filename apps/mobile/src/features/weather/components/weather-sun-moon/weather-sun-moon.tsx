@@ -5,9 +5,11 @@ import { type Instant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Spacing, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { isNotNil, range } from 'es-toolkit';
+import { range } from 'es-toolkit';
 import { Separator } from 'heroui-native';
+import type { PropsWithChildren } from 'react';
 import { match } from 'ts-pattern';
 
 import { type NextSunEvent, WeatherDetailPolicy } from '../../domains/weather-detail.model';
@@ -91,15 +93,7 @@ export function WeatherSunMoon() {
     )
     .exhaustive();
   const isPolar = sunEvents.kind !== 'regular';
-  const moonFacts = [
-    today.moonrise == null ? null : t('sunMoon.moonrise', { time: formatTime(today.moonrise) }),
-    today.moonset == null ? null : t('sunMoon.moonset', { time: formatTime(today.moonset) }),
-    nextFullMoon == null
-      ? null
-      : t('sunMoon.nextFullMoon', {
-          date: formatYearAwareDateKeyLabel(nextFullMoon, todayKey, dateFormat),
-        }),
-  ].filter(isNotNil);
+  const hasMoonFacts = today.moonrise != null || today.moonset != null || nextFullMoon != null;
 
   return (
     <WeatherCard
@@ -122,12 +116,12 @@ export function WeatherSunMoon() {
         <Text
           tone="onSky"
           numberOfLines={isPolar ? 2 : 1}
-          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-          className={
+          className={cn(
+            'shrink',
             isPolar
-              ? 'shrink text-b1 font-semibold'
-              : 'shrink text-[32px] leading-[38px] font-normal tracking-[-1px] tabular-nums'
-          }
+              ? 'text-b1 font-semibold'
+              : 'text-[32px] leading-[38px] font-normal tracking-[-1px] tabular-nums',
+          )}
         >
           {headline.value}
         </Text>
@@ -170,13 +164,21 @@ export function WeatherSunMoon() {
           <Text size="b2" weight="semibold" tone="onSky" className="leading-[22px]">
             {t(MOON_PHASE_LABEL_KEYS[today.moonPhase])}
           </Text>
-          {moonFacts.length > 0 && (
+          {hasMoonFacts && (
             <HStack className="flex-wrap gap-x-2">
-              {moonFacts.map((fact) => (
-                <Text key={fact} size="b4" className="leading-[18px] text-on-sky/70 tabular-nums">
-                  {fact}
-                </Text>
-              ))}
+              {today.moonrise != null && (
+                <MoonFact>{t('sunMoon.moonrise', { time: formatTime(today.moonrise) })}</MoonFact>
+              )}
+              {today.moonset != null && (
+                <MoonFact>{t('sunMoon.moonset', { time: formatTime(today.moonset) })}</MoonFact>
+              )}
+              {nextFullMoon != null && (
+                <MoonFact>
+                  {t('sunMoon.nextFullMoon', {
+                    date: formatYearAwareDateKeyLabel(nextFullMoon, todayKey, dateFormat),
+                  })}
+                </MoonFact>
+              )}
             </HStack>
           )}
         </VStack>
@@ -238,3 +240,11 @@ WeatherSunMoon.Loading = function Loading() {
     </WeatherCard>
   );
 };
+
+function MoonFact({ children }: PropsWithChildren) {
+  return (
+    <Text size="b4" className="leading-[18px] text-on-sky/70 tabular-nums">
+      {children}
+    </Text>
+  );
+}
