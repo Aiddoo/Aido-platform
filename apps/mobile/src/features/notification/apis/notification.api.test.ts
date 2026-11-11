@@ -1,6 +1,7 @@
 import { err, ok, unwrap } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors';
 import { createHttpClientStub } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { noop } from 'es-toolkit';
 
 import {
@@ -143,6 +144,8 @@ describe('NotificationApi', () => {
 });
 
 describe('NotificationApi.markAsReadAndCheckOwnership', () => {
+  setupFakeTimersPerTest();
+
   function setup() {
     const httpClient = createHttpClientStub();
     return {
@@ -153,11 +156,6 @@ describe('NotificationApi.markAsReadAndCheckOwnership', () => {
       }),
     };
   }
-
-  afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
-  });
 
   it('읽음이 성공하면 내 알림이다', async () => {
     // Given
@@ -200,8 +198,6 @@ describe('NotificationApi.markAsReadAndCheckOwnership', () => {
 
   it('응답이 예산을 넘기면 기다리지 않고 모르는 것으로 끝난다', async () => {
     // Given
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
     const { httpClient, api } = setup();
     httpClient.patch.mockReturnValue(new Promise(noop));
 

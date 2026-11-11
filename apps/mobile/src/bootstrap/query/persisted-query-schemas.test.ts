@@ -27,6 +27,7 @@ import {
   createMemorySyncStorage,
   createTestQueryClient,
 } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { partialMatchKey, type QueryKey } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,
@@ -109,17 +110,15 @@ async function saveThenRestore(cache: CacheEntry[]) {
 }
 
 describe('영속 캐시 복원 검증', () => {
+  setupFakeTimersPerTest();
+
   const logger = createLoggerStub();
 
   beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
     setGlobalLogger(logger);
   });
 
   afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
     jest.clearAllMocks();
   });
 

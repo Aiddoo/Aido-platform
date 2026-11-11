@@ -11,6 +11,7 @@ import {
   createTestDi,
   createTestQueryClient,
 } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
@@ -25,14 +26,9 @@ import { PushRegistrationService } from '../services/push-registration.service';
 import { usePushDeviceSync } from './use-push-device-sync';
 
 describe('usePushDeviceSync', () => {
-  beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
-  });
+  setupFakeTimersPerTest();
 
   afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 

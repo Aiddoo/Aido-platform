@@ -3,6 +3,7 @@ import { err, ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { createAnalyticsStub, createHapticsGatewayStub } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
@@ -25,16 +26,7 @@ import {
 } from './auth.mutations';
 
 // 마운트된 조회의 캐시를 비우면 떨어져 나간 쿼리에 24시간 gc 타이머가 남아 Jest 종료를 붙잡는다
-beforeEach(() => {
-  // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-  jest.useFakeTimers();
-});
-
-afterEach(() => {
-  jest.clearAllTimers();
-  // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-  jest.useRealTimers();
-});
+setupFakeTimersPerTest();
 
 describe('이메일 로그인 오프라인', () => {
   afterEach(() => {

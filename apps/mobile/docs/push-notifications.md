@@ -192,4 +192,4 @@ Android 에뮬레이터는 FCM 없이 로컬 알림으로 본다. 임시 코드�
 
 ## 테스트
 
-포트를 구현한 `createPushNotificationGatewayStub`을 DI로 넣는다. 예시는 `push-permission-notice.test.tsx`, `use-push-device-sync.test.tsx`, `expo-push-notification-gateway.test.ts`(어댑터 경계)다. 눌린 푸시의 진입 순서는 실제 라우터로 도는 `auth-gate-layout.push-entry.test.tsx`다. 자세한 규칙은 [testing.md](./testing.md)를 본다.
+포트를 구현한 `createPushNotificationGatewayStub`을 DI로 넣는다. 예시는 `use-push-device-sync.test.tsx`, `expo-push-notification-gateway.test.ts`(어댑터 경계)다. 눌린 푸시의 진입 순서는 실제 라우터로 도는 `auth-gate-layout.push-entry.flow.test.tsx`다. 자세한 규칙은 [testing.md](./testing.md)를 본다.

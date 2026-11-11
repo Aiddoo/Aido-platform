@@ -180,16 +180,12 @@ describe('useVoiceCaptureSession', () => {
     const SAMPLE_MS = 50;
     const LOUD = 0.6;
 
-    afterEach(() => {
-      // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-      jest.useRealTimers();
-    });
+    setupFakeTimersPerTest();
 
     const startSpeaking = async () => {
       const session = await renderSession();
-      await userEvent.press(screen.getByRole('button', { name: 'begin' }));
-      // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-      jest.useFakeTimers();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => session.speechRecognizer.emit({ type: 'start' }));
       return session;
     };
@@ -1292,31 +1288,33 @@ describe('useVoiceCaptureSession', () => {
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
     });
 
-    it('멈춘 인식기를 다시 열면 이벤트와 breadcrumb으로 남긴다', async () => {
-      // Given
-      // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-      jest.useFakeTimers({ advanceTimers: true });
-      const { speechRecognizer, analytics, errorReporter } = await beginListening({ mode: 'note' });
+    describe('멈춘 인식기 재개', () => {
+      setupFakeTimersPerTest({ advanceTimers: true });
 
-      // When
-      await act(async () => {
-        for (let elapsed = 0; elapsed < 6_100; elapsed += 50) {
-          jest.advanceTimersByTime(50);
-          speechRecognizer.emit({ type: 'volume', level: SPEAKING_LEVEL });
-        }
-      });
-      // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-      jest.useRealTimers();
+      it('멈춘 인식기를 다시 열면 이벤트와 breadcrumb으로 남긴다', async () => {
+        // Given
+        const { speechRecognizer, analytics, errorReporter } = await beginListening({
+          mode: 'note',
+        });
 
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_recognizer_stalled', {
-        mode: 'note',
-        on_device: true,
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.recognizer-stalled',
-        data: { mode: 'note', on_device: true },
+        // When
+        await act(async () => {
+          for (let elapsed = 0; elapsed < 6_100; elapsed += 50) {
+            jest.advanceTimersByTime(50);
+            speechRecognizer.emit({ type: 'volume', level: SPEAKING_LEVEL });
+          }
+        });
+
+        // Then
+        expect(analytics.trackEvent).toHaveBeenCalledWith('voice_recognizer_stalled', {
+          mode: 'note',
+          on_device: true,
+        });
+        expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
+          category: 'voice',
+          message: 'capture.recognizer-stalled',
+          data: { mode: 'note', on_device: true },
+        });
       });
     });
   });

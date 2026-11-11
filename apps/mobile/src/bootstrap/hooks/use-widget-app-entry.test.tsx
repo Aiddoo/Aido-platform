@@ -16,6 +16,7 @@ import {
 } from '@src/testing/core';
 // 생성된 typed routes가 없는 CI에서는 useSegments 반환이 [string]으로 좁아져 공용 mock의 jest.fn을 직접 쓴다
 import { useSegments } from '@src/testing/mocks/expo-router';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
@@ -46,6 +47,8 @@ function widgetOpenedCalls() {
 }
 
 describe('종료된 앱의 위젯 명령 복원', () => {
+  setupFakeTimersPerTest({ now: new Date('2026-10-05T00:00:00Z') });
+
   let queryClient: QueryClient;
   let frames: Map<number, FrameRequestCallback>;
   let nextFrameId: number;
@@ -84,9 +87,6 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2026-10-05T00:00:00Z'));
     frames = new Map();
     nextFrameId = 0;
     jest.spyOn(global, 'requestAnimationFrame').mockImplementation((callback) => {
@@ -123,8 +123,6 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
   });
 
   it('인증 복원을 기다린 뒤 이전 Linking URL보다 저장된 실제 터치 목적지를 우선한다', async () => {

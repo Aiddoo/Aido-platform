@@ -5,7 +5,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { toInstant } from '@src/shared/date/instant';
 import { createMemoryObservableSyncStorage, createTestQueryClient } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
-import { waitFor } from '@testing-library/react-native';
+import { act, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import { RELEASE_1_15_0 } from '../constants/releases';
@@ -103,8 +103,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
       signedUpAt: '2026-10-01T00:00:00.000Z',
       isOnboardingSettled: false,
     });
-    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
-    await new Promise((resolve) => setImmediate(resolve));
+    await act(async () => undefined);
     expect(router.push).not.toHaveBeenCalled();
 
     // When
@@ -126,8 +125,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     await renderFeed({ signedUpAt: '2026-10-01T00:00:00.000Z', syncStorage });
 
     // Then
-    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
-    await new Promise((resolve) => setImmediate(resolve));
+    await act(async () => undefined);
     expect(router.push).not.toHaveBeenCalled();
   });
 });

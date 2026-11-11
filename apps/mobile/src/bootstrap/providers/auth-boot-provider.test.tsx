@@ -37,6 +37,7 @@ import {
   createVoiceNoteStorageFake,
   createTestQueryClient,
 } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
@@ -69,6 +70,8 @@ const LogoutProbe = () => {
 };
 
 describe('AuthBootProvider', () => {
+  setupFakeTimersPerTest();
+
   let tokenStore: ReturnType<typeof createMemoryTokenStore>;
   let errorReporter: jest.Mocked<ErrorReporter>;
   let analytics: ReturnType<typeof createAnalyticsStub>;
@@ -85,8 +88,6 @@ describe('AuthBootProvider', () => {
   let requestPushRelease: jest.Mock<void, []>;
 
   beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
     writeSnapshot = jest.fn().mockResolvedValue(undefined);
     requestRefresh = jest.fn();
     requestPushRelease = jest.fn();
@@ -111,8 +112,6 @@ describe('AuthBootProvider', () => {
     }
     await queryClient.cancelQueries();
     jest.clearAllTimers();
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 
