@@ -1,5 +1,11 @@
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
-import type { InvalidateQueryFilters, Query, QueryClient, QueryKey } from '@tanstack/react-query';
+import type {
+  InvalidateQueryFilters,
+  MutationFilters,
+  Query,
+  QueryClient,
+  QueryKey,
+} from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
@@ -320,6 +326,24 @@ function isConcurrentTodoWrite(queryClient: QueryClient) {
 /** 지금 끝나는 쓰기가 마지막이면 true. 앞 쓰기의 응답이 뒤에 바꾼 낙관적 값을 덮지 않게 마지막만 응답을 쓴다 */
 export function isLastTodoWrite(queryClient: QueryClient) {
   return queryClient.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() }) === 1;
+}
+
+/** 그 할 일의 완료를 바꾸는 쓰기. 응답 전에는 화면의 완료가 낙관적 값이라 서버는 아직 모른다 */
+export function todoCompletionWritesFilter({ todoId }: { todoId: number }): MutationFilters {
+  return {
+    mutationKey: TODO_MUTATION_KEYS.completionWrites(),
+    predicate: (mutation) => writesTodo(mutation.state.variables, todoId),
+  };
+}
+
+/** 뮤테이션마다 변수 모양이 달라 todoId 칸만 확인해 읽는다 */
+function writesTodo(variables: unknown, todoId: number) {
+  return (
+    typeof variables === 'object' &&
+    variables != null &&
+    'todoId' in variables &&
+    variables.todoId === todoId
+  );
 }
 
 /** 쓰기를 시작한 순번. 먼저 시작해 나중에 끝난 쓰기도 그 사이 다른 쓰기가 있었는지 알 수 있다 */
