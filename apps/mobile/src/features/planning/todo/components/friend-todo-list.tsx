@@ -31,29 +31,32 @@ import { formatTodoTime } from '../utils/format-todo-time';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
+interface FriendTodoRowActionProps {
+  todo: Todo;
+  /** 보고 있는 피드 날짜 */
+  dateKey: string;
+}
+
 interface FriendTodoListProps {
   /** 피드가 친구 목록에서 확인한 친구의 id. route 값은 더는 친구가 아닌 사람일 수 있어 그대로 읽지 않는다 */
   friendId: string;
   /** 할 일 줄 오른쪽에 붙는 행동(콕 등). 다시 마운트되지 않도록 모듈 수준 컴포넌트를 넘긴다 */
-  rowAction: ComponentType<{ todo: Todo }>;
+  rowAction: ComponentType<FriendTodoRowActionProps>;
   /** 친구에게 할 일이 없는 오늘 빈 화면에 붙는 행동(독촉 콕 등) */
   emptyAction: ComponentType;
 }
 
 export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoListProps) {
-  const [date] = useFeedDateKey();
+  // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
+  const [dateKey] = useFeedDateKey();
+  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
   const [{ data: todos }] = useSuspenseQueries({
     queries: [
-      useGetFriendTodosQueryOptions({
-        friendUserId: friendId,
-        date,
-      }),
+      useGetFriendTodosQueryOptions({ friendUserId: friendId, date: dateKey }),
       useGetPreferenceQueryOptions(),
     ],
   });
   const categoryGroups = useMemo(() => groupFriendTodosByCategory(todos.todos), [todos]);
-  // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다
-  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
 
   if (categoryGroups.length === 0) {
     return <FriendTodoList.Empty action={emptyAction} />;
@@ -69,6 +72,7 @@ export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoL
               <FriendTodoList.Item
                 key={todo.id}
                 todo={todo}
+                dateKey={dateKey}
                 action={rowAction}
                 onOpenDetail={openTodoDetail}
               />
@@ -82,11 +86,11 @@ export function FriendTodoList({ friendId, rowAction, emptyAction }: FriendTodoL
 
 FriendTodoList.Item = function Item({
   todo,
+  dateKey,
   action: RowAction,
   onOpenDetail,
-}: {
-  todo: Todo;
-  action: ComponentType<{ todo: Todo }>;
+}: FriendTodoRowActionProps & {
+  action: ComponentType<FriendTodoRowActionProps>;
   onOpenDetail: (todoId: number) => void;
 }) {
   const { t } = useTranslation('todo');
@@ -134,7 +138,7 @@ FriendTodoList.Item = function Item({
             accessibilityRole="button"
             accessibilityLabel={t('detail.open')}
           />
-          <RowAction todo={todo} />
+          <RowAction todo={todo} dateKey={dateKey} />
         </HStack>
       }
       onPress={
