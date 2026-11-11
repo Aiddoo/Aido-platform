@@ -121,7 +121,6 @@ export function useUpdateMarketingConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
-      // 구 서버가 처리 일시를 주지 않으면 알리지 않는다
       const result = getConsentResult({
         agreedAt: data.marketingAgreedAt,
         withdrawnAt: data.marketingWithdrawnAt,

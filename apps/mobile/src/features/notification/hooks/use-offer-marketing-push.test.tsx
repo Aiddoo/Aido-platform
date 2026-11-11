@@ -103,7 +103,9 @@ describe('useOfferMarketingPushAfterCompletion', () => {
   it('동의하면 시트가 닫히는 순간에도 거절로 남기지 않는다', async () => {
     // Given
     const { analytics, httpClient, prompts } = await renderOffer();
-    httpClient.patch.mockResolvedValue(ok({ marketingPushAgreedAt: '2026-03-01T12:00:00.000Z' }));
+    httpClient.patch.mockResolvedValue(
+      ok({ marketingPushAgreedAt: '2026-03-01T12:00:00.000Z', marketingPushWithdrawnAt: null }),
+    );
     await act(async () => {
       emitTodoCompletionChanged({ isCompleted: true });
       await jest.advanceTimersByTimeAsync(OFFER_DELAY_MS);

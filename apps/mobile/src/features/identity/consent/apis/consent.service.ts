@@ -1,14 +1,16 @@
 import {
   type UpdateAiDataSharingConsentInput,
   updateAiDataSharingConsentResponseSchema,
-  updateMarketingConsentResponseSchema,
-  updateMarketingPushConsentResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { type ConsentAgreement } from '../schemas/consent-request.schema';
-import { consentEnvelopeSchema } from '../schemas/consent-response.schema';
+import {
+  consentEnvelopeSchema,
+  updateMarketingConsentEnvelopeSchema,
+  updateMarketingPushConsentEnvelopeSchema,
+} from '../schemas/consent-response.schema';
 import {
   toConsent,
   toUpdateAiDataSharingConsentResult,
@@ -34,7 +36,7 @@ export class ConsentService {
   updateMarketingConsent = async (input: ConsentAgreement) =>
     parseApiResponse(
       await this.#httpClient.patch('v1/auth/consent/marketing', input),
-      updateMarketingConsentResponseSchema,
+      updateMarketingConsentEnvelopeSchema,
       toUpdateMarketingConsentResult,
       '[ConsentService] Invalid updateMarketingConsent response',
     );
@@ -42,7 +44,7 @@ export class ConsentService {
   updateMarketingPushConsent = async (input: ConsentAgreement) =>
     parseApiResponse(
       await this.#httpClient.patch('v1/auth/consent/marketing-push', input),
-      updateMarketingPushConsentResponseSchema,
+      updateMarketingPushConsentEnvelopeSchema,
       toUpdateMarketingPushConsentResult,
       '[ConsentService] Invalid updateMarketingPushConsent response',
     );
