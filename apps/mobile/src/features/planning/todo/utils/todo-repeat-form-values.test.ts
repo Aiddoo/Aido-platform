@@ -1,4 +1,3 @@
-import { instantFromDate } from '@src/shared/date/native-date';
 import { createDateKey } from '@src/testing/date-key';
 
 import { getRepeatPresetDays } from '../domains/todo-repeat.model';
@@ -13,11 +12,10 @@ import {
   toTodoRepeatFormValues,
 } from './todo-repeat-form-values';
 
-const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const TODAY_KEY = createDateKey('2026-11-02');
 
 const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues => ({
-  startDate: instantFromDate(new Date(2026, 10, 2)),
+  startDate: createDateKey('2026-11-02'),
   weekdays: ['MON'],
   interval: 1,
   isMonthly: false,
@@ -99,7 +97,6 @@ describe('반복 달력에서 날짜 누르기', () => {
     const next = withTodoRepeatFormCalendarDate(values, {
       dateKey: createDateKey('2026-11-01'),
       todayKey: TODAY_KEY,
-      timeZone: TIME_ZONE,
     });
 
     // Then
@@ -114,30 +111,28 @@ describe('반복 달력에서 날짜 누르기', () => {
     const next = withTodoRepeatFormCalendarDate(values, {
       dateKey: createDateKey('2026-11-20'),
       todayKey: TODAY_KEY,
-      timeZone: TIME_ZONE,
     });
 
     // Then
     expect(next).toMatchObject({
       endType: 'UNTIL',
-      untilDate: instantFromDate(new Date(2026, 10, 20)),
+      untilDate: createDateKey('2026-11-20'),
     });
   });
 
   it('기간을 이미 골랐으면 누른 날부터 다시 시작한다', () => {
     // Given
-    const values = createValues({ untilDate: instantFromDate(new Date(2026, 10, 20)) });
+    const values = createValues({ untilDate: createDateKey('2026-11-20') });
 
     // When
     const next = withTodoRepeatFormCalendarDate(values, {
       dateKey: createDateKey('2026-11-25'),
       todayKey: TODAY_KEY,
-      timeZone: TIME_ZONE,
     });
 
     // Then
     expect(next).toMatchObject({
-      startDate: instantFromDate(new Date(2026, 10, 25)),
+      startDate: createDateKey('2026-11-25'),
       untilDate: null,
     });
   });
@@ -145,7 +140,7 @@ describe('반복 달력에서 날짜 누르기', () => {
   it('시작일 앞을 누르면 시작일을 옮기고 시작일을 다시 누르면 그대로다', () => {
     // Given
     const values = createValues({
-      startDate: instantFromDate(new Date(2026, 10, 9)),
+      startDate: createDateKey('2026-11-09'),
       endType: 'NEVER',
     });
 
@@ -153,44 +148,34 @@ describe('반복 달력에서 날짜 누르기', () => {
     const moved = withTodoRepeatFormCalendarDate(values, {
       dateKey: createDateKey('2026-11-03'),
       todayKey: TODAY_KEY,
-      timeZone: TIME_ZONE,
     });
     const same = withTodoRepeatFormCalendarDate(values, {
       dateKey: createDateKey('2026-11-09'),
       todayKey: TODAY_KEY,
-      timeZone: TIME_ZONE,
     });
 
     // Then
-    expect(moved.startDate).toEqual(instantFromDate(new Date(2026, 10, 3)));
+    expect(moved.startDate).toEqual(createDateKey('2026-11-03'));
     expect(same).toBe(values);
   });
 });
 
-describe('반복 폼 값의 시간대', () => {
-  it('시작 요일은 고른 시간대의 날짜로 정한다', () => {
-    // Given
-    const startDate = instantFromDate(new Date('2026-11-06T15:30:00Z'));
-
+describe('반복 폼 값', () => {
+  it('시작 요일은 시작일의 요일로 정한다', () => {
     // When
-    const seoul = toTodoRepeatFormValues(startDate, null, 'Asia/Seoul');
-    const losAngeles = toTodoRepeatFormValues(startDate, null, 'America/Los_Angeles');
+    const values = toTodoRepeatFormValues(createDateKey('2026-11-07'), null);
 
     // Then
-    expect(seoul.weekdays).toEqual(['SAT']);
-    expect(losAngeles.weekdays).toEqual(['FRI']);
+    expect(values.weekdays).toEqual(['SAT']);
   });
 
   it('말일 규칙이 있는 폼을 열면 매월 며칠인지 규칙 값을 그대로 보여 준다', () => {
-    // Given
-    const startDate = instantFromDate(new Date('2026-02-28T03:00:00Z'));
-
     // When
-    const values = toTodoRepeatFormValues(
-      startDate,
-      { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } },
-      'Asia/Seoul',
-    );
+    const values = toTodoRepeatFormValues(createDateKey('2026-02-28'), {
+      frequency: 'MONTHLY',
+      monthDay: 31,
+      end: { type: 'NEVER' },
+    });
 
     // Then
     expect(values).toMatchObject({ isMonthly: true, monthDay: 31 });

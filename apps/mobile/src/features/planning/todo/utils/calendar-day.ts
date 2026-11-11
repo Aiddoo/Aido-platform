@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import type { TextTone } from '@src/shared/ui';
 
 import type { CalendarDayCell } from './calendar-month.view-model';
@@ -35,11 +36,11 @@ export function getPickerDayType({
 }
 
 interface MonthViewDayInput {
-  dateKey: string;
+  dateKey: DateKey;
   /** 쪽을 만들 때 한 번 구한 요일 */
   dayOfWeek: number;
-  selectedDateKey: string;
-  todayKey: string;
+  selectedDateKey: DateKey;
+  todayKey: DateKey;
 }
 
 /** 피드 달력 칸의 선택·글자색·오늘 강조. 날짜 키만 비교해 칸마다 날짜를 다시 읽지 않는다 */
@@ -113,8 +114,8 @@ export function getWeekRangeBand(
 }
 
 interface RepeatWeekPeriod {
-  startDateKey: string;
-  endDateKey: string | null;
+  startDateKey: DateKey;
+  endDateKey: DateKey | null;
   isOpenEnded: boolean;
 }
 

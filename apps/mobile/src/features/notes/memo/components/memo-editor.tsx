@@ -16,7 +16,7 @@ import { isConnectivityError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -849,7 +849,7 @@ function useOpenMemoConvertSheet({
   onSaveChanges,
   onConverted,
 }: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted'>) {
-  const today = useToday();
+  const todayKey = useTodayKey();
   const overlay = useOverlay();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
@@ -870,7 +870,7 @@ function useOpenMemoConvertSheet({
     overlay.open(({ isOpen, close, unmount }) => (
       <MemoConvertBottomSheet
         memo={savedMemo}
-        selectedDate={today}
+        selectedDate={todayKey}
         categoryId={defaultCategoryId}
         isOpen={isOpen}
         onClose={close}

@@ -1,11 +1,12 @@
-import { instantFromDate } from '@src/shared/date/native-date';
+import type { DateKey } from '@src/shared/date/date-key';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import '@src/shared/i18n/init';
 import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createAnalyticsStub,
 } from '@src/testing/core';
+import '@src/shared/i18n/init';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { screen, userEvent } from '@testing-library/react-native';
@@ -13,7 +14,7 @@ import { screen, userEvent } from '@testing-library/react-native';
 import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { TodoRepeatPicker } from './todo-repeat-picker';
 
-const START_DATE = new Date(2026, 10, 5, 12);
+const START_DATE = createDateKey('2026-11-05');
 
 const WEEKLY_THURSDAY_FOREVER: TodoRepeat = {
   frequency: 'WEEKLY',
@@ -25,18 +26,14 @@ const WEEKLY_THURSDAY_FOREVER: TodoRepeat = {
 async function renderSheet({
   repeat = null,
   startDate = START_DATE,
-}: { repeat?: TodoRepeat | null; startDate?: Date } = {}) {
+}: { repeat?: TodoRepeat | null; startDate?: DateKey } = {}) {
   const onChange = jest.fn();
   const onCancel = jest.fn();
   const haptics = createHapticsGatewayStub();
 
   await renderScreen(
     <LocalDateProvider>
-      <TodoRepeatPicker
-        value={{ startDate: instantFromDate(startDate), repeat }}
-        onChange={onChange}
-        onCancel={onCancel}
-      />
+      <TodoRepeatPicker value={{ startDate, repeat }} onChange={onChange} onCancel={onCancel} />
     </LocalDateProvider>,
     { di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub(), haptics } },
   );
@@ -82,7 +79,7 @@ describe('TodoRepeatPicker', () => {
 
     // Then
     expect(onChange).toHaveBeenCalledWith({
-      startDate: instantFromDate(START_DATE),
+      startDate: START_DATE,
       repeat: { ...WEEKLY_THURSDAY_FOREVER, interval: 2 },
     });
 
@@ -106,7 +103,7 @@ describe('TodoRepeatPicker', () => {
     expect(screen.getByText('매월 5일 반복')).toBeOnTheScreen();
     expect(chip('목')).not.toBeSelected();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: instantFromDate(START_DATE),
+      startDate: START_DATE,
       repeat: { frequency: 'MONTHLY', monthDay: 5, end: { type: 'NEVER' } },
     });
   });
@@ -125,7 +122,7 @@ describe('TodoRepeatPicker', () => {
     // Then
     expect(screen.getByText('11월 5일부터 10회')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: instantFromDate(START_DATE),
+      startDate: START_DATE,
       repeat: counted,
     });
 
@@ -148,7 +145,7 @@ describe('TodoRepeatPicker', () => {
     // Then
     expect(screen.getByText('11월 5일 - 11월 12일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: instantFromDate(START_DATE),
+      startDate: START_DATE,
       repeat: { ...WEEKLY_THURSDAY_FOREVER, end: { type: 'UNTIL', date: '2026-11-12' } },
     });
   });
@@ -171,7 +168,7 @@ describe('TodoRepeatPicker', () => {
     // Then
     expect(screen.getByText('11월 5일 - 11월 12일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: instantFromDate(START_DATE),
+      startDate: START_DATE,
       repeat: { ...WEEKLY_THURSDAY_FOREVER, end: { type: 'UNTIL', date: '2026-11-12' } },
     });
   });
@@ -202,7 +199,7 @@ describe('TodoRepeatPicker', () => {
     // Then
     expect(screen.getByText('11월 7일부터 계속')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: instantFromDate(START_DATE),
+      startDate: START_DATE,
       repeat: {
         frequency: 'WEEKLY',
         interval: 1,
@@ -226,14 +223,14 @@ describe('TodoRepeatPicker', () => {
     // Then
     expect(screen.getByText('매월 19일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: instantFromDate(new Date(2026, 10, 19)),
+      startDate: createDateKey('2026-11-19'),
       repeat: { frequency: 'MONTHLY', monthDay: 19, end: { type: 'UNTIL', date: '2026-11-26' } },
     });
   });
 
   it('매월 31일 규칙을 2월 28일 회차에서 열어 확인만 눌러도 31일을 유지한다', async () => {
     // Given
-    const startDate = new Date(2027, 1, 28, 12);
+    const startDate = createDateKey('2027-02-28');
     const repeat: TodoRepeat = { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } };
     const { onChange } = await renderSheet({ startDate, repeat });
 
@@ -242,13 +239,13 @@ describe('TodoRepeatPicker', () => {
 
     // Then
     expect(screen.getByText('매월 31일')).toBeOnTheScreen();
-    expect(onChange).toHaveBeenCalledWith({ startDate: instantFromDate(startDate), repeat });
+    expect(onChange).toHaveBeenCalledWith({ startDate, repeat });
   });
 
   it('매월 31일 규칙도 시작일을 직접 옮기면 옮긴 날을 따른다', async () => {
     // Given
     const repeat: TodoRepeat = { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } };
-    const { onChange } = await renderSheet({ repeat, startDate: new Date(2026, 10, 30, 12) });
+    const { onChange } = await renderSheet({ repeat, startDate: createDateKey('2026-11-30') });
 
     // When
     await press('19');
@@ -257,7 +254,7 @@ describe('TodoRepeatPicker', () => {
     // Then
     expect(screen.getByText('매월 19일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenLastCalledWith({
-      startDate: instantFromDate(new Date(2026, 10, 19)),
+      startDate: createDateKey('2026-11-19'),
       repeat: expect.objectContaining({ frequency: 'MONTHLY', monthDay: 19 }),
     });
   });
@@ -270,6 +267,6 @@ describe('TodoRepeatPicker', () => {
     await press('삭제');
 
     // Then
-    expect(onChange).toHaveBeenCalledWith({ startDate: instantFromDate(START_DATE), repeat: null });
+    expect(onChange).toHaveBeenCalledWith({ startDate: START_DATE, repeat: null });
   });
 });

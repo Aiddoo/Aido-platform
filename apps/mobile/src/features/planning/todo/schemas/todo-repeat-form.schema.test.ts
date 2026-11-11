@@ -1,16 +1,14 @@
-import { instantFromDate } from '@src/shared/date/native-date';
+import { createDateKey } from '@src/testing/date-key';
 
 import {
   getTodoRepeatFormIssue,
-  createTodoRepeatFormSchema,
+  todoRepeatFormSchema,
   toTodoRepeat,
   type TodoRepeatFormIssue,
   type TodoRepeatFormValues,
 } from './todo-repeat-form.schema';
 
-const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
-const todoRepeatFormSchema = createTodoRepeatFormSchema(TIME_ZONE);
-const THURSDAY = instantFromDate(new Date(2026, 10, 5, 12));
+const THURSDAY = createDateKey('2026-11-05');
 
 const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues => ({
   startDate: THURSDAY,
@@ -33,7 +31,7 @@ describe('todoRepeatFormSchema', () => {
       {
         weekdays: ['MON'],
         endType: 'UNTIL',
-        untilDate: instantFromDate(new Date(2026, 10, 6, 12)),
+        untilDate: createDateKey('2026-11-06'),
       },
       'no-occurrence',
       'untilDate',
@@ -48,7 +46,7 @@ describe('todoRepeatFormSchema', () => {
     const result = todoRepeatFormSchema.safeParse(values);
 
     // Then
-    expect(getTodoRepeatFormIssue(values, TIME_ZONE)).toBe(issue);
+    expect(getTodoRepeatFormIssue(values)).toBe(issue);
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toBe(issue);
     expect(result.error?.issues[0]?.path).toEqual([path]);
@@ -63,7 +61,7 @@ describe('todoRepeatFormSchema', () => {
 
     // Then
     expect(result.success).toBe(true);
-    expect(toTodoRepeat(values, TIME_ZONE)).toEqual({
+    expect(toTodoRepeat(values)).toEqual({
       frequency: 'MONTHLY',
       monthDay: 5,
       end: { type: 'NEVER' },
@@ -74,7 +72,7 @@ describe('todoRepeatFormSchema', () => {
     // Given
     const values = createValues({
       endType: 'UNTIL',
-      untilDate: instantFromDate(new Date(2026, 10, 12, 12)),
+      untilDate: createDateKey('2026-11-12'),
     });
 
     // When
@@ -85,49 +83,19 @@ describe('todoRepeatFormSchema', () => {
   });
 });
 
-describe('시간대에 따른 반복 규칙', () => {
-  it('같은 순간도 시간대에 따라 매월 반복의 날짜와 요일이 달라진다', () => {
-    // Given
-    const startDate = instantFromDate(new Date('2026-11-06T15:30:00Z'));
-    const values = createValues({ startDate, weekdays: [], isMonthly: true });
-
-    // When
-    const seoul = toTodoRepeat(values, 'Asia/Seoul');
-    const losAngeles = toTodoRepeat(values, 'America/Los_Angeles');
-
-    // Then
-    expect(seoul).toMatchObject({ frequency: 'MONTHLY', monthDay: 7 });
-    expect(losAngeles).toMatchObject({ frequency: 'MONTHLY', monthDay: 6 });
-  });
-
+describe('toTodoRepeat', () => {
   it('말일에 시작한 매월 반복은 31일 규칙을 유지한다', () => {
     // Given
     const values = createValues({
-      startDate: instantFromDate(new Date('2026-10-31T03:00:00Z')),
+      startDate: createDateKey('2026-10-31'),
       weekdays: [],
       isMonthly: true,
     });
 
     // When
-    const repeat = toTodoRepeat(values, 'Asia/Seoul');
+    const repeat = toTodoRepeat(values);
 
     // Then
     expect(repeat).toMatchObject({ frequency: 'MONTHLY', monthDay: 31 });
-  });
-
-  it('종료일은 고른 시간대의 날짜로 저장한다', () => {
-    // Given
-    const values = createValues({
-      endType: 'UNTIL',
-      untilDate: instantFromDate(new Date('2026-11-19T15:30:00Z')),
-    });
-
-    // When
-    const seoul = toTodoRepeat(values, 'Asia/Seoul');
-    const newYork = toTodoRepeat(values, 'America/New_York');
-
-    // Then
-    expect(seoul?.end).toEqual({ type: 'UNTIL', date: '2026-11-20' });
-    expect(newYork?.end).toEqual({ type: 'UNTIL', date: '2026-11-19' });
   });
 });

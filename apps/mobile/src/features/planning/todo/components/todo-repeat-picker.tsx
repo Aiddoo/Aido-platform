@@ -5,8 +5,6 @@ import type { DateKey } from '@src/shared/date/date-key';
 import { hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/format/date-labels';
-import { type Instant } from '@src/shared/date/instant';
-import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -24,7 +22,7 @@ import {
   getTodoRepeatFormIssue,
   getTodoRepeatFormMonthDay,
   toTodoRepeat,
-  createTodoRepeatFormSchema,
+  todoRepeatFormSchema,
   type TodoRepeatFormValues,
 } from '../schemas/todo-repeat-form.schema';
 import {
@@ -44,7 +42,7 @@ import { RepeatHintLine } from './repeat-hint-line';
 type RepeatForm = UseFormReturn<TodoRepeatFormValues>;
 
 interface RepeatPickerValue {
-  startDate: Instant;
+  startDate: DateKey;
   repeat: TodoRepeat | null;
 }
 
@@ -55,13 +53,12 @@ interface TodoRepeatPickerProps {
 }
 
 export function TodoRepeatPicker({ value, onChange, onCancel }: TodoRepeatPickerProps) {
-  const { timeZone } = useDateFormatContext();
   const form = useForm({
-    resolver: zodResolver(createTodoRepeatFormSchema(timeZone)),
-    defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat, timeZone),
+    resolver: zodResolver(todoRepeatFormSchema),
+    defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat),
     mode: 'onChange',
   });
-  const picker = useDatePicker({ initialDateKey: toDateKey(value.startDate, timeZone) });
+  const picker = useDatePicker({ initialDateKey: value.startDate });
 
   return (
     <SheetHeaderLayout
@@ -170,14 +167,13 @@ function applyRepeatFormValues(form: RepeatForm, next: TodoRepeatFormValues) {
 
 TodoRepeatPicker.DayOfWeekSelector = function DayOfWeekSelector({ form }: { form: RepeatForm }) {
   const { t } = useTranslation('todo');
-  const { timeZone } = useDateFormatContext();
   const [weekdays, interval, isMonthly] = useWatch({
     control: form.control,
     name: ['weekdays', 'interval', 'isMonthly'],
   });
   const monthDay = useWatch({
     control: form.control,
-    compute: (values) => getTodoRepeatFormMonthDay(values, timeZone),
+    compute: (values) => getTodoRepeatFormMonthDay(values),
   });
   const isPresetSelected = (days: readonly DayOfWeek[]) =>
     isTodoRepeatFormPreset({ isMonthly, interval, weekdays }, days);
@@ -239,18 +235,17 @@ TodoRepeatPicker.DayOfWeekSelector = function DayOfWeekSelector({ form }: { form
 
 TodoRepeatPicker.RepeatSummary = function RepeatSummary({ form }: { form: RepeatForm }) {
   const { t, i18n } = useTranslation('todo');
-  const { timeZone } = useDateFormatContext();
   const [weekdays, interval, isMonthly] = useWatch({
     control: form.control,
     name: ['weekdays', 'interval', 'isMonthly'],
   });
   const monthDay = useWatch({
     control: form.control,
-    compute: (values) => getTodoRepeatFormMonthDay(values, timeZone),
+    compute: (values) => getTodoRepeatFormMonthDay(values),
   });
   const issue = useWatch({
     control: form.control,
-    compute: (values) => getTodoRepeatFormIssue(values, timeZone),
+    compute: (values) => getTodoRepeatFormIssue(values),
   });
   const days = formatDaysOfWeek(weekdays, i18n.language);
   const summary = match({ weekdays, interval, isMonthly })
@@ -300,11 +295,10 @@ TodoRepeatPicker.RepeatPickerHeader = function RepeatPickerHeader({
   onCancel,
 }: RepeatPickerHeaderProps) {
   const { t } = useTranslation('todo');
-  const { timeZone } = useDateFormatContext();
   const { isValid } = useFormState({ control: form.control });
 
   const handleConfirm = form.handleSubmit((values) => {
-    onChange({ startDate: values.startDate, repeat: toTodoRepeat(values, timeZone) });
+    onChange({ startDate: values.startDate, repeat: toTodoRepeat(values) });
   });
 
   return (
@@ -326,22 +320,19 @@ TodoRepeatPicker.RepeatFormCalendar = function RepeatFormCalendar({
   form,
   picker,
 }: RepeatFormCalendarProps) {
-  const { timeZone } = useDateFormatContext();
-  const [startDate, endType, untilDate] = useWatch({
+  const [startDateKey, endType, untilDateKey] = useWatch({
     control: form.control,
     name: ['startDate', 'endType', 'untilDate'],
   });
   const repeat = useWatch({
     control: form.control,
-    compute: (values) => toTodoRepeat(values, timeZone),
+    compute: (values) => toTodoRepeat(values),
   });
   const firstOccurrenceKey = useWatch({
     control: form.control,
-    compute: (values) => getTodoRepeatFormFirstOccurrenceKey(values, timeZone),
+    compute: (values) => getTodoRepeatFormFirstOccurrenceKey(values),
   });
   const todayKey = useTodayKey();
-  const startDateKey = toDateKey(startDate, timeZone);
-  const untilDateKey = untilDate == null ? null : toDateKey(untilDate, timeZone);
   const firstWeekDateKey = picker.weeks.at(0)?.at(0)?.dateKey;
   const lastWeekDateKey = picker.weeks.at(-1)?.at(-1)?.dateKey;
   const occurrenceKeys =
@@ -373,7 +364,7 @@ TodoRepeatPicker.RepeatFormCalendar = function RepeatFormCalendar({
   const handleDateChange = (dateKey: DateKey) => {
     applyRepeatFormValues(
       form,
-      withTodoRepeatFormCalendarDate(form.getValues(), { dateKey, todayKey, timeZone }),
+      withTodoRepeatFormCalendarDate(form.getValues(), { dateKey, todayKey }),
     );
   };
 
@@ -404,21 +395,18 @@ TodoRepeatPicker.RepeatPeriodFooter = function RepeatPeriodFooter({
   const { t } = useTranslation(['todo', 'common']);
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
-  const [startDate, endType, untilDate, count] = useWatch({
+  const [startDate, endType, untilDateKey, count] = useWatch({
     control: form.control,
     name: ['startDate', 'endType', 'untilDate', 'count'],
   });
   const firstOccurrenceKey = useWatch({
     control: form.control,
     compute: (values) => {
-      const repeat = toTodoRepeat(values, dateFormatContext.timeZone);
+      const repeat = toTodoRepeat(values);
 
       return repeat == null
         ? null
-        : TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(
-            repeat,
-            toDateKey(values.startDate, dateFormatContext.timeZone),
-          );
+        : TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(repeat, values.startDate);
     },
   });
   const formatDate = (dateKey: DateKey) =>
@@ -426,13 +414,12 @@ TodoRepeatPicker.RepeatPeriodFooter = function RepeatPeriodFooter({
   const isMonthDayClamped = useWatch({
     control: form.control,
     compute: (values) => {
-      const repeat = toTodoRepeat({ ...values, endType: 'NEVER' }, dateFormatContext.timeZone);
+      const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
 
       return repeat != null && TodoRepeatPolicy.isRepeatMonthDayClamped(repeat);
     },
   });
-  const periodStartKey = firstOccurrenceKey ?? toDateKey(startDate, dateFormatContext.timeZone);
-  const untilDateKey = untilDate == null ? null : toDateKey(untilDate, dateFormatContext.timeZone);
+  const periodStartKey = firstOccurrenceKey ?? startDate;
 
   const handleForeverPress = () => {
     form.setValue('endType', endType === 'NEVER' ? 'UNTIL' : 'NEVER', VALIDATE);

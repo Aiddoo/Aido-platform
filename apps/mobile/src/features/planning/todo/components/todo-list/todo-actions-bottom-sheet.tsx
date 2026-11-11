@@ -1,6 +1,5 @@
-import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
@@ -85,7 +84,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   onClose,
 }: TodoActionListProps) {
   const { t } = useTranslation(['todo', 'common']);
-  const today = useToday();
+  const todayKey = useTodayKey();
   const [date] = useTodoSheetDateKey();
   const todo = useSheetTodo({ onMissing: onClose });
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
@@ -103,7 +102,6 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   // 저장 중에는 같은 요청이 두 번 가거나 저장 중에 지우거나 고치러 들어가지 않게 모든 행을 잠근다
   const isBusy =
     deleteMutation.isPending || updateScheduleMutation.isPending || stopSeriesMutation.isPending;
-  const todayKey = toDateKey(today, dateFormatContext.timeZone);
   const isTodoToday = todo.startDate === todayKey;
 
   const sheetParams = { todoId: todo.id, date };

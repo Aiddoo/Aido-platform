@@ -1,7 +1,8 @@
-import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
+import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
 import { createHapticsGatewayStub, createHttpClientStub } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
@@ -17,7 +18,7 @@ async function renderSheet() {
   await renderScreen(
     <MemoConvertBottomSheet
       memo={MEMO}
-      selectedDate={new Date(2026, 10, 7)}
+      selectedDate={createDateKey('2026-11-07')}
       categoryId={1}
       isOpen
       onOpenChange={jest.fn()}

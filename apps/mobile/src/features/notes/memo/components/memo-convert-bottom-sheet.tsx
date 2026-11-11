@@ -7,8 +7,7 @@ import {
 } from '@src/features/planning/composer/components/todo-composer-fields';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
-import { toDateKey } from '@src/shared/date/zoned';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import type { DateKey } from '@src/shared/date/date-key';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheetInput, HStack, KeyboardBottomSheet, VStack } from '@src/shared/ui';
@@ -25,7 +24,7 @@ interface MemoConvertBottomSheetProps extends Pick<
   'isOpen' | 'onOpenChange'
 > {
   memo: Pick<Memo, 'id' | 'content'>;
-  selectedDate: Date;
+  selectedDate: DateKey;
   categoryId: number;
   onClose: () => void;
   onConverted: () => void;
@@ -42,13 +41,12 @@ export function MemoConvertBottomSheet({
   onConverted,
 }: MemoConvertBottomSheetProps) {
   const { t } = useTranslation('todo');
-  const { timeZone } = useDateFormatContext();
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const form = useForm({
     resolver: zodResolver(todoFormSchema),
     defaultValues: {
       title: memo.content.slice(0, TODO_LIMITS.TITLE_MAX_LENGTH),
-      startDate: toDateKey(selectedDate, timeZone),
+      startDate: selectedDate,
       endDate: null,
       scheduledTime: null,
       isAllDay: true,

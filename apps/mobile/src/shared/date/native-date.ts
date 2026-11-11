@@ -26,11 +26,6 @@ export function toLocalDay(dateKey: DateKey): Date {
   return new Date(year, month - 1, day);
 }
 
-/** 폼이 날짜를 기기 시간대 그날 0시의 순간으로 들고 있어 key를 그 순간으로 바꾼다 */
-export function toLocalDayInstant(dateKey: DateKey): Instant {
-  return instantFromDate(toLocalDay(dateKey));
-}
-
 /** 피커가 기기 시간대 벽시계로 돌려준 Date의 시와 분 */
 export function getPickerTimeOfDay(date: Date): TimeOfDay {
   return { hour: date.getHours(), minute: date.getMinutes() };

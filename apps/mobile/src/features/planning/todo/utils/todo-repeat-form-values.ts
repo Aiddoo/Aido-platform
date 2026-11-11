@@ -1,9 +1,6 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import type { DateKey } from '@src/shared/date/date-key';
 import { getDateKeyDayOfWeek, hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
-import { type Instant } from '@src/shared/date/instant';
-import { toLocalDayInstant } from '@src/shared/date/native-date';
-import { toDateKey } from '@src/shared/date/zoned';
 import { without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -13,11 +10,10 @@ import { type TodoRepeat } from '../domains/todo-repeat.model';
 import { toTodoRepeat, type TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
 
 export function toTodoRepeatFormValues(
-  startDate: Instant,
+  startDate: DateKey,
   repeat: TodoRepeat | null,
-  timeZone: string,
 ): TodoRepeatFormValues {
-  const startWeekday = [getDateKeyDayOfWeek(toDateKey(startDate, timeZone))];
+  const startWeekday = [getDateKeyDayOfWeek(startDate)];
   const base = {
     startDate,
     weekdays: startWeekday,
@@ -36,7 +32,7 @@ export function toTodoRepeatFormValues(
   const withEnd = {
     ...base,
     endType: repeat.end.type,
-    untilDate: repeat.end.type === 'UNTIL' ? toLocalDayInstant(repeat.end.date) : null,
+    untilDate: repeat.end.type === 'UNTIL' ? repeat.end.date : null,
     count: repeat.end.type === 'COUNT' ? repeat.end.count : base.count,
   };
 
@@ -54,26 +50,20 @@ export function toTodoRepeatFormValues(
 
 function withTodoRepeatFormStartDate(
   values: TodoRepeatFormValues,
-  nextStartDate: Instant,
-  timeZone: string,
+  nextStartDate: DateKey,
 ): TodoRepeatFormValues {
   const next = { ...values, startDate: nextStartDate, monthDay: null };
-  const repeat = toTodoRepeat(values, timeZone);
+  const repeat = toTodoRepeat(values);
   if (repeat == null) {
     return next;
   }
 
-  const adjusted = TodoRepeatPolicy.withRepeatStartDate(
-    repeat,
-    toDateKey(values.startDate, timeZone),
-    toDateKey(nextStartDate, timeZone),
-  );
+  const adjusted = TodoRepeatPolicy.withRepeatStartDate(repeat, values.startDate, nextStartDate);
 
   return {
     ...next,
     weekdays: adjusted.frequency === 'WEEKLY' ? adjusted.weekdays : next.weekdays,
-    untilDate:
-      adjusted.end.type === 'UNTIL' ? toLocalDayInstant(adjusted.end.date) : next.untilDate,
+    untilDate: adjusted.end.type === 'UNTIL' ? adjusted.end.date : next.untilDate,
   };
 }
 
@@ -124,44 +114,36 @@ export function withTodoRepeatFormDayToggled(
 }
 
 /** 날짜 종료를 아직 안 골랐어도 첫 회차는 알 수 있으므로 끝이 없는 규칙으로 계산한다. 첫 할 일이 실제로 생기는 날이다 */
-export function getTodoRepeatFormFirstOccurrenceKey(
-  values: TodoRepeatFormValues,
-  timeZone: string,
-): DateKey | null {
-  const repeat = toTodoRepeat({ ...values, endType: 'NEVER' }, timeZone);
+export function getTodoRepeatFormFirstOccurrenceKey(values: TodoRepeatFormValues): DateKey | null {
+  const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
   return repeat == null
     ? null
-    : TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(
-        repeat,
-        toDateKey(values.startDate, timeZone),
-      );
+    : TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(repeat, values.startDate);
 }
 
 interface PickedCalendarDate {
   dateKey: DateKey;
   todayKey: DateKey;
-  timeZone: string;
 }
 
 export function withTodoRepeatFormCalendarDate(
   values: TodoRepeatFormValues,
-  { dateKey, todayKey, timeZone }: PickedCalendarDate,
+  { dateKey, todayKey }: PickedCalendarDate,
 ): TodoRepeatFormValues {
   if (dateKey < todayKey) {
     return values;
   }
 
-  const startDateKey = toDateKey(values.startDate, timeZone);
+  const startDateKey = values.startDate;
   const isFirstOccurrence =
-    dateKey === getTodoRepeatFormFirstOccurrenceKey(values, timeZone) && dateKey !== startDateKey;
+    dateKey === getTodoRepeatFormFirstOccurrenceKey(values) && dateKey !== startDateKey;
   const hasPickedPeriod = values.endType === 'UNTIL' && values.untilDate != null;
 
-  const picked = toLocalDayInstant(dateKey);
   if (isFirstOccurrence || hasPickedPeriod) {
-    return { ...withTodoRepeatFormStartDate(values, picked, timeZone), untilDate: null };
+    return { ...withTodoRepeatFormStartDate(values, dateKey), untilDate: null };
   }
   if (dateKey > startDateKey) {
-    return { ...values, endType: 'UNTIL', untilDate: picked };
+    return { ...values, endType: 'UNTIL', untilDate: dateKey };
   }
-  return dateKey < startDateKey ? withTodoRepeatFormStartDate(values, picked, timeZone) : values;
+  return dateKey < startDateKey ? withTodoRepeatFormStartDate(values, dateKey) : values;
 }

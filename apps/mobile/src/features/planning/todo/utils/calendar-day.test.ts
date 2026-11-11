@@ -58,10 +58,10 @@ describe('getPickerDayType', () => {
 describe('getMonthViewDayState', () => {
   // 2025-03-17 월, 2025-03-22 토, 2025-03-23 일, 2025-03-20 목
   const keys = (dateKey: string, selectedDateKey: string, todayKey = '2025-03-20') => ({
-    dateKey,
+    dateKey: createDateKey(dateKey),
     dayOfWeek: getDayOfWeek(createDateKey(dateKey)),
-    selectedDateKey,
-    todayKey,
+    selectedDateKey: createDateKey(selectedDateKey),
+    todayKey: createDateKey(todayKey),
   });
 
   it.each([
@@ -165,8 +165,8 @@ describe('getRepeatWeekDays', () => {
   it('시작과 끝 사이의 날만 기간 띠에 넣는다', () => {
     // When
     const days = getRepeatWeekDays(WEEK, {
-      startDateKey: '2026-11-01',
-      endDateKey: '2026-11-03',
+      startDateKey: createDateKey('2026-11-01'),
+      endDateKey: createDateKey('2026-11-03'),
       isOpenEnded: false,
     });
 
@@ -179,8 +179,8 @@ describe('getRepeatWeekDays', () => {
   it('시작과 끝이 같은 날이면 띠를 그리지 않는다', () => {
     // When
     const days = getRepeatWeekDays(WEEK, {
-      startDateKey: '2026-11-02',
-      endDateKey: '2026-11-02',
+      startDateKey: createDateKey('2026-11-02'),
+      endDateKey: createDateKey('2026-11-02'),
       isOpenEnded: false,
     });
 
@@ -192,7 +192,7 @@ describe('getRepeatWeekDays', () => {
   it('계속 반복은 끝이 없어 시작 뒤 모든 날이 띠에 든다', () => {
     // When
     const days = getRepeatWeekDays(WEEK, {
-      startDateKey: '2026-11-02',
+      startDateKey: createDateKey('2026-11-02'),
       endDateKey: null,
       isOpenEnded: true,
     });
@@ -204,7 +204,7 @@ describe('getRepeatWeekDays', () => {
   it('보고 있는 달이 아닌 칸은 띠에 넣지 않는다', () => {
     // When
     const [day] = getRepeatWeekDays([cell('2026-10-31', true)], {
-      startDateKey: '2026-10-01',
+      startDateKey: createDateKey('2026-10-01'),
       endDateKey: null,
       isOpenEnded: true,
     });
