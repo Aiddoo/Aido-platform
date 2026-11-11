@@ -1,7 +1,9 @@
 import type { Storage } from '@src/core/ports/storage';
 
-import { EMPTY_PUSH_REGISTRATION } from '../constants/notification.constants';
-import type { PushRegistration } from '../domains/push-registration.model';
+import {
+  createEmptyPushRegistration,
+  type PushRegistration,
+} from '../domains/push-registration.model';
 import { pushRegistrationStorageSchema } from '../schemas/push-registration-storage.schema';
 
 const PUSH_REGISTRATION_KEY = 'pushRegistration';
@@ -16,7 +18,7 @@ export function createPushRegistrationRepository(storage: Storage): PushRegistra
   return {
     find: async () =>
       (await storage.get(PUSH_REGISTRATION_KEY, pushRegistrationStorageSchema)) ??
-      EMPTY_PUSH_REGISTRATION,
+      createEmptyPushRegistration(),
     save: (registration) => storage.set(PUSH_REGISTRATION_KEY, registration),
   };
 }

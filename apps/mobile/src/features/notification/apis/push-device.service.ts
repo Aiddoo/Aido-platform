@@ -16,10 +16,13 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { isEqual, noop, withTimeout } from 'es-toolkit';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { EMPTY_PUSH_REGISTRATION } from '../constants/notification.constants';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
 import type { PushDevice, PushPermission } from '../domains/push-permission.model';
-import { type PushRegistration, PushRegistrationPolicy } from '../domains/push-registration.model';
+import {
+  createEmptyPushRegistration,
+  type PushRegistration,
+  PushRegistrationPolicy,
+} from '../domains/push-registration.model';
 import type { DeviceIdService } from './device-id.service';
 import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-permission.mapper';
 import type { PushRegistrationRepository } from './push-registration.repository';
@@ -141,7 +144,7 @@ export class PushDeviceService {
     const registration =
       isDeliverable && issuedToken == null
         ? await this.#findRegistration()
-        : EMPTY_PUSH_REGISTRATION;
+        : createEmptyPushRegistration();
     const token = PushRegistrationPolicy.getReportToken(registration, { permission, issuedToken });
     const deviceId = await this.#deviceIdService.get();
     const input = toReportPushDeviceInput({ permission, token });
@@ -337,7 +340,7 @@ export class PushDeviceService {
   };
 
   #findRegistration = (): Promise<PushRegistration> =>
-    this.#registrationRepository.find().catch(() => EMPTY_PUSH_REGISTRATION);
+    this.#registrationRepository.find().catch(() => createEmptyPushRegistration());
 
   #updateRegistration = async (
     update: (registration: PushRegistration) => PushRegistration,

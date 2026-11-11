@@ -34,17 +34,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/features/notification/domains/notification.model.ts",
-    "to": "src/features/notification/constants/notification.constants.ts",
-    "unresolvedTo": "../constants/notification.constants",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "domain-model-constants"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/features/notification/domains/push-permission.model.ts",
     "to": "src/features/notification/constants/notification.constants.ts",
     "unresolvedTo": "../constants/notification.constants",

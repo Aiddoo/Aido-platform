@@ -8,8 +8,6 @@ import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { z } from 'zod';
 
-import { NOTIFICATION_TYPE_TRAITS } from '../constants/notification.constants';
-
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
 export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORY);
@@ -78,9 +76,44 @@ export type NotificationPage = z.infer<typeof notificationPageSchema>;
 /** 읽음 응답으로 본 소유. 네트워크·5xx·예산 초과는 모르는 것이라 막지 않는다 */
 export type NotificationOwnership = 'ok' | 'foreign' | 'unknown';
 
+/** 프리미엄 AI 기능이 만든 알림 종류. 서버가 종류를 더하면 여기서 정해야 빌드가 된다 */
+const AI_FEATURE_BY_TYPE = {
+  FOLLOW_NEW: false,
+  FOLLOW_ACCEPTED: false,
+  INVITE_JOINED: false,
+  INVITE_REWARDED: false,
+  INVITE_PROGRESS: false,
+  INVITE_QUALIFY_REMINDER: false,
+  NUDGE_RECEIVED: false,
+  NUDGE_REPLIED: false,
+  NUDGE_THANKED: false,
+  CHEER_RECEIVED: false,
+  DAILY_COMPLETE: false,
+  FRIEND_COMPLETED: false,
+  WEEKLY_ACHIEVEMENT: false,
+  TODO_REMINDER: false,
+  TODO_SHARED: false,
+  WINBACK: false,
+  WEATHER_MORNING: false,
+  WEATHER_EVENING: false,
+  MORNING_REMINDER: false,
+  EVENING_REMINDER: false,
+  LUNCH_NUDGE: false,
+  STREAK_AT_RISK: false,
+  WEEKLY_REPORT: true,
+  MONTHLY_REPORT: true,
+  AI_SUGGESTION: true,
+  SYSTEM_NOTICE: false,
+  ADMIN_BROADCAST: false,
+  ADMIN_TARGETED: false,
+  PREMIUM_GRANT_ENDING: false,
+  SOCIAL_DIGEST: false,
+  NUDGE_SUGGEST: false,
+} as const satisfies Record<NotificationType, boolean>;
+
 /** 프리미엄 AI 기능이 만든 알림. 열기 전에 기능 한도를 묻는다 */
 function isAiFeature(notification: Notification) {
-  return NOTIFICATION_TYPE_TRAITS[notification.type].isAiFeature;
+  return AI_FEATURE_BY_TYPE[notification.type];
 }
 
 function isUnread(notification: Notification) {

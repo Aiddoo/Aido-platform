@@ -23,7 +23,6 @@ import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { NOTIFICATION_TYPE_TRAITS } from '../constants/notification.constants';
 import { NotificationPolicy } from '../domains/notification.model';
 import type { Notification } from '../domains/notification.model';
 import { useNotificationCategory } from '../hooks/use-notification-category';
@@ -36,6 +35,7 @@ import {
   type NotificationDestination,
   toNotificationDestination,
 } from '../utils/notification-destination';
+import { getNotificationLabelKey } from '../utils/notification.view-model';
 import { NotificationListRow } from './notification-list-row';
 
 const NOTIFICATION_PAGE_SIZE = 10;
@@ -137,7 +137,7 @@ NotificationList.Item = function Item({ notification, onOpen }: NotificationItem
 
   return (
     <NotificationListRow
-      label={t(`categories.${NOTIFICATION_TYPE_TRAITS[notification.type].labelKey}`)}
+      label={t(`categories.${getNotificationLabelKey(notification.type)}`)}
       title={notification.title}
       body={notification.body}
       createdAt={notification.createdAt}

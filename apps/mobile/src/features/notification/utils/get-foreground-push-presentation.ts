@@ -1,13 +1,7 @@
 import type { ForegroundPushPresentation } from '@src/core/ports/push-notification-gateway';
 
-import { NOTIFICATION_TYPE_TRAITS } from '../constants/notification.constants';
-import type { NotificationType } from '../domains/notification.model';
 import type { PushNotification } from '../domains/push-notification.model';
-
-/** 받을 때 그 종류의 화면을 다시 받는지. 다시 받으면 보고 있는 화면에 새 내용이 바로 보인다 */
-function isRefreshedOnReceipt(type: NotificationType) {
-  return NOTIFICATION_TYPE_TRAITS[type].invalidation != null;
-}
+import { isRefreshedOnReceipt } from './notification-received-refresh';
 
 /**
  * 앱이 앞에 있을 때 받은 알림을 보이는 방식. 알림함과 받은 종류의 화면은 받을 때 다시 받으므로, 그 화면을 보고 있으면

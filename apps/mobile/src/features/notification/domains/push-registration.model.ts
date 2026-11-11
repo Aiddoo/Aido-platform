@@ -15,6 +15,11 @@ export const pushRegistrationSchema = z
   .strip();
 export type PushRegistration = z.infer<typeof pushRegistrationSchema>;
 
+/** 보고한 적도, 풀 해제도 없는 기기 */
+export function createEmptyPushRegistration(): PushRegistration {
+  return { reportedToken: null, releaseRequestedAt: null };
+}
+
 /**
  * 지금 토큰을 받지 못해도 서버가 가진 토큰으로 보고하면 등록을 지키면서 권한·시간대·언어를 맞춘다.
  * 한 번도 토큰을 받지 못한 허용 기기는 null로 보고한다. 지울 토큰이 없고 1.15.1 서버는 허용 상태의 null에 저장된 토큰을 지킨다
