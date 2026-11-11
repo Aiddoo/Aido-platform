@@ -117,6 +117,12 @@ stepper.history.replace('verification', (prev) => ({ ...prev, email: nextEmail }
 - 단계를 route params에 저장해 입력 단계를 URL로 복원하지 않는 규칙과 부딪힌다.
 - 단계마다 화면이 새로 마운트돼 폼도 다시 마운트된다.
 
+`@use-funnel/core@0.1.0`의 `createUseFunnel(router)`로 Expo Router용 router를 직접 붙이는 길도 검토했다. 쓰지 않는 이유는 다음과 같다.
+
+- Android 뒤로 가기가 단계마다 한 칸씩 돌아야 하는데 그 연결을 우리가 다시 써야 한다.
+- 같은 단계를 연속으로 push하면 건너뛰는 규칙과 `onStepChange` 추적이 우리 훅에 이미 있다.
+- 의존성이 하나 더 늘고, 0.1.0이라 계약이 바뀔 위험이 있다.
+
 ## 좋은 훅인지 판단하는 질문
 
 1. 이 훅이 바뀌는 이유를 한 문장으로 말할 수 있는가?
