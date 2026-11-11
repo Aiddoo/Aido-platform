@@ -8,6 +8,7 @@
   },
   "list": {
     "scrollToTop": "맨 위로 이동",
+    "scrollProgress": "스크롤 위치",
     "savedTitle": "저장한 메모",
     "emptyTitle": "아직 메모가 없어요",
     "emptyDescription": "애매한 할 일은 여기에 메모해두고\n나중에 할 일로 옮겨보세요",

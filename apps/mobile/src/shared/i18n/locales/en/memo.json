@@ -8,6 +8,7 @@
   },
   "list": {
     "scrollToTop": "Scroll to top",
+    "scrollProgress": "Scroll position",
     "savedTitle": "Saved memos",
     "emptyTitle": "No memos yet",
     "emptyDescription": "Jot down rough ideas here\nand turn them into to-dos later",
