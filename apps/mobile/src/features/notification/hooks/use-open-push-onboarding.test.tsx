@@ -29,7 +29,7 @@ import * as TabsLayoutRoute from '../../../../app/(app)/(tabs)/_layout';
 import * as AppLayoutRoute from '../../../../app/(app)/_layout';
 import NotificationOnboardingScreen from '../../../../app/(app)/onboarding/notifications';
 import { createPushPermissionResponse } from '../__tests__/notification.fixtures';
-import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
+import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
 import { useOpenPushOnboarding } from './use-open-push-onboarding';
 
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
@@ -291,7 +291,7 @@ describe('가입 직후 알림 화면 — 실제 라우터', () => {
       });
       await waitFor(() => {
         expect(queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeDefined();
-        expect(queryClient.getQueryData(NOTIFICATION_QUERY_KEYS.permission())).toBeDefined();
+        expect(queryClient.getQueryData(PUSH_PERMISSION_QUERY_KEYS.current())).toBeDefined();
       });
 
       // When

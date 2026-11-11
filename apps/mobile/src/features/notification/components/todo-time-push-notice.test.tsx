@@ -9,7 +9,7 @@ import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import type { PushPermission } from '../domains/push-permission.model';
-import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
+import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
 import { TodoTimePushNotice } from './todo-time-push-notice';
 
 const OFF_LINE = '알림이 꺼져 있어 알려드릴 수 없어요';
@@ -18,7 +18,7 @@ async function renderNotice(permission: PushPermission, { isTimed }: { isTimed: 
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), permission);
+  queryClient.setQueryData(PUSH_PERMISSION_QUERY_KEYS.current(), permission);
   const externalLink = createExternalLinkGatewayStub();
   await renderScreen(<TodoTimePushNotice isTimed={isTimed} />, {
     queryClient,

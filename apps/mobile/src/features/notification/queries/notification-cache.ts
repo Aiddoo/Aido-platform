@@ -5,6 +5,7 @@ import { uniq } from 'es-toolkit';
 import type { Notification, NotificationPage } from '../domains/notification.model';
 import type { PushPermission } from '../domains/push-permission.model';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
+import { PUSH_PERMISSION_QUERY_KEYS } from './push-permission-query-keys';
 
 type NotificationPages = InfiniteData<NotificationPage, number | undefined>;
 
@@ -109,9 +110,9 @@ export function invalidateNotifications(queryClient: QueryClient) {
 }
 
 export function setCachedPushPermission(queryClient: QueryClient, permission: PushPermission) {
-  queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), permission);
+  queryClient.setQueryData(PUSH_PERMISSION_QUERY_KEYS.current(), permission);
 }
 
 export function invalidatePushPermission(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.permission() });
+  return queryClient.invalidateQueries({ queryKey: PUSH_PERMISSION_QUERY_KEYS.current() });
 }

@@ -11,6 +11,7 @@ import { uniqBy } from 'es-toolkit';
 import type { NotificationPage } from '../domains/notification.model';
 import type { NotificationListQueryKey } from '../schemas/notification-list-query-key.schema';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
+import { PUSH_PERMISSION_QUERY_KEYS } from './push-permission-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
@@ -44,7 +45,7 @@ export function useGetPushPermissionQueryOptions() {
   const pushRegistrationService = usePushRegistrationService();
 
   return queryOptions({
-    queryKey: NOTIFICATION_QUERY_KEYS.permission(),
+    queryKey: PUSH_PERMISSION_QUERY_KEYS.current(),
     queryFn: () => pushRegistrationService.getPermission(),
     // 기기 안에서만 처리해 연결 상태와 무관하다
     networkMode: 'always',

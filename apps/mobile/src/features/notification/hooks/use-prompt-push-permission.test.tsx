@@ -11,14 +11,14 @@ import { act, waitFor } from '@testing-library/react-native';
 
 import { createPushDeviceResponseDto } from '../__tests__/notification.fixtures';
 import type { PushPermission } from '../domains/push-permission.model';
-import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
+import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
 import { usePromptPushPermission } from './use-prompt-push-permission';
 
 async function renderPrompt(permission: PushPermission) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), permission);
+  queryClient.setQueryData(PUSH_PERMISSION_QUERY_KEYS.current(), permission);
   const httpClient = createHttpClientStub();
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const pushNotification = createPushNotificationGatewayStub();
@@ -48,7 +48,7 @@ describe('usePromptPushPermission — 할 일 시간을 정한 순간', () => {
     // Then
     await waitFor(() => expect(pushNotification.requestPermission).toHaveBeenCalledTimes(1));
     await waitFor(() =>
-      expect(queryClient.getQueryData(NOTIFICATION_QUERY_KEYS.permission())?.status).toBe(
+      expect(queryClient.getQueryData(PUSH_PERMISSION_QUERY_KEYS.current())?.status).toBe(
         'GRANTED',
       ),
     );

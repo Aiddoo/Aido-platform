@@ -18,7 +18,7 @@ import {
 import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
 
-import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
+import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
 import { useIsPushOnboardingDue } from './use-is-push-onboarding-due';
 
 const SIGNED_UP_AT = '2026-11-08T00:00:00.000Z';
@@ -33,7 +33,7 @@ async function renderGuard() {
     USER_QUERY_KEYS.me(),
     createUser({ createdAt: toInstant(SIGNED_UP_AT) }),
   );
-  queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), {
+  queryClient.setQueryData(PUSH_PERMISSION_QUERY_KEYS.current(), {
     status: 'NOT_DETERMINED',
     canAskAgain: true,
   });
@@ -146,7 +146,7 @@ describe('useIsPushOnboardingDue — 알림 권한을 이미 답한 사용자', 
       );
       await waitFor(() => {
         expect(queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeDefined();
-        expect(queryClient.getQueryData(NOTIFICATION_QUERY_KEYS.permission())).toBeDefined();
+        expect(queryClient.getQueryData(PUSH_PERMISSION_QUERY_KEYS.current())).toBeDefined();
       });
 
       // Then

@@ -19,7 +19,7 @@ import { getLastGorhomSheetProps } from '@src/testing/mocks/gorhom-bottom-sheet'
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
-import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
+import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
 import { createMarketingPushPromptRepository } from '../repositories/marketing-push-prompt.repository';
 import { useOfferMarketingPushAfterCompletion } from './use-offer-marketing-push';
 
@@ -39,7 +39,7 @@ async function renderOffer() {
     CONSENT_QUERY_KEYS.detail(),
     createConsent({ marketingPushAgreedAt: null }),
   );
-  queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), {
+  queryClient.setQueryData(PUSH_PERMISSION_QUERY_KEYS.current(), {
     status: 'GRANTED',
     canAskAgain: false,
   });

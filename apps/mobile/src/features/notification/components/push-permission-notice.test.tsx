@@ -23,7 +23,7 @@ import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import type { PushPermission } from '../domains/push-permission.model';
-import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
+import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
 import { PushPermissionNotice } from './push-permission-notice';
 
 const DENIED_TITLE = '알림이 꺼져 있어요';
@@ -40,7 +40,7 @@ async function renderCard(
   const todayKey = readDeviceLocalDateState().currentLocalDateKey;
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(createCurrentUserDto()));
   queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), toPreference(createPreferenceDto()));
-  queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.permission(), permission);
+  queryClient.setQueryData(PUSH_PERMISSION_QUERY_KEYS.current(), permission);
   // 내일 시작하는 시간 할 일은 지금 몇 시든 아직 알림이 남은 할 일이다
   queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date: todayKey }), {
     todos: hasUpcomingTimedTodo
