@@ -21,6 +21,7 @@ import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { toDateSectionedListItems } from '../utils/date-section';
+import { NotificationList } from './notification-list';
 import { NotificationListRow } from './notification-list-row';
 
 export function SentNudgeList() {
@@ -42,7 +43,7 @@ export function SentNudgeList() {
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
-            <NotificationListRow.SectionHeader section={section} />
+            <NotificationList.SectionHeader section={section} />
           ))
           .with({ type: 'item' }, ({ entry }) => <SentNudgeList.Item nudge={entry} />)
           .exhaustive()
@@ -60,34 +61,6 @@ export function SentNudgeList() {
     />
   );
 }
-
-SentNudgeList.Loading = NotificationListRow.Loading;
-
-SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation(['notification', 'common']);
-  const isListDisabled = isSentNudgeListDisabledError(error);
-
-  return (
-    <VStack flex={1} p={24}>
-      <QueryErrorFallback
-        title={t(
-          isListDisabled ? 'notification:sentNudges.disabled' : 'notification:sentNudges.loadError',
-        )}
-        reset={reset}
-      />
-    </VStack>
-  );
-};
-
-SentNudgeList.Empty = function Empty() {
-  const { t } = useTranslation('notification');
-
-  return (
-    <VStack flex={1} p={24}>
-      <Result icon={<NotificationIllustration />} title={t('sentNudges.empty')} />
-    </VStack>
-  );
-};
 
 SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
   const { t } = useTranslation('todo');
@@ -114,5 +87,33 @@ SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
       createdAt={nudge.createdAt}
       onPress={openDetail}
     />
+  );
+};
+
+SentNudgeList.Loading = NotificationList.Loading;
+
+SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['notification', 'common']);
+  const isListDisabled = isSentNudgeListDisabledError(error);
+
+  return (
+    <VStack flex={1} p={24}>
+      <QueryErrorFallback
+        title={t(
+          isListDisabled ? 'notification:sentNudges.disabled' : 'notification:sentNudges.loadError',
+        )}
+        reset={reset}
+      />
+    </VStack>
+  );
+};
+
+SentNudgeList.Empty = function Empty() {
+  const { t } = useTranslation('notification');
+
+  return (
+    <VStack flex={1} p={24}>
+      <Result icon={<NotificationIllustration />} title={t('sentNudges.empty')} />
+    </VStack>
   );
 };

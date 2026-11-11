@@ -8,16 +8,22 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
+  Box,
   InfiniteList,
   NotificationIllustration,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
+  Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery, useMutation } from '@tanstack/react-query';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
+import { Fragment } from 'react';
+import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -31,11 +37,18 @@ import { useNotificationCategory } from '../hooks/use-notification-params';
 import { refreshNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
+import type { DateSectionKey } from '../utils/date-section';
 import type { NotificationDestination } from '../utils/notification-destination';
 import { getNotificationLabelKey } from '../utils/notification.view-model';
 import { NotificationListRow } from './notification-list-row';
 
 const NOTIFICATION_PAGE_SIZE = 10;
+const LOADING_ROW_COUNT = 5;
+
+interface NotificationItemProps {
+  notification: Notification;
+  onOpen: (notification: Notification) => void;
+}
 
 export function NotificationList() {
   const [category] = useNotificationCategory();
@@ -70,7 +83,7 @@ export function NotificationList() {
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
-            <NotificationListRow.SectionHeader section={section} />
+            <NotificationList.SectionHeader section={section} />
           ))
           .with({ type: 'item' }, ({ entry }) => (
             <NotificationList.Item notification={entry} onOpen={openNotification} />
@@ -89,33 +102,6 @@ export function NotificationList() {
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
     />
   );
-}
-
-NotificationList.Loading = NotificationListRow.Loading;
-
-NotificationList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation(['notification', 'common']);
-
-  return (
-    <VStack flex={1} p={24}>
-      <QueryErrorFallback title={t('notification:list.loadError')} reset={reset} />
-    </VStack>
-  );
-};
-
-NotificationList.Empty = function Empty() {
-  const { t } = useTranslation('notification');
-
-  return (
-    <VStack flex={1} p={24}>
-      <Result icon={<NotificationIllustration />} title={t('list.empty')} />
-    </VStack>
-  );
-};
-
-interface NotificationItemProps {
-  notification: Notification;
-  onOpen: (notification: Notification) => void;
 }
 
 NotificationList.Item = function Item({ notification, onOpen }: NotificationItemProps) {
@@ -162,6 +148,55 @@ NotificationList.Item = function Item({ notification, onOpen }: NotificationItem
         }
       }}
     />
+  );
+};
+
+NotificationList.SectionHeader = function SectionHeader({ section }: { section: DateSectionKey }) {
+  const { t } = useTranslation('common');
+
+  return (
+    <Box className="bg-white px-4 py-2">
+      <Text size="b3" shade={5} weight="semibold">
+        {t(`dateSections.${section}`)}
+      </Text>
+    </Box>
+  );
+};
+
+/** 받은 뒤와 같은 자리에 날짜 머리 한 줄과 행을 그린다. 머리·행 여백은 SectionHeader·행과 같다 */
+NotificationList.Loading = function Loading() {
+  return (
+    <ScrollView className="flex-1">
+      <Box className="px-4 py-2">
+        <TextSkeleton size="b3" className="w-32" />
+      </Box>
+      {range(LOADING_ROW_COUNT).map((index) => (
+        <Fragment key={index}>
+          {index > 0 && <Separator className="mx-4" />}
+          <NotificationListRow.Loading />
+        </Fragment>
+      ))}
+    </ScrollView>
+  );
+};
+
+NotificationList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['notification', 'common']);
+
+  return (
+    <VStack flex={1} p={24}>
+      <QueryErrorFallback title={t('notification:list.loadError')} reset={reset} />
+    </VStack>
+  );
+};
+
+NotificationList.Empty = function Empty() {
+  const { t } = useTranslation('notification');
+
+  return (
+    <VStack flex={1} p={24}>
+      <Result icon={<NotificationIllustration />} title={t('list.empty')} />
+    </VStack>
   );
 };
 
