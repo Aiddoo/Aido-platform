@@ -218,6 +218,31 @@ describe('usePushDeviceSync', () => {
     expect(onReported).toHaveBeenCalledTimes(1);
   });
 
+  it('보고가 가는 사이 로그아웃하면 늦게 도착한 성공을 알리지 않는다', async () => {
+    // Given
+    let resolvePut: ((value: { ok: true; value: unknown }) => void) | undefined;
+    const { httpClient, onReported, rerender } = await setup('loading');
+    httpClient.put.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePut = resolve;
+        }),
+    );
+    await rerender({ status: 'authenticated' });
+    await act(() => jest.advanceTimersByTimeAsync(0));
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+
+    // When
+    await rerender({ status: 'unauthenticated' });
+    await act(async () => {
+      resolvePut?.({ ok: true, value: createPushDeviceResponseDto() });
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // Then
+    expect(onReported).not.toHaveBeenCalled();
+  });
+
   it('기기 토큰이 바뀌면 새 토큰으로 다시 보고한다', async () => {
     // Given
     const { gateway, httpClient, emitTokenChange } = await setup();
