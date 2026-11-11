@@ -660,23 +660,6 @@ describe('PushDeviceService.requestRelease', () => {
     });
   });
 
-  it('해제 API가 없는 이전 서버(404)면 경고 없이 끝내고 다시 보내지 않는다', async () => {
-    // Given
-    const { service, publicHttpClient, logger } = setup();
-    publicHttpClient.post.mockResolvedValue({
-      ok: false,
-      error: createNotificationApiError({ status: 404 }),
-    });
-    await service.requestRelease();
-
-    // When
-    await service.flushRelease();
-
-    // Then
-    expect(publicHttpClient.post).toHaveBeenCalledTimes(1);
-    expect(logger.warn).not.toHaveBeenCalled();
-  });
-
   it('보고한 토큰도 지금 토큰도 없으면 해제를 남겨 토큰을 받는 다음 시도에 보낸다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub();

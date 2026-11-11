@@ -25,7 +25,6 @@ import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-
 import type { PushRegistrationRepository } from './push-registration.repository';
 
 const REPORT_WAIT_TIMEOUT_MS = 3_000;
-const NOT_FOUND_STATUS = 404;
 const TOO_MANY_REQUESTS_STATUS = 429;
 
 interface ReportedPushDevice {
@@ -316,7 +315,7 @@ export class PushDeviceService {
     }
   };
 
-  /** 연결·서버 장애는 던진다. 429면 다시 보내고, 이 API가 없는 이전 서버(404)는 다시 보내도 같아 조용히 끝낸다 */
+  /** 연결·서버 장애는 던진다. 429면 다시 보낸다 */
   #postRelease = async (input: UnregisterPushDeviceByTokenInput): Promise<'done' | 'retry'> => {
     const result = parseApiResponse(
       await this.#publicHttpClient.post('v1/notifications/push-devices/unregister', input),
@@ -324,7 +323,7 @@ export class PushDeviceService {
       noop,
       '[PushDeviceService] Invalid unregisterPushDeviceByToken response',
     );
-    if (result.ok || result.error.status === NOT_FOUND_STATUS) {
+    if (result.ok) {
       return 'done';
     }
     if (result.error.status === TOO_MANY_REQUESTS_STATUS) {
