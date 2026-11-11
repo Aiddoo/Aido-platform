@@ -15,10 +15,10 @@ import { type ComponentProps, type ComponentType, useEffect, useRef } from 'reac
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { PLAN_PRICE_LABEL_KEYS } from '../constants/subscription-labels';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
+import { getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
 import {
   shouldBuzzOnTrialStamp,
   toTrialScheduleSteps,
@@ -81,7 +81,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
   }
   const formatDate = (dateKey: string) =>
     formatYearAwareDateKeyLabel(dateKey, currentLocalDateKey, dateFormatContext);
-  const price = t(PLAN_PRICE_LABEL_KEYS[plan.planType], { price: plan.priceString });
+  const price = t(getPlanPriceLabelKey(plan.planType), { price: plan.priceString });
   const reminderStep = steps.find((step) => step.kind === 'reminder');
   const chargeStep = steps.find((step) => step.kind === 'charge');
 

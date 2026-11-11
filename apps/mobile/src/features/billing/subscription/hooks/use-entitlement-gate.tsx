@@ -12,17 +12,16 @@ import { router } from 'expo-router';
 import { type ComponentProps, useMemo } from 'react';
 import { match } from 'ts-pattern';
 
+import { parseLimitedFeature } from '../apis/entitlement.mapper';
 import { PremiumUpsellBottomSheet } from '../components/premium-upsell-bottom-sheet';
 import type { EntitlementGateSurface, LimitReachedTrigger } from '../constants/subscription.events';
-import { findLimitedFeature } from '../domains/entitlement.error';
 import { type EntitlementFeature } from '../domains/entitlement.model';
 import { EntitlementPolicy, LimitedFeaturePolicy } from '../domains/entitlement.model';
-import { type UpsellPresentation } from '../domains/upsell.model';
-import { UpsellPolicy } from '../domains/upsell.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { upsellDismissalStoredValue } from '../schemas/upsell-dismissal-storage.schema';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
+import { getUpsellPresentation, type UpsellPresentation } from '../utils/upsell.view-model';
 import { useFormatRefillSentence } from './use-format-refill-sentence';
 
 type BlockedDecision = 'limit-reached' | 'locked';
@@ -92,7 +91,7 @@ export function useEntitlementGate(
       const userId = getCachedMe(queryClient)?.id;
       const dismissedOn =
         readStoredValue(upsellDismissalStorage, upsellDismissalStoredValue, userId)[target] ?? null;
-      const presentation = UpsellPolicy.getPromptSurface(dismissedOn, todayKey, {
+      const presentation = getUpsellPresentation(dismissedOn, todayKey, {
         hasAlternativeAction: alternativeAction != null,
       });
 
@@ -186,7 +185,7 @@ export function useEntitlementGate(
       },
       /** 서버가 한도·프리미엄 전용으로 막은 오류면 안내를 띄우고 true다(멈춘다). 그 밖의 오류는 부른 쪽이 처리한다 */
       promptIfBlockedError: (error: unknown, options?: EntitlementGatePromptOptions): boolean => {
-        const limited = findLimitedFeature(error);
+        const limited = parseLimitedFeature(error);
         if (limited == null) {
           return false;
         }

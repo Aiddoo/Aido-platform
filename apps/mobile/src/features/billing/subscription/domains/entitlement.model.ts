@@ -9,8 +9,6 @@ import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/
 import { calculateCalendarDaysLeft } from '@src/shared/date/zoned';
 import { z } from 'zod';
 
-import type { LimitedFeature } from './entitlement.error';
-
 const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
 export type EntitlementFeature = z.infer<typeof entitlementFeatureSchema>;
 
@@ -164,6 +162,12 @@ function getFreeLimit(snapshot: EntitlementSnapshot, feature: PlanLimitFeatureKe
 
 function withFeatureQuota(snapshot: EntitlementSnapshot, quota: FeatureQuota): EntitlementSnapshot {
   return { ...snapshot, features: { ...snapshot.features, [quota.feature]: quota } };
+}
+
+export interface LimitedFeature {
+  feature: EntitlementFeature;
+  /** 서버가 오류와 함께 준 현재 한도. 상세를 싣지 않는 코드는 null이다 */
+  featureQuota: FeatureQuota | null;
 }
 
 /** 서버가 막은 기능의 오류가 한도 소진인지 등급 잠금인지. 서버가 한도를 함께 줬으면 그 값을 따른다 */

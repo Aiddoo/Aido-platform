@@ -24,12 +24,12 @@ import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { PLAN_PRICE_LABEL_KEYS } from '../constants/subscription-labels';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useFormatReceiptDate } from '../hooks/use-format-receipt-date';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
+import { getPlanNameKey, getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
 import {
   type SubscriptionReceiptRow,
   toReceiptDateLabel,
@@ -41,9 +41,9 @@ export function SubscriptionReceipt() {
   const { variant, rows, footnote } = useSubscriptionReceipt();
   const dateFormatContext = useDateFormatContext();
   const premium = getPremiumBenefitAmounts();
-  const planPrices = usePlanPrices(
-    rows.some((row) => row.type === 'firstBillingDate' || row.type === 'plan'),
-  );
+  const planPrices = usePlanPrices({
+    isEnabled: rows.some((row) => row.type === 'firstBillingDate' || row.type === 'plan'),
+  });
   const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
   const trialPlanType =
     rows.find((row) => row.type === 'plan')?.planType ?? ('annual' satisfies PlanType);
@@ -225,7 +225,7 @@ SubscriptionReceipt.Loading = function Loading() {
  * 서버는 금액을 몰라(국가별 스토어 가격) 스토어 요금제에서 붙인다.
  * 영수증은 스토어 없이 서버 값으로 그려야 해서 실패를 던지지 않고, 못 받으면 날짜·요금제 이름만 보인다
  */
-function usePlanPrices(isEnabled: boolean): Record<PlanType, string | null> {
+function usePlanPrices({ isEnabled }: { isEnabled: boolean }): Record<PlanType, string | null> {
   const { t } = useTranslation('subscription');
   const { data: availability } = useQuery({
     ...useGetOfferingsQueryOptions(),
@@ -235,16 +235,11 @@ function usePlanPrices(isEnabled: boolean): Record<PlanType, string | null> {
   const plans = availability?.status === 'available' ? availability.offering.plans : [];
   const formatPlanPrice = (planType: PlanType) => {
     const plan = SubscriptionPolicy.findPlanByType(plans, planType);
-    return plan == null ? null : t(PLAN_PRICE_LABEL_KEYS[planType], { price: plan.priceString });
+    return plan == null ? null : t(getPlanPriceLabelKey(planType), { price: plan.priceString });
   };
 
   return { annual: formatPlanPrice('annual'), monthly: formatPlanPrice('monthly') };
 }
-
-const PLAN_NAME_KEYS = {
-  annual: 'plan.annual',
-  monthly: 'plan.monthly',
-} as const satisfies Record<PlanType, string>;
 
 interface ReceiptDetailRowProps {
   row: SubscriptionReceiptRow;
@@ -275,7 +270,7 @@ function ReceiptDetailRow({ row, formatDate, planPrices, trialPlanType }: Receip
     }))
     .with({ type: 'plan' }, ({ planType }) => {
       const price = planType == null ? null : planPrices[planType];
-      const name = t(planType == null ? 'receipt.rows.planUnknown' : PLAN_NAME_KEYS[planType]);
+      const name = t(planType == null ? 'receipt.rows.planUnknown' : getPlanNameKey(planType));
       return {
         label: t('receipt.rows.plan'),
         value: price == null ? name : t('receipt.rows.planWithPrice', { plan: name, price }),

@@ -1,10 +1,8 @@
 import { useHaptics, useVoiceApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
-import {
-  findErrorFeatureQuota,
-  isFreeOfChargeError,
-} from '@src/features/billing/subscription/domains/entitlement.error';
+import { parseErrorFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
@@ -182,7 +180,7 @@ export function useCreateQuickPlanMutationOptions({
         return;
       }
 
-      const featureQuota = findErrorFeatureQuota(error);
+      const featureQuota = parseErrorFeatureQuota(error);
       if (featureQuota != null) {
         setFeatureQuota(queryClient, featureQuota);
       }
@@ -249,7 +247,7 @@ export function useCreateVoiceNoteDigestMutationOptions() {
         return;
       }
 
-      const featureQuota = findErrorFeatureQuota(error);
+      const featureQuota = parseErrorFeatureQuota(error);
       if (featureQuota != null) {
         setFeatureQuota(queryClient, featureQuota);
       }

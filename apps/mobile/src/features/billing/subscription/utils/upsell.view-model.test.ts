@@ -1,6 +1,6 @@
-import { UpsellPolicy } from './upsell.model';
+import { getUpsellPresentation } from './upsell.view-model';
 
-describe('getPromptSurface', () => {
+describe('getUpsellPresentation', () => {
   it.each([
     ['닫은 적이 없으면', null, 'sheet'],
     ['어제 닫았으면', '2026-11-08', 'sheet'],
@@ -10,7 +10,7 @@ describe('getPromptSurface', () => {
     const todayKey = '2026-11-09';
 
     // When
-    const result = UpsellPolicy.getPromptSurface(dismissedOn, todayKey, {
+    const result = getUpsellPresentation(dismissedOn, todayKey, {
       hasAlternativeAction: false,
     });
 
@@ -23,7 +23,7 @@ describe('getPromptSurface', () => {
     const todayKey = '2026-11-09';
 
     // When
-    const result = UpsellPolicy.getPromptSurface(todayKey, todayKey, {
+    const result = getUpsellPresentation(todayKey, todayKey, {
       hasAlternativeAction: true,
     });
 

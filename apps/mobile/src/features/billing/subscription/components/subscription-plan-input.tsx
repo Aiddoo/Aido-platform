@@ -9,11 +9,11 @@ import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { FREE_TRIAL_PERIOD_LABEL_KEYS } from '../constants/subscription-labels';
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { formatPlanAmount } from '../utils/plan-price.view-model';
+import { getFreeTrialPeriodLabelKey } from '../utils/subscription-label.view-model';
 
 const AnimatedCard = Animated.createAnimatedComponent(Card);
 
@@ -85,7 +85,7 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
                 {plan.freeTrial != null && (
                   <PlanChip testID="subscription-plan-free-trial">
                     {t('plan.freeTrial', {
-                      period: t(FREE_TRIAL_PERIOD_LABEL_KEYS[plan.freeTrial.periodUnit], {
+                      period: t(getFreeTrialPeriodLabelKey(plan.freeTrial.periodUnit), {
                         count: plan.freeTrial.periodNumberOfUnits,
                       }),
                     })}

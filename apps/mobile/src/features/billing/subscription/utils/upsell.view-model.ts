@@ -2,7 +2,7 @@
 export type UpsellPresentation = 'sheet' | 'toast';
 
 /** 같은 기능은 하루 한 번만 시트로 막는다. 대안 동작이 있는 안내는 토스트로는 대안을 고를 수 없어 늘 시트다 */
-function getPromptSurface(
+export function getUpsellPresentation(
   dismissedOn: string | null,
   todayKey: string,
   { hasAlternativeAction }: { hasAlternativeAction: boolean },
@@ -12,7 +12,3 @@ function getPromptSurface(
   }
   return dismissedOn === todayKey ? 'toast' : 'sheet';
 }
-
-export const UpsellPolicy = {
-  getPromptSurface,
-} as const;

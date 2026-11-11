@@ -1,4 +1,4 @@
-import { WEBHOOK_SYNC_DELAY } from '@src/features/billing/subscription/constants/subscription.constants';
+import { WEBHOOK_SYNC_DELAY_MS } from '@src/features/billing/subscription/constants/subscription.constants';
 import { type CustomerInfo } from '@src/features/billing/subscription/domains/customer-info.model';
 import { CustomerInfoPolicy } from '@src/features/billing/subscription/domains/customer-info.model';
 import { useRefreshOnPremiumEnd } from '@src/features/billing/subscription/hooks/use-refresh-on-premium-end';
@@ -26,7 +26,7 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
       debounce(() => {
         invalidateMe(queryClient);
         invalidateEntitlements(queryClient);
-      }, WEBHOOK_SYNC_DELAY),
+      }, WEBHOOK_SYNC_DELAY_MS),
     [queryClient],
   );
 

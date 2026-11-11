@@ -7,15 +7,15 @@ import { Box, Button, Text, TextSkeleton } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
-import {
-  FREE_TRIAL_PERIOD_LABEL_KEYS,
-  PLAN_PRICE_LABEL_KEYS,
-} from '../constants/subscription-labels';
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { hasFreeTrial, SubscriptionPolicy } from '../domains/subscription.model';
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
+import {
+  getFreeTrialPeriodLabelKey,
+  getPlanPriceLabelKey,
+} from '../utils/subscription-label.view-model';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';
 
 interface PurchaseButtonProps {
@@ -70,7 +70,7 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
           period:
             freeTrial == null
               ? undefined
-              : t(FREE_TRIAL_PERIOD_LABEL_KEYS[freeTrial.periodUnit], {
+              : t(getFreeTrialPeriodLabelKey(freeTrial.periodUnit), {
                   count: freeTrial.periodNumberOfUnits,
                 }),
         })}
@@ -106,7 +106,7 @@ function PurchaseDisclosure({ plan, trialEndDateKey, isPlanLoading }: PurchaseDi
     ) : null;
   }
 
-  const price = t(PLAN_PRICE_LABEL_KEYS[plan.planType], { price: plan.priceString });
+  const price = t(getPlanPriceLabelKey(plan.planType), { price: plan.priceString });
 
   return (
     <Text

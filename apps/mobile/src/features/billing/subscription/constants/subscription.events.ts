@@ -1,11 +1,11 @@
 import type { PlanType } from '@src/shared/domains/plan-type.model';
 
-import type { UpsellPresentation } from '../domains/upsell.model';
 import type { SubscriptionView } from '../schemas/subscription-params.schema';
 import type {
   PremiumGateAnalyticsFeature,
   PurchaseFailedReason,
 } from '../utils/subscription-analytics';
+import type { UpsellPresentation } from '../utils/upsell.view-model';
 
 export type EntitlementGateSurface =
   | 'add_todo_sheet'

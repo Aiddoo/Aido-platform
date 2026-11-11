@@ -5,8 +5,9 @@ import { getErrorMessage } from '@src/shared/errors';
 import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
+import { toCustomerInfo } from '../apis/customer-info.mapper';
 import { toSubscriptionError } from '../apis/subscription-error.mapper';
-import { toCustomerInfo, toSubscriptionOffering } from '../apis/subscription.mapper';
+import { toSubscriptionOffering } from '../apis/subscription.mapper';
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { type CustomerInfo, type SubscriptionStore } from '../domains/customer-info.model';
 import { CustomerInfoPolicy } from '../domains/customer-info.model';

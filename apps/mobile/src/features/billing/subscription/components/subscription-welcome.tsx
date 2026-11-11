@@ -19,10 +19,10 @@ import {
 import type { ComponentType } from 'react';
 import { match } from 'ts-pattern';
 
-import { PLAN_PRICE_LABEL_KEYS } from '../constants/subscription-labels';
 import type { PremiumQuickstartAction } from '../constants/subscription.events';
 import type { SubscriptionPlan } from '../domains/subscription.model';
 import { useCheckoutRoute } from '../hooks/use-checkout-route';
+import { getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
 import { toTrialScheduleSteps } from '../utils/trial-schedule.view-model';
 
 const CROWN_CIRCLE_SIZE = 72;
@@ -51,7 +51,7 @@ export function SubscriptionWelcome({
   const steps = toTrialScheduleSteps(plan, purchasedOn);
   const reminderStep = steps?.find((step) => step.kind === 'reminder');
   const chargeStep = steps?.find((step) => step.kind === 'charge');
-  const price = t(PLAN_PRICE_LABEL_KEYS[plan.planType], { price: plan.priceString });
+  const price = t(getPlanPriceLabelKey(plan.planType), { price: plan.priceString });
   const formatDate = (dateKey: string) =>
     formatYearAwareDateKeyLabel(dateKey, todayKey, dateFormatContext);
 
