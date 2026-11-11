@@ -4,14 +4,12 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createTodoApiError } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHapticsGatewayStub,
   createHttpClientStub,
   createMemoryStorage,
-  createMemorySyncStorage,
   createSpeechRecognizerStub,
   createTestQueryClient,
   createVoiceNoteStorageFake,
@@ -47,8 +45,6 @@ async function renderCreateSheet(routeParams: Record<string, string> = {}) {
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
         ...createVoiceNoteStorageFake().di,
-        recognitionLanguageRepository:
-          createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer,
         haptics: createHapticsGatewayStub(),
         storage: createMemoryStorage(),

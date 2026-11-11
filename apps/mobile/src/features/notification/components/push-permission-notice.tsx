@@ -3,11 +3,12 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
-import { toHHmm } from '@src/shared/date/instant';
+import { getNowInstant, toHHmm } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, InlineAlert } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -16,12 +17,12 @@ import { match } from 'ts-pattern';
 import { PUSH_ASK_MOMENT, PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import { usePushPermissionPrompt } from '../hooks/use-push-permission-prompt';
 import {
   useOpenPushSettingsMutationOptions,
   useRequestPushPermissionMutationOptions,
 } from '../queries/notification.mutations';
 import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+import { pushNoticeDismissedAtStoredValue } from '../schemas/push-notice-dismissed-at-storage.schema';
 
 const SOURCE: PushPermissionPromptSource = 'feed_card';
 
@@ -41,7 +42,10 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
         useGetTodosByDateQueryOptions({ date: todayKey }),
       ],
     });
-  const [prompt, { dismissNotice }] = usePushPermissionPrompt(me.id);
+  const [noticeDismissedAt, setNoticeDismissedAt] = useStoredValue(
+    pushNoticeDismissedAtStoredValue,
+    me.id,
+  );
   const { timeZone } = useDateFormatContext();
   const now = useMinuteNow();
   const { trackEvent } = useTrack();
@@ -53,7 +57,7 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
         time: toHHmm(now, timeZone),
         timeZone,
       }),
-      prompt,
+      prompt: { noticeDismissedAt },
       now,
     }) === PUSH_ASK_MOMENT.DENIED_NOTICE;
   const step = PushPermissionPolicy.getNextStep(permission, preference);
@@ -70,7 +74,7 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
 
   const dismiss = () => {
     trackEvent('push_permission_prompt_dismissed', { source: SOURCE, step });
-    dismissNotice();
+    setNoticeDismissedAt(getNowInstant());
   };
 
   return match(step)

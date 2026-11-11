@@ -1,11 +1,15 @@
-import { usePendingRedemptionService } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { type User } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
+import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
+import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { useQuery } from '@tanstack/react-query';
 import { router, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
+
+import { PendingRedemptionPolicy } from '../domains/invite-redemption.model';
+import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
 
 function selectUserId(user: User) {
   return user.id;
@@ -18,7 +22,7 @@ function selectUserId(user: User) {
  */
 export function useInviteAppEntry() {
   const status = useAuthStatus();
-  const pendingRedemptionService = usePendingRedemptionService();
+  const storage = useStoredValueStorage(pendingRedemptionStoredValue);
   const segments = useSegments();
   const { data: userId } = useQuery({
     ...useGetMeQueryOptions(),
@@ -36,10 +40,13 @@ export function useInviteAppEntry() {
 
     // 첫 화면이 그려진 다음 프레임에 이동해야 탭 화면이 아래에 남는다
     const frameId = requestAnimationFrame(() => {
-      const now = getNowInstant();
-      pendingRedemptionService.discardStalePendingRedemption(now);
-      const pending = pendingRedemptionService.findFreshPendingRedemption(now);
+      const pending = readStoredValue(storage, pendingRedemptionStoredValue);
       if (pending == null) {
+        return;
+      }
+      // 저장소는 기한이 지났을 때만 지운다. 카드가 뜨기 전에 앱이 꺼져도 다음 실행 때 이어서 연다
+      if (!PendingRedemptionPolicy.isFresh(pending, getNowInstant())) {
+        removeStoredValue(storage, pendingRedemptionStoredValue);
         return;
       }
 
@@ -56,5 +63,5 @@ export function useInviteAppEntry() {
     });
 
     return () => cancelAnimationFrame(frameId);
-  }, [status, isAuthenticatedRouteMounted, userId, pendingRedemptionService]);
+  }, [status, isAuthenticatedRouteMounted, userId, storage]);
 }

@@ -1,9 +1,11 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { toError } from '@src/shared/errors';
+import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
+import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
-import type { WidgetHeadlessFailureRepository } from './widget-headless-failure.repository';
 import {
   toLoggedOutWidgetSnapshot,
   toWidgetSnapshot,
@@ -14,34 +16,32 @@ import {
 export class WidgetSyncService {
   readonly #bridge: WidgetBridge;
   readonly #errorReporter: ErrorReporter;
-  readonly #headlessFailureRepository: WidgetHeadlessFailureRepository;
+  /** 위젯만 깨어난 프로세스가 실패를 남기는 위젯 저장소 */
+  readonly #widgetStorage: SyncStorage;
   #pendingWrite: Promise<void> = Promise.resolve();
   #generation = 0;
   #lastSnapshotKey: string | null = null;
 
-  constructor(
-    bridge: WidgetBridge,
-    errorReporter: ErrorReporter,
-    headlessFailureRepository: WidgetHeadlessFailureRepository,
-  ) {
+  constructor(bridge: WidgetBridge, errorReporter: ErrorReporter, widgetStorage: SyncStorage) {
     this.#bridge = bridge;
     this.#errorReporter = errorReporter;
-    this.#headlessFailureRepository = headlessFailureRepository;
+    this.#widgetStorage = widgetStorage;
   }
 
-  /** 앱 없이 깨어난 위젯이 남긴 실패를 오류 보고기로 보낸다. 앱 시작을 막지 않는다 */
+  /** 앱 없이 깨어난 위젯이 남긴 실패를 꺼내 지우고 오류 보고기로 보낸다. 앱 시작을 막지 않는다 */
   reportHeadlessFailure = (): void => {
+    const failure = readStoredValue(this.#widgetStorage, widgetHeadlessFailureStoredValue);
     try {
-      const failure = this.#headlessFailureRepository.take();
-      if (failure == null) {
-        return;
-      }
-      const error = new Error(failure.message);
-      error.name = failure.name;
-      this.#report(error, failure.method);
+      removeStoredValue(this.#widgetStorage, widgetHeadlessFailureStoredValue);
     } catch {
       // Widget storage failures must not reject the app's startup.
     }
+    if (failure == null) {
+      return;
+    }
+    const error = new Error(failure.message);
+    error.name = failure.name;
+    this.#report(error, failure.method);
   };
 
   syncSummary = (summaries: WidgetDaySummaries, context: WidgetSnapshotContext): Promise<void> =>

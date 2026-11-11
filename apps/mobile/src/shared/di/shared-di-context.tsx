@@ -25,6 +25,8 @@ export interface SharedDependencies {
   appLifecycle: AppLifecycleGateway;
   /** 앱과 위젯이 함께 읽는 기기 저장소. 키별 구독과 키 목록을 준다 */
   syncStorage: ObservableSyncStorage & Pick<EnumerableSyncStorage, 'keys'>;
+  /** 로그아웃 때 통째로 비우는 암호화 저장소. 계정 범위 저장 값(`area: 'account'`)을 둔다 */
+  accountSyncStorage: ObservableSyncStorage;
 }
 
 export const SharedDIContext = createContext<SharedDependencies | null>(null);
@@ -79,7 +81,10 @@ export function useIncomingLink() {
   return useSharedDI().incomingLink;
 }
 
-/** @public */
 export function useSyncStorage() {
   return useSharedDI().syncStorage;
+}
+
+export function useAccountSyncStorage() {
+  return useSharedDI().accountSyncStorage;
 }

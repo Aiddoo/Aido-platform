@@ -1,5 +1,5 @@
 import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
-import { useHaptics, usePawPrintCelebrationRepository } from '@src/bootstrap/providers/di-context';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -7,6 +7,8 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import {
   Box,
   Button,
@@ -45,6 +47,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import { type Invite, InvitePolicy } from '../domains/invite.model';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
+import { pawPrintCelebrationStoredValue } from '../schemas/paw-print-celebration-storage.schema';
 import {
   calculatePawPrintBoardWidth,
   calculatePawPrintGrid,
@@ -342,10 +345,11 @@ InvitePawPrintBoard.Unavailable = function Unavailable() {
 function useCelebrateNewPawPrints(userId: string, invite: Invite) {
   const { qualifiedCount } = invite;
   const haptics = useHaptics();
-  const pawPrintCelebrationRepository = usePawPrintCelebrationRepository();
   const { requestReviewAt } = useStoreReviewMoment();
+  const storage = useStoredValueStorage(pawPrintCelebrationStoredValue);
+  // 축하하는 동안 방금 저장한 수로 바뀌지 않게 화면에 들어올 때 한 번만 읽는다
   const [celebratedCount] = useState(() =>
-    pawPrintCelebrationRepository.getCelebratedCount(userId),
+    readStoredValue(storage, pawPrintCelebrationStoredValue, userId),
   );
   const hasNewPawPrint = InvitePolicy.hasNewPawPrints(invite, celebratedCount);
 
@@ -354,21 +358,14 @@ function useCelebrateNewPawPrints(userId: string, invite: Invite) {
       return;
     }
 
-    pawPrintCelebrationRepository.saveCelebratedCount(userId, qualifiedCount);
+    // 줄어든 경우(보상 회수 등)에도 그 수로 맞춰 다음 발자국에서 다시 축하한다
+    writeStoredValue(storage, pawPrintCelebrationStoredValue, qualifiedCount, userId);
     if (hasNewPawPrint) {
       haptics.notify('success');
       // 찍히는 애니메이션이 끝날 때까지는 서비스가 기다리고, 화면을 떠나면 훅이 취소한다
       requestReviewAt('paw_print_celebration');
     }
-  }, [
-    celebratedCount,
-    haptics,
-    hasNewPawPrint,
-    pawPrintCelebrationRepository,
-    qualifiedCount,
-    requestReviewAt,
-    userId,
-  ]);
+  }, [celebratedCount, haptics, hasNewPawPrint, qualifiedCount, requestReviewAt, storage, userId]);
 
   return celebratedCount;
 }

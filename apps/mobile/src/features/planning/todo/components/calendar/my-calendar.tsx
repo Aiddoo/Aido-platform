@@ -1,4 +1,5 @@
 import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Box } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
@@ -6,9 +7,9 @@ import { match } from 'ts-pattern';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { useCalendarRange } from '../../hooks/use-calendar-range';
-import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useGetDailyCompletionsQueryOptions } from '../../queries/todo.queries';
+import { calendarViewModeStoredValue } from '../../schemas/calendar-view-mode-storage.schema';
 import { Calendar } from './calendar';
 import { RepeatHorizonHint } from './repeat-horizon-hint';
 
@@ -16,7 +17,7 @@ export function MyCalendar({
   shouldShowHint,
 }: Pick<ComponentProps<typeof RepeatHorizonHint>, 'shouldShowHint'>) {
   const [{ rangeStart, rangeEnd }] = useCalendarRange();
-  const [viewMode] = useCalendarViewMode();
+  const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const [selectedDateKey] = useFeedDateKey();
   const todayKey = useTodayKey();
   const query = useQuery(

@@ -4,7 +4,6 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -59,9 +58,6 @@ async function renderSteps() {
       errorReporter: createErrorReporterStub(),
       whatsNewRepository: repository,
       featureAttribution: createFeatureAttributionStore(createMemoryObservableSyncStorage()),
-      recognitionLanguageRepository: createRecognitionLanguageRepository(
-        createMemoryObservableSyncStorage(),
-      ),
       speechRecognizer: createSpeechRecognizerStub(),
     },
   });

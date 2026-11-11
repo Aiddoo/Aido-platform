@@ -1,4 +1,5 @@
 import '@src/shared/i18n/init';
+import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -11,15 +12,13 @@ import {
   renderUi,
 } from '@src/shared/__tests__';
 import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
 import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
-import {
-  createOfflineModelPromptRepository,
-  type OfflineModelPromptRepository,
-} from '../apis/offline-model-prompt.repository';
+import { offlineModelDeclinedStoredValue } from '../schemas/offline-model-declined-storage.schema';
 import { useVoiceNoteRecording } from './use-voice-note-recording';
 
 const ACCOUNT_ID = 'user-1';
@@ -76,16 +75,28 @@ function RecordingProbe(props: ProbeProps) {
   );
 }
 
+/** 거절한 언어는 계정 범위 저장소(암호화 초안 저장소)에 남는다 */
+function createOfflineModelDeclines(draftStorage = createMemorySyncStorage()) {
+  const toScope = (locale: SpeechLocale) => ({ accountId: ACCOUNT_ID, locale });
+  return {
+    draftStorage,
+    hasDeclined: (locale: SpeechLocale) =>
+      readStoredValue(draftStorage, offlineModelDeclinedStoredValue, toScope(locale)) != null,
+    saveDeclined: (locale: SpeechLocale) =>
+      writeStoredValue(draftStorage, offlineModelDeclinedStoredValue, 'declined', toScope(locale)),
+  };
+}
+
 async function renderRecording({
   maxSeconds = null,
   canDownloadOnDeviceModel = false,
   files = createLocalFileSystemFake(),
-  offlineModelPromptRepository = createOfflineModelPromptRepository(createMemorySyncStorage()),
+  offlineModelDeclines = createOfflineModelDeclines(),
 }: {
   maxSeconds?: number | null;
   canDownloadOnDeviceModel?: boolean;
   files?: ReturnType<typeof createLocalFileSystemFake>;
-  offlineModelPromptRepository?: OfflineModelPromptRepository;
+  offlineModelDeclines?: ReturnType<typeof createOfflineModelDeclines>;
 } = {}) {
   const speechRecognizer = createSpeechRecognizerStub();
   speechRecognizer.getCapabilities.mockResolvedValue({
@@ -111,7 +122,7 @@ async function renderRecording({
       di: {
         speechRecognizer,
         ...storage.di,
-        offlineModelPromptRepository,
+        draftStorage: offlineModelDeclines.draftStorage,
         analytics,
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsGatewayStub(),
@@ -443,28 +454,24 @@ describe('useVoiceNoteRecording', () => {
   it('받기를 거절하면 이 사용자의 그 언어로 기억한다', async () => {
     // Given
     const user = userEvent.setup();
-    const offlineModelPromptRepository =
-      createOfflineModelPromptRepository(createMemorySyncStorage());
-    await renderRecording({ canDownloadOnDeviceModel: true, offlineModelPromptRepository });
+    const offlineModelDeclines = createOfflineModelDeclines();
+    await renderRecording({ canDownloadOnDeviceModel: true, offlineModelDeclines });
 
     // When
     await user.press(screen.getByRole('button', { name: 'start' }));
     await user.press(await screen.findByRole('button', { name: '나중에' }));
 
     // Then
-    await waitFor(() =>
-      expect(offlineModelPromptRepository.hasDeclined(ACCOUNT_ID, 'ko-KR')).toBe(true),
-    );
+    await waitFor(() => expect(offlineModelDeclines.hasDeclined('ko-KR')).toBe(true));
   });
 
   it('받기를 묻는 중에 화면이 내려가면 거절로 기억하지 않고 듣지도 않는다', async () => {
     // Given
     const user = userEvent.setup();
-    const offlineModelPromptRepository =
-      createOfflineModelPromptRepository(createMemorySyncStorage());
+    const offlineModelDeclines = createOfflineModelDeclines();
     const { speechRecognizer } = await renderRecording({
       canDownloadOnDeviceModel: true,
-      offlineModelPromptRepository,
+      offlineModelDeclines,
     });
     await user.press(screen.getByRole('button', { name: 'start' }));
     await screen.findByText('나중에');
@@ -474,7 +481,7 @@ describe('useVoiceNoteRecording', () => {
     await act(async () => undefined);
 
     // Then
-    expect(offlineModelPromptRepository.hasDeclined(ACCOUNT_ID, 'ko-KR')).toBe(false);
+    expect(offlineModelDeclines.hasDeclined('ko-KR')).toBe(false);
     expect(speechRecognizer.start).not.toHaveBeenCalled();
   });
 
@@ -482,11 +489,10 @@ describe('useVoiceNoteRecording', () => {
     '받기를 고른 뒤 결과가 %s이면 다음 녹음에 다시 묻지 않는다',
     async (result) => {
       // Given
-      const offlineModelPromptRepository =
-        createOfflineModelPromptRepository(createMemorySyncStorage());
+      const offlineModelDeclines = createOfflineModelDeclines();
       const { speechRecognizer } = await renderRecording({
         canDownloadOnDeviceModel: true,
-        offlineModelPromptRepository,
+        offlineModelDeclines,
       });
       speechRecognizer.requestOfflineModel.mockResolvedValue(result);
 
@@ -495,20 +501,17 @@ describe('useVoiceNoteRecording', () => {
       await userEvent.press(await screen.findByRole('button', { name: '받기' }));
 
       // Then
-      await waitFor(() =>
-        expect(offlineModelPromptRepository.hasDeclined(ACCOUNT_ID, 'ko-KR')).toBe(true),
-      );
+      await waitFor(() => expect(offlineModelDeclines.hasDeclined('ko-KR')).toBe(true));
     },
   );
 
   it('받기가 끝났으면 거절로 기억하지 않는다', async () => {
     // Given
     const user = userEvent.setup();
-    const offlineModelPromptRepository =
-      createOfflineModelPromptRepository(createMemorySyncStorage());
+    const offlineModelDeclines = createOfflineModelDeclines();
     const { speechRecognizer } = await renderRecording({
       canDownloadOnDeviceModel: true,
-      offlineModelPromptRepository,
+      offlineModelDeclines,
     });
     speechRecognizer.requestOfflineModel.mockResolvedValue('downloaded');
 
@@ -518,18 +521,17 @@ describe('useVoiceNoteRecording', () => {
 
     // Then
     await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
-    expect(offlineModelPromptRepository.hasDeclined(ACCOUNT_ID, 'ko-KR')).toBe(false);
+    expect(offlineModelDeclines.hasDeclined('ko-KR')).toBe(false);
   });
 
   it('이미 거절한 언어는 묻지 않고 바로 네트워크 인식으로 시작한다', async () => {
     // Given
     const user = userEvent.setup();
-    const offlineModelPromptRepository =
-      createOfflineModelPromptRepository(createMemorySyncStorage());
-    offlineModelPromptRepository.saveDeclined(ACCOUNT_ID, 'ko-KR');
+    const offlineModelDeclines = createOfflineModelDeclines();
+    offlineModelDeclines.saveDeclined('ko-KR');
     const { speechRecognizer } = await renderRecording({
       canDownloadOnDeviceModel: true,
-      offlineModelPromptRepository,
+      offlineModelDeclines,
     });
 
     // When
@@ -543,10 +545,9 @@ describe('useVoiceNoteRecording', () => {
   it('다른 언어를 거절했어도 이 언어는 한 번 묻는다', async () => {
     // Given
     const user = userEvent.setup();
-    const offlineModelPromptRepository =
-      createOfflineModelPromptRepository(createMemorySyncStorage());
-    offlineModelPromptRepository.saveDeclined(ACCOUNT_ID, 'en-US');
-    await renderRecording({ canDownloadOnDeviceModel: true, offlineModelPromptRepository });
+    const offlineModelDeclines = createOfflineModelDeclines();
+    offlineModelDeclines.saveDeclined('en-US');
+    await renderRecording({ canDownloadOnDeviceModel: true, offlineModelDeclines });
 
     // When
     await user.press(screen.getByRole('button', { name: 'start' }));

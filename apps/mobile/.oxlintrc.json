@@ -162,7 +162,7 @@
               {
                 "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
                 "importNames": ["useSyncStorageString"],
-                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. 그 값의 repository에 읽기·쓰기·subscribe를 두고 useSyncExternalStore로 구독하세요."
+                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. schemas/{name}-storage.schema.ts에 defineStoredValue를 두고 useStoredValue로 구독하세요."
               }
             ]
           }
@@ -202,7 +202,7 @@
               {
                 "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
                 "importNames": ["useSyncStorageString"],
-                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. 그 값의 repository에 읽기·쓰기·subscribe를 두고 useSyncExternalStore로 구독하세요."
+                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. schemas/{name}-storage.schema.ts에 defineStoredValue를 두고 useStoredValue로 구독하세요."
               },
               {
                 "regex": "(?:^@src/|/)(?:shared/di/shared-di-context|bootstrap/providers/di-context)$",
@@ -252,7 +252,7 @@
               {
                 "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
                 "importNames": ["useSyncStorageString"],
-                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. 그 값의 repository에 읽기·쓰기·subscribe를 두고 useSyncExternalStore로 구독하세요."
+                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. schemas/{name}-storage.schema.ts에 defineStoredValue를 두고 useStoredValue로 구독하세요."
               },
               {
                 "regex": "(?:^@src/|/)(?:shared/di/shared-di-context|bootstrap/providers/di-context)$",

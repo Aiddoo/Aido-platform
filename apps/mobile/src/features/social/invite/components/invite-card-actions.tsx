@@ -1,11 +1,12 @@
 import { INVITE_FRIENDSHIP } from '@aido/api/vocabulary';
-import { usePendingRedemptionService } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { removeStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { Box, Button, ReadableContent, StyledSafeAreaView, Text, TextButton } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ import { toRedeemFailureReason } from '../domains/invite.error';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useRedeemInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInvitePreviewQueryOptions } from '../queries/invite.queries';
+import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
 
 /** 초대 카드 아래 행동. 로그인 전이면 초대를 기기에 남기고 가입·로그인으로 보낸다 */
 export function InviteCardActions() {
@@ -45,9 +47,13 @@ InviteCardActions.Guest = function Guest({
   source: InviteLinkSource;
 }) {
   const { t } = useTranslation('invite');
-  const pendingRedemptionService = usePendingRedemptionService();
+  const storage = useStoredValueStorage(pendingRedemptionStoredValue);
   const continueAsGuest = useSingleTap((pathname: '/sign-up' | '/login') => {
-    pendingRedemptionService.savePendingRedemption({ inviteCode, source }, getNowInstant());
+    writeStoredValue(storage, pendingRedemptionStoredValue, {
+      inviteCode,
+      source,
+      savedAt: getNowInstant(),
+    });
     router.push(pathname);
   });
 
@@ -78,7 +84,7 @@ InviteCardActions.Guest = function Guest({
  */
 InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
-  const pendingRedemptionService = usePendingRedemptionService();
+  const storage = useStoredValueStorage(pendingRedemptionStoredValue);
   // 내 초대 정보(GET /v1/invites/me)는 처음 부르면 내 코드를 만들어 여기서 읽지 않는다.
   // 내 링크를 열었으면 서버가 INVITE_2103으로 막고 수락 오류 처리가 내 초대 화면으로 보낸다
   const [{ data: preview }, { data: me }] = useSuspenseQueries({
@@ -95,8 +101,8 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
   // 그래서 수락이나 실패 쪽에서는 따로 지우지 않는다
   useFocusEffect(
     useCallback(() => {
-      pendingRedemptionService.clearPendingRedemption();
-    }, [pendingRedemptionService]),
+      removeStoredValue(storage, pendingRedemptionStoredValue);
+    }, [storage]),
   );
 
   // 이동은 호출부 콜백에 둔다. 재조회를 기다리는 사이 화면을 떠났으면 콜백이 불리지 않아 끌려가지 않는다

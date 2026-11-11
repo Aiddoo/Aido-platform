@@ -8,10 +8,12 @@ import {
   createMemoryObservableSyncStorage,
   renderUi,
 } from '@src/shared/__tests__';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { act, screen } from '@testing-library/react-native';
 import { getCalendars } from 'expo-localization';
 
-import { createDeviceTimezoneRepository } from '../apis/device-timezone.repository';
+import type { DeviceTimezone } from '../domains/device-timezone.model';
+import { deviceTimezoneStoredValue } from '../schemas/device-timezone-storage.schema';
 import { useTimezoneChangeNotice } from './use-timezone-change-notice';
 
 const USER_ID = 'user-1';
@@ -55,8 +57,12 @@ function setup(todos: ReturnType<typeof createTodoDto>[]) {
   const getTodos = httpClient.get;
   const syncStorage = createMemoryObservableSyncStorage();
   const di = { analytics, httpClient, syncStorage };
-  const repository = createDeviceTimezoneRepository(syncStorage);
-  return { analytics, repository, getTodos, di };
+  const recordedTimezone = {
+    find: () => readStoredValue(syncStorage, deviceTimezoneStoredValue)?.deviceTimezone,
+    save: (deviceTimezone: DeviceTimezone) =>
+      writeStoredValue(syncStorage, deviceTimezoneStoredValue, { userId: USER_ID, deviceTimezone }),
+  };
+  return { analytics, recordedTimezone, getTodos, di };
 }
 
 async function report(di: ReturnType<typeof setup>['di'], accountId: string | null = USER_ID) {
@@ -83,7 +89,7 @@ describe('useTimezoneChangeNotice', () => {
 
   it('처음 저장할 때는 안내하지 않고 요청도 하지 않는다', async () => {
     // Given
-    const { di, getTodos, analytics, repository } = setup([upcomingTimedTodo]);
+    const { di, getTodos, analytics, recordedTimezone } = setup([upcomingTimedTodo]);
 
     // When
     await report(di);
@@ -92,13 +98,13 @@ describe('useTimezoneChangeNotice', () => {
     expect(screen.queryByText(NOTICE_TITLE)).toBeNull();
     expect(getTodos).not.toHaveBeenCalled();
     expect(analytics.trackEvent).not.toHaveBeenCalled();
-    expect(repository.find(USER_ID)?.timeZone).toBe('America/New_York');
+    expect(recordedTimezone.find()?.timeZone).toBe('America/New_York');
   });
 
   it('시간대가 바뀌었고 앞으로 시간 있는 할 일이 있으면 한 번만 안내한다', async () => {
     // Given
-    const { di, repository, analytics } = setup([upcomingTimedTodo]);
-    repository.save(USER_ID, FAR_AWAY);
+    const { di, recordedTimezone, analytics } = setup([upcomingTimedTodo]);
+    recordedTimezone.save(FAR_AWAY);
 
     // When
     const { rerender } = await report(di);
@@ -136,15 +142,15 @@ describe('useTimezoneChangeNotice', () => {
     },
   ])('$name: 값은 저장하고 안내는 하지 않는다', async ({ todos }) => {
     // Given
-    const { di, repository, analytics } = setup(todos);
-    repository.save(USER_ID, FAR_AWAY);
+    const { di, recordedTimezone, analytics } = setup(todos);
+    recordedTimezone.save(FAR_AWAY);
 
     // When
     await report(di);
 
     // Then
     expect(screen.queryByText(NOTICE_TITLE)).toBeNull();
-    expect(repository.find(USER_ID)?.timeZone).toBe('America/New_York');
+    expect(recordedTimezone.find()?.timeZone).toBe('America/New_York');
     expect(analytics.trackEvent).toHaveBeenCalledWith('device_timezone_changed', {
       offset_bucket: '8h_plus',
       notice_shown: false,
@@ -154,9 +160,9 @@ describe('useTimezoneChangeNotice', () => {
   it('이름만 다른 같은 오프셋이면 안내하지 않고 할 일을 묻지 않는다', async () => {
     // Given
     setDeviceTimeZone('Asia/Tokyo');
-    const { di, repository, getTodos, analytics } = setup([upcomingTimedTodo]);
+    const { di, recordedTimezone, getTodos, analytics } = setup([upcomingTimedTodo]);
     const offsetMinutes = -NOW.getTimezoneOffset();
-    repository.save(USER_ID, { timeZone: 'Asia/Seoul', offsetMinutes });
+    recordedTimezone.save({ timeZone: 'Asia/Seoul', offsetMinutes });
 
     // When
     await report(di);
@@ -172,8 +178,8 @@ describe('useTimezoneChangeNotice', () => {
 
   it('내 정보를 읽기 전에 보고가 끝나도 계정을 알게 된 뒤 판단한다', async () => {
     // Given
-    const { di, repository } = setup([upcomingTimedTodo]);
-    repository.save(USER_ID, FAR_AWAY);
+    const { di, recordedTimezone } = setup([upcomingTimedTodo]);
+    recordedTimezone.save(FAR_AWAY);
 
     // When
     const { rerender } = await report(di, null);
@@ -187,8 +193,8 @@ describe('useTimezoneChangeNotice', () => {
 
   it('할 일을 읽지 못하면 안내 없이 넘어가고 다시 묻지 않는다', async () => {
     // Given
-    const { di, repository, getTodos } = setup([upcomingTimedTodo]);
-    repository.save(USER_ID, FAR_AWAY);
+    const { di, recordedTimezone, getTodos } = setup([upcomingTimedTodo]);
+    recordedTimezone.save(FAR_AWAY);
     getTodos.mockRejectedValueOnce(new Error('offline'));
 
     // When

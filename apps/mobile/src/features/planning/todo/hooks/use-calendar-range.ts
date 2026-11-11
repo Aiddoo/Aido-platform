@@ -1,14 +1,15 @@
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 
+import { calendarViewModeStoredValue } from '../schemas/calendar-view-mode-storage.schema';
 import { getCalendarRange, getWeekRange } from '../utils/calendar-grid';
-import { useCalendarViewMode } from './use-calendar-view-mode';
 import { useFeedDate } from './use-feed-params';
 
 export function useCalendarRange() {
   const [selectedDate] = useFeedDate();
-  const [viewMode] = useCalendarViewMode();
+  const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const { timeZone } = useDateFormatContext();
 
   const range = useMemo(

@@ -1,9 +1,10 @@
 import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
+import { readStoredValue } from '@src/shared/storage/define-stored-value';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
-import { createWidgetHeadlessFailureRepository } from '../apis/widget-headless-failure.repository';
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../constants/widget.constants';
+import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 
 function createHandler(isAppActive = false) {
@@ -11,11 +12,10 @@ function createHandler(isAppActive = false) {
   const navigationRepository = createWidgetNavigationRepository(storage);
   const openApp = jest.fn(async () => {});
   const renderStoredWidget = jest.fn();
-  const failureRepository = createWidgetHeadlessFailureRepository(storage);
   return {
     navigationRepository,
     openApp,
-    failureRepository,
+    storage,
     renderStoredWidget,
     handler: createAndroidWidgetTaskHandler({
       navigationRepository,
@@ -23,7 +23,7 @@ function createHandler(isAppActive = false) {
       isAppActive: () => isAppActive,
       now: () => 1000,
       createCommandId: () => 'widget-tap',
-      failureRepository,
+      failureStorage: storage,
       renderStoredWidget,
     }),
   };
@@ -164,7 +164,7 @@ describe('Android 위젯 작업 처리', () => {
 
   it('앱 열기가 실패하면 작업을 크래시시키지 않고 실패를 저장소에 남긴다', async () => {
     // Given
-    const { handler, openApp, failureRepository } = createHandler();
+    const { handler, openApp, storage } = createHandler();
     openApp.mockRejectedValue(new Error('activity unavailable'));
 
     // When
@@ -172,7 +172,7 @@ describe('Android 위젯 작업 처리', () => {
 
     // Then
     await expect(result).resolves.toBeUndefined();
-    expect(failureRepository.take()).toEqual({
+    expect(readStoredValue(storage, widgetHeadlessFailureStoredValue)).toEqual({
       method: 'handleWidgetTask',
       name: 'Error',
       message: 'activity unavailable',

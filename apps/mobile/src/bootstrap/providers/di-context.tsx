@@ -18,7 +18,6 @@ import type { SuggestionService } from '@src/features/assistant/suggestion/apis/
 import type { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import type { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
 import type { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
-import type { UpsellDismissalRepository } from '@src/features/billing/subscription/apis/upsell-dismissal.repository';
 import type { ActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import type { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import type { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
@@ -38,28 +37,21 @@ import type { UserService } from '@src/features/identity/user/apis/user.service'
 import type { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
 import type { ReportService } from '@src/features/insights/report/apis/report.service';
 import type { MemoService } from '@src/features/notes/memo/apis/memo.service';
-import type { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import type { MarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
 import type { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
 import type { NotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import type { PushPermissionPromptRepository } from '@src/features/notification/apis/push-permission-prompt.repository';
 import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
-import type { CalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
 import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import type { FriendService } from '@src/features/social/friend/apis/friend.service';
-import type { AllDoneBannerRepository } from '@src/features/social/invite/apis/all-done-banner.repository';
 import type { InviteShareService } from '@src/features/social/invite/apis/invite-share.service';
 import type { InviteService } from '@src/features/social/invite/apis/invite.service';
-import type { PawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
 import type { PendingRedemptionService } from '@src/features/social/invite/apis/pending-redemption.service';
 import type { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
 import type { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import type { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
-import type { OfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
-import type { RecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import type { VoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
 import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import type { VoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
@@ -95,8 +87,6 @@ export interface DIContainer extends SharedDependencies {
   sessionRevocationService: SessionRevocationService;
   /** 오프라인 조회 캐시(사용자 범위 로컬 상태) */
   queryCacheStorage: QueryCacheStorage;
-  recognitionLanguageRepository: RecognitionLanguageRepository;
-  offlineModelPromptRepository: OfflineModelPromptRepository;
 
   achievementService: AchievementService;
   reportService: ReportService;
@@ -111,8 +101,6 @@ export interface DIContainer extends SharedDependencies {
   friendService: FriendService;
   inviteService: InviteService;
   pendingRedemptionService: PendingRedemptionService;
-  allDoneBannerRepository: AllDoneBannerRepository;
-  pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   inviteShareService: InviteShareService;
   featureCampaignService: FeatureCampaignService;
   whatsNewRepository: WhatsNewRepository;
@@ -122,7 +110,6 @@ export interface DIContainer extends SharedDependencies {
   moderationService: ModerationService;
   subTodoService: SubTodoService;
   todoService: TodoService;
-  calendarViewModeRepository: CalendarViewModeRepository;
   todoCommentService: TodoCommentService;
   todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
@@ -130,8 +117,6 @@ export interface DIContainer extends SharedDependencies {
   /** 눌린 푸시 응답 슬롯 */
   notificationEntryStore: NotificationEntryStore;
   pushDeviceService: PushDeviceService;
-  deviceTimezoneService: DeviceTimezoneService;
-  pushPermissionPromptRepository: PushPermissionPromptRepository;
   marketingPushPromptRepository: MarketingPushPromptRepository;
   todoNudgeService: TodoNudgeService;
   coachmarkService: CoachmarkService;
@@ -140,7 +125,6 @@ export interface DIContainer extends SharedDependencies {
   purchasesSession: PurchasesSession;
   subscriptionService: SubscriptionService;
   entitlementService: EntitlementService;
-  upsellDismissalRepository: UpsellDismissalRepository;
   weatherService: WeatherService;
   weatherLocationService: WeatherLocationService;
   widgetSyncService: WidgetSyncService;
@@ -241,12 +225,6 @@ export function usePushNotification() {
 export function useQueryCacheStorage() {
   return useDI().queryCacheStorage;
 }
-export function useRecognitionLanguageRepository() {
-  return useDI().recognitionLanguageRepository;
-}
-export function useOfflineModelPromptRepository() {
-  return useDI().offlineModelPromptRepository;
-}
 
 export function useAchievementService() {
   return useDI().achievementService;
@@ -283,12 +261,6 @@ export function useInviteService() {
 }
 export function usePendingRedemptionService() {
   return useDI().pendingRedemptionService;
-}
-export function useAllDoneBannerRepository() {
-  return useDI().allDoneBannerRepository;
-}
-export function usePawPrintCelebrationRepository() {
-  return useDI().pawPrintCelebrationRepository;
 }
 export function useInviteShareService() {
   return useDI().inviteShareService;
@@ -335,15 +307,6 @@ export function useNotificationEntryStore() {
 export function usePushDeviceService() {
   return useDI().pushDeviceService;
 }
-export function useDeviceTimezoneService() {
-  return useDI().deviceTimezoneService;
-}
-export function useCalendarViewModeRepository() {
-  return useDI().calendarViewModeRepository;
-}
-export function usePushPermissionPromptRepository() {
-  return useDI().pushPermissionPromptRepository;
-}
 export function useMarketingPushPromptRepository() {
   return useDI().marketingPushPromptRepository;
 }
@@ -367,9 +330,6 @@ export function useSubscriptionService() {
 }
 export function useEntitlementService() {
   return useDI().entitlementService;
-}
-export function useUpsellDismissalRepository() {
-  return useDI().upsellDismissalRepository;
 }
 export function useWeatherLocationService() {
   return useDI().weatherLocationService;

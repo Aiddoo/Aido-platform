@@ -1,6 +1,8 @@
+import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { toError } from '@src/shared/errors';
+import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
-import type { WidgetHeadlessFailureRepository } from '../apis/widget-headless-failure.repository';
 import type { WidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import {
   ANDROID_WIDGET_DEFINITIONS,
@@ -10,6 +12,7 @@ import {
   parseWidgetNavigationUri,
   WidgetNavigationPolicy,
 } from '../domains/widget-navigation.model';
+import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import type { renderStoredAndroidWidget } from './android-widgets.bridge';
 
 type WidgetTaskDependencies = {
@@ -18,7 +21,8 @@ type WidgetTaskDependencies = {
   isAppActive: () => boolean;
   now: () => number;
   createCommandId: () => string;
-  failureRepository: Pick<WidgetHeadlessFailureRepository, 'save'>;
+  /** 앱 없이 깨어난 실패를 남겨 다음 앱 시작 때 보고한다 */
+  failureStorage: SyncStorage;
   renderStoredWidget: typeof renderStoredAndroidWidget;
 };
 
@@ -28,7 +32,7 @@ export function createAndroidWidgetTaskHandler({
   isAppActive,
   now,
   createCommandId,
-  failureRepository,
+  failureStorage,
   renderStoredWidget,
 }: WidgetTaskDependencies) {
   return async (task: WidgetTaskHandlerProps): Promise<void> => {
@@ -78,11 +82,12 @@ export function createAndroidWidgetTaskHandler({
 
       task.renderWidget(renderStoredWidget(task.widgetInfo));
     } catch (error) {
-      try {
-        failureRepository.save({ method: 'handleWidgetTask', error });
-      } catch {
-        return;
-      }
+      const { name, message } = toError(error);
+      writeStoredValue(failureStorage, widgetHeadlessFailureStoredValue, {
+        method: 'handleWidgetTask',
+        name,
+        message,
+      });
     }
   };
 }

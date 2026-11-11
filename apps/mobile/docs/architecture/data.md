@@ -47,27 +47,29 @@ export class MemoApi {
 
 ## 저장 값
 
-기기 값 하나는 정의 하나다. 키·모양·기본값이 바뀌면 그 정의만 고친다.
+기기 값 하나는 정의 하나다(`schemas/{name}-storage.schema.ts`의 `{name}StoredValue`). 키·모양·기본값·저장 영역이 바뀌면 그 정의만 고친다.
 
 ```ts
-// features/planning/todo/schemas/calendar-view-mode-storage.schema.ts
-export const calendarViewModeStoredValue = defineStoredValue({
-  key: 'aido_calendar_view_mode_v1',
-  schema: z.enum(['week', 'month']),
-  fallback: 'week',
+// features/voice/schemas/offline-model-declined-storage.schema.ts
+export const offlineModelDeclinedStoredValue = defineStoredValue({
+  key: ({ accountId, locale }: { accountId: string; locale: SpeechLocale }) =>
+    `aido_offline_model_declined_v1:${encodeURIComponent(accountId)}:${locale}`,
+  area: 'account',
+  schema: z.literal('declined'),
+  fallback: null,
 });
 
 const [viewMode, setViewMode] = useStoredValue(calendarViewModeStoredValue);
-const [dismissedOn, setDismissedOn] = useStoredValue(allDoneBannerStoredValue, userId);
-const pending = readStoredValue(syncStorage, pendingRedemptionStoredValue);
+const [dismissedOn, setDismissedOn] = useStoredValue(allDoneBannerStoredValue, me?.id);
+const storage = useStoredValueStorage(upsellDismissalStoredValue); // 핸들러·effect에서 읽고 쓸 때
 ```
 
-- `defineStoredValue({ key, schema, fallback, migrate? })`는 `schemas/{name}-storage.schema.ts`에 둔다. `key`는 문자열이거나, 계정 범위면 `(scopeId) => string`이다.
-- `useStoredValue(def, scopeId?)`는 `[value, setValue]` 튜플이다. 범위 값인데 `scopeId`가 없으면 `fallback`과 아무것도 하지 않는 세터다. 원문 문자열이 같으면 다시 파싱하지 않고, 깨진 값은 `fallback`이다. React 밖(Service, 헤드리스 실행)은 같은 정의로 `readStoredValue`·`writeStoredValue`·`removeStoredValue`를 쓴다.
-- 도구는 `shared/storage/`이고 포트 `ObservableSyncStorage` 위에 있다. MMKV 훅(`useMMKVString`)을 직접 쓰지 않는다. 내부는 같은 `useSyncExternalStore` 구독이고, 포트 위에 있어야 DI와 stub 테스트가 된다. 암호화 저장소도 `subscribe`를 단다. iOS App Group 주의는 [widgets](../widgets.md#플랫폼-선택)에 있다.
-- 키는 `aido_{feature}_{name}_v{n}`이다. 계정 범위면 `:{accountId}`, 하위 값이면 `:{sub}`를 붙인다. 키 문자열은 `*-storage.schema.ts`와 남은 repository 밖에 쓰지 않는다(lint).
-- 있는 키는 출시 앱이 읽는 외부 계약이다. 키나 모양을 바꾸면 옛 값을 시작할 때 한 번 옮기고(`migrate`, 이주 repository) 옛 키를 읽는 코드는 다음 minor 버전에서 지운다([compatibility](../../../../docs/conventions/compatibility.md)).
-- 같은 값을 Query 캐시나 `useState`에 복사하지 않는다. 다시 보일 때를 정하는 기간 규칙은 Policy `shouldShow*(record, now)`이고 안내 노출 표는 [design](../design.md)에 있다.
+- **키와 범위.** `defineStoredValue({ key, area?, schema, fallback, migrate? })`의 `key`는 문자열이거나 범위를 받는 함수다. 범위는 계정 id이거나 `{ accountId, locale }` 같은 객체다. 범위 키에 범위를 넘기지 않거나 문자열 키에 범위를 넘기면 타입 오류다. 범위가 `null`·`undefined`면(로그인 전) `fallback`으로 읽고 쓰지 않는다.
+- **영역.** `area`는 `'device'`(기본, 앱과 위젯이 함께 읽는 MMKV)나 `'account'`(로그아웃 때 통째로 비우는 암호화 MMKV)다. 탈퇴 때만 지울 계정 기록은 device에 두고 `UserDeviceDataService`가 지운다.
+- **원문과 실패.** `schema`는 원문 문자열을 값으로 읽는다(입력 타입 `string`). 원문이 JSON이면 `storedJsonSchema(schema)`로 감싸고(`upsellDismissalStoredValue`), 감싸지 않은 객체 스키마는 타입 오류다. 쓰기는 문자열 값이면 원문 그대로, 그 밖의 값이면 `JSON.stringify`이고 스키마의 변환(초대 코드 정규화)을 거꾸로 돌리지 않는다. 정수는 `String(n)`과 같은 원문이다. `fallback: null`이면 값은 `T | null`이다. 읽기는 던지지 않는다. 없거나 깨진 값은 `fallback`이고, 지금 스키마로 못 읽는 옛 원문은 `migrate(raw)`가 읽는다. `null`을 쓰면 키를 지운다. 쓰기 실패는 삼키고(다음에 한 번 더 묻거나 보일 뿐이다), `removeStoredValue`는 로그아웃·탈퇴 정리가 실패를 기록하도록 던진다.
+- **React.** `useStoredValue(def, scope?)`는 `[value, setValue]` 튜플이다. 원문 문자열이 같으면 다시 파싱하지 않고 같은 참조를 준다. 핸들러·effect에서만 읽고 쓰는 값은 `useStoredValueStorage(def)`로 그 영역의 저장소를 꺼내 `readStoredValue`·`writeStoredValue`·`removeStoredValue`를 쓴다. Service와 헤드리스 실행은 생성자로 받은 저장 포트에 같은 정의를 쓴다. 도구는 `shared/storage/`이고 포트 `ObservableSyncStorage` 위에 있다. MMKV 훅(`useMMKVString`)을 직접 쓰지 않는다. 내부는 같은 `useSyncExternalStore` 구독이고, 포트 위에 있어야 DI와 stub 테스트가 된다. iOS App Group 주의는 [widgets](../widgets.md#플랫폼-선택)에 있다.
+- 새 키는 `aido_{feature}_{name}_v{n}`이다. 계정 범위면 `:{accountId}`, 하위 값이면 `:{sub}`를 붙인다. 출시된 키는 이 모양이 아니어도 그대로 둔다(`aido_calendar_view_mode`). 키 문자열은 `*-storage.schema.ts`와 남은 repository 밖에 쓰지 않는다(lint). 있는 키는 출시 앱이 읽는 외부 계약이다. 키나 모양을 바꾸면 옛 값을 시작할 때 한 번 옮기고(`migrate`, 이주 repository) 옛 키를 읽는 코드는 다음 minor 버전에서 지운다([compatibility](../../../../docs/conventions/compatibility.md)).
+- 같은 값을 Query 캐시나 `useState`에 복사해 따라가게 하지 않는다. 화면에 들어온 순간의 값으로 고정해야 할 때만(발자국 축하) `useState(() => readStoredValue(…))`로 한 번 읽는다. 다시 보일 때를 정하는 기간 규칙은 Policy `shouldShow*(record, now)`이고 안내 노출 표는 [design](../design.md)에 있다.
 
 ## 흐름: mapper → 캐시 → select → view-model
 

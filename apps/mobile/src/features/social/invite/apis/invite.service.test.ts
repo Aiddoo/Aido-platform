@@ -5,6 +5,7 @@ import {
 } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
 import { ParseError } from '@src/shared/errors/infra-error';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 
 import {
   createInviteApiError,
@@ -15,9 +16,8 @@ import {
   INVALID_DTO,
 } from '../__tests__/invite.fixtures';
 import { INVITE_ERROR_CODE } from '../domains/invite.error';
-import { createInstallReferrerRepository } from './install-referrer.repository';
+import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
 import { InviteService } from './invite.service';
-import { createPendingRedemptionRepository } from './pending-redemption.repository';
 import { PendingRedemptionService } from './pending-redemption.service';
 
 function createService({
@@ -31,13 +31,8 @@ function createService({
   const authHttpClient = createHttpClientStub();
   const storage = createMemorySyncStorage();
   const readReferrer = jest.fn().mockResolvedValue(referrer);
-  const pendingRedemptionRepository = createPendingRedemptionRepository(storage);
   const logger = createLoggerStub();
-  const pendingRedemptionService = new PendingRedemptionService({
-    pendingRedemptionRepository,
-    installReferrerRepository: createInstallReferrerRepository(storage),
-    installReferrerGateway: { get: readReferrer },
-  });
+  const pendingRedemptionService = new PendingRedemptionService(storage, { get: readReferrer });
   const service = new InviteService({
     publicHttpClient,
     authHttpClient,
@@ -50,7 +45,7 @@ function createService({
     service,
     publicHttpClient,
     authHttpClient,
-    pendingRedemptionRepository,
+    storage,
     readReferrer,
     logger,
   };
@@ -345,8 +340,12 @@ describe('InviteService', () => {
   describe('미리보기 실패와 기기에 남긴 초대', () => {
     it('이어서 열려던 초대가 없어졌으면 기기에 남긴 초대를 지운다', async () => {
       // Given
-      const { service, publicHttpClient, pendingRedemptionRepository } = createService();
-      pendingRedemptionRepository.save(createPendingRedemption({ inviteCode: 'K7M2QX' }));
+      const { service, publicHttpClient, storage } = createService();
+      writeStoredValue(
+        storage,
+        pendingRedemptionStoredValue,
+        createPendingRedemption({ inviteCode: 'K7M2QX' }),
+      );
       publicHttpClient.get.mockResolvedValue({
         ok: false,
         error: createInviteApiError({ code: 'INVITE_2102', status: 410 }),
@@ -356,14 +355,14 @@ describe('InviteService', () => {
       await service.getPreview('K7M2QX');
 
       // Then
-      expect(pendingRedemptionRepository.find()).toBeNull();
+      expect(readStoredValue(storage, pendingRedemptionStoredValue)).toBeNull();
     });
 
     it('다른 코드의 실패나 일시 오류는 기기에 남긴 초대를 지우지 않는다', async () => {
       // Given
-      const { service, publicHttpClient, pendingRedemptionRepository } = createService();
+      const { service, publicHttpClient, storage } = createService();
       const pending = createPendingRedemption({ inviteCode: 'K7M2QX' });
-      pendingRedemptionRepository.save(pending);
+      writeStoredValue(storage, pendingRedemptionStoredValue, pending);
       publicHttpClient.get
         .mockResolvedValueOnce({
           ok: false,
@@ -379,7 +378,7 @@ describe('InviteService', () => {
       await service.getPreview('K7M2QX');
 
       // Then
-      expect(pendingRedemptionRepository.find()).toEqual(pending);
+      expect(readStoredValue(storage, pendingRedemptionStoredValue)).toEqual(pending);
     });
   });
 });

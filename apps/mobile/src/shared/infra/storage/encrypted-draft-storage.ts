@@ -1,5 +1,7 @@
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import type { Storage } from '@src/core/ports/storage';
 import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
+import { noop } from 'es-toolkit';
 import { getRandomBytes } from 'expo-crypto';
 import { createMMKV, deleteMMKV, existsMMKV } from 'react-native-mmkv';
 import { z } from 'zod';
@@ -18,8 +20,10 @@ const LEGACY_DRAFT_STORAGE_ID = 'aido.drafts';
 const QUERY_CACHE_STORAGE_ID = 'aido.query-cache.encrypted';
 const DRAFT_ENCRYPTION_KEY_STORAGE_KEY = 'aido_draft_encryption_key';
 
+type EncryptedSyncStorage = EnumerableSyncStorage & ObservableSyncStorage;
+
 export interface EncryptedStorageBootstrap {
-  draftStorage: EnumerableSyncStorage;
+  draftStorage: EncryptedSyncStorage;
   /** 조회 캐시 저장소. 암호화 저장소를 열지 못하면 `null`이고 캐시를 기기에 남기지 않는다. */
   queryCacheStorage: SyncStorage | null;
   /** 암호화 저장소를 열지 못해 초안·조회 캐시 저장을 끈 사유. 정상이면 없다. */
@@ -27,12 +31,13 @@ export interface EncryptedStorageBootstrap {
 }
 
 /** 초안 기능을 끈 상태. 저장은 버리고 복원은 항상 비어 있어 폼은 빈 값으로 동작한다. */
-export const disabledDraftStorage: EnumerableSyncStorage = {
+export const disabledDraftStorage: EncryptedSyncStorage = {
   get: () => undefined,
   set: () => undefined,
   remove: () => undefined,
   keys: () => [],
   clear: () => undefined,
+  subscribe: () => noop,
 };
 
 async function resolveEncryptionKey(secureStorage: Storage) {
@@ -48,16 +53,24 @@ async function resolveEncryptionKey(secureStorage: Storage) {
 }
 
 function openEncryptedMmkv(id: string, key: string) {
-  return toEnumerableSyncStorage(createMMKV({ id, encryptionKey: key, encryptionType: 'AES-256' }));
+  return toEncryptedSyncStorage(createMMKV({ id, encryptionKey: key, encryptionType: 'AES-256' }));
 }
 
-function toEnumerableSyncStorage(mmkv: ReturnType<typeof createMMKV>): EnumerableSyncStorage {
+function toEncryptedSyncStorage(mmkv: ReturnType<typeof createMMKV>): EncryptedSyncStorage {
   return {
     get: (key) => mmkv.getString(key),
     set: (key, value) => mmkv.set(key, value),
     remove: (key) => mmkv.remove(key),
     keys: () => mmkv.getAllKeys(),
     clear: () => mmkv.clearAll(),
+    subscribe: (key, listener) => {
+      const subscription = mmkv.addOnValueChangedListener((changedKey) => {
+        if (changedKey === key) {
+          listener();
+        }
+      });
+      return () => subscription.remove();
+    },
   };
 }
 

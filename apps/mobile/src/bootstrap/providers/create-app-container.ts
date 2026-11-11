@@ -41,7 +41,7 @@ import { SuggestionService } from '@src/features/assistant/suggestion/apis/sugge
 import { EntitlementService } from '@src/features/billing/subscription/apis/entitlement.service';
 import { PurchasesSession } from '@src/features/billing/subscription/apis/purchases-session';
 import { SubscriptionService } from '@src/features/billing/subscription/apis/subscription.service';
-import { createUpsellDismissalRepository } from '@src/features/billing/subscription/apis/upsell-dismissal.repository';
+import { upsellDismissalStoredValue } from '@src/features/billing/subscription/schemas/upsell-dismissal-storage.schema';
 import { createActivationProgressRepository } from '@src/features/device/activation/apis/activation-progress.repository';
 import { ActivationService } from '@src/features/device/activation/apis/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/apis/app-icon.service';
@@ -49,7 +49,6 @@ import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/c
 import { CoachmarkService } from '@src/features/device/coachmark/apis/coachmark.service';
 import { createStoreReviewRepository } from '@src/features/device/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/apis/store-review.service';
-import { createWidgetHeadlessFailureRepository } from '@src/features/device/widget/apis/widget-headless-failure.repository';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/apis/widget-navigation.repository';
 import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
@@ -69,32 +68,26 @@ import { AchievementService } from '@src/features/insights/achievement/apis/achi
 import { ReportService } from '@src/features/insights/report/apis/report.service';
 import { MemoService } from '@src/features/notes/memo/apis/memo.service';
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
-import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
-import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
 import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
 import { NotificationBadgeService } from '@src/features/notification/apis/notification-badge.service';
 import { createNotificationEntryStore } from '@src/features/notification/apis/notification-entry.store';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
-import { createPushPermissionPromptRepository } from '@src/features/notification/apis/push-permission-prompt.repository';
 import { createPushRegistrationRepository } from '@src/features/notification/apis/push-registration.repository';
+import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
+import { pushNoticeDismissedAtStoredValue } from '@src/features/notification/schemas/push-notice-dismissed-at-storage.schema';
+import { pushPermissionDeferredAtStoredValue } from '@src/features/notification/schemas/push-permission-deferred-at-storage.schema';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
-import { createCalendarViewModeRepository } from '@src/features/planning/todo/apis/calendar-view-mode.repository';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { FriendService } from '@src/features/social/friend/apis/friend.service';
-import { createAllDoneBannerRepository } from '@src/features/social/invite/apis/all-done-banner.repository';
-import { createInstallReferrerRepository } from '@src/features/social/invite/apis/install-referrer.repository';
 import { InviteShareService } from '@src/features/social/invite/apis/invite-share.service';
 import { InviteService } from '@src/features/social/invite/apis/invite.service';
-import { createPawPrintCelebrationRepository } from '@src/features/social/invite/apis/paw-print-celebration.repository';
-import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import { PendingRedemptionService } from '@src/features/social/invite/apis/pending-redemption.service';
+import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
 import { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
 import { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
-import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
-import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import { createVoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
 import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import { createVoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
@@ -105,6 +98,7 @@ import { createFeatureAttributionStore } from '@src/shared/analytics/feature-att
 import { getNowInstant } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
+import { removeStoredValue } from '@src/shared/storage/define-stored-value';
 import type { QueryClient } from '@tanstack/react-query';
 
 import {
@@ -164,8 +158,8 @@ export interface AppContainerPorts {
   widgetStorage: ObservableSyncStorage;
   /** 앱과 위젯이 함께 읽는 기기 저장소. 키별 구독과 키 목록을 준다 */
   syncStorage: ObservableSyncStorage & Pick<EnumerableSyncStorage, 'keys'>;
-  /** 암호화 초안 저장소. 초안, 말로 메모 초안, 인식 언어가 함께 쓴다 */
-  draftStorage: EnumerableSyncStorage;
+  /** 로그아웃 때 비우는 암호화 저장소. 초안, 말로 메모 초안, 계정 범위 저장 값이 함께 쓴다 */
+  draftStorage: EnumerableSyncStorage & ObservableSyncStorage;
   /** 오프라인 조회 캐시. 암호화 저장소를 열지 못하면 null이고 기기에 남기지 않는다 */
   queryCacheStorage: QueryCacheStorage | null;
   queryClient: QueryClient;
@@ -213,16 +207,12 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
   const activationProgressRepository = createActivationProgressRepository(syncStorage);
   const whatsNewRepository = createWhatsNewRepository(syncStorage);
   const coachmarkRepository = createCoachmarkRepository(syncStorage, getNowInstant);
-  const upsellDismissalRepository = createUpsellDismissalRepository(syncStorage);
-  const pushPermissionPromptRepository = createPushPermissionPromptRepository(syncStorage);
   const marketingPushPromptRepository = createMarketingPushPromptRepository(syncStorage);
 
-  const pendingRedemptionRepository = createPendingRedemptionRepository(syncStorage);
-  const pendingRedemptionService = new PendingRedemptionService({
-    pendingRedemptionRepository,
-    installReferrerRepository: createInstallReferrerRepository(syncStorage),
-    installReferrerGateway: ports.installReferrerGateway,
-  });
+  const pendingRedemptionService = new PendingRedemptionService(
+    syncStorage,
+    ports.installReferrerGateway,
+  );
 
   const pushDeviceService = new PushDeviceService({
     gateway: pushNotification,
@@ -240,9 +230,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     getLanguage: ports.getLanguage,
     sessionEpoch,
   });
-  const deviceTimezoneService = new DeviceTimezoneService(
-    createDeviceTimezoneRepository(syncStorage),
-  );
 
   const purchasesSession = new PurchasesSession({
     purchases: ports.purchasesGateway,
@@ -285,16 +272,27 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       persistedQueryCache: queryCacheStorage,
       drafts: draftService,
       voiceNotes: voiceNoteStorageService,
-      deviceTimezone: deviceTimezoneService,
-      pendingRedemption: pendingRedemptionRepository,
+      deviceTimezone: { clear: () => removeStoredValue(syncStorage, deviceTimezoneStoredValue) },
+      pendingRedemption: {
+        clear: () => removeStoredValue(syncStorage, pendingRedemptionStoredValue),
+      },
       pushDevice: pushDeviceService,
       userDeviceData: new UserDeviceDataService({
         repositories: {
           'whats-new': whatsNewRepository,
           coachmark: coachmarkRepository,
-          'push-permission-prompt': pushPermissionPromptRepository,
+          'push-permission-deferred': {
+            clear: (userId) =>
+              removeStoredValue(syncStorage, pushPermissionDeferredAtStoredValue, userId),
+          },
+          'push-notice-dismissed': {
+            clear: (userId) =>
+              removeStoredValue(syncStorage, pushNoticeDismissedAtStoredValue, userId),
+          },
           'marketing-push-prompt': marketingPushPromptRepository,
-          'upsell-dismissal': upsellDismissalRepository,
+          'upsell-dismissal': {
+            clear: (userId) => removeStoredValue(syncStorage, upsellDismissalStoredValue, userId),
+          },
         },
         logger,
       }),
@@ -304,8 +302,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     featureAttribution: createFeatureAttributionStore(syncStorage),
     draftService,
     queryCacheStorage,
-    recognitionLanguageRepository: createRecognitionLanguageRepository(draftStorage),
-    offlineModelPromptRepository: createOfflineModelPromptRepository(draftStorage),
     achievementService: new AchievementService(authHttpClient),
     reportService: new ReportService(authHttpClient, logger),
     suggestionService: new SuggestionService(authHttpClient, logger),
@@ -325,8 +321,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       logger,
     }),
     pendingRedemptionService,
-    allDoneBannerRepository: createAllDoneBannerRepository(syncStorage),
-    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(syncStorage),
     inviteShareService: new InviteShareService({
       socialShare: ports.socialShareGateway,
       systemShare: ports.systemShare,
@@ -351,9 +345,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     }),
     notificationEntryStore: createNotificationEntryStore(),
     pushDeviceService,
-    deviceTimezoneService,
-    pushPermissionPromptRepository,
-    calendarViewModeRepository: createCalendarViewModeRepository(syncStorage),
     marketingPushPromptRepository,
     todoNudgeService: new TodoNudgeService(authHttpClient),
     coachmarkService: new CoachmarkService(coachmarkRepository),
@@ -366,7 +357,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     purchasesSession,
     subscriptionService: new SubscriptionService(purchasesSession, ports.purchasesGateway, logger),
     entitlementService: new EntitlementService(authHttpClient, logger),
-    upsellDismissalRepository,
     weatherService,
     weatherLocationService: new WeatherLocationService({
       gateway: ports.deviceLocation,
@@ -383,6 +373,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     systemShare: ports.systemShare,
     incomingLink: ports.incomingLink,
     syncStorage,
+    accountSyncStorage: draftStorage,
     networkStatus: ports.networkStatus,
     appLifecycle: ports.appLifecycle,
     viewCapture: ports.viewCapture,
@@ -390,7 +381,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     widgetSyncService: new WidgetSyncService(
       ports.widgetBridge,
       errorReporter,
-      createWidgetHeadlessFailureRepository(ports.widgetStorage),
+      ports.widgetStorage,
     ),
     widgetNavigationRepository: createWidgetNavigationRepository(ports.widgetStorage),
     logOutDeviceService: new LogOutDeviceService({

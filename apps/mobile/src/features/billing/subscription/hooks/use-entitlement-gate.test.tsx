@@ -14,6 +14,7 @@ import {
   renderUi,
 } from '@src/shared/__tests__';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { readStoredValue } from '@src/shared/storage/define-stored-value';
 import { Button } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -25,10 +26,10 @@ import {
   createFeatureQuotaDto,
   createLimitApiError,
 } from '../__tests__/entitlement.fixtures';
-import { createUpsellDismissalRepository } from '../apis/upsell-dismissal.repository';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { type EntitlementSnapshot } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
+import { upsellDismissalStoredValue } from '../schemas/upsell-dismissal-storage.schema';
 import { useEntitlementGate } from './use-entitlement-gate';
 
 const LIMIT_TITLE = '이번 달 AI 할 일 만들기를 다 썼어요';
@@ -84,7 +85,7 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
     analytics,
     queryClient,
     onAlternative,
-    dismissals: createUpsellDismissalRepository(syncStorage),
+    readDismissals: () => readStoredValue(syncStorage, upsellDismissalStoredValue, ACCOUNT_ID),
     countEvents: (eventName: string) =>
       analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length,
   };
@@ -162,7 +163,7 @@ describe('useEntitlementGate', () => {
   it('나중에를 누르면 오늘 닫은 것으로 남기고 같은 날 다시 막히면 토스트로만 알린다', async () => {
     // Given
     const user = userEvent.setup();
-    const { analytics, countEvents, dismissals } = await renderGate(
+    const { analytics, countEvents, readDismissals } = await renderGate(
       createEntitlementSnapshot(USED_UP),
     );
     await user.press(screen.getByRole('button', { name: '시작' }));
@@ -173,7 +174,7 @@ describe('useEntitlementGate', () => {
     await user.press(screen.getByRole('button', { name: '시작' }));
 
     // Then
-    expect(dismissals.findDismissedOn(ACCOUNT_ID, 'AI_PARSE')).not.toBeNull();
+    expect(readDismissals().AI_PARSE).toBeDefined();
     expect(analytics.trackEvent).toHaveBeenLastCalledWith('premium_gate_shown', {
       feature: 'ai_parse',
       surface: 'add_todo_sheet',

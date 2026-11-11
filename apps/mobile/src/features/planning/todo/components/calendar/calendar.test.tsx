@@ -4,11 +4,14 @@ import {
   createRouteParamsFake,
   renderUi,
 } from '@src/shared/__tests__';
+import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { createCalendarViewModeRepository } from '../../apis/calendar-view-mode.repository';
-import type { CalendarViewMode } from '../../schemas/calendar-view-mode-storage.schema';
+import {
+  type CalendarViewMode,
+  calendarViewModeStoredValue,
+} from '../../schemas/calendar-view-mode-storage.schema';
 import { Calendar } from './calendar';
 
 // 오늘과 겹치지 않게 지난 해의 날을 고른다
@@ -19,11 +22,10 @@ const DATE_CELL_NAME = /^2020년 \d+월 \d+일$/;
 async function renderCalendar(viewMode: CalendarViewMode) {
   createRouteParamsFake({ date: SELECTED_DATE });
   const syncStorage = createMemoryObservableSyncStorage();
-  const viewModeRepository = createCalendarViewModeRepository(syncStorage);
-  viewModeRepository.save(viewMode);
+  writeStoredValue(syncStorage, calendarViewModeStoredValue, viewMode);
   await renderUi(<Calendar />, { di: { syncStorage }, withLocalDate: true });
 
-  return { viewModeRepository };
+  return { syncStorage };
 }
 
 function countRouteParamsReads() {
@@ -45,11 +47,11 @@ describe('Calendar', () => {
 
   it('주에서 월로 바꾸면 한 달을 그리고 route는 칸마다 읽지 않는다', async () => {
     // Given
-    const { viewModeRepository } = await renderCalendar('week');
+    const { syncStorage } = await renderCalendar('week');
     jest.mocked(useLocalSearchParams).mockClear();
 
     // When
-    await act(() => viewModeRepository.save('month'));
+    await act(() => writeStoredValue(syncStorage, calendarViewModeStoredValue, 'month'));
 
     // Then
     expect(screen.getAllByRole('button', { name: DATE_CELL_NAME })).toHaveLength(

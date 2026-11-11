@@ -9,7 +9,6 @@ import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
-import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import {
   createErrorReporterStub,
   createHttpClientStub,
@@ -125,7 +124,6 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     queryCacheStorage,
     errorReporter,
     writeSnapshot,
-    pendingRedemption: createPendingRedemptionRepository(syncStorage),
     pendingRevocation: createPendingRevocationRepository(storage),
     requestRefresh,
     container,

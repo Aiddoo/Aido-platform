@@ -36,7 +36,7 @@ const pushPermissionPromptSchema = z.object({
   deferredAt: instantSchema.nullable(),
   noticeDismissedAt: instantSchema.nullable(),
 });
-export type PushPermissionPrompt = z.infer<typeof pushPermissionPromptSchema>;
+type PushPermissionPrompt = z.infer<typeof pushPermissionPromptSchema>;
 
 type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMISSION_STEP];
 type PushAskMoment = (typeof PUSH_ASK_MOMENT)[keyof typeof PUSH_ASK_MOMENT];

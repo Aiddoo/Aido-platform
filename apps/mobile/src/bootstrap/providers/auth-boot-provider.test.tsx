@@ -9,10 +9,8 @@ import { useAuthSession } from '@src/features/identity/auth/hooks/use-auth-sessi
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { UserService } from '@src/features/identity/user/apis/user.service';
-import { createDeviceTimezoneRepository } from '@src/features/notification/apis/device-timezone.repository';
-import { DeviceTimezoneService } from '@src/features/notification/apis/device-timezone.service';
+import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
-import { createPendingRedemptionRepository } from '@src/features/social/invite/apis/pending-redemption.repository';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -30,6 +28,11 @@ import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { KeychainLockedError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import {
+  readStoredValue,
+  removeStoredValue,
+  writeStoredValue,
+} from '@src/shared/storage/define-stored-value';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
@@ -45,8 +48,10 @@ import {
 import { AuthBootProvider } from './auth-boot-provider';
 import { StaticDIProvider } from './di-context';
 
-const SEOUL_TIMEZONE = { timeZone: 'Asia/Seoul', offsetMinutes: 540 };
-const NEW_YORK_TIMEZONE = { timeZone: 'America/New_York', offsetMinutes: -240 };
+const SEOUL_TIMEZONE_RECORD = {
+  userId: 'user-1',
+  deviceTimezone: { timeZone: 'Asia/Seoul', offsetMinutes: 540 },
+};
 
 const StatusProbe = () => <Text testID="status">{useAuthStatus()}</Text>;
 
@@ -66,7 +71,7 @@ describe('AuthBootProvider', () => {
   let queryClient: QueryClient;
   let draftService: DraftService;
   let queryCacheStorage: QueryCacheStorage;
-  let deviceTimezoneService: DeviceTimezoneService;
+  let deviceStorage: ReturnType<typeof createMemorySyncStorage>;
   let unsubscribes: Array<() => void>;
   let mountedProviders: Array<Awaited<ReturnType<typeof render>>>;
   let writeSnapshot: jest.Mock;
@@ -84,9 +89,7 @@ describe('AuthBootProvider', () => {
     queryClient = createTestQueryClient();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
-    deviceTimezoneService = new DeviceTimezoneService(
-      createDeviceTimezoneRepository(createMemorySyncStorage()),
-    );
+    deviceStorage = createMemorySyncStorage();
     unsubscribes = [];
     mountedProviders = [];
   });
@@ -126,8 +129,10 @@ describe('AuthBootProvider', () => {
             persistedQueryCache: queryCacheStorage,
             drafts: draftService,
             voiceNotes: createVoiceNoteStorageFake().service,
-            deviceTimezone: deviceTimezoneService,
-            pendingRedemption: createPendingRedemptionRepository(createMemorySyncStorage()),
+            deviceTimezone: {
+              clear: () => removeStoredValue(deviceStorage, deviceTimezoneStoredValue),
+            },
+            pendingRedemption: { clear: noop },
             pushDevice: { requestRelease: requestPushRelease },
             logger: createLoggerStub(),
           }),
@@ -601,14 +606,14 @@ describe('AuthBootProvider', () => {
       tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
-      deviceTimezoneService.record('user-1', SEOUL_TIMEZONE);
+      writeStoredValue(deviceStorage, deviceTimezoneStoredValue, SEOUL_TIMEZONE_RECORD);
 
       // When
       await fireEvent.press(screen.getByTestId('logout'));
 
       // Then
       await expectStatus('unauthenticated');
-      expect(deviceTimezoneService.record('user-1', NEW_YORK_TIMEZONE)).toBeNull();
+      expect(readStoredValue(deviceStorage, deviceTimezoneStoredValue)).toBeNull();
     });
 
     it.each(['refresh-rejected', 'tokens-missing'] as const)(
@@ -633,14 +638,16 @@ describe('AuthBootProvider', () => {
       tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
-      deviceTimezoneService.record('user-1', SEOUL_TIMEZONE);
+      writeStoredValue(deviceStorage, deviceTimezoneStoredValue, SEOUL_TIMEZONE_RECORD);
 
       // When
       await act(() => emitSessionExpired({ reason: 'tokens-missing' }));
 
       // Then
       await expectStatus('unauthenticated');
-      expect(deviceTimezoneService.record('user-1', NEW_YORK_TIMEZONE)).not.toBeNull();
+      expect(readStoredValue(deviceStorage, deviceTimezoneStoredValue)).toEqual(
+        SEOUL_TIMEZONE_RECORD,
+      );
     });
 
     it('로그아웃하면 기기에 저장한 조회 캐시를 지워 다음 사용자에게 복원되지 않게 한다', async () => {

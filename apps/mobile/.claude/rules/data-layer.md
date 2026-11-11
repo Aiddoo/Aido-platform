@@ -16,8 +16,8 @@ paths:
 
 **저장 값**
 
-- 저장 값 하나는 `defineStoredValue({ key, schema, fallback, migrate? })` 정의 하나다. 정의는 `schemas/*-storage.schema.ts`에 둔다.
-- 읽기는 `useStoredValue(def, scopeId?)` 튜플과 `readStoredValue`다. 깨진 값은 `fallback`이다.
+- 저장 값 하나는 `defineStoredValue({ key, area?, schema, fallback, migrate? })` 정의 하나이고 파일 하나다(`schemas/{name}-storage.schema.ts`의 `{name}StoredValue`). `key`는 문자열이거나 범위(계정 id, `{ accountId, locale }`)를 받는 함수, `area`는 `device`(기본)·`account`(로그아웃 때 비우는 암호화 저장소)다. 원문이 JSON이면 `storedJsonSchema(schema)`로 감싼다.
+- 화면은 `useStoredValue(def, scope?)` 튜플, 핸들러·effect는 `useStoredValueStorage(def)` + `readStoredValue`·`writeStoredValue`, Service는 받은 저장 포트로 같은 함수를 쓴다. 깨진 값은 `fallback`, `null`을 쓰면 지운다.
 - 키는 `aido_{feature}_{name}_v{n}`이고 계정 범위면 `:{accountId}`를 붙인다. 키 문자열을 정의 밖에 쓰지 않는다.
 
 **쿼리와 mutation**

@@ -1,6 +1,8 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/instant';
 import { useTranslation } from '@src/shared/i18n';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, STACK_CLOSE_ICON } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Stack, useFocusEffect } from 'expo-router';
@@ -9,8 +11,8 @@ import { BackHandler } from 'react-native';
 
 import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
-import { usePushPermissionPrompt } from '../hooks/use-push-permission-prompt';
 import { useRequestPushPermissionMutationOptions } from '../queries/notification.mutations';
+import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
 
 const SOURCE: PushPermissionPromptSource = 'onboarding';
 
@@ -19,7 +21,7 @@ export function PushPermissionOnboardingActions() {
   const { t } = useTranslation(['notification', 'common']);
   const { trackEvent } = useTrack();
   const { data: me } = useQuery(useGetMeQueryOptions());
-  const [_prompt, { defer }] = usePushPermissionPrompt(me?.id);
+  const [_deferredAt, setDeferredAt] = useStoredValue(pushPermissionDeferredAtStoredValue, me?.id);
   const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
 
   useEffect(() => {
@@ -31,8 +33,8 @@ export function PushPermissionOnboardingActions() {
       source: SOURCE,
       step: PUSH_PERMISSION_STEP.ASK,
     });
-    defer();
-  }, [defer, trackEvent]);
+    setDeferredAt(getNowInstant());
+  }, [setDeferredAt, trackEvent]);
 
   // Android 뒤로 가기도 닫기로 받는다. 답 없이 피드로 돌아가면 피드가 이 화면을 다시 연다
   useFocusEffect(
@@ -50,7 +52,7 @@ export function PushPermissionOnboardingActions() {
       onSuccess: (permission) =>
         trackEvent('push_permission_requested', { source: SOURCE, status: permission.status }),
       // 권한 창을 띄우지 못하면 권한이 그대로라 화면이 닫히지 않는다. 앱은 알림 없이도 쓸 수 있게 넘긴다
-      onError: defer,
+      onError: () => setDeferredAt(getNowInstant()),
     });
   };
 

@@ -11,22 +11,22 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 PushRegistrationService (features/notification/services) → PushDeviceApi (apis) → PUT /v1/notifications/push-devices/{deviceId}
 ```
 
-| 조각                                                                         | 역할                                                                                                        |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `domains/push-permission.model.ts`                                           | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)                                                |
-| `apis/push-permission.mapper.ts`                                             | OS 권한 → 모델                                                                                              |
-| `apis/push-device.mapper.ts`                                                 | 모델·토큰 → 서버 보고 입력                                                                                  |
-| `apis/push-notification.mapper.ts`                                           | `parsePushNotification(data: unknown)`: 푸시 data → 모델 또는 `null`                                        |
-| `apis/push-device.api.ts`                                                    | `PushDeviceApi`: 기기 보고(PUT)·해제(DELETE)·인증 없는 해제(POST unregister) 요청                           |
-| `services/push-registration.service.ts`                                      | `PushRegistrationService`: 권한 읽기·요청, 토큰 → 보고, 로그아웃 해제와 해제 기록                           |
-| `schemas/push-permission-prompt-storage.schema.ts`                           | 알림 화면·피드 안내를 닫은 시각을 계정마다 저장하는 저장 값 정의                                            |
-| `queries/push-permission.{queries,mutations}.ts`, `push-permission-cache.ts` | 권한 조회와 요청·설정 열기·앱 푸시 켜기. 쿼리 키 루트는 `['device', 'push-permission']`                     |
-| `hooks/use-push-permission-action.ts`                                        | `usePushPermissionAction({ source })` → `{ runStep(step), isPending }`. 권한 단계 실행과 추적의 유일한 입구 |
-| `hooks/use-push-device-sync.ts`                                              | 로그인한 동안 보고 시점을 모은다(`NotificationProvider`가 한 번 호출)                                       |
-| `hooks/use-notification-response-observer.ts`                                | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                                                          |
-| `hooks/use-notification-entry.ts`                                            | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                       |
-| `stores/notification-entry.store.ts`                                         | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다                                                     |
-| `apis/notification.mapper.ts`                                                | 서버 `navigation` → 앱 목적지(`target`). 알림함 항목도 같은 길이다                                          |
+| 조각                                                                                                 | 역할                                                                                                        |
+| ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `domains/push-permission.model.ts`                                                                   | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)                                                |
+| `apis/push-permission.mapper.ts`                                                                     | OS 권한 → 모델                                                                                              |
+| `apis/push-device.mapper.ts`                                                                         | 모델·토큰 → 서버 보고 입력                                                                                  |
+| `apis/push-notification.mapper.ts`                                                                   | `parsePushNotification(data: unknown)`: 푸시 data → 모델 또는 `null`                                        |
+| `apis/push-device.api.ts`                                                                            | `PushDeviceApi`: 기기 보고(PUT)·해제(DELETE)·인증 없는 해제(POST unregister) 요청                           |
+| `services/push-registration.service.ts`                                                              | `PushRegistrationService`: 권한 읽기·요청, 토큰 → 보고, 로그아웃 해제와 해제 기록                           |
+| `schemas/push-permission-deferred-at-storage.schema.ts`·`push-notice-dismissed-at-storage.schema.ts` | 알림 화면·피드 안내를 닫은 시각을 계정마다 저장하는 저장 값 정의                                            |
+| `queries/push-permission.{queries,mutations}.ts`, `push-permission-cache.ts`                         | 권한 조회와 요청·설정 열기·앱 푸시 켜기. 쿼리 키 루트는 `['device', 'push-permission']`                     |
+| `hooks/use-push-permission-action.ts`                                                                | `usePushPermissionAction({ source })` → `{ runStep(step), isPending }`. 권한 단계 실행과 추적의 유일한 입구 |
+| `hooks/use-push-device-sync.ts`                                                                      | 로그인한 동안 보고 시점을 모은다(`NotificationProvider`가 한 번 호출)                                       |
+| `hooks/use-notification-response-observer.ts`                                                        | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                                                          |
+| `hooks/use-notification-entry.ts`                                                                    | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                       |
+| `stores/notification-entry.store.ts`                                                                 | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다                                                     |
+| `apis/notification.mapper.ts`                                                                        | 서버 `navigation` → 앱 목적지(`target`). 알림함 항목도 같은 길이다                                          |
 
 ## 클라이언트가 하는 일
 
@@ -65,7 +65,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
   - 본문 버튼은 시스템 창을 여는 [계속] 하나다. 나가는 길은 흐름형 화면처럼 네이티브 헤더 오른쪽 닫기이고, Android 뒤로 가기도 닫기다.
   - 시스템 창을 바로 여는 버튼은 알림 화면·피드 안내·설정 줄 모두 `permission.continue`([계속])다. HIG가 권한 전 버튼에 "허용" 대신 Continue·Next를 쓰라고 해서 날씨 위치 안내(`locationPrompt.continue`)와 같은 규칙을 따른다.
   - `redirectTo`를 비우면 열린 화면의 guard가 풀릴 때 anchor 그룹 `/(app)/(tabs)`로 replace한다. 탭이 없는 그룹 경로라 탭 묶음이 새로 생기고 글자 순 첫 탭 `(mypage)`가 열린다. `..`는 뒤로 가기라 있던 탭 묶음과 탭이 그대로 남는다.
-- 알림 화면 닫기와 피드 안내 닫기는 저장 값 정의 2개(`deferredAt`·`noticeDismissedAt`, `useStoredValue`)로 계정마다 남긴다. 로그아웃은 남기고 탈퇴는 `UserDeviceDataService.clearForUser`가 지운다.
+- 알림 화면 닫기와 피드 안내 닫기는 저장 값 정의 2개(`pushPermissionDeferredAtStoredValue`·`pushNoticeDismissedAtStoredValue`, `useStoredValue`)로 계정마다 남긴다. 로그아웃은 남기고 탈퇴는 `UserDeviceDataService.clearForUser`가 지운다.
 - 설정 > 알림 > 푸시 맨 위 `PushPermissionSettings`는 기기 알림 한 줄이다. 꺼져 있으면 줄을 눌러 다음 단계(시스템 창 또는 설정 열기)를 하고 아래 토글을 흐리게 둔다. 허용했으면 `허용됨`을 보이고 누르면 기기 설정을 연다.
 - 앱 푸시 설정을 켜면 이어서 OS 권한을 묻는다(`useUpdatePushEnabledAndAskPermissionMutationOptions`).
 - 할 일 목록 시간 옆 종 꺼짐 표시는 OS 권한과 앱 푸시 설정(`PushPermissionPolicy.canReceivePush`)으로 정한다. 피드가 한 번 읽어 목록에 넘긴다.

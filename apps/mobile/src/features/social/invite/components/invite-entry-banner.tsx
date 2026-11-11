@@ -1,17 +1,17 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
-import { useAllDoneBannerRepository } from '@src/bootstrap/providers/di-context';
 import { type User } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, Image, InlineAlert, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
-import { type ComponentProps, useCallback, useSyncExternalStore } from 'react';
+import type { ComponentProps } from 'react';
 
 import { useIsInviteAvailable } from '../hooks/use-is-invite-available';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
+import { allDoneBannerStoredValue } from '../schemas/all-done-banner-storage.schema';
 
 function selectUserId(user: User) {
   return user.id;
@@ -24,7 +24,6 @@ export function InviteEntryBanner({
 }: Pick<ComponentProps<typeof InlineAlert>, 'className' | 'testID'>) {
   const { t } = useTranslation('invite');
   const todayKey = useTodayKey();
-  const allDoneBannerRepository = useAllDoneBannerRepository();
   const openMyInvite = useOpenMyInvite();
   const isInviteAvailable = useIsInviteAvailable();
   const { data: userId } = useQuery({
@@ -37,14 +36,7 @@ export function InviteEntryBanner({
     enabled: userId != null,
   });
   // 닫은 날은 저장소가 원본이다. 저장 값을 구독해 다른 화면에서 닫아도 따라간다
-  const dismissedOn = useSyncExternalStore(
-    useCallback(
-      (onChange: () => void) =>
-        userId == null ? noop : allDoneBannerRepository.subscribe(userId, onChange),
-      [allDoneBannerRepository, userId],
-    ),
-    () => (userId == null ? null : allDoneBannerRepository.findDismissedOn(userId)),
-  );
+  const [dismissedOn, setDismissedOn] = useStoredValue(allDoneBannerStoredValue, userId);
 
   if (
     !isInviteAvailable ||
@@ -85,7 +77,7 @@ export function InviteEntryBanner({
           {t('entry.inviteFriends')}
         </Button>
       }
-      onClose={() => allDoneBannerRepository.dismiss(userId, todayKey)}
+      onClose={() => setDismissedOn(todayKey)}
       closeLabel={t('entry.allDoneDismiss')}
       {...props}
     />

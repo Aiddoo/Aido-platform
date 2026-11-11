@@ -11,10 +11,8 @@ import { type Consent } from '@src/features/identity/consent/domains/consent.mod
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
-import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createHttpClientStub,
-  createMemorySyncStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
@@ -124,8 +122,6 @@ async function renderEditor(
       withOverlay: true,
       di: {
         httpClient,
-        recognitionLanguageRepository:
-          createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer: createSpeechRecognizerStub(),
         ...createVoiceNoteStorageFake().di,
       },

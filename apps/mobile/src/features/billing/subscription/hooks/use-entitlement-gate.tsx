@@ -1,9 +1,10 @@
-import { useUpsellDismissalRepository } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { useOverlay } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ import { type UpsellPresentation } from '../domains/upsell.model';
 import { UpsellPolicy } from '../domains/upsell.model';
 import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
+import { upsellDismissalStoredValue } from '../schemas/upsell-dismissal-storage.schema';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import { useFormatRefillSentence } from './use-format-refill-sentence';
 
@@ -59,7 +61,7 @@ export function useEntitlementGate(
   const toast = useAppToast();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const upsellDismissalRepository = useUpsellDismissalRepository();
+  const upsellDismissalStorage = useStoredValueStorage(upsellDismissalStoredValue);
   const todayKey = useTodayKey();
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const { t } = useTranslation('subscription');
@@ -89,7 +91,7 @@ export function useEntitlementGate(
 
       const userId = getCachedMe(queryClient)?.id;
       const dismissedOn =
-        userId == null ? null : upsellDismissalRepository.findDismissedOn(userId, target);
+        readStoredValue(upsellDismissalStorage, upsellDismissalStoredValue, userId)[target] ?? null;
       const presentation = UpsellPolicy.getPromptSurface(dismissedOn, todayKey, {
         hasAlternativeAction: alternativeAction != null,
       });
@@ -148,9 +150,17 @@ export function useEntitlementGate(
             .with('alternative', () => alternativeAction?.onPress())
             .with('dismiss', () => {
               trackEvent('premium_upsell_dismissed', { feature: analyticsFeature, surface });
-              if (userId != null) {
-                upsellDismissalRepository.dismiss(userId, target, todayKey);
-              }
+              const dismissals = readStoredValue(
+                upsellDismissalStorage,
+                upsellDismissalStoredValue,
+                userId,
+              );
+              writeStoredValue(
+                upsellDismissalStorage,
+                upsellDismissalStoredValue,
+                { ...dismissals, [target]: todayKey },
+                userId,
+              );
             })
             .with(null, () => undefined)
             .exhaustive(),
@@ -195,7 +205,7 @@ export function useEntitlementGate(
     toast,
     trackEvent,
     queryClient,
-    upsellDismissalRepository,
+    upsellDismissalStorage,
     todayKey,
     t,
     formatRefillSentence,

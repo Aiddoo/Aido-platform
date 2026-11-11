@@ -10,7 +10,6 @@ import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/con
 import { type Consent } from '@src/features/identity/consent/domains/consent.model';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -18,7 +17,6 @@ import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createMemoryStorage,
-  createMemorySyncStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
@@ -180,8 +178,6 @@ async function renderQuickVoice({
         httpClient,
         ...voiceNoteStorage.di,
         syncStorage,
-        recognitionLanguageRepository:
-          createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer,
         analytics,
         errorReporter: createErrorReporterStub(),

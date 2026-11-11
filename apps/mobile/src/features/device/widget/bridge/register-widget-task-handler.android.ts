@@ -4,7 +4,6 @@ import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { AppState } from 'react-native';
 import { registerWidgetTaskHandler as registerNativeWidgetTaskHandler } from 'react-native-android-widget';
 
-import { createWidgetHeadlessFailureRepository } from '../apis/widget-headless-failure.repository';
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
 import { renderStoredAndroidWidget } from './android-widgets.bridge';
@@ -18,7 +17,7 @@ export function registerWidgetTaskHandler(): void {
       isAppActive: () => AppState.currentState === 'active',
       now: Date.now,
       createCommandId: expoIdGenerator.create,
-      failureRepository: createWidgetHeadlessFailureRepository(widgetStorage),
+      failureStorage: widgetStorage,
       renderStoredWidget: renderStoredAndroidWidget,
     }),
   );

@@ -1,7 +1,6 @@
 import { EVENING_REMINDER_HOUR_RANGE, MORNING_REMINDER_HOUR_RANGE } from '@aido/api/vocabulary';
 
 import type { NotificationType } from '../domains/notification.model';
-import type { PushPermissionPrompt } from '../domains/push-permission.model';
 import type { PushRegistration } from '../domains/push-registration.model';
 
 /** 보고한 적도, 풀 해제도 없는 기기 */
@@ -40,11 +39,6 @@ export const PUSH_PERMISSION_STEP = {
 
 /** 홈 알림 안내를 닫으면 이 날수 동안 다시 보이지 않는다 */
 export const PUSH_PROMPT_SNOOZE_DAYS = 14;
-
-export const EMPTY_PUSH_PERMISSION_PROMPT: PushPermissionPrompt = {
-  deferredAt: null,
-  noticeDismissedAt: null,
-};
 
 /** 알림을 어떻게 물을지. 화면은 이 값으로 알림 화면·시스템 창·꺼짐 안내 중 하나를 고른다 */
 export const PUSH_ASK_MOMENT = {

@@ -1,8 +1,9 @@
 import { createErrorReporterStub, createMemorySyncStorage } from '@src/shared/__tests__';
 import { toInstant } from '@src/shared/date/instant';
+import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 
 import type { WidgetBridge } from '../bridge/widget-bridge';
-import { createWidgetHeadlessFailureRepository } from './widget-headless-failure.repository';
+import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import type { WidgetSnapshotContext, WidgetSummaryInput } from './widget-snapshot.mapper';
 import { WidgetSyncService } from './widget-sync.service';
 
@@ -28,13 +29,12 @@ const summary: WidgetSummaryInput = {
 };
 
 function createService(bridge: WidgetBridge, errorReporter = createErrorReporterStub()) {
-  const headlessFailureRepository =
-    createWidgetHeadlessFailureRepository(createMemorySyncStorage());
+  const widgetStorage = createMemorySyncStorage();
 
   return {
     errorReporter,
-    headlessFailureRepository,
-    service: new WidgetSyncService(bridge, errorReporter, headlessFailureRepository),
+    widgetStorage,
+    service: new WidgetSyncService(bridge, errorReporter, widgetStorage),
   };
 }
 
@@ -258,11 +258,11 @@ describe('WidgetSyncService', () => {
 
   it('앱 없이 깨어난 위젯이 남긴 실패를 다음 시작에 한 번만 보고한다', () => {
     // Given
-    const { service, errorReporter, headlessFailureRepository } =
-      createService(createWidgetBridgeStub());
-    headlessFailureRepository.save({
+    const { service, errorReporter, widgetStorage } = createService(createWidgetBridgeStub());
+    writeStoredValue(widgetStorage, widgetHeadlessFailureStoredValue, {
       method: 'handleWidgetTask',
-      error: new TypeError('activity unavailable'),
+      name: 'TypeError',
+      message: 'activity unavailable',
     });
 
     // When

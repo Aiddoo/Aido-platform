@@ -14,6 +14,7 @@ import {
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Box, HStack, Result, Text, usePaneColumns, VStack } from '@src/shared/ui';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -27,9 +28,9 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
-import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
 import { useFeedDate } from '../../hooks/use-feed-params';
 import type { CompletionsByDate } from '../../queries/todo.queries';
+import { calendarViewModeStoredValue } from '../../schemas/calendar-view-mode-storage.schema';
 import { getMonthViewDayState } from '../../utils/calendar-day';
 import { diffWeeks, getMonthWeeks, getWeekDates, getWeekStart } from '../../utils/calendar-grid';
 import { clampCalendarPage } from '../../utils/calendar-pager.geometry';
@@ -52,7 +53,7 @@ interface CalendarProps {
 }
 
 export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarProps) {
-  const [viewMode] = useCalendarViewMode();
+  const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const [pageWidth, handlePagerLayout] = useCalendarPageWidth();
 
   const pagerHeight = match(viewMode)

@@ -5,6 +5,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Box, Flex, HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback, Tabs } from 'heroui-native';
@@ -19,11 +20,11 @@ import {
 import type { HostInstance, LayoutChangeEvent } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { useCalendarViewMode } from '../../hooks/use-calendar-view-mode';
 import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-params';
 import {
   type CalendarViewMode,
   calendarViewModeSchema,
+  calendarViewModeStoredValue,
 } from '../../schemas/calendar-view-mode-storage.schema';
 import { shiftCalendarDate } from '../../utils/calendar-grid';
 import {
@@ -43,7 +44,7 @@ export function CalendarHeader() {
   const { t } = useTranslation('common');
   const [selectedDate, setSelectedDate] = useFeedDate();
   const today = useToday();
-  const [viewMode] = useCalendarViewMode();
+  const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const { timeZone } = useDateFormatContext();
   const {
     layout,
@@ -101,7 +102,7 @@ export function CalendarHeader() {
  * 재기 전에는 마지막으로 정한 배치를 그린다
  */
 function useCalendarHeaderLayout() {
-  const [viewMode] = useCalendarViewMode();
+  const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const { i18n } = useTranslation();
   const { fontScale } = useFontScale();
   const [layout, setLayout] = useState<CalendarHeaderLayout>('inline');
@@ -176,7 +177,7 @@ function measureWidth(node: Pick<HostInstance, 'measure'> | null): number | null
 
 /** 이 언어가 지금 보기에서 보일 수 있는 제목을 달마다 쌓아, 묶음 폭이 가장 긴 제목의 폭이다 */
 function CalendarTitleSamples({ ref }: Pick<ComponentProps<typeof Box>, 'ref'>) {
-  const [viewMode] = useCalendarViewMode();
+  const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
   const monthStartDateKey = getMonthStartDateKey(todayDateKey);
@@ -215,7 +216,7 @@ function CalendarTitleSamples({ ref }: Pick<ComponentProps<typeof Box>, 'ref'>) 
 }
 
 function CalendarHeaderText() {
-  const [viewMode] = useCalendarViewMode();
+  const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const [selectedDateKey] = useFeedDateKey();
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
@@ -234,7 +235,7 @@ function CalendarHeaderText() {
 
 function CalendarViewModeTabs({ ref }: Pick<ComponentProps<typeof Tabs>, 'ref'>) {
   const { t } = useTranslation('todo');
-  const [viewMode, setViewMode] = useCalendarViewMode();
+  const [viewMode, setViewMode] = useStoredValue(calendarViewModeStoredValue);
 
   return (
     <Tabs

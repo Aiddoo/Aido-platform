@@ -17,6 +17,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
+import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import {
   createErrorReporterStub,
   createLoggerStub,
@@ -33,6 +34,7 @@ import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { RETRY_MARKER_HEADER } from '@src/shared/infra/http/token-refresh-hook';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 import { z } from 'zod';
@@ -310,12 +312,12 @@ describe('대기 중인 초대', () => {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.delete.mockResolvedValue(ok({}));
     session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
-    session.pendingRedemption.save(PENDING_INVITE);
+    writeStoredValue(session.syncStorage, pendingRedemptionStoredValue, PENDING_INVITE);
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), logout: useMutation(useLogoutMutationOptions()) }),
       'authenticated',
     );
-    expect(session.pendingRedemption.find()).not.toBeNull();
+    expect(readStoredValue(session.syncStorage, pendingRedemptionStoredValue)).not.toBeNull();
 
     // When
     await act(async () => {
@@ -324,13 +326,13 @@ describe('대기 중인 초대', () => {
 
     // Then
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
-    expect(session.pendingRedemption.find()).toBeNull();
+    expect(readStoredValue(session.syncStorage, pendingRedemptionStoredValue)).toBeNull();
   });
 
   it('세션이 만료되면 남겨 다시 로그인한 뒤 이어서 받는다', async () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
-    session.pendingRedemption.save(PENDING_INVITE);
+    writeStoredValue(session.syncStorage, pendingRedemptionStoredValue, PENDING_INVITE);
     const { result } = await session.renderSession(() => useAuthStatus(), 'authenticated');
 
     // When
@@ -338,19 +340,23 @@ describe('대기 중인 초대', () => {
 
     // Then
     await waitFor(() => expect(result.current).toBe('unauthenticated'));
-    expect(session.pendingRedemption.find()).toMatchObject({ inviteCode: 'K7M2QX' });
+    expect(readStoredValue(session.syncStorage, pendingRedemptionStoredValue)).toMatchObject({
+      inviteCode: 'K7M2QX',
+    });
   });
 
   it('로그인 전 미인증으로 시작해도 지우지 않는다', async () => {
     // Given
     const session = createAuthSession();
-    session.pendingRedemption.save(PENDING_INVITE);
+    writeStoredValue(session.syncStorage, pendingRedemptionStoredValue, PENDING_INVITE);
 
     // When
     await session.renderSession(() => useAuthStatus(), 'unauthenticated');
 
     // Then
-    expect(session.pendingRedemption.find()).toMatchObject({ inviteCode: 'K7M2QX' });
+    expect(readStoredValue(session.syncStorage, pendingRedemptionStoredValue)).toMatchObject({
+      inviteCode: 'K7M2QX',
+    });
   });
 });
 
