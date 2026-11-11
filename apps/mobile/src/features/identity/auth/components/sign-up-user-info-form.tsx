@@ -9,12 +9,13 @@ import {
   FormStepLayout,
   Box,
 } from '@src/shared/ui';
-import { useCallback, useState } from 'react';
-import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
+import { useCallback } from 'react';
+import { Controller, type UseFormReturn, useFormState } from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { type SignUpFormValues, signUpFormSchema } from '../schemas/sign-up-form.schema';
+import { useFocusOnStepBack } from '../hooks/use-focus-on-step-back';
+import { type SignUpFormValues } from '../schemas/sign-up-form.schema';
 import { RevealedField } from './revealed-field';
 import { SuggestedEmailDomainList } from './suggested-email-domain-list';
 
@@ -27,47 +28,41 @@ const STEP_DESCRIPTION_KEYS = {
 
 interface SignUpUserInfoFormProps {
   form: UseFormReturn<SignUpFormValues>;
+  /** 이름 단계 다음 이메일 단계는 이름 칸 위에 이메일 칸을 더한다 */
+  step: UserInfoStep;
   onNextStep: () => void;
 }
 
-export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps) {
+export function SignUpUserInfoForm({ form, step, onNextStep }: SignUpUserInfoFormProps) {
   const { t } = useTranslation(['auth']);
   const { control } = form;
-  const [email, name] = useWatch({ control, name: ['email', 'name'] });
-  const [step, setStep] = useState<UserInfoStep>(() =>
-    form.formState.errors.name == null && form.formState.errors.email != null ? 'email' : 'name',
-  );
+  const formState = useFormState({ control, name: ['name', 'email'] });
   const focusEmailInput = useCallback(() => {
     form.setFocus('email');
   }, [form]);
 
-  const handleNext = () => {
-    match(step)
-      .with('name', () => {
-        setStep('email');
-      })
-      .with('email', () => onNextStep())
-      .exhaustive();
-  };
+  useFocusOnStepBack({ step, firstStep: 'name', focus: () => form.setFocus('name') });
 
-  const isNameValid = signUpFormSchema.shape.name.safeParse(name).success;
-  const isEmailValid = signUpFormSchema.shape.email.safeParse(email).success;
-
-  const isNextButtonEnabled = match(step)
-    .with('name', () => isNameValid)
-    .with('email', () => isNameValid && isEmailValid)
+  const name = form.getFieldState('name', formState);
+  const email = form.getFieldState('email', formState);
+  const isNameReady = name.isDirty && !name.invalid;
+  const isNextEnabled = match(step)
+    .with('name', () => isNameReady)
+    .with('email', () => isNameReady && email.isDirty && !email.invalid)
     .exhaustive();
+
+  const submitStep = () => {
+    if (isNextEnabled) {
+      onNextStep();
+    }
+  };
 
   return (
     <Box className="flex-1">
       <FormStepLayout
         title={t(STEP_DESCRIPTION_KEYS[step])}
         footer={
-          <KeyboardAdaptiveButton
-            color="dark"
-            onPress={handleNext}
-            isDisabled={!isNextButtonEnabled}
-          >
+          <KeyboardAdaptiveButton color="dark" onPress={submitStep} isDisabled={!isNextEnabled}>
             {t('auth:signUp.next')}
           </KeyboardAdaptiveButton>
         }
@@ -77,36 +72,35 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
             <Controller
               control={control}
               name="email"
-              render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
-                <VStack gap={8}>
-                  <Input
-                    ref={ref}
-                    label={t('auth:signUp.emailLabel')}
-                    placeholder={t('auth:signUp.emailPlaceholder')}
-                    value={value}
-                    onChange={onChange}
-                    onBlur={onBlur}
-                    keyboardType="email-address"
-                    textContentType="emailAddress"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    submitBehavior="submit"
-                    returnKeyType="next"
-                    isInvalid={!!error}
-                    errorMessage={resolveValidationMessage(error, {
-                      default: 'email.invalid',
-                      byType: { too_big: 'email.tooLong' },
-                    })}
-                    onSubmitEditing={() => {
-                      if (isNextButtonEnabled) {
-                        handleNext();
-                      }
-                    }}
-                  />
-                  <SuggestedEmailDomainList value={value} onChange={onChange} />
-                </VStack>
-              )}
+              render={({ field: { ref, onChange, onBlur, value }, fieldState }) => {
+                const error = fieldState.isTouched ? fieldState.error : undefined;
+                return (
+                  <VStack gap={8}>
+                    <Input
+                      ref={ref}
+                      label={t('auth:signUp.emailLabel')}
+                      placeholder={t('auth:signUp.emailPlaceholder')}
+                      value={value}
+                      onChange={onChange}
+                      onBlur={onBlur}
+                      keyboardType="email-address"
+                      textContentType="emailAddress"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      submitBehavior="submit"
+                      returnKeyType="next"
+                      isInvalid={error != null}
+                      errorMessage={resolveValidationMessage(error, {
+                        default: 'email.invalid',
+                        byType: { too_big: 'email.tooLong' },
+                      })}
+                      onSubmitEditing={submitStep}
+                    />
+                    <SuggestedEmailDomainList value={value} onChange={onChange} />
+                  </VStack>
+                );
+              }}
             />
             <Spacing size={20} />
           </RevealedField>
@@ -116,30 +110,29 @@ export function SignUpUserInfoForm({ form, onNextStep }: SignUpUserInfoFormProps
           <Controller
             control={control}
             name="name"
-            render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
-              <Input
-                ref={ref}
-                label={t('auth:signUp.nicknameLabel')}
-                placeholder={t('auth:signUp.nicknamePlaceholder')}
-                value={value}
-                onChange={onChange}
-                onBlur={onBlur}
-                autoCapitalize="none"
-                submitBehavior="submit"
-                autoFocus={step === 'name'}
-                returnKeyType="next"
-                isInvalid={!!error}
-                errorMessage={resolveValidationMessage(error, {
-                  default: 'nickname.required',
-                  byType: { too_big: 'nickname.tooLong' },
-                })}
-                onSubmitEditing={() => {
-                  if (isNextButtonEnabled) {
-                    handleNext();
-                  }
-                }}
-              />
-            )}
+            render={({ field: { ref, onChange, onBlur, value }, fieldState }) => {
+              const error = fieldState.isTouched ? fieldState.error : undefined;
+              return (
+                <Input
+                  ref={ref}
+                  label={t('auth:signUp.nicknameLabel')}
+                  placeholder={t('auth:signUp.nicknamePlaceholder')}
+                  value={value}
+                  onChange={onChange}
+                  onBlur={onBlur}
+                  autoCapitalize="none"
+                  submitBehavior="submit"
+                  autoFocus={step === 'name'}
+                  returnKeyType="next"
+                  isInvalid={error != null}
+                  errorMessage={resolveValidationMessage(error, {
+                    default: 'nickname.required',
+                    byType: { too_big: 'nickname.tooLong' },
+                  })}
+                  onSubmitEditing={submitStep}
+                />
+              );
+            }}
           />
         </Animated.View>
       </FormStepLayout>

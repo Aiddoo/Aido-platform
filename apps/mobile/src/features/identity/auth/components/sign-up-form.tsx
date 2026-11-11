@@ -8,16 +8,29 @@ import {
   useResendVerificationMutationOptions,
   useVerifyEmailMutationOptions,
 } from '../queries/auth.mutations';
-import { signUpFormSchema } from '../schemas/sign-up-form.schema';
+import { signUpFormSchema, type SignUpFormValues } from '../schemas/sign-up-form.schema';
 import { EmailVerificationCodeStep } from './email-verification-code-step';
 import { SignUpPasswordForm } from './sign-up-password-form';
 import { SignUpUserInfoForm } from './sign-up-user-info-form';
 
+/** 이름·이메일, 비밀번호·확인은 칸이 하나씩 늘어나는 한 화면이라 같은 렌더러로 이어 그린다 */
 export type SignUpStepContexts = {
-  userInfo: Record<string, never>;
+  name: Record<string, never>;
+  email: Record<string, never>;
   password: Record<string, never>;
+  passwordConfirm: Record<string, never>;
   verification: { email: string };
 };
+
+type SignUpStep = keyof SignUpStepContexts;
+
+/** 입력 단계의 이름은 그 단계에서 새로 여는 칸 이름과 같다 */
+const FIELD_STEPS = [
+  'name',
+  'email',
+  'password',
+  'passwordConfirm',
+] as const satisfies readonly (SignUpStep & keyof SignUpFormValues)[];
 
 interface SignUpFormProps {
   /** 제목과 툴바가 단계를 따라가므로 단계 이동은 화면이 소유하고 여기서는 읽고 옮기기만 한다 */
@@ -37,11 +50,25 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
       passwordConfirm: '',
       name: '',
     },
-    mode: 'onTouched',
+    // 단계 버튼이 칸의 유효성을 바로 따르도록 입력마다 검사한다. 오류 문구는 칸을 벗어난 뒤에 보인다
+    mode: 'onChange',
   });
+
   const register = useMutation(useRegisterMutationOptions());
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
+
+  const goBackTo = (step: SignUpStep) => {
+    const index = stepper.historySteps.findIndex((entry) => entry.step === step);
+    if (0 <= index && index !== stepper.index) {
+      stepper.history.go(index - stepper.index);
+    }
+  };
+
+  const findInvalidStep = async () => {
+    await form.trigger(FIELD_STEPS);
+    return FIELD_STEPS.find((step) => form.getFieldState(step).invalid) ?? null;
+  };
 
   // 가입 요청이 실패하면 false를 돌려 약관 시트를 열어 둔다. 바로 다시 누를 수 있다
   const submitValidRegister = () =>
@@ -72,28 +99,39 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
       )();
     });
 
+  // 단계 버튼이 앞 칸을 이미 막았다. 그 사이 값이 바뀌었으면 틀린 칸의 단계로 돌아간다
   const submitRegister = async () => {
-    const isUserInfoValid = await form.trigger(['name', 'email']);
-    if (!isUserInfoValid) {
-      stepper.history.go(-stepper.index);
+    const invalidStep = await findInvalidStep();
+    if (invalidStep != null) {
+      goBackTo(invalidStep);
       return false;
     }
-    const isPasswordValid = await form.trigger(['password', 'passwordConfirm'], {
-      shouldFocus: true,
-    });
-    if (!isPasswordValid) {
-      return false;
-    }
-
     return submitValidRegister();
   };
 
+  const renderUserInfo = ({ step }: { step: 'name' | 'email' }) => (
+    <SignUpUserInfoForm
+      form={form}
+      step={step}
+      onNextStep={() => stepper.history.push(step === 'name' ? 'email' : 'password')}
+    />
+  );
+
+  const renderPassword = ({ step }: { step: 'password' | 'passwordConfirm' }) => (
+    <SignUpPasswordForm
+      form={form}
+      step={step}
+      onNextStep={() => stepper.history.push('passwordConfirm')}
+      onSubmit={submitRegister}
+    />
+  );
+
   return (
     <stepper.Render
-      userInfo={({ history }) => (
-        <SignUpUserInfoForm form={form} onNextStep={() => history.push('password', {})} />
-      )}
-      password={() => <SignUpPasswordForm form={form} onSubmit={submitRegister} />}
+      name={renderUserInfo}
+      email={renderUserInfo}
+      password={renderPassword}
+      passwordConfirm={renderPassword}
       verification={({ context: { email } }) => (
         <EmailVerificationCodeStep
           email={email}

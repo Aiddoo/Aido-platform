@@ -12,7 +12,6 @@ import {
   useForm,
   type UseFormReturn,
   useFormState,
-  useWatch,
 } from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -32,6 +31,7 @@ type ForgotPasswordStepContexts = {
   email: Record<string, never>;
   verificationCode: { email: string };
   newPassword: Record<string, never>;
+  newPasswordConfirm: Record<string, never>;
 };
 
 interface ForgotPasswordFormProps {
@@ -53,12 +53,17 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
   });
   const stepper = useStepper<ForgotPasswordStepContexts>({
     id: 'forgot-password',
-    initial: { step: 'email', context: {} },
+    initial: { step: 'email' },
   });
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const resetPassword = useMutation(useResetPasswordMutationOptions());
   const { t } = useTranslation('auth');
-  const newPassword = useController({ control: form.control, name: 'newPassword' });
+  const newPassword = useController({
+    control: form.control,
+    name: 'newPassword',
+    // 새 비밀번호를 고치면 이미 적은 확인 칸의 일치 여부도 다시 본다
+    rules: { deps: 'newPasswordConfirm' },
+  });
   const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
   const { isSubmitting } = useFormState({ control: form.control });
 
@@ -76,6 +81,20 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     await resetPassword.mutateAsync(input).catch(noop);
   });
 
+  const renderNewPassword = ({ step }: { step: 'newPassword' | 'newPasswordConfirm' }) => (
+    <NewPasswordStep
+      title={stepTitles.newPassword}
+      step={step}
+      newPassword={newPassword}
+      newPasswordConfirm={newPasswordConfirm}
+      isSubmitting={isSubmitting || resetPassword.isPending}
+      onNextStep={() => stepper.history.push('newPasswordConfirm')}
+      onSubmit={submitNewPassword}
+      nextLabel={t('forgotPassword.next')}
+      submitLabel={t('forgotPassword.submit')}
+    />
+  );
+
   return (
     <stepper.Render
       email={() => (
@@ -92,7 +111,7 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
           isResending={forgotPassword.isPending}
           onComplete={async (code) => {
             form.setValue('code', code, { shouldValidate: true });
-            history.push('newPassword', {});
+            history.push('newPassword');
           }}
           onResend={async () => {
             await forgotPassword.mutateAsync({ email });
@@ -100,17 +119,8 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
           }}
         />
       )}
-      newPassword={() => (
-        <NewPasswordStep
-          title={stepTitles.newPassword}
-          newPassword={newPassword}
-          newPasswordConfirm={newPasswordConfirm}
-          isSubmitting={isSubmitting}
-          onSubmit={submitNewPassword}
-          nextLabel={t('forgotPassword.next')}
-          submitLabel={t('forgotPassword.submit')}
-        />
-      )}
+      newPassword={renderNewPassword}
+      newPasswordConfirm={renderNewPassword}
     />
   );
 }
@@ -125,9 +135,9 @@ interface EmailStepProps {
 function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
   const { t } = useTranslation('auth');
   const { control } = form;
-  const { errors } = useFormState({ control, name: 'email' });
-  const email = useWatch({ control, name: 'email' });
-  const isValid = email.length > 0 && !errors.email;
+  const formState = useFormState({ control, name: 'email' });
+  const email = form.getFieldState('email', formState);
+  const isValid = email.isDirty && !email.invalid;
 
   return (
     <Box className="flex-1">

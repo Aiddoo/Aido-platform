@@ -46,7 +46,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
           testID="email-login-submit"
           color="primary"
           onPress={() => submitEmailLogin()}
-          isLoading={isSubmitting}
+          isLoading={isSubmitting || emailLogin.isPending}
         >
           {t('emailLogin.submit')}
         </KeyboardAdaptiveButton>

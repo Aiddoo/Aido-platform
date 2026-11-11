@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { useStepper } from '@src/shared/hooks/use-stepper';
-import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Keyboard, Pressable } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { BackHandler, Keyboard, Pressable } from 'react-native';
 
 import { createAuthSession } from '../__tests__/auth-session.test-utils';
 import { SignUpForm, type SignUpStepContexts } from './sign-up-form';
@@ -9,7 +9,7 @@ import { SignUpForm, type SignUpStepContexts } from './sign-up-form';
 function SignUpHarness() {
   const stepper = useStepper<SignUpStepContexts>({
     id: 'sign-up-test',
-    initial: { step: 'userInfo', context: {} },
+    initial: { step: 'name' },
   });
 
   return (
@@ -20,7 +20,83 @@ function SignUpHarness() {
   );
 }
 
+type BackListener = Parameters<typeof BackHandler.addEventListener>[1];
+
+function givenAndroidBack() {
+  const listeners: BackListener[] = [];
+  jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_, listener) => {
+    listeners.push(listener);
+    return { remove: jest.fn() };
+  });
+  return {
+    press: () => act(async () => listeners.at(-1)?.({ type: 'hardwareBackPress', timeStamp: 0 })),
+  };
+}
+
+async function fillName(name: string) {
+  await fireEvent.changeText(await screen.findByPlaceholderText('닉네임을 입력해주세요.'), name);
+  await fireEvent.press(screen.getByText('다음'));
+}
+
 describe('회원가입 폼', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('이메일 단계에서 Android 뒤로 가기는 이름 단계로 한 칸 돌아가고 적은 이름을 지킨다', async () => {
+    // Given
+    const androidBack = givenAndroidBack();
+    const session = createAuthSession();
+    await render(<SignUpHarness />, { wrapper: session.Wrapper });
+    await fillName('아이두');
+    await fireEvent.changeText(
+      await screen.findByPlaceholderText('example@email.com'),
+      'a@aido.app',
+    );
+
+    // When
+    await androidBack.press();
+
+    // Then
+    expect(screen.queryByPlaceholderText('example@email.com')).toBeNull();
+    expect(screen.getByDisplayValue('아이두')).toBeTruthy();
+  });
+
+  it('이름 다음 이메일 단계로 넘어가도 이름 칸을 다시 마운트하지 않아 키보드가 내려가지 않는다', async () => {
+    // Given
+    const session = createAuthSession();
+    await render(<SignUpHarness />, { wrapper: session.Wrapper });
+    const nameInput = await screen.findByPlaceholderText('닉네임을 입력해주세요.');
+
+    // When
+    await fillName('아이두');
+    await screen.findByPlaceholderText('example@email.com');
+
+    // Then
+    expect(screen.getByPlaceholderText('닉네임을 입력해주세요.')).toBe(nameInput);
+  });
+
+  it('이메일이 형식에 맞을 때만 다음 단계로 갈 수 있고 오류 문구는 칸을 벗어난 뒤에 보인다', async () => {
+    // Given
+    const session = createAuthSession();
+    await render(<SignUpHarness />, { wrapper: session.Wrapper });
+    await fillName('아이두');
+    const emailInput = await screen.findByPlaceholderText('example@email.com');
+
+    // When
+    await fireEvent.changeText(emailInput, 'a@aido');
+
+    // Then
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+    expect(screen.queryByText('올바른 이메일 형식이 아니에요')).toBeNull();
+
+    // When
+    await fireEvent.changeText(emailInput, 'a@aido.app');
+
+    // Then
+    expect(screen.getByRole('button', { name: '다음' })).toBeEnabled();
+  });
+
   it('비밀번호 단계에서 이전 단계로 돌아가도 적은 닉네임과 이메일이 남는다', async () => {
     // Given
     const session = createAuthSession();

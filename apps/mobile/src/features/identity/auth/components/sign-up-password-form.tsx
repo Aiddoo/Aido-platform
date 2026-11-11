@@ -3,12 +3,13 @@ import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import { useCallback, useState } from 'react';
-import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
+import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { type SignUpFormValues, signUpFormSchema } from '../schemas/sign-up-form.schema';
+import { useFocusOnStepBack } from '../hooks/use-focus-on-step-back';
+import { type SignUpFormValues } from '../schemas/sign-up-form.schema';
 import { PasswordInput } from './password-input';
 import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { RevealedField } from './revealed-field';
@@ -18,49 +19,49 @@ type PasswordStep = 'password' | 'passwordConfirm';
 
 interface SignUpPasswordFormProps {
   form: UseFormReturn<SignUpFormValues>;
+  /** 비밀번호 단계 다음 확인 단계는 비밀번호 칸 위에 확인 칸을 더한다 */
+  step: PasswordStep;
+  onNextStep: () => void;
   /** 약관 동의 후 호출하는 회원가입 제출 함수 */
   onSubmit: () => Promise<boolean>;
 }
 
-export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) {
+export function SignUpPasswordForm({ form, step, onNextStep, onSubmit }: SignUpPasswordFormProps) {
   const { t } = useTranslation('auth');
   const { control } = form;
-  const [password, passwordConfirm] = useWatch({ control, name: ['password', 'passwordConfirm'] });
-  const [step, setStep] = useState<PasswordStep>('password');
+  const formState = useFormState({ control, name: ['password', 'passwordConfirm'] });
+  const passwordValue = useWatch({ control, name: 'password' });
+
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const focusPasswordConfirmInput = useCallback(() => {
     form.setFocus('passwordConfirm');
   }, [form]);
 
-  const isPasswordValid = signUpFormSchema.shape.password.safeParse(password).success;
-  const isPasswordConfirmValid = isPasswordValid && password === passwordConfirm;
+  useFocusOnStepBack({ step, firstStep: 'password', focus: () => form.setFocus('password') });
 
-  const handleSubmit = async () => {
-    const isSubmitted = await onSubmit();
-    if (!isSubmitted) {
-      const nextStep = isPasswordValid ? 'passwordConfirm' : 'password';
-      setStep(nextStep);
-      form.setFocus(nextStep);
+  const password = form.getFieldState('password', formState);
+  const passwordConfirm = form.getFieldState('passwordConfirm', formState);
+  const isPasswordReady = password.isDirty && !password.invalid;
+  const isNextEnabled = match(step)
+    .with('password', () => isPasswordReady)
+    .with(
+      'passwordConfirm',
+      () => isPasswordReady && passwordConfirm.isDirty && !passwordConfirm.invalid,
+    )
+    .exhaustive();
+
+  const submitStep = () => {
+    if (!isNextEnabled) {
+      return;
     }
-    return isSubmitted;
-  };
-
-  const handleNext = () => {
     match(step)
-      .with('password', () => {
-        setStep('passwordConfirm');
-      })
+      .with('password', onNextStep)
       .with('passwordConfirm', () => {
         Keyboard.dismiss();
         setIsTermsOpen(true);
       })
       .exhaustive();
   };
-
-  const isNextEnabled = match(step)
-    .with('password', () => isPasswordValid)
-    .with('passwordConfirm', () => isPasswordConfirmValid)
-    .exhaustive();
 
   return (
     <>
@@ -70,7 +71,7 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
           footer={
             <KeyboardAdaptiveButton
               color="dark"
-              onPress={handleNext}
+              onPress={submitStep}
               isDisabled={!isNextEnabled}
               enabled={!isTermsOpen}
             >
@@ -84,28 +85,27 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
                 <Controller
                   control={control}
                   name="passwordConfirm"
-                  render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
-                    <PasswordInput
-                      ref={ref}
-                      label={t('signUp.passwordConfirmLabel')}
-                      placeholder={t('signUp.passwordConfirmPlaceholder')}
-                      value={value}
-                      onChange={onChange}
-                      onBlur={onBlur}
-                      textContentType="newPassword"
-                      autoComplete="new-password"
-                      returnKeyType="done"
-                      isInvalid={!!error}
-                      errorMessage={resolveValidationMessage(error, {
-                        default: 'password.mismatch',
-                      })}
-                      onSubmitEditing={() => {
-                        if (isNextEnabled) {
-                          handleNext();
-                        }
-                      }}
-                    />
-                  )}
+                  render={({ field: { ref, onChange, onBlur, value }, fieldState }) => {
+                    const error = fieldState.isTouched ? fieldState.error : undefined;
+                    return (
+                      <PasswordInput
+                        ref={ref}
+                        label={t('signUp.passwordConfirmLabel')}
+                        placeholder={t('signUp.passwordConfirmPlaceholder')}
+                        value={value}
+                        onChange={onChange}
+                        onBlur={onBlur}
+                        textContentType="newPassword"
+                        autoComplete="new-password"
+                        returnKeyType="done"
+                        isInvalid={error != null}
+                        errorMessage={resolveValidationMessage(error, {
+                          default: 'password.mismatch',
+                        })}
+                        onSubmitEditing={submitStep}
+                      />
+                    );
+                  }}
                 />
               </VStack>
             </RevealedField>
@@ -115,36 +115,37 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
             <Controller
               control={control}
               name="password"
-              render={({ field: { ref, onChange, onBlur, value }, fieldState: { error } }) => (
-                <VStack gap={8}>
-                  <PasswordInput
-                    ref={ref}
-                    label={t('signUp.passwordLabel')}
-                    placeholder={t('signUp.passwordPlaceholder')}
-                    value={value}
-                    onChange={onChange}
-                    onBlur={onBlur}
-                    textContentType="newPassword"
-                    autoComplete="new-password"
-                    autoFocus={step === 'password'}
-                    submitBehavior="submit"
-                    returnKeyType="next"
-                    isInvalid={!!error}
-                    errorMessage={resolveValidationMessage(error, {
-                      default: 'password.pattern',
-                      byType: { too_small: 'password.tooShort', too_big: 'password.tooLong' },
-                    })}
-                    renderErrorMessage={false}
-                    onSubmitEditing={() => {
-                      if (isNextEnabled) {
-                        handleNext();
-                      }
-                    }}
-                  />
+              // 비밀번호를 고치면 이미 적은 확인 칸의 일치 여부도 다시 본다
+              rules={{ deps: 'passwordConfirm' }}
+              render={({ field: { ref, onChange, onBlur, value }, fieldState }) => {
+                const error = fieldState.isTouched ? fieldState.error : undefined;
+                return (
+                  <VStack gap={8}>
+                    <PasswordInput
+                      ref={ref}
+                      label={t('signUp.passwordLabel')}
+                      placeholder={t('signUp.passwordPlaceholder')}
+                      value={value}
+                      onChange={onChange}
+                      onBlur={onBlur}
+                      textContentType="newPassword"
+                      autoComplete="new-password"
+                      autoFocus={step === 'password'}
+                      submitBehavior="submit"
+                      returnKeyType="next"
+                      isInvalid={error != null}
+                      errorMessage={resolveValidationMessage(error, {
+                        default: 'password.pattern',
+                        byType: { too_small: 'password.tooShort', too_big: 'password.tooLong' },
+                      })}
+                      renderErrorMessage={false}
+                      onSubmitEditing={submitStep}
+                    />
 
-                  <PasswordStrengthIndicator password={password} />
-                </VStack>
-              )}
+                    <PasswordStrengthIndicator password={passwordValue} />
+                  </VStack>
+                );
+              }}
             />
           </Animated.View>
         </FormStepLayout>
@@ -154,7 +155,7 @@ export function SignUpPasswordForm({ form, onSubmit }: SignUpPasswordFormProps) 
         form={form}
         isOpen={isTermsOpen}
         onOpenChange={setIsTermsOpen}
-        onSubmit={handleSubmit}
+        onSubmit={onSubmit}
       />
     </>
   );
