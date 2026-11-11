@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { PushDevicePlatform, PushPermissionStatus } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
+import { match } from "ts-pattern";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -55,7 +56,10 @@ interface ReportPushDeviceDependencies {
   >;
   readonly pushTokenRepository: Pick<
     PushTokenRepositoryPort,
-    "releasePushTokenHeldElsewhere" | "registerPushToken" | "deletePushTokensByDevice"
+    | "releasePushTokenHeldElsewhere"
+    | "registerPushToken"
+    | "keepPushToken"
+    | "deletePushTokensByDevice"
   >;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly pushProvider: Pick<PushProviderPort, "validateToken">;
@@ -68,10 +72,15 @@ interface ReportPushDeviceDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
+interface SavedPushDevice {
+  readonly releasedUserIds: readonly string[];
+  readonly hasActiveToken: boolean;
+}
+
 /**
  * 기기 하나의 알림 권한과 토큰을 저장한다.
  *
- * 권한이 발송을 허용하고 토큰이 있으면 토큰을 등록하고, 아니면 이 기기의 토큰을 지운다.
+ * 권한이 발송을 허용하고 토큰이 있으면 토큰을 등록하고, 토큰이 없으면 기존 토큰을 두며, 권한이 없으면 이 기기의 토큰을 지운다.
  * 같은 토큰을 동시에 등록해 충돌하면 새 트랜잭션에서 한 번만 다시 시도한다.
  */
 export class ReportPushDeviceUseCase {
@@ -98,11 +107,11 @@ export class ReportPushDeviceUseCase {
       now: this.#dependencies.clock.now(),
     });
 
-    const releasedUserIds = await this.#saveWithSingleRetry(device, command);
+    const { releasedUserIds, hasActiveToken } = await this.#saveWithSingleRetry(device, command);
     const previousUserIds = uniq(releasedUserIds.filter((userId) => userId !== command.userId));
     await Promise.all(
       [command.userId, ...previousUserIds].map((userId) =>
-        this.#dependencies.cache.invalidatePushTokens(userId),
+        this.#dependencies.cache.invalidatePushTokens(UserId.reconstitute(userId)),
       ),
     );
     if (previousUserIds.length > 0) {
@@ -115,7 +124,6 @@ export class ReportPushDeviceUseCase {
 
     await this.#syncDeliveryLocale(command);
 
-    const hasActiveToken = device.deliverableToken != null;
     this.#dependencies.logger.log({
       event: NotificationDeliveryLogEvent.REPORT_PUSH_DEVICE_REPORTED,
       userId: command.userId,
@@ -136,7 +144,7 @@ export class ReportPushDeviceUseCase {
   async #saveWithSingleRetry(
     device: PushDevice,
     command: ReportPushDeviceCommand,
-  ): Promise<readonly string[]> {
+  ): Promise<SavedPushDevice> {
     try {
       return await this.#save(device, command);
     } catch (error) {
@@ -151,48 +159,63 @@ export class ReportPushDeviceUseCase {
     }
   }
 
-  #save(device: PushDevice, command: ReportPushDeviceCommand): Promise<readonly string[]> {
+  #save(device: PushDevice, command: ReportPushDeviceCommand): Promise<SavedPushDevice> {
     const { pushDeviceRepository, pushTokenRepository } = this.#dependencies;
-    const userId = device.userId.value;
-    const deviceId = device.id.value;
-    const token = device.deliverableToken;
+    const { userId, id: deviceId, tokenChange } = device;
 
     return this.#dependencies.unitOfWork.run(async () => {
       const devices = await pushDeviceRepository.releasePushDeviceHeldElsewhere(userId, deviceId);
       const tokens = await pushTokenRepository.releasePushTokenHeldElsewhere({
         userId,
         deviceId,
-        token,
+        token: tokenChange.kind === "REGISTER" ? tokenChange.token : null,
       });
       await pushDeviceRepository.savePushDevice(device);
-      if (token == null) {
-        await pushTokenRepository.deletePushTokensByDevice(userId, deviceId);
-      } else {
-        await pushTokenRepository.registerPushToken({
-          userId,
-          token,
-          deviceId,
-          platform: device.platform,
-          sessionId: device.sessionId,
-          payloadVersion: command.payloadVersion,
-          appVersion: command.appVersion,
-          registeredAt: device.reportedAt,
-        });
-      }
-      return [...devices.userIds, ...tokens.userIds];
+      const hasActiveToken = await match(tokenChange)
+        .with({ kind: "REGISTER" }, async ({ token }) => {
+          await pushTokenRepository.registerPushToken({
+            userId,
+            token,
+            deviceId,
+            platform: device.platform,
+            sessionId: device.sessionId,
+            payloadVersion: command.payloadVersion,
+            appVersion: command.appVersion,
+            registeredAt: device.reportedAt,
+          });
+          return true;
+        })
+        .with({ kind: "KEEP" }, async () => {
+          const kept = await pushTokenRepository.keepPushToken({
+            userId,
+            deviceId,
+            sessionId: device.sessionId,
+            payloadVersion: command.payloadVersion,
+            appVersion: command.appVersion,
+            keptAt: device.reportedAt,
+          });
+          return kept.hasActiveToken;
+        })
+        .with({ kind: "RELEASE" }, async () => {
+          await pushTokenRepository.deletePushTokensByDevice(userId, deviceId);
+          return false;
+        })
+        .exhaustive();
+      return { releasedUserIds: [...devices.userIds, ...tokens.userIds], hasActiveToken };
     });
   }
 
   async #syncDeliveryLocale(command: ReportPushDeviceCommand): Promise<void> {
     const timezone = normalizeIanaTimezone(command.timezone);
+    const userId = UserId.reconstitute(command.userId);
     if (timezone) {
-      await this.#dependencies.userSettings.upsertPushTimezone(command.userId, timezone);
+      await this.#dependencies.userSettings.upsertPushTimezone(userId, timezone);
     }
     if (command.locale) {
-      await this.#dependencies.userSettings.upsertPushLocale(command.userId, command.locale);
+      await this.#dependencies.userSettings.upsertPushLocale(userId, command.locale);
     }
     if (timezone || command.locale) {
-      await this.#dependencies.cache.invalidateUserPreference(command.userId);
+      await this.#dependencies.cache.invalidateUserPreference(userId);
     }
   }
 }

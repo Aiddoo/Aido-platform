@@ -1,5 +1,7 @@
 import type { TIME_FORMATS } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 export interface NotificationDeliveryPreference {
   readonly pushEnabled: boolean;
   readonly nightPushEnabled: boolean;
@@ -32,15 +34,15 @@ type NotificationMarketingConsentWithUserId = NotificationMarketingConsent & {
 
 // 푸시 발송 판단에 필요한 사용자 설정만 알림이 소유한 모양으로 읽고 쓴다(identity 내부 레코드 변화가 넘어오지 않게)
 export abstract class UserNotificationSettingsPort {
-  abstract upsertPushTimezone(userId: string, timezone: string): Promise<void>;
-  abstract upsertPushLocale(userId: string, locale: string): Promise<void>;
-  abstract getPreferenceRecord(userId: string): Promise<NotificationDeliveryPreference | null>;
+  abstract upsertPushTimezone(userId: UserId, timezone: string): Promise<void>;
+  abstract upsertPushLocale(userId: UserId, locale: string): Promise<void>;
+  abstract getPreferenceRecord(userId: UserId): Promise<NotificationDeliveryPreference | null>;
   abstract getPreferenceRecordsByUserIds(
-    userIds: string[],
+    userIds: readonly UserId[],
   ): Promise<NotificationDeliveryPreferenceWithUserId[]>;
-  abstract getConsentRecord(userId: string): Promise<NotificationMarketingConsent | null>;
+  abstract getConsentRecord(userId: UserId): Promise<NotificationMarketingConsent | null>;
   abstract getConsentRecordsByUserIds(
-    userIds: string[],
+    userIds: readonly UserId[],
   ): Promise<NotificationMarketingConsentWithUserId[]>;
-  abstract updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void>;
+  abstract updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void>;
 }

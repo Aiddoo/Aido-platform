@@ -1,4 +1,4 @@
-import { envSchema } from "./index.js";
+import { envSchema } from "./env.schema.js";
 
 describe("envSchema — WeatherKit 자격", () => {
   const requiredEnvironment = {

@@ -1,3 +1,4 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { StubMarketingPushOptOutToken } from "#test/doubles/notification/stub-marketing-push-opt-out-token";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -13,7 +14,8 @@ class RecordingMarketingConsent implements Pick<
 > {
   readonly consents = new Map<string, boolean>();
 
-  async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
+  async updateMarketingPushConsent(user: UserId, agreed: boolean): Promise<void> {
+    const userId = user.value;
     this.consents.set(userId, agreed);
   }
 }

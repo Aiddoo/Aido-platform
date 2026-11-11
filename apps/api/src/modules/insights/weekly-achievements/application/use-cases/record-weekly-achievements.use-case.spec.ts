@@ -46,7 +46,7 @@ describe("RecordWeeklyAchievementsUseCase", () => {
     });
     await useCase.execute({ records: [first, second] });
     const before = await findWeek(weeklyAchievementRepository, first.userId, 10);
-    const laterAt = new Date("2026-03-16T00:00:00.000Z");
+    const laterAt = Temporal.Instant.from("2026-03-16T00:00:00Z");
 
     // When
     await useCase.execute({ records: [{ ...first, completedTodos: 5, achievedAt: laterAt }] });

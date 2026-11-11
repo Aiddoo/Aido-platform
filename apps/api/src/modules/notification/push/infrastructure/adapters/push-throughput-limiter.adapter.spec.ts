@@ -38,6 +38,6 @@ describe("PushThroughputLimiterAdapter — 공급자 초당 한도", () => {
     await Promise.all([limiter.acquire(100), limiter.acquire(100), limiter.acquire(100)]);
 
     // Then
-    expect(clock.now()).toBe(2_000);
+    expect(clock.now()).toBe(2000);
   });
 });

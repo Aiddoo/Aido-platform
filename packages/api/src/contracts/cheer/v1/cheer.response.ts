@@ -1,12 +1,13 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 
 export const cheerSchema = z
   .object({
     id: z.number().int().positive().describe("응원 ID (양의 정수)"),
-    senderId: z.cuid().describe("보낸 사용자 ID (CUID 25자)"),
-    receiverId: z.cuid().describe("받은 사용자 ID (CUID 25자)"),
+    senderId: entityIdSchema.describe("보낸 사용자 ID"),
+    receiverId: entityIdSchema.describe("받은 사용자 ID"),
     message: z.string().max(200).nullable().describe("응원 메시지 (최대 200자, 미설정 시 null)"),
     createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)"),
     readAt: nullableDatetimeSchema.describe(
@@ -28,7 +29,7 @@ export type Cheer = z.infer<typeof cheerSchema>;
 
 export const cheerSenderSchema = z
   .object({
-    id: z.cuid().describe("사용자 ID (CUID 25자)"),
+    id: entityIdSchema.describe("사용자 ID"),
     userTag: z.string().length(8).describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
@@ -196,7 +197,7 @@ export type CheerLimitInfo = z.infer<typeof cheerLimitInfoSchema>;
 
 export const cheerCooldownInfoSchema = z
   .object({
-    userId: z.cuid().describe("대상 사용자 ID (CUID 25자)"),
+    userId: entityIdSchema.describe("대상 사용자 ID"),
     canCheer: z.boolean().describe("응원 가능 여부"),
     cooldownEndsAt: nullableDatetimeSchema.describe(
       "쿨다운 종료 시각 (ISO 8601 UTC, 예: 2026-01-18T10:00:00.000Z, 쿨다운 없으면 null)",

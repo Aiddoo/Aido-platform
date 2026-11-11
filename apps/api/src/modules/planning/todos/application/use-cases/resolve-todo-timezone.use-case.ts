@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   normalizeIanaTimezone,
   resolveWallClockTimezone,
@@ -25,6 +26,8 @@ export class ResolveTodoTimezoneUseCase {
     if (timezone != null) {
       return timezone;
     }
-    return resolveWallClockTimezone(await this.#dependencies.ownerTimezone.findTimezone(userId));
+    return resolveWallClockTimezone(
+      await this.#dependencies.ownerTimezone.findTimezone(UserId.reconstitute(userId)),
+    );
   }
 }

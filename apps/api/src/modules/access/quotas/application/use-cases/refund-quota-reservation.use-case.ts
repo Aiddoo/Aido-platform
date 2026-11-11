@@ -40,7 +40,7 @@ export function refundChargeUnderUserLock(
   const { unitOfWork, userMutationLock, quotaChargeRepository, quotaUsageRepository, clock } =
     dependencies;
   return unitOfWork.run(async () => {
-    if (!(await userMutationLock.lockById(target.userId.value))) {
+    if (!(await userMutationLock.lockById(target.userId))) {
       return false;
     }
     const charge = await quotaChargeRepository.findById(target.chargeId);

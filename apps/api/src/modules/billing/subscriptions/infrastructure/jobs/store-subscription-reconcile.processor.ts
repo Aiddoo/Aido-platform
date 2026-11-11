@@ -2,8 +2,7 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { sumBy, uniq } from "es-toolkit";
 
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import type { JobEnvelope } from "#api/shared/application/ports/job-runtime.port";
+import { type JobEnvelope, JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 

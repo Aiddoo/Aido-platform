@@ -66,7 +66,7 @@ export class ConvertMemoToTodoUseCase {
       }
       const staged = await todoCreator.stage({
         ...command.todo,
-        userId: command.userId,
+        userId,
         title: memo.toTodoTitle(),
         timezone: command.timezone,
         isAllDay: command.todo.isAllDay ?? true,

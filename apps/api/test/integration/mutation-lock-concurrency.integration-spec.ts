@@ -36,7 +36,7 @@ import { GetNudgeLimitUseCase } from "#api/modules/social/nudges/application/use
 import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
 import { SendRemindNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-remind-nudge.use-case";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
@@ -50,10 +50,13 @@ import {
 } from "#api/platform/database/schema/index";
 import { provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
+import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createTestClient, createTransactionHost } from "#test/setup/database-context";
@@ -73,19 +76,22 @@ class BestEffortRendezvous {
     this.#release = resolve;
   });
 
-  constructor(
-    private readonly participants: number,
-    private readonly maximumWaitMs = 20,
-  ) {}
+  readonly #participants: number;
+  readonly #maximumWaitMs: number;
+
+  constructor(participants: number, maximumWaitMs = 20) {
+    this.#participants = participants;
+    this.#maximumWaitMs = maximumWaitMs;
+  }
 
   async wait(): Promise<void> {
     this.#arrivals += 1;
-    if (this.#arrivals >= this.participants) {
+    if (this.#arrivals >= this.#participants) {
       this.#release?.();
     }
     await Promise.race([
       this.#released,
-      new Promise<void>((resolve) => setTimeout(resolve, this.maximumWaitMs)),
+      new Promise<void>((resolve) => setTimeout(resolve, this.#maximumWaitMs)),
     ]);
   }
 }
@@ -115,15 +121,15 @@ class RequiredParticipantBarrier {
   readonly #ready = createRejectableDeferred();
   readonly #timer: ReturnType<typeof setTimeout>;
 
-  constructor(
-    private readonly participants: number,
-    timeoutMs = 5_000,
-  ) {
+  readonly #participants: number;
+
+  constructor(participants: number, timeoutMs = 5000) {
+    this.#participants = participants;
     this.#timer = setTimeout(() => {
       this.#ready.reject(
         new Error(
           `category pre-lock barrier timed out: ` +
-            `arrivals=${this.#arrivals.length}/${this.participants}; ` +
+            `arrivals=${this.#arrivals.length}/${this.#participants}; ` +
             `participants=[${this.#arrivals.join(",")}]`,
         ),
       );
@@ -132,16 +138,16 @@ class RequiredParticipantBarrier {
 
   async arrive(participant: string): Promise<void> {
     this.#arrivals.push(participant);
-    if (this.#arrivals.length > this.participants) {
+    if (this.#arrivals.length > this.#participants) {
       const error = new Error(
         `category pre-lock barrier overflow: ` +
-          `arrivals=${this.#arrivals.length}/${this.participants}; ` +
+          `arrivals=${this.#arrivals.length}/${this.#participants}; ` +
           `participants=[${this.#arrivals.join(",")}]`,
       );
       this.#ready.reject(error);
       throw error;
     }
-    if (this.#arrivals.length === this.participants) {
+    if (this.#arrivals.length === this.#participants) {
       clearTimeout(this.#timer);
       this.#ready.resolve();
     }
@@ -158,12 +164,17 @@ class RequiredParticipantBarrier {
 }
 
 class RacingCheerRepository extends DrizzleCheerRepository {
+  readonly #dailyBarrier?: BestEffortRendezvous;
+  readonly #cooldownBarrier?: BestEffortRendezvous;
+
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    private readonly dailyBarrier?: BestEffortRendezvous,
-    private readonly cooldownBarrier?: BestEffortRendezvous,
+    dailyBarrier?: BestEffortRendezvous,
+    cooldownBarrier?: BestEffortRendezvous,
   ) {
     super(txHost);
+    this.#dailyBarrier = dailyBarrier;
+    this.#cooldownBarrier = cooldownBarrier;
   }
 
   override async countSentBetween(
@@ -171,25 +182,32 @@ class RacingCheerRepository extends DrizzleCheerRepository {
     window: { readonly startsAt: Temporal.Instant; readonly endsAt: Temporal.Instant },
   ): Promise<number> {
     const count = await super.countSentBetween(senderId, window);
-    await this.dailyBarrier?.wait();
+    await this.#dailyBarrier?.wait();
     return count;
   }
 
   override async findLastSent(senderId: UserId, receiverId: UserId) {
     const lastCheer = await super.findLastSent(senderId, receiverId);
-    await this.cooldownBarrier?.wait();
+    await this.#cooldownBarrier?.wait();
     return lastCheer;
   }
 }
 
 class RacingNudgeRepository extends DrizzleNudgeRepository {
+  readonly #dailyBarrier?: BestEffortRendezvous;
+  readonly #todoCooldownBarrier?: BestEffortRendezvous;
+  readonly #reminderCooldownBarrier?: BestEffortRendezvous;
+
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    private readonly dailyBarrier?: BestEffortRendezvous,
-    private readonly todoCooldownBarrier?: BestEffortRendezvous,
-    private readonly reminderCooldownBarrier?: BestEffortRendezvous,
+    dailyBarrier?: BestEffortRendezvous,
+    todoCooldownBarrier?: BestEffortRendezvous,
+    reminderCooldownBarrier?: BestEffortRendezvous,
   ) {
     super(txHost);
+    this.#dailyBarrier = dailyBarrier;
+    this.#todoCooldownBarrier = todoCooldownBarrier;
+    this.#reminderCooldownBarrier = reminderCooldownBarrier;
   }
 
   override async countSentBetween(
@@ -197,19 +215,19 @@ class RacingNudgeRepository extends DrizzleNudgeRepository {
     window: { readonly startsAt: Temporal.Instant; readonly endsAt: Temporal.Instant },
   ): Promise<number> {
     const count = await super.countSentBetween(senderId, window);
-    await this.dailyBarrier?.wait();
+    await this.#dailyBarrier?.wait();
     return count;
   }
 
   override async findLastSentForTodo(senderId: UserId, todoId: TodoId) {
     const lastNudge = await super.findLastSentForTodo(senderId, todoId);
-    await this.todoCooldownBarrier?.wait();
+    await this.#todoCooldownBarrier?.wait();
     return lastNudge;
   }
 
   override async findLastReminderSentTo(senderId: UserId, receiverId: UserId) {
     const reminder = await super.findLastReminderSentTo(senderId, receiverId);
-    await this.reminderCooldownBarrier?.wait();
+    await this.#reminderCooldownBarrier?.wait();
     return reminder;
   }
 }
@@ -271,42 +289,49 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
   readonly #releaseFirstHolder = createDeferred();
   #hasFirstHolder = false;
 
+  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #delegate: PostgresMutationLockAdapter;
+  readonly #expectedKey: string;
+
   constructor(
-    private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    private readonly delegate: PostgresMutationLockAdapter,
-    private readonly expectedKey: string,
+    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    delegate: PostgresMutationLockAdapter,
+    expectedKey: string,
     participants: number,
-    timeoutMs = 5_000,
+    timeoutMs = 5000,
   ) {
+    this.#txHost = txHost;
+    this.#delegate = delegate;
+    this.#expectedKey = expectedKey;
     this.#barrier = new RequiredParticipantBarrier(participants, timeoutMs);
   }
 
   async acquire(keys: readonly string[]): Promise<void> {
-    if (keys.length !== 1 || keys[0] !== this.expectedKey) {
+    if (keys.length !== 1 || keys[0] !== this.#expectedKey) {
       throw new Error(
-        `unexpected category lock key: expected=${JSON.stringify(this.expectedKey)}, ` +
+        `unexpected category lock key: expected=${JSON.stringify(this.#expectedKey)}, ` +
           `received=${JSON.stringify(keys)}`,
       );
     }
-    if (!this.txHost.isTransactionActive()) {
+    if (!this.#txHost.isTransactionActive()) {
       throw new Error(
-        `category lock reached outside active UoW: key=${JSON.stringify(this.expectedKey)}`,
+        `category lock reached outside active UoW: key=${JSON.stringify(this.#expectedKey)}`,
       );
     }
 
-    const { rows } = await this.txHost.tx.execute<{ pid: number }>(
+    const { rows } = await this.#txHost.tx.execute<{ pid: number }>(
       sql`SELECT pg_backend_pid()::int AS pid`,
     );
     const pid = rows[0]?.pid;
     if (pid === undefined) {
       throw new Error(
         `could not identify category transaction backend: ` +
-          `key=${JSON.stringify(this.expectedKey)}`,
+          `key=${JSON.stringify(this.#expectedKey)}`,
       );
     }
 
     await this.#barrier.arrive(pid.toString());
-    await this.delegate.acquire(keys);
+    await this.#delegate.acquire(keys);
 
     if (!this.#hasFirstHolder) {
       this.#hasFirstHolder = true;
@@ -362,7 +387,7 @@ async function waitForBlockedAdvisoryLock(
       }
       return { waitingCount };
     },
-    { timeout: options.timeoutMs ?? 2_000, interval: LOCK_PROBE_INTERVAL_MS },
+    { timeout: options.timeoutMs ?? 2000, interval: LOCK_PROBE_INTERVAL_MS },
   );
 }
 
@@ -402,7 +427,7 @@ async function waitForCategoryAdvisoryLockState(
       }
       return state;
     },
-    { timeout: 5_000, interval: LOCK_PROBE_INTERVAL_MS },
+    { timeout: 5000, interval: LOCK_PROBE_INTERVAL_MS },
   );
 }
 
@@ -685,7 +710,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         }),
         TodoCategoryLimitReaderAdapter,
         {
-          provide: CacheService,
+          provide: CacheStorePort,
           useValue: {
             wrap: () => {
               throw new Error("category mutation integration test used cached entitlement");
@@ -808,7 +833,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         acquire("ascending", ["batch:a", "batch:b"], first.txHost, first.uow),
         acquire("descending", ["batch:b", "batch:a"], second.txHost, second.uow),
       ]),
-      3_000,
+      3000,
     );
 
     // Then
@@ -1087,6 +1112,8 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const useCase = new ReorderTodoCategoryUseCase({
       repository: categoryRepository,
       cache: createTodoCategoryCache(),
+      todoCache: new FakeTodoCache(),
+      afterCommit: new RecordingAfterCommitRegistry(),
       mutationLock: coordinatedLock,
       unitOfWork: categoryUow,
       logger: new SilentLogger(),

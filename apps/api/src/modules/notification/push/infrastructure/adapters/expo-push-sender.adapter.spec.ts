@@ -19,7 +19,13 @@ const token = "ExponentPushToken[notification14-synthetic-token]";
 const credential = "notification14-synthetic-credential-not-real";
 const body = "notification14-synthetic-private-body";
 const privateMessage = `${credential}; token=${token}; body=${body}`;
-const payload = () => ({ token, title: "fixture notification", body });
+const payload = () => ({
+  token,
+  title: "fixture notification",
+  body,
+  priority: "high" as const,
+  ttlSeconds: 3600,
+});
 const sendPath = "/--/api/v2/push/send";
 let provider: ExpoPushSenderAdapter;
 let warn: ReturnType<typeof vi.spyOn>;

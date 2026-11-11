@@ -1,6 +1,6 @@
 import { createEventChannel } from '@src/core/events/event-channel';
 import type { AppLifecycleGateway, AppLifecycleState } from '@src/core/ports/app-lifecycle-gateway';
-import { AppState, type NativeEventSubscription } from 'react-native';
+import { AppState, type EventSubscription } from 'react-native';
 
 function toLifecycleState(status: string | null | undefined): AppLifecycleState {
   return status === 'active' || status === 'inactive' || status === 'background'
@@ -12,7 +12,7 @@ function toLifecycleState(status: string | null | undefined): AppLifecycleState 
 function createReactNativeAppLifecycleGateway(): AppLifecycleGateway {
   const channel = createEventChannel<AppLifecycleState>('app-lifecycle');
   let listenerCount = 0;
-  let nativeSubscription: NativeEventSubscription | null = null;
+  let nativeSubscription: EventSubscription | null = null;
 
   return {
     getCurrentState: () => toLifecycleState(AppState.currentState),

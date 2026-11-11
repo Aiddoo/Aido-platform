@@ -4,6 +4,7 @@ import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { OAUTH_STATE_EXPIRY_MINUTES, type OAuthMode } from "../../domain/auth.constants.js";
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -46,7 +47,8 @@ export class StartOAuthAuthorizationUseCase {
       state: input.state,
       validatedRedirectUri: this.#resolveRedirectUri(input.clientRedirectUri),
       mode: input.mode,
-      initiatingUserId: input.initiatingUserId,
+      initiatingUserId:
+        input.initiatingUserId == null ? undefined : UserId.reconstitute(input.initiatingUserId),
       persistState: (provider, redirectUri, options) =>
         this.#dependencies.oauthStateRepository.create({
           state: input.state,

@@ -6,7 +6,7 @@ import { cacheConfig, selectSharedRedis } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryLockAdapter } from "./adapters/in-memory-lock.adapter.js";
 import { RedisLockAdapter } from "./adapters/redis-lock.adapter.js";
-import { type ILockProvider, LOCK_PROVIDER } from "./interfaces/lock.interface.js";
+import { LockProviderPort } from "./lock-provider.port.js";
 
 /**
  * 잠금 모듈
@@ -33,8 +33,8 @@ export class LockModule {
    */
   static forRoot(): DynamicModule {
     const lockProvider: Provider = {
-      provide: LOCK_PROVIDER,
-      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis): ILockProvider => {
+      provide: LockProviderPort,
+      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis): LockProviderPort => {
         const shared = selectSharedRedis(cache, redis);
         return shared == null ? new InMemoryLockAdapter() : new RedisLockAdapter(shared);
       },
@@ -44,7 +44,7 @@ export class LockModule {
     return {
       module: LockModule,
       providers: [lockProvider],
-      exports: [LOCK_PROVIDER],
+      exports: [LockProviderPort],
     };
   }
 
@@ -59,11 +59,11 @@ export class LockModule {
    *   imports: [LockModule.forTesting(mockAdapter)],
    * }).compile();
    */
-  static forTesting(adapter: ILockProvider): DynamicModule {
+  static forTesting(adapter: LockProviderPort): DynamicModule {
     return {
       module: LockModule,
-      providers: [{ provide: LOCK_PROVIDER, useValue: adapter }],
-      exports: [LOCK_PROVIDER],
+      providers: [{ provide: LockProviderPort, useValue: adapter }],
+      exports: [LockProviderPort],
     };
   }
 }

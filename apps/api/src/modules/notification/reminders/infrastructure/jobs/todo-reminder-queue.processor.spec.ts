@@ -265,12 +265,30 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     });
 
     it("정확히 15분 늦은 리마인더는 보낸다", async () => {
-      // Given: 10분 단계가 15분 전에 울렸어야 했다
-      reader.todos.set(1, activeTodo({ scheduledAt: NOW.subtract({ minutes: 5 }) }));
+      // Given: 60분 단계가 15분 전에 울렸어야 했다
+      reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 45 }) }));
+      // When
+      await processor.process(makeJob({ stageLabel: "60min" }));
+      // Then
+      expect(publisher.published).toHaveLength(1);
+    });
+
+    it("할 일 시각이 지난 10분 단계는 15분 안으로 늦어도 보내지 않고 사유를 남긴다", async () => {
+      // Given: 10분 단계가 11분 늦었다. 할 일은 1분 전에 시작했다
+      reader.todos.set(1, activeTodo({ scheduledAt: NOW.subtract({ minutes: 1 }) }));
+      const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
       // When
       await processor.process(makeJob({ stageLabel: "10min" }));
       // Then
-      expect(publisher.published).toHaveLength(1);
+      expect(publisher.published).toEqual([]);
+      expect(warn).toHaveBeenCalledExactlyOnceWith({
+        event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+        todoId: 1,
+        userId: USER_ID,
+        stage: "10min",
+        reason: "todo-started",
+        lateMinutes: 11,
+      });
     });
 
     it("시각이 없는 할 일은 늦음을 판단하지 않고 보낸다", async () => {

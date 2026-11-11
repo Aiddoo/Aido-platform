@@ -7,6 +7,7 @@ import {
   NotificationJobName,
 } from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingAdminEventNotifier } from "#test/doubles/operations/recording-admin-event-notifier";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -158,7 +159,7 @@ describe("SubscriptionEventNotifierAdapter — 결제 문제 푸시 기록", () 
     const job = { name: NotificationJobName.BILLING_ISSUE, data: { userId: "user-1" } } as const;
 
     // When
-    await adapter.recordBillingIssue("user-1", at);
+    await adapter.recordBillingIssue(UserId.reconstitute("user-1"), at);
 
     // Then
     const queued = jobQueue.jobsIn(NOTIFICATION_QUEUE);

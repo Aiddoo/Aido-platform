@@ -44,7 +44,7 @@ const PART_OF_DAY_MINUTES: Readonly<Record<Exclude<PartOfDay, "MIDNIGHT">, numbe
 };
 
 /** 요일 + 종료일 recurrence로 나타낼 수 없는 반복 */
-const LEGACY_UNSUPPORTED_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
+const UNREPRESENTABLE_REPEAT_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
   "UNSUPPORTED",
   "BIWEEKLY_DAYS",
   "MONTHLY_DAY",
@@ -151,7 +151,7 @@ export function resolveTodoSchedule(
   }
 
   let recurrence: ResolvedSchedule["recurrence"] = null;
-  if (LEGACY_UNSUPPORTED_PATTERNS.has(draft.repeat.pattern)) {
+  if (UNREPRESENTABLE_REPEAT_PATTERNS.has(draft.repeat.pattern)) {
     warnings.push("UNSUPPORTED_RECURRENCE");
   }
   if (recurrenceBase != null) {

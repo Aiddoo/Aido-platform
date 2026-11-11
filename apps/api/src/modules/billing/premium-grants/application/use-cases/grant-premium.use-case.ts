@@ -2,7 +2,6 @@ import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { planNewGrantStart } from "../../../shared/premium-access.domain-service.js";
 import { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
@@ -44,7 +43,7 @@ export class GrantPremiumUseCase {
       afterCommit.register(async () => {
         logger.log({
           event: PremiumGrantLogEvent.PREMIUM_GRANT_RECORDED,
-          userId: command.userId,
+          userId: command.userId.value,
           source: command.source,
           durationDays: command.durationDays,
           reason: result.status,
@@ -64,11 +63,10 @@ export class GrantPremiumUseCase {
       afterCommit,
       cache,
     } = this.#dependencies;
-    if (!(await userLock.lockById(command.userId))) {
+    const { userId } = command;
+    if (!(await userLock.lockById(userId))) {
       return { status: "user-missing" };
     }
-
-    const userId = UserId.reconstitute(command.userId);
     const now = clock.now();
     const { entitlements } = await loadPremiumEntitlements.execute({ userId });
     const created = await premiumGrantRepository.saveIfAbsent(
@@ -88,7 +86,7 @@ export class GrantPremiumUseCase {
 
     await projectPremiumAccess.execute({ userId, now });
     // 커밋된 뒤에만 구독·프로필 캐시를 비운다
-    afterCommit.register(() => cache.invalidate(command.userId));
+    afterCommit.register(() => cache.invalidate(userId));
     return { status: "granted" };
   }
 }

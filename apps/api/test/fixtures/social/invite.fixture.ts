@@ -7,7 +7,7 @@ import { UserFixture } from "#test/fixtures/user.fixture";
 export const INVITE_FIXTURE_NOW = Temporal.Instant.from("2028-02-28T03:00:00Z");
 
 export const INVITE_FIXTURE_ID = "c0000000000000000000inv01";
-export const INVITE_FIXTURE_CODE = "K7M2QX";
+const INVITE_FIXTURE_CODE = "K7M2QX";
 
 export interface InviteFixtureUser {
   readonly id: string;

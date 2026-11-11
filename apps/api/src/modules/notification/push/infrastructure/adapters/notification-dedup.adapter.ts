@@ -1,9 +1,6 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import {
-  DEDUP_PROVIDER,
-  type IDedupProvider,
-} from "#api/platform/dedup/interfaces/dedup.interface";
+import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 
 import type { NotificationType } from "../../../inbox/domain/notification-type.constants.js";
 import type {
@@ -18,12 +15,9 @@ import {
 
 @Injectable()
 export class NotificationDedupAdapter implements NotificationDedupPort {
-  readonly #dedupProvider: IDedupProvider;
+  readonly #dedupProvider: DedupProviderPort;
 
-  constructor(
-    @Inject(DEDUP_PROVIDER)
-    dedupProvider: IDedupProvider,
-  ) {
+  constructor(dedupProvider: DedupProviderPort) {
     this.#dedupProvider = dedupProvider;
   }
 

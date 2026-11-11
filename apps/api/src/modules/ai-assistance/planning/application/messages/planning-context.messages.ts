@@ -17,7 +17,7 @@ import {
 } from "./planning-context.constants.js";
 
 /** 겹침 판정·고유명사 교정에 쓰는 사용자의 다가오는 할 일. 반복 할 일은 다음 회차 하나를 준다. */
-export interface PlanningUpcomingTodo {
+interface PlanningUpcomingTodo {
   readonly id: number;
   readonly title: string;
   readonly startDate: string;

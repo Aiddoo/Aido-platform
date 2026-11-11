@@ -1,4 +1,5 @@
 import type { StreakState } from "#api/modules/identity/preferences/domain/streak.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryUserPreferenceRepository } from "#test/doubles/identity/in-memory-user-preference.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
@@ -26,7 +27,7 @@ class ContendedPreferenceRepository extends InMemoryUserPreferenceRepository {
   }
 
   override async updateStreakIfUnchanged(
-    userId: string,
+    userId: UserId,
     expected: StreakState,
     next: StreakState,
   ): Promise<boolean> {

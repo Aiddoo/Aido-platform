@@ -1,8 +1,8 @@
-import { UserReportPolicy } from '../domains/user-report.model';
+import { createCommentReportTarget } from '../domains/user-report.model';
 import { toUserReportRequest } from './user-report.mapper';
 
 describe('toUserReportRequest', () => {
-  const target = UserReportPolicy.createCommentReportTarget({
+  const target = createCommentReportTarget({
     commentId: 'clz7x5p8k0099qz0z8z8z8z8z',
     authorId: 'clz7x5p8k0005qz0z8z8z8z8z',
   });

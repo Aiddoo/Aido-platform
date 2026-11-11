@@ -8,6 +8,7 @@ import {
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { ReorderTodoItemsUseCase } from "./reorder-todo-items.use-case.js";
 
 describe("하위 항목 순서 변경", () => {
@@ -26,7 +27,7 @@ describe("하위 항목 순서 변경", () => {
 
   it("전체 ID 순서대로 항목을 저장하고 새 연속 순서를 반환한다", async () => {
     // Given
-    await fixture.todoRepository.createInlineItems(1, [
+    await fixture.todoRepository.createInlineItems(TodoId.reconstitute(1), [
       { title: "첫 항목" },
       { title: "둘째 항목" },
       { title: "셋째 항목" },
@@ -47,7 +48,7 @@ describe("하위 항목 순서 변경", () => {
     { name: "다른 항목 ID", ids: [1, 999], errorCode: ErrorCode.TODO_0822 },
   ])("$name 요청은 순서를 변경하지 않는다", async ({ ids, errorCode }) => {
     // Given
-    await fixture.todoRepository.createInlineItems(1, [
+    await fixture.todoRepository.createInlineItems(TodoId.reconstitute(1), [
       { title: "첫 항목" },
       { title: "둘째 항목" },
     ]);

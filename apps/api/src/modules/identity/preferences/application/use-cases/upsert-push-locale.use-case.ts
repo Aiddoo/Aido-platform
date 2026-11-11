@@ -1,3 +1,5 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import type { UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
 
@@ -19,7 +21,8 @@ export class UpsertPushLocaleUseCase {
   }
 
   async execute(input: UpsertPushLocaleCommand): Promise<void> {
-    await this.#dependencies.preferenceRepository.upsertLocale(input.userId, input.locale);
-    await this.#dependencies.cache.invalidateUserPreference(input.userId);
+    const userId = UserId.reconstitute(input.userId);
+    await this.#dependencies.preferenceRepository.upsertLocale(userId, input.locale);
+    await this.#dependencies.cache.invalidateUserPreference(userId);
   }
 }

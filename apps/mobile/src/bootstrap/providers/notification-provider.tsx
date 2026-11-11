@@ -4,19 +4,18 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import type { NotificationType } from '@src/features/notification/domains/notification.model';
 import { useForegroundNotificationListener } from '@src/features/notification/hooks/use-foreground-notification-listener';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
+import { useForegroundPushPresentation } from '@src/features/notification/hooks/use-foreground-push-presentation';
 import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-notification-badge-sync';
+import { usePushDeviceReleaseFlush } from '@src/features/notification/hooks/use-push-device-release-flush';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
 import { useRegisterMarketingNotificationCategory } from '@src/features/notification/hooks/use-register-marketing-notification-category';
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
 import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
-import { registerForegroundNotificationPresentation } from '@src/shared/infra/notification/expo-push-notification-gateway';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useCallback, useEffect, useReducer } from 'react';
 
 import { invalidateOnNotificationReceived } from '../query/notification-received-invalidation';
-
-registerForegroundNotificationPresentation();
 
 export function NotificationProvider({ children }: PropsWithChildren) {
   const status = useAuthStatus();
@@ -35,6 +34,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   const { currentTimeZone } = useLocalDate();
   const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);
 
+  useForegroundPushPresentation();
   useForegroundNotificationListener(handleForegroundNotification);
   useEffect(
     () => subscribeNotificationsChanged(() => invalidateNotifications(queryClient)),
@@ -46,6 +46,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     deviceTimeZone: currentTimeZone,
     onReported: markReported,
   });
+  usePushDeviceReleaseFlush(status);
   useTimezoneChangeNotice({ accountId, reportCount });
   useNotificationBadgeSync(status);
 

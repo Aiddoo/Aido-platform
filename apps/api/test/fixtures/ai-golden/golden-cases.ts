@@ -71,7 +71,7 @@ const planningContextSchema = z.object({
  * 계획 할 일의 기대값. 날짜는 일정 표현을 서버 resolver로 계산한 값이라 같은 뜻의 다른 표현
  * (내일 = 목요일)도 같게 비교된다. 반복은 종류·요일·날짜와 종료 날짜(없으면 계속 반복)로 비교한다.
  */
-export const plannedTodoExpectationSchema = z.object({
+const plannedTodoExpectationSchema = z.object({
   title: z.string(),
   categoryId: z.number().int().nullable(),
   startDate: z.iso.date(),

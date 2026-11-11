@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 
-import type { ILockProvider } from "../interfaces/lock.interface.js";
+import { LockProviderPort } from "../lock-provider.port.js";
 
 // 동시에 잡힌 잠금 수의 상한. 웹훅·알림 처리 잠금만 쓰므로 정상 운영에서는 닿지 않는다
 export const LOCK_MAX_ENTRIES = 10_000;
@@ -21,11 +21,11 @@ interface LockEntry {
  * - 단일 프로세스 환경에서만 유효 (수평 확장 시 Redis 잠금 필요)
  */
 @Injectable()
-export class InMemoryLockAdapter implements ILockProvider, OnModuleInit {
+export class InMemoryLockAdapter extends LockProviderPort implements OnModuleInit {
   readonly #logger = new Logger(InMemoryLockAdapter.name);
   readonly #locks = new LRUCache<string, LockEntry>({
     max: LOCK_MAX_ENTRIES,
-    // 옛 저장소처럼 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
+    // 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
     perf: { now: () => Date.now() },
     ttlResolution: 0,
   });

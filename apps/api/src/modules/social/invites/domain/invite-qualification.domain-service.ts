@@ -5,7 +5,7 @@ import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 const HOURS_PER_DAY = 24;
 
-// 옛 날짜 함수(resolveTimezone)처럼 알 수 없는 저장값은 활동일 계산을 멈추지 않고 UTC 날짜로 센다
+// 알 수 없는 저장값은 활동일 계산을 멈추지 않고 UTC 날짜로 센다
 function activityTimeZoneOf(timeZone: TimeZone): TimeZone {
   try {
     return TimeZone.create(timeZone.value);

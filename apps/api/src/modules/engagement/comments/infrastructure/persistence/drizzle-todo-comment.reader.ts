@@ -212,7 +212,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   }
 
   async findAccessibleTodoOwnerId(todoId: TodoId, viewerId: UserId): Promise<string | null> {
-    const access = await this.#todoDetails.findAccess(todoId.value);
+    const access = await this.#todoDetails.findAccess(todoId);
     if (access == null) {
       return null;
     }
@@ -229,7 +229,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     todoId: TodoId,
     viewerId: UserId,
   ): Promise<TodoDetailsReadModel | null> {
-    const details = await this.#todoDetails.findDetails(todoId.value);
+    const details = await this.#todoDetails.findDetails(todoId);
     if (details == null) {
       return null;
     }

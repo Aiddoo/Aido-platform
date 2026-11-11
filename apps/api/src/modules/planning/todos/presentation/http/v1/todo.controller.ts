@@ -18,25 +18,28 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { Timezone } from "#api/platform/http/decorators/index";
-import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
   ApiConflictError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { DomainException } from "#api/shared/domain/index";
-import { plainDateToDate } from "#api/shared/domain/time/plain-date";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { TodoCategoryId } from "../../../../categories/domain/todo-category-id.vo.js";
 import { localDateAt } from "../../../../shared/domain/todo-calendar.domain-service.js";
 import { toTodoSeriesResponse } from "../../../../todo-series/presentation/http/v1/todo-series-response.mapper.js";
 import { AddTodoItemUseCase } from "../../../application/use-cases/add-todo-item.use-case.js";
@@ -285,12 +288,11 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<CreateTodoResponseDto> {
     const { todos, series } = await this.#createTodoUseCase.execute({
-      userId: user.userId,
+      userId: UserId.reconstitute(user.userId),
       title: dto.title,
-      categoryId: dto.categoryId,
-      startDate: plainDateToDate(Temporal.PlainDate.from(dto.startDate)),
-      endDate:
-        dto.endDate == null ? undefined : plainDateToDate(Temporal.PlainDate.from(dto.endDate)),
+      categoryId: TodoCategoryId.reconstitute(dto.categoryId),
+      startDate: Temporal.PlainDate.from(dto.startDate),
+      endDate: dto.endDate == null ? undefined : Temporal.PlainDate.from(dto.endDate),
       scheduledTime: dto.scheduledTime,
       timezone,
       isAllDay: dto.isAllDay,
@@ -353,10 +355,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   ): Promise<CreateRecurringTodoResponseDto> {
     const { todos } = await this.#createTodoUseCase
       .execute({
-        userId: user.userId,
+        userId: UserId.reconstitute(user.userId),
         title: dto.title,
-        categoryId: dto.categoryId,
-        startDate: plainDateToDate(Temporal.PlainDate.from(dto.startDate)),
+        categoryId: TodoCategoryId.reconstitute(dto.categoryId),
+        startDate: Temporal.PlainDate.from(dto.startDate),
         scheduledTime: dto.scheduledTime,
         timezone,
         isAllDay: dto.isAllDay,

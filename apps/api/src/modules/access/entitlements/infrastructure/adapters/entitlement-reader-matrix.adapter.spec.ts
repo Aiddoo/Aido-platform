@@ -9,7 +9,7 @@ import { createEntitlementFixture } from "#test/fixtures/access/entitlement.fixt
 import { assertEntitled, assertEntitledInTx } from "../../application/entitlements.errors.js";
 
 const NOW = Temporal.Instant.from("2026-11-03T00:00:00.000Z");
-const SECOND_MS = 1_000;
+const SECOND_MS = 1000;
 
 const SUBJECTS = {
   FREE: { role: "USER", subscriptionStatus: "FREE", accessDeadline: null },
@@ -107,7 +107,7 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
     // Given
     const premium = entitlementAt(SUBJECTS.PREMIUM);
     const free = entitlementAt(SUBJECTS.FREE);
-    free.accessStateReader.featureGrants.seed(free.userId, { FRIEND: 2 });
+    free.accessStateReader.featureGrants.seed(free.userId.value, { FRIEND: 2 });
 
     // When
     const premiumCategory = await premium.reader.getFeatureLimit(premium.userId, "TODO_CATEGORY");

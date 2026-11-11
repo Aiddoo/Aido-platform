@@ -13,6 +13,7 @@ import {
   user as userTable,
   userActivityDay,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
@@ -60,7 +61,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 
     // When
     await activityWriter.updateLastActiveAt({
-      userId: "activity-user",
+      userId: UserId.reconstitute("activity-user"),
       timezone: "Asia/Seoul",
       seenAt: seenNow(),
     });
@@ -75,7 +76,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     await Promise.all(
       Array.from({ length: 6 }, () =>
         activityWriter.updateLastActiveAt({
-          userId: "activity-user",
+          userId: UserId.reconstitute("activity-user"),
           timezone: "Asia/Seoul",
           seenAt: seenNow(),
         }),
@@ -128,13 +129,13 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       // When
       vi.setSystemTime(later);
       await activityWriter.updateLastActiveAt({
-        userId: "out-of-order-user",
+        userId: UserId.reconstitute("out-of-order-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
       vi.setSystemTime(earlier);
       await otherWriter.updateLastActiveAt({
-        userId: "out-of-order-user",
+        userId: UserId.reconstitute("out-of-order-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
@@ -174,13 +175,13 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       // When
       vi.setSystemTime(earlier);
       const earlierWrite = activityWriter.updateLastActiveAt({
-        userId: "parallel-insert-user",
+        userId: UserId.reconstitute("parallel-insert-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
       vi.setSystemTime(later);
       const laterWrite = otherWriter.updateLastActiveAt({
-        userId: "parallel-insert-user",
+        userId: UserId.reconstitute("parallel-insert-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });

@@ -17,7 +17,7 @@ PR의 head `H`와 실제 checkout한 merge commit `P`는 별개다. 후보 artif
 main gate는 같은 저장소·CI workflow의 성공 PR run에서 후보를 찾고, 공식 download-artifact와 `actions: read` 권한으로 해당 run의 정확한 artifact를 다운로드한다. 재사용 전에 다음 조건을 독립적으로 확인한다.
 
 - 원본 run은 현재 attempt에서 `completed/success`이고, 해당 PR은 같은 저장소의 ready stack tip 또는 stack 라벨이 없고 base가 `main`인 일반 PR이며 head가 `H`로 유지된다. fork·중간 PR의 결과는 사용하지 않는다.
-- 공식 attempt별 jobs API에서 `Lint, Type Check & Build`가 실제 `completed/success`여야 한다. skipped job은 성공 검증을 대신하지 않는다. 조회 후 원본 run의 attempt를 다시 확인한다.
+- 공식 attempt별 jobs API에서 `Lint, Test & Build`가 실제 `completed/success`여야 한다. skipped job은 성공 검증을 대신하지 않는다. 조회 후 원본 run의 attempt를 다시 확인한다.
 - Artifact는 해당 run/attempt의 유일한 이름·메타데이터와 일치하고 만료되지 않아야 한다. 다운로드 digest 검증 실패도 재사용을 거부한다.
 - 원본 `P`, `H`와 현재 checkout의 tree가 같고 현재 commit이 `H`를 포함해야 한다. 현재 변경 범위는 증거가 검증한 API·mobile·shared 범위에 모두 포함되어야 한다.
 
@@ -31,22 +31,22 @@ Git tree 증거는 파일과 검증 범위에 관한 근거다. 새로운 runner
 
 ## API 작업 흐름
 
-| Job                      | 역할                                                                                                                                                                                                                                                                                                                         |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CI Scope                 | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                                                                                                                                                                                                                                     |
-| Dependency Review        | heavy job과 같은 조건의 PR에서 공식 dependency-review-action으로 gate의 base~head 누적 범위에 high 이상 취약 의존성이 새로 들어오는지 확인                                                                                                                                                                                   |
-| Lint, Type Check & Build | 한 번의 checkout·설치로 Oxc lint/format, `pnpm audit --prod --audit-level high`, Changeset, 컨벤션 검사, 영향 범위 typecheck, API 범위일 때 API 의존성 closure build. 단위·통합·계약·E2E 테스트는 CI에서 돌리지 않고 로컬 lefthook 훅에서 실행한다(pre-commit `pnpm test`, pre-push `pnpm test:integration`·`test:contract`) |
-| Build & Push Image       | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 빌드해 Trivy(HIGH/CRITICAL, 미수정 제외) 검사를 통과한 뒤 발행하고, 공식 `actions/attest`로 두 digest에 빌드 출처 증명을 남김                                                                                  |
+| Job                | 역할                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CI Scope           | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Dependency Review  | heavy job과 같은 조건의 PR에서 공식 dependency-review-action으로 gate의 base~head 누적 범위에 high 이상 취약 의존성이 새로 들어오는지 확인                                                                                                                                                                                                                                                                                                                                 |
+| Lint, Test & Build | 한 번의 checkout·설치로 Oxc lint/format, `pnpm audit --prod --audit-level high`, Changeset, 컨벤션 검사, `turbo run typecheck --affected`, 테스트 작업을 한 번에 하나씩 도는 `turbo run test test:integration --affected --concurrency=1`, API 범위일 때 API 의존성 closure build. 단위·통합 테스트는 pre-push가 올린 원격 캐시를 재사용하고 놓친 작업만 러너에서 돈다. 계약·E2E 테스트는 CI에서 돌리지 않고 로컬 pre-push(`test:contract`)와 `pnpm test:e2e`에서 실행한다 |
+| Build & Push Image | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 빌드해 Trivy(HIGH/CRITICAL, 미수정 제외) 검사를 통과한 뒤 발행하고, 공식 `actions/attest`로 두 digest에 빌드 출처 증명을 남김                                                                                                                                                                                                                                |
 
 공식 setup action은 `.nvmrc` Node.js 버전, packageManager의 pnpm 버전, frozen lockfile과 pnpm cache를 사용한다. API만 영향이 있으면 API dependency closure를 설치하고 필요한 contract를 emit한다. GitHub Actions는 버전 주석과 commit SHA로 고정하며 업데이트의 정본은 workflow다.
 
-CI는 PostgreSQL service를 띄우지 않는다. 통합·계약 테스트는 로컬 훅에서 Testcontainers(또는 `AIDO_TEST_POSTGRES_URL`)로 무작위 `aido_test_<run-id>` DB를 만들고 자신이 만든 DB만 정리한다. 유료 vendor 호출은 기본 테스트에 넣지 않는다.
+CI는 PostgreSQL service를 띄우지 않는다. 통합 테스트는 러너의 Docker에서, 계약 테스트는 로컬 훅에서 Testcontainers(또는 `AIDO_TEST_POSTGRES_URL`)로 무작위 `aido_test_<run-id>` DB를 만들고 자신이 만든 DB만 정리한다. 유료 vendor 호출은 기본 테스트에 넣지 않는다.
 
-Turbo와 Docker build cache는 도구 기본 경로를 사용한다. gate는 변경 파일 목록만 필요하므로 `filter: blob:none`으로 이력만 받는다.
+Turbo 원격 캐시는 `TURBO_TOKEN`·`TURBO_TEAM`으로 로컬과 CI가 같은 팀 캐시를 쓴다(시크릿이 없는 fork PR은 캐시 없이 전부 돈다). `test:integration`·`test:contract`는 `src/**`·`test/**`·`drizzle/**`·설정 파일을 입력으로 캐시되며, 결과에 영향을 주는 `TZ`·`BROADCAST_RECIPIENT_COUNT`는 `env`로 해시에 넣는다. Docker build cache는 도구 기본 경로를 사용한다. gate는 변경 파일 목록만 필요하므로 `filter: blob:none`으로 이력만 받는다.
 
 ## 로컬 검증과 완료 기록
 
-작업 중에는 변경한 동작의 target test와 필요한 lint/type/format을 실행하고, source가 바뀌지 않은 성공 검사를 반복하지 않는다. 공개 HTTP·OpenAPI·released-client fingerprint와 실제 DB/transaction 검사는 pre-push 훅(통합·계약 테스트)이 맡고, CI는 정적 검사와 build만 확인한다. 로컬 결과에는 command, source revision, seed, 파일/테스트 수, 실패·재실행 사유와 한계를 남긴다. coverage나 SDK schema 통과를 실제 vendor 품질/운영 배포 완료로 표현하지 않는다.
+작업 중에는 변경한 동작의 target test와 필요한 lint/type/format을 실행하고, source가 바뀌지 않은 성공 검사를 반복하지 않는다. 공개 HTTP·OpenAPI·released-client fingerprint와 실제 DB/transaction 검사는 pre-push 훅(통합·계약 테스트)이 맡고, CI는 같은 캐시로 정적 검사·단위·통합 테스트와 build를 확인한다. 로컬 결과에는 command, source revision, seed, 파일/테스트 수, 실패·재실행 사유와 한계를 남긴다. coverage나 SDK schema 통과를 실제 vendor 품질/운영 배포 완료로 표현하지 않는다.
 
 수동 performance project와 승인된 유료 AI 평가는 일반 CI 밖의 별도 근거다. 배포 승인은 [배포 문서](deployment.md)의 동일 SHA 이미지·마이그레이션·health 절차를 따른다.
 

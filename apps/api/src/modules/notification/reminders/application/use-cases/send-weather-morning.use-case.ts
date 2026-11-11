@@ -6,18 +6,19 @@ import {
 } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
+import { formatWeatherNotificationTime } from "../../../push/application/messages/notification-copy-format.messages.js";
 import {
   createWeatherMorningFallbackNotificationMessage,
   createWeatherMorningNotificationMessage,
   createWeatherMorningUnavailableNotificationMessage,
   createWeatherRescheduleAction,
-  formatWeatherNotificationTime,
-} from "../../../push/application/messages/notification.messages.js";
+} from "../../../push/application/messages/weather-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
@@ -92,7 +93,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
       tz: ctx.tz,
       hour: ctx.localHour,
       minute: ctx.localMinute,
-      userId: ctx.userId,
+      userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
     });
     const targets = await filterUnnotifiedWeatherUsers(
       this.#dependencies.notificationHistoryReader,
@@ -110,11 +111,11 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     const date = now.toZonedDateTimeISO(timeZone).toPlainDate();
     const [todos, reports] = await Promise.all([
       this.#dependencies.todoReader.listTodayTodos({
-        userIds: targets.map((u) => u.id),
+        userIds: targets.map((u) => UserId.reconstitute(u.id)),
         date,
         timezone: ctx.tz,
-        from: at,
-        until: instantToDate(date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant()),
+        from: now,
+        until: date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant(),
       }),
       this.#dependencies.weatherReportReader.readReports(
         targets.map((user) => ({
@@ -123,7 +124,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
           longitude: user.location.longitude,
           language: weatherRecipientLocale(user),
         })),
-        at,
+        now,
       ),
     ]);
     const todosByUser = groupBy(todos, (todo) => todo.userId);
@@ -183,7 +184,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
       tz: ctx.tz,
       hour: ctx.localHour,
       minute: ctx.localMinute,
-      userId: ctx.userId,
+      userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
     });
     return sendWeatherFallbackNotifications(this.#dependencies, {
       users,

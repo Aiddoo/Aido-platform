@@ -6,7 +6,7 @@ export const PUSH_RECEIPT_POLICY = {
   recheckIntervalMs: 15 * MINUTE_MS,
   availabilityWindowMs: 24 * 60 * MINUTE_MS,
   batchSize: 900,
-  expireBatchSize: 5_000,
+  expireBatchSize: 5000,
   runBudgetMs: 45_000,
 } as const;
 
@@ -14,7 +14,7 @@ export const PUSH_RECEIPT_POLICY = {
  * 한 번의 receipt 확인 실행(5분마다, 실행 예산 안)에서 받은 receipt 중 공급자 쪽 실패 비율이 이 값 이상이면 경보한다.
  * 기기 미등록·잘못된 토큰은 앱 삭제로 늘 생기므로 세지 않는다.
  */
-export const PUSH_RECEIPT_FAILURE_RATIO_THRESHOLD = 0.2;
+const PUSH_RECEIPT_FAILURE_RATIO_THRESHOLD = 0.2;
 
 /** 받은 receipt가 이보다 적으면 한두 건으로 비율이 튀므로 판정하지 않는다 */
 export const PUSH_RECEIPT_FAILURE_MIN_RECEIPTS = 20;

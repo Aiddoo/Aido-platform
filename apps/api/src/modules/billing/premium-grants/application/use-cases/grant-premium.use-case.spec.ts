@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeBillingUserLock } from "#test/doubles/billing/fake-billing-user-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
@@ -24,7 +25,7 @@ import { LoadPremiumEntitlementsUseCase } from "./load-premium-entitlements.use-
 import { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
-const DAY = 24 * 60 * 60 * 1_000;
+const DAY = 24 * 60 * 60 * 1000;
 
 function setup(
   options: {
@@ -63,7 +64,7 @@ function setup(
 }
 
 const command = {
-  userId: SUBSCRIPTION_FIXTURE_USER_ID,
+  userId: UserId.reconstitute(SUBSCRIPTION_FIXTURE_USER_ID),
   source: "INVITE",
   sourceKey: "invite:new",
   durationDays: 7,

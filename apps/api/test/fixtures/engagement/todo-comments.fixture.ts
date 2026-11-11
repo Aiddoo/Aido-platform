@@ -2,6 +2,7 @@ import type {
   TodoComment,
   TodoCommentPrimitives,
 } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { FakeTodoCommentReader } from "#test/doubles/engagement/fake-todo-comment.reader";
 import { FakeTodoEngagementCounter } from "#test/doubles/engagement/fake-todo-engagement-counter";
 import { InMemoryTodoCommentLikeRepository } from "#test/doubles/engagement/in-memory-todo-comment-like.repository";
@@ -47,7 +48,7 @@ export function createTodoCommentsFixture() {
       ...overrides,
     });
     await repository.save(comment);
-    await engagementCounter.increaseCommentCount(comment.todoId, 1);
+    await engagementCounter.increaseCommentCount(TodoId.reconstitute(comment.todoId), 1);
     return comment;
   }
 

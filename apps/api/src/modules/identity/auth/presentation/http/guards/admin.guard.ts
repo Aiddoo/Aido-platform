@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import type { Request } from "express";
 
-import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import type { CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 /**

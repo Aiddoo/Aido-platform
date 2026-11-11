@@ -1,4 +1,3 @@
-export type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import type { PushDeliveryLane } from "../../domain/push-delivery-lane.domain-service.js";
 

@@ -1,11 +1,13 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 import { isUndefined, omitBy } from "es-toolkit";
 
+import type { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
 import type { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
 import type { TodoScheduleProps } from "#api/modules/planning/shared/domain/todo-schedule.vo";
 import { Todo } from "#api/modules/planning/shared/domain/todo.aggregate";
+import type { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import {
   type CreatedOccurrence,
@@ -20,6 +22,7 @@ import {
   TodoRepositoryPort,
   type TodoUpdatePatch,
 } from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TodoBuilder } from "#test/builders/index";
 import { type PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 
@@ -45,9 +48,9 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     this.seriesStore = seriesStore;
   }
 
-  async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
-    const saved = this.records.get(id);
-    if (saved === undefined || saved.userId !== userId) {
+  async findByIdAndUserId(id: TodoId, userId: UserId): Promise<Todo | null> {
+    const saved = this.records.get(id.value);
+    if (saved === undefined || saved.userId !== userId.value) {
       return null;
     }
     return Todo.reconstitute(copyTodoRecord(saved));
@@ -89,9 +92,10 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
 
   async insertOccurrences(
     plans: readonly TodoOccurrencePlan[],
-    seriesId: string,
+    series: TodoSeriesId,
     checklist: readonly { title: string }[],
   ): Promise<readonly CreatedOccurrence[]> {
+    const seriesId = series.value;
     const created: CreatedOccurrence[] = [];
     for (const plan of plans) {
       const occurrenceDate = Temporal.PlainDate.from(plan.occurrenceDate);
@@ -109,21 +113,22 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
         seriesId,
         occurrenceDate,
       });
-      await this.createInlineItems(id, checklist);
+      await this.createInlineItems(plan.id, checklist);
       created.push({ todoId: id, scheduledTime: plan.scheduledTime });
     }
     return created;
   }
 
   async findOccurrencesFrom(
-    seriesIds: readonly string[],
+    seriesIds: readonly TodoSeriesId[],
     fromDate: string,
   ): Promise<readonly OccurrenceRow[]> {
+    const ids = seriesIds.map((seriesId) => seriesId.value);
     return [...this.records.values()]
       .filter(
         (record) =>
           record.seriesId != null &&
-          seriesIds.includes(record.seriesId) &&
+          ids.includes(record.seriesId) &&
           record.occurrenceDate !== null &&
           record.occurrenceDate.toString() >= fromDate,
       )
@@ -137,33 +142,37 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
       .sort((left, right) => left.occurrenceDate.localeCompare(right.occurrenceDate));
   }
   async updateFollowingOccurrences(
-    seriesId: string,
+    seriesId: TodoSeriesId,
     fromDate: string,
     patch: OccurrencePatch,
   ): Promise<void> {
+    const values = omitBy(
+      { title: patch.title, categoryId: patch.categoryId?.value, visibility: patch.visibility },
+      isUndefined,
+    );
     for (const row of await this.findOccurrencesFrom([seriesId], fromDate)) {
       if (!row.completed) {
-        Object.assign(this.#record(row.todoId), omitBy(patch, isUndefined));
+        Object.assign(this.#record(row.todoId), values);
       }
     }
   }
   async updateOccurrenceTimes(times: readonly OccurrenceTime[]): Promise<void> {
     for (const { todoId, scheduledLocalTime, scheduledTime } of times) {
-      Object.assign(this.#record(todoId), {
+      Object.assign(this.#record(todoId.value), {
         scheduledLocalTime,
         scheduledTime,
         isAllDay: scheduledTime === null,
       });
     }
   }
-  async reassignOccurrences(todoIds: readonly number[], toSeriesId: string): Promise<void> {
+  async reassignOccurrences(todoIds: readonly TodoId[], toSeriesId: TodoSeriesId): Promise<void> {
     for (const todoId of todoIds) {
-      this.#record(todoId).seriesId = toSeriesId;
+      this.#record(todoId.value).seriesId = toSeriesId.value;
     }
   }
-  async moveOccurrence(todoId: number, occurrence: TodoOccurrenceAttachment): Promise<void> {
+  async moveOccurrence(todoId: TodoId, occurrence: TodoOccurrenceAttachment): Promise<void> {
     const date = Temporal.PlainDate.from(occurrence.occurrenceDate);
-    Object.assign(this.#record(todoId), {
+    Object.assign(this.#record(todoId.value), {
       occurrenceDate: date,
       startDate: date,
       scheduledLocalTime: occurrence.scheduledLocalTime,
@@ -174,9 +183,9 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     return [...this.records.values()]
       .filter(
         (record) =>
-          record.userId === query.userId &&
+          record.userId === query.userId.value &&
           record.scheduledTime != null &&
-          (query.afterId == null || record.id > query.afterId),
+          (query.afterId == null || record.id > query.afterId.value),
       )
       .sort((left, right) => left.id - right.id)
       .slice(0, query.limit)
@@ -196,17 +205,17 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
   }
   async updateRebasedInstants(instants: readonly RebasedInstant[]): Promise<void> {
     for (const { todoId, scheduledTime } of instants) {
-      this.#record(todoId).scheduledTime = scheduledTime;
+      this.#record(todoId.value).scheduledTime = scheduledTime;
     }
   }
   async attachToSeries(
-    todoId: number,
-    seriesId: string,
+    todoId: TodoId,
+    seriesId: TodoSeriesId,
     occurrence: TodoOccurrenceAttachment,
   ): Promise<void> {
     const date = Temporal.PlainDate.from(occurrence.occurrenceDate);
-    Object.assign(this.#record(todoId), {
-      seriesId,
+    Object.assign(this.#record(todoId.value), {
+      seriesId: seriesId.value,
       occurrenceDate: date,
       startDate: date,
       endDate: null,
@@ -216,34 +225,35 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     });
   }
   async deleteOccurrences(query: {
-    readonly userId: string;
-    readonly seriesIds: readonly string[];
+    readonly userId: UserId;
+    readonly seriesIds: readonly TodoSeriesId[];
     readonly fromDate?: string;
     readonly includeCompleted: boolean;
   }): Promise<readonly number[]> {
     const { fromDate } = query;
+    const seriesIds = query.seriesIds.map((seriesId) => seriesId.value);
     const ids = [...this.records.values()]
       .filter(
         (record) =>
           record.seriesId != null &&
-          query.seriesIds.includes(record.seriesId) &&
+          seriesIds.includes(record.seriesId) &&
           (query.includeCompleted || !record.completed) &&
           (fromDate == null ||
             (record.occurrenceDate != null && record.occurrenceDate.toString() >= fromDate)),
       )
       .map((record) => record.id);
-    await this.deleteMany(ids);
+    await this.deleteMany(ids.map((id) => TodoId.reconstitute(id)));
     return ids;
   }
-  async deleteMany(todoIds: readonly number[]): Promise<void> {
+  async deleteMany(todoIds: readonly TodoId[]): Promise<void> {
     for (const todoId of todoIds) {
-      this.records.delete(todoId);
+      this.records.delete(todoId.value);
     }
   }
-  async createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void> {
+  async createInlineItems(todoId: TodoId, items: readonly { title: string }[]): Promise<void> {
     for (const [sortOrder, item] of items.entries()) {
       const id = (await this.nextItemId()).value;
-      this.#record(todoId).items.push({
+      this.#record(todoId.value).items.push({
         id,
         ...item,
         sortOrder,
@@ -260,36 +270,39 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
   ): Promise<void> {
     Object.assign(this.#record(id), { completed, completedAt });
   }
-  async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {
-    Object.assign(this.#record(id), omitBy(patch, isUndefined));
+  async updateDetails(id: TodoId, patch: TodoUpdatePatch): Promise<void> {
+    Object.assign(
+      this.#record(id.value),
+      omitBy({ ...patch, categoryId: patch.categoryId?.value }, isUndefined),
+    );
   }
-  async updateTitle(id: number, title: string): Promise<void> {
-    this.#record(id).title = title;
+  async updateTitle(id: TodoId, title: string): Promise<void> {
+    this.#record(id.value).title = title;
   }
-  async updateVisibility(id: number, visibility: TodoVisibility): Promise<void> {
-    this.#record(id).visibility = visibility;
+  async updateVisibility(id: TodoId, visibility: TodoVisibility): Promise<void> {
+    this.#record(id.value).visibility = visibility;
   }
-  async updateSchedule(id: number, schedule: TodoScheduleProps): Promise<void> {
-    Object.assign(this.#record(id), { ...schedule });
+  async updateSchedule(id: TodoId, schedule: TodoScheduleProps): Promise<void> {
+    Object.assign(this.#record(id.value), { ...schedule });
   }
-  async updateCategory(id: number, categoryId: number): Promise<void> {
-    this.#record(id).categoryId = categoryId;
+  async updateCategory(id: TodoId, categoryId: TodoCategoryId): Promise<void> {
+    this.#record(id.value).categoryId = categoryId.value;
   }
-  async delete(id: number): Promise<void> {
-    this.records.delete(id);
+  async delete(id: TodoId): Promise<void> {
+    this.records.delete(id.value);
   }
-  async updateSortOrder(id: number, sortOrder: number): Promise<void> {
-    this.#record(id).sortOrder = sortOrder;
+  async updateSortOrder(id: TodoId, sortOrder: number): Promise<void> {
+    this.#record(id.value).sortOrder = sortOrder;
   }
   async shiftSortOrders(
-    userId: string,
+    userId: UserId,
     from: number,
     to: number | null,
     delta: number,
   ): Promise<void> {
     for (const record of this.records.values()) {
       if (
-        record.userId === userId &&
+        record.userId === userId.value &&
         record.sortOrder >= from &&
         (to === null || record.sortOrder <= to)
       ) {
@@ -297,27 +310,27 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
       }
     }
   }
-  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+  async countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number> {
     const activeSeries = [...this.seriesStore.values()].filter(
       (series) =>
-        series.userId.value === userId && series.categoryId === categoryId && series.isActive,
+        series.userId.equals(userId) && series.categoryId === categoryId.value && series.isActive,
     ).length;
     return (
       activeSeries +
       [...this.records.values()].filter(
         (record) =>
-          record.userId === userId &&
-          record.categoryId === categoryId &&
+          record.userId === userId.value &&
+          record.categoryId === categoryId.value &&
           !record.completed &&
           record.seriesId === null,
       ).length
     );
   }
-  async getMaxSortOrder(userId: string): Promise<number> {
+  async getMaxSortOrder(userId: UserId): Promise<number> {
     return Math.max(
       -1,
       ...[...this.records.values()]
-        .filter((record) => record.userId === userId)
+        .filter((record) => record.userId === userId.value)
         .map((record) => record.sortOrder),
     );
   }
@@ -331,13 +344,16 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     });
   }
 
-  async insertItem(todoId: number, item: TodoItem): Promise<void> {
-    this.#record(todoId).items.push(item.toPrimitives());
+  async insertItem(todoId: TodoId, item: TodoItem): Promise<void> {
+    this.#record(todoId.value).items.push(item.toPrimitives());
   }
-  async updateItem(itemId: number, data: { title?: string; completed?: boolean }): Promise<void> {
+  async updateItem(
+    itemId: TodoItemId,
+    data: { title?: string; completed?: boolean },
+  ): Promise<void> {
     const item = [...this.records.values()]
       .flatMap((record) => record.items)
-      .find((entry) => entry.id === itemId);
+      .find((entry) => entry.id === itemId.value);
     if (item === undefined) {
       throw new Error("Todo item fixture is missing");
     }
@@ -346,16 +362,16 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
       Object.fromEntries(Object.entries(data).filter(([_fieldName, value]) => value !== undefined)),
     );
   }
-  async deleteItem(itemId: number): Promise<void> {
+  async deleteItem(itemId: TodoItemId): Promise<void> {
     for (const record of this.records.values()) {
-      record.items = record.items.filter((item) => item.id !== itemId);
+      record.items = record.items.filter((item) => item.id !== itemId.value);
     }
   }
-  async reorderItems(itemIds: number[]): Promise<void> {
+  async reorderItems(itemIds: readonly TodoItemId[]): Promise<void> {
     for (const [sortOrder, id] of itemIds.entries()) {
       const item = [...this.records.values()]
         .flatMap((record) => record.items)
-        .find((entry) => entry.id === id);
+        .find((entry) => entry.id === id.value);
       if (item !== undefined) {
         item.sortOrder = sortOrder;
       }

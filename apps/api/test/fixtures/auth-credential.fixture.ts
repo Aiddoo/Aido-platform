@@ -12,7 +12,7 @@ import type {
 import type {
   PremiumAccess,
   PremiumAccessReaderPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
 import { CreateSessionUseCase } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
 import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
@@ -25,6 +25,7 @@ import type {
   DailySendUsageReaderPort,
 } from "#api/modules/social/cheers/social-cheers.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryEntitlementCache } from "#test/doubles/access/in-memory-entitlement-cache";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import { InMemoryAuthLoginAttemptRepository } from "#test/doubles/identity/in-memory-auth-login-attempt.repository";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
@@ -141,6 +142,7 @@ export function createAuthCredentialFixture(
     verificationRepository,
     verificationCodeSecurity,
     cacheService,
+    entitlementCache: new InMemoryEntitlementCache(),
     pushDevices,
     emailSender,
     adminEventNotifier,
@@ -170,22 +172,22 @@ export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getEn
   readonly tiers = new Map<string, AccessTier>();
   readonly activeSubscriptionUserIds = new Set<string>();
 
-  async getEntitlements(userId: string): Promise<UserEntitlements> {
-    const tier = this.tiers.get(userId) ?? "FREE";
+  async getEntitlements(userId: UserId): Promise<UserEntitlements> {
+    const tier = this.tiers.get(userId.value) ?? "FREE";
     return {
       tier,
       plan: planOfTier(tier),
-      isPremium: this.activeSubscriptionUserIds.has(userId),
+      isPremium: this.activeSubscriptionUserIds.has(userId.value),
       features: createFeatureEntitlementsFixture(tier),
     };
   }
 }
 
-export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
+class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
   used = 0;
   resetsAt = "2026-11-30T15:00:00.000Z";
 
-  async read(_userId: string): Promise<MeteredFeatureQuota> {
+  async read(_userId: UserId): Promise<MeteredFeatureQuota> {
     return {
       feature: "AI_PARSE",
       allowed: true,
@@ -200,7 +202,7 @@ export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read">
   }
 }
 
-export class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsage"> {
+class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsage"> {
   used = 0;
   resetsAt = new Date("2026-11-03T15:00:00.000Z");
   readonly timezones: string[] = [];
@@ -212,14 +214,14 @@ export class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readD
 }
 
 /** 사용자별 프리미엄 출처를 정해 두는 대역. 기본값은 프리미엄 아님이다. */
-export class StubPremiumAccessReader implements PremiumAccessReaderPort {
+class StubPremiumAccessReader implements PremiumAccessReaderPort {
   readonly accesses = new Map<string, PremiumAccess>();
   readonly requestedUserIds: string[] = [];
 
-  async getPremiumAccess(userId: string): Promise<PremiumAccess> {
-    this.requestedUserIds.push(userId);
+  async getPremiumAccess(userId: UserId): Promise<PremiumAccess> {
+    this.requestedUserIds.push(userId.value);
     return (
-      this.accesses.get(userId) ?? {
+      this.accesses.get(userId.value) ?? {
         source: null,
         endsAt: null,
         periodEndsAt: null,

@@ -5,12 +5,14 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   addDaysToKey,
   localDateKeyAt,
 } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { isSeriesOwnerDormant } from "../../domain/series-dormancy.domain-service.js";
+import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
 import type {
   TodoSeriesRef,
@@ -20,7 +22,7 @@ import { TodoSeriesAlerts } from "../todo-series.alerts.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
 import type { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
 
-export const TODO_SERIES_MATERIALIZATION_BUDGET = {
+const TODO_SERIES_MATERIALIZATION_BUDGET = {
   /** ID만 읽으므로 배치 메모리는 1MB 미만이다. */
   BATCH_SIZE: 100,
   /** 큐 만료(10분)보다 먼저 멈추고 남은 규칙은 다음 실행이 커서로 이어받는다. */
@@ -72,7 +74,7 @@ export class MaterializeDueTodoSeriesUseCase {
       localDateKeyAt(this.#dependencies.clock.now(), "UTC"),
       TODO_SERIES_MATERIALIZATION_BUDGET.DUE_SCAN_AHEAD_DAYS,
     );
-    let afterId: string | null = null;
+    let afterId: TodoSeriesId | null = null;
     let processedCount = 0;
     let createdCount = 0;
     let failedCount = 0;
@@ -86,7 +88,7 @@ export class MaterializeDueTodoSeriesUseCase {
         limit: batchSize,
       });
       const owners = await seriesOwner.findOperatingOwners(
-        uniq(dueBatch.map(({ userId }) => userId)),
+        uniq(dueBatch.map(({ userId }) => userId)).map((userId) => UserId.reconstitute(userId)),
       );
       for (const due of dueBatch) {
         if (performance.now() - startedAt >= deadlineMs) {
@@ -99,7 +101,7 @@ export class MaterializeDueTodoSeriesUseCase {
         }
         if (
           isSeriesOwnerDormant(owner, this.#dependencies.clock.now()) &&
-          !(await seriesOwner.isExemptFromDormancy(due.userId))
+          !(await seriesOwner.isExemptFromDormancy(UserId.reconstitute(due.userId)))
         ) {
           dormantCount += 1;
           continue;
@@ -117,7 +119,8 @@ export class MaterializeDueTodoSeriesUseCase {
           });
         }
       }
-      afterId = dueBatch.at(-1)?.id ?? null;
+      const lastDue = dueBatch.at(-1);
+      afterId = lastDue == null ? null : TodoSeriesId.reconstitute(lastDue.id);
       if (dueBatch.length < batchSize) {
         break;
       }

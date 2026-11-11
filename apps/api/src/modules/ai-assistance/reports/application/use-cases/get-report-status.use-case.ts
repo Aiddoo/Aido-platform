@@ -43,7 +43,7 @@ export class GetReportStatusUseCase {
   }): Promise<ReportStatusReadModel> {
     const { userId, timezone } = query;
     const owner = UserId.reconstitute(userId);
-    await assertEntitled(this.#dependencies.entitlementReader, userId, "AI_REPORT");
+    await assertEntitled(this.#dependencies.entitlementReader, owner, "AI_REPORT");
 
     const zone = timezone ?? (await this.#dependencies.localePreferenceReader.read(owner)).timezone;
     const now = this.#dependencies.clock.now();

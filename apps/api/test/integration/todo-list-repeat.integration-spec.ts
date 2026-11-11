@@ -8,6 +8,7 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
@@ -111,8 +112,12 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     // Given
     await seedOccurrences(40);
     // When
-    const small = await countStatements(() => repository.findManyByUserId({ userId, size: 3 }));
-    const large = await countStatements(() => repository.findManyByUserId({ userId, size: 30 }));
+    const small = await countStatements(() =>
+      repository.findManyByUserId({ userId: UserId.reconstitute(userId), size: 3 }),
+    );
+    const large = await countStatements(() =>
+      repository.findManyByUserId({ userId: UserId.reconstitute(userId), size: 30 }),
+    );
     // Then
     expect(small.result).toHaveLength(4);
     expect(large.result).toHaveLength(31);
@@ -130,7 +135,10 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     });
     await seedTodos(1, { title: "단일", sortOrder: 1 });
     // When
-    const result = await repository.findManyByUserId({ userId, size: 10 });
+    const result = await repository.findManyByUserId({
+      userId: UserId.reconstitute(userId),
+      size: 10,
+    });
     // Then
     const byTitle = new Map(result.map((item) => [item.title, item]));
     expect(byTitle.get("회차")).toMatchObject({
@@ -150,7 +158,10 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     // Given
     await seedTodos(1, { seriesId: "orphan-group" });
     // When
-    const result = await repository.findManyByUserId({ userId, size: 10 });
+    const result = await repository.findManyByUserId({
+      userId: UserId.reconstitute(userId),
+      size: 10,
+    });
     // Then
     expect(result[0]).toMatchObject({ seriesId: "orphan-group", repeat: null });
   });
@@ -160,7 +171,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     await seedOccurrences(2, { visibility: "PUBLIC" });
     // When
     const { result, count } = await countStatements(() =>
-      repository.findPublicTodosByUserId({ friendUserId: userId, size: 10 }),
+      repository.findPublicTodosByUserId({ friendUserId: UserId.reconstitute(userId), size: 10 }),
     );
     // Then
     expect(result).toHaveLength(2);

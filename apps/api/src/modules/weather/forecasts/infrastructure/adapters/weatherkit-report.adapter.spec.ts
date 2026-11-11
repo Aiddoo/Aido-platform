@@ -375,7 +375,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     ]);
     // When
     const settled = provider.getReport(cell, REQUEST).catch((error: unknown) => error);
-    await vi.advanceTimersByTimeAsync(3_999);
+    await vi.advanceTimersByTimeAsync(3999);
     const beforeTimeout = await Promise.race([settled, Promise.resolve("pending")]);
     await vi.advanceTimersByTimeAsync(1);
     // Then

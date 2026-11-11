@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { UserStreakAccessPort } from "#api/modules/identity/identity-settings.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { StreakPort } from "../../application/ports/streak.port.js";
 
@@ -18,11 +19,11 @@ export class StreakAdapter implements StreakPort {
     this.#userStreakAccess = userStreakAccess;
   }
 
-  async recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void> {
+  async recordTodoToggle(userId: UserId, completed: boolean, timezone: string): Promise<void> {
     await this.#userStreakAccess.recordTodoToggle(userId, completed, timezone);
   }
 
-  async getStreakContext(userId: string): Promise<{
+  async getStreakContext(userId: UserId): Promise<{
     currentStreak: number;
     lastCompletedDate: Temporal.PlainDate | null;
   }> {

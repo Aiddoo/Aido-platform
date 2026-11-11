@@ -4,7 +4,8 @@ import {
   EntitlementReaderPort,
   isExemptFromDormancy,
 } from "#api/modules/access/entitlements/access-entitlements.public";
-import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
+import { UserActivityReaderPort } from "#api/modules/identity/users/identity-users.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoSeriesOwnerPort } from "../../application/ports/todo-series-owner.port.js";
 import type { SeriesOwnerActivity } from "../../domain/series-dormancy.domain-service.js";
@@ -26,7 +27,7 @@ export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
   }
 
   async findOperatingOwners(
-    userIds: readonly string[],
+    userIds: readonly UserId[],
   ): Promise<ReadonlyMap<string, SeriesOwnerActivity>> {
     const accounts = await this.#activityReader.findActiveAccounts(userIds);
     return new Map(
@@ -41,7 +42,7 @@ export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
     );
   }
 
-  async isExemptFromDormancy(userId: string): Promise<boolean> {
+  async isExemptFromDormancy(userId: UserId): Promise<boolean> {
     const { plan } = await this.#entitlementReader.getEntitlements(userId);
     return isExemptFromDormancy(plan);
   }

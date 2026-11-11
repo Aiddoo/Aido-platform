@@ -3,6 +3,7 @@ import {
   SubscriptionEventNotifierPort,
 } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class RecordingSubscriptionEventNotifier extends SubscriptionEventNotifierPort {
   readonly events: SubscriptionEventPayload[] = [];
@@ -16,8 +17,8 @@ export class RecordingSubscriptionEventNotifier extends SubscriptionEventNotifie
     this.events.push(payload);
   }
 
-  async recordBillingIssue(userId: string): Promise<void> {
-    this.billingIssueUserIds.push(userId);
+  async recordBillingIssue(userId: UserId): Promise<void> {
+    this.billingIssueUserIds.push(userId.value);
   }
 
   reportWebhookFailure(error: unknown, context: StoreSubscriptionEventFailureContext): void {

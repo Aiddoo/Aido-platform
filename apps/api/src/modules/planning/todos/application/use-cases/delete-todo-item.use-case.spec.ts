@@ -8,6 +8,7 @@ import {
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { DeleteTodoItemUseCase } from "./delete-todo-item.use-case.js";
 
 describe("하위 항목 삭제", () => {
@@ -26,7 +27,7 @@ describe("하위 항목 삭제", () => {
 
   it("요청한 항목만 삭제하고 다른 항목과 통계를 보존한다", async () => {
     // Given
-    await fixture.todoRepository.createInlineItems(1, [
+    await fixture.todoRepository.createInlineItems(TodoId.reconstitute(1), [
       { title: "첫 항목" },
       { title: "둘째 항목" },
     ]);

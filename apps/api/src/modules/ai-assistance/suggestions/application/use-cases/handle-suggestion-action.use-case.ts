@@ -5,8 +5,11 @@ import {
   type EntitlementReaderPort,
   premiumFeatureDenied,
 } from "#api/modules/access/entitlements/access-entitlements.public";
-import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
-import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
+import {
+  TodoCategoryId,
+  TodoCategoryLockKeys,
+} from "#api/modules/planning/categories/planning-categories.public";
 import {
   type StagedTodoCreatorPort,
   TodoLockKeys,
@@ -18,7 +21,6 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
 import type { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
 import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
@@ -76,7 +78,9 @@ export class HandleSuggestionActionUseCase {
     const timezone =
       command.timezone ?? (await this.#dependencies.localePreferenceReader.read(owner)).timezone;
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      if (!(await this.#dependencies.userMutationLock.lockById(command.userId))) {
+      if (
+        !(await this.#dependencies.userMutationLock.lockById(UserId.reconstitute(command.userId)))
+      ) {
         throw new ApplicationException(ErrorCode.AI_1309);
       }
       await this.#enforcePremium(command.userId);
@@ -137,10 +141,10 @@ export class HandleSuggestionActionUseCase {
     ]);
     // 같은 UoW에 참여하므로 생성이 실패하면 상태 갱신도 함께 rollback된다.
     const staged = await this.#dependencies.todoCreator.stage({
-      userId: command.userId,
+      userId: UserId.reconstitute(command.userId),
       title: suggestion.title,
-      categoryId: command.categoryId,
-      startDate: plainDateToDate(Temporal.PlainDate.from(startDate)),
+      categoryId: TodoCategoryId.reconstitute(command.categoryId),
+      startDate: Temporal.PlainDate.from(startDate),
       scheduledTime: suggestion.scheduledTime,
       timezone: at.timezone,
       repeat: {
@@ -157,7 +161,12 @@ export class HandleSuggestionActionUseCase {
   }
 
   async #enforcePremium(userId: string): Promise<void> {
-    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_SUGGESTION"))) {
+    if (
+      !(await this.#dependencies.entitlementReader.canInTx(
+        UserId.reconstitute(userId),
+        "AI_SUGGESTION",
+      ))
+    ) {
       this.#dependencies.logger.warn({ event: AiSuggestionLogEvent.PREMIUM_DENIED, userId });
       throw premiumFeatureDenied("AI_SUGGESTION");
     }

@@ -1,6 +1,6 @@
 import type { WeeklyAchievementStatsReaderPort } from "#api/modules/notification/reminders/application/ports/weekly-achievement-stats-reader.port";
 
-export const WEEKLY_STATS_USER_PLANS = ["FREE", "PREMIUM", "ADMIN"] as const;
+const WEEKLY_STATS_USER_PLANS = ["FREE", "PREMIUM", "ADMIN"] as const;
 
 export interface WeeklyStatsTodoSeed {
   readonly start: string;
