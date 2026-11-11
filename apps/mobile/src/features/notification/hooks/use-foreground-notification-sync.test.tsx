@@ -1,12 +1,18 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createHttpClientStub, createTestDi, createTestQueryClient } from '@src/testing/core';
+import {
+  createHttpClientStub,
+  createPushNotificationGatewayStub,
+  createTestDi,
+  createTestQueryClient,
+} from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { partialMatchKey, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import type { NotificationType } from '../domains/notification.model';
 import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 import { useForegroundNotificationSync } from './use-foreground-notification-sync';
 
 async function setup(isAuthenticated: boolean) {
@@ -14,22 +20,39 @@ async function setup(isAuthenticated: boolean) {
   const queryClient = createTestQueryClient();
   // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
-  const container = createTestDi({ httpClient: createHttpClientStub() });
+  const pushNotification = createPushNotificationGatewayStub();
+  pushNotification.getPermission.mockResolvedValue({
+    status: 'granted',
+    canAskAgain: true,
+    iosStatus: null,
+  });
+  const container = createTestDi({ httpClient: createHttpClientStub(), pushNotification });
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </StaticDIProvider>
   );
   const hook = await renderHook(
-    () => useForegroundNotificationSync({ isAuthenticated, invalidateByType }),
+    () => {
+      // 알림 설정 행처럼 권한을 보고 있는 화면
+      useQuery(useGetPushPermissionQueryOptions());
+      return useForegroundNotificationSync({ isAuthenticated, invalidateByType });
+    },
     { wrapper },
   );
   // 안 읽은 수(배지)도 이 무효화로 다시 받는다
   const invalidatedInbox = () =>
     invalidateQueries.mock.calls.filter(
-      ([filters]) => filters?.queryKey === NOTIFICATION_QUERY_KEYS.all,
+      ([filters]) =>
+        filters?.queryKey != null &&
+        partialMatchKey(filters.queryKey, NOTIFICATION_QUERY_KEYS.unreadCount()),
     );
-  return { invalidatedInbox, invalidateByType, ...hook };
+  return {
+    invalidatedInbox,
+    invalidateByType,
+    getPermission: pushNotification.getPermission,
+    ...hook,
+  };
 }
 
 describe('useForegroundNotificationSync', () => {
@@ -112,5 +135,23 @@ describe('useForegroundNotificationSync', () => {
 
     // Then
     expect(invalidatedInbox()).toHaveLength(1);
+  });
+
+  it('푸시를 받아도 OS 권한은 다시 묻지 않는다', async () => {
+    // Given
+    const { result, getPermission } = await setup(true);
+    await act(() => jest.advanceTimersByTimeAsync(0));
+    const callsBefore = getPermission.mock.calls.length;
+
+    // When
+    result.current({ data: {} });
+    await act(() => jest.advanceTimersByTimeAsync(1000));
+    result.current({ data: {} });
+    await act(() => jest.advanceTimersByTimeAsync(1000));
+    result.current({ data: {} });
+    await act(() => jest.advanceTimersByTimeAsync(1000));
+
+    // Then
+    expect(getPermission.mock.calls.length - callsBefore).toBe(0);
   });
 });

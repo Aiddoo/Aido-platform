@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { parsePushNotification } from '../apis/push-notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { type NotificationType } from '../domains/notification.model';
-import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
+import { invalidateNotifications } from '../queries/notification-cache';
 
 const FOREGROUND_SYNC_DELAY_MS = SECOND_MS;
 
@@ -31,10 +31,9 @@ export function useForegroundNotificationSync({
     const flush = debounce(() => {
       const types = [...pendingTypes];
       pendingTypes.clear();
-      // 안 읽은 수도 함께 다시 받아 앱 아이콘 배지가 따라간다(`useNotificationBadgeSync`)
+      // 목록과 안 읽은 수만 다시 받는다. 안 읽은 수를 따라 앱 아이콘 배지가 맞춰진다(`useNotificationBadgeSync`)
       const tasks: Promise<unknown>[] = [
-        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-        queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
+        invalidateNotifications(queryClient),
         ...types.map((type) => invalidateByType(type)),
       ];
 

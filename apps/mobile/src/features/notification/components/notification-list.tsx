@@ -27,7 +27,7 @@ import { NotificationPolicy } from '../domains/notification.model';
 import type { Notification } from '../domains/notification.model';
 import { useNotificationCategory } from '../hooks/use-notification-category';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
-import { invalidateNotifications } from '../queries/notification-cache';
+import { refreshNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
 import { toDateSectionedListItems } from '../utils/date-section';
@@ -49,7 +49,7 @@ export function NotificationList() {
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
   const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
   const queryClient = useQueryClient();
-  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateNotifications(queryClient));
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshNotifications(queryClient));
   const openNotification = useOpenNotification();
 
   return (

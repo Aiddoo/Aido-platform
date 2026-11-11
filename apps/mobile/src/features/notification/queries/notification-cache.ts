@@ -106,3 +106,14 @@ export function invalidateNotifications(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.unreadCount() }),
   ]);
 }
+
+/** 당겨서 새로고침. 화면에 붙은 알림함 조회만 다시 받는다 */
+export function refreshNotifications(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.refetchQueries({ queryKey: NOTIFICATION_QUERY_KEYS.lists(), type: 'active' }),
+    queryClient.refetchQueries({
+      queryKey: NOTIFICATION_QUERY_KEYS.unreadCount(),
+      type: 'active',
+    }),
+  ]);
+}
