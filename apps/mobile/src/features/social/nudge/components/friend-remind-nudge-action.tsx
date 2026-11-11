@@ -1,6 +1,7 @@
 import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, PawIcon, Result, Text, useOverlay } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 
 import { useGetRemindNudgeCooldownQueryOptions } from '../queries/todo-nudge.queries';
@@ -41,8 +42,11 @@ export function FriendRemindNudgeAction({ friend }: { friend: FriendUser }) {
         <Text size="b4" weight="semibold" shade={canNudge ? undefined : 5}>
           {canNudge ? t('todo:friendTodo.nudge') : t('todo:friendTodo.alreadyNudged')}
         </Text>
-        {/* oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400 */}
-        <PawIcon width={16} height={16} colorClassName={canNudge ? 'text-main' : 'text-gray-5'} />
+        <PawIcon
+          width={16}
+          height={16}
+          colorClassName={cn(canNudge ? 'text-main' : 'text-gray-5')}
+        />
       </HStack>
     </Result.Button>
   );

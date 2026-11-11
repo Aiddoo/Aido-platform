@@ -29,6 +29,7 @@ import {
   VStack,
   MenuContent,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 import { router } from 'expo-router';
@@ -100,8 +101,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
         <TodoCommentAuthorAvatar
           author={comment.author}
           size={TodoCommentPolicy.isReply(comment) ? 'sm' : 'md'}
-          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-          className={displayState === 'active' ? undefined : 'opacity-40'}
+          className={cn(displayState !== 'active' && 'opacity-40')}
         />
         {/* oxlint-disable-next-line aido/spacing-scale -- 작성자 줄과 본문 사이는 글줄 간격이라 규격 단계 사이 3px을 쓴다 */}
         <VStack gap={3} flex={1} className="min-w-0">
@@ -141,8 +141,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
 TodoCommentItem.Loading = function Loading({ isReply = false }: { isReply?: boolean }) {
   return (
     <HStack gap={12} align="start" className="min-w-0">
-      {/* oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400 */}
-      <Skeleton className={isReply ? 'size-7 rounded-full' : 'size-9 rounded-full'} />
+      <Skeleton className={cn('rounded-full', isReply ? 'size-7' : 'size-9')} />
       <VStack gap={6} flex={1} className="min-w-0 py-1">
         <TextSkeleton size="b4" className="w-28" />
         <TextSkeleton size="b3" className="w-4/5" />
@@ -199,8 +198,7 @@ function Meta({ text, isShrinkable = false }: { text: string; isShrinkable?: boo
       shade={7}
       numberOfLines={1}
       ellipsizeMode="tail"
-      // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-      className={isShrinkable ? 'min-w-0 shrink' : 'shrink-0 tabular-nums'}
+      className={cn(isShrinkable ? 'min-w-0 shrink' : 'shrink-0 tabular-nums')}
     >
       {text}
     </Text>

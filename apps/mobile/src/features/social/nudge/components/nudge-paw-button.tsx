@@ -31,8 +31,7 @@ export function NudgePawButton({
       <PawIcon
         width={18}
         height={18}
-        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-        colorClassName={isDisabled === true ? 'text-gray-5' : 'text-main'}
+        colorClassName={cn(isDisabled === true ? 'text-gray-5' : 'text-main')}
       />
     </PressableFeedback>
   );

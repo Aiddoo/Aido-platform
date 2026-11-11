@@ -144,8 +144,7 @@ export function HintPopoverContent({
   const closeSize = fontScaledSize(CLOSE_BUTTON_SIZE);
   // 좁은 폰은 말풍선 폭이 좁아 Android에서도 단어 단위로 꺾는다
   const descriptionText = description != null && (
-    // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-    <WordWrapText size="b4" shade={6} className={title == null ? 'flex-1' : undefined}>
+    <WordWrapText size="b4" shade={6} className={cn(title == null && 'flex-1')}>
       {description}
     </WordWrapText>
   );

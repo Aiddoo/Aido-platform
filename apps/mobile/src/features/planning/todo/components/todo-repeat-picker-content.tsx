@@ -121,8 +121,7 @@ TodoRepeatPickerContent.PresetChip = function PresetChip({
         size="b4"
         weight="medium"
         numberOfLines={1}
-        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-        className={isSelected ? 'text-white' : undefined}
+        className={cn(isSelected && 'text-white')}
         shade={isSelected ? undefined : 7}
       >
         {label}
@@ -162,8 +161,7 @@ TodoRepeatPickerContent.DayOfWeekChip = function DayOfWeekChip({
       <Text
         size="b4"
         weight="medium"
-        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-        className={isSelected ? 'text-white' : undefined}
+        className={cn(isSelected && 'text-white')}
         shade={isSelected ? undefined : 7}
       >
         {getDayOfWeekLabel(day, i18n.language)}

@@ -147,8 +147,9 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
             <Text
               size="e2"
               weight="medium"
-              // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-              className={isLinked ? 'text-accent-soft-foreground' : 'text-default-soft-foreground'}
+              className={cn(
+                isLinked ? 'text-accent-soft-foreground' : 'text-default-soft-foreground',
+              )}
             >
               {isLinked ? t('linkedAccounts.linked') : t('linkedAccounts.notLinked')}
             </Text>
