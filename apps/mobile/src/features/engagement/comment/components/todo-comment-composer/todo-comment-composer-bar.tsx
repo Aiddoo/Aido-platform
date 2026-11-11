@@ -1,10 +1,9 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import { Box, Text } from '@src/shared/ui';
-import { useSuspenseQueries } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useCallback, useEffect, useRef } from 'react';
@@ -35,9 +34,7 @@ const EXTRA_PADDING_DURATION_MS = 150;
 export function TodoCommentComposerBar() {
   const { t } = useTranslation('todoComment');
   const [todoId] = useTodoId();
-  const [{ data: detail }, { data: user }] = useSuspenseQueries({
-    queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetMeQueryOptions()],
-  });
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const insets = useSafeAreaInsets();
   const keyboardBottomGap = useKeyboardBottomGap();
   const isScreenFocused = useIsFocused();
@@ -106,7 +103,7 @@ export function TodoCommentComposerBar() {
       <Box className="bg-white px-3 pt-2" testID="todo-comment-composer">
         <Box ref={composerRef} collapsable={false} onLayout={handleContentLayout}>
           {detail.permissions.canComment ? (
-            <TodoCommentForm user={user} />
+            <TodoCommentForm />
           ) : (
             <Box className="items-center py-2">
               <Text size="b4" shade={6}>

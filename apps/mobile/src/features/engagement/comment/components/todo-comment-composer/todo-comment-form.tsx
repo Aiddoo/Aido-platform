@@ -1,4 +1,5 @@
 import { useDraftService, useIdGenerator, useLogger } from '@src/bootstrap/providers/di-context';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
@@ -17,7 +18,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { CloseButton } from 'heroui-native';
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
@@ -36,7 +37,6 @@ import {
   findTodoCommentErrorStatus,
   isTodoCommentRejectedError,
 } from '../../domains/todo-comment.error';
-import type { TodoCommentAuthor } from '../../domains/todo-comment.model';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
 import { useTodoCommentForm } from '../../hooks/use-todo-comment-form';
 import {
@@ -69,19 +69,18 @@ const CLOSE_ICON_SIZE = 16;
 const CLOSE_HIT_SLOP = 12;
 const TARGET_CONTENT_MAX_LINES = 1;
 
-interface TodoCommentFormProps extends Omit<
+type TodoCommentFormProps = Omit<
   ComponentProps<typeof ScrollView>,
   'children' | 'keyboardShouldPersistTaps' | 'nestedScrollEnabled'
-> {
-  user: Pick<TodoCommentAuthor, 'name' | 'profileImage'> & { id: string };
-}
+>;
 
 /**
  * 키보드 위 작성기. 모드(새 댓글·답글·수정)와 입력값은 화면이 소유한 폼에 있고, 이 컴포넌트는 필요한 필드만 구독한다.
  * 이어 쓴 글은 같은 묶음에 차례로 붙는다.
  */
-export function TodoCommentForm({ user, style, ...scrollViewProps }: TodoCommentFormProps) {
+export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormProps) {
   const [todoId] = useTodoId();
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { height: viewportHeight } = useWindowDimensions();
   const { control, setFocus, getValues, reset } = useTodoCommentForm();
   const mode = useWatch({ control, name: 'mode' });

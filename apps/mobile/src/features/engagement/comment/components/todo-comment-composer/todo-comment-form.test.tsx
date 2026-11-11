@@ -1,5 +1,7 @@
 import '@src/shared/i18n/init';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ok } from '@src/core/errors/result';
+import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createHttpClientStub } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -37,7 +39,7 @@ function EditingForm() {
     <TodoCommentFormProvider form={form}>
       <TodoCommentRevealProvider>
         <TodoCommentExpansionProvider>
-          <TodoCommentForm user={{ id: 'user-1', name: '나', profileImage: null }} />
+          <TodoCommentForm />
         </TodoCommentExpansionProvider>
       </TodoCommentRevealProvider>
     </TodoCommentFormProvider>
@@ -46,6 +48,7 @@ function EditingForm() {
 
 async function renderEditingForm() {
   const httpClient = createHttpClientStub();
+  httpClient.get.mockImplementation(async () => ok(createCurrentUserDto()));
   jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
   await renderScreen(<EditingForm />, {
     withLocalDate: true,
