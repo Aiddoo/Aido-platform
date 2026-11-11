@@ -16,7 +16,7 @@ import { PushPermissionNotice } from '@src/features/notification/components/push
 import { useIsPushReminderOff } from '@src/features/notification/hooks/use-is-push-reminder-off';
 import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useOpenPushOnboarding } from '@src/features/notification/hooks/use-open-push-onboarding';
-import { useIsPushOnboardingGuardClosed } from '@src/features/notification/hooks/use-push-onboarding-guard';
+import { usePushOnboardingGuardState } from '@src/features/notification/hooks/use-push-onboarding-guard';
 import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
@@ -74,7 +74,7 @@ export default function FeedScreen() {
   // 피드를 내리기 시작하면 위에 떠 있는 친구 줄 안내가 내용을 가리지 않게 닫는다
   const [hasScrolledFeed, setHasScrolledFeed] = useState(false);
   // 첫 피드는 알림 화면 → 새로운 기능 → 말풍선 순서라 앞 화면을 열지 정해진 뒤에만 말풍선을 띄운다
-  const isPushOnboardingSettled = useIsPushOnboardingGuardClosed();
+  const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
   const { shouldShowCoachmarks } = useWhatsNewAutoOpen({
     isOnboardingSettled: isPushOnboardingSettled,
   });
@@ -178,7 +178,7 @@ function MyFeed({
     hasPendingNavigation,
   });
   useOpenPushOnboarding({ isStable });
-  const isPushOnboardingSettled = useIsPushOnboardingGuardClosed();
+  const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
   const isReminderOff = useIsPushReminderOff();
   const whatsNew = useWhatsNewFeed({ isStable, isOnboardingSettled: isPushOnboardingSettled });
   const [isRefreshing, handleRefresh] = useRefresh(() =>

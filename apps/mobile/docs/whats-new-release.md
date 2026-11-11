@@ -52,7 +52,7 @@
 | 계정·캠페인별 한 번       | `aido_feature_discovery_seen_v1:{userId}:{campaignId}`. 동기 claim                                                                                                                   |
 | 가입 시점과 상관없이 자동 | `WhatsNewPolicy.shouldAutoOpen(release, …)`: 서버 `enabled`·`autoOpen`, 이 출시의 캠페인, 지원 버전, 안 봄. 새 계정도 한 번 본다. 1.15.0 이하 앱은 `launchedAt` 전 가입자에게만 연다 |
 | 다른 안내와 겹치지 않음   | `useStableFeedForeground`(피드가 앞에 자리 잡은 뒤). 날씨 위치는 자동으로 묻지 않는다                                                                                                |
-| 알림 화면 다음에 연다     | 피드가 `useIsPushOnboardingGuardClosed()`를 `isOnboardingSettled`로 넘긴다. 아래 순서를 따른다                                                                                       |
+| 알림 화면 다음에 연다     | 피드가 `usePushOnboardingGuardState() === 'closed'`를 `isOnboardingSettled`로 넘긴다. 아래 순서를 따른다                                                                             |
 | 말풍선은 그 다음          | `useWhatsNewAutoOpen`의 `shouldShowCoachmarks`(`utils/should-show-coachmarks.ts`)를 피드가 친구 줄·달력 안내에 넘긴다. 설정을 받는 중이거나 자동으로 열 차례면 기다린다              |
 | 기능으로 떠나기           | `leaveTo`(`dismissTo`)로 기능이 사는 탭에서 연다. 말로 할 일 만들기는 `/feed?action=add-voice-todo`로 오늘의 내 피드 위에 시트를 열어 만든 할 일이 뒤에 보인다                       |
 | 다시 열기                 | 피드 카드 14일(`aido_feature_discovery_reentry_v1:{userId}:{campaignId}`), 마이 메뉴 상시                                                                                            |
