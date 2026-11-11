@@ -18,15 +18,16 @@ iOS는 Expo SDK 58의 `expo-widgets`(`createWidget` + props + `updateTimeline`),
 | 위치                           | 책임                                                                   |
 | ------------------------------ | ---------------------------------------------------------------------- |
 | schemas                        | snapshot v2 Zod 계약(v1 읽기 포함), props, 탐색 명령, 저장 값 정의(키) |
-| domains                        | day 선택 Policy(`WidgetSnapshotPolicy.getDay`), 탐색 명령 유효성       |
+| domains                        | day 선택 Policy(`WidgetSnapshotPolicy.getDay`), 탐색 명령 유효성(5분)  |
 | utils                          | 첫 동기화 전 props, 탐색 링크 변환(번들이 별칭을 못 풀어 상대 경로)    |
 | constants                      | Android 위젯 정의·탐색 action                                          |
 | apis                           | summary → snapshot → props·iOS timeline mapper                         |
-| services                       | `WidgetSyncService`: 쓰기 직렬화·generation·중복 제거                  |
+| services                       | `WidgetSyncService`: 쓰기 직렬화·generation·중복 제거, 결과를 돌려준다 |
+| repositories                   | Android 위젯 저장소의 snapshot·소유자, 탐색 명령                       |
 | bridge                         | iOS timeline / Android snapshot·HeadlessJS / 미지원 플랫폼 경계        |
 | components/widgets.ios.tsx     | 격리된 SwiftUI renderer(`expo-widgets`)                                |
 | components/widgets.android.tsx | 격리된 FlexWidget·TextWidget·SvgWidget renderer                        |
-| hooks                          | `AuthBootProvider`가 소유하는 계정·날짜(오늘·내일)·언어 동기화         |
+| hooks                          | `AuthBootProvider`가 소유하는 계정·날짜(오늘·내일)·언어 동기화와 보고  |
 
 `create-widget-bridge.ios.ts` / `.android.ts`, `widget-storage.android.ts`와 noop fallback, `register-widget-task-handler.android.ts`와 noop fallback을 쓴다. iOS Metro graph에 Android renderer·HeadlessJS·MMKV widget adapter가 들어가지 않도록 platform module로 나눈다.
 
@@ -35,7 +36,7 @@ iOS는 Expo SDK 58의 `expo-widgets`(`createWidget` + props + `updateTimeline`),
 ```text
 useWidgetSnapshotSync(authState)
   → 현재 계정·로컬 날짜의 오늘·내일 TodoSummary(`?date=`, `limit`으로 상위 10개) / daily completions Query
-  → WidgetSyncService (직렬 쓰기·generation·내용/소유자 중복 제거)
+  → WidgetSyncService (직렬 쓰기·generation·내용/소유자 중복 제거, 결과를 훅이 breadcrumb·Sentry로 보고)
   → 순수 snapshot / props mapper
   → 플랫폼별 WidgetBridge
       iOS: Expo Widgets timeline (지금: 오늘 · 다음 자정: 내일 · 그다음 자정: stale)
@@ -43,7 +44,7 @@ useWidgetSnapshotSync(authState)
 ```
 
 - Query는 인증과 현재 계정 식별자가 준비될 때 활성화하고 `throwOnError: false`를 유지한다.
-- 인증 판정 중에는 이전 snapshot을 유지한다. 로그아웃이 확정되면 loggedOut과 소유자 제거를 기록한다.
+- 인증 판정 중에는 이전 snapshot을 유지한다. 로그아웃이 확정되면 loggedOut과 소유자 제거를 기록한다. 로그아웃·탈퇴 뒤에 도착한 앞 계정 요약은 쓰지 않고, 쓰는 중이던 요약이 있으면 그 뒤에 loggedOut이 마지막으로 남는다(`use-widget-snapshot-sync.test.tsx`).
 - 계정 식별자는 Android 저장소의 별도 metadata다. 공유 snapshot과 iOS timeline payload에 넣지 않는다.
 - 내일 요약은 서버가 그 날짜 기준으로 계산한 잠정 값이다. 서버 날짜가 요청과 다르거나 거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다(`useGetTodoSummaryQueryOptions`).
 - 렌더러는 전달받은 props만 쓴다. 토큰·네트워크·앱 Provider·현재 시각을 읽지 않는다.
