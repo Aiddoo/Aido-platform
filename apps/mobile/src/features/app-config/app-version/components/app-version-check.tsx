@@ -1,4 +1,5 @@
 import { useApplicationMetadata } from '@src/bootstrap/providers/di-context';
+import { useTrack } from '@src/shared/analytics';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -17,6 +18,7 @@ export function AppVersionCheck() {
   const applicationMetadata = useApplicationMetadata();
   const reportUnexpectedError = useReportUnexpectedError('app_version');
   const toast = useAppToast();
+  const { trackEvent } = useTrack();
   const confirmDialog = useConfirmDialog();
   const installation = applicationMetadata.getInstallation();
   const query = useQuery({ ...useGetAppVersionQueryOptions(), enabled: false });
@@ -48,7 +50,9 @@ export function AppVersionCheck() {
         toast.error(t('checkFailed'));
       })
       .with('outdated', () => {
-        openStoreListing.mutate();
+        openStoreListing.mutate(undefined, {
+          onSuccess: () => trackEvent('app_update_store_opened', { source: 'settings' }),
+        });
       })
       .with('up-to-date', () =>
         confirmDialog.openAsync({
