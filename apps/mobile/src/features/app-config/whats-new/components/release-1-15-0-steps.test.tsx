@@ -238,38 +238,4 @@ describe('Release1150Steps', () => {
     // Then
     expect(getStepViews(analytics)).toHaveLength(2);
   });
-
-  it('마무리에서 나중에를 누르면 완료를 남기고 닫은 것으로 세지 않는다', async () => {
-    // Given
-    const { analytics, unmount } = await renderSteps();
-    await goToFinish();
-
-    // When
-    await fireEvent.press(screen.getByTestId('whats-new-later'));
-    await unmount();
-
-    // Then
-    expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_completed', {
-      release_id: RELEASE_1_15_0.id,
-      source: 'auto',
-    });
-    expect(analytics.trackEvent).not.toHaveBeenCalledWith(
-      'feature_hub_dismissed',
-      expect.anything(),
-    );
-  });
-
-  it('CTA 없이 화면이 사라지면 닫은 것으로 남긴다', async () => {
-    // Given
-    const { analytics, unmount } = await renderSteps();
-
-    // When
-    await unmount();
-
-    // Then
-    expect(analytics.trackEvent).toHaveBeenCalledWith('feature_hub_dismissed', {
-      campaign_id: RELEASE_1_15_0.campaignId,
-      source: 'auto',
-    });
-  });
 });

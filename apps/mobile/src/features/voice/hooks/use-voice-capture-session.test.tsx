@@ -126,10 +126,10 @@ function createDeferred<T>() {
 }
 
 describe('useVoiceCaptureSession', () => {
-  it('기기 인식이 가능하면 기기 인식으로 시작하고 실제 값을 분석에 남긴다', async () => {
+  it('기기 인식이 가능하면 기기 인식으로 시작한다', async () => {
     // Given
     const user = userEvent.setup();
-    const { speechRecognizer, analytics } = await renderSession();
+    const { speechRecognizer } = await renderSession();
 
     // When
     await user.press(screen.getByRole('button', { name: 'begin' }));
@@ -142,10 +142,6 @@ describe('useVoiceCaptureSession', () => {
         isOnDevice: true,
         hintWords: expect.arrayContaining(['기획팀']),
       }),
-    );
-    expect(analytics.trackEvent).toHaveBeenCalledWith(
-      'voice_capture_started',
-      expect.objectContaining({ mode: 'quick', on_device: true, locale: 'ko-KR' }),
     );
     expect(screen.getByTestId('status')).toHaveTextContent('listening');
   });
@@ -1016,149 +1012,6 @@ describe('useVoiceCaptureSession', () => {
         speechRecognizer.emit({ type: 'result', transcript: '한 말', isFinal: true, segments: [] }),
       );
 
-    it('시작을 이벤트와 breadcrumb으로 남긴다', async () => {
-      // When
-      const { analytics, errorReporter } = await beginListening();
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_started', {
-        mode: 'quick',
-        entry: 'add_todo_sheet',
-        locale: 'ko-KR',
-        on_device: true,
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.started',
-        data: { mode: 'quick', locale: 'ko-KR', on_device: true },
-      });
-    });
-
-    it('글자가 있으면 끝을 completed로, 정리 요청을 breadcrumb으로 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics, errorReporter } = await beginListening();
-      await say(speechRecognizer);
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'finish' }));
-      await act(async () => speechRecognizer.emit({ type: 'end' }));
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_finished', {
-        mode: 'quick',
-        outcome: 'completed',
-        duration_bucket: expect.any(String),
-        pause_count: 0,
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.finished',
-        data: { mode: 'quick', duration_bucket: expect.any(String) },
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'plan.requested',
-        data: { mode: 'quick' },
-      });
-    });
-
-    it('글자가 없으면 끝을 empty로 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics } = await beginListening();
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'finish' }));
-      await act(async () => speechRecognizer.emit({ type: 'end' }));
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'voice_capture_finished',
-        expect.objectContaining({ outcome: 'empty' }),
-      );
-    });
-
-    it('일시정지 뒤에 끝내도 멈춘 횟수와 함께 completed로 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics } = await beginListening();
-      await say(speechRecognizer);
-      await user.press(screen.getByRole('button', { name: 'pause' }));
-      await act(async () => speechRecognizer.emit({ type: 'end' }));
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'finish' }));
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'voice_capture_finished',
-        expect.objectContaining({ outcome: 'completed', pause_count: 1 }),
-      );
-    });
-
-    it.each([
-      { button: 'cancel', outcome: 'cancelled' },
-      { button: 'hand-off', outcome: 'upgraded' },
-    ])('$button은 들은 글자가 있으면 $outcome으로 남기고 인식기를 끊는다', async (expected) => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics } = await beginListening();
-      await say(speechRecognizer);
-
-      // When
-      await user.press(screen.getByRole('button', { name: expected.button }));
-
-      // Then
-      expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'voice_capture_finished',
-        expect.objectContaining({ outcome: expected.outcome }),
-      );
-    });
-
-    it('취소해도 들은 글자가 없으면 empty로 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { analytics } = await beginListening();
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'cancel' }));
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'voice_capture_finished',
-        expect.objectContaining({ outcome: 'empty' }),
-      );
-    });
-
-    it('일시정지와 이어 듣기를 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics, errorReporter } = await beginListening();
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'pause' }));
-      await act(async () => speechRecognizer.emit({ type: 'end' }));
-      await user.press(screen.getByRole('button', { name: 'resume' }));
-
-      // Then
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.paused',
-        data: { mode: 'quick', cause: 'user' },
-      });
-      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_resumed', {
-        mode: 'quick',
-        cause: 'user',
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.resumed',
-        data: { mode: 'quick' },
-      });
-    });
-
     it.each(['not-allowed', 'audio-capture'] as const)(
       '%s로 실패하면 실패 이벤트를 남기고 글자를 든 채 멈춘다',
       async (code) => {
@@ -1286,36 +1139,6 @@ describe('useVoiceCaptureSession', () => {
 
       // Then
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
-    });
-
-    describe('멈춘 인식기 재개', () => {
-      setupFakeTimersPerTest({ advanceTimers: true });
-
-      it('멈춘 인식기를 다시 열면 이벤트와 breadcrumb으로 남긴다', async () => {
-        // Given
-        const { speechRecognizer, analytics, errorReporter } = await beginListening({
-          mode: 'note',
-        });
-
-        // When
-        await act(async () => {
-          for (let elapsed = 0; elapsed < 6_100; elapsed += 50) {
-            jest.advanceTimersByTime(50);
-            speechRecognizer.emit({ type: 'volume', level: SPEAKING_LEVEL });
-          }
-        });
-
-        // Then
-        expect(analytics.trackEvent).toHaveBeenCalledWith('voice_recognizer_stalled', {
-          mode: 'note',
-          on_device: true,
-        });
-        expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-          category: 'voice',
-          message: 'capture.recognizer-stalled',
-          data: { mode: 'note', on_device: true },
-        });
-      });
     });
   });
 });

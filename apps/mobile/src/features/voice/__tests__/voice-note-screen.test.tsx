@@ -247,8 +247,11 @@ describe('말로 메모 화면', () => {
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
-    queryClient.setQueryData(MEMO_QUERY_KEYS.list(), []);
-    queryClient.setQueryData(MEMO_QUERY_KEYS.resourceLimit(), null);
+    queryClient.setQueryData(MEMO_QUERY_KEYS.list(), {
+      pages: [{ items: [], nextCursor: null }],
+      pageParams: [undefined],
+    });
+    queryClient.setQueryData(MEMO_QUERY_KEYS.resourceLimit(), { currentCount: 0, maxPerUser: 100 });
     httpClient.post.mockResolvedValue(
       ok({
         todos: [],
