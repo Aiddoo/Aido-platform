@@ -1,12 +1,17 @@
+import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { TodoPolicy, type TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import { useGetUpcomingTodosQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { readDeviceLocalDateState } from '@src/shared/date/clock';
 import type { DateKey } from '@src/shared/date/date-key';
+import { formatTimeOfDay } from '@src/shared/date/format/date-format';
+import type { TimeOfDay } from '@src/shared/date/time-of-day';
 import { toHHmm } from '@src/shared/date/zoned';
 import { getErrorMessage } from '@src/shared/errors';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
@@ -22,6 +27,8 @@ import type { DeviceTimezone, DeviceTimezoneChange } from '../domains/device-tim
 import { deviceTimezoneStoredValue } from '../schemas/device-timezone-storage.schema';
 import { getTimezoneOffsetBucket } from '../utils/notification-analytics';
 
+const EXAMPLE_TODO_TIME: TimeOfDay = { hour: 10, minute: 0 };
+
 /** 보고가 성공해야 서버 재계산이 돌므로 보고 전에는 안내하지 않는다 */
 export function useTimezoneChangeNotice({
   accountId,
@@ -34,6 +41,9 @@ export function useTimezoneChangeNotice({
   const logger = useLogger();
   const { toast } = useAppToast();
   const { t } = useTranslation('notification');
+  const dateFormatContext = useDateFormatContext();
+  // 앱 전체에 걸린 훅이라 요청하지 않고 받아 둔 설정 캐시만 읽는다. 없으면 기본 표기다
+  const { data: preference } = useQuery({ ...useGetPreferenceQueryOptions(), enabled: false });
 
   const [recorded, settleChange] = useRecordedTimezoneChange({ accountId, reportCount });
   const change = recorded?.change ?? null;
@@ -44,7 +54,14 @@ export function useTimezoneChangeNotice({
 
   const announce = useEffectEvent((settled: DeviceTimezoneChange, isNoticeShown: boolean) => {
     if (isNoticeShown) {
-      toast(t('timezoneChanged.title'), { description: t('timezoneChanged.description') });
+      const time = formatTimeOfDay(
+        EXAMPLE_TODO_TIME,
+        preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
+        dateFormatContext,
+      );
+      toast(t('timezoneChanged.title'), {
+        description: t('timezoneChanged.description', { time }),
+      });
     }
     trackEvent('device_timezone_changed', {
       offset_bucket: getTimezoneOffsetBucket(settled),

@@ -1,11 +1,9 @@
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetTodoOverviewQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { getNowInstant } from '@src/shared/date/clock';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
 
 import { ActivationPolicy } from '../domains/activation.model';
 import { activationProgressStoredValue } from '../schemas/activation-progress-storage.schema';
@@ -18,10 +16,7 @@ export function useActivationChecklist() {
     activationProgressStoredValue,
     isAuthenticated ? user?.id : undefined,
   );
-  // React Compiler가 인자 없는 new Date()를 렌더 사이에 붙잡아 두므로, 날짜가 바뀔 때 다시 읽는다
-  const todayKey = useTodayKey();
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- todayKey는 날짜가 바뀔 때 now를 다시 읽게 하는 키다
-  const now = useMemo(() => getNowInstant(), [todayKey]);
+  const now = useMinuteNow();
   const shouldOfferChecklist =
     isAuthenticated &&
     user != null &&

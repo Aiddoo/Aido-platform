@@ -1,3 +1,4 @@
+import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
@@ -140,7 +141,7 @@ function TimeChip({
   const { t } = useTranslation('todo');
   const openSheet = useOpenSheet();
   const dateFormatContext = useDateFormatContext();
-  // 루트 overlay라 경계로 터지지 않게 Suspense 대신 상태로 읽는다. 읽지 못하면 24시간 표기다
+  // 루트 overlay라 경계로 터지지 않게 Suspense 대신 상태로 읽는다. 읽지 못하면 설정 기본 표기다
   const { data: preference, isError } = useQuery(useGetPreferenceQueryOptions());
   const displayedTime = getScheduledTime(value);
 
@@ -186,7 +187,7 @@ function TimeChip({
           ? t('chip.allDay')
           : formatHHmmTime(
               displayedTime,
-              preference?.timeFormat ?? 'TWENTY_FOUR_HOUR',
+              preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
               dateFormatContext,
             )
       }

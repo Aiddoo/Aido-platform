@@ -1,3 +1,4 @@
+import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import {
   TodoCheckbox,
@@ -63,7 +64,7 @@ export function DemoTodoRow({
   const fontScaledSize = useFontScaledSize();
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
   const { data: preference } = useQuery(useGetPreferenceQueryOptions());
-  const timeFormat = preference?.timeFormat ?? 'TWELVE_HOUR';
+  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
   const isPrivate = isPrivateVisibility(todo.visibility);
 
   return match(surface)

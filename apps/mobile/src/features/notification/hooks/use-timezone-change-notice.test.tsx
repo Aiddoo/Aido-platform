@@ -116,9 +116,9 @@ describe('useTimezoneChangeNotice', () => {
 
     // Then
     expect(screen.getAllByText(NOTICE_TITLE).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('오전 10시 할 일은 여기서도 오전 10시예요').length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      screen.getAllByText('오전\u00A010:00 할 일은 여기서도 오전\u00A010:00예요').length,
+    ).toBeGreaterThan(0);
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
     expect(analytics.trackEvent).toHaveBeenCalledWith('device_timezone_changed', {
       offset_bucket: '8h_plus',
