@@ -231,11 +231,7 @@ function useOpenNotification() {
   };
 }
 
-/**
- * 좁은 화면에서 읽은 알림이 알림함과 같은 루트 Stack의 상세로 갈 때만 길게 눌러 미리본다.
- * 미리보기를 눌러 가는 길은 행 onPress를 거치지 않아 안 읽은 알림은 읽음이 빠지고, AI 알림은 프리미엄
- * 안내를 건너뛴다. 넓은 화면은 pane을 고르는 탭으로 연다
- */
+/** 좁은 화면에서 읽은 알림이 같은 루트 Stack의 상세로 갈 때만 길게 눌러 미리본다. 미리보기 이동은 행 onPress를 거치지 않아 읽음과 AI 프리미엄 안내를 건너뛴다 */
 function useFindNotificationHref() {
   const windowSizeClass = useWindowSizeClass();
   const resolveInboxDestination = useResolveInboxDestination();
