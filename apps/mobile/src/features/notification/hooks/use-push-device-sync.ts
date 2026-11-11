@@ -19,7 +19,7 @@ export function usePushDeviceSync({
   authStatus: AuthStatus;
   /** 앞에 떠 있는 채로 시간대가 바뀌면 복귀 이벤트가 없어 이 값으로 알아챈다 */
   deviceTimeZone?: string;
-  /** 보고가 성공하면 부른다. 값이 같아 요청을 건너뛴 때도 부른다 */
+  /** 보고가 성공하면 부른다. 값이 같아 요청을 건너뛴 때도 부르고, 읽는 사이 세션이 끝나 보내지 않은 때는 부르지 않는다 */
   onReported?: () => void;
 }) {
   const pushNotification = usePushNotification();
@@ -43,7 +43,11 @@ export function usePushDeviceSync({
       }
       isReporting = true;
       reportPushDevice({ force })
-        .then(() => onReported?.())
+        .then((device) => {
+          if (device != null) {
+            onReported?.();
+          }
+        })
         .catch(noop)
         .finally(() => {
           isReporting = false;

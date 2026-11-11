@@ -1,36 +1,28 @@
 import { Injectable } from "@nestjs/common";
 
-import { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import {
   type InviteRewardTrigger,
   InviteRewardSchedulerPort,
 } from "../../application/ports/invite-reward-scheduler.port.js";
 import type { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
-import {
-  INVITE_REWARD_JOB_OPTIONS,
-  INVITE_REWARD_QUEUE,
-  type InviteRewardJobData,
-  InviteRewardJobKey,
-} from "./invite-reward.queue.js";
+import { INVITE_REWARD_QUEUE, InviteRewardJobKey } from "./invite-reward.queue.js";
 
 @Injectable()
 export class InviteRewardSchedulerAdapter extends InviteRewardSchedulerPort {
-  readonly #runtime: Pick<JobRuntimePort, "enqueue" | "enqueueMany">;
+  readonly #jobQueue: Pick<JobQueuePort, "enqueue" | "enqueueMany">;
 
-  constructor(runtime: JobRuntimePort) {
+  constructor(jobQueue: JobQueuePort) {
     super();
-    this.#runtime = runtime;
+    this.#jobQueue = jobQueue;
   }
 
   async schedule(redemptionId: InviteRedemptionId, trigger: InviteRewardTrigger): Promise<void> {
-    await this.#runtime.enqueue<InviteRewardJobData>(
+    await this.#jobQueue.enqueue(
       INVITE_REWARD_QUEUE,
       { redemptionId: redemptionId.value },
-      {
-        ...INVITE_REWARD_JOB_OPTIONS,
-        idempotencyKey: InviteRewardJobKey.of(redemptionId, trigger),
-      },
+      { idempotencyKey: InviteRewardJobKey.of(redemptionId, trigger) },
     );
   }
 
@@ -41,14 +33,11 @@ export class InviteRewardSchedulerAdapter extends InviteRewardSchedulerPort {
     if (redemptionIds.length === 0) {
       return;
     }
-    await this.#runtime.enqueueMany<InviteRewardJobData>(
+    await this.#jobQueue.enqueueMany(
       INVITE_REWARD_QUEUE,
       redemptionIds.map((redemptionId) => ({
-        data: { redemptionId: redemptionId.value },
-        options: {
-          ...INVITE_REWARD_JOB_OPTIONS,
-          idempotencyKey: InviteRewardJobKey.of(redemptionId, trigger),
-        },
+        payload: { redemptionId: redemptionId.value },
+        idempotencyKey: InviteRewardJobKey.of(redemptionId, trigger),
       })),
     );
   }

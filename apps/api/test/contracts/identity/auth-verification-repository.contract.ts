@@ -5,6 +5,7 @@ import type {
   AuthVerification,
   AuthVerificationPrimitives,
 } from "#api/modules/identity/auth/domain/auth-verification.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAuthVerificationFixture } from "#test/fixtures/identity/auth-credential.fixture";
 import {
   AUTH_FIXTURE_NOW,
@@ -33,8 +34,8 @@ async function saveVerification(
 
 function consumeInput(verification: AuthVerification, at: Temporal.Instant) {
   return {
-    id: verification.id.value,
-    userId: verification.userId.value,
+    id: verification.id,
+    userId: verification.userId,
     type: verification.type,
     tokenHash: verification.tokenHash,
     maxAttempts: VERIFICATION_CODE.MAX_ATTEMPTS,
@@ -64,7 +65,7 @@ export function describeAuthVerificationRepositoryContract(
 
       // When
       const found = await repository.findValidByUserIdAndType(
-        AUTH_FIXTURE_USER_ID,
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         AUTH_FIXTURE_NOW,
       );
@@ -85,7 +86,7 @@ export function describeAuthVerificationRepositoryContract(
 
       // When
       const found = await repository.findValidByUserIdAndType(
-        AUTH_FIXTURE_USER_ID,
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         LATER,
       );
@@ -104,7 +105,7 @@ export function describeAuthVerificationRepositoryContract(
 
       // When
       const count = await repository.countRecentByUserIdAndType(
-        AUTH_FIXTURE_USER_ID,
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         AUTH_FIXTURE_NOW,
       );
@@ -123,12 +124,12 @@ export function describeAuthVerificationRepositoryContract(
 
       // When
       const count = await repository.invalidateAllByUserIdAndType(
-        AUTH_FIXTURE_USER_ID,
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         LATER,
       );
       const remaining = await repository.findValidByUserIdAndType(
-        AUTH_FIXTURE_USER_ID,
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         AUTH_FIXTURE_NOW,
       );
@@ -137,8 +138,13 @@ export function describeAuthVerificationRepositoryContract(
       expect(count).toBe(1);
       expect(remaining?.toPrimitives()).toEqual({ ...active.toPrimitives(), expiresAt: LATER });
       expect(
-        (await repository.findValidByUserIdAndType(AUTH_FIXTURE_USER_ID, "EMAIL_VERIFY", LATER))?.id
-          .value,
+        (
+          await repository.findValidByUserIdAndType(
+            UserId.reconstitute(AUTH_FIXTURE_USER_ID),
+            "EMAIL_VERIFY",
+            LATER,
+          )
+        )?.id.value,
       ).toBe(otherType.id.value);
     });
 
@@ -151,7 +157,7 @@ export function describeAuthVerificationRepositoryContract(
       const first = await repository.consume(consumeInput(saved, LATER));
       const second = await repository.consume(consumeInput(saved, LATER));
       const valid = await repository.findValidByUserIdAndType(
-        AUTH_FIXTURE_USER_ID,
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         LATER,
       );
@@ -168,7 +174,10 @@ export function describeAuthVerificationRepositoryContract(
 
       // When
       const results = [
-        await repository.consume({ ...input, userId: AUTH_FIXTURE_OTHER_USER_ID }),
+        await repository.consume({
+          ...input,
+          userId: UserId.reconstitute(AUTH_FIXTURE_OTHER_USER_ID),
+        }),
         await repository.consume({ ...input, type: "EMAIL_VERIFY" }),
         await repository.consume({ ...input, tokenHash: "other-digest" }),
         await repository.consume({ ...input, at: saved.expiresAt }),
@@ -186,10 +195,10 @@ export function describeAuthVerificationRepositoryContract(
       const saved = await saveVerification(repository);
 
       // When
-      await repository.incrementAttempts(saved.id.value);
-      await repository.incrementAttempts(saved.id.value);
+      await repository.incrementAttempts(saved.id);
+      await repository.incrementAttempts(saved.id);
       const afterIncrements = await repository.findValidByUserIdAndType(
-        AUTH_FIXTURE_USER_ID,
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         AUTH_FIXTURE_NOW,
       );
@@ -197,7 +206,7 @@ export function describeAuthVerificationRepositoryContract(
         createAuthVerificationFixture({ ...saved.toPrimitives(), attempts: 4, usedAt: LATER }),
       );
       const afterSave = await repository.countRecentByUserIdAndType(
-        AUTH_FIXTURE_USER_ID,
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         AUTH_FIXTURE_NOW,
       );
@@ -207,7 +216,7 @@ export function describeAuthVerificationRepositoryContract(
       expect(afterSave).toBe(1);
       expect(
         await repository.findValidByUserIdAndType(
-          AUTH_FIXTURE_USER_ID,
+          UserId.reconstitute(AUTH_FIXTURE_USER_ID),
           "PASSWORD_RESET",
           AUTH_FIXTURE_NOW,
         ),

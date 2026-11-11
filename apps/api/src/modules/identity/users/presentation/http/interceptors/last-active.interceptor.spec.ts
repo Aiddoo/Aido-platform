@@ -6,6 +6,7 @@ import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-hos
 import { of } from "rxjs";
 
 import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
 
@@ -24,12 +25,12 @@ class RecordingActivityWriter extends AuthUserActivityWriterPort {
 
   // 인터셉터가 붙이는 catch가 바로 다음 tick에 돌도록 async로 감싸지 않는다
   updateLastActiveAt(activity: {
-    readonly userId: string;
+    readonly userId: UserId;
     readonly timezone: string;
     readonly seenAt: Temporal.Instant;
     readonly appVersion?: string;
   }): Promise<void> {
-    this.writes.push([activity.userId, activity.timezone, activity.appVersion]);
+    this.writes.push([activity.userId.value, activity.timezone, activity.appVersion]);
     return this.#outcomes.shift()?.() ?? Promise.resolve();
   }
 }

@@ -29,15 +29,15 @@ export class CheerLimitReaderAdapter extends CheerLimitReaderPort {
   }
 
   readLimit(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimit(userId.value, "CHEER");
+    return this.#entitlementReader.getFeatureLimit(userId, "CHEER");
   }
 
   readLimitInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTx(userId.value, "CHEER");
+    return this.#entitlementReader.getFeatureLimitInTx(userId, "CHEER");
   }
 
   readFeatureQuotaInTx(userId: UserId, usage: DailySendQuotaUsage): Promise<DailySendFeatureQuota> {
-    return this.#entitlementReader.getFeatureQuotaInTx(userId.value, "CHEER", {
+    return this.#entitlementReader.getFeatureQuotaInTx(userId, "CHEER", {
       used: usage.used,
       resetsAt: instantToDate(usage.resetsAt),
     });

@@ -11,6 +11,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
 import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import {
   createNudgeFixture,
@@ -74,9 +75,10 @@ describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
             title: seed.title,
             completed: seed.completed,
             visibility: seed.visibility,
-            startDate: new Date(seed.startDate.toString()),
-            endDate: seed.endDate == null ? null : new Date(seed.endDate.toString()),
+            startDate: seed.startDate,
+            endDate: seed.endDate,
             sortOrder: 0,
+            updatedAt: nowInstant(),
           }),
           ["id"],
         ),

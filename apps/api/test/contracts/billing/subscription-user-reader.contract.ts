@@ -4,7 +4,7 @@ import {
   SUBSCRIPTION_FIXTURE_USER_ID,
 } from "#test/fixtures/billing/subscription.fixture";
 
-export interface SeedSubscriptionUserInput {
+interface SeedSubscriptionUserInput {
   readonly id: string;
   readonly email: string;
   /** null이면 프로필 행이 없다 */

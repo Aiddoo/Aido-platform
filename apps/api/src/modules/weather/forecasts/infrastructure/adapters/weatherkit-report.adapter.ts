@@ -56,8 +56,8 @@ const availabilitySchema = z
 const cachedAvailabilitySchema = z.array(z.enum(DATA_SETS));
 
 /** 사용자 요청 경로라 모듈 공용 10초보다 짧게 끊고 폴백으로 넘긴다. */
-const WEATHER_TIMEOUT_MS = 4_000;
-const AVAILABILITY_TIMEOUT_MS = 3_000;
+const WEATHER_TIMEOUT_MS = 4000;
+const AVAILABILITY_TIMEOUT_MS = 3000;
 const AUTH_REJECTED_STATUSES: readonly number[] = [401, 403];
 
 const MS_PER_HOUR = 60 * 60_000;

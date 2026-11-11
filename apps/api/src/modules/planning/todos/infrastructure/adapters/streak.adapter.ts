@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { UserStreakAccessPort } from "#api/modules/identity/identity-settings.public";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { StreakPort } from "../../application/ports/streak.port.js";
 
@@ -19,23 +19,18 @@ export class StreakAdapter implements StreakPort {
     this.#userStreakAccess = userStreakAccess;
   }
 
-  async recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void> {
+  async recordTodoToggle(userId: UserId, completed: boolean, timezone: string): Promise<void> {
     await this.#userStreakAccess.recordTodoToggle(userId, completed, timezone);
   }
 
-  async getStreakContext(userId: string): Promise<{
+  async getStreakContext(userId: UserId): Promise<{
     currentStreak: number;
-    lastCompletedDate: Date | null;
+    lastCompletedDate: Temporal.PlainDate | null;
   }> {
     const record = await this.#userStreakAccess.getPreferenceRecord(userId);
-    const lastCompletedDate = record?.lastCompletedDate ?? null;
-    // 요약의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
     return {
       currentStreak: record?.currentStreak ?? 0,
-      lastCompletedDate:
-        lastCompletedDate == null
-          ? null
-          : instantToDate(lastCompletedDate.toZonedDateTime("UTC").toInstant()),
+      lastCompletedDate: record?.lastCompletedDate ?? null,
     };
   }
 }

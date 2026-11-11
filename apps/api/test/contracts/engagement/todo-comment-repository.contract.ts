@@ -4,6 +4,7 @@ import type {
   TodoComment,
   TodoCommentPrimitives,
 } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createTodoCommentFixture,
@@ -49,10 +50,13 @@ export function describeTodoCommentRepositoryContract(
       const comment = await saveComment(repository, { requestFingerprint: "a".repeat(64) });
 
       // When
-      const found = await repository.findByIdAndTodoId(comment.id, TODO_COMMENT_FIXTURE_TODO_ID);
+      const found = await repository.findByIdAndTodoId(
+        comment.id,
+        TodoId.reconstitute(TODO_COMMENT_FIXTURE_TODO_ID),
+      );
       const foreign = await repository.findByIdAndTodoId(
         comment.id,
-        TODO_COMMENT_FIXTURE_TODO_ID + 1,
+        TodoId.reconstitute(TODO_COMMENT_FIXTURE_TODO_ID + 1),
       );
 
       // Then
@@ -72,7 +76,10 @@ export function describeTodoCommentRepositoryContract(
 
       // When
       await repository.save(changed);
-      const found = await repository.findByIdAndTodoId(head.id, TODO_COMMENT_FIXTURE_TODO_ID);
+      const found = await repository.findByIdAndTodoId(
+        head.id,
+        TodoId.reconstitute(TODO_COMMENT_FIXTURE_TODO_ID),
+      );
 
       // Then
       expect(found?.toPrimitives()).toEqual({

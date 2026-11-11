@@ -1,4 +1,4 @@
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 import { ADMIN_NOTIFICATION_QUEUE, AdminNotificationJobName } from "./admin-notification.queue.js";
 
@@ -45,7 +45,7 @@ describe("관리자 알림 큐 정의", () => {
             event: "billing_issue",
             environment: "PRODUCTION",
             store: "PLAY_STORE",
-            price: { amount: 3_900, currency: "KRW", usd: 2.99 },
+            price: { amount: 3900, currency: "KRW", usd: 2.99 },
             endReason: "BILLING_ERROR",
             premium: { source: "STORE", bankedDays: 7, isTrial: false },
           },

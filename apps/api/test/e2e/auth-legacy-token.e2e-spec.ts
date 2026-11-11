@@ -104,7 +104,7 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
       .update(sessionTable)
       .set({
         lastUsedAt: Temporal.Now.instant().subtract({
-          milliseconds: TOKEN_REUSE_GRACE_PERIOD_MS + 1_000,
+          milliseconds: TOKEN_REUSE_GRACE_PERIOD_MS + 1000,
         }),
       })
       .where(eq(sessionTable.id, legacy.sessionId));

@@ -11,7 +11,8 @@ import { Email } from "#api/modules/identity/auth/domain/email.vo";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AuthLogEvent } from "../auth.log-events.js";
@@ -101,7 +102,7 @@ export class RegisterUseCase {
         });
 
         await this.#dependencies.securityLogRepository.create({
-          userId: newUser.id,
+          userId: UserId.reconstitute(newUser.id),
           event: SECURITY_EVENT.REGISTRATION,
           ipAddress: ip,
           userAgent,

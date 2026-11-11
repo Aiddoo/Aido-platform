@@ -1,5 +1,3 @@
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
-
 import type { NotificationType } from "../../inbox/domain/notification-type.constants.js";
 
 /**
@@ -35,7 +33,7 @@ export interface DedupContextFields {
 }
 
 const DEDUP_WINDOW = {
-  FOLLOW: 24 * TIME_UNIT.MS_PER_HOUR, // 24시간
+  FOLLOW: 24 * 60 * 60_000, // 24시간
 } as const;
 
 const DEDUP_STRATEGIES: Partial<Record<NotificationType, DedupStrategy>> = {
@@ -44,7 +42,7 @@ const DEDUP_STRATEGIES: Partial<Record<NotificationType, DedupStrategy>> = {
 };
 
 /** dedup 잠금 TTL (밀리초) — DB 조회 + 생성에 충분한 시간 */
-export const DEDUP_LOCK_TTL = 5_000;
+export const DEDUP_LOCK_TTL = 5000;
 
 /** 타입별 dedup 전략 조회 (없으면 서비스 레이어 dedup 미적용) */
 export function resolveDedupStrategy(type: NotificationType): DedupStrategy | undefined {

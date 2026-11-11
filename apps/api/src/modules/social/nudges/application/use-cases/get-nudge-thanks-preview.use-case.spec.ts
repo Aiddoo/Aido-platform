@@ -125,6 +125,33 @@ describe("GetNudgeThanksPreviewUseCase — 감사 받을 친구 미리보기", (
     expect(legacy.pagination).toBeNull();
   });
 
+  it("완료 저장보다 먼저 도착한 조회는 받은 콕·전한 감사가 있어도 거절하지 않고 빈 미리보기를 준다", async () => {
+    // Given
+    const nudgeRepository = new InMemoryNudgeRepository();
+    const todoId = await seedCompletedTodo(nudgeRepository, { completed: false });
+    await nudgeRepository.save(
+      createNudgeFixture({ id: 1, senderId: "friend-a", todoId, thankedAt: FIRST_THANKED_AT }),
+    );
+    await nudgeRepository.save(createNudgeFixture({ id: 2, senderId: "friend-b", todoId }));
+
+    // When
+    const preview = await createUseCase(nudgeRepository).execute({
+      userId: NUDGE_FIXTURE_RECEIVER_ID,
+      todoId,
+      limit: 20,
+    });
+
+    // Then
+    expect(preview).toEqual({
+      todoId,
+      throughNudgeId: null,
+      recipients: [],
+      pagination: { totalRecipients: 0, nextCursor: null, hasNext: false },
+      thankedRecipientCount: 0,
+      lastThankedAt: null,
+    });
+  });
+
   it("비공개 할 일은 대상 없이 감사 요약만 준다", async () => {
     // Given
     const nudgeRepository = new InMemoryNudgeRepository();
@@ -160,13 +187,6 @@ describe("GetNudgeThanksPreviewUseCase — 감사 받을 친구 미리보기", (
       todo: { ownerId: "friend-a" },
       throughNudgeId: undefined,
       code: ErrorCode.TODO_0801,
-    },
-    {
-      name: "완료하지 않은 할 일",
-      isEnabled: true,
-      todo: { completed: false },
-      throughNudgeId: undefined,
-      code: ErrorCode.NUDGE_1110,
     },
     {
       name: "다른 할 일의 경계 콕",

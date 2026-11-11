@@ -70,7 +70,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       durationSeconds: 60,
       segments: [
         { startMs: 0, text: "회의를 했습니다.", isBookmarked: false },
-        { startMs: 4_200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
+        { startMs: 4200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
       ],
     };
   }
@@ -182,7 +182,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       // Then
       const parsed = voiceNoteDigestResponseSchema.parse(response.body.data);
       expect(response.body.data).not.toHaveProperty("meta");
-      expect(parsed.keyPoints[0]?.startMs).toBe(4_200);
+      expect(parsed.keyPoints[0]?.startMs).toBe(4200);
       expect(parsed.featureQuota).toMatchObject({
         feature: "VOICE_NOTE",
         used: 1,

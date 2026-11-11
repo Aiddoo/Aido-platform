@@ -1,10 +1,13 @@
 import {
   type FindPushTokensParams,
+  type KeepPushTokenData,
   PushTokenRegistrationConflictError,
   PushTokenRepositoryPort,
   type RegisterPushTokenData,
 } from "#api/modules/notification/push/application/ports/push-token.repository.port";
 import type { PushTokenRecord } from "#api/modules/notification/push/application/read-models/push-token.read-model";
+import type { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 interface StoredPushToken extends PushTokenRecord {
   readonly sessionId: string | null;
@@ -48,17 +51,23 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return stored == null ? undefined : toRecord(stored);
   }
 
+  sessionOf(userId: string, deviceId: string): string | null | undefined {
+    return this.#find((row) => row.userId === userId && row.deviceId === deviceId)?.sessionId;
+  }
+
   async releasePushTokenHeldElsewhere(data: {
-    readonly userId: string;
-    readonly deviceId: string;
+    readonly userId: UserId;
+    readonly deviceId: PushDeviceId;
     readonly token: string | null;
   }): Promise<{ readonly userIds: readonly string[] }> {
+    const userId = data.userId.value;
+    const deviceId = data.deviceId.value;
     const released = [...this.#tokens.values()].filter((row) => {
-      const sameDeviceOfOtherUser = row.deviceId === data.deviceId && row.userId !== data.userId;
+      const sameDeviceOfOtherUser = row.deviceId === deviceId && row.userId !== userId;
       const sameTokenElsewhere =
         data.token != null &&
         row.token === data.token &&
-        (row.userId !== data.userId || row.deviceId !== data.deviceId);
+        (row.userId !== userId || row.deviceId !== deviceId);
       return sameDeviceOfOtherUser || sameTokenElsewhere;
     });
     return { userIds: this.#delete(released) };
@@ -67,7 +76,7 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
   async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
     this.registerAttempts += 1;
     const existing = this.#find(
-      (row) => row.userId === data.userId && row.deviceId === data.deviceId,
+      (row) => row.userId === data.userId.value && row.deviceId === data.deviceId.value,
     );
     const tokenHolder = this.#find((row) => row.token === data.token);
     if (this.#conflictsLeft > 0 || (tokenHolder != null && tokenHolder !== existing)) {
@@ -78,9 +87,9 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     this.#sequence = Math.max(this.#sequence, id);
     const stored: StoredPushToken = {
       id,
-      userId: data.userId,
+      userId: data.userId.value,
       token: data.token,
-      deviceId: data.deviceId,
+      deviceId: data.deviceId.value,
       platform: data.platform,
       sessionId: data.sessionId,
       isActive: true,
@@ -94,29 +103,60 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return toRecord(stored);
   }
 
+  async keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }> {
+    const existing = this.#find(
+      (row) => row.userId === data.userId.value && row.deviceId === data.deviceId.value,
+    );
+    if (existing == null) {
+      return { hasActiveToken: false };
+    }
+    this.#tokens.set(existing.id, {
+      ...existing,
+      sessionId: data.sessionId,
+      payloadVersion: data.payloadVersion,
+      appVersion: data.appVersion,
+      updatedAt: data.keptAt,
+    });
+    return { hasActiveToken: existing.isActive };
+  }
+
   async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {
     return [...this.#tokens.values()]
-      .filter((row) => row.userId === params.userId && (!params.activeOnly || row.isActive))
+      .filter((row) => row.userId === params.userId.value && (!params.activeOnly || row.isActive))
       .toSorted(compareRecentFirst)
       .map(toRecord);
   }
 
-  async findActivePushTokensByUsers(userIds: string[]): Promise<PushTokenRecord[]> {
+  async findActivePushTokensByUsers(users: readonly UserId[]): Promise<PushTokenRecord[]> {
+    const userIds = users.map((user) => user.value);
     return [...this.#tokens.values()]
       .filter((row) => userIds.includes(row.userId) && row.isActive)
       .map(toRecord);
   }
 
-  async deletePushTokensByDevice(userId: string, deviceId: string): Promise<{ count: number }> {
+  async deletePushTokensByDevice(
+    userId: UserId,
+    deviceId: PushDeviceId,
+  ): Promise<{ count: number }> {
     const deleted = [...this.#tokens.values()].filter(
-      (row) => row.userId === userId && row.deviceId === deviceId,
+      (row) => row.userId === userId.value && row.deviceId === deviceId.value,
     );
     return { count: this.#delete(deleted).length };
   }
 
-  async deleteAllPushTokensByUser(userId: string): Promise<{ count: number }> {
-    const deleted = [...this.#tokens.values()].filter((row) => row.userId === userId);
+  async deleteAllPushTokensByUser(userId: UserId): Promise<{ count: number }> {
+    const deleted = [...this.#tokens.values()].filter((row) => row.userId === userId.value);
     return { count: this.#delete(deleted).length };
+  }
+
+  async deletePushTokenByDeviceAndToken(data: {
+    readonly deviceId: PushDeviceId;
+    readonly token: string;
+  }): Promise<{ readonly userIds: readonly string[] }> {
+    const deleted = [...this.#tokens.values()].filter(
+      (row) => row.token === data.token && row.deviceId === data.deviceId.value,
+    );
+    return { userIds: this.#delete(deleted) };
   }
 
   async deletePushTokensBySessions(

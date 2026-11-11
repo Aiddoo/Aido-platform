@@ -1,5 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NotificationDeliveryLogEvent } from "../../../push/application/notification-delivery.log-events.js";
 import { NotificationId } from "../../domain/notification-id.vo.js";
@@ -28,15 +29,16 @@ export class MarkNotificationOpenedUseCase {
 
   async execute(command: MarkNotificationOpenedCommand): Promise<boolean> {
     const { notificationRepository, cache, clock, logger } = this.#dependencies;
+    const userId = UserId.reconstitute(command.userId);
     const isOpened = await notificationRepository.markAsOpened(
       NotificationId.reconstitute(command.notificationId),
-      command.userId,
+      userId,
       clock.now(),
     );
     if (isOpened) {
-      await cache.invalidateUnreadCount(command.userId);
+      await cache.invalidateUnreadCount(userId);
       logger.log({
-        event: NotificationDeliveryLogEvent.MARK_NOTIFICATION_OPENED_OPENED,
+        event: NotificationDeliveryLogEvent.PUSH_OPENED,
         userId: command.userId,
         notificationId: command.notificationId,
       });

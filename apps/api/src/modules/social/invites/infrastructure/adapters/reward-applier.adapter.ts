@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 
 import { FeatureGranterPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 
 import { inviteUserNotFound } from "../../application/invites.errors.js";
 import { RewardApplierPort } from "../../application/ports/reward-applier.port.js";
@@ -36,7 +36,7 @@ export class RewardApplierAdapter extends RewardApplierPort {
 
   async #applyPremiumDays(grant: RewardGrant): Promise<void> {
     const result = await this.#premiumGranter.grant({
-      userId: grant.recipientId.value,
+      userId: grant.recipientId,
       source: "INVITE",
       sourceKey: grant.benefitSourceKey,
       durationDays: grant.quantity,
@@ -48,7 +48,7 @@ export class RewardApplierAdapter extends RewardApplierPort {
 
   async #applyFriendSlot(grant: RewardGrant): Promise<void> {
     await this.#featureGranter.grant({
-      userId: grant.recipientId.value,
+      userId: grant.recipientId,
       feature: "FRIEND",
       quantity: grant.quantity,
       sourceKey: grant.benefitSourceKey,

@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryCheerRepository } from "#test/doubles/social/in-memory-cheer.repository";
 import {
@@ -20,7 +21,10 @@ describe("CheerUsageReader — identity가 읽는 응원 일간 사용량", () =
     });
 
     // When
-    const usage = await reader.readDailyUsage(CHEER_FIXTURE_SENDER_ID, "Asia/Seoul");
+    const usage = await reader.readDailyUsage(
+      UserId.reconstitute(CHEER_FIXTURE_SENDER_ID),
+      "Asia/Seoul",
+    );
 
     // Then
     expect(usage).toEqual({ used: 1, resetsAt: new Date("2026-07-26T15:00:00.000Z") });

@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import { inject } from "vitest";
 
-import "../src/shared/domain/date/dayjs.setup.js";
 import { selectWorkerDatabaseUri } from "./setup/test-database-workers.js";
 
 const database = inject("testDatabase");

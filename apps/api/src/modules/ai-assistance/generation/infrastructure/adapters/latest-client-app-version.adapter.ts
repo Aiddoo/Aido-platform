@@ -1,8 +1,9 @@
 import { compareSemanticVersions } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 
-import { UserAppVersionReaderPort } from "#api/modules/identity/identity-user-access.public";
+import { UserAppVersionReaderPort } from "#api/modules/identity/users/identity-users.public";
 import { ClientAppVersionReaderPort } from "#api/modules/notification/notification-delivery.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AiClientAppVersionReaderPort } from "../../application/ports/client-app-version.reader.port.js";
 
@@ -24,7 +25,7 @@ export class LatestClientAppVersionAdapter extends AiClientAppVersionReaderPort 
     this.#requestVersions = requestVersions;
   }
 
-  async findLatestAppVersion(userId: string): Promise<string | null> {
+  async findLatestAppVersion(userId: UserId): Promise<string | null> {
     const [pushDeviceVersion, requestVersion] = await Promise.all([
       this.#pushDeviceVersions.findLatestAppVersion(userId),
       this.#requestVersions.findLastSeenAppVersion(userId),

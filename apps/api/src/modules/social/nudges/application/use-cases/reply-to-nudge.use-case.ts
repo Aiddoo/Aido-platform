@@ -1,5 +1,6 @@
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -58,7 +59,10 @@ export class ReplyToNudgeUseCase {
       if (received == null || received.receiverId !== command.userId) {
         throw nudgeInteractionNotFound();
       }
-      const todo = await nudgeRepository.lockInteractionTodo(received.todoId, userId);
+      const todo = await nudgeRepository.lockInteractionTodo(
+        TodoId.reconstitute(received.todoId),
+        userId,
+      );
       if (todo == null) {
         throw nudgeInteractionClosed();
       }
@@ -68,7 +72,7 @@ export class ReplyToNudgeUseCase {
       if (nudge == null || !nudge.isReceivedBy(userId)) {
         throw nudgeInteractionNotFound();
       }
-      const friendIds = await followReader.getCurrentMutualFriendIds(command.userId);
+      const friendIds = await followReader.getCurrentMutualFriendIds(userId);
       const isAvailable = isNudgeInteractionAvailable({
         receiverId: command.userId,
         isMutualFriend: friendIds.includes(nudge.senderId.value),

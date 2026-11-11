@@ -2,6 +2,7 @@ import {
   UserBlockReaderPort,
   type UserBlockRelation,
 } from "#api/modules/social/blocks/social-blocks.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // blockerId가 blockedId를 차단한 방향 있는 쌍만 들고 차단 관계를 돌려준다
 export class StubUserBlockReader extends UserBlockReaderPort {
@@ -11,23 +12,25 @@ export class StubUserBlockReader extends UserBlockReaderPort {
     this.#blocks.add(`${blockerId}>${blockedId}`);
   }
 
-  async findRelation(userId: string, otherUserId: string): Promise<UserBlockRelation> {
+  async findRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation> {
     return {
-      isBlocking: this.#blocks.has(`${userId}>${otherUserId}`),
-      isBlockedBy: this.#blocks.has(`${otherUserId}>${userId}`),
+      isBlocking: this.#blocks.has(`${userId.value}>${otherUserId.value}`),
+      isBlockedBy: this.#blocks.has(`${otherUserId.value}>${userId.value}`),
     };
   }
 
   async findBlockedCounterpartIds(
-    viewerId: string,
-    candidateUserIds: readonly string[],
+    viewerId: UserId,
+    candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>> {
     return new Set(
-      candidateUserIds.filter(
-        (candidateId) =>
-          this.#blocks.has(`${viewerId}>${candidateId}`) ||
-          this.#blocks.has(`${candidateId}>${viewerId}`),
-      ),
+      candidateUserIds
+        .map((candidateId) => candidateId.value)
+        .filter(
+          (candidateId) =>
+            this.#blocks.has(`${viewerId.value}>${candidateId}`) ||
+            this.#blocks.has(`${candidateId}>${viewerId.value}`),
+        ),
     );
   }
 }

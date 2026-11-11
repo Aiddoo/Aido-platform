@@ -19,11 +19,9 @@ import { EventSubscriptionCatalog } from "#api/platform/events/event-subscriptio
 import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import {
-  AfterCommitTaskRegistryPort,
-  type PublishedDomainEvent,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { type PublishedDomainEvent } from "#api/shared/application/ports/domain-event-publisher.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -78,6 +76,7 @@ describe("초대 사용 시작 기록의 내구성 구독 (실제 PostgreSQL·pg
       boss,
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost),
       new JobQueueRegistry(),
+      { shutdownTimeoutMs: 10_000 },
     );
     // 커밋 뒤 in-process 전달을 받을 리스너가 하나도 없는 emitter다
     eventEmitter = new EventEmitter2();

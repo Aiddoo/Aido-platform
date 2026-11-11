@@ -5,6 +5,7 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import { StoreSubscriptionId } from "../../../domain/store-subscription-id.vo.js";
 import {
   RevenueCatRequestError,
   RevenueCatStoreSubscriptionStatusAdapter,
@@ -69,7 +70,6 @@ function createAdapter(revenuecat: { apiV2SecretKey?: string; projectId?: string
     new HttpClient({ retry: false, throwOnHttpError: false }),
     {
       revenuecat: {
-        webhookSecret: undefined,
         apiV2SecretKey: revenuecat.apiV2SecretKey,
         projectId: revenuecat.projectId,
       },
@@ -98,7 +98,7 @@ describe("RevenueCatStoreSubscriptionStatusAdapter — RevenueCat v2 구독 상�
     const reader = createAdapter({ apiV2SecretKey: "sk_test", projectId: PROJECT_ID });
 
     // When
-    const states = await reader.read([CHAIN_ID]);
+    const states = await reader.read([StoreSubscriptionId.reconstitute(CHAIN_ID)]);
 
     // Then
     expect(states).toEqual([
@@ -121,7 +121,7 @@ describe("RevenueCatStoreSubscriptionStatusAdapter — RevenueCat v2 구독 상�
     const reader = createAdapter({ projectId: PROJECT_ID });
 
     // When
-    const states = await reader.read([CHAIN_ID]);
+    const states = await reader.read([StoreSubscriptionId.reconstitute(CHAIN_ID)]);
 
     // Then
     expect(states).toBeNull();
@@ -137,7 +137,7 @@ describe("RevenueCatStoreSubscriptionStatusAdapter — RevenueCat v2 구독 상�
     const reader = createAdapter({ apiV2SecretKey: "sk_test", projectId: PROJECT_ID });
 
     // When
-    const reading = reader.read([CHAIN_ID]);
+    const reading = reader.read([StoreSubscriptionId.reconstitute(CHAIN_ID)]);
 
     // Then
     await expect(reading).rejects.toBeInstanceOf(RevenueCatRequestError);

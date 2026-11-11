@@ -9,7 +9,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { QuotaUsageReading } from "../../domain/entitlement.domain-service.js";
 
 /** 계량기 없이 소유 Context가 세는 일간 quota (CHEER·NUDGE) */
-export type UnmeteredQuotaFeatureKey = Exclude<PlanQuotaFeatureKey, MeteredFeatureKey>;
+type UnmeteredQuotaFeatureKey = Exclude<PlanQuotaFeatureKey, MeteredFeatureKey>;
 
 /** Access가 셀 수 없어 소유 Context가 센 사용량 */
 export interface OwnedFeatureUsage {

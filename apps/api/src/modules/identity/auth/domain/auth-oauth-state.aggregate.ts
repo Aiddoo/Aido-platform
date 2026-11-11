@@ -90,7 +90,7 @@ export class AuthOAuthState extends AggregateRoot<OAuthStateId, AuthOAuthStatePr
     return Temporal.Instant.compare(this.props.expiresAt, now) <= 0 ? "expired" : "valid";
   }
 
-  // 옛 state 행은 시작한 사용자가 비어 있을 수 있어 그때는 누구의 연결이든 받는다
+  // 1.15.0까지의 앱은 연결 시작에 user_hint를 보내지 않아 시작한 사용자가 비어 있다. 모든 지원 앱이 보내면 지운다
   canLinkFor(userId: string): boolean {
     return (
       this.props.mode === "link" &&

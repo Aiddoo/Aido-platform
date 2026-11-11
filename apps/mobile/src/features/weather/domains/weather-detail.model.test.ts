@@ -1,11 +1,15 @@
 import { fromEpochMs, getNowInstant, toInstant } from '@src/shared/date/instant';
 
-import { createHourlyForecastDto, createWeatherReport } from '../__tests__/weather-report.fixtures';
+import {
+  createDailyForecast,
+  createHourlyForecastDto,
+  createWeatherReport,
+} from '../__tests__/weather-report.fixtures';
 import { WeatherDetailPolicy } from './weather-detail.model';
 
 const SUNRISE = toInstant('2026-11-01T21:51:00.000Z');
 const SUNSET = toInstant('2026-11-02T08:28:00.000Z');
-const DAY = { sunrise: SUNRISE, sunset: SUNSET };
+const DAY = createDailyForecast({ sunrise: SUNRISE, sunset: SUNSET });
 
 describe('findSunscreenWindow', () => {
   const now = toInstant('2026-11-02T02:30:00.000Z');

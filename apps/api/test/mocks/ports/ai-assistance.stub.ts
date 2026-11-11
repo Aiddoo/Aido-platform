@@ -7,13 +7,14 @@ import type {
   AggregateParams,
   AggregationInputs,
 } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
-import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type {
   WeatherForecastReaderPort,
   GridInput,
   WeatherForecast,
 } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 /** 콜백 조립 Stub. 실제 PostgreSQL rollback/lock 보장은 Integration에서 검증한다. */
 export class StubAiGenerationUnitOfWork implements UnitOfWorkPort {
@@ -40,8 +41,12 @@ export class StubAiGenerationAccess
   exists = true;
   readonly reads: Array<{ inUnitOfWork: boolean; eligible: boolean }> = [];
   readonly locks: boolean[] = [];
-  constructor(readonly unitOfWork: StubAiGenerationUnitOfWork) {}
-  async canInTx(_userId: string, _feature: PremiumFeature): Promise<boolean> {
+  readonly unitOfWork: StubAiGenerationUnitOfWork;
+
+  constructor(unitOfWork: StubAiGenerationUnitOfWork) {
+    this.unitOfWork = unitOfWork;
+  }
+  async canInTx(_userId: UserId, _feature: PremiumFeature): Promise<boolean> {
     const eligible =
       this.exists &&
       this.status === "ACTIVE" &&
@@ -50,7 +55,7 @@ export class StubAiGenerationAccess
     this.reads.push({ inUnitOfWork: this.unitOfWork.depth > 0, eligible });
     return eligible;
   }
-  async lockById(_userId: string): Promise<boolean> {
+  async lockById(_userId: UserId): Promise<boolean> {
     this.locks.push(this.unitOfWork.depth > 0);
     return this.exists;
   }

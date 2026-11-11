@@ -6,15 +6,7 @@ import type { WeeklyAchievement, WeeklyAchievementPage } from '../domains/achiev
 
 export function toWeeklyAchievement(dto: WeeklyAchievementDto): WeeklyAchievement {
   return {
-    ...pick(dto, [
-      'id',
-      'year',
-      'week',
-      'weekLabel',
-      'totalTodos',
-      'completedTodos',
-      'completionRate',
-    ]),
+    ...pick(dto, ['id', 'year', 'week', 'totalTodos', 'completedTodos', 'completionRate']),
     dateRange: pick(dto.dateRange, ['startDate', 'endDate']),
     achievedAt: toInstant(dto.achievedAt),
   };

@@ -1,10 +1,11 @@
 import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek, type DayOfWeek } from "@aido/api/vocabulary";
 import { groupBy, keyBy, mapValues, orderBy, sumBy } from "es-toolkit";
 
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
+
 import {
   localDateAt,
   localDateTimeAt,
-  plainDateOfDateColumn,
   sundayBasedDayIndex,
 } from "../../shared/domain/user-calendar.domain-service.js";
 import type {
@@ -29,7 +30,7 @@ function sumCountsBy<K extends PropertyKey>(
 }
 
 const toDayOfWeek = (group: DailyGroupRow): DayOfWeek =>
-  dayIndexToDayOfWeek(sundayBasedDayIndex(plainDateOfDateColumn(group.startDate)));
+  dayIndexToDayOfWeek(sundayBasedDayIndex(plainDateFromDate(group.startDate)));
 
 /**
  * 카테고리별 집계 계산
@@ -116,7 +117,7 @@ export function computeStreakDays(
   endDate: Date,
   timezone: string,
 ): number {
-  const dateKeyOf = (group: DailyGroupRow) => plainDateOfDateColumn(group.startDate).toString();
+  const dateKeyOf = (group: DailyGroupRow) => plainDateFromDate(group.startDate).toString();
   const totalByDate = sumCountsBy(totalGroups, dateKeyOf);
   const completedByDate = sumCountsBy(completedGroups, dateKeyOf);
 

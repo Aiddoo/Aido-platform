@@ -1,7 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import { UserProfileInvalidatorPort } from "#api/modules/identity/identity-user-access.public";
+import { UserProfileInvalidatorPort } from "#api/modules/identity/users/identity-users.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { PremiumAccessCachePort } from "../../application/ports/premium-access-cache.port.js";
 
@@ -20,7 +21,7 @@ export class PremiumAccessCacheAdapter extends PremiumAccessCachePort {
     this.#profileCache = profileCache;
   }
 
-  async invalidate(userId: string): Promise<void> {
+  async invalidate(userId: UserId): Promise<void> {
     await Promise.all([
       this.#entitlementCache.invalidateEntitlements(userId),
       this.#profileCache.invalidateUserProfile(userId),

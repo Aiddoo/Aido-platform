@@ -3,8 +3,6 @@ import { chunk, groupBy } from "es-toolkit";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   PUSH_DELIVERY_LANES,
@@ -99,7 +97,9 @@ export class PublishPushDeliveryOutboxUseCase {
       await this.#dependencies.unitOfWork.run(() =>
         this.#dependencies.outbox.defer({
           publications,
-          availableAt: addMilliseconds(pushDeliveryOutboxRetryDelayMs(highestAttempt), this.#now()),
+          availableAt: this.#now().add({
+            milliseconds: pushDeliveryOutboxRetryDelayMs(highestAttempt),
+          }),
           error: message,
         }),
       );
@@ -127,7 +127,7 @@ export class PublishPushDeliveryOutboxUseCase {
     }
   }
 
-  #now(): Date {
-    return instantToDate(this.#dependencies.clock.now());
+  #now(): Temporal.Instant {
+    return this.#dependencies.clock.now();
   }
 }

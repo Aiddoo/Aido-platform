@@ -7,7 +7,7 @@ import { NOTICE_DEEP_LINK_PATH, type NoticeDeepLinkPath } from "@aido/api/vocabu
  */
 
 /** 온보딩 알림 발송 대상 day (가입 후 경과일) */
-export const ONBOARDING_DAYS = [0, 1, 2, 3, 5, 7] as const;
+const ONBOARDING_DAYS = [0, 1, 2, 3, 5, 7] as const;
 export type OnboardingDay = (typeof ONBOARDING_DAYS)[number];
 export type OnboardingDayRequiringCompletedCount = Extract<OnboardingDay, 5 | 7>;
 

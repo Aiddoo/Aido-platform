@@ -7,17 +7,18 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { IdempotencyKey, Timezone } from "#api/platform/http/decorators/index";
+import { IdempotencyKey } from "#api/platform/http/decorators/idempotency-key.decorator";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { ApplyActionPlanUseCase } from "../../../application/use-cases/apply-action-plan.use-case.js";
 import { ApiIdempotencyKeyHeader } from "../plan-request.decorator.js";

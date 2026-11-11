@@ -14,9 +14,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import { WEATHER_LOG_EVENT } from '../../constants/weather-log-events';
-import { WeatherBriefingPolicy } from '../../domains/weather-briefing.model';
 import { WeatherReschedulePolicy } from '../../domains/weather-reschedule.model';
 import { useWeatherRescheduleParams } from '../../hooks/use-weather-reschedule-params';
+import { invalidateWeatherReports } from '../../queries/weather-cache';
 import { useRescheduleTodoMutationOptions } from '../../queries/weather.mutations';
 import {
   useGetWeatherReportQueryOptions,
@@ -63,6 +63,8 @@ export function WeatherRescheduleSubmitButton({
 
   const refreshAndReportFailures = (failures: unknown[]) => {
     invalidateTodos(queryClient);
+    // 영향받는 할 일은 서버가 고르므로 옮긴 할 일이 브리핑에서 빠지려면 리포트를 다시 받는다
+    invalidateWeatherReports(queryClient);
     const [firstFailure] = failures;
     if (failures.length > 0) {
       haptics.notify('error');
@@ -102,18 +104,10 @@ export function WeatherRescheduleSubmitButton({
     if (expired.length > 0) {
       // 시트를 연 채 정시를 넘겼다. 지난 시각으로 옮기지 않고 다음 유효 후보로 바꿔 다시 확인받는다
       for (const { todo } of expired) {
-        const { scheduledAt } = WeatherBriefingPolicy.toBriefingTodo(todo, {
-          date: todayKey,
-          timeZone,
+        const next = WeatherReschedulePolicy.findNextRescheduleOption(report?.briefing ?? null, {
+          todoId: todo.id,
+          now,
         });
-        const [next] =
-          scheduledAt == null
-            ? []
-            : WeatherReschedulePolicy.getRescheduleOptions(
-                report?.hourly ?? [],
-                { scheduledAt },
-                { now, timeZone, reason },
-              );
         if (next != null) {
           form.setValue(`selections.${toSelectionKey(todo.id)}`, next.startsAt);
         }

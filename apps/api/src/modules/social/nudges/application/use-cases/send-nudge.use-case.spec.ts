@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { NudgeTargetTodo } from "#api/modules/social/nudges/domain/nudge-target-todo.vo";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -53,7 +54,7 @@ class OrderedNudgeRepository extends InMemoryNudgeRepository {
     this.#events = events;
   }
 
-  override async findTargetTodo(todoId: number): Promise<NudgeTargetTodo | null> {
+  override async findTargetTodo(todoId: TodoId): Promise<NudgeTargetTodo | null> {
     this.#events.push("target");
     return super.findTargetTodo(todoId);
   }

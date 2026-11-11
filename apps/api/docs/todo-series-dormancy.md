@@ -1,6 +1,6 @@
 # 반복 할 일 휴면·복귀
 
-오래 앱을 열지 않은 사용자의 반복 규칙이 회차와 알림을 계속 만들지 않게 멈추고, 돌아오면 앱 변경 없이(구버전 포함) 첫 목록에 오늘 회차를 보여 주는 동작이다. HTTP 응답 모양과 기존 잡 payload는 바뀌지 않으며 이 동작을 위한 마이그레이션은 없다. 코드 정본은 `modules/planning/todo-series/domain/series-dormancy.domain-service.ts`, `todo-series/application/use-cases/{materialize-todo-series,catch-up-todo-series}.use-case.ts`, `TodoSeries.skipDormantGap`이다.
+반복 규칙의 휴면·복귀 동작을 바꿀 때 읽는다. 오래 앱을 열지 않은 사용자의 반복 규칙이 회차와 알림을 계속 만들지 않게 멈추고, 돌아오면 앱 변경 없이(구버전 포함) 첫 목록에 오늘 회차를 보여 주는 동작이다. HTTP 응답 모양과 기존 잡 payload는 그대로다. 코드 정본은 `modules/planning/todo-series/domain/series-dormancy.domain-service.ts`, `todo-series/application/use-cases/{materialize-todo-series,catch-up-todo-series}.use-case.ts`, `TodoSeries.skipDormantGap`이다.
 
 ## 휴면
 
@@ -13,7 +13,7 @@
 
 ### 백그라운드 요청이 활동으로 세이는가
 
-세이지 않는다. 2026-11-05 코드와 저장소 이력 기준 근거:
+세이지 않는다. 근거:
 
 - `expo-task-manager`·`expo-background-*`·`defineTask`·`registerTaskAsync`·iOS `UIBackgroundModes`·서버 `_contentAvailable` 모두 쓴 적이 없다. 알림이 와도 JS가 깨지 않는다.
 - Android 위젯 태스크는 저장된 스냅샷을 그릴 뿐 API를 부르지 않고, 앱 화면 트리를 띄우지 않는다.
@@ -27,7 +27,7 @@
 
 복귀 감지는 활동 기록이 아니라 **규칙 커서**로 한다. 인터셉터가 먼저(응답을 기다리지 않고) `lastActiveAt`을 갱신하므로 UseCase 시점에는 휴면이었는지 알 수 없다. 반면 커서는 평소 오늘보다 90일 앞서 있어서, 커서가 오늘을 넘지 못했다는 것 자체가 "오늘 회차가 없다"는 사실이다.
 
-- 진입점: `GetTodos`·`GetTodoSummary` 시작에서 `TodoSeriesCatchUp.ensureCaughtUp(userId)`를 기다린다. 요약은 앱이 목록과 나란히 부르기 때문이다.
+- 진입점: `ListTodosUseCase`·`GetTodoSummaryUseCase` 시작에서 `CatchUpTodoSeriesUseCase.execute(userId)`를 기다린다. 요약은 앱이 목록과 나란히 부르기 때문이다.
 - 일반 요청 비용: 사용자·UTC 날짜마다 조회 1번(`findIdsBehind`, `(userId, nextOccurrenceDate)` 인덱스), 그 뒤 메모리만 본다(쿼리 0번). 조회 상한은 UTC 내일이라 어떤 시간대의 오늘도 포함한다. 메모리는 UTC 날짜가 바뀌면 비운다.
 - 60~150일 사이에 돌아오면 커서가 아직 오늘보다 앞이다. 오늘 회차가 이미 있으므로 요청에서는 쓰지 않고, `lastActiveAt`이 갱신돼 다음 밤 작업이 이어서 채운다.
 - 뒤처진 규칙은 규칙마다 트랜잭션: 잠금(`todoSortOrder`) → 규칙 행 → 커서를 오늘 이후 첫 회차로 옮김 → 90일 채움·알림 등록(같은 트랜잭션). 잠금 순서·저장은 밤 작업과 `TodoSeriesDueRun` 하나를 공유한다. 복귀는 다른 트랜잭션이 잡은 규칙을 기다리고(이 요청의 목록에 오늘 회차가 있어야 하므로), 밤 작업은 `SKIP LOCKED`로 건너뛴다.
@@ -39,11 +39,3 @@
 - 카테고리가 사라진 규칙: FK로 막혀 있지만 경합으로 생기면 그 규칙만 실패로 남고 나머지는 채운다.
 
 측정(로컬 Docker PostgreSQL, 실제 pg-boss, 규칙마다 90일·체크리스트 10개·시간 있음): 1개 71ms, 5개 222ms, 30개 1.3~2.1초. 다음 날부터는 평소와 같다.
-
-## 배포
-
-이미 60일 넘은 사용자는 다음 작업부터 건너뛰고, 돌아오면 위 경로를 탄다. 별도 보정 작업과 마이그레이션은 없다.
-
-## 전환 중
-
-이 문서의 코드 이름·경로는 아직 옮기지 않은 옛 구조(`modules/<context>/<layer>/<slice>`) 기준이다. 해당 Context를 옮기면 경로만 [아키텍처](architecture.md)의 slice 구조로 바뀌고 규칙은 그대로다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

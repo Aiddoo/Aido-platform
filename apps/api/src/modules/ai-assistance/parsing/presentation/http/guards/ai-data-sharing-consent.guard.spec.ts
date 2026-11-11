@@ -1,6 +1,7 @@
 import type { CurrentUserPayload } from "@aido/api";
 import type { AiDataSharingDecision } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createMockExecutionContext } from "#test/mocks/index";
@@ -72,7 +73,9 @@ describe("AiDataSharingConsentGuard", () => {
     async (header) => {
       // Given
       const guard = createGuard("UNDECIDED");
-      const consent = await new StubAiDataSharingConsentReader().findAiDataSharingConsent("user");
+      const consent = await new StubAiDataSharingConsentReader().findAiDataSharingConsent(
+        UserId.reconstitute("user"),
+      );
 
       // When
       const allowed = await canActivateFor(guard, header).then(

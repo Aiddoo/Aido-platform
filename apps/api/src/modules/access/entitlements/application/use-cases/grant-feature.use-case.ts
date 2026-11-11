@@ -1,6 +1,5 @@
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FeatureGrant } from "../../domain/feature-grant.aggregate.js";
 import type { EntitlementCachePort } from "../ports/entitlement-cache.port.js";
@@ -26,7 +25,7 @@ export class GrantFeatureUseCase {
 
   async execute(command: GrantFeatureCommand): Promise<FeatureGrantResult> {
     const { featureGrantRepository, entitlementCache, afterCommit, clock } = this.#dependencies;
-    const userId = UserId.reconstitute(command.userId);
+    const { userId } = command;
     const grant = FeatureGrant.create({
       id: await featureGrantRepository.nextId(),
       userId,

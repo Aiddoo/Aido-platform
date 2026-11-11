@@ -1,7 +1,6 @@
 import { vi } from "vitest";
 
-import type { QueueDefinition } from "#api/shared/application/ports/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import type { QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
@@ -25,7 +24,7 @@ class CancelRecordingJobQueue extends InMemoryJobQueue {
   }
 }
 
-const at = (minutes: number) => instantToDate(NOW.add({ minutes }));
+const at = (minutes: number) => NOW.add({ minutes });
 
 describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", () => {
   let jobQueue: CancelRecordingJobQueue;

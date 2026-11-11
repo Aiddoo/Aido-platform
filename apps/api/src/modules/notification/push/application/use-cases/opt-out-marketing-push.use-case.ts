@@ -1,5 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
@@ -33,7 +34,10 @@ export class OptOutMarketingPushUseCase {
     if (!userId) {
       return { isOptedOut: false, processedAt };
     }
-    await this.#dependencies.settings.updateMarketingPushConsent(userId, false);
+    await this.#dependencies.settings.updateMarketingPushConsent(
+      UserId.reconstitute(userId),
+      false,
+    );
     this.#dependencies.logger.log({
       event: NotificationDeliveryLogEvent.OPT_OUT_MARKETING_PUSH_OPTED_OUT,
       userId,

@@ -1,6 +1,6 @@
 import type { IncomingHttpHeaders } from "node:http";
 
-import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { parseRequestClient } from "#api/platform/http/request-client/request-client";
 import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 
 import { type RequestDeviceSource, resolveRequestDevice } from "./request-device.mapper.js";

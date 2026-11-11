@@ -25,5 +25,3 @@ export function resolveAiDataSharingAgreement(
 ): Temporal.Instant | null {
   return agreed ? at : null;
 }
-
-export type { AiDataSharingConsentStatus };

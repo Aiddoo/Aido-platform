@@ -1,4 +1,3 @@
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
@@ -6,7 +5,7 @@ import { StubScheduledReminderReader } from "#test/doubles/notification/stub-sch
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createMonthlyReportNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createMonthlyReportNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import { SendMonthlyReportUseCase } from "./send-monthly-report.use-case.js";
 
@@ -50,7 +49,7 @@ describe("SendMonthlyReportUseCase — 월간 리포트 전략", () => {
         method: "findMonthlyReportRecipients",
         params: {
           tz: "Asia/Seoul",
-          periodStart: parseDateOnly("2024-01-01"),
+          periodStart: Temporal.PlainDate.from("2024-01-01"),
           periodEnd: ctx.today,
         },
       },

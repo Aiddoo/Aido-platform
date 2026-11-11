@@ -1,5 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
 import type { AdminNoticeUserReaderPort } from "../ports/admin-notice-user.reader.port.js";
@@ -24,7 +25,7 @@ export class ResolveAdminNoticeUserUseCase {
   async execute(fallback: AdminNoticeUser): Promise<AdminNoticeUser> {
     const { userReader, logger } = this.#dependencies;
     try {
-      const found = await userReader.findById(fallback.userId);
+      const found = await userReader.findById(UserId.reconstitute(fallback.userId));
       return found == null ? fallback : { ...fallback, ...found };
     } catch (error) {
       logger.warn({

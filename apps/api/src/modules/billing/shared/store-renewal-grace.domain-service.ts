@@ -6,7 +6,7 @@
  * Billing(보상 기간 시작 판단)과 Access(엔타이틀먼트 판단)가 같은 값을 써야 한쪽만 프리미엄이
  * 끝났다고 보는 구간이 생기지 않는다.
  */
-export const STORE_RENEWAL_GRACE_MS = 3 * 60 * 60 * 1_000;
+export const STORE_RENEWAL_GRACE_MS = 3 * 60 * 60 * 1000;
 
 /** 스토어 구독 행 중 엔타이틀먼트가 끝나는 시각 판단에 필요한 값 */
 export interface StoreEntitlementWindow {

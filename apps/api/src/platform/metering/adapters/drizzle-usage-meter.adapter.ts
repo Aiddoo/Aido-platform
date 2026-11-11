@@ -6,12 +6,12 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { outboundUsage } from "#api/platform/database/schema/outbound.schema";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 
-import type {
-  UsageIncrement,
-  UsageKey,
+import {
+  type UsageIncrement,
+  type UsageKey,
   UsageMeterPort,
-  UsageReservation,
-} from "../interfaces/usage-meter.interface.js";
+  type UsageReservation,
+} from "../usage-meter.port.js";
 
 const toUsageId = (key: Pick<UsageKey, "meter" | "periodKey" | "subject">) =>
   `${key.meter}\u0000${key.periodKey}\u0000${key.subject}`;
@@ -25,11 +25,12 @@ const whereUsageKey = (key: UsageKey) =>
 
 /** 기간별 한 행을 `ON CONFLICT DO UPDATE … RETURNING`으로 원자적으로 더한다(QuotaUsage와 같은 방식). */
 @Injectable()
-export class DrizzleUsageMeterAdapter implements UsageMeterPort {
+export class DrizzleUsageMeterAdapter extends UsageMeterPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    super();
     this.#txHost = txHost;
     this.#clock = clock;
   }

@@ -8,7 +8,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
+import { getConsentResult } from '@src/features/identity/consent/domains/consent.model';
 import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
 import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -31,7 +31,7 @@ import {
 import type { ReadyNotificationEntry } from '../apis/notification-entry.store';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
-import { NotificationPolicy } from '../domains/notification.model';
+import { NotificationResponsePolicy, PushNotificationPolicy } from '../domains/notification.model';
 import { type PendingNotificationResponse } from '../domains/notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
 import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
@@ -43,6 +43,7 @@ import { useNotificationNavigation } from './use-notification-navigation';
 export function useNotificationResponseObserver(): void {
   const status = useAuthStatus();
   const gateway = usePushNotification();
+  const appLifecycle = useAppLifecycle();
   const store = useNotificationEntryStore();
   const logger = useLogger();
   const { pending, ready, optOut } = useSyncExternalStore(store.subscribe, store.getState);
@@ -64,7 +65,14 @@ export function useNotificationResponseObserver(): void {
   );
 
   useLayoutEffect(() => {
-    const receive = (response: PushNotificationResponse) => {
+    let activeSince = appLifecycle.getCurrentState() === 'active' ? Date.now() : null;
+    const removeAppStateListener = appLifecycle.subscribe((state) => {
+      activeSince = state === 'active' ? Date.now() : null;
+    });
+    const receive = (
+      response: PushNotificationResponse,
+      { isLaunchResponse }: { isLaunchResponse: boolean },
+    ) => {
       const parsed = pushNotificationPayloadSchema.safeParse(response.data);
       if (!parsed.success) {
         logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_PAYLOAD_INVALID, {
@@ -77,14 +85,23 @@ export function useNotificationResponseObserver(): void {
         actionIdentifier: response.actionIdentifier,
         data: parsed.data,
         receivedAt: Date.now(),
+        isLaunchResponse,
+        appState: appLifecycle.getCurrentState(),
+        activeSince,
       });
     };
-    const last = gateway.getLastResponse();
-    if (last != null) {
-      receive(last);
+    const launchResponse = gateway.getLastResponse();
+    if (launchResponse != null) {
+      receive(launchResponse, { isLaunchResponse: true });
     }
-    return gateway.subscribeResponse(receive);
-  }, [gateway, logger, store]);
+    const removeResponseListener = gateway.subscribeResponse((response) =>
+      receive(response, { isLaunchResponse: false }),
+    );
+    return () => {
+      removeAppStateListener();
+      removeResponseListener();
+    };
+  }, [appLifecycle, gateway, logger, store]);
 
   const wasAuthenticatedRef = useRef(status === 'authenticated');
   useLayoutEffect(() => {
@@ -120,7 +137,7 @@ function useMarketingOptOut(
     if (inFlightIdRef.current === target.id) {
       return;
     }
-    const action = NotificationPolicy.getResponseAction(target, {
+    const action = NotificationResponsePolicy.getResponseAction(target, {
       authStatus: status,
       now: Date.now(),
     });
@@ -148,7 +165,7 @@ function useMarketingOptOut(
     }
     finishResponse(target.id);
     // 설정 토글과 같은 결과 안내(처리 일시는 서버 값)를 띄우고, 설정 화면의 토글도 서버 값으로 맞춘다
-    const result = ConsentPolicy.getConsentResult({ agreedAt: null, withdrawnAt });
+    const result = getConsentResult({ agreedAt: null, withdrawnAt });
     if (result == null) {
       toast.success(t('notification:consentResult.marketingPushOptedOut'));
     } else {
@@ -222,7 +239,7 @@ function useResolveResponse(
   });
 
   const decide = useEffectEvent((target: PendingNotificationResponse) => {
-    const action = NotificationPolicy.getResponseAction(target, {
+    const action = NotificationResponsePolicy.getResponseAction(target, {
       authStatus: status,
       now: Date.now(),
     });
@@ -269,6 +286,7 @@ function useOpenReadyEntry(
         trackEvent('push_notification_opened', {
           type: data.type ?? 'UNKNOWN',
           action: data.action.type,
+          app_state: NotificationResponsePolicy.getOpenAppState(response),
           ...(data.campaignKey && { campaign_key: data.campaignKey }),
           ...(data.variantId && { variant_id: data.variantId }),
           ...(data.purpose && { purpose: data.purpose }),
@@ -281,7 +299,7 @@ function useOpenReadyEntry(
           error: getErrorMessage(error),
         });
       }
-      if (NotificationPolicy.hasServerRecord(data)) {
+      if (PushNotificationPolicy.hasServerRecord(data)) {
         recordOpened(data.notificationId);
       }
     } catch (error) {
@@ -296,7 +314,7 @@ function useOpenReadyEntry(
   // 목적지로 못 가 피드로 보내도 사용자는 알림을 열었으므로 열람(읽음 포함)은 남긴다
   const abandon = useEffectEvent(({ response }: ReadyNotificationEntry) => {
     logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { responseId: response.id });
-    if (NotificationPolicy.hasServerRecord(response.data)) {
+    if (PushNotificationPolicy.hasServerRecord(response.data)) {
       recordOpened(response.data.notificationId);
     }
     finishResponse(response.id);

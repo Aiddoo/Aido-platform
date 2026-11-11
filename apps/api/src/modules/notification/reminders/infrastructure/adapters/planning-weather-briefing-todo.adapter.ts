@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { TodoScheduleReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   type WeatherBriefingTodoQuery,
@@ -23,8 +23,8 @@ export class PlanningWeatherBriefingTodoAdapter implements WeatherBriefingTodoRe
       userIds: query.userIds,
       date: query.date,
       timezone: query.timezone,
-      from: instantFromDate(query.from),
-      until: instantFromDate(query.until),
+      from: query.from,
+      until: query.until,
     });
     return todos.map(({ id, userId, title, scheduledAt }) => ({
       id,

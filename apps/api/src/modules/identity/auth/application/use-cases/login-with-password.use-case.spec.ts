@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { ApplicationLogMessage } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import type { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -43,7 +44,7 @@ class CasObservingAccountRepository extends InMemoryAuthAccountRepository {
   readonly casSettled = Promise.withResolvers<boolean>();
 
   override async updatePasswordIfUnchanged(
-    userId: string,
+    userId: UserId,
     expectedPasswordHash: string,
     passwordHash: string,
   ): Promise<boolean> {
@@ -80,6 +81,9 @@ class ClockAdvancingUnitOfWork extends ImmediateUnitOfWork {
     return super.run(work);
   }
 }
+
+// 탈퇴 유예 중 비활성 계정은 권한을 무료로 캐시한다
+const FREE_ACCESS_WHILE_DELETED = { status: null, isAdmin: false, resourceBonuses: {} };
 
 async function markDeleted(fixture: CredentialFixture, deletedAt: Temporal.Instant) {
   await fixture.userRepository.saveAccountStatus(
@@ -243,6 +247,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
       const fixture = createAuthCredentialFixture();
       await markDeleted(fixture, Temporal.Instant.from(deletedAt));
       fixture.cacheService.userIds.add(fixture.user.id);
+      fixture.entitlementCache.entries.set(fixture.user.id, FREE_ACCESS_WHILE_DELETED);
       const useCase = new LoginWithPasswordUseCase({
         ...fixture,
         unitOfWork: crossesBoundary
@@ -262,6 +267,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
         expect.objectContaining({ status: "ACTIVE", deletedAt: null }),
       );
       expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(false);
+      expect(fixture.entitlementCache.entries.has(fixture.user.id)).toBe(false);
       expect(fixture.securityLogRepository.entries).toContainEqual(
         expect.objectContaining({
           event: SECURITY_EVENT.ACCOUNT_RESTORED,

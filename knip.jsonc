@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // 모바일은 apps/mobile/knip.jsonc로 따로 검사한다. 루트 스크립트가 --workspace '!apps/mobile'로 빼되 catalog 참조는 모바일 package.json까지 센다
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.mjs", "turbo/generators/config.ts"],
+      "project": ["*.ts", "scripts/**/*.mjs", "turbo/generators/**/*.ts"],
+      // vitest의 필수 peer다. pnpm resolvePeersFromWorkspaceRoot로 모든 workspace의 vitest가 이 catalog 버전을 쓴다
+      "ignoreDependencies": ["vite"],
+    },
+    "apps/api": {
+      // 테스트 진입점(spec·setup·globalSetup)은 vitest 플러그인이 vitest.config.ts에서 읽는다
+      "entry": [
+        "src/bootstrap.ts",
+        // alert-catalog.spec이 *.alerts.ts의 export를 모두 읽어 문서 표와 맞춘다
+        "src/**/*.alerts.ts",
+        "scripts/**/*.{ts,mjs,cjs}",
+        "test/dev-fixtures/*.ts",
+      ],
+      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.{ts,mjs,cjs}"],
+      // pino transport가 이름 문자열로 불러 import가 없다(platform/logging/logger.options.ts)
+      "ignoreDependencies": ["pino-pretty"],
+    },
+    "packages/api": {
+      // 모든 계약 파일이 공개 API다. 모바일이 쓰는 export는 이 검사에서 보이지 않아 의존성·중복 export만 본다
+      "entry": ["src/**/*.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"],
+    },
+    "tooling/*": {},
+  },
+}

@@ -14,11 +14,11 @@ import {
   QUOTA_REQUEST_HASH_RETENTION_MS,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
 } from "#api/modules/access/quotas/domain/quotas.constants";
-import { PremiumGranterPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge, quotaUsage, user as userTable } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";
@@ -61,7 +61,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       strict: false,
     });
     usageRepository = context.module.get(QuotaUsageRepositoryPort, { strict: false });
-    unitOfWork = context.module.get(UNIT_OF_WORK);
+    unitOfWork = context.module.get(UnitOfWorkPort);
     entitlement = context.module.get(EntitlementReaderPort);
   });
   beforeEach(async () => {
@@ -92,7 +92,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
 
   function input(overrides: Partial<QuotaReserveInput> = {}): QuotaReserveInput {
     return {
-      userId,
+      userId: UserId.reconstitute(userId),
       feature: "AI_PARSE",
       idempotencyKey: null,
       reason: "parse-todo",
@@ -464,7 +464,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
           },
           { timeout: 5000, interval: 10 },
         );
-        await ledger.reserve(input({ userId: other.id }));
+        await ledger.reserve(input({ userId: UserId.reconstitute(other.id) }));
       } finally {
         released.resolve();
         await holding;
@@ -607,7 +607,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       ]);
       const [winner] = reopened;
       expect(winner != null && (await ledger.commit(winner))).toBe(true);
-      expect((await ledger.read(userId, "VOICE_NOTE")).used).toBe(1);
+      expect((await ledger.read(UserId.reconstitute(userId), "VOICE_NOTE")).used).toBe(1);
     });
 
     it("다시 연 예약을 환불하면 앞선 차감까지 돌아간다", async () => {
@@ -619,7 +619,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       const refunded = await ledger.refund(await ledger.reopen(committed), "FAILED");
       // Then
       expect(refunded).toBe(true);
-      expect((await ledger.read(userId, "VOICE_NOTE")).used).toBe(0);
+      expect((await ledger.read(UserId.reconstitute(userId), "VOICE_NOTE")).used).toBe(0);
     });
 
     it("환불된 키는 같은 행에서 다시 차감해 순 차감이 한 번이다", async () => {
@@ -657,7 +657,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         vi.setSystemTime(newMonthAt);
         // When
         const takenOver = await ledger.reserve(reserveInput);
-        const quotaAfterTakeOver = await ledger.read(userId, feature);
+        const quotaAfterTakeOver = await ledger.read(UserId.reconstitute(userId), feature);
         const refunded = await ledger.refund(takenOver, "FAILED");
         // Then
         const [charge] = await storedCharges();
@@ -665,7 +665,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         expect(quotaAfterTakeOver.used).toBe(1);
         expect(charge?.periodKey).toBe(periodKeyOf(newMonthAt));
         expect(refunded).toBe(true);
-        expect((await ledger.read(userId, feature)).used).toBe(0);
+        expect((await ledger.read(UserId.reconstitute(userId), feature)).used).toBe(0);
       },
     );
 
@@ -717,7 +717,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
     it("AI_PARSE는 출시 앱과 같은 User.aiUsageCount를, VOICE_NOTE는 QuotaUsage를 센다", async () => {
       // When
       await ledger.reserve(input({ feature: "VOICE_NOTE" }));
-      const aiQuota = await ledger.read(userId, "AI_PARSE");
+      const aiQuota = await ledger.read(UserId.reconstitute(userId), "AI_PARSE");
 
       // Then
       expect((await storedAiUsage())?.count).toBe(FREE_AI_LIMIT - 1);
@@ -736,7 +736,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         .where(eq(userTable.id, userId));
 
       // When
-      const quota = await ledger.read(userId, "AI_PARSE");
+      const quota = await ledger.read(UserId.reconstitute(userId), "AI_PARSE");
 
       // Then
       expect(quota).toMatchObject({
@@ -786,7 +786,9 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
           .update(userTable)
           .set({ role, subscriptionStatus, aiUsageCount: FREE_AI_LIMIT })
           .where(eq(userTable.id, userId));
-        expect(await entitlement.getFeatureLimit(userId, "AI_PARSE")).toBeNull();
+        expect(
+          await entitlement.getFeatureLimit(UserId.reconstitute(userId), "AI_PARSE"),
+        ).toBeNull();
         await client
           .update(userTable)
           .set({ role: "USER", subscriptionStatus: "FREE" })
@@ -810,12 +812,15 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         .update(userTable)
         .set({ aiUsageCount: FREE_AI_LIMIT })
         .where(eq(userTable.id, userId));
-      await context.module
-        .get<PremiumGranterPort>(PremiumGranterPort)
-        .grant({ userId, source: "INVITE", sourceKey: "invite:quota-ledger", durationDays: 7 });
-      const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1_000);
+      await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+        userId: UserId.reconstitute(userId),
+        source: "INVITE",
+        sourceKey: "invite:quota-ledger",
+        durationDays: 7,
+      });
+      const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1000);
       vi.setSystemTime(new Date(grantEndsAt.getTime() - 1));
-      const duringGrant = await ledger.read(userId, "AI_PARSE");
+      const duringGrant = await ledger.read(UserId.reconstitute(userId), "AI_PARSE");
 
       // When
       await ledger.reserve(input());

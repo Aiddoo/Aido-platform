@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
+import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 
 import { PlanningTodoPortsModule } from "../todos/planning-todo-ports.module.js";
 import { TodoSeriesRepositoryPort } from "./application/ports/todo-series.repository.port.js";

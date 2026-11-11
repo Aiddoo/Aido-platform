@@ -1,3 +1,4 @@
+import { toIsoString } from "#api/shared/domain/time/instant";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
@@ -22,14 +23,14 @@ class RecordingRelaySteps
   publishedPerBatch = 0;
 
   readonly lifecycle: Pick<PushDeliveryLifecycleRepositoryPort, "recoverStaleProcessing"> = {
-    recoverStaleProcessing: async (startedBefore: Date) => {
-      this.steps.push(`lifecycle-recover:${startedBefore.toISOString()}`);
+    recoverStaleProcessing: async (startedBefore: Temporal.Instant) => {
+      this.steps.push(`lifecycle-recover:${toIsoString(startedBefore)}`);
       return 0;
     },
   };
 
-  async recoverStaleProcessing(lockedBefore: Date): Promise<number> {
-    this.steps.push(`outbox-recover:${lockedBefore.toISOString()}`);
+  async recoverStaleProcessing(lockedBefore: Temporal.Instant): Promise<number> {
+    this.steps.push(`outbox-recover:${toIsoString(lockedBefore)}`);
     return 0;
   }
 

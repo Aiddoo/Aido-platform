@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG, PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 
 import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
@@ -23,9 +24,9 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
   it("nullable 프로필과 여러 provider를 보존하며 요청별 sessionId는 캐시하지 않는다", async () => {
     // Given
     const fixture = given({ pending: true });
-    await fixture.userRepository.createProfile(fixture.user.id, {});
+    await fixture.userRepository.createProfile(UserId.reconstitute(fixture.user.id), {});
     await fixture.accountRepository.createOAuthAccount({
-      userId: fixture.user.id,
+      userId: UserId.reconstitute(fixture.user.id),
       provider: "GOOGLE",
       providerAccountId: "google-account",
     });
@@ -36,7 +37,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       sessionId: "session-1",
       timezone: "Asia/Seoul",
     });
-    await fixture.userRepository.hardDelete(fixture.user.id);
+    await fixture.userRepository.hardDelete(UserId.reconstitute(fixture.user.id));
     const second = await fixture.useCase.execute({
       userId: fixture.user.id,
       sessionId: "session-2",

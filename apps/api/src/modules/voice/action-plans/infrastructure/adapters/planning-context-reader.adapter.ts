@@ -7,6 +7,7 @@ import {
 import { TodoCategoryReaderPort } from "#api/modules/planning/categories/planning-categories.public";
 import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
@@ -15,7 +16,7 @@ import {
   PlanningContextReaderPort,
 } from "../../application/ports/planning-context.reader.port.js";
 
-// 옛 날짜 함수(todayInTimezone)처럼 알 수 없는 시간대는 계획을 멈추지 않고 UTC 오늘로 본다
+// 알 수 없는 시간대는 계획을 멈추지 않고 UTC 오늘로 본다
 function toPlanningTimeZone(raw: string): TimeZone {
   try {
     return TimeZone.create(raw);
@@ -42,13 +43,12 @@ export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
     this.#clock = clock;
   }
 
-  async read(userId: string, timezone: string): Promise<PlanningContext> {
+  async read(userId: UserId, timezone: string): Promise<PlanningContext> {
     const today = localDateOf(this.#clock.now(), toPlanningTimeZone(timezone));
     const [categories, upcomingTodos] = await Promise.all([
       this.#categoryReader.listForUser(userId),
       this.#todoReader.findUpcoming(userId, {
-        // planning 조회 포트는 아직 날짜를 UTC 자정 Date로 받는다
-        fromDate: new Date(today.toZonedDateTime("UTC").epochMilliseconds),
+        fromDate: today,
         limit: PLANNING_UPCOMING_TODO_LIMIT,
       }),
     ]);
@@ -60,7 +60,7 @@ export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
     };
   }
 
-  async findOwnedCategoryIds(userId: string): Promise<ReadonlySet<number>> {
+  async findOwnedCategoryIds(userId: UserId): Promise<ReadonlySet<number>> {
     const categories = await this.#categoryReader.listForUser(userId);
     return new Set(categories.map((category) => category.id));
   }
