@@ -1,123 +1,89 @@
 # Aido
 
-> **Version**: 1.2.1 · **Last Updated**: 2026-11-07 · **Owner**: Aido Platform Team
-
-Turborepo + pnpm 모노레포. AI 기반 할 일 관리 서비스의 API 서버와 모바일 앱을 포함.
-
----
+Turborepo + pnpm 모노레포. AI 할 일 관리 서비스의 API 서버와 모바일 앱이다. 이 파일이 Claude·Codex 공통 지침의 단일 원본이고 `CLAUDE.md`는 `@AGENTS.md` 한 줄이다. 세션마다 읽히므로 얇게 두고 상세는 각 앱 문서에 둔다.
 
 ## 작업 진입점
 
-- API 작업은 [`apps/api/AGENTS.md`](apps/api/AGENTS.md)에서 시작하고, 작업에 해당하는 상세 문서만 참조한다. 문서 전체를 순서대로 읽을 필요는 없다.
-- Mobile 작업은 기존 [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md)를 따른다.
-- 서버 검증 범위는 변경한 동작과 위험에 맞춘다. 문서만 바꾸면 링크·예제·포맷을 확인하고, 코드 변경은 관련 정적 검사와 의미 있는 테스트로 확인한다. 통과한 검사는 추가 변경·실패·미확인 위험이 있을 때 다시 실행한다. Mobile 검증 규칙은 해당 앱 지침을 따른다.
-- 데이터 삭제·운영 migration·배포·공유 Git 이력 재작성은 사용자의 기존 승인 범위에서만 실행한다. 요청과 무관한 파괴적 초기화는 하지 않는다. 서버의 일회성 테스트 DB 생성·삭제는 해당 테스트 실행의 정상 수명주기다.
-- `AGENTS.md`는 Claude/Codex 공통 지침의 **단일 원본**으로 유지한다. `CLAUDE.md`에는 별도 공통 규칙을 추가하지 않는다.
-- `AGENTS.md`는 세션 컨텍스트에 포함되므로 **얇게 유지**한다. 상세 패턴·예제는 `.claude/*.md`에 둔다.
+- API: [`apps/api/AGENTS.md`](apps/api/AGENTS.md) → 필요한 문서만 [서버 문서 안내](apps/api/docs/README.md)에서 고른다.
+- Mobile: [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md).
+- 앱·서버 공통: [오류](docs/conventions/errors.md) · [날짜·언어](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md) · [nullish](docs/conventions/nullish.md) · [Git](docs/conventions/git.md).
 
----
+## 스택
 
-## 기술 스택 (요약)
+Node 26.13.0 LTS(EAS 모바일 빌드는 24.22.2) · NestJS 12.4.2 ESM · Drizzle ORM 1.0.0-rc.5 · PostgreSQL 16 · pg-boss 12.38.1 · Expo SDK 58 · React Native 0.88 · React 19 · TypeScript 6.0.3 · Zod 4.6.7 · Oxlint 1.93.0 · Oxfmt 0.78.0 · Turbo 2.11 · pnpm 12.15. 정확한 버전은 `pnpm-workspace.yaml` catalog와 `.nvmrc`가 정본이다. 상세: [README](README.md).
 
-NestJS 12.3 ESM · Drizzle ORM 1.0 RC · PostgreSQL 16 · Expo SDK 58.0.x · React Native 0.88 · React 19.3 · TypeScript 6.0 · Zod 4.6 · Oxlint 1.91 · Oxfmt 0.76 · Turbo 2.11 · pnpm 12.15 · Node 24.22.2
+## 모노레포
 
-상세: [README.md](./README.md)
-
----
-
-## 모노레포 구조
-
-```
-apps/api            NestJS 백엔드
-apps/mobile         Expo 모바일 앱
-packages/api        REST 스키마·오류 계약·순수 공용 타입 (@aido/api)
-tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
+```text
+apps/api        NestJS 서버 (문서: apps/api/docs)
+apps/mobile     Expo 앱
+packages/api    REST 계약·오류 코드·공용 어휘 (@aido/api)
+tooling/*       공유 설정(vitest·typescript), migration CLI
+docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(releases)
 ```
 
----
+## 명령
 
-## 핵심 명령어
-
-| 명령어              | 설명                       |
-| ------------------- | -------------------------- |
-| `pnpm install`      | 의존성 설치                |
-| `pnpm docker:up`    | PostgreSQL 컨테이너 시작   |
-| `pnpm dev`          | 전체 개발 서버             |
-| `pnpm build`        | 전체 빌드                  |
-| `pnpm typecheck`    | 타입 체크                  |
-| `pnpm lint`         | Oxlint 정적 검사           |
-| `pnpm format`       | 코드 포맷팅                |
-| `pnpm format:check` | Oxfmt 포맷 검사            |
-| `pnpm test`         | 단위 테스트                |
-| `pnpm test:e2e`     | E2E 테스트                 |
-| `pnpm db:migrate`   | Drizzle migration 적용     |
-| `pnpm commit`       | Conventional Commit 생성기 |
-
----
-
-## 작업 유형별 문서 네비게이션
-
-| 하려는 일                            | 읽을 문서                                                                                                                                         |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| API 기능 추가·Context 경계 변경      | [`apps/api/AGENTS.md`](apps/api/AGENTS.md), 필요에 따라 [구조](apps/api/.claude/architecture.md)·[코드 규칙](apps/api/.claude/api-conventions.md) |
-| Mobile 기능 추가 (Feature-based)     | [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md) → [`apps/mobile/.claude/architecture.md`](apps/mobile/.claude/architecture.md)                   |
-| Zod 스키마 / DTO 추가                | [`apps/api/.claude/rest-contracts.md`](apps/api/.claude/rest-contracts.md)                                                                        |
-| DB 스키마·ORM 변경                   | [`apps/api/.claude/drizzle.md`](apps/api/.claude/drizzle.md)                                                                                      |
-| 단위/통합/E2E 테스트                 | `apps/{api,mobile}/.claude/testing-guide.md`                                                                                                      |
-| Mobile UI 컴포넌트                   | [`apps/mobile/.claude/ui-components.md`](apps/mobile/.claude/ui-components.md)                                                                    |
-| Mobile 다국어 / 문자열 추가          | [`apps/mobile/.claude/i18n-guide.md`](apps/mobile/.claude/i18n-guide.md)                                                                          |
-| 홈 화면 위젯 (iOS/Android)           | [`apps/mobile/.claude/widgets.md`](apps/mobile/.claude/widgets.md)                                                                                |
-| OAuth / 소셜 로그인                  | [`apps/mobile/.claude/oauth-client-guide.md`](apps/mobile/.claude/oauth-client-guide.md)                                                          |
-| 로깅 패턴 (서버 이벤트 키·오류 필드) | [`apps/api/.claude/logging-guide.md`](apps/api/.claude/logging-guide.md)                                                                          |
-| 요청 헤더·throttle (서버)            | [`apps/api/.claude/api-conventions.md`](apps/api/.claude/api-conventions.md#요청-헤더와-throttle)                                                 |
-| 푸시 기기·발송 (서버)                | [`apps/api/docs/push-notifications.md`](apps/api/docs/push-notifications.md)                                                                      |
-| 응답·오류, 날짜·시간, 하위 호환      | [오류](docs/conventions/errors.md) · [날짜](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md)                                |
-| 배포                                 | `apps/{api,mobile}/DEPLOYMENT.md`                                                                                                                 |
-
----
+- `pnpm install` · `pnpm docker:up`(PostgreSQL) · `pnpm dev` · `pnpm build`
+- `pnpm check`: lint → format:check → 이름·경계·관례 검사 → typecheck(커밋 전 한 번)
+- 가드레일: `pnpm lint:names`(ls-lint) · `pnpm --filter @aido/server lint:deps`(dependency-cruiser) · `pnpm --filter @aido/server check:conventions` · `pnpm --filter @aido/server check:unused`(knip, 보고만)
+- `pnpm lint` · `pnpm format` · `pnpm format:check` · `pnpm typecheck`
+- `pnpm test` · `pnpm test:integration` · `pnpm test:e2e` · `pnpm --filter @aido/server test:contract`
+- `pnpm db:generate` · `pnpm db:migrate` · `pnpm commit`
+- Swagger UI: `http://localhost:8080/api/docs`(development)
 
 ## 공통 코드 규칙
 
 서버·앱 공통이다. 앱·서버 문서는 여기로 링크하고 되풀이하지 않는다.
 
-- **책임**: SOLID와 단일 책임을 지킨다. 계산·변환은 부수효과 없는 순수 함수로 두고 훅·클래스는 그것을 감싼다.
-- **이름**: 실무에서 흔하고 직관적으로 짓는다. 파일·변수·메서드를 같은 규칙으로 맞춘다. 포트 이름에는 SDK·공급자 이름을 쓰지 않는다.
-- **주석**: 코드만 봐서는 알 수 없는 이유(제약, 버전 사유, 정책, QA 근거)만 한 줄로 남긴다. 이름·인자·반환을 되풀이하는 JSDoc, 다음 줄을 설명하는 주석, 구역 구분선, 변경 이력("이전에는", PR 번호)은 쓰지 않는다. 플랫폼 차이, 서버 동작·하위 호환, 순서·경합 이유, 뻔하지 않은 반환값의 뜻("true면 멈춘다")은 코드에 없는 정보라 남긴다. 테스트의 `// Given`·`// When`·`// Then`과 계산 근거 주석은 남긴다.
-- **제어문**: 한 줄 `if`도 `if (조건) { return; }`처럼 중괄호를 쓴다.
-- **라이브러리**: 라이브러리·프레임워크가 주는 기능을 다시 만들지 않는다(es-toolkit, ts-pattern 등). 공식 문서의 권장 방식을 먼저 본다.
-- **테스트**: 새 테스트는 중요한 비즈니스 로직과 공용 유틸에만 쓴다. `// Given`·`// When`·`// Then` 한 줄 주석과 한국어 제목을 쓴다. mock보다 포트 stub을 쓰고 외부 API는 부르지 않는다. 기존 테스트를 일괄 교체하지 않는다.
-- **정리**: 안 쓰는 코드·파일과 레거시를 지운다. 출시 앱이 쓰는 계약만 남긴다([호환](docs/conventions/compatibility.md)).
-- **비밀**: env 값·토큰·키를 로그·문서·커밋에 쓰지 않는다.
+**가독성**
 
----
+- 같이 실행되지 않는 코드는 나눈다. 버전·권한별 분기를 한 함수에 섞지 않는다.
+- 구현 상세는 감춘다. 흐름이 위에서 아래로 읽히고 SQL·SDK·네이티브 호출은 어댑터에 둔다.
+- 로직 종류로 묶은 만능 클래스·훅을 만들지 않는다. 행동 하나가 함수·UseCase 하나다.
+- 복잡한 조건·매직 넘버에 이름을 붙인다. 상수는 단위를 이름에 넣는다(`timeoutMs`).
+- 한 번만 쓰는 작은 조회표는 쓰는 함수 안에 둬 시점 이동을 줄인다.
+- 중첩 삼항을 쓰지 않는다. 유니온 분기는 ts-pattern `match().exhaustive()`, 그 밖은 `if`다. 한 줄 `if`도 중괄호를 쓴다.
+- 범위 비교는 `min <= value && value <= max`로 쓴다.
 
-## 규칙 & 금칙
+**예측 가능성**
 
-- **린트/포맷**: Oxlint + Oxfmt — `pnpm lint`, `pnpm format:check`, `pnpm format`
-- **커밋/PR/이슈**: 한국어 Conventional Commits(`refactor(server): …`, `ci(server): …`). PR은 요약·주요 변경·실제 검증, 측정한 숫자만. stack은 `stack:<release>`, tip만 `ci:stack-tip`. 상세: [docs/conventions/git.md](docs/conventions/git.md)
-- **타입**: `strict: true`. `as`(`as const` 제외)·`any`·`!`·`@ts-ignore`/`@ts-expect-error` 금지, 타입은 Zod·props·상수 튜플에서 유도
-- **DTO**: 요청·응답 계약은 `@aido/api`, 앱 모델은 앱이 소유
-- **에러 코드**: `@aido/api/errors`의 `ErrorCode`를 사용. 하드코딩 문자열 금지
-- **서버 요청 헤더**: Controller에서 `@Headers("x-…")`를 쓰지 않는다. `RequestClient`(`@CurrentRequestClient()`·`@AppVersion()`)로 읽는다
-- **서버 테스트**: 상태가 중요하면 깊은 mock 대신 작은 Port Stub/Fake, DB 의미는 실제 PostgreSQL(Testcontainers)로 검증
-- **비교·null/undefined**: 값 비교는 `===`, "없음"만 `== null`(Oxlint `eqeqeq`). 상세: [docs/conventions/nullish.md](docs/conventions/nullish.md)
-- **API 문서**: Swagger UI는 `http://localhost:8080/api/docs`
-- **AGENTS.md**: Claude/Codex 공통 지침의 단일 원본. 세션 컨텍스트에 포함되므로 _얇게 유지_. 상세는 `.claude/*.md`로 분리
+- 라이브러리와 겹치는 이름(`HttpService`·`Logger`)을 쓰지 않는다. 역할로 짓고 포트 이름에 SDK·공급자 이름을 쓰지 않는다.
+- 같은 종류 함수는 반환 모양을 통일한다(`find*`는 `T | null`, 판정은 판별 유니온).
+- 숨은 부수효과를 만들지 않는다. 저장소·매퍼는 로그·발송·캐시 정리를 하지 않는다.
 
----
+**응집도·결합도**
 
-## AI 가이드 인덱스
+- 함께 바뀌는 파일은 같은 기능 폴더에 둔다. 함께 바뀌지 않으면 버그가 나는 것(계약·큐 payload·잠금 키)은 한 곳에 응집한다.
+- 책임은 하나씩(SOLID). 계산·변환은 부수효과 없는 순수 함수이고 클래스·훅은 그것을 감싼다.
+- 기능 사이 중복은 허용한다. 공용화는 함께 바뀌어야 할 때만 한다. props·인자 드릴링은 구조로 없앤다.
 
-- **API**: [서버 문서 안내](docs/server/README.md) — 작업별 설계·계약·테스트·배포와 검증 기록
-- **Mobile**: [`apps/mobile/.claude/`](apps/mobile/.claude/) — architecture, testing-guide, ui-components, oauth-client-guide
+**TypeScript**
 
-<!-- BEGIN:turborepo-agent-rules -->
+- `strict`. `as`(`as const` 제외)·`any`·`!`·`@ts-ignore`/`@ts-expect-error` 금지. 타입은 Zod·props·`as const` 튜플에서 유도한다.
+- 비공개 멤버는 `#` 하나다. TS `private` 키워드와 생성자 파라미터 프로퍼티를 쓰지 않는다.
+- 값 비교는 `===`, "없음"만 `== null`. 기본값은 `??`다. 상세: [nullish](docs/conventions/nullish.md).
+- 공유 값 목록(상태·종류·언어)은 `@aido/api/vocabulary` 튜플 한 곳에서 선언하고 나머지는 유도한다.
 
-# This is NOT the Turborepo you know
+**그 밖**
 
-Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+- 라이브러리·프레임워크가 주는 기능을 다시 만들지 않는다(es-toolkit, ts-pattern, Zod, 공식 Nest·Expo 모듈). 공식 문서의 권장 방식을 먼저 본다.
+- 주석은 코드로 알 수 없는 이유(제약·버전·정책·순서·호환·QA 근거)만 한 줄로 남긴다. 이름을 되풀이하는 JSDoc, 다음 줄 설명, 구역 구분선, 변경 이력을 쓰지 않는다. 테스트의 `// Given`·`// When`·`// Then`은 남긴다.
+- 테스트는 중요한 비즈니스 로직과 공용 유틸에만 쓴다. GWT 한 줄 주석과 한국어 제목, mock보다 포트 stub이고 외부 API는 부르지 않는다. 기존 테스트를 일괄 교체하지 않는다.
+- 안 쓰는 코드·파일·빈 폴더·레거시는 지운다. 하위 호환에 필요한 계약만 남긴다([호환](docs/conventions/compatibility.md)).
+- env 값·토큰·키를 로그·문서·커밋에 쓰지 않는다.
+- 판단이 갈리면 사용자 사용성 > 일관성 > 구현 편의다.
 
-Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+## 금칙과 계약
 
-This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
-<!-- END:turborepo-agent-rules -->
+- 요청·응답 계약은 `@aido/api`, 앱 모델은 앱이 소유한다. 오류는 `@aido/api/errors`의 `ErrorCode`를 쓰고 문자열을 하드코딩하지 않는다.
+- 서버 Controller에서 `@Headers("x-…")`를 쓰지 않는다. `RequestClient`(`@CurrentRequestClient()`·`@AppVersion()`)로 읽는다.
+- 출시 앱이 보는 외부 계약(HTTP·푸시 payload·딥링크·기기 저장 key·DB·큐 이름)은 추가만 한다.
+- 커밋·PR은 한국어 Conventional Commits(`refactor(server): …`), 본문 줄 100자 이하, `--no-verify` 금지. PR에는 실제 검증과 측정한 숫자만. stack은 `stack:<release>`, tip만 `ci:stack-tip`. 상세: [Git](docs/conventions/git.md).
+
+## 검증
+
+- 범위는 바꾼 동작과 위험에 맞춘다. 문서만 바꾸면 링크·예제·포맷을 확인한다. 코드는 관련 정적 검사와 의미 있는 테스트로 확인한다.
+- 통과한 검사는 추가 변경·실패·미확인 위험이 있을 때만 다시 돌린다. 결과에는 실행한 명령과 범위, 남은 한계를 적는다.
+- 데이터 삭제·운영 migration·배포·공유 Git 이력 재작성은 사용자의 기존 승인 범위에서만 한다. 서버의 일회성 테스트 DB 생성·삭제는 테스트의 정상 수명주기다.
+- Mobile 검증 규칙은 앱 지침을 따른다.

@@ -343,10 +343,13 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     }
 
     function redeployStatements(): string {
-      const deployment = readFileSync(join(process.cwd(), "DEPLOYMENT.md"), "utf8");
+      const deployment = readFileSync(
+        join(process.cwd(), "../../docs/releases/1.15.0/server-rollback.md"),
+        "utf8",
+      );
       const block = /```sql\n(BEGIN;[\s\S]*?COMMIT;)\n```/.exec(deployment)?.[1];
       if (block == null) {
-        throw new Error("DEPLOYMENT.md에 재배포 SQL이 없다");
+        throw new Error("1.15.0 되돌리기 문서에 재배포 SQL이 없다");
       }
       return block;
     }

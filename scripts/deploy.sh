@@ -8,7 +8,7 @@
 #              --build만 서버 로컬 빌드(비상 폴백, 끝나면 빌드 캐시 전체 삭제)
 # 읽기 토큰: GHCR_TOKEN env(Actions) → $GHCR_TOKEN_FILE(기본 $STATE_DIR/ghcr-read-token, 600)
 #            → 터미널 프롬프트. 없으면 빌드로 넘어가지 않고 중단한다. PAT 로그인 실패 시 GHCR_USER=<GitHub 로그인>
-# 수동 배포 (apps/api/DEPLOYMENT.md "수동 배포"):
+# 수동 배포 (apps/api/docs/deployment.md "수동 배포"):
 #   Mac: bash scripts/release/build-push-api-images.sh --push   # 마지막에 서버 명령을 출력
 #   서버: cd ~/apps/Aido-platform && git fetch origin main \
 #           && git merge-base --is-ancestor <sha> origin/main && git reset --hard <sha> \

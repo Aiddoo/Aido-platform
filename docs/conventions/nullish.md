@@ -84,14 +84,14 @@ premiumSource: premiumSourceSchema.nullable().optional(),
 endDate: z.iso.date().optional(),
 ```
 
-- 기존 필드의 required/optional/nullable 형태는 바꾸지 않는다(하위 호환). 상세: [REST 계약](../../apps/api/.claude/rest-contracts.md)
+- 기존 필드의 required/optional/nullable 형태는 바꾸지 않는다(하위 호환). 상세: [REST 계약](../../apps/api/docs/http-contracts.md)
 - 새 응답 필드를 읽는 클라는 `== null`로 "없음"을 처리한다.
 - `.nullish()`와 `.nullable().optional()`은 같은 타입이다. 새 계약에서는 의도가 드러나는 위 표의 형태를 쓰고, `.nullish()`는 구버전 입력을 관대하게 받는 경계에서만 쓴다. 기존 `.nullish()`를 표기 때문에 바꾸지 않는다.
 
 ## 5. 도메인·DB (서버)
 
 - DB nullable 컬럼은 도메인에서 `null`이다. 도메인 모델 안에서 같은 "없음"을 `null`과 `undefined`로 섞지 않는다.
-- 변환은 mapper·Adapter(경계)에서만 한다. 예: ORM 쓰기의 `undefined` = 변경 생략, `null` = 지우기는 Repository 구현이 해석한다([Drizzle](../../apps/api/.claude/drizzle.md)).
+- 변환은 mapper·Adapter(경계)에서만 한다. 예: ORM 쓰기의 `undefined` = 변경 생략, `null` = 지우기는 Repository 구현이 해석한다([Drizzle](../../apps/api/docs/persistence.md)).
 - Port의 조회 실패·cache miss는 각 Port가 정한 `null`/`undefined` 계약을 따른다.
 
 ```ts

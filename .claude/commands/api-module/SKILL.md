@@ -11,28 +11,25 @@ disable-model-invocation: true
 ## 필요한 참조
 
 - [서버 진입점](../../../apps/api/AGENTS.md): 공통 경계와 완료 기준.
-- [구조](../../../apps/api/.claude/architecture.md): Context·slice·조립·공개 capability를 정할 때.
-- [코드 규칙](../../../apps/api/.claude/api-conventions.md): 파일 이름과 구현 예제가 필요할 때.
-- [REST 계약](../../../apps/api/.claude/rest-contracts.md): route·DTO·응답을 추가하거나 바꿀 때.
-- [Drizzle](../../../apps/api/.claude/drizzle.md): 영속성·트랜잭션·schema를 바꿀 때.
-- [테스트](../../../apps/api/.claude/testing-guide.md): 변경 동작을 검증할 때.
+- [구조](../../../apps/api/docs/architecture.md): Context·slice·조립·공개 capability를 정할 때.
+- [이름 사전](../../../apps/api/docs/conventions.md)·[도메인 모델](../../../apps/api/docs/domain-modeling.md): 파일 이름과 모델 규약이 필요할 때.
+- [HTTP 계약](../../../apps/api/docs/http-contracts.md): route·DTO·응답을 추가하거나 바꿀 때.
+- [영속성](../../../apps/api/docs/persistence.md): 저장소·트랜잭션·schema를 바꿀 때.
+- [테스트](../../../apps/api/docs/testing.md): 변경 동작을 검증할 때.
 
 ## 구현 기준
 
-Context는 `apps/api/src/modules/<context>`, slice는 각 레이어 아래에 둔다. 현재 참조 구현은 `planning`이다.
+새 slice는 `apps/api/src/modules/<context>/<slice>/` 아래에 레이어를 둔다. 기준 구현은 notes/memos다. 생성기(`pnpm gen:api-slice`)가 있으면 그것으로 뼈대를 만든다.
 
 ```text
-<context>/
-  domain/{aggregates,entities,value-objects,policies}/<slice>/
-  application/{use-cases,ports,read-models}/<slice>/
-  infrastructure/{persistence,adapters}/<slice>/
-  presentation/{controllers,dtos,mappers}/<slice>/
+<context>/<slice>/
   <context>-<slice>.module.ts
-  <context>-<slice>-application.providers.ts
+  <context>-<slice>.providers.ts
   <context>-<slice>.public.ts
+  domain/  application/  infrastructure/  presentation/http/v1/
 ```
 
-위 목록에서 필요한 파일만 만든다. 상태 없는 조회·전달에 가짜 Aggregate나 빈 폴더를 만들지 않는다. Controller가 endpoint UseCase를 호출하고, 순수 Application 클래스는 생성자 객체로 필요한 Port만 받는다. Nest factory provider가 구현체를 조립한다.
+필요한 파일만 만들고 빈 폴더를 남기지 않는다. Controller가 UseCase를 호출하고, UseCase는 생성자 객체로 필요한 Port(abstract class)만 받는다. `*.providers.ts`의 `provideUseCase`가 구현체를 조립한다. 아직 옮기지 않은 Context에 기능을 더할 때는 그 Context의 옛 구조를 따르고 섞지 않는다.
 
 HTTP 스키마·오류는 `@aido/api`로 공유한다. ORM 타입·vendor SDK를 공유 계약이나 Domain/Application에 노출하지 않는다. 데이터 변경의 업무 단위는 `UnitOfWorkPort.run`으로 묶고 repository가 CLS의 활성 transaction을 사용한다. 다른 Context에는 해당 공개 capability로 연결한다.
 

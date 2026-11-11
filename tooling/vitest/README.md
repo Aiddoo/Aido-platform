@@ -39,4 +39,4 @@ pnpm --filter @aido/server exec vitest run --project integration
 pnpm --filter @aido/server exec vitest run --project e2e
 ```
 
-API의 통합 및 E2E 프로젝트는 각각 독립된 관리형 PostgreSQL을 준비하고 종료합니다. 자세한 규칙은 [API 테스트 가이드](../../apps/api/.claude/testing-guide.md)를 참고합니다.
+API의 통합 및 E2E 프로젝트는 각각 독립된 관리형 PostgreSQL을 준비하고 종료합니다. 자세한 규칙은 [API 테스트 가이드](../../apps/api/docs/testing.md)를 참고합니다.

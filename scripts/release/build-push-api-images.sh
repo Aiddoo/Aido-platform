@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Actions 없이 배포할 API/migrate 이미지를 개발자 Mac에서 빌드하고 GHCR에 올린다.
-# 서버(t4g.small, 2GB)는 빌드하지 않고 pull만 한다 — apps/api/DEPLOYMENT.md "수동 배포"
+# 서버(t4g.small, 2GB)는 빌드하지 않고 pull만 한다 — apps/api/docs/deployment.md "수동 배포"
 #
 # 빌드 설정은 .github/workflows/ci.yml의 docker job과 같다:
 #   apps/api/Dockerfile · target production/migrate · linux/arm64 · --pull · provenance/sbom 끔

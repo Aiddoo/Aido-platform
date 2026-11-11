@@ -138,7 +138,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 ## 버전과 호환
 
 - 프롬프트를 바꾸면 같은 폴더에서 고치고 정의의 `version` 숫자를 올린다. 이전 버전 폴더·env 전환은 두지 않는다(되돌리기는 배포 롤백). 출시 응답의 `meta.promptVersion`은 선택 문자열이라 값이 바뀌어도 호환된다.
-- HTTP 경로는 `/v1/ai/*` 그대로다. 프롬프트 버전으로 API 버전을 올리지 않는다. 응답 변경은 `meta.promptVersion` 같은 optional 필드 추가만 한다([하위 호환](../conventions/compatibility.md)).
+- HTTP 경로는 `/v1/ai/*` 그대로다. 프롬프트 버전으로 API 버전을 올리지 않는다. 응답 변경은 `meta.promptVersion` 같은 optional 필드 추가만 한다([하위 호환](../../../docs/conventions/compatibility.md)).
 - live eval과 로그는 API 키·사용자 원문을 출력하지 않는다. 키는 환경 변수로만 읽고 결과 기록에는 모델·버전·건수·지연·실패 분류만 남긴다.
 
 ## 평가
@@ -157,3 +157,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 | 2026-10-26 | 3.1-flash-lite / low                                            | v2.1                                            | 후속 38회. en 리포트 5/5·ko 3/3 숫자 근거 통과(근거 밖 숫자 문장 0), en 문장 "This is an increase of … compared to the previous period" 0/5. 긴 메모 count 정확: `totalTaskCount`를 앞에 둔 경우 5/10, 뒤로 옮긴 뒤 8/10. "은행 업무"류 덧붙인 명사 1/10                                                                                                                                                                                                   |
 | 2026-11-06 | claude-haiku-5-5 1순위(`anthropic,openai,google`) / 작업별 기본 | parse-todo@7, quick-plan@8, voice-note-digest@8 | parse-todo 36건 날짜·제목·NO_ACTION 1.0(p50 1469ms, p95 1884ms). quick-plan 42건(추가 사례 3건 포함) 날짜·제목·겹침 0.976(p50 1372ms, 실패 qp-mx-04 "Call 엄마"→"엄마에게 전화하기"). digest 9건 날짜 0.889(실패 dg-mx-02 "그 전에 견적서 보내기"를 오늘로 읽음, 10회 중 3회). 제목 언어 dg-mx-03 5/5 실패 → 8회 중 0회. 대상 사례 gpt-6-luna quick-plan 8/9·digest 1/3, gemini-3.1-flash-lite quick-plan 7/9("등기 보고서" 유지 등)·digest 3/3. 총 $0.107 |
 | 2026-11-06 | claude-haiku-5-5 / 작업별 기본                                  | voice-note-digest@8                             | `dg-mx-02` 문장을 "내일 미팅 전에 견적서 보내기"로 바꾼 뒤 3회 재평가. 날짜·제목·겹침·중요 표시 3/3(p50 2589~3516ms). 앱 언어 지표 1/3은 요약에 쓴 "김 대리" 한글 때문이고 합격 기준이 아니다. 총 $0.0025                                                                                                                                                                                                                                                  |
+
+## 전환 중
+
+이 문서의 코드 이름·경로는 아직 옮기지 않은 옛 구조(`modules/<context>/<layer>/<slice>`) 기준이다. 해당 Context를 옮기면 경로만 [아키텍처](architecture.md)의 slice 구조로 바뀌고 규칙은 그대로다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

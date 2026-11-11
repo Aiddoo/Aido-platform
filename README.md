@@ -26,14 +26,14 @@
 
 정확한 버전은 [`pnpm-workspace.yaml`](./pnpm-workspace.yaml)의 catalog와 각 `package.json`을 따른다.
 
-| 영역      | 기술                                                                                             |
-| --------- | ------------------------------------------------------------------------------------------------ |
-| 서버      | NestJS 12.3 (ESM, SWC), Drizzle ORM 1.0 RC, PostgreSQL 16, pg-boss 12, AI SDK 7 (Google)         |
-| 공유 계약 | `@aido/api`: Zod 4.6 스키마·오류 코드·공용 vocabulary                                            |
-| 모바일    | Expo SDK 58.0.x, React Native 0.88, React 19.3, Expo Router, TanStack Query 5, HeroUI Native, Ky |
-| 테스트    | Vitest 5 + Testcontainers(서버·계약), Jest 30 + jest-expo(모바일)                                |
-| 툴링      | Node.js 24.22.2, pnpm 12.15, Turborepo 2.11, TypeScript 6.0, Oxlint 1.91, Oxfmt 0.76             |
-| 인프라    | Docker Compose, GitHub Actions, GHCR, AWS EC2, Expo EAS                                          |
+| 영역      | 기술                                                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------------- |
+| 서버      | NestJS 12.4.2 (ESM, SWC), Drizzle ORM 1.0.0-rc.5, PostgreSQL 16, pg-boss 12.38.1, AI SDK 7 (Google)                 |
+| 공유 계약 | `@aido/api`: Zod 4.6.7 스키마·오류 코드·공용 vocabulary                                                             |
+| 모바일    | Expo SDK 58.0.x, React Native 0.88, React 19.3, Expo Router, TanStack Query 5, HeroUI Native, Ky                    |
+| 테스트    | Vitest 5 + Testcontainers(서버·계약), Jest 30 + jest-expo(모바일)                                                   |
+| 툴링      | Node.js 26.13.0 LTS (EAS 빌드는 24.22.2), pnpm 12.15, Turborepo 2.11, TypeScript 6.0.3, Oxlint 1.93.0, Oxfmt 0.78.0 |
+| 인프라    | Docker Compose, GitHub Actions, GHCR, AWS EC2, Expo EAS                                                             |
 
 ## 아키텍처
 
@@ -80,7 +80,7 @@ flowchart LR
 - job은 PostgreSQL(pg-boss)만 쓴다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우의 캐시·rate limit에만 쓴다.
 - 앱 헤더(`X-App-Version`·`X-Timezone`·`X-Request-Id` 등)는 요청마다 한 번 `RequestClient`로 정규화한다. `X-Request-Id`는 응답으로 돌려주고 로그 `reqId`와 Sentry `request_id`가 된다.
 
-상세: [apps/api/.claude/architecture.md](./apps/api/.claude/architecture.md)
+상세: [apps/api/docs/architecture.md](./apps/api/docs/architecture.md)
 
 ### 서버·클라이언트 타입 공유
 
@@ -108,7 +108,7 @@ packages/api (Zod 스키마, ErrorCode)
 
 ### 요구 사항
 
-- Node.js `24.22.2` ([`.nvmrc`](./.nvmrc))
+- Node.js `26.13.0` LTS ([`.nvmrc`](./.nvmrc))
 - pnpm `12.15.0` (`packageManager`, `corepack enable`로 활성화)
 - Docker (로컬 PostgreSQL·Redis, integration/e2e 테스트의 Testcontainers)
 
@@ -149,7 +149,8 @@ pnpm dev
 | `pnpm typecheck`        | 전체 타입 검사                                             |
 | `pnpm lint`             | Oxlint 정적 검사 (`lint:fix`로 자동 수정)                  |
 | `pnpm format`           | Oxfmt 포맷 적용 (`format:check`로 검사만)                  |
-| `pnpm check`            | lint + format:check + typecheck + 모바일 컨벤션 검사       |
+| `pnpm check`            | lint + format:check + 이름·경계·관례 검사 + typecheck      |
+| `pnpm lint:names`       | 서버 slice 폴더·파일 이름 검사 (ls-lint)                   |
 | `pnpm test`             | 전체 unit 테스트                                           |
 | `pnpm test:cov`         | unit 테스트 + 커버리지                                     |
 | `pnpm test:integration` | 서버 PostgreSQL integration 테스트                         |
@@ -176,7 +177,7 @@ pnpm dev
 - **실행 방식**: unit은 worker 병렬(`maxWorkers: 50%`)이다. integration·e2e는 worker별 DB로 파일 단위 병렬(기본 2~4, `AIDO_TEST_DB_WORKERS`로 조정) + 무작위 순서(`sequence.shuffle`)로 실행해 순서 의존을 드러낸다. 테스트 사이 정리는 FK 트리거를 끈 `DELETE`로 처리한다.
 - **외부 공급자**: Expo Push·Resend·AI SDK는 Fake 또는 고정 HTTP fixture로 격리한다. 실제 유료 호출(`ai:eval`)과 `test:performance`는 CI 밖에서 별도로 실행한다.
 
-상세: [apps/api/.claude/testing-guide.md](./apps/api/.claude/testing-guide.md), [apps/mobile/.claude/testing-guide.md](./apps/mobile/.claude/testing-guide.md)
+상세: [apps/api/docs/testing.md](./apps/api/docs/testing.md), [apps/mobile/.claude/testing-guide.md](./apps/mobile/.claude/testing-guide.md)
 
 ## CI/CD
 
@@ -197,7 +198,7 @@ flowchart LR
 - **배포**: `Deploy to EC2` workflow가 두 이미지 태그를 확인한 뒤 SSH로 [`scripts/deploy.sh`](./scripts/deploy.sh)를 실행한다. **migrate 컨테이너가 먼저 실행되어** pg-boss·Drizzle 마이그레이션을 끝내야 API 컨테이너를 교체하며, health gate 실패 시 이전 API 이미지로 되돌린다.
 - **모바일**: Expo EAS로 빌드·제출한다 ([apps/mobile/DEPLOYMENT.md](./apps/mobile/DEPLOYMENT.md)).
 
-상세: [docs/server/ci.md](./docs/server/ci.md), [apps/api/DEPLOYMENT.md](./apps/api/DEPLOYMENT.md)
+상세: [apps/api/docs/ci.md](./apps/api/docs/ci.md), [apps/api/docs/deployment.md](./apps/api/docs/deployment.md)
 
 ## 문서
 
@@ -205,12 +206,12 @@ flowchart LR
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 작업 진입점 (사람·AI 공통) | [AGENTS.md](./AGENTS.md), [apps/api/AGENTS.md](./apps/api/AGENTS.md), [apps/mobile/AGENTS.md](./apps/mobile/AGENTS.md)                                                                                            |
 | 공통 컨벤션                | [오류](./docs/conventions/errors.md), [날짜·시간](./docs/conventions/dates.md), [하위 호환](./docs/conventions/compatibility.md), [null 비교](./docs/conventions/nullish.md), [Git·PR](./docs/conventions/git.md) |
-| 서버 문서 안내             | [docs/server/README.md](./docs/server/README.md)                                                                                                                                                                  |
-| 서버 구조·코드 규칙        | [architecture](./apps/api/.claude/architecture.md), [api-conventions](./apps/api/.claude/api-conventions.md), [naming](./docs/server/naming.md)                                                                   |
-| REST 계약·DB               | [rest-contracts](./apps/api/.claude/rest-contracts.md), [drizzle](./apps/api/.claude/drizzle.md)                                                                                                                  |
-| 테스트·로깅                | [testing-guide](./apps/api/.claude/testing-guide.md), [logging-guide](./apps/api/.claude/logging-guide.md)                                                                                                        |
+| 서버 문서 안내             | [apps/api/docs/README.md](./apps/api/docs/README.md)                                                                                                                                                              |
+| 서버 구조·코드 규칙        | [architecture](./apps/api/docs/architecture.md), [conventions](./apps/api/docs/conventions.md), [domain-modeling](./apps/api/docs/domain-modeling.md)                                                             |
+| REST 계약·DB               | [http-contracts](./apps/api/docs/http-contracts.md), [persistence](./apps/api/docs/persistence.md)                                                                                                                |
+| 테스트·로깅                | [testing](./apps/api/docs/testing.md), [observability](./apps/api/docs/observability.md)                                                                                                                          |
 | 모바일 구조·UI             | [apps/mobile/.claude/](./apps/mobile/.claude/)                                                                                                                                                                    |
-| 배포                       | [서버](./apps/api/DEPLOYMENT.md), [모바일](./apps/mobile/DEPLOYMENT.md)                                                                                                                                           |
+| 배포                       | [서버](./apps/api/docs/deployment.md), [모바일](./apps/mobile/DEPLOYMENT.md)                                                                                                                                      |
 
 ## 라이선스
 

@@ -1,6 +1,6 @@
 # 서버 CI
 
-PR 또는 배포 검증을 준비할 때 참고한다. 정본은 [ci.yml](../../.github/workflows/ci.yml), [setup action](../../.github/actions/setup/action.yml), [CI policy](../../scripts/ci/stack-policy.mjs), [dependency scope](../../scripts/ci/dependency-scope.mjs)다.
+PR 또는 배포 검증을 준비할 때 참고한다. 정본은 [ci.yml](../../../.github/workflows/ci.yml), [setup action](../../../.github/actions/setup/action.yml), [CI policy](../../../scripts/ci/stack-policy.mjs), [dependency scope](../../../scripts/ci/dependency-scope.mjs)다.
 
 ## 실행 범위
 
@@ -48,13 +48,13 @@ Turbo와 Docker build cache는 도구 기본 경로를 사용한다. gate는 변
 
 작업 중에는 변경한 동작의 target test와 필요한 lint/type/format을 실행하고, source가 바뀌지 않은 성공 검사를 반복하지 않는다. 공개 HTTP·OpenAPI·released-client fingerprint와 실제 DB/transaction 검사는 pre-push 훅(통합·계약 테스트)이 맡고, CI는 정적 검사와 build만 확인한다. 로컬 결과에는 command, source revision, seed, 파일/테스트 수, 실패·재실행 사유와 한계를 남긴다. coverage나 SDK schema 통과를 실제 vendor 품질/운영 배포 완료로 표현하지 않는다.
 
-수동 performance project와 승인된 유료 AI 평가는 일반 CI 밖의 별도 근거다. 배포 승인은 [DEPLOYMENT.md](../../apps/api/DEPLOYMENT.md)의 동일 SHA 이미지·마이그레이션·health 절차를 따른다.
+수동 performance project와 승인된 유료 AI 평가는 일반 CI 밖의 별도 근거다. 배포 승인은 [배포 문서](deployment.md)의 동일 SHA 이미지·마이그레이션·health 절차를 따른다.
 
 ## 의존성·이미지 보안 검사
 
 - workflow 기본 권한은 `contents: read`이고 job이 필요한 권한만 더한다. `TURBO_TOKEN`은 turbo를 실행하는 job에만 주입한다.
 - 출처 증명은 GitHub attestations API에만 저장하고 registry에는 올리지 않는다(GHCR 버전 보존 개수 유지). `gh attestation verify oci://ghcr.io/aiddoo/aido-platform-api:<sha> --repo Aiddoo/Aido-platform`으로 확인한다.
-- CodeQL(actions, JavaScript/TypeScript)은 PR마다 돌리지 않고 기본 브랜치를 주 1회 스캔한다([codeql.yml](../../.github/workflows/codeql.yml)). schedule은 저장소 기본 브랜치에서만 돌므로 기본 브랜치는 `main`이어야 한다.
+- CodeQL(actions, JavaScript/TypeScript)은 PR마다 돌리지 않고 기본 브랜치를 주 1회 스캔한다([codeql.yml](../../../.github/workflows/codeql.yml)). schedule은 저장소 기본 브랜치에서만 돌므로 기본 브랜치는 `main`이어야 한다.
 
 - `pnpm audit --prod --audit-level high`가 high 이상 취약점을 막는다. 패치 버전이 없어 위험을 수용한 advisory는 `pnpm-workspace.yaml`의 `auditConfig.ignoreGhsas`에 사유·제거 조건 주석과 함께 둔다. 현재는 `@expo/cli`(Expo 빌드 도구) 내부의 `node-forge`(GHSA-86w9-cpqp-85rv)와 `zod` 3.x(GHSA-mrhx-c7xc-m3w5)이며, `@expo/cli`가 패치된 버전을 받으면 제거한다.
 - API/migrate 이미지는 runner에 load한 상태로 Trivy가 먼저 검사하고, 둘 다 고칠 수 있는 HIGH/CRITICAL이 없을 때만 GHCR에 push한다. 검사에 실패하면 그 SHA의 이미지가 발행되지 않으므로 deploy의 이미지 존재 확인(`docker buildx imagetools inspect`)에서 멈춘다.

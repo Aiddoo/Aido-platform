@@ -1,6 +1,6 @@
 # 구독 결제 처리
 
-RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)과 보상 기간이 프리미엄을 정하는 규칙은 [유료 기능과 권한](../.claude/architecture.md#유료-기능과-권한)에 있다. 이 문서는 운영 결정만 적는다.
+RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)과 보상 기간이 프리미엄을 정하는 규칙은 [유료 기능과 권한](entitlements.md)에 있다. 이 문서는 운영 결정만 적는다.
 
 ## SANDBOX 결제
 
