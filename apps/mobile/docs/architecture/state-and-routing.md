@@ -106,7 +106,7 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 
 - 시트도 route다. gorhom 시트를 `transparentModal` route(`SHEET_ROUTE_SCREEN_OPTIONS`, `shared/ui/bottom-sheet/sheet-route.ts`)에 그린다. 키보드를 따라 움직이고 60fps를 지키기 위해서다.
 - 시트 route도 params 검증은 [params 튜플](#params-튜플)의 규칙과 같다.
-- route 시트의 껍데기는 `RouteBottomSheet`(`fallbackHref`, `loading`, 입력이 있으면 `RouteKeyboardBottomSheet`) 하나다. 딥링크로 바로 열려 돌아갈 화면이 없으면 `fallbackHref`로 바꾼다. 폼이 시트와 `footer`를 함께 가져 경계가 시트 밖인 시트만 `useSheetRoute`를 직접 쓴다. route가 아닌 시트는 `useOpenSheet`로 연다([ui-catalog](./ui-catalog.md)).
+- route 시트의 껍데기는 `RouteBottomSheet`(`fallbackHref`, `loading`, 입력이 있으면 `RouteKeyboardBottomSheet`) 하나다. 딥링크로 바로 열려 돌아갈 화면이 없으면 `fallbackHref`로 바꾼다. 폼이 시트와 `footer`를 함께 가져 경계가 시트 밖인 시트만 `useSheetRoute`를 직접 쓴다. route가 아닌 시트는 `useOpenSheet`(입력 시트는 `useOpenKeyboardSheet`)로 연다([ui-catalog](./ui-catalog.md)). 같은 시트에 route가 있으면 overlay로 다시 띄우지 않고 route로 간다(친구 독촉 콕).
 
 ### Link
 

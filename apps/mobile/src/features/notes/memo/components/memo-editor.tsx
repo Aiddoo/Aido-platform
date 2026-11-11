@@ -40,7 +40,7 @@ import {
   TextArea,
   TextSkeleton,
   TrashIcon,
-  useOverlay,
+  useOpenKeyboardSheet,
   useStackBackToolbar,
   VStack,
   MenuContent,
@@ -850,7 +850,7 @@ function useOpenMemoConvertSheet({
   onConverted,
 }: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted'>) {
   const todayKey = useTodayKey();
-  const overlay = useOverlay();
+  const openKeyboardSheet = useOpenKeyboardSheet();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesQuery.data?.categories ?? [],
@@ -867,19 +867,14 @@ function useOpenMemoConvertSheet({
       return;
     }
 
-    overlay.open(({ isOpen, close, unmount }) => (
+    openKeyboardSheet(({ isOpen, onOpenChange, close }) => (
       <MemoConvertBottomSheet
         memo={savedMemo}
         selectedDate={todayKey}
         categoryId={defaultCategoryId}
         isOpen={isOpen}
         onClose={close}
-        onOpenChange={(isSheetOpen) => {
-          if (!isSheetOpen) {
-            close();
-            unmount();
-          }
-        }}
+        onOpenChange={onOpenChange}
         onConverted={onConverted}
       />
     ));

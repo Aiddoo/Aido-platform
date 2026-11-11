@@ -46,7 +46,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 - **`Mascot`**(있음): `name`, `size?`, `isCentered`. 고양이 이미지를 직접 import하지 않는다.
 - **`TimeSpinner`**: `value`, `onChange`, `timeFormat`, `minimum`, `maximum`. Android 시스템 피커는 `openAndroidTimePicker()`다.
 - **`RouteBottomSheet`**(있음): `fallbackHref`, `loading`, `children`·`footer`는 `(sheet) => ReactNode`. 대상이 있는 시트 route의 껍데기 하나(떠나기·경계·문의)이고 대상은 `useSheetTodo` 같은 route 훅으로 읽는다. 입력이 있으면 `RouteKeyboardBottomSheet`다.
-- **`useOpenSheet()`**: `openSheet(render, options)`. route 문맥이 없는 시트(폼에 묶인 피커)를 띄운다.
+- **`useOpenSheet()`**(있음): `openSheet(render, options)`. route 문맥이 없는 시트(폼에 묶인 피커)를 띄우고 고른 값을 돌려준다(취소는 `undefined`). 폼이 `footer`를 가진 입력 시트는 `useOpenKeyboardSheet()`다([overlay](../../src/shared/ui/overlay/overlay.md)).
 - **`QueryErrorFallback.Inline`**(있음): 블록 안 "실패 + 다시 시도" 한 줄이다. `hasInquiry`를 켜면 문의하기가 붙는다.
 
 ## 직접 만든 부품을 둔 이유

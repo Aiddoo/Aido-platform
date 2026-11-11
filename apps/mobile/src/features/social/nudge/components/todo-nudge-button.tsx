@@ -1,5 +1,5 @@
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useOverlay } from '@src/shared/ui';
+import { useOpenKeyboardSheet } from '@src/shared/ui';
 import type { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
@@ -21,24 +21,18 @@ export function TodoNudgeButton({
   isDisabled,
   ...pressableProps
 }: TodoNudgeButtonProps) {
-  const overlay = useOverlay();
+  const openKeyboardSheet = useOpenKeyboardSheet();
   const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
 
-  const openNudgeSheet = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
+  const openNudgeSheet = () =>
+    openKeyboardSheet(({ isOpen, onOpenChange }) => (
       <NudgeBottomSheet
         receiver={receiver}
         todo={todo}
         isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            unmount();
-          }
-        }}
+        onOpenChange={onOpenChange}
       />
     ));
-  };
 
   const handlePress = () => {
     if (gate.promptIfBlocked()) {

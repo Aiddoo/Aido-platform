@@ -139,7 +139,14 @@ export { ListRow, type ListRowProps } from './list-row';
 export { Mascot } from './mascot';
 export { Meter } from './meter';
 export { OfflineBanner } from './offline-banner';
-export { OverlayProvider, useOpenSheet, useOverlay, useOverlayState } from './overlay';
+export {
+  type OpenSheetOptions,
+  OverlayProvider,
+  useOpenKeyboardSheet,
+  useOpenSheet,
+  useOverlay,
+  useOverlayState,
+} from './overlay';
 export type { QueryErrorFallbackProps } from './query-error-boundary';
 export {
   INQUIRY_SHEET_EXIT,

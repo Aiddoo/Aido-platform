@@ -15,13 +15,12 @@ import {
   HStack,
   INQUIRY_SHEET_EXIT,
   ListRow,
-  ModalBottomSheet,
   QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   Text,
   TextSkeleton,
-  useOverlay,
+  useOpenSheet,
   useSheetRoute,
   VStack,
   WordWrapText,
@@ -510,7 +509,7 @@ function MoveTargetRow({
   ...props
 }: MoveTargetRowProps) {
   const { t } = useTranslation(['todo', 'common']);
-  const overlay = useOverlay();
+  const openSheet = useOpenSheet();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const moveTarget = TodoCategoryPolicy.findCategory(
     categoriesResult.categories,
@@ -521,24 +520,22 @@ function MoveTargetRow({
     return null;
   }
 
-  const openMoveTargetPicker = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close()} onExit={unmount}>
-        <QueryErrorBoundary>
-          <Suspense fallback={<CategorySelectInput.Loading />}>
-            <CategorySelectInput
-              defaultValue={moveTargetCategoryId}
-              excludedCategoryId={deletingCategoryId}
-              submitLabel={t('common:actions.confirm')}
-              onSubmit={(categoryId) => {
-                onMoveTargetChange(categoryId);
-                close();
-              }}
-            />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ModalBottomSheet>
+  const openMoveTargetPicker = async () => {
+    const categoryId = await openSheet<number>((close) => (
+      <QueryErrorBoundary>
+        <Suspense fallback={<CategorySelectInput.Loading />}>
+          <CategorySelectInput
+            defaultValue={moveTargetCategoryId}
+            excludedCategoryId={deletingCategoryId}
+            submitLabel={t('common:actions.confirm')}
+            onSubmit={close}
+          />
+        </Suspense>
+      </QueryErrorBoundary>
     ));
+    if (categoryId != null) {
+      onMoveTargetChange(categoryId);
+    }
   };
 
   return (

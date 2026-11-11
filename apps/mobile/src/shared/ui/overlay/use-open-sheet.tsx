@@ -3,7 +3,7 @@ import { type ComponentProps, type ReactNode, useCallback } from 'react';
 import { ModalBottomSheet } from '../bottom-sheet/modal-bottom-sheet';
 import { useOverlay } from './use-overlay';
 
-type OpenSheetOptions = Pick<
+export type OpenSheetOptions = Pick<
   ComponentProps<typeof ModalBottomSheet>,
   'hasFixedHeader' | 'onCloseStart'
 >;

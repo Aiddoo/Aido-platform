@@ -19,6 +19,7 @@ import {
   QueryErrorBoundary,
   RepeatIcon,
   SheetChipRow,
+  type OpenSheetOptions,
   useOpenSheet,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -33,7 +34,7 @@ import {
   withScheduleStartDate,
   withVisibilityToggled,
 } from '../domains/todo.model';
-import { type SheetOptions, useOpenTodoRepeatPicker } from '../hooks/use-open-todo-repeat-picker';
+import { useOpenTodoRepeatPicker } from '../hooks/use-open-todo-repeat-picker';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
 import { formatRepeatSummary } from '../utils/format-repeat-summary';
 import { formatTodoPeriod } from '../utils/todo-period.view-model';
@@ -46,7 +47,7 @@ export type TodoScheduleChipsValue = TodoSchedule &
 interface ChipProps<T> {
   value: TodoScheduleChipsValue;
   onChange: (next: T) => void;
-  sheetOptions: SheetOptions;
+  sheetOptions: OpenSheetOptions;
 }
 
 interface TodoScheduleChipsProps {

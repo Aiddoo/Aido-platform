@@ -26,7 +26,7 @@ import {
   ScrollFade,
   Text,
   TextSkeleton,
-  useOverlay,
+  useOpenKeyboardSheet,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -411,7 +411,7 @@ PlanReview.TodoRow = function TodoRow({
   surface: NonNullable<PlanReviewProps['surface']>;
 }) {
   const { t } = useTranslation('voicePlan');
-  const overlay = useOverlay();
+  const openKeyboardSheet = useOpenKeyboardSheet();
   const todo = useWatch({ control: form.control, name: `actions.${index}` });
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
@@ -430,8 +430,8 @@ PlanReview.TodoRow = function TodoRow({
   const isDuplicate = VoicePlanPolicy.isDuplicateAction(todo);
   const unselectedClassName = !todo.isSelected && UNSELECTED_TITLE_CLASS_NAME;
 
-  const handlePress = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
+  const handlePress = () =>
+    openKeyboardSheet(({ isOpen, onOpenChange }) => (
       <QueryErrorBoundary fallback={() => null}>
         {/* 카테고리와 설정을 읽은 뒤에야 시트가 올라온다. 닫힌 시트라 밀릴 화면이 없고 조회는 이 화면에서 이미 받아 둔 캐시다 */}
         <Suspense fallback={null}>
@@ -439,25 +439,18 @@ PlanReview.TodoRow = function TodoRow({
             todo={todo}
             fallbackCategoryId={fallbackCategoryId}
             isOpen={isOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                close();
-                unmount();
-              }
-            }}
+            onOpenChange={onOpenChange}
             onConfirm={(edited) => {
               form.setValue(`actions.${index}`, edited, {
                 shouldDirty: true,
                 shouldValidate: true,
               });
-              close();
-              unmount();
+              onOpenChange(false);
             }}
           />
         </Suspense>
       </QueryErrorBoundary>
     ));
-  };
 
   return (
     <HStack gap={SELECT_GAP} align="center">
