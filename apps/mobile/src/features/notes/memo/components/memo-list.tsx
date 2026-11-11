@@ -413,11 +413,7 @@ MemoList.Empty = function Empty() {
   );
 };
 
-/**
- * 화면에 그릴 메모 목록. 순서가 같거나 끝에 붙기만 하면 그 그림에 바로 쓰고, 순서가 바뀌면(만들기·고정·삭제)
- * FlashList 권장 방식대로 재사용을 멈추고 LayoutAnimation을 건 뒤 다음 그림에 바꿔 카드가 새 자리로 미끄러진다.
- * 탭 전환·다시 마운트·칸 수나 폭 변경·다음 쪽은 순서 변경이 아니라 움직이지 않는다
- */
+/** 순서가 바뀔 때(만들기·고정·삭제)만 FlashList 권장대로 재사용을 멈추고 LayoutAnimation을 걸어 카드가 미끄러진다. 탭 전환·다시 마운트·칸 수 변경·다음 쪽은 움직이지 않는다 */
 function useDisplayedMemos(
   memos: readonly Memo[],
   listRef: RefObject<FlashListRef<Memo> | null>,
