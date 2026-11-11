@@ -6,7 +6,7 @@ import {
   usePushNotification,
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
-import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
+import type { PushNotificationResponse as OsPushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
 import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
@@ -28,8 +28,11 @@ import {
 import type { ReadyNotificationEntry } from '../apis/notification-entry.store';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
-import { NotificationResponsePolicy, PushNotificationPolicy } from '../domains/notification.model';
-import { type PendingNotificationResponse } from '../domains/notification.model';
+import {
+  type PushNotificationResponse,
+  PushNotificationResponsePolicy,
+} from '../domains/push-notification-response.model';
+import { PushNotificationPolicy } from '../domains/push-notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
 import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
 import { resolveNotificationDestination } from '../utils/notification-destination';
@@ -67,7 +70,7 @@ export function useNotificationResponseObserver(): void {
       activeSince = state === 'active' ? Date.now() : null;
     });
     const receive = (
-      response: PushNotificationResponse,
+      response: OsPushNotificationResponse,
       { isLaunchResponse }: { isLaunchResponse: boolean },
     ) => {
       const parsed = pushNotificationPayloadSchema.safeParse(response.data);
@@ -117,7 +120,7 @@ export function useNotificationResponseObserver(): void {
 }
 
 function useMarketingOptOut(
-  response: PendingNotificationResponse | null,
+  response: PushNotificationResponse | null,
   finishResponse: (responseId: string) => void,
 ) {
   const status = useAuthStatus();
@@ -129,11 +132,11 @@ function useMarketingOptOut(
   const showConsentResult = useConsentResultToast();
   const inFlightIdRef = useRef<string | null>(null);
 
-  const send = useEffectEvent(async (target: PendingNotificationResponse) => {
+  const send = useEffectEvent(async (target: PushNotificationResponse) => {
     if (inFlightIdRef.current === target.id) {
       return;
     }
-    const action = NotificationResponsePolicy.getResponseAction(target, {
+    const action = PushNotificationResponsePolicy.getResponseAction(target, {
       authStatus: status,
       now: Date.now(),
     });
@@ -180,7 +183,7 @@ function useMarketingOptOut(
 
 /** 인증과 복원이 끝난 탭의 소유를 확인하고 목적지를 정한다 */
 function useResolveResponse(
-  response: PendingNotificationResponse | null,
+  response: PushNotificationResponse | null,
   finishResponse: (responseId: string) => void,
 ) {
   const status = useAuthStatus();
@@ -193,7 +196,7 @@ function useResolveResponse(
   const windowSizeClass = useWindowSizeClass();
   const inFlightIdRef = useRef<string | null>(null);
 
-  const resolve = useEffectEvent(async (target: PendingNotificationResponse) => {
+  const resolve = useEffectEvent(async (target: PushNotificationResponse) => {
     if (inFlightIdRef.current === target.id) {
       return;
     }
@@ -229,8 +232,8 @@ function useResolveResponse(
     }
   });
 
-  const decide = useEffectEvent((target: PendingNotificationResponse) => {
-    const action = NotificationResponsePolicy.getResponseAction(target, {
+  const decide = useEffectEvent((target: PushNotificationResponse) => {
+    const action = PushNotificationResponsePolicy.getResponseAction(target, {
       authStatus: status,
       now: Date.now(),
     });
@@ -277,7 +280,7 @@ function useOpenReadyEntry(
         trackEvent('push_notification_opened', {
           type: data.type ?? 'UNKNOWN',
           action: data.action.type,
-          app_state: NotificationResponsePolicy.getOpenAppState(response),
+          app_state: PushNotificationResponsePolicy.getOpenAppState(response),
           ...(data.campaignKey && { campaign_key: data.campaignKey }),
           ...(data.variantId && { variant_id: data.variantId }),
           ...(data.purpose && { purpose: data.purpose }),

@@ -9,8 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useGlobalSearchParams, usePathname } from 'expo-router';
 import { useEffect, useEffectEvent } from 'react';
 
-import { PushNotificationPolicy } from '../domains/notification.model';
 import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
+import { getForegroundPushPresentation } from '../utils/get-foreground-push-presentation';
 import {
   isViewingNotificationDestination,
   NOTIFICATION_INBOX_DESTINATION,
@@ -37,7 +37,7 @@ export function useForegroundPushPresentation() {
         windowSizeClass,
         viewerId: getCachedMe(queryClient)?.id,
       });
-      return PushNotificationPolicy.getForegroundPresentation(payload.data, {
+      return getForegroundPushPresentation(payload.data, {
         isViewingInbox: isViewingNotificationDestination(
           NOTIFICATION_INBOX_DESTINATION,
           currentRoute,

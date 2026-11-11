@@ -1,5 +1,5 @@
 import type { TimezoneOffsetBucket } from '../domains/device-timezone.model';
-import type { PushOpenAppState } from '../domains/notification.model';
+import type { PushOpenAppState } from '../domains/push-notification-response.model';
 
 export type PushPermissionPromptSource =
   | 'onboarding'

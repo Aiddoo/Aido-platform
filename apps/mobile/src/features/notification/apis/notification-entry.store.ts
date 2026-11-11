@@ -1,29 +1,30 @@
-import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
 import {
   type HandledResponseIds,
-  HandledResponsePolicy,
-  type PendingNotificationResponse,
-} from '../domains/notification.model';
+  hasHandledResponse,
+  type PushNotificationResponse,
+  PushNotificationResponsePolicy,
+  rememberHandledResponse,
+} from '../domains/push-notification-response.model';
 import type { NotificationDestination } from '../utils/notification-destination';
 
 interface NotificationEntryState {
   /** 아직 열지 못한 탭 하나. 마지막 탭이 이긴다 */
-  pending: PendingNotificationResponse | null;
+  pending: PushNotificationResponse | null;
   /** 소유 확인이 끝나 열 곳이 정해진 탭 */
   ready: ReadyNotificationEntry | null;
   /** 아직 보내지 못한 수신 거부. 다음 탭에 밀려 사라지면 안 되어 따로 둔다 */
-  optOut: PendingNotificationResponse | null;
+  optOut: PushNotificationResponse | null;
 }
 
 export interface ReadyNotificationEntry {
-  response: PendingNotificationResponse;
+  response: PushNotificationResponse;
   destination: NotificationDestination;
 }
 
 export interface NotificationEntryStore {
   getState(): NotificationEntryState;
   subscribe(listener: () => void): () => void;
-  receive(response: PendingNotificationResponse): void;
+  receive(response: PushNotificationResponse): void;
   /** 소유 확인이 끝난 탭의 목적지를 정한다. 그 사이 새 탭이 왔으면 무시한다 */
   markReady(responseId: string, destination: NotificationDestination): void;
   /** 끝난 응답을 슬롯에서 빼고, 같은 응답이 다시 와도 무시한다(최근 응답만 기억한다) */
@@ -56,7 +57,7 @@ export function createNotificationEntryStore(): NotificationEntryStore {
     },
     receive: (response) => {
       if (
-        HandledResponsePolicy.hasHandledResponse(handledResponseIds, response.id) ||
+        hasHandledResponse(handledResponseIds, response.id) ||
         response.id === state.pending?.id ||
         response.id === state.ready?.response.id ||
         response.id === state.optOut?.id
@@ -64,7 +65,7 @@ export function createNotificationEntryStore(): NotificationEntryStore {
         return;
       }
       setState(
-        response.actionIdentifier === MARKETING_OPT_OUT_ACTION
+        PushNotificationResponsePolicy.isMarketingOptOut(response)
           ? { ...state, optOut: response }
           : { ...state, pending: response, ready: null },
       );
@@ -76,10 +77,7 @@ export function createNotificationEntryStore(): NotificationEntryStore {
       setState({ ...state, pending: null, ready: { response: state.pending, destination } });
     },
     settle: (responseId) => {
-      handledResponseIds = HandledResponsePolicy.rememberHandledResponse(
-        handledResponseIds,
-        responseId,
-      );
+      handledResponseIds = rememberHandledResponse(handledResponseIds, responseId);
       setState({
         pending: state.pending?.id === responseId ? null : state.pending,
         ready: state.ready?.response.id === responseId ? null : state.ready,

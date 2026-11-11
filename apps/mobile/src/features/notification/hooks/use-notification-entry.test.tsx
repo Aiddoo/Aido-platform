@@ -4,10 +4,10 @@ import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import { createNotificationEntryStore } from '../apis/notification-entry.store';
-import type { PendingNotificationResponse } from '../domains/notification.model';
+import type { PushNotificationResponse } from '../domains/push-notification-response.model';
 import { useHasPendingNotificationEntry } from './use-notification-entry';
 
-const RESPONSE: PendingNotificationResponse = {
+const RESPONSE: PushNotificationResponse = {
   id: 'response-1',
   actionIdentifier: 'default',
   data: { notificationId: 7, type: 'FOLLOW_NEW', action: { type: 'NONE' } },

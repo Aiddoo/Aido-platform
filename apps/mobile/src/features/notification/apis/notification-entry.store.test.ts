@@ -1,8 +1,8 @@
-import { createPendingNotificationResponse } from '../__tests__/notification.fixtures';
+import { createPushNotificationResponse } from '../__tests__/notification.fixtures';
 import { createNotificationEntryStore } from './notification-entry.store';
 
 const tap = (id: string, actionIdentifier = 'default') =>
-  createPendingNotificationResponse({ id, actionIdentifier });
+  createPushNotificationResponse({ id, actionIdentifier });
 
 describe('createNotificationEntryStore', () => {
   it('연속 두 탭은 마지막 탭만 슬롯에 남는다', () => {

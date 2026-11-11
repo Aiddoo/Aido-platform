@@ -17,7 +17,8 @@ import type { PushPermissionResponse } from '@src/core/ports/push-notification-g
 import { toInstant } from '@src/shared/date/instant';
 import { defineFixture } from '@src/testing/fixture';
 
-import type { Notification, PendingNotificationResponse } from '../domains/notification.model';
+import type { Notification } from '../domains/notification.model';
+import type { PushNotificationResponse } from '../domains/push-notification-response.model';
 import type { PushPermission } from '../domains/push-permission.model';
 import { pushRegistrationSchema } from '../domains/push-registration.model';
 import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
@@ -169,9 +170,9 @@ export const createPushRegistration = defineFixture(pushRegistrationSchema, {
   releaseRequestedAt: null,
 });
 
-export function createPendingNotificationResponse(
-  overrides: Partial<PendingNotificationResponse> = {},
-): PendingNotificationResponse {
+export function createPushNotificationResponse(
+  overrides: Partial<PushNotificationResponse> = {},
+): PushNotificationResponse {
   return {
     id: 'response-1',
     actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
