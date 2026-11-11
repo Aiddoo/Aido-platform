@@ -48,14 +48,10 @@
 
 ## 옛 서버·옛 앱 분기 (1.15.2에서 삭제)
 
-| 대상                        | 자리                                                                                                 |
-| --------------------------- | ---------------------------------------------------------------------------------------------------- |
-| 알림 옛 필드 목적지         | `notification-destination.ts` `toLegacyFieldsDestination` 등, `notificationDestinationRoutingSchema` |
-| 카테고리 삭제 미리보기 대체 | `todo-category.queries.ts:33`, `todo-category.model.ts` `createFallbackPreview`                      |
-| 응답 기본값                 | `user.mapper.ts:30`(`premiumIsTrial`), `consent.mapper.ts:34,43`, `notification.mapper.ts:15`        |
-| 푸시 해제 404               | `push-device.service.ts` `#postRelease`(이전 서버의 404를 성공으로 봄)                               |
-| 시리즈 한도 대체            | `todo-series.error.ts:38`                                                                            |
-| 옛 댓글 route               | `app/(app)/todo/[todoId]/comments/[commentId].tsx`                                                   |
+| 대상                | 자리                                                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| 알림 옛 필드 목적지 | `notification-destination.ts` `toLegacyFieldsDestination` 등, `notificationDestinationRoutingSchema` |
+| 옛 댓글 route       | `app/(app)/todo/[todoId]/comments/[commentId].tsx`                                                   |
 
 기기 저장 값 이주와 읽기 코드를 지울 시점은 [compatibility](../../../../docs/conventions/compatibility.md)의 앱 코드 표가 원본이다.
 
