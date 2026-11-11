@@ -1,25 +1,25 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { and, count, eq, inArray, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import {
   freeAccessCondition,
   premiumAccessCondition,
-} from "#api/modules/access/access-entitlement-sql.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import {
   ReminderCacheKey,
   REMINDER_CACHE_TTL_MS,
 } from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { notificationRetentionConfig } from "#api/modules/notification/retention/notification-retention.config";
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, userPreference } from "#api/platform/database/schema/index";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
 import type {
@@ -61,48 +61,14 @@ import type {
   WinbackUser,
 } from "../../application/read-models/scheduler.read-model.js";
 
-// identity User·UserPreference 칸은 Temporal이지만 스케줄러 읽기 모델은 아직 Date다
-function toDateOrNull(instant: Temporal.Instant | null): Date | null {
-  return instant == null ? null : instantToDate(instant);
-}
-
-function toStreakUser<
-  T extends {
-    readonly preference: {
-      readonly currentStreak: number;
-      readonly lastCompletedDate: Temporal.PlainDate | null;
-      readonly locale: string;
-    } | null;
-  },
->(row: T): Omit<T, "preference"> & Pick<UserWithTodosAndStreak, "preference"> {
-  const { preference } = row;
-  return {
-    ...row,
-    preference:
-      preference == null
-        ? null
-        : {
-            ...preference,
-            lastCompletedDate:
-              preference.lastCompletedDate == null
-                ? null
-                : instantToDate(preference.lastCompletedDate.toZonedDateTime("UTC").toInstant()),
-          },
-  };
-}
-
-function toFollowRelationUser<T extends { readonly lastActiveAt: Temporal.Instant | null }>(
-  user: T,
-): Omit<T, "lastActiveAt"> & { readonly lastActiveAt: Date | null } {
-  return { ...user, lastActiveAt: toDateOrNull(user.lastActiveAt) };
-}
-
 /**
  * 스케줄러 리더 어댑터 (Drizzle).
  *
  * 스케줄러의 모든 읽기 포트를 단일 영속성 어댑터로 구현한다.
  * (조회 계약은 포트별로 분리되어 있고, 어댑터는 DB 접근을 응집한다)
  */
+type RetentionSettings = Pick<ConfigType<typeof notificationRetentionConfig>, "onboardingV2">;
+
 @Injectable()
 export class DrizzleSchedulerReader
   implements
@@ -114,21 +80,29 @@ export class DrizzleSchedulerReader
     SchedulerPreferenceReaderPort
 {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
-  readonly #cacheService: CacheService;
-  readonly #config: TypedConfigService;
+  readonly #cacheService: CacheStorePort;
+  readonly #retention: RetentionSettings;
+  readonly #clock: ClockPort;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    cacheService: CacheService,
-    config: TypedConfigService,
+    cacheService: CacheStorePort,
+    @Inject(notificationRetentionConfig.KEY) retention: RetentionSettings,
+    clock: ClockPort,
   ) {
     this.#txHost = txHost;
     this.#cacheService = cacheService;
-    this.#config = config;
+    this.#retention = retention;
+    this.#clock = clock;
   }
 
   get #db() {
     return this.#txHost.tx;
+  }
+
+  // access 권한 조건은 아직 Date로 받는다
+  #now(): Date {
+    return instantToDate(this.#clock.now());
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -142,8 +116,8 @@ export class DrizzleSchedulerReader
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
-        RAW: (target) => premiumAccessCondition(target, now()),
+        ...(userId != null && { id: userId.value }),
+        RAW: (target) => premiumAccessCondition(target, this.#now()),
         preference: { timezone: tz, morningReminderHour: hour, morningReminderMinute: minute },
       },
       with: { preference: { columns: { locale: true } } },
@@ -159,7 +133,7 @@ export class DrizzleSchedulerReader
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        RAW: (target) => freeAccessCondition(target, now()),
+        RAW: (target) => freeAccessCondition(target, this.#now()),
         preference: { timezone: tz },
       },
       with: { preference: { columns: { locale: true } } },
@@ -175,8 +149,8 @@ export class DrizzleSchedulerReader
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
-        RAW: (target) => premiumAccessCondition(target, now()),
+        ...(userId != null && { id: userId.value }),
+        RAW: (target) => premiumAccessCondition(target, this.#now()),
         preference: { timezone: tz, eveningReminderHour: hour, eveningReminderMinute: minute },
         todos: { startDate: { gte: today, lt: tomorrow } },
       },
@@ -188,7 +162,7 @@ export class DrizzleSchedulerReader
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
     });
-    return rows.map(toStreakUser);
+    return rows;
   }
 
   async findFreeEveningReminderUsers(
@@ -198,7 +172,7 @@ export class DrizzleSchedulerReader
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        RAW: (target) => freeAccessCondition(target, now()),
+        RAW: (target) => freeAccessCondition(target, this.#now()),
         preference: { timezone: tz },
         todos: { startDate: { gte: today, lt: tomorrow } },
       },
@@ -210,7 +184,7 @@ export class DrizzleSchedulerReader
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
     });
-    return rows.map(toStreakUser);
+    return rows;
   }
 
   findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]> {
@@ -221,8 +195,19 @@ export class DrizzleSchedulerReader
         AND: [
           ...this.#recentTreatmentExclusion(),
           { preference: { timezone: tz } },
-          { todos: { startDate: { gte: today, lt: tomorrow } } },
-          { NOT: { todos: { startDate: { gte: today, lt: tomorrow }, completed: true } } },
+          {
+            todos: {
+              startDate: { gte: today, lt: tomorrow },
+            },
+          },
+          {
+            NOT: {
+              todos: {
+                startDate: { gte: today, lt: tomorrow },
+                completed: true,
+              },
+            },
+          },
         ],
       },
     });
@@ -242,8 +227,10 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         preference: { timezone: tz },
-        RAW: (target) => premiumAccessCondition(target, now()),
-        todos: { startDate: { gte: periodStart, lt: periodEnd } },
+        RAW: (target) => premiumAccessCondition(target, this.#now()),
+        todos: {
+          startDate: { gte: periodStart, lt: periodEnd },
+        },
       },
     });
   }
@@ -262,19 +249,19 @@ export class DrizzleSchedulerReader
           { preference: { timezone: tz } },
           {
             lastActiveAt: {
-              gte: instantFromDate(inactiveSince),
-              lte: instantFromDate(inactiveUntil),
+              gte: inactiveSince,
+              lte: inactiveUntil,
             },
           },
         ],
       },
     });
-    return rows.map(toFollowRelationUser);
+    return rows;
   }
 
   async findOnboardingCandidates(params: {
     tz: string;
-    createdSince: Date;
+    createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidate[]> {
     const { tz, createdSince } = params;
     const rows = await this.#db.query.user.findMany({
@@ -282,12 +269,12 @@ export class DrizzleSchedulerReader
       where: {
         AND: [
           ...this.#recentTreatmentExclusion(),
-          { createdAt: { gte: instantFromDate(createdSince) } },
+          { createdAt: { gte: createdSince } },
           { preference: { timezone: tz } },
         ],
       },
     });
-    return rows.map((row) => ({ ...row, createdAt: instantToDate(row.createdAt) }));
+    return rows;
   }
 
   countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCount[]> {
@@ -313,12 +300,12 @@ export class DrizzleSchedulerReader
 
   async findNudgeSuggestFollows(params: {
     candidateIds: string[];
-    activeSince: Date;
-    activeUntil: Date;
+    activeSince: Temporal.Instant;
+    activeUntil: Temporal.Instant;
   }): Promise<NudgeSuggestFollow[]> {
     const { candidateIds, activeSince, activeUntil } = params;
     const activeWindow = {
-      lastActiveAt: { gte: instantFromDate(activeSince), lte: instantFromDate(activeUntil) },
+      lastActiveAt: { gte: activeSince, lte: activeUntil },
     };
     const rows = await this.#db.query.follow.findMany({
       columns: { followerId: true, followingId: true },
@@ -339,11 +326,7 @@ export class DrizzleSchedulerReader
         },
       },
     });
-    return rows.map((row) => ({
-      ...row,
-      follower: toFollowRelationUser(row.follower),
-      following: toFollowRelationUser(row.following),
-    }));
+    return rows;
   }
 
   findSocialDigestCandidates(
@@ -357,7 +340,12 @@ export class DrizzleSchedulerReader
           { id: { in: [...recipientUserIds] } },
           ...this.#recentTreatmentExclusion(),
           { preference: { timezone: tz } },
-          { todos: { startDate: { gte: today, lt: tomorrow }, completed: false } },
+          {
+            todos: {
+              startDate: { gte: today, lt: tomorrow },
+              completed: false,
+            },
+          },
         ],
       },
       with: {
@@ -383,8 +371,8 @@ export class DrizzleSchedulerReader
 
   findFriendsWithTodayTodos(params: {
     friendIds: string[];
-    today: Date;
-    tomorrow: Date;
+    today: Temporal.PlainDate;
+    tomorrow: Temporal.PlainDate;
   }): Promise<FriendWithTodos[]> {
     const { friendIds, today, tomorrow } = params;
     return this.#db.query.user.findMany({
@@ -411,7 +399,12 @@ export class DrizzleSchedulerReader
         AND: [
           ...this.#recentTreatmentExclusion(),
           { preference: { timezone: tz, currentStreak: { gte: 3 } } },
-          { todos: { startDate: { gte: today, lt: tomorrow }, completed: false } },
+          {
+            todos: {
+              startDate: { gte: today, lt: tomorrow },
+              completed: false,
+            },
+          },
         ],
       },
       with: {
@@ -422,7 +415,7 @@ export class DrizzleSchedulerReader
         preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
       },
     });
-    return rows.map(toStreakUser);
+    return rows;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -436,7 +429,7 @@ export class DrizzleSchedulerReader
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         status: "ACTIVE",
         deletedAt: { isNull: true },
         preference: {
@@ -459,7 +452,7 @@ export class DrizzleSchedulerReader
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         status: "ACTIVE",
         deletedAt: { isNull: true },
         preference: {
@@ -481,7 +474,7 @@ export class DrizzleSchedulerReader
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         status: "ACTIVE",
         deletedAt: { isNull: true },
         preference: {
@@ -504,7 +497,7 @@ export class DrizzleSchedulerReader
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        ...(userId && { id: userId }),
+        ...(userId != null && { id: userId.value }),
         status: "ACTIVE",
         deletedAt: { isNull: true },
         preference: {
@@ -560,7 +553,7 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         id: { in: userIds },
-        RAW: (target) => freeAccessCondition(target, now()),
+        RAW: (target) => freeAccessCondition(target, this.#now()),
       },
     });
     return new Set(rows.map((row) => row.id));
@@ -570,7 +563,7 @@ export class DrizzleSchedulerReader
   // TodoReminderReaderPort — 지연 잡 처리용
   // ─────────────────────────────────────────────────────────────
 
-  async findActiveTodo(todoId: number): Promise<ActiveTodo | null> {
+  async findActiveTodo(todoId: TodoId): Promise<ActiveTodo | null> {
     const row = await this.#db.query.todo.findFirst({
       columns: {
         id: true,
@@ -580,17 +573,13 @@ export class DrizzleSchedulerReader
         scheduledLocalTime: true,
         scheduledTime: true,
       },
-      where: { id: todoId, completed: false },
+      where: { id: todoId.value, completed: false },
     });
     if (row == null) {
       return null;
     }
     const { scheduledTime, ...rest } = row;
-    return {
-      ...rest,
-      startDate: toDateString(row.startDate),
-      scheduledAt: scheduledTime == null ? null : instantFromDate(scheduledTime),
-    };
+    return { ...rest, startDate: row.startDate.toString(), scheduledAt: scheduledTime };
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -629,7 +618,7 @@ export class DrizzleSchedulerReader
     );
   }
 
-  #todoCount(userId: AnyColumn, today: Date, tomorrow: Date) {
+  #todoCount(userId: AnyColumn, today: Temporal.PlainDate, tomorrow: Temporal.PlainDate) {
     return sql<number>`(
       SELECT count(*)::int FROM ${todo}
       WHERE ${todo.userId} = ${userId}
@@ -650,7 +639,7 @@ export class DrizzleSchedulerReader
 
   /** kill switch가 켜진 동안 최근 TREATMENT만 legacy engagement에서 제외한다. */
   #recentTreatmentExclusion() {
-    if (!this.#config.retentionOnboardingV2.enabled) {
+    if (!this.#retention.onboardingV2.enabled) {
       return [];
     }
     return [
@@ -659,7 +648,7 @@ export class DrizzleSchedulerReader
           retentionAssignments: {
             experimentKey: "onboarding_v2_d7",
             variant: "TREATMENT" as const,
-            startedAt: { gte: subtractDays(8) },
+            startedAt: { gte: this.#clock.now().subtract({ hours: 8 * 24 }) },
           },
         },
       },

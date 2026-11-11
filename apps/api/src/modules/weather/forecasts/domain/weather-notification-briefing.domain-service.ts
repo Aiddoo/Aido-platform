@@ -5,10 +5,10 @@ import {
 } from "@aido/api/vocabulary";
 import { maxBy } from "es-toolkit";
 
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
-import { dayWindowInTimezone, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
-import { instantFromDate } from "#api/shared/domain/time/instant";
-
+import {
+  localDateAt,
+  localDateTimeAt,
+} from "../../shared/domain/weather-calendar.domain-service.js";
 import {
   findHourIndexAt,
   type ForecastTodo,
@@ -63,6 +63,8 @@ export interface WeatherBriefingClock {
   readonly locationTimezone: string;
 }
 
+const HOUR_MS = 60 * 60_000;
+
 type WetHazard = "rain" | "storm" | "snow";
 export type WeatherDayPart = "dawn" | "morning" | "afternoon" | "evening";
 
@@ -114,12 +116,8 @@ function isChilly(day: WeatherBriefingDay): boolean {
   return day.temperatureMin <= WEATHER_BRIEFING_RULES.CHILLY_TEMPERATURE;
 }
 
-function nextDateKey(dateKey: string): string {
-  return Temporal.PlainDate.from(dateKey).add({ days: 1 }).toString();
-}
-
 function toDayPart(instant: Date, timezone: string): WeatherDayPart {
-  const { hour } = instantFromDate(instant).toZonedDateTimeISO(resolveTimezone(timezone));
+  const { hour } = localDateTimeAt(instant, timezone);
   if (hour < 6) {
     return "dawn";
   }
@@ -202,11 +200,11 @@ function toWetLaterBriefing(
   hourly: readonly WeatherBriefingReportHour[],
   { now, timezone }: WeatherBriefingClock,
 ): MorningWeatherBriefing | null {
-  const todayKey = dayWindowInTimezone(now, timezone).localDate;
+  const today = localDateAt(now, timezone);
   const wetHour = hourly.find(
     (hour) =>
-      hour.startsAt.getTime() + TIME_UNIT.MS_PER_HOUR > now.getTime() &&
-      dayWindowInTimezone(hour.startsAt, timezone).localDate === todayKey &&
+      hour.startsAt.getTime() + HOUR_MS > now.getTime() &&
+      localDateAt(hour.startsAt, timezone).equals(today) &&
       isWetHour(hour),
   );
   if (wetHour == null) {
@@ -225,9 +223,8 @@ export function decideMorningWeatherBriefing(
   todos: readonly TitledWeatherBriefingTodo[],
   clock: WeatherBriefingClock,
 ): MorningWeatherBriefing | null {
-  const today = forecast.daily.find(
-    (day) => day.date === dayWindowInTimezone(clock.now, clock.locationTimezone).localDate,
-  );
+  const locationToday = localDateAt(clock.now, clock.locationTimezone).toString();
+  const today = forecast.daily.find((day) => day.date === locationToday);
   if (today == null) {
     return null;
   }
@@ -254,16 +251,14 @@ export function decideEveningWeatherBriefing(
   forecast: WeatherBriefingForecast,
   clock: WeatherBriefingClock,
 ): EveningWeatherBriefing | null {
-  const tomorrowKey = nextDateKey(dayWindowInTimezone(clock.now, clock.locationTimezone).localDate);
+  const tomorrowKey = localDateAt(clock.now, clock.locationTimezone).add({ days: 1 }).toString();
   const tomorrow = forecast.daily.find((day) => day.date === tomorrowKey);
   if (tomorrow == null) {
     return null;
   }
-  const deviceTomorrowKey = nextDateKey(dayWindowInTimezone(clock.now, clock.timezone).localDate);
+  const deviceTomorrow = localDateAt(clock.now, clock.timezone).add({ days: 1 });
   const wetHour = forecast.hourly.find(
-    (hour) =>
-      dayWindowInTimezone(hour.startsAt, clock.timezone).localDate === deviceTomorrowKey &&
-      isWetHour(hour),
+    (hour) => localDateAt(hour.startsAt, clock.timezone).equals(deviceTomorrow) && isWetHour(hour),
   );
   if (wetHour != null) {
     return {

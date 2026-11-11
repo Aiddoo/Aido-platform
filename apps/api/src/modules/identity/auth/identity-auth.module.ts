@@ -3,7 +3,8 @@ import { ConfigModule, type ConfigType } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 import { JwtModule } from "@nestjs/jwt";
 
-import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
+import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import {
   NotificationEmailModule,
   TransactionalEmailSender,
@@ -14,8 +15,8 @@ import {
   OperationsAdminNoticesModule,
 } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
+import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import { IdentityPreferencesModule } from "../preferences/identity-preferences.module.js";
 import { IdentityUserAccessModule } from "../users/identity-user-access.module.js";
@@ -124,8 +125,9 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       inject: [jwtConfig.KEY],
       useFactory: (jwt: ConfigType<typeof jwtConfig>) => ({ secret: jwt.secret }),
     }),
+    AccessEntitlementsModule,
     OperationsAdminNoticesModule,
-    NotificationDeliveryModule,
+    NotificationPushModule,
     NotificationEmailModule,
     // 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
     IdentityPreferencesModule,
@@ -185,7 +187,13 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       provide: AuthRegistrationNotifierPort,
       useExisting: AdminEventNotifierPort,
     },
-    { provide: AuthRuntimeConfigPort, useExisting: TypedConfigService },
+    {
+      provide: AuthRuntimeConfigPort,
+      inject: [appConfig.KEY],
+      useFactory: (app: AppSettings): AuthRuntimeConfigPort => ({
+        allowsDevRedirects: app.devTools.oauthDevRedirects,
+      }),
+    },
     issueVerificationCodeProvider,
     sendVerificationCodeProvider,
     consumeVerificationCodeProvider,

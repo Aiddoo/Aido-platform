@@ -2,6 +2,7 @@ import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
 import { createPlanningTodo } from "#test/fixtures/planning/planning-todos.fixture";
 
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { InvalidateTodoViewCacheUseCase } from "./invalidate-todo-view-cache.use-case.js";
 
 function setUp() {
@@ -20,7 +21,7 @@ describe("InvalidateTodoViewCacheUseCase", () => {
     const { cache, invalidator } = setUp();
 
     // When
-    await invalidator.execute(42);
+    await invalidator.execute(TodoId.reconstitute(42));
 
     // Then
     expect([...cache.generations]).toEqual([["owner-1", 1]]);
@@ -31,7 +32,7 @@ describe("InvalidateTodoViewCacheUseCase", () => {
     const { cache, invalidator } = setUp();
 
     // When
-    await invalidator.execute(7);
+    await invalidator.execute(TodoId.reconstitute(7));
 
     // Then
     expect(cache.generations.size).toBe(0);

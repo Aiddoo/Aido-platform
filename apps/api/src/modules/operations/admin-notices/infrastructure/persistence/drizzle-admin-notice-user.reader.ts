@@ -4,6 +4,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account, user, userProfile } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { AdminNoticeUserReaderPort } from "../../application/ports/admin-notice-user.reader.port.js";
@@ -25,7 +26,7 @@ export class DrizzleAdminNoticeUserReader extends AdminNoticeUserReaderPort {
     return this.#txHost.tx;
   }
 
-  async findById(userId: string): Promise<AdminNoticeUser | null> {
+  async findById(userId: UserId): Promise<AdminNoticeUser | null> {
     const [row] = await this.#db
       .select({
         id: user.id,
@@ -36,7 +37,7 @@ export class DrizzleAdminNoticeUserReader extends AdminNoticeUserReaderPort {
       })
       .from(user)
       .leftJoin(userProfile, eq(userProfile.userId, user.id))
-      .where(and(eq(user.id, userId), isNull(user.deletedAt)))
+      .where(and(eq(user.id, userId.value), isNull(user.deletedAt)))
       .limit(1);
     if (row == null) {
       return null;
@@ -44,7 +45,7 @@ export class DrizzleAdminNoticeUserReader extends AdminNoticeUserReaderPort {
     const [firstAccount] = await this.#db
       .select({ provider: account.provider })
       .from(account)
-      .where(eq(account.userId, userId))
+      .where(eq(account.userId, userId.value))
       .orderBy(asc(account.createdAt), asc(account.id))
       .limit(1);
 

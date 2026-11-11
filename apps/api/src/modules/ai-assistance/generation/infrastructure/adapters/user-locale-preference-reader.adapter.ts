@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
 import { UserPreferenceReaderPort } from "#api/modules/identity/identity-settings.public";
-import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toSupportedLocale } from "#api/shared/domain/locale";
+import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import {
   type UserLocalePreference,
@@ -18,7 +19,7 @@ export class UserLocalePreferenceReaderAdapter extends UserLocalePreferenceReade
     this.#preferenceReader = preferenceReader;
   }
 
-  async read(userId: string): Promise<UserLocalePreference> {
+  async read(userId: UserId): Promise<UserLocalePreference> {
     const preference = await this.#preferenceReader.read(userId);
     return {
       timezone: resolveTimezone(preference.timezone),

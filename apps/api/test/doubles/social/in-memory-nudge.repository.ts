@@ -1,3 +1,4 @@
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type {
   ListNudgesParams,
   NudgeReaderPort,
@@ -118,8 +119,10 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort implements Nudg
     return nudge == null ? null : copyOf(nudge);
   }
 
-  async findLastSentForTodo(senderId: UserId, todoId: number): Promise<Nudge | null> {
-    return this.#lastNudge((nudge) => nudge.senderId.equals(senderId) && nudge.todoId === todoId);
+  async findLastSentForTodo(senderId: UserId, todoId: TodoId): Promise<Nudge | null> {
+    return this.#lastNudge(
+      (nudge) => nudge.senderId.equals(senderId) && nudge.todoId === todoId.value,
+    );
   }
 
   async findLastSentTo(senderId: UserId, receiverId: UserId): Promise<Nudge | null> {
@@ -164,8 +167,8 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort implements Nudg
     return this.#thanksCandidates(query).map(copyOf);
   }
 
-  async findTargetTodo(todoId: number): Promise<NudgeTargetTodo | null> {
-    const todo = this.#todos.get(todoId);
+  async findTargetTodo(todoId: TodoId): Promise<NudgeTargetTodo | null> {
+    const todo = this.#todos.get(todoId.value);
     return todo == null
       ? null
       : NudgeTargetTodo.reconstitute({
@@ -177,8 +180,8 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort implements Nudg
         });
   }
 
-  async lockInteractionTodo(todoId: number, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
-    return this.#interactionTodo(todoId, ownerId);
+  async lockInteractionTodo(todoId: TodoId, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
+    return this.#interactionTodo(todoId.value, ownerId);
   }
 
   async countTodosOn(ownerId: UserId, date: Temporal.PlainDate): Promise<number> {
@@ -261,22 +264,22 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort implements Nudg
       .flatMap((nudge) => this.#toListItem(nudge) ?? []);
   }
 
-  async findInteractionTodo(todoId: number, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
-    return this.#interactionTodo(todoId, ownerId);
+  async findInteractionTodo(todoId: TodoId, ownerId: UserId): Promise<NudgeInteractionTodo | null> {
+    return this.#interactionTodo(todoId.value, ownerId);
   }
 
-  async findLastReceivedNudgeId(todoId: number, receiverId: UserId): Promise<NudgeId | null> {
+  async findLastReceivedNudgeId(todoId: TodoId, receiverId: UserId): Promise<NudgeId | null> {
     const [last] = this.#all()
-      .filter((nudge) => nudge.todoId === todoId && nudge.receiverId.equals(receiverId))
+      .filter((nudge) => nudge.todoId === todoId.value && nudge.receiverId.equals(receiverId))
       .toSorted((left, right) => right.id.value - left.id.value);
     return last?.id ?? null;
   }
 
-  async countThankedRecipients(todoId: number, receiverId: UserId): Promise<number> {
+  async countThankedRecipients(todoId: TodoId, receiverId: UserId): Promise<number> {
     return new Set(this.#thanked(todoId, receiverId).map((nudge) => nudge.senderId.value)).size;
   }
 
-  async findLastThankedAt(todoId: number, receiverId: UserId): Promise<Temporal.Instant | null> {
+  async findLastThankedAt(todoId: TodoId, receiverId: UserId): Promise<Temporal.Instant | null> {
     const thankedAts = this.#thanked(todoId, receiverId)
       .flatMap((nudge) => nudge.thankedAt ?? [])
       .toSorted(Temporal.Instant.compare);
@@ -312,27 +315,29 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort implements Nudg
     return last == null ? null : copyOf(last);
   }
 
-  #thanked(todoId: number, receiverId: UserId): Nudge[] {
+  #thanked(todoId: TodoId, receiverId: UserId): Nudge[] {
     return this.#all().filter(
       (nudge) =>
-        nudge.todoId === todoId && nudge.receiverId.equals(receiverId) && nudge.thankedAt != null,
+        nudge.todoId === todoId.value &&
+        nudge.receiverId.equals(receiverId) &&
+        nudge.thankedAt != null,
     );
   }
 
   // 친구마다 throughNudgeId까지 받은, 아직 감사받지 않은 가장 최근 콕 하나(id 내림차순)
   #thanksCandidates(query: NudgeThanksCandidateQuery): Nudge[] {
-    const todo = this.#todos.get(query.todoId);
+    const todo = this.#todos.get(query.todoId.value);
     if (todo == null || todo.visibility !== "PUBLIC" || todo.ownerId !== query.ownerId.value) {
       return [];
     }
-    const friends = new Set(query.friendIds);
+    const friends = new Set(query.friendIds.map((friendId) => friendId.value));
     const thankedSenders = new Set(
       this.#thanked(query.todoId, query.ownerId).map((nudge) => nudge.senderId.value),
     );
     const latestBySender = new Map<string, Nudge>();
     for (const nudge of this.#all()) {
       const isCandidate =
-        nudge.todoId === query.todoId &&
+        nudge.todoId === query.todoId.value &&
         nudge.receiverId.equals(query.ownerId) &&
         nudge.id.value <= query.throughNudgeId.value &&
         friends.has(nudge.senderId.value) &&

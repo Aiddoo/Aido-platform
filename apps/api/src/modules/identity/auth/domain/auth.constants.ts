@@ -1,6 +1,15 @@
 import type { ACCOUNT_PROVIDERS, USER_STATUS, VERIFICATION_TYPE } from "@aido/api/vocabulary";
 
 export type AccountProvider = (typeof ACCOUNT_PROVIDERS)[number];
+
+/** DB AccountProvider enum의 값 순서다. 계약 ACCOUNT_PROVIDERS와 순서만 다르고, 계약 순서를 바꾸면 OpenAPI 지문이 바뀌어 따로 둔다 */
+export const ACCOUNT_PROVIDERS_IN_DB_ORDER = [
+  "CREDENTIAL",
+  "KAKAO",
+  "APPLE",
+  "GOOGLE",
+  "NAVER",
+] as const satisfies readonly AccountProvider[];
 export type UserStatus = (typeof USER_STATUS)[number];
 export type VerificationType = (typeof VERIFICATION_TYPE)[keyof typeof VERIFICATION_TYPE];
 

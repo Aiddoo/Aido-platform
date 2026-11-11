@@ -5,26 +5,28 @@ import type { TodoVisibility } from "@aido/api/vocabulary";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
+import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { Todo, TodoDetailsPatch, TodoEvent } from "../../../shared/domain/todo.aggregate.js";
 import { type CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort, type TodoUpdatePatch } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export interface UpdateTodoData {
   readonly title?: string;
   readonly categoryId?: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date | null;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate | null;
   readonly scheduledTime?: string | null;
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
@@ -76,7 +78,10 @@ export class UpdateTodoUseCase {
       return updated;
     });
     await this.publish(applied);
-    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
+    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
+      TodoId.reconstitute(id),
+      UserId.reconstitute(userId),
+    );
     if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
@@ -86,16 +91,21 @@ export class UpdateTodoUseCase {
   /** 활성 UoW 안에서 호출한다. 다른 수정과 한 트랜잭션으로 묶을 때 EditTodoUseCase가 부르고, 리마인더·이벤트 반영은 호출자가 고른다. */
   async apply(input: UpdateTodoInput): Promise<AppliedTodoUpdate> {
     const { id, userId, data, timezone } = input;
+    const todoId = TodoId.reconstitute(id);
+    const ownerId = UserId.reconstitute(userId);
     await this.#dependencies.mutationLock.acquire([
-      MutationLockKeys.todo(id),
-      ...(data.categoryId == null ? [] : [MutationLockKeys.todoCategory(userId)]),
+      TodoLockKeys.todo(id),
+      ...(data.categoryId == null ? [] : [TodoCategoryLockKeys.userCategories(userId)]),
     ]);
     if (data.categoryId != null) {
       // 일반 PATCH는 전용 category endpoint와 달리 활성 한도를 검사하지 않는다.
-      await this.#dependencies.categoryOwnership.validateOwnership(data.categoryId, userId);
+      await this.#dependencies.categoryOwnership.validateOwnership(
+        TodoCategoryId.reconstitute(data.categoryId),
+        ownerId,
+      );
     }
 
-    const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
+    const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
     if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
@@ -109,7 +119,7 @@ export class UpdateTodoUseCase {
     const patchDetails: TodoDetailsPatch = { ...details, scheduledLocalTime };
     if (todo.updateDetails(patchDetails, timezone, this.#dependencies.clock.now())) {
       await this.#dependencies.todoRepository.updateDetails(
-        id,
+        todoId,
         toUpdatePatch(data, todo, wasCompleted),
       );
     }
@@ -126,10 +136,11 @@ export class UpdateTodoUseCase {
     const { id, userId, hasCategoryChanged } = applied;
     this.#dependencies.logger.log({ event: TodoLogEvent.UPDATED, todoId: id, userId });
 
+    const ownerId = UserId.reconstitute(userId);
     if (hasCategoryChanged) {
-      await this.#dependencies.todoCache.invalidateTodoCategories(userId);
+      await this.#dependencies.todoCache.invalidateTodoCategories(ownerId);
     }
-    await this.#dependencies.todoCache.invalidateFriendTodos(userId);
+    await this.#dependencies.todoCache.invalidateFriendTodos(ownerId);
   }
 }
 
@@ -141,7 +152,9 @@ function toUpdatePatch(data: UpdateTodoData, todo: Todo, wasCompleted: boolean):
     data.scheduledTime !== undefined || data.isAllDay != null || data.startDate != null;
   return {
     ...(data.title == null ? {} : { title: todo.title.value }),
-    ...(data.categoryId == null ? {} : { categoryId: todo.categoryId }),
+    ...(data.categoryId == null
+      ? {}
+      : { categoryId: TodoCategoryId.reconstitute(todo.categoryId) }),
     ...(data.startDate == null ? {} : { startDate: schedule.startDate }),
     // nullish-strict: endDate null은 종료일 지우기다
     ...(data.endDate === undefined ? {} : { endDate: schedule.endDate }),

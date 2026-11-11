@@ -6,7 +6,7 @@ import {
 import { INVITE_REDEMPTION_FIXTURE_ID } from "./invite-redemption.fixture.js";
 import { INVITE_FIXTURE_INVITER_ID, INVITE_FIXTURE_NOW } from "./invite.fixture.js";
 
-export const REWARD_GRANT_FIXTURE_ID = "c0000000000000000000grt01";
+const REWARD_GRANT_FIXTURE_ID = "c0000000000000000000grt01";
 
 export function createRewardGrantFixture(
   overrides: Partial<RewardGrantPrimitives> = {},

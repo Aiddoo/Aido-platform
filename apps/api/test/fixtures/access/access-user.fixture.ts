@@ -6,10 +6,11 @@ import {
 } from "@aido/api/vocabulary";
 
 import {
-  resolveAllFeatureAccess,
-  type FeatureAccess,
+  planOfTier,
+  resolveFeatureEntitlements,
+  type FeatureEntitlement,
 } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
-import { NO_RESOURCE_BONUSES } from "#api/modules/access/entitlements/domain/entitlements.constants";
+import { NO_FEATURE_GRANTS } from "#api/modules/access/entitlements/domain/entitlements.constants";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import type { InMemoryAccessUser } from "#test/doubles/access/in-memory-access-state.reader";
 
@@ -49,7 +50,9 @@ export function createAccessUserFixture(input: AccessUserInput = {}): InMemoryAc
   };
 }
 
-/** 보너스 없는 등급의 모든 기능 권한. 다른 Context 대역이 실제 Access 판단으로 권한을 채울 때 쓴다 */
-export function createFeatureAccessFixture(tier: AccessTier): Record<PlanFeature, FeatureAccess> {
-  return resolveAllFeatureAccess({ tier, resourceBonuses: NO_RESOURCE_BONUSES });
+/** 받은 자리 없는 주체의 모든 기능. 다른 Context 대역이 실제 Access 판단으로 권한을 채울 때 쓴다 */
+export function createFeatureEntitlementsFixture(
+  tier: AccessTier,
+): Record<PlanFeature, FeatureEntitlement> {
+  return resolveFeatureEntitlements({ plan: planOfTier(tier), grants: NO_FEATURE_GRANTS });
 }

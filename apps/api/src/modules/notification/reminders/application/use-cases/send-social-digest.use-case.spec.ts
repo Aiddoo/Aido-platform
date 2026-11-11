@@ -6,7 +6,7 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TEST_CUID } from "#test/fixtures/index";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createSocialDigestNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createSocialDigestNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import { SendSocialDigestUseCase } from "./send-social-digest.use-case.js";
 

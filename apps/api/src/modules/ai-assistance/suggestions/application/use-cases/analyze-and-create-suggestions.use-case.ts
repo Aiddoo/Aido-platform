@@ -2,11 +2,11 @@ import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import { orderBy } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { GridInput } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
@@ -69,7 +69,12 @@ export class AnalyzeAndCreateSuggestionsUseCase {
 
   async execute(command: AnalyzeAndCreateSuggestionsCommand): Promise<number> {
     const { userId, timezone, weatherGrid = null, locale = "ko" } = command;
-    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_SUGGESTION"))) {
+    if (
+      !(await this.#dependencies.entitlementReader.canInTx(
+        UserId.reconstitute(userId),
+        "AI_SUGGESTION",
+      ))
+    ) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
         userId,
@@ -172,8 +177,8 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     const createdCount = await this.#dependencies.unitOfWork.run(async () => {
       const { userMutationLock, entitlementReader } = this.#dependencies;
       if (
-        !(await userMutationLock.lockById(userId)) ||
-        !(await entitlementReader.canInTx(userId, "AI_SUGGESTION"))
+        !(await userMutationLock.lockById(owner)) ||
+        !(await entitlementReader.canInTx(owner, "AI_SUGGESTION"))
       ) {
         return 0;
       }

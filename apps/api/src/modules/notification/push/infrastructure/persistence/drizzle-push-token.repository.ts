@@ -9,14 +9,17 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushToken } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type FindPushTokensParams,
+  type KeepPushTokenData,
   PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
   type RegisterPushTokenData,
 } from "../../application/ports/push-token.repository.port.js";
 import type { PushTokenRecord } from "../../application/read-models/push-token.read-model.js";
+import type { PushDeviceId } from "../../domain/push-device-id.vo.js";
 
 const PUSH_TOKEN_TOKEN_UNIQUE_CONSTRAINT = "PushToken_token_key";
 
@@ -35,9 +38,11 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
   async releasePushTokenHeldElsewhere(
     data: Parameters<PushTokenRepositoryPort["releasePushTokenHeldElsewhere"]>[0],
   ): Promise<{ readonly userIds: readonly string[] }> {
+    const userId = data.userId.value;
+    const deviceId = data.deviceId.value;
     const sameDeviceOfOtherUser = and(
-      eq(pushToken.deviceId, data.deviceId),
-      ne(pushToken.userId, data.userId),
+      eq(pushToken.deviceId, deviceId),
+      ne(pushToken.userId, userId),
     );
     // 해제 요청(unregister)과 같은 삭제다. 그 등록의 발송 시도 기록은 FK cascade로 함께 지워진다.
     const released = await this.#db
@@ -49,7 +54,7 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
               sameDeviceOfOtherUser,
               and(
                 eq(pushToken.token, data.token),
-                or(ne(pushToken.userId, data.userId), ne(pushToken.deviceId, data.deviceId)),
+                or(ne(pushToken.userId, userId), ne(pushToken.deviceId, deviceId)),
               ),
             ),
       )
@@ -72,9 +77,9 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       const [row] = await this.#db
         .insert(pushToken)
         .values({
-          userId,
+          userId: userId.value,
           token,
-          deviceId,
+          deviceId: deviceId.value,
           platform,
           sessionId,
           isActive: true,
@@ -107,40 +112,78 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
     }
   }
 
+  async keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }> {
+    const kept = await this.#db
+      .update(pushToken)
+      .set({
+        sessionId: data.sessionId,
+        payloadVersion: data.payloadVersion,
+        appVersion: data.appVersion,
+        updatedAt: data.keptAt,
+      })
+      .where(
+        and(eq(pushToken.userId, data.userId.value), eq(pushToken.deviceId, data.deviceId.value)),
+      )
+      .returning({ isActive: pushToken.isActive });
+    return { hasActiveToken: kept.some((row) => row.isActive) };
+  }
+
   findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {
     return this.#db
       .select()
       .from(pushToken)
       .where(
         and(
-          eq(pushToken.userId, params.userId),
+          eq(pushToken.userId, params.userId.value),
           params.activeOnly ? eq(pushToken.isActive, true) : undefined,
         ),
       )
       .orderBy(desc(pushToken.updatedAt));
   }
 
-  findActivePushTokensByUsers(userIds: string[]): Promise<PushTokenRecord[]> {
+  findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenRecord[]> {
     return this.#db
       .select()
       .from(pushToken)
-      .where(and(inArray(pushToken.userId, userIds), eq(pushToken.isActive, true)));
+      .where(
+        and(
+          inArray(
+            pushToken.userId,
+            userIds.map((userId) => userId.value),
+          ),
+          eq(pushToken.isActive, true),
+        ),
+      );
   }
 
-  async deletePushTokensByDevice(userId: string, deviceId: string): Promise<{ count: number }> {
+  async deletePushTokensByDevice(
+    userId: UserId,
+    deviceId: PushDeviceId,
+  ): Promise<{ count: number }> {
     const deleted = await this.#db
       .delete(pushToken)
-      .where(and(eq(pushToken.userId, userId), eq(pushToken.deviceId, deviceId)))
+      .where(and(eq(pushToken.userId, userId.value), eq(pushToken.deviceId, deviceId.value)))
       .returning({ id: pushToken.id });
     return { count: deleted.length };
   }
 
-  async deleteAllPushTokensByUser(userId: string): Promise<{ count: number }> {
+  async deleteAllPushTokensByUser(userId: UserId): Promise<{ count: number }> {
     const deleted = await this.#db
       .delete(pushToken)
-      .where(eq(pushToken.userId, userId))
+      .where(eq(pushToken.userId, userId.value))
       .returning({ id: pushToken.id });
     return { count: deleted.length };
+  }
+
+  async deletePushTokenByDeviceAndToken(data: {
+    readonly deviceId: PushDeviceId;
+    readonly token: string;
+  }): Promise<{ readonly userIds: readonly string[] }> {
+    const deleted = await this.#db
+      .delete(pushToken)
+      .where(and(eq(pushToken.token, data.token), eq(pushToken.deviceId, data.deviceId.value)))
+      .returning({ userId: pushToken.userId });
+    return { userIds: deleted.map((row) => row.userId) };
   }
 
   async deletePushTokensBySessions(

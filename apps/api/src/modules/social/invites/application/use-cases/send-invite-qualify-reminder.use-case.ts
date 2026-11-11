@@ -91,7 +91,7 @@ export class SendInviteQualifyReminderUseCase {
         return skipped("not-due");
       }
       // 작업이 늦게 돌아 야간이면 표시하지 않고 남겨 다음 정비 작업이 다시 예약한다
-      if (await notifier.isInQuietHours(redemption.inviteeId.value, command.now)) {
+      if (await notifier.isInQuietHours(redemption.inviteeId, command.now)) {
         return skipped("quiet-hours");
       }
       if (!(await pairReachability.execute({ inviteeId: redemption.inviteeId, inviterId }))) {

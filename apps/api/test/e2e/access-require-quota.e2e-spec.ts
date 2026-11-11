@@ -166,19 +166,25 @@ describe("@RequireQuota 남은 횟수 선검사 (실제 PostgreSQL)", () => {
     expect(ai.status).toBe(200);
   });
 
-  it("ADMIN은 사용량과 무관하게 무제한이라 막지 않는다", async () => {
-    // Given
-    await updateUser({
-      role: "ADMIN",
-      aiUsageCount: PLAN_CATALOG.AI_PARSE.fairUse.premium + 5,
-      aiUsageResetAt: instantFromDate(AT),
-    });
+  it.each([
+    { usedBefore: PLAN_CATALOG.AI_PARSE.fairUse.premium - 1, status: 200 },
+    { usedBefore: PLAN_CATALOG.AI_PARSE.fairUse.premium, status: 429 },
+  ])(
+    "ADMIN은 프리미엄 공정 사용 상한으로 선검사한다($usedBefore회 사용 → $status)",
+    async ({ usedBefore, status }) => {
+      // Given
+      await updateUser({
+        role: "ADMIN",
+        aiUsageCount: usedBefore,
+        aiUsageResetAt: instantFromDate(AT),
+      });
 
-    // When
-    const response = await call("ai-plan");
+      // When
+      const response = await call("ai-plan");
 
-    // Then
-    expect(response.status).toBe(200);
-    expect(await storedAiUsageCount()).toBe(PLAN_CATALOG.AI_PARSE.fairUse.premium + 5);
-  });
+      // Then
+      expect(response.status).toBe(status);
+      expect(await storedAiUsageCount()).toBe(usedBefore);
+    },
+  );
 });

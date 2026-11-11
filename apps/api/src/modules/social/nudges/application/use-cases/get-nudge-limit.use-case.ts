@@ -1,4 +1,4 @@
-import { calculateRemainingLimit } from "#api/modules/access/access-entitlement.public";
+import { calculateRemainingLimit } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -14,7 +14,7 @@ export interface GetNudgeLimitQuery {
 
 export interface GetNudgeLimitDependencies {
   readonly nudgeRepository: Pick<NudgeRepositoryPort, "countSentBetween">;
-  readonly limitReader: Pick<NudgeLimitReaderPort, "readDailyLimit">;
+  readonly limitReader: Pick<NudgeLimitReaderPort, "readLimit">;
   readonly clock: ClockPort;
 }
 
@@ -30,7 +30,7 @@ export class GetNudgeLimitUseCase {
     const userId = UserId.reconstitute(query.userId);
     const window = dailySendWindowAt({ now: clock.now(), timeZone: query.timezone });
     const [dailyLimit, used] = await Promise.all([
-      limitReader.readDailyLimit(userId),
+      limitReader.readLimit(userId),
       nudgeRepository.countSentBetween(userId, window),
     ]);
     return { dailyLimit, used, remaining: calculateRemainingLimit(dailyLimit, used) };

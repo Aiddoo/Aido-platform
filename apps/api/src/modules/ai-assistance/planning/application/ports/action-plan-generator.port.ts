@@ -1,3 +1,4 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { AiGenerationMeta } from "../../../generation/application/ports/ai-generator.port.js";
@@ -5,12 +6,12 @@ import type { TodoRepeatRule } from "../../../shared/domain/todo-draft.constants
 import type { PlannedVisibility } from "../../domain/action-plan-draft.constants.js";
 import type { TranscriptSentence } from "../messages/voice-note-digest-prompt.messages.js";
 
-export interface PlanningCategory {
+interface PlanningCategory {
   readonly id: number;
   readonly name: string;
 }
 
-export interface PlanningUpcomingTodo {
+interface PlanningUpcomingTodo {
   readonly id: number;
   readonly title: string;
   readonly startDate: string;
@@ -18,7 +19,7 @@ export interface PlanningUpcomingTodo {
 }
 
 interface PlanGenerationInput {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly timezone: string;
   readonly locale: SupportedLocale;
   readonly categories: readonly PlanningCategory[];
@@ -36,7 +37,7 @@ export interface VoiceNoteDigestGenerationInput extends PlanGenerationInput {
 }
 
 /** 일정을 날짜·시각·반복으로 계산한 할 일. 적용 전까지 서버에 저장하지 않는다. */
-export interface GeneratedTodo {
+interface GeneratedTodo {
   readonly title: string;
   readonly categoryId: number | null;
   readonly startDate: string;
@@ -48,7 +49,7 @@ export interface GeneratedTodo {
   readonly duplicateOfTodoId: number | null;
 }
 
-export interface GeneratedMemo {
+interface GeneratedMemo {
   readonly title: string;
   readonly content: string;
 }
@@ -59,7 +60,7 @@ export interface GeneratedActionPlan {
   readonly omittedTodoCount: number;
 }
 
-export interface PlanGenerationMeta extends AiGenerationMeta {
+interface PlanGenerationMeta extends AiGenerationMeta {
   readonly promptVersion: string;
 }
 
@@ -90,6 +91,3 @@ export abstract class ActionPlanGeneratorPort {
     input: VoiceNoteDigestGenerationInput,
   ): Promise<VoiceNoteDigestGeneration>;
 }
-
-/** 옛 토큰. voice가 클래스 토큰으로 옮기면 지운다(같은 인스턴스 별칭으로 바인딩) */
-export const ACTION_PLAN_GENERATOR = Symbol("ACTION_PLAN_GENERATOR");

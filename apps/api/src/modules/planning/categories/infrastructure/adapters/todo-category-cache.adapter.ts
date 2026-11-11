@@ -5,12 +5,12 @@ import {
   TodoCategoryCacheKey,
   TODO_CATEGORY_CACHE_TTL_MS,
 } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoCategoryCachePort } from "../../application/ports/todo-category-cache.port.js";
 import type { TodoCategoryWithCountReadModel } from "../../application/read-models/todo-category-with-count.read-model.js";
 
-/** Redis JSON에서 문자열이 된 생성·수정 시각을 Date로 복원한다. */
 const TODO_CATEGORY_LIST_SCHEMA = z.array(
   z.object({
     id: z.number(),
@@ -18,36 +18,36 @@ const TODO_CATEGORY_LIST_SCHEMA = z.array(
     name: z.string(),
     color: z.string(),
     sortOrder: z.number(),
-    createdAt: z.coerce.date(),
-    updatedAt: z.coerce.date(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
     todoCount: z.number(),
   }),
 ) satisfies z.ZodType<TodoCategoryWithCountReadModel[]>;
 
 /**
- * TodoCategoryCachePort의 어댑터 — 공유 CacheService에 위임한다(키·TTL은 CacheService가 소유).
+ * TodoCategoryCachePort의 어댑터 — 공유 CacheStorePort에 위임한다(키·TTL은 CacheStorePort가 소유).
  */
 @Injectable()
 export class TodoCategoryCacheAdapter implements TodoCategoryCachePort {
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort) {
     this.#cacheService = cacheService;
   }
 
   wrapList(
-    userId: string,
+    userId: UserId,
     factory: () => Promise<TodoCategoryWithCountReadModel[]>,
   ): Promise<TodoCategoryWithCountReadModel[]> {
     return this.#cacheService.wrap(
-      TodoCategoryCacheKey.list(userId),
+      TodoCategoryCacheKey.list(userId.value),
       TODO_CATEGORY_LIST_SCHEMA,
       factory,
       TODO_CATEGORY_CACHE_TTL_MS,
     );
   }
 
-  invalidate(userId: string): Promise<void> {
-    return this.#cacheService.del(TodoCategoryCacheKey.list(userId));
+  invalidate(userId: UserId): Promise<void> {
+    return this.#cacheService.del(TodoCategoryCacheKey.list(userId.value));
   }
 }

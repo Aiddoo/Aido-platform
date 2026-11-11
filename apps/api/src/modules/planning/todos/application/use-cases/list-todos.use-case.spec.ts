@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -8,6 +9,7 @@ import {
 } from "#test/fixtures/planning/planning-todos.fixture";
 import { createTodoReadModelFromRecord } from "#test/fixtures/todo-response.fixture";
 
+import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { ListTodosUseCase } from "./list-todos.use-case.js";
 
 describe("할 일 목록 조회", () => {
@@ -43,8 +45,8 @@ describe("할 일 목록 조회", () => {
   it("필터와 정규화한 size를 읽기 경계에 전달한다", async () => {
     // Given
     const query = vi.spyOn(fixture.todoReadRepository, "findManyByUserId");
-    const startDate = new Date("2026-05-01T00:00:00Z");
-    const endDate = new Date("2026-05-31T00:00:00Z");
+    const startDate = Temporal.PlainDate.from("2026-05-01");
+    const endDate = Temporal.PlainDate.from("2026-05-31");
     // When
     await useCase.execute({
       userId: fixture.userId,
@@ -57,10 +59,10 @@ describe("할 일 목록 조회", () => {
     });
     // Then
     expect(query).toHaveBeenCalledWith({
-      userId: fixture.userId,
+      userId: UserId.reconstitute(fixture.userId),
       cursor: 5,
       size: 10,
-      categoryId: 1,
+      categoryId: TodoCategoryId.reconstitute(1),
       completed: false,
       startDate,
       endDate,
@@ -84,7 +86,7 @@ describe("할 일 목록 조회", () => {
   });
   it("size 생략은 기본20이며 날짜가 같거나 끝이 생략되어도 유효하다", async () => {
     // Given
-    const today = new Date("2026-05-15T00:00:00Z");
+    const today = Temporal.PlainDate.from("2026-05-15");
     // When
     const sameDay = await useCase.execute({
       userId: fixture.userId,
@@ -103,8 +105,8 @@ describe("할 일 목록 조회", () => {
     await expect(
       useCase.execute({
         userId: fixture.userId,
-        startDate: new Date("2026-05-16"),
-        endDate: new Date("2026-05-15"),
+        startDate: Temporal.PlainDate.from("2026-05-16"),
+        endDate: Temporal.PlainDate.from("2026-05-15"),
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
     expect(query).not.toHaveBeenCalled();

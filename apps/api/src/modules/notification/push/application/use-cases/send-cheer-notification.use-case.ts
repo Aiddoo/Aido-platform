@@ -1,7 +1,8 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../domain/transactional-notification-campaign.constants.js";
-import { createCheerReceivedNotificationMessage } from "../messages/notification.messages.js";
+import { createCheerReceivedNotificationMessage } from "../messages/social-notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
 import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
@@ -28,7 +29,9 @@ export class SendCheerNotificationUseCase {
   }
 
   async execute(input: SendCheerNotificationInput): Promise<void> {
-    const locale = await this.#dependencies.recipientLocaleReader.getLocale(input.receiverId);
+    const locale = await this.#dependencies.recipientLocaleReader.getLocale(
+      UserId.reconstitute(input.receiverId),
+    );
     const variantContext = {
       campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.CHEER_RECEIVED,
       recipientId: input.receiverId,

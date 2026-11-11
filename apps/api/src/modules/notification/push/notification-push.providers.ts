@@ -1,12 +1,13 @@
 import type { Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { NotificationHistoryReader } from "../inbox/application/notification-history.reader.js";
@@ -68,6 +69,7 @@ import { SendMilestoneNotificationUseCase } from "./application/use-cases/send-m
 import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup.use-case.js";
 import { SendNotificationUseCase } from "./application/use-cases/send-notification.use-case.js";
 import { SendNudgeNotificationUseCase } from "./application/use-cases/send-nudge-notification.use-case.js";
+import { UnregisterPushDeviceByTokenUseCase } from "./application/use-cases/unregister-push-device-by-token.use-case.js";
 import { UnregisterPushDeviceUseCase } from "./application/use-cases/unregister-push-device.use-case.js";
 import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/cached-active-push-token-reader.adapter.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/cached-notification-recipient-preference.adapter.js";
@@ -76,7 +78,7 @@ import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/adapters/h
 import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter.js";
 import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter.js";
 import { PushNotificationPayloadMapper } from "./infrastructure/adapters/push-notification-payload.mapper.js";
-import { createPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
+import { selectPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter.js";
 import { PushDeliveryQueueAdapter } from "./infrastructure/jobs/push-delivery-queue.adapter.js";
 import { DrizzleClientAppVersionReader } from "./infrastructure/persistence/drizzle-client-app-version.reader.js";
@@ -89,21 +91,21 @@ import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persisten
 import { DrizzlePushFunnelReader } from "./infrastructure/persistence/drizzle-push-funnel.reader.js";
 import { DrizzlePushReceiptRepository } from "./infrastructure/persistence/drizzle-push-receipt.repository.js";
 import { DrizzlePushTokenRepository } from "./infrastructure/persistence/drizzle-push-token.repository.js";
+import { notificationPushConfig } from "./notification-push.config.js";
 
 // 운영은 PostgreSQL, 설정으로 Redis·메모리를 고른다
 const pushRateLimiterProvider = {
   provide: PushRateLimiterPort,
   useFactory: (
-    configService: TypedConfigService,
+    config: ConfigType<typeof notificationPushConfig>,
     database: Database,
     redis?: Redis,
   ): PushRateLimiterPort =>
-    createPushRateLimiter({
-      backend: configService.pushRateLimitBackend,
+    selectPushRateLimiter(config.rateLimitBackend, {
       database,
       ...(redis && { redis }),
     }),
-  inject: [TypedConfigService, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
+  inject: [notificationPushConfig.KEY, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
 } satisfies Provider;
 
 // 테스트 하네스가 공급자·한도기·설정 어댑터만 바꿔 끼우도록 저장소·조회 어댑터를 따로 묶는다
@@ -220,6 +222,7 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     clock: ClockPort,
     logger: loggerFor(ReconcilePushReceiptsUseCase),
+    alert: OperationalAlertPort,
   }),
   provideUseCase(SendNotificationUseCase, {
     notificationRepository: NotificationRepositoryPort,
@@ -317,6 +320,13 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     cache: NotificationCachePort,
     logger: loggerFor(UnregisterPushDeviceUseCase),
+  }),
+  provideUseCase(UnregisterPushDeviceByTokenUseCase, {
+    pushDeviceRepository: PushDeviceRepositoryPort,
+    pushTokenRepository: PushTokenRepositoryPort,
+    unitOfWork: UnitOfWorkPort,
+    cache: NotificationCachePort,
+    logger: loggerFor(UnregisterPushDeviceByTokenUseCase),
   }),
   provideUseCase(ReleaseSessionPushDevicesUseCase, {
     pushDeviceRepository: PushDeviceRepositoryPort,

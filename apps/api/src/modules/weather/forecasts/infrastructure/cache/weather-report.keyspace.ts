@@ -1,7 +1,8 @@
 import { cacheKey } from "#api/platform/cache/keyspace/cache-key";
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
 
-const { MS_PER_MINUTE, MS_PER_HOUR, MS_PER_DAY } = TIME_UNIT;
+const MS_PER_MINUTE = 60_000;
+const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
 
 export const WEATHER_REPORT_CACHE_TTL_MS = {
   LATEST_REPORT: 6 * MS_PER_HOUR,

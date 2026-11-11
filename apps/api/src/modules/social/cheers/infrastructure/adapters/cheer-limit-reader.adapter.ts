@@ -1,15 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  ENTITLEMENT_READER,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { CheerLimitReaderPort } from "../../application/ports/cheer-limit.reader.port.js";
 import type {
-  DailySendQuota,
+  DailySendFeatureQuota,
   DailySendQuotaUsage,
 } from "../../application/ports/daily-send-usage.reader.port.js";
 
@@ -17,30 +14,30 @@ import type {
 export class CheerLimitReaderAdapter extends CheerLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getLimit" | "getLimitInTx" | "readFeatureQuotaInTx"
+    "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
   >;
 
   constructor(
-    @Inject(ENTITLEMENT_READER)
+    @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getLimit" | "getLimitInTx" | "readFeatureQuotaInTx"
+      "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
     >,
   ) {
     super();
     this.#entitlementReader = entitlementReader;
   }
 
-  readDailyLimit(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getLimit(userId.value, "CHEER");
+  readLimit(userId: UserId): Promise<number | null> {
+    return this.#entitlementReader.getFeatureLimit(userId, "CHEER");
   }
 
-  readDailyLimitInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getLimitInTx(userId.value, "CHEER");
+  readLimitInTx(userId: UserId): Promise<number | null> {
+    return this.#entitlementReader.getFeatureLimitInTx(userId, "CHEER");
   }
 
-  readDailyQuotaInTx(userId: UserId, usage: DailySendQuotaUsage): Promise<DailySendQuota> {
-    return this.#entitlementReader.readFeatureQuotaInTx(userId.value, "CHEER", {
+  readFeatureQuotaInTx(userId: UserId, usage: DailySendQuotaUsage): Promise<DailySendFeatureQuota> {
+    return this.#entitlementReader.getFeatureQuotaInTx(userId, "CHEER", {
       used: usage.used,
       resetsAt: instantToDate(usage.resetsAt),
     });

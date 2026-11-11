@@ -1,5 +1,5 @@
 import type {
-  DailySendQuota,
+  DailySendFeatureQuota,
   DailySendQuotaUsage,
 } from "#api/modules/social/cheers/application/ports/daily-send-usage.reader.port";
 import { NudgeLimitReaderPort } from "#api/modules/social/nudges/application/ports/nudge-limit.reader.port";
@@ -16,15 +16,18 @@ export class StubNudgeLimitReader extends NudgeLimitReaderPort {
     this.dailyLimit = dailyLimit;
   }
 
-  async readDailyLimit(_userId: UserId): Promise<number | null> {
+  async readLimit(_userId: UserId): Promise<number | null> {
     return this.dailyLimit;
   }
 
-  async readDailyLimitInTx(_userId: UserId): Promise<number | null> {
+  async readLimitInTx(_userId: UserId): Promise<number | null> {
     return this.dailyLimit;
   }
 
-  async readDailyQuotaInTx(_userId: UserId, usage: DailySendQuotaUsage): Promise<DailySendQuota> {
+  async readFeatureQuotaInTx(
+    _userId: UserId,
+    usage: DailySendQuotaUsage,
+  ): Promise<DailySendFeatureQuota> {
     return toStubDailyQuota("NUDGE", this.dailyLimit, usage);
   }
 }

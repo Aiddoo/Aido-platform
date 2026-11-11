@@ -4,6 +4,7 @@ import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
+import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
 import { subscription, user } from "#api/platform/database/schema/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
@@ -14,18 +15,25 @@ const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 const webhookSecret = "me-entitlements-webhook-secret";
 const AT = new Date("2027-01-04T12:00:00.000Z");
-const HOUR_MS = 60 * 60 * 1_000;
+const HOUR_MS = 60 * 60 * 1000;
 const FUTURE_EXPIRY = new Date("2027-02-04T12:00:00.000Z");
 
 describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () => {
   let context: E2eTestContext;
 
   beforeAll(async () => {
-    context = await createE2eApp();
+    context = await createE2eApp({
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(billingSubscriptionsConfig.KEY).useValue(
+          billingSubscriptionsConfig.parse({
+            NODE_ENV: "test",
+            REVENUECAT_WEBHOOK_SECRET: webhookSecret,
+          }),
+        ),
+    });
   });
 
   beforeEach(async () => {
-    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
@@ -131,7 +139,7 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
     expect(body.entitlements?.CUSTOM_REMINDER_TIME).toEqual({ allowed: false, limit: null });
   });
 
-  it("ADMIN은 isPremium이 아니어도 모든 기능을 한도 없이 쓸 수 있다", async () => {
+  it("ADMIN은 isPremium이 아니어도 모든 기능을 프리미엄 표시 한도로 쓸 수 있다", async () => {
     // Given
     const admin = await context.helpers.createVerifiedUser("me-admin@test.com", "Test1234!");
     await updateUser(admin.userId, { role: "ADMIN" });
@@ -143,7 +151,10 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
     expect(body.role).toBe("ADMIN");
     expect(body.isPremium).toBe(false);
     for (const feature of PREMIUM_FEATURE_KEYS) {
-      expect(body.entitlements?.[feature], feature).toMatchObject({ allowed: true, limit: null });
+      const definition = PLAN_CATALOG[feature];
+      const limit = definition.kind === "flag" ? null : definition.premium;
+      expect(body.entitlements?.[feature], feature).toMatchObject({ allowed: true, limit });
     }
+    expect(body.entitlements?.TODO_CATEGORY.limit).toBe(PLAN_CATALOG.TODO_CATEGORY.premium);
   });
 });

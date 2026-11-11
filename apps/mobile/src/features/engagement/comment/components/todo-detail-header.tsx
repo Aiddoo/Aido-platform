@@ -9,6 +9,7 @@ import { useLanguage } from '@src/shared/providers/language-provider';
 import { Box, HStack, QueryErrorBoundary, Text, TextSkeleton } from '@src/shared/ui';
 import { formatCompactCount } from '@src/shared/utils/number-format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { useNavigation } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useEffect, useRef, useState } from 'react';
@@ -111,7 +112,8 @@ function useSortChange() {
   const prefetchThenCommit = (sort: TodoCommentSort, commit: () => void) => {
     setIsPending(true);
     queryClient
-      .prefetchInfiniteQuery(sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions)
+      .infiniteQuery(sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions)
+      .catch(noop)
       .finally(() => {
         if (isUnmountedRef.current) {
           return;

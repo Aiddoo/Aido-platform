@@ -1,37 +1,54 @@
-import { pushDeviceResponseSchema, type ReportPushDeviceInput } from '@aido/api';
+import {
+  pushDeviceResponseSchema,
+  type ReportPushDeviceInput,
+  type UnregisterPushDeviceByTokenInput,
+  unregisterPushDeviceByTokenResponseSchema,
+} from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
+import { getNowInstant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { isEqual, noop, withTimeout } from 'es-toolkit';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
+import { EMPTY_PUSH_REGISTRATION } from '../constants/notification.constants';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
 import type { PushDevice, PushPermission } from '../domains/push-permission.model';
+import { type PushRegistration, PushRegistrationPolicy } from '../domains/push-registration.model';
 import type { DeviceIdService } from './device-id.service';
 import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-permission.mapper';
+import type { PushRegistrationRepository } from './push-registration.repository';
 
 const REPORT_WAIT_TIMEOUT_MS = 3_000;
+const NOT_FOUND_STATUS = 404;
+const TOO_MANY_REQUESTS_STATUS = 429;
 
 interface ReportedPushDevice {
   deviceId: string;
   input: ReportPushDeviceInput;
   timeZone: string;
+  language: string;
   device: PushDevice;
 }
 
-type PushDeviceReport = Pick<ReportedPushDevice, 'deviceId' | 'input' | 'timeZone'>;
+type PushDeviceReport = Pick<ReportedPushDevice, 'deviceId' | 'input' | 'timeZone' | 'language'>;
 
 interface PushDeviceServicePorts {
   gateway: PushNotificationGateway;
   deviceIdService: Pick<DeviceIdService, 'get'>;
   httpClient: HttpClient;
+  /** 끝난 세션의 해제는 인증 없이 보낸다. 인증 클라이언트는 401에 지금 세션을 끝낸다 */
+  publicHttpClient: Pick<HttpClient, 'post'>;
+  registrationRepository: PushRegistrationRepository;
   logger: Logger;
   getTimeZone: () => string;
+  /** 서버는 푸시 문구 언어를 요청 헤더에서 읽어 언어가 바뀌면 다시 보낸다 */
+  getLanguage: () => string;
   sessionEpoch: Pick<SessionEpoch, 'current'>;
 }
 
@@ -39,8 +56,11 @@ export class PushDeviceService {
   readonly #gateway: PushNotificationGateway;
   readonly #deviceIdService: Pick<DeviceIdService, 'get'>;
   readonly #httpClient: HttpClient;
+  readonly #publicHttpClient: Pick<HttpClient, 'post'>;
+  readonly #registrationRepository: PushRegistrationRepository;
   readonly #logger: Logger;
   readonly #getTimeZone: () => string;
+  readonly #getLanguage: () => string;
   readonly #sessionEpoch: Pick<SessionEpoch, 'current'>;
   #lastReported: ReportedPushDevice | null = null;
   #pendingSend: {
@@ -49,20 +69,29 @@ export class PushDeviceService {
   } | null = null;
   readonly #reportsInFlight = new Set<Promise<unknown>>();
   #unregisterCount = 0;
+  #releasing: Promise<void> | null = null;
+  /** 새 세션의 보고가 끝난 세션의 해제를 무른 횟수. 가는 중인 해제가 새 등록을 지우지 않게 한다 */
+  #releaseCancelCount = 0;
 
   constructor({
     gateway,
     deviceIdService,
     httpClient,
+    publicHttpClient,
+    registrationRepository,
     logger,
     getTimeZone,
+    getLanguage,
     sessionEpoch,
   }: PushDeviceServicePorts) {
     this.#gateway = gateway;
     this.#deviceIdService = deviceIdService;
     this.#httpClient = httpClient;
+    this.#publicHttpClient = publicHttpClient;
+    this.#registrationRepository = registrationRepository;
     this.#logger = logger;
     this.#getTimeZone = getTimeZone;
+    this.#getLanguage = getLanguage;
     this.#sessionEpoch = sessionEpoch;
   }
 
@@ -107,14 +136,19 @@ export class PushDeviceService {
     const epoch = this.#sessionEpoch.current();
     const unregisterCount = this.#unregisterCount;
     const permission = await this.getPermission();
-    const token = PushPermissionPolicy.isPushDeliverable(permission)
-      ? await this.#issueToken()
-      : null;
+    const isDeliverable = PushPermissionPolicy.isPushDeliverable(permission);
+    const issuedToken = isDeliverable ? await this.#issueToken() : null;
+    const registration =
+      isDeliverable && issuedToken == null
+        ? await this.#findRegistration()
+        : EMPTY_PUSH_REGISTRATION;
+    const token = PushRegistrationPolicy.getReportToken(registration, { permission, issuedToken });
     const deviceId = await this.#deviceIdService.get();
     const input = toReportPushDeviceInput({ permission, token });
     const timeZone = this.#getTimeZone();
+    const language = this.#getLanguage();
 
-    const report: PushDeviceReport = { deviceId, input, timeZone };
+    const report: PushDeviceReport = { deviceId, input, timeZone, language };
 
     const lastReported = this.#lastReported;
     if (
@@ -124,9 +158,15 @@ export class PushDeviceService {
         deviceId: lastReported.deviceId,
         input: lastReported.input,
         timeZone: lastReported.timeZone,
+        language: lastReported.language,
       })
     ) {
       return ok(lastReported.device);
+    }
+
+    // 끝난 세션의 해제가 가는 중이면 끝난 뒤에 보내 새 등록이 지워지지 않게 한다
+    if (this.#releasing != null) {
+      await this.#releasing;
     }
 
     // 읽는 사이 로그아웃했다면 끝난 세션의 기기를 다시 등록하지 않는다
@@ -140,6 +180,8 @@ export class PushDeviceService {
       return pending.result;
     }
 
+    // 새 세션이 이 기기를 다시 등록하므로 아직 보내지 못한 끝난 세션의 해제는 버린다
+    this.#releaseCancelCount += 1;
     const result = this.#send(report, { permission, hasToken: token != null });
     this.#pendingSend = { report, result };
     return result.finally(() => {
@@ -150,7 +192,7 @@ export class PushDeviceService {
   };
 
   #send = async (
-    { deviceId, input, timeZone }: PushDeviceReport,
+    { deviceId, input, timeZone, language }: PushDeviceReport,
     { permission, hasToken }: { permission: PushPermission; hasToken: boolean },
   ): Promise<Result<PushDevice | null, ApiError>> => {
     const result = parseApiResponse(
@@ -164,7 +206,14 @@ export class PushDeviceService {
     }
 
     const device = result.value;
-    this.#lastReported = { deviceId, input, timeZone, device };
+    this.#lastReported = { deviceId, input, timeZone, language, device };
+    await this.#updateRegistration((registration) =>
+      PushRegistrationPolicy.recordReported(registration, input.token),
+    ).catch((error: unknown) =>
+      this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_REGISTRATION_SAVE_FAILED, {
+        error: getErrorMessage(error),
+      }),
+    );
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORTED, {
       ...permission,
       hasToken,
@@ -196,10 +245,107 @@ export class PushDeviceService {
       return result;
     }
 
+    await this.#updateRegistration(PushRegistrationPolicy.recordReleased).catch((error: unknown) =>
+      this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_REGISTRATION_SAVE_FAILED, {
+        error: getErrorMessage(error),
+      }),
+    );
     return ok(undefined);
   };
 
-  /** 오프라인·APNs 없는 시뮬레이터·Play 서비스 없는 에뮬레이터에서는 null이다. 권한 상태는 토큰 없이도 보고한다 */
+  /**
+   * 온라인 로그아웃 없이 세션이 끝났다. 서버는 끝난 세션의 토큰을 지우지 않아 이 기기로 이전 계정의 푸시가 계속 가므로
+   * 기기 id와 토큰으로 푼다. 던지지 않고 화면을 기다리게 하지 않는다
+   */
+  requestRelease = (): Promise<void> => {
+    this.#lastReported = null;
+    return this.#updateRegistration((registration) =>
+      PushRegistrationPolicy.requestRelease(registration, getNowInstant()),
+    ).then(
+      () => this.flushRelease(),
+      (error: unknown) =>
+        this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_REGISTRATION_SAVE_FAILED, {
+          error: getErrorMessage(error),
+        }),
+    );
+  };
+
+  /** 던지지 않는다. 연결·서버 장애면 기록을 남겨 다음 연결·복귀 때 다시 보낸다. 겹쳐 불리면 앞 시도 뒤에 한 번 더 본다 */
+  flushRelease = (): Promise<void> => {
+    const releasing = (this.#releasing ?? Promise.resolve())
+      .then(() => this.#release())
+      .catch((error: unknown) => {
+        this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_RELEASE_DEFERRED, {
+          error: getErrorMessage(error),
+        });
+      })
+      .finally(() => {
+        if (this.#releasing === releasing) {
+          this.#releasing = null;
+        }
+      });
+    this.#releasing = releasing;
+    return releasing;
+  };
+
+  #release = async (): Promise<void> => {
+    const cancelCount = this.#releaseCancelCount;
+    const registration = await this.#registrationRepository.find();
+    if (!PushRegistrationPolicy.hasPendingRelease(registration)) {
+      return;
+    }
+    const tokens = PushRegistrationPolicy.getReleaseTokens(registration, {
+      currentToken: await this.#issueToken(),
+    });
+    if (tokens.length === 0) {
+      return;
+    }
+    const deviceId = await this.#deviceIdService.get();
+    // 토큰을 받는 사이 새 세션이 보고했다면 그 등록을 지우지 않는다
+    if (this.#releaseCancelCount !== cancelCount) {
+      return;
+    }
+    const results = await Promise.all(
+      tokens.map((token) => this.#postRelease({ deviceId, token })),
+    );
+    if (results.includes('retry')) {
+      throw new Error('push device release throttled');
+    }
+    if (this.#releaseCancelCount === cancelCount) {
+      await this.#updateRegistration(PushRegistrationPolicy.recordReleased);
+    }
+  };
+
+  /** 연결·서버 장애는 던진다. 429면 다시 보내고, 이 API가 없는 이전 서버(404)는 다시 보내도 같아 조용히 끝낸다 */
+  #postRelease = async (input: UnregisterPushDeviceByTokenInput): Promise<'done' | 'retry'> => {
+    const result = parseApiResponse(
+      await this.#publicHttpClient.post('v1/notifications/push-devices/unregister', input),
+      unregisterPushDeviceByTokenResponseSchema,
+      noop,
+      '[PushDeviceService] Invalid unregisterPushDeviceByToken response',
+    );
+    if (result.ok || result.error.status === NOT_FOUND_STATUS) {
+      return 'done';
+    }
+    if (result.error.status === TOO_MANY_REQUESTS_STATUS) {
+      return 'retry';
+    }
+    this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_RELEASE_REJECTED, {
+      errorCode: result.error.code,
+    });
+    return 'done';
+  };
+
+  #findRegistration = (): Promise<PushRegistration> =>
+    this.#registrationRepository.find().catch(() => EMPTY_PUSH_REGISTRATION);
+
+  #updateRegistration = async (
+    update: (registration: PushRegistration) => PushRegistration,
+  ): Promise<void> => {
+    await this.#registrationRepository.save(update(await this.#registrationRepository.find()));
+  };
+
+  /** 오프라인·APNs 없는 시뮬레이터·Play 서비스 없는 에뮬레이터에서는 null이다 */
   #issueToken = async (): Promise<string | null> => {
     try {
       return await this.#gateway.getToken();

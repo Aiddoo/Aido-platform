@@ -45,7 +45,7 @@ const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
 };
 
 /** 프롬프트에 실을 번호 붙인 문장. 정규화의 sentenceCount와 같은 수를 쓴다. */
-export function toPromptSentences(sentences: readonly TranscriptSentence[]) {
+function toPromptSentences(sentences: readonly TranscriptSentence[]) {
   return sentences.slice(0, ACTION_PLAN_LIMITS.DIGEST_MAX_SEGMENTS).map((sentence, index) => ({
     index,
     text: sanitizeLineForPrompt(sentence.text, TRANSCRIPT_MAX_LENGTH),

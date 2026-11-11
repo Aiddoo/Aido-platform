@@ -2,7 +2,7 @@ import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-ga
 import type { Instant } from '@src/shared/date/instant';
 
 import type { InviteCode } from '../domains/invite-code.model';
-import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
+import { PendingRedemptionPolicy } from '../domains/invite-redemption.model';
 import { type InviteLinkSource, type PendingRedemption } from '../domains/invite-redemption.model';
 import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invite.error';
 import { parseInstallReferrerInviteCode } from '../utils/install-referrer';
@@ -47,7 +47,7 @@ export class PendingRedemptionService {
    */
   findFreshPendingRedemption = (now: Instant): PendingRedemption | null => {
     const pending = this.#pendingRedemptionRepository.find();
-    if (pending == null || !InviteRedemptionPolicy.isFresh(pending, now)) {
+    if (pending == null || !PendingRedemptionPolicy.isFresh(pending, now)) {
       return null;
     }
 
@@ -57,7 +57,7 @@ export class PendingRedemptionService {
   /** 기한이 지난 초대를 저장소에서 지운다 */
   discardStalePendingRedemption = (now: Instant) => {
     const pending = this.#pendingRedemptionRepository.find();
-    if (pending != null && !InviteRedemptionPolicy.isFresh(pending, now)) {
+    if (pending != null && !PendingRedemptionPolicy.isFresh(pending, now)) {
       this.#pendingRedemptionRepository.clear();
     }
   };

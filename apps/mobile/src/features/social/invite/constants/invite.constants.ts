@@ -1,7 +1,7 @@
 import { INVITEE_REWARDS, INVITER_REWARD_MILESTONES } from '@aido/api/vocabulary';
 
 import { InviteRewardPolicy } from '../domains/invite-reward.model';
-import { InvitePolicy } from '../domains/invite.model';
+import { isOneTimeMilestone } from '../domains/invite.model';
 
 /** 내 초대 화면 요약에 보여 줄 친구 수 */
 export const INVITED_FRIEND_SUMMARY_LIMIT = 5;
@@ -26,6 +26,6 @@ export const FIRST_INVITER_PREMIUM_DAYS = InviteRewardPolicy.getPremiumDays(
 );
 
 /** 발자국 판에 생선 칸으로 미리 보여 줄 단계의 친구 수 */
-export const ONE_TIME_MILESTONE_COUNTS = INVITER_REWARD_MILESTONES.filter(
-  InvitePolicy.isOneTimeMilestone,
-).map((milestone) => milestone.qualifiedCount);
+export const ONE_TIME_MILESTONE_COUNTS = INVITER_REWARD_MILESTONES.filter(isOneTimeMilestone).map(
+  (milestone) => milestone.qualifiedCount,
+);

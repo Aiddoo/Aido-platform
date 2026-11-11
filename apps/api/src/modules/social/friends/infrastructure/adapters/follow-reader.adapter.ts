@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FollowCachePort } from "../../application/ports/follow-cache.port.js";
 import type { FollowReaderPort } from "../../application/ports/follow.reader.port.js";
@@ -25,9 +25,9 @@ export class FollowReaderAdapter implements FollowReaderPort, FriendCountReaderP
     this.#cache = cache;
   }
 
-  async isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
+  async isMutualFriend(userId: UserId, targetUserId: UserId): Promise<boolean> {
     const [smallerId, largerId] =
-      userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
+      userId.value < targetUserId.value ? [userId, targetUserId] : [targetUserId, userId];
     const cached = await this.#cache.getMutualFriend(smallerId, largerId);
     if (cached != null) {
       return cached;
@@ -38,32 +38,29 @@ export class FollowReaderAdapter implements FollowReaderPort, FriendCountReaderP
     return isMutual;
   }
 
-  isCurrentMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
-    return this.#followRepository.existsMutualFriendship(
-      UserId.reconstitute(userId),
-      UserId.reconstitute(targetUserId),
-    );
+  isCurrentMutualFriend(userId: UserId, targetUserId: UserId): Promise<boolean> {
+    return this.#followRepository.existsMutualFriendship(userId, targetUserId);
   }
 
-  countFriends(userId: string): Promise<number> {
+  countFriends(userId: UserId): Promise<number> {
     return this.#cache.wrapFriendCount(userId, () => this.countCurrentFriends(userId));
   }
 
   // 권한 스냅샷이 한도 검사와 같은 값을 보이도록 캐시 대신 지금 친구 수를 센다
-  countCurrentFriends(userId: string): Promise<number> {
-    return this.#followRepository.countMutualFriends(UserId.reconstitute(userId));
+  countCurrentFriends(userId: UserId): Promise<number> {
+    return this.#followRepository.countMutualFriends(userId);
   }
 
-  getMutualFriendIds(userId: string): Promise<string[]> {
+  getMutualFriendIds(userId: UserId): Promise<string[]> {
     return this.#cache.wrapMutualFriendIds(userId, () => this.getCurrentMutualFriendIds(userId));
   }
 
-  async getCurrentMutualFriendIds(userId: string): Promise<string[]> {
-    const friendIds = await this.#followRepository.listMutualFriendIds(UserId.reconstitute(userId));
+  async getCurrentMutualFriendIds(userId: UserId): Promise<string[]> {
+    const friendIds = await this.#followRepository.listMutualFriendIds(userId);
     return friendIds.map((friendId) => friendId.value);
   }
 
-  async getUserDisplayName(userId: string): Promise<string> {
-    return (await this.#profileReader.findDisplayName(UserId.reconstitute(userId))) ?? userId;
+  async getUserDisplayName(userId: UserId): Promise<string> {
+    return (await this.#profileReader.findDisplayName(userId)) ?? userId.value;
   }
 }

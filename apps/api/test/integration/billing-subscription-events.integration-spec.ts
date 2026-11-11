@@ -2,8 +2,7 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 import { eq, sql } from "drizzle-orm";
 import { sortBy } from "es-toolkit";
 
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { StoreEntitlementReaderPort } from "#api/modules/billing/premium-grants/application/ports/store-entitlement.reader.port";
 import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
@@ -21,7 +20,7 @@ import {
   subscriptionEventReceipt,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
@@ -38,8 +37,8 @@ import {
 const at = new Date("2027-01-04T12:00:00.000Z");
 const previousExpiry = new Date("2027-01-03T12:00:00.000Z");
 const nextExpiry = new Date("2027-02-03T12:00:00.000Z");
-const previousEventAt = at.getTime() - 2_000;
-const renewedEventAt = at.getTime() - 1_000;
+const previousEventAt = at.getTime() - 2000;
+const renewedEventAt = at.getTime() - 1000;
 
 const events: SubscriptionEventPayload[] = [];
 const failures: unknown[] = [];
@@ -79,9 +78,9 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     projection = context.module.get(UserSubscriptionProjectionRepositoryPort);
     entitlementReader = context.module.get(StoreEntitlementReaderPort);
     useCase = context.module.get(RevenueCatWebhookReceiver);
-    entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
+    entitlement = context.module.get(EntitlementReaderPort);
     receipts = context.module.get(SubscriptionEventReceiptRepositoryPort);
-    unitOfWork = context.module.get(UNIT_OF_WORK);
+    unitOfWork = context.module.get(UnitOfWorkPort);
   });
 
   beforeEach(async () => {
@@ -201,7 +200,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       userStatus: user?.subscriptionStatus,
       userExpiry:
         user?.subscriptionExpiresAt == null ? null : toIsoString(user.subscriptionExpiresAt),
-      premiumAccess: await entitlement.can(userId, "AI_REPORT"),
+      premiumAccess: await entitlement.can(UserId.reconstitute(userId), "AI_REPORT"),
     };
   }
 
@@ -233,7 +232,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(stored?.environment).toBe("SANDBOX");
     expect(receipt?.environment).toBe("SANDBOX");
     expect(events.at(-1)?.environment).toBe("SANDBOX");
-    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   it("A 만료→B 갱신→동일 A 재전송은 최신 프리미엄 권한을 유지해야 한다", async () => {
@@ -358,7 +357,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     );
     expect(await client.select().from(subscriptionEventReceipt)).toHaveLength(1);
     expect(events).toHaveLength(1);
-    expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   it("구독 INSERT의 실제 FK 오류는 처리 원장도 rollback하고 던져, 다시 보낸 같은 이벤트를 처리할 수 있다", async () => {
@@ -528,7 +527,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     // Given
     await givenActiveUserProjection();
     await givenOtherSubscription();
-    expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
     const body = builder()
       .withAppUserId(userId)
       .withOriginalTransactionId(transactionId)

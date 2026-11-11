@@ -8,8 +8,7 @@ import type {
 import { clamp, round, sortBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
-
+import { localDateAt } from "../../../shared/domain/weather-calendar.domain-service.js";
 import type {
   WeatherReport,
   WeatherReportAlert,
@@ -277,7 +276,7 @@ function toDayPart(part: WeatherKitDayPart | null | undefined): WeatherReportDay
 
 function toDay(day: WeatherKitDay, timezone: string): WeatherReportDay {
   return {
-    date: dayWindowInTimezone(day.forecastStart, timezone).localDate,
+    date: localDateAt(day.forecastStart, timezone).toString(),
     condition: toWeatherCondition(day.conditionCode),
     temperatureMin: day.temperatureMin,
     temperatureMax: day.temperatureMax,

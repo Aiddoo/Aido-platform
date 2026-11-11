@@ -5,6 +5,7 @@ import {
   aiReportSchema,
   ReportPolicy,
   type ReportStatus,
+  ReportStatusPolicy,
   reportStatusSchema,
 } from './report.model';
 
@@ -14,7 +15,6 @@ function createAiReport(overrides: Partial<AiReport> = {}) {
     type: 'WEEKLY',
     year: 2026,
     period: 10,
-    periodLabel: '3월 2주차',
     dateRange: { startDate: '2026-03-02', endDate: '2026-03-08' },
     stats: {
       totalTodos: 10,
@@ -41,10 +41,10 @@ function createReportStatus(overrides: Partial<ReportStatus> = {}) {
 describe('getCompletionRateChange', () => {
   it('지난 기간보다 오르거나 내린 만큼을 반환한다', () => {
     // Given
-    const { stats } = createAiReport();
+    const report = createAiReport();
 
     // When
-    const change = ReportPolicy.getCompletionRateChange(stats);
+    const change = ReportPolicy.getCompletionRateChange(report);
 
     // Then
     // 60 - 75 = -15
@@ -53,7 +53,7 @@ describe('getCompletionRateChange', () => {
 
   it('지난 기간 완료율이 없으면 비교하지 않는다', () => {
     // Given
-    const { stats } = createAiReport({
+    const report = createAiReport({
       stats: {
         totalTodos: 10,
         completedTodos: 6,
@@ -64,7 +64,7 @@ describe('getCompletionRateChange', () => {
     });
 
     // When
-    const change = ReportPolicy.getCompletionRateChange(stats);
+    const change = ReportPolicy.getCompletionRateChange(report);
 
     // Then
     expect(change).toBeNull();
@@ -136,7 +136,7 @@ describe('getDaysUntilReport', () => {
     const status = createReportStatus();
 
     // When
-    const days = ReportPolicy.getDaysUntilReport(status, type);
+    const days = ReportStatusPolicy.getDaysUntilReport(status, type);
 
     // Then
     expect(days).toBe(expected);

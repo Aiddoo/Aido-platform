@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { hexColorRegex } from "../../../vocabulary/todo-category.types.js";
+import { CATEGORY_TODO_HANDLINGS, hexColorRegex } from "../../../vocabulary/todo-category.types.js";
 import { reorderPositionSchema } from "./todo-category.common.js";
 
 export const createTodoCategorySchema = z.object({
@@ -37,14 +37,30 @@ export const updateTodoCategorySchema = z
 
 export type UpdateTodoCategoryInput = z.infer<typeof updateTodoCategorySchema>;
 
-export const deleteTodoCategoryQuerySchema = z.object({
-  moveToCategoryId: z.coerce
-    .number()
-    .int()
-    .positive("유효하지 않은 카테고리 ID입니다")
-    .optional()
-    .describe("할 일을 이동할 카테고리 ID (선택, 양의 정수)"),
-});
+// todoHandling을 생략하면 출시 앱(1.15.0까지)의 규칙 그대로다: 할 일이 있으면 moveToCategoryId가 필요하다
+export const deleteTodoCategoryQuerySchema = z
+  .object({
+    moveToCategoryId: z.coerce
+      .number()
+      .int()
+      .positive("유효하지 않은 카테고리 ID입니다")
+      .optional()
+      .describe("할 일을 이동할 카테고리 ID (선택, 양의 정수)"),
+    todoHandling: z
+      .enum(CATEGORY_TODO_HANDLINGS)
+      .optional()
+      .describe(
+        "안의 할 일 처리 (선택). move: moveToCategoryId로 옮긴 뒤 삭제(필수), delete: 할 일·반복과 함께 삭제(moveToCategoryId 금지). 생략하면 할 일이 있을 때 moveToCategoryId가 필요하다",
+      ),
+  })
+  .refine((query) => query.todoHandling !== "move" || query.moveToCategoryId != null, {
+    error: "할 일을 옮기려면 이동할 카테고리를 지정해야 합니다",
+    path: ["moveToCategoryId"],
+  })
+  .refine((query) => query.todoHandling !== "delete" || query.moveToCategoryId == null, {
+    error: "할 일을 함께 삭제할 때는 이동할 카테고리를 지정할 수 없습니다",
+    path: ["moveToCategoryId"],
+  });
 
 export type DeleteTodoCategoryQuery = z.infer<typeof deleteTodoCategoryQuerySchema>;
 

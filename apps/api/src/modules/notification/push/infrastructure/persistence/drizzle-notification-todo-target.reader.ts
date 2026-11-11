@@ -1,8 +1,8 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
   NotificationTodoTarget,
@@ -18,7 +18,7 @@ export class DrizzleNotificationTodoTargetReader implements NotificationTodoTarg
   }
 
   async findTodoTargets(
-    todoIds: readonly number[],
+    todoIds: readonly TodoId[],
   ): Promise<ReadonlyMap<number, NotificationTodoTarget>> {
     if (todoIds.length === 0) {
       return new Map();
@@ -26,11 +26,11 @@ export class DrizzleNotificationTodoTargetReader implements NotificationTodoTarg
 
     const rows = await this.#txHost.tx.query.todo.findMany({
       columns: { id: true, userId: true, startDate: true },
-      where: { id: { in: [...todoIds] } },
+      where: { id: { in: todoIds.map((todoId) => todoId.value) } },
     });
 
     return new Map(
-      rows.map((row) => [row.id, { ownerId: row.userId, date: toDateString(row.startDate) }]),
+      rows.map((row) => [row.id, { ownerId: row.userId, date: row.startDate.toString() }]),
     );
   }
 }

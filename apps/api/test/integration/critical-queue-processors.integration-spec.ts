@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { chunk } from "es-toolkit";
-import { assert } from "vitest";
+import { assert, vi } from "vitest";
 
 import { PublishNotificationUseCase } from "#api/modules/notification/push/application/use-cases/publish-notification.use-case";
 import {
@@ -19,6 +19,7 @@ import {
 import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
@@ -26,10 +27,9 @@ import {
   type CriticalQueueProcessorHarness,
   createCriticalQueueProcessorHarness,
 } from "./helpers/critical-queue-processor.harness.js";
+import { WORKER_WAIT } from "./helpers/fast-job-timing.js";
 
 const BROADCAST_TIMEOUT_MS = 180_000;
-/** retention worker는 정해진 시각 작업이라 15초마다 polling한다. */
-const SCHEDULED_WORKER_TIMEOUT_MS = 40_000;
 
 describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg-boss)", () => {
   let harness: CriticalQueueProcessorHarness;
@@ -87,7 +87,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 
     // Then
     expect(jobId).not.toBeNull();
-    await harness.eventually(async () => {
+    await vi.waitFor(async () => {
       const friendCompleted = { type: "FRIEND_COMPLETED" as const, friendId: friend.id };
       const [notifications, dispatches, attempts, jobs] = await Promise.all([
         harness.client.query.notification.findMany({
@@ -113,7 +113,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       expect(attempts).toHaveLength(2);
       expect(attempts.every(({ status }) => status === "TICKET_ACCEPTED")).toBe(true);
       expect(jobs[0]?.state).toBe("completed");
-    });
+    }, WORKER_WAIT);
     expect(
       harness.pushProvider
         .getSentPayloads()
@@ -151,7 +151,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 
     // Then
     let deliveryJobs: Awaited<ReturnType<typeof harness.boss.findJobs>> = [];
-    await harness.eventually(async () => {
+    await vi.waitFor(async () => {
       const dispatches = await harness.client.query.pushDispatch.findMany({
         where: { userId: recipient.id },
       });
@@ -162,7 +162,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
           PushDeliveryRuntimeJobSchema.safeParse(job.data).data?.name === "deliver-dispatches",
       );
       expect(deliveryJobs).toHaveLength(2);
-    });
+    }, WORKER_WAIT);
     expect(deliveryJobs.map(({ priority }) => priority).sort()).toEqual([0, 10]);
     expect(harness.pushProvider.getSentPayloads()).toHaveLength(2);
 
@@ -183,63 +183,59 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     ).resolves.toHaveLength(2);
   });
 
-  it(
-    "retention sweep 잡은 공용 outbox와 push-delivery worker로 ENGAGEMENT 푸시를 보낸다",
-    async () => {
-      // Given: 가입 3시간 뒤 할 일이 없는 D0 대상
-      const recipient = await createPushReadyUser(harness.client, {
-        email: "queue-retention@example.com",
-        userTag: "RETENT01",
-        name: "리텐션 수신자",
-        locale: "ko",
+  it("retention sweep 잡은 공용 outbox와 push-delivery worker로 ENGAGEMENT 푸시를 보낸다", async () => {
+    // Given: 가입 3시간 뒤 할 일이 없는 D0 대상
+    const recipient = await createPushReadyUser(harness.client, {
+      email: "queue-retention@example.com",
+      userTag: "RETENT01",
+      name: "리텐션 수신자",
+      locale: "ko",
+      token: "fake-retention-token",
+      timezone: harness.daytimeTimezone,
+    });
+    await harness.retentionRepository.enroll({
+      userId: UserId.reconstitute(recipient.id),
+      variant: "TREATMENT",
+      startedAt: Temporal.Instant.fromEpochMilliseconds(Date.now() - 3 * 60 * 60 * 1000),
+    });
+
+    // When
+    await harness.jobQueue.enqueue(
+      RETENTION_QUEUE,
+      { name: RetentionJobName.STAGE_SWEEP, data: {} },
+      { idempotencyKey: `retention-sweep:${recipient.id}` },
+    );
+
+    // Then
+    await vi.waitFor(async () => {
+      const dispatch = await harness.client.query.pushDispatch.findFirst({
+        where: { userId: recipient.id },
+        with: { notification: true },
+      });
+      assert.exists(dispatch);
+      expect(dispatch).toMatchObject({ status: "SENT", purpose: "ENGAGEMENT" });
+      const stage = await harness.client.query.retentionExperimentStage.findFirst({
+        where: { stage: "D0", assignment: { userId: recipient.id } },
+      });
+      expect(stage).toMatchObject({
+        status: "OUTBOXED",
+        notificationId: dispatch.notificationId,
+      });
+    }, WORKER_WAIT);
+    expect(harness.pushProvider.getSentPayloads()).toEqual([
+      expect.objectContaining({
         token: "fake-retention-token",
-        timezone: harness.daytimeTimezone,
-      });
-      await harness.retentionRepository.enroll({
-        userId: recipient.id,
-        variant: "TREATMENT",
-        startedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-      });
-
-      // When
-      await harness.jobQueue.enqueue(
-        RETENTION_QUEUE,
-        { name: RetentionJobName.STAGE_SWEEP, data: {} },
-        { idempotencyKey: `retention-sweep:${recipient.id}` },
-      );
-
-      // Then
-      await harness.eventually(async () => {
-        const dispatch = await harness.client.query.pushDispatch.findFirst({
-          where: { userId: recipient.id },
-          with: { notification: true },
-        });
-        assert.exists(dispatch);
-        expect(dispatch).toMatchObject({ status: "SENT", purpose: "ENGAGEMENT" });
-        const stage = await harness.client.query.retentionExperimentStage.findFirst({
-          where: { stage: "D0", assignment: { userId: recipient.id } },
-        });
-        expect(stage).toMatchObject({
-          status: "OUTBOXED",
-          notificationId: dispatch.notificationId,
-        });
-      }, SCHEDULED_WORKER_TIMEOUT_MS);
-      expect(harness.pushProvider.getSentPayloads()).toEqual([
-        expect.objectContaining({
-          token: "fake-retention-token",
-          categoryId: "MARKETING",
-          data: expect.objectContaining({ purpose: "ENGAGEMENT", type: "SYSTEM_NOTICE" }),
-        }),
-      ]);
-    },
-    SCHEDULED_WORKER_TIMEOUT_MS + 10_000,
-  );
+        categoryId: "MARKETING",
+        data: expect.objectContaining({ purpose: "ENGAGEMENT", type: "SYSTEM_NOTICE" }),
+      }),
+    ]);
+  });
 
   it(
     "브로드캐스트는 같은 요청을 한 번만 분배하고 대상 전원에게 발송한다",
     async () => {
       // Given
-      const recipientCount = Number(process.env.BROADCAST_RECIPIENT_COUNT ?? 1_200);
+      const recipientCount = Number(process.env.BROADCAST_RECIPIENT_COUNT ?? 1200);
       await seedPushReadyUsers(harness.client, recipientCount);
       const createCampaign = harness.module.get(CreateBroadcastCampaignUseCase);
       const request = {
@@ -259,20 +255,23 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 
       // Then
       expect(replay.campaign.id.value).toBe(first.campaign.id.value);
-      await harness.eventually(async () => {
-        const [campaign, sentDispatches] = await Promise.all([
-          harness.client.query.broadcastCampaign.findFirst({
-            where: { id: first.campaign.id.value },
-          }),
-          harness.client.$count(pushDispatch, eq(pushDispatch.status, "SENT")),
-        ]);
-        expect(campaign).toMatchObject({
-          status: "COMPLETED",
-          processedCount: recipientCount,
-          queuedCount: recipientCount,
-        });
-        expect(sentDispatches).toBe(recipientCount);
-      }, BROADCAST_TIMEOUT_MS);
+      await vi.waitFor(
+        async () => {
+          const [campaign, sentDispatches] = await Promise.all([
+            harness.client.query.broadcastCampaign.findFirst({
+              where: { id: first.campaign.id.value },
+            }),
+            harness.client.$count(pushDispatch, eq(pushDispatch.status, "SENT")),
+          ]);
+          expect(campaign).toMatchObject({
+            status: "COMPLETED",
+            processedCount: recipientCount,
+            queuedCount: recipientCount,
+          });
+          expect(sentDispatches).toBe(recipientCount);
+        },
+        { timeout: BROADCAST_TIMEOUT_MS, interval: 500 },
+      );
       const elapsedMs = Math.round(performance.now() - startedAt);
       const fanOutJobs = await harness.boss.findJobs(BROADCAST_FAN_OUT_QUEUE.name);
       expect(new Set(harness.pushProvider.getSentPayloads().map(({ token }) => token)).size).toBe(
@@ -295,7 +294,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 async function seedPushReadyUsers(client: TestDatabaseClient, count: number): Promise<void> {
   for (const page of chunk(
     Array.from({ length: count }, (_, index) => index),
-    1_000,
+    1000,
   )) {
     const users = await client
       .insert(user)

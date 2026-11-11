@@ -1,5 +1,5 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { DailySendUsage } from "../../cheers/application/ports/daily-send-usage.reader.port.js";
@@ -20,10 +20,10 @@ export class NudgeUsageReader extends NudgeUsageReaderPort {
     this.#dependencies = dependencies;
   }
 
-  async readDailyUsage(userId: string, timezone: string): Promise<DailySendUsage> {
+  async readDailyUsage(userId: UserId, timezone: string): Promise<DailySendUsage> {
     const { nudgeRepository, clock } = this.#dependencies;
     const window = dailySendWindowAt({ now: clock.now(), timeZone: timezone });
-    const used = await nudgeRepository.countSentBetween(UserId.reconstitute(userId), window);
+    const used = await nudgeRepository.countSentBetween(userId, window);
     return { used, resetsAt: instantToDate(window.endsAt) };
   }
 }

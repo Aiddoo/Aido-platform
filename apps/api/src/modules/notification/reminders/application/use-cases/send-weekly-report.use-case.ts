@@ -1,10 +1,8 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createWeeklyReportNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createWeeklyReportNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
@@ -30,7 +28,7 @@ export class SendWeeklyReportUseCase implements TimezoneReminderStrategyPort {
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
     const { tz, today } = ctx;
-    const weekAgo = subtractDays(7, today);
+    const weekAgo = today.subtract({ days: 7 });
 
     // 오케스트레이터가 월요일 09:00에만 호출 → 프리미엄 유저 대상
     const users = await this.#dependencies.reader.findWeeklyReportRecipients({
@@ -65,7 +63,7 @@ export class SendWeeklyReportUseCase implements TimezoneReminderStrategyPort {
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_REPORT,
           recipientId: user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
       return {

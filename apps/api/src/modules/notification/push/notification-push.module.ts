@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 
@@ -17,12 +18,18 @@ import { MarketingConsentReconfirmScheduler } from "./infrastructure/jobs/market
 import { NotificationQueueModule } from "./infrastructure/jobs/notification-queue.module.js";
 import { NotificationQueueProcessor } from "./infrastructure/jobs/notification-queue.processor.js";
 import { PushDeliveryQueueProcessor } from "./infrastructure/jobs/push-delivery-queue.processor.js";
+import { notificationPushConfig } from "./notification-push.config.js";
 import { NOTIFICATION_PUSH_PROVIDERS } from "./notification-push.providers.js";
 import { PushDeviceController } from "./presentation/http/v1/push-device.controller.js";
 
 @Module({
   // Identity 설정의 역방향 큐 참조는 jobs.public 경계로 분리한다
-  imports: [NotificationQueueModule, IdentitySettingsModule, NotificationInboxModule],
+  imports: [
+    NotificationQueueModule,
+    IdentitySettingsModule,
+    NotificationInboxModule,
+    ConfigModule.forFeature(notificationPushConfig),
+  ],
   controllers: [PushDeviceController],
   providers: [
     ...NOTIFICATION_PUSH_PROVIDERS,

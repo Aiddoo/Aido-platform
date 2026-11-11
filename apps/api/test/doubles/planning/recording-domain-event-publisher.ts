@@ -1,7 +1,7 @@
 import {
   DomainEventPublisherPort,
   type PublishedDomainEvent,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/domain-event-publisher.port";
 
 export class RecordingDomainEventPublisher extends DomainEventPublisherPort {
   readonly publishedEvents: PublishedDomainEvent[] = [];

@@ -37,7 +37,7 @@ describe("MarkAllNotificationsReadUseCase — 모든 알림 읽음", () => {
     expect(result.count).toBe(3);
     expect(notificationRepository.rowOf(2)).toMatchObject({
       isRead: true,
-      readAt: new Date(NOW.epochMilliseconds),
+      readAt: NOW,
     });
     expect(notificationRepository.rowOf(4)?.isRead).toBe(false);
     expect(cache.invalidatedUnreadCountUserIds).toEqual([USER_ID]);

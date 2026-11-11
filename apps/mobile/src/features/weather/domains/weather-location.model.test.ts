@@ -156,8 +156,14 @@ describe('shouldFetchReport', () => {
     ['needsPermission', false],
     ['denied', false],
   ] as const)('%s 상태에서 리포트를 받을 수 있는지는 %p이다', (status, expected) => {
+    // Given
+    const location =
+      status === 'ready'
+        ? { status, place: null, countryCode: null, isLastKnown: false }
+        : { status };
+
     // When
-    const canFetch = WeatherLocationPolicy.shouldFetchReport({ status });
+    const canFetch = WeatherLocationPolicy.shouldFetchReport(location);
 
     // Then
     expect(canFetch).toBe(expected);

@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { eq, sum } from "drizzle-orm";
+import { and, eq, gt, sum } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { resourceBonus } from "#api/platform/database/schema/index";
@@ -8,8 +8,8 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AccessStateReaderPort } from "../../application/ports/access-state.reader.port.js";
 import type { AccessState } from "../../domain/entitlement.domain-service.js";
-import type { ResourceBonuses } from "../../domain/entitlements.constants.js";
-import { resolvePremiumAccessDeadline } from "../../domain/paid-access.domain-service.js";
+import type { FeatureGrants } from "../../domain/entitlements.constants.js";
+import { resolvePaidAccessDeadline } from "../../domain/paid-access.domain-service.js";
 
 /** 권한 판단 조회는 호출자의 CLS 트랜잭션에 참여한다. */
 @Injectable()
@@ -54,14 +54,18 @@ export class DrizzleAccessStateReader extends AccessStateReaderPort {
     return row == null ? null : toAccessState(row);
   }
 
-  async findResourceBonuses(userId: UserId): Promise<ResourceBonuses> {
+  async findFeatureGrants(userId: UserId): Promise<FeatureGrants> {
+    // 지급은 1 이상만 저장하지만 손으로 넣은 0·음수 행이 한도를 줄이지 않게 더하지 않는다
     const groups = await this.#db
-      .select({ resource: resourceBonus.resource, quantity: sum(resourceBonus.quantity) })
+      .select({ feature: resourceBonus.resource, quantity: sum(resourceBonus.quantity) })
       .from(resourceBonus)
-      .where(eq(resourceBonus.userId, userId.value))
+      .where(and(eq(resourceBonus.userId, userId.value), gt(resourceBonus.quantity, 0)))
       .groupBy(resourceBonus.resource);
-    const friend = groups.find((group) => group.resource === "FRIEND")?.quantity;
-    return { FRIEND: friend == null ? 0 : Number(friend) };
+    return Object.fromEntries(
+      groups.flatMap(({ feature, quantity }) =>
+        quantity == null ? [] : [[feature, Number(quantity)] as const],
+      ),
+    );
   }
 }
 
@@ -78,7 +82,7 @@ function toAccessState(row: {
   return {
     role: row.role,
     subscriptionStatus: row.subscriptionStatus,
-    accessDeadline: resolvePremiumAccessDeadline({
+    accessDeadline: resolvePaidAccessDeadline({
       subscriptionExpiresAt: row.subscriptionExpiresAt,
       storeEntitlements: row.subscriptions,
     }),

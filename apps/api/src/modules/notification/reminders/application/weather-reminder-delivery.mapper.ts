@@ -1,4 +1,3 @@
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../inbox/application/notification-history.reader.js";
@@ -42,12 +41,12 @@ export function weatherRecipientLocale(user: WeatherReminderRecipient): Supporte
 export function weatherVariantContext(
   type: WeatherNotificationType,
   userId: string,
-  today: Date,
+  today: Temporal.PlainDate,
 ): NotificationVariantContext {
   return {
     campaignKey: SCHEDULER_CAMPAIGN_KEY[type],
     recipientId: userId,
-    occurrenceKey: toDateString(today),
+    occurrenceKey: today.toString(),
   };
 }
 
@@ -67,7 +66,7 @@ export async function filterUnnotifiedWeatherUsers<TUser extends { readonly id: 
   historyReader: WeatherReminderDeliveryDependencies["notificationHistoryReader"],
   users: readonly TUser[],
   type: WeatherNotificationType,
-  today: Date,
+  today: Temporal.PlainDate,
 ): Promise<TUser[]> {
   if (users.length === 0) {
     return [];
@@ -85,7 +84,7 @@ export function buildWeatherNotification(input: {
   readonly type: WeatherNotificationType;
   readonly message: NotificationMessage;
   readonly action: NotificationAction | null;
-  readonly today: Date;
+  readonly today: Temporal.PlainDate;
 }): CreateNotificationData {
   const { userId, type, message, action, today } = input;
   return {
@@ -109,7 +108,7 @@ export async function sendWeatherFallbackNotifications(
   input: {
     readonly users: readonly WeatherFallbackUser[];
     readonly type: WeatherNotificationType;
-    readonly today: Date;
+    readonly today: Temporal.PlainDate;
     readonly createMessage: (input: {
       readonly locale: SupportedLocale;
       readonly variantContext: NotificationVariantContext;

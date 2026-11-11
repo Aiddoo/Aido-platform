@@ -9,11 +9,13 @@ import { omit } from "es-toolkit";
 import { TodoSeriesOwnerDormancyPort } from "#api/modules/notification/reminders/application/ports/todo-series-owner-dormancy.port";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
+import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import {
   UpdateFollowingTodosUseCase,
   type UpdateFollowingTodosInput,
 } from "#api/modules/planning/todo-series/application/use-cases/update-following-todos.use-case";
+import { TodoLockKeys } from "#api/modules/planning/todos/application/todos.lock-keys";
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { DeleteTodoUseCase } from "#api/modules/planning/todos/application/use-cases/delete-todo.use-case";
 import {
@@ -30,12 +32,13 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -112,10 +115,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
   async function start(repeat: TodoRepeat = DAILY_NEVER, scheduledTime: string | null = null) {
     const { series, todos } = await context.module.get(CreateTodoUseCase).execute({
-      userId,
-      categoryId,
+      userId: UserId.reconstitute(userId),
+      categoryId: TodoCategoryId.reconstitute(categoryId),
       title: "원래 제목",
-      startDate: AT,
+      startDate: plainDateFromDate(AT),
       scheduledTime,
       timezone: "America/New_York",
       items: [{ title: "항목" }],
@@ -169,8 +172,9 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           title: "규칙",
           timezone: "UTC",
           repeatFrequency: "DAILY" as const,
-          startDate: AT,
-          nextOccurrenceDate: AT,
+          startDate: plainDateFromDate(AT),
+          nextOccurrenceDate: plainDateFromDate(AT),
+          updatedAt: nowInstant(),
         };
       }),
     );
@@ -180,12 +184,15 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     return edit(todoId, { repeat: null });
   }
 
-  function dateOf(value: Date | null | undefined) {
-    return value?.toISOString().slice(0, 10);
+  function dateOf(value: Temporal.PlainDate | null | undefined) {
+    return value?.toString();
   }
 
   async function complete(todoId: number) {
-    await client.update(todo).set({ completed: true, completedAt: AT }).where(eq(todo.id, todoId));
+    await client
+      .update(todo)
+      .set({ completed: true, completedAt: instantFromDate(AT) })
+      .where(eq(todo.id, todoId));
   }
 
   describe("이 할 일만", () => {
@@ -200,7 +207,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         userId,
         timezone: "UTC",
         scope: "THIS_ONLY",
-        data: { startDate: new Date("2026-11-20T00:00:00.000Z"), title: "이것만" },
+        data: { startDate: Temporal.PlainDate.from("2026-11-20"), title: "이것만" },
       });
       vi.setSystemTime(new Date("2026-11-03T00:00:00.000Z"));
       await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
@@ -257,7 +264,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         const result = await context.module.get(MaterializeDueTodoSeriesUseCase).execute();
         const since = await context.module
           .get(TodoSeriesOwnerDormancyPort, { strict: false })
-          .findDormantSince(userId);
+          .findDormantSince(UserId.reconstitute(userId));
         // Then
         expect(result.dormantCount).toBe(dormantCount);
         expect(since).toBe(dormantSince);
@@ -269,10 +276,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("지난 회차가 상한을 넘는 새 반복은 만들지 않는다", async () => {
       // When
       const outcome = context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "먼 과거",
-        startDate: new Date("2000-01-01T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2000-01-01"),
         timezone: "UTC",
         repeat: DAILY_NEVER,
       });
@@ -286,11 +293,11 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
     it("상한 안의 지난 시작일은 빠짐없이 만들고 다음 날 작업이 이어 채운다", async () => {
       // Given
-      const startDate = new Date("2025-11-02T00:00:00.000Z");
+      const startDate = Temporal.PlainDate.from("2025-11-02");
       // When
       const { series } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "1년 전 시작",
         startDate,
         timezone: "UTC",
@@ -307,10 +314,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("출시 앱의 /recurring이 보내는 366일 범위는 시작일이 오래돼도 그대로 만든다", async () => {
       // When
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "옛 앱",
-        startDate: new Date("2000-01-03T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2000-01-03"),
         timezone: "UTC",
         repeat: {
           frequency: "WEEKLY",
@@ -350,7 +357,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       await following({ id: todos[2]?.id ?? 0, title: "새 제목", repeat: DAILY_NEVER });
       // Then
       expect(await client.$count(todoSeries, eq(todoSeries.userId, userId))).toBe(1);
-      expect((await seriesRow(seriesId))?.startDate).toEqual(AT);
+      expect((await seriesRow(seriesId))?.startDate).toEqual(plainDateFromDate(AT));
     });
 
     it("시간을 바꾸면 회차 날짜마다 규칙 시간대로 다시 계산하고 리마인더를 재등록한다", async () => {
@@ -358,10 +365,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       vi.setSystemTime(new Date("2027-03-12T00:00:00.000Z"));
       const { seriesId } = await (async () => {
         const created = await context.module.get(CreateTodoUseCase).execute({
-          userId,
-          categoryId,
+          userId: UserId.reconstitute(userId),
+          categoryId: TodoCategoryId.reconstitute(categoryId),
           title: "DST",
-          startDate: new Date("2027-03-13T00:00:00.000Z"),
+          startDate: Temporal.PlainDate.from("2027-03-13"),
           scheduledTime: "08:00",
           timezone: "America/New_York",
           repeat: { frequency: "DAILY", end: { type: "COUNT", count: 3 } },
@@ -374,7 +381,9 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       await following({ id: rowsBefore[0]?.id ?? 0, scheduledTime: "09:30" });
       // Then
       const rows = await rowsOf(seriesId);
-      expect(rows.map((row) => row.scheduledTime?.toISOString())).toEqual([
+      expect(
+        rows.map((row) => (row.scheduledTime == null ? undefined : toIsoString(row.scheduledTime))),
+      ).toEqual([
         "2027-03-13T14:30:00.000Z",
         "2027-03-14T13:30:00.000Z",
         "2027-03-15T13:30:00.000Z",
@@ -481,7 +490,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         repeatWeekdays: ["MON"],
       });
       const rows = await rowsOf(seriesId);
-      expect(rows.every((row) => row.startDate.getUTCDay() === 1)).toBe(true);
+      expect(rows.every((row) => row.startDate.dayOfWeek === 1)).toBe(true);
     });
 
     it("규칙이 그대로면 체크리스트만 바꾸고 나누지 않으며 이미 있는 회차의 진행을 보존한다", async () => {
@@ -562,7 +571,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           ...omit(TodoFixture.create({ userId, categoryId: target?.id ?? 0, sortOrder: index }), [
             "id",
           ]),
-          startDate: AT,
+          startDate: plainDateFromDate(AT),
         })),
       );
       // When
@@ -618,10 +627,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("반복이 아니면 TODO_0844다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "단일",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         timezone: "UTC",
       });
       // When
@@ -702,10 +711,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         .values(omit(TodoCategoryFixture.create({ userId: other.id, sortOrder: 0 }), ["id"]))
         .returning();
       const otherTodos = await context.module.get(CreateTodoUseCase).execute({
-        userId: other.id,
-        categoryId: otherCategory?.id ?? 0,
+        userId: UserId.reconstitute(other.id),
+        categoryId: TodoCategoryId.reconstitute(otherCategory?.id ?? 0),
         title: "남의 반복",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         timezone: "UTC",
         repeat: { frequency: "DAILY", end: { type: "COUNT", count: 2 } },
       });
@@ -741,10 +750,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       async (scope) => {
         // Given
         const { todos } = await context.module.get(CreateTodoUseCase).execute({
-          userId,
-          categoryId,
+          userId: UserId.reconstitute(userId),
+          categoryId: TodoCategoryId.reconstitute(categoryId),
           title: "단일",
-          startDate: AT,
+          startDate: plainDateFromDate(AT),
           timezone: "UTC",
         });
         // When
@@ -923,7 +932,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // Then
         const rows = await rowsOf(laterSeriesId);
         expect(rows[0]?.scheduledTime).toEqual(
-          parseLocalDateTime(dateOf(rows[0]?.startDate) ?? "", "10:00", "Asia/Seoul"),
+          wallClockInstant(dateOf(rows[0]?.startDate) ?? "", "10:00", "Asia/Seoul"),
         );
         expect(await seriesRow(laterSeriesId)).toMatchObject({
           scheduledLocalTime: "10:00",
@@ -1056,9 +1065,9 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           title: "앞 구간의 완료 회차",
           seriesId,
           occurrenceDate: sameDate,
-          startDate: sameDate ?? AT,
+          startDate: sameDate ?? plainDateFromDate(AT),
           completed: true,
-          completedAt: AT,
+          completedAt: instantFromDate(AT),
         });
         // When
         const edited = await following({ id: earlier[1]?.id ?? 0, repeat: WEEKLY_MON });
@@ -1119,7 +1128,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
             ...omit(TodoFixture.create({ userId, categoryId, sortOrder: index }), ["id"]),
             seriesId: groupId,
             occurrenceDate: null,
-            startDate: new Date(`${date}T00:00:00.000Z`),
+            startDate: Temporal.PlainDate.from(date),
           })),
         )
         .returning();
@@ -1172,10 +1181,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("그 할 일을 첫 회차로 삼아 id·댓글을 유지하고 체크리스트를 템플릿으로 쓴다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         scheduledTime: "09:00",
         timezone: "Asia/Seoul",
         items: [{ title: "준비물" }],
@@ -1213,10 +1222,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("시작일이 규칙에 맞지 않으면 다음 맞는 날로 옮긴다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         timezone: "UTC",
       });
       // When
@@ -1237,10 +1246,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("첫 회차가 옮겨지면 옛 시각의 예약을 지우고 새 날짜로 다시 잡는다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         scheduledTime: "09:00",
         timezone: "UTC",
       });
@@ -1269,10 +1278,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("전환과 함께 시간을 바꿔도 옮겨진 첫 회차의 예약이 옛 시각으로 덮이지 않는다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "전환",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         scheduledTime: "09:00",
         timezone: "UTC",
       });
@@ -1302,10 +1311,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("규칙 상한에 걸리면 함께 보낸 제목도 저장되지 않는다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "원래 제목",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         timezone: "UTC",
       });
       const todoId = todos[0]?.id ?? 0;
@@ -1344,10 +1353,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("아주 오래된 단일 할 일을 매일 반복으로 바꾸면 지난 회차가 너무 많아 TODO_0845다", async () => {
       // Given
       const { todos } = await context.module.get(CreateTodoUseCase).execute({
-        userId,
-        categoryId,
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(categoryId),
         title: "오래된 할 일",
-        startDate: new Date("2000-01-01T00:00:00.000Z"),
+        startDate: Temporal.PlainDate.from("2000-01-01"),
         timezone: "UTC",
       });
       // When
@@ -1415,7 +1424,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         const release = Promise.withResolvers<void>();
         const holder = client.transaction(async (tx) => {
           await tx.execute(
-            sql`SELECT pg_advisory_xact_lock(hashtextextended(${MutationLockKeys.todoSortOrder(userId)}, 0))`,
+            sql`SELECT pg_advisory_xact_lock(hashtextextended(${TodoLockKeys.sortOrder(userId)}, 0))`,
           );
           held.resolve();
           await release.promise;
