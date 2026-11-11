@@ -79,7 +79,7 @@ import { NotificationBadgeService } from '@src/features/notification/services/no
 import { PushRegistrationService } from '@src/features/notification/services/push-registration.service';
 import { createPushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
 import { createPushOnboardingGuardStore } from '@src/features/notification/stores/push-onboarding-guard.store';
-import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
 import { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { FriendService } from '@src/features/social/friend/apis/friend.service';
@@ -340,7 +340,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     subTodoApi: new SubTodoApi(authHttpClient),
     todoApi: new TodoApi(authHttpClient),
     todoCommentService: new TodoCommentService(authHttpClient),
-    todoCategoryService: new TodoCategoryService(authHttpClient),
+    todoCategoryApi: new TodoCategoryApi(authHttpClient),
     notificationApi: new NotificationApi({ httpClient: authHttpClient, publicHttpClient }),
     notificationBadgeService: new NotificationBadgeService({
       badgeGateway: pushNotification,

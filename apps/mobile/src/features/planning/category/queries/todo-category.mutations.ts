@@ -1,4 +1,4 @@
-import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { useTodoCategoryApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
@@ -47,7 +47,7 @@ import { TODO_CATEGORY_MUTATION_KEYS } from './todo-category-mutation-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 
 export function useCreateTodoCategoryMutationOptions() {
-  const todoCategoryService = useTodoCategoryService();
+  const todoCategoryApi = useTodoCategoryApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -57,7 +57,7 @@ export function useCreateTodoCategoryMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes(),
     mutationFn: async (input: TodoCategoryFormValues) =>
-      unwrap(await todoCategoryService.createCategory(input)),
+      unwrap(await todoCategoryApi.createCategory(input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
 
@@ -122,7 +122,7 @@ interface UpdateTodoCategoryVariables {
 }
 
 export function useUpdateTodoCategoryMutationOptions() {
-  const todoCategoryService = useTodoCategoryService();
+  const todoCategoryApi = useTodoCategoryApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -131,7 +131,7 @@ export function useUpdateTodoCategoryMutationOptions() {
     networkMode: 'always',
     mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes(),
     mutationFn: async ({ id, input }: UpdateTodoCategoryVariables) =>
-      unwrap(await todoCategoryService.updateCategory(id, input)),
+      unwrap(await todoCategoryApi.updateCategory(id, input)),
     onMutate: async ({ id, input }) => {
       await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
 
@@ -220,7 +220,7 @@ function getCategoryDeletedMessage(
 }
 
 export function useDeleteTodoCategoryMutationOptions() {
-  const todoCategoryService = useTodoCategoryService();
+  const todoCategoryApi = useTodoCategoryApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -229,7 +229,7 @@ export function useDeleteTodoCategoryMutationOptions() {
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 시트를 그대로 두고 알린다
     networkMode: 'always',
     mutationFn: async ({ id, deletion }: DeleteTodoCategoryVariables) =>
-      unwrap(await todoCategoryService.deleteCategory(id, deletion)),
+      unwrap(await todoCategoryApi.deleteCategory(id, deletion)),
     // 되돌릴 수 없는 삭제라 목록에서 미리 빼지 않고, 결과 안내에 쓸 이름만 지우기 전 목록에서 잡아 둔다
     onMutate: () => ({
       categories: queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
@@ -265,7 +265,7 @@ interface ReorderTodoCategoryVariables {
 }
 
 export function useReorderTodoCategoryMutationOptions() {
-  const todoCategoryService = useTodoCategoryService();
+  const todoCategoryApi = useTodoCategoryApi();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
 
@@ -273,7 +273,7 @@ export function useReorderTodoCategoryMutationOptions() {
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
     networkMode: 'always',
     mutationFn: async ({ id, input }: ReorderTodoCategoryVariables) =>
-      unwrap(await todoCategoryService.reorderCategory(id, input)),
+      unwrap(await todoCategoryApi.reorderCategory(id, input)),
     onSuccess: () => {
       invalidateWidgetSummary(queryClient);
       trackEvent('category_reordered', { source: 'settings' });

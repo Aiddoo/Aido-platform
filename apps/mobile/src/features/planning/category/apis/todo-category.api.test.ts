@@ -8,17 +8,17 @@ import {
   createTodoCategoryListDto,
   INVALID_DTO,
 } from '../__tests__/todo-category.fixtures';
-import { TodoCategoryService } from './todo-category.service';
+import { TodoCategoryApi } from './todo-category.api';
 
 const EMPTY_DELETION = { todoHandling: null, moveToCategoryId: null };
 
 function createSut() {
   const httpClient = createHttpClientStub();
 
-  return { httpClient, service: new TodoCategoryService(httpClient) };
+  return { httpClient, service: new TodoCategoryApi(httpClient) };
 }
 
-describe('TodoCategoryService', () => {
+describe('TodoCategoryApi', () => {
   describe('getCategories', () => {
     it('응답을 받으면 TodoCategoriesResult를 반환한다', async () => {
       // Given

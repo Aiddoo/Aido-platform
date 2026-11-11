@@ -1,4 +1,4 @@
-import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { useTodoCategoryApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { queryOptions } from '@tanstack/react-query';
@@ -6,11 +6,11 @@ import { queryOptions } from '@tanstack/react-query';
 import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 
 export function useGetTodoCategoriesQueryOptions() {
-  const todoCategoryService = useTodoCategoryService();
+  const todoCategoryApi = useTodoCategoryApi();
 
   return queryOptions({
     queryKey: TODO_CATEGORY_QUERY_KEYS.list(),
-    queryFn: async ({ signal }) => unwrap(await todoCategoryService.getCategories(signal)),
+    queryFn: async ({ signal }) => unwrap(await todoCategoryApi.getCategories(signal)),
     ...PERSISTED_QUERY_OPTIONS,
   });
 }
@@ -20,7 +20,7 @@ export function useGetTodoCategoryDeletionPreviewQueryOptions({
 }: {
   categoryId: number;
 }) {
-  const todoCategoryService = useTodoCategoryService();
+  const todoCategoryApi = useTodoCategoryApi();
 
   return queryOptions({
     queryKey: TODO_CATEGORY_QUERY_KEYS.deletionPreview({ categoryId }),
@@ -28,6 +28,6 @@ export function useGetTodoCategoryDeletionPreviewQueryOptions({
     networkMode: 'always',
     retry: false,
     queryFn: async ({ signal }) =>
-      unwrap(await todoCategoryService.getDeletionPreview(categoryId, signal)),
+      unwrap(await todoCategoryApi.getDeletionPreview(categoryId, signal)),
   });
 }

@@ -303,8 +303,6 @@ ignore:
   - apps/mobile/src/features/identity/user/apis/user.service.ts
   - apps/mobile/src/features/insights/achievement/apis/achievement.service.ts
   - apps/mobile/src/features/insights/report/apis/report.service.ts
-  - apps/mobile/src/features/planning/category/apis/todo-category.service.test.ts
-  - apps/mobile/src/features/planning/category/apis/todo-category.service.ts
   - apps/mobile/src/features/social/friend/apis/friend.service.test.ts
   - apps/mobile/src/features/social/friend/apis/friend.service.ts
   - apps/mobile/src/features/social/invite/apis/invite-share.service.test.ts

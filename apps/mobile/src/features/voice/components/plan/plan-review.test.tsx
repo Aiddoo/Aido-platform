@@ -3,7 +3,7 @@ import '@src/shared/i18n/init';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
-import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
@@ -128,7 +128,7 @@ async function renderPlan(
         httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        todoCategoryService: new TodoCategoryService(createHttpClientStub()),
+        todoCategoryApi: new TodoCategoryApi(createHttpClientStub()),
         preferenceService: new PreferenceService(createHttpClientStub()),
       },
       queryClient,

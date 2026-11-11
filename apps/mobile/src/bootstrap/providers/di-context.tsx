@@ -42,7 +42,7 @@ import type { NotificationBadgeService } from '@src/features/notification/servic
 import type { PushRegistrationService } from '@src/features/notification/services/push-registration.service';
 import type { PushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
 import type { PushOnboardingGuardStore } from '@src/features/notification/stores/push-onboarding-guard.store';
-import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
+import type { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
 import type { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import type { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import type { FriendService } from '@src/features/social/friend/apis/friend.service';
@@ -110,7 +110,7 @@ export interface DIContainer extends SharedDependencies {
   subTodoApi: SubTodoApi;
   todoApi: TodoApi;
   todoCommentService: TodoCommentService;
-  todoCategoryService: TodoCategoryService;
+  todoCategoryApi: TodoCategoryApi;
   notificationApi: NotificationApi;
   notificationBadgeService: NotificationBadgeService;
   /** 눌린 푸시 응답 슬롯 */
@@ -290,8 +290,8 @@ export function useTodoApi() {
 export function useTodoCommentService() {
   return useDI().todoCommentService;
 }
-export function useTodoCategoryService() {
-  return useDI().todoCategoryService;
+export function useTodoCategoryApi() {
+  return useDI().todoCategoryApi;
 }
 export function useNotificationBadgeService() {
   return useDI().notificationBadgeService;

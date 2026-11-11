@@ -23,7 +23,7 @@ import {
   toTodoCategoryWithCounts,
 } from './todo-category.mapper';
 
-export class TodoCategoryService {
+export class TodoCategoryApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -35,7 +35,7 @@ export class TodoCategoryService {
       await this.#httpClient.get('v1/todo-categories', { signal }),
       todoCategoryListResponseSchema,
       (dto) => ({ categories: toTodoCategoryWithCounts(dto.items) }),
-      '[TodoCategoryService] Invalid getCategories response',
+      '[TodoCategoryApi] Invalid getCategories response',
     );
 
   createCategory = async (input: TodoCategoryFormValues) =>
@@ -43,7 +43,7 @@ export class TodoCategoryService {
       await this.#httpClient.post('v1/todo-categories', input),
       createTodoCategoryResponseSchema,
       (dto) => toTodoCategory(dto.category),
-      '[TodoCategoryService] Invalid createCategory response',
+      '[TodoCategoryApi] Invalid createCategory response',
     );
 
   updateCategory = async (id: number, input: TodoCategoryChange) =>
@@ -51,7 +51,7 @@ export class TodoCategoryService {
       await this.#httpClient.patch(`v1/todo-categories/${id}`, input),
       updateTodoCategoryResponseSchema,
       (dto) => toTodoCategory(dto.category),
-      '[TodoCategoryService] Invalid updateCategory response',
+      '[TodoCategoryApi] Invalid updateCategory response',
     );
 
   getDeletionPreview = async (id: number, signal?: AbortSignal) =>
@@ -59,7 +59,7 @@ export class TodoCategoryService {
       await this.#httpClient.get(`v1/todo-categories/${id}/deletion-preview`, { signal }),
       todoCategoryDeletionPreviewSchema,
       toTodoCategoryDeletionPreview,
-      '[TodoCategoryService] Invalid getDeletionPreview response',
+      '[TodoCategoryApi] Invalid getDeletionPreview response',
     );
 
   deleteCategory = async (id: number, deletion: TodoCategoryDeletionRequest) =>
@@ -69,7 +69,7 @@ export class TodoCategoryService {
       }),
       deleteTodoCategoryEnvelopeSchema,
       (dto) => toTodoCategoryDeletionResult(dto.result),
-      '[TodoCategoryService] Invalid deleteCategory response',
+      '[TodoCategoryApi] Invalid deleteCategory response',
     );
 
   reorderCategory = async (id: number, input: TodoCategoryReorder) =>
@@ -77,6 +77,6 @@ export class TodoCategoryService {
       await this.#httpClient.patch(`v1/todo-categories/${id}/reorder`, input),
       reorderTodoCategoryResponseSchema,
       (dto) => toTodoCategory(dto.category),
-      '[TodoCategoryService] Invalid reorderCategory response',
+      '[TodoCategoryApi] Invalid reorderCategory response',
     );
 }
