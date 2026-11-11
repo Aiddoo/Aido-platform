@@ -1,6 +1,7 @@
 import type { UserPreferenceRepositoryPort } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
 import type { StreakState } from "#api/modules/identity/preferences/domain/streak.vo";
 import type { UserPreferenceRecord } from "#api/modules/identity/preferences/domain/user-preference.constants";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   USER_SETTINGS_FIXTURE_OTHER_USER_ID,
   USER_SETTINGS_FIXTURE_USER_ID,
@@ -34,7 +35,7 @@ const INITIAL_STREAK: StreakState = { currentStreak: 0, longestStreak: 0, lastCo
 const SAVED_STREAK: StreakState = {
   currentStreak: 2,
   longestStreak: 5,
-  lastCompletedDate: new Date("2026-11-09T00:00:00.000Z"),
+  lastCompletedDate: Temporal.PlainDate.from("2026-11-09"),
 };
 
 export function describeUserPreferenceRepositoryContract(
@@ -46,8 +47,8 @@ export function describeUserPreferenceRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const record = await repository.findByUserId(USER_ID);
-      const streak = await repository.findStreakByUserId(USER_ID);
+      const record = await repository.findByUserId(UserId.reconstitute(USER_ID));
+      const streak = await repository.findStreakByUserId(UserId.reconstitute(USER_ID));
 
       // Then
       expect({ record, streak }).toEqual({ record: null, streak: null });
@@ -58,8 +59,8 @@ export function describeUserPreferenceRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const created = await repository.create(USER_ID);
-      const found = await repository.findByUserId(USER_ID);
+      const created = await repository.create(UserId.reconstitute(USER_ID));
+      const found = await repository.findByUserId(UserId.reconstitute(USER_ID));
 
       // Then
       expect(created).toMatchObject(COLUMN_DEFAULTS);
@@ -78,10 +79,10 @@ export function describeUserPreferenceRepositoryContract(
       } as const;
 
       // When
-      await repository.create(USER_ID, data);
+      await repository.create(UserId.reconstitute(USER_ID), data);
 
       // Then
-      expect(await repository.findByUserId(USER_ID)).toMatchObject({
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject({
         ...COLUMN_DEFAULTS,
         ...data,
       });
@@ -90,14 +91,16 @@ export function describeUserPreferenceRepositoryContract(
     it("이미 설정이 있는 사용자에게 다시 만들면 실패한다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID);
+      await repository.create(UserId.reconstitute(USER_ID));
 
       // When
-      const duplicated = repository.create(USER_ID, { timezone: "Asia/Seoul" });
+      const duplicated = repository.create(UserId.reconstitute(USER_ID), {
+        timezone: "Asia/Seoul",
+      });
 
       // Then
       await expect(duplicated).rejects.toThrow();
-      expect((await repository.findByUserId(USER_ID))?.timezone).toBe("UTC");
+      expect((await repository.findByUserId(UserId.reconstitute(USER_ID)))?.timezone).toBe("UTC");
     });
 
     it("upsert는 설정이 없으면 기본값 위에 준 값으로 만든다", async () => {
@@ -105,7 +108,7 @@ export function describeUserPreferenceRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const written = await repository.upsert(USER_ID, {
+      const written = await repository.upsert(UserId.reconstitute(USER_ID), {
         nightPushEnabled: false,
         morningReminderHour: 9,
         weatherEveningEnabled: false,
@@ -119,17 +122,24 @@ export function describeUserPreferenceRepositoryContract(
         weatherEveningEnabled: false,
       };
       expect(written).toMatchObject(expected);
-      expect(await repository.findByUserId(USER_ID)).toMatchObject(expected);
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject(expected);
     });
 
     it("upsert는 준 값(false·0 포함)만 바꾸고 undefined·빠진 값과 연속 완료는 둔다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { timezone: "Asia/Seoul", weatherMorningMinute: 17 });
-      await repository.updateStreakIfUnchanged(USER_ID, INITIAL_STREAK, SAVED_STREAK);
+      await repository.create(UserId.reconstitute(USER_ID), {
+        timezone: "Asia/Seoul",
+        weatherMorningMinute: 17,
+      });
+      await repository.updateStreakIfUnchanged(
+        UserId.reconstitute(USER_ID),
+        INITIAL_STREAK,
+        SAVED_STREAK,
+      );
 
       // When
-      const written = await repository.upsert(USER_ID, {
+      const written = await repository.upsert(UserId.reconstitute(USER_ID), {
         pushEnabled: false,
         weatherMorningHour: 0,
         weatherMorningMinute: undefined,
@@ -146,16 +156,16 @@ export function describeUserPreferenceRepositoryContract(
         weatherMorningMinute: 17,
       };
       expect(written).toMatchObject(expected);
-      expect(await repository.findByUserId(USER_ID)).toMatchObject(expected);
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject(expected);
     });
 
     it("upsert에 바꿀 값이 없으면 기존 설정을 그대로 돌려준다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { timezone: "Europe/Paris" });
+      await repository.create(UserId.reconstitute(USER_ID), { timezone: "Europe/Paris" });
 
       // When
-      const written = await repository.upsert(USER_ID, {});
+      const written = await repository.upsert(UserId.reconstitute(USER_ID), {});
 
       // Then
       expect(written).toMatchObject({ ...COLUMN_DEFAULTS, timezone: "Europe/Paris" });
@@ -164,12 +174,19 @@ export function describeUserPreferenceRepositoryContract(
     it("여러 사용자 조회는 설정이 있는 사용자만 userId와 함께 주고 빈 목록이면 빈 배열이다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID, { timezone: "Asia/Seoul" });
-      await repository.create(OTHER_USER_ID, { timezone: "America/New_York" });
+      await repository.create(UserId.reconstitute(USER_ID), { timezone: "Asia/Seoul" });
+      await repository.create(UserId.reconstitute(OTHER_USER_ID), { timezone: "America/New_York" });
 
       // When
-      const found = await repository.findByUserIds([OTHER_USER_ID, "missing-user", OTHER_USER_ID]);
-      const both = await repository.findByUserIds([USER_ID, OTHER_USER_ID]);
+      const found = await repository.findByUserIds([
+        UserId.reconstitute(OTHER_USER_ID),
+        UserId.reconstitute("missing-user"),
+        UserId.reconstitute(OTHER_USER_ID),
+      ]);
+      const both = await repository.findByUserIds([
+        UserId.reconstitute(USER_ID),
+        UserId.reconstitute(OTHER_USER_ID),
+      ]);
       const none = await repository.findByUserIds([]);
 
       // Then
@@ -188,9 +205,12 @@ export function describeUserPreferenceRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const created = await repository.upsertTimezone(USER_ID, "Asia/Seoul");
-      const unchanged = await repository.upsertTimezone(USER_ID, "Asia/Seoul");
-      const changed = await repository.upsertTimezone(USER_ID, "America/New_York");
+      const created = await repository.upsertTimezone(UserId.reconstitute(USER_ID), "Asia/Seoul");
+      const unchanged = await repository.upsertTimezone(UserId.reconstitute(USER_ID), "Asia/Seoul");
+      const changed = await repository.upsertTimezone(
+        UserId.reconstitute(USER_ID),
+        "America/New_York",
+      );
 
       // Then
       expect({ created, unchanged, changed }).toEqual({
@@ -198,7 +218,7 @@ export function describeUserPreferenceRepositoryContract(
         unchanged: false,
         changed: true,
       });
-      expect(await repository.findByUserId(USER_ID)).toMatchObject({
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject({
         ...COLUMN_DEFAULTS,
         timezone: "America/New_York",
       });
@@ -209,11 +229,20 @@ export function describeUserPreferenceRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const missing = await repository.refreshTimezoneIfChanged(USER_ID, "Asia/Seoul");
-      const created = await repository.findByUserId(USER_ID);
-      await repository.create(USER_ID, { timezone: "Asia/Seoul" });
-      const unchanged = await repository.refreshTimezoneIfChanged(USER_ID, "Asia/Seoul");
-      const changed = await repository.refreshTimezoneIfChanged(USER_ID, "Europe/London");
+      const missing = await repository.refreshTimezoneIfChanged(
+        UserId.reconstitute(USER_ID),
+        "Asia/Seoul",
+      );
+      const created = await repository.findByUserId(UserId.reconstitute(USER_ID));
+      await repository.create(UserId.reconstitute(USER_ID), { timezone: "Asia/Seoul" });
+      const unchanged = await repository.refreshTimezoneIfChanged(
+        UserId.reconstitute(USER_ID),
+        "Asia/Seoul",
+      );
+      const changed = await repository.refreshTimezoneIfChanged(
+        UserId.reconstitute(USER_ID),
+        "Europe/London",
+      );
 
       // Then
       expect({ missing, created, unchanged, changed }).toEqual({
@@ -222,24 +251,29 @@ export function describeUserPreferenceRepositoryContract(
         unchanged: 0,
         changed: 1,
       });
-      expect((await repository.findByUserId(USER_ID))?.timezone).toBe("Europe/London");
+      expect((await repository.findByUserId(UserId.reconstitute(USER_ID)))?.timezone).toBe(
+        "Europe/London",
+      );
     });
 
     it("upsertLocale은 설정이 없으면 기본값으로 만들고 있으면 언어만 바꾼다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(OTHER_USER_ID, { timezone: "Asia/Tokyo", pushEnabled: false });
+      await repository.create(UserId.reconstitute(OTHER_USER_ID), {
+        timezone: "Asia/Tokyo",
+        pushEnabled: false,
+      });
 
       // When
-      await repository.upsertLocale(USER_ID, "en");
-      await repository.upsertLocale(OTHER_USER_ID, "en-US");
+      await repository.upsertLocale(UserId.reconstitute(USER_ID), "en");
+      await repository.upsertLocale(UserId.reconstitute(OTHER_USER_ID), "en-US");
 
       // Then
-      expect(await repository.findByUserId(USER_ID)).toMatchObject({
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject({
         ...COLUMN_DEFAULTS,
         locale: "en",
       });
-      expect(await repository.findByUserId(OTHER_USER_ID)).toMatchObject({
+      expect(await repository.findByUserId(UserId.reconstitute(OTHER_USER_ID))).toMatchObject({
         ...COLUMN_DEFAULTS,
         timezone: "Asia/Tokyo",
         pushEnabled: false,
@@ -250,46 +284,60 @@ export function describeUserPreferenceRepositoryContract(
     it("연속 완료는 기대한 상태와 같을 때만 바꾸고 Aggregate로 다시 읽는다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID);
+      await repository.create(UserId.reconstitute(USER_ID));
       const next = {
         currentStreak: 3,
         longestStreak: 5,
-        lastCompletedDate: new Date("2026-11-10T00:00:00.000Z"),
+        lastCompletedDate: Temporal.PlainDate.from("2026-11-10"),
       };
 
       // When
-      const first = await repository.updateStreakIfUnchanged(USER_ID, INITIAL_STREAK, SAVED_STREAK);
-      const stale = await repository.updateStreakIfUnchanged(USER_ID, INITIAL_STREAK, next);
-      const advanced = await repository.updateStreakIfUnchanged(USER_ID, SAVED_STREAK, next);
-      const streak = await repository.findStreakByUserId(USER_ID);
+      const first = await repository.updateStreakIfUnchanged(
+        UserId.reconstitute(USER_ID),
+        INITIAL_STREAK,
+        SAVED_STREAK,
+      );
+      const stale = await repository.updateStreakIfUnchanged(
+        UserId.reconstitute(USER_ID),
+        INITIAL_STREAK,
+        next,
+      );
+      const advanced = await repository.updateStreakIfUnchanged(
+        UserId.reconstitute(USER_ID),
+        SAVED_STREAK,
+        next,
+      );
+      const streak = await repository.findStreakByUserId(UserId.reconstitute(USER_ID));
 
       // Then
       expect({ first, stale, advanced }).toEqual({ first: true, stale: false, advanced: true });
       expect(streak?.streakState).toEqual(next);
-      expect(await repository.findByUserId(USER_ID)).toMatchObject(next);
+      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject(next);
     });
 
     it("연속 완료 CAS는 마지막 완료일이 비어 있는지도 비교하고 설정이 없으면 false다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(USER_ID);
+      await repository.create(UserId.reconstitute(USER_ID));
 
       // When
       const mismatchedDate = await repository.updateStreakIfUnchanged(
-        USER_ID,
+        UserId.reconstitute(USER_ID),
         { ...INITIAL_STREAK, lastCompletedDate: SAVED_STREAK.lastCompletedDate },
         SAVED_STREAK,
       );
       const missing = await repository.updateStreakIfUnchanged(
-        OTHER_USER_ID,
+        UserId.reconstitute(OTHER_USER_ID),
         INITIAL_STREAK,
         SAVED_STREAK,
       );
 
       // Then
       expect({ mismatchedDate, missing }).toEqual({ mismatchedDate: false, missing: false });
-      expect((await repository.findStreakByUserId(USER_ID))?.streakState).toEqual(INITIAL_STREAK);
-      expect(await repository.findByUserId(OTHER_USER_ID)).toBeNull();
+      expect(
+        (await repository.findStreakByUserId(UserId.reconstitute(USER_ID)))?.streakState,
+      ).toEqual(INITIAL_STREAK);
+      expect(await repository.findByUserId(UserId.reconstitute(OTHER_USER_ID))).toBeNull();
     });
   });
 }

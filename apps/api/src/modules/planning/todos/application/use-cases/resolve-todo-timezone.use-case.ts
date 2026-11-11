@@ -1,9 +1,9 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   normalizeIanaTimezone,
   resolveWallClockTimezone,
-} from "#api/shared/domain/date/utils/timezone";
+} from "#api/shared/domain/time/time-zone-name";
 
-import {} from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoOwnerTimezonePort } from "../ports/todo-owner-timezone.port.js";
 
 interface TodoTimezoneResolverDependencies {
@@ -26,6 +26,8 @@ export class ResolveTodoTimezoneUseCase {
     if (timezone != null) {
       return timezone;
     }
-    return resolveWallClockTimezone(await this.#dependencies.ownerTimezone.findTimezone(userId));
+    return resolveWallClockTimezone(
+      await this.#dependencies.ownerTimezone.findTimezone(UserId.reconstitute(userId)),
+    );
   }
 }

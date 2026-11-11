@@ -1,5 +1,5 @@
 import { createInvite } from '../__tests__/invite.fixtures';
-import { InvitePolicy } from './invite.model';
+import { InvitePolicy, isOneTimeMilestone } from './invite.model';
 
 describe('isOneTimeMilestone', () => {
   it('반복 간격이 없는 단계면 true를 반환한다', () => {
@@ -7,7 +7,7 @@ describe('isOneTimeMilestone', () => {
     const milestone = { repeatEvery: null };
 
     // When
-    const result = InvitePolicy.isOneTimeMilestone(milestone);
+    const result = isOneTimeMilestone(milestone);
 
     // Then
     expect(result).toBe(true);
@@ -18,7 +18,7 @@ describe('isOneTimeMilestone', () => {
     const milestone = { repeatEvery: 1 };
 
     // When
-    const result = InvitePolicy.isOneTimeMilestone(milestone);
+    const result = isOneTimeMilestone(milestone);
 
     // Then
     expect(result).toBe(false);

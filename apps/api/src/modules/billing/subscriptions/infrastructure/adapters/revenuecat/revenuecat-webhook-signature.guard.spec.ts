@@ -1,41 +1,21 @@
-/**
- * RevenueCatWebhookSignatureGuard 가드 단위 테스트
- *
- * @description
- * RevenueCatWebhookSignatureGuard의 인가 로직을 격리 테스트합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test webhook-signature.guard
- * ```
- */
 import { Logger } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { createMockExecutionContext } from "#test/mocks/index";
 
+import { billingSubscriptionsConfig } from "../../../billing-subscriptions.config.js";
 import { RevenueCatWebhookSignatureGuard } from "./revenuecat-webhook-signature.guard.js";
 
-/** 가드가 참조하는 config 필드만 담은 스텁 형태 */
-interface GuardConfigStub {
-  revenuecat: { webhookSecret: string };
-  isProduction?: boolean;
+function guardFor(
+  env: Readonly<Record<string, string | undefined>>,
+): RevenueCatWebhookSignatureGuard {
+  return new RevenueCatWebhookSignatureGuard(billingSubscriptionsConfig.parse(env));
 }
 
-/**
- * TypedConfigService 부분 스텁으로 가드 인스턴스를 생성한다.
- * (useValue는 any이므로 부분 객체를 캐스트 없이 주입할 수 있다)
- */
-let moduleRef: TestingModule | undefined;
-
-async function createGuard(config: GuardConfigStub): Promise<RevenueCatWebhookSignatureGuard> {
-  moduleRef = await Test.createTestingModule({
-    providers: [RevenueCatWebhookSignatureGuard, { provide: TypedConfigService, useValue: config }],
-  }).compile();
-
-  return moduleRef.get(RevenueCatWebhookSignatureGuard);
+function requestWith(authorization?: string) {
+  return createMockExecutionContext({
+    headers: authorization == null ? {} : { authorization },
+  }).context;
 }
 
 describe("RevenueCatWebhookSignatureGuard — 가드", () => {
@@ -43,79 +23,73 @@ describe("RevenueCatWebhookSignatureGuard — 가드", () => {
     vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
     vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
   });
-  afterEach(async () => {
-    await moduleRef?.close();
-    moduleRef = undefined;
-  });
-  describe("webhook secret이 설정된 경우", () => {
-    let guard: RevenueCatWebhookSignatureGuard;
 
-    beforeEach(async () => {
-      guard = await createGuard({
-        revenuecat: { webhookSecret: "test-secret" },
-      });
+  describe("webhook secret이 설정된 운영", () => {
+    const guard = guardFor({
+      NODE_ENV: "production",
+      APP_ENV: "production",
+      REVENUECAT_WEBHOOK_SECRET: "test-secret",
     });
 
-    it("올바른 Authorization 헤더 → 통과 (true)", () => {
-      const { context } = createMockExecutionContext({
-        headers: { authorization: "Bearer test-secret" },
-      });
+    it("Bearer를 붙인 올바른 Authorization은 통과한다", () => {
+      // When
+      const allowed = guard.canActivate(requestWith("Bearer test-secret"));
 
-      expect(guard.canActivate(context)).toBe(true);
+      // Then
+      expect(allowed).toBe(true);
     });
 
-    it("Authorization 헤더 없음 → ApplicationException", () => {
-      const { context } = createMockExecutionContext({ headers: {} });
+    it("Bearer 없이 보낸 올바른 값도 통과한다", () => {
+      // When
+      const allowed = guard.canActivate(requestWith("test-secret"));
 
-      expect(() => guard.canActivate(context)).toThrow(ApplicationException);
+      // Then
+      expect(allowed).toBe(true);
     });
 
-    it("잘못된 값 → ApplicationException", () => {
-      const { context } = createMockExecutionContext({
-        headers: { authorization: "Bearer wrong-secret" },
-      });
+    it.each([
+      { name: "Authorization 없음", authorization: undefined },
+      { name: "다른 값", authorization: "Bearer wrong-secret" },
+      { name: "길이가 다른 값", authorization: "Bearer short" },
+    ])("$name은 거절한다", ({ authorization }) => {
+      // When
+      const check = () => guard.canActivate(requestWith(authorization));
 
-      expect(() => guard.canActivate(context)).toThrow(ApplicationException);
-    });
-
-    it("길이가 다른 토큰 → 거부", () => {
-      const { context } = createMockExecutionContext({
-        headers: { authorization: "Bearer short" },
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(ApplicationException);
-    });
-
-    it("Bearer prefix 없는 raw 값 → 통과 (true)", () => {
-      const { context } = createMockExecutionContext({
-        headers: { authorization: "test-secret" },
-      });
-
-      expect(guard.canActivate(context)).toBe(true);
+      // Then
+      expect(check).toThrow(ApplicationException);
     });
   });
 
-  describe("webhook secret이 미설정된 경우 (개발 환경)", () => {
-    it("secret 미설정 → 통과 (true)", async () => {
-      const guard = await createGuard({
-        revenuecat: { webhookSecret: "" },
-        isProduction: false,
-      });
-      const { context } = createMockExecutionContext({ headers: {} });
+  it.each([
+    { name: "로컬 개발", env: { NODE_ENV: "development" } },
+    { name: "배포된 개발서버", env: { NODE_ENV: "production", APP_ENV: "development" } },
+  ])("$name은 secret이 없으면 검증을 건너뛰고 통과시킨다", ({ env }) => {
+    // Given
+    const guard = guardFor(env);
 
-      expect(guard.canActivate(context)).toBe(true);
-    });
+    // When
+    const allowed = guard.canActivate(requestWith());
+
+    // Then
+    expect(allowed).toBe(true);
   });
 
-  describe("webhook secret이 미설정된 경우 (프로덕션 환경)", () => {
-    it("프로덕션 + secret 미설정 → ApplicationException", async () => {
-      const guard = await createGuard({
-        revenuecat: { webhookSecret: "" },
-        isProduction: true,
-      });
-      const { context } = createMockExecutionContext({ headers: {} });
+  it.each([
+    { name: "스테이징", env: { NODE_ENV: "production", APP_ENV: "staging" } },
+    { name: "운영", env: { NODE_ENV: "production", APP_ENV: "production" } },
+    { name: "APP_ENV 없는 운영", env: { NODE_ENV: "production" } },
+    {
+      name: "빈 문자열 secret의 운영",
+      env: { NODE_ENV: "production", APP_ENV: "production", REVENUECAT_WEBHOOK_SECRET: "" },
+    },
+  ])("$name은 secret이 없으면 Authorization을 보내도 모두 거절한다", ({ env }) => {
+    // Given
+    const guard = guardFor(env);
 
-      expect(() => guard.canActivate(context)).toThrow(ApplicationException);
-    });
+    // When
+    const check = () => guard.canActivate(requestWith("Bearer anything"));
+
+    // Then
+    expect(check).toThrow(ApplicationException);
   });
 });

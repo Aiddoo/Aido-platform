@@ -72,7 +72,7 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
     });
     expect(await savedSchedule()).toEqual({
       ...before,
-      scheduledTime: new Date("2026-05-15T03:30:00.000Z"),
+      scheduledTime: Temporal.Instant.from("2026-05-15T03:30:00.000Z"),
     });
   });
 
@@ -85,7 +85,9 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
       startDate: "2026-05-15",
       scheduledTime: "2026-05-15T03:30:00.000Z",
     });
-    expect((await savedSchedule())?.scheduledTime).toEqual(new Date("2026-05-15T03:30:00.000Z"));
+    expect((await savedSchedule())?.scheduledTime).toEqual(
+      Temporal.Instant.from("2026-05-15T03:30:00.000Z"),
+    );
   });
 
   it("새 날짜와 시간이 함께 오면 새 DATE의 로컬 시간으로 변환한다", async () => {
@@ -97,8 +99,8 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
       scheduledTime: "2026-05-16T03:30:00.000Z",
     });
     expect(await savedSchedule()).toMatchObject({
-      startDate: new Date("2026-05-16T00:00:00.000Z"),
-      scheduledTime: new Date("2026-05-16T03:30:00.000Z"),
+      startDate: Temporal.PlainDate.from("2026-05-16"),
+      scheduledTime: Temporal.Instant.from("2026-05-16T03:30:00.000Z"),
     });
   });
 
@@ -129,6 +131,6 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
       startDate: "2026-05-15",
       scheduledTime: expected,
     });
-    expect((await savedSchedule())?.scheduledTime).toEqual(new Date(expected));
+    expect((await savedSchedule())?.scheduledTime).toEqual(Temporal.Instant.from(expected));
   });
 });

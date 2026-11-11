@@ -29,6 +29,7 @@ const dayPatternItemSchema = z.object({
   completed: z.int().nonnegative(),
   rate: z.number().min(0).max(100),
 });
+type DayPatternItem = z.infer<typeof dayPatternItemSchema>;
 
 const timePatternItemSchema = z.object({
   hour: z.int().min(0).max(23),
@@ -41,7 +42,6 @@ export const aiReportSchema = z.object({
   type: reportTypeSchema,
   year: z.number(),
   period: z.number(),
-  periodLabel: z.string(),
   dateRange: z.object({ startDate: z.iso.date(), endDate: z.iso.date() }),
   stats: reportStatsSchema,
   categoryBreakdown: z.array(categoryBreakdownItemSchema),
@@ -61,10 +61,9 @@ export const reportStatusSchema = z.object({
 export type ReportStatus = z.infer<typeof reportStatusSchema>;
 
 // 지난 기간 완료율이 없으면(첫 리포트) 비교할 값이 없다
-export function getCompletionRateChange(
-  stats: Pick<AiReport['stats'], 'completionRate' | 'prevCompletionRate'>,
-): number | null {
-  return stats.prevCompletionRate != null ? stats.completionRate - stats.prevCompletionRate : null;
+export function getCompletionRateChange(report: AiReport): number | null {
+  const { completionRate, prevCompletionRate } = report.stats;
+  return prevCompletionRate != null ? completionRate - prevCompletionRate : null;
 }
 
 type CompletionLevel = 'high' | 'medium' | 'low';
@@ -73,9 +72,7 @@ const HIGH_COMPLETION_RATE = 80;
 const MEDIUM_COMPLETION_RATE = 50;
 
 // 요일 완료율 80% 이상은 높음, 50% 이상은 보통
-export function getCompletionLevel(
-  dayPattern: Pick<AiReport['dayPatterns'][number], 'rate'>,
-): CompletionLevel {
+export function getCompletionLevel(dayPattern: DayPatternItem): CompletionLevel {
   if (dayPattern.rate >= HIGH_COMPLETION_RATE) {
     return 'high';
   }
@@ -85,10 +82,7 @@ export function getCompletionLevel(
   return 'low';
 }
 
-export function getMostActiveHours(
-  report: Pick<AiReport, 'timePatterns'>,
-  limit: number,
-): TimePatternItem[] {
+export function getMostActiveHours(report: AiReport, limit: number): TimePatternItem[] {
   return orderBy(report.timePatterns, ['count'], ['desc']).slice(0, limit);
 }
 
@@ -103,5 +97,8 @@ export const ReportPolicy = {
   getCompletionRateChange,
   getCompletionLevel,
   getMostActiveHours,
+} as const;
+
+export const ReportStatusPolicy = {
   getDaysUntilReport,
 } as const;

@@ -1,7 +1,6 @@
 import type { Provider } from "@nestjs/common";
 import { getHttpClientToken } from "@nestjs/http-client";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -19,11 +18,12 @@ import { ResolveAdminNoticeUserUseCase } from "./application/use-cases/resolve-a
 import { SendAdminNotificationUseCase } from "./application/use-cases/send-admin-notification.use-case.js";
 import { AdminEventNotifierAdapter } from "./infrastructure/adapters/admin-event-notifier.adapter.js";
 import { AdminNotificationQueueAdapter } from "./infrastructure/adapters/admin-notification-queue.adapter.js";
-import { createAdminNotifier } from "./infrastructure/adapters/admin-notifier-selection.adapter.js";
+import { selectAdminNotifier } from "./infrastructure/adapters/admin-notifier-selection.adapter.js";
 import { AdminNotificationProcessor } from "./infrastructure/jobs/admin-notification.processor.js";
 import { DailySignupSummaryScheduler } from "./infrastructure/jobs/daily-signup-summary.scheduler.js";
 import { DrizzleAdminNoticeUserReader } from "./infrastructure/persistence/drizzle-admin-notice-user.reader.js";
 import { DrizzleSignupStatsReader } from "./infrastructure/persistence/drizzle-signup-stats.reader.js";
+import { operationsAdminNoticesConfig } from "./operations-admin-notices.config.js";
 
 export const DISCORD_HTTP_CLIENT_NAME = "discord";
 
@@ -31,11 +31,12 @@ export const OPERATIONS_ADMIN_NOTICES_PROVIDERS = [
   { provide: AdminNotificationQueuePort, useClass: AdminNotificationQueueAdapter },
   { provide: SignupStatsReaderPort, useClass: DrizzleSignupStatsReader },
   { provide: AdminNoticeUserReaderPort, useClass: DrizzleAdminNoticeUserReader },
+  // ADMIN_NOTIFIER_PROVIDER(비우면 배포 환경 기본값)로 어댑터를 고른다
   {
     provide: AdminNotifierPort,
-    useFactory: createAdminNotifier,
+    useFactory: selectAdminNotifier,
     inject: [
-      TypedConfigService,
+      operationsAdminNoticesConfig.KEY,
       getHttpClientToken(DISCORD_HTTP_CLIENT_NAME),
       OutboundPolicyRegistry,
     ],

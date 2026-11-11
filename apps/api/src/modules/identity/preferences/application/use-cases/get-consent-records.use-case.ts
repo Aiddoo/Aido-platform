@@ -1,3 +1,5 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type {
   UserConsentRepositoryPort,
   UserConsentRecordWithId,
@@ -19,6 +21,8 @@ export class GetConsentRecordsUseCase {
   }
 
   execute(input: GetConsentRecordsQuery): Promise<UserConsentRecordWithId[]> {
-    return this.#dependencies.consentRepository.findByUserIds(input.userIds);
+    return this.#dependencies.consentRepository.findByUserIds(
+      input.userIds.map((userId) => UserId.reconstitute(userId)),
+    );
   }
 }

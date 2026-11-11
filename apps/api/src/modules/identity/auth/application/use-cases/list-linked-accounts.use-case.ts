@@ -1,5 +1,7 @@
 import { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 
 export interface ListLinkedAccountsQuery {
@@ -29,7 +31,7 @@ export class ListLinkedAccountsUseCase {
 
   async execute(input: ListLinkedAccountsQuery): Promise<ListLinkedAccountsResult> {
     const identityAccounts = await this.#dependencies.accountRepository.findIdentityAccounts(
-      input.userId,
+      UserId.reconstitute(input.userId),
     );
     const accountsByProvider = new Map(
       identityAccounts.accounts.map((account) => [account.provider, account]),

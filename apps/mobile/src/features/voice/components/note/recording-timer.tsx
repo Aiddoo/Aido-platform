@@ -75,8 +75,7 @@ export function RecordingTimer({
             strokeWidth={ring.strokeWidth}
             strokeLinecap="round"
             strokeDasharray={[progress * ring.circumference, ring.circumference]}
-            rotation={RING_START_ANGLE}
-            origin={`${center}, ${center}`}
+            transform={`rotate(${RING_START_ANGLE} ${center} ${center})`}
             testID="recording-timer-progress"
           />
         )}

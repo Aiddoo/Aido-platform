@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { and, eq, exists, gt, isNull, lte, notExists, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
-import { validStoreEntitlementCondition } from "#api/modules/access/access-entitlement-sql.public";
+import { validStoreEntitlementCondition } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";

@@ -6,6 +6,7 @@ export const IDENTITY_CACHE_TTL_MS = { SESSION: 30_000, USER_PROFILE: 5 * 60_000
 export const IdentityCacheKey = {
   session: (sessionId: string) => cacheKey("auth", "session", sessionId),
   userProfile: (userId: string) => cacheKey("auth", "user-profile", userId),
+  userProfileGeneration: (userId: string) => cacheKey("auth", "user-profile-generation", userId),
 } as const;
 
 /**

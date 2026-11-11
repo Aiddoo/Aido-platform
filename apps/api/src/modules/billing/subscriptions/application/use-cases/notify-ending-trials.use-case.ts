@@ -14,7 +14,7 @@ import type {
 import type { TrialEndingNotifierPort } from "../ports/trial-ending-notifier.port.js";
 import { SubscriptionLogEvent } from "../subscriptions.log-events.js";
 
-export const TRIAL_ENDING_NOTICE = {
+const TRIAL_ENDING_NOTICE = {
   noticeDays: PREMIUM_TRIAL_ENDING_NOTICE_DAYS,
   isNoticeable: (notice) =>
     isBillingNoticeable(notice.startedAt, notice.expiresAt, PREMIUM_TRIAL_ENDING_NOTICE_DAYS),

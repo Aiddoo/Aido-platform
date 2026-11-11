@@ -1,18 +1,13 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/notification-delivery-jobs.public";
+import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
 import { BROADCAST_DELIVERY_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-delivery.queue";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { user as userTable, userPreference } from "#api/platform/database/schema/index";
-import {
-  JOB_RUNTIME,
-  JobQueuePort,
-  type QueueDefinition,
-} from "#api/shared/application/ports/index";
+import { JobQueuePort, type QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -21,7 +16,7 @@ describe("관리자 E2E", () => {
 
   beforeAll(async () => {
     ctx = await createE2eApp();
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -139,29 +134,15 @@ describe("관리자 E2E", () => {
       force: true,
     };
 
-    function jobRuntime(): FakeJobRuntime {
-      return ctx.module.get<FakeJobRuntime>(JOB_RUNTIME);
-    }
-
     function jobQueue(): InMemoryJobQueue {
       return ctx.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
     }
 
-    // 분배·현지 시각 발송 작업은 새 큐 포트(메모리)에서, 푸시 발송 작업은 옛 런타임에서 돌린다
+    // 분배·현지 시각 발송·푸시 발송 작업을 모두 새 큐 포트(메모리)에서 돌린다
     async function runQueued(queue: QueueDefinition<object>): Promise<number> {
       const count = jobQueue().jobsIn(queue).length;
       await jobQueue().drain(queue);
       return count;
-    }
-
-    async function runEnqueued(queue: string): Promise<number> {
-      const runtime = jobRuntime();
-      const jobs = runtime.enqueueCalls.filter((call) => call.queue === queue);
-      runtime.enqueueCalls.splice(0, runtime.enqueueCalls.length);
-      for (const job of jobs) {
-        await runtime.run(queue, job.data);
-      }
-      return jobs.length;
     }
 
     async function registerRecipient(email: string, deviceId: string, acceptLanguage = "ko-KR") {
@@ -180,7 +161,6 @@ describe("관리자 E2E", () => {
       const admin = await createAdminUser("admin-campaign@example.com", "Test1234!");
       await registerRecipient("campaign-recipient-1@example.com", "ios_device-one");
       await registerRecipient("campaign-recipient-2@example.com", "android_device-two");
-      jobRuntime().enqueueCalls.splice(0);
       jobQueue().clear();
 
       // When
@@ -194,7 +174,7 @@ describe("관리자 E2E", () => {
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .expect(200);
       expect(await runQueued(BROADCAST_FAN_OUT_QUEUE)).toBe(1);
-      await runEnqueued(PUSH_DELIVERY_QUEUE);
+      await runQueued(PUSH_DELIVERY_QUEUE);
       const delivered = await request(ctx.app.getHttpServer())
         .get(`/v2/admin/notifications/broadcasts/${accepted.body.data.campaignId}`)
         .set("Authorization", `Bearer ${admin.accessToken}`)
@@ -218,7 +198,6 @@ describe("관리자 E2E", () => {
       // Given
       const admin = await createAdminUser("admin-replay@example.com", "Test1234!");
       await registerRecipient("replay-recipient@example.com", "ios_device-replay");
-      jobRuntime().enqueueCalls.splice(0);
       jobQueue().clear();
       const send = () =>
         request(ctx.app.getHttpServer())

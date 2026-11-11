@@ -8,7 +8,7 @@ import type {
 import type { NoticeEndReason, NoticeStore } from "./admin-notice.read-model.js";
 
 // 관리자 알림이 구독 이벤트에서 읽는 값이다. billing이 같은 모양으로 넘기고, billing의 값이 늘면 호출 쪽 컴파일이 가리킨다
-export const SUBSCRIPTION_ALERT_KINDS = [
+const SUBSCRIPTION_ALERT_KINDS = [
   "STARTED",
   "RENEWED",
   "CANCELLED",
@@ -23,7 +23,7 @@ export const SUBSCRIPTION_ALERT_KINDS = [
 
 export type SubscriptionAlertKind = (typeof SUBSCRIPTION_ALERT_KINDS)[number];
 
-export const SUBSCRIPTION_ALERT_LIFECYCLES = [
+const SUBSCRIPTION_ALERT_LIFECYCLES = [
   "trial_started",
   "trial_cancelled",
   "trial_converted",

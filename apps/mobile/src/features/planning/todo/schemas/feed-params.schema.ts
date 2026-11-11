@@ -8,7 +8,8 @@ export const feedParamsSchema = z.object({
     .union([dateSchema, z.literal('today')])
     .optional()
     .catch(undefined),
-  action: z.literal('add-todo').optional().catch(undefined),
+  /** 다른 화면·위젯이 피드에 보낸 할 일 추가 요청. `add-voice-todo`는 시트를 열자마자 듣기를 시작한다 */
+  action: z.enum(['add-todo', 'add-voice-todo']).optional().catch(undefined),
   friendId: userIdParamSchema.shape.userId.optional().catch(undefined),
   todoId: routeIdSchema.optional().catch(undefined),
   sort: z.enum(TODO_COMMENT_SORT).catch(TODO_COMMENT_SORT.LATEST),

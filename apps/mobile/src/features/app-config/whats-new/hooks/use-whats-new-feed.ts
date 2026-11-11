@@ -1,78 +1,44 @@
-import { useApplicationMetadata, useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
-import { useGetFeatureCampaignConfigQueryOptions } from '@src/features/app-config/feature-campaign/queries/feature-campaign.queries';
-import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
 import { getNowInstant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
-import { RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
+import { useWhatsNewAutoOpen } from './use-whats-new-auto-open';
 
 interface WhatsNewFeedInput {
   isStable: boolean;
-  isInviteAvailable: boolean;
+  /** 가입 직후 안내(알림 화면)를 열 차례가 아니라고 정해졌다. 정해지기 전에 열면 그 화면과 겹치거나 순서가 바뀐다 */
+  isOnboardingSettled: boolean;
 }
 
-/** 업데이트한 기존 사용자에게 서버가 켠 캠페인을 첫 피드에서 한 번 자동으로 열고, 피드 카드로 다시 열게 한다 */
-export function useWhatsNewFeed({ isStable, isInviteAvailable }: WhatsNewFeedInput) {
-  const status = useAuthStatus();
-  const isAuthenticated = status === 'authenticated';
-  const { data: config } = useQuery({
-    ...useGetFeatureCampaignConfigQueryOptions(),
-    enabled: isAuthenticated,
-  });
-  const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
-  const applicationMetadata = useApplicationMetadata();
-  const appVersion = useMemo(
-    () => applicationMetadata.getInstallation()?.currentVersion,
-    [applicationMetadata],
-  );
+/** 서버가 켠 캠페인을 첫 피드에서 계정마다 한 번 자동으로 열고(새 계정 포함), 피드 카드로 다시 열게 한다 */
+export function useWhatsNewFeed({ isStable, isOnboardingSettled }: WhatsNewFeedInput) {
+  const { identity, release, shouldAutoOpen } = useWhatsNewAutoOpen({ isOnboardingSettled });
   const repository = useWhatsNewRepository();
   const now = useMinuteNow();
   const push = useSingleTap(router.push);
 
-  const campaignRelease = config?.enabled
-    ? WhatsNewPolicy.findReleaseByCampaign(RELEASES, config.campaignId)
-    : null;
-  const release =
-    campaignRelease != null && WhatsNewPolicy.canViewRelease(campaignRelease, { isInviteAvailable })
-      ? campaignRelease
-      : null;
-  const accountId = user?.id;
-  const identity = useMemo(
-    () =>
-      accountId != null && release != null
-        ? { userId: accountId, campaignId: release.campaignId }
-        : null,
-    [accountId, release],
+  const reentryOpenedAt = useSyncExternalStore(
+    useCallback(
+      (onChange: () => void) =>
+        identity == null ? noop : repository.subscribe(identity, onChange),
+      [identity, repository],
+    ),
+    () => (identity == null ? null : repository.findReentryOpenedAt(identity)),
   );
-  const subscribe = useCallback(
-    (onChange: () => void) => (identity == null ? noop : repository.subscribe(identity, onChange)),
-    [identity, repository],
-  );
-  const hasSeen = useSyncExternalStore(subscribe, () =>
-    identity == null ? false : repository.hasSeen(identity),
-  );
-  const reentryOpenedAt = useSyncExternalStore(subscribe, () =>
-    identity == null ? null : repository.findReentryOpenedAt(identity),
-  );
-  const shouldAutoOpen =
-    isAuthenticated &&
-    identity != null &&
-    WhatsNewPolicy.shouldAutoOpen({
-      config,
-      user,
-      appVersion,
-      hasSeen,
-    });
 
   useEffect(() => {
-    if (!shouldAutoOpen || !isStable || identity == null || release == null) {
+    if (
+      !shouldAutoOpen ||
+      !isStable ||
+      !isOnboardingSettled ||
+      identity == null ||
+      release == null
+    ) {
       return;
     }
 
@@ -83,7 +49,7 @@ export function useWhatsNewFeed({ isStable, isInviteAvailable }: WhatsNewFeedInp
     });
 
     return () => cancelIdleCallback(task);
-  }, [shouldAutoOpen, identity, isStable, push, release, repository]);
+  }, [shouldAutoOpen, identity, isStable, isOnboardingSettled, push, release, repository]);
 
   const isReentryVisible =
     identity != null && WhatsNewPolicy.shouldShowReentry(reentryOpenedAt, now);

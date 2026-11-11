@@ -76,7 +76,7 @@ export class PurchasesGatewayError extends Error {
 export type PurchasesConfigureResult = 'configured' | 'missing-api-key';
 
 export interface PurchasesGateway {
-  /** 초기화에 실패하면 throw한다 */
+  /** SDK는 프로세스에 하나라 한 번만 초기화하고, 다시 부르면 처음 결과를 돌려준다. 초기화에 실패하면 throw하고 다음 호출이 다시 한다 */
   configure(): PurchasesConfigureResult;
   logIn(userId: string): Promise<void>;
   /** 로그인하지 않은 상태면 아무것도 하지 않는다 */

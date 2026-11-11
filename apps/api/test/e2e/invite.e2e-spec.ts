@@ -7,7 +7,7 @@ import {
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
-import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
+import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { inviteRedemption } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -21,7 +21,7 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
     beforeAll(async () => {
       ctx = await createE2eApp({
         customizeBuilder: (builder) =>
-          builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: true }),
+          builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
       });
     }, 60_000);
 
@@ -139,19 +139,19 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
           ctx.helpers.createVerifiedUser(`invite-filter-${suffix}@test.com`, PASSWORD),
         ),
       );
-      const sameJoinedAt = new Date("2026-10-20T00:00:00.000Z");
+      const sameJoinedAt = Temporal.Instant.from("2026-10-20T00:00:00.000Z");
       const rows = [
         { invitee: invitees[0], status: "JOINED", joinedAt: sameJoinedAt },
         { invitee: invitees[1], status: "JOINED", joinedAt: sameJoinedAt },
         {
           invitee: invitees[2],
           status: "QUALIFIED",
-          joinedAt: new Date("2026-10-21T00:00:00.000Z"),
+          joinedAt: Temporal.Instant.from("2026-10-21T00:00:00.000Z"),
         },
         {
           invitee: invitees[3],
           status: "REJECTED",
-          joinedAt: new Date("2026-10-19T00:00:00.000Z"),
+          joinedAt: Temporal.Instant.from("2026-10-19T00:00:00.000Z"),
         },
       ] as const;
       await ctx.testDatabase
@@ -166,7 +166,8 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
             joinedAt: row.joinedAt,
             qualifiedAt: row.status === "QUALIFIED" ? row.joinedAt : null,
             rejectionReason: row.status === "REJECTED" ? ("EXPIRED" as const) : null,
-            expiresAt: new Date("2026-11-03T00:00:00.000Z"),
+            expiresAt: Temporal.Instant.from("2026-11-03T00:00:00.000Z"),
+            updatedAt: Temporal.Instant.from("2026-11-03T00:00:00.000Z"),
           })),
         );
       const list = (query: string) =>
@@ -210,7 +211,7 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
     beforeAll(async () => {
       ctx = await createE2eApp({
         customizeBuilder: (builder) =>
-          builder.overrideProvider(INVITE_CONFIG).useValue({ isEnabled: false }),
+          builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: false }),
       });
     }, 60_000);
 

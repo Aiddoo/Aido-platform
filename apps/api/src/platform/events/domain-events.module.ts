@@ -1,27 +1,20 @@
 import { Global, Module } from "@nestjs/common";
 import { DiscoveryModule } from "@nestjs/core";
 
-import {
-  DOMAIN_EVENT_PUBLISHER,
-  DomainEventPublisherPort,
-} from "#api/shared/application/ports/index";
+import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 
-import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.publisher.js";
 import { eventSubscriptionCatalogProvider } from "./event-subscription.catalog.js";
 import { FanOutDomainEventPublisher } from "./fan-out-domain-event.publisher.js";
 
-// 구독은 slice module이 provideEventSubscriptions로 선언하고, 옛 @OnEvent 구독과 EventEmitterModule.forRoot()는 app.module이 배선한다
+// 구독은 slice module이 provideEventSubscriptions로 선언하고, after-commit 전달 채널(EventEmitterModule.forRoot())은 app.module이 배선한다
 @Global()
 @Module({
   imports: [DiscoveryModule],
   providers: [
-    EventEmitterDomainEventPublisher,
     eventSubscriptionCatalogProvider,
     FanOutDomainEventPublisher,
-    { provide: DOMAIN_EVENT_PUBLISHER, useExisting: FanOutDomainEventPublisher },
-    // 옛 Symbol 토큰을 쓰는 Context가 모두 옮겨질 때까지 같은 인스턴스의 별칭이다
-    { provide: DomainEventPublisherPort, useExisting: DOMAIN_EVENT_PUBLISHER },
+    { provide: DomainEventPublisherPort, useExisting: FanOutDomainEventPublisher },
   ],
-  exports: [DOMAIN_EVENT_PUBLISHER, DomainEventPublisherPort, FanOutDomainEventPublisher],
+  exports: [DomainEventPublisherPort, FanOutDomainEventPublisher],
 })
 export class DomainEventsModule {}

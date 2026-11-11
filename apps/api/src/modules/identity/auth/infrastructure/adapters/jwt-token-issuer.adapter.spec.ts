@@ -1,6 +1,8 @@
 import { JwtService } from "@nestjs/jwt";
 
+import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
 import { JwtTokenIssuerAdapter } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { decodeJwtSegment } from "#test/fixtures/jwt-token.fixture";
 
 describe("JwtTokenIssuerAdapter — 서명 알고리즘 고정", () => {
@@ -22,7 +24,12 @@ describe("JwtTokenIssuerAdapter — 서명 알고리즘 고정", () => {
     const userId = "user-id";
 
     // When
-    const pair = await service.generateTokenPair(userId, "test@example.com", "session-id", "USER");
+    const pair = await service.generateTokenPair(
+      UserId.reconstitute(userId),
+      "test@example.com",
+      SessionId.reconstitute("session-id"),
+      "USER",
+    );
 
     // Then
     for (const token of [pair.accessToken, pair.refreshToken]) {

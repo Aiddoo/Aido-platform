@@ -1,10 +1,14 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { StoreSubscriptionReconcileSchedulerPort } from "../../application/ports/store-subscription-reconcile-scheduler.port.js";
 import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
+import {
+  type BillingSubscriptionsConfig,
+  billingSubscriptionsConfig,
+} from "../../billing-subscriptions.config.js";
 import {
   reconcileWindowStart,
   STORE_SUBSCRIPTION_RECONCILE_JOB_NAME,
@@ -21,11 +25,11 @@ export class StoreSubscriptionReconcileScheduler
 {
   readonly #logger = new Logger(StoreSubscriptionReconcileScheduler.name);
   readonly #jobQueue: JobQueuePort;
-  readonly #config: Pick<TypedConfigService, "revenuecat">;
+  readonly #config: Pick<BillingSubscriptionsConfig, "revenuecat">;
 
   constructor(
     jobQueue: JobQueuePort,
-    @Inject(TypedConfigService) config: Pick<TypedConfigService, "revenuecat">,
+    @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
   ) {
     super();
     this.#jobQueue = jobQueue;
@@ -38,15 +42,15 @@ export class StoreSubscriptionReconcileScheduler
     }
   }
 
-  async schedule(userId: string, at: Temporal.Instant): Promise<void> {
+  async schedule(userId: UserId, at: Temporal.Instant): Promise<void> {
     if (!this.#isEnabled()) {
       return;
     }
     await this.#jobQueue.enqueue(
       STORE_SUBSCRIPTION_RECONCILE_QUEUE,
-      { name: STORE_SUBSCRIPTION_RECONCILE_JOB_NAME, data: { userId } },
+      { name: STORE_SUBSCRIPTION_RECONCILE_JOB_NAME, data: { userId: userId.value } },
       {
-        idempotencyKey: storeSubscriptionReconcileIdempotencyKey(userId, at),
+        idempotencyKey: storeSubscriptionReconcileIdempotencyKey(userId.value, at),
         startAfter: reconcileWindowStart(at).add({
           milliseconds: STORE_SUBSCRIPTION_RECONCILE_WINDOW_MS,
         }),

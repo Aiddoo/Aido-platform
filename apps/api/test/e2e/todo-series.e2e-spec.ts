@@ -9,9 +9,10 @@ import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
 import request from "supertest";
 
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { memo, todo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
+import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import {
@@ -40,10 +41,10 @@ describe("반복 할 일 생성 E2E", () => {
     fakeAiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -164,8 +165,9 @@ describe("반복 할 일 생성 E2E", () => {
             title: "시드",
             timezone: "UTC",
             repeatFrequency: "DAILY" as const,
-            startDate: new Date(),
-            nextOccurrenceDate: new Date(),
+            startDate: todayUtc(),
+            nextOccurrenceDate: todayUtc(),
+            updatedAt: nowInstant(),
           };
         }),
       );
@@ -247,7 +249,7 @@ describe("반복 할 일 생성 E2E", () => {
         where: { id: ids[2] },
       });
       expect(other?.title).toBe("함께");
-      expect(other?.startDate.toISOString().slice(0, 10)).not.toBe(moved);
+      expect(other?.startDate.toString()).not.toBe(moved);
     });
 
     it("단일 할 일에 repeat를 주면 반복으로 전환하고 null을 주면 끝낸다", async () => {
@@ -572,8 +574,9 @@ describe("반복 할 일 생성 E2E", () => {
               title: "시드",
               timezone: "UTC",
               repeatFrequency: "DAILY" as const,
-              startDate: new Date(),
-              nextOccurrenceDate: new Date(),
+              startDate: todayUtc(),
+              nextOccurrenceDate: todayUtc(),
+              updatedAt: nowInstant(),
             };
           }),
         );

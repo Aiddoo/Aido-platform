@@ -3,14 +3,15 @@ import { z } from "zod";
 
 import {
   AfterCommitTaskRegistryPort,
-  defineEventSubscription,
-  defineQueue,
   type AfterCommitTask,
+} from "#api/shared/application/ports/after-commit-task.registry.port";
+import {
+  defineEventSubscription,
   type PublishedDomainEvent,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/domain-event-publisher.port";
+import { defineQueue } from "#api/shared/application/ports/job-queue.port";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
-import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.publisher.js";
 import { EventSubscriptionCatalog } from "./event-subscription.catalog.js";
 import { FanOutDomainEventPublisher } from "./fan-out-domain-event.publisher.js";
 
@@ -56,7 +57,6 @@ function memoPinned(payload: Record<string, unknown>): PublishedDomainEvent {
 function createPublisher(jobQueue: InMemoryJobQueue) {
   const eventEmitter = new EventEmitter2();
   return new FanOutDomainEventPublisher(
-    new EventEmitterDomainEventPublisher(eventEmitter),
     new EventSubscriptionCatalog([ACTIVITY]),
     jobQueue,
     new RecordingAfterCommitTasks(),

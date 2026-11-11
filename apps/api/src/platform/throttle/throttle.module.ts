@@ -3,7 +3,7 @@ import type { ConfigType } from "@nestjs/config";
 import type { ThrottlerStorage } from "@nestjs/throttler";
 import type { Redis } from "ioredis";
 
-import { cacheConfig } from "../config/cache.config.js";
+import { cacheConfig, selectSharedRedis } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { RedisThrottlerStorage } from "./redis-throttler-storage.js";
 import { THROTTLER_STORAGE } from "./throttle.constants.js";
@@ -32,11 +32,8 @@ export class ThrottleModule {
         cache: ConfigType<typeof cacheConfig>,
         redis?: Redis,
       ): ThrottlerStorage | undefined => {
-        if (cache.type === "redis" && redis) {
-          return new RedisThrottlerStorage(redis);
-        }
-
-        return undefined;
+        const shared = selectSharedRedis(cache, redis);
+        return shared == null ? undefined : new RedisThrottlerStorage(shared);
       },
       inject: [cacheConfig.KEY, { token: REDIS_COMMAND_CLIENT, optional: true }],
     };

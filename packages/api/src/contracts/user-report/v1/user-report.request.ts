@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { entityIdSchemaWithMessage } from "../../../common/entity-id.js";
 import {
   USER_REPORT_LIMITS,
   USER_REPORT_REASONS,
@@ -36,9 +37,9 @@ export type UserReportFormInput = z.infer<typeof userReportFormSchema>;
 
 export const createUserReportSchema = z
   .object({
-    targetUserId: z
-      .cuid("유효하지 않은 사용자 ID입니다")
-      .describe("신고할 콘텐츠를 만든 사용자 ID (CUID 25자)"),
+    targetUserId: entityIdSchemaWithMessage("유효하지 않은 사용자 ID입니다").describe(
+      "신고할 콘텐츠를 만든 사용자 ID",
+    ),
     targetType: userReportTargetTypeSchema,
     targetId: z
       .string()
@@ -47,7 +48,7 @@ export const createUserReportSchema = z
       .max(USER_REPORT_LIMITS.MAX_TARGET_ID_LENGTH)
       .optional()
       .describe(
-        "신고할 콘텐츠 ID (할 일·콕·응원은 숫자 ID 문자열, 댓글은 CUID). PROFILE이면 보내지 않습니다",
+        "신고할 콘텐츠 ID (할 일·콕·응원은 숫자 ID 문자열, 댓글은 댓글 ID). PROFILE이면 보내지 않습니다",
       ),
     ...userReportFormSchema.shape,
   })
@@ -77,9 +78,9 @@ export const createUserReportSchema = z
 export type CreateUserReportInput = z.infer<typeof createUserReportSchema>;
 
 export const resolveUserReportParamSchema = z.object({
-  reportId: z
-    .cuid("유효하지 않은 신고 ID입니다")
-    .describe("처리할 신고 ID (CUID 25자, 신고 접수 이메일의 신고 ID)"),
+  reportId: entityIdSchemaWithMessage("유효하지 않은 신고 ID입니다").describe(
+    "처리할 신고 ID (신고 접수 이메일의 신고 ID)",
+  ),
 });
 
 export type ResolveUserReportParam = z.infer<typeof resolveUserReportParamSchema>;

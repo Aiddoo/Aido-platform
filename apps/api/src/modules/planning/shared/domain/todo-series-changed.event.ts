@@ -1,6 +1,6 @@
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-const TODO_SERIES_CHANGE_EVENT_NAMES = [
+export const TODO_SERIES_CHANGE_EVENT_NAMES = [
   "planning.todo-series.occurrences-created",
   "planning.todo-series.occurrences-changed",
 ] as const;

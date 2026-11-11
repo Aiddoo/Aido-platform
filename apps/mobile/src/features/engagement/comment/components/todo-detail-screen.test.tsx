@@ -1,6 +1,8 @@
 import '@src/shared/i18n/init';
+import { nudgeThanksPreviewResponseSchema } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
+import type { HttpClient } from '@src/core/ports/http-client';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import {
@@ -8,6 +10,8 @@ import {
   createTodoItemResponseDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import { updateCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
 import {
   createAnalyticsStub,
   createClipboardGatewayStub,
@@ -15,9 +19,9 @@ import {
   createPendingResponse,
   renderUi,
 } from '@src/shared/__tests__';
-import { NetworkError } from '@src/shared/errors/infra-error';
+import { NetworkError, ServerError } from '@src/shared/errors/infra-error';
 import { onlineManager } from '@tanstack/react-query';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
@@ -80,6 +84,8 @@ function createDetailsDto(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const THANKS_PREVIEW_PATH = `v1/nudges/todos/${TODO_ID}/thanks`;
+
 const FRIEND_DETAILS = {
   owner: { id: FRIEND_ID, name: '안드친구', userTag: 'FRIEND01', profileImage: null },
   permissions: { canEdit: false, canComment: true, canNudge: false },
@@ -111,6 +117,8 @@ interface RenderTodoDetailOptions {
   threadItems?: unknown[];
   listItems?: ReturnType<typeof createTodoDto>[];
   analytics?: ReturnType<typeof createAnalyticsStub>;
+  /** 고마움 현황 응답. 넘기면 콕 답장·감사를 켠 서버다 */
+  thanksPreview?: () => ReturnType<HttpClient['get']>;
 }
 
 async function renderTodoDetail({
@@ -118,9 +126,16 @@ async function renderTodoDetail({
   threadItems,
   listItems = [],
   analytics = createAnalyticsStub(),
+  thanksPreview,
 }: RenderTodoDetailOptions = {}) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async (path: string) => {
+    if (thanksPreview != null && path === 'v1/nudges/interactions/availability') {
+      return ok({ enabled: true });
+    }
+    if (thanksPreview != null && path === THANKS_PREVIEW_PATH) {
+      return thanksPreview();
+    }
     if (path === 'v1/auth/me') {
       return ok(createCurrentUserDto({ userId: USER_ID }));
     }
@@ -451,6 +466,29 @@ describe('할 일 상세 체크', () => {
     pending.settle();
   });
 
+  it('목록에서 막 더해 응답을 기다리는 하위 할 일은 체크할 수 없어 임시 id로 요청을 보내지 않는다', async () => {
+    // Given
+    const todo = createTodoDto({ id: TODO_ID, ...PRIVATE_TODO });
+    const { httpClient, queryClient } = await renderTodoDetail({ details: { todo } });
+    await act(async () => {
+      updateCachedTodo(queryClient, { date: todo.startDate, todoId: TODO_ID }, (cached) =>
+        SubTodoPolicy.withSubTodoAdded(cached, {
+          id: -1,
+          title: '스트레칭',
+          completed: false,
+          sortOrder: 0,
+        }),
+      );
+    });
+
+    // When
+    await fireEvent.press(await screen.findByTestId('todo-detail-sub-todo-checkbox--1'));
+
+    // Then
+    expect(screen.getByTestId('todo-detail-sub-todo-checkbox--1')).toBeDisabled();
+    expect(httpClient.patch).not.toHaveBeenCalled();
+  });
+
   it('친구 하위 할 일은 읽기 전용이다', async () => {
     // Given
     const item = createTodoItemResponseDto({ id: 7, title: '스트레칭' });
@@ -465,5 +503,114 @@ describe('할 일 상세 체크', () => {
 
     // Then
     expect(await screen.findByTestId('todo-detail-sub-todo-checkbox-7')).toBeDisabled();
+  });
+});
+
+describe('할 일 상세 고마움 현황', () => {
+  const THANKS_PREVIEW_DTO = nudgeThanksPreviewResponseSchema.parse({
+    todoId: TODO_ID,
+    throughNudgeId: 7,
+    recipients: [{ id: FRIEND_ID, userTag: 'FRIEND01', name: '안드친구', profileImage: null }],
+    totalRecipients: 1,
+    nextCursor: null,
+    hasNext: false,
+    thankedRecipientCount: 0,
+    lastThankedAt: null,
+  });
+
+  it('완료를 저장하는 동안에는 고마움 현황을 묻지 않고, 저장이 끝나면 받아 콕 찔러준 친구 카드를 보인다', async () => {
+    // Given
+    const { httpClient } = await renderTodoDetail({
+      details: { todo: createTodoDto({ id: TODO_ID, visibility: 'PUBLIC' }) },
+      thanksPreview: async () => ok(THANKS_PREVIEW_DTO),
+    });
+    const completion = createPendingResponse(
+      ok({ message: '완료', todo: createTodoDto({ id: TODO_ID, completed: true }) }),
+    );
+    httpClient.patch.mockReturnValue(completion.response);
+
+    // When
+    await fireEvent.press(await screen.findByTestId('todo-detail-checkbox'));
+    await waitFor(() =>
+      expect(httpClient.get).toHaveBeenCalledWith(
+        'v1/nudges/interactions/availability',
+        expect.anything(),
+      ),
+    );
+    await act(async () => {});
+
+    // Then
+    expect(screen.getByTestId('todo-detail-checkbox')).toBeChecked();
+    expect(httpClient.get).not.toHaveBeenCalledWith(THANKS_PREVIEW_PATH, expect.anything());
+
+    // When
+    completion.settle();
+
+    // Then
+    expect(await screen.findByText('콕 찔러준 친구 1명')).toBeOnTheScreen();
+    expect(httpClient.get).toHaveBeenCalledWith(THANKS_PREVIEW_PATH, expect.anything());
+  });
+
+  it('서버 장애는 같은 자리에 다시 시도를 보이고 누르면 다시 받아 카드를 보인다', async () => {
+    // Given
+    let attempts = 0;
+    await renderTodoDetail({
+      details: { todo: createTodoDto({ id: TODO_ID, visibility: 'PUBLIC', completed: true }) },
+      thanksPreview: async () => {
+        attempts += 1;
+        if (attempts === 1) {
+          throw new ServerError(503);
+        }
+        return ok(THANKS_PREVIEW_DTO);
+      },
+    });
+    expect(await screen.findByText('고마움 현황을 불러오지 못했어요')).toBeOnTheScreen();
+
+    // When
+    await fireEvent.press(screen.getByTestId('thanks-summary-retry'));
+
+    // Then
+    expect(await screen.findByText('콕 찔러준 친구 1명')).toBeOnTheScreen();
+  });
+});
+
+describe('댓글 하트 연타', () => {
+  function createLikeResponse(isLiked: boolean, likeCount: number) {
+    return createPendingResponse(ok({ commentId: COMMENT_ID, isLiked, likeCount }));
+  }
+
+  it('앞 응답이 뒤에 누른 하트를 덮지 않고 마지막 응답만 서버 수로 보인다', async () => {
+    // Given
+    const { httpClient } = await renderTodoDetail();
+    const firstLike = createLikeResponse(true, 1);
+    const unlike = createLikeResponse(false, 0);
+    // 그사이 다른 사람도 눌러 마지막 응답의 수는 2다
+    const secondLike = createLikeResponse(true, 2);
+    httpClient.put.mockReturnValueOnce(firstLike.response).mockReturnValueOnce(secondLike.response);
+    httpClient.delete.mockReturnValueOnce(unlike.response);
+    const heart = () => screen.getByTestId(`todo-comment-like-${COMMENT_ID}`);
+    await fireEvent.press(heart());
+    await waitFor(() => expect(heart()).toBeSelected());
+    await fireEvent.press(heart());
+    await waitFor(() => expect(heart()).not.toBeSelected());
+    await fireEvent.press(heart());
+    await waitFor(() => expect(heart()).toBeSelected());
+
+    // When
+    firstLike.settle();
+    await waitFor(() => expect(httpClient.delete).toHaveBeenCalledTimes(1));
+    unlike.settle();
+    await waitFor(() => expect(httpClient.put).toHaveBeenCalledTimes(2));
+
+    // Then
+    expect(heart()).toBeSelected();
+    expect(within(heart()).getByText('1')).toBeOnTheScreen();
+
+    // When
+    secondLike.settle();
+
+    // Then
+    await waitFor(() => expect(within(heart()).getByText('2')).toBeOnTheScreen());
+    expect(heart()).toBeSelected();
   });
 });

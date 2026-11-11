@@ -71,11 +71,13 @@ describe('AuthBootProvider', () => {
   let mountedProviders: Array<Awaited<ReturnType<typeof render>>>;
   let writeSnapshot: jest.Mock;
   let requestRefresh: jest.Mock<Promise<Response>, [string]>;
+  let requestPushRelease: jest.Mock<void, []>;
 
   beforeEach(() => {
     jest.useFakeTimers();
     writeSnapshot = jest.fn().mockResolvedValue(undefined);
     requestRefresh = jest.fn();
+    requestPushRelease = jest.fn();
     tokenStore = createMemoryTokenStore();
     errorReporter = createErrorReporterStub();
     analytics = createAnalyticsStub();
@@ -126,6 +128,7 @@ describe('AuthBootProvider', () => {
             voiceNotes: createVoiceNoteStorageFake().service,
             deviceTimezone: deviceTimezoneService,
             pendingRedemption: createPendingRedemptionRepository(createMemorySyncStorage()),
+            pushDevice: { requestRelease: requestPushRelease },
             logger: createLoggerStub(),
           }),
           sessionRevocationService: new SessionRevocationService({
@@ -259,6 +262,7 @@ describe('AuthBootProvider', () => {
         status: 'restored',
         value: { content: '작성 중' },
       });
+      expect(requestPushRelease).not.toHaveBeenCalled();
     });
 
     it('어떤 판정이든 토큰을 쓰거나 지우지 않는다', async () => {
@@ -606,6 +610,23 @@ describe('AuthBootProvider', () => {
       await expectStatus('unauthenticated');
       expect(deviceTimezoneService.record('user-1', NEW_YORK_TIMEZONE)).toBeNull();
     });
+
+    it.each(['refresh-rejected', 'tokens-missing'] as const)(
+      '세션이 만료되면(%s) 서버에 알리지 못한 이 기기의 푸시 등록 해제를 요청한다',
+      async (reason) => {
+        // Given
+        tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
+        await renderProvider();
+        await expectStatus('authenticated');
+
+        // When
+        await act(() => emitSessionExpired({ reason }));
+
+        // Then
+        await expectStatus('unauthenticated');
+        expect(requestPushRelease).toHaveBeenCalledTimes(1);
+      },
+    );
 
     it('세션이 만료되면 마지막 기기 시간대를 남겨 같은 사용자가 다시 로그인해도 변경을 알아챈다', async () => {
       // Given

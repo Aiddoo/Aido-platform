@@ -9,7 +9,7 @@ import { createPlanningTodoFixture } from "#test/fixtures/planning/planning-todo
 
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
-import { TodoSeriesAlertKey } from "../todo-series.alerts.js";
+import { TodoSeriesAlerts } from "../todo-series.alerts.js";
 import { MaterializeDueTodoSeriesUseCase } from "./materialize-due-todo-series.use-case.js";
 import { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
 import { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
@@ -87,7 +87,7 @@ describe("회차 채우기", () => {
       fixture.todoSeriesRepository,
     );
     vi.spyOn(fixture.todoSeriesRepository, "lockForUpdate").mockImplementation(async (id) => {
-      if (id === "series-1") {
+      if (id.value === "series-1") {
         throw new Error("저장 실패");
       }
       return lockForUpdate(id);
@@ -98,8 +98,7 @@ describe("회차 채우기", () => {
     expect(result).toMatchObject({ processedCount: 2, createdCount: 3, failedCount: 1 });
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: TodoSeriesAlertKey.MATERIALIZE_FAILED,
-        severity: "error",
+        key: TodoSeriesAlerts.MATERIALIZE_FAILED.key,
       }),
     ]);
   });
@@ -132,8 +131,8 @@ describe("회차 채우기", () => {
     // Given
     await seed("series-1");
     fixture.seriesOwner.activity = {
-      lastActiveAt: new Date("2026-09-05T00:00:00.000Z"),
-      signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
+      lastActiveAt: Temporal.Instant.from("2026-09-05T00:00:00.000Z"),
+      signedUpAt: Temporal.Instant.from("2026-01-01T00:00:00.000Z"),
       timezone: "Asia/Seoul",
     };
     // When
@@ -150,8 +149,8 @@ describe("회차 채우기", () => {
     // Given
     await seed("series-1");
     fixture.seriesOwner.activity = {
-      lastActiveAt: new Date("2026-09-05T00:00:00.000Z"),
-      signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
+      lastActiveAt: Temporal.Instant.from("2026-09-05T00:00:00.000Z"),
+      signedUpAt: Temporal.Instant.from("2026-01-01T00:00:00.000Z"),
       timezone: "Asia/Seoul",
     };
     fixture.seriesOwner.exemptUserIds.add(fixture.userId);
@@ -175,8 +174,8 @@ describe("회차 채우기", () => {
     // Given
     await seed("series-1");
     fixture.seriesOwner.activity = {
-      lastActiveAt: new Date("2026-09-06T00:00:00.000Z"),
-      signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
+      lastActiveAt: Temporal.Instant.from("2026-09-06T00:00:00.000Z"),
+      signedUpAt: Temporal.Instant.from("2026-01-01T00:00:00.000Z"),
       timezone: "Asia/Seoul",
     };
     // When

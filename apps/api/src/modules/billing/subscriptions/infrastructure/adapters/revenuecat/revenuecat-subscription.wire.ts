@@ -4,7 +4,7 @@ import { z } from "zod";
  * RevenueCat REST v2 Subscription 중 대조에 쓰는 칸. 나머지 칸은 버린다.
  * @see https://www.revenuecat.com/docs/api-v2/subscription-data-model
  */
-export const revenueCatSubscriptionSchema = z.object({
+const revenueCatSubscriptionSchema = z.object({
   id: z.string().min(1),
   product_id: z.string().min(1).nullable(),
   current_period_ends_at: z.number().int().nullable(),

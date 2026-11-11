@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { dateSchema, timeOfDaySchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { SUPPORTED_LOCALES } from "../../../vocabulary/locale.constants.js";
 import { broadcastNotificationSchema } from "../v1/admin.request.js";
 
@@ -52,7 +53,7 @@ export const createBroadcastCampaignSchema = broadcastNotificationSchema
 export type CreateBroadcastCampaignInput = z.infer<typeof createBroadcastCampaignSchema>;
 
 export const broadcastCampaignIdParamSchema = z.object({
-  campaignId: z.cuid().describe("브로드캐스트 캠페인 ID"),
+  campaignId: entityIdSchema.describe("브로드캐스트 캠페인 ID"),
 });
 
 export type BroadcastCampaignIdParam = z.infer<typeof broadcastCampaignIdParamSchema>;

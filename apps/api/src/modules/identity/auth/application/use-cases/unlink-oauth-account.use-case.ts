@@ -5,7 +5,8 @@ import {
   type AccountProvider,
 } from "#api/modules/identity/auth/domain/auth.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
@@ -40,7 +41,8 @@ export class UnlinkOAuthAccountUseCase {
   }
 
   async execute(input: UnlinkOAuthAccountCommand): Promise<{ message: string }> {
-    const { userId, provider, metadata } = input;
+    const { provider, metadata } = input;
+    const userId = UserId.reconstitute(input.userId);
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.userRepository.findByIdForUpdate(userId);
       const accounts = await this.#dependencies.accountRepository.findIdentityAccounts(userId);
@@ -57,7 +59,7 @@ export class UnlinkOAuthAccountUseCase {
     await this.#dependencies.cacheService.invalidateUserProfile(userId);
     this.#dependencies.logger.log({
       event: AuthLogEvent.OAUTH_ACCOUNT_UNLINKED,
-      userId,
+      userId: input.userId,
       provider,
     });
     return { message: "계정 연결이 해제되었습니다." };

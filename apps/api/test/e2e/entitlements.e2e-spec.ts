@@ -1,10 +1,11 @@
-import { entitlementSnapshotSchema } from "@aido/api";
+import { currentUserSchema, entitlementSnapshotSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG, PLAN_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { user } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -51,6 +52,15 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
       .send({ name, color: "#00FF00" });
   }
 
+  async function me(accessToken: string) {
+    const response = await request(context.app.getHttpServer())
+      .get("/v1/auth/me")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("X-Timezone", "Asia/Seoul")
+      .expect(200);
+    return currentUserSchema.parse(response.body.data);
+  }
+
   async function updateUser(userId: string, values: Partial<typeof user.$inferInsert>) {
     await context.testDatabase.getClient().update(user).set(values).where(eq(user.id, userId));
   }
@@ -58,7 +68,7 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
   it("FREE 사용자는 모든 기능의 무료 한도와 이번 달·오늘 사용량을 받는다", async () => {
     // Given
     const free = await context.helpers.createVerifiedUser("ent-free@test.com", "Test1234!");
-    await updateUser(free.userId, { aiUsageCount: 4, aiUsageResetAt: AT });
+    await updateUser(free.userId, { aiUsageCount: 4, aiUsageResetAt: instantFromDate(AT) });
 
     // When
     const snapshot = await entitlements(free.accessToken);
@@ -166,22 +176,49 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
     expect(snapshot.features.AI_REPORT).toMatchObject({ allowed: true });
   });
 
-  it("ADMIN은 모든 기능을 쓸 수 있고 횟수 한도가 정말 무제한(null)이다", async () => {
+  it("ADMIN은 주체 표시만 ADMIN이고 /v1/entitlements·/me.entitlements 모두 프리미엄과 같은 한도를 받는다", async () => {
     // Given
     const admin = await context.helpers.createVerifiedUser("ent-admin@test.com", "Test1234!");
-    await updateUser(admin.userId, { role: "ADMIN" });
+    await updateUser(admin.userId, {
+      role: "ADMIN",
+      aiUsageCount: 7,
+      aiUsageResetAt: instantFromDate(AT),
+    });
+    const premium = await context.helpers.createVerifiedUser(
+      "ent-admin-peer@test.com",
+      "Test1234!",
+    );
+    await updateUser(premium.userId, {
+      subscriptionStatus: "ACTIVE",
+      aiUsageCount: 7,
+      aiUsageResetAt: instantFromDate(AT),
+    });
 
     // When
-    const snapshot = await entitlements(admin.accessToken);
+    const adminSnapshot = await entitlements(admin.accessToken);
+    const premiumSnapshot = await entitlements(premium.accessToken);
+    const adminMe = await me(admin.accessToken);
+    const premiumMe = await me(premium.accessToken);
 
     // Then
-    expect(snapshot).toMatchObject({ isPremium: false, tier: "ADMIN" });
-    expect(snapshot.features.AI_PARSE).toMatchObject({
-      limit: null,
-      remaining: null,
-      isFairUse: false,
+    expect(adminSnapshot).toMatchObject({ isPremium: false, tier: "ADMIN" });
+    expect(adminSnapshot.features).toEqual(premiumSnapshot.features);
+    expect(adminSnapshot.features.AI_PARSE).toMatchObject({
+      limit: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+      used: 7,
+      remaining: PLAN_CATALOG.AI_PARSE.fairUse.premium - 7,
+      isFairUse: true,
     });
-    expect(snapshot.features.APP_ICON).toMatchObject({ allowed: true });
+    expect(adminSnapshot.features.TODO_CATEGORY).toMatchObject({
+      limit: PLAN_CATALOG.TODO_CATEGORY.premium,
+    });
+    expect(adminSnapshot.features.APP_ICON).toMatchObject({ allowed: true });
+    expect(adminMe).toMatchObject({ role: "ADMIN", isPremium: false });
+    expect(adminMe.entitlements).toEqual(premiumMe.entitlements);
+    expect(adminMe.entitlements?.TODO_CATEGORY).toEqual({
+      allowed: true,
+      limit: PLAN_CATALOG.TODO_CATEGORY.premium,
+    });
   });
 
   it("인증 없이 요청하면 401 AUTH_0101이다", async () => {
@@ -191,5 +228,117 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
     // Then
     expect(response.status).toBe(401);
     expect(response.body.error.code).toBe(ErrorCode.AUTH_0101);
+  });
+
+  describe("하루·월 경계 (서울·LA)", () => {
+    // KST 1월 31일 23:00에 AI를 4회 쓴 사용자
+    const LAST_AI_USE = Temporal.Instant.from("2027-01-31T14:00:00.000Z");
+
+    async function entitlementsIn(accessToken: string, timeZone: string) {
+      const response = await request(context.app.getHttpServer())
+        .get("/v1/entitlements")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("X-Timezone", timeZone)
+        .expect(200);
+      return entitlementSnapshotSchema.parse(response.body.data);
+    }
+
+    it.each([
+      {
+        label: "KST 1월 31일 23:30(LA 1월 31일 06:30)",
+        at: "2027-01-31T14:30:00.000Z",
+        aiUsed: 4,
+        aiResetsAt: "2027-01-31T15:00:00.000Z",
+        seoulDayResetsAt: "2027-01-31T15:00:00.000Z",
+        laDayResetsAt: "2027-02-01T08:00:00.000Z",
+      },
+      {
+        label: "KST 2월 1일 00:30(LA는 아직 1월 31일 07:30)",
+        at: "2027-01-31T15:30:00.000Z",
+        aiUsed: 0,
+        aiResetsAt: "2027-02-28T15:00:00.000Z",
+        seoulDayResetsAt: "2027-02-01T15:00:00.000Z",
+        laDayResetsAt: "2027-02-01T08:00:00.000Z",
+      },
+    ])(
+      "$label: 월간 AI 한도는 시간대와 무관하게 KST 달력 월, 일간 응원 한도는 요청 시간대 자정에 초기화된다",
+      async ({ at, aiUsed, aiResetsAt, seoulDayResetsAt, laDayResetsAt }) => {
+        // Given
+        vi.setSystemTime(new Date(at));
+        const free = await context.helpers.createVerifiedUser("ent-boundary@test.com", "Test1234!");
+        await updateUser(free.userId, { aiUsageCount: 4, aiUsageResetAt: LAST_AI_USE });
+
+        // When
+        const seoul = await entitlementsIn(free.accessToken, "Asia/Seoul");
+        const losAngeles = await entitlementsIn(free.accessToken, "America/Los_Angeles");
+
+        // Then
+        for (const snapshot of [seoul, losAngeles]) {
+          expect(snapshot.features.AI_PARSE).toMatchObject({ used: aiUsed, resetsAt: aiResetsAt });
+          expect(snapshot.features.VOICE_NOTE).toMatchObject({ used: 0, resetsAt: aiResetsAt });
+        }
+        expect(seoul.features.CHEER).toMatchObject({
+          used: 0,
+          period: "day",
+          resetsAt: seoulDayResetsAt,
+        });
+        expect(losAngeles.features.CHEER).toMatchObject({
+          used: 0,
+          period: "day",
+          resetsAt: laDayResetsAt,
+        });
+        expect(losAngeles.features.NUDGE.resetsAt).toBe(laDayResetsAt);
+      },
+    );
+
+    it.each([
+      {
+        label: "KST 1월 31일 23:30(LA 1월 31일 06:30)",
+        at: "2027-01-31T14:30:00.000Z",
+        aiUsed: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+        aiResetsAt: "2027-01-31T15:00:00.000Z",
+        laDayResetsAt: "2027-02-01T08:00:00.000Z",
+      },
+      {
+        label: "KST 2월 1일 00:30(LA는 아직 1월 31일 07:30)",
+        at: "2027-01-31T15:30:00.000Z",
+        aiUsed: 0,
+        aiResetsAt: "2027-02-28T15:00:00.000Z",
+        laDayResetsAt: "2027-02-01T08:00:00.000Z",
+      },
+    ])(
+      "$label: 공정 사용 상한을 다 쓴 ADMIN도 프리미엄처럼 KST 달력 월에 다시 채워지고 일간 창은 요청 시간대를 따른다",
+      async ({ at, aiUsed, aiResetsAt, laDayResetsAt }) => {
+        // Given
+        vi.setSystemTime(new Date(at));
+        const fairUse = PLAN_CATALOG.AI_PARSE.fairUse.premium;
+        const admin = await context.helpers.createVerifiedUser(
+          "ent-admin-month@test.com",
+          "Test1234!",
+        );
+        await updateUser(admin.userId, {
+          role: "ADMIN",
+          aiUsageCount: fairUse,
+          aiUsageResetAt: LAST_AI_USE,
+        });
+
+        // When
+        const seoul = await entitlementsIn(admin.accessToken, "Asia/Seoul");
+        const losAngeles = await entitlementsIn(admin.accessToken, "America/Los_Angeles");
+
+        // Then
+        for (const snapshot of [seoul, losAngeles]) {
+          expect(snapshot.features.AI_PARSE).toMatchObject({
+            limit: fairUse,
+            used: aiUsed,
+            remaining: fairUse - aiUsed,
+            isFairUse: true,
+            resetsAt: aiResetsAt,
+          });
+          expect(snapshot.features.CHEER).toMatchObject({ limit: null, remaining: null });
+        }
+        expect(losAngeles.features.CHEER.resetsAt).toBe(laDayResetsAt);
+      },
+    );
   });
 });
