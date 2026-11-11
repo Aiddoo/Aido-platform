@@ -1,7 +1,7 @@
 import {
   useLogger,
   useWeatherLocationService,
-  useWeatherService,
+  useWeatherApi,
 } from '@src/bootstrap/providers/di-context';
 import { type Logger } from '@src/core/ports/logger';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
@@ -92,7 +92,7 @@ function shouldRetryReport(failureCount: number, error: unknown): boolean {
 
 /** 개발 QA 덮어쓰기는 실제 리포트 캐시로 만들어 새로 요청하지 않고, 키를 나눠 기기에 저장하지 않는다 */
 export function useGetWeatherReportQueryOptions() {
-  const weatherService = useWeatherService();
+  const weatherApi = useWeatherApi();
   const locationRevision = useWeatherLocationRevision();
   const client = useQueryClient();
   const [devOverride] = useDevWeatherOverride();
@@ -104,7 +104,7 @@ export function useGetWeatherReportQueryOptions() {
       removeOutdatedWeatherReports(queryClient, { locationRevision });
       const reading = queryClient.getQueryData(WEATHER_QUERY_KEYS.location());
       return unwrap(
-        await weatherService.getReportWithReregistration({
+        await weatherApi.getReportWithReregistration({
           lastRegistered:
             reading?.status === 'located'
               ? pick(reading.registered, ['latitude', 'longitude'])

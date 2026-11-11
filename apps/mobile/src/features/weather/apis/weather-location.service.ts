@@ -13,7 +13,7 @@ import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import type { Coordinates, LocationReading } from '../domains/weather-location.model';
 import { WEATHER_ERROR_CODE } from '../domains/weather.error';
-import type { WeatherService } from './weather.service';
+import type { WeatherApi } from './weather.api';
 
 interface ResolveLocationInput {
   /** 직전에 읽은 위치. 충분히 움직이지 않았으면 다시 등록하지 않는다. */
@@ -28,20 +28,20 @@ interface WeatherLocationServicePorts {
     LocationGateway,
     'getPermission' | 'recheckPermission' | 'getCoordinates' | 'getPlace'
   >;
-  weatherService: Pick<WeatherService, 'updateLocation'>;
+  weatherApi: Pick<WeatherApi, 'updateLocation'>;
   logger: Logger;
   errorReporter: ErrorReporter;
 }
 
 export class WeatherLocationService {
   readonly #gateway: WeatherLocationServicePorts['gateway'];
-  readonly #weatherService: Pick<WeatherService, 'updateLocation'>;
+  readonly #weatherApi: Pick<WeatherApi, 'updateLocation'>;
   readonly #logger: Logger;
   readonly #errorReporter: ErrorReporter;
 
-  constructor({ gateway, weatherService, logger, errorReporter }: WeatherLocationServicePorts) {
+  constructor({ gateway, weatherApi, logger, errorReporter }: WeatherLocationServicePorts) {
     this.#gateway = gateway;
-    this.#weatherService = weatherService;
+    this.#weatherApi = weatherApi;
     this.#logger = logger;
     this.#errorReporter = errorReporter;
   }
@@ -134,7 +134,7 @@ export class WeatherLocationService {
 
   #registerLocation = async (coordinates: LocationCoordinates, signal: AbortSignal) => {
     try {
-      const result = await this.#weatherService.updateLocation(coordinates, signal);
+      const result = await this.#weatherApi.updateLocation(coordinates, signal);
       if (!result.ok && !signal.aborted) {
         this.#logger.warn(WEATHER_LOG_EVENT.LOCATION_REGISTER_FAILED, {
           serverErrorCode: result.error.code,

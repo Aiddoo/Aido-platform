@@ -14,7 +14,7 @@ import type { WeatherReport } from '../domains/weather-report.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
 import { toRegisteredLocation, toWeatherReport } from './weather.mapper';
 
-export class WeatherService {
+export class WeatherApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -26,7 +26,7 @@ export class WeatherService {
       await this.#httpClient.get('v2/weather', { signal }),
       weatherReportSchema,
       toWeatherReport,
-      '[WeatherService] Invalid getReport response',
+      '[WeatherApi] Invalid getReport response',
     );
 
   updateLocation = async (
@@ -37,7 +37,7 @@ export class WeatherService {
       await this.#httpClient.put('v2/weather/location', input, { signal }),
       weatherLocationSchema,
       toRegisteredLocation,
-      '[WeatherService] Invalid updateLocation response',
+      '[WeatherApi] Invalid updateLocation response',
     );
 
   // 서버가 위치를 잃으면(WEATHER_1902) 한 번만 다시 등록하고, 그것도 안 되면 처음의 1902를 돌려 위치 안내를 띄운다

@@ -58,7 +58,7 @@ import type { VoiceNoteDraftRepository } from '@src/features/voice/repositories/
 import type { VoiceRecordingRepository } from '@src/features/voice/repositories/voice-recording.repository';
 import type { VoiceNoteStorageService } from '@src/features/voice/services/voice-note-storage.service';
 import type { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
-import type { WeatherService } from '@src/features/weather/apis/weather.service';
+import type { WeatherApi } from '@src/features/weather/apis/weather.api';
 import { SharedDIContext, type SharedDependencies } from '@src/shared/di/shared-di-context';
 import { createContext, type PropsWithChildren, use } from 'react';
 
@@ -128,7 +128,7 @@ export interface DIContainer extends SharedDependencies {
   purchasesSession: PurchasesSession;
   subscriptionService: SubscriptionService;
   entitlementApi: EntitlementApi;
-  weatherService: WeatherService;
+  weatherApi: WeatherApi;
   weatherLocationService: WeatherLocationService;
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
@@ -340,8 +340,8 @@ export function useEntitlementApi() {
 export function useWeatherLocationService() {
   return useDI().weatherLocationService;
 }
-export function useWeatherService() {
-  return useDI().weatherService;
+export function useWeatherApi() {
+  return useDI().weatherApi;
 }
 export function useWidgetSyncService() {
   return useDI().widgetSyncService;

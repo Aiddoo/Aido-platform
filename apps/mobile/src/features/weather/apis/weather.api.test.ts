@@ -3,18 +3,18 @@ import { ParseError } from '@src/shared/errors/infra-error';
 import { createHttpClientStub } from '@src/testing/core';
 
 import { createWeatherReportDto } from '../__tests__/weather-report.fixtures';
-import { WeatherService } from './weather.service';
+import { WeatherApi } from './weather.api';
 
-describe('WeatherService.getReport', () => {
+describe('WeatherApi.getReport', () => {
   it('v2 날씨를 요청하고 시각을 Instant로 바꾼 리포트를 돌려준다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue({ ok: true, value: createWeatherReportDto() });
-    const service = new WeatherService(httpClient);
+    const api = new WeatherApi(httpClient);
     const signal = new AbortController().signal;
 
     // When
-    const result = await service.getReport(signal);
+    const result = await api.getReport(signal);
 
     // Then
     expect(httpClient.get).toHaveBeenCalledWith('v2/weather', { signal });
@@ -28,10 +28,10 @@ describe('WeatherService.getReport', () => {
       ok: true,
       value: { ...createWeatherReportDto(), hourly: null },
     });
-    const service = new WeatherService(httpClient);
+    const api = new WeatherApi(httpClient);
 
     // When
-    const request = service.getReport();
+    const request = api.getReport();
 
     // Then
     await expect(request).rejects.toBeInstanceOf(ParseError);
@@ -42,17 +42,17 @@ describe('WeatherService.getReport', () => {
     const httpClient = createHttpClientStub();
     const apiError = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
     httpClient.get.mockResolvedValue({ ok: false, error: apiError });
-    const service = new WeatherService(httpClient);
+    const api = new WeatherApi(httpClient);
 
     // When
-    const result = await service.getReport();
+    const result = await api.getReport();
 
     // Then
     expect(result).toEqual({ ok: false, error: apiError });
   });
 });
 
-describe('WeatherService.updateLocation', () => {
+describe('WeatherApi.updateLocation', () => {
   it('좌표를 v2 위치 등록으로 보내고 서버가 정한 시간대를 돌려준다', async () => {
     // Given
     const httpClient = createHttpClientStub();
@@ -60,10 +60,10 @@ describe('WeatherService.updateLocation', () => {
       ok: true,
       value: { latitude: 35.6812, longitude: 139.7671, timezone: 'Asia/Tokyo' },
     });
-    const service = new WeatherService(httpClient);
+    const api = new WeatherApi(httpClient);
 
     // When
-    const result = await service.updateLocation({ latitude: 35.6812, longitude: 139.7671 });
+    const result = await api.updateLocation({ latitude: 35.6812, longitude: 139.7671 });
 
     // Then
     expect(httpClient.put).toHaveBeenCalledWith(
@@ -81,10 +81,10 @@ describe('WeatherService.updateLocation', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.put.mockResolvedValue({ ok: true, value: { latitude: 1, longitude: 2 } });
-    const service = new WeatherService(httpClient);
+    const api = new WeatherApi(httpClient);
 
     // When
-    const request = service.updateLocation({ latitude: 1, longitude: 2 });
+    const request = api.updateLocation({ latitude: 1, longitude: 2 });
 
     // Then
     await expect(request).rejects.toBeInstanceOf(ParseError);

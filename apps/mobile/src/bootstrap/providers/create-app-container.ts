@@ -96,7 +96,7 @@ import { createVoiceNoteDraftRepository } from '@src/features/voice/repositories
 import { createVoiceRecordingRepository } from '@src/features/voice/repositories/voice-recording.repository';
 import { VoiceNoteStorageService } from '@src/features/voice/services/voice-note-storage.service';
 import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
-import { WeatherService } from '@src/features/weather/apis/weather.service';
+import { WeatherApi } from '@src/features/weather/apis/weather.api';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { getNowInstant } from '@src/shared/date/clock';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
@@ -251,7 +251,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     getNowInstant,
   );
 
-  const weatherService = new WeatherService(authHttpClient);
+  const weatherApi = new WeatherApi(authHttpClient);
 
   return {
     logger,
@@ -362,10 +362,10 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     purchasesSession,
     subscriptionService: new SubscriptionService(purchasesSession, ports.purchasesGateway, logger),
     entitlementApi: new EntitlementApi(authHttpClient, logger),
-    weatherService,
+    weatherApi,
     weatherLocationService: new WeatherLocationService({
       gateway: ports.deviceLocation,
-      weatherService,
+      weatherApi,
       logger,
       errorReporter,
     }),
