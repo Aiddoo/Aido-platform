@@ -1,6 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import {
+  AuthPersistenceConflict,
+  emailAlreadyRegistered,
+  oauthAccountAlreadyLinked,
+} from "#api/modules/identity/auth/application/auth.errors";
 import {
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
@@ -13,11 +19,15 @@ import type { IdentityUser } from "#api/modules/identity/users/domain/identity-u
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { AuthLogEvent } from "../auth.log-events.js";
-import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
+import type {
+  AuthAccountRecord,
+  AuthAccountRepositoryPort,
+} from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthLoginAttemptRepositoryPort } from "../ports/auth-login-attempt.repository.port.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
@@ -58,6 +68,8 @@ interface LoginWithOAuthTokenDependencies {
   readonly loginAttemptRepository: Pick<AuthLoginAttemptRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
+  // 탈퇴 유예 중에는 권한을 무료로 캐시하므로 되살리면 함께 비운다
+  readonly entitlementCache: Pick<EntitlementCacheInvalidatorPort, "invalidateEntitlements">;
   readonly issueLoginUseCase: Pick<IssueLoginUseCase, "execute">;
   readonly provisionUserUseCase: Pick<ProvisionUserUseCase, "execute">;
   readonly restoreAccount: Pick<RestoreAccountUseCase, "execute">;
@@ -117,52 +129,23 @@ export class LoginWithOAuthTokenUseCase {
       metadata?: RequestMetadata;
     },
   ): Promise<SocialLoginResult> {
+    const { accountRepository, userRepository, logger } = this.#dependencies;
     const ip = options.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = options.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+    const request = { ip, userAgent, provider };
 
-    const existingAccount = await this.#dependencies.accountRepository.findByProviderAccountId(
+    const existingAccount = await accountRepository.findByProviderAccountId(
       provider,
       providerAccountId,
     );
-
-    let userId: string;
-    let userEmail: string;
-    let isNewUser = false;
-
     if (existingAccount != null) {
-      userId = existingAccount.userId;
-      const user = await this.#dependencies.userRepository.findById(userId);
+      return this.#loginLinkedUser(existingAccount.userId, request);
+    }
 
-      if (user == null) {
-        throw new ApplicationException(ErrorCode.USER_0601, { userId });
-      }
-
-      const restorationAt = this.#dependencies.clock.now();
-      if (user.requiresRestoration(restorationAt)) {
-        const loginResult = await this.#restoreAndCreateSession(user, {
-          ip,
-          userAgent,
-          provider,
-          restorationAt,
-        });
-        return { ...loginResult, accountRestored: true, isNewUser: false };
-      }
-
-      this.#validateUserStatus(user.status);
-      userEmail = user.email;
-
-      this.#dependencies.logger.debug({
-        event: AuthLogEvent.OAUTH_EXISTING_USER_AUTHENTICATED,
-        userId,
-        provider,
-      });
-    } else {
-      const effectiveEmail =
-        email ?? `${provider.toLowerCase()}_${providerAccountId}@social.aido.kr`;
-
-      if (email) {
-        const existingUser = await this.#dependencies.userRepository.findByEmail(email);
-        if (existingUser != null) {
+    if (email) {
+      const existingUser = await userRepository.findByEmail(email);
+      if (existingUser != null) {
+        try {
           const loginResult = await this.#handleEmailConflict(
             existingUser,
             provider,
@@ -170,10 +153,21 @@ export class LoginWithOAuthTokenUseCase {
             { emailVerified: options.emailVerified, ip, userAgent },
           );
           return { ...loginResult, isNewUser: false };
+        } catch (error) {
+          const linked = await this.#findAccountLinkedMeanwhile(error, provider, providerAccountId);
+          // 이 사용자에게 같은 공급자의 다른 계정이 있거나 다른 사용자에게 연결됐으면 진짜 충돌이다
+          if (linked?.userId !== existingUser.id.value) {
+            throw oauthAccountAlreadyLinked(provider, providerAccountId);
+          }
+          return this.#loginLinkedUser(existingUser.id.value, request);
         }
       }
+    }
 
-      const newUser = await this.#createSocialUser({
+    const effectiveEmail = email ?? `${provider.toLowerCase()}_${providerAccountId}@social.aido.kr`;
+    let newUser: { id: string };
+    try {
+      newUser = await this.#createSocialUser({
         email: effectiveEmail,
         provider,
         providerAccountId,
@@ -181,20 +175,59 @@ export class LoginWithOAuthTokenUseCase {
         profileImage: options.profileImage,
         locale: options.metadata?.locale,
       });
+    } catch (error) {
+      const linked = await this.#findAccountLinkedMeanwhile(error, provider, providerAccountId);
+      if (linked == null) {
+        // 그사이 다른 가입이 이메일을 가져갔다. 1.15.0이 User_email_key 제약에 주던 응답이다
+        throw emailAlreadyRegistered(effectiveEmail);
+      }
+      return this.#loginLinkedUser(linked.userId, request);
+    }
+    logger.log({ event: AuthLogEvent.USER_REGISTERED, userId: newUser.id, provider });
 
-      userId = newUser.id;
-      userEmail = effectiveEmail;
-      isNewUser = true;
+    const loginResult = await this.#createSessionAndTokens(newUser.id, effectiveEmail, request);
+    return { ...loginResult, isNewUser: true };
+  }
 
-      this.#dependencies.logger.log({ event: AuthLogEvent.USER_REGISTERED, userId, provider });
+  async #loginLinkedUser(
+    userId: string,
+    request: { ip: string; userAgent: string; provider: AccountProvider },
+  ): Promise<SocialLoginResult> {
+    const user = await this.#dependencies.userRepository.findById(UserId.reconstitute(userId));
+    if (user == null) {
+      throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
 
-    const loginResult = await this.#createSessionAndTokens(userId, userEmail, {
-      ip,
-      userAgent,
-      provider,
+    const restorationAt = this.#dependencies.clock.now();
+    if (user.requiresRestoration(restorationAt)) {
+      const loginResult = await this.#restoreAndCreateSession(user, { ...request, restorationAt });
+      return { ...loginResult, accountRestored: true, isNewUser: false };
+    }
+
+    this.#validateUserStatus(user.status);
+    this.#dependencies.logger.debug({
+      event: AuthLogEvent.OAUTH_EXISTING_USER_AUTHENTICATED,
+      userId,
+      provider: request.provider,
     });
-    return { ...loginResult, isNewUser };
+    const loginResult = await this.#createSessionAndTokens(userId, user.email, request);
+    return { ...loginResult, isNewUser: false };
+  }
+
+  // 같은 공급자 계정의 첫 로그인이 동시에 오면 늦은 요청은 사용자·계정 INSERT의 유일 제약에 걸린다.
+  // 먼저 커밋한 요청이 만든 연결을 한 번만 다시 읽어 그 사용자로 이어서 로그인하게 한다
+  async #findAccountLinkedMeanwhile(
+    error: unknown,
+    provider: AccountProvider,
+    providerAccountId: string,
+  ): Promise<AuthAccountRecord | null> {
+    if (!(error instanceof AuthPersistenceConflict)) {
+      throw error;
+    }
+    return this.#dependencies.accountRepository.findByProviderAccountId(
+      provider,
+      providerAccountId,
+    );
   }
 
   async #createSocialUser(data: {
@@ -232,7 +265,7 @@ export class LoginWithOAuthTokenUseCase {
       });
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id,
+        userId: UserId.reconstitute(user.id),
         event: SECURITY_EVENT.REGISTRATION,
         ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
         userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
@@ -244,7 +277,7 @@ export class LoginWithOAuthTokenUseCase {
   }
 
   async #linkOAuthAccount(
-    userId: string,
+    userId: UserId,
     provider: AccountProvider,
     providerAccountId: string,
     options: { ip: string; userAgent: string },
@@ -281,7 +314,7 @@ export class LoginWithOAuthTokenUseCase {
   ): Promise<LoginResult> {
     const userId = user.id.value;
     // 복구와 발급 사이에 역할이 바뀌었을 수 있어 최신 행의 역할로 토큰을 만든다
-    const latest = await this.#dependencies.userRepository.findById(userId);
+    const latest = await this.#dependencies.userRepository.findById(user.id);
     if (latest == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
@@ -317,7 +350,10 @@ export class LoginWithOAuthTokenUseCase {
       };
     });
 
-    await this.#dependencies.cacheService.invalidateUserProfile(userId);
+    await Promise.all([
+      this.#dependencies.cacheService.invalidateUserProfile(user.id),
+      this.#dependencies.entitlementCache.invalidateEntitlements(user.id),
+    ]);
     this.#dependencies.logger.log({
       event: AuthLogEvent.ACCOUNT_RESTORED,
       userId,
@@ -336,7 +372,7 @@ export class LoginWithOAuthTokenUseCase {
       provider: AccountProvider;
     },
   ): Promise<LoginResult> {
-    const user = await this.#dependencies.userRepository.findById(userId);
+    const user = await this.#dependencies.userRepository.findById(UserId.reconstitute(userId));
 
     if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
@@ -405,7 +441,7 @@ export class LoginWithOAuthTokenUseCase {
           existingUser,
           { ip: options.ip, userAgent: options.userAgent, provider, restorationAt },
           () =>
-            this.#linkOAuthAccount(existingUser.id.value, provider, providerAccountId, {
+            this.#linkOAuthAccount(existingUser.id, provider, providerAccountId, {
               ip: options.ip,
               userAgent: options.userAgent,
             }),
@@ -415,7 +451,7 @@ export class LoginWithOAuthTokenUseCase {
       }
 
       const loginResult = await this.#dependencies.unitOfWork.run(async () => {
-        await this.#linkOAuthAccount(existingUser.id.value, provider, providerAccountId, {
+        await this.#linkOAuthAccount(existingUser.id, provider, providerAccountId, {
           ip: options.ip,
           userAgent: options.userAgent,
         });
@@ -426,7 +462,7 @@ export class LoginWithOAuthTokenUseCase {
           provider,
         });
       });
-      await this.#dependencies.cacheService.invalidateUserProfile(existingUser.id.value);
+      await this.#dependencies.cacheService.invalidateUserProfile(existingUser.id);
       return loginResult;
     }
 
@@ -437,7 +473,7 @@ export class LoginWithOAuthTokenUseCase {
     });
 
     await this.#dependencies.securityLogRepository.create({
-      userId: existingUser.id.value,
+      userId: existingUser.id,
       event: SECURITY_EVENT.OAUTH_LINK_REQUIRED,
       ipAddress: options.ip,
       userAgent: options.userAgent,

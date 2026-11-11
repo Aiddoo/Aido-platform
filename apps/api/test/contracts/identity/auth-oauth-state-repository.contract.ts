@@ -3,6 +3,7 @@ import type {
   NewAuthOAuthState,
 } from "#api/modules/identity/auth/application/ports/auth-oauth-state.repository.port";
 import type { AuthOAuthState } from "#api/modules/identity/auth/domain/auth-oauth-state.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_FIXTURE_NOW,
   AUTH_FIXTURE_OTHER_USER_ID,
@@ -37,7 +38,7 @@ async function saveLoginExchange(
   state: AuthOAuthState,
 ): Promise<string> {
   const exchangeCode = repository.generateExchangeCode();
-  await repository.saveExchangeData(state.id.value, {
+  await repository.saveExchangeData(state.id, {
     exchangeCode,
     accessToken: "access-token",
     refreshToken: "refresh-token",
@@ -62,7 +63,7 @@ export function describeAuthOAuthStateRepositoryContract(
         provider: "KAKAO",
         redirectUri: "aido://auth/kakao",
         mode: "link",
-        initiatingUserId: AUTH_FIXTURE_USER_ID,
+        initiatingUserId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
       });
       const atExpiry = await repository.findByState(created.state, EXPIRES_AT);
 
@@ -118,7 +119,7 @@ export function describeAuthOAuthStateRepositoryContract(
       const created = await createState(repository);
       const exchangeCode = await saveLoginExchange(repository, created);
       const input = {
-        id: created.id.value,
+        id: created.id,
         exchangeCode,
         at: AUTH_FIXTURE_NOW,
         purpose: "login",
@@ -147,13 +148,13 @@ export function describeAuthOAuthStateRepositoryContract(
 
       // When
       const expired = await repository.consumeExchangeCode({
-        id: created.id.value,
+        id: created.id,
         exchangeCode,
         at: EXPIRES_AT,
         purpose: "login",
       });
       const wrongCode = await repository.consumeExchangeCode({
-        id: created.id.value,
+        id: created.id,
         exchangeCode: "other-code",
         at: AUTH_FIXTURE_NOW,
         purpose: "login",
@@ -168,27 +169,27 @@ export function describeAuthOAuthStateRepositoryContract(
       const repository = await createRepository();
       const created = await createState(repository, {
         mode: "link",
-        initiatingUserId: AUTH_FIXTURE_USER_ID,
+        initiatingUserId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
       });
       const exchangeCode = repository.generateExchangeCode();
-      await repository.saveLinkingData(created.id.value, {
+      await repository.saveLinkingData(created.id, {
         exchangeCode,
         provider: "NAVER",
         providerAccountId: "naver-account",
       });
-      const linkInput = { id: created.id.value, exchangeCode, at: AUTH_FIXTURE_NOW } as const;
+      const linkInput = { id: created.id, exchangeCode, at: AUTH_FIXTURE_NOW } as const;
 
       // When
       const found = await repository.findByExchangeCode(exchangeCode, AUTH_FIXTURE_NOW);
       const byOther = await repository.consumeExchangeCode({
         ...linkInput,
         purpose: "link",
-        actorUserId: AUTH_FIXTURE_OTHER_USER_ID,
+        actorUserId: UserId.reconstitute(AUTH_FIXTURE_OTHER_USER_ID),
       });
       const byOwner = await repository.consumeExchangeCode({
         ...linkInput,
         purpose: "link",
-        actorUserId: AUTH_FIXTURE_USER_ID,
+        actorUserId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
       });
 
       // Then
@@ -205,26 +206,26 @@ export function describeAuthOAuthStateRepositoryContract(
       const legacyCode = repository.generateExchangeCode();
       const loginCode = repository.generateExchangeCode();
       const linking = { provider: "GOOGLE", providerAccountId: "google-account" } as const;
-      await repository.saveLinkingData(legacyLink.id.value, {
+      await repository.saveLinkingData(legacyLink.id, {
         ...linking,
         exchangeCode: legacyCode,
       });
-      await repository.saveLinkingData(login.id.value, { ...linking, exchangeCode: loginCode });
+      await repository.saveLinkingData(login.id, { ...linking, exchangeCode: loginCode });
 
       // When
       const legacy = await repository.consumeExchangeCode({
-        id: legacyLink.id.value,
+        id: legacyLink.id,
         exchangeCode: legacyCode,
         at: AUTH_FIXTURE_NOW,
         purpose: "link",
-        actorUserId: AUTH_FIXTURE_OTHER_USER_ID,
+        actorUserId: UserId.reconstitute(AUTH_FIXTURE_OTHER_USER_ID),
       });
       const loginAsLink = await repository.consumeExchangeCode({
-        id: login.id.value,
+        id: login.id,
         exchangeCode: loginCode,
         at: AUTH_FIXTURE_NOW,
         purpose: "link",
-        actorUserId: AUTH_FIXTURE_USER_ID,
+        actorUserId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
       });
 
       // Then

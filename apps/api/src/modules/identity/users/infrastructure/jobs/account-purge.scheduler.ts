@@ -1,13 +1,12 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import {
   ACCOUNT_PURGE_JOB_NAME,
-  ACCOUNT_PURGE_JOB_OPTIONS,
   ACCOUNT_PURGE_QUEUE,
   ACCOUNT_PURGE_SCHEDULE,
   AccountPurgeJobKey,
@@ -18,11 +17,11 @@ export class AccountPurgeScheduler implements OnModuleInit {
   readonly #logger = new Logger(AccountPurgeScheduler.name);
   schedulerRegistration: Promise<void> = Promise.resolve();
 
-  readonly #runtime: JobRuntimePort;
+  readonly #jobQueue: Pick<JobQueuePort, "registerSchedules" | "enqueue">;
   readonly #clock: ClockPort;
 
-  constructor(@Inject(JOB_RUNTIME) runtime: JobRuntimePort, clock: ClockPort) {
-    this.#runtime = runtime;
+  constructor(jobQueue: JobQueuePort, clock: ClockPort) {
+    this.#jobQueue = jobQueue;
     this.#clock = clock;
   }
 
@@ -32,13 +31,7 @@ export class AccountPurgeScheduler implements OnModuleInit {
       this.#logger,
       "Account purge scheduler registration",
       async () => {
-        await this.#runtime.schedule(
-          ACCOUNT_PURGE_SCHEDULE.id,
-          ACCOUNT_PURGE_SCHEDULE.cron,
-          ACCOUNT_PURGE_QUEUE,
-          { name: ACCOUNT_PURGE_JOB_NAME, data: {} },
-          ACCOUNT_PURGE_JOB_OPTIONS,
-        );
+        await this.#jobQueue.registerSchedules(ACCOUNT_PURGE_QUEUE);
         this.#logger.log({ event: AuthLogEvent.ACCOUNT_PURGE_SCHEDULER_REGISTERED });
         await this.#catchUpIfNeeded();
       },
@@ -52,10 +45,10 @@ export class AccountPurgeScheduler implements OnModuleInit {
     }
 
     const localDate = currentTime.toPlainDate().toString();
-    await this.#runtime.enqueue(
+    await this.#jobQueue.enqueue(
       ACCOUNT_PURGE_QUEUE,
-      { name: ACCOUNT_PURGE_JOB_NAME, data: {} },
-      { ...ACCOUNT_PURGE_JOB_OPTIONS, idempotencyKey: AccountPurgeJobKey.catchUp(localDate) },
+      { name: ACCOUNT_PURGE_JOB_NAME },
+      { idempotencyKey: AccountPurgeJobKey.catchUp(localDate) },
     );
     this.#logger.log({ event: AuthLogEvent.ACCOUNT_PURGE_CATCH_UP_DISPATCHED, localDate });
   }

@@ -6,7 +6,11 @@ import {
 export class RecordingTodoReminderScheduler extends TodoReminderSchedulerPort {
   readonly scheduled: TodoReminderSchedule[] = [];
   readonly cancelled: number[] = [];
-  async scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
+  async scheduleReminder(
+    todoId: number,
+    scheduledTime: Temporal.Instant,
+    userId: string,
+  ): Promise<void> {
     this.scheduled.push({ todoId, scheduledTime, userId });
   }
   async scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void> {

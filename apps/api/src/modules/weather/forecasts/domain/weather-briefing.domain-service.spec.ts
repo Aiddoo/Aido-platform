@@ -137,7 +137,12 @@ describe("planWeatherBriefing — 날씨와 겹친 할 일과 옮길 시간", ()
     const briefing = planWeatherBriefing({ hourly, todos, now: NOW, timezone: SEOUL });
 
     // Then
-    expect(briefing).toEqual({ reason: null, affectedTodoIds: [], rescheduleOptions: [] });
+    expect(briefing).toEqual({
+      reason: null,
+      affected: [],
+      affectedTodoIds: [],
+      rescheduleOptions: [],
+    });
   });
 
   it("후보는 할 일과 같은 날(기기 시간대)의 시간만 쓴다", () => {

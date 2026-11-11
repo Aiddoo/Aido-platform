@@ -15,7 +15,7 @@ export type NotificationMetadata = z.infer<typeof notificationMetadataSchema>;
 export const notificationSchema = z
   .object({
     id: z.number().int().positive().describe("알림 ID (양의 정수)"),
-    userId: z.string().describe("사용자 ID (CUID 25자)"),
+    userId: z.string().describe("사용자 ID"),
     type: notificationTypeSchema
       .exclude([
         "NUDGE_REPLIED",
@@ -133,6 +133,14 @@ export const registerTokenResponseSchema = z
   });
 
 export type RegisterTokenResponse = z.infer<typeof registerTokenResponseSchema>;
+
+export const unregisterPushDeviceByTokenResponseSchema = z.object({
+  unregistered: z.literal(true).describe("항상 true. 일치하는 등록이 있었는지는 알려 주지 않는다"),
+});
+
+export type UnregisterPushDeviceByTokenResponse = z.infer<
+  typeof unregisterPushDeviceByTokenResponseSchema
+>;
 
 export const pushDeviceResponseSchema = z
   .object({

@@ -1,9 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  USER_TIMEZONE_READER,
-  type UserTimezoneReaderPort,
-} from "#api/modules/identity/identity-settings.public";
+import { UserTimezoneReaderPort } from "#api/modules/identity/identity-settings.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoOwnerTimezonePort } from "../../application/ports/todo-owner-timezone.port.js";
 
@@ -11,11 +9,11 @@ import type { TodoOwnerTimezonePort } from "../../application/ports/todo-owner-t
 export class TodoOwnerTimezoneAdapter implements TodoOwnerTimezonePort {
   readonly #userTimezoneReader: UserTimezoneReaderPort;
 
-  constructor(@Inject(USER_TIMEZONE_READER) userTimezoneReader: UserTimezoneReaderPort) {
+  constructor(@Inject(UserTimezoneReaderPort) userTimezoneReader: UserTimezoneReaderPort) {
     this.#userTimezoneReader = userTimezoneReader;
   }
 
-  findTimezone(userId: string): Promise<string | null> {
+  findTimezone(userId: UserId): Promise<string | null> {
     return this.#userTimezoneReader.findStoredTimezone(userId);
   }
 }

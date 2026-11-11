@@ -2,12 +2,17 @@ import type {
   AuthSecurityLogRepositoryPort,
   NewSecurityLog,
 } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import {
+  type SecurityLogRecord,
+  toSecurityLogRecord,
+} from "#test/doubles/identity/in-memory-auth-security-log.repository";
 import { AUTH_FIXTURE_USER_ID } from "#test/fixtures/identity/auth-session.fixture";
 
 // 보안 로그는 쓰기만 하는 감사 기록이라 포트에 조회가 없다. 계약은 저장소마다 남은 기록을 읽는 방법을 받는다
 export interface AuthSecurityLogRepositorySubject {
   readonly repository: AuthSecurityLogRepositoryPort;
-  readonly listEntries: () => Promise<readonly NewSecurityLog[]>;
+  readonly listEntries: () => Promise<readonly SecurityLogRecord[]>;
 }
 
 export function describeAuthSecurityLogRepositoryContract(
@@ -19,14 +24,14 @@ export function describeAuthSecurityLogRepositoryContract(
       const { repository, listEntries } = await createSubject();
       const entries: NewSecurityLog[] = [
         {
-          userId: AUTH_FIXTURE_USER_ID,
+          userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
           event: "LOGIN_SUCCESS",
           ipAddress: "127.0.0.1",
           userAgent: "Aido/1.15.1",
           metadata: { provider: "GOOGLE" },
         },
         {
-          userId: AUTH_FIXTURE_USER_ID,
+          userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
           event: "LOGOUT",
           ipAddress: "127.0.0.2",
           userAgent: "Aido/1.15.1",
@@ -39,7 +44,7 @@ export function describeAuthSecurityLogRepositoryContract(
       }
 
       // Then
-      expect(await listEntries()).toEqual(entries);
+      expect(await listEntries()).toEqual(entries.map(toSecurityLogRecord));
     });
 
     it("사용자를 모르는 잠금 기록도 남긴다", async () => {
@@ -56,7 +61,7 @@ export function describeAuthSecurityLogRepositoryContract(
       await repository.create(entry);
 
       // Then
-      expect(await listEntries()).toEqual([entry]);
+      expect(await listEntries()).toEqual([toSecurityLogRecord(entry)]);
     });
   });
 }

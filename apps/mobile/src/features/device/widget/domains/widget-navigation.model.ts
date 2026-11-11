@@ -56,7 +56,7 @@ export const widgetNavigationCommandSchema = z.object({
 });
 export type WidgetNavigationCommand = z.infer<typeof widgetNavigationCommandSchema>;
 
-function isFresh(command: Pick<WidgetNavigationCommand, 'createdAt'>, now: number): boolean {
+function isFresh(command: WidgetNavigationCommand, now: number): boolean {
   return (
     Number.isFinite(now) &&
     command.createdAt <= now &&
@@ -64,7 +64,7 @@ function isFresh(command: Pick<WidgetNavigationCommand, 'createdAt'>, now: numbe
   );
 }
 
-function isOwnedBy(command: Pick<WidgetNavigationCommand, 'userId'>, userId: string): boolean {
+function isOwnedBy(command: WidgetNavigationCommand, userId: string): boolean {
   return command.userId === userId;
 }
 
@@ -81,7 +81,7 @@ function isSameCommand(first: WidgetNavigationCommand, second: WidgetNavigationC
 type WidgetCommandState = 'stale' | 'ownerUnknown' | 'foreign' | 'valid';
 
 function getCommandState(
-  command: Pick<WidgetNavigationCommand, 'createdAt' | 'userId'>,
+  command: WidgetNavigationCommand,
   { userId, now }: { userId: string | null; now: number },
 ): WidgetCommandState {
   if (!isFresh(command, now)) {

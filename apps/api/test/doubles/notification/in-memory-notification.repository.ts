@@ -19,11 +19,12 @@ import type { NotificationId } from "#api/modules/notification/inbox/domain/noti
 import type { NotificationType } from "#api/modules/notification/inbox/domain/notification-type.constants";
 import { Notification } from "#api/modules/notification/inbox/domain/notification.aggregate";
 import type { NotificationMilestone } from "#api/modules/notification/push/domain/notification-milestone.constants";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 
 // Drizzle 저장소와 같은 순서(createdAt·id 내림차순)로 나열한다
 function compareListOrder(left: InboxNotification, right: InboxNotification): number {
-  return right.createdAt.getTime() - left.createdAt.getTime() || right.id - left.id;
+  return Temporal.Instant.compare(right.createdAt, left.createdAt) || right.id - left.id;
 }
 
 function isOfTypes(row: InboxNotification, types: readonly NotificationType[] | undefined) {
@@ -32,10 +33,6 @@ function isOfTypes(row: InboxNotification, types: readonly NotificationType[] | 
 
 function metadataField(row: InboxNotification, key: string): unknown {
   return isPlainObject(row.metadata) ? row.metadata[key] : undefined;
-}
-
-function toDateOnly(date: Date): string {
-  return date.toISOString().slice(0, 10);
 }
 
 // Notification_todo_reminder_occurrence_dedup 유니크 인덱스와 같은 키다
@@ -94,9 +91,9 @@ export class InMemoryNotificationRepository
       copyKey: row.copyKey,
       copyFacts: isPlainObject(row.copyFacts) ? row.copyFacts : null,
       isRead: row.isRead,
-      readAt: row.readAt == null ? null : instantFromDate(row.readAt),
-      openedAt: row.openedAt == null ? null : instantFromDate(row.openedAt),
-      createdAt: instantFromDate(row.createdAt),
+      readAt: row.readAt,
+      openedAt: row.openedAt,
+      createdAt: row.createdAt,
     });
   }
 
@@ -127,41 +124,43 @@ export class InMemoryNotificationRepository
     if (row == null || row.userId !== userId || row.isRead) {
       return false;
     }
-    this.#rows.set(id, { ...row, isRead, readAt: readAt == null ? null : instantToDate(readAt) });
+    this.#rows.set(id, { ...row, isRead, readAt });
     return true;
   }
 
   async markAsOpened(
     notificationId: NotificationId,
-    userId: string,
+    user: UserId,
     now: Temporal.Instant,
   ): Promise<boolean> {
+    const userId = user.value;
     const row = this.#rows.get(notificationId.value);
     if (row == null || row.userId !== userId || row.openedAt != null) {
       return false;
     }
-    const openedAt = instantToDate(now);
-    this.#rows.set(row.id, { ...row, openedAt, isRead: true, readAt: openedAt });
+    this.#rows.set(row.id, { ...row, openedAt: now, isRead: true, readAt: now });
     return true;
   }
 
   async markAllAsRead(
-    userId: string,
+    user: UserId,
     types: readonly NotificationType[] | undefined,
     now: Temporal.Instant,
   ): Promise<{ count: number }> {
+    const userId = user.value;
     const targets = [...this.#rows.values()].filter(
       (row) => row.userId === userId && !row.isRead && isOfTypes(row, types),
     );
     for (const row of targets) {
-      this.#rows.set(row.id, { ...row, isRead: true, readAt: instantToDate(now) });
+      this.#rows.set(row.id, { ...row, isRead: true, readAt: now });
     }
     return { count: targets.length };
   }
 
   async deleteNotificationsByActorId(
-    actorId: string,
+    actor: UserId,
   ): Promise<{ count: number; affectedUserIds: string[] }> {
+    const actorId = actor.value;
     const deleted = [...this.#rows.values()].filter(
       (row) => row.friendId === actorId || metadataField(row, "senderId") === actorId,
     );
@@ -175,7 +174,7 @@ export class InMemoryNotificationRepository
     const visible = [...this.#rows.values()]
       .filter(
         (row) =>
-          row.userId === query.userId &&
+          row.userId === query.userId.value &&
           (!query.unreadOnly || !row.isRead) &&
           isOfTypes(row, query.types),
       )
@@ -183,14 +182,15 @@ export class InMemoryNotificationRepository
     if (query.afterNotificationId == null) {
       return visible.slice(0, query.limit);
     }
-    const anchor = this.#rows.get(query.afterNotificationId);
+    const anchor = this.#rows.get(query.afterNotificationId.value);
     if (anchor == null) {
       return [];
     }
     return visible.filter((row) => compareListOrder(anchor, row) < 0).slice(0, query.limit);
   }
 
-  async countUnread(userId: string, types?: readonly NotificationType[]): Promise<number> {
+  async countUnread(user: UserId, types?: readonly NotificationType[]): Promise<number> {
+    const userId = user.value;
     return [...this.#rows.values()].filter(
       (row) => row.userId === userId && !row.isRead && isOfTypes(row, types),
     ).length;
@@ -201,7 +201,7 @@ export class InMemoryNotificationRepository
       (row) =>
         row.userId === query.userId &&
         row.type === query.type &&
-        row.createdAt.getTime() >= query.since.getTime() &&
+        Temporal.Instant.compare(row.createdAt, query.since) >= 0 &&
         (query.friendId == null || row.friendId === query.friendId) &&
         (query.todoId == null || row.todoId === query.todoId) &&
         (query.nudgeId == null || row.nudgeId === query.nudgeId) &&
@@ -210,7 +210,7 @@ export class InMemoryNotificationRepository
   }
 
   async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
-    const notificationDate = toDateOnly(query.notificationDate);
+    const { notificationDate } = query;
     return new Set(
       [...this.#rows.values()]
         .filter(
@@ -218,7 +218,7 @@ export class InMemoryNotificationRepository
             query.userIds.includes(row.userId) &&
             row.type === query.type &&
             row.notificationDate != null &&
-            toDateOnly(row.notificationDate) === notificationDate &&
+            row.notificationDate.equals(notificationDate) &&
             (query.friendId == null || row.friendId === query.friendId),
         )
         .map((row) => row.userId),
@@ -251,7 +251,7 @@ export class InMemoryNotificationRepository
       cheerId: data.cheerId ?? null,
       notificationDate: data.notificationDate ?? null,
       metadata: data.metadata ?? null,
-      createdAt: this.#now(),
+      createdAt: instantFromDate(this.#now()),
       readAt: null,
       actionType: data.action?.type ?? "DEEP_LINK",
       actionUrl: data.action?.url ?? null,

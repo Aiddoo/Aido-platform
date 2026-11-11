@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import {
   createExpoPushNotificationGateway,
   PUSH_TOKEN_ISSUE_TIMEOUT_MS,
+  registerForegroundNotificationPresentation,
 } from './expo-push-notification-gateway';
 
 jest.mock('expo-notifications', () => ({
@@ -28,6 +29,7 @@ jest.mock('expo-notifications', () => ({
   getLastNotificationResponse: jest.fn(),
   clearLastNotificationResponse: jest.fn(),
   setNotificationCategoryAsync: jest.fn(),
+  setNotificationHandler: jest.fn(),
 }));
 
 const getPermissionsAsync = jest.mocked(Notifications.getPermissionsAsync);
@@ -35,6 +37,7 @@ const addPushTokenListener = jest.mocked(Notifications.addPushTokenListener);
 const getExpoPushTokenAsync = jest.mocked(Notifications.getExpoPushTokenAsync);
 const requestPermissionsAsync = jest.mocked(Notifications.requestPermissionsAsync);
 const setNotificationChannelAsync = jest.mocked(Notifications.setNotificationChannelAsync);
+const setNotificationHandler = jest.mocked(Notifications.setNotificationHandler);
 
 describe('createExpoPushNotificationGateway', () => {
   const gateway = createExpoPushNotificationGateway(createLoggerStub());
@@ -278,3 +281,56 @@ function createSdkResponse({
     },
   };
 }
+
+describe('registerForegroundNotificationPresentation', () => {
+  const gateway = createExpoPushNotificationGateway(createLoggerStub());
+  const { notification } = createSdkResponse({ id: 'notification-1' });
+
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('화면이 조용히를 고르면 배너·소리 없이 알림 센터에만 남기고, 판단을 거두면 배너로 돌아간다', async () => {
+    // Given
+    registerForegroundNotificationPresentation();
+    const handler = setNotificationHandler.mock.calls[0]?.[0];
+    const decide = jest.fn(() => 'quiet' as const);
+
+    // When
+    const stopDeciding = gateway.setForegroundPresentation(decide);
+    const quiet = await handler?.handleNotification(notification);
+    stopDeciding();
+    const banner = await handler?.handleNotification(notification);
+
+    // Then
+    expect(decide).toHaveBeenCalledWith({ data: { notificationId: 1 } });
+    expect(quiet).toEqual({
+      shouldShowBanner: false,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    });
+    expect(banner).toEqual({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    });
+  });
+
+  it('화면의 판단이 실패해도 알림을 놓치지 않게 배너로 보인다', async () => {
+    // Given
+    registerForegroundNotificationPresentation();
+    const handler = setNotificationHandler.mock.calls[0]?.[0];
+    const stopDeciding = gateway.setForegroundPresentation(() => {
+      throw new Error('route unavailable');
+    });
+
+    // When
+    const behavior = await handler?.handleNotification(notification);
+    stopDeciding();
+
+    // Then
+    expect(behavior?.shouldShowBanner).toBe(true);
+  });
+});

@@ -1,3 +1,4 @@
+import type { PushDeliveryPriority } from "../../domain/push-delivery-options.constants.js";
 import type { PushFailureKind } from "../../domain/push-failure-kind.constants.js";
 
 export interface PushPayload {
@@ -9,8 +10,8 @@ export interface PushPayload {
   readonly sound?: "default" | null;
   readonly channelId?: string;
   readonly categoryId?: string;
-  readonly priority?: "default" | "normal" | "high";
-  readonly ttl?: number;
+  readonly priority: PushDeliveryPriority;
+  readonly ttlSeconds: number;
 }
 
 export interface PushFailure {

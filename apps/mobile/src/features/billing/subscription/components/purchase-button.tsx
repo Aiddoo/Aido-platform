@@ -12,7 +12,7 @@ import {
   PLAN_PRICE_LABEL_KEYS,
 } from '../constants/subscription-labels';
 import { type SubscriptionPlan } from '../domains/subscription.model';
-import { SubscriptionPolicy } from '../domains/subscription.model';
+import { hasFreeTrial, SubscriptionPolicy } from '../domains/subscription.model';
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
@@ -140,7 +140,7 @@ function getPurchaseLabelKey(plan: SubscriptionPlan | null) {
   if (plan == null) {
     return 'paywall.subscribeButton' as const;
   }
-  if (SubscriptionPolicy.hasFreeTrial(plan)) {
+  if (hasFreeTrial(plan.freeTrial)) {
     return 'paywall.startFreeTrial' as const;
   }
   return match(plan.planType)

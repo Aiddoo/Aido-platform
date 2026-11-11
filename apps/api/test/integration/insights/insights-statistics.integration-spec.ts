@@ -2,7 +2,7 @@ import { count } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
 import { DateRange } from "#api/modules/insights/daily-completions/domain/date-range.vo";
-import { DrizzleDailyCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/drizzle-daily-completion.repository";
+import { DailyCompletionRepositoryAdapter } from "#api/modules/insights/daily-completions/infrastructure/adapters/daily-completion-repository.adapter";
 import { WeeklyAchievementRepositoryPort } from "#api/modules/insights/weekly-achievements/application/ports/weekly-achievement.repository.port";
 import { GetWeeklyAchievementUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/get-weekly-achievement.use-case";
 import { ListWeeklyAchievementsUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/list-weekly-achievements.use-case";
@@ -12,6 +12,7 @@ import {
   type WeeklyAchievementPrimitives,
 } from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.entity";
 import { toWeeklyAchievementResponse } from "#api/modules/insights/weekly-achievements/presentation/http/v1/weekly-achievement-response.mapper";
+import { DrizzleTodoCompletionGroupReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-completion-group.reader";
 import {
   todo,
   todoCategory,
@@ -36,7 +37,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let userId: string;
-  let daily: DrizzleDailyCompletionRepository;
+  let daily: DailyCompletionRepositoryAdapter;
   let weekly: WeeklyAchievementRepositoryPort;
   beforeAll(async () => {
     db = new TestDatabase({
@@ -50,7 +51,9 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     client = await db.start();
     context = await createE2eApp({ testDatabase: db });
     weekly = context.module.get(WeeklyAchievementRepositoryPort);
-    daily = new DrizzleDailyCompletionRepository(createDatabaseTransactionFixture(client).txHost);
+    daily = new DailyCompletionRepositoryAdapter(
+      new DrizzleTodoCompletionGroupReader(createDatabaseTransactionFixture(client).txHost),
+    );
   });
   beforeEach(async () => {
     statements = null;
@@ -136,7 +139,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
           TodoFixture.create({
             userId,
             categoryId: category.id,
-            startDate: new Date(`2027-01-0${1 + Math.floor(index / 3)}T00:00:00Z`),
+            startDate: Temporal.PlainDate.from(`2027-01-0${1 + Math.floor(index / 3)}`),
             completed: index % 2 === 0,
             visibility: index === 0 ? "PRIVATE" : "PUBLIC",
             sortOrder: index,

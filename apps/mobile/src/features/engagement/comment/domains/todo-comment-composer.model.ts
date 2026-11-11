@@ -53,7 +53,7 @@ export function prepareSubmission({
 }
 
 // 글자가 그대로면 서버에 보낼 것이 없다. 보낼 글은 앞뒤 공백을 지운 값이다
-export function isSameAsOriginal(target: Pick<TodoComment, 'content'>, trimmedContent: string) {
+export function isSameAsOriginal(target: TodoComment, trimmedContent: string) {
   return target.content === trimmedContent;
 }
 

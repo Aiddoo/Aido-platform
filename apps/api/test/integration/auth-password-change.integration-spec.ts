@@ -33,7 +33,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
     verifyEmail = module.get(VerifyEmailUseCase);
     loginWithPassword = module.get(LoginWithPasswordUseCase);
     changePassword = module.get(ChangePasswordUseCase);
-  }, 60000);
+  }, 60_000);
 
   beforeEach(async () => {
     suppressLogger();

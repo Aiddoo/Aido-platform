@@ -3,8 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
+import { localDateAt } from "../../../shared/domain/weather-calendar.domain-service.js";
 import type {
   WeatherForecastCachePort,
   WeatherForecastEntry,
@@ -67,7 +67,7 @@ const WEATHER_CONDITIONS_SCHEMA = z.object({
 
 function forecastKey(gridX: number, gridY: number, timing: KmaForecastTiming): string {
   const { baseDate, baseTime } = getKmaBaseDateTime(timing.issuance);
-  const targetDate = dayWindowInTimezone(timing.target, KMA_TIMEZONE).localDate;
+  const targetDate = localDateAt(timing.target, KMA_TIMEZONE).toString();
   return WeatherCacheKey.forecast(gridX, gridY, baseDate, baseTime, targetDate);
 }
 
@@ -164,7 +164,7 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
   }
 
   getConditions(gridX: number, gridY: number, date: Date): Promise<WeatherConditions | undefined> {
-    const { localDate } = dayWindowInTimezone(date, KMA_TIMEZONE);
+    const localDate = localDateAt(date, KMA_TIMEZONE).toString();
     return this.#cache.get(
       WeatherCacheKey.conditions(gridX, gridY, localDate),
       WEATHER_CONDITIONS_SCHEMA,
@@ -177,7 +177,7 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
     date: Date,
     conditions: WeatherConditions,
   ): Promise<void> {
-    const { localDate } = dayWindowInTimezone(date, KMA_TIMEZONE);
+    const localDate = localDateAt(date, KMA_TIMEZONE).toString();
     await this.#cache.set(
       WeatherCacheKey.conditions(gridX, gridY, localDate),
       conditions,

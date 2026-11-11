@@ -32,7 +32,7 @@ export class StageTodoCreationUseCase {
 
   async execute(input: CreateTodoData): Promise<StagedTodoCreation> {
     const timezone = await this.#dependencies.timezoneResolver.execute(
-      input.userId,
+      input.userId.value,
       input.timezone,
     );
     const resolved = { ...input, timezone };
@@ -46,18 +46,17 @@ export class StageTodoCreationUseCase {
       toSingleTodoSpec(input),
       input.items,
     );
-    const todoId = created.todo.id.value;
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
-      todoId,
+      created.todo.id,
       input.userId,
     );
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: created.todo.id.value });
     }
     return {
       todos: [response],
       series: null,
-      afterCommit: () => this.#dependencies.effects.publishSingle(created.todo, created.events),
+      afterCommit: () => this.#dependencies.effects.publishSingle(created.todo),
     };
   }
 
@@ -68,7 +67,7 @@ export class StageTodoCreationUseCase {
     const { series, occurrences } = await this.#dependencies.writer.startSeries(input, repeat);
     const todos = await this.#dependencies.todoReadRepository.findManyBySeriesId(
       input.userId,
-      series.id.value,
+      series.id,
     );
     return {
       todos,

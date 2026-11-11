@@ -2,6 +2,7 @@ export * from "./admin.constants.js";
 export * from "./ai.constants.js";
 export * from "./auth.constants.js";
 export * from "./cheer.constants.js";
+export * from "./entity-id.constants.js";
 export * from "./follow.constants.js";
 export * from "./inquiry.constants.js";
 export * from "./invite.constants.js";

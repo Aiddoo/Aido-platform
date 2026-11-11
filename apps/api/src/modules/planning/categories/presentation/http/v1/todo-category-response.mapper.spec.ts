@@ -36,8 +36,8 @@ describe("TodoCategoryMapper", () => {
       name: "할 일",
       color: "#FF6B43",
       sortOrder: 1,
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-02T00:00:00.000Z",
       todoCount: 5,
     };
 

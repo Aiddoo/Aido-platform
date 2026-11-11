@@ -1,8 +1,10 @@
+import type { LocalFileEntry } from '@src/core/ports/local-file-system';
+
 import { voiceCaptureStateSchema, type VoiceCaptureState } from '../domains/voice-capture.model';
-import { VoiceTranscriptPolicy, type VoiceTranscript } from '../domains/voice-transcript.model';
+import { createVoiceTranscript, type VoiceTranscript } from '../domains/voice-transcript.model';
 
 export function createTranscript(overrides: Partial<VoiceTranscript> = {}): VoiceTranscript {
-  return VoiceTranscriptPolicy.createVoiceTranscript(overrides);
+  return createVoiceTranscript(overrides);
 }
 
 type CaptureStateInput = Partial<
@@ -12,11 +14,21 @@ type CaptureStateInput = Partial<
 /** 상태 종류마다 필요한 필드를 스키마로 검증해 만든다 */
 export function createCaptureState(input: CaptureStateInput): VoiceCaptureState {
   return voiceCaptureStateSchema.parse({
-    transcript: VoiceTranscriptPolicy.createVoiceTranscript(),
+    transcript: createVoiceTranscript(),
     elapsedMs: 0,
     pauseCount: 0,
     ...input,
   });
+}
+
+export function createLocalFileEntry(overrides: Partial<LocalFileEntry> = {}): LocalFileEntry {
+  return {
+    name: 'recording.m4a',
+    uri: 'file:///voice/recording.m4a',
+    sizeBytes: 1024,
+    modifiedAt: null,
+    ...overrides,
+  };
 }
 
 /** 말로 메모 정리 응답. 핵심 포인트와 계획 카드는 테스트가 정한다 */

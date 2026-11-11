@@ -5,7 +5,7 @@ import { and, asc, eq, gt, inArray, isNotNull, isNull, or, type SQL, sql } from 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userConsent } from "#api/platform/database/schema/index";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type ConsentSeedInput,
@@ -15,7 +15,7 @@ import {
 } from "../../application/ports/user-consent.repository.port.js";
 
 /** 광고성 동의가 있고, 마지막 재확인(없으면 처음 동의)이 cutoff 이전이다. LEAST는 NULL을 건너뛴다 */
-function marketingReconfirmDue(cutoff: Date): SQL | undefined {
+function marketingReconfirmDue(cutoff: Temporal.Instant): SQL | undefined {
   return and(
     or(isNotNull(userConsent.marketingAgreedAt), isNotNull(userConsent.marketingPushAgreedAt)),
     sql`COALESCE(${userConsent.marketingReconfirmedAt}, LEAST(${userConsent.marketingAgreedAt}, ${userConsent.marketingPushAgreedAt})) <= ${sql.param(cutoff, userConsent.marketingReconfirmedAt)}`,
@@ -46,36 +46,37 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     return this.#txHost.tx;
   }
 
-  async findByUserId(userId: string): Promise<UserConsentRow | null> {
-    const row = await this.#db.query.userConsent.findFirst({ where: { userId } });
+  async findByUserId(userId: UserId): Promise<UserConsentRow | null> {
+    const row = await this.#db.query.userConsent.findFirst({ where: { userId: userId.value } });
     return row ?? null;
   }
 
-  async findAiDataSharingConsent(userId: string): Promise<AiDataSharingConsent> {
+  async findAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
     const row = await this.#db.query.userConsent.findFirst({
       columns: { aiDataSharingAgreedAt: true, aiDataSharingVersion: true },
-      where: { userId },
+      where: { userId: userId.value },
     });
     return AiDataSharingConsent.reconstitute({
-      userId,
-      agreedAt:
-        row?.aiDataSharingAgreedAt == null ? null : instantFromDate(row.aiDataSharingAgreedAt),
+      userId: userId.value,
+      agreedAt: row?.aiDataSharingAgreedAt ?? null,
       version: row?.aiDataSharingVersion ?? null,
     });
   }
 
-  async findByUserIds(userIds: readonly string[]): Promise<UserConsentRow[]> {
+  async findByUserIds(userIds: readonly UserId[]): Promise<UserConsentRow[]> {
     if (userIds.length === 0) {
       return [];
     }
-    return this.#db.query.userConsent.findMany({ where: { userId: { in: [...userIds] } } });
+    return this.#db.query.userConsent.findMany({
+      where: { userId: { in: userIds.map((userId) => userId.value) } },
+    });
   }
 
-  async create(userId: string, data: ConsentSeedInput): Promise<UserConsentRow> {
+  async create(userId: UserId, data: ConsentSeedInput): Promise<UserConsentRow> {
     const [row] = await this.#db
       .insert(userConsent)
       .values({
-        userId,
+        userId: userId.value,
         termsAgreedAt: data.termsAgreedAt ?? null,
         privacyAgreedAt: data.privacyAgreedAt ?? null,
         agreedTermsVersion: data.agreedTermsVersion ?? null,
@@ -87,17 +88,17 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
   }
 
   async upsertMarketingConsent(
-    userId: string,
-    data: { agreedAt: Date | null },
+    userId: UserId,
+    data: { agreedAt: Temporal.Instant | null },
   ): Promise<UserConsentRow> {
-    return this.#upsert(userId, { marketingAgreedAt: data.agreedAt });
+    return this.#upsert(userId.value, { marketingAgreedAt: data.agreedAt });
   }
 
   async upsertMarketingPushConsent(
-    userId: string,
-    data: { agreedAt: Date | null },
+    userId: UserId,
+    data: { agreedAt: Temporal.Instant | null },
   ): Promise<UserConsentRow> {
-    return this.#upsert(userId, { marketingPushAgreedAt: data.agreedAt });
+    return this.#upsert(userId.value, { marketingPushAgreedAt: data.agreedAt });
   }
 
   async findMarketingReconfirmTargets(
@@ -112,7 +113,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
           marketingReconfirmDue(params.cutoff),
           isNull(user.deletedAt),
           eq(user.status, "ACTIVE"),
-          params.afterUserId == null ? undefined : gt(userConsent.userId, params.afterUserId),
+          params.afterUserId == null ? undefined : gt(userConsent.userId, params.afterUserId.value),
         ),
       )
       .orderBy(asc(userConsent.userId))
@@ -120,8 +121,8 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
   }
 
   async claimMarketingReconfirm(
-    userIds: readonly string[],
-    params: { readonly cutoff: Date; readonly at: Date },
+    userIds: readonly UserId[],
+    params: { readonly cutoff: Temporal.Instant; readonly at: Temporal.Instant },
   ): Promise<MarketingReconfirmTarget[]> {
     if (userIds.length === 0) {
       return [];
@@ -129,15 +130,23 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     return this.#db
       .update(userConsent)
       .set({ marketingReconfirmedAt: params.at })
-      .where(and(inArray(userConsent.userId, [...userIds]), marketingReconfirmDue(params.cutoff)))
+      .where(
+        and(
+          inArray(
+            userConsent.userId,
+            userIds.map((userId) => userId.value),
+          ),
+          marketingReconfirmDue(params.cutoff),
+        ),
+      )
       .returning(reconfirmTargetColumns);
   }
 
   async upsertAiDataSharingConsent(
-    userId: string,
-    data: { agreedAt: Date | null; version: string },
+    userId: UserId,
+    data: { agreedAt: Temporal.Instant | null; version: string },
   ): Promise<UserConsentRow> {
-    return this.#upsert(userId, {
+    return this.#upsert(userId.value, {
       aiDataSharingAgreedAt: data.agreedAt,
       aiDataSharingVersion: data.version,
     });

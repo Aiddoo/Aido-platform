@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -34,7 +35,7 @@ describe("오늘의 할 일 요약", () => {
     // When
     const result = await useCase.execute({
       userId: fixture.userId,
-      today: new Date("2026-05-15T00:00:00Z"),
+      today: Temporal.PlainDate.from("2026-05-15"),
     });
     // Then
     expect(result).toEqual({
@@ -46,7 +47,11 @@ describe("오늘의 할 일 요약", () => {
       currentStreak: 12,
       topTodos: fixture.todoReadRepository.topTodos,
     });
-    expect(topQuery).toHaveBeenCalledWith(fixture.userId, new Date("2026-05-15T00:00:00Z"), 10);
+    expect(topQuery).toHaveBeenCalledWith(
+      UserId.reconstitute(fixture.userId),
+      Temporal.PlainDate.from("2026-05-15"),
+      10,
+    );
   });
   it.each([
     { name: "빈 목록", total: 0, completed: 0, rate: 0, complete: false },
@@ -58,7 +63,7 @@ describe("오늘의 할 일 요약", () => {
     // When
     const result = await useCase.execute({
       userId: fixture.userId,
-      today: new Date("2026-05-15T00:00:00Z"),
+      today: Temporal.PlainDate.from("2026-05-15"),
     });
     // Then
     expect(result).toMatchObject({
@@ -72,11 +77,11 @@ describe("오늘의 할 일 요약", () => {
     // Given
     fixture.todoReadRepository.dayStats = { total: 3, completed: 3 };
     fixture.streakContext.currentStreak = 5;
-    fixture.streakContext.lastCompletedDate = new Date("2026-05-14T00:00:00Z");
+    fixture.streakContext.lastCompletedDate = Temporal.PlainDate.from("2026-05-14");
     // When
     const result = await useCase.execute({
       userId: fixture.userId,
-      today: new Date("2026-05-15T00:00:00Z"),
+      today: Temporal.PlainDate.from("2026-05-15"),
     });
     // Then
     expect(result.currentStreak).toBe(6);
@@ -85,16 +90,19 @@ describe("오늘의 할 일 요약", () => {
     // Given - 오늘 전체 완료로 스트릭이 이어진 상태
     fixture.todoReadRepository.dayStats = { total: 2, completed: 0 };
     fixture.streakContext.currentStreak = 6;
-    fixture.streakContext.lastCompletedDate = new Date("2026-05-15T00:00:00Z");
+    fixture.streakContext.lastCompletedDate = Temporal.PlainDate.from("2026-05-15");
     const statsQuery = vi.spyOn(fixture.todoReadRepository, "getTodayTodoStats");
     // When
     const result = await useCase.execute({
       userId: fixture.userId,
-      today: new Date("2026-05-15T00:00:00Z"),
-      requestedDate: new Date("2026-05-16T00:00:00Z"),
+      today: Temporal.PlainDate.from("2026-05-15"),
+      requestedDate: Temporal.PlainDate.from("2026-05-16"),
     });
     // Then
     expect(result).toMatchObject({ date: "2026-05-16", totalTodos: 2, currentStreak: 6 });
-    expect(statsQuery).toHaveBeenCalledWith(fixture.userId, new Date("2026-05-16T00:00:00Z"));
+    expect(statsQuery).toHaveBeenCalledWith(
+      UserId.reconstitute(fixture.userId),
+      Temporal.PlainDate.from("2026-05-16"),
+    );
   });
 });

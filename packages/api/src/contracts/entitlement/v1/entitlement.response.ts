@@ -13,7 +13,9 @@ const planFeatureSchema = z.enum(PLAN_FEATURE_KEYS).describe("PLAN_CATALOG 기�
 
 export const accessTierSchema = z
   .enum(ACCESS_TIERS)
-  .describe("권한 주체 (FREE: 무료, PREMIUM: 구독·보상 기간, ADMIN: 모든 기능 무제한)");
+  .describe(
+    "권한 주체 (FREE: 무료, PREMIUM: 구독·보상 기간, ADMIN: 관리자. ADMIN의 기능·한도는 PREMIUM과 같다)",
+  );
 
 const featurePerUseLimitSchema = z
   .object({
@@ -44,7 +46,7 @@ export const featureQuotaSchema = z
       .nonnegative()
       .nullable()
       .describe(
-        "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+        "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
       ),
     used: z
       .number()

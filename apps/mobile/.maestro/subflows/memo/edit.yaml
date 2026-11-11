@@ -1,0 +1,15 @@
+appId: ${MAESTRO_APP_ID}
+name: 목록의 메모를 열어 내용을 바꿔 저장한다
+# env: MEMO_ID, MEMO_TEXT
+---
+- tapOn:
+    id: ${output.ids.memo.item(MEMO_ID)}
+- tapOn:
+    id: ${output.ids.memo.editorInput}
+- eraseText: 200
+- inputText: ${MEMO_TEXT}
+# 헤더 저장 버튼은 네이티브 툴바라 testID를 받지 않는다
+- tapOn: ${output.labels.save}
+- extendedWaitUntil:
+    notVisible: ${output.labels.save}
+    timeout: 10000

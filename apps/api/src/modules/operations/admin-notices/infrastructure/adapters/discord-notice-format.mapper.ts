@@ -1,10 +1,10 @@
 /** 운영자가 한국에서 보므로 시각은 KST로 적는다. */
 const OPERATOR_TIMEZONE = "Asia/Seoul";
-const DAY_MS = 24 * 60 * 60 * 1_000;
-const FIELD_VALUE_MAX_LENGTH = 1_024;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const FIELD_VALUE_MAX_LENGTH = 1024;
 const TRANSACTION_ID_MAX_LENGTH = 20;
 
-export const EMPTY = "—";
+const EMPTY = "—";
 
 export interface DiscordEmbedField {
   readonly name: string;
@@ -64,7 +64,7 @@ export function formatKst(iso: string | undefined): string | undefined {
 export function formatKstWithRelative(iso: string | undefined): string | undefined {
   const kst = formatKst(iso);
   const instant = iso == null ? null : instantOf(iso);
-  return instant == null ? kst : `${kst} · <t:${Math.floor(instant.epochMilliseconds / 1_000)}:R>`;
+  return instant == null ? kst : `${kst} · <t:${Math.floor(instant.epochMilliseconds / 1000)}:R>`;
 }
 
 /** 가입일과 가입 뒤 지난 날(KST 달력). 예: `2026-10-01 (D+40)` */

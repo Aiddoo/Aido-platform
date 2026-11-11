@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
@@ -22,8 +23,8 @@ export class PremiumAccessReaderAdapter extends PremiumAccessReaderPort {
     this.#getPremiumAccess = getPremiumAccess;
   }
 
-  async getPremiumAccess(userId: string): Promise<PremiumAccess> {
-    const access = await this.#getPremiumAccess.execute({ userId });
+  async getPremiumAccess(userId: UserId): Promise<PremiumAccess> {
+    const access = await this.#getPremiumAccess.execute({ userId: userId.value });
     return {
       ...access,
       endsAt: toDateOrNull(access.endsAt),

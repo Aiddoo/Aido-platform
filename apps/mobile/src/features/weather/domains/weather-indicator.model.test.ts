@@ -1,4 +1,8 @@
-import { createWeatherReport } from '../__tests__/weather-report.fixtures';
+import {
+  createAirQuality,
+  createCurrentWeather,
+  createWeatherReport,
+} from '../__tests__/weather-report.fixtures';
 import { WeatherIndicatorPolicy } from './weather-indicator.model';
 
 describe('getPollutantGrade', () => {
@@ -14,7 +18,7 @@ describe('getPollutantGrade', () => {
     ['pm25', 76, 'veryBad'],
   ] as const)('%s가 %s μg/m³이면 %s 등급이다', (pollutant, value, expected) => {
     // Given
-    const airQuality = { pm10: null, pm25: null, [pollutant]: value };
+    const airQuality = createAirQuality(pollutant === 'pm10' ? { pm10: value } : { pm25: value });
 
     // When
     const grade = WeatherIndicatorPolicy.getPollutantGrade(airQuality, pollutant);
@@ -25,7 +29,7 @@ describe('getPollutantGrade', () => {
 
   it('고른 오염 물질의 값이 없으면 다른 물질이 나빠도 null이다', () => {
     // Given
-    const airQuality = { pm10: 200, pm25: null };
+    const airQuality = createAirQuality({ pm10: 200, pm25: null });
 
     // When
     const grade = WeatherIndicatorPolicy.getPollutantGrade(airQuality, 'pm25');
@@ -36,7 +40,7 @@ describe('getPollutantGrade', () => {
 
   it('고른 오염 물질만 보고 다른 물질의 값은 등급에 섞지 않는다', () => {
     // Given
-    const airQuality = { pm10: 200, pm25: 10 };
+    const airQuality = createAirQuality({ pm10: 200, pm25: 10 });
 
     // When
     const grade = WeatherIndicatorPolicy.getPollutantGrade(airQuality, 'pm25');
@@ -59,7 +63,7 @@ describe('getUvLevel', () => {
     [11, 'extreme'],
   ] as const)('자외선 지수 %s는 %s 단계다', (uvIndex, expected) => {
     // When
-    const level = WeatherIndicatorPolicy.getUvLevel({ uvIndex });
+    const level = WeatherIndicatorPolicy.getUvLevel(createCurrentWeather({ uvIndex }));
 
     // Then
     expect(level).toBe(expected);
@@ -79,7 +83,9 @@ describe('getCompassDirection', () => {
     [null, null],
   ] as const)('풍향 %s도는 %s 방위로 보여 준다', (windDirection, expected) => {
     // When
-    const direction = WeatherIndicatorPolicy.getCompassDirection({ windDirection });
+    const direction = WeatherIndicatorPolicy.getCompassDirection(
+      createCurrentWeather({ windDirection }),
+    );
 
     // Then
     expect(direction).toBe(expected);
@@ -119,7 +125,9 @@ describe('getVisibilityLevel', () => {
     [1_240, 'poor'],
   ] as const)('가시거리 %dm는 %s다', (meters, expected) => {
     // When
-    const level = WeatherIndicatorPolicy.getVisibilityLevel({ visibility: meters });
+    const level = WeatherIndicatorPolicy.getVisibilityLevel(
+      createCurrentWeather({ visibility: meters }),
+    );
 
     // Then
     // 10km 이상은 맑음, 5km 이상은 보통, 그 아래는 나쁨이다
@@ -136,7 +144,7 @@ describe('getCloudCoverLevel', () => {
     [10, 'mostlyClear'],
   ] as const)('운량 %d%%는 %s다', (cloudCover, expected) => {
     // When
-    const level = WeatherIndicatorPolicy.getCloudCoverLevel({ cloudCover });
+    const level = WeatherIndicatorPolicy.getCloudCoverLevel(createCurrentWeather({ cloudCover }));
 
     // Then
     // 80% 이상은 흐림, 40% 이상은 구름 많음, 그 아래는 대체로 맑음이다
@@ -155,7 +163,7 @@ describe('getWindLevel', () => {
     [8, 'strong'],
   ] as const)('풍속 %s m/s는 %s 바람이다', (speed, expected) => {
     // When
-    const level = WeatherIndicatorPolicy.getWindLevel({ windSpeed: speed });
+    const level = WeatherIndicatorPolicy.getWindLevel(createCurrentWeather({ windSpeed: speed }));
 
     // Then
     // 1.5m/s 미만은 잔잔, 5.5m/s 이상은 강하다 (보퍼트 풍력 1·4)
@@ -169,7 +177,7 @@ describe('isMuggy', () => {
     [80, true],
   ])('상대 습도 %s%%이면 눅눅한지는 %s다', (humidity, expected) => {
     // When
-    const muggy = WeatherIndicatorPolicy.isMuggy({ humidity });
+    const muggy = WeatherIndicatorPolicy.isMuggy(createCurrentWeather({ humidity }));
 
     // Then
     expect(muggy).toBe(expected);

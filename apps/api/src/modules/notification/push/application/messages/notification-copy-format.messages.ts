@@ -1,5 +1,6 @@
-import { localDateInTimezone, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type {
   NotificationCopyArgs,
@@ -103,7 +104,7 @@ export function formatConsentDate(
 ): string {
   const timeZone = resolveTimezone(timezone);
   return locale === "ko"
-    ? localDateInTimezone(instant, timeZone).replaceAll("-", ".")
+    ? localDateIn(instantFromDate(instant), timeZone).toString().replaceAll("-", ".")
     : new Intl.DateTimeFormat("en", {
         month: "short",
         day: "numeric",

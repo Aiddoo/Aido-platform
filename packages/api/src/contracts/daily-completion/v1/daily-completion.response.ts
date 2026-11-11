@@ -1,11 +1,12 @@
 import { z } from "zod";
 
 import { datetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 
 export const dailyCompletionSchema = z
   .object({
-    id: z.cuid().describe("데일리 달성 기록 ID (CUID 25자, 예: clz7x5p8k0040qz0z8z8z8z8z)"),
-    userId: z.cuid().describe("사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)"),
+    id: entityIdSchema.describe("데일리 달성 기록 ID (예: clz7x5p8k0040qz0z8z8z8z8z)"),
+    userId: entityIdSchema.describe("사용자 ID (예: clz7x5p8k0001qz0z8z8z8z8z)"),
     date: z.string().describe("날짜 (YYYY-MM-DD, 예: 2026-01-17)"),
     totalTodos: z.number().int().min(0).describe("해당 날짜 전체 할 일 개수 (0 이상)"),
     completedTodos: z.number().int().min(0).describe("완료한 할 일 개수 (0 이상)"),

@@ -11,6 +11,4 @@ export const DailyCompletionCacheKey = {
     cacheKey("daily-completion", "range-v2", userId, generation, "public", startDate, endDate),
   generationPattern: (userId: string, generation: string) =>
     cachePattern("daily-completion", "range-v2", userId, generation),
-  // 이전 인스턴스의 prefix 무효화도 generation을 끊도록 기존 namespace를 공유한다.
-  legacyPattern: (userId: string) => cachePattern("daily-completion", "range-v1", userId),
 } as const;

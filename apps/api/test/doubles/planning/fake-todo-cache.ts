@@ -1,34 +1,36 @@
 import { TodoCachePort } from "#api/modules/planning/todos/application/ports/todo-cache.port";
 import type { FriendTodoReadModel } from "#api/modules/planning/todos/application/read-models/todo.read-model";
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class FakeTodoCache extends TodoCachePort {
   readonly categoryUsers = new Set<string>();
   readonly pages = new Map<string, CursorPaginatedResponse<FriendTodoReadModel, number>>();
   readonly generations = new Map<string, number>();
-  async invalidateTodoCategories(userId: string): Promise<void> {
-    this.categoryUsers.delete(userId);
+  async invalidateTodoCategories(userId: UserId): Promise<void> {
+    this.categoryUsers.delete(userId.value);
   }
-  async readFriendTodosFirstPage(userId: string, start: string, end: string, size: number) {
-    const page = this.pages.get(this.#key(userId, start, end, size));
+  async readFriendTodosFirstPage(owner: UserId, start: string, end: string, size: number) {
+    const page = this.pages.get(this.#key(owner.value, start, end, size));
     return {
-      generation: String(this.generations.get(userId) ?? 0),
+      generation: String(this.generations.get(owner.value) ?? 0),
       page: page === undefined ? undefined : structuredClone(page),
     };
   }
   async storeFriendTodosFirstPageIfCurrent(
-    userId: string,
+    owner: UserId,
     start: string,
     end: string,
     size: number,
     generation: string,
     page: CursorPaginatedResponse<FriendTodoReadModel, number>,
   ): Promise<void> {
-    if (generation === String(this.generations.get(userId) ?? 0)) {
-      this.pages.set(this.#key(userId, start, end, size), structuredClone(page));
+    if (generation === String(this.generations.get(owner.value) ?? 0)) {
+      this.pages.set(this.#key(owner.value, start, end, size), structuredClone(page));
     }
   }
-  async invalidateFriendTodos(userId: string): Promise<void> {
+  async invalidateFriendTodos(owner: UserId): Promise<void> {
+    const userId = owner.value;
     this.generations.set(userId, (this.generations.get(userId) ?? 0) + 1);
     for (const key of this.pages.keys()) {
       if (key.startsWith(`${userId}:`)) {

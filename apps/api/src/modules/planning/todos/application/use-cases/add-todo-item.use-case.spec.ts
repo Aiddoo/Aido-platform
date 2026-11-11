@@ -5,7 +5,9 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
+  PLANNING_INSTANT,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { AddTodoItemUseCase } from "./add-todo-item.use-case.js";
@@ -49,7 +51,7 @@ describe("하위 항목 추가", () => {
     if (record == null) {
       throw new Error("fixture todo missing");
     }
-    fixture.records.set(1, { ...record, completed: true, completedAt: PLANNING_TIME });
+    fixture.records.set(1, { ...record, completed: true, completedAt: PLANNING_INSTANT });
     // When
     const result = await useCase.execute({
       todoId: 1,
@@ -60,7 +62,7 @@ describe("하위 항목 추가", () => {
     // Then
     expect(result.completed).toBe(false);
     expect(fixture.records.get(1)?.completedAt).toBeNull();
-    expect(fixture.eventPublisher.events).toEqual([
+    expect(fixture.completionEffects.events).toEqual([
       expect.objectContaining({ todoId: 1, completed: false, timezone: TIMEZONE }),
     ]);
   });
@@ -73,14 +75,14 @@ describe("하위 항목 추가", () => {
       timezone: TIMEZONE,
     });
     // Then
-    expect(fixture.eventPublisher.events).toEqual([]);
+    expect(fixture.completionEffects.events).toEqual([]);
   });
   it("20개 항목 한도와 잘못된 제목은 상태를 바꾸지 않는다", async () => {
     // Given
     for (let sortOrder = 0; sortOrder < TODO_ITEM_LIMITS.MAX_PER_TODO; sortOrder++) {
       await fixture.todoRepository.seedItem(1, { title: `항목 ${sortOrder}`, sortOrder });
     }
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({
@@ -97,7 +99,7 @@ describe("하위 항목 추가", () => {
   });
   it("잘못된 항목 제목을 거부하고 소유자만 항목을 추가할 수 있다", async () => {
     // Given
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({

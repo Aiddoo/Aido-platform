@@ -23,6 +23,7 @@
     "test": {
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": [],
+      "passThroughEnv": ["AIDO_TEST_WORKERS"],
       "env": ["TZ"],
       "dependsOn": ["^build"]
     },
@@ -49,7 +50,6 @@
     },
     "test:integration": {
       "dependsOn": ["^build"],
-      "cache": false,
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": [],
       "passThroughEnv": [
@@ -58,13 +58,36 @@
         "JWT_REFRESH_SECRET",
         "TOKEN_ENCRYPTION_KEY",
         "NODE_ENV",
-        "AIDO_TEST_POSTGRES_URL"
+        "AIDO_TEST_POSTGRES_URL",
+        "DOCKER_HOST",
+        "TESTCONTAINERS_HOST_OVERRIDE",
+        "TESTCONTAINERS_RYUK_DISABLED",
+        "AIDO_TEST_DB_WORKERS"
+      ],
+      "env": ["TZ", "BROADCAST_RECIPIENT_COUNT"]
+    },
+    "test:contract": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": [],
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "JWT_REFRESH_SECRET",
+        "TOKEN_ENCRYPTION_KEY",
+        "NODE_ENV",
+        "AIDO_TEST_POSTGRES_URL",
+        "DOCKER_HOST",
+        "TESTCONTAINERS_HOST_OVERRIDE",
+        "TESTCONTAINERS_RYUK_DISABLED",
+        "AIDO_TEST_DB_WORKERS"
       ],
       "env": ["TZ"]
     },
     "test:cov": {
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["coverage/**"],
+      "passThroughEnv": ["AIDO_TEST_WORKERS"],
       "env": ["TZ"],
       "dependsOn": ["^build"]
     },

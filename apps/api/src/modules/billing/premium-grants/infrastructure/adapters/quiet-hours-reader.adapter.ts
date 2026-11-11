@@ -1,10 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  PUSH_QUIET_HOURS_READER,
-  type PushQuietHoursReaderPort,
-} from "#api/modules/notification/notification-delivery.public";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { PushQuietHoursReaderPort } from "#api/modules/notification/notification-delivery.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { QuietHoursReaderPort } from "../../application/ports/quiet-hours.reader.port.js";
 
@@ -13,7 +10,7 @@ import { QuietHoursReaderPort } from "../../application/ports/quiet-hours.reader
 export class QuietHoursReaderAdapter extends QuietHoursReaderPort {
   readonly #reader: PushQuietHoursReaderPort;
 
-  constructor(@Inject(PUSH_QUIET_HOURS_READER) reader: PushQuietHoursReaderPort) {
+  constructor(@Inject(PushQuietHoursReaderPort) reader: PushQuietHoursReaderPort) {
     super();
     this.#reader = reader;
   }
@@ -22,6 +19,9 @@ export class QuietHoursReaderAdapter extends QuietHoursReaderPort {
     userIds: readonly string[],
     at: Temporal.Instant,
   ): Promise<ReadonlySet<string>> {
-    return this.#reader.findUsersInQuietHours(userIds, instantToDate(at));
+    return this.#reader.findUsersInQuietHours(
+      userIds.map((userId) => UserId.reconstitute(userId)),
+      at,
+    );
   }
 }

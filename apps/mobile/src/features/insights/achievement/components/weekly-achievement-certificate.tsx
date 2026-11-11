@@ -2,6 +2,7 @@ import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyRange } from '@src/shared/date/date-format';
+import { formatIsoWeekOfMonthLabel } from '@src/shared/date/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
@@ -101,7 +102,10 @@ export function WeeklyAchievementCertificate() {
             textBreakStrategy="highQuality"
           >
             {t('card.certificate', {
-              weekLabel: achievement.weekLabel,
+              weekLabel: formatIsoWeekOfMonthLabel(
+                achievement.dateRange.startDate,
+                dateFormatContext,
+              ),
               total: achievement.totalTodos,
               completed: achievement.completedTodos,
               rate: formatPercent(achievement.completionRate),

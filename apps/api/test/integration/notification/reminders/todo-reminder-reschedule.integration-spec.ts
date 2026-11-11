@@ -1,36 +1,31 @@
 import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 
-import { todoReminderJobKey } from "#api/modules/notification/push/infrastructure/jobs/notification-job-keys.constants";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import {
-  TODO_REMINDER_JOB_NAME,
   TODO_REMINDER_QUEUE,
   TODO_SERIES_PAUSED_JOB_NAME,
   TODO_SERIES_PAUSED_QUEUE,
 } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase } from "#test/setup/test-database";
+
+import { withFastJobTiming } from "../../helpers/fast-job-timing.js";
 
 const SCHEMA = "pgboss";
 const USER_ID = "user-reminder";
 const HOUR_MS = 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
-// 테스트가 기다리지 않게 같은 큐를 1초마다 가져간다
-const FAST_TODO_REMINDER_QUEUE = {
-  ...TODO_REMINDER_QUEUE,
-  worker: { localConcurrency: 1, pollingIntervalSeconds: 1 },
-};
+const FAST_TODO_REMINDER_QUEUE = withFastJobTiming(TODO_REMINDER_QUEUE);
 
 describe("리마인더 재예약 (실제 pg-boss)", () => {
   let testDatabase: TestDatabase;
   let boss: PgBoss;
-  let runtime: PgBossJobRuntimeAdapter;
   let jobQueue: PgBossJobQueueAdapter;
   let scheduler: TodoReminderSchedulerAdapter;
   let transaction: ReturnType<typeof createDatabaseTransactionFixture>;
@@ -65,11 +60,10 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
       max: 3,
     });
     transaction = createDatabaseTransactionFixture(client);
-    runtime = new PgBossJobRuntimeAdapter(boss, transaction.txHost, {
-      job: { shutdownTimeoutMs: 10_000 },
+    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
+      shutdownTimeoutMs: 10_000,
     });
-    await runtime.start();
-    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry());
+    await jobQueue.start();
     scheduler = new TodoReminderSchedulerAdapter(jobQueue, new DateClock());
   });
 
@@ -79,15 +73,15 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
   });
 
   afterAll(async () => {
-    await runtime?.stop();
+    await jobQueue?.stop();
     await testDatabase?.stop();
   });
 
   it("단일 할 일의 시간을 바꾸면 새 시각의 작업만 대기한다", async () => {
     // Given
     const todoId = nextTodoId;
-    const first = new Date(Date.now() + 5 * HOUR_MS);
-    const moved = new Date(Date.now() + 8 * HOUR_MS);
+    const first = nowInstant().add({ milliseconds: 5 * HOUR_MS });
+    const moved = nowInstant().add({ milliseconds: 8 * HOUR_MS });
     await scheduler.scheduleReminder(todoId, first, USER_ID);
 
     // When
@@ -96,15 +90,17 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     // Then
     const starts = await queuedStarts(todoId, "60min");
     expect(starts).toHaveLength(1);
-    expect(Math.abs((starts[0] ?? 0) - (moved.getTime() - HOUR_MS))).toBeLessThan(MINUTE_MS);
+    expect(Math.abs((starts[0] ?? 0) - (moved.epochMilliseconds - HOUR_MS))).toBeLessThan(
+      MINUTE_MS,
+    );
     await expect(queuedStarts(todoId, "10min")).resolves.toHaveLength(1);
   });
 
   it("범위 수정처럼 취소 뒤 일괄 등록해도 새 시각의 작업만 대기한다", async () => {
     // Given
     const todoIds = [nextTodoId, nextTodoId + 1000];
-    const first = new Date(Date.now() + 5 * HOUR_MS);
-    const moved = new Date(Date.now() + 8 * HOUR_MS);
+    const first = nowInstant().add({ milliseconds: 5 * HOUR_MS });
+    const moved = nowInstant().add({ milliseconds: 8 * HOUR_MS });
     await scheduler.scheduleReminders(
       todoIds.map((todoId) => ({ todoId, scheduledTime: first, userId: USER_ID })),
     );
@@ -119,7 +115,9 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     for (const todoId of todoIds) {
       const starts = await queuedStarts(todoId, "60min");
       expect(starts).toHaveLength(1);
-      expect(Math.abs((starts[0] ?? 0) - (moved.getTime() - HOUR_MS))).toBeLessThan(MINUTE_MS);
+      expect(Math.abs((starts[0] ?? 0) - (moved.epochMilliseconds - HOUR_MS))).toBeLessThan(
+        MINUTE_MS,
+      );
     }
   });
 
@@ -127,7 +125,11 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     // Given
     const todoId = nextTodoId;
     const key = `reminder_${todoId}_10min`;
-    await scheduler.scheduleReminder(todoId, new Date(Date.now() + 10 * MINUTE_MS + 500), USER_ID);
+    await scheduler.scheduleReminder(
+      todoId,
+      nowInstant().add({ milliseconds: 10 * MINUTE_MS + 500 }),
+      USER_ID,
+    );
     await jobQueue.work(FAST_TODO_REMINDER_QUEUE, vi.fn().mockResolvedValue(undefined));
     const finished = await vi.waitFor(
       async () => {
@@ -138,7 +140,11 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
       { timeout: 15_000, interval: 200 },
     );
     // When
-    await scheduler.scheduleReminder(todoId, new Date(Date.now() + 10 * MINUTE_MS + 500), USER_ID);
+    await scheduler.scheduleReminder(
+      todoId,
+      nowInstant().add({ milliseconds: 10 * MINUTE_MS + 500 }),
+      USER_ID,
+    );
     // Then
     await vi.waitFor(
       async () => {
@@ -176,35 +182,10 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     expect(kept?.deleteAfterSeconds).toBe(120 * 24 * 60 * 60);
   });
 
-  it("옛 runtime이 같은 key로 등록해 둔 작업도 새 어댑터의 취소가 지운다", async () => {
-    // Given: 배포 전 서버가 남긴 작업(같은 큐 이름·key 문자열)
-    const todoId = nextTodoId;
-    await runtime.enqueueMany(TODO_REMINDER_QUEUE.name, [
-      {
-        data: {
-          name: TODO_REMINDER_JOB_NAME,
-          data: { todoId, userId: USER_ID, stageLabel: "60min" },
-        },
-        options: {
-          ...TODO_REMINDER_QUEUE.retry,
-          idempotencyKey: todoReminderJobKey(todoId, "60min"),
-          startAfter: new Date(Date.now() + 4 * HOUR_MS),
-        },
-      },
-    ]);
-    await expect(queuedStarts(todoId, "60min")).resolves.toHaveLength(1);
-
-    // When
-    await scheduler.cancelReminders([todoId]);
-
-    // Then
-    await expect(queuedStarts(todoId, "60min")).resolves.toEqual([]);
-  });
-
   it("트랜잭션이 되돌려지면 지운 작업이 그대로 남고 새 작업도 없다", async () => {
     // Given
     const todoId = nextTodoId;
-    const first = new Date(Date.now() + 5 * HOUR_MS);
+    const first = nowInstant().add({ milliseconds: 5 * HOUR_MS });
     await scheduler.scheduleReminder(todoId, first, USER_ID);
     const before = await queuedStarts(todoId, "60min");
 
@@ -212,7 +193,7 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     const outcome = transaction.uow.run(async () => {
       await scheduler.cancelReminders([todoId]);
       await scheduler.scheduleReminders([
-        { todoId, scheduledTime: new Date(Date.now() + 8 * HOUR_MS), userId: USER_ID },
+        { todoId, scheduledTime: nowInstant().add({ milliseconds: 8 * HOUR_MS }), userId: USER_ID },
       ]);
       throw new Error("force rollback");
     });

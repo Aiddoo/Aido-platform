@@ -177,18 +177,7 @@ describe('계약 응답과 앱 스키마', () => {
 
   it('계약을 통과한 달성 기간을 매핑하면 앱 달성 스키마를 통과한다', () => {
     // Given
-    const dto = dailyCompletionsRangeResponseSchema.parse(
-      createDailyCompletionsDto({
-        multiDayTodos: [
-          {
-            startDate: '2026-03-01',
-            endDate: '2026-03-03',
-            completed: false,
-            categoryColor: '#4A90D9',
-          },
-        ],
-      }),
-    );
+    const dto = dailyCompletionsRangeResponseSchema.parse(createDailyCompletionsDto());
 
     // When
     const result = toDailyCompletionsResult(dto);

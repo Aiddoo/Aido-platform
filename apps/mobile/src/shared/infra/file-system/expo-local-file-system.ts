@@ -6,13 +6,13 @@ function openDirectory(directory: readonly string[]) {
 }
 
 function toEntry(file: File): LocalFileEntry {
-  const modificationTime = file.modificationTime;
+  const lastModified = file.lastModified;
 
   return {
     name: file.name,
     uri: file.uri,
     sizeBytes: file.size,
-    modifiedAt: modificationTime == null ? null : new Date(modificationTime),
+    modifiedAt: lastModified == null ? null : new Date(lastModified),
   };
 }
 

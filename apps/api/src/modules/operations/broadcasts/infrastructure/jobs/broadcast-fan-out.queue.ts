@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 export const BroadcastFanOutJobName = {
   FAN_OUT: "fan-out-campaign",
@@ -11,8 +11,6 @@ const broadcastFanOutJobSchema = z.strictObject({
   name: z.literal(BroadcastFanOutJobName.FAN_OUT),
   data: z.strictObject({ campaignId: z.string().min(1) }),
 });
-
-export type BroadcastFanOutJob = z.output<typeof broadcastFanOutJobSchema>;
 
 const DAY_SECONDS = 24 * 60 * 60;
 

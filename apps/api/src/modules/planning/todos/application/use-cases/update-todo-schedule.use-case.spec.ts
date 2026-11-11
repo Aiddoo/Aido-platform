@@ -5,9 +5,9 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
 import { UpdateTodoScheduleUseCase } from "./update-todo-schedule.use-case.js";
 
 describe("할 일 일정 수정", () => {
@@ -26,14 +26,14 @@ describe("할 일 일정 수정", () => {
 
   it("시간 일정을 저장하고 리마인더 이벤트에 동일한 시간을 전달한다", async () => {
     // Given
-    const scheduledTime = new Date("2026-05-16T03:30:00Z");
+    const scheduledTime = Temporal.Instant.from("2026-05-16T03:30:00Z");
     // When
     const result = await useCase.execute({
       id: 1,
       userId: fixture.userId,
       timezone: "Asia/Seoul",
       schedule: {
-        startDate: new Date("2026-05-16T00:00:00Z"),
+        startDate: Temporal.PlainDate.from("2026-05-16"),
         endDate: null,
         scheduledTime: "12:30",
         isAllDay: false,
@@ -50,8 +50,11 @@ describe("할 일 일정 수정", () => {
       scheduledTime: "2026-05-16T03:30:00.000Z",
       scheduledLocalTime: "12:30",
     });
-    expect(fixture.eventPublisher.events).toEqual([
-      new TodoRescheduledEvent(1, fixture.userId, scheduledTime),
+    expect(fixture.todoReminder.scheduled).toEqual([
+      { todoId: 1, scheduledTime, userId: fixture.userId },
+    ]);
+    expect(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)).toEqual([
+      "planning.todo.rescheduled",
     ]);
   });
   it("종일 일정으로 변경하면 시간을 지우고 역전된 기간은 저장하지 않는다", async () => {
@@ -61,7 +64,7 @@ describe("할 일 일정 수정", () => {
       userId: fixture.userId,
       timezone: "Asia/Seoul",
       schedule: {
-        startDate: new Date("2026-05-16T00:00:00Z"),
+        startDate: Temporal.PlainDate.from("2026-05-16"),
         endDate: null,
         scheduledTime: null,
         isAllDay: true,
@@ -69,48 +72,22 @@ describe("할 일 일정 수정", () => {
     };
     // When
     const result = await useCase.execute(input);
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // Then
     expect(result.scheduledTime).toBeNull();
-    expect(fixture.eventPublisher.events).toEqual([
-      new TodoRescheduledEvent(1, fixture.userId, null),
+    expect(fixture.todoReminder.cancelled).toEqual([1]);
+    expect(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)).toEqual([
+      "planning.todo.rescheduled",
     ]);
     await expect(
       useCase.execute({
         ...input,
-        schedule: { ...input.schedule, endDate: new Date("2026-05-15T00:00:00Z") },
+        schedule: { ...input.schedule, endDate: Temporal.PlainDate.from("2026-05-15") },
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
     expect(fixture.records.get(1)).toEqual(before);
     await expect(useCase.execute({ ...input, id: 999 })).rejects.toMatchObject({
       errorCode: ErrorCode.TODO_0801,
     });
-  });
-
-  it("이벤트 발행이 끝나기 전에 응답 조회를 진행하지 않는다", async () => {
-    // Given
-    const entered = Promise.withResolvers<void>();
-    const publication = Promise.withResolvers<void>();
-    fixture.eventPublisher.publishAll = async () => {
-      entered.resolve();
-      await publication.promise;
-    };
-    const responseRead = vi.spyOn(fixture.todoReadRepository, "findByIdAndUserId");
-    // When
-    const execution = useCase.execute({
-      id: 1,
-      userId: fixture.userId,
-      timezone: "Asia/Seoul",
-      schedule: { startDate: PLANNING_TIME, endDate: null, scheduledTime: null, isAllDay: true },
-    });
-    try {
-      await Promise.race([entered.promise, execution]);
-      // Then
-      expect(responseRead).not.toHaveBeenCalled();
-    } finally {
-      publication.resolve();
-      await execution;
-    }
-    expect(responseRead).toHaveBeenCalledOnce();
   });
 });

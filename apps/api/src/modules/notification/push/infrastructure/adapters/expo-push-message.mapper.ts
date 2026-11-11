@@ -36,8 +36,8 @@ export function buildExpoPushMessage(payload: PushPayload): ExpoPushMessageBuild
     sound: payload.sound ?? "default",
     channelId: payload.channelId ?? "default",
     categoryId: payload.categoryId,
-    priority: payload.priority ?? "high",
-    ttl: payload.ttl,
+    priority: payload.priority,
+    ttl: payload.ttlSeconds,
   };
   const byteLength = measureExpoPushMessageByteLength(message);
 

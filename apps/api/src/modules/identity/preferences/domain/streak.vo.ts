@@ -1,12 +1,10 @@
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { isSameDay } from "#api/shared/domain/date/utils/compare";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
 /** 스트릭 지속 상태(영속 대상) */
 export interface StreakState {
   currentStreak: number;
   longestStreak: number;
-  lastCompletedDate: Date | null;
+  lastCompletedDate: Temporal.PlainDate | null;
 }
 
 /** 전체 완료 반영 계획 */
@@ -27,7 +25,7 @@ export class Streak extends ValueObject<StreakState> {
     return new Streak({
       currentStreak: state.currentStreak,
       longestStreak: state.longestStreak,
-      lastCompletedDate: state.lastCompletedDate == null ? null : new Date(state.lastCompletedDate),
+      lastCompletedDate: state.lastCompletedDate,
     });
   }
 
@@ -39,27 +37,26 @@ export class Streak extends ValueObject<StreakState> {
     return this.value.longestStreak;
   }
 
-  get lastCompletedDate(): Date | null {
-    return this.value.lastCompletedDate == null ? null : new Date(this.value.lastCompletedDate);
+  get lastCompletedDate(): Temporal.PlainDate | null {
+    return this.value.lastCompletedDate;
   }
 
   /** 오늘 완료가 이미 반영되어 있는지 */
-  isCompletedOn(today: Date): boolean {
-    return this.value.lastCompletedDate != null && isSameDay(this.value.lastCompletedDate, today);
+  isCompletedOn(today: Temporal.PlainDate): boolean {
+    return this.value.lastCompletedDate?.equals(today) ?? false;
   }
 
   /**
    * 오늘 전체 완료 → 스트릭 증가 계획을 반환한다.
    * 이미 오늘 반영되었으면 null(무변경).
    */
-  planCompletion(today: Date): StreakCompletionPlan | null {
-    if (this.value.lastCompletedDate != null && isSameDay(this.value.lastCompletedDate, today)) {
+  planCompletion(today: Temporal.PlainDate): StreakCompletionPlan | null {
+    if (this.isCompletedOn(today)) {
       return null;
     }
 
-    const yesterday = subtractDays(1, today);
-    const isConsecutive =
-      this.value.lastCompletedDate != null && isSameDay(this.value.lastCompletedDate, yesterday);
+    const yesterday = today.subtract({ days: 1 });
+    const isConsecutive = this.value.lastCompletedDate?.equals(yesterday) ?? false;
 
     const newStreak = isConsecutive ? this.value.currentStreak + 1 : 1;
     const newLongest = Math.max(this.value.longestStreak, newStreak);
@@ -68,7 +65,7 @@ export class Streak extends ValueObject<StreakState> {
       nextState: {
         currentStreak: newStreak,
         longestStreak: newLongest,
-        lastCompletedDate: new Date(today),
+        lastCompletedDate: today,
       },
       reachedStreak3: newStreak === 3,
     };
@@ -78,19 +75,17 @@ export class Streak extends ValueObject<StreakState> {
    * 완료 취소 → 오늘 전체 완료가 아니게 되면 스트릭 재계산 계획을 반환한다.
    * 오늘 완료 반영이 없었으면 null(무변경).
    */
-  planUncompletion(today: Date, hadYesterdayCompletion: boolean): StreakState | null {
-    if (this.value.lastCompletedDate == null || !isSameDay(this.value.lastCompletedDate, today)) {
+  planUncompletion(today: Temporal.PlainDate, hadYesterdayCompletion: boolean): StreakState | null {
+    if (!this.isCompletedOn(today)) {
       return null;
     }
-
-    const yesterday = subtractDays(1, today);
 
     if (hadYesterdayCompletion) {
       // 어제까지의 스트릭은 유지하되, 오늘은 제거
       return {
         currentStreak: Math.max(this.value.currentStreak - 1, 0),
         longestStreak: this.value.longestStreak,
-        lastCompletedDate: yesterday,
+        lastCompletedDate: today.subtract({ days: 1 }),
       };
     }
 

@@ -11,7 +11,6 @@ export class InMemoryUserLocationRepository extends UserLocationRepositoryPort {
   readonly #locations = new Map<string, UserLocation>();
   readonly saved: UserLocation[] = [];
   readonly reads: string[] = [];
-  saveFailure: Error | null = null;
 
   constructor(locations: readonly UserLocation[] = []) {
     super();
@@ -35,9 +34,6 @@ export class InMemoryUserLocationRepository extends UserLocationRepositoryPort {
   }
 
   async save(location: UserLocation): Promise<void> {
-    if (this.saveFailure != null) {
-      throw this.saveFailure;
-    }
     this.saved.push(copyOf(location));
     this.#locations.set(location.userId.value, copyOf(location));
   }
