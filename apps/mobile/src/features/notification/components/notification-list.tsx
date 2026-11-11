@@ -1,12 +1,10 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { createCheerMessageReportTarget } from '@src/features/social/moderation/domains/user-report.model';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
@@ -25,15 +23,15 @@ import { match } from 'ts-pattern';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NotificationPolicy } from '../domains/notification.model';
 import type { Notification } from '../domains/notification.model';
-import { useNotificationNavigation } from '../hooks/use-notification-navigation';
+import {
+  useOpenNotificationDestination,
+  useResolveNotificationDestination,
+} from '../hooks/use-notification-destination';
 import { useNotificationCategory } from '../hooks/use-notification-params';
 import { refreshNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
-import {
-  type NotificationDestination,
-  toNotificationDestination,
-} from '../utils/notification-destination';
+import type { NotificationDestination } from '../utils/notification-destination';
 import { getNotificationLabelKey } from '../utils/notification.view-model';
 import { NotificationListRow } from './notification-list-row';
 
@@ -170,12 +168,11 @@ NotificationList.Item = function Item({ notification, onOpen }: NotificationItem
 // 목록이 한 번 부르고 행에 넘겨 행마다 게이트·mutation을 만들지 않는다
 function useOpenNotification() {
   const { t } = useTranslation('notification');
-  const navigateToDestination = useNotificationNavigation();
-  const windowSizeClass = useWindowSizeClass();
+  const resolveDestination = useResolveNotificationDestination();
+  const openDestination = useOpenNotificationDestination();
   const logger = useLogger();
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
   const { trackEvent } = useTrack();
-  const queryClient = useQueryClient();
   const gate = useEntitlementGate('AI_REPORT', { surface: 'notification_center' });
 
   return (notification: Notification) => {
@@ -194,15 +191,12 @@ function useOpenNotification() {
     const destination: NotificationDestination =
       notification.target.kind === 'NOTIFICATIONS'
         ? { kind: 'none' }
-        : toNotificationDestination(notification.target, {
-            windowSizeClass,
-            viewerId: getCachedMe(queryClient)?.id,
-          });
+        : resolveDestination(notification.target);
     trackEvent('notification_center_opened', {
       type: notification.type,
       destination: destination.kind,
     });
-    navigateToDestination(destination).catch((error) =>
+    openDestination(destination).catch((error) =>
       logger.warn(NOTIFICATION_LOG_EVENT.CENTER_NAVIGATION_FAILED, {
         error: getErrorMessage(error),
       }),

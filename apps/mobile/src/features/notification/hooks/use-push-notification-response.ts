@@ -10,11 +10,9 @@ import type { PushNotificationResponse as OsPushNotificationResponse } from '@sr
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
 import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
-import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { type Instant } from '@src/shared/date/instant';
 import { getErrorMessage, unwrap } from '@src/shared/errors';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useIsRestoring, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   useCallback,
@@ -38,8 +36,10 @@ import {
 } from '../domains/push-notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
 import type { ReadyPushNotificationEntry } from '../stores/push-notification-entry.store';
-import { toNotificationDestination } from '../utils/notification-destination';
-import { useNotificationNavigation } from './use-notification-navigation';
+import {
+  useOpenNotificationDestination,
+  useResolveNotificationDestination,
+} from './use-notification-destination';
 import { usePushNotificationEntry } from './use-push-notification-entry';
 
 /** 푸시 응답의 입구 하나. 마지막 응답과 응답 리스너를 슬롯 하나로 모은다 */
@@ -206,8 +206,7 @@ function useResolveResponse(
   const notificationApi = useNotificationApi();
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
-  const queryClient = useQueryClient();
-  const windowSizeClass = useWindowSizeClass();
+  const resolveDestination = useResolveNotificationDestination();
   const inFlightIdRef = useRef<string | null>(null);
 
   const resolve = useEffectEvent(async (target: PushNotificationResponse) => {
@@ -230,13 +229,7 @@ function useResolveResponse(
         finishResponse(target.id);
         return;
       }
-      store.markReady(
-        target.id,
-        toNotificationDestination(notification.target, {
-          windowSizeClass,
-          viewerId: getCachedMe(queryClient)?.id,
-        }),
-      );
+      store.markReady(target.id, resolveDestination(notification.target));
     } catch (error) {
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
       // 끝난 세션이나 밀려난 탭의 실패로 새 탭의 마지막 응답을 지우지 않는다
@@ -278,7 +271,7 @@ function useOpenReadyEntry(
 ) {
   const { isEnteringApp } = usePushNotificationEntry();
   const logger = useLogger();
-  const navigate = useNotificationNavigation();
+  const openDestination = useOpenNotificationDestination();
   const { trackEvent } = useTrack();
   const { mutate: recordOpened } = useMutation(useRecordPushOpenedMutationOptions());
   const openedByIndexIdRef = useRef<string | null>(null);
@@ -292,7 +285,7 @@ function useOpenReadyEntry(
     const { notification } = response;
     try {
       if (destination.kind !== 'route' || openedByIndexIdRef.current !== response.id) {
-        await navigate(destination);
+        await openDestination(destination);
       }
       try {
         trackEvent('push_notification_opened', {
