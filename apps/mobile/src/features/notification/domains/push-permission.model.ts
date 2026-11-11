@@ -39,6 +39,7 @@ const pushPermissionPromptSchema = z.object({
 type PushPermissionPrompt = z.infer<typeof pushPermissionPromptSchema>;
 
 export type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMISSION_STEP];
+type PushDeviceStep = Exclude<PushPermissionStep, typeof PUSH_PERMISSION_STEP.ENABLE_IN_APP>;
 type PushAskMoment = (typeof PUSH_ASK_MOMENT)[keyof typeof PUSH_ASK_MOMENT];
 
 type PushAskContext =
@@ -131,18 +132,26 @@ function canReceivePush(permission: PushPermission, { pushEnabled }: { pushEnabl
   return isPushDeliverable(permission) && pushEnabled;
 }
 
+/** 기기 권한만 본 다음 단계. 앱 안 푸시 설정은 보지 않는다 */
+function getDeviceStep(permission: PushPermission): PushDeviceStep {
+  return match(permission)
+    .returnType<PushDeviceStep>()
+    .when(isPushDeliverable, () => PUSH_PERMISSION_STEP.NONE)
+    .when(isSettingsRequired, () => PUSH_PERMISSION_STEP.OPEN_SETTINGS)
+    .when(isNotDetermined, () => PUSH_PERMISSION_STEP.ASK)
+    .otherwise(() => PUSH_PERMISSION_STEP.REQUEST_SYSTEM);
+}
+
 /** 알림을 받으려면 사용자가 다음에 무엇을 해야 하는지 정한다. 문구·화면은 컴포넌트가 정한다 */
 function getNextStep(
   permission: PushPermission,
   { pushEnabled }: { pushEnabled: boolean },
 ): PushPermissionStep {
-  return match(permission)
-    .when(isPushDeliverable, () =>
-      pushEnabled ? PUSH_PERMISSION_STEP.NONE : PUSH_PERMISSION_STEP.ENABLE_IN_APP,
-    )
-    .when(isSettingsRequired, () => PUSH_PERMISSION_STEP.OPEN_SETTINGS)
-    .when(isNotDetermined, () => PUSH_PERMISSION_STEP.ASK)
-    .otherwise(() => PUSH_PERMISSION_STEP.REQUEST_SYSTEM);
+  const deviceStep = getDeviceStep(permission);
+  if (deviceStep === PUSH_PERMISSION_STEP.NONE && !pushEnabled) {
+    return PUSH_PERMISSION_STEP.ENABLE_IN_APP;
+  }
+  return deviceStep;
 }
 
 export const PushPermissionPolicy = {
@@ -152,5 +161,6 @@ export const PushPermissionPolicy = {
   canReceivePush,
   getAskMoment,
   getOnboardingWindowEndsAt,
+  getDeviceStep,
   getNextStep,
 } as const;

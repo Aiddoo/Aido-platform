@@ -67,6 +67,19 @@ describe('getNextStep', () => {
   });
 });
 
+describe('getDeviceStep', () => {
+  it('기기가 허용했으면 앱 안 푸시 설정과 상관없이 기기에서 할 일이 없다', () => {
+    // Given
+    const permission = createPushPermission({ status: 'GRANTED' });
+
+    // When
+    const step = PushPermissionPolicy.getDeviceStep(permission);
+
+    // Then
+    expect(step).toBe('NONE');
+  });
+});
+
 describe('isPushDeliverable', () => {
   it.each([
     ['GRANTED', true],
