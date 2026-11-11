@@ -2,10 +2,9 @@ import { i18n } from '@src/shared/i18n';
 
 import {
   diffWeeks,
-  getCalendarRange,
+  getCalendarMonthRanges,
   getWeekStart,
   getMonthWeeks,
-  getWeekRange,
   shiftCalendarDate,
 } from './calendar-grid';
 
@@ -73,21 +72,28 @@ describe('getMonthWeeks', () => {
   });
 });
 
-describe('표시 언어와 무관한 달력 범위', () => {
-  it.each(['ko', 'en'] as const)('%s에서도 주·월 범위는 일요일 시작이다', async (language) => {
-    // Given
-    await i18n.changeLanguage(language);
-    const monday = new Date(2026, 9, 26);
-
+describe('getCalendarMonthRanges', () => {
+  it('고른 날의 달·앞 달·다음 달을 일요일 시작 주까지 채운 범위로 준다', () => {
     // When
-    const weekRange = getWeekRange(monday, SYSTEM_TIME_ZONE);
-    const monthRange = getCalendarRange(monday, SYSTEM_TIME_ZONE);
-    const [firstWeek] = getMonthWeeks(monday, SYSTEM_TIME_ZONE);
+    const ranges = getCalendarMonthRanges('2026-10-26');
 
     // Then
-    expect(weekRange).toEqual({ rangeStart: '2026-10-25', rangeEnd: '2026-10-31' });
-    expect(monthRange).toEqual({ rangeStart: '2026-09-27', rangeEnd: '2026-10-31' });
-    expect(firstWeek?.[0]).toEqual(new Date(2026, 8, 27));
+    expect(ranges).toEqual({
+      selected: { startDate: '2026-09-27', endDate: '2026-10-31' },
+      neighbors: [
+        { startDate: '2026-08-30', endDate: '2026-10-03' },
+        { startDate: '2026-11-01', endDate: '2026-12-05' },
+      ],
+    });
+  });
+
+  it('같은 달의 어느 날을 골라도 같은 범위라 달 안에서 날짜를 옮겨도 키가 같다', () => {
+    // When
+    const first = getCalendarMonthRanges('2026-10-01');
+    const last = getCalendarMonthRanges('2026-10-31');
+
+    // Then
+    expect(first).toEqual(last);
   });
 });
 

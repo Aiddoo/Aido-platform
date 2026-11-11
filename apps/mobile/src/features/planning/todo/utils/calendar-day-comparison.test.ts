@@ -1,5 +1,4 @@
 import { isAfterDay, isBeforeDay, isSameDay } from './calendar-day-comparison';
-import { getWeekRange } from './calendar-grid';
 
 const SEOUL = 'Asia/Seoul';
 const NEW_YORK = 'America/New_York';
@@ -48,27 +47,5 @@ describe('시간대에 따라 달라지는 날', () => {
     expect(afterInSeoul).toBe(true);
     expect(afterInNewYork).toBe(false);
     expect(beforeInNewYork).toBe(false);
-  });
-
-  it('서머타임이 시작되는 주도 일요일부터 토요일까지 7일이다', () => {
-    // Given
-    const springForwardDay = new Date('2026-03-08T12:00:00Z');
-
-    // When
-    const range = getWeekRange(springForwardDay, NEW_YORK);
-
-    // Then
-    expect(range).toEqual({ rangeStart: '2026-03-08', rangeEnd: '2026-03-14' });
-  });
-
-  it('서머타임이 끝나는 날 새벽의 순간도 같은 날짜 주에 속한다', () => {
-    // Given
-    const fallBackNight = new Date('2026-11-01T05:30:00Z');
-
-    // When
-    const range = getWeekRange(fallBackNight, NEW_YORK);
-
-    // Then
-    expect(range).toEqual({ rangeStart: '2026-11-01', rangeEnd: '2026-11-07' });
   });
 });

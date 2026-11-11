@@ -97,6 +97,7 @@ export function CalendarPager({ value, pageWidth, onChange, children }: Calendar
           animated: false,
         });
       }}
+      // 애니메이션으로 넘기는 최대 거리(MAX_ANIMATED_PAGE_JUMP = 2쪽)까지 미리 그려 넘기는 중 빈 쪽이 보이지 않게 한다
       windowSize={5}
       // 보기를 바꾼 첫 프레임에는 보이는 쪽만 그리고, 양옆 쪽은 다음 배치에서 채운다
       initialNumToRender={1}

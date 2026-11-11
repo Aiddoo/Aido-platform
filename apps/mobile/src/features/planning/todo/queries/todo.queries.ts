@@ -5,10 +5,18 @@ import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { type QueryState, queryOptions } from '@tanstack/react-query';
+import {
+  type QueryState,
+  queryOptions,
+  useQueries,
+  useQuery,
+  type UseQueryResult,
+} from '@tanstack/react-query';
 import { keyBy } from 'es-toolkit';
 
+import type { TodoService } from '../apis/todo.service';
 import { type DailyCompletionSummary } from '../domains/daily-completion.model';
+import { type CalendarDateRange, getCalendarMonthRanges } from '../utils/calendar-grid';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 /** 다시 열 때 먼저 보일 어제·오늘·내일 목록만 기기에 남긴다. 둘러본 다른 날짜는 콜드 스타트 복원 크기만 키운다 */
@@ -39,15 +47,34 @@ function toCompletionsByDate(data: { completions: DailyCompletionSummary[] }): C
   return keyBy(data.completions, (completion) => completion.date);
 }
 
-export function useGetDailyCompletionsQueryOptions({
-  startDate,
-  endDate,
-}: {
-  startDate: string;
-  endDate: string;
-}) {
-  const todoService = useTodoService();
+type SelectedMonthQueryResult = Pick<
+  UseQueryResult<CompletionsByDate>,
+  'data' | 'isError' | 'error' | 'refetch'
+>;
 
+function mergeNeighborCompletions(results: Pick<UseQueryResult<CompletionsByDate>, 'data'>[]) {
+  const completions: CompletionsByDate = {};
+  for (const { data } of results) {
+    Object.assign(completions, data);
+  }
+  return completions;
+}
+
+/** 겹치는 앞뒤 주는 고른 달의 결과로 그린다. 오류·다시 시도는 고른 달 기준이다 */
+function toCalendarCompletions(
+  selected: SelectedMonthQueryResult,
+  neighborCompletions: CompletionsByDate,
+) {
+  return {
+    completions: { ...neighborCompletions, ...selected.data },
+    isError: selected.isError,
+    error: selected.error,
+    refetch: () => selected.refetch(),
+  };
+}
+
+function toDailyCompletionsQueryOptions(todoService: TodoService, range: CalendarDateRange) {
+  const { startDate, endDate } = range;
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.completionsByRange({ startDate, endDate }),
     queryFn: async ({ signal }) =>
@@ -57,17 +84,36 @@ export function useGetDailyCompletionsQueryOptions({
   });
 }
 
-export function useGetFriendDailyCompletionsQueryOptions({
-  friendUserId,
-  startDate,
-  endDate,
-}: {
-  friendUserId: string;
-  startDate: string;
-  endDate: string;
-}) {
+export function useGetDailyCompletionsQueryOptions(range: CalendarDateRange) {
   const todoService = useTodoService();
 
+  return toDailyCompletionsQueryOptions(todoService, range);
+}
+
+/**
+ * 달마다 같은 키로 고른 달을 받고, 받은 뒤 앞뒤 달을 미리 받는다. 넘긴 달은 이미 받아 둔 이웃이라
+ * 점이 비는 프레임이 없다. 처음 열 때는 고른 달 하나만 먼저 묻는다
+ */
+export function useCalendarCompletions({ dateKey }: { dateKey: string }) {
+  const todoService = useTodoService();
+  const { selected, neighbors } = getCalendarMonthRanges(dateKey);
+
+  const selectedMonth = useQuery(toDailyCompletionsQueryOptions(todoService, selected));
+  const neighborCompletions = useQueries({
+    queries: neighbors.map((range) => ({
+      ...toDailyCompletionsQueryOptions(todoService, range),
+      enabled: selectedMonth.isSuccess,
+    })),
+    combine: mergeNeighborCompletions,
+  });
+
+  return toCalendarCompletions(selectedMonth, neighborCompletions);
+}
+
+function toFriendDailyCompletionsQueryOptions(
+  todoService: TodoService,
+  { friendUserId, startDate, endDate }: CalendarDateRange & { friendUserId: string },
+) {
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.friendCompletionsByRange({
       userId: friendUserId,
@@ -78,6 +124,31 @@ export function useGetFriendDailyCompletionsQueryOptions({
       unwrap(await todoService.getFriendDailyCompletions(friendUserId, startDate, endDate, signal)),
     select: toCompletionsByDate,
   });
+}
+
+/** 내 달력과 같다. 볼 수 없는 친구면 고른 달 하나만 실패하고 앞뒤 달은 묻지 않는다 */
+export function useFriendCalendarCompletions({
+  friendUserId,
+  dateKey,
+}: {
+  friendUserId: string;
+  dateKey: string;
+}) {
+  const todoService = useTodoService();
+  const { selected, neighbors } = getCalendarMonthRanges(dateKey);
+
+  const selectedMonth = useQuery(
+    toFriendDailyCompletionsQueryOptions(todoService, { ...selected, friendUserId }),
+  );
+  const neighborCompletions = useQueries({
+    queries: neighbors.map((range) => ({
+      ...toFriendDailyCompletionsQueryOptions(todoService, { ...range, friendUserId }),
+      enabled: selectedMonth.isSuccess,
+    })),
+    combine: mergeNeighborCompletions,
+  });
+
+  return toCalendarCompletions(selectedMonth, neighborCompletions);
 }
 
 export function useGetFriendTodosQueryOptions({

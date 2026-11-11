@@ -1,10 +1,12 @@
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
+  addMonthsToDateKey,
   diffDateKeysInDays,
   getCalendarWeek,
   type CalendarWeek,
   getMonthEndDateKey,
+  getMonthStartDateKey,
 } from '@src/shared/date/date-key';
 import { toLocalDay } from '@src/shared/date/native-date';
 import { addLocalDays, addLocalMonths, startOfLocalMonth, toDateKey } from '@src/shared/date/zoned';
@@ -52,25 +54,35 @@ export function getMonthWeeks(displayDate: Date, timeZone: string): Date[][] {
   );
 }
 
-/** 캘린더 그리드 범위 (월간 뷰 - 앞뒤 패딩 주 포함) */
-export function getCalendarRange(
-  displayDate: Date,
-  timeZone: string,
-): { rangeStart: string; rangeEnd: string } {
-  const monthStartKey = toDateKey(startOfLocalMonth(displayDate, timeZone), timeZone);
+export interface CalendarDateRange {
+  startDate: string;
+  endDate: string;
+}
 
+/** 그 날이 속한 달을 앞뒤 주까지 채운 달력 범위(일요일 시작) */
+function getMonthGridRange(dateKey: string): CalendarDateRange {
+  const monthStartKey = getMonthStartDateKey(dateKey);
   return {
-    rangeStart: getCalendarWeek(monthStartKey).startDateKey,
-    rangeEnd: getCalendarWeek(getMonthEndDateKey(monthStartKey)).endDateKey,
+    startDate: getCalendarWeek(monthStartKey).startDateKey,
+    endDate: getCalendarWeek(getMonthEndDateKey(monthStartKey)).endDateKey,
   };
 }
 
-export function getWeekRange(
-  displayDate: Date,
-  timeZone: string,
-): { rangeStart: string; rangeEnd: string } {
-  const week = getWeekOfDate(displayDate, timeZone);
-  return { rangeStart: week.startDateKey, rangeEnd: week.endDateKey };
+/**
+ * 고른 날의 달과 앞 달·다음 달(이웃)의 달력 범위. 주 보기도 같은 달 범위로 받아 달을 넘겨도 키가 같다.
+ * 주 보기의 앞뒤 주는 고른 날이 든 달 범위나 그 이웃 달 범위 안에 있다
+ */
+export function getCalendarMonthRanges(dateKey: string): {
+  selected: CalendarDateRange;
+  neighbors: CalendarDateRange[];
+} {
+  const monthStartKey = getMonthStartDateKey(dateKey);
+  return {
+    selected: getMonthGridRange(monthStartKey),
+    neighbors: [-1, 1].map((offset) =>
+      getMonthGridRange(addMonthsToDateKey(monthStartKey, offset)),
+    ),
+  };
 }
 
 interface ShiftCalendarDateInput {

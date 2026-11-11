@@ -1,8 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-
 import { isFriendFeedUnavailableError } from '../../domains/todo.error';
-import { useCalendarRange } from '../../hooks/use-calendar-range';
-import { useGetFriendDailyCompletionsQueryOptions } from '../../queries/todo.queries';
+import { useFeedDateKey } from '../../hooks/use-feed-params';
+import { useFriendCalendarCompletions } from '../../queries/todo.queries';
 import { Calendar } from './calendar';
 
 interface FriendCalendarProps {
@@ -12,22 +10,18 @@ interface FriendCalendarProps {
 
 /** 친구가 공개(PUBLIC)한 완료 현황을 표시하는 캘린더. 틀은 내 캘린더와 같다. */
 export function FriendCalendar({ friendId }: FriendCalendarProps) {
-  const [{ rangeStart, rangeEnd }] = useCalendarRange();
-  const query = useQuery(
-    useGetFriendDailyCompletionsQueryOptions({
-      friendUserId: friendId,
-      startDate: rangeStart,
-      endDate: rangeEnd,
-    }),
-  );
-
+  const [selectedDateKey] = useFeedDateKey();
+  const calendar = useFriendCalendarCompletions({
+    friendUserId: friendId,
+    dateKey: selectedDateKey,
+  });
   // 친구가 끊어 볼 수 없게 된 상태는 다시 시도해도 같고, 아래 할 일 목록이 한 번만 안내한다
-  const shouldOfferRetry = query.isError && !isFriendFeedUnavailableError(query.error);
+  const shouldOfferRetry = calendar.isError && !isFriendFeedUnavailableError(calendar.error);
 
   return (
     <Calendar
-      completions={query.data}
-      status={shouldOfferRetry ? <Calendar.Error onRetry={() => query.refetch()} /> : undefined}
+      completions={calendar.completions}
+      status={shouldOfferRetry ? <Calendar.Error onRetry={calendar.refetch} /> : undefined}
     />
   );
 }
