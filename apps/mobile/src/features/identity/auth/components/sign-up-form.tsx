@@ -137,8 +137,8 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
           email={email}
           isVerifying={verify.isPending}
           isResending={resend.isPending}
-          onComplete={(code) => verify.mutateAsync({ email, code })}
-          onResend={() => resend.mutateAsync({ email })}
+          onComplete={(code) => verify.mutateAsync({ email, code, source: 'sign_up' })}
+          onResend={() => resend.mutateAsync({ email, source: 'sign_up' })}
         />
       )}
     />

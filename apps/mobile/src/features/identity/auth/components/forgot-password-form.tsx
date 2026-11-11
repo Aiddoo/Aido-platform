@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
@@ -51,9 +52,11 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     },
     mode: 'onChange',
   });
+  const { trackEvent } = useTrack();
   const stepper = useStepper<ForgotPasswordStepContexts>({
     id: 'forgot-password',
     initial: { step: 'email' },
+    onStepChange: ({ step }) => trackEvent('auth_password_reset_step_viewed', { step }),
   });
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const resetPassword = useMutation(useResetPasswordMutationOptions());

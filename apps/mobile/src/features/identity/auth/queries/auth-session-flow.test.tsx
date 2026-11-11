@@ -697,6 +697,7 @@ describe('로그인', () => {
       await result.current.verify.mutateAsync({
         email: 'a@aido.app',
         code: '123456',
+        source: 'login',
       });
     });
 

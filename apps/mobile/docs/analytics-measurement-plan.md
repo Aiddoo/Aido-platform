@@ -35,13 +35,19 @@
 
 **인증 / 세션**
 
-| 이벤트                                        | 파라미터                                                                 | 발생 위치                                | 의미            |
-| --------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------- | --------------- |
-| `auth_signup`                                 | `method`: `email`·`google`·`apple`·`kakao`·`naver`                       | 이메일 가입, 소셜 신규 가입(`isNewUser`) | 가입            |
-| `auth_login`                                  | `method`: 위와 같다                                                      | 이메일 로그인, 소셜 기존 계정            | 로그인          |
-| `auth_logout` / `auth_account_deleted`        | –                                                                        | 로그아웃 / 탈퇴                          | 이탈 신호       |
-| `auth_social_linked` / `auth_social_unlinked` | `provider`                                                               | 계정 연결 설정                           | 계정 연동       |
-| `session_expired`                             | `reason`: `refresh-rejected`·`invalid-refresh-response`·`tokens-missing` | `use-auth-boot`                          | 비자발 로그아웃 |
+| 이벤트                                                            | 파라미터                                                                                                                                                    | 발생 위치                                                                   | 의미            |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------- |
+| `auth_signup`                                                     | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                                                                          | 이메일 가입, 소셜 신규 가입(`isNewUser`)                                    | 가입            |
+| `auth_login`                                                      | `method`: 위와 같다                                                                                                                                         | 이메일 로그인, 소셜 기존 계정                                               | 로그인          |
+| `auth_login_failed`                                               | `method`: 위와 같다 · `reason`: `email_not_verified`·`invalid_credentials`(이메일만)·`network`·`rejected`(서버 거부)·`unknown`(앱이 판단한 창·코드 실패 등) | 로그인·소셜 창·코드 교환 mutation `onError`. 사용자가 닫은 창은 세지 않는다 | 로그인 이탈     |
+| `auth_signup_step_viewed`                                         | `step`: `name`·`email`·`password`·`passwordConfirm`·`verification`                                                                                          | 가입 `useStepper` `onStepChange`. 뒤로 가서 다시 보면 또                    | 가입 퍼널       |
+| `auth_email_verified` / `auth_email_verification_resent`          | `source`: `sign_up`·`login`                                                                                                                                 | 인증 코드 확인·다시 보내기 mutation `onSuccess`                             | 이메일 인증     |
+| `auth_password_reset_step_viewed`                                 | `step`: `email`·`verificationCode`·`newPassword`·`newPasswordConfirm`                                                                                       | 비밀번호 찾기 `onStepChange`                                                | 재설정 퍼널     |
+| `auth_password_reset_requested` / `auth_password_reset_completed` | –                                                                                                                                                           | 코드 발송(다시 보내기 포함)·재설정 mutation `onSuccess`                     | 재설정          |
+| `auth_password_changed`                                           | –                                                                                                                                                           | 비밀번호 바꾸기 mutation `onSuccess`                                        | 비밀번호 변경   |
+| `auth_logout` / `auth_account_deleted`                            | –                                                                                                                                                           | 로그아웃 / 탈퇴                                                             | 이탈 신호       |
+| `auth_social_linked` / `auth_social_unlinked`                     | `provider`                                                                                                                                                  | 계정 연결 설정                                                              | 계정 연동       |
+| `session_expired`                                                 | `reason`: `refresh-rejected`·`invalid-refresh-response`·`tokens-missing`                                                                                    | `use-auth-boot`                                                             | 비자발 로그아웃 |
 
 **할 일 / 카테고리**
 

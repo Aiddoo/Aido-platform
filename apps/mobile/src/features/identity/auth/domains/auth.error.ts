@@ -1,6 +1,9 @@
 import { ErrorCode } from '@aido/api/errors';
 import { isCodedError } from '@src/core/errors/result';
-import { isApiError } from '@src/shared/errors';
+import { isApiError, isConnectivityError } from '@src/shared/errors';
+import { match } from 'ts-pattern';
+
+import { type OAuthProviderSlug } from './oauth.model';
 
 /** 앱이 직접 판단한 소셜 로그인 실패. 문구는 `errors` 카탈로그에 같은 키로 둔다 */
 export const AUTH_ERROR_CODE = {
@@ -25,6 +28,7 @@ export function isEmailAlreadyRegisteredError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.EMAIL_0501);
 }
 
+/** 로그인에서는 이메일·비밀번호가, 탈퇴·비밀번호 변경에서는 현재 비밀번호가 틀렸다 */
 export function isPasswordMismatchError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.USER_0602);
 }
@@ -55,4 +59,32 @@ export function findResendCooldown(error: unknown): number | null {
   }
   const remaining = error.details?.remainingSeconds;
   return typeof remaining === 'number' ? remaining : null;
+}
+
+/** 로그인 실패를 추적할 때의 이유. 서버·공급자 코드를 그대로 싣지 않고 몇 갈래로 묶는다 */
+export type LoginFailureReason =
+  | 'email_not_verified'
+  | 'invalid_credentials'
+  | 'network'
+  | 'rejected'
+  | 'unknown';
+
+/** 사용자가 직접 닫은 소셜 창은 실패가 아니라 null이다. 서버가 거부한 것만 rejected이고, 앱이 판단한 실패(창 열기·코드 없음)는 unknown이다 */
+export function findLoginFailureReason(
+  error: unknown,
+  method: 'email' | OAuthProviderSlug,
+): LoginFailureReason | null {
+  if (isLoginCancelledError(error)) {
+    return null;
+  }
+  return match(error)
+    .returnType<LoginFailureReason>()
+    .when(isEmailNotVerifiedError, () => 'email_not_verified')
+    .when(
+      (value) => method === 'email' && isPasswordMismatchError(value),
+      () => 'invalid_credentials',
+    )
+    .when(isConnectivityError, () => 'network')
+    .when(isApiError, () => 'rejected')
+    .otherwise(() => 'unknown');
 }

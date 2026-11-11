@@ -3,6 +3,7 @@ import {
   SignUpForm,
   type SignUpStepContexts,
 } from '@src/features/identity/auth/components/sign-up-form';
+import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
@@ -22,9 +23,11 @@ const SIGN_UP_STEP_TITLE_KEYS = {
 
 export default function SignUpScreen() {
   const { t } = useTranslation(['auth', 'invite']);
+  const { trackEvent } = useTrack();
   const stepper = useStepper<SignUpStepContexts>({
     id: 'sign-up',
     initial: { step: 'name' },
+    onStepChange: ({ step }) => trackEvent('auth_signup_step_viewed', { step }),
   });
   const openInviteCodeEntry = useSingleTap(() => router.push('/invite'));
 

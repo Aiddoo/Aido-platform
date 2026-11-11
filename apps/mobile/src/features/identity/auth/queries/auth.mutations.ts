@@ -8,6 +8,7 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
+import type { AppEventMap } from '@src/shared/analytics/event-map';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -17,6 +18,7 @@ import { match } from 'ts-pattern';
 
 import { getOAuthProviderLabel } from '../constants/oauth-labels';
 import {
+  findLoginFailureReason,
   isEmailAlreadyRegisteredError,
   isEmailNotVerifiedError,
   isLoginCancelledError,
@@ -40,6 +42,14 @@ import {
 } from '../schemas/auth-request.schema';
 import { AUTH_QUERY_KEYS } from './auth-query-keys';
 
+type EmailVerificationSource = AppEventMap['auth_email_verified']['source'];
+
+type VerifyEmailVariables = VerifyEmailInput & { source: EmailVerificationSource };
+
+type ResendVerificationVariables = ResendVerificationInput & {
+  source: EmailVerificationSource;
+};
+
 /** 인증 코드가 틀렸거나 만료됐거나 시도를 다 썼다. 코드마다 다른 문구로 알린다 */
 function getVerificationCodeMessage(error: unknown) {
   return match(error)
@@ -53,12 +63,25 @@ function isVerificationCodeRejection(error: unknown) {
   return getVerificationCodeMessage(error) != null;
 }
 
+/** 서버나 공급자가 끝낸 로그인 실패만 센다. 사용자가 직접 닫은 소셜 창은 세지 않는다 */
+function useTrackLoginFailure() {
+  const { trackEvent } = useTrack();
+
+  return (method: 'email' | OAuthProviderSlug, error: unknown) => {
+    const reason = findLoginFailureReason(error, method);
+    if (reason != null) {
+      trackEvent('auth_login_failed', { method, reason });
+    }
+  };
+}
+
 // 인증 폼은 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
 export function useEmailLoginMutationOptions() {
   const haptics = useHaptics();
   const push = useSingleTap(router.push);
   const signInService = useSignInService();
   const { trackEvent } = useTrack();
+  const trackLoginFailure = useTrackLoginFailure();
   const { signIn } = useAuthSession();
   const toast = useAppToast();
 
@@ -74,6 +97,7 @@ export function useEmailLoginMutationOptions() {
       trackEvent('auth_login', { method: 'email' });
     },
     onError: (error, variables) => {
+      trackLoginFailure('email', error);
       if (isEmailNotVerifiedError(error)) {
         haptics.notify('error');
         push({ pathname: '/(auth)/verify-email', params: { email: variables.email } });
@@ -92,6 +116,7 @@ export function useEmailLoginMutationOptions() {
 export function useExchangeCodeMutationOptions() {
   const signInService = useSignInService();
   const { trackEvent } = useTrack();
+  const trackLoginFailure = useTrackLoginFailure();
   const { signIn } = useAuthSession();
   const toast = useAppToast();
   const haptics = useHaptics();
@@ -108,7 +133,8 @@ export function useExchangeCodeMutationOptions() {
 
       trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: variables.provider });
     },
-    onError: (error) => {
+    onError: (error, variables) => {
+      trackLoginFailure(variables.provider, error);
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         haptics.notify('error');
@@ -128,6 +154,7 @@ export function useOpenAppleLoginMutationOptions() {
   const signInService = useSignInService();
   const { signIn } = useAuthSession();
   const { trackEvent } = useTrack();
+  const trackLoginFailure = useTrackLoginFailure();
   const toast = useAppToast();
   const haptics = useHaptics();
 
@@ -143,6 +170,7 @@ export function useOpenAppleLoginMutationOptions() {
       trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: 'apple' });
     },
     onError: (error) => {
+      trackLoginFailure('apple', error);
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         haptics.notify('error');
@@ -161,11 +189,13 @@ export function useOpenAppleLoginMutationOptions() {
 export function useOpenGoogleLoginMutationOptions() {
   const signInService = useSignInService();
   const haptics = useHaptics();
+  const trackLoginFailure = useTrackLoginFailure();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openGoogleLogin()),
     onError: (error) => {
+      trackLoginFailure('google', error);
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         haptics.notify('error');
@@ -184,11 +214,13 @@ export function useOpenGoogleLoginMutationOptions() {
 export function useOpenKakaoLoginMutationOptions() {
   const signInService = useSignInService();
   const haptics = useHaptics();
+  const trackLoginFailure = useTrackLoginFailure();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openKakaoLogin()),
     onError: (error) => {
+      trackLoginFailure('kakao', error);
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         haptics.notify('error');
@@ -207,11 +239,13 @@ export function useOpenKakaoLoginMutationOptions() {
 export function useOpenNaverLoginMutationOptions() {
   const signInService = useSignInService();
   const haptics = useHaptics();
+  const trackLoginFailure = useTrackLoginFailure();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openNaverLogin()),
     onError: (error) => {
+      trackLoginFailure('naver', error);
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
         haptics.notify('error');
@@ -331,12 +365,15 @@ export function useRegisterMutationOptions() {
 
 export function useVerifyEmailMutationOptions() {
   const signInService = useSignInService();
+  const { trackEvent } = useTrack();
   const { signIn } = useAuthSession();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: VerifyEmailInput) => unwrap(await signInService.verifyEmail(input)),
-    onSuccess: () => {
+    mutationFn: async ({ email, code }: VerifyEmailVariables) =>
+      unwrap(await signInService.verifyEmail({ email, code })),
+    onSuccess: (_data, { source }) => {
+      trackEvent('auth_email_verified', { source });
       signIn();
     },
     meta: { errorFeedback: { feature: 'auth', fallbackKey: 'auth:toasts.codeInvalid' } },
@@ -345,13 +382,15 @@ export function useVerifyEmailMutationOptions() {
 
 export function useResendVerificationMutationOptions() {
   const authApi = useAuthApi();
+  const { trackEvent } = useTrack();
   const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: ResendVerificationInput) =>
-      unwrap(await authApi.resendVerification(input)),
-    onSuccess: () => {
+    mutationFn: async ({ email }: ResendVerificationVariables) =>
+      unwrap(await authApi.resendVerification({ email })),
+    onSuccess: (_data, { source }) => {
+      trackEvent('auth_email_verification_resent', { source });
       toast.success(t('auth:toasts.codeResent'));
     },
     meta: { errorFeedback: { feature: 'auth', fallbackKey: 'auth:toasts.codeResendFailed' } },
@@ -360,10 +399,14 @@ export function useResendVerificationMutationOptions() {
 
 export function useForgotPasswordMutationOptions() {
   const authApi = useAuthApi();
+  const { trackEvent } = useTrack();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async (input: ForgotPasswordInput) => unwrap(await authApi.forgotPassword(input)),
+    onSuccess: () => {
+      trackEvent('auth_password_reset_requested');
+    },
     meta: { errorFeedback: { feature: 'auth', fallbackKey: 'auth:toasts.requestFailed' } },
   });
 }
@@ -372,12 +415,14 @@ export function useResetPasswordMutationOptions() {
   const haptics = useHaptics();
   const replace = useSingleTap(router.replace);
   const authApi = useAuthApi();
+  const { trackEvent } = useTrack();
   const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async (input: ResetPasswordInput) => unwrap(await authApi.resetPassword(input)),
     onSuccess: () => {
+      trackEvent('auth_password_reset_completed');
       haptics.notify('success');
       toast.success(t('auth:toasts.passwordResetDone'));
       replace('/(auth)/email-login');
@@ -403,12 +448,14 @@ export function useChangePasswordMutationOptions() {
   const haptics = useHaptics();
   const goBack = useSingleTap(router.back);
   const authApi = useAuthApi();
+  const { trackEvent } = useTrack();
   const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async (input: ChangePasswordInput) => unwrap(await authApi.changePassword(input)),
     onSuccess: () => {
+      trackEvent('auth_password_changed');
       haptics.notify('success');
       toast.success(t('auth:toasts.passwordChanged'));
       goBack();
