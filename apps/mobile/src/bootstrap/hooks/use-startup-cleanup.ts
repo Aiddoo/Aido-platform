@@ -1,5 +1,5 @@
 import { RELEASES } from '@src/features/app-config/whats-new/constants/releases';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { useEffect } from 'react';
 
 import type { DIContainer } from '../providers/di-context';

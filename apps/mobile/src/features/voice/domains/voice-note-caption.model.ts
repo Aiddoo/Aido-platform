@@ -1,5 +1,5 @@
 import type { SpeechLocale, SpeechSegment } from '@src/core/ports/speech-recognizer';
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import { splitIntoSentences } from '@src/shared/utils/split-into-sentences';
 import { clamp, isEqual, range, sumBy } from 'es-toolkit';
 

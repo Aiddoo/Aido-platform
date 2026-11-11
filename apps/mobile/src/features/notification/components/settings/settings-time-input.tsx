@@ -3,8 +3,9 @@ import DateTimePicker, {
   type IOSNativeProps,
 } from '@react-native-community/datetimepicker';
 import { PickerHeader } from '@src/features/planning/todo/components/picker-header';
-import { formatTimeOfDay, type TimeFormat } from '@src/shared/date/date-format';
-import { getPickerLocale, getTodayAt } from '@src/shared/date/time-of-day';
+import { formatTimeOfDay, type TimeFormat } from '@src/shared/date/format/date-format';
+import { toPickerDate, getPickerTimeOfDay } from '@src/shared/date/native-date';
+import { getPickerLocale, isTimeOfDayInRange, type TimeOfDay } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -20,8 +21,6 @@ import {
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { type ComponentProps, type ReactNode, useState } from 'react';
-
-import { isClockTimeInRange } from '../../utils/clock-time';
 
 const TIME_PICKER_HEIGHT = 216;
 
@@ -96,19 +95,14 @@ function AndroidTimePicker({ onConfirm, onDismiss, ...props }: AndroidTimePicker
   );
 }
 
-export interface ClockTime {
-  hour: number;
-  minute: number;
-}
-
 interface SettingsTimeInputProps extends Omit<
   ComponentProps<typeof SettingsListGroup.Item>,
   'value' | 'right' | 'onPress'
 > {
-  value: ClockTime;
-  onChange: (value: ClockTime) => void;
-  minimumTime: ClockTime;
-  maximumTime: ClockTime;
+  value: TimeOfDay;
+  onChange: (value: TimeOfDay) => void;
+  minimumTime: TimeOfDay;
+  maximumTime: TimeOfDay;
   timeFormat: TimeFormat;
   /** 시각 앞에 붙는 표시. 프리미엄 기능이면 왕관을 둔다 */
   accessory?: ReactNode;
@@ -132,14 +126,13 @@ export function SettingsTimeInput({
   const toast = useAppToast();
   const overlay = useOverlay();
   const [isAndroidPickerOpen, setIsAndroidPickerOpen] = useState(false);
-  const minimumDate = getTodayAt(minimumTime.hour, minimumTime.minute);
-  const maximumDate = getTodayAt(maximumTime.hour, maximumTime.minute);
-  const commit = (date: Date) => onChange({ hour: date.getHours(), minute: date.getMinutes() });
+  const minimumDate = toPickerDate(minimumTime);
+  const maximumDate = toPickerDate(maximumTime);
+  const commit = (date: Date) => onChange(getPickerTimeOfDay(date));
 
   // Android 시각 선택기는 최소·최대 시각을 지원하지 않아 확인할 때 범위를 본다
   const commitInRange = (date: Date) => {
-    const time = { hour: date.getHours(), minute: date.getMinutes() };
-    if (!isClockTimeInRange(time, { minimumTime, maximumTime })) {
+    if (!isTimeOfDayInRange(getPickerTimeOfDay(date), { minimumTime, maximumTime })) {
       toast.warning(
         t('settings.timeOutOfRange', {
           start: formatTimeOfDay(minimumTime, timeFormat, dateFormatContext),
@@ -178,7 +171,7 @@ export function SettingsTimeInput({
         >
           <TimePickerSheetContent
             title={itemProps.label}
-            initialValue={getTodayAt(value.hour, value.minute)}
+            initialValue={toPickerDate(value)}
             minimumDate={minimumDate}
             maximumDate={maximumDate}
             locale={getPickerLocale(resolvedLanguage, timeFormat)}
@@ -209,7 +202,7 @@ export function SettingsTimeInput({
       />
       {isAndroidPickerOpen && (
         <AndroidTimePicker
-          value={getTodayAt(value.hour, value.minute)}
+          value={toPickerDate(value)}
           minimumDate={minimumDate}
           maximumDate={maximumDate}
           is24Hour={timeFormat === 'TWENTY_FOUR_HOUR'}

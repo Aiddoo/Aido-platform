@@ -13,7 +13,8 @@ import {
   type VoicePlan,
   voicePlanSchema,
 } from '@src/features/voice/domains/voice-plan.model';
-import { toDateKey, toInstant } from '@src/shared/date/instant';
+import { toInstant } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import { pick } from 'es-toolkit';
 
 import type { Memo, MemoPage, MemoResourceLimit } from '../domains/memo.model';

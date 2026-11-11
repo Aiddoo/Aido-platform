@@ -1,4 +1,4 @@
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';

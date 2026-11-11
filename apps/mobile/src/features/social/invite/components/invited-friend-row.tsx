@@ -3,7 +3,7 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetFriendInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
-import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';

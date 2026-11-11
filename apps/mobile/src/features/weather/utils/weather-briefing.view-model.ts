@@ -3,7 +3,7 @@ import type {
   WeatherPrecipitationType,
   WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
 

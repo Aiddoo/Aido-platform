@@ -2,7 +2,7 @@ import {
   formatHHmmTime,
   type DateFormatContext,
   type TimeFormat,
-} from '@src/shared/date/date-format';
+} from '@src/shared/date/format/date-format';
 
 import { TodoPolicy } from '../domains/todo.model';
 import type { Todo } from '../domains/todo.model';

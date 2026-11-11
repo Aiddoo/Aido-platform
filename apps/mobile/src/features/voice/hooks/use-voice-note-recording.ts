@@ -6,7 +6,7 @@ import {
   useVoiceRecordingRepository,
 } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { noop } from 'es-toolkit';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';

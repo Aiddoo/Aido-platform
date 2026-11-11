@@ -1,5 +1,5 @@
 import type { PremiumPlanType } from '@src/features/identity/user/domains/premium-access.model';
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import { match, P } from 'ts-pattern';
 
 import {

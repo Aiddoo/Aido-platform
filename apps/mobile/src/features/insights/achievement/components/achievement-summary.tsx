@@ -1,9 +1,9 @@
 import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
-import { formatDateKeyRange } from '@src/shared/date/date-format';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
-import { formatIsoWeekOfMonthLabel } from '@src/shared/date/date-labels';
+import { formatDateKeyRange } from '@src/shared/date/format/date-format';
+import { formatIsoWeekOfMonthLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

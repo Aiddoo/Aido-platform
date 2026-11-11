@@ -10,7 +10,7 @@ import {
   createVoiceRecordingRepository,
   type VoiceRecordingRepository,
 } from '@src/features/voice/apis/voice-recording.repository';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 
 import { createLoggerStub } from '../ports/logger.stub';
 import { createLocalFileSystemFake, type LocalFileSystemFake } from './local-file-system.fake';

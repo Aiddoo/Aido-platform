@@ -1,6 +1,8 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { getDateKeyDayOfWeek, hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
-import { fromDate, type Instant, toDate, toDateKey } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
+import { instantFromDate, toLocalDayInstant } from '@src/shared/date/native-date';
+import { toDateKey } from '@src/shared/date/zoned';
 import { without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -34,7 +36,7 @@ export function toTodoRepeatFormValues(
   const withEnd = {
     ...base,
     endType: repeat.end.type,
-    untilDate: repeat.end.type === 'UNTIL' ? fromDate(toDate(repeat.end.date)) : null,
+    untilDate: repeat.end.type === 'UNTIL' ? toLocalDayInstant(repeat.end.date) : null,
     count: repeat.end.type === 'COUNT' ? repeat.end.count : base.count,
   };
 
@@ -70,7 +72,8 @@ function withTodoRepeatFormStartDate(
   return {
     ...next,
     weekdays: adjusted.frequency === 'WEEKLY' ? adjusted.weekdays : next.weekdays,
-    untilDate: adjusted.end.type === 'UNTIL' ? fromDate(toDate(adjusted.end.date)) : next.untilDate,
+    untilDate:
+      adjusted.end.type === 'UNTIL' ? toLocalDayInstant(adjusted.end.date) : next.untilDate,
   };
 }
 
@@ -153,7 +156,7 @@ export function withTodoRepeatFormCalendarDate(
     !isSameDay(date, values.startDate, timeZone);
   const hasPickedPeriod = values.endType === 'UNTIL' && values.untilDate != null;
 
-  const picked = fromDate(date);
+  const picked = instantFromDate(date);
   if (isFirstOccurrence || hasPickedPeriod) {
     return { ...withTodoRepeatFormStartDate(values, picked, timeZone), untilDate: null };
   }

@@ -4,35 +4,36 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { type Preference } from '@src/features/identity/preference/domains/preference.model';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import type { TimeOfDay } from '@src/shared/date/time-of-day';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { CrownFilledIcon } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import { SETTINGS_TIME_RANGE } from '../../constants/notification.constants';
-import { type ClockTime, SettingsTimeInput } from './settings-time-input';
+import { SettingsTimeInput } from './settings-time-input';
 
 const CROWN_SIZE = 14;
 
 const REMINDER_TIME = {
   morning: {
     range: SETTINGS_TIME_RANGE.morning,
-    read: (preference: Preference): ClockTime => ({
+    read: (preference: Preference): TimeOfDay => ({
       hour: preference.morningReminderHour,
       minute: preference.morningReminderMinute,
     }),
-    toInput: ({ hour, minute }: ClockTime) => ({
+    toInput: ({ hour, minute }: TimeOfDay) => ({
       morningReminderHour: hour,
       morningReminderMinute: minute,
     }),
   },
   evening: {
     range: SETTINGS_TIME_RANGE.evening,
-    read: (preference: Preference): ClockTime => ({
+    read: (preference: Preference): TimeOfDay => ({
       hour: preference.eveningReminderHour,
       minute: preference.eveningReminderMinute,
     }),
-    toInput: ({ hour, minute }: ClockTime) => ({
+    toInput: ({ hour, minute }: TimeOfDay) => ({
       eveningReminderHour: hour,
       eveningReminderMinute: minute,
     }),

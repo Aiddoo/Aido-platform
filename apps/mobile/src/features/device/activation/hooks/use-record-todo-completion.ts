@@ -1,7 +1,7 @@
 import { useActivationService } from '@src/bootstrap/providers/di-context';
 import { subscribeTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 

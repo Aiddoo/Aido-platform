@@ -1,5 +1,5 @@
 import type { PremiumPlanType } from '@src/features/identity/user/domains/premium-access.model';
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {

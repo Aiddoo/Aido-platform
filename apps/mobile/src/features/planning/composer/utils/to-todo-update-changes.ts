@@ -1,6 +1,7 @@
 import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { hasScheduleChanged } from '@src/features/planning/todo/domains/todo.model';
-import { type Instant, toDateKey } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 import type { TodoUpdateChanges } from '../schemas/todo-change-request.schema';

@@ -6,16 +6,16 @@
 
 ### 값과 도구
 
-| 값        | 앱 표현                                                                 | 만드는 곳                    |
-| --------- | ----------------------------------------------------------------------- | ---------------------------- |
-| 순간      | `Instant`(ISO 8601 문자열 brand)                                        | `shared/date/instant.ts`     |
-| 달력 날짜 | `DateKey`(`YYYY-MM-DD` brand)                                           | `shared/date/date-key.ts`    |
-| 벽시계    | `TimeOfDay`(`HH:mm` brand, `isTimeOfDayInRange` 포함)                   | `shared/date/time-of-day.ts` |
-| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`) | `shared/date/zoned.ts`(계산) |
+| 값        | 앱 표현                                                                                                                                               | 만드는 곳                    |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                      | `shared/date/instant.ts`     |
+| 달력 날짜 | `YYYY-MM-DD` 문자열. 계약 형식(`z.iso.date()`)만 읽는다(`parseDateKey`). `DateKey` brand는 아직 없다([전환 상태](./architecture/migration-status.md)) | `shared/date/date-key.ts`    |
+| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                          | `shared/date/time-of-day.ts` |
+| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                               | `shared/date/zoned.ts`(계산) |
 
 - 모델·캐시·전송은 문자열 brand다. 문자열은 같은 값이면 같은 참조라 재조회에도 구조 공유가 유지된다. 순간의 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다.
 - `Date`는 `shared/date/native-date.ts`를 지나는 네이티브 피커·달력·파일 수정 시각 경계에서만 만든다. 앱 모델에 `Date`를 두지 않는다.
-- Hermes에는 Temporal이 없고 폴리필도 쓰지 않는다([Temporal spike](#temporal-spike)). 날짜 key 산술은 `date-key.ts`의 순수 계산(Hinnant의 civil 날짜 ↔ 일수 변환), 순간 직렬화는 `Date#toISOString`, 시간대 변환(`zoned.ts`)은 캐시한 `Intl.DateTimeFormat`이다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다(`src/shared/__tests__/temporal-oracle.ts`). `dayjs`·`temporal-polyfill` import는 depcruise(`date-library-dayjs`·`date-library-temporal`)가 막는다.
+- Hermes에는 Temporal이 없고 폴리필도 쓰지 않는다([Temporal spike](#temporal-spike)). 날짜 key 산술은 `date-key.ts`의 순수 계산(Hinnant의 civil 날짜 ↔ 일수 변환), 순간 직렬화는 `Date#toISOString`, 시간대 변환(`zoned.ts`)은 캐시한 `Intl.DateTimeFormat`이다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다(`src/testing/temporal-oracle.ts`). `dayjs`·`temporal-polyfill` import는 depcruise(`date-library-dayjs`·`date-library-temporal`)가 막는다.
 - 이름과 규칙은 서버 `shared/domain/time`과 같다. 날짜 + 벽시계 → 순간은 `toZonedInstant({ date, time, timeZone })` 하나이고 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤 순간이다(Temporal `compatible`). 순간 직렬화는 `Date#toISOString`이라 서버 `toIsoString`(ms 3자리 내림)과 바이트 단위로 같다.
 - 표시는 캐시된 `Intl.DateTimeFormat` 하나다. 새 포매터를 만들지 않는다.
 

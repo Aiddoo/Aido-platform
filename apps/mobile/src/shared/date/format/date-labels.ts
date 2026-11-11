@@ -1,9 +1,9 @@
 import { DAY_OF_WEEK_MAP, type DayOfWeek, type SupportedLocale } from '@aido/api/vocabulary';
 import { t } from '@src/shared/i18n';
 
+import { getCalendarWeek, getIsoWeekOfMonth, isSameYearDateKey } from '../date-key';
+import type { Instant } from '../instant';
 import { type DateFormatContext, formatDateKeyLabel, formatRelativeTimeWith } from './date-format';
-import { getCalendarWeek, getIsoWeekOfMonth, isSameYearDateKey } from './date-key';
-import type { Instant } from './instant';
 
 export function toCatalogLanguage(context: DateFormatContext): SupportedLocale {
   return context.locale === 'ko-KR' ? 'ko' : 'en';

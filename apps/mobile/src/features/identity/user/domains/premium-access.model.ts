@@ -4,13 +4,8 @@ import {
   PREMIUM_SOURCE,
   PREMIUM_TRIAL_ENDING_NOTICE_DAYS,
 } from '@aido/api/vocabulary';
-import {
-  calculateCalendarDaysLeft,
-  hasInstantPassed,
-  type Instant,
-  instantSchema,
-  toEpochMs,
-} from '@src/shared/date/instant';
+import { hasInstantPassed, type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
+import { calculateCalendarDaysLeft } from '@src/shared/date/zoned';
 import { z } from 'zod';
 
 const premiumPlanTypeSchema = z.enum(['annual', 'monthly']);

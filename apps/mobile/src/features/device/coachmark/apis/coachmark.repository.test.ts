@@ -1,4 +1,4 @@
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { createMemorySyncStorage } from '@src/testing/core';
 
 import { createCoachmarkKey, createCoachmarkRepository } from './coachmark.repository';

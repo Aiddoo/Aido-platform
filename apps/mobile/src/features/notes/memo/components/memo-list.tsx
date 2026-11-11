@@ -1,7 +1,7 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useStartVoiceNote } from '@src/features/voice/hooks/use-start-voice-note';
 import { useVoiceNotes } from '@src/features/voice/hooks/use-voice-notes';
-import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';

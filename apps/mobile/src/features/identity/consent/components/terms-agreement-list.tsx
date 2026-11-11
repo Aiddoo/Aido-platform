@@ -1,6 +1,6 @@
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
-import { formatDateLabel } from '@src/shared/date/date-format';
-import type { Instant } from '@src/shared/date/instant';
+import { formatDateLabel } from '@src/shared/date/format/date-format';
+import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';

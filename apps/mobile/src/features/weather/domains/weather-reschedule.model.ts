@@ -1,4 +1,5 @@
-import { type Instant, toEpochMs, toHHmm } from '@src/shared/date/instant';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
+import { toHHmm } from '@src/shared/date/zoned';
 import { keyBy } from 'es-toolkit';
 
 import {

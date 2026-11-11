@@ -1,4 +1,5 @@
-import { toDate, toDateKey } from '@src/shared/date/instant';
+import { instantToDate } from '@src/shared/date/native-date';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import {
@@ -87,7 +88,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
   return (
     <TodoScopeStep step={scopeSelector}>
       <TodoTimePickerContent
-        date={toDate(editValues.startDate)}
+        date={instantToDate(editValues.startDate)}
         value={{
           scheduledTime: editValues.scheduledTime,
           isAllDay: todo.isAllDay,

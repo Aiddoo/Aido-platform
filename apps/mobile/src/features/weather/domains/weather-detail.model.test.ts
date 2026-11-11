@@ -1,4 +1,5 @@
-import { fromEpochMs, getNowInstant, toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
+import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 
 import {
   createDailyForecast,

@@ -4,8 +4,8 @@ import {
   useGetDailyCompletionsQueryOptions,
   useGetTodoSummaryQueryOptions,
 } from '@src/features/planning/todo/queries/todo.queries';
+import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey, getCalendarWeek } from '@src/shared/date/date-key';
-import { getNowInstant } from '@src/shared/date/instant';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';

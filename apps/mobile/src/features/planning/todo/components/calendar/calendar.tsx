@@ -1,16 +1,16 @@
 import { ANIMATION } from '@src/shared/constants/animation';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
-import { type DateFormatContext, formatDateLabel } from '@src/shared/date/date-format';
 import { getDayOfWeek, isSameMonthDateKey } from '@src/shared/date/date-key';
-import { toDateKey } from '@src/shared/date/instant';
+import { type DateFormatContext, formatDateLabel } from '@src/shared/date/format/date-format';
+import { toLocalDay } from '@src/shared/date/native-date';
 import {
   addLocalDays,
   addLocalMonths,
   diffLocalMonths,
-  startOfLocalMonth,
   moveToLocalMonth,
-  toLocalDay,
-} from '@src/shared/date/local-day';
+  startOfLocalMonth,
+  toDateKey,
+} from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';

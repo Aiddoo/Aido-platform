@@ -16,8 +16,9 @@ import {
   formatDateKeyRange,
   formatHHmmTime,
   formatYearAwareDateKeyLabel,
-} from '@src/shared/date/date-format';
-import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
+} from '@src/shared/date/format/date-format';
+import { toLocalDay, toLocalDayInstant } from '@src/shared/date/native-date';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -153,7 +154,7 @@ function DateChip({ form }: PlanTodoChipProps) {
         onExit={unmount}
       >
         <TodoDatePickerContent
-          value={toDate(startDate)}
+          value={toLocalDay(startDate)}
           onChange={(nextStartDate) => {
             updateTodo(form, (current) =>
               VoicePlanPolicy.withStartDate(
@@ -204,7 +205,7 @@ function TimeChip({ form }: PlanTodoChipProps) {
         <QueryErrorBoundary>
           <Suspense fallback={<TodoTimePickerContent.Loading />}>
             <TodoTimePickerContent
-              date={toDate(startDate)}
+              date={toLocalDay(startDate)}
               value={{ scheduledTime, isAllDay: scheduledTime == null }}
               onChange={(nextTime) => {
                 updateTodo(form, (current) =>
@@ -261,7 +262,7 @@ function RepeatChip({ form }: PlanTodoChipProps) {
         onExit={unmount}
       >
         <TodoRepeatPickerContent
-          value={{ startDate: fromDate(toDate(startDate)), repeat }}
+          value={{ startDate: toLocalDayInstant(startDate), repeat }}
           onChange={(next) => {
             updateTodo(form, (current) =>
               VoicePlanPolicy.withRepeat(

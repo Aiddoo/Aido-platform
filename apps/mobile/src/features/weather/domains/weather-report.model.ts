@@ -13,13 +13,8 @@ import {
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
-import {
-  type Instant,
-  fromEpochMs,
-  instantSchema,
-  toDateKey,
-  toEpochMs,
-} from '@src/shared/date/instant';
+import { type Instant, fromEpochMs, instantSchema, toEpochMs } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import { z } from 'zod';
 
 const weatherConditionSchema = z.enum(WEATHER_CONDITIONS);

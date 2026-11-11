@@ -1,17 +1,21 @@
 import { AchievementSummary } from '@src/features/insights/achievement/components/achievement-summary';
 import { WeeklyAchievementList } from '@src/features/insights/achievement/components/weekly-achievement-list';
-import { useToday } from '@src/shared/hooks/use-today';
+import { getYearOfDateKey } from '@src/shared/date/date-key';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, Text, Box } from '@src/shared/ui';
 import { Suspense } from 'react';
 
 export default function AchievementsScreen() {
   const { t } = useTranslation('achievement');
-  const today = useToday();
+  const todayKey = useTodayKey();
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
-      <QueryErrorBoundary resetKeys={[today.getFullYear()]} fallback={WeeklyAchievementList.Error}>
+      <QueryErrorBoundary
+        resetKeys={[getYearOfDateKey(todayKey)]}
+        fallback={WeeklyAchievementList.Error}
+      >
         <Suspense
           fallback={
             <Box className="px-4">

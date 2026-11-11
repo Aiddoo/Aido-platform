@@ -19,8 +19,9 @@ import {
   formatDateKeyCompactRange,
   formatHHmmTime,
   formatYearAwareDateKeyLabel,
-} from '@src/shared/date/date-format';
-import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
+} from '@src/shared/date/format/date-format';
+import { instantFromDate, instantToDate } from '@src/shared/date/native-date';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -214,7 +215,7 @@ function DateChip({
       },
       toDateKey(nextStartDate, dateFormatContext.timeZone),
     );
-    setValue('startDate', fromDate(nextStartDate));
+    setValue('startDate', instantFromDate(nextStartDate));
     setValue('endDate', parseInstant(nextEndDate));
   };
 
@@ -228,7 +229,7 @@ function DateChip({
         onExit={unmount}
       >
         <TodoDatePickerContent
-          value={toDate(startDate)}
+          value={instantToDate(startDate)}
           onChange={(nextStartDate) => {
             applyStartDate(nextStartDate);
             close();
@@ -279,7 +280,7 @@ function TimeChip({ form }: { form: ComposerForm }) {
         <QueryErrorBoundary>
           <Suspense fallback={<TodoTimePickerContent.Loading />}>
             <TodoTimePickerContent
-              date={toDate(startDate)}
+              date={instantToDate(startDate)}
               value={{ scheduledTime, isAllDay }}
               onChange={(nextTime) => {
                 setValue('scheduledTime', nextTime.scheduledTime);

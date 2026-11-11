@@ -3,15 +3,8 @@ import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.mode
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { HOUR_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
-import {
-  type Instant,
-  fromEpochMs,
-  fromWallClock,
-  getZonedHour,
-  hasSameWallClock,
-  toDateKey,
-  toEpochMs,
-} from '@src/shared/date/instant';
+import { type Instant, fromEpochMs, toEpochMs } from '@src/shared/date/instant';
+import { toZonedInstant, getZonedHour, hasSameWallClock, toDateKey } from '@src/shared/date/zoned';
 import { keyBy, maxBy, range, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -64,7 +57,7 @@ function toBriefingTodo(
     scheduledAt:
       todo.isAllDay || todo.localTime == null
         ? null
-        : fromWallClock(date, todo.localTime, timeZone),
+        : toZonedInstant({ date, time: todo.localTime, timeZone }),
     completed: todo.completed,
     subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
       ? SubTodoPolicy.getSubTodoStats(todo.subTodos)

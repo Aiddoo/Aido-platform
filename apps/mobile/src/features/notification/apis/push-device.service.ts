@@ -10,7 +10,7 @@ import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { isEqual, noop, withTimeout } from 'es-toolkit';

@@ -5,12 +5,8 @@ import {
   PLAN_QUOTA_PERIODS,
   type PlanLimitFeatureKey,
 } from '@aido/api/vocabulary';
-import {
-  calculateCalendarDaysLeft,
-  hasInstantPassed,
-  type Instant,
-  instantSchema,
-} from '@src/shared/date/instant';
+import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
+import { calculateCalendarDaysLeft } from '@src/shared/date/zoned';
 import { z } from 'zod';
 
 import type { LimitedFeature } from './entitlement.error';

@@ -1,5 +1,5 @@
 import { useIdGenerator, useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { useMutation } from '@tanstack/react-query';
 
 import { VoiceNotePolicy, type VoiceNote } from '../domains/voice-note.model';

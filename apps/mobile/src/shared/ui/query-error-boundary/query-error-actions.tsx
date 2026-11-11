@@ -1,5 +1,5 @@
 import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as translate, useTranslation } from '@src/shared/i18n';

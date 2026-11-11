@@ -6,7 +6,7 @@ import {
   type TodoCategoryWithCount,
 } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { toDateKey } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';

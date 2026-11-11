@@ -1,5 +1,5 @@
 import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import type { CoachmarkInput } from '../domains/coachmark.model';

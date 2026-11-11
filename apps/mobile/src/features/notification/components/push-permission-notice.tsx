@@ -3,7 +3,8 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant, toHHmm } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
+import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';

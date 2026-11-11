@@ -3,10 +3,12 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { match } from 'ts-pattern';
 
-import { isSameMonthDateKey, isSameYearDateKey } from './date-key';
-import { diffMs, getZonedHour, type Instant, toDate, toDateKey } from './instant';
-import { getFormatter, getPartValue, isValidDate, PARTS_LOCALE } from './intl-formatter';
-import { getHour, getMinute, isValidHHmm } from './time-of-day';
+import { isSameMonthDateKey, isSameYearDateKey } from '../date-key';
+import { diffMs, type Instant } from '../instant';
+import { instantToDate, isValidDate, toNativeDate } from '../native-date';
+import { isValidHHmm, type TimeOfDay, toTimeOfDay } from '../time-of-day';
+import { getZonedHour, toDateKey } from '../zoned';
+import { getFormatter, getPartValue, PARTS_LOCALE } from './intl-formatter';
 
 /** 표시 언어(locale)는 글자 모양만, 시간대(timeZone)는 날짜·시각 계산만 정한다. */
 export interface DateFormatContext {
@@ -19,12 +21,6 @@ export function toDateFormatLocale(language: ResolvedLanguage): DateFormatContex
 }
 
 export type TimeFormat = (typeof TIME_FORMATS)[number];
-
-/** 시간대와 무관한 하루 중 시각 (0-23시, 0-59분) */
-export interface TimeOfDay {
-  hour: number;
-  minute: number;
-}
 
 type DateLabel =
   | 'fullDate'
@@ -63,11 +59,15 @@ function toUtcContext(context: DateFormatContext): DateFormatContext {
 }
 
 function toUtcMidnight(dateKey: string): Date {
-  return new Date(`${dateKey}T00:00:00Z`);
+  return toNativeDate(Date.parse(`${dateKey}T00:00:00Z`));
 }
 
 function toUtcDateAtTime({ hour, minute }: TimeOfDay): Date {
-  return new Date(Date.UTC(1970, 0, 1, hour, minute));
+  return toNativeDate(Date.UTC(1970, 0, 1, hour, minute));
+}
+
+function toFormatDate(value: Date | Instant): Date {
+  return value instanceof Date ? value : instantToDate(value);
 }
 
 function getHourCycleOptions(timeFormat: TimeFormat): Intl.DateTimeFormatOptions {
@@ -79,7 +79,7 @@ export function formatDateLabel(
   kind: DateLabel,
   context: DateFormatContext,
 ): string {
-  const date = toDate(value);
+  const date = toFormatDate(value);
   if (!isValidDate(date)) {
     return '';
   }
@@ -164,7 +164,7 @@ export function formatClockTime(
   timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string {
-  const date = toDate(value);
+  const date = toFormatDate(value);
   if (!isValidDate(date)) {
     return '';
   }
@@ -261,5 +261,5 @@ export function formatHHmmTime(
   if (!isValidHHmm(time)) {
     return time;
   }
-  return formatTimeOfDay({ hour: getHour(time), minute: getMinute(time) }, timeFormat, context);
+  return formatTimeOfDay(toTimeOfDay(time), timeFormat, context);
 }

@@ -4,8 +4,8 @@ import { ok, unwrap } from '@src/core/errors/result';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
-import { getNowInstant } from '@src/shared/date/instant';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,

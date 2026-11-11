@@ -1,6 +1,6 @@
 import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
 import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
-import { fromDate } from '@src/shared/date/instant';
+import { instantFromDate } from '@src/shared/date/native-date';
 import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
 import { ZodError } from 'zod';
 
@@ -83,7 +83,7 @@ describe('메모 작성·수정 요청', () => {
 
 const createFormData = (overrides: Partial<AddTodoFormValues> = {}): AddTodoFormValues => ({
   title: '수정한 메모 제목',
-  startDate: fromDate(new Date(2026, 9, 2)),
+  startDate: instantFromDate(new Date(2026, 9, 2)),
   endDate: null,
   scheduledTime: null,
   isAllDay: true,
@@ -164,7 +164,7 @@ describe('toConvertMemoToTodosRequest', () => {
     const values = createFormData({
       isAllDay: false,
       scheduledTime: '13:30',
-      endDate: fromDate(new Date(2026, 9, 3)),
+      endDate: instantFromDate(new Date(2026, 9, 3)),
     });
 
     // When

@@ -1,5 +1,8 @@
-import { type DateFormatContext, formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
-import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/date-labels';
+import {
+  type DateFormatContext,
+  formatYearAwareDateKeyLabel,
+} from '@src/shared/date/format/date-format';
+import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/format/date-labels';
 import { t } from '@src/shared/i18n';
 import { compact } from 'es-toolkit';
 import { match } from 'ts-pattern';

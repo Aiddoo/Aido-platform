@@ -95,7 +95,7 @@ import { VoiceService } from '@src/features/voice/apis/voice.service';
 import { WeatherLocationService } from '@src/features/weather/apis/weather-location.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { removeStoredValue } from '@src/shared/storage/define-stored-value';

@@ -1,4 +1,4 @@
-import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useTranslation } from '@src/shared/i18n';

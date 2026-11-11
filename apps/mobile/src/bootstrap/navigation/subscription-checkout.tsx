@@ -23,7 +23,7 @@ import type { SubscriptionView } from '@src/features/billing/subscription/schema
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
 import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
 import { useTrack } from '@src/shared/analytics';
-import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

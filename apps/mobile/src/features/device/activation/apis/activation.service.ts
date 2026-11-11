@@ -1,4 +1,4 @@
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 
 import type { ActivationCompletedEvent } from '../constants/activation.events';
 import { ActivationPolicy } from '../domains/activation.model';

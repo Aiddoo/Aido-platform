@@ -1,7 +1,7 @@
 import catAnchorImage from '@assets/images/weather/mascot-anchor.png';
 import { useTrack } from '@src/shared/analytics';
-import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
-import type { Instant } from '@src/shared/date/instant';
+import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
+import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';

@@ -1,6 +1,6 @@
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
 import { addMonthsToDateKey, getMonthStartDateKey } from '@src/shared/date/date-key';
-import { formatWeekHeaderLabel, formatWeekOfMonthLabel } from '@src/shared/date/date-labels';
+import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
+import { formatWeekHeaderLabel, formatWeekOfMonthLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';

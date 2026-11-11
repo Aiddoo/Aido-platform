@@ -1,6 +1,6 @@
 import { useVoiceRecordingRepository } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useTodayKey } from '@src/shared/hooks/use-today';

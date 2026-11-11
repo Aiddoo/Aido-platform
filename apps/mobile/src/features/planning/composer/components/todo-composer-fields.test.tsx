@@ -3,7 +3,7 @@ import { ok } from '@src/core/errors/result';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
-import { fromDate } from '@src/shared/date/instant';
+import { instantFromDate } from '@src/shared/date/native-date';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
@@ -18,7 +18,7 @@ function ChipsHarness() {
   const form = useForm<AddTodoFormValues>({
     defaultValues: {
       title: '',
-      startDate: fromDate(new Date('2026-10-27T00:00:00.000Z')),
+      startDate: instantFromDate(new Date('2026-10-27T00:00:00.000Z')),
       endDate: null,
       scheduledTime: '14:30',
       isAllDay: false,

@@ -1,4 +1,4 @@
-import { toDateKey } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import dayjs from 'dayjs';
 
 import { clampCalendarPage, getCalendarPageAtOffset } from './calendar-pager.geometry';

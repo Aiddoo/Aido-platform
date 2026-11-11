@@ -24,7 +24,7 @@ import { useStartVoiceNote } from '@src/features/voice/hooks/use-start-voice-not
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/voice.mutations';
 import type { CreateQuickPlanInput } from '@src/features/voice/schemas/quick-plan-request.schema';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

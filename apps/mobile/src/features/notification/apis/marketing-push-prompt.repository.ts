@@ -1,5 +1,5 @@
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import type { MarketingPushPromptState } from '../domains/marketing-push-prompt.model';

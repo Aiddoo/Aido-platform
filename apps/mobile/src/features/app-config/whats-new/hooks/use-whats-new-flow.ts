@@ -6,7 +6,7 @@ import {
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import type { FeatureKey } from '@src/shared/analytics/feature-key';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

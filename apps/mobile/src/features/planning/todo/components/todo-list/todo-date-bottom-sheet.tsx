@@ -1,4 +1,5 @@
-import { toDate, toDateKey } from '@src/shared/date/instant';
+import { instantToDate } from '@src/shared/date/native-date';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import {
@@ -69,7 +70,7 @@ TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => v
 
   return (
     <TodoDatePickerContent
-      value={toDate(editValues.startDate)}
+      value={instantToDate(editValues.startDate)}
       onCancel={onClose}
       isConfirmDisabled={updateSchedule.isPending}
       onChange={(startDate) => {

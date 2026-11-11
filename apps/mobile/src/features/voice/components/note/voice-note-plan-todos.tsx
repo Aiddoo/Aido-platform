@@ -3,7 +3,7 @@ import { useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { useTranslation } from '@src/shared/i18n';
 import { Result } from '@src/shared/ui';

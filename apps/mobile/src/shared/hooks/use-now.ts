@@ -1,4 +1,5 @@
-import { diffMs, getNowInstant, hasInstantPassed, type Instant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
+import { diffMs, hasInstantPassed, type Instant } from '@src/shared/date/instant';
 import { useOnAppForeground } from '@src/shared/hooks/use-on-app-foreground';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 

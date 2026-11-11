@@ -4,7 +4,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { toDateFormatLocale } from '@src/shared/date/date-format';
+import { toDateFormatLocale } from '@src/shared/date/format/date-format';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';

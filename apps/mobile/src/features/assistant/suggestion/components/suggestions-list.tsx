@@ -4,8 +4,8 @@ import {
   formatYearAwareDateLabel,
   type DateFormatContext,
   type TimeFormat,
-} from '@src/shared/date/date-format';
-import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/date-labels';
+} from '@src/shared/date/format/date-format';
+import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';

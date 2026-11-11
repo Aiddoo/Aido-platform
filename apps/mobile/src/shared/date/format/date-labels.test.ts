@@ -203,3 +203,25 @@ describe('formatIsoWeekOfMonthLabel', () => {
     expect(label).toBe('4월 1주차');
   });
 });
+
+// dayjs를 지우기 전 구현이 만든 글자다. 계산을 바꿔도 화면 글자는 바이트 단위로 같아야 한다
+describe('formatWeekOfMonthLabel', () => {
+  it.each([
+    ['ko-KR', '2027-01-01', '12월 4주차', '12월 5주차'],
+    ['ko-KR', '2026-12-31', '12월 4주차', '12월 5주차'],
+    ['ko-KR', '2026-03-01', '3월 1주차', '2월 4주차'],
+    ['en-US', '2027-01-01', 'Week 4 of Dec', 'Week 5 of Dec'],
+    ['en-US', '2026-12-31', 'Week 4 of Dec', 'Week 5 of Dec'],
+    ['en-US', '2026-03-01', 'Week 1 of Mar', 'Week 4 of Feb'],
+  ] as const)('%s %s의 주 라벨은 이전과 같은 글자다', (locale, dateKey, expected, expectedIso) => {
+    // Given
+    const context = { locale, timeZone: 'Asia/Seoul' };
+
+    // When
+    const week = formatWeekOfMonthLabel(dateKey, '2026-11-11', context);
+    const isoWeek = formatIsoWeekOfMonthLabel(dateKey, context);
+
+    // Then
+    expect([week, isoWeek]).toEqual([expected, expectedIso]);
+  });
+});

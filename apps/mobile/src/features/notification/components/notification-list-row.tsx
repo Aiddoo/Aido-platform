@@ -1,5 +1,5 @@
-import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
-import type { Instant } from '@src/shared/date/instant';
+import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
+import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';

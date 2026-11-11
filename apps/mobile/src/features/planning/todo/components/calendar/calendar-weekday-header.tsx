@@ -1,4 +1,4 @@
-import { getWeekdayLabels } from '@src/shared/date/date-labels';
+import { getWeekdayLabels } from '@src/shared/date/format/date-labels';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, type TextShade, type TextTone } from '@src/shared/ui';
 import { match } from 'ts-pattern';

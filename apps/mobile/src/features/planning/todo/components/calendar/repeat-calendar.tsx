@@ -1,5 +1,5 @@
-import { formatDateLabel } from '@src/shared/date/date-format';
-import { toDateKey } from '@src/shared/date/instant';
+import { formatDateLabel } from '@src/shared/date/format/date-format';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { Box, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';

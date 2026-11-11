@@ -1,4 +1,4 @@
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';

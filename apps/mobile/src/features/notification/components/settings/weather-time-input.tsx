@@ -4,31 +4,32 @@ import {
 } from '@src/features/identity/preference/domains/preference.model';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import type { TimeOfDay } from '@src/shared/date/time-of-day';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import { SETTINGS_TIME_RANGE } from '../../constants/notification.constants';
-import { type ClockTime, SettingsTimeInput } from './settings-time-input';
+import { SettingsTimeInput } from './settings-time-input';
 
 const WEATHER_TIME = {
   morning: {
     range: SETTINGS_TIME_RANGE.morning,
-    read: (preference: Preference): ClockTime => ({
+    read: (preference: Preference): TimeOfDay => ({
       hour: preference.weatherMorningHour,
       minute: preference.weatherMorningMinute,
     }),
-    toInput: ({ hour, minute }: ClockTime) => ({
+    toInput: ({ hour, minute }: TimeOfDay) => ({
       weatherMorningHour: hour,
       weatherMorningMinute: minute,
     }),
   },
   evening: {
     range: SETTINGS_TIME_RANGE.evening,
-    read: (preference: Preference): ClockTime => ({
+    read: (preference: Preference): TimeOfDay => ({
       hour: preference.weatherEveningHour,
       minute: preference.weatherEveningMinute,
     }),
-    toInput: ({ hour, minute }: ClockTime) => ({
+    toInput: ({ hour, minute }: TimeOfDay) => ({
       weatherEveningHour: hour,
       weatherEveningMinute: minute,
     }),

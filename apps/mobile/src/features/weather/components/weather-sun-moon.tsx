@@ -1,5 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { formatClockTime, formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
+import { formatClockTime, formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { type Instant } from '@src/shared/date/instant';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';

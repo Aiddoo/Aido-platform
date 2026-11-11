@@ -1,7 +1,7 @@
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { type User } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { useQuery } from '@tanstack/react-query';

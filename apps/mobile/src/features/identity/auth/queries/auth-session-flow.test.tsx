@@ -18,7 +18,8 @@ import { useCreateTodoMutationOptions } from '@src/features/planning/composer/qu
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
-import { getNowInstant, toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
+import { toInstant } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';

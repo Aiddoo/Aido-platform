@@ -2,7 +2,7 @@ import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/voc
 import { useConsentService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';

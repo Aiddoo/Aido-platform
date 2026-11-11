@@ -1,5 +1,5 @@
 import { getDayOfWeek } from '@src/shared/date/date-key';
-import { toDateKey } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import type { TextTone } from '@src/shared/ui';
 
 import { isAfterDay, isBeforeDay, isSameDay, isSameMonth } from './calendar-day-comparison';

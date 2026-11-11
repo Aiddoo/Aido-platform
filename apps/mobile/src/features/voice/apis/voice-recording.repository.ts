@@ -1,6 +1,6 @@
 import type { LocalFileEntry, LocalFileSystem } from '@src/core/ports/local-file-system';
 import type { Logger } from '@src/core/ports/logger';
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';

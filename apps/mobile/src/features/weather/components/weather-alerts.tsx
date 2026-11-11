@@ -1,6 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack } from '@src/shared/analytics';
-import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
+import { formatClockTime, type TimeFormat } from '@src/shared/date/format/date-format';
 import { type Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';

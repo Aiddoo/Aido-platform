@@ -1,4 +1,4 @@
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { mapInfiniteItems, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 import { uniq } from 'es-toolkit';

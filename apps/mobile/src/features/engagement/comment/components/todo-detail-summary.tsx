@@ -22,7 +22,10 @@ import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-in
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
 import { TodoThanksPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
-import { formatDateKeyRange, formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
+import {
+  formatDateKeyRange,
+  formatYearAwareDateKeyLabel,
+} from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

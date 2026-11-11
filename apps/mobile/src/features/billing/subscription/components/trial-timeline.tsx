@@ -2,7 +2,7 @@ import { PREMIUM_TRIAL_ENDING_NOTICE_DAYS } from '@aido/api/vocabulary';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
-import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';

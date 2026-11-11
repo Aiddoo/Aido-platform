@@ -1,5 +1,6 @@
 import { addDaysToDateKey, getCalendarWeek, isSameMonthDateKey } from '@src/shared/date/date-key';
-import { type Instant, toDateKey } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import { groupBy } from 'es-toolkit';
 
 export type DateSectionKey = 'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | 'earlier';

@@ -19,7 +19,8 @@ import {
 } from '@src/features/voice/components/quick-voice/quick-voice-panel';
 import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
-import { fromDate, toDate, toDateKey } from '@src/shared/date/instant';
+import { toLocalDayInstant } from '@src/shared/date/native-date';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
@@ -100,7 +101,7 @@ TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSh
     <TodoCreateForm
       defaultValues={{
         title: title ?? '',
-        startDate: fromDate(toDate(date)),
+        startDate: toLocalDayInstant(date),
         endDate: null,
         scheduledTime: time ?? null,
         isAllDay: time == null,

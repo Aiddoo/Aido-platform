@@ -1,5 +1,6 @@
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
-import { type Instant, fromEpochMs, toDateKey, toEpochMs } from '@src/shared/date/instant';
+import { type Instant, fromEpochMs, toEpochMs } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import { round, sumBy } from 'es-toolkit';
 
 import type { DailyForecastEntry, HourlyForecastEntry } from './weather-report.model';

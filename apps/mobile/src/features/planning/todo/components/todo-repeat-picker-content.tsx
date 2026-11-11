@@ -1,10 +1,12 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
-import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/date-labels';
 import { hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
-import { type Instant, toDate, toDateKey } from '@src/shared/date/instant';
+import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
+import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/format/date-labels';
+import { type Instant } from '@src/shared/date/instant';
+import { instantToDate, toLocalDay } from '@src/shared/date/native-date';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -65,7 +67,7 @@ export function TodoRepeatPickerContent({
     defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat, timeZone),
     mode: 'onChange',
   });
-  const picker = useDatePicker({ initialDate: toDate(value.startDate) });
+  const picker = useDatePicker({ initialDate: instantToDate(value.startDate) });
 
   return (
     <SheetHeaderLayout
@@ -371,8 +373,8 @@ TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
       ? TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(repeat, startDateKey)
       : null;
   const endDate = match(endType)
-    .with('UNTIL', () => (untilDate == null ? null : toDate(untilDate)))
-    .with('COUNT', () => (lastOccurrenceKey == null ? null : toDate(lastOccurrenceKey)))
+    .with('UNTIL', () => (untilDate == null ? null : instantToDate(untilDate)))
+    .with('COUNT', () => (lastOccurrenceKey == null ? null : toLocalDay(lastOccurrenceKey)))
     .with('NEVER', () => null)
     .exhaustive();
   // 고른 기간 안에 회차가 없으면 첫 회차가 종료일보다 뒤다. 띠가 뒤집히지 않게 고른 기간을 그대로 그린다
@@ -382,7 +384,9 @@ TodoRepeatPickerContent.RepeatFormCalendar = function RepeatFormCalendar({
       untilDate == null ||
       firstOccurrenceKey <= toDateKey(untilDate, timeZone));
   /** 달력의 시작 원과 띠는 폼의 시작일이 아니라 첫 할 일이 생기는 날부터 그린다 */
-  const displayStartDate = toDate(hasOccurrenceInPeriod ? firstOccurrenceKey : startDate);
+  const displayStartDate = hasOccurrenceInPeriod
+    ? toLocalDay(firstOccurrenceKey)
+    : instantToDate(startDate);
 
   // 칸마다 넘기는 함수라 렌더 값에 기대지 않고 누른 순간의 폼 값을 읽어 항상 같은 함수로 둔다
   const handleDateChange = (date: Date) => {
@@ -446,7 +450,7 @@ TodoRepeatPickerContent.RepeatPeriodFooter = function RepeatPeriodFooter({
       return repeat != null && TodoRepeatPolicy.isRepeatMonthDayClamped(repeat);
     },
   });
-  const periodStart = firstOccurrenceKey == null ? startDate : toDate(firstOccurrenceKey);
+  const periodStart = firstOccurrenceKey == null ? startDate : toLocalDay(firstOccurrenceKey);
 
   const handleForeverPress = () => {
     form.setValue('endType', endType === 'NEVER' ? 'UNTIL' : 'NEVER', VALIDATE);

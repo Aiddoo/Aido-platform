@@ -1,5 +1,5 @@
-import { formatDateKeyLabel } from '@src/shared/date/date-format';
-import { toDateKey } from '@src/shared/date/instant';
+import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, HStack, IconButton, Text } from '@src/shared/ui';

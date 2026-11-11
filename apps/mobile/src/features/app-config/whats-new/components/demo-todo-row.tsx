@@ -14,8 +14,8 @@ import {
 } from '@src/features/planning/todo/domains/todo.model';
 import type { PlanTodoFormValues } from '@src/features/voice/schemas/plan-review-form.schema';
 import { getPlanTodoSubtitle } from '@src/features/voice/utils/plan-todo-subtitle.view-model';
-import { formatTimeOfDay } from '@src/shared/date/date-format';
-import { getHour, getMinute } from '@src/shared/date/time-of-day';
+import { formatTimeOfDay } from '@src/shared/date/format/date-format';
+import { toTimeOfDay } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -127,11 +127,7 @@ export function DemoTodoRow({
       const timeLabel =
         todo.scheduledTime == null
           ? null
-          : formatTimeOfDay(
-              { hour: getHour(todo.scheduledTime), minute: getMinute(todo.scheduledTime) },
-              timeFormat,
-              dateFormatContext,
-            );
+          : formatTimeOfDay(toTimeOfDay(todo.scheduledTime), timeFormat, dateFormatContext);
 
       return (
         <TodoRow

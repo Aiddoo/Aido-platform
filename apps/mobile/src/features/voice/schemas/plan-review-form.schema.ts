@@ -1,4 +1,5 @@
-import { toDateKey, toInstant } from '@src/shared/date/instant';
+import { toInstant } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import { z } from 'zod';
 
 import { plannedMemoSchema, plannedTodoSchema } from '../domains/voice-plan.model';

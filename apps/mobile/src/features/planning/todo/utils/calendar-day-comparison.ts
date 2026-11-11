@@ -1,5 +1,6 @@
 import { isSameMonthDateKey } from '@src/shared/date/date-key';
-import { type Instant, toDateKey } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 
 /** 달력 날짜를 가리키는 값. Date는 달력 칸, Instant는 폼에 담긴 값이다 */
 type Day = Date | Instant;

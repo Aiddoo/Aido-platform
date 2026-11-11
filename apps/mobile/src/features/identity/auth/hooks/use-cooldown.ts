@@ -1,5 +1,6 @@
 import { SECOND_MS } from '@src/shared/constants/time-units';
-import { fromEpochMs, getNowInstant, toEpochMs } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
+import { fromEpochMs, toEpochMs } from '@src/shared/date/instant';
 import { useNow } from '@src/shared/hooks/use-now';
 import { useCallback, useState } from 'react';
 

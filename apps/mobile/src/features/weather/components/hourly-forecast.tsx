@@ -4,7 +4,7 @@ import {
   formatInstantHour,
   type DateFormatContext,
   type TimeFormat,
-} from '@src/shared/date/date-format';
+} from '@src/shared/date/format/date-format';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';

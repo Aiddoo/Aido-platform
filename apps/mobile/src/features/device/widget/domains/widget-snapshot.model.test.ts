@@ -1,4 +1,4 @@
-import { toDateKey } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 
 import { createWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { widgetSnapshotStorageSchema } from '../schemas/widget-snapshot-storage.schema';

@@ -1,5 +1,7 @@
-import { toDateKey } from '@src/shared/date/instant';
-import { getNextLocalMidnight } from '@src/shared/date/local-date-clock';
+import { getNextLocalMidnight } from '@src/shared/date/clock';
+import type { Instant } from '@src/shared/date/instant';
+import { instantToDate } from '@src/shared/date/native-date';
+import { toDateKey } from '@src/shared/date/zoned';
 import type { WidgetTimelineEntry } from 'expo-widgets';
 
 import { toWidgetProps } from '../apis/widget-props.mapper';
@@ -8,7 +10,7 @@ import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 import { type WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 
 interface WidgetTimelineContext {
-  now: Date;
+  now: Instant;
   /** LocalDateProvider와 같은 기기 시간대 — 자정 경계를 이 시간대로 계산한다 */
   timeZone: string;
   appScheme: string;
@@ -21,7 +23,7 @@ export function toWidgetTimelineEntries(
 ): WidgetTimelineEntry<WidgetProps>[] {
   const current = WidgetSnapshotPolicy.getDay(snapshot, toDateKey(now, timeZone));
   const entries: WidgetTimelineEntry<WidgetProps>[] = [
-    { date: now, props: toWidgetProps(current.day, current.renderState, appScheme) },
+    { date: instantToDate(now), props: toWidgetProps(current.day, current.renderState, appScheme) },
   ];
   if (current.renderState === 'loggedOut' || current.renderState === 'stale') {
     return entries;
@@ -30,14 +32,17 @@ export function toWidgetTimelineEntries(
   const firstBoundary = getNextLocalMidnight(now, timeZone);
   const nextDay = snapshot.days.find((day) => day.date === toDateKey(firstBoundary, timeZone));
   if (nextDay == null) {
-    entries.push({ date: firstBoundary, props: toWidgetProps(current.day, 'stale', appScheme) });
+    entries.push({
+      date: instantToDate(firstBoundary),
+      props: toWidgetProps(current.day, 'stale', appScheme),
+    });
     return entries;
   }
 
   entries.push(
-    { date: firstBoundary, props: toWidgetProps(nextDay, nextDay.state, appScheme) },
+    { date: instantToDate(firstBoundary), props: toWidgetProps(nextDay, nextDay.state, appScheme) },
     {
-      date: getNextLocalMidnight(firstBoundary, timeZone),
+      date: instantToDate(getNextLocalMidnight(firstBoundary, timeZone)),
       props: toWidgetProps(nextDay, 'stale', appScheme),
     },
   );

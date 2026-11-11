@@ -1,4 +1,4 @@
-import { fromDate } from '@src/shared/date/instant';
+import { instantFromDate } from '@src/shared/date/native-date';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import '@src/shared/i18n/init';
 import {
@@ -33,7 +33,7 @@ async function renderSheet({
   await renderScreen(
     <LocalDateProvider>
       <TodoRepeatPickerContent
-        value={{ startDate: fromDate(startDate), repeat }}
+        value={{ startDate: instantFromDate(startDate), repeat }}
         onChange={onChange}
         onCancel={onCancel}
       />
@@ -77,7 +77,7 @@ describe('TodoRepeatPickerContent', () => {
     // Then
     expect(screen.getByText('11월 5일부터 계속')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: fromDate(START_DATE),
+      startDate: instantFromDate(START_DATE),
       repeat: WEEKLY_THURSDAY_FOREVER,
     });
   });
@@ -135,7 +135,7 @@ describe('TodoRepeatPickerContent', () => {
 
     // Then
     expect(onChange).toHaveBeenCalledWith({
-      startDate: fromDate(START_DATE),
+      startDate: instantFromDate(START_DATE),
       repeat: { ...WEEKLY_THURSDAY_FOREVER, interval: 2 },
     });
 
@@ -159,7 +159,7 @@ describe('TodoRepeatPickerContent', () => {
     expect(screen.getByText('매월 5일 반복')).toBeOnTheScreen();
     expect(chip('목')).not.toBeSelected();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: fromDate(START_DATE),
+      startDate: instantFromDate(START_DATE),
       repeat: { frequency: 'MONTHLY', monthDay: 5, end: { type: 'NEVER' } },
     });
   });
@@ -190,7 +190,10 @@ describe('TodoRepeatPickerContent', () => {
 
     // Then
     expect(screen.getByText('11월 5일부터 10회')).toBeOnTheScreen();
-    expect(onChange).toHaveBeenCalledWith({ startDate: fromDate(START_DATE), repeat: counted });
+    expect(onChange).toHaveBeenCalledWith({
+      startDate: instantFromDate(START_DATE),
+      repeat: counted,
+    });
 
     // When
     await press('계속 반복');
@@ -211,7 +214,7 @@ describe('TodoRepeatPickerContent', () => {
     // Then
     expect(screen.getByText('11월 5일 - 11월 12일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: fromDate(START_DATE),
+      startDate: instantFromDate(START_DATE),
       repeat: { ...WEEKLY_THURSDAY_FOREVER, end: { type: 'UNTIL', date: '2026-11-12' } },
     });
   });
@@ -234,7 +237,7 @@ describe('TodoRepeatPickerContent', () => {
     // Then
     expect(screen.getByText('11월 5일 - 11월 12일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: fromDate(START_DATE),
+      startDate: instantFromDate(START_DATE),
       repeat: { ...WEEKLY_THURSDAY_FOREVER, end: { type: 'UNTIL', date: '2026-11-12' } },
     });
   });
@@ -278,7 +281,7 @@ describe('TodoRepeatPickerContent', () => {
     // Then
     expect(screen.getByText('11월 7일부터 계속')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: fromDate(START_DATE),
+      startDate: instantFromDate(START_DATE),
       repeat: {
         frequency: 'WEEKLY',
         interval: 1,
@@ -315,7 +318,7 @@ describe('TodoRepeatPickerContent', () => {
     // Then
     expect(screen.getByText('11월 7일부터 계속')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: fromDate(new Date(2026, 10, 7)),
+      startDate: instantFromDate(new Date(2026, 10, 7)),
       repeat: {
         frequency: 'WEEKLY',
         interval: 1,
@@ -339,7 +342,7 @@ describe('TodoRepeatPickerContent', () => {
     // Then
     expect(screen.getByText('매월 19일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: fromDate(new Date(2026, 10, 19)),
+      startDate: instantFromDate(new Date(2026, 10, 19)),
       repeat: { frequency: 'MONTHLY', monthDay: 19, end: { type: 'UNTIL', date: '2026-11-26' } },
     });
   });
@@ -355,7 +358,7 @@ describe('TodoRepeatPickerContent', () => {
 
     // Then
     expect(screen.getByText('매월 31일')).toBeOnTheScreen();
-    expect(onChange).toHaveBeenCalledWith({ startDate: fromDate(startDate), repeat });
+    expect(onChange).toHaveBeenCalledWith({ startDate: instantFromDate(startDate), repeat });
   });
 
   it('매월 31일 규칙도 시작일을 직접 옮기면 옮긴 날을 따른다', async () => {
@@ -370,7 +373,7 @@ describe('TodoRepeatPickerContent', () => {
     // Then
     expect(screen.getByText('매월 19일')).toBeOnTheScreen();
     expect(onChange).toHaveBeenLastCalledWith({
-      startDate: fromDate(new Date(2026, 10, 19)),
+      startDate: instantFromDate(new Date(2026, 10, 19)),
       repeat: expect.objectContaining({ frequency: 'MONTHLY', monthDay: 19 }),
     });
   });
@@ -411,7 +414,7 @@ describe('TodoRepeatPickerContent', () => {
     await press('삭제');
 
     // Then
-    expect(onChange).toHaveBeenCalledWith({ startDate: fromDate(START_DATE), repeat: null });
+    expect(onChange).toHaveBeenCalledWith({ startDate: instantFromDate(START_DATE), repeat: null });
   });
 
   it('기존 반복이 없으면 삭제 버튼이 없다', async () => {

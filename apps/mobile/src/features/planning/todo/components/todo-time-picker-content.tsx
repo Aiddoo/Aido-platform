@@ -1,8 +1,9 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { formatHHmmTime } from '@src/shared/date/date-format';
-import { toHHmm } from '@src/shared/date/instant';
-import { getDateWithTime, getPickerLocale } from '@src/shared/date/time-of-day';
+import { formatHHmmTime } from '@src/shared/date/format/date-format';
+import { getDateWithTime } from '@src/shared/date/native-date';
+import { getPickerLocale } from '@src/shared/date/time-of-day';
+import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';

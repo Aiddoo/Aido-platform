@@ -2,7 +2,7 @@ import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTrack } from '@src/shared/analytics';
-import { formatRelativeTimeLabel } from '@src/shared/date/date-labels';
+import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { useCopyToClipboard } from '@src/shared/hooks/use-copy-to-clipboard';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';

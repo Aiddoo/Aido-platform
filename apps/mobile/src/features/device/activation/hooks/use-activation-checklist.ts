@@ -2,7 +2,7 @@ import { useActivationProgressRepository } from '@src/bootstrap/providers/di-con
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetTodoExistenceQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';

@@ -1,4 +1,4 @@
-import { toDateFormatLocale, type DateFormatContext } from '@src/shared/date/date-format';
+import { type DateFormatContext, toDateFormatLocale } from '@src/shared/date/format/date-format';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 

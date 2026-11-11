@@ -1,5 +1,5 @@
 import { useWhatsNewRepository } from '@src/bootstrap/providers/di-context';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { noop } from 'es-toolkit';

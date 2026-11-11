@@ -3,7 +3,7 @@ import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage, getUserFacingMessage } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';

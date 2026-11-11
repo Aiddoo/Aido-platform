@@ -1,5 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { formatClockTime } from '@src/shared/date/date-format';
+import { formatClockTime } from '@src/shared/date/format/date-format';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';

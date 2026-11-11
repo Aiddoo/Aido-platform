@@ -1,4 +1,5 @@
-import { toDateKey, toEpochMs } from '@src/shared/date/instant';
+import { toEpochMs } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';

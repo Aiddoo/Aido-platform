@@ -1,4 +1,5 @@
-import { toDate, toDateKey } from '@src/shared/date/instant';
+import { toLocalDay } from '@src/shared/date/native-date';
+import { toDateKey } from '@src/shared/date/zoned';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -13,8 +14,8 @@ export function useFeedDate() {
   const { currentLocalDateKey, currentTimeZone, currentUtcOffsetMinutes } = useLocalDate();
   const selectedDateKey = toFeedDateKey(date, currentLocalDateKey);
   const selectedDate = useMemo(
-    () => toDate(selectedDateKey),
-    // toDate는 기기 시간대로 날짜 키를 읽는다. 시간대가 바뀌면 같은 키라도 다시 만든다
+    () => toLocalDay(selectedDateKey),
+    // toLocalDay는 기기 시간대 그날 0시 Date를 만든다. 시간대가 바뀌면 같은 키라도 다시 만든다
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- 위 이유로 시간대 값을 키로 둔다
     [selectedDateKey, currentTimeZone, currentUtcOffsetMinutes],
   );

@@ -8,8 +8,13 @@ import {
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
-import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/date/date-format';
-import { type Instant, toHHmm } from '@src/shared/date/instant';
+import {
+  formatClockTime,
+  formatInstantHour,
+  type TimeFormat,
+} from '@src/shared/date/format/date-format';
+import { type Instant } from '@src/shared/date/instant';
+import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';

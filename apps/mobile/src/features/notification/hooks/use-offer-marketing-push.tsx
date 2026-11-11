@@ -5,7 +5,7 @@ import { useGetConsentQueryOptions } from '@src/features/identity/consent/querie
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useOverlay } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';

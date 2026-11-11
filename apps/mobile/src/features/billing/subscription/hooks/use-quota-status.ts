@@ -1,4 +1,4 @@
-import { toDateFormatLocale } from '@src/shared/date/date-format';
+import { toDateFormatLocale } from '@src/shared/date/format/date-format';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';

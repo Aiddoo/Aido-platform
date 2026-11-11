@@ -1,13 +1,13 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
 import {
   formatClockTime,
   formatDateKeyLabel,
   formatHourLabel,
   type DateFormatContext,
   type TimeFormat,
-} from '@src/shared/date/date-format';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
+} from '@src/shared/date/format/date-format';
 import { type Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';

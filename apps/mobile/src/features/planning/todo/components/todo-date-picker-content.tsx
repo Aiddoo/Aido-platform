@@ -1,8 +1,7 @@
-import { formatDateLabel } from '@src/shared/date/date-format';
 import { getDayOfWeek } from '@src/shared/date/date-key';
-import { getWeekdayLabels } from '@src/shared/date/date-labels';
-import { toDateKey } from '@src/shared/date/instant';
-import { addLocalDays, startOfLocalDay } from '@src/shared/date/local-day';
+import { formatDateLabel } from '@src/shared/date/format/date-format';
+import { getWeekdayLabels } from '@src/shared/date/format/date-labels';
+import { addLocalDays, startOfLocalDay, toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';

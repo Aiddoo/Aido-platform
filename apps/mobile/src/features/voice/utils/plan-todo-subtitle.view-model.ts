@@ -5,8 +5,8 @@ import {
   formatTimeOfDay,
   formatYearAwareDateKeyLabel,
   type TimeFormat,
-} from '@src/shared/date/date-format';
-import { getHour, getMinute } from '@src/shared/date/time-of-day';
+} from '@src/shared/date/format/date-format';
+import { toTimeOfDay } from '@src/shared/date/time-of-day';
 import { compact } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
@@ -36,11 +36,7 @@ export function getPlanTodoSubtitle(
   const timeLabel =
     todo.scheduledTime == null
       ? null
-      : formatTimeOfDay(
-          { hour: getHour(todo.scheduledTime), minute: getMinute(todo.scheduledTime) },
-          timeFormat,
-          dateFormatContext,
-        );
+      : formatTimeOfDay(toTimeOfDay(todo.scheduledTime), timeFormat, dateFormatContext);
   const repeatLabel =
     todo.repeat == null ? null : formatRepeatSummary(todo.repeat, todayKey, dateFormatContext);
   const parts = compact([dateLabel, timeLabel, repeatLabel]);

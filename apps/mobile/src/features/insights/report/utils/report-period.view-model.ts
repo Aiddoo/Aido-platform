@@ -1,5 +1,5 @@
-import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/date/date-format';
-import { toCatalogLanguage } from '@src/shared/date/date-labels';
+import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/date/format/date-format';
+import { toCatalogLanguage } from '@src/shared/date/format/date-labels';
 import { t } from '@src/shared/i18n';
 
 import type { AiReport } from '../domains/report.model';
@@ -10,7 +10,11 @@ export function formatReportPeriodLabel(
   context: DateFormatContext,
 ): string {
   if (type === 'WEEKLY') {
-    return t('ai:report.weeklyPeriodLabel', { lng: toCatalogLanguage(context), year, period });
+    return t('ai:report.weeklyPeriodLabel', {
+      lng: toCatalogLanguage(context),
+      year,
+      period,
+    });
   }
   const monthStartDateKey = `${year}-${String(period).padStart(2, '0')}-01`;
   return formatDateKeyLabel(monthStartDateKey, 'yearMonth', context);

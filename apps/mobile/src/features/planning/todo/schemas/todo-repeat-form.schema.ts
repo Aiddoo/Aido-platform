@@ -1,7 +1,8 @@
 import { DAYS_OF_WEEK, TODO_REPEAT_END_TYPES } from '@aido/api/vocabulary';
 import { getDayOfMonth } from '@src/shared/date/date-key';
 import { sortDaysOfWeek } from '@src/shared/date/day-of-week';
-import { instantFieldSchema, toDateKey } from '@src/shared/date/instant';
+import { instantFieldSchema } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 

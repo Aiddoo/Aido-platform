@@ -1,5 +1,5 @@
 import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, SettingsListGroup, Text, TextButton, useConfirmDialog } from '@src/shared/ui';

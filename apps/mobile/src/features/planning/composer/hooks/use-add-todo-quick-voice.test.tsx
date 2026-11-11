@@ -10,7 +10,8 @@ import { type Consent } from '@src/features/identity/consent/domains/consent.mod
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { fromDate, getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
+import { instantFromDate } from '@src/shared/date/native-date';
 import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
@@ -70,7 +71,7 @@ const titlesRenderedAsFailed: string[] = [];
 
 function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
   const form = useForm<AddTodoFormValues>({
-    defaultValues: { title: '', startDate: fromDate(new Date(2026, 10, 5)), repeat: null },
+    defaultValues: { title: '', startDate: instantFromDate(new Date(2026, 10, 5)), repeat: null },
   });
   const quickVoice = useAddTodoQuickVoice({ form, onExit });
   const title = useWatch({ control: form.control, name: 'title' });

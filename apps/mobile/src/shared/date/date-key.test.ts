@@ -1,4 +1,5 @@
 import { i18n } from '@src/shared/i18n';
+import { temporalOracle } from '@src/testing/temporal-oracle';
 import { range } from 'es-toolkit';
 
 import {
@@ -13,10 +14,12 @@ import {
   getIsoWeekYear,
   getMondayOfDateKey,
   getMonthEndDateKey,
+  getYearOfDateKey,
+  getDayOfMonth,
   isSameMonthDateKey,
   isSameYearDateKey,
 } from './date-key';
-import { toDateKey } from './instant';
+import { toDateKey } from './zoned';
 
 afterEach(async () => {
   await i18n.changeLanguage('ko');
@@ -261,5 +264,93 @@ describe('달 단위 key 계산', () => {
     expect(acrossMonth).toBe(1);
     expect(sameMonth).toBe(0);
     expect(backwards).toBe(-1);
+  });
+});
+
+describe('서버 Temporal과 같은 날짜 key 계산', () => {
+  // 1900-01-01부터 2200-12-31까지 사흘마다. 월말·윤일·ISO 53주 해가 모두 들어간다
+  const dateKeys = range(0, 109_938, 3).map((days) => addDaysToDateKey('1900-01-01', days));
+
+  it('1900~2200년 날짜 key의 더하기·차이·요일·달 길이·ISO 주 연도가 Node 26 Temporal과 같다', () => {
+    // When
+    const mismatches = dateKeys.filter(
+      (dateKey) =>
+        addDaysToDateKey(dateKey, 400) !== temporalOracle.addDays(dateKey, 400) ||
+        addDaysToDateKey(dateKey, -31) !== temporalOracle.addDays(dateKey, -31) ||
+        addMonthsToDateKey(dateKey, 1) !== temporalOracle.addMonths(dateKey, 1) ||
+        addMonthsToDateKey(dateKey, -13) !== temporalOracle.addMonths(dateKey, -13) ||
+        diffDateKeysInDays('2026-11-12', dateKey) !==
+          temporalOracle.diffDays('2026-11-12', dateKey) ||
+        getDayOfWeek(dateKey) !== temporalOracle.dayOfWeek(dateKey) ||
+        getDaysInDateKeyMonth(dateKey) !== temporalOracle.daysInMonth(dateKey) ||
+        getIsoWeekYear(dateKey) !== temporalOracle.isoWeekYear(dateKey),
+    );
+
+    // Then
+    expect({ checked: dateKeys.length, mismatches: mismatches.slice(0, 5) }).toEqual({
+      checked: 36_646,
+      mismatches: [],
+    });
+  });
+
+  it.each([
+    ['윤년 1월 말 + 1달', '2028-01-31', 1, '2028-02-29'],
+    ['평년 1월 말 + 1달', '2026-01-31', 1, '2026-02-28'],
+    ['3월 말 - 1달', '2026-03-31', -1, '2026-02-28'],
+    ['윤일 + 12달', '2028-02-29', 12, '2029-02-28'],
+    ['2100년은 윤년이 아니다', '2100-01-31', 1, '2100-02-28'],
+    ['2000년은 윤년이다', '2000-01-31', 1, '2000-02-29'],
+  ])('%s는 그 달의 마지막 날로 맞춘다', (_name, dateKey, months, expected) => {
+    // When
+    const result = addMonthsToDateKey(dateKey, months);
+
+    // Then
+    expect([result, temporalOracle.addMonths(dateKey, months)]).toEqual([expected, expected]);
+  });
+
+  it.each([
+    ['2026-12-31', 2026],
+    ['2027-01-03', 2026],
+    ['2027-01-04', 2027],
+    ['2032-12-31', 2032],
+    ['2033-01-02', 2032],
+    ['2027-12-31', 2027],
+  ])('%s의 ISO 주 연도는 %s다(2026·2032는 53주)', (dateKey, expected) => {
+    // When
+    const result = getIsoWeekYear(dateKey);
+
+    // Then
+    expect([result, temporalOracle.isoWeekYear(dateKey)]).toEqual([expected, expected]);
+  });
+
+  it.each([
+    '',
+    'abc',
+    '2026-13-01',
+    '2026-02-30',
+    '2027-02-29',
+    '2026-2-3',
+    '20261112',
+    '2026-11-12T09:00',
+    '2026-11-12T00:00:00.000Z',
+  ])("계약 형식이 아닌 '%s'는 빈 key와 NaN이다", (dateKey) => {
+    // When
+    const results = [
+      addDaysToDateKey(dateKey, 1),
+      addMonthsToDateKey(dateKey, 1),
+      getMonthStartDateKey(dateKey),
+      getMonthEndDateKey(dateKey),
+      getMondayOfDateKey(dateKey),
+      diffDateKeysInDays(dateKey, '2026-01-01'),
+      diffDateKeysInMonths(dateKey, '2026-01-01'),
+      getDayOfWeek(dateKey),
+      getDayOfMonth(dateKey),
+      getYearOfDateKey(dateKey),
+      isSameMonthDateKey(dateKey, dateKey),
+      isSameYearDateKey(dateKey, dateKey),
+    ];
+
+    // Then
+    expect(results).toEqual(['', '', '', '', '', NaN, NaN, NaN, NaN, NaN, false, false]);
   });
 });

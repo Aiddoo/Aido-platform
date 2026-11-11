@@ -1,4 +1,4 @@
-import { fromDate } from '@src/shared/date/instant';
+import { instantFromDate } from '@src/shared/date/native-date';
 
 import type { AddTodoFormValues } from '../schemas/add-todo-form.schema';
 import { toTodoUpdateChanges } from './to-todo-update-changes';
@@ -7,7 +7,7 @@ const TIME_ZONE = 'Asia/Seoul';
 
 const DEFAULTS: AddTodoFormValues = {
   title: '운동',
-  startDate: fromDate(new Date(2026, 10, 5, 12)),
+  startDate: instantFromDate(new Date(2026, 10, 5, 12)),
   endDate: null,
   scheduledTime: '09:00',
   isAllDay: false,
@@ -80,7 +80,7 @@ describe('toTodoUpdateChanges', () => {
   it('날짜만 옮기면 날짜만 보낸다', () => {
     // When
     const changes = toTodoUpdateChanges(
-      { ...DEFAULTS, startDate: fromDate(new Date(2026, 10, 6, 12)) },
+      { ...DEFAULTS, startDate: instantFromDate(new Date(2026, 10, 6, 12)) },
       DEFAULTS,
       TIME_ZONE,
     );
