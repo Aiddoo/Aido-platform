@@ -96,7 +96,8 @@ export function EmailVerificationCodeStep({
             {t('verification.verifying')}
           </Text>
 
-          <HStack gap={8} justify="center">
+          {/* 다시 보낼 수 있을 때까지의 안내가 좁은 화면·큰 글꼴에서 넘치지 않게 줄을 바꾼다 */}
+          <HStack gap={8} justify="center" wrap="wrap">
             <Text size="b4" shade={7}>
               {t('verification.didNotReceive')}
             </Text>

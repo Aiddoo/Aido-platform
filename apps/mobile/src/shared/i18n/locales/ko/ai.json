@@ -38,7 +38,7 @@
       "freeDescription": "프리미엄 구독으로 매주/매월 AI 리포트를 받아보세요",
       "subscribeCta": "구독하고 리포트 받기",
       "arrivalToday": "오늘 첫 번째 {{type}} 리포트가 도착해요!",
-      "arrivalInDays": "{{count}}일 후에 첫 번째 {{type}} 리포트가 도착해요"
+      "arrivalInDays": "{{count}}일 뒤에 첫 번째 {{type}} 리포트가 도착해요"
     },
     "lockedDetail": {
       "title": "나만의 리포트를 받아보세요",
