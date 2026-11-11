@@ -86,7 +86,7 @@ export function VoiceNoteRecordDemo() {
   const elapsedMs =
     heardCount === 0 ? 0 : (DEMO_NOTE_SENTENCES[heardCount]?.startMs ?? DEMO_NOTE_DURATION_MS);
   const isRecording = heardCount < DEMO_NOTE_SENTENCES.length;
-  const level = useDemoVoiceLevel(isRecording);
+  const level = useDemoVoiceLevel({ isSpeaking: isRecording });
   const heardSentences = DEMO_NOTE_SENTENCES.slice(0, heardCount);
   const captions = heardSentences.slice(-VISIBLE_CAPTION_COUNT);
 

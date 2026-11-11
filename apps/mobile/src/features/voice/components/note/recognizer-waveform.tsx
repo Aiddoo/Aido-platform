@@ -40,8 +40,13 @@ interface LiveWaveform {
   shift: SharedValue<number>;
 }
 
+interface UseLiveWaveformOptions {
+  level: SharedValue<number>;
+  isActive: boolean;
+}
+
 /** 듣는 동안 UI 스레드에서 음량을 칸으로 모은다. JS가 바빠도 파형이 멈추지 않고 React가 다시 그리지 않는다 */
-function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWaveform {
+function useLiveWaveform({ level, isActive }: UseLiveWaveformOptions): LiveWaveform {
   const isReducedMotion = useIsReduceMotionEnabled();
   // 값을 모으는 일이라 동작 줄이기·포커스와 무관하게 앱이 백그라운드일 때만 멈춘다
   const isInBackground = useIsAppInBackground();
@@ -52,25 +57,28 @@ function useLiveWaveform(level: SharedValue<number>, isActive: boolean): LiveWav
 
   useEffect(() => () => cancelAnimation(shift), [shift]);
 
-  useToggleableFrameCallback((frame) => {
-    'worklet';
-    const next = appendLevelFrame(
-      sampler.get(),
-      level.get(),
-      frame.timeSincePreviousFrame ?? 0,
-      WAVEFORM_BAR.intervalMs,
-    );
-    sampler.set(next.sampler);
-    if (next.bar == null) {
-      return;
-    }
-    bars.set(appendTimelineBar(bars.get(), next.bar, WAVEFORM_BAR.maxLiveBars));
-    barCount.set(barCount.get() + 1);
-    if (!isReducedMotion) {
-      shift.set(STEP);
-      shift.set(withTiming(0, { duration: WAVEFORM_BAR.intervalMs, easing: Easing.linear }));
-    }
-  }, isActive && !isInBackground);
+  useToggleableFrameCallback(
+    (frame) => {
+      'worklet';
+      const next = appendLevelFrame(
+        sampler.get(),
+        level.get(),
+        frame.timeSincePreviousFrame ?? 0,
+        WAVEFORM_BAR.intervalMs,
+      );
+      sampler.set(next.sampler);
+      if (next.bar == null) {
+        return;
+      }
+      bars.set(appendTimelineBar(bars.get(), next.bar, WAVEFORM_BAR.maxLiveBars));
+      barCount.set(barCount.get() + 1);
+      if (!isReducedMotion) {
+        shift.set(STEP);
+        shift.set(withTiming(0, { duration: WAVEFORM_BAR.intervalMs, easing: Easing.linear }));
+      }
+    },
+    { isActive: isActive && !isInBackground },
+  );
 
   return { bars, barCount, shift };
 }
@@ -233,7 +241,7 @@ export function RecognizerWaveform({
   bookmarksMs,
   ...timelineProps
 }: RecognizerWaveformProps) {
-  const waveform = useLiveWaveform(level, isActive);
+  const waveform = useLiveWaveform({ level, isActive });
   const { barCount } = waveform;
   const [flagBars, setFlagBars] = useState<ReadonlyMap<number, number>>(new Map());
 

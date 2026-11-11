@@ -11,7 +11,7 @@ describe('useDemoVoiceLevel', () => {
 
   it('말하는 동안 UI 스레드에서 음량이 오르내린다', async () => {
     // Given
-    const { result } = await renderHook(() => useDemoVoiceLevel(true));
+    const { result } = await renderHook(() => useDemoVoiceLevel({ isSpeaking: true }));
 
     // When
     await act(() => jest.advanceTimersByTimeAsync(SPEAKING_MS));
@@ -23,7 +23,7 @@ describe('useDemoVoiceLevel', () => {
   it('말이 끝나면 0으로 내려앉는다', async () => {
     // Given
     const { result, rerender } = await renderHook(
-      ({ isSpeaking }: { isSpeaking: boolean }) => useDemoVoiceLevel(isSpeaking),
+      ({ isSpeaking }: { isSpeaking: boolean }) => useDemoVoiceLevel({ isSpeaking }),
       { initialProps: { isSpeaking: true } },
     );
     await act(() => jest.advanceTimersByTimeAsync(SPEAKING_MS));
@@ -38,7 +38,7 @@ describe('useDemoVoiceLevel', () => {
 
   it('장면이 사라지면 반복하던 음량 애니메이션을 멈춘다', async () => {
     // Given
-    const { result, unmount } = await renderHook(() => useDemoVoiceLevel(true));
+    const { result, unmount } = await renderHook(() => useDemoVoiceLevel({ isSpeaking: true }));
     await act(() => jest.advanceTimersByTimeAsync(SPEAKING_MS));
     const level = result.current;
 

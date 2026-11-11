@@ -1,5 +1,8 @@
+import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { getErrorMessage } from '@src/shared/errors/to-error';
+import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
@@ -7,7 +10,7 @@ import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
-import { Flex, HStack, STACK_CLOSE_ICON, VStack } from '@src/shared/ui';
+import { Flex, HStack, STACK_CLOSE_ICON, useConfirmDialog, VStack } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -17,11 +20,11 @@ import { type ComponentProps, useEffect, useEffectEvent, useLayoutEffect, useRef
 import { useWindowDimensions } from 'react-native';
 import { match } from 'ts-pattern';
 
-import type { VoiceCaptureState } from '../../domains/voice-capture.model';
+import { VOICE_LOG_EVENT } from '../../constants/voice-log-events';
+import { VoiceCapturePolicy, type VoiceCaptureState } from '../../domains/voice-capture.model';
 import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { useReadSpeechContext } from '../../hooks/use-read-speech-context';
 import { useRecognitionLanguage } from '../../hooks/use-recognition-language';
-import { useVoiceNoteRecordExit } from '../../hooks/use-voice-note-record-exit';
 import { useVoiceNoteRecordLimit } from '../../hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '../../hooks/use-voice-note-recording';
 import { voiceNoteRecordParamsSchema } from '../../schemas/voice-note-params.schema';
@@ -61,7 +64,8 @@ export function VoiceNoteRecorder() {
     },
   });
   useOnScreenBlur(recording.interrupt);
-  const { requestClose, requestFinish } = useVoiceNoteRecordExit(recording);
+  const requestClose = useRecordClose(recording);
+  const requestFinish = useRecordFinish(recording);
   // 글자를 받을 때마다 recording이 새로 만들어진다. 헤더 옵션이 그때마다 바뀌면 내비게이터까지 다시 그려져 정체성을 고정한다
   const close = useSingleTap(requestClose);
   const changeLocaleRef = useRef(recording.changeLocale);
@@ -215,4 +219,98 @@ function RecordClock({ state, limitMs }: RecordClockProps) {
       label={state.status === 'paused' ? t('record.pausedLabel') : undefined}
     />
   );
+}
+
+interface RecordCloseOptions {
+  state: VoiceCaptureState;
+  hasText: boolean;
+  discard: () => void;
+  finish: () => void;
+}
+
+/** 닫기·Android 뒤로 가기. 들은 글자가 있으면 끝낼지 묻고, 실패는 다시 누르면 되니 진단만 남긴다 */
+function useRecordClose({ state, hasText, discard, finish }: RecordCloseOptions) {
+  const { t } = useTranslation('voiceNote');
+  const logger = useLogger();
+  const confirmDialog = useConfirmDialog();
+
+  const handleClose = async () => {
+    if (VoiceCapturePolicy.isWrappingUp(state)) {
+      return;
+    }
+    if (!hasText) {
+      discard();
+      router.back();
+      return;
+    }
+    // 듣기를 시작하기 전이면 끝낼 것이 없다. 넘겨받은 글자는 메모 탭의 초안에 그대로 있다
+    if (state.status === 'idle') {
+      router.back();
+      return;
+    }
+    const shouldFinish = await confirmDialog.openAsync({
+      title: t('record.leaveTitle'),
+      description: t('record.leaveDescription'),
+      confirmLabel: t('record.leaveConfirm'),
+      cancelLabel: t('record.leaveCancel'),
+    });
+    if (shouldFinish) {
+      finish();
+    }
+  };
+
+  const requestClose = () => {
+    handleClose().catch((error: unknown) => {
+      logger.warn(VOICE_LOG_EVENT.RECORD_ACTION_FAILED, {
+        action: 'close',
+        error: getErrorMessage(error),
+      });
+    });
+  };
+
+  useAndroidBackHandler({
+    onBack: () => {
+      requestClose();
+      return true;
+    },
+  });
+
+  return requestClose;
+}
+
+interface RecordFinishOptions {
+  state: VoiceCaptureState;
+  finish: () => void;
+}
+
+/** 끝내기. 아직 들은 글자가 없으면 그래도 끝낼지 묻는다 */
+function useRecordFinish({ state, finish }: RecordFinishOptions) {
+  const { t } = useTranslation('voiceNote');
+  const logger = useLogger();
+  const confirmDialog = useConfirmDialog();
+
+  const handleFinish = async () => {
+    if (VoiceCapturePolicy.canFinish(state)) {
+      finish();
+      return;
+    }
+    const shouldFinish = await confirmDialog.openAsync({
+      title: t('record.finishEmptyTitle'),
+      description: t('record.finishEmptyDescription'),
+      confirmLabel: t('record.leaveConfirm'),
+      cancelLabel: t('record.leaveCancel'),
+    });
+    if (shouldFinish) {
+      finish();
+    }
+  };
+
+  return () => {
+    handleFinish().catch((error: unknown) => {
+      logger.warn(VOICE_LOG_EVENT.RECORD_ACTION_FAILED, {
+        action: 'finish',
+        error: getErrorMessage(error),
+      });
+    });
+  };
 }

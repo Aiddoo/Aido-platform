@@ -20,7 +20,7 @@ const DEMO_LEVEL_SETTLE_MS = 300;
  * 마이크 없이 실제 음성 시각화 부품에 넣을 0..1 음량. UI 스레드 애니메이션이라 JS가 다시 그리지 않고,
  * 말이 끝나거나 장면이 사라지면 멈춘다
  */
-export function useDemoVoiceLevel(isSpeaking: boolean): SharedValue<number> {
+export function useDemoVoiceLevel({ isSpeaking }: { isSpeaking: boolean }): SharedValue<number> {
   const level = useSharedValue(0);
 
   useEffect(() => {

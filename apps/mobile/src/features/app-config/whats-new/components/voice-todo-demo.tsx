@@ -58,7 +58,7 @@ export function VoiceTodoCaptureDemo({ onFinish }: VoiceTodoCaptureDemoProps) {
       DEMO_SCRIPT.startDelayMs + words.length * DEMO_SCRIPT.wordMs + LISTENING_SETTLE_MS,
   });
   const isListening = settledCount === 0;
-  const level = useDemoVoiceLevel(heardCount < words.length);
+  const level = useDemoVoiceLevel({ isSpeaking: heardCount < words.length });
 
   return (
     <WhatsNewStep.Stage accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

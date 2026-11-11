@@ -38,16 +38,19 @@ export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
   const angle = useSharedValue(0);
   const smoothed = useSharedValue(0);
 
-  useToggleableFrameCallback((frame) => {
-    'worklet';
-    const elapsed = frame.timeSincePreviousFrame ?? 0;
-    const next = followLevel(smoothed.get(), level.get(), elapsed, VOICE_EDGE_GLOW);
-    smoothed.set(next);
-    angle.set(
-      (angle.get() + (elapsed / VOICE_EDGE_GLOW.rotationPeriodMs) * FULL_TURN_RADIANS * next) %
-        FULL_TURN_RADIANS,
-    );
-  }, isAnimationActive);
+  useToggleableFrameCallback(
+    (frame) => {
+      'worklet';
+      const elapsed = frame.timeSincePreviousFrame ?? 0;
+      const next = followLevel(smoothed.get(), level.get(), elapsed, VOICE_EDGE_GLOW);
+      smoothed.set(next);
+      angle.set(
+        (angle.get() + (elapsed / VOICE_EDGE_GLOW.rotationPeriodMs) * FULL_TURN_RADIANS * next) %
+          FULL_TURN_RADIANS,
+      );
+    },
+    { isActive: isAnimationActive },
+  );
 
   const opacity = useDerivedValue(
     () => VOICE_EDGE_GLOW.minOpacity + (1 - VOICE_EDGE_GLOW.minOpacity) * smoothed.get(),

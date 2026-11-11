@@ -116,50 +116,53 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
   const isAnimationActive = useIsAnimationActive();
   const isMoving = isActive && isAnimationActive;
 
-  useToggleableFrameCallback((frame) => {
-    'worklet';
-    const frameMs = frame.timeSincePreviousFrame ?? 0;
-    const elapsed = Math.min(VOICE_VISUAL.maxFrameMs, frameMs);
-    const currentLevel = level.get();
-    smoothed.set(followLevel(smoothed.get(), currentLevel, elapsed, VOICE_VISUAL));
-    time.set(time.get() + elapsed / SECOND_MS);
-    pendingPeak.set(Math.max(pendingPeak.get(), currentLevel));
-
-    const barElapsed = sinceLastBar.get() + elapsed;
-    const isBarDue = barElapsed >= VOICE_VISUAL_BARS.intervalMs;
-    sinceLastBar.set(isBarDue ? 0 : barElapsed);
-    if (isBarDue) {
-      const peak = pendingPeak.get();
-      pendingPeak.set(0);
-      history.modify((values) => {
-        'worklet';
-        for (let index = values.length - 1; index > 0; index -= 1) {
-          values[index] = values[index - 1] ?? 0;
-        }
-        values[0] = peak;
-        return values;
-      }, false);
-    }
-    const source = history.get();
-    const followRate = 1 - Math.exp(-elapsed / VOICE_VISUAL_BARS.followMs);
-    bars.modify((values) => {
+  useToggleableFrameCallback(
+    (frame) => {
       'worklet';
-      for (let index = 0; index < values.length; index += 1) {
-        const value = values[index] ?? 0;
-        values[index] = value + ((source[index] ?? 0) - value) * followRate;
-      }
-      return values;
-    });
+      const frameMs = frame.timeSincePreviousFrame ?? 0;
+      const elapsed = Math.min(VOICE_VISUAL.maxFrameMs, frameMs);
+      const currentLevel = level.get();
+      smoothed.set(followLevel(smoothed.get(), currentLevel, elapsed, VOICE_VISUAL));
+      time.set(time.get() + elapsed / SECOND_MS);
+      pendingPeak.set(Math.max(pendingPeak.get(), currentLevel));
 
-    if (!hasFallenBack.get()) {
-      const nextSlowMs = addFrameTime(slowMs.get(), frameMs);
-      slowMs.set(nextSlowMs);
-      if (shouldUseLightOrb(nextSlowMs)) {
-        hasFallenBack.set(true);
-        scheduleOnRN(setIsLightOrb, true);
+      const barElapsed = sinceLastBar.get() + elapsed;
+      const isBarDue = barElapsed >= VOICE_VISUAL_BARS.intervalMs;
+      sinceLastBar.set(isBarDue ? 0 : barElapsed);
+      if (isBarDue) {
+        const peak = pendingPeak.get();
+        pendingPeak.set(0);
+        history.modify((values) => {
+          'worklet';
+          for (let index = values.length - 1; index > 0; index -= 1) {
+            values[index] = values[index - 1] ?? 0;
+          }
+          values[0] = peak;
+          return values;
+        }, false);
       }
-    }
-  }, isMoving);
+      const source = history.get();
+      const followRate = 1 - Math.exp(-elapsed / VOICE_VISUAL_BARS.followMs);
+      bars.modify((values) => {
+        'worklet';
+        for (let index = 0; index < values.length; index += 1) {
+          const value = values[index] ?? 0;
+          values[index] = value + ((source[index] ?? 0) - value) * followRate;
+        }
+        return values;
+      });
+
+      if (!hasFallenBack.get()) {
+        const nextSlowMs = addFrameTime(slowMs.get(), frameMs);
+        slowMs.set(nextSlowMs);
+        if (shouldUseLightOrb(nextSlowMs)) {
+          hasFallenBack.set(true);
+          scheduleOnRN(setIsLightOrb, true);
+        }
+      }
+    },
+    { isActive: isMoving },
+  );
 
   useEffect(() => {
     if (!isMoving) {
