@@ -165,6 +165,7 @@ CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
               display="inline"
               isDisabled={isOptimistic}
               onPress={handleDeletePress}
+              testID={`category-delete-${category.id}`}
             >
               {t('actions.delete')}
             </Button>

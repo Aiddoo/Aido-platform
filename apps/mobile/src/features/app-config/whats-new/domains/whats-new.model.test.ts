@@ -1,8 +1,7 @@
 import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
-import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toInstant } from '@src/shared/date/instant';
 
-import { RELEASES } from '../constants/releases';
+import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
 import type { Release } from './whats-new.model';
 import { WhatsNewPolicy } from './whats-new.model';
 
@@ -10,24 +9,23 @@ const createEnabledConfig = (
   overrides: Partial<Extract<FeatureCampaignConfig, { enabled: true }>> = {},
 ): Extract<FeatureCampaignConfig, { enabled: true }> => ({
   enabled: true,
-  campaignId: 'feature-discovery-2026-08',
-  minAppVersion: '1.8.0',
-  launchedAt: toInstant('2026-08-01T00:00:00.000Z'),
+  campaignId: RELEASE_1_15_0.campaignId,
+  minAppVersion: '1.15.0',
   autoOpen: true,
   ...overrides,
 });
 
 describe('shouldAutoOpen', () => {
-  const eligibleInput = {
+  const eligibleContext = {
     config: createEnabledConfig(),
-    user: createUser({ createdAt: toInstant('2026-07-01T00:00:00.000Z') }),
-    appVersion: '1.8.0',
+    appVersion: '1.15.0',
     hasSeen: false,
   };
 
-  it('출시 전 가입한 사용자가 지원 버전에서 처음 보면 true를 반환한다', () => {
+  // 가입 시점은 받지 않는다. 출시 뒤에 가입한 새 계정도 이 조건이면 한 번 본다
+  it('켜진 캠페인의 출시를 지원 버전과 같은 앱에서 처음 보면 연다', () => {
     // When
-    const result = WhatsNewPolicy.shouldAutoOpen(eligibleInput);
+    const result = WhatsNewPolicy.shouldAutoOpen(RELEASE_1_15_0, eligibleContext);
 
     // Then
     expect(result).toBe(true);
@@ -36,15 +34,20 @@ describe('shouldAutoOpen', () => {
   it.each([
     ['서버 비활성', { config: { enabled: false } as const }],
     ['설정 실패', { config: undefined }],
-    ['사용자 조회 실패', { user: undefined }],
-    ['신규 사용자', { user: createUser({ createdAt: toInstant('2026-08-01T00:00:00.000Z') }) }],
-    ['미지원 앱', { appVersion: '1.7.9' }],
+    [
+      '다른 출시의 캠페인',
+      { config: createEnabledConfig({ campaignId: 'feature-discovery-2026-08' }) },
+    ],
+    ['지원 버전보다 낮은 앱', { appVersion: '1.14.9' }],
     ['알 수 없는 앱 버전', { appVersion: undefined }],
     ['이미 본 캠페인', { hasSeen: true }],
     ['자동 열기 비활성', { config: createEnabledConfig({ autoOpen: false }) }],
-  ])('%s 조건에서는 false를 반환한다', (_label, overrides) => {
+  ])('%s이면 열지 않는다', (_label, overrides) => {
     // When
-    const result = WhatsNewPolicy.shouldAutoOpen({ ...eligibleInput, ...overrides });
+    const result = WhatsNewPolicy.shouldAutoOpen(RELEASE_1_15_0, {
+      ...eligibleContext,
+      ...overrides,
+    });
 
     // Then
     expect(result).toBe(false);
@@ -68,9 +71,12 @@ describe('getLatestRelease', () => {
 });
 
 describe('findReleaseByCampaign', () => {
-  it('앱이 모르는 캠페인이면 찾지 못한다', () => {
+  it.each([
+    ['앱이 모르는', 'feature-discovery-2026-08'],
+    ['목록에만 남긴 지난 출시(친구 초대)가 쓰던', 'feature-discovery-2026-11'],
+  ])('%s 캠페인이면 찾지 못해 자동으로 열지 않는다', (_label, campaignId) => {
     // When
-    const result = WhatsNewPolicy.findReleaseByCampaign(RELEASES, 'feature-discovery-2026-08');
+    const result = WhatsNewPolicy.findReleaseByCampaign(RELEASES, campaignId);
 
     // Then
     expect(result).toBeNull();
@@ -82,16 +88,19 @@ describe('canViewRelease', () => {
     [true, false, false],
     [true, true, true],
     [false, false, true],
-  ])('초대 필요 %s, 초대 가능 %s이면 %s다', (requiresInvite, isInviteAvailable, expected) => {
-    // When
-    const result = WhatsNewPolicy.canViewRelease(
-      { ...RELEASES[0], requiresInvite },
-      { isInviteAvailable },
-    );
+  ])(
+    '초대 필요 %s, 초대 가능 %s이면 목록에 보이는지 %s다',
+    (requiresInvite, isInviteAvailable, expected) => {
+      // When
+      const result = WhatsNewPolicy.canViewRelease(
+        { ...RELEASES[0], requiresInvite },
+        { isInviteAvailable },
+      );
 
-    // Then
-    expect(result).toBe(expected);
-  });
+      // Then
+      expect(result).toBe(expected);
+    },
+  );
 });
 
 describe('shouldShowReentry', () => {

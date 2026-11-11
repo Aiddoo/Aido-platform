@@ -172,7 +172,10 @@
     "emptyTitle": "친구가 아직 할 일을 만들지 않았어요",
     "emptyDescription": "콕 눌러 오늘의 시작을 응원해보세요",
     "nudge": "콕 찌르기",
-    "alreadyNudged": "이미 콕 찔렀어요"
+    "alreadyNudged": "이미 콕 찔렀어요",
+    "unavailableTitle": "이제 친구 피드를 볼 수 없어요",
+    "unavailableDescription": "친구 관계가 바뀌었을 수 있어요",
+    "backToMyFeed": "내 피드로 가기"
   },
   "nudge": {
     "limitSpentTitle": "오늘 콕 찌르기를 다 썼어요",

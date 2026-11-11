@@ -237,7 +237,7 @@ InviteWelcomeBottomSheet.Actions = function Actions({
     <VStack gap={4} px={20}>
       <Button onPress={onCreateFirstTodo}>{t('welcome.createFirstTodo')}</Button>
       <Button
-        testID={isRequested ? 'invite-welcome-later' : undefined}
+        testID={isRequested ? 'invite-welcome-later' : 'invite-welcome-open-friend-feed'}
         variant="weak"
         color="dark"
         onPress={isRequested ? onDismiss : onOpenFriendFeed}

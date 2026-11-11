@@ -20,14 +20,11 @@ import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series
 import { ReminderAlerts } from "../../application/reminders.alerts.js";
 import { NotificationRemindersLogEvent } from "../../application/reminders.log-events.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import {
-  REMINDER_LATE_LIMIT_MINUTES,
-  REMINDER_LATE_SKIP_REASON,
-} from "../../domain/notification-schedule.domain-service.js";
+import { REMINDER_LATE_LIMIT_MINUTES } from "../../domain/notification-schedule.domain-service.js";
 import {
   createReminderOccurrenceKey,
-  isReminderTooLate,
   reminderFireAt,
+  reminderLateSkipReason,
 } from "../../domain/reminder-plan.domain-service.js";
 import {
   type ReminderJobData,
@@ -111,27 +108,10 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     }
 
     // 작업에는 울릴 시각이 없어 할 일의 지금 시각에서 단계 리드 타임을 뺀다. 시각을 바꾸면 작업도 다시 등록된다
-    const now = this.#clock.now();
     if (
       todo.scheduledAt != null &&
-      isReminderTooLate({
-        scheduledAt: todo.scheduledAt,
-        stageLabel,
-        now,
-        limitMinutes: REMINDER_LATE_LIMIT_MINUTES,
-      })
+      this.#skipIfLate(todo.scheduledAt, { todoId, userId, stageLabel })
     ) {
-      this.#logger.warn({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
-        todoId,
-        userId,
-        stage,
-        reason: REMINDER_LATE_SKIP_REASON,
-        lateMinutes: reminderFireAt(todo.scheduledAt, stageLabel).until(now, {
-          largestUnit: "minutes",
-        }).minutes,
-      });
-      this.#countLateSkip(now);
       return;
     }
 
@@ -194,6 +174,34 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     }
 
     this.#logger.log({ event: NotificationProviderLogEvent.JOB_COMPLETED, todoId, userId, stage });
+  }
+
+  // true면 늦어서 보내지 않는다
+  #skipIfLate(
+    scheduledAt: Temporal.Instant,
+    { todoId, userId, stageLabel }: ReminderJobData,
+  ): boolean {
+    const now = this.#clock.now();
+    const reason = reminderLateSkipReason({
+      scheduledAt,
+      stageLabel,
+      now,
+      limitMinutes: REMINDER_LATE_LIMIT_MINUTES,
+    });
+    if (reason == null) {
+      return false;
+    }
+    this.#logger.warn({
+      event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+      todoId,
+      userId,
+      stage: resolveReminderStage(stageLabel),
+      reason,
+      lateMinutes: reminderFireAt(scheduledAt, stageLabel).until(now, { largestUnit: "minutes" })
+        .minutes,
+    });
+    this.#countLateSkip(now);
+    return true;
   }
 
   #countLateSkip(now: Temporal.Instant): void {

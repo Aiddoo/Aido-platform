@@ -127,7 +127,7 @@ describe('CategoryDeleteBottomSheet', () => {
         },
       }),
     });
-    await fireEvent.press(await screen.findByTestId('category-delete-delete'));
+    await fireEvent.press(await screen.findByTestId('category-delete-handling-delete'));
 
     // When
     await fireEvent.press(screen.getByText('모두 삭제'));
@@ -163,7 +163,7 @@ describe('CategoryDeleteBottomSheet', () => {
       previews: [err(new ApiError('SYS_0002', 'Not Found', 404))],
     });
     await screen.findByTestId('category-delete-sheet');
-    expect(screen.queryByTestId('category-delete-delete')).toBeNull();
+    expect(screen.queryByTestId('category-delete-handling-delete')).toBeNull();
 
     // When
     await fireEvent.press(screen.getByText('옮기고 삭제'));
