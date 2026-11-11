@@ -332,8 +332,7 @@ function LikeButton({ comment, scale }: { comment: TodoComment; scale: SharedVal
   const likeComment = useMutation(
     useSetTodoCommentLikeMutationOptions({ todoId: comment.todoId, commentId: comment.id }),
   );
-  // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-  const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   const isLiked = comment.viewer.isLiked;
 
   return (
