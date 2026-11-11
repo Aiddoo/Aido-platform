@@ -116,5 +116,15 @@ const handleLogoutPress = async () => {
 };
 ```
 
-다이얼로그 안에서 진행 상태를 보여 줘야 하면 Overlay 스냅샷 규칙에 따라 내용 컴포넌트가
-자기 상태를 갖도록 직접 `overlay.openAsync`를 쓴다.
+확인 뒤 일이 끝날 때까지 다이얼로그를 열어 두고 확인 버튼에 진행 표시를 보이려면 `onConfirm`을 넘긴다.
+끝나면 닫고 `true`, 던지면 닫고 `false`다. 진행 상태는 내용 컴포넌트가 스스로 갖는다.
+낙관적 갱신으로 화면이 바로 바뀌는 mutation에는 쓰지 않는다. 행이 사라지며 다이얼로그도 함께 사라져
+진행 표시가 보이지 않는다. 서버 응답을 실제로 기다려야 하는 일에 쓴다.
+
+```tsx
+await confirmDialog.openAsync({
+  title,
+  confirmLabel,
+  onConfirm: () => disconnectAccount.mutateAsync(accountId),
+});
+```
