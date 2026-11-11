@@ -3,6 +3,7 @@ import type { TodoCommentPurgeRepositoryPort } from "#api/modules/engagement/com
 import type { TodoCommentRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
 import type { TodoCommentPrimitives } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createTodoCommentFixture,
@@ -105,7 +106,10 @@ export function describeTodoCommentPurgeRepositoryContract(
 
       // Then
       const find = (id: string, todoId = TODO_ID) =>
-        repositories.comments.findByIdAndTodoId(createTodoCommentFixture({ id }).id, todoId);
+        repositories.comments.findByIdAndTodoId(
+          createTodoCommentFixture({ id }).id,
+          TodoId.reconstitute(todoId),
+        );
       const purgedReply = (await find(IDS.purgedReply))?.toPrimitives();
       expect(counts).toEqual([
         { todoId: TODO_ID, commentCount: 2 },

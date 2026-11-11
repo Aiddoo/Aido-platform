@@ -2,8 +2,8 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { PlanApplication } from "../../domain/plan-application.aggregate.js";
+import { ActionPlanLogEvent } from "../action-plans.log-events.js";
 import type { PlanApplicationRepositoryPort } from "../ports/plan-application.repository.port.js";
-import { VoiceLogEvent } from "../voice.log-events.js";
 
 interface PurgePlanApplicationsDependencies {
   readonly repository: Pick<PlanApplicationRepositoryPort, "deleteCreatedBefore">;
@@ -23,7 +23,10 @@ export class PurgePlanApplicationsUseCase {
     const deletedCount = await this.#dependencies.repository.deleteCreatedBefore(
       PlanApplication.retentionCutoff(this.#dependencies.clock.now()),
     );
-    this.#dependencies.logger.log({ event: VoiceLogEvent.PLAN_APPLICATION_PURGED, deletedCount });
+    this.#dependencies.logger.log({
+      event: ActionPlanLogEvent.PLAN_APPLICATION_PURGED,
+      deletedCount,
+    });
     return deletedCount;
   }
 }

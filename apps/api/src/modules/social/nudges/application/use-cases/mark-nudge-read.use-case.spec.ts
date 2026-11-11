@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { NudgeId } from "#api/modules/social/nudges/domain/nudge-id.vo";
 import type { Nudge } from "#api/modules/social/nudges/domain/nudge.aggregate";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import {
@@ -34,6 +35,7 @@ describe("MarkNudgeReadUseCase — 콕 읽음", () => {
     // Given
     const nudgeRepository = new InMemoryNudgeRepository([createNudgeFixture()]);
     const useCase = new MarkNudgeReadUseCase({
+      unitOfWork: new ImmediateUnitOfWork(),
       nudgeRepository,
       clock: new FixedClock(READ_AT),
       logger: new SilentLogger(),
@@ -55,6 +57,7 @@ describe("MarkNudgeReadUseCase — 콕 읽음", () => {
     const nudgeRepository = new CountingNudgeRepository([createNudgeFixture()]);
     const clock = new FixedClock(READ_AT);
     const useCase = new MarkNudgeReadUseCase({
+      unitOfWork: new ImmediateUnitOfWork(),
       nudgeRepository,
       clock,
       logger: new SilentLogger(),

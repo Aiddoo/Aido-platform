@@ -1,7 +1,4 @@
-export {
-  CHEER_USAGE_READER,
-  CheerUsageReaderPort,
-} from "./application/ports/cheer-usage.reader.port.js";
+export { CheerUsageReaderPort } from "./application/ports/cheer-usage.reader.port.js";
 export {
   type DailySendUsage,
   DailySendUsageReaderPort,

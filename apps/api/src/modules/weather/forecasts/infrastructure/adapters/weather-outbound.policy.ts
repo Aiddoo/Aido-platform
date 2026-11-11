@@ -7,13 +7,14 @@ import {
   type OutboundBreakerSpec,
   type OutboundPolicySpec,
 } from "#api/platform/resilience/outbound-policy";
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
+
+const MINUTE_MS = 60_000;
 
 /** 공급자 전체 장애(시간 초과·네트워크·5xx)만 센다. 4xx·응답 형식 오류는 그 요청의 문제다. */
 const createHealthBreaker = (consecutiveFailures: number): OutboundBreakerSpec => ({
   name: "health",
   consecutiveFailures,
-  halfOpenAfterMs: TIME_UNIT.MS_PER_MINUTE,
+  halfOpenAfterMs: MINUTE_MS,
   handles: isTransportFailure,
   handlesResult: isServerFailureOutcome,
 });

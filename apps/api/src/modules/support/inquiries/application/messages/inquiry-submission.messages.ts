@@ -12,7 +12,7 @@ const CATEGORY_LABELS = {
   OTHER: "기타",
 } satisfies Record<InquiryCategory, string>;
 
-export function categoryLabel(category: InquiryCategory): string {
+function categoryLabel(category: InquiryCategory): string {
   return CATEGORY_LABELS[category];
 }
 

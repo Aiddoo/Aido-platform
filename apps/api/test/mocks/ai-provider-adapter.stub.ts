@@ -45,14 +45,20 @@ export class StubProviderAdapter extends AiProviderAdapter {
   readonly model: MockLanguageModelV4;
   readonly #steps: StubModelStep[];
   #last: StubModelStep;
+  readonly id: AiProviderId;
+  readonly #modelId: string;
+  readonly #configured: boolean;
 
   constructor(
-    readonly id: AiProviderId,
+    id: AiProviderId,
     steps: readonly StubModelStep[],
-    private readonly modelId: string,
-    private readonly configured = true,
+    modelId: string,
+    configured = true,
   ) {
     super();
+    this.id = id;
+    this.#modelId = modelId;
+    this.#configured = configured;
     this.#steps = [...steps];
     this.#last = steps.at(-1) ?? { type: "ok", text: "{}" };
     this.model = new MockLanguageModelV4({
@@ -98,7 +104,7 @@ export class StubProviderAdapter extends AiProviderAdapter {
   }
 
   getModel(): AiProviderModel | null {
-    return this.configured ? { id: `${this.id}:${this.modelId}`, model: this.model } : null;
+    return this.#configured ? { id: `${this.id}:${this.#modelId}`, model: this.model } : null;
   }
 
   getProviderOptions() {

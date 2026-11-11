@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -38,20 +39,19 @@ export class UnlikeTodoCommentUseCase {
     const { unitOfWork, mutationLock, clock, reader, repository, likeRepository } =
       this.#dependencies;
     return unitOfWork.run(async () => {
+      const todoId = TodoId.reconstitute(command.todoId);
       const commentId = TodoCommentId.reconstitute(command.commentId);
+      const userId = UserId.reconstitute(command.userId);
       await mutationLock.acquire([TodoCommentLockKeys.comment(command.commentId)]);
-      if ((await reader.findAccessibleTodoOwnerId(command.todoId, command.userId)) == null) {
+      if ((await reader.findAccessibleTodoOwnerId(todoId, userId)) == null) {
         throw todoNotFound(command.todoId);
       }
-      const comment = await repository.findByIdAndTodoId(commentId, command.todoId);
+      const comment = await repository.findByIdAndTodoId(commentId, todoId);
       if (comment == null) {
         throw commentNotFound(command.commentId);
       }
       comment.assertActive();
-      const like = await likeRepository.findByCommentIdAndUserId(
-        commentId,
-        UserId.reconstitute(command.userId),
-      );
+      const like = await likeRepository.findByCommentIdAndUserId(commentId, userId);
       const now = clock.now();
       if (like?.deactivate(now) === true) {
         await likeRepository.save(like);

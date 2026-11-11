@@ -1,8 +1,10 @@
-import type { VoiceNoteDigestResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { omit } from "es-toolkit";
 
-import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import type {
+  MeteredFeatureQuota,
+  QuotaLedgerPort,
+} from "#api/modules/access/quotas/access-quotas.public";
 import {
   fingerprintRequest,
   resolveRequestLocale,
@@ -22,22 +24,22 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { ChargedPlanRunnerPort } from "../../../action-plans/application/ports/charged-plan-runner.port.js";
-import type {
-  PlanResultReplay,
-  VoiceNoteDigestResult,
-} from "../../../action-plans/application/ports/plan-result-replay.port.js";
+import type { PlanResultReplay } from "../../../action-plans/application/ports/plan-result-replay.port.js";
 import type { PlanningContextReaderPort } from "../../../action-plans/application/ports/planning-context.reader.port.js";
 import {
   countPlannedActions,
-  toActionPlanView,
+  toActionPlanReadModel,
 } from "../../../action-plans/application/read-models/action-plan.read-model.js";
-import { VoiceLogEvent } from "../../../action-plans/application/voice.log-events.js";
 import { VOICE_NOTE_DURATION_TOLERANCE_SECONDS } from "../../domain/voice-notes.constants.js";
 import { type TranscriptSegment, VoiceTranscript } from "../../domain/voice-transcript.vo.js";
-import { VoiceNoteAlertKey } from "../voice-notes.alerts.js";
+import type { VoiceNoteDigestResult } from "../ports/voice-note-digest-result-replay.port.js";
+import type { VoiceNoteDigestReadModel } from "../read-models/voice-note-digest.read-model.js";
+import { VoiceNoteAlerts } from "../voice-notes.alerts.js";
+import { VoiceNoteLogEvent } from "../voice-notes.log-events.js";
 
 export interface DigestVoiceNoteCommand {
   readonly userId: string;
@@ -51,6 +53,12 @@ export interface DigestVoiceNoteCommand {
   readonly locale: SupportedLocale | undefined;
   /** 앱이 연결을 끊으면 AI 호출을 멈추고 환불한다. */
   readonly signal?: AbortSignal;
+}
+
+export interface DigestedVoiceNote extends VoiceNoteDigestReadModel {
+  /** 이 요청을 반영한 VOICE_NOTE 한도. 결과는 주되 한도를 읽지 못했으면 null이다 */
+  readonly featureQuota: MeteredFeatureQuota | null;
+  readonly charged: boolean;
 }
 
 interface DigestVoiceNoteDependencies {
@@ -78,8 +86,9 @@ export class DigestVoiceNoteUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: DigestVoiceNoteCommand): Promise<VoiceNoteDigestResponse> {
+  async execute(input: DigestVoiceNoteCommand): Promise<DigestedVoiceNote> {
     const { userId, text, durationSeconds, segments, idempotencyKey } = input;
+    const owner = UserId.reconstitute(userId);
     const startedAt = this.#dependencies.clock.now().epochMilliseconds;
     const transcript = VoiceTranscript.create({ text, durationSeconds, segments });
     const logFields = {
@@ -92,12 +101,12 @@ export class DigestVoiceNoteUseCase {
       await this.#assertWithinPerUseLimit(userId, transcript);
       const { timezone, locale } = await resolveRequestLocale(
         this.#dependencies.localePreferenceReader,
-        userId,
+        owner,
         input,
       );
       const { result, charged, featureQuota } =
         await this.#dependencies.runner.run<VoiceNoteDigestResult>({
-          userId,
+          userId: owner,
           feature: "VOICE_NOTE",
           reason: "voice-note-digest",
           idempotencyKey,
@@ -105,14 +114,14 @@ export class DigestVoiceNoteUseCase {
           replay: this.#dependencies.replay,
           generate: () =>
             this.#generate(transcript, {
-              userId,
+              userId: owner,
               timezone,
               locale,
               signal: input.signal,
             }),
         });
       this.#dependencies.logger.log({
-        event: VoiceLogEvent.NOTE_DIGEST_COMPLETED,
+        event: VoiceNoteLogEvent.DIGEST_COMPLETED,
         ...logFields,
         ...countPlannedActions(result.plan),
         keyPointCount: result.keyPoints.length,
@@ -123,7 +132,7 @@ export class DigestVoiceNoteUseCase {
       return { ...omit(result, ["model"]), featureQuota, charged };
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: VoiceLogEvent.NOTE_DIGEST_FAILED,
+        event: VoiceNoteLogEvent.DIGEST_FAILED,
         ...logFields,
         latencyMs: this.#dependencies.clock.now().epochMilliseconds - startedAt,
         ...(error instanceof ErrorCodedException
@@ -136,7 +145,10 @@ export class DigestVoiceNoteUseCase {
 
   /** 등급별 상한은 access가 계산해 준 값만 쓴다. 차감 전에 막아 횟수를 쓰지 않는다. */
   async #assertWithinPerUseLimit(userId: string, transcript: VoiceTranscript): Promise<void> {
-    const featureQuota = await this.#dependencies.quota.read(userId, "VOICE_NOTE");
+    const featureQuota = await this.#dependencies.quota.read(
+      UserId.reconstitute(userId),
+      "VOICE_NOTE",
+    );
     if (
       featureQuota.perUse != null &&
       transcript.exceedsDuration({
@@ -146,9 +158,7 @@ export class DigestVoiceNoteUseCase {
     ) {
       // 1.15.1은 출시 앱 호환을 위해 거절하지 않고 경보만 올린다(1.15.2부터 거절)
       this.#dependencies.alert.raise({
-        key: VoiceNoteAlertKey.DURATION_OVER_LIMIT,
-        severity: "warning",
-        message: "녹음 길이가 한 번 상한을 넘었습니다",
+        ...VoiceNoteAlerts.DURATION_OVER_LIMIT,
         details: {
           durationSeconds: transcript.durationSeconds,
           maxSeconds: featureQuota.perUse.maxSeconds,
@@ -168,7 +178,7 @@ export class DigestVoiceNoteUseCase {
   async #generate(
     transcript: VoiceTranscript,
     request: {
-      readonly userId: string;
+      readonly userId: UserId;
       readonly timezone: string;
       readonly locale: SupportedLocale;
       readonly signal?: AbortSignal;
@@ -195,7 +205,7 @@ export class DigestVoiceNoteUseCase {
           text: point.text,
           startMs: transcript.startMsAt(point.sentenceIndex),
         })),
-        plan: toActionPlanView(digest.plan, context.upcomingTodos),
+        plan: toActionPlanReadModel(digest.plan, context.upcomingTodos),
         model: digest.meta.model,
       },
       outcome: resolveChargeOutcome(digest),

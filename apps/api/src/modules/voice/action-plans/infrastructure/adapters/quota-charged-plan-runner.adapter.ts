@@ -1,4 +1,7 @@
-import type { QuotaLedgerPort, QuotaReservation } from "#api/modules/access/access-quota.public";
+import type {
+  QuotaLedgerPort,
+  QuotaReservation,
+} from "#api/modules/access/quotas/access-quotas.public";
 import type {
   ChargedGenerationPort,
   ChargedGenerationResult,

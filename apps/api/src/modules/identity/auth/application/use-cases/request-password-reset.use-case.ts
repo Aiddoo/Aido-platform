@@ -50,7 +50,7 @@ export class RequestPasswordResetUseCase {
       });
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id.value,
+        userId: user.id,
         event: SECURITY_EVENT.PASSWORD_RESET_REQUESTED,
         ipAddress: ip,
         userAgent,

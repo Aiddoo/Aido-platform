@@ -9,31 +9,30 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import {
-  ClientAbortSignal,
-  IdempotencyKey,
-  Locale,
-  Timezone,
-} from "#api/platform/http/decorators/index";
+import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
+import { IdempotencyKey } from "#api/platform/http/decorators/idempotency-key.decorator";
+import { Locale } from "#api/platform/http/decorators/locale.decorator";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
   ApiConflictError,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiServiceUnavailableError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { CreateQuickPlanUseCase } from "../../../application/use-cases/create-quick-plan.use-case.js";
 import { ApiIdempotencyKeyHeader, ApiPlanningLocaleHeaders } from "../plan-request.decorator.js";
+import { toQuickPlanResponse } from "./action-plan-response.mapper.js";
 import { QuickPlanRequestDto, QuickPlanResponseDto } from "./action-plan.dto.js";
 
-export const QUICK_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 20 } } as const;
+const QUICK_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 20 } } as const;
 
 @ApiTags(SWAGGER_TAGS.VOICE)
 @ApiBearerAuth()
@@ -71,7 +70,7 @@ AI 할 일 만들기(글·말·메모 공통): 무료 월 ${PLAN_CATALOG.AI_PARS
   @ApiErrorCodesResponse(HttpStatus.UNPROCESSABLE_ENTITY, [ErrorCode.AI_1302, ErrorCode.AI_1318])
   @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
-  create(
+  async create(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: QuickPlanRequestDto }) dto: QuickPlanRequestDto,
     @IdempotencyKey() idempotencyKey: string,
@@ -79,7 +78,7 @@ AI 할 일 만들기(글·말·메모 공통): 무료 월 ${PLAN_CATALOG.AI_PARS
     @Locale() locale: SupportedLocale | undefined,
     @ClientAbortSignal() signal: AbortSignal,
   ): Promise<QuickPlanResponseDto> {
-    return this.#createQuickPlan.execute({
+    const created = await this.#createQuickPlan.execute({
       userId: user.userId,
       text: dto.text,
       source: dto.source,
@@ -88,5 +87,6 @@ AI 할 일 만들기(글·말·메모 공통): 무료 월 ${PLAN_CATALOG.AI_PARS
       locale,
       signal,
     });
+    return toQuickPlanResponse(created);
   }
 }

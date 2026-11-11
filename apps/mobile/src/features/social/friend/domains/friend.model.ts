@@ -59,18 +59,17 @@ interface FriendLimitInput {
   knownLimit: number | null;
 }
 
-export function isValidUserTag(user: Pick<SearchedUser, 'userTag'>) {
-  return userTagSchema.safeParse(user.userTag.trim()).success;
+// 입력한 태그·검색어 규칙이라 Policy 밖에 둔다
+export function isValidUserTag(userTag: string) {
+  return userTagSchema.safeParse(userTag.trim()).success;
 }
 
-export function isValidSearchQuery(input: { query: string }) {
-  return input.query.trim().length >= USER_SEARCH_QUERY_LENGTH.MIN;
+export function isValidSearchQuery(query: string) {
+  return query.trim().length >= USER_SEARCH_QUERY_LENGTH.MIN;
 }
 
 // 이미 친구면 요청 대기보다 먼저다
-export function getRequestState(
-  user: Pick<SearchedUser, 'isFriend' | 'requestPending'>,
-): RequestState {
+export function getRequestState(user: SearchedUser): RequestState {
   if (user.isFriend) {
     return 'friend';
   }
@@ -87,8 +86,6 @@ export function getFriendLimit({ serverLimit, knownLimit }: FriendLimitInput) {
 }
 
 export const FriendPolicy = {
-  isValidUserTag,
-  isValidSearchQuery,
   getRequestState,
   getFriendLimit,
 } as const;

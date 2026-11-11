@@ -32,7 +32,7 @@ function assignRetention(userId: string, treatmentPercent: number) {
 
 function subjectIds(): string[] {
   return [
-    ...Array.from({ length: 2_000 }, () => `c${randomBytes(12).toString("hex")}`),
+    ...Array.from({ length: 2000 }, () => `c${randomBytes(12).toString("hex")}`),
     ...Array.from({ length: 500 }, () => randomUUID()),
     "user-stable",
     "user-a",
@@ -78,7 +78,7 @@ describe("DeterministicHashExperimentAssignerAdapter — 결정적 실험 배정
 
   it("새 실험은 실험 key를 섞어 같은 사용자도 실험마다 다른 구간에 놓인다", () => {
     // Given
-    const ids = Array.from({ length: 1_000 }, (_, index) => `user-${index}`);
+    const ids = Array.from({ length: 1000 }, (_, index) => `user-${index}`);
     const variants = [
       { key: "A", weight: 50 },
       { key: "B", weight: 50 },

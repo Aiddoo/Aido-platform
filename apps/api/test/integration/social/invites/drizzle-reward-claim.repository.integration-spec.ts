@@ -41,8 +41,6 @@ describe("DrizzleRewardClaimRepository (실제 PostgreSQL)", () => {
     const rows = await client
       .select({ claimKind: rewardClaim.claimKind, firstClaimedAt: rewardClaim.firstClaimedAt })
       .from(rewardClaim);
-    expect(rows).toEqual([
-      { claimKind: "INSTALLATION", firstClaimedAt: new Date(INVITE_FIXTURE_NOW.epochMilliseconds) },
-    ]);
+    expect(rows).toEqual([{ claimKind: "INSTALLATION", firstClaimedAt: INVITE_FIXTURE_NOW }]);
   });
 });

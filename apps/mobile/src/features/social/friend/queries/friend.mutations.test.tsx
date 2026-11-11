@@ -1,10 +1,25 @@
-import { ok } from '@src/core/errors/result';
-import { createHttpClientStub, createPendingResponse, renderUiHook } from '@src/shared/__tests__';
+import '@src/shared/i18n/init';
+import { err, ok } from '@src/core/errors/result';
+import {
+  createHapticsGatewayStub,
+  createHttpClientStub,
+  createPendingResponse,
+  createTestQueryClient,
+  renderUiHook,
+} from '@src/shared/__tests__';
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
-import { act, waitFor } from '@testing-library/react-native';
+import { act, screen, waitFor } from '@testing-library/react-native';
 
-import { createSentRequestsDto } from '../__tests__/friend.fixtures';
-import { useCancelRequestMutationOptions } from './friend.mutations';
+import {
+  createFriendApiError,
+  createFriendUser,
+  createSentRequestsDto,
+} from '../__tests__/friend.fixtures';
+import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
+import {
+  useCancelRequestMutationOptions,
+  useRemoveFriendMutationOptions,
+} from './friend.mutations';
 import { useGetSentRequestsInfiniteQueryOptions } from './friend.queries';
 
 describe('보낸 요청 취소', () => {
@@ -38,5 +53,56 @@ describe('보낸 요청 취소', () => {
       refetch.settle();
     });
     await waitFor(() => expect(result.current.cancel.isPending).toBe(false));
+  });
+});
+
+describe('친구 끊기', () => {
+  it('두 명을 함께 끊다 한 명만 실패하면 그 친구만 원래 자리에 돌아오고 다른 친구는 빠진 채 남는다', async () => {
+    // Given
+    const [first, second, third] = [
+      createFriendUser('friend-1'),
+      createFriendUser('friend-2'),
+      createFriendUser('friend-3'),
+    ];
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(FRIEND_QUERY_KEYS.friends(), {
+      pages: [{ items: [first, second, third], totalCount: 3, hasMore: false }],
+      pageParams: [undefined],
+    });
+    const rejection = createFriendApiError({ code: 'FOLLOW_0904', message: '끊지 못했어요' });
+    const firstRemoval = createPendingResponse(err(rejection));
+    const secondRemoval = createPendingResponse(ok({ message: '친구를 삭제했습니다.' }));
+    const httpClient = createHttpClientStub();
+    httpClient.delete
+      .mockReturnValueOnce(firstRemoval.response)
+      .mockReturnValueOnce(secondRemoval.response);
+    const { result } = await renderUiHook(() => useMutation(useRemoveFriendMutationOptions()), {
+      queryClient,
+      di: { httpClient, haptics: createHapticsGatewayStub() },
+    });
+    const removals = await act(async () => [
+      result.current.mutateAsync(first.id).catch((error: unknown) => error),
+      result.current.mutateAsync(second.id),
+    ]);
+
+    // When
+    await act(async () => {
+      firstRemoval.settle();
+    });
+
+    // Then
+    await expect(removals[0]).resolves.toBe(rejection);
+    expect(queryClient.getQueryData(FRIEND_QUERY_KEYS.friends())?.pages[0]).toEqual({
+      items: [first, third],
+      totalCount: 2,
+      hasMore: false,
+    });
+    expect(queryClient.getQueryState(FRIEND_QUERY_KEYS.friends())?.isInvalidated).toBe(false);
+    expect(await screen.findAllByText(rejection.message)).not.toHaveLength(0);
+    await act(async () => {
+      secondRemoval.settle();
+    });
+    await removals[1];
+    expect(queryClient.getQueryState(FRIEND_QUERY_KEYS.friends())?.isInvalidated).toBe(true);
   });
 });

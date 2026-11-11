@@ -1,19 +1,13 @@
 import { Inject, Injectable } from "@nestjs/common";
 
+import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
 import {
-  TODO_CATEGORY_COUNT_READER,
-  type TodoCategoryCountReaderPort,
-} from "#api/modules/planning/categories/planning-categories.public";
-import {
-  CHEER_USAGE_READER,
+  CheerUsageReaderPort,
   type DailySendUsage,
   type DailySendUsageReaderPort,
 } from "#api/modules/social/cheers/social-cheers.public";
-import {
-  FRIEND_COUNT_READER,
-  type FriendCountReaderPort,
-} from "#api/modules/social/friends/social-friends.public";
-import { NUDGE_USAGE_READER } from "#api/modules/social/nudges/social-nudges.public";
+import { FriendCountReaderPort } from "#api/modules/social/friends/social-friends.public";
+import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
@@ -27,7 +21,7 @@ function toQuotaUsageReading(usage: DailySendUsage): QuotaUsageReading {
   return { used: usage.used, resetsAt: instantFromDate(usage.resetsAt) };
 }
 
-// social·planning 포트가 아직 Symbol 토큰이고 Date를 돌려줘 이 경계에서 바꾼다
+// social·planning 포트가 Date를 돌려줘 이 경계에서 Temporal로 바꾼다
 @Injectable()
 export class OwnedFeatureUsageReaderAdapter extends OwnedFeatureUsageReaderPort {
   readonly #cheerUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
@@ -36,10 +30,10 @@ export class OwnedFeatureUsageReaderAdapter extends OwnedFeatureUsageReaderPort 
   readonly #categoryCountReader: Pick<TodoCategoryCountReaderPort, "countCategories">;
 
   constructor(
-    @Inject(CHEER_USAGE_READER) cheerUsageReader: DailySendUsageReaderPort,
-    @Inject(NUDGE_USAGE_READER) nudgeUsageReader: DailySendUsageReaderPort,
-    @Inject(FRIEND_COUNT_READER) friendCountReader: FriendCountReaderPort,
-    @Inject(TODO_CATEGORY_COUNT_READER) categoryCountReader: TodoCategoryCountReaderPort,
+    @Inject(CheerUsageReaderPort) cheerUsageReader: CheerUsageReaderPort,
+    @Inject(NudgeUsageReaderPort) nudgeUsageReader: NudgeUsageReaderPort,
+    @Inject(FriendCountReaderPort) friendCountReader: FriendCountReaderPort,
+    @Inject(TodoCategoryCountReaderPort) categoryCountReader: TodoCategoryCountReaderPort,
   ) {
     super();
     this.#cheerUsageReader = cheerUsageReader;
@@ -52,12 +46,11 @@ export class OwnedFeatureUsageReaderAdapter extends OwnedFeatureUsageReaderPort 
     readonly userId: UserId;
     readonly timeZone: string;
   }): Promise<OwnedFeatureUsage> {
-    const userId = params.userId.value;
     const [cheer, nudge, friendCount, categoryCount] = await Promise.all([
-      this.#cheerUsageReader.readDailyUsage(userId, params.timeZone),
-      this.#nudgeUsageReader.readDailyUsage(userId, params.timeZone),
-      this.#friendCountReader.countCurrentFriends(userId),
-      this.#categoryCountReader.countCategories(userId),
+      this.#cheerUsageReader.readDailyUsage(params.userId, params.timeZone),
+      this.#nudgeUsageReader.readDailyUsage(params.userId, params.timeZone),
+      this.#friendCountReader.countCurrentFriends(params.userId),
+      this.#categoryCountReader.countCategories(params.userId),
     ]);
     return {
       daily: { CHEER: toQuotaUsageReading(cheer), NUDGE: toQuotaUsageReading(nudge) },

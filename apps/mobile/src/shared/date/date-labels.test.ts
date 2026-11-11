@@ -4,6 +4,7 @@ import { i18n } from '@src/shared/i18n';
 
 import {
   formatDaysOfWeek,
+  formatIsoWeekOfMonthLabel,
   formatRelativeTimeLabel,
   formatWeekOfMonthLabel,
   getDayOfWeekLabel,
@@ -169,5 +170,36 @@ describe('로케일 인지 포맷 (i18n)', () => {
     expect(formatRelativeTimeLabel(oneMinuteAgo, now, EN_SEOUL)).toBe('1 minute ago');
     expect(formatRelativeTimeLabel(twoHoursAgo, now, EN_SEOUL)).toBe('2 hours ago');
     expect(formatRelativeTimeLabel(twoDaysAgo, now, EN_SEOUL)).toBe('2 days ago');
+  });
+});
+
+describe('formatIsoWeekOfMonthLabel', () => {
+  const KO = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
+  const EN = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
+
+  it('주의 목요일이 속한 달 기준으로 앱 언어에 맞는 주차를 만든다', () => {
+    // Given
+    // 2026-03-02 주의 목요일은 3월 5일이라 3월 1주차
+    const mondayKey = '2026-03-02';
+
+    // When
+    const korean = formatIsoWeekOfMonthLabel(mondayKey, KO);
+    const english = formatIsoWeekOfMonthLabel(mondayKey, EN);
+
+    // Then
+    expect(korean).toBe('3월 1주차');
+    expect(english).toBe('Week 1 of Mar');
+  });
+
+  it('달이 걸치는 주는 목요일이 속한 달로 센다', () => {
+    // Given
+    // 2026-03-30 주의 목요일은 4월 2일
+    const mondayKey = '2026-03-30';
+
+    // When
+    const label = formatIsoWeekOfMonthLabel(mondayKey, KO);
+
+    // Then
+    expect(label).toBe('4월 1주차');
   });
 });

@@ -2,7 +2,6 @@ import { DrizzleSignupStatsReader } from "#api/modules/operations/admin-notices/
 import { DrizzleAdminUserDirectoryReader } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-admin-user-directory.reader";
 import { account, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -34,10 +33,10 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
   it("한국 날짜의 시작은 포함하고 끝은 제외하며 인증 계정 없는 내부 사용자는 전체 가입자에서 제외한다", async () => {
     // Given
     const accounts = [
-      { provider: "CREDENTIAL", createdAt: new Date(START.epochMilliseconds - 1) },
-      { provider: "CREDENTIAL", createdAt: instantToDate(START) },
-      { provider: "GOOGLE", createdAt: new Date(START.epochMilliseconds + 1) },
-      { provider: "GOOGLE", createdAt: instantToDate(END) },
+      { provider: "CREDENTIAL", createdAt: START.subtract({ milliseconds: 1 }) },
+      { provider: "CREDENTIAL", createdAt: START },
+      { provider: "GOOGLE", createdAt: START.add({ milliseconds: 1 }) },
+      { provider: "GOOGLE", createdAt: END },
     ] as const;
     for (const item of accounts) {
       const created = UserFixture.create();
@@ -69,7 +68,7 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
       .values([
         ...activeUsers,
         UserFixture.create({ status: "SUSPENDED" }),
-        UserFixture.create({ deletedAt: instantToDate(END) }),
+        UserFixture.create({ deletedAt: END }),
       ]);
 
     // When
@@ -97,7 +96,7 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
     // Given
     const active = UserFixture.create();
     const suspended = UserFixture.create({ status: "SUSPENDED" });
-    const deleted = UserFixture.create({ deletedAt: instantToDate(END) });
+    const deleted = UserFixture.create({ deletedAt: END });
     await client.insert(user).values([active, suspended, deleted]);
 
     // When

@@ -63,10 +63,3 @@ export function ApiCreatedResponse<T>(options: ApiCreatedResponseOptions<T>): Me
     options.type,
   );
 }
-
-export function ApiNoContentResponse(description?: string): MethodDecorator {
-  return ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: description ?? SWAGGER_DESCRIPTION.NO_CONTENT_204,
-  });
-}

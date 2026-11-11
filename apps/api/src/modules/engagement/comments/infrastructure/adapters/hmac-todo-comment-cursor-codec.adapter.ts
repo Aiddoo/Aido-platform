@@ -1,10 +1,10 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from "@aido/api/vocabulary";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { HmacTokenSigner } from "#api/platform/security/hmac-token-signer";
 import { SigningKeyRing } from "#api/platform/security/signing-key-ring";
+import { isEntityId } from "#api/shared/domain/model/entity-id";
 
 import { invalidCommentRequest } from "../../application/comments.errors.js";
 import {
@@ -24,6 +24,10 @@ import {
   type TodoCommentPageDirection,
   type TodoConversationScope,
 } from "../../application/todo-comment-page.constants.js";
+import {
+  type EngagementCommentsConfig,
+  engagementCommentsConfig,
+} from "../../engagement-comments.config.js";
 
 const CURSOR_DOMAIN = {
   legacyPrefix: "todo-comment-cursor:v1:",
@@ -34,13 +38,15 @@ const cursorPositionSchema = z.strictObject({
   rootLikeCount: postgresCountSchema,
   rootReplyCount: postgresCountSchema,
 });
+const commentIdSchema = z.string().refine(isEntityId);
+
 const conversationCursorSchema = z.strictObject({
   v: z.literal(1),
   kind: z.literal("conversation"),
   sort: z.enum(TODO_COMMENT_SORT),
   todoId: z.number().int().positive(),
-  commentId: z.cuid(),
-  threadId: z.cuid(),
+  commentId: commentIdSchema,
+  threadId: commentIdSchema,
   scope: z.enum(TODO_CONVERSATION_SCOPES),
   position: cursorPositionSchema,
 });
@@ -50,7 +56,7 @@ const threadsCursorSchema = z.strictObject({
   kind: z.literal("overview"),
   sort: z.enum(TODO_COMMENT_SORT),
   todoId: z.number().int().positive(),
-  rootId: z.cuid(),
+  rootId: commentIdSchema,
   position: cursorPositionSchema,
   direction: directionSchema.optional(),
 });
@@ -58,8 +64,8 @@ const repliesCursorSchema = z.strictObject({
   v: z.literal(1),
   kind: z.literal("replies"),
   todoId: z.number().int().positive(),
-  threadCommentId: z.cuid(),
-  replyId: z.cuid(),
+  threadCommentId: commentIdSchema,
+  replyId: commentIdSchema,
   direction: directionSchema,
 });
 
@@ -68,11 +74,10 @@ const repliesCursorSchema = z.strictObject({
 export class HmacTodoCommentCursorCodecAdapter implements TodoCommentCursorCodecPort {
   readonly #signer: HmacTokenSigner;
 
-  constructor(config: TypedConfigService) {
-    const ring = SigningKeyRing.fromEnv({
-      configured: config.cursorSigningKeys,
-      legacySecret: config.jwtSecret,
-    });
+  constructor(
+    @Inject(engagementCommentsConfig.KEY) config: Pick<EngagementCommentsConfig, "cursorSigning">,
+  ) {
+    const ring = SigningKeyRing.fromEnv(config.cursorSigning);
     this.#signer = new HmacTokenSigner(ring, CURSOR_DOMAIN);
   }
 

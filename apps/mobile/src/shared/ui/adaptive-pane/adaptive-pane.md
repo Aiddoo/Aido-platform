@@ -1,10 +1,20 @@
 # AdaptivePane 컴포넌트
 
-창 폭(`useWindowSizeClass`)에 따라 목록과 상세를 나란히 놓는 List-detail 컨테이너입니다. 폴더블 펼침, 태블릿, 분할 화면에서 씁니다. 레이아웃을 힌지로 나누지 않습니다. 접힘선은 경계 위치만 맞춥니다.
+화면이 실제로 받은 폭(`usePaneSizeClass`)에 따라 목록과 상세를 나란히 놓는 List-detail 컨테이너입니다. 폴더블 펼침, 태블릿, 분할 화면에서 씁니다. 레이아웃을 힌지로 나누지 않습니다. 접힘선은 경계 위치만 맞춥니다.
 
 ```tsx
 import { AdaptivePane } from '@src/shared/ui';
 ```
+
+## 창 폭이 아니라 영역 폭
+
+iPad에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바가 열리면 창 폭은 그대로인데 탭 안이 사이드바만큼 좁아진다. 창 폭으로 나누면 세로 iPad·Split View에서 두 칸이 짓눌린다. 그래서 탭 Stack을 `PaneArea`로 감싸 탭이 받은 폭을 `onLayout`으로 재고, 칸 나누기는 그 폭으로 정한다. 규칙은 `WindowLayoutPolicy`(`shared/domains/window-layout.model.ts`)에 있다.
+
+- `PaneArea`: 할 일·메모·마이 탭의 Stack 레이아웃이 감싼다. 탭 위에 여는 화면(날씨 등)은 사이드바가 없어 감싸지 않고 창 폭을 쓴다.
+- `usePaneSizeClass()`: 칸을 나눌지, 고른 항목을 칸에 열지 push할지(`useFeedSelectedTodoId`·`useSelectedMemoId`·`useOpenDetailWhenCompact`·마이 탭 메뉴)를 정한다. 같은 폭을 봐야 칸은 하나인데 고른 항목이 칸에 열리는 어긋남이 없다.
+- `usePaneColumns()`: 두 칸인지와 목록 칸 폭(320/400, 접힘선 x, 한 칸이면 영역 전체)이다. `AdaptivePane`·마이 탭 칸·달력·날씨 배경이 쓴다.
+- 재기 전 첫 프레임은 창 폭으로 어림한다. 사이드바가 열린 채 들어오면 한 프레임 두 칸으로 그렸다가 한 칸이 될 수 있고, 목록 칸은 같은 트리 슬롯이라 다시 마운트되지 않는다.
+- `useWindowSizeClass()`는 창 전체 정책(시트·말로 메모 화면·알림에서 여는 경로)에 남긴다. 알림이 창 폭으로 `/feed?todoId=`를 골랐는데 탭 안이 좁으면 피드의 `useOpenDetailWhenCompact`가 상세로 넘긴다.
 
 ## 동작
 
@@ -14,11 +24,11 @@ import { AdaptivePane } from '@src/shared/ui';
 | `medium`   | 600 ~ 839 | `primary`(320 고정) \| `secondary`(나머지)             |
 | `expanded` | 840 이상  | `primary`(400 고정) \| `secondary`(나머지)             |
 
-- Mac(Designed for iPad)은 창 폭과 관계없이 `compact`다(`IS_IOS_APP_ON_MAC`). Expo 권장이 아니라 데스크톱에서도 모바일과 같은 경험을 주려는 제품 결정이다. 시작할 때 정해지는 상수라 첫 프레임부터 1열이다.
+- Mac(Designed for iPad)은 폭과 관계없이 `compact`다(`IS_IOS_APP_ON_MAC`). Expo 권장이 아니라 데스크톱에서도 모바일과 같은 경험을 주려는 제품 결정이다. 시작할 때 정해지는 상수라 첫 프레임부터 1열이다.
 - 각 pane을 `SafeAreaProvider`로 감싼다. pane 안의 `SafeAreaView`·`useSafeAreaInsets`는 창이 아닌 그 pane이 실제로 겹치는 safe area만 받는다. iPhone Duo는 접혀도 펼쳐도 탭 바·상태 표시를 좌우 세로 레일로 옮기는데, 펼친 2-pane에서는 레일에 닿는 pane만 inset을 받는다.
 - 첫 프레임에는 그 pane이 닿는 가장자리의 창 inset만 `initialMetrics`로 준다(`getPaneEdgeInsets`, RTL이면 좌우를 바꾼다). 네이티브 측정 전에 레일 반대쪽 pane이 84pt 들여 그려졌다가 튀는 시프트를 막는다.
 - 컨테이너는 가로 inset을 적용하지 않는다. pane 내용이 스스로 피한다: 스크롤 내용은 `<StyledSafeAreaView edges={['left', 'right']}>`로 감싸고(스크롤바와 배경은 가장자리까지), 고정 헤더·하단 버튼·빈 상태는 그 컨테이너에 `left`/`right`를 둔다. react-native-safe-area-context의 `SafeAreaView`는 가장 가까운 네이티브 provider의 inset을 쓰므로 같은 축의 `SafeAreaView`를 중첩하지 않는다(중복 패딩). JS `SafeAreaInsetsContext`로 바꾼 값은 보지 않는다([칸 안의 safe area](#칸-안의-safe-area)).
-- pane 폭은 size class별 최소 목록 폭(320/400)이고 상세 pane은 남은 폭을 채운다. 기기별 고정 폭이 아니라 창 폭 기준이다.
+- pane 폭은 size class별 최소 목록 폭(320/400)이고 상세 pane은 남은 폭을 채운다. 기기별 고정 폭이 아니라 영역 폭 기준이다.
 - 반쯤 접어 세로 접힘선(reserved region `division`)이 생기면 목록 폭을 접힘선의 `frame.x`에 맞추고 접힘선 폭만큼 비운다. `AdaptivePane`이 `ReservedRegionsProvider`로 자기 좌표계를 만들고, 접힘선은 `findVerticalFold`로 찾는다.
 - 펼친 화면에서 고른 항목은 URL param으로 상세 pane에 보여 준다. 접히면 항상 렌더링되는 목록 pane에서 `useOpenDetailWhenCompact(selectedId, openDetail)`로 상세 라우트에 넘긴다. 훅은 `useIsFocused`로 앞에 보이는 화면에서만 동작하므로, 뒤에 남아 있는 다른 탭은 push하지 않는다.
 - 목록 밖(푸시·알림함 행)에서 여는 항목도 같은 기준을 따른다. 할 일은 `toTodoDetailRoute(windowSizeClass, …)`가 접힌 화면이면 `/todo/[todoId]`, 펼친 화면이면 `/feed?todoId=`(피드 상세 pane)를 고른다. 알림이 할 일 주인·날짜(`routing.todoOwnerId`·`todoDate`)를 실으면 목록 pane도 그 사람(친구면 `friendId`)의 그 `date` 피드로 연다. 없는 예전 알림은 내 피드 기본 날짜다.
@@ -75,7 +85,7 @@ pane은 Stack 화면이 아니어서 네이티브 헤더가 없고, 꼭대기 �
 
 ## 자리가 움직였는지 알기
 
-`useAdaptivePaneLayoutKey()`는 창 폭과 접힘선 위치를 합친 문자열이다. 말풍선처럼 pane 안의 자리를 재어 띄운 것은 `CoachmarkPopover`의 `dismissKey`로 넘긴다(`VoiceNoteStartButton`). 자세가 바뀌어 자리가 움직일 때 읽기 시간 전이면 멈춘 뒤 새 자리에서 다시 열고, 충분히 읽었으면 끝낸다. 접힘선이 `AdaptivePane`의 좌표로 재어지므로 `primary`·`secondary` 안에서 부른다. 화면에서 부르면 앱 루트의 provider를 읽어 좌표가 달라진다.
+`useAdaptivePaneLayoutKey()`는 영역 폭과 접힘선 위치를 합친 문자열이다(사이드바를 열고 닫아 칸이 옮겨 가도 바뀐다). 말풍선처럼 pane 안의 자리를 재어 띄운 것은 `CoachmarkPopover`의 `dismissKey`로 넘긴다(`VoiceNoteStartButton`). 자세가 바뀌어 자리가 움직일 때 읽기 시간 전이면 멈춘 뒤 새 자리에서 다시 열고, 충분히 읽었으면 끝낸다. 접힘선이 `AdaptivePane`의 좌표로 재어지므로 `primary`·`secondary` 안에서 부른다. 화면에서 부르면 앱 루트의 provider를 읽어 좌표가 달라진다.
 
 ## Props
 
@@ -92,8 +102,7 @@ adaptive-pane/
 ├── adaptive-pane.types.ts
 ├── adaptive-pane.test.tsx
 ├── get-pane-edge-insets.ts
-├── get-primary-pane-width.ts
-├── get-primary-pane-width.test.ts
+├── pane-area.tsx
 ├── index.ts
 └── adaptive-pane.md
 ```

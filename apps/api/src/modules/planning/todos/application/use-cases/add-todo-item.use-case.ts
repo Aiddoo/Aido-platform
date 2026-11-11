@@ -3,19 +3,19 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MutationLockKeys,
-  type DomainEventPublisherPort,
-  type MutationLockPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
+import type { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 export interface AddTodoItemInput {
@@ -37,7 +37,7 @@ interface AddTodoItemDependencies {
   readonly mutationLock: MutationLockPort;
   readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
-  readonly eventPublisher: DomainEventPublisherPort;
+  readonly completionEffects: Pick<ApplyTodoCompletionEffectsUseCase, "execute">;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -50,10 +50,12 @@ export class AddTodoItemUseCase {
 
   async execute(input: AddTodoItemInput): Promise<TodoReadModel> {
     const { todoId, userId, title, timezone } = input;
+    const targetTodoId = TodoId.reconstitute(todoId);
+    const ownerId = UserId.reconstitute(userId);
 
     const events = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(todoId)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, userId);
+      await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
+      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(targetTodoId, ownerId);
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
       }
@@ -62,12 +64,12 @@ export class AddTodoItemUseCase {
       const itemTitle = TodoTitle.create(title);
       const now = clock.now();
       const item = todo.addItem({ id: await todoRepository.nextItemId(), title: itemTitle, now });
-      await todoRepository.insertItem(todoId, item);
+      await todoRepository.insertItem(targetTodoId, item);
 
       if (!todo.reopenForAddedItem(timezone, now)) {
         return [];
       }
-      await todoRepository.updateDetails(todoId, {
+      await todoRepository.updateDetails(targetTodoId, {
         completed: todo.completed,
         completedAt: todo.completedAt,
       });
@@ -84,11 +86,14 @@ export class AddTodoItemUseCase {
 
     this.#dependencies.logger.log({ event: TodoLogEvent.ITEM_ADDED, todoId, userId });
 
-    await this.#dependencies.eventPublisher.publishAll(events);
+    await this.#dependencies.completionEffects.execute(events);
 
-    await this.#dependencies.todoCache.invalidateFriendTodos(userId);
+    await this.#dependencies.todoCache.invalidateFriendTodos(ownerId);
 
-    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, userId);
+    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
+      targetTodoId,
+      ownerId,
+    );
     if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }

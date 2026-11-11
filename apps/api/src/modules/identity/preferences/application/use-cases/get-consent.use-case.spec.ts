@@ -30,11 +30,11 @@ describe("GetConsent — 약관과 선택 동의의 nullable 응답", () => {
     const result = await new GetConsentUseCase(fixture).execute({ userId: fixture.userId });
     // Then
     expect(result).toEqual({
-      termsAgreedAt: SETTINGS_TIME.toISOString(),
-      privacyAgreedAt: SETTINGS_TIME.toISOString(),
+      termsAgreedAt: "2026-01-16T09:00:00.000Z",
+      privacyAgreedAt: "2026-01-16T09:00:00.000Z",
       agreedTermsVersion: fixture.consent.agreedTermsVersion,
       marketingAgreedAt: null,
-      marketingPushAgreedAt: SETTINGS_TIME.toISOString(),
+      marketingPushAgreedAt: "2026-01-16T09:00:00.000Z",
       aiDataSharingDecision: "UNDECIDED",
       aiDataSharingAgreedAt: null,
       aiDataSharingConsentVersion: null,

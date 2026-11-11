@@ -7,7 +7,6 @@ import { tupleLessThan } from "#api/platform/database/keyset";
 import { cheer as cheerTable } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { hasNoBlockWith } from "../../../blocks/infrastructure/persistence/drizzle-user-block.repository.js";
 import { USER_BRIEF_RELATION } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
@@ -61,8 +60,8 @@ export class DrizzleCheerRepository implements CheerRepositoryPort, CheerReaderP
       cheerTable,
       and(
         eq(cheerTable.senderId, senderId.value),
-        gte(cheerTable.createdAt, instantToDate(window.startsAt)),
-        lt(cheerTable.createdAt, instantToDate(window.endsAt)),
+        gte(cheerTable.createdAt, window.startsAt),
+        lt(cheerTable.createdAt, window.endsAt),
       ),
     );
   }
@@ -85,7 +84,7 @@ export class DrizzleCheerRepository implements CheerRepositoryPort, CheerReaderP
     }
     const updated = await this.#db
       .update(cheerTable)
-      .set({ readAt: instantToDate(params.now) })
+      .set({ readAt: params.now })
       .where(
         and(
           inArray(

@@ -2,14 +2,15 @@ import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import type { PlanMemo } from "#api/modules/notes/memos/notes-memos.public";
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryPlanApplicationRepository } from "#test/doubles/voice/in-memory-plan-application.repository";
 import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import type { PlannedAction, PlannedTodo } from "../../domain/action-plan.vo.js";
 import { ApplyActionPlanUseCase } from "./apply-action-plan.use-case.js";
@@ -65,7 +66,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
   };
   let nextTodoId = 100;
   const useCase = new ApplyActionPlanUseCase({
-    unitOfWork: createUnitOfWorkMock(),
+    unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: {
       acquire: async (keys) => {
         acquiredLocks.push([...keys]);
@@ -107,20 +108,20 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
     memoWriter: {
       create: async (input) => {
         order.push("memo");
-        createdMemos.push({ userId: input.userId, content: input.content });
+        createdMemos.push({ userId: input.userId.value, content: input.content });
         return memo;
       },
-      findById: async (memoId) => (memoId === MISSING_MEMO_ID ? null : memo),
+      findById: async (memoId) => (memoId.value === MISSING_MEMO_ID ? null : memo),
       delete: async (memoId) => {
         order.push("deleteMemo");
-        deletedMemoIds.push(memoId);
+        deletedMemoIds.push(memoId.value);
       },
     },
     todoReader: {
-      findManyByIds: async (_userId, ids) => ids.map((id) => todoResponse(id)),
+      findManyByIds: async (_userId, ids) => ids.map((id) => todoResponse(id.value)),
     },
     clock: new FixedClock(Temporal.Instant.from("2027-01-04T00:00:00Z")),
-    logger: createSpyApplicationLogger(),
+    logger: new SilentLogger(),
   });
   const execute = (actions: readonly PlannedAction[], idempotencyKey = "key-1") =>
     useCase.execute({
@@ -176,12 +177,12 @@ describe("ApplyActionPlanUseCase", () => {
     const result = await execute([scheduled, todoAction({ key: "todo-1" })]);
     // Then
     expect(stagedInputs[0]).toMatchObject({
-      userId: USER_ID,
+      userId: UserId.reconstitute(USER_ID),
       timezone: "Asia/Seoul",
       title: "회의록 보내기",
-      categoryId: 1,
-      startDate: parseDateOnly("2027-01-04"),
-      endDate: parseDateOnly("2027-01-06"),
+      categoryId: TodoCategoryId.reconstitute(1),
+      startDate: Temporal.PlainDate.from("2027-01-04"),
+      endDate: Temporal.PlainDate.from("2027-01-06"),
       scheduledTime: "15:30",
       isAllDay: false,
       visibility: "PRIVATE",

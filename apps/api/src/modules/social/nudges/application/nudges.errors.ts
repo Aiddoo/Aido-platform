@@ -1,10 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
+import { match } from "ts-pattern";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { DailySendQuota } from "../../cheers/application/ports/daily-send-usage.reader.port.js";
+import type { DailySendFeatureQuota } from "../../cheers/application/ports/daily-send-usage.reader.port.js";
 import type { NudgeId } from "../domain/nudge-id.vo.js";
+import type { NudgeThanksRejection } from "../domain/nudge-interaction.domain-service.js";
 
 export function cannotNudgeSelf(): ApplicationException {
   return new ApplicationException(ErrorCode.NUDGE_1104);
@@ -23,7 +25,7 @@ export function nudgeTodoNotActiveToday(todoId: number): ApplicationException {
   return new ApplicationException(ErrorCode.NUDGE_1106, { todoId });
 }
 
-export function nudgeDailyLimitReached(featureQuota: DailySendQuota): ApplicationException {
+export function nudgeDailyLimitReached(featureQuota: DailySendFeatureQuota): ApplicationException {
   return new ApplicationException(ErrorCode.NUDGE_1101, { charged: false, featureQuota });
 }
 
@@ -68,6 +70,9 @@ export function thanksTodoNotFound(): ApplicationException {
   return new ApplicationException(ErrorCode.TODO_0801);
 }
 
-export function thanksTodoNotCompleted(): ApplicationException {
-  return new ApplicationException(ErrorCode.NUDGE_1110);
+export function nudgeThanksRejected(reason: NudgeThanksRejection): ApplicationException {
+  return match(reason)
+    .with("todo-not-completed", () => new ApplicationException(ErrorCode.NUDGE_1110))
+    .with("todo-not-public", () => nudgeInteractionClosed())
+    .exhaustive();
 }

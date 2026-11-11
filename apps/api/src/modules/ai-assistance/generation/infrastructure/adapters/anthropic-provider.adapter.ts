@@ -1,9 +1,11 @@
 import { type AnthropicLanguageModelOptions, createAnthropic } from "@ai-sdk/anthropic";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
-
+import {
+  type AiAssistanceGenerationConfig,
+  aiAssistanceGenerationConfig,
+} from "../../ai-assistance-generation.config.js";
 import type { AiFailureKind } from "../../application/ai-generation.errors.js";
 import type { AiGenerationPolicy } from "./ai-generation-policy.constants.js";
 import {
@@ -35,9 +37,12 @@ export class AnthropicProviderAdapter extends AiProviderAdapter {
   };
   readonly #model: AiProviderModel | null;
 
-  constructor(config: TypedConfigService) {
+  constructor(
+    @Inject(aiAssistanceGenerationConfig.KEY)
+    config: Pick<AiAssistanceGenerationConfig, "providers">,
+  ) {
     super();
-    const { apiKey, model } = config.ai.providers.anthropic;
+    const { apiKey, model } = config.providers.anthropic;
     this.#model =
       apiKey == null
         ? null

@@ -1,8 +1,9 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
-import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
-import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
+import { BillingPremiumGrantsModule } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
+import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialBlocksModule } from "#api/modules/social/blocks/social-blocks.public";
 import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
 import { provideEventSubscriptions } from "#api/platform/events/event-subscription.catalog";
@@ -15,15 +16,17 @@ import { InviteMaintenanceProcessor } from "./infrastructure/jobs/invite-mainten
 import { InviteMaintenanceScheduler } from "./infrastructure/jobs/invite-maintenance.scheduler.js";
 import { InviteRewardProcessor } from "./infrastructure/jobs/invite-reward.processor.js";
 import { InviteController } from "./presentation/http/v1/invite.controller.js";
+import { socialInvitesConfig } from "./social-invites.config.js";
 import { SOCIAL_INVITES_PROVIDERS } from "./social-invites.providers.js";
 
 @Module({
   imports: [
     SocialBlocksModule,
     SocialFriendsModule,
-    NotificationDeliveryModule,
-    AccessModule,
-    BillingSubscriptionsModule,
+    NotificationPushModule,
+    AccessEntitlementsModule,
+    BillingPremiumGrantsModule,
+    ConfigModule.forFeature(socialInvitesConfig),
   ],
   controllers: [InviteController],
   providers: [

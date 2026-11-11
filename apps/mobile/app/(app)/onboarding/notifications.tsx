@@ -16,7 +16,7 @@ export default function NotificationOnboardingScreen() {
   const { t } = useTranslation('notification');
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-white">
+    <StyledSafeAreaView className="flex-1 bg-white" testID="push-onboarding-screen">
       <ReadableContent flex={1}>
         <VStack flex={1} align="center" justify="center" className="px-6">
           <NotificationIllustration />

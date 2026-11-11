@@ -17,6 +17,8 @@ export class InMemoryScheduledTodoReader extends ScheduledTodoReaderPort {
 
   async listPendingTimedTodos(params: {
     readonly userId: UserId;
+    readonly date: Temporal.PlainDate;
+    readonly timezone: string;
     readonly from: Temporal.Instant;
     readonly until: Temporal.Instant;
   }): Promise<ScheduledTodo[]> {

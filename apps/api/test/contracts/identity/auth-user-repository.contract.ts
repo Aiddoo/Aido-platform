@@ -3,6 +3,7 @@ import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
 import type { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
 import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AUTH_FIXTURE_NOW } from "#test/fixtures/identity/auth-session.fixture";
 
 const GRACE_PERIOD = { hours: 24 * ACCOUNT_DELETION.GRACE_PERIOD_DAYS };
@@ -30,9 +31,9 @@ export function describeAuthUserRepositoryContract(
       const created = await createUser(repository, { emailVerifiedAt: AUTH_FIXTURE_NOW });
 
       // When
-      const byId = await repository.findById(created.id.value);
+      const byId = await repository.findById(created.id);
       const byEmail = await repository.findByEmail(created.email);
-      const locked = await repository.findByIdForUpdate(created.id.value);
+      const locked = await repository.findByIdForUpdate(created.id);
 
       // Then
       expect(created.toPrimitives()).toMatchObject({
@@ -66,9 +67,9 @@ export function describeAuthUserRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const byId = await repository.findById("missing-user");
+      const byId = await repository.findById(UserId.reconstitute("missing-user"));
       const byEmail = await repository.findByEmail("missing@example.com");
-      const withProfile = await repository.findByIdWithProfile("missing-user");
+      const withProfile = await repository.findByIdWithProfile(UserId.reconstitute("missing-user"));
 
       // Then
       expect({ byId, byEmail, withProfile }).toEqual({
@@ -82,15 +83,15 @@ export function describeAuthUserRepositoryContract(
       // Given
       const repository = await createRepository();
       const created = await createUser(repository);
-      await repository.createProfile(created.id.value, {
+      await repository.createProfile(created.id, {
         name: "아이도",
         profileImage: "https://example.com/a.png",
       });
 
       // When
-      const renamed = await repository.updateProfile(created.id.value, { name: "새 이름" });
-      const cleared = await repository.updateProfile(created.id.value, { profileImage: null });
-      const found = await repository.findByIdWithProfile(created.id.value);
+      const renamed = await repository.updateProfile(created.id, { name: "새 이름" });
+      const cleared = await repository.updateProfile(created.id, { profileImage: null });
+      const found = await repository.findByIdWithProfile(created.id);
 
       // Then
       expect(renamed).toEqual({ name: "새 이름", profileImage: "https://example.com/a.png" });
@@ -110,7 +111,7 @@ export function describeAuthUserRepositoryContract(
       const created = await createUser(repository);
 
       // When
-      const profile = await repository.updateProfile(created.id.value, { name: "처음" });
+      const profile = await repository.updateProfile(created.id, { name: "처음" });
 
       // Then
       expect(profile).toEqual({ name: "처음", profileImage: null });
@@ -122,8 +123,8 @@ export function describeAuthUserRepositoryContract(
       const created = await createUser(repository);
 
       // When
-      await repository.markEmailVerified(created.id.value, AUTH_FIXTURE_NOW);
-      const found = await repository.findById(created.id.value);
+      await repository.markEmailVerified(created.id, AUTH_FIXTURE_NOW);
+      const found = await repository.findById(created.id);
 
       // Then
       expect(found?.toPrimitives()).toMatchObject({
@@ -140,10 +141,10 @@ export function describeAuthUserRepositoryContract(
 
       // When
       await repository.saveAccountStatus(created);
-      const deleted = (await repository.findById(created.id.value))?.toPrimitives();
+      const deleted = (await repository.findById(created.id))?.toPrimitives();
       created.restore(AUTH_FIXTURE_NOW.add({ hours: 1 }));
       await repository.saveAccountStatus(created);
-      const restored = (await repository.findById(created.id.value))?.toPrimitives();
+      const restored = (await repository.findById(created.id))?.toPrimitives();
 
       // Then
       expect(deleted).toMatchObject({ status: "SUSPENDED", deletedAt: AUTH_FIXTURE_NOW });
@@ -176,11 +177,11 @@ export function describeAuthUserRepositoryContract(
       const created = await createUser(repository);
 
       // When
-      await repository.hardDelete(created.id.value);
+      await repository.hardDelete(created.id);
 
       // Then
-      expect(await repository.findById(created.id.value)).toBeNull();
-      await expect(repository.hardDelete(created.id.value)).rejects.toThrow();
+      expect(await repository.findById(created.id)).toBeNull();
+      await expect(repository.hardDelete(created.id)).rejects.toThrow();
     });
   });
 }

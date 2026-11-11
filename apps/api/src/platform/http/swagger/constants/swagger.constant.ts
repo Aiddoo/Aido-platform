@@ -207,18 +207,3 @@ export const SWAGGER_DESCRIPTION = {
   TOO_MANY_REQUESTS_429: "요청이 너무 많습니다",
   INTERNAL_ERROR_500: "서버 내부 오류가 발생했습니다",
 } as const;
-
-export type SwaggerDescription = (typeof SWAGGER_DESCRIPTION)[keyof typeof SWAGGER_DESCRIPTION];
-
-/**
- * Swagger 보안 스키마 이름
- */
-export const SWAGGER_SECURITY = {
-  ACCESS_TOKEN: "access-token",
-  REFRESH_TOKEN: "refresh-token",
-} as const;
-
-/**
- * 공통 에러 응답에 포함할 HTTP 상태 코드
- */
-export const COMMON_ERROR_STATUS_CODES = [400, 500] as const;

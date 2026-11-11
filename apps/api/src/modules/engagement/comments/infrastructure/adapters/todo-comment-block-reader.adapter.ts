@@ -1,24 +1,21 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  USER_BLOCK_READER,
-  type UserBlockReaderPort,
-} from "#api/modules/social/blocks/social-blocks.public";
+import { UserBlockReaderPort } from "#api/modules/social/blocks/social-blocks.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentBlockReaderPort } from "../../application/ports/todo-comment-block-reader.port.js";
 
-/** social이 클래스 토큰을 열 때까지 옛 Symbol 토큰으로 차단 관계를 읽는다 */
 @Injectable()
 export class TodoCommentBlockReaderAdapter implements TodoCommentBlockReaderPort {
   readonly #userBlockReader: UserBlockReaderPort;
 
-  constructor(@Inject(USER_BLOCK_READER) userBlockReader: UserBlockReaderPort) {
+  constructor(@Inject(UserBlockReaderPort) userBlockReader: UserBlockReaderPort) {
     this.#userBlockReader = userBlockReader;
   }
 
   findBlockedCounterpartIds(
-    viewerId: string,
-    candidateUserIds: readonly string[],
+    viewerId: UserId,
+    candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>> {
     return this.#userBlockReader.findBlockedCounterpartIds(viewerId, candidateUserIds);
   }

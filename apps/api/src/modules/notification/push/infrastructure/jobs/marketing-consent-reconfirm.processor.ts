@@ -3,7 +3,6 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { NotificationDeliveryLogEvent } from "../../application/notification-delivery.log-events.js";
 import { ReconfirmMarketingConsentsUseCase } from "../../application/use-cases/reconfirm-marketing-consents.use-case.js";
@@ -34,7 +33,7 @@ export class MarketingConsentReconfirmProcessor implements OnModuleInit {
 
   async process(): Promise<void> {
     try {
-      await this.#reconfirmMarketingConsents.execute({ now: instantToDate(this.#clock.now()) });
+      await this.#reconfirmMarketingConsents.execute({ now: this.#clock.now() });
     } catch (error) {
       this.#logger.error({
         event: NotificationDeliveryLogEvent.MARKETING_CONSENT_RECONFIRM_JOB_FAILED,

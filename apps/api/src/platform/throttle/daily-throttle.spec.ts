@@ -1,5 +1,4 @@
-import type { ExecutionContext } from "@nestjs/common";
-import { mock } from "vitest-mock-extended";
+import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
 
 import { DAILY_THROTTLER_OPTIONS, ThrottleDaily } from "./user-aware-throttler.guard.js";
 
@@ -10,10 +9,8 @@ class Routes {
   free(): void {}
 }
 
-function contextOf(handler: () => void): ExecutionContext {
-  const context = mock<ExecutionContext>();
-  context.getHandler.mockReturnValue(handler);
-  return context;
+function contextOf(handler: () => void): ExecutionContextHost {
+  return new ExecutionContextHost([], Routes, handler);
 }
 
 describe("하루 한도 throttler", () => {

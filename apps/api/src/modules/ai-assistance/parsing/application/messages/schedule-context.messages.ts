@@ -1,6 +1,7 @@
-import dayjs from "dayjs";
-
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+
+import { sundayBasedDayIndex } from "../../../shared/domain/user-calendar.domain-service.js";
 
 export interface PromptCategory {
   readonly id: number;
@@ -18,10 +19,10 @@ export function buildScheduleContext(input: {
   readonly timezone: string;
   readonly locale: SupportedLocale;
 }) {
-  const local = dayjs(input.now).tz(input.timezone);
+  const local = instantFromDate(input.now).toZonedDateTimeISO(input.timezone);
   return {
-    now: local.format("YYYY-MM-DDTHH:mm"),
-    weekday: WEEKDAY_LABELS[input.locale][local.day()],
+    now: local.toPlainDateTime().toString({ smallestUnit: "minute" }),
+    weekday: WEEKDAY_LABELS[input.locale][sundayBasedDayIndex(local.toPlainDate())],
     timezone: input.timezone,
   };
 }

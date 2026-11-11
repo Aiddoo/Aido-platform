@@ -13,8 +13,8 @@ export abstract class PushReceiptRepositoryPort {
   abstract recordPushReceipts(input: {
     readonly requestedTicketIds: readonly string[];
     readonly results: readonly PushReceiptResult[];
-    readonly checkedAt: Date;
+    readonly checkedAt: Temporal.Instant;
   }): Promise<InvalidPushToken[]>;
   // 보관 기간 안에 receipt가 오지 않은 ticket을 결과 미상으로 닫는다
-  abstract expireUnreceipted(acceptedBefore: Date, limit: number): Promise<number>;
+  abstract expireUnreceipted(acceptedBefore: Temporal.Instant, limit: number): Promise<number>;
 }

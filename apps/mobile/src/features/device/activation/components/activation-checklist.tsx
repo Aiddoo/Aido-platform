@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { useActivationChecklist } from '../hooks/use-activation-progress';
+import { useActivationChecklist } from '../hooks/use-activation-checklist';
 
 interface ActivationChecklistProps {
   className?: string;

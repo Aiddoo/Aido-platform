@@ -1,6 +1,6 @@
-import type { QuickPlanResponse } from "@aido/api";
 import type { QuickPlanSource } from "@aido/api/vocabulary";
 
+import type { MeteredFeatureQuota } from "#api/modules/access/quotas/access-quotas.public";
 import {
   fingerprintRequest,
   resolveRequestLocale,
@@ -11,13 +11,18 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
+import { ActionPlanLogEvent } from "../action-plans.log-events.js";
 import type { ChargedPlanRunnerPort } from "../ports/charged-plan-runner.port.js";
 import type { PlanResultReplay, QuickPlanResult } from "../ports/plan-result-replay.port.js";
 import type { PlanningContextReaderPort } from "../ports/planning-context.reader.port.js";
-import { countPlannedActions, toActionPlanView } from "../read-models/action-plan.read-model.js";
-import { VoiceLogEvent } from "../voice.log-events.js";
+import {
+  type ActionPlanReadModel,
+  countPlannedActions,
+  toActionPlanReadModel,
+} from "../read-models/action-plan.read-model.js";
 
 export interface CreateQuickPlanCommand {
   readonly userId: string;
@@ -30,6 +35,13 @@ export interface CreateQuickPlanCommand {
   readonly locale: SupportedLocale | undefined;
   /** 앱이 연결을 끊으면 AI 호출을 멈추고 환불한다. */
   readonly signal?: AbortSignal;
+}
+
+export interface CreatedQuickPlan {
+  readonly plan: ActionPlanReadModel;
+  /** 이 요청을 반영한 AI_PARSE 한도. 결과는 주되 한도를 읽지 못했으면 null이다 */
+  readonly featureQuota: MeteredFeatureQuota | null;
+  readonly charged: boolean;
 }
 
 interface CreateQuickPlanDependencies {
@@ -50,25 +62,26 @@ export class CreateQuickPlanUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: CreateQuickPlanCommand): Promise<QuickPlanResponse> {
+  async execute(input: CreateQuickPlanCommand): Promise<CreatedQuickPlan> {
     const { runner, generator, contextReader, localePreferenceReader, replay, logger } =
       this.#dependencies;
     const { userId, text, source, idempotencyKey } = input;
+    const owner = UserId.reconstitute(userId);
     const startedAt = this.#dependencies.clock.now().epochMilliseconds;
-    const { timezone, locale } = await resolveRequestLocale(localePreferenceReader, userId, input);
+    const { timezone, locale } = await resolveRequestLocale(localePreferenceReader, owner, input);
 
     try {
       const { result, charged, featureQuota } = await runner.run<QuickPlanResult>({
-        userId,
+        userId: owner,
         feature: "AI_PARSE",
         reason: "quick-plan",
         idempotencyKey,
         requestHash: fingerprintRequest(userId, { text, source }),
         replay,
         generate: async () => {
-          const context = await contextReader.read(userId, timezone);
+          const context = await contextReader.read(owner, timezone);
           const generation = await generator.generateQuickPlan({
-            userId,
+            userId: owner,
             text,
             timezone,
             locale,
@@ -78,7 +91,7 @@ export class CreateQuickPlanUseCase {
           });
           return {
             result: {
-              plan: toActionPlanView(generation.plan, context.upcomingTodos),
+              plan: toActionPlanReadModel(generation.plan, context.upcomingTodos),
               model: generation.meta.model,
             },
             outcome: generation.plan.todos.length > 0 ? "CHARGE" : "NO_ACTION",
@@ -86,7 +99,7 @@ export class CreateQuickPlanUseCase {
         },
       });
       logger.log({
-        event: VoiceLogEvent.QUICK_PLAN_COMPLETED,
+        event: ActionPlanLogEvent.QUICK_PLAN_COMPLETED,
         userId,
         source,
         characterCount: text.length,
@@ -98,7 +111,7 @@ export class CreateQuickPlanUseCase {
       return { plan: result.plan, featureQuota, charged };
     } catch (error) {
       logger.warn({
-        event: VoiceLogEvent.QUICK_PLAN_FAILED,
+        event: ActionPlanLogEvent.QUICK_PLAN_FAILED,
         userId,
         source,
         characterCount: text.length,

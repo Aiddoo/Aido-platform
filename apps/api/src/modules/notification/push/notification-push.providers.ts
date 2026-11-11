@@ -1,12 +1,13 @@
 import type { Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import type { Redis } from "ioredis";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { NotificationHistoryReader } from "../inbox/application/notification-history.reader.js";
@@ -16,30 +17,18 @@ import {
   NotificationRepositoryPort,
 } from "../inbox/notification-inbox.public.js";
 import { ActivePushTokenReaderPort } from "./application/ports/active-push-token.reader.port.js";
-import {
-  CLIENT_APP_VERSION_READER,
-  ClientAppVersionReaderPort,
-} from "./application/ports/client-app-version.reader.port.js";
+import { ClientAppVersionReaderPort } from "./application/ports/client-app-version.reader.port.js";
 import { MarketingConsentReconfirmPort } from "./application/ports/marketing-consent-reconfirm.port.js";
 import { MarketingPushOptOutTokenPort } from "./application/ports/marketing-push-opt-out-token.port.js";
 import {
   NotificationDedupLockPort,
   NotificationDedupPort,
 } from "./application/ports/notification-dedup.port.js";
-import {
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  NotificationRecipientLocaleReaderPort,
-} from "./application/ports/notification-recipient-locale.reader.port.js";
+import { NotificationRecipientLocaleReaderPort } from "./application/ports/notification-recipient-locale.reader.port.js";
 import { NotificationRecipientPreferenceReaderPort } from "./application/ports/notification-recipient-preference.reader.port.js";
-import {
-  NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-  NotificationRecipientTimezoneReaderPort,
-} from "./application/ports/notification-recipient-timezone.reader.port.js";
+import { NotificationRecipientTimezoneReaderPort } from "./application/ports/notification-recipient-timezone.reader.port.js";
 import { NotificationTodoTargetReaderPort } from "./application/ports/notification-todo-target.reader.port.js";
-import {
-  PUSH_CAMPAIGN_OUTCOME_READER,
-  PushCampaignOutcomeReaderPort,
-} from "./application/ports/push-campaign-outcome.reader.port.js";
+import { PushCampaignOutcomeReaderPort } from "./application/ports/push-campaign-outcome.reader.port.js";
 import { PushDeliveryJobEnqueuerPort } from "./application/ports/push-delivery-job-enqueuer.port.js";
 import { PushDeliveryLifecycleRepositoryPort } from "./application/ports/push-delivery-lifecycle.repository.port.js";
 import { PushDeliveryOutboxRepositoryPort } from "./application/ports/push-delivery-outbox.repository.port.js";
@@ -48,17 +37,11 @@ import { PushDispatchStagingRepositoryPort } from "./application/ports/push-disp
 import { PushFunnelReaderPort } from "./application/ports/push-funnel.reader.port.js";
 import { PushNotificationPayloadPort } from "./application/ports/push-notification-payload.port.js";
 import { PushProviderPort } from "./application/ports/push-provider.port.js";
-import {
-  PUSH_QUIET_HOURS_READER,
-  PushQuietHoursReaderPort,
-} from "./application/ports/push-quiet-hours.reader.port.js";
+import { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.reader.port.js";
 import { PushRateLimiterPort } from "./application/ports/push-rate-limiter.port.js";
 import { PushReceiptRepositoryPort } from "./application/ports/push-receipt.repository.port.js";
 import { PushTokenRepositoryPort } from "./application/ports/push-token.repository.port.js";
-import {
-  SESSION_PUSH_DEVICE_RELEASE,
-  SessionPushDeviceReleasePort,
-} from "./application/ports/session-push-device-release.port.js";
+import { SessionPushDeviceReleasePort } from "./application/ports/session-push-device-release.port.js";
 import { UserNotificationSettingsPort } from "./application/ports/user-notification-settings.port.js";
 import { PushQuietHoursReader } from "./application/push-quiet-hours.reader.js";
 import { DeliverPushNotificationsUseCase } from "./application/use-cases/deliver-push-notifications.use-case.js";
@@ -86,6 +69,7 @@ import { SendMilestoneNotificationUseCase } from "./application/use-cases/send-m
 import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup.use-case.js";
 import { SendNotificationUseCase } from "./application/use-cases/send-notification.use-case.js";
 import { SendNudgeNotificationUseCase } from "./application/use-cases/send-nudge-notification.use-case.js";
+import { UnregisterPushDeviceByTokenUseCase } from "./application/use-cases/unregister-push-device-by-token.use-case.js";
 import { UnregisterPushDeviceUseCase } from "./application/use-cases/unregister-push-device.use-case.js";
 import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/cached-active-push-token-reader.adapter.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/cached-notification-recipient-preference.adapter.js";
@@ -94,7 +78,7 @@ import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/adapters/h
 import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter.js";
 import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter.js";
 import { PushNotificationPayloadMapper } from "./infrastructure/adapters/push-notification-payload.mapper.js";
-import { createPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
+import { selectPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter.js";
 import { PushDeliveryQueueAdapter } from "./infrastructure/jobs/push-delivery-queue.adapter.js";
 import { DrizzleClientAppVersionReader } from "./infrastructure/persistence/drizzle-client-app-version.reader.js";
@@ -107,21 +91,21 @@ import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persisten
 import { DrizzlePushFunnelReader } from "./infrastructure/persistence/drizzle-push-funnel.reader.js";
 import { DrizzlePushReceiptRepository } from "./infrastructure/persistence/drizzle-push-receipt.repository.js";
 import { DrizzlePushTokenRepository } from "./infrastructure/persistence/drizzle-push-token.repository.js";
+import { notificationPushConfig } from "./notification-push.config.js";
 
 // 운영은 PostgreSQL, 설정으로 Redis·메모리를 고른다
 const pushRateLimiterProvider = {
   provide: PushRateLimiterPort,
   useFactory: (
-    configService: TypedConfigService,
+    config: ConfigType<typeof notificationPushConfig>,
     database: Database,
     redis?: Redis,
   ): PushRateLimiterPort =>
-    createPushRateLimiter({
-      backend: configService.pushRateLimitBackend,
+    selectPushRateLimiter(config.rateLimitBackend, {
       database,
       ...(redis && { redis }),
     }),
-  inject: [TypedConfigService, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
+  inject: [notificationPushConfig.KEY, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
 } satisfies Provider;
 
 // 테스트 하네스가 공급자·한도기·설정 어댑터만 바꿔 끼우도록 저장소·조회 어댑터를 따로 묶는다
@@ -238,6 +222,7 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     clock: ClockPort,
     logger: loggerFor(ReconcilePushReceiptsUseCase),
+    alert: OperationalAlertPort,
   }),
   provideUseCase(SendNotificationUseCase, {
     notificationRepository: NotificationRepositoryPort,
@@ -336,6 +321,13 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     cache: NotificationCachePort,
     logger: loggerFor(UnregisterPushDeviceUseCase),
   }),
+  provideUseCase(UnregisterPushDeviceByTokenUseCase, {
+    pushDeviceRepository: PushDeviceRepositoryPort,
+    pushTokenRepository: PushTokenRepositoryPort,
+    unitOfWork: UnitOfWorkPort,
+    cache: NotificationCachePort,
+    logger: loggerFor(UnregisterPushDeviceByTokenUseCase),
+  }),
   provideUseCase(ReleaseSessionPushDevicesUseCase, {
     pushDeviceRepository: PushDeviceRepositoryPort,
     pushTokenRepository: PushTokenRepositoryPort,
@@ -361,25 +353,8 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
   }),
 ] satisfies Provider[];
 
-// 다른 Context가 옮길 때까지 옛 Symbol 토큰을 같은 인스턴스의 별칭으로 둔다
-export const NOTIFICATION_PUSH_LEGACY_TOKEN_PROVIDERS = [
-  {
-    provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
-    useExisting: NotificationRecipientLocaleReaderPort,
-  },
-  {
-    provide: NOTIFICATION_RECIPIENT_TIMEZONE_READER,
-    useExisting: NotificationRecipientTimezoneReaderPort,
-  },
-  { provide: PUSH_QUIET_HOURS_READER, useExisting: PushQuietHoursReaderPort },
-  { provide: PUSH_CAMPAIGN_OUTCOME_READER, useExisting: PushCampaignOutcomeReaderPort },
-  { provide: CLIENT_APP_VERSION_READER, useExisting: ClientAppVersionReaderPort },
-  { provide: SESSION_PUSH_DEVICE_RELEASE, useExisting: SessionPushDeviceReleasePort },
-] satisfies Provider[];
-
 export const NOTIFICATION_PUSH_PROVIDERS = [
   ...NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
   ...NOTIFICATION_PUSH_EXTERNAL_PROVIDERS,
   ...NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
-  ...NOTIFICATION_PUSH_LEGACY_TOKEN_PROVIDERS,
 ] satisfies Provider[];

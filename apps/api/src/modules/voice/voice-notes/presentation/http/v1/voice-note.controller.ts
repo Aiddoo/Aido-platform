@@ -9,35 +9,31 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import {
-  ClientAbortSignal,
-  IdempotencyKey,
-  Locale,
-  Timezone,
-} from "#api/platform/http/decorators/index";
+import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
+import { IdempotencyKey } from "#api/platform/http/decorators/idempotency-key.decorator";
+import { Locale } from "#api/platform/http/decorators/locale.decorator";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
   ApiConflictError,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiServiceUnavailableError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser, ThrottleDaily } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser, ThrottleDaily } from "#api/platform/throttle/user-aware-throttler.guard";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   ApiIdempotencyKeyHeader,
   ApiPlanningLocaleHeaders,
 } from "../../../../action-plans/presentation/http/plan-request.decorator.js";
-import {
-  VoiceNoteDigestRequestDto,
-  VoiceNoteDigestResponseDto,
-} from "../../../../action-plans/presentation/http/v1/action-plan.dto.js";
 import { DigestVoiceNoteUseCase } from "../../../application/use-cases/digest-voice-note.use-case.js";
+import { toVoiceNoteDigestResponse } from "./voice-note-response.mapper.js";
+import { VoiceNoteDigestRequestDto, VoiceNoteDigestResponseDto } from "./voice-note.dto.js";
 
 export const VOICE_NOTE_THROTTLE = {
   MINUTE: { default: { ttl: 60_000, limit: 4 } },
@@ -90,7 +86,7 @@ export class VoiceNoteController {
   ])
   @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1313, ErrorCode.AI_1310])
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
-  digest(
+  async digest(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: VoiceNoteDigestRequestDto }) dto: VoiceNoteDigestRequestDto,
     @IdempotencyKey() idempotencyKey: string,
@@ -98,7 +94,7 @@ export class VoiceNoteController {
     @Locale() locale: SupportedLocale | undefined,
     @ClientAbortSignal() signal: AbortSignal,
   ): Promise<VoiceNoteDigestResponseDto> {
-    return this.#digestVoiceNote.execute({
+    const digested = await this.#digestVoiceNote.execute({
       userId: user.userId,
       text: dto.text,
       durationSeconds: dto.durationSeconds,
@@ -108,5 +104,6 @@ export class VoiceNoteController {
       locale,
       signal,
     });
+    return toVoiceNoteDigestResponse(digested);
   }
 }

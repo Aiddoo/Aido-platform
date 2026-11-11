@@ -5,7 +5,6 @@ import { and, count, eq, isNull, sql } from "drizzle-orm";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userBlock } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { USER_BRIEF_RELATION } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
 import type { BlockedUserReaderPort } from "../../application/ports/blocked-user.reader.port.js";
@@ -60,7 +59,7 @@ export class DrizzleBlockedUserReader implements BlockedUserReaderPort {
       userTag: row.blocked.userTag,
       name: row.blocked.profile?.name ?? null,
       profileImage: row.blocked.profile?.profileImage ?? null,
-      blockedAt: instantFromDate(row.createdAt),
+      blockedAt: row.createdAt,
     }));
   }
 

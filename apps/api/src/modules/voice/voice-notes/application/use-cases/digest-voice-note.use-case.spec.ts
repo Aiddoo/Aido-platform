@@ -2,18 +2,15 @@ import { voiceNoteDigestResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryPlanResultReplay } from "#test/doubles/voice/in-memory-plan-result-replay";
+import { StubPlanningContextReader } from "#test/doubles/voice/stub-planning-context.reader";
 import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
-import {
-  createPlanFlowFixture,
-  digestDraft,
-  InMemoryPlanResultReplay,
-  memoActionDraft,
-  stubPlanningContextReader,
-  todoActionDraft,
-} from "#test/fixtures/voice-plan.fixture";
+import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
+import { createPlanFlowFixture } from "#test/fixtures/voice/plan-flow.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-import type { VoiceNoteDigestResult } from "../../../action-plans/application/ports/plan-result-replay.port.js";
+import type { VoiceNoteDigestResult } from "../ports/voice-note-digest-result-replay.port.js";
 import { DigestVoiceNoteUseCase } from "./digest-voice-note.use-case.js";
 
 const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
@@ -24,7 +21,7 @@ const ADMIN = { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null 
 
 const segments = [
   { startMs: 0, text: "다음 주 일정을 정했습니다.", isBookmarked: false },
-  { startMs: 4_200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
+  { startMs: 4200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
 ];
 
 function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
@@ -34,7 +31,7 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
     runner: fixture.runner,
     quota: fixture.quota,
     generator: fixture.generator,
-    contextReader: stubPlanningContextReader(),
+    contextReader: new StubPlanningContextReader(),
     localePreferenceReader: fixture.localePreferenceReader,
     replay,
     clock: fixture.clock,
@@ -54,7 +51,8 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
       locale: "ko",
       ...overrides,
     });
-  const used = async () => (await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used;
+  const used = async () =>
+    (await fixture.ledger.read(UserId.reconstitute(fixture.userId), "VOICE_NOTE")).used;
   return { ...fixture, replay, execute, used };
 }
 
@@ -65,7 +63,6 @@ describe("DigestVoiceNoteUseCase", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
-    vi.restoreAllMocks();
   });
 
   describe("녹음 길이 확인(1.15.1은 경보만)", () => {
@@ -121,7 +118,7 @@ describe("DigestVoiceNoteUseCase", () => {
     // Then
     const parsed = voiceNoteDigestResponseSchema.parse(response);
     expect(parsed.keyPoints).toEqual([
-      { text: "회의록", startMs: 4_200 },
+      { text: "회의록", startMs: 4200 },
       { text: "번호 없음", startMs: null },
       { text: "범위 밖", startMs: null },
     ]);
@@ -240,7 +237,7 @@ describe("DigestVoiceNoteUseCase", () => {
     it.each([
       { tier: "FREE", input: FREE, limit: PLAN_CATALOG.VOICE_NOTE.free },
       { tier: "PREMIUM", input: PREMIUM, limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium },
-      { tier: "ADMIN", input: ADMIN, limit: null },
+      { tier: "ADMIN", input: ADMIN, limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium },
     ])("$tier은 할 일 없는 정리도 사용량에 기록한다", async ({ input, limit }) => {
       // Given
       const { aiGenerator, execute, used } = setup(input);
@@ -418,10 +415,10 @@ describe("DigestVoiceNoteUseCase", () => {
         blocked: true,
       },
       {
-        tier: "ADMIN",
+        tier: "ADMIN 공정 사용 상한",
         input: ADMIN,
         count: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
-        blocked: false,
+        blocked: true,
       },
     ])("$tier: $count회 쓴 뒤 막힘=$blocked", async ({ input, count, blocked }) => {
       // Given
@@ -457,9 +454,8 @@ describe("DigestVoiceNoteUseCase", () => {
     // When
     await execute({ text: "비밀 전사" });
     // Then
-    const logged = JSON.stringify([...logger.log.mock.calls, ...logger.warn.mock.calls]);
-    expect(logged).not.toContain("비밀");
-    expect(logger.log).toHaveBeenCalledWith(
+    expect(JSON.stringify(logger.messages)).not.toContain("비밀");
+    expect(logger.messages).toContainEqual(
       expect.objectContaining({
         event: "voice.note-digest.completed",
         segmentCount: 2,

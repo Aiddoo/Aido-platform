@@ -5,6 +5,7 @@ import {
   PublishNotificationUseCase,
 } from "#api/modules/notification/notification-delivery.public";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
 import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
@@ -69,7 +70,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     this.#logger.debug({ event: AiJobLogEvent.STARTED, queueName, userId });
 
     // 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
-    const { locale } = await this.#localePreferenceReader.read(userId);
+    const { locale } = await this.#localePreferenceReader.read(UserId.reconstitute(userId));
     const createdCount = await this.#analyzeSuggestions.execute({
       userId,
       timezone,

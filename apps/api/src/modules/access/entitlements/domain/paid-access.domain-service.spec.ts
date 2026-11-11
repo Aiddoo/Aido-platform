@@ -1,6 +1,6 @@
 import { SUBSCRIPTION_STATUS } from "@aido/api/vocabulary";
 
-import { hasPaidAccess, resolvePremiumAccessDeadline } from "./paid-access.domain-service.js";
+import { hasPaidAccess, resolvePaidAccessDeadline } from "./paid-access.domain-service.js";
 
 describe("유료 접근 판단 — 프리미엄 종료 시각", () => {
   const ENDS_AT = Temporal.Instant.from("2028-03-04T00:00:00.000Z");
@@ -10,7 +10,7 @@ describe("유료 접근 판단 — 프리미엄 종료 시각", () => {
     { now: "2028-03-04T00:00:00.000Z", expected: false },
   ])("보상 기간만 있으면 $now의 유료 접근은 $expected다", ({ now, expected }) => {
     // Given
-    const accessDeadline = resolvePremiumAccessDeadline({
+    const accessDeadline = resolvePaidAccessDeadline({
       subscriptionExpiresAt: ENDS_AT,
       storeEntitlements: [],
     });
@@ -27,7 +27,7 @@ describe("유료 접근 판단 — 프리미엄 종료 시각", () => {
 
   it("자동 갱신 중인 스토어 구독은 만료 뒤 3시간 유예가 끝날 때까지 프리미엄이다", () => {
     // Given
-    const accessDeadline = resolvePremiumAccessDeadline({
+    const accessDeadline = resolvePaidAccessDeadline({
       subscriptionExpiresAt: ENDS_AT,
       storeEntitlements: [{ status: "ACTIVE", expiresAt: ENDS_AT }],
     });
@@ -47,7 +47,7 @@ describe("유료 접근 판단 — 프리미엄 종료 시각", () => {
   it("결제 유예 중인 스토어 구독은 취소 상태여도 유예가 끝날 때까지 프리미엄이다", () => {
     // Given
     const graceEndsAt = Temporal.Instant.from("2028-03-14T00:00:00.000Z");
-    const accessDeadline = resolvePremiumAccessDeadline({
+    const accessDeadline = resolvePaidAccessDeadline({
       subscriptionExpiresAt: ENDS_AT,
       storeEntitlements: [
         { status: "CANCELLED", expiresAt: ENDS_AT, gracePeriodEndsAt: graceEndsAt },

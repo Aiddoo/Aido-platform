@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { StreakMilestoneNotifierPort } from "../../application/ports/streak-milestone-notifier.port.js";
 
@@ -12,15 +13,15 @@ import type { StreakMilestoneNotifierPort } from "../../application/ports/streak
  */
 @Injectable()
 export class StreakMilestoneNotifierAdapter implements StreakMilestoneNotifierPort {
-  readonly #notificationQueueService: NotificationQueueService;
+  readonly #notificationQueueService: NotificationQueueAdapter;
 
-  constructor(notificationQueueService: NotificationQueueService) {
+  constructor(notificationQueueService: NotificationQueueAdapter) {
     this.#notificationQueueService = notificationQueueService;
   }
 
-  notifyStreak3Reached(userId: string): void {
+  notifyStreak3Reached(userId: UserId): void {
     this.#notificationQueueService.enqueueMilestoneReached({
-      userId,
+      userId: userId.value,
       milestone: "STREAK_3",
     });
   }

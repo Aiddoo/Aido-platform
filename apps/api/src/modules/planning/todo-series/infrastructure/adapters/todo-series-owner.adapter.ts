@@ -1,14 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-  ENTITLEMENT_READER,
+  EntitlementReaderPort,
   isExemptFromDormancy,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import {
-  USER_ACTIVITY_READER,
-  type UserActivityReaderPort,
-} from "#api/modules/identity/identity-user-access.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
+import { UserActivityReaderPort } from "#api/modules/identity/users/identity-users.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoSeriesOwnerPort } from "../../application/ports/todo-series-owner.port.js";
 import type { SeriesOwnerActivity } from "../../domain/series-dormancy.domain-service.js";
@@ -16,25 +13,37 @@ import type { SeriesOwnerActivity } from "../../domain/series-dormancy.domain-se
 @Injectable()
 export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
   readonly #activityReader: UserActivityReaderPort;
-  readonly #entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">;
+  readonly #entitlementReader: Pick<EntitlementReaderPort, "getEntitlements">;
 
   constructor(
-    @Inject(USER_ACTIVITY_READER) activityReader: UserActivityReaderPort,
-    @Inject(ENTITLEMENT_READER) entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">,
+    @Inject(UserActivityReaderPort) activityReader: UserActivityReaderPort,
+    @Inject(EntitlementReaderPort) entitlementReader: Pick<
+      EntitlementReaderPort,
+      "getEntitlements"
+    >,
   ) {
     this.#activityReader = activityReader;
     this.#entitlementReader = entitlementReader;
   }
 
   async findOperatingOwners(
-    userIds: readonly string[],
+    userIds: readonly UserId[],
   ): Promise<ReadonlyMap<string, SeriesOwnerActivity>> {
     const accounts = await this.#activityReader.findActiveAccounts(userIds);
-    return new Map(accounts.map((account) => [account.userId, account]));
+    return new Map(
+      accounts.map((account) => [
+        account.userId,
+        {
+          lastActiveAt: account.lastActiveAt,
+          signedUpAt: account.signedUpAt,
+          timezone: account.timezone,
+        },
+      ]),
+    );
   }
 
-  async isExemptFromDormancy(userId: string): Promise<boolean> {
-    const { tier } = await this.#entitlementReader.getAccessSnapshot(userId);
-    return isExemptFromDormancy(tier);
+  async isExemptFromDormancy(userId: UserId): Promise<boolean> {
+    const { plan } = await this.#entitlementReader.getEntitlements(userId);
+    return isExemptFromDormancy(plan);
   }
 }

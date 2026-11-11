@@ -1,9 +1,8 @@
+import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { pushDeliveryOutboxRetryDelayMs } from "../../domain/push-delivery-outbox-retry.domain-service.js";
@@ -18,10 +17,7 @@ import type { PushNotificationPayloadPort } from "../ports/push-notification-pay
 import type { PushResult } from "../ports/push-provider.port.js";
 import { PushDeliveryClaimRecoveryConflictError } from "../push-delivery-claim-recovery-conflict.errors.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../push-delivery-rate-limit-reservation-conflict.errors.js";
-import type {
-  DeliverPushNotificationsInput,
-  PushDispatchSkipReason,
-} from "../read-models/push-delivery.read-model.js";
+import type { DeliverPushNotificationsInput } from "../read-models/push-delivery.read-model.js";
 import type { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 import type { EvaluatePushDeliveryEligibilityUseCase } from "./evaluate-push-delivery-eligibility.use-case.js";
 import {
@@ -368,7 +364,7 @@ export class DeliverPushNotificationsUseCase {
   }
 
   #context(timezone: string, localDate: string): PushDeliveryContext {
-    return { timezone, localDate: parseDateOnly(localDate) };
+    return { timezone, localDate: Temporal.PlainDate.from(localDate) };
   }
 
   #logSkipped(data: CreateNotificationData, reason: PushDispatchSkipReason): void {
@@ -380,8 +376,8 @@ export class DeliverPushNotificationsUseCase {
     });
   }
 
-  #now(): Date {
-    return instantToDate(this.#dependencies.clock.now());
+  #now(): Temporal.Instant {
+    return this.#dependencies.clock.now();
   }
 
   async #release(
@@ -398,10 +394,11 @@ export class DeliverPushNotificationsUseCase {
             fence: item.fence,
             error: message,
             reopenOutbox: isFinalAttempt,
-            availableAt: addMilliseconds(
-              isFinalAttempt ? pushDeliveryOutboxRetryDelayMs(item.fence.publishAttempt) : 0,
-              at,
-            ),
+            availableAt: at.add({
+              milliseconds: isFinalAttempt
+                ? pushDeliveryOutboxRetryDelayMs(item.fence.publishAttempt)
+                : 0,
+            }),
           })),
         ),
       );

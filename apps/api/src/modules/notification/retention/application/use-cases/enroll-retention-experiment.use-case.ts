@@ -1,5 +1,5 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { RETENTION_EXPERIMENT_KEY } from "../../domain/retention.constants.js";
 import type { ExperimentAssignerPort } from "../ports/experiment-assigner.port.js";
@@ -35,9 +35,9 @@ export class EnrollRetentionExperimentUseCase {
       ],
     });
     await this.#dependencies.repository.enroll({
-      userId,
+      userId: UserId.reconstitute(userId),
       variant,
-      startedAt: activated ? instantToDate(this.#dependencies.clock.now()) : null,
+      startedAt: activated ? this.#dependencies.clock.now() : null,
     });
   }
 }

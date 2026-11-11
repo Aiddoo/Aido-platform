@@ -1,9 +1,9 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 
 import type { AccessStateReaderPort } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
-import type { ResourceBonusRepositoryPort } from "#api/modules/access/entitlements/application/ports/resource-bonus.repository.port";
-import type { ResourceBonusId } from "#api/modules/access/entitlements/domain/resource-bonus-id.vo";
-import { ResourceBonus } from "#api/modules/access/entitlements/domain/resource-bonus.aggregate";
+import type { FeatureGrantRepositoryPort } from "#api/modules/access/entitlements/application/ports/feature-grant.repository.port";
+import type { FeatureGrantId } from "#api/modules/access/entitlements/domain/feature-grant-id.vo";
+import { FeatureGrant } from "#api/modules/access/entitlements/domain/feature-grant.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   ACCESS_FIXTURE_NOW,
@@ -14,7 +14,7 @@ import {
 const USER_ID = UserId.reconstitute(ACCESS_FIXTURE_USER_ID);
 const OTHER_USER_ID = UserId.reconstitute(ACCESS_FIXTURE_OTHER_USER_ID);
 
-export interface SeedAccessUserInput {
+interface SeedAccessUserInput {
   readonly id: string;
   readonly role: UserRole;
   readonly subscriptionStatus: SubscriptionStatus;
@@ -26,23 +26,25 @@ export interface SeedAccessUserInput {
 
 export interface AccessStateReaderHarness {
   readonly reader: AccessStateReaderPort;
-  readonly resourceBonusRepository: ResourceBonusRepositoryPort;
+  readonly featureGrantRepository: FeatureGrantRepositoryPort;
   seedUser(input: SeedAccessUserInput): Promise<void>;
+  /** 도메인 검증을 거치지 않은 친구 자리 행(손으로 넣은 0·음수 포함) */
+  seedFriendGrantRow(input: { readonly userId: string; readonly quantity: number }): Promise<void>;
 }
 
-function bonus(params: {
-  readonly id: ResourceBonusId;
+function friendGrant(params: {
+  readonly id: FeatureGrantId;
   readonly userId: UserId;
   readonly quantity: number;
   readonly sourceKey: string;
-}): ResourceBonus {
-  return ResourceBonus.create({ ...params, resource: "FRIEND", now: ACCESS_FIXTURE_NOW });
+}): FeatureGrant {
+  return FeatureGrant.create({ ...params, feature: "FRIEND", now: ACCESS_FIXTURE_NOW });
 }
 
 export function describeAccessStateReaderContract(
   createHarness: () => Promise<AccessStateReaderHarness>,
 ): void {
-  describe("권한 상태 reader·리소스 보너스 저장소 계약", () => {
+  describe("권한 상태 reader·기능 자리 저장소 계약", () => {
     it("활성 사용자는 두 조회 모두 역할·구독 상태와 projection 만료 시각을 돌려준다", async () => {
       // Given
       const harness = await createHarness();
@@ -90,7 +92,7 @@ export function describeAccessStateReaderContract(
       expect(missing).toBeNull();
     });
 
-    it("보너스는 출처 키마다 한 번만 저장하고 사용자별 합계를 읽는다", async () => {
+    it("자리는 출처 키마다 한 번만 저장하고 사용자별 합계를 읽으며 받은 것이 없으면 키가 없다", async () => {
       // Given
       const harness = await createHarness();
       for (const id of [ACCESS_FIXTURE_USER_ID, ACCESS_FIXTURE_OTHER_USER_ID]) {
@@ -102,29 +104,29 @@ export function describeAccessStateReaderContract(
           isActive: true,
         });
       }
-      const { resourceBonusRepository } = harness;
+      const { featureGrantRepository } = harness;
 
       // When
       const saved = [
-        await resourceBonusRepository.saveIfAbsent(
-          bonus({
-            id: await resourceBonusRepository.nextId(),
+        await featureGrantRepository.saveIfAbsent(
+          friendGrant({
+            id: await featureGrantRepository.nextId(),
             userId: USER_ID,
             quantity: 1,
             sourceKey: "invite:1",
           }),
         ),
-        await resourceBonusRepository.saveIfAbsent(
-          bonus({
-            id: await resourceBonusRepository.nextId(),
+        await featureGrantRepository.saveIfAbsent(
+          friendGrant({
+            id: await featureGrantRepository.nextId(),
             userId: USER_ID,
             quantity: 2,
             sourceKey: "invite:2",
           }),
         ),
-        await resourceBonusRepository.saveIfAbsent(
-          bonus({
-            id: await resourceBonusRepository.nextId(),
+        await featureGrantRepository.saveIfAbsent(
+          friendGrant({
+            id: await featureGrantRepository.nextId(),
             userId: USER_ID,
             quantity: 5,
             sourceKey: "invite:1",
@@ -134,8 +136,34 @@ export function describeAccessStateReaderContract(
 
       // Then
       expect(saved).toEqual([true, true, false]);
-      expect(await harness.reader.findResourceBonuses(USER_ID)).toEqual({ FRIEND: 3 });
-      expect(await harness.reader.findResourceBonuses(OTHER_USER_ID)).toEqual({ FRIEND: 0 });
+      expect(await harness.reader.findFeatureGrants(USER_ID)).toEqual({ FRIEND: 3 });
+      expect(await harness.reader.findFeatureGrants(OTHER_USER_ID)).toEqual({});
+    });
+
+    it("손으로 넣은 0·음수 자리 행은 합계에서 빼서 한도를 줄이지 않는다", async () => {
+      // Given
+      const harness = await createHarness();
+      for (const id of [ACCESS_FIXTURE_USER_ID, ACCESS_FIXTURE_OTHER_USER_ID]) {
+        await harness.seedUser({
+          id,
+          role: "USER",
+          subscriptionStatus: "FREE",
+          subscriptionExpiresAt: null,
+          isActive: true,
+        });
+      }
+      await harness.seedFriendGrantRow({ userId: ACCESS_FIXTURE_USER_ID, quantity: 2 });
+      await harness.seedFriendGrantRow({ userId: ACCESS_FIXTURE_USER_ID, quantity: -5 });
+      await harness.seedFriendGrantRow({ userId: ACCESS_FIXTURE_USER_ID, quantity: 0 });
+      await harness.seedFriendGrantRow({ userId: ACCESS_FIXTURE_OTHER_USER_ID, quantity: -1 });
+
+      // When
+      const grants = await harness.reader.findFeatureGrants(USER_ID);
+      const onlyNegative = await harness.reader.findFeatureGrants(OTHER_USER_ID);
+
+      // Then
+      expect(grants).toEqual({ FRIEND: 2 });
+      expect(onlyNegative).toEqual({});
     });
   });
 }

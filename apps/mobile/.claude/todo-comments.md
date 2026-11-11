@@ -156,10 +156,12 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 
 - 키(`constants/todo-comment-query-keys.ts`): `all → todo(todoId) → threadLists → threads(sort, anchorCommentId)`, `… → replyLists → thread(commentId) → replies(aroundReplyId)`.
 - 무효화·갱신은 `queries/todo-comment-cache.ts`만 거친다. 페이지 변환은 `utils/todo-comment-cache-pages.ts` 순수 함수다.
-- 좋아요: `scope: todo-comment-like:<id>`로 같은 댓글 연타를 직렬화, `cancelQueries(todo)` → 스냅샷 → 묶음·답글 캐시 ±1 →
-  실패 시 복원, 성공 시 서버 값으로 확정. 전체 invalidate는 하지 않는다.
-- 삭제: 낙관적으로 빼고(답글이 남은 댓글은 묘비, 마지막 답글을 잃은 묘비 묶음은 제거) 실패하면 복원. 성공하면 할 일 댓글 수만 다시 받는다.
-- 수정: 낙관적 본문 교체 후 서버 값으로 확정.
+- 좋아요: `scope: todo-comment-like:<id>`로 같은 댓글 연타를 직렬화, `cancelQueries(todo)` → 묶음·답글 캐시 ±1.
+  응답은 댓글마다 센 `likeComment` 키의 마지막만 서버 값으로 쓰고, 실패하면 마지막 하트만 되돌린 뒤 목록을 다시 받는다.
+  앞 응답을 쓰면 뒤에 누른 하트가 깜빡인다.
+- 삭제: 낙관적으로 빼고(답글이 남은 댓글은 묘비, 마지막 답글을 잃은 묘비 묶음은 제거) 실패하면 그 댓글만 지운 자리에 되돌린다(`restoreTodoCommentToCaches`). 마지막 지우기가 끝나면 할 일 댓글 수만 다시 받는다.
+- 수정: 낙관적 본문 교체 후 마지막 수정만 글 칸(`content`·`isEdited`·`editedAt`)을 서버 값으로 확정, 실패하면 글 칸만 되돌린다.
+- 캐시를 통째로 스냅샷해 되돌리지 않는다. 함께 누른 다른 하트·지운 댓글이 사라진다([낙관적 갱신](architecture.md#낙관적-갱신)).
 - 오류(각 mutation의 `onError`에 나란히): `TODO_0833`·`TODO_0831` → "이미 삭제된 댓글이에요" + 그 행을 캐시에서 제거,
   429 → "너무 빨리 보내고 있어요", 그 밖은 햅틱과 토스트를 한 번, 4xx 밖은 Sentry에도 보낸다.
 - 알림으로 연 위치: `comment`가 있으면 anchor 페이지를 받아 그 묶음으로 옮기고(답글이면 펼쳐서) 1.6초 강조한다.

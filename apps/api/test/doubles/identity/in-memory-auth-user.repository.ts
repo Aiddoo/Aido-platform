@@ -9,15 +9,11 @@ import {
   IdentityUser,
   type IdentityUserPrimitives,
 } from "#api/modules/identity/users/domain/identity-user.aggregate";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-export const IN_MEMORY_USER_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
+const IN_MEMORY_USER_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
 type UserProfile = NonNullable<AuthUserProfileRecord["profile"]>;
-
-function dateOrNull(instant: Temporal.Instant | null): Date | null {
-  return instant == null ? null : instantToDate(instant);
-}
 
 export class InMemoryAuthUserRepository extends AuthUserRepositoryPort {
   readonly #users = new Map<string, IdentityUserPrimitives>();
@@ -60,17 +56,17 @@ export class InMemoryAuthUserRepository extends AuthUserRepositoryPort {
     return found == null ? null : IdentityUser.reconstitute(found);
   }
 
-  async findById(id: string): Promise<IdentityUser | null> {
-    const found = this.#users.get(id);
+  async findById(id: UserId): Promise<IdentityUser | null> {
+    const found = this.#users.get(id.value);
     return found == null ? null : IdentityUser.reconstitute(found);
   }
 
-  async findByIdForUpdate(id: string): Promise<IdentityUser | null> {
+  async findByIdForUpdate(id: UserId): Promise<IdentityUser | null> {
     return this.findById(id);
   }
 
-  async findByIdWithProfile(id: string): Promise<AuthUserProfileRecord | null> {
-    const user = this.#users.get(id);
+  async findByIdWithProfile(id: UserId): Promise<AuthUserProfileRecord | null> {
+    const user = this.#users.get(id.value);
     if (user == null) {
       return null;
     }
@@ -81,12 +77,12 @@ export class InMemoryAuthUserRepository extends AuthUserRepositoryPort {
       userTag: user.userTag,
       role: user.role,
       status: user.status,
-      emailVerifiedAt: dateOrNull(user.emailVerifiedAt),
+      emailVerifiedAt: user.emailVerifiedAt,
       subscriptionStatus: user.subscriptionStatus,
-      subscriptionExpiresAt: dateOrNull(user.subscriptionExpiresAt),
-      createdAt: instantToDate(user.createdAt),
-      deletedAt: dateOrNull(user.deletedAt),
-      profile: this.#profiles.get(id) ?? null,
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+      createdAt: user.createdAt,
+      deletedAt: user.deletedAt,
+      profile: this.#profiles.get(id.value) ?? null,
       accounts: accounts.map((account) => ({ provider: account.provider })),
     };
   }
@@ -117,31 +113,31 @@ export class InMemoryAuthUserRepository extends AuthUserRepositoryPort {
   }
 
   async createProfile(
-    userId: string,
+    userId: UserId,
     data: { name?: string; profileImage?: string },
   ): Promise<void> {
-    this.#profiles.set(userId, {
+    this.#profiles.set(userId.value, {
       name: data.name ?? null,
       profileImage: data.profileImage ?? null,
     });
   }
 
-  async markEmailVerified(id: string, now: Temporal.Instant): Promise<void> {
-    const user = this.#require(id);
-    this.#users.set(id, { ...user, status: "ACTIVE", emailVerifiedAt: now });
+  async markEmailVerified(id: UserId, now: Temporal.Instant): Promise<void> {
+    const user = this.#require(id.value);
+    this.#users.set(id.value, { ...user, status: "ACTIVE", emailVerifiedAt: now });
   }
 
   async updateProfile(
-    userId: string,
+    userId: UserId,
     data: { name?: string | null; profileImage?: string | null },
   ): Promise<UserProfile> {
-    const prior = this.#profiles.get(userId) ?? { name: null, profileImage: null };
+    const prior = this.#profiles.get(userId.value) ?? { name: null, profileImage: null };
     // nullish-strict: PATCH라 undefined는 그대로 두고 null은 비운다
     const profile = {
       name: data.name === undefined ? prior.name : data.name,
       profileImage: data.profileImage === undefined ? prior.profileImage : data.profileImage,
     };
-    this.#profiles.set(userId, profile);
+    this.#profiles.set(userId.value, profile);
     return profile;
   }
 
@@ -157,10 +153,10 @@ export class InMemoryAuthUserRepository extends AuthUserRepositoryPort {
       .filter((user) => user.isPurgeEligibleAt(now));
   }
 
-  async hardDelete(id: string): Promise<void> {
-    this.#require(id);
-    this.#users.delete(id);
-    this.#profiles.delete(id);
+  async hardDelete(id: UserId): Promise<void> {
+    this.#require(id.value);
+    this.#users.delete(id.value);
+    this.#profiles.delete(id.value);
   }
 
   // Drizzle 저장소는 없는 사용자를 바꾸면 requireRecord가 던진다

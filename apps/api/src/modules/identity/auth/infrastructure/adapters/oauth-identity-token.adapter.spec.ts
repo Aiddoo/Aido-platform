@@ -270,7 +270,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
   describe("Kakao Access Token 검증", () => {
     const kakaoUser = {
-      id: 12345678,
+      id: 12_345_678,
       kakao_account: {
         email: "test@kakao.com",
         is_email_verified: true,
@@ -307,7 +307,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
     it("이메일이 없는 Kakao 계정도 처리한다", async () => {
       // Given
       providerFetch.respondWith(
-        jsonResponse({ id: 87654321, kakao_account: { profile: { nickname: "닉네임만" } } }),
+        jsonResponse({ id: 87_654_321, kakao_account: { profile: { nickname: "닉네임만" } } }),
       );
 
       // When
@@ -579,7 +579,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
         .setAudience(options.audience ?? "apple-client-id")
         .setSubject(`apple-user-${userNumber}`)
         .setIssuedAt(now)
-        .setExpirationTime(now + (options.expiresInSeconds ?? 3_600))
+        .setExpirationTime(now + (options.expiresInSeconds ?? 3600))
         .sign(keyPairs[key].privateKey);
     }
 

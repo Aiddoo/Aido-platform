@@ -4,8 +4,8 @@ import { and, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
 import {
-  USER_PREFERENCE_READER,
-  USER_SETTINGS_CACHE,
+  UserPreferenceReaderPort,
+  UserSettingsCachePort,
 } from "#api/modules/identity/identity-settings.public";
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
@@ -24,7 +24,7 @@ import { PublishNotificationUseCase } from "#api/modules/notification/notificati
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
-} from "#api/modules/notification/push/application/messages/notification.messages";
+} from "#api/modules/notification/push/application/messages/scheduler-notification.messages";
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import { NotificationDedupPort } from "#api/modules/notification/push/application/ports/notification-dedup.port";
@@ -43,8 +43,7 @@ import {
   NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
   NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push/notification-push.providers";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import {
   notification,
   pushDispatch,
@@ -53,22 +52,22 @@ import {
   userPreference,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
-import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
+import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
+import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 import { paginationServiceProvider } from "#api/platform/pagination/pagination.providers";
 import { SystemClock } from "#api/platform/time/system-clock";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  AfterCommitTaskRegistryPort,
-  UNIT_OF_WORK,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserPreferenceBuilder } from "#test/builders/index";
+import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 import { createReportPushDeviceCommandFixture } from "#test/fixtures/notification/push-device.fixture";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
-import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -152,6 +151,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       providers: [
         ...NOTIFICATION_INBOX_PROVIDERS,
         { provide: ClockPort, useClass: SystemClock },
+        { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         ...NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
         ...NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
         {
@@ -165,37 +165,35 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           useValue: { findMarketingReconfirmTargets: vi.fn(), claimMarketingReconfirm: vi.fn() },
         },
         {
-          provide: UNIT_OF_WORK,
+          provide: UnitOfWorkPort,
           useValue: transaction.uow satisfies UnitOfWorkPort,
         },
-        { provide: UnitOfWorkPort, useExisting: UNIT_OF_WORK },
         {
-          provide: AFTER_COMMIT_TASK_REGISTRY,
+          provide: AfterCommitTaskRegistryPort,
           useValue: {
             register: (task) => {
               task().catch(() => undefined);
             },
           } satisfies AfterCommitTaskRegistryPort,
         },
-        { provide: AfterCommitTaskRegistryPort, useExisting: AFTER_COMMIT_TASK_REGISTRY },
         {
           provide: PublishPushDeliveryAfterCommitUseCase,
           useValue: mockAfterCommitPublisher,
         },
         {
-          provide: USER_PREFERENCE_READER,
+          provide: UserPreferenceReaderPort,
           useFactory: (
             preferenceRepository: DrizzleUserPreferenceRepository,
-            cache: CacheService,
+            cache: CacheStorePort,
           ) =>
             new ReadUserPreferencesUseCase({
               preferenceRepository,
               cache: new UserSettingsCacheAdapter(cache),
             }),
-          inject: [DrizzleUserPreferenceRepository, CacheService],
+          inject: [DrizzleUserPreferenceRepository, CacheStorePort],
         },
         UserSettingsCacheAdapter,
-        { provide: USER_SETTINGS_CACHE, useExisting: UserSettingsCacheAdapter },
+        { provide: UserSettingsCachePort, useExisting: UserSettingsCacheAdapter },
         {
           provide: NotificationDedupPort,
           useValue: {
@@ -215,19 +213,21 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             preferenceRepository: DrizzleUserPreferenceRepository,
             consentRepository: DrizzleUserConsentRepository,
           ) => ({
-            upsertPushTimezone: (userId: string, timezone: string) =>
+            upsertPushTimezone: (userId: UserId, timezone: string) =>
               preferenceRepository.upsertTimezone(userId, timezone),
-            upsertPushLocale: (userId: string, locale: string) =>
+            upsertPushLocale: (userId: UserId, locale: string) =>
               preferenceRepository.upsertLocale(userId, locale),
-            getPreferenceRecord: (userId: string) => preferenceRepository.findByUserId(userId),
-            getPreferenceRecordsByUserIds: (userIds: string[]) =>
+            getPreferenceRecord: (userId: UserId) => preferenceRepository.findByUserId(userId),
+            getPreferenceRecordsByUserIds: (userIds: readonly UserId[]) =>
               preferenceRepository.findByUserIds(userIds),
-            getConsentRecord: (userId: string) => consentRepository.findByUserId(userId),
-            getConsentRecordsByUserIds: (userIds: string[]) =>
+            getConsentRecord: (userId: UserId) => consentRepository.findByUserId(userId),
+            getConsentRecordsByUserIds: (userIds: readonly UserId[]) =>
               consentRepository.findByUserIds(userIds),
-            updateMarketingPushConsent: (userId: string, agreed: boolean) =>
+            updateMarketingPushConsent: (userId: UserId, agreed: boolean) =>
               consentRepository
-                .upsertMarketingPushConsent(userId, { agreedAt: agreed ? new Date() : null })
+                .upsertMarketingPushConsent(userId, {
+                  agreedAt: agreed ? Temporal.Instant.fromEpochMilliseconds(Date.now()) : null,
+                })
                 .then(() => undefined),
           }),
           inject: [DrizzleUserPreferenceRepository, DrizzleUserConsentRepository],
@@ -237,33 +237,24 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           useValue: transaction.txHost,
         },
         {
-          provide: TypedConfigService,
-          useValue: {
-            get: vi.fn().mockReturnValue(20),
-          },
-        },
-        {
           provide: PushProviderPort,
           useValue: mockPushProvider,
         },
+        { provide: NoCacheStore, useValue: new NoCacheStore() },
         {
-          provide: CacheService,
-          useFactory: () => {
-            const cache = createMockCacheService();
-            cache.mget.mockImplementation(async (keys) => keys.map(() => undefined));
-            cache.wrap.mockImplementation((_key, _schema, factory) => factory());
-            return cache;
-          },
+          provide: CacheStorePort,
+          inject: [NoCacheStore],
+          useFactory: (store: NoCacheStore) => store,
         },
         {
-          provide: LOCK_PROVIDER,
+          provide: LockProviderPort,
           useValue: {
             acquire: vi.fn().mockResolvedValue(vi.fn().mockResolvedValue(undefined)),
             isLocked: vi.fn().mockResolvedValue(false),
           },
         },
         {
-          provide: DEDUP_PROVIDER,
+          provide: DedupProviderPort,
           useValue: {
             filterMembers: vi.fn().mockResolvedValue(new Set()),
             isMember: vi.fn().mockResolvedValue(false),
@@ -309,6 +300,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         id,
         email: `notification-${index}@example.com`,
         userTag: `NOTIF${String(index).padStart(3, "0")}`,
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       })),
     );
   });
@@ -553,7 +545,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         createInboxNotificationFixture({
           userId: mockUserId,
           isRead: true,
-          readAt: new Date("2026-11-10T00:00:00Z"),
+          readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
         }),
       ]);
 
@@ -642,7 +634,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           userId: "user-1",
           type: "SYSTEM_NOTICE",
           isRead: true,
-          readAt: new Date("2026-11-10T00:00:00Z"),
+          readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
         }),
         createInboxNotificationFixture({
           userId: "user-1",
@@ -670,7 +662,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         createInboxNotificationFixture({
           userId: mockUserId,
           isRead: true,
-          readAt: new Date("2026-11-10T00:00:00Z"),
+          readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
         }),
       ]);
 
@@ -718,7 +710,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         createInboxNotificationFixture({
           userId: mockUserId,
           isRead: true,
-          readAt: new Date("2026-11-10T00:00:00Z"),
+          readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
         }),
       ]);
 
@@ -737,7 +729,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           createInboxNotificationFixture({ userId: mockUserId, type: "INVITE_JOINED" }),
         ),
       ]);
-      const cacheService = module.get(CacheService);
+      const cacheStore = module.get(NoCacheStore);
+      cacheStore.forgetRecords();
 
       // When
       const releasedUnreadCount = await facade.getUnreadCount(mockUserId, "1.10.1");
@@ -746,20 +739,10 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // Then
       expect(releasedUnreadCount).toBe(3);
       expect(currentUnreadCount).toBe(5);
-      expect(cacheService.wrap).toHaveBeenNthCalledWith(
-        1,
-        `aido:v1:notification:unread-count:${mockUserId}:legacy`,
-        expect.anything(),
-        expect.any(Function),
-        120_000,
-      );
-      expect(cacheService.wrap).toHaveBeenNthCalledWith(
-        2,
-        `aido:v1:notification:unread-count:${mockUserId}`,
-        expect.anything(),
-        expect.any(Function),
-        120_000,
-      );
+      expect(cacheStore.wrapped).toEqual([
+        { key: `aido:v1:notification:unread-count:${mockUserId}:legacy`, ttlMs: 120_000 },
+        { key: `aido:v1:notification:unread-count:${mockUserId}`, ttlMs: 120_000 },
+      ]);
     });
   });
 
@@ -780,7 +763,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       await expect(marking).resolves.toBeUndefined();
       expect(await findNotification(unread.id)).toMatchObject({
         isRead: true,
-        readAt: expect.any(Date),
+        readAt: expect.any(Temporal.Instant),
       });
     });
 
@@ -796,6 +779,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         notificationId: unread.id,
         userId: mockUserId,
         purpose: "TRANSACTIONAL",
+        updatedAt: nowInstant(),
       });
 
       // When
@@ -807,18 +791,18 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       expect(repeated).toBe(false);
       expect(await findNotification(unread.id)).toMatchObject({
         isRead: true,
-        openedAt: expect.any(Date),
+        openedAt: expect.any(Temporal.Instant),
       });
       expect(
         await client.query.pushDispatch.findFirst({ where: { notificationId: unread.id } }),
-      ).toMatchObject({ openedAt: expect.any(Date) });
+      ).toMatchObject({ openedAt: expect.any(Temporal.Instant) });
     });
 
     it("서명 토큰으로 광고성 푸시 동의를 철회해야 함", async () => {
       // Given
       await client.insert(userConsent).values({
         userId: mockUserId,
-        marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z"),
+        marketingPushAgreedAt: Temporal.Instant.from("2026-07-01T00:00:00.000Z"),
       });
 
       // When
@@ -891,7 +875,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           createInboxNotificationFixture({ userId: mockUserId, type: "NUDGE_REPLIED" }),
         ),
       ]);
-      const cacheService = module.get(CacheService);
+      const cacheStore = module.get(NoCacheStore);
+      cacheStore.forgetRecords();
 
       // When
       const result = await facade.markAllAsRead(mockUserId, "1.13.0");
@@ -904,16 +889,11 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           and(eq(notification.userId, mockUserId), eq(notification.isRead, false)),
         ),
       ).toBe(0);
-      expect(cacheService.del).toHaveBeenCalledTimes(3);
-      expect(cacheService.del).toHaveBeenCalledWith(
+      expect([...cacheStore.deletedKeys].sort()).toEqual([
         `aido:v1:notification:unread-count:${mockUserId}`,
-      );
-      expect(cacheService.del).toHaveBeenCalledWith(
         `aido:v1:notification:unread-count:${mockUserId}:legacy`,
-      );
-      expect(cacheService.del).toHaveBeenCalledWith(
         `aido:v1:notification:unread-count:${mockUserId}:since-1.11.0`,
-      );
+      ]);
     });
   });
 

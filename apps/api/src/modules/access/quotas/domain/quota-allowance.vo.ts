@@ -1,25 +1,25 @@
 import {
   PLAN_CATALOG,
-  type AccessTier,
   type MeteredFeatureKey,
+  type Plan,
   type QuotaMeter,
 } from "@aido/api/vocabulary";
 
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
 import {
-  resolveAccessTier,
+  resolveAccessSubject,
   resolveFeatureQuota,
   resolveQuotaLimit,
   type AccessState,
   type FeatureQuotaState,
 } from "../../entitlements/domain/entitlement.domain-service.js";
-import { NO_RESOURCE_BONUSES } from "../../entitlements/domain/entitlements.constants.js";
+import { NO_FEATURE_GRANTS } from "../../entitlements/domain/entitlements.constants.js";
 import { QuotaWindow } from "./quota-window.vo.js";
 
 interface QuotaAllowanceValue {
   readonly feature: MeteredFeatureKey;
-  readonly tier: AccessTier;
+  readonly plan: Plan;
   readonly window: QuotaWindow;
 }
 
@@ -38,7 +38,7 @@ export class QuotaAllowance extends ValueObject<QuotaAllowanceValue> {
   }): QuotaAllowance {
     return new QuotaAllowance({
       feature: params.feature,
-      tier: resolveAccessTier(params).tier,
+      plan: resolveAccessSubject(params).plan,
       window: QuotaWindow.monthOf(params.now),
     });
   }
@@ -47,8 +47,8 @@ export class QuotaAllowance extends ValueObject<QuotaAllowanceValue> {
     return this.value.feature;
   }
 
-  get tier(): AccessTier {
-    return this.value.tier;
+  get plan(): Plan {
+    return this.value.plan;
   }
 
   get window(): QuotaWindow {
@@ -67,9 +67,9 @@ export class QuotaAllowance extends ValueObject<QuotaAllowanceValue> {
   toFeatureQuota(used: number): MeteredQuotaState {
     const resetsAt = this.value.window.resetsAt;
     const state = resolveFeatureQuota({
-      tier: this.value.tier,
+      plan: this.value.plan,
       feature: this.value.feature,
-      resourceBonuses: NO_RESOURCE_BONUSES,
+      grants: NO_FEATURE_GRANTS,
       usage: { used, resetsAt },
     });
     return { ...state, used, resetsAt };

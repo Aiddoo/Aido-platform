@@ -1,12 +1,11 @@
-import { AsyncLocalStorage } from "node:async_hooks";
-
-import type { TransactionHost } from "@nestjs-cls/transactional";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { Pool, type PoolConfig } from "pg";
-import { mock } from "vitest-mock-extended";
 
 import {
   createDatabase,
   type Database,
+  DRIZZLE,
   type DrizzleTransactionalAdapter,
 } from "#api/platform/database/database.client";
 import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
@@ -40,21 +39,29 @@ export function createTestClient(
   });
 }
 
-type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+let transactionHostCount = 0;
+
+/**
+ * Nest 없이 운영과 같은 Drizzle 어댑터로 실제 TransactionHost를 만든다.
+ * 연결 이름을 따로 줘 앱이나 다른 fixture의 CLS 트랜잭션과 섞이지 않는다.
+ */
+export function createTransactionHost(
+  database: Database,
+): TransactionHost<DrizzleTransactionalAdapter> {
+  transactionHostCount += 1;
+  const adapter = new TransactionalAdapterDrizzleOrm<Database>({ drizzleInstanceToken: DRIZZLE });
+  return new TransactionHost<DrizzleTransactionalAdapter>({
+    ...adapter.optionsFactory(database),
+    connectionName: `test-fixture-${transactionHostCount}`,
+    enableTransactionProxy: false,
+    defaultTxOptions: {},
+    extraProviderTokens: [],
+  });
+}
 
 /** 저장소 integration fixture가 실제 트랜잭션과 Required 전파를 공유한다. */
 export function createDatabaseTransactionFixture(client: Database) {
-  const active = new AsyncLocalStorage<DatabaseTransaction>();
-  const host = mock<TransactionHost<DrizzleTransactionalAdapter>>();
-  Object.defineProperty(host, "tx", { get: () => active.getStore() ?? client });
-  host.isTransactionActive.mockImplementation(() => active.getStore() !== undefined);
-  const uow: UnitOfWorkPort = {
-    async run(work) {
-      if (active.getStore() !== undefined) {
-        return work();
-      }
-      return client.transaction((tx) => active.run(tx, work));
-    },
-  };
-  return { txHost: host, uow };
+  const txHost = createTransactionHost(client);
+  const uow: UnitOfWorkPort = { run: (work) => txHost.withTransaction(work) };
+  return { txHost, uow };
 }

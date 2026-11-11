@@ -21,9 +21,9 @@ import {
   user as userTable,
   userProfile,
 } from "#api/platform/database/schema/index";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
+import { dayWindowIn } from "#test/fixtures/clock.fixture";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -79,8 +79,20 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     todoIds = [];
     for (const [index, receiverId] of receiverIds.entries()) {
       await client.insert(follow).values([
-        { followerId: senderId, followingId: receiverId, status: "ACCEPTED", sortOrder: index },
-        { followerId: receiverId, followingId: senderId, status: "ACCEPTED", sortOrder: 0 },
+        {
+          followerId: senderId,
+          followingId: receiverId,
+          status: "ACCEPTED",
+          sortOrder: index,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        },
+        {
+          followerId: receiverId,
+          followingId: senderId,
+          status: "ACCEPTED",
+          sortOrder: 0,
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        },
       ]);
       const [category] = await client
         .insert(todoCategory)
@@ -93,8 +105,8 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         userId: receiverId,
         categoryId: category.id,
         visibility: "PUBLIC",
-        startDate: new Date("2027-01-04"),
-        endDate: new Date("2027-01-05"),
+        startDate: Temporal.PlainDate.from("2027-01-04"),
+        endDate: Temporal.PlainDate.from("2027-01-05"),
         sortOrder: 0,
       });
       const [row] = await client
@@ -154,15 +166,19 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       if (kind === "Cheer") {
         await client
           .insert(cheer)
-          .values({ senderId, receiverId, message: null, createdAt: SEED_AT });
+          .values({ senderId, receiverId, message: null, createdAt: instantFromDate(SEED_AT) });
       } else {
         const todoId = todoIds[index];
         if (todoId === undefined) {
           throw new Error("todo fixture 누락");
         }
-        await client
-          .insert(nudge)
-          .values({ senderId, receiverId, todoId, message: null, createdAt: SEED_AT });
+        await client.insert(nudge).values({
+          senderId,
+          receiverId,
+          todoId,
+          message: null,
+          createdAt: instantFromDate(SEED_AT),
+        });
       }
     }
   }
@@ -173,16 +189,14 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         : context.module.get(NudgeRepositoryPort);
     return Promise.all(
       ["UTC", "Asia/Seoul"].map(async (tz) => {
-        const window = dayWindowInTimezone(AT, tz);
+        const at = instantFromDate(AT);
+        const window = dayWindowIn(at, tz);
         return {
           tz,
-          localDate: window.localDate,
-          startsAt: window.startsAt.toISOString(),
-          endsAt: window.endsAt.toISOString(),
-          used: await repo.countSentBetween(UserId.reconstitute(senderId), {
-            startsAt: instantFromDate(window.startsAt),
-            endsAt: instantFromDate(window.endsAt),
-          }),
+          localDate: at.toZonedDateTimeISO(tz).toPlainDate().toString(),
+          startsAt: toIsoString(window.startsAt),
+          endsAt: toIsoString(window.endsAt),
+          used: await repo.countSentBetween(UserId.reconstitute(senderId), window),
         };
       }),
     );
@@ -251,7 +265,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         senderId,
         receiverId,
         message: "목록",
-        createdAt: SEED_AT,
+        createdAt: instantFromDate(SEED_AT),
       })),
     );
     const listStatements: string[] = [];
@@ -306,9 +320,13 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       .delete(follow)
       .where(and(eq(follow.followerId, receiverId), eq(follow.followingId, senderId)));
     const missingReverse = await isMutualFriend(senderId, receiverId);
-    await client
-      .insert(follow)
-      .values({ followerId: senderId, followingId: senderId, status: "ACCEPTED", sortOrder: 0 });
+    await client.insert(follow).values({
+      followerId: senderId,
+      followingId: senderId,
+      status: "ACCEPTED",
+      sortOrder: 0,
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    });
     const self = await isMutualFriend(senderId, senderId);
     const missingUser = await isMutualFriend(senderId, createEntityId());
 
@@ -336,7 +354,10 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       { userId: deletedId, name: "민서 가나다" },
       { userId: inactiveId, name: "민서 가나다" },
     ]);
-    await client.update(userTable).set({ deletedAt: AT }).where(eq(userTable.id, deletedId));
+    await client
+      .update(userTable)
+      .set({ deletedAt: instantFromDate(AT) })
+      .where(eq(userTable.id, deletedId));
     await client.update(userTable).set({ status: "LOCKED" }).where(eq(userTable.id, inactiveId));
     const searchReader = context.module.get(FriendSearchReaderPort);
 

@@ -4,7 +4,7 @@ import type { CreateNotificationData } from "../../../inbox/application/ports/no
 import type { MarketingReconfirmRecipient } from "../ports/marketing-consent-reconfirm.port.js";
 import { ReconfirmMarketingConsentsUseCase } from "./reconfirm-marketing-consents.use-case.js";
 
-const NOW = new Date("2026-12-01T02:00:00.000Z");
+const NOW = Temporal.Instant.from("2026-12-01T02:00:00.000Z");
 
 /** 표시한 사용자를 다시 고르지 않는 대역. 조건부 UPDATE는 실제 PG에서 확인한다. */
 function createReconfirm(
@@ -12,7 +12,7 @@ function createReconfirm(
   quietUserIds: ReadonlySet<string> = new Set(),
 ) {
   const reconfirmed = new Set<string>();
-  const cutoffs: Date[] = [];
+  const cutoffs: Temporal.Instant[] = [];
   const sent: CreateNotificationData[] = [];
   const useCase = new ReconfirmMarketingConsentsUseCase({
     reconfirmAccess: {
@@ -20,7 +20,8 @@ function createReconfirm(
         cutoffs.push(params.cutoff);
         return targets.filter((target) => !reconfirmed.has(target.userId)).slice(0, params.limit);
       },
-      claimMarketingReconfirm: async (userIds) => {
+      claimMarketingReconfirm: async (users) => {
+        const userIds = users.map((user) => user.value);
         const claimed = targets.filter(
           (target) => userIds.includes(target.userId) && !reconfirmed.has(target.userId),
         );
@@ -31,15 +32,15 @@ function createReconfirm(
       },
     },
     localeReader: {
-      getLocales: async (userIds) =>
-        new Map(userIds.map((userId) => [userId, userId.endsWith("en") ? "en" : "ko"])),
+      getLocales: async (users) =>
+        new Map(users.map(({ value: userId }) => [userId, userId.endsWith("en") ? "en" : "ko"])),
     },
     timezoneReader: {
       getTimezones: async (userIds) => new Map(userIds.map((userId) => [userId, "Asia/Seoul"])),
     },
     quietHoursReader: {
-      findUsersInQuietHours: async (userIds) =>
-        new Set(userIds.filter((userId) => quietUserIds.has(userId))),
+      findUsersInQuietHours: async (users) =>
+        new Set(users.map((user) => user.value).filter((userId) => quietUserIds.has(userId))),
     },
     notificationPublisher: {
       publishBatch: async (notices) => {
@@ -59,13 +60,13 @@ describe("ReconfirmMarketingConsentsUseCase — 광고성 수신 동의 2년 재
     const { useCase, sent, cutoffs } = createReconfirm([
       {
         userId: "user-ko",
-        marketingAgreedAt: new Date("2024-11-08T16:00:00.000Z"),
-        marketingPushAgreedAt: new Date("2024-12-01T00:00:00.000Z"),
+        marketingAgreedAt: Temporal.Instant.from("2024-11-08T16:00:00.000Z"),
+        marketingPushAgreedAt: Temporal.Instant.from("2024-12-01T00:00:00.000Z"),
       },
       {
         userId: "user-en",
         marketingAgreedAt: null,
-        marketingPushAgreedAt: new Date("2024-11-08T16:00:00.000Z"),
+        marketingPushAgreedAt: Temporal.Instant.from("2024-11-08T16:00:00.000Z"),
       },
     ]);
 
@@ -74,7 +75,7 @@ describe("ReconfirmMarketingConsentsUseCase — 광고성 수신 동의 2년 재
     const second = await useCase.execute({ now: NOW });
 
     // Then
-    expect(cutoffs[0]).toEqual(new Date("2024-12-01T02:00:00.000Z"));
+    expect(cutoffs[0]).toEqual(Temporal.Instant.from("2024-12-01T02:00:00.000Z"));
     expect(first.notifiedCount).toBe(2);
     expect(second.notifiedCount).toBe(0);
     expect(
@@ -127,12 +128,12 @@ describe("ReconfirmMarketingConsentsUseCase — 광고성 수신 동의 2년 재
       [
         {
           userId: "user-seoul",
-          marketingAgreedAt: new Date("2024-11-08T16:00:00.000Z"),
+          marketingAgreedAt: Temporal.Instant.from("2024-11-08T16:00:00.000Z"),
           marketingPushAgreedAt: null,
         },
         {
           userId: "user-london",
-          marketingAgreedAt: new Date("2024-11-08T16:00:00.000Z"),
+          marketingAgreedAt: Temporal.Instant.from("2024-11-08T16:00:00.000Z"),
           marketingPushAgreedAt: null,
         },
       ],

@@ -72,7 +72,7 @@ export class CompleteOAuthAuthorizationUseCase {
     if (authorization.mode === "link") {
       const profile = await strategy.verifyToken(exchanged.token);
       const exchangeCode = this.#dependencies.oauthStateRepository.generateExchangeCode();
-      await this.#dependencies.oauthStateRepository.saveLinkingData(authorization.id.value, {
+      await this.#dependencies.oauthStateRepository.saveLinkingData(authorization.id, {
         exchangeCode,
         provider: authorization.provider,
         providerAccountId: profile.id,
@@ -91,7 +91,7 @@ export class CompleteOAuthAuthorizationUseCase {
       metadata,
     });
     const exchangeCode = this.#dependencies.oauthStateRepository.generateExchangeCode();
-    await this.#dependencies.oauthStateRepository.saveExchangeData(authorization.id.value, {
+    await this.#dependencies.oauthStateRepository.saveExchangeData(authorization.id, {
       exchangeCode,
       accessToken: loginResult.tokens.accessToken,
       refreshToken: loginResult.tokens.refreshToken,
