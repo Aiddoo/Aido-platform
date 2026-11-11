@@ -1,7 +1,8 @@
 import type { SubscriptionPlanType } from "@aido/api/vocabulary";
 
-import { calendarDaysBetween, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationMilestone } from "../../domain/notification-milestone.constants.js";
 import type {
@@ -95,8 +96,9 @@ function billingDayFacts(input: {
   readonly at: Date;
   readonly now: Date;
 }) {
+  const today = localDateIn(instantFromDate(input.now), input.timezone);
   return {
-    days: calendarDaysBetween(input.now, input.at, resolveTimezone(input.timezone)),
+    days: localDateIn(instantFromDate(input.at), input.timezone).since(today).days,
     at: input.at.toISOString(),
     timezone: input.timezone,
   };

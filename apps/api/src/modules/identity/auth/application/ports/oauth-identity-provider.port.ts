@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { AccountProvider, OAuthMode } from "../../domain/auth.constants.js";
 
 /** 공급자 토큰을 검증해 얻은 프로필. 공급자 응답 모양은 어댑터의 wire schema가 안다 */
@@ -13,11 +15,11 @@ export interface GenerateAuthUrlParams {
   state: string;
   validatedRedirectUri: string;
   mode?: OAuthMode;
-  initiatingUserId?: string;
+  initiatingUserId?: UserId;
   persistState: (
     provider: AccountProvider,
     redirectUri: string,
-    opts: { mode?: OAuthMode; initiatingUserId?: string },
+    opts: { mode?: OAuthMode; initiatingUserId?: UserId },
   ) => Promise<unknown>;
 }
 

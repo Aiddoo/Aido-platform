@@ -18,13 +18,14 @@ import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/p
  * - PATCH /ai/suggestions/:id: 제안 수락/거절
  * - 인증 에러 (401)
  */
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   recurringSuggestion,
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -41,7 +42,7 @@ describe("AI 제안 E2E", () => {
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -59,7 +60,7 @@ describe("AI 제안 E2E", () => {
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
       .where(eq(userTable.id, user.userId));
-    const cacheService = ctx.module.get(CacheService);
+    const cacheService = ctx.module.get(CacheStorePort);
     await cacheService.del(EntitlementCacheKey.subscription(user.userId));
     return user;
   }
@@ -163,8 +164,9 @@ describe("AI 제안 E2E", () => {
               title: "시드",
               timezone: "UTC",
               repeatFrequency: "DAILY" as const,
-              startDate: new Date(),
-              nextOccurrenceDate: new Date(),
+              startDate: todayUtc(),
+              nextOccurrenceDate: todayUtc(),
+              updatedAt: nowInstant(),
             };
           }),
         );

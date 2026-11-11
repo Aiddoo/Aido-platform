@@ -47,7 +47,7 @@ describe("RecoverFailedPushDeliveriesUseCase — 재시도가 끝난 발송 다�
     expect(lifecycle.reopenInputs).toEqual([
       {
         publications,
-        availableAt: new Date(NOW.epochMilliseconds),
+        availableAt: NOW,
         error: "DELIVERY_RUNTIME_RETRIES_EXHAUSTED",
       },
     ]);

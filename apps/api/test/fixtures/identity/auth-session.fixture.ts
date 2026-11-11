@@ -27,6 +27,7 @@ export function createAuthSessionFixture(
     userAgent: "Aido/1.15.0",
     lastUsedAt: AUTH_FIXTURE_NOW,
     createdAt: AUTH_FIXTURE_NOW,
+    updatedAt: AUTH_FIXTURE_NOW,
     expiresAt: AUTH_FIXTURE_NOW.add({ hours: 24 * 7 }),
     revokedAt: null,
     ...overrides,

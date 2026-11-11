@@ -1,6 +1,7 @@
 import { forEachAsync, uniq } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type NotificationCachePort } from "../../../inbox/application/ports/notification-cache.port.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
@@ -33,7 +34,7 @@ export class FinalizeBatchNotificationUseCase {
       uniqueUserIds,
       async (userId) => {
         try {
-          await this.#dependencies.cache.invalidateUnreadCount(userId);
+          await this.#dependencies.cache.invalidateUnreadCount(UserId.reconstitute(userId));
         } catch {
           this.#dependencies.logger.warn({
             event: NotificationDeliveryLogEvent.FINALIZE_BATCH_NOTIFICATION_UNREAD_CACHE_FAILED,

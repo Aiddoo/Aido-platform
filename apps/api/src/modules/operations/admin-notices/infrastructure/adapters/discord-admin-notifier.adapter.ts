@@ -3,8 +3,7 @@ import type { HttpClient } from "@nestjs/http-client";
 
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toISOString } from "#api/shared/domain/date/utils/format";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import {
   AdminNotifierPort,
@@ -67,7 +66,7 @@ export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
           signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds: [renderDiscordEmbed(notice, toISOString(now()))],
+            embeds: [renderDiscordEmbed(notice, toIsoString(Temporal.Now.instant()))],
           }),
         }),
       );

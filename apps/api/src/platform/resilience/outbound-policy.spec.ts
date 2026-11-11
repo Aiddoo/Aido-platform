@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 
+import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import { OutboundRejectedError, OutboundTimeoutError } from "./outbound-policy.errors.js";
@@ -10,6 +11,15 @@ import { OutboundPolicyRegistry } from "./outbound-policy.registry.js";
 const START = new Date("2026-11-05T00:00:00.000Z");
 
 class VendorDown extends Error {}
+
+const VendorAlerts = defineAlerts("vendor", {
+  BILLING_CIRCUIT_OPENED: {
+    key: "vendor.billing",
+    severity: "error",
+    summary: "결제 실패",
+    runbook: "결제 수단을 확인한다",
+  },
+});
 
 const HEALTH: OutboundPolicySpec = {
   name: "vendor",
@@ -176,7 +186,7 @@ describe("OutboundPolicy — 회로·bulkhead·시도별 timeout", () => {
           consecutiveFailures: 1,
           halfOpenAfterMs: 900_000,
           handles: (error) => error instanceof VendorDown,
-          alert: { key: "vendor.billing", message: "결제 실패" },
+          alert: VendorAlerts.BILLING_CIRCUIT_OPENED,
         },
       ],
     });
@@ -186,9 +196,7 @@ describe("OutboundPolicy — 회로·bulkhead·시도별 timeout", () => {
     // Then
     expect(alert.alerts).toEqual([
       {
-        key: "vendor.billing",
-        severity: "error",
-        message: "결제 실패",
+        ...VendorAlerts.BILLING_CIRCUIT_OPENED,
         tags: { policy: "billing-vendor", breaker: "billing" },
         details: { cooldownMs: 900_000 },
       },

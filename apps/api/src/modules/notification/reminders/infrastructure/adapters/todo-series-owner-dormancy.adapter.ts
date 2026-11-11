@@ -1,14 +1,15 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-  ENTITLEMENT_READER,
+  EntitlementReaderPort,
   isExemptFromDormancy,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import { UserActivityReaderPort } from "#api/modules/identity/identity-user-access.public";
+} from "#api/modules/access/entitlements/access-entitlements.public";
+import { UserActivityReaderPort } from "#api/modules/identity/users/identity-users.public";
 import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series-dormancy.public";
-import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
 
@@ -16,23 +17,35 @@ import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series
 @Injectable()
 export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort {
   readonly #activityReader: UserActivityReaderPort;
-  readonly #entitlementReader: EntitlementReaderPort;
+  readonly #entitlementReader: Pick<EntitlementReaderPort, "getEntitlements">;
+  readonly #clock: ClockPort;
 
   constructor(
     @Inject(UserActivityReaderPort) activityReader: UserActivityReaderPort,
-    @Inject(ENTITLEMENT_READER) entitlementReader: EntitlementReaderPort,
+    @Inject(EntitlementReaderPort) entitlementReader: Pick<
+      EntitlementReaderPort,
+      "getEntitlements"
+    >,
+    clock: ClockPort,
   ) {
     super();
     this.#activityReader = activityReader;
     this.#entitlementReader = entitlementReader;
+    this.#clock = clock;
   }
 
-  async findDormantSince(userId: string): Promise<string | null> {
-    const [owner] = await this.#activityReader.findActiveAccounts([userId]);
-    if (owner == null || !isSeriesOwnerDormant(owner, now())) {
+  async findDormantSince(userId: UserId): Promise<string | null> {
+    const [account] = await this.#activityReader.findActiveAccounts([userId]);
+    if (account == null) {
       return null;
     }
-    const { tier } = await this.#entitlementReader.getAccessSnapshot(userId);
-    return isExemptFromDormancy(tier) ? null : toDateString(owner.lastActiveAt ?? owner.signedUpAt);
+    if (!isSeriesOwnerDormant(account, this.#clock.now())) {
+      return null;
+    }
+    const { plan } = await this.#entitlementReader.getEntitlements(userId);
+    // 휴면 시작일은 지금처럼 UTC 달력 날짜로 알린다
+    return isExemptFromDormancy(plan)
+      ? null
+      : localDateOf(account.lastActiveAt ?? account.signedUpAt, TimeZone.UTC).toString();
   }
 }

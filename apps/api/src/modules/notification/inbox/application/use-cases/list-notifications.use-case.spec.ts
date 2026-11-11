@@ -6,8 +6,8 @@ import { ListNotificationsUseCase } from "./list-notifications.use-case.js";
 
 const USER_ID = "user-1";
 
-function minutesAfterBase(minutes: number): Date {
-  return new Date(Date.UTC(2026, 10, 10, 0, minutes));
+function minutesAfterBase(minutes: number): Temporal.Instant {
+  return Temporal.Instant.from("2026-11-10T00:00:00Z").add({ minutes });
 }
 
 function createListNotificationsUseCase(notificationInboxReader: InMemoryNotificationRepository) {
@@ -63,7 +63,7 @@ describe("ListNotificationsUseCase — 알림 목록", () => {
         userId: USER_ID,
         id: 1,
         isRead: true,
-        readAt: new Date("2026-11-10T00:00:00Z"),
+        readAt: Temporal.Instant.from("2026-11-10T00:00:00Z"),
       }),
       createInboxNotificationFixture({ userId: USER_ID, id: 2, isRead: false, readAt: null }),
     ]);

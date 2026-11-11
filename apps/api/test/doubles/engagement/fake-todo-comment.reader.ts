@@ -11,7 +11,10 @@ import type {
   TodoConversationWindow,
   TodoDetailsReadModel,
 } from "#api/modules/engagement/comments/application/read-models/todo-comment.read-model";
+import type { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
 import type { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InMemoryTodoCommentLikeRepository } from "./in-memory-todo-comment-like.repository.js";
 import type { InMemoryTodoCommentRepository } from "./in-memory-todo-comment.repository.js";
@@ -51,34 +54,37 @@ export class FakeTodoCommentReader extends TodoCommentReaderPort {
   }
 
   async findAccessibleTodoDetails(
-    todoId: number,
-    viewerId: string,
+    todoId: TodoId,
+    viewerId: UserId,
   ): Promise<TodoDetailsReadModel | null> {
-    const details = this.details.get(todoId);
+    const details = this.details.get(todoId.value);
     if (details == null || (await this.findAccessibleTodoOwnerId(todoId, viewerId)) == null) {
       return null;
     }
-    return { ...details, isOwner: details.owner.id === viewerId };
+    return { ...details, isOwner: details.owner.id === viewerId.value };
   }
 
-  async findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null> {
-    const access = this.#access.get(todoId);
-    return access?.viewerIds.has(viewerId) === true ? access.ownerId : null;
+  async findAccessibleTodoOwnerId(todoId: TodoId, viewerId: UserId): Promise<string | null> {
+    const access = this.#access.get(todoId.value);
+    return access?.viewerIds.has(viewerId.value) === true ? access.ownerId : null;
   }
 
-  async findComment(todoId: number, commentId: string): Promise<TodoCommentReadModel | null> {
+  async findComment(
+    todoId: TodoId,
+    commentId: TodoCommentId,
+  ): Promise<TodoCommentReadModel | null> {
     const [comment] = await this.listComments(todoId, [commentId]);
     return comment ?? null;
   }
 
   async listComments(
-    todoId: number,
-    commentIds: readonly string[],
+    todoId: TodoId,
+    commentIds: readonly TodoCommentId[],
   ): Promise<TodoCommentReadModel[]> {
     const stored = new Map(this.#comments.list().map((comment) => [comment.id.value, comment]));
     return commentIds.flatMap((commentId) => {
-      const comment = stored.get(commentId);
-      return comment == null || comment.todoId !== todoId
+      const comment = stored.get(commentId.value);
+      return comment == null || comment.todoId !== todoId.value
         ? []
         : [this.#toReadModel(comment, stored)];
     });
@@ -106,23 +112,23 @@ export class FakeTodoCommentReader extends TodoCommentReaderPort {
   }
 
   async listLikedCommentIds(
-    commentIds: readonly string[],
-    viewerId: string,
+    commentIds: readonly TodoCommentId[],
+    viewerId: UserId,
   ): Promise<ReadonlySet<string>> {
-    const requested = new Set(commentIds);
+    const requested = new Set(commentIds.map((commentId) => commentId.value));
     return new Set(
       this.#likes
         .list()
         .filter(
           (like) =>
-            like.isActive && like.userId.value === viewerId && requested.has(like.commentId.value),
+            like.isActive && like.userId.equals(viewerId) && requested.has(like.commentId.value),
         )
         .map((like) => like.commentId.value),
     );
   }
 
-  async findUserDisplayName(userId: string): Promise<string | null> {
-    return this.names.get(userId) ?? null;
+  async findUserDisplayName(userId: UserId): Promise<string | null> {
+    return this.names.get(userId.value) ?? null;
   }
 
   #toReadModel(comment: TodoComment, stored: Map<string, TodoComment>): TodoCommentReadModel {

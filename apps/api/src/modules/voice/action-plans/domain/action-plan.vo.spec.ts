@@ -29,7 +29,7 @@ describe("ActionPlan", () => {
     // When
     const rejected = () => plan.assertCategoriesOwned(new Set([1]));
     // Then
-    expect(rejected).toThrowError(
+    expect(rejected).toThrow(
       expect.objectContaining({
         errorCode: ErrorCode.AI_1315,
         details: { reason: "CATEGORY_NOT_OWNED", categoryIds: [9, 8] },

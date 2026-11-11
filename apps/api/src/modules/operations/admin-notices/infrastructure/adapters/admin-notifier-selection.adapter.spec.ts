@@ -4,11 +4,11 @@ import type { AdminNotifierProviderId } from "#api/platform/config/schemas/webho
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
-import { createAdminNotifier } from "./admin-notifier-selection.adapter.js";
+import { selectAdminNotifier } from "./admin-notifier-selection.adapter.js";
 import { DiscordAdminNotifierAdapter } from "./discord-admin-notifier.adapter.js";
 import { LogAdminNotifierAdapter } from "./log-admin-notifier.adapter.js";
 
-describe("createAdminNotifier", () => {
+describe("selectAdminNotifier", () => {
   it.each([
     ["discord", DiscordAdminNotifierAdapter],
     ["log", LogAdminNotifierAdapter],
@@ -17,13 +17,12 @@ describe("createAdminNotifier", () => {
     (provider, adapter) => {
       // Given
       const config = {
-        adminNotifierProvider: provider,
-        discordSignupWebhookUrl: undefined,
-        discordPaymentWebhookUrl: undefined,
+        provider,
+        discordWebhookUrls: { admin: undefined, payment: undefined },
       };
 
       // When
-      const notifier = createAdminNotifier(
+      const notifier = selectAdminNotifier(
         config,
         new HttpClient(),
         new OutboundPolicyRegistry(new RecordingOperationalAlert()),

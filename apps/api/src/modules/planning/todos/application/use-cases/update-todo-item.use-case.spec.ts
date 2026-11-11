@@ -5,8 +5,11 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
 import { UpdateTodoItemUseCase } from "./update-todo-item.use-case.js";
 
 describe("하위 항목 수정", () => {
@@ -25,11 +28,11 @@ describe("하위 항목 수정", () => {
 
   it("제목과 false 완료 값을 저장하고 다른 항목은 보존한다", async () => {
     // Given
-    await fixture.todoRepository.createInlineItems(1, [
+    await fixture.todoRepository.createInlineItems(TodoId.reconstitute(1), [
       { title: "첫 항목" },
       { title: "둘째 항목" },
     ]);
-    await fixture.todoRepository.updateItem(1, { completed: true });
+    await fixture.todoRepository.updateItem(TodoItemId.reconstitute(1), { completed: true });
     // When
     const result = await useCase.execute({
       todoId: 1,
@@ -46,7 +49,7 @@ describe("하위 항목 수정", () => {
   it("다른 부모의 항목과 없는 할 일은 거부하고 상태를 보존한다", async () => {
     // Given
     await fixture.todoRepository.seedItem(1, { title: "기존 항목", sortOrder: 0 });
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({

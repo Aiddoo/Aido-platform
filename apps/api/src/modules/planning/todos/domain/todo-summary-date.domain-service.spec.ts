@@ -7,7 +7,7 @@ import { resolveTodoSummaryDate } from "./todo-summary-date.domain-service.js";
 describe("resolveTodoSummaryDate", () => {
   it("요청 날짜가 없으면 사용자 오늘을 반환한다", () => {
     // Given
-    const today = new Date("2026-07-14T00:00:00Z");
+    const today = Temporal.PlainDate.from("2026-07-14");
 
     // When
     const result = resolveTodoSummaryDate(today);
@@ -17,39 +17,39 @@ describe("resolveTodoSummaryDate", () => {
   });
 
   it.each([
-    { name: "오늘", requested: "2026-07-14T00:00:00Z" },
-    { name: "내일", requested: "2026-07-15T00:00:00Z" },
+    { name: "오늘", requested: "2026-07-14" },
+    { name: "내일", requested: "2026-07-15" },
   ])("$name 날짜는 그대로 허용한다", ({ requested }) => {
     // Given
-    const today = new Date("2026-07-14T00:00:00Z");
+    const today = Temporal.PlainDate.from("2026-07-14");
 
     // When
-    const result = resolveTodoSummaryDate(today, new Date(requested));
+    const result = resolveTodoSummaryDate(today, Temporal.PlainDate.from(requested));
 
     // Then
-    expect(result).toEqual(new Date(requested));
+    expect(result).toEqual(Temporal.PlainDate.from(requested));
   });
 
   it("윤년 2월 29일의 내일은 3월 1일로 허용한다", () => {
     // Given
-    const leapDay = new Date("2028-02-29T00:00:00Z");
+    const leapDay = Temporal.PlainDate.from("2028-02-29");
 
     // When
-    const result = resolveTodoSummaryDate(leapDay, new Date("2028-03-01T00:00:00Z"));
+    const result = resolveTodoSummaryDate(leapDay, Temporal.PlainDate.from("2028-03-01"));
 
     // Then
-    expect(result).toEqual(new Date("2028-03-01T00:00:00Z"));
+    expect(result).toEqual(Temporal.PlainDate.from("2028-03-01"));
   });
 
   it.each([
-    { name: "어제", requested: "2026-07-13T00:00:00Z" },
-    { name: "모레", requested: "2026-07-16T00:00:00Z" },
+    { name: "어제", requested: "2026-07-13" },
+    { name: "모레", requested: "2026-07-16" },
   ])("$name 날짜를 요청하면 SYS_0002로 거부한다", ({ requested }) => {
     // Given
-    const today = new Date("2026-07-14T00:00:00Z");
+    const today = Temporal.PlainDate.from("2026-07-14");
 
     // When
-    const resolve = () => resolveTodoSummaryDate(today, new Date(requested));
+    const resolve = () => resolveTodoSummaryDate(today, Temporal.PlainDate.from(requested));
 
     // Then
     expect(resolve).toThrow(DomainException);

@@ -1,31 +1,29 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  ENTITLEMENT_SUBSCRIPTION_INVALIDATOR,
-  type EntitlementSubscriptionInvalidatorPort,
-} from "#api/modules/access/access-entitlement.public";
-import { UserProfileInvalidatorPort } from "#api/modules/identity/identity-user-access.public";
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { UserProfileInvalidatorPort } from "#api/modules/identity/users/identity-users.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { PremiumAccessCachePort } from "../../application/ports/premium-access-cache.port.js";
 
 @Injectable()
 export class PremiumAccessCacheAdapter extends PremiumAccessCachePort {
-  readonly #subscriptionCache: EntitlementSubscriptionInvalidatorPort;
+  readonly #entitlementCache: Pick<EntitlementCacheInvalidatorPort, "invalidateEntitlements">;
   readonly #profileCache: UserProfileInvalidatorPort;
 
   constructor(
-    @Inject(ENTITLEMENT_SUBSCRIPTION_INVALIDATOR)
-    subscriptionCache: EntitlementSubscriptionInvalidatorPort,
+    @Inject(EntitlementCacheInvalidatorPort)
+    entitlementCache: Pick<EntitlementCacheInvalidatorPort, "invalidateEntitlements">,
     @Inject(UserProfileInvalidatorPort) profileCache: UserProfileInvalidatorPort,
   ) {
     super();
-    this.#subscriptionCache = subscriptionCache;
+    this.#entitlementCache = entitlementCache;
     this.#profileCache = profileCache;
   }
 
-  async invalidate(userId: string): Promise<void> {
+  async invalidate(userId: UserId): Promise<void> {
     await Promise.all([
-      this.#subscriptionCache.invalidateSubscription(userId),
+      this.#entitlementCache.invalidateEntitlements(userId),
       this.#profileCache.invalidateUserProfile(userId),
     ]);
   }

@@ -19,8 +19,9 @@ export function resolveAiDataSharingConsent(
   });
 }
 
-export function resolveAiDataSharingAgreement(agreed: boolean, at: Date): Date | null {
-  return agreed ? new Date(at) : null;
+export function resolveAiDataSharingAgreement(
+  agreed: boolean,
+  at: Temporal.Instant,
+): Temporal.Instant | null {
+  return agreed ? at : null;
 }
-
-export type { AiDataSharingConsentStatus };

@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule } from "#api/modules/access/access-entitlement.public";
-import { BillingSubscriptionsModule } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
+import { BillingPremiumGrantsModule } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/comments/engagement-comments.public";
-import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialCheersModule } from "#api/modules/social/cheers/social-cheers.public";
 import { SocialNudgesModule } from "#api/modules/social/nudges/social-nudges.public";
 
@@ -20,10 +20,10 @@ import { UserAccountController } from "./presentation/http/v1/user-account.contr
   imports: [
     IdentityAuthModule,
     IdentityUserAccessModule,
-    AccessModule,
-    BillingSubscriptionsModule,
+    AccessQuotasModule,
+    BillingPremiumGrantsModule,
     EngagementCommentsModule,
-    NotificationDeliveryModule,
+    NotificationPushModule,
     SocialCheersModule,
     SocialNudgesModule,
   ],

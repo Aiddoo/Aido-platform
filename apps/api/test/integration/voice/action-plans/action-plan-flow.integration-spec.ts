@@ -19,6 +19,9 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { UserFixture } from "#test/fixtures/index";
 import { digestDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -71,16 +74,22 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       email: "voice-plan@example.com",
       userTag: "VOICEP01",
       aiUsageCount: 0,
-      aiUsageResetAt: AT,
+      aiUsageResetAt: instantFromDate(AT),
       subscriptionStatus: "FREE",
-      createdAt: AT,
-      updatedAt: AT,
+      createdAt: instantFromDate(AT),
+      updatedAt: instantFromDate(AT),
     });
     await client.insert(userTable).values(user);
     userId = user.id;
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId, name: "업무", color: "#000000", sortOrder: 0, updatedAt: AT })
+      .values({
+        userId,
+        name: "업무",
+        color: "#000000",
+        sortOrder: 0,
+        updatedAt: instantFromDate(AT),
+      })
       .returning({ id: todoCategory.id });
     if (category == null) {
       throw new Error("category insert failed");
@@ -490,9 +499,9 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
           userId,
           categoryId,
           title: `할 일 ${index}`,
-          startDate: AT,
+          startDate: plainDateFromDate(AT),
           sortOrder: index,
-          updatedAt: AT,
+          updatedAt: instantFromDate(AT),
         })),
       );
       // When
@@ -538,8 +547,8 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
         id: createEntityId(),
         email: "voice-plan-other@example.com",
         userTag: "VOICEP02",
-        createdAt: AT,
-        updatedAt: AT,
+        createdAt: instantFromDate(AT),
+        updatedAt: instantFromDate(AT),
       });
       await client.insert(userTable).values(other);
       const memoId = await insertMemo(other.id);
@@ -562,25 +571,29 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
         userId,
         categoryId,
         title,
-        startDate: new Date(`${startDate}T00:00:00.000Z`),
-        updatedAt: AT,
+        startDate: Temporal.PlainDate.from(startDate),
+        updatedAt: instantFromDate(AT),
         ...overrides,
       });
       const seriesId = "11111111-1111-4111-8111-111111111111";
-      await client
-        .insert(todoTable)
-        .values([
-          row("지난 할 일", "2027-01-01"),
-          row("완료한 할 일", "2027-01-05", { completed: true }),
-          row("나중 할 일", "2027-01-20"),
-          row("곧 할 일", "2027-01-05"),
-          row("진행 중 기간", "2027-01-01", { endDate: new Date("2027-01-10T00:00:00.000Z") }),
-          row("운동", "2027-01-08", { seriesId, occurrenceDate: "2027-01-08" }),
-          row("운동", "2027-01-06", { seriesId, occurrenceDate: "2027-01-06" }),
-        ]);
+      await client.insert(todoTable).values([
+        row("지난 할 일", "2027-01-01"),
+        row("완료한 할 일", "2027-01-05", { completed: true }),
+        row("나중 할 일", "2027-01-20"),
+        row("곧 할 일", "2027-01-05"),
+        row("진행 중 기간", "2027-01-01", { endDate: Temporal.PlainDate.from("2027-01-10") }),
+        row("운동", "2027-01-08", {
+          seriesId,
+          occurrenceDate: Temporal.PlainDate.from("2027-01-08"),
+        }),
+        row("운동", "2027-01-06", {
+          seriesId,
+          occurrenceDate: Temporal.PlainDate.from("2027-01-06"),
+        }),
+      ]);
       // When
-      const upcoming = await todoPlanReader.findUpcoming(userId, {
-        fromDate: new Date("2027-01-04T00:00:00.000Z"),
+      const upcoming = await todoPlanReader.findUpcoming(UserId.reconstitute(userId), {
+        fromDate: Temporal.PlainDate.from("2027-01-04"),
         limit: 3,
       });
       // Then

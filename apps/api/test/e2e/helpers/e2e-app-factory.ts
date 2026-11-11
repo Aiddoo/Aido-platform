@@ -11,10 +11,11 @@ import type { INestApplication, ModuleMetadata } from "@nestjs/common";
  */
 import { Test, type TestingModule } from "@nestjs/testing";
 import { ThrottlerGuard } from "@nestjs/throttler";
-import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types.js";
+import { vi } from "vitest";
 
+import { setupApiDocs } from "#api/api-docs";
 import { AppModule } from "#api/app.module";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
@@ -54,11 +55,10 @@ import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/appl
 import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import { DRIZZLE } from "#api/platform/database/index";
+import { DRIZZLE } from "#api/platform/database/database.client";
 import { configureApplication } from "#api/platform/http/configure-application";
-import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { JOB_RUNTIME, JobQueuePort } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -68,7 +68,6 @@ import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
 import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider.js";
 import { FakeEmailService } from "../../mocks/fake-email.service.js";
-import { FakeJobRuntime } from "../../mocks/fake-job-runtime.js";
 import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider.js";
 import { FakeLogger } from "../../mocks/fake-logger.service.js";
 import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry.js";
@@ -132,9 +131,14 @@ export interface E2eAppOptions {
   additionalResetters?: readonly TestStateResetter[];
   /** @internal 앱 재시작 테스트에서 동일 PostgreSQL을 재사용 */
   testDatabase?: TestDatabase;
+  /** 설정은 앱이 시작할 때 env를 한 번 읽는다. 배포 환경·비밀처럼 suite마다 다른 값은 여기로 넣는다 */
+  env?: Readonly<Record<string, string>>;
 }
 
 export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestContext> {
+  for (const [key, value] of Object.entries(options?.env ?? {})) {
+    vi.stubEnv(key, value);
+  }
   const testDatabase = options?.testDatabase ?? new TestDatabase();
   if (!options?.testDatabase) {
     await testDatabase.start();
@@ -150,12 +154,10 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeAirQualityProvider = new FakeAirQualityProvider();
   const fakeLifestyleIndexProvider = new FakeLifestyleIndexProvider();
   const fakeSunTimeProvider = new FakeSunTimeProvider();
-  const fakeJobRuntime = new FakeJobRuntime();
   const inMemoryJobQueue = new InMemoryJobQueue();
 
-  const redisMock = new RedisMock();
   const cacheAdapter = new InMemoryCacheStore({
-    defaultTtlMs: 60000,
+    defaultTtlMs: 60_000,
     maxItems: 1000,
   });
   let fakeOAuthProviderRegistry: FakeOAuthProviderRegistry | undefined;
@@ -168,22 +170,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
       return;
     }
     applicationClosed = true;
-    const errors: unknown[] = [];
-    try {
-      await app?.close();
-    } catch (error) {
-      errors.push(error);
-    }
-
-    const results = await Promise.allSettled([
-      Promise.resolve().then(() => redisMock.disconnect()),
-    ]);
-    errors.push(
-      ...results.flatMap((result) => (result.status === "rejected" ? [result.reason] : [])),
-    );
-    if (errors.length > 0) {
-      throw new AggregateError(errors, "Failed to close E2E app resources");
-    }
+    await app?.close();
   };
 
   const closeTestResources = async (): Promise<void> => {
@@ -206,11 +193,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   let builder = Test.createTestingModule({
     imports: [AppModule, ...(options?.imports ?? [])],
   })
-    .overrideProvider(REDIS_COMMAND_CLIENT)
-    .useValue(redisMock)
-    .overrideProvider(JOB_RUNTIME)
-    .useValue(fakeJobRuntime)
-    // E2E 앱이 실제 pg-boss에 연결하지 않게 새 큐 포트도 메모리 구현으로 바꾼다
+    // E2E 앱이 실제 pg-boss에 연결하지 않게 큐 포트를 메모리 구현으로 바꾼다
     .overrideProvider(JobQueuePort)
     .useValue(inMemoryJobQueue)
     // 시각을 옮기는 테스트가 Date 가짜 시계로 ClockPort도 움직이게 한다
@@ -291,10 +274,11 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     module = await builder.compile();
     app = module.createNestApplication();
     configureApplication(app, {
-      nodeEnv: "development",
       corsOrigins: ["http://localhost:3000"],
       enableShutdownHooks: false,
     });
+    // main.ts와 같은 순서로 문서를 붙여, 개발 도구가 꺼진 설정에서 문서 경로가 열리지 않는지 E2E가 본다
+    setupApiDocs(app);
     // Supertest의 요청별 임시 서버 재시작 대신 suite 전체에서 같은 HTTP 서버를 사용한다.
     await app.listen(0, "127.0.0.1");
 
@@ -306,7 +290,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     const reset = createE2eTestStateResetter({
       cleanupDatabase: () => testDatabase.cleanup(),
       resetCache: () => cacheAdapter.reset(),
-      flushRedis: () => redisMock.flushall(),
       sharedResetters: [
         () => fakeEmailService.clear(),
         () => fakeOAuthTokenVerifierService.clear(),
@@ -319,7 +302,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakeAirQualityProvider.clear(),
         () => fakeLifestyleIndexProvider.clear(),
         () => fakeSunTimeProvider.clear(),
-        () => fakeJobRuntime.clear(),
         () => inMemoryJobQueue.clear(),
       ],
       additionalResetters: options?.additionalResetters,

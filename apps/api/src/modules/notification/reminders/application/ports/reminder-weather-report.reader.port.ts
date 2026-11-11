@@ -20,6 +20,6 @@ export abstract class ReminderWeatherReportReaderPort {
   /** 같은 칸 요청은 공급자를 한 번만 부른다. 캐시·마지막 스냅샷까지 없는 키는 결과에 없다. */
   abstract readReports(
     requests: readonly ReminderWeatherReportRequest[],
-    now: Date,
+    now: Temporal.Instant,
   ): Promise<ReadonlyMap<string, ReminderWeatherReport>>;
 }

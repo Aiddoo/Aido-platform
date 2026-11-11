@@ -19,7 +19,7 @@ import {
   wrap,
 } from "cockatiel";
 
-import { now } from "#api/shared/domain/date/utils/core";
+import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
 
 import { OutboundRejectedError, OutboundTimeoutError } from "./outbound-policy.errors.js";
 
@@ -32,8 +32,8 @@ export interface OutboundBreakerSpec {
   readonly handles: (error: unknown) => boolean;
   /** 던지지 않고 돌아온 실패 결과(예: 5xx 응답)를 실패로 셀지 */
   readonly handlesResult?: (result: unknown) => boolean;
-  /** 열릴 때 사람이 확인해야 하면 운영 경보로 올린다 */
-  readonly alert?: { readonly key: string; readonly message: string };
+  /** 열릴 때 사람이 확인해야 하면 이 경보로 올린다. 업체 이름은 정책 이름 태그(policy)로 간다 */
+  readonly alert?: AlertDefinition;
 }
 
 /**
@@ -172,7 +172,8 @@ export class OutboundPolicy {
   }
 
   #openBreakers(): string[] {
-    const at = now().getTime();
+    // cockatiel이 halfOpenAfter를 Date.now()로 재므로 열린 시각도 같은 시계로 잰다
+    const at = Date.now();
     return this.#breakers
       .filter(
         ({ policy, openedAt, spec }) =>
@@ -201,7 +202,7 @@ export class OutboundPolicy {
     circuit = policy;
     const breaker: Breaker = { spec, policy, openedAt: null };
     policy.onBreak((reason) => {
-      breaker.openedAt = now().getTime();
+      breaker.openedAt = Date.now();
       const failure = "error" in reason ? reason.error : "value" in reason ? reason.value : null;
       this.#events.onOpened({
         policy: policySpec.name,

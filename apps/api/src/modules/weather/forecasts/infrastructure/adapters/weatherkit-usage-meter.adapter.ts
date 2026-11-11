@@ -1,20 +1,13 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import {
-  USAGE_METER,
-  USAGE_SUBJECT_ALL,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  OPERATIONAL_ALERT,
-  type OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { ForecastAlertKey } from "../../application/forecasts.alerts.js";
+import { ForecastAlerts } from "../../application/forecasts.alerts.js";
 import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WEATHERKIT_MONTHLY_CALL_ALERTS } from "./weather-outbound.policy.js";
 
@@ -33,8 +26,8 @@ export class WeatherKitUsageMeterAdapter {
   readonly #clock: ClockPort;
 
   constructor(
-    @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add">,
-    @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
+    @Inject(UsageMeterPort) meter: Pick<UsageMeterPort, "add">,
+    alert: OperationalAlertPort,
     clock: ClockPort,
   ) {
     this.#meter = meter;
@@ -54,9 +47,7 @@ export class WeatherKitUsageMeterAdapter {
       for (const threshold of crossedThresholds(total, 1, WEATHERKIT_MONTHLY_CALL_ALERTS)) {
         this.#logger.warn({ event: WeatherKitLogEvent.MONTHLY_CALLS_REACHED, period, threshold });
         this.#alert.raise({
-          key: ForecastAlertKey.WEATHERKIT_MONTHLY_CALLS,
-          severity: "warning",
-          message: `WeatherKit 이번 달 호출이 ${threshold}회에 닿았습니다`,
+          ...ForecastAlerts.WEATHERKIT_MONTHLY_CALLS,
           tags: { period },
           details: { threshold, total },
         });

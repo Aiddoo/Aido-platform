@@ -2,6 +2,8 @@ import { ErrorCode } from "@aido/api/errors";
 import {
   PLAN_CATALOG,
   PLAN_FEATURE_KEYS,
+  PLANS,
+  type Plan,
   type PlanFeature,
   type PlanQuotaPeriod,
 } from "@aido/api/vocabulary";
@@ -12,13 +14,11 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { Timezone } from "#api/platform/http/decorators/index";
-import {
-  ApiDoc,
-  ApiSuccessResponse,
-  ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
+import { ApiUnauthorizedError } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { GetEntitlementSnapshotUseCase } from "../../../application/use-cases/get-entitlement-snapshot.use-case.js";
 import { toEntitlementSnapshotResponse } from "./entitlement-response.mapper.js";
@@ -29,15 +29,12 @@ const PERIOD_LABEL = { day: "하루", month: "월" } as const satisfies Record<
   string
 >;
 
-/** 카탈로그가 값을 적는 등급. ADMIN은 서버 정책이라 표에 없다 */
-const CATALOG_TIERS = ["free", "premium"] as const;
-
-function describeCount(feature: PlanFeature, tier: (typeof CATALOG_TIERS)[number]): string {
+function describeCount(feature: PlanFeature, plan: Plan): string {
   const definition = PLAN_CATALOG[feature];
   if (definition.kind === "flag") {
-    return definition[tier] ? "사용" : "-";
+    return definition[plan] ? "사용" : "-";
   }
-  const value = definition[tier];
+  const value = definition[plan];
   if (definition.kind === "resource") {
     return value == null ? "무제한" : `${value}개`;
   }
@@ -53,7 +50,7 @@ function describeCount(feature: PlanFeature, tier: (typeof CATALOG_TIERS)[number
 /** 카탈로그 숫자를 그대로 보여 주는 표. 숫자는 PLAN_CATALOG에서만 고친다. */
 const PLAN_CATALOG_TABLE = PLAN_FEATURE_KEYS.map(
   (feature) =>
-    `| \`${feature}\` | ${PLAN_CATALOG[feature].kind} | ${CATALOG_TIERS.map((tier) => describeCount(feature, tier)).join(" | ")} |`,
+    `| \`${feature}\` | ${PLAN_CATALOG[feature].kind} | ${PLANS.map((plan) => describeCount(feature, plan)).join(" | ")} |`,
 ).join("\n");
 
 @ApiTags(SWAGGER_TAGS.ENTITLEMENTS)
@@ -79,12 +76,14 @@ export class EntitlementController {
     description: `PLAN_CATALOG 모든 기능의 현재 권한과 한도·사용량을 서버가 계산해 돌려줍니다. 앱은 이 값을 그대로 보여 주고 직접 계산하지 않습니다.
 
 ## 📋 기능별 플랜
+ADMIN 주체도 프리미엄 열의 값을 받습니다.
+
 | 기능 | 종류 | 무료 | 프리미엄 |
 |------|------|------|----------|
 ${PLAN_CATALOG_TABLE}
 
 ## 📊 featureQuota
-- \`limit\`: 서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고 \`isFairUse=true\`입니다(앱은 "넉넉하게(월 N회까지)"로 보여 줍니다). \`null\`은 ADMIN·flag처럼 정말 무제한일 때만입니다.
+- \`limit\`: 서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고 \`isFairUse=true\`입니다(앱은 "넉넉하게(월 N회까지)"로 보여 줍니다). \`null\`은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.
 - \`used\`·\`remaining\`: 횟수 기능은 이번 창에서 쓴 횟수와 남은 횟수입니다. 개수 기능(FRIEND·TODO_CATEGORY)은 지금 가진 개수와 남은 자리이고, 친구 맺기·카테고리 만들기가 막는 값과 같습니다(친구는 초대 보상 자리 포함). 무제한 개수 기능과 flag는 null입니다. \`remaining=0\`이면 앱은 입력을 받기 전에 막습니다.
 - \`resetsAt\`: 횟수 기능만 있습니다(resource·flag는 null). 월간(AI_PARSE·VOICE_NOTE)은 KST 매월 1일 00:00, 일간(CHEER·NUDGE)은 \`X-Timezone\` 자정에 0으로 돌아갑니다.
 - \`perUse\`: 한 번 쓸 때의 길이 상한(말로 메모하기, VOICE_NOTE)입니다.

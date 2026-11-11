@@ -1,22 +1,18 @@
 import { Global, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
 import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
 import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/email/infrastructure/jobs/email-delivery.queue";
+import { notificationEmailConfig } from "#api/modules/notification/email/notification-email.config";
 import { NotificationEmailModule } from "#api/modules/notification/email/notification-email.module";
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
-import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import {
-  OPERATIONAL_ALERT,
-  OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
@@ -28,24 +24,19 @@ import {
 } from "#test/mocks/resend-http.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+const FIXTURE_EMAIL_CONFIG = notificationEmailConfig.parse({
+  NODE_ENV: "test",
+  EMAIL_PROVIDER: "resend",
+  RESEND_API_KEY: "fixture-api-key",
+  EMAIL_FROM: "noreply@integration-test.com",
+  EMAIL_FROM_NAME: "Integration Test",
+});
 const recipient = "private@example.com";
 const code = "987654";
 const expiryMinutes = 15;
 const success = resendResponseFixture("send.success.json");
 const unavailable = resendResponseFixture("send.application-error.json", 500);
 
-const config = mock<TypedConfigService>({
-  email: {
-    provider: "resend",
-    apiKey: "fixture-api-key",
-    from: "noreply@integration-test.com",
-    fromName: "Integration Test",
-    supportEmail: "support@example.com",
-  },
-  nodeEnv: "test",
-  tokenEncryptionKey: "test-token-encryption-key-minimum-32-characters-long",
-  tokenEncryptionSalt: undefined,
-});
 const jobQueue = new InMemoryJobQueue();
 const meter = new InMemoryUsageMeterAdapter();
 const alerts = new RecordingOperationalAlert();
@@ -53,20 +44,22 @@ const alerts = new RecordingOperationalAlert();
 @Global()
 @Module({
   providers: [
-    { provide: TypedConfigService, useValue: config },
     { provide: JobQueuePort, useValue: jobQueue },
-    { provide: USAGE_METER, useValue: meter },
-    { provide: OPERATIONAL_ALERT, useValue: alerts },
+    { provide: UsageMeterPort, useValue: meter },
     { provide: OperationalAlertPort, useValue: alerts },
     { provide: ClockPort, useClass: DateClock },
     OutboundPolicyRegistry,
-    EncryptionService,
+    {
+      provide: EncryptionService,
+      useValue: new EncryptionService({
+        key: "test-token-encryption-key-minimum-32-characters-long",
+        salt: undefined,
+      }),
+    },
   ],
   exports: [
-    TypedConfigService,
     JobQueuePort,
-    USAGE_METER,
-    OPERATIONAL_ALERT,
+    UsageMeterPort,
     OperationalAlertPort,
     ClockPort,
     OutboundPolicyRegistry,
@@ -89,7 +82,10 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
     alerts.alerts.length = 0;
     module = await Test.createTestingModule({
       imports: [PlatformStubModule, NotificationEmailModule],
-    }).compile();
+    })
+      .overrideProvider(notificationEmailConfig.KEY)
+      .useValue(FIXTURE_EMAIL_CONFIG)
+      .compile();
     sender = module.get(SendTransactionalEmailUseCase);
     processor = module.get(EmailDeliveryQueueProcessor);
   });

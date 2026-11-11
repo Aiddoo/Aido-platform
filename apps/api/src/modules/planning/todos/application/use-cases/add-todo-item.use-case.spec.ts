@@ -5,7 +5,9 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
+  PLANNING_INSTANT,
   PLANNING_TIME,
+  snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { AddTodoItemUseCase } from "./add-todo-item.use-case.js";
@@ -49,7 +51,7 @@ describe("하위 항목 추가", () => {
     if (record == null) {
       throw new Error("fixture todo missing");
     }
-    fixture.records.set(1, { ...record, completed: true, completedAt: PLANNING_TIME });
+    fixture.records.set(1, { ...record, completed: true, completedAt: PLANNING_INSTANT });
     // When
     const result = await useCase.execute({
       todoId: 1,
@@ -80,7 +82,7 @@ describe("하위 항목 추가", () => {
     for (let sortOrder = 0; sortOrder < TODO_ITEM_LIMITS.MAX_PER_TODO; sortOrder++) {
       await fixture.todoRepository.seedItem(1, { title: `항목 ${sortOrder}`, sortOrder });
     }
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({
@@ -97,7 +99,7 @@ describe("하위 항목 추가", () => {
   });
   it("잘못된 항목 제목을 거부하고 소유자만 항목을 추가할 수 있다", async () => {
     // Given
-    const before = structuredClone(fixture.records.get(1));
+    const before = snapshotTodoRecord(fixture.records.get(1));
     // When / Then
     await expect(
       useCase.execute({

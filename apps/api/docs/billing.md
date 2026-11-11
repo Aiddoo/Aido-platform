@@ -1,6 +1,6 @@
 # 구독 결제 처리
 
-RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)과 보상 기간이 프리미엄을 정하는 규칙은 [유료 기능과 권한](entitlements.md)에 있다. 이 문서는 운영 결정만 적는다.
+RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)·스토어 상태 대조·보상 기간 처리를 바꿀 때 읽는다. 프리미엄 판단·한도는 [유료 기능과 권한](entitlements.md)에 있다.
 
 ## SANDBOX 결제
 
@@ -22,7 +22,7 @@ RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)과 보상 기간이 프리미�
 | 결제 복구(`RENEWAL`)             | 유예를 지우고 새 만료 시각까지 프리미엄. 보상은 시작한 적이 없어 다시 쌓거나 일수를 올리지 않는다                                         |
 | 유예 끝(`EXPIRATION` 또는 sweep) | 쌓아 둔 보상이 유예 끝 시각부터 한 번 시작한다. `EXPIRATION`은 유예를 지우고 만료 시각을 유예가 실제로 끝난 시각으로 남긴다               |
 
-TS 판단(Billing `isStoreEntitlementValid`, Access `resolvePremiumAccessDeadline`)과 SQL(`validStoreEntitlementCondition`)은 같은 규칙(`storeEntitlementEndsAt`)을 쓴다.
+TS 판단(Billing `isStoreEntitlementValid`, Access `resolvePaidAccessDeadline`)과 SQL(`validStoreEntitlementCondition`)은 같은 규칙(`storeEntitlementEndsAt`)을 쓴다.
 
 ## 끊은 보상 기간
 
@@ -97,5 +97,5 @@ RevenueCat이 보내는 모양은 `subscriptions/infrastructure/adapters/revenue
 billing은 slice 둘이다. `premium-grants`는 보상 기간 Aggregate와 프리미엄 판단·projection(`ProjectPremiumAccessUseCase`)을 소유하고, `subscriptions`는 스토어 구독 체인·웹훅·RevenueCat ACL·상태 대조·체험/갱신 안내를 소유한다. 두 slice가 함께 쓰는 순수 판단(프리미엄 규칙, 요금제, 안내 기간, 스토어 갱신 유예)은 `billing/shared`에 있다. Nest 모듈은 `subscriptions → premium-grants` 한 방향이다.
 
 - 모든 시각은 `Temporal.Instant`이고 UseCase는 `ClockPort`로 지금을 읽는다. 처리기·스케줄이 시각을 따로 넘기는 UseCase(`Sweep*`·`Reconcile*`·`Revoke*`·안내)는 `now` 명령 필드를 받는다.
-- 다른 Context에 여는 문: `billing-subscriptions.public`(모듈·`PremiumAccessReaderPort`·`PremiumGranterPort`, 시각은 Date), `billing-subscriptions-entitlement.public`(스토어 엔타이틀먼트 끝 판단과 `STORE_RENEWAL_GRACE_MS`).
+- 다른 Context에 여는 문: `billing-premium-grants.public`(`BillingPremiumGrantsModule`·`PremiumAccessReaderPort`·`PremiumGranterPort`. `PremiumAccess`의 시각은 identity가 옮길 때까지 Date), `billing-subscriptions-entitlement.public`(스토어 엔타이틀먼트 끝 판단과 `STORE_RENEWAL_GRACE_MS`). 소비자는 클래스 토큰으로 주입받는다.
 - 큐 `premium-grant-sweep.v1`(10분, `missed: skip`)과 `store-subscription-reconcile.v1`은 `defineQueue`로 정의한다. 대조 큐는 스케줄이 없고 웹훅이 넣는다. payload는 배포 순간 쌓인 작업과 같은 `{ name, data }` 모양이다. 형식이 틀린 작업은 큐 어댑터가 그 작업만 실패시킨다.

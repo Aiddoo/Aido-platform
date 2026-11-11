@@ -144,6 +144,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
                 value={value}
                 onChange={onChange}
                 onFocus={startEditing}
+                testID="memo-editor-input"
               />
             )}
           />

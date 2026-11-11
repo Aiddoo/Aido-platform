@@ -15,7 +15,9 @@ import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/admin-notices/
 import { DrizzleAdminNoticeUserReader } from "#api/modules/operations/admin-notices/infrastructure/persistence/drizzle-admin-notice-user.reader";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { account, user as userTable, userProfile } from "#api/platform/database/schema/index";
-import { JobQueuePort } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
@@ -70,18 +72,24 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
       id: createEntityId(),
       email: "matthew@example.com",
       userTag: "MATT2025",
-      createdAt: JOINED_AT,
-      updatedAt: JOINED_AT,
+      createdAt: instantFromDate(JOINED_AT),
+      updatedAt: instantFromDate(JOINED_AT),
     });
     await client.insert(userTable).values(owner);
     await client.insert(userProfile).values({ userId: owner.id, name: "매튜" });
     // 가입 방식은 처음 만든 계정이다. 나중에 연결한 Google 계정이 아니다
-    await client
-      .insert(account)
-      .values([
-        AccountFixture.create({ userId: owner.id, provider: "APPLE", createdAt: JOINED_AT }),
-        AccountFixture.create({ userId: owner.id, provider: "GOOGLE", createdAt: AT }),
-      ]);
+    await client.insert(account).values([
+      AccountFixture.create({
+        userId: owner.id,
+        provider: "APPLE",
+        createdAt: instantFromDate(JOINED_AT),
+      }),
+      AccountFixture.create({
+        userId: owner.id,
+        provider: "GOOGLE",
+        createdAt: instantFromDate(AT),
+      }),
+    ]);
     userId = owner.id;
   });
 
@@ -103,7 +111,7 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
   /** 커밋 뒤 기다리지 않고 넘긴 알림이 큐에 들어올 때까지 기다렸다가 작업자로 처리한다. */
   async function deliverPaymentNotices(count: number): Promise<AdminNotice[]> {
     await vi.waitFor(() => expect(jobQueue.jobsIn(ADMIN_NOTIFICATION_QUEUE)).toHaveLength(count), {
-      timeout: 5_000,
+      timeout: 5000,
     });
     await jobQueue.drain(ADMIN_NOTIFICATION_QUEUE);
     return notifier.getSent("payment").map((sent) => sent.notice);
@@ -196,9 +204,9 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
       .withEventId("evt-discord-monthly")
       .withTransactionId(transactionId)
       .withOriginalTransactionId(transactionId)
-      .withPurchasedAtMs(AT.getTime() - 31 * 24 * 60 * 60 * 1_000)
+      .withPurchasedAtMs(AT.getTime() - 31 * 24 * 60 * 60 * 1000)
       .withExpirationAtMs(AT.getTime() - 60_000)
-      .withPrice(2.99, "KRW", 3_900)
+      .withPrice(2.99, "KRW", 3900)
       .build();
     const expiration = SubscriptionEventBuilder.expiration()
       .withAppUserId(userId)
@@ -255,20 +263,20 @@ describe("DrizzleAdminNoticeUserReader (실제 PostgreSQL)", () => {
 
   it("탈퇴한 사용자는 찾지 않는다", async () => {
     // Given
-    const deleted = UserFixture.create({ deletedAt: AT });
+    const deleted = UserFixture.create({ deletedAt: instantFromDate(AT) });
     await client.insert(userTable).values(deleted);
 
     // When / Then
-    await expect(reader.findById(deleted.id)).resolves.toBeNull();
+    await expect(reader.findById(UserId.reconstitute(deleted.id))).resolves.toBeNull();
   });
 
   it("프로필·계정이 없는 사용자는 닉네임·가입 방식을 비운다", async () => {
     // Given
-    const bare = UserFixture.create({ userTag: "BARE0001", createdAt: JOINED_AT });
+    const bare = UserFixture.create({ userTag: "BARE0001", createdAt: instantFromDate(JOINED_AT) });
     await client.insert(userTable).values(bare);
 
     // When
-    const found = await reader.findById(bare.id);
+    const found = await reader.findById(UserId.reconstitute(bare.id));
 
     // Then
     expect(found).toEqual({

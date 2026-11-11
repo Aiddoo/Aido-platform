@@ -11,7 +11,10 @@ describeAccessStateReaderContract(async () => {
   const reader = new InMemoryAccessStateReader(users);
   return {
     reader,
-    resourceBonusRepository: reader.resourceBonuses,
+    featureGrantRepository: reader.featureGrants,
+    seedFriendGrantRow: async ({ userId, quantity }) => {
+      reader.featureGrants.seed(userId, { FRIEND: quantity });
+    },
     seedUser: async ({ id, role, subscriptionStatus, subscriptionExpiresAt, isActive }) => {
       users.set(
         id,

@@ -51,7 +51,7 @@ export interface SendFriendRequestDependencies {
     | "save"
   >;
   readonly profileReader: Pick<FriendProfileReaderPort, "existsActiveUser" | "findDisplayName">;
-  readonly limitReader: Pick<FriendLimitReaderPort, "readMaxFriendCountInTx" | "readQuotaInTx">;
+  readonly limitReader: Pick<FriendLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
   readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly cache: FriendshipCacheInvalidator;
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew" | "notifyFollowMutual">;
@@ -98,14 +98,14 @@ export class SendFriendRequestUseCase {
   async #assertBelowFriendLimit(userId: UserId): Promise<void> {
     const { followRepository, limitReader } = this.#dependencies;
     const [maxFriendCount, friendCount] = await Promise.all([
-      limitReader.readMaxFriendCountInTx(userId),
+      limitReader.readLimitInTx(userId),
       followRepository.countMutualFriends(userId),
     ]);
     if (hasReachedFriendLimit({ maxFriendCount, friendCount })) {
       throw friendLimitReached({
         friendCount,
         maxFriendCount,
-        featureQuota: await limitReader.readQuotaInTx(userId, friendCount),
+        featureQuota: await limitReader.readFeatureQuotaInTx(userId, friendCount),
       });
     }
   }
@@ -116,7 +116,7 @@ export class SendFriendRequestUseCase {
       throw friendTargetNotFound(targetUserId);
     }
     // 차단과 같은 쌍 잠금 아래에서 읽어 차단 직후 요청이 친구 관계를 되살리지 못하게 한다
-    const blockRelation = await blockReader.findRelation(userId.value, targetUserId.value);
+    const blockRelation = await blockReader.findRelation(userId, targetUserId);
     if (blockRelation.isBlocking) {
       throw blockedTargetRequested(targetUserId);
     }
@@ -191,6 +191,6 @@ export class SendFriendRequestUseCase {
       friendName: (await profileReader.findDisplayName(userId)) ?? userId.value,
     });
     await checkFirstFriendMilestone.execute({ userIds: [userId.value, targetUserId.value] });
-    await invalidateFriendshipCaches(cache, userId.value, targetUserId.value);
+    await invalidateFriendshipCaches(cache, userId, targetUserId);
   }
 }

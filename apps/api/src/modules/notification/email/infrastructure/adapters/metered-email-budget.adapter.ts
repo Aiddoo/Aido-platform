@@ -2,15 +2,16 @@ import {
   USAGE_SUBJECT_ALL,
   type UsageKey,
   type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+} from "#api/platform/metering/usage-meter.port";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
+import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { EmailAlertKey } from "../../application/email.alerts.js";
+import { EmailAlerts } from "../../application/email.alerts.js";
 import { EmailDeliveryLogEvent } from "../../application/email.log-events.js";
 import {
   EmailBudgetPort,
@@ -61,12 +62,12 @@ export class MeteredEmailBudgetAdapter extends EmailBudgetPort {
       }
       this.#alertNear(
         crossedThresholds(daily.total, 1, [EMAIL_BUDGET_ALERT_THRESHOLDS.daily]),
-        EmailAlertKey.DAILY_BUDGET_NEAR,
+        EmailAlerts.DAILY_BUDGET_NEAR,
         { period: day.periodKey, total: daily.total },
       );
       this.#alertNear(
         crossedThresholds(monthly.total, 1, [EMAIL_BUDGET_ALERT_THRESHOLDS.monthly]),
-        EmailAlertKey.MONTHLY_BUDGET_NEAR,
+        EmailAlerts.MONTHLY_BUDGET_NEAR,
         { period: month.periodKey, total: monthly.total },
       );
       return "reserved";
@@ -103,9 +104,7 @@ export class MeteredEmailBudgetAdapter extends EmailBudgetPort {
       this.#logMeterFailure(error);
     }
     this.#dependencies.alert.raise({
-      key: EmailAlertKey.PROVIDER_QUOTA_EXHAUSTED,
-      severity: "error",
-      message: "이메일 공급자의 발송 한도를 넘었습니다",
+      ...EmailAlerts.PROVIDER_QUOTA_EXHAUSTED,
       tags: { scope },
     });
   }
@@ -124,14 +123,12 @@ export class MeteredEmailBudgetAdapter extends EmailBudgetPort {
 
   #alertNear(
     crossed: readonly number[],
-    key: string,
+    alert: AlertDefinition,
     details: Readonly<Record<string, string | number>>,
   ): void {
     for (const threshold of crossed) {
       this.#dependencies.alert.raise({
-        key,
-        severity: "warning",
-        message: "이메일 발송 수가 무료 한도에 가까워졌습니다",
+        ...alert,
         details: { ...details, threshold },
       });
     }
@@ -150,9 +147,7 @@ export class MeteredEmailBudgetAdapter extends EmailBudgetPort {
     );
     if (once.isAccepted) {
       this.#dependencies.alert.raise({
-        key: EmailAlertKey.BUDGET_EXHAUSTED,
-        severity: "warning",
-        message: "이메일 발송 예산을 다 써서 메일을 보내지 못했습니다",
+        ...EmailAlerts.BUDGET_EXHAUSTED,
         tags: { scope },
         details: { period: key.periodKey },
       });

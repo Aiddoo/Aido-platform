@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 export interface InviteJoinedNotification {
   readonly inviterId: string;
   readonly inviteeName: string;
@@ -36,5 +38,5 @@ export abstract class InviteNotifierPort {
    */
   abstract notifyQualifyReminder(notification: InviteQualifyReminderNotification): Promise<void>;
   /** 참여 유도 알림은 야간에 보내지 않으므로 발신자가 미룰 수 있게 야간인지 묻는다. */
-  abstract isInQuietHours(userId: string, at: Temporal.Instant): Promise<boolean>;
+  abstract isInQuietHours(userId: UserId, at: Temporal.Instant): Promise<boolean>;
 }

@@ -6,15 +6,18 @@ import {
 } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import dayjs from "dayjs";
 import { compact, countBy, groupBy, sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { startOfDayInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
+import {
+  localDateAt,
+  localDateTimeAt,
+  sundayBasedDayIndex,
+} from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionActivityReaderPort } from "../../application/ports/suggestion-activity.reader.port.js";
 import type {
   CategoryCompletionRate,
@@ -25,8 +28,13 @@ import type {
   UserStreakInfo,
 } from "../../domain/suggestion.constants.js";
 
-function localDay(value: Date, timezone: string): Date {
-  return startOfDayInTimezone(value, timezone);
+// planning Todo.startDate는 달력 날짜 칸이라 같은 현지 날짜를 PlainDate로 비교한다
+function localDay(value: Date, timezone: string): Temporal.PlainDate {
+  return localDateAt(value, timezone);
+}
+
+function toWallClock(local: Temporal.ZonedDateTime): string {
+  return local.toPlainTime().toString({ smallestUnit: "minute" });
 }
 
 /** 제안 분석용 활동 projection. planning·insights 테이블을 읽는다(공개 조회 포트로 옮기는 것은 후속). */
@@ -44,7 +52,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
   }
 
   async findDayCompletionRates(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date,
     timezone: string,
@@ -52,14 +60,14 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     const completions = await this.#db.query.dailyCompletion.findMany({
       columns: { date: true, totalTodos: true, completedTodos: true },
       where: {
-        userId,
-        date: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
+        userId: userId.value,
+        date: { gte: localDateAt(from, timezone), lte: localDateAt(to, timezone) },
       },
     });
 
     const completionsByDay: Partial<Record<DayOfWeek, typeof completions>> = groupBy(
       completions,
-      (c) => dayIndexToDayOfWeek(dayjs.utc(c.date).day()),
+      (c) => dayIndexToDayOfWeek(sundayBasedDayIndex(c.date)),
     );
 
     return DAY_OF_WEEK_ORDER.map((day) => {
@@ -73,7 +81,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
   }
 
   async findTimeCompletionRates(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date,
     timezone: string,
@@ -81,7 +89,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     const todos = await this.#db.query.todo.findMany({
       columns: { completedAt: true },
       where: {
-        userId,
+        userId: userId.value,
         completed: true,
         completedAt: { isNotNull: true },
         startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
@@ -90,7 +98,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
 
     const { morning = 0, afternoon = 0 } = countBy(
       compact(todos.map((t) => t.completedAt)),
-      (completedAt) => (dayjs(completedAt).tz(timezone).hour() < 12 ? "morning" : "afternoon"),
+      (completedAt) => (localDateTimeAt(completedAt, timezone).hour < 12 ? "morning" : "afternoon"),
     );
 
     const total = morning + afternoon;
@@ -107,7 +115,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
   }
 
   async findCategoryCompletionRates(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date,
     timezone = "UTC",
@@ -116,7 +124,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       columns: { completed: true },
       with: { category: { columns: { name: true } } },
       where: {
-        userId,
+        userId: userId.value,
         startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
       },
     });
@@ -143,10 +151,10 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       .sort((a, b) => b.total - a.total);
   }
 
-  async findUserStreakInfo(userId: string): Promise<UserStreakInfo | null> {
+  async findUserStreakInfo(userId: UserId): Promise<UserStreakInfo | null> {
     const pref = await this.#db.query.userPreference.findFirst({
       columns: { currentStreak: true, longestStreak: true },
-      where: { userId },
+      where: { userId: userId.value },
     });
 
     if (pref == null) {
@@ -160,7 +168,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
   }
 
   async findRecentTodos(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date,
     timezone: string,
@@ -176,7 +184,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       },
       with: { category: { columns: { name: true } } },
       where: {
-        userId,
+        userId: userId.value,
         seriesId: { isNull: true },
         startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
       },
@@ -187,22 +195,22 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
 
     return todos.toReversed().map((t) => ({
       title: t.title,
-      startDate: toDateString(t.startDate),
+      startDate: t.startDate.toString(),
       scheduledTime:
         t.scheduledTime == null
           ? null
-          : (t.scheduledLocalTime ?? toLocalTimeString(t.scheduledTime, timezone)),
+          : (t.scheduledLocalTime ?? toWallClock(localDateTimeAt(t.scheduledTime, timezone))),
       categoryId: t.categoryId,
       completed: t.completed,
       categoryName: requireRecord(t.category).name,
     }));
   }
 
-  async findRecentResponded(userId: string, since: Date): Promise<SuggestionHistoryItem[]> {
+  async findRecentResponded(userId: UserId, since: Date): Promise<SuggestionHistoryItem[]> {
     const rows = await this.#db.query.recurringSuggestion.findMany({
       columns: { title: true, status: true },
       where: {
-        userId,
+        userId: userId.value,
         status: { in: ["ACCEPTED", "DISMISSED"] },
         updatedAt: { gte: instantFromDate(since) },
       },

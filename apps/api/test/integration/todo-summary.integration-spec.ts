@@ -26,6 +26,7 @@ import { TodoReadRepositoryPort } from "#api/modules/planning/todos/application/
 import { GetTodoSummaryUseCase } from "#api/modules/planning/todos/application/use-cases/get-todo-summary.use-case";
 import { StreakAdapter } from "#api/modules/planning/todos/infrastructure/adapters/streak.adapter";
 import { provideUseCase } from "#api/platform/di/provide-use-case";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -39,7 +40,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
     getPreferenceRecord: vi.fn(),
   };
 
-  const today = new Date("2026-07-12T00:00:00.000Z");
+  const today = Temporal.PlainDate.from("2026-07-12");
 
   beforeAll(async () => {
     suppressLogger();
@@ -79,7 +80,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
     // lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
     mockUserStreakAccess.getPreferenceRecord.mockResolvedValue({
       currentStreak: 7,
-      lastCompletedDate: today,
+      lastCompletedDate: Temporal.PlainDate.from("2026-07-12"),
     });
 
     // When
@@ -90,7 +91,9 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
     expect(result.isComplete).toBe(true);
     expect(result.completionRate).toBe(100);
     expect(result.currentStreak).toBe(7);
-    expect(mockUserStreakAccess.getPreferenceRecord).toHaveBeenCalledWith("user-123");
+    expect(mockUserStreakAccess.getPreferenceRecord).toHaveBeenCalledWith(
+      UserId.reconstitute("user-123"),
+    );
   });
 
   it("선호 레코드가 없는 사용자는 스트릭 0으로 응답한다", async () => {

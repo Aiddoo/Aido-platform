@@ -2,6 +2,7 @@ import { quickPlanResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryPlanResultReplay } from "#test/doubles/voice/in-memory-plan-result-replay";
 import { StubPlanningContextReader } from "#test/doubles/voice/stub-planning-context.reader";
 import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
@@ -43,7 +44,8 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
       locale: "ko",
       ...overrides,
     });
-  const used = async () => (await fixture.ledger.read(fixture.userId, "AI_PARSE")).used;
+  const used = async () =>
+    (await fixture.ledger.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used;
   return { ...fixture, replay, execute, used };
 }
 
@@ -366,9 +368,16 @@ describe("CreateQuickPlanUseCase", () => {
       {
         tier: "ADMIN",
         input: { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null },
-        usedBefore: FAIR_USE_LIMIT + 10,
-        limit: null,
+        usedBefore: FAIR_USE_LIMIT - 1,
+        limit: FAIR_USE_LIMIT,
         blocked: false,
+      },
+      {
+        tier: "ADMIN 공정 사용 상한",
+        input: { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null },
+        usedBefore: FAIR_USE_LIMIT,
+        limit: FAIR_USE_LIMIT,
+        blocked: true,
       },
     ] as const)(
       "$tier: 사용량 $usedBefore에서 막힘=$blocked, 사용량은 등급과 상관없이 기록한다",

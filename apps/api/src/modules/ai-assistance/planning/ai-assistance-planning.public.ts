@@ -1,6 +1,5 @@
 export { AiAssistancePlanningModule } from "./ai-assistance-planning.module.js";
 export {
-  ACTION_PLAN_GENERATOR,
   ActionPlanGeneratorPort,
   type GeneratedActionPlan,
   type VoiceNoteDigestGeneration,

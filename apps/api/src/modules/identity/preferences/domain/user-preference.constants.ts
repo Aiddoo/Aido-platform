@@ -26,5 +26,5 @@ export interface UserPreferenceRecord {
   weatherEveningMinute: number;
   currentStreak: number;
   longestStreak: number;
-  lastCompletedDate: Date | null;
+  lastCompletedDate: Temporal.PlainDate | null;
 }

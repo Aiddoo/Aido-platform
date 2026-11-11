@@ -35,6 +35,9 @@ import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -112,7 +115,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     reader = module.get(TodoStatsReaderPort);
     txHost = module.get(TransactionHost);
     uow = module.get(ClsUnitOfWork);
-  }, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
+  }, 60_000); // 컨테이너 시작에 시간이 걸릴 수 있음
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -127,8 +130,20 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     testUserId = created.id;
 
     await client.insert(todoCategory).values([
-      { userId: testUserId, name: "업무", color: "#FF0000", sortOrder: 0 },
-      { userId: testUserId, name: "개인", color: "#00FF00", sortOrder: 1 },
+      {
+        userId: testUserId,
+        name: "업무",
+        color: "#FF0000",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 0,
+      },
+      {
+        userId: testUserId,
+        name: "개인",
+        color: "#00FF00",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 1,
+      },
     ]);
   });
 
@@ -166,12 +181,13 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
       userId: testUserId,
       categoryId: category.id,
       title: "테스트 할 일",
-      startDate: data.startDate,
+      startDate: plainDateFromDate(data.startDate),
       completed: data.completed ?? false,
-      completedAt: data.completedAt ?? null,
+      completedAt: data.completedAt == null ? null : instantFromDate(data.completedAt),
       isAllDay: true,
       visibility: "PUBLIC",
       sortOrder: 0,
+      updatedAt: nowInstant(),
     });
   }
 
@@ -360,9 +376,10 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
           userId: testUserId,
           categoryId: category.id,
           title: "미커밋 할 일",
-          startDate: params.startDate,
+          startDate: plainDateFromDate(params.startDate),
           completed: true,
-          completedAt: new Date("2026-02-23T23:30:00.000Z"),
+          completedAt: Temporal.Instant.from("2026-02-23T23:30:00.000Z"),
+          updatedAt: nowInstant(),
         });
         const inputs = await reader.fetchAggregationInputs(params);
         expect(
@@ -386,14 +403,25 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     await createTodo({ startDate: params.endDate, completed: true, completedAt: params.endDate });
     const [otherUser] = await client
       .insert(user)
-      .values({ email: "other-aggregator@example.com", userTag: "OTHER001", status: "ACTIVE" })
+      .values({
+        email: "other-aggregator@example.com",
+        userTag: "OTHER001",
+        status: "ACTIVE",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      })
       .returning();
     if (otherUser === undefined) {
       throw new Error("other user fixture 누락");
     }
     const [otherCategory] = await client
       .insert(todoCategory)
-      .values({ userId: otherUser.id, name: "다른 사용자", color: "#FF0000", sortOrder: 0 })
+      .values({
+        userId: otherUser.id,
+        name: "다른 사용자",
+        color: "#FF0000",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 0,
+      })
       .returning();
     if (otherCategory === undefined) {
       throw new Error("other category fixture 누락");
@@ -402,9 +430,10 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
       userId: otherUser.id,
       categoryId: otherCategory.id,
       title: "다른 사용자의 할 일",
-      startDate: params.startDate,
+      startDate: plainDateFromDate(params.startDate),
       completed: true,
-      completedAt: params.startDate,
+      completedAt: instantFromDate(params.startDate),
+      updatedAt: nowInstant(),
     });
     const result = await aggregate(params);
     expect(result.totalTodos).toBe(2);

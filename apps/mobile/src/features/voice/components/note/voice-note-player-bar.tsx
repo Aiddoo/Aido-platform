@@ -8,7 +8,7 @@ import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, useEffect, useMemo, useState } from 'react';
 import type { AccessibilityActionEvent, LayoutChangeEvent } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import {
   clamp,
   type SharedValue,
@@ -200,25 +200,26 @@ function Scrubber({
   const barCount = Math.floor(width / STEP);
   const bars = useMemo(() => resampleLevels(levels, barCount), [levels, barCount]);
 
-  const gesture = Gesture.Pan()
-    .withTestId('voice-note-scrubber')
-    .minDistance(0)
-    .onBegin((event) => {
+  const gesture = usePanGesture({
+    testID: 'voice-note-scrubber',
+    minDistance: 0,
+    onBegin: (event) => {
       'worklet';
       dragRatio.set(getDragRatio(event.x, width));
-    })
-    .onUpdate((event) => {
+    },
+    onUpdate: (event) => {
       'worklet';
       dragRatio.set(getDragRatio(event.x, width));
-    })
-    .onFinalize((event, success) => {
+    },
+    onFinalize: (event) => {
       'worklet';
       dragRatio.set(null);
       // 다른 제스처나 시스템이 가로채 끊긴 터치는 위치를 옮기지 않는다
-      if (success) {
+      if (!event.canceled) {
         scheduleOnRN(onSeek, getDragRatio(event.x, width));
       }
-    });
+    },
+  });
 
   const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
     setSize({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });

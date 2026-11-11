@@ -1,29 +1,17 @@
-import type { TransactionHost } from "@nestjs-cls/transactional";
 import type { SQL } from "drizzle-orm";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { DatabaseError, type Pool, type QueryResult } from "pg";
+import { Client, DatabaseError, Pool, type QueryResult } from "pg";
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
-import {
-  createDatabase,
-  type Database,
-  type DrizzleTransactionalAdapter,
-} from "#api/platform/database/database.client";
+import { createDatabase } from "#api/platform/database/database.client";
+import { createTransactionHost } from "#test/setup/database-context";
 
 const dialect = new PgDialect();
 
 /** Drizzle SQL 객체를 PostgreSQL 문장과 파라미터로 렌더링한다. */
 export function renderSql(query: SQL): { sql: string; params: unknown[] } {
   return dialect.sqlToQuery(query);
-}
-
-/** 쿼리 체인 호출만 확인하는 단위 테스트용 TransactionHost. */
-export function createMockDrizzleTransactionHost(database = mock<Database>()) {
-  const host = mock<TransactionHost<DrizzleTransactionalAdapter>>();
-  Object.defineProperty(host, "tx", { get: () => database });
-  return { host, database };
 }
 
 export interface ExecutedStatement {
@@ -43,23 +31,23 @@ export function createFakeDatabase(
   respond: (statement: ExecutedStatement) => Promise<QueryResult> = async () => queryResult(),
 ) {
   const statements: ExecutedStatement[] = [];
-  const pool = mock<Pool>();
   const query = vi.fn(async (config: { text: string }, params: readonly unknown[] = []) => {
     const statement = { text: config.text, params };
     statements.push(statement);
     return respond(statement);
   });
-  Object.assign(pool, { query });
+  // 연결하지 않는 pg 객체에 query만 바꿔 끼운다. 트랜잭션은 pool.connect()가 준 client로 같은 query를 부른다
+  const client = Object.assign(new Client(), { query, release: () => undefined });
+  const pool = Object.assign(new Pool(), { query, connect: async () => client });
   return { database: createDatabase(pool), statements };
 }
 
+/** 트랜잭션 밖에서 `tx`가 가짜 pool을 쓰는 database인 실제 TransactionHost. */
 export function createFakeTransactionHost(
   respond?: (statement: ExecutedStatement) => Promise<QueryResult>,
 ) {
   const { database, statements } = createFakeDatabase(respond);
-  const host = mock<TransactionHost<DrizzleTransactionalAdapter>>();
-  Object.defineProperty(host, "tx", { get: () => database });
-  return { host, database, statements };
+  return { host: createTransactionHost(database), database, statements };
 }
 
 export function postgresError(sqlState: string, constraint?: string): DatabaseError {

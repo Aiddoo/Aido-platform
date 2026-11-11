@@ -4,7 +4,6 @@ import { inArray } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { rewardClaim } from "#api/platform/database/schema/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { RewardClaimRepositoryPort } from "../../application/ports/reward-claim.repository.port.js";
 import type { RewardClaim } from "../../domain/reward-claim.vo.js";
@@ -36,14 +35,13 @@ export class DrizzleRewardClaimRepository implements RewardClaimRepositoryPort {
     if (claims.length === 0) {
       return false;
     }
-    const firstClaimedAt = instantToDate(claimedAt);
     const inserted = await this.#db
       .insert(rewardClaim)
       .values(
         claims.map((claim) => ({
           claimHash: claim.claimHash,
           claimKind: claim.claimKind,
-          firstClaimedAt,
+          firstClaimedAt: claimedAt,
         })),
       )
       .onConflictDoNothing({ target: rewardClaim.claimHash })

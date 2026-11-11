@@ -71,7 +71,6 @@ import { DrizzleAdminUserDirectoryReader } from "#api/modules/operations/broadca
 import { DrizzleBroadcastCampaignRepository } from "#api/modules/operations/broadcasts/infrastructure/persistence/drizzle-broadcast-campaign.repository";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import {
   type Database,
@@ -80,34 +79,27 @@ import {
 } from "#api/platform/database/database.client";
 import { userConsent, userPreference } from "#api/platform/database/schema/index";
 import { InMemoryDedupAdapter } from "#api/platform/dedup/adapters/in-memory-dedup.adapter";
-import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
+import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { InMemoryLockAdapter } from "#api/platform/lock/adapters/in-memory-lock.adapter";
-import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
+import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  JOB_RUNTIME,
-  JobQueuePort,
-  type JobRuntimePort,
-  UNIT_OF_WORK,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";
 
+import { FastJobQueue } from "./fast-job-timing.js";
+
 const PG_BOSS_SCHEMA = "pgboss_critical_processors";
-const POLL_INTERVAL_MS = 100;
-const EVENTUALLY_TIMEOUT_MS = 20_000;
 
 const unexpectedUseCase = {
   execute: async () => {
@@ -129,14 +121,12 @@ class CriticalQueueDatabaseModule {
 export interface CriticalQueueProcessorHarness {
   readonly client: TestDatabaseClient;
   readonly boss: PgBoss;
-  readonly runtime: JobRuntimePort;
   readonly jobQueue: JobQueuePort;
   readonly pushProvider: FakePushProvider;
   readonly module: TestingModule;
   readonly retentionRepository: DrizzleRetentionRepository;
   readonly daytimeTimezone: string;
   cleanup(): Promise<void>;
-  eventually(assertion: () => Promise<void>, timeoutMs?: number): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -182,19 +172,9 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     ],
     providers: [
       ClsUnitOfWork,
-      { provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
       { provide: UnitOfWorkPort, useExisting: ClsUnitOfWork },
-      { provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
       { provide: AfterCommitTaskRegistryPort, useExisting: ClsUnitOfWork },
       { provide: ClockPort, useClass: SystemClock },
-      {
-        provide: JOB_RUNTIME,
-        inject: [TransactionHost],
-        useFactory: (txHost: TransactionHost<DrizzleTransactionalAdapter>) =>
-          new PgBossJobRuntimeAdapter(boss, txHost, {
-            job: { shutdownTimeoutMs: 10_000 },
-          }),
-      },
       JobQueueRegistry,
       {
         provide: JobQueuePort,
@@ -202,7 +182,10 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
         useFactory: (
           txHost: TransactionHost<DrizzleTransactionalAdapter>,
           registry: JobQueueRegistry,
-        ) => new PgBossJobQueueAdapter(boss, txHost, registry),
+        ) =>
+          new FastJobQueue(
+            new PgBossJobQueueAdapter(boss, txHost, registry, { shutdownTimeoutMs: 10_000 }),
+          ),
       },
       ...notificationProviders(pushProvider),
       ...retentionProviders(),
@@ -210,15 +193,14 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     ],
   }).compile();
 
-  const runtime = module.get<JobRuntimePort>(JOB_RUNTIME);
-  await runtime.start();
+  const jobQueue = module.get(JobQueuePort);
+  await jobQueue.start();
   await module.init();
 
   return {
     client,
     boss,
-    runtime,
-    jobQueue: module.get(JobQueuePort),
+    jobQueue,
     pushProvider,
     module,
     retentionRepository: module.get(DrizzleRetentionRepository),
@@ -228,13 +210,10 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
       // DB 정리가 dispatch id를 처음부터 다시 쓰므로 같은 publication key로 남은 지난 발송 작업을 지운다
       await boss.deleteAllJobs(PUSH_DELIVERY_QUEUE.name);
       pushProvider.clear();
-      await module.get(CacheService).reset();
-    },
-    eventually: async (assertion, timeoutMs) => {
-      await eventually(assertion, timeoutMs);
+      await module.get(CacheStorePort).reset();
     },
     close: async () => {
-      await runtime.stop();
+      await jobQueue.stop();
       await module.close();
       await testDatabase.stop();
     },
@@ -285,12 +264,11 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
           maxItems: 100,
         }),
     },
-    CacheService,
     UserSettingsCacheAdapter,
     { provide: UserSettingsCachePort, useExisting: UserSettingsCacheAdapter },
     InMemoryDedupAdapter,
-    { provide: DEDUP_PROVIDER, useExisting: InMemoryDedupAdapter },
-    { provide: LOCK_PROVIDER, useFactory: () => new InMemoryLockAdapter() },
+    { provide: DedupProviderPort, useExisting: InMemoryDedupAdapter },
+    { provide: LockProviderPort, useFactory: () => new InMemoryLockAdapter() },
     {
       provide: UserNotificationSettingsPort,
       inject: [DRIZZLE],
@@ -300,12 +278,12 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     DrizzleUserPreferenceRepository,
     {
       provide: UserPreferenceReaderPort,
-      useFactory: (preferenceRepository: DrizzleUserPreferenceRepository, cache: CacheService) =>
+      useFactory: (preferenceRepository: DrizzleUserPreferenceRepository, cache: CacheStorePort) =>
         new ReadUserPreferencesUseCase({
           preferenceRepository,
           cache: new UserSettingsCacheAdapter(cache),
         }),
-      inject: [DrizzleUserPreferenceRepository, CacheService],
+      inject: [DrizzleUserPreferenceRepository, CacheStorePort],
     },
   ];
 }
@@ -380,22 +358,29 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
       .onConflictDoUpdate({ target: userPreference.userId, set: { userId, ...values } });
   };
   return {
-    upsertPushTimezone: (userId, timezone) => upsertPreference(userId, { timezone }),
-    upsertPushLocale: (userId, locale) => upsertPreference(userId, { locale }),
+    upsertPushTimezone: (userId, timezone) => upsertPreference(userId.value, { timezone }),
+    upsertPushLocale: (userId, locale) => upsertPreference(userId.value, { locale }),
     getPreferenceRecord: async (userId): Promise<UserPreferenceRecord | null> =>
-      (await database.query.userPreference.findFirst({ where: { userId } })) ?? null,
+      (await database.query.userPreference.findFirst({ where: { userId: userId.value } })) ?? null,
     getPreferenceRecordsByUserIds: async (userIds): Promise<UserPreferenceRecordWithId[]> =>
       userIds.length === 0
         ? []
-        : database.query.userPreference.findMany({ where: { userId: { in: [...userIds] } } }),
+        : database.query.userPreference.findMany({
+            where: { userId: { in: userIds.map((userId) => userId.value) } },
+          }),
     getConsentRecord: async (userId): Promise<UserConsentRecord | null> =>
-      (await database.query.userConsent.findFirst({ where: { userId } })) ?? null,
+      (await database.query.userConsent.findFirst({ where: { userId: userId.value } })) ?? null,
     getConsentRecordsByUserIds: async (userIds): Promise<UserConsentRecordWithId[]> =>
       userIds.length === 0
         ? []
-        : database.query.userConsent.findMany({ where: { userId: { in: [...userIds] } } }),
-    updateMarketingPushConsent: async (userId, agreed) => {
-      const marketingPushAgreedAt = agreed ? new Date() : null;
+        : database.query.userConsent.findMany({
+            where: { userId: { in: userIds.map((userId) => userId.value) } },
+          }),
+    updateMarketingPushConsent: async (user, agreed) => {
+      const userId = user.value;
+      const marketingPushAgreedAt = agreed
+        ? Temporal.Instant.fromEpochMilliseconds(Date.now())
+        : null;
       await database
         .insert(userConsent)
         .values({ userId, marketingPushAgreedAt })
@@ -405,24 +390,6 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
         });
     },
   };
-}
-
-async function eventually(
-  assertion: () => Promise<void>,
-  timeoutMs = EVENTUALLY_TIMEOUT_MS,
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  let lastError: unknown;
-  while (Date.now() < deadline) {
-    try {
-      await assertion();
-      return;
-    } catch (error) {
-      lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-    }
-  }
-  throw lastError;
 }
 
 function findDaytimeTimezone(now: Date): string {

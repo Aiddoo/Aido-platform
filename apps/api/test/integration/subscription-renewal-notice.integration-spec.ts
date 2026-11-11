@@ -1,9 +1,9 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 import { and, eq } from "drizzle-orm";
 
+import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import { NotifyUpcomingRenewalsUseCase } from "#api/modules/billing/subscriptions/application/use-cases/notify-upcoming-renewals.use-case";
-import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -11,6 +11,7 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
@@ -24,7 +25,7 @@ import {
   type E2eTestContext,
 } from "../e2e/helpers/e2e-app-factory.js";
 
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 // 런던 12:00(낮)이라 야간으로 미루지 않는다
 const at = new Date("2027-01-04T12:00:00.000Z");
 const periodEndsAt = new Date("2027-01-10T12:00:00.000Z");
@@ -83,8 +84,8 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
       email: `renewal-${tag.toLowerCase()}@example.com`,
       userTag: tag,
       subscriptionStatus: "FREE",
-      createdAt: periodStartedAt,
-      updatedAt: periodStartedAt,
+      createdAt: instantFromDate(periodStartedAt),
+      updatedAt: instantFromDate(periodStartedAt),
     });
     await client.insert(userTable).values(user);
     await client
@@ -205,7 +206,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
         expiresAt: periodEndsAt,
       }),
     });
-    const beforeRenewal = await premiumAccess.getPremiumAccess(userId);
+    const beforeRenewal = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
     const notified = await notifyUpcomingRenewals.execute({ now: instantFromDate(at) });
     const monthlyEndsAt = new Date(periodEndsAt.getTime() + 31 * DAY_MS);
     vi.setSystemTime(periodEndsAt);
@@ -226,7 +227,9 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
       nextProductId: null,
       expiresAt: monthlyEndsAt,
     });
-    expect(await premiumAccess.getPremiumAccess(userId)).toMatchObject({ planType: "MONTHLY" });
+    expect(await premiumAccess.getPremiumAccess(UserId.reconstitute(userId))).toMatchObject({
+      planType: "MONTHLY",
+    });
   });
 
   it("App Store에서 월간→연간으로 바꾸면 다음 결제가 연간이라 갱신 안내를 보내고, 갱신 뒤 연간이다", async () => {
@@ -245,7 +248,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
       }),
     });
     const notified = await notifyUpcomingRenewals.execute({ now: instantFromDate(at) });
-    const beforeRenewal = await premiumAccess.getPremiumAccess(userId);
+    const beforeRenewal = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
     vi.setSystemTime(periodEndsAt);
     await webhook.receive({
       body: storeEvent(userId, SubscriptionEventBuilder.renewal(), {
@@ -259,7 +262,9 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     // Then
     expect(notified.notifiedCount).toBe(1);
     expect(beforeRenewal.planType).toBe("MONTHLY");
-    expect(await premiumAccess.getPremiumAccess(userId)).toMatchObject({ planType: "ANNUAL" });
+    expect(await premiumAccess.getPremiumAccess(UserId.reconstitute(userId))).toMatchObject({
+      planType: "ANNUAL",
+    });
   });
 
   it("Play에서 연간→월간으로 바꿔 새 체인이 생기면 원래 만료까지 ACTIVE로 남은 옛 연간 체인에는 갱신 안내를 보내지 않는다", async () => {
@@ -299,7 +304,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     });
 
     // Then
-    expect(await premiumAccess.getPremiumAccess(userId)).toMatchObject({
+    expect(await premiumAccess.getPremiumAccess(UserId.reconstitute(userId))).toMatchObject({
       source: "STORE",
       planType: "MONTHLY",
       periodEndsAt: monthlyEndsAt,
@@ -338,7 +343,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
       nextProductId: null,
       expiresAt: nextPeriodEndsAt,
     });
-    expect(await premiumAccess.getPremiumAccess(userId)).toMatchObject({
+    expect(await premiumAccess.getPremiumAccess(UserId.reconstitute(userId))).toMatchObject({
       periodEndsAt: nextPeriodEndsAt,
       planType: "ANNUAL",
     });

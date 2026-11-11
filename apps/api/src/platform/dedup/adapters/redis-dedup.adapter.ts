@@ -3,7 +3,7 @@ import type { Redis } from "ioredis";
 
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
 import { REDIS_COMMAND_CLIENT } from "../../redis/redis.constants.js";
-import type { IDedupProvider } from "../interfaces/dedup.interface.js";
+import { DedupProviderPort } from "../dedup-provider.port.js";
 
 /**
  * Redis Set 기반 중복 방지 어댑터
@@ -15,12 +15,13 @@ import type { IDedupProvider } from "../interfaces/dedup.interface.js";
  * - Redis 장애 시 fail-open (DB unique index가 최종 방어선)
  */
 @Injectable()
-export class RedisDedupAdapter implements IDedupProvider {
+export class RedisDedupAdapter extends DedupProviderPort {
   readonly #logger = new Logger(RedisDedupAdapter.name);
   readonly #redis: Redis;
   readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
 
   constructor(@Inject(REDIS_COMMAND_CLIENT) redis: Redis) {
+    super();
     this.#redis = redis;
   }
 

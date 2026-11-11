@@ -216,7 +216,10 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
 
   it("요청 대상은 활성 사용자만이고 표시 이름은 프로필 이름, 없으면 태그, 사용자가 없으면 null이다", async () => {
     // Given
-    await client.update(user).set({ deletedAt: new Date() }).where(eq(user.id, BRAVO));
+    await client
+      .update(user)
+      .set({ deletedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()) })
+      .where(eq(user.id, BRAVO));
 
     // When
     const [isActive, isLocked, isDeleted, byTag, byLockedTag, names] = await Promise.all([

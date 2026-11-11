@@ -1,3 +1,7 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import { commentNotFound, invalidCommentRequest, todoNotFound } from "../comments.errors.js";
 import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
 import type { TodoCommentCursorCodecPort } from "../ports/todo-comment-cursor-codec.port.js";
@@ -38,15 +42,18 @@ export class ListTodoCommentRepliesUseCase {
 
   async execute(query: ListTodoCommentRepliesQuery): Promise<TodoCommentRepliesPage> {
     const { reader, blockReader, cursorCodec } = this.#dependencies;
-    if ((await reader.findAccessibleTodoOwnerId(query.todoId, query.viewerId)) == null) {
+    const todoId = TodoId.reconstitute(query.todoId);
+    const viewerId = UserId.reconstitute(query.viewerId);
+    const threadCommentId = TodoCommentId.reconstitute(query.threadCommentId);
+    if ((await reader.findAccessibleTodoOwnerId(todoId, viewerId)) == null) {
       throw todoNotFound(query.todoId);
     }
-    const thread = await reader.findComment(query.todoId, query.threadCommentId);
+    const thread = await reader.findComment(todoId, threadCommentId);
     if (thread == null || thread.threadCommentId != null) {
       throw commentNotFound(query.threadCommentId);
     }
 
-    const params = this.#toParams(query);
+    const params = this.#toParams(query, { todoId, threadCommentId, size: query.size });
     // 기준 답글이 지워졌거나 다른 묶음이면 첫 페이지로 연다
     const window =
       (await reader.listReplies(params)) ??
@@ -56,8 +63,8 @@ export class ListTodoCommentRepliesUseCase {
     }
 
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
-      reader.listLikedCommentIds(listCommentIds(window.items), query.viewerId),
-      blockReader.findBlockedCounterpartIds(query.viewerId, listCommentAuthorIds(window.items)),
+      reader.listLikedCommentIds(listCommentIds(window.items), viewerId),
+      blockReader.findBlockedCounterpartIds(viewerId, listCommentAuthorIds(window.items)),
     ]);
     const first = window.items.at(0);
     const last = window.items.at(-1);
@@ -77,17 +84,27 @@ export class ListTodoCommentRepliesUseCase {
     };
   }
 
-  #toParams(query: ListTodoCommentRepliesQuery): ListTodoCommentRepliesParams {
-    const base = { todoId: query.todoId, threadCommentId: query.threadCommentId, size: query.size };
+  #toParams(
+    query: ListTodoCommentRepliesQuery,
+    base: Pick<ListTodoCommentRepliesParams, "todoId" | "threadCommentId" | "size">,
+  ): ListTodoCommentRepliesParams {
     if (query.cursor != null) {
       const cursor = this.#dependencies.cursorCodec.decodeReplies(query.cursor);
       if (cursor.todoId !== query.todoId || cursor.threadCommentId !== query.threadCommentId) {
         throw invalidCommentRequest();
       }
-      return { ...base, mode: cursor.direction, anchorReplyId: cursor.replyId };
+      return {
+        ...base,
+        mode: cursor.direction,
+        anchorReplyId: TodoCommentId.reconstitute(cursor.replyId),
+      };
     }
     if (query.aroundReplyId != null) {
-      return { ...base, mode: "AROUND", anchorReplyId: query.aroundReplyId };
+      return {
+        ...base,
+        mode: "AROUND",
+        anchorReplyId: TodoCommentId.reconstitute(query.aroundReplyId),
+      };
     }
     return { ...base, mode: "INITIAL" };
   }

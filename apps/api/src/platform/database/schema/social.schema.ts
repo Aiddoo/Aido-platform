@@ -3,12 +3,10 @@ import {
   pgTable,
   integer,
   text,
-  timestamp,
   char,
   varchar,
   boolean,
   serial,
-  date,
   index,
   uniqueIndex,
   foreignKey,
@@ -16,6 +14,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import { instant, plainDate } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import {
   followStatus,
@@ -37,16 +36,16 @@ import { todo } from "./planning.schema.js";
 export const follow = pgTable(
   "Follow",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     followerId: text().notNull(),
     followingId: text().notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     sortOrder: integer().default(0).notNull(),
     status: followStatus().default("PENDING").notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
   },
   (table) => [
     foreignKey({
@@ -85,10 +84,12 @@ export const follow = pgTable(
 export const cheer = pgTable(
   "Cheer",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
     message: varchar({ length: 200 }),
-    readAt: timestamp({ precision: 3 }),
+    readAt: instant(),
     receiverId: text().notNull(),
     senderId: text().notNull(),
   },
@@ -129,16 +130,18 @@ export const cheer = pgTable(
 export const nudge = pgTable(
   "Nudge",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
     message: varchar({ length: 200 }),
-    readAt: timestamp({ precision: 3 }),
+    readAt: instant(),
     receiverId: text().notNull(),
-    repliedAt: timestamp({ precision: 3 }),
+    repliedAt: instant(),
     replyKind: nudgeReplyKind(),
-    replyUpdatedAt: timestamp({ precision: 3 }),
+    replyUpdatedAt: instant(),
     senderId: text().notNull(),
-    thankedAt: timestamp({ precision: 3 }),
+    thankedAt: instant(),
     todoId: integer().notNull(),
   },
   (table) => [
@@ -206,7 +209,9 @@ export const nudge = pgTable(
 export const reminderNudge = pgTable(
   "ReminderNudge",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
     message: varchar({ length: 200 }),
     receiverId: text().notNull(),
@@ -246,7 +251,9 @@ export const userBlock = pgTable(
   {
     blockedId: text().notNull(),
     blockerId: text().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
   },
   (table) => [
@@ -282,7 +289,9 @@ export const userBlock = pgTable(
 export const userReport = pgTable(
   "UserReport",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     detail: varchar({ length: 500 }),
     id: text().primaryKey().$defaultFn(createEntityId),
     reason: userReportReason().notNull(),
@@ -292,7 +301,7 @@ export const userReport = pgTable(
     targetType: userReportTargetType().notNull(),
     targetUserId: text().notNull(),
     resolutionNote: varchar({ length: 500 }),
-    resolvedAt: timestamp({ precision: 3 }),
+    resolvedAt: instant(),
     resolvedById: text(),
   },
   (table) => [
@@ -339,15 +348,15 @@ export const invite = pgTable(
   "Invite",
   {
     code: varchar({ length: 6 }).notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     inviterId: text().notNull(),
-    revokedAt: timestamp({ precision: 3 }),
+    revokedAt: instant(),
     status: inviteStatus().default("ACTIVE").notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
   },
   (table) => [
     foreignKey({
@@ -372,8 +381,10 @@ export const invite = pgTable(
 export const inviteActiveDay = pgTable(
   "InviteActiveDay",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    localDate: date({ mode: "date" }).notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    localDate: plainDate().notNull(),
     redemptionId: text().notNull(),
   },
   (table) => [
@@ -391,25 +402,25 @@ export const inviteActiveDay = pgTable(
 export const inviteRedemption = pgTable(
   "InviteRedemption",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    expiresAt: timestamp({ precision: 3 }).notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    expiresAt: instant().notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     inviteId: text(),
     inviteeId: text().notNull(),
     inviterId: text(),
     inviterRewardEligible: boolean().default(true).notNull(),
-    joinedAt: timestamp({ precision: 3 }).notNull(),
-    qualifiedAt: timestamp({ precision: 3 }),
-    rejectedAt: timestamp({ precision: 3 }),
+    joinedAt: instant().notNull(),
+    qualifiedAt: instant(),
+    rejectedAt: instant(),
     rejectionReason: inviteRejectionReason(),
-    rewardedAt: timestamp({ precision: 3 }),
+    rewardedAt: instant(),
     status: inviteRedemptionStatus().default("JOINED").notNull(),
     timezone: varchar({ length: 50 }).notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
-    qualifyReminderSentAt: timestamp({ precision: 3 }),
+    // 도메인이 ClockPort 값으로 채운다. 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
+    qualifyReminderSentAt: instant(),
   },
   (table) => [
     foreignKey({
@@ -459,15 +470,19 @@ export const inviteRedemption = pgTable(
 export const rewardClaim = pgTable("RewardClaim", {
   claimHash: char({ length: 64 }).primaryKey(),
   claimKind: rewardClaimKind().notNull(),
-  firstClaimedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+  firstClaimedAt: instant()
+    .default(sql`now()`)
+    .notNull(),
 });
 
 export const rewardGrant = pgTable(
   "RewardGrant",
   {
-    appliedAt: timestamp({ precision: 3 }),
+    appliedAt: instant(),
     attempts: integer().default(0).notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     lastErrorCode: varchar({ length: 100 }),
     quantity: integer().notNull(),
@@ -476,10 +491,8 @@ export const rewardGrant = pgTable(
     sourceId: varchar({ length: 64 }).notNull(),
     sourceType: rewardSourceType().notNull(),
     status: rewardGrantStatus().default("PENDING").notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
   },
   (table) => [
     foreignKey({

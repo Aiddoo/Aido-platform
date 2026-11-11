@@ -1,6 +1,6 @@
 import { CheerLimitReaderPort } from "#api/modules/social/cheers/application/ports/cheer-limit.reader.port";
 import type {
-  DailySendQuota,
+  DailySendFeatureQuota,
   DailySendQuotaUsage,
 } from "#api/modules/social/cheers/application/ports/daily-send-usage.reader.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -11,7 +11,7 @@ export function toStubDailyQuota(
   feature: "CHEER" | "NUDGE",
   limit: number | null,
   usage: DailySendQuotaUsage,
-): DailySendQuota {
+): DailySendFeatureQuota {
   return {
     feature,
     allowed: true,
@@ -34,15 +34,18 @@ export class StubCheerLimitReader extends CheerLimitReaderPort {
     this.dailyLimit = dailyLimit;
   }
 
-  async readDailyLimit(_userId: UserId): Promise<number | null> {
+  async readLimit(_userId: UserId): Promise<number | null> {
     return this.dailyLimit;
   }
 
-  async readDailyLimitInTx(_userId: UserId): Promise<number | null> {
+  async readLimitInTx(_userId: UserId): Promise<number | null> {
     return this.dailyLimit;
   }
 
-  async readDailyQuotaInTx(_userId: UserId, usage: DailySendQuotaUsage): Promise<DailySendQuota> {
+  async readFeatureQuotaInTx(
+    _userId: UserId,
+    usage: DailySendQuotaUsage,
+  ): Promise<DailySendFeatureQuota> {
     return toStubDailyQuota("CHEER", this.dailyLimit, usage);
   }
 }

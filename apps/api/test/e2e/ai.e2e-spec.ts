@@ -21,6 +21,7 @@ import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assist
  * - 에러 처리 (400, 401, 422, 429, 503)
  */
 import { user } from "#api/platform/database/schema/index";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import {
   createMemoDraftResponse,
   createTodoDraftResponse,
@@ -46,7 +47,7 @@ function at(hour: number, minute = 0) {
 function memoTodo(title: string, overrides: Record<string, unknown> = {}) {
   return {
     ...createTodoDraftResponse({ title }),
-    categoryId: 999999,
+    categoryId: 999_999,
     items: [],
     ...overrides,
   };
@@ -72,7 +73,7 @@ describe("AI E2E", () => {
       .update(user)
       .set({
         aiUsageCount: 0,
-        aiUsageResetAt: new Date(),
+        aiUsageResetAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       })
       .where(eq(user.id, userId));
   }
@@ -86,7 +87,7 @@ describe("AI E2E", () => {
       .update(user)
       .set({
         aiUsageCount: count,
-        aiUsageResetAt: new Date(),
+        aiUsageResetAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       })
       .where(eq(user.id, userId));
   }
@@ -100,7 +101,7 @@ describe("AI E2E", () => {
       .update(user)
       .set({
         aiUsageCount: count,
-        aiUsageResetAt: resetAt,
+        aiUsageResetAt: instantFromDate(resetAt),
       })
       .where(eq(user.id, userId));
   }
@@ -113,7 +114,7 @@ describe("AI E2E", () => {
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -1057,7 +1058,7 @@ describe("AI E2E", () => {
       if (route === "parse-todo") {
         fakeAiGenerator.setResponse(draft);
       } else {
-        fakeAiGenerator.setRawResponse({ todos: [{ ...draft, categoryId: 999999, items: [] }] });
+        fakeAiGenerator.setRawResponse({ todos: [{ ...draft, categoryId: 999_999, items: [] }] });
       }
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));

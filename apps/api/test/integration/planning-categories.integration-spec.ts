@@ -8,11 +8,14 @@ import { GetTodoCategoryResourceLimitUseCase } from "#api/modules/planning/categ
 import { GetTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/get-todo-category.use-case";
 import { ListTodoCategoriesUseCase } from "#api/modules/planning/categories/application/use-cases/list-todo-categories.use-case";
 import { UpdateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/update-todo-category.use-case";
+import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import type { TodoCategory } from "#api/modules/planning/categories/domain/todo-category.aggregate";
 import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, user } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 
@@ -50,8 +53,8 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
           id: userId,
           email: "planning-category-owner@example.com",
           userTag: "PLANCA01",
-          createdAt: at,
-          updatedAt: at,
+          createdAt: instantFromDate(at),
+          updatedAt: instantFromDate(at),
         }),
       );
     categoryId = (await insertCategory({ name: "기존", color: "#FFB3B3", sortOrder: 0 })).id.value;
@@ -124,7 +127,14 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     ).rejects.toBeInstanceOf(Error);
 
     // Then
-    expect((await repository.findByIdAndUserId(categoryId, userId))?.toPrimitives()).toMatchObject({
+    expect(
+      (
+        await repository.findByIdAndUserId(
+          TodoCategoryId.reconstitute(categoryId),
+          UserId.reconstitute(userId),
+        )
+      )?.toPrimitives(),
+    ).toMatchObject({
       name: "기존",
       color: "#FFB3B3",
     });
@@ -133,7 +143,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   it("상위 UoW가 실패하면 카테고리 변경도 같은 트랜잭션에서 rollback된다", async () => {
     // Given
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     const failure = new Error("rollback-category");
 
     // When
@@ -145,7 +155,14 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     ).rejects.toBe(failure);
 
     // Then
-    expect((await repository.findByIdAndUserId(categoryId, userId))?.toPrimitives()).toMatchObject({
+    expect(
+      (
+        await repository.findByIdAndUserId(
+          TodoCategoryId.reconstitute(categoryId),
+          UserId.reconstitute(userId),
+        )
+      )?.toPrimitives(),
+    ).toMatchObject({
       name: "기존",
     });
   });
@@ -160,7 +177,14 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     ]);
 
     // Then
-    expect((await repository.findByIdAndUserId(categoryId, userId))?.toPrimitives()).toMatchObject({
+    expect(
+      (
+        await repository.findByIdAndUserId(
+          TodoCategoryId.reconstitute(categoryId),
+          UserId.reconstitute(userId),
+        )
+      )?.toPrimitives(),
+    ).toMatchObject({
       name: "변경",
       color: "#112233",
     });
@@ -177,7 +201,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
     // Then
     expect(
-      (await repository.findByIdAndUserId(another.id.value, userId))?.toPrimitives(),
+      (await repository.findByIdAndUserId(another.id, UserId.reconstitute(userId)))?.toPrimitives(),
     ).toMatchObject({
       name: "다른",
     });
@@ -194,8 +218,8 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
           categoryId,
           completed: false,
           sortOrder: 0,
-          createdAt: at,
-          updatedAt: at,
+          createdAt: instantFromDate(at),
+          updatedAt: instantFromDate(at),
         }),
         ["id"],
       ),
@@ -204,8 +228,8 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
           userId,
           categoryId,
           sortOrder: 1,
-          createdAt: at,
-          updatedAt: at,
+          createdAt: instantFromDate(at),
+          updatedAt: instantFromDate(at),
         }),
         ["id"],
       ),
@@ -242,7 +266,12 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
         categoryId: target.id.value,
       })),
     );
-    expect(await repository.findByIdAndUserId(categoryId, userId)).toBeNull();
+    expect(
+      await repository.findByIdAndUserId(
+        TodoCategoryId.reconstitute(categoryId),
+        UserId.reconstitute(userId),
+      ),
+    ).toBeNull();
     expect(
       await context.module.get(GetTodoCategoryUseCase).execute({ id: target.id.value, userId }),
     ).toMatchObject({ todoCount: 2 });
@@ -261,7 +290,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   it("공개 기본 카테고리 provisioner도 상위 transaction rollback에 참여한다", async () => {
     // Given
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     const provisioner = context.module.get<TodoCategoryProvisionerPort>(
       TodoCategoryProvisionerPort,
     );
@@ -270,13 +299,13 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     // When
     await expect(
       unitOfWork.run(async () => {
-        await provisioner.seed(userId);
+        await provisioner.seed(UserId.reconstitute(userId));
         throw failure;
       }),
     ).rejects.toBe(failure);
 
     // Then
-    expect(await repository.countByUserId(userId)).toBe(1);
+    expect(await repository.countByUserId(UserId.reconstitute(userId))).toBe(1);
   });
 
   it.each([
@@ -284,16 +313,16 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     { why: "영어로 가입하면 영어", locale: "en", names: ["Important", "To-do"] },
   ] as const)("기본 카테고리 이름은 $why로 만든다", async ({ locale, names }) => {
     // Given
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     const provisioner = context.module.get<TodoCategoryProvisionerPort>(
       TodoCategoryProvisionerPort,
     );
 
     // When
-    await unitOfWork.run(() => provisioner.seed(userId, locale));
+    await unitOfWork.run(() => provisioner.seed(UserId.reconstitute(userId), locale));
 
     // Then
-    const categories = await repository.findManyByUserId(userId);
+    const categories = await repository.findManyByUserId(UserId.reconstitute(userId));
     expect(categories.map(({ name }) => name)).toEqual(expect.arrayContaining([...names]));
   });
 });

@@ -4,7 +4,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
-import { UserReportPolicy } from '../domains/user-report.model';
+import { TodoReportPolicy } from '../domains/user-report.model';
 
 /**
  * 친구 할 일 상세의 신고·차단. 내 할 일이거나 상세를 아직 못 불러왔으면 쓸 수 없다.
@@ -15,7 +15,7 @@ export function useTodoModerationActions({ todoId }: { todoId: number }) {
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
-  if (detail == null || !UserReportPolicy.canReportTodo(detail)) {
+  if (detail == null || !TodoReportPolicy.canReportTodo(detail)) {
     return { isAvailable: false, report: () => undefined, block: () => undefined } as const;
   }
 

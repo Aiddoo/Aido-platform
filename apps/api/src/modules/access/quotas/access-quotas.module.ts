@@ -4,7 +4,7 @@ import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-u
 
 import { AccessEntitlementsModule } from "../entitlements/access-entitlements.module.js";
 import { ACCESS_QUOTAS_PROVIDERS } from "./access-quotas.providers.js";
-import { QUOTA_LEDGER, QuotaLedgerPort } from "./application/ports/quota-ledger.port.js";
+import { QuotaLedgerPort } from "./application/ports/quota-ledger.port.js";
 import { QuotaUsageRepositoryPort } from "./application/ports/quota-usage.repository.port.js";
 import { CheckQuotaRemainingUseCase } from "./application/use-cases/check-quota-remaining.use-case.js";
 
@@ -15,7 +15,6 @@ import { CheckQuotaRemainingUseCase } from "./application/use-cases/check-quota-
   exports: [
     AccessEntitlementsModule,
     QuotaLedgerPort,
-    QUOTA_LEDGER,
     // 권한 스냅샷이 같은 기간의 계량기 사용량을 읽는다
     QuotaUsageRepositoryPort,
     // @RequireQuota 가드가 붙은 라우트의 모듈이 이 UseCase로 남은 횟수를 확인한다

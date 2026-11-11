@@ -1,0 +1,50 @@
+appId: ${MAESTRO_APP_ID}
+name: 이미 친구인 사람의 초대 링크를 수락하면 보상 없이 그 친구의 피드로 간다
+tags:
+  - regression
+  - friends
+  - needs-second-account
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.second = output.api.signIn('second')}
+  - evalScript: ${output.second.unfollow(output.main.userId)}
+  - evalScript: ${output.main.unfollow(output.second.userId)}
+  - evalScript: ${output.second.requestFriend(output.main.userTag)}
+  - evalScript: ${output.main.acceptFriend(output.second.userId)}
+  - evalScript: ${output.inviteCode = output.main.inviteCode()}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.second && output.main && output.second.unfollow(output.main.userId)}
+  - evalScript: ${output.second && output.main && output.main.unfollow(output.second.userId)}
+---
+# Given: 주 계정과 이미 친구인 두 번째 계정으로 로그인했다
+- assertTrue:
+    condition: ${!output.main.hasInvited(output.second.userId)}
+    label: 두 번째 계정의 초대 수락 기록이 없다 (있으면 pnpm e2e:accounts reset)
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.second.email}
+      PASSWORD: ${output.second.password}
+
+# When: 주 계정의 초대 링크를 열어 수락한다
+- openLink: ${output.config.appScheme}://invite/${output.inviteCode}
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.invite.redeemButton}
+    timeout: 15000
+- tapOn:
+    id: ${output.ids.invite.redeemButton}
+
+# Then: 환영 시트 없이 주 계정의 피드가 열리고 수락 기록은 남지 않는다
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.feed.screen}
+    timeout: 20000
+- assertNotVisible:
+    id: ${output.ids.invite.welcomeSheet}
+- assertVisible: ${'.*' + output.main.name + '.*'}
+- assertTrue:
+    condition: ${!output.main.hasInvited(output.second.userId)}
+    label: 이미 친구라 초대 수락(보상) 기록이 생기지 않았다

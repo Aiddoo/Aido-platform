@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 
 import { UnlinkOAuthAccountUseCase } from "./unlink-oauth-account.use-case.js";
@@ -28,7 +29,7 @@ describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
     // Given
     const fixture = createAuthOAuthFixture();
     await fixture.accountRepository.createOAuthAccount({
-      userId: fixture.user.id,
+      userId: UserId.reconstitute(fixture.user.id),
       provider: "GOOGLE",
       providerAccountId: "google-account",
     });

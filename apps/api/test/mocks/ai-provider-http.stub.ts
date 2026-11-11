@@ -1,22 +1,21 @@
 import { readFileSync } from "node:fs";
 
-import type { AccessTier } from "@aido/api/vocabulary";
-import { ConfigService } from "@nestjs/config";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
-import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import {
+  type AiAssistanceGenerationConfig,
+  aiAssistanceGenerationConfig,
+} from "#api/modules/ai-assistance/generation/ai-assistance-generation.config";
 import {
   type AiProviderAdapter,
   AiProviderCatalog,
 } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
 import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
 import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
-import type { UsageMeterPort } from "#api/platform/metering/interfaces/usage-meter.interface";
+import type { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { createFeatureAccessFixture } from "#test/fixtures/access/access-user.fixture";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 
 import { RecordingOperationalAlert } from "./recording-operational-alert.js";
@@ -33,15 +32,15 @@ export function aiProviderErrorResponse(vendor: AiProviderFixtureVendor, fileNam
   return new Response(body, { status, headers: { "content-type": "application/json" } });
 }
 
-export const AI_FIXTURE_KEYS = {
+const AI_FIXTURE_KEYS = {
   ANTHROPIC_API_KEY: `sk-ant-fixture-${"a".repeat(30)}`,
   GOOGLE_GENERATIVE_AI_API_KEY: `fixture-${"g".repeat(30)}`,
   OPENAI_API_KEY: `sk-proj-fixture-${"o".repeat(30)}`,
 } as const;
 
 /** 업체 키와 AI 운영 env만 바꾼 설정. 외부 호출은 테스트가 fetch를 stub해 막는다. */
-export function createAiTestConfig(env: Record<string, string> = {}): TypedConfigService {
-  return new TypedConfigService(new ConfigService<EnvConfig, true>({ ...AI_FIXTURE_KEYS, ...env }));
+export function createAiTestConfig(env: Record<string, string> = {}): AiAssistanceGenerationConfig {
+  return aiAssistanceGenerationConfig.parse({ ...AI_FIXTURE_KEYS, ...env });
 }
 
 /** 실제 업체 SDK로 한 번 호출해(재시도 없음) 던진 오류를 돌려준다. fetch는 테스트가 stub한다. */
@@ -63,33 +62,16 @@ export async function captureProviderError(
   );
 }
 
-/** 사용자별 등급을 돌려주는 권한 reader. 정하지 않은 사용자는 FREE다. */
-export function stubAccessTiers(
-  tiers: Readonly<Record<string, AccessTier>> = {},
-): Pick<EntitlementReaderPort, "getAccessSnapshot"> {
-  return {
-    getAccessSnapshot: async (userId) => {
-      const tier = tiers[userId] ?? "FREE";
-      return {
-        tier,
-        isPremium: tier === "PREMIUM",
-        features: createFeatureAccessFixture(tier),
-      };
-    },
-  };
-}
-
 /**
  * 실제 업체 체인(AiSdkGeneratorAdapter)을 메모리 계량기·기록용 경보로 조립한다.
  * 회로 레지스트리를 새로 만들므로 생성기마다 회로 상태가 따로다.
  */
 export function createAiSdkGenerator(
-  config: TypedConfigService,
+  config: AiAssistanceGenerationConfig,
   adapters: readonly AiProviderAdapter[],
   options: {
     readonly alert?: RecordingOperationalAlert;
     readonly meter?: UsageMeterPort;
-    readonly access?: Pick<EntitlementReaderPort, "getAccessSnapshot">;
   } = {},
 ) {
   const alert = options.alert ?? new RecordingOperationalAlert();
@@ -99,7 +81,8 @@ export function createAiSdkGenerator(
     config,
     new AiProviderCatalog(adapters),
     registry,
-    new AiSpendBudgetAdapter(config, meter, alert, options.access ?? stubAccessTiers()),
+    new AiSpendBudgetAdapter(config, meter, alert, new DateClock()),
+    alert,
   );
   return { generator, alert, meter, registry };
 }

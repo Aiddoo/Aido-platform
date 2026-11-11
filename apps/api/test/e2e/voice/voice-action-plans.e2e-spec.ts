@@ -70,7 +70,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       durationSeconds: 60,
       segments: [
         { startMs: 0, text: "회의를 했습니다.", isBookmarked: false },
-        { startMs: 4_200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
+        { startMs: 4200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
       ],
     };
   }
@@ -182,7 +182,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       // Then
       const parsed = voiceNoteDigestResponseSchema.parse(response.body.data);
       expect(response.body.data).not.toHaveProperty("meta");
-      expect(parsed.keyPoints[0]?.startMs).toBe(4_200);
+      expect(parsed.keyPoints[0]?.startMs).toBe(4200);
       expect(parsed.featureQuota).toMatchObject({
         feature: "VOICE_NOTE",
         used: 1,
@@ -198,7 +198,11 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         values: { subscriptionStatus: "ACTIVE" },
         limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
       },
-      { tier: "ADMIN", values: { role: "ADMIN" }, limit: null },
+      {
+        tier: "ADMIN",
+        values: { role: "ADMIN" },
+        limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
+      },
     ] as const)(
       "$tier은 할 일 없는 정리도 1회를 쓰고 같은 키의 재요청은 같은 결과에 한 번만 센다",
       async ({ tier, values, limit }) => {
@@ -318,7 +322,11 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         values: { subscriptionStatus: "ACTIVE" },
         limit: PLAN_CATALOG.AI_PARSE.fairUse.premium,
       },
-      { tier: "ADMIN", values: { role: "ADMIN" }, limit: null },
+      {
+        tier: "ADMIN",
+        values: { role: "ADMIN" },
+        limit: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+      },
     ] as const)(
       "$tier의 빠른 계획 한도는 $limit이고 사용량을 기록한다",
       async ({ tier, values, limit }) => {

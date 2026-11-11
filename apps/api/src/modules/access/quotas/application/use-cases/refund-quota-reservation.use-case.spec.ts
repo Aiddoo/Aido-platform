@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import {
   ACCESS_FIXTURE_NOW,
@@ -15,12 +16,13 @@ function setup(input: AccessUserInput = {}) {
   const fixture = createQuotaLedgerFixture(input, undefined, { clock });
   const reserve = (idempotencyKey: string | null = null) =>
     fixture.ledger.reserve({
-      userId: fixture.userId,
+      userId: UserId.reconstitute(fixture.userId),
       feature: "AI_PARSE",
       idempotencyKey,
       reason: "parse-todo",
     });
-  const used = async () => (await fixture.ledger.read(fixture.userId, "AI_PARSE")).used;
+  const used = async () =>
+    (await fixture.ledger.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used;
   const chargeOf = (chargeId: string) =>
     fixture.quotaChargeRepository.all.find((charge) => charge.id === chargeId);
   return { ...fixture, clock, reserve, used, chargeOf };
@@ -90,7 +92,9 @@ describe("RefundQuotaReservationUseCase·CommitQuotaReservationUseCase — 확�
 
     // Then
     expect(refunded).toBe(true);
-    expect(await fixture.ledger.read(fixture.userId, "AI_PARSE")).toMatchObject({
+    expect(
+      await fixture.ledger.read(UserId.reconstitute(fixture.userId), "AI_PARSE"),
+    ).toMatchObject({
       used: 1,
       limit: FREE_AI_LIMIT,
       resetsAt: "2026-05-31T15:00:00.000Z",
@@ -105,7 +109,7 @@ describe("RefundQuotaReservationUseCase·CommitQuotaReservationUseCase — 확�
     fixture.users.clear();
 
     // When
-    const read = fixture.ledger.read(fixture.userId, "AI_PARSE");
+    const read = fixture.ledger.read(UserId.reconstitute(fixture.userId), "AI_PARSE");
     const refunded = await fixture.ledger.refund(reservation, "FAILED");
 
     // Then

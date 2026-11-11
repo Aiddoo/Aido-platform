@@ -41,7 +41,7 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
 
   async findOnboardingCandidates(params: {
     tz: string;
-    createdSince: Date;
+    createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidate[]> {
     this.queries.push({ method: "findOnboardingCandidates", params });
     return this.onboardingCandidates;
@@ -59,8 +59,8 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
 
   async findNudgeSuggestFollows(params: {
     candidateIds: string[];
-    activeSince: Date;
-    activeUntil: Date;
+    activeSince: Temporal.Instant;
+    activeUntil: Temporal.Instant;
   }): Promise<NudgeSuggestFollow[]> {
     this.queries.push({ method: "findNudgeSuggestFollows", params });
     return this.nudgeSuggestFollows.filter(
@@ -87,8 +87,8 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
 
   async findFriendsWithTodayTodos(params: {
     friendIds: string[];
-    today: Date;
-    tomorrow: Date;
+    today: Temporal.PlainDate;
+    tomorrow: Temporal.PlainDate;
   }): Promise<FriendWithTodos[]> {
     this.queries.push({ method: "findFriendsWithTodayTodos", params });
     return this.friendsWithTodayTodos.filter((friend) => params.friendIds.includes(friend.id));

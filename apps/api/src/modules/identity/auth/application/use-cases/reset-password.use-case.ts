@@ -6,7 +6,7 @@ import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants"
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
@@ -59,7 +59,7 @@ export class ResetPasswordUseCase {
     }
 
     const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      user.id.value,
+      user.id,
       "CREDENTIAL",
     );
     if (account == null) {
@@ -75,16 +75,16 @@ export class ResetPasswordUseCase {
         type: "PASSWORD_RESET",
       });
 
-      await this.#dependencies.accountRepository.updatePassword(user.id.value, hashedPassword);
+      await this.#dependencies.accountRepository.updatePassword(user.id, hashedPassword);
 
       const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
-        userId: user.id.value,
+        userId: user.id,
         reason: REVOKE_REASON.PASSWORD_RESET,
         now: this.#dependencies.clock.now(),
       });
 
       await this.#dependencies.securityLogRepository.create({
-        userId: user.id.value,
+        userId: user.id,
         event: SECURITY_EVENT.PASSWORD_CHANGED,
         ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
         userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,

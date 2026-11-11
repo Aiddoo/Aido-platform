@@ -1,5 +1,5 @@
 import { ReportReasonBottomSheet } from '@src/features/social/moderation/components/report-reason-bottom-sheet';
-import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
+import { createCommentReportTarget } from '@src/features/social/moderation/domains/user-report.model';
 import { commentReportParamsSchema } from '@src/features/social/moderation/schemas/moderation-params.schema';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
@@ -24,7 +24,7 @@ export function CommentReportBottomSheet() {
 
   return (
     <ReportReasonBottomSheet
-      target={UserReportPolicy.createCommentReportTarget({ commentId, authorId: author.id })}
+      target={createCommentReportTarget({ commentId, authorId: author.id })}
       targetDisplayName={author.name ?? t('fallbackName')}
     />
   );

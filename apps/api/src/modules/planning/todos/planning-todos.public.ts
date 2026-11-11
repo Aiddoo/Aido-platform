@@ -9,6 +9,8 @@ export {
   type TodoViewRecord,
 } from "./application/ports/todo-engagement-counter.port.js";
 export { TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
+/** notes·voice·ai가 할 일을 만들 때 planning과 같은 잠금을 한 번에 잡는다. */
+export { TodoLockKeys } from "./application/todos.lock-keys.js";
 export type {
   FriendTodoReadModel,
   TodoReadModel,

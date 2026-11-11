@@ -13,10 +13,10 @@ export interface TimezoneContext {
   readonly localMinute: number;
   /** 로컬 요일 (0=일, 1=월, ...) */
   readonly dayOfWeek: number;
-  /** 로컬 오늘 자정(UTC 인스턴트) */
-  readonly today: Date;
-  /** 로컬 내일 자정(UTC 인스턴트) */
-  readonly tomorrow: Date;
+  /** 로컬 오늘 */
+  readonly today: Temporal.PlainDate;
+  /** 로컬 내일 */
+  readonly tomorrow: Temporal.PlainDate;
   /** catch-up 발송 시 특정 유저만 대상 (없으면 전체 스윕) */
   readonly userId?: string;
 }

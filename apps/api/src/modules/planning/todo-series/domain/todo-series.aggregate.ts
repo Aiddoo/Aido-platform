@@ -10,7 +10,6 @@ import {
   addDaysToKey,
   localDateKeyAt,
   resolveScheduledInstant,
-  utcMidnightOf,
 } from "../../shared/domain/todo-calendar.domain-service.js";
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
 import { RepeatRule, type RepeatRuleProps } from "./repeat-rule.vo.js";
@@ -95,10 +94,10 @@ export interface TodoOccurrenceDraft {
   readonly categoryId: number;
   readonly title: string;
   readonly visibility: TodoVisibility;
-  readonly startDate: Date;
+  readonly startDate: Temporal.PlainDate;
   readonly endDate: null;
   readonly scheduledLocalTime: string | null;
-  readonly scheduledTime: Date | null;
+  readonly scheduledTime: Temporal.Instant | null;
   readonly isAllDay: boolean;
   readonly occurrenceDate: string;
   readonly createdAt: Temporal.Instant;
@@ -287,7 +286,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
       categoryId,
       title: title.value,
       visibility,
-      startDate: utcMidnightOf(date),
+      startDate: Temporal.PlainDate.from(date),
       endDate: null,
       scheduledLocalTime,
       // DST로 오프셋이 달라지므로 회차 날짜마다 규칙 시간대로 다시 해석한다.

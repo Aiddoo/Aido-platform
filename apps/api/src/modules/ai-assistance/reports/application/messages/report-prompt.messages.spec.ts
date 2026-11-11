@@ -4,11 +4,8 @@ import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import { generateWithPrompt } from "../../../generation/application/messages/prompt-definition.messages.js";
 import type { AggregatedReportData } from "../../domain/ai-report.constants.js";
 import { reportDraftSchema } from "./report-content.wire.js";
-import {
-  ReportDraftRejectedError,
-  reportPrompt,
-  type ReportPromptInput,
-} from "./report-prompt.messages.js";
+import { type ReportPromptInput } from "./report-context.messages.js";
+import { ReportDraftRejectedError, reportPrompt } from "./report-prompt.messages.js";
 import { REPORT_SYSTEM_EN } from "./report-system-en.messages.js";
 import { REPORT_SYSTEM_KO } from "./report-system-ko.messages.js";
 

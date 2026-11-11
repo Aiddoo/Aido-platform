@@ -7,20 +7,22 @@ import {
   type PlanMemo,
   type PlanMemoWriterPort,
 } from "#api/modules/notes/memos/notes-memos.public";
-import type {
-  StagedTodoCreatorPort,
-  TodoPlanReaderPort,
-  TodoReadModel,
+import {
+  TodoCategoryId,
+  TodoCategoryLockKeys,
+} from "#api/modules/planning/categories/planning-categories.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import {
+  type StagedTodoCreatorPort,
+  TodoLockKeys,
+  type TodoPlanReaderPort,
+  type TodoReadModel,
 } from "#api/modules/planning/todos/planning-todos.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MutationLockKeys,
-  type MutationLockPort,
-} from "#api/shared/application/ports/mutation-lock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { ActionPlan, type PlannedAction } from "../../domain/action-plan.vo.js";
@@ -88,8 +90,8 @@ export class ApplyActionPlanUseCase {
       await this.#dependencies.mutationLock.acquire([
         ...(sourceMemoId == null ? [] : [MemoLockKeys.memo(MemoId.reconstitute(sourceMemoId))]),
         MemoLockKeys.sortOrder(owner),
-        MutationLockKeys.todoCategory(userId),
-        MutationLockKeys.todoSortOrder(userId),
+        TodoCategoryLockKeys.userCategories(userId),
+        TodoLockKeys.sortOrder(userId),
       ]);
       const existing = await this.#dependencies.repository.findByIdempotencyKey(
         owner,
@@ -103,7 +105,7 @@ export class ApplyActionPlanUseCase {
       }
       await this.#assertSourceMemoExists(userId, sourceMemoId);
       plan.assertCategoriesOwned(
-        await this.#dependencies.contextReader.findOwnedCategoryIds(userId),
+        await this.#dependencies.contextReader.findOwnedCategoryIds(owner),
       );
       return { kind: "applied", applied: await this.#apply(plan, command, requestHash) };
     });
@@ -126,14 +128,15 @@ export class ApplyActionPlanUseCase {
   ): Promise<AppliedActionPlan> {
     const { todoCreator, memoWriter, afterCommit, repository, clock } = this.#dependencies;
     const { userId, timezone, source, sourceMemoId, idempotencyKey } = command;
+    const owner = UserId.reconstitute(userId);
     const todos: TodoReadModel[] = [];
     for (const todo of plan.todos) {
       const staged = await todoCreator.stage({
-        userId,
+        userId: owner,
         title: todo.title,
-        categoryId: todo.categoryId,
-        startDate: parseDateOnly(todo.startDate),
-        endDate: todo.endDate == null ? null : parseDateOnly(todo.endDate),
+        categoryId: TodoCategoryId.reconstitute(todo.categoryId),
+        startDate: Temporal.PlainDate.from(todo.startDate),
+        endDate: todo.endDate == null ? null : Temporal.PlainDate.from(todo.endDate),
         scheduledTime: todo.scheduledTime,
         timezone,
         isAllDay: todo.scheduledTime == null,
@@ -147,14 +150,14 @@ export class ApplyActionPlanUseCase {
     }
     // 새 메모보다 먼저 지워 원본 메모가 개수 상한을 채우고 있어도 저장할 수 있게 한다.
     if (sourceMemoId != null) {
-      await memoWriter.delete(sourceMemoId, userId);
+      await memoWriter.delete(MemoId.reconstitute(sourceMemoId), owner);
     }
     const { memoContent } = plan;
     const memo =
-      memoContent == null ? null : await memoWriter.create({ userId, content: memoContent });
+      memoContent == null ? null : await memoWriter.create({ userId: owner, content: memoContent });
     await repository.save(
       PlanApplication.create({
-        userId: UserId.reconstitute(userId),
+        userId: owner,
         idempotencyKey,
         requestHash,
         source,
@@ -171,7 +174,10 @@ export class ApplyActionPlanUseCase {
     if (memoId == null) {
       return;
     }
-    if ((await this.#dependencies.memoWriter.findById(memoId, userId)) == null) {
+    const { memoWriter } = this.#dependencies;
+    if (
+      (await memoWriter.findById(MemoId.reconstitute(memoId), UserId.reconstitute(userId))) == null
+    ) {
       throw sourceMemoNotFound(memoId);
     }
   }
@@ -179,11 +185,13 @@ export class ApplyActionPlanUseCase {
   /** 그 뒤 사용자가 지운 할 일·메모는 돌려주지 않는다. 다시 만들지도 않는다. */
   async #readApplied(application: PlanApplication): Promise<AppliedActionPlan> {
     const { todoReader, memoWriter } = this.#dependencies;
-    const userId = application.userId.value;
     const { memoId } = application;
     const [todos, memo] = await Promise.all([
-      todoReader.findManyByIds(userId, application.todoIds),
-      memoId == null ? null : memoWriter.findById(memoId, userId),
+      todoReader.findManyByIds(
+        application.userId,
+        application.todoIds.map((todoId) => TodoId.reconstitute(todoId)),
+      ),
+      memoId == null ? null : memoWriter.findById(MemoId.reconstitute(memoId), application.userId),
     ]);
     return { todos, memo };
   }

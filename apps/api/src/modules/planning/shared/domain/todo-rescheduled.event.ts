@@ -9,9 +9,9 @@ export class TodoRescheduledEvent {
 
   readonly todoId: number;
   readonly userId: string;
-  readonly scheduledTime: Date | null;
+  readonly scheduledTime: Temporal.Instant | null;
 
-  constructor(todoId: number, userId: string, scheduledTime: Date | null) {
+  constructor(todoId: number, userId: string, scheduledTime: Temporal.Instant | null) {
     this.todoId = todoId;
     this.userId = userId;
     this.scheduledTime = scheduledTime;

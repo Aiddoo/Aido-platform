@@ -12,14 +12,14 @@ import type {
 
 export interface InactiveWindowParams {
   readonly tz: string;
-  readonly inactiveSince: Date;
-  readonly inactiveUntil: Date;
+  readonly inactiveSince: Temporal.Instant;
+  readonly inactiveUntil: Temporal.Instant;
 }
 
 export interface TodayRangeParams {
   readonly tz: string;
-  readonly today: Date;
-  readonly tomorrow: Date;
+  readonly today: Temporal.PlainDate;
+  readonly tomorrow: Temporal.PlainDate;
 }
 
 export interface SocialDigestCandidateParams extends TodayRangeParams {
@@ -33,15 +33,15 @@ export abstract class ReEngagementReaderPort {
   abstract findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]>;
   abstract findOnboardingCandidates(params: {
     tz: string;
-    createdSince: Date;
+    createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidate[]>;
   abstract countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCount[]>;
   abstract findActiveUsersInTimezone(tz: string): Promise<UserIdRow[]>;
   /** candidate들의 비활성 맞팔 친구 관계 */
   abstract findNudgeSuggestFollows(params: {
     candidateIds: string[];
-    activeSince: Date;
-    activeUntil: Date;
+    activeSince: Temporal.Instant;
+    activeUntil: Temporal.Instant;
   }): Promise<NudgeSuggestFollow[]>;
   /** 오늘 미완료 할 일이 있는 사용자 */
   abstract findSocialDigestCandidates(
@@ -50,8 +50,8 @@ export abstract class ReEngagementReaderPort {
   abstract findAcceptedFollows(candidateIds: string[]): Promise<FollowPair[]>;
   abstract findFriendsWithTodayTodos(params: {
     friendIds: string[];
-    today: Date;
-    tomorrow: Date;
+    today: Temporal.PlainDate;
+    tomorrow: Temporal.PlainDate;
   }): Promise<FriendWithTodos[]>;
   /** 연속 기록 3일 이상이고 오늘 미완료 할 일이 있는 사용자 */
   abstract findStreakAtRiskUsers(params: TodayRangeParams): Promise<UserWithTodosAndStreak[]>;

@@ -3,13 +3,14 @@ import type { AiProviderId } from "@aido/api/vocabulary";
 import type { AiSettings } from "#api/platform/config/schemas/ai.schema";
 import type { OutboundPolicySpec } from "#api/platform/resilience/outbound-policy";
 
-import { AiAlertKey } from "../../application/ai-generation.alerts.js";
+import { AiAlerts } from "../../application/ai-generation.alerts.js";
 import {
   type AiCircuitBreakerKind,
   type AiFailureKind,
   resolveAiFailureRule,
 } from "../../application/ai-generation.errors.js";
-import type { AiTaskClass, AiTaskId } from "../../application/ports/ai-generator.port.js";
+import type { AiTaskId } from "../../application/ports/ai-generator.port.js";
+import type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 
 /** 한 업체 호출의 실패. 회로가 종류로 열지 말지를 정한다. */
 export class AiAttemptFailure extends Error {
@@ -31,12 +32,6 @@ export class AiAttemptFailure extends Error {
     this.name = AiAttemptFailure.name;
   }
 }
-
-const PROVIDER_NAMES: Readonly<Record<AiProviderId, string>> = {
-  anthropic: "Claude",
-  google: "Gemini",
-  openai: "OpenAI",
-};
 
 const AI_AUTH_CIRCUIT_THRESHOLD = 3;
 
@@ -61,10 +56,7 @@ export function createAiProviderPolicy(
         consecutiveFailures: 1,
         halfOpenAfterMs: breaker.billingCooldownMs,
         handles: isFailureForBreaker("billing"),
-        alert: {
-          key: AiAlertKey.PROVIDER_BILLING_CIRCUIT_OPENED,
-          message: `${PROVIDER_NAMES[provider]} 결제 실패, 다음 순서 AI 업체로 전환`,
-        },
+        alert: AiAlerts.PROVIDER_BILLING_CIRCUIT_OPENED,
       },
       {
         // 일시적인 401·403 한 번으로 Gemini만 쓰는 사용자의 AI가 15분 멈추지 않게 연속 실패에만 연다.
@@ -72,10 +64,7 @@ export function createAiProviderPolicy(
         consecutiveFailures: AI_AUTH_CIRCUIT_THRESHOLD,
         halfOpenAfterMs: breaker.billingCooldownMs,
         handles: isFailureForBreaker("auth"),
-        alert: {
-          key: AiAlertKey.PROVIDER_BILLING_CIRCUIT_OPENED,
-          message: `${PROVIDER_NAMES[provider]} 인증 실패가 이어져 다음 순서 AI 업체로 전환`,
-        },
+        alert: AiAlerts.PROVIDER_AUTH_CIRCUIT_OPENED,
       },
       {
         name: "health",
