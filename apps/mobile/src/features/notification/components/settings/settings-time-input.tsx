@@ -39,7 +39,10 @@ function TimePicker({ style, ...props }: TimePickerProps) {
   );
 }
 
-interface TimePickerSheetContentProps extends Omit<TimePickerProps, 'value' | 'onChange'> {
+interface TimePickerSheetContentProps extends Omit<
+  TimePickerProps,
+  'value' | 'onChange' | 'onValueChange'
+> {
   title: string;
   initialValue: Date;
   onCancel: () => void;
@@ -62,11 +65,7 @@ function TimePickerSheetContent({
         <TimePicker
           {...pickerProps}
           value={draft}
-          onChange={(_event, date) => {
-            if (date != null) {
-              setDraft(date);
-            }
-          }}
+          onValueChange={(_event, date) => setDraft(date)}
         />
       </Box>
     </VStack>
@@ -75,7 +74,7 @@ function TimePickerSheetContent({
 
 interface AndroidTimePickerProps extends Omit<
   AndroidNativeProps,
-  'mode' | 'display' | 'minuteInterval' | 'onChange'
+  'mode' | 'display' | 'minuteInterval' | 'onChange' | 'onValueChange'
 > {
   onConfirm: (date: Date) => void;
   onDismiss: () => void;
@@ -88,12 +87,11 @@ function AndroidTimePicker({ onConfirm, onDismiss, ...props }: AndroidTimePicker
       mode="time"
       display="spinner"
       minuteInterval={1}
-      onChange={(event, date) => {
+      onValueChange={(_event, date) => {
         onDismiss();
-        if (event.type === 'set' && date) {
-          onConfirm(date);
-        }
+        onConfirm(date);
       }}
+      onDismiss={onDismiss}
     />
   );
 }

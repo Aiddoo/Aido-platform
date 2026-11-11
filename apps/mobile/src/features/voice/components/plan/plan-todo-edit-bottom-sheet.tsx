@@ -7,7 +7,10 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import { TodoDatePickerContent } from '@src/features/planning/todo/components/todo-date-picker-content';
 import { TodoRepeatPickerContent } from '@src/features/planning/todo/components/todo-repeat-picker-content';
 import { TodoTimePickerContent } from '@src/features/planning/todo/components/todo-time-picker-content';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import {
+  isPrivateVisibility,
+  withVisibilityToggled,
+} from '@src/features/planning/todo/domains/todo.model';
 import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import {
   formatDateKeyRange,
@@ -294,7 +297,7 @@ function RepeatChip({ form }: PlanTodoChipProps) {
 function VisibilityChip({ form }: PlanTodoChipProps) {
   const { t } = useTranslation('todo');
   const visibility = useWatch({ control: form.control, name: 'todo.visibility' });
-  const isPrivate = TodoPolicy.isPrivate({ visibility });
+  const isPrivate = isPrivateVisibility(visibility);
 
   return (
     <ActionButton
@@ -306,7 +309,7 @@ function VisibilityChip({ form }: PlanTodoChipProps) {
         )
       }
       label={isPrivate ? t('chip.private') : t('chip.public')}
-      onPress={() => updateTodo(form, TodoPolicy.withVisibilityToggled)}
+      onPress={() => updateTodo(form, withVisibilityToggled)}
     />
   );
 }

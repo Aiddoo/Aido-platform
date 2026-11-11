@@ -51,4 +51,20 @@ describe("keyset 튜플 비교", () => {
     // Then
     expect(build).toThrow("same length");
   });
+
+  it("기준 행 컬럼과 식은 매개변수 없이 그대로 비교한다", () => {
+    // Given
+    const anchor = pgTable("KeysetAnchor", { id: serial().primaryKey(), sortOrder: integer() });
+
+    // When
+    const query = renderSql(
+      tupleLessThan([sample.sortOrder, sample.id], [anchor.sortOrder, anchor.id]),
+    );
+
+    // Then
+    expect(query).toEqual({
+      sql: '("KeysetSample"."sortOrder", "KeysetSample"."id") < ("KeysetAnchor"."sortOrder", "KeysetAnchor"."id")',
+      params: [],
+    });
+  });
 });

@@ -1,10 +1,13 @@
+import type { NotificationInboxItem } from '@aido/api';
 import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
+import { ok } from '@src/core/errors/result';
 import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
-import { screen } from '@testing-library/react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { fireEvent, screen } from '@testing-library/react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import NotificationsScreen from '../../../../app/(app)/notifications/index';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import { createNotificationInboxResponseDto } from './notification.fixtures';
 
 async function renderScreen(category: string) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ category });
@@ -38,4 +41,65 @@ describe('알림 화면의 안 읽은 알림 줄', () => {
       expect(screen.queryByText('읽지 않은 알림')).toBeNull();
     },
   );
+});
+
+describe('알림함 항목을 누르면', () => {
+  const INBOX_ITEM: NotificationInboxItem = {
+    id: 1,
+    userId: 'user-1',
+    type: 'WEATHER_MORNING',
+    title: '오늘은 비 소식이 있어요',
+    body: '우산을 챙겨요',
+    isRead: true,
+    metadata: null,
+    action: { type: 'DEEP_LINK' },
+    createdAt: '2026-03-08T10:00:00.000Z',
+    readAt: '2026-03-08T10:05:00.000Z',
+  };
+
+  async function renderInbox(item: NotificationInboxItem) {
+    jest.mocked(useLocalSearchParams).mockReturnValue({ category: NOTIFICATION_CATEGORY.ALL });
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockImplementation(async (path) =>
+      path === 'v1/notifications/inbox'
+        ? ok(createNotificationInboxResponseDto([item]))
+        : new Promise(() => undefined),
+    );
+    await renderUi(<NotificationsScreen />, {
+      withLocalDate: true,
+      withOverlay: true,
+      di: { httpClient },
+    });
+  }
+
+  it('서버가 고른 navigation이 있으면 구 필드가 가리키는 날씨 화면 대신 그곳(옮기기 시트)으로 간다', async () => {
+    // Given
+    await renderInbox({
+      ...INBOX_ITEM,
+      navigation: { kind: 'WEATHER_RESCHEDULE', todoIds: [3, 4], reason: 'rain' },
+    });
+
+    // When
+    await fireEvent.press(await screen.findByTestId('notification-item-WEATHER_MORNING'));
+
+    // Then
+    expect(router.navigate).toHaveBeenCalledWith({
+      pathname: '/weather/reschedule',
+      params: { todoIds: '3,4', reason: 'rain' },
+    });
+  });
+
+  it('navigation이 없는 옛 항목은 구 필드로 고른 곳으로 간다', async () => {
+    // Given
+    await renderInbox(INBOX_ITEM);
+
+    // When
+    await fireEvent.press(await screen.findByTestId('notification-item-WEATHER_MORNING'));
+
+    // Then
+    expect(router.navigate).toHaveBeenCalledWith({
+      pathname: '/weather',
+      params: { entry: 'notification' },
+    });
+  });
 });

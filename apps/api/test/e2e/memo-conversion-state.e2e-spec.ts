@@ -112,7 +112,7 @@ describe("메모 변환 상태 HTTP 계약", () => {
       .send({
         todos: [
           { title: "성공한 첫 항목", categoryId, startDate: "2027-01-09" },
-          { title: "잘못된 카테고리", categoryId: 999999, startDate: "2027-01-10" },
+          { title: "잘못된 카테고리", categoryId: 999_999, startDate: "2027-01-10" },
           { title: "실행하지 않을 항목", categoryId, startDate: "2027-01-11" },
         ],
       })

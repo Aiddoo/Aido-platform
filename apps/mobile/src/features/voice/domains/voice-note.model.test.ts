@@ -9,8 +9,13 @@ import {
   createVoiceNoteKeyPoint,
   createVoiceNoteSentence,
 } from '../__tests__/voice-note.fixtures';
+import { createLocalFileEntry } from '../__tests__/voice.fixtures';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
-import { VoiceNotePolicy } from './voice-note.model';
+import {
+  findRecordingIndexAt,
+  VoiceNotePolicy,
+  VoiceRecordingFilePolicy,
+} from './voice-note.model';
 import { voicePlanSchema } from './voice-plan.model';
 
 const createPlanDraftWithActions = (actions: unknown[]) =>
@@ -229,7 +234,10 @@ describe('isRecordingFileExpired', () => {
 
   it('수정 시각을 모르는 파일은 기한이 지난 것으로 본다', () => {
     // When
-    const result = VoiceNotePolicy.isRecordingFileExpired({ modifiedAt: null }, now);
+    const result = VoiceRecordingFilePolicy.isRecordingFileExpired(
+      createLocalFileEntry({ modifiedAt: null }),
+      now,
+    );
 
     // Then
     expect(result).toBe(true);
@@ -240,7 +248,10 @@ describe('isRecordingFileExpired', () => {
     const modifiedAt = new Date('2026-11-05T00:00:00.001Z');
 
     // When
-    const result = VoiceNotePolicy.isRecordingFileExpired({ modifiedAt }, now);
+    const result = VoiceRecordingFilePolicy.isRecordingFileExpired(
+      createLocalFileEntry({ modifiedAt }),
+      now,
+    );
 
     // Then
     expect(result).toBe(false);
@@ -251,7 +262,10 @@ describe('isRecordingFileExpired', () => {
     const modifiedAt = new Date('2026-11-05T00:00:00.000Z');
 
     // When
-    const result = VoiceNotePolicy.isRecordingFileExpired({ modifiedAt }, now);
+    const result = VoiceRecordingFilePolicy.isRecordingFileExpired(
+      createLocalFileEntry({ modifiedAt }),
+      now,
+    );
 
     // Then
     expect(result).toBe(true);
@@ -425,7 +439,7 @@ describe('findRecordingIndexAt', () => {
     [120_000, 2],
   ])('%dms는 %d번째 조각이다', (positionMs, index) => {
     // When
-    const found = VoiceNotePolicy.findRecordingIndexAt(recordings, positionMs);
+    const found = findRecordingIndexAt(recordings, positionMs);
 
     // Then
     expect(found).toBe(index);

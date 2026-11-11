@@ -3,10 +3,9 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
-import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
-import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
+import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *
@@ -19,13 +18,14 @@ import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public
  * - PATCH /ai/suggestions/:id: 제안 수락/거절
  * - 인증 에러 (401)
  */
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   recurringSuggestion,
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -39,10 +39,10 @@ describe("AI 제안 E2E", () => {
 
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -60,7 +60,7 @@ describe("AI 제안 E2E", () => {
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
       .where(eq(userTable.id, user.userId));
-    const cacheService = ctx.module.get(CacheService);
+    const cacheService = ctx.module.get(CacheStorePort);
     await cacheService.del(EntitlementCacheKey.subscription(user.userId));
     return user;
   }
@@ -87,7 +87,8 @@ describe("AI 제안 E2E", () => {
         matchedTodos: [],
         suggestedCategoryId: null,
         status: overrides?.status ?? "PENDING",
-        expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        expiresAt: Temporal.Now.instant().add({ hours: 14 * 24 }),
+        updatedAt: Temporal.Now.instant(),
       })
       .returning({ id: recurringSuggestion.id });
     if (suggestion === undefined) {
@@ -163,8 +164,9 @@ describe("AI 제안 E2E", () => {
               title: "시드",
               timezone: "UTC",
               repeatFrequency: "DAILY" as const,
-              startDate: new Date(),
-              nextOccurrenceDate: new Date(),
+              startDate: todayUtc(),
+              nextOccurrenceDate: todayUtc(),
+              updatedAt: nowInstant(),
             };
           }),
         );
@@ -314,7 +316,7 @@ describe("AI 제안 E2E", () => {
     const user = await createPremiumUser("ai-suggestion-failure@example.com", "Test1234!");
     const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
     const id = await seedPendingSuggestion(user.userId);
-    const creator = ctx.module.get<StagedTodoCreatorPort>(STAGED_TODO_CREATOR);
+    const creator = ctx.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
     const before = await ctx.testDatabase
       .getClient()
       .query.todo.findMany({ where: { userId: user.userId } });

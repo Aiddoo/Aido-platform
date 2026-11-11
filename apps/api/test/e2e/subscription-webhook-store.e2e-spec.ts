@@ -3,8 +3,13 @@ import { Logger } from "@nestjs/common";
 import request from "supertest";
 import { z } from "zod";
 
+import {
+  type BillingSubscriptionsConfig,
+  billingSubscriptionsConfig,
+} from "#api/modules/billing/subscriptions/billing-subscriptions.config";
+import type { AppEnvironment } from "#api/platform/config/schemas/app.schema";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
-import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
@@ -15,20 +20,38 @@ const at = new Date("2027-01-04T12:00:00.000Z");
 const expiresAt = new Date("2027-02-04T12:00:00.000Z");
 const loggedEventSchema = z.object({ event: z.string() });
 
+function billingIn(environment: AppEnvironment): BillingSubscriptionsConfig {
+  return billingSubscriptionsConfig.parse({
+    NODE_ENV: "production",
+    APP_ENV: environment,
+    REVENUECAT_WEBHOOK_SECRET: webhookSecret,
+  });
+}
+
 describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)", () => {
   let context: E2eTestContext;
   const alert = new RecordingOperationalAlert();
+  const billing = billingIn("production");
 
   beforeAll(async () => {
     context = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(OPERATIONAL_ALERT).useValue(alert),
+      customizeBuilder: (builder) =>
+        builder
+          .overrideProvider(OperationalAlertPort)
+          .useValue(alert)
+          .overrideProvider(billingSubscriptionsConfig.KEY)
+          .useValue(billing),
       additionalResetters: [() => alert.alerts.splice(0)],
     });
   });
 
+  // 배포 환경은 시작할 때 한 번 읽으므로 앱이 받은 billing 설정 값을 테스트마다 바꾼다
+  function deployTo(environment: AppEnvironment): void {
+    Object.assign(billing, billingIn(environment));
+  }
+
   beforeEach(async () => {
-    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
-    vi.stubEnv("APP_ENV", "production");
+    deployTo("production");
     vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -204,7 +227,7 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
 
   it("운영이 아닌 서버는 Test Store 구매를 지금처럼 반영한다", async () => {
     // Given
-    vi.stubEnv("APP_ENV", "development");
+    deployTo("development");
     const user = await context.helpers.createVerifiedUser("local@example.com", "Test1234!");
 
     // When

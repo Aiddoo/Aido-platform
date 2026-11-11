@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { type AppEnvironment, type NodeEnvironment, resolveAppEnvironment } from "./app.schema.js";
+
 /**
  * 외부 서비스 연동 설정 스키마
  * 향후 확장용 - 현재는 선택적
@@ -33,8 +35,6 @@ export const externalSchema = z.object({
   // Sentry 트레이스 샘플링 비율 (0.0 ~ 1.0, 기본값: production=0.2, 나머지=1.0)
   SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
 
-  // TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (SENTRY_RELEASE: z.string().optional())
-
   // 공공데이터포털 서비스키 (기상청 단기예보, 생활기상지수, 천문연구원 출몰시각, 에어코리아 공용)
   KMA_API_KEY: z.string().optional(),
 
@@ -66,9 +66,11 @@ const WEATHERKIT_KEYS = [
 export function validateWeatherKitConfig({
   value: config,
   issues,
-}: z.core.ParsePayload<ExternalConfig & { readonly NODE_ENV: string }>): void {
+}: z.core.ParsePayload<
+  ExternalConfig & { readonly NODE_ENV: NodeEnvironment; readonly APP_ENV?: AppEnvironment }
+>): void {
   const missing = WEATHERKIT_KEYS.filter((key) => (config[key] ?? "") === "");
-  const isProduction = config.NODE_ENV === "production";
+  const isProduction = resolveAppEnvironment(config) === "production";
   if (missing.length === 0 || (missing.length === WEATHERKIT_KEYS.length && !isProduction)) {
     return;
   }

@@ -139,6 +139,7 @@ export function withScheduledTime(todo: PlannedTodo, scheduledTime: string | nul
   return { ...todo, scheduledTime };
 }
 
+// 고르기 시트의 폼 카드도 묶어 Policy 밖 함수로 두고 종류와 카테고리만 받는다
 type PlanGroupableAction = Pick<PlannedTodo, 'type' | 'categoryId'> | Pick<PlannedMemo, 'type'>;
 
 /** 한 카테고리의 카드들. 메모는 카테고리가 없어 `categoryId`가 null인 묶음으로 맨 뒤에 모인다 */
@@ -217,6 +218,4 @@ export const VoicePlanPolicy = {
   getSelectedTodoCount,
   getHeadline,
   canApplyPlan,
-  getPlanActionGroups,
-  sortPlanActionsByGroup,
 } as const;

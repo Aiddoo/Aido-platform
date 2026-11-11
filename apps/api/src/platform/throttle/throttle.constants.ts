@@ -3,6 +3,7 @@
  *
  * `@nestjs/throttler`의 `ThrottlerStorage` 인터페이스가 포트 역할을 한다.
  * Redis 사용 시 `RedisThrottlerStorage`, 아니면 undefined(기본 in-memory).
+ * 라이브러리 인터페이스라 클래스 토큰이 없어 Symbol 토큰으로 둔다.
  */
 export const THROTTLER_STORAGE = Symbol("THROTTLER_STORAGE");
 

@@ -1,11 +1,12 @@
 import { z } from "zod";
 
+import { entityIdSchemaWithMessage } from "../../../common/entity-id.js";
 import { CHEER_LIMITS } from "../../../vocabulary/cheer.constants.js";
 
 export const createCheerSchema = z.object({
-  receiverId: z
-    .cuid("유효하지 않은 사용자 ID입니다")
-    .describe("받을 사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)"),
+  receiverId: entityIdSchemaWithMessage("유효하지 않은 사용자 ID입니다").describe(
+    "받을 사용자 ID (예: clz7x5p8k0001qz0z8z8z8z8z)",
+  ),
   message: z
     .string()
     .max(

@@ -217,7 +217,7 @@ describe('푸시 탭 진입', () => {
     // Given
     const user = userEvent.setup();
     const read = createPendingResponse(READ_OK);
-    const { route, gateway, focusLog, hideLog } = await setup({
+    const { route, gateway, focusLog, hideLog, analytics } = await setup({
       status: 'loading',
       lastResponse: TODO_RESPONSE,
       markRead: () => read.response,
@@ -240,6 +240,36 @@ describe('푸시 탭 진입', () => {
     await waitFor(() => expect(hideLog).toEqual(['/todo/42']));
     expect(focusLog).toEqual(['todo']);
     await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalled());
+    expect(analytics.trackEvent).toHaveBeenCalledWith(
+      'push_notification_opened',
+      expect.objectContaining({ app_state: 'cold' }),
+    );
+  });
+
+  it('뒤에 있던 앱의 탭: 한 번만 이동하고 열림을 background로 한 번 남긴다', async () => {
+    // Given
+    const { route, gateway, appLifecycle, analytics } = await setup({ status: 'authenticated' });
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    await act(async () => appLifecycle.emit('background'));
+
+    // When
+    await act(async () => gateway.emitResponse(TODO_RESPONSE));
+    await act(async () => appLifecycle.emit('active'));
+    await act(async () => gateway.emitResponse(TODO_RESPONSE));
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith(
+        'push_notification_opened',
+        expect.objectContaining({ app_state: 'background' }),
+      ),
+    );
+    expect(
+      jest
+        .mocked(analytics.trackEvent)
+        .mock.calls.filter(([eventName]) => eventName === 'push_notification_opened'),
+    ).toHaveLength(1);
   });
 
   it('앱 종료 상태 탭: 다른 계정 알림은 버리고 피드로 간다', async () => {

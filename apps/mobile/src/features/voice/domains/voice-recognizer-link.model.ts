@@ -51,10 +51,7 @@ export function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWa
 
 // 파형은 움직이는데 글자가 오지 않으면 구간을 다시 연다. 앱이 stop을 부른 구간은 곧 end가 와서 열지 않는다
 export function shouldRestartStalledRecognizer(
-  {
-    isStopRequested,
-    stallWatch: watch,
-  }: Pick<VoiceRecognizerLink, 'isStopRequested' | 'stallWatch'>,
+  { isStopRequested, stallWatch: watch }: VoiceRecognizerLink,
   state: Pick<VoiceCaptureState, 'status'>,
   now: number,
 ): boolean {
@@ -114,16 +111,13 @@ function getQuickEndCount(
   return now - lastStartedAt < VOICE_RESTART_LOOP.windowMs ? quickEndCount + 1 : 0;
 }
 
-export function isRestartLooping(
-  link: Pick<VoiceRecognizerLink, 'lastStartedAt' | 'quickEndCount'>,
-  now: number,
-): boolean {
+export function isRestartLooping(link: VoiceRecognizerLink, now: number): boolean {
   return getQuickEndCount(link, now) >= VOICE_RESTART_LOOP.limit;
 }
 
 // 음량이 말소리만큼 크고, 글자가 아직 없거나 방금 왔으면 말하는 중이다. 글자가 끊긴 큰 소리는 주변 소리다
 export function isSpeaking(
-  { lastTextAt }: Pick<VoiceRecognizerLink, 'lastTextAt'>,
+  { lastTextAt }: VoiceRecognizerLink,
   level: number,
   now: number,
 ): boolean {

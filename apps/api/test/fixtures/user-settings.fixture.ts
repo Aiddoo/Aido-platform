@@ -1,55 +1,78 @@
-import { mock } from "vitest-mock-extended";
-
-import { UserPreferenceReader } from "#api/modules/identity/application/services/settings/user-preference-reader.service";
-import type { UserConsentRecord } from "#api/modules/identity/domain/records/settings/user-consent.record";
-import type { UserPreferenceRecord } from "#api/modules/identity/domain/records/settings/user-preference.record";
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
+import type { UserConsentRecordWithId } from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
+import type { UserPreferenceRecordWithId } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
+import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { InMemoryUserConsentRepository } from "#test/doubles/identity/in-memory-user-consent.repository";
+import { InMemoryUserPreferenceRepository } from "#test/doubles/identity/in-memory-user-preference.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
-  StubUserPreferenceRepository,
-  StubUserConsentRepository,
-  StubUserSettingsCache,
-  StubReminderTimezoneCache,
   StubPreferenceEntitlement,
   StubReminderScheduleEnqueuer,
+  StubReminderTimezoneCache,
   StubStreakMilestoneNotifier,
   StubTodoCompletionStatsReader,
   StubTodoTimezoneRebaseEnqueuer,
+  StubUserSettingsCache,
 } from "#test/mocks/ports/user-settings.stub";
 
-export const SETTINGS_TIME = new Date("2026-01-16T09:00:00.000Z");
+export const SETTINGS_TIME = Temporal.Instant.from("2026-01-16T09:00:00.000Z");
 
 export function createUserSettingsFixture(
   input: {
     userId?: string;
-    preference?: Partial<UserPreferenceRecord> | null;
-    consent?: Partial<UserConsentRecord> | null;
+    preference?: Partial<UserPreferenceRecordWithId> | null;
+    consent?: Partial<UserConsentRecordWithId> | null;
     premium?: boolean;
   } = {},
 ) {
   const userId = input.userId ?? "settings-user";
-  const preference = { ...UserPreferenceBuilder.create(userId).build(), ...input.preference };
-  const consent = { ...UserConsentBuilder.create(userId).build(), ...input.consent };
-  const preferenceRepository = new StubUserPreferenceRepository(
-    input.preference === null ? [] : [[userId, preference]],
+  const preference: UserPreferenceRecordWithId = {
+    userId,
+    pushEnabled: true,
+    nightPushEnabled: false,
+    timezone: "UTC",
+    locale: "ko",
+    morningReminderHour: 8,
+    morningReminderMinute: 0,
+    eveningReminderHour: 18,
+    eveningReminderMinute: 0,
+    timeFormat: "TWELVE_HOUR",
+    weatherMorningEnabled: false,
+    weatherMorningHour: 7,
+    weatherMorningMinute: 0,
+    weatherEveningEnabled: false,
+    weatherEveningHour: 18,
+    weatherEveningMinute: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastCompletedDate: null,
+    ...input.preference,
+  };
+  const consent: UserConsentRecordWithId = {
+    userId,
+    termsAgreedAt: SETTINGS_TIME,
+    privacyAgreedAt: SETTINGS_TIME,
+    agreedTermsVersion: "1.0.0",
+    marketingAgreedAt: null,
+    marketingPushAgreedAt: null,
+    aiDataSharingAgreedAt: null,
+    aiDataSharingVersion: null,
+    marketingReconfirmedAt: null,
+    ...input.consent,
+  };
+  const preferenceRepository = new InMemoryUserPreferenceRepository(
+    input.preference === null ? [] : [preference],
   );
-  const consentRepository = new StubUserConsentRepository(
-    input.consent === null ? [] : [[userId, consent]],
-  );
+  const consentRepository = new InMemoryUserConsentRepository({
+    records: input.consent === null ? [] : [consent],
+  });
   const cache = new StubUserSettingsCache();
-  const reminderTimezoneCache = new StubReminderTimezoneCache();
-  const preferenceReader = new UserPreferenceReader({ preferenceRepository, cache });
+  const preferenceReader = new ReadUserPreferencesUseCase({ preferenceRepository, cache });
   const entitlement = new StubPreferenceEntitlement();
   if (input.premium) {
     entitlement.premiumUserIds.add(userId);
   }
-  const reminderEnqueuer = new StubReminderScheduleEnqueuer();
-  const milestoneNotifier = new StubStreakMilestoneNotifier();
-  const statsReader = new StubTodoCompletionStatsReader();
-  const logger = mock<ApplicationLoggerPort>();
-  const todoTimezoneRebase = new StubTodoTimezoneRebaseEnqueuer();
-  const unitOfWork = createUnitOfWorkMock();
   return {
     userId,
     preference,
@@ -58,13 +81,14 @@ export function createUserSettingsFixture(
     preferenceRepository,
     consentRepository,
     cache,
-    reminderTimezoneCache,
+    reminderTimezoneCache: new StubReminderTimezoneCache(),
     entitlement,
-    reminderEnqueuer,
-    milestoneNotifier,
-    statsReader,
-    logger,
-    todoTimezoneRebase,
-    unitOfWork,
+    reminderEnqueuer: new StubReminderScheduleEnqueuer(),
+    milestoneNotifier: new StubStreakMilestoneNotifier(),
+    statsReader: new StubTodoCompletionStatsReader(),
+    logger: new SilentLogger(),
+    todoTimezoneRebase: new StubTodoTimezoneRebaseEnqueuer(),
+    unitOfWork: new ImmediateUnitOfWork(),
+    clock: new FixedClock(SETTINGS_TIME),
   };
 }

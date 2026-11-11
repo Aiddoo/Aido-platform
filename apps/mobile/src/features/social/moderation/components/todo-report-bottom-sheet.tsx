@@ -3,7 +3,7 @@ import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queri
 import { useTranslation } from '@src/shared/i18n';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
-import { UserReportPolicy } from '../domains/user-report.model';
+import { createTodoReportTarget } from '../domains/user-report.model';
 import { ReportReasonBottomSheet } from './report-reason-bottom-sheet';
 
 /** 할 일 상세 캐시에서 주인을 읽어 신고 대상으로 넘긴다. 상세 화면에서 열어 보통 바로 그린다 */
@@ -14,7 +14,7 @@ export function TodoReportBottomSheet() {
 
   return (
     <ReportReasonBottomSheet
-      target={UserReportPolicy.createTodoReportTarget({ todoId, ownerId: detail.owner.id })}
+      target={createTodoReportTarget({ todoId, ownerId: detail.owner.id })}
       targetDisplayName={detail.owner.name ?? t('fallbackName')}
     />
   );

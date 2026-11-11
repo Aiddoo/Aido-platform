@@ -3,13 +3,9 @@ import { Global, Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  type AfterCommitTaskRegistryPort,
-  UNIT_OF_WORK,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { databaseConfig } from "#api/platform/config/database.config";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 import { DatabaseModule } from "./database.module.js";
@@ -20,17 +16,15 @@ const transactionHost = {
 };
 
 // pg Pool은 첫 쿼리 전까지 연결하지 않아 조립만 볼 때 실제 DB가 필요 없다
-const config = {
-  database: { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 },
-};
+const database = { url: "postgresql://unused:unused@localhost:5432/unused", poolMax: 1 };
 
 @Global()
 @Module({
   providers: [
     { provide: TransactionHost, useValue: transactionHost },
-    { provide: TypedConfigService, useValue: config },
+    { provide: databaseConfig.KEY, useValue: database },
   ],
-  exports: [TransactionHost, TypedConfigService],
+  exports: [TransactionHost, databaseConfig.KEY],
 })
 class TestInfrastructureModule {}
 
@@ -41,8 +35,8 @@ describe("DatabaseModule", () => {
     }).compile();
 
     const concrete = module.get(ClsUnitOfWork);
-    const unitOfWork = module.get<UnitOfWorkPort>(UNIT_OF_WORK);
-    const registry = module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
+    const unitOfWork = module.get(UnitOfWorkPort);
+    const registry = module.get(AfterCommitTaskRegistryPort);
 
     expect(unitOfWork).toBe(concrete);
     expect(registry).toBe(concrete);

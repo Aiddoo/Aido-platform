@@ -1,0 +1,102 @@
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px;">
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">아이두</h1>
+              <p style="margin: 8px 0 0; font-size: 13px; color: #666666;">사용자 신고 접수 알림</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 40px;">
+              <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1a1a1a; text-align: center;">
+                새로운 신고가 접수되었습니다
+              </h2>
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>신고 ID</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    {{ reportId }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>사유</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    {{ reasonLabel }} ({{ reason }})
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>대상 종류</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    {{ targetTypeLabel }} ({{ targetType }})
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>콘텐츠 ID</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    {{#if hasTargetId}}{{ targetId }}{{else}}-{{/if}}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>신고된 사용자</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    {{ targetUserTag }} · {{ targetUserId }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>신고한 사용자</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    {{ reporterTag }} · {{ reporterId }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>접수 시각</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    {{ submittedAt }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px; font-size: 14px; color: #666666; border-bottom: 1px solid #eee; width: 140px;">
+                    <strong>처리 API</strong>
+                  </td>
+                  <td style="padding: 12px; font-size: 14px; color: #1a1a1a; border-bottom: 1px solid #eee; word-break: break-all;">
+                    {{ resolutionEndpoint }}
+                  </td>
+                </tr>
+              </table>
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+                <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #666666;">신고 내용</p>
+                <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #1a1a1a; white-space: pre-wrap;">{{#if hasDetail}}{{ detail }}{{else}}(상세 내용 없음){{/if}}</p>
+              </div>
+              <div style="background-color: #fff7e6; border-radius: 8px; padding: 16px 20px; border: 1px solid #ffe0a3;">
+                <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #8a5a00;">처리 체크리스트</p>
+                <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #8a5a00;">
+                  1) 콘텐츠 ID로 원문 확인 2) 약관 위반이면 콘텐츠 삭제·계정 제한 3) 처리 API로 조치 내용을 남겨 RESOLVED로 변경
+                </p>
+              </div>{{#if hasResolutionDocsUrl}}
+              <p style="margin: 24px 0 0; text-align: center;">
+                <a href="{{ resolutionDocsUrl }}" style="display: inline-block; padding: 12px 20px; font-size: 14px; font-weight: 600; color: #ffffff; background-color: #1a1a1a; border-radius: 8px; text-decoration: none;">관리자 문서에서 처리하기</a>
+              </p>{{/if}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 40px 40px;">
+              <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
+              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
+                이 이메일은 아이두 앱에서 자동으로 발송되었습니다.
+              </p>
+            </td>
+          </tr>
+        </table>

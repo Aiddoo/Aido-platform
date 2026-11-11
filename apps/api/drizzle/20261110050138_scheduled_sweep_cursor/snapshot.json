@@ -1,0 +1,86 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "82bb2533-0b2b-4ac6-98fd-aaa4f6c6faa2",
+  "prevIds": [
+    "d64855ee-5a7d-4ede-a1c5-63239b00bb77"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "ScheduledSweepCursor"
+      ],
+      "writes": [
+        "s|tbl|public.ScheduledSweepCursor",
+        "n|tbl|public.ScheduledSweepCursor",
+        "e|tbl|public.ScheduledSweepCursor",
+        "n|rel|public.ScheduledSweepCursor",
+        "n|type|public.ScheduledSweepCursor",
+        "n|rel|public.ScheduledSweepCursor_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "ScheduledSweepCursor",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ScheduledSweepCursor",
+        "name": "key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ScheduledSweepCursor",
+        "name": "lastCompletedAt",
+        "type": "timestamp(3) with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ScheduledSweepCursor",
+        "name": "ScheduledSweepCursor_pkey",
+        "columns": [
+          "key"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

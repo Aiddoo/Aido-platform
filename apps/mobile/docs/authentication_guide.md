@@ -1,6 +1,6 @@
 # 인증 가이드: 세션 수명주기와 불변식
 
-> **Owner**: Aido Mobile Team · **Last Updated**: 2026-11-07
+> **Owner**: Aido Mobile Team · **Last Updated**: 2026-11-11
 
 OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)를 본다.
 
@@ -50,7 +50,7 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 ## 토큰 갱신 (`shared/infra/http/token-refresher.ts`, `token-refresh-hook.ts`)
 
-- **단일 인스턴스**: `TokenRefresher`는 `di-provider.tsx`에서 1개만 만들어 auth-client의 401 훅에 넘긴다. 인스턴스가 갈라지면 single-flight가 분리되어 동시 회전으로 토큰 패밀리를 소모한다.
+- **단일 인스턴스**: `TokenRefresher`는 `create-device-ports.ts`가 1개만 만들어 auth-client의 401 훅에 넘기고, `composition-root.ts`가 프로세스에 한 번만 부른다. 인스턴스가 갈라지면 single-flight가 분리되어 동시 회전으로 토큰 패밀리를 소모한다. 루트 "다시 시도"는 화면 수명 컨테이너만 다시 만들어 갱신기·`TokenStore`·`SessionEpoch`가 그대로다.
 - resolve는 확정 판정, reject는 일시 장애다.
 
 | 결과                                 | 사유                                            | 처리                                      |
@@ -107,7 +107,7 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 ## 오프라인 로그아웃
 
-토큰을 지우면 인증 요청을 보낼 수 없어, 그대로 두면 서버 세션과 푸시 기기가 남는다. 서버에 닿지 못한 로그아웃(오프라인, 시간 초과, 연결 실패, 5xx)은 refresh 토큰을 `pendingRevocation`에 기록하고 나서 토큰을 지운다. 서버가 답한 4xx는 기록하지 않는다.
+토큰을 지우면 인증 요청을 보낼 수 없어, 그대로 두면 서버 세션과 푸시 기기가 남는다. 서버에 닿지 못한 로그아웃(오프라인, 시간 초과, 연결 실패, 5xx)은 refresh 토큰을 `pendingRevocation`에 기록하고 나서 토큰을 지운다. 서버가 답한 4xx는 기록하지 않는다. 푸시 기기는 이 기록과 따로 기기 id와 토큰으로 푼다(세션 만료 포함, [푸시 알림](push-notifications.md#로그아웃과-배지)).
 
 | 시점                                       | 동작                                                                                       |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------ |

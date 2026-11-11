@@ -27,7 +27,7 @@ describe('메모 재조회의 구조 공유', () => {
     const client = createTestQueryClient();
     const queryKey = ['memo', 'list'];
     const fetchPage = async () => {
-      await client.fetchQuery({
+      await client.query({
         queryKey,
         queryFn: () => toMemoPage(createMemoListResponse()),
         staleTime: 0,
