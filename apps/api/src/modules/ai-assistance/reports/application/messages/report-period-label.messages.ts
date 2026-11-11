@@ -1,3 +1,5 @@
+import { match } from "ts-pattern";
+
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { formatIsoWeekLabel } from "#api/shared/domain/time/week-of-month";
 
@@ -41,9 +43,14 @@ export function computePeriodLabel({
   locale,
   localToday,
 }: PeriodLabelInput): string {
-  if (type === "MONTHLY") {
-    return MONTHLY_LABELS[locale](year, period);
-  }
-  const { startDate } = computeDateRange(type, year, period);
-  return formatIsoWeekLabel(Temporal.PlainDate.from(startDate), locale, localToday);
+  return match(type)
+    .with("WEEKLY", () =>
+      formatIsoWeekLabel(
+        Temporal.PlainDate.from(computeDateRange(type, year, period).startDate),
+        locale,
+        localToday,
+      ),
+    )
+    .with("MONTHLY", () => MONTHLY_LABELS[locale](year, period))
+    .exhaustive();
 }

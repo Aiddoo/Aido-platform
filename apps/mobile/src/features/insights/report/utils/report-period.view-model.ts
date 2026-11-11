@@ -1,6 +1,7 @@
 import type { DateKey } from '@src/shared/date/date-key';
 import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/date/format/date-format';
 import { formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
+import { match } from 'ts-pattern';
 
 import type { AiReport } from '../domains/report.model';
 
@@ -10,7 +11,8 @@ export function formatReportPeriodLabel(
   todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
-  return type === 'WEEKLY'
-    ? formatIsoWeekLabel(dateRange.startDate, todayDateKey, context)
-    : formatDateKeyLabel(dateRange.startDate, 'yearMonth', context);
+  return match(type)
+    .with('WEEKLY', () => formatIsoWeekLabel(dateRange.startDate, todayDateKey, context))
+    .with('MONTHLY', () => formatDateKeyLabel(dateRange.startDate, 'yearMonth', context))
+    .exhaustive();
 }
