@@ -35,8 +35,8 @@ import type { TokenStore } from '@src/core/ports/token-store';
 import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
 import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
-import { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
-import { WhatsNewCampaignService } from '@src/features/app-config/whats-new/apis/whats-new-campaign.service';
+import { AppVersionApi } from '@src/features/app-config/app-version/apis/app-version.api';
+import { WhatsNewCampaignApi } from '@src/features/app-config/whats-new/apis/whats-new-campaign.api';
 import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
@@ -313,7 +313,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     preferenceService: new PreferenceService(authHttpClient),
     activationService: new ActivationService(syncStorage),
     activationProgressRepository,
-    appVersionService: new AppVersionService(ports.jsonFetcher),
+    appVersionApi: new AppVersionApi(ports.jsonFetcher),
     appIconService: new AppIconService(ports.appIconGateway),
     friendService: new FriendService(authHttpClient),
     inviteService: new InviteService({
@@ -331,7 +331,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       errorReporter,
     }),
     // 기능 소개 캠페인 설정은 API envelope 없이 원문 JSON이다
-    whatsNewCampaignService: new WhatsNewCampaignService(ports.jsonFetcher),
+    whatsNewCampaignApi: new WhatsNewCampaignApi(ports.jsonFetcher),
     whatsNewRepository,
     inquiryService: new InquiryService(authHttpClient),
     memoApi: new MemoApi(authHttpClient, logger),

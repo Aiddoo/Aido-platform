@@ -10,8 +10,8 @@ import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
-import type { AppVersionService } from '@src/features/app-config/app-version/apis/app-version.service';
-import type { WhatsNewCampaignService } from '@src/features/app-config/whats-new/apis/whats-new-campaign.service';
+import type { AppVersionApi } from '@src/features/app-config/app-version/apis/app-version.api';
+import type { WhatsNewCampaignApi } from '@src/features/app-config/whats-new/apis/whats-new-campaign.api';
 import type { WhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
 import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import type { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
@@ -97,13 +97,13 @@ export interface DIContainer extends SharedDependencies {
   preferenceService: PreferenceService;
   activationService: ActivationService;
   activationProgressRepository: ActivationProgressRepository;
-  appVersionService: AppVersionService;
+  appVersionApi: AppVersionApi;
   appIconService: AppIconService;
   friendService: FriendService;
   inviteService: InviteService;
   pendingRedemptionService: PendingRedemptionService;
   inviteShareService: InviteShareService;
-  whatsNewCampaignService: WhatsNewCampaignService;
+  whatsNewCampaignApi: WhatsNewCampaignApi;
   whatsNewRepository: WhatsNewRepository;
   inquiryService: InquiryService;
   memoApi: MemoApi;
@@ -250,8 +250,8 @@ export function usePreferenceService() {
 export function useActivationService() {
   return useDI().activationService;
 }
-export function useAppVersionService() {
-  return useDI().appVersionService;
+export function useAppVersionApi() {
+  return useDI().appVersionApi;
 }
 export function useFriendService() {
   return useDI().friendService;
@@ -265,8 +265,8 @@ export function usePendingRedemptionService() {
 export function useInviteShareService() {
   return useDI().inviteShareService;
 }
-export function useWhatsNewCampaignService() {
-  return useDI().whatsNewCampaignService;
+export function useWhatsNewCampaignApi() {
+  return useDI().whatsNewCampaignApi;
 }
 export function useWhatsNewRepository() {
   return useDI().whatsNewRepository;

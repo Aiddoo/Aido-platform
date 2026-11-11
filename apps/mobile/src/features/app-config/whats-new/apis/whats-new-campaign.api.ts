@@ -5,7 +5,7 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { toWhatsNewCampaignConfig } from './whats-new-campaign.mapper';
 
-export class WhatsNewCampaignService {
+export class WhatsNewCampaignApi {
   readonly #jsonFetcher: JsonFetcher;
 
   constructor(jsonFetcher: JsonFetcher) {
@@ -17,6 +17,6 @@ export class WhatsNewCampaignService {
       ok(await this.#jsonFetcher.get('v1/app-config/feature-discovery', signal)),
       featureDiscoveryResponseSchema,
       toWhatsNewCampaignConfig,
-      '[WhatsNewCampaignService] Invalid response',
+      '[WhatsNewCampaignApi] Invalid response',
     );
 }

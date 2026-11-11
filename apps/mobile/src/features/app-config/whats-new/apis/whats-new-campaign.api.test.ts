@@ -2,9 +2,9 @@ import { unwrap } from '@src/core/errors/result';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { createJsonFetcherStub } from '@src/testing/core';
 
-import { WhatsNewCampaignService } from './whats-new-campaign.service';
+import { WhatsNewCampaignApi } from './whats-new-campaign.api';
 
-describe('WhatsNewCampaignService', () => {
+describe('WhatsNewCampaignApi', () => {
   it('원문 설정 응답을 검증하고 도메인 설정으로 반환한다', async () => {
     // Given
     const fetcher = createJsonFetcherStub();
@@ -15,10 +15,10 @@ describe('WhatsNewCampaignService', () => {
       launchedAt: '2026-08-01T00:00:00.000Z',
       autoOpen: true,
     });
-    const service = new WhatsNewCampaignService(fetcher);
+    const api = new WhatsNewCampaignApi(fetcher);
 
     // When
-    const result = unwrap(await service.getConfig());
+    const result = unwrap(await api.getConfig());
 
     // Then
     expect(result).toEqual({
@@ -33,10 +33,10 @@ describe('WhatsNewCampaignService', () => {
     // Given
     const fetcher = createJsonFetcherStub();
     fetcher.get.mockResolvedValue({ data: { enabled: false } });
-    const service = new WhatsNewCampaignService(fetcher);
+    const api = new WhatsNewCampaignApi(fetcher);
 
     // When
-    const result = service.getConfig();
+    const result = api.getConfig();
 
     // Then
     await expect(result).rejects.toThrow(ParseError);
@@ -46,10 +46,10 @@ describe('WhatsNewCampaignService', () => {
     // Given
     const fetcher = createJsonFetcherStub();
     fetcher.get.mockRejectedValue(new Error('offline'));
-    const service = new WhatsNewCampaignService(fetcher);
+    const api = new WhatsNewCampaignApi(fetcher);
 
     // When
-    const result = service.getConfig();
+    const result = api.getConfig();
 
     // Then
     await expect(result).rejects.toThrow('offline');

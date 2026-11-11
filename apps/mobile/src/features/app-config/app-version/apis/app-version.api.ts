@@ -5,7 +5,7 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { toAppVersionConfig } from './app-version.mapper';
 
-export class AppVersionService {
+export class AppVersionApi {
   readonly #jsonFetcher: JsonFetcher;
 
   constructor(jsonFetcher: JsonFetcher) {
@@ -17,6 +17,6 @@ export class AppVersionService {
       ok(await this.#jsonFetcher.get('v1/app-config/app-version', signal)),
       appVersionResponseSchema,
       toAppVersionConfig,
-      '[AppVersionService] Invalid response',
+      '[AppVersionApi] Invalid response',
     );
 }
