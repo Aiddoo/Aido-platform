@@ -38,10 +38,7 @@ function isRequestedRoute(routeName: string) {
   return routeName === name || routeName === `${name}/index`;
 }
 
-/**
- * 넓은 화면의 첫 상세는 메뉴가 고른 화면이라 뒤로 가기 없이 바로 바꾸고, 두 번째 단계부터 네이티브 뒤로 가기를 쓴다.
- * 화면을 쌓는 렌더에서는 받은 상태에 그 화면이 아직 없다. 그때는 맨 뒤에 붙을 자리로 보되, 메뉴가 걷고 연 화면은 첫 상세다
- */
+/** 넓은 화면의 첫 상세는 메뉴가 고른 화면이라 뒤로 가기 없이 바꾸고 두 번째부터 네이티브 뒤로 가기를 쓴다. 쌓는 렌더에서 받은 상태에 그 화면이 없으면 맨 뒤에 붙을 자리로 본다 */
 export function getMyPageDetailOptions({
   route,
   navigation,
