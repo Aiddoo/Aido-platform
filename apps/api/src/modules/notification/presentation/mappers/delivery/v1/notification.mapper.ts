@@ -10,8 +10,8 @@ import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/fo
 import type { NotificationRecord } from "../../../../application/read-models/delivery/notification.read-model.js";
 import { toWireNotificationType } from "../../../../domain/services/delivery/notification-client-capability.js";
 
-export abstract class NotificationMapper {
-  static toDto(notification: NotificationRecord): NotificationDto {
+export const NotificationMapper = {
+  toDto(notification: NotificationRecord): NotificationDto {
     const context: NotificationContext = {};
     if (notification.todoId != null) {
       context.todoId = notification.todoId;
@@ -43,12 +43,12 @@ export abstract class NotificationMapper {
       createdAt: toISOString(notification.createdAt),
       readAt: toISOStringOrNull(notification.readAt ?? null),
     };
-  }
+  },
 
-  static toDtoList(notifications: NotificationRecord[]): NotificationDto[] {
-    return notifications.map((notification) => this.toDto(notification));
-  }
-}
+  toDtoList(notifications: NotificationRecord[]): NotificationDto[] {
+    return notifications.map((notification) => NotificationMapper.toDto(notification));
+  },
+};
 
 function toNotificationMetadata(metadata: unknown): NotificationMetadata {
   const result = notificationMetadataSchema.safeParse(metadata);

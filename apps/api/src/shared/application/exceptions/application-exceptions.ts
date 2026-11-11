@@ -2,46 +2,46 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-export class ApplicationExceptions {
-  static todoNotFound(todoId: number) {
+export const ApplicationExceptions = {
+  todoNotFound(todoId: number) {
     return new ApplicationException(ErrorCode.TODO_0801, { todoId });
-  }
+  },
 
-  static invalidParameter(details?: unknown) {
+  invalidParameter(details?: unknown) {
     return new ApplicationException(ErrorCode.SYS_0002, details);
-  }
+  },
 
-  static internalServerError(details?: unknown) {
+  internalServerError(details?: unknown) {
     return new ApplicationException(ErrorCode.SYS_0001, details);
-  }
+  },
 
-  static concurrentModification() {
+  concurrentModification() {
     return new ApplicationException(ErrorCode.SYS_0004);
-  }
+  },
 
-  static emailAlreadyRegistered(email: string) {
+  emailAlreadyRegistered(email: string) {
     return new ApplicationException(ErrorCode.EMAIL_0501, {
       email,
     });
-  }
+  },
 
-  static accountAlreadyExists(details?: unknown) {
+  accountAlreadyExists(details?: unknown) {
     return new ApplicationException(ErrorCode.USER_0604, details);
-  }
+  },
 
-  static followRequestAlreadySent(targetUserId: string) {
+  followRequestAlreadySent(targetUserId: string) {
     return new ApplicationException(ErrorCode.FOLLOW_0901, { targetUserId });
-  }
+  },
 
-  static todoCategoryNotFound(categoryId: number) {
+  todoCategoryNotFound(categoryId: number) {
     return new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId });
-  }
+  },
 
-  static todoCategoryNameDuplicate(name: string) {
+  todoCategoryNameDuplicate(name: string) {
     return new ApplicationException(ErrorCode.TODO_CATEGORY_0853, { name });
-  }
+  },
 
-  static weatherServiceUnavailable(details?: unknown) {
+  weatherServiceUnavailable(details?: unknown) {
     return new ApplicationException(ErrorCode.WEATHER_1901, details);
-  }
-}
+  },
+};

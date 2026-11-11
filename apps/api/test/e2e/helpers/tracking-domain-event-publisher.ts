@@ -48,7 +48,7 @@ export class TrackingDomainEventPublisher implements DomainEventPublisherPort {
       if (rounds > 25) {
         throw new Error("Domain event drain exceeded 25 rounds — 이벤트 연쇄 루프 의심");
       }
-      await Promise.allSettled([...this.#pending]);
+      await Promise.allSettled(this.#pending);
     }
   }
 }

@@ -359,17 +359,11 @@ describe("알림 문구 생성", () => {
   });
 
   it("댓글 factory 계약에는 댓글 원문 필드가 없다", () => {
-    if (false) {
-      createTodoCommentNotificationMessage({
-        activityKind: "COMMENT",
-        senderName: "민재",
-        commentCount: 1,
-        // @ts-expect-error 댓글 원문은 push copy 입력이 아니다.
-        commentContent: "잠금 화면에 노출되면 안 되는 원문",
-      });
-    }
+    // Given
+    type Input = Parameters<typeof createTodoCommentNotificationMessage>[0];
 
-    expect(true).toBe(true);
+    // Then
+    expectTypeOf<Input>().not.toHaveProperty("commentContent");
   });
 
   it("결제 안내는 장난스러운 표현 없이 명확하다", () => {

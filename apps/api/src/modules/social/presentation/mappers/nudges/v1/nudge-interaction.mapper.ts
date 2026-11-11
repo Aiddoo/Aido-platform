@@ -10,17 +10,17 @@ import type {
 import type { NudgeUserBrief } from "../../../../application/ports/nudges/nudge.repository.port.js";
 import { NudgeMapper } from "./nudge.mapper.js";
 
-export abstract class NudgeInteractionMapper {
-  static toUserDto(user: NudgeUserBrief, appVersion?: string): NudgeSender {
+export const NudgeInteractionMapper = {
+  toUserDto(user: NudgeUserBrief, appVersion?: string): NudgeSender {
     return {
       id: user.id,
       userTag: user.userTag,
       name: user.profile?.name ?? null,
       profileImage: resolveProfileImage(user.profile?.profileImage ?? null, appVersion),
     };
-  }
+  },
 
-  static toDto(
+  toDto(
     nudge: NudgeInteractionResult,
     userId: string,
     appVersion?: string,
@@ -39,9 +39,9 @@ export abstract class NudgeInteractionMapper {
       thankedAt: toISOStringOrNull(nudge.thankedAt),
       isAvailable: nudge.isAvailable,
     };
-  }
+  },
 
-  static toThanksPreviewDto(
+  toThanksPreviewDto(
     preview: NudgeThanksPreviewResult,
     appVersion?: string,
   ): NudgeThanksPreviewResponse {
@@ -52,5 +52,5 @@ export abstract class NudgeInteractionMapper {
         NudgeInteractionMapper.toUserDto(user, appVersion),
       ),
     };
-  }
-}
+  },
+};

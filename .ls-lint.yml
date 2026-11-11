@@ -1,0 +1,48 @@
+# 새 slice 경로(modules/<context>/<slice>/…)의 폴더·파일 이름만 검사한다.
+# 접미사 없는 `.ts`는 허용하지 않는다. 옛 레이어 폴더는 Context를 옮기면 사라지므로 ignore에서 뺀다.
+ls:
+  apps/api/src/modules/*/*:
+    .dir: kebab-case
+    .ts: regex:[^\s\S]
+    .aggregate.ts: kebab-case
+    .entity.ts: kebab-case
+    .vo.ts: kebab-case
+    .event.ts: kebab-case
+    .domain-service.ts: kebab-case
+    .constants.ts: kebab-case
+    .use-case.ts: kebab-case
+    .port.ts: kebab-case
+    .read-model.ts: kebab-case
+    .lock-keys.ts: kebab-case
+    .log-events.ts: kebab-case
+    .alerts.ts: kebab-case
+    .errors.ts: kebab-case
+    .messages.ts: kebab-case
+    .repository.ts: kebab-case
+    .reader.ts: kebab-case
+    .mapper.ts: kebab-case
+    .adapter.ts: kebab-case
+    .wire.ts: kebab-case
+    .policy.ts: regex:[a-z0-9]+(?:-[a-z0-9]+)*-outbound
+    .queue.ts: kebab-case
+    .processor.ts: kebab-case
+    .scheduler.ts: kebab-case
+    .cache.ts: kebab-case
+    .keyspace.ts: kebab-case
+    .event-handler.ts: kebab-case
+    .controller.ts: kebab-case
+    .dto.ts: kebab-case
+    .guard.ts: kebab-case
+    .decorator.ts: kebab-case
+    .module.ts: kebab-case
+    .providers.ts: kebab-case
+    .public.ts: kebab-case
+    .config.ts: kebab-case
+    .spec.ts: kebab-case
+    .integration-spec.ts: kebab-case
+
+ignore:
+  - apps/api/src/modules/*/domain
+  - apps/api/src/modules/*/application
+  - apps/api/src/modules/*/infrastructure
+  - apps/api/src/modules/*/presentation

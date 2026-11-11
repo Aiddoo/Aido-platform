@@ -1,21 +1,30 @@
 # 테스트는 GitHub Actions가 아닌 이 훅에서 실행한다(docs/conventions/git.md#커밋).
 # https://lefthook.dev/configuration/
 
+glob_matcher: doublestar
+
 pre-commit:
   piped: true
   jobs:
     # 수정 도구가 먼저 staged 파일을 고치고 다시 stage한 뒤 검사가 그 결과를 본다.
     - name: oxlint
-      glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'
+      glob: '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'
       run: pnpm exec oxlint --fix {staged_files}
       stage_fixed: true
     - name: oxfmt
-      glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}'
+      glob: '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}'
       run: pnpm exec oxfmt --write --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
     - name: ci-policy
       glob: 'scripts/ci/*.mjs'
       run: node --test scripts/ci/*.test.mjs
+    # 새 slice 경로의 파일 이름과 서버 관례는 전체를 보되 몇 초 안에 끝난다.
+    - name: ls-lint
+      glob: 'apps/api/src/**/*.ts'
+      run: pnpm exec ls-lint
+    - name: server-conventions
+      glob: 'apps/api/src/**/*.ts'
+      run: pnpm --filter @aido/server check:conventions
 
 # 커밋마다 전체 검사를 돌리면 작은 커밋이 수 분씩 걸려 push 때 한 번 모아 돌린다.
 # 통합·계약 테스트는 로컬 Docker PostgreSQL이 필요하다.

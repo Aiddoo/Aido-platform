@@ -88,7 +88,7 @@ presentation → application → domain        infrastructure → application(po
 | Application은 infrastructure·presentation·SDK·`@aido/api` 루트와 `/contracts`·`/common`을 모른다 | 같음                                                             |
 | 다른 Context는 `*.public.ts`로만 import한다                                                      | dependency-cruiser                                               |
 | 파일·Module 순환 금지, `forwardRef(` 0건                                                         | `import/no-cycle` + dependency-cruiser `no-circular` + 관례 검사 |
-| 폴더·파일 접미사                                                                                 | ls-lint                                                          |
+| 폴더·파일 접미사. 역할 접미사는 사전의 하나만(`.spec`은 그 뒤에만)                               | ls-lint + 관례 검사(`ROLE_SUFFIXES`)                             |
 | 안 쓰는 파일·export·의존성                                                                       | knip                                                             |
 
 - 양방향 Module 의존이 필요해 보이면 소유 Context가 좁은 Port를 public으로 열고, 반대 방향은 [이벤트](jobs-and-events.md)로 바꾼다.

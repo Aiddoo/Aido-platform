@@ -67,7 +67,7 @@ export class NotificationQueueService implements OnModuleDestroy {
 
   /** job runtime이 멈추기 전에 아직 저장 중인 이벤트를 끝낸다. */
   async onModuleDestroy(): Promise<void> {
-    await Promise.allSettled([...this.#inFlight]);
+    await Promise.allSettled(this.#inFlight);
   }
 
   async #enqueue(job: NotificationEventJob, occurredAt: Date): Promise<void> {

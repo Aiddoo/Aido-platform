@@ -15,6 +15,7 @@ export function createMockExecutionContext(options?: {
   http.getRequest.mockReturnValue(request);
   context.switchToHttp.mockReturnValue(http);
   context.getHandler.mockReturnValue(() => undefined);
+  // oxlint-disable-next-line typescript/no-extraneous-class -- Reflector가 읽을 컨트롤러 클래스 토큰이라 멤버가 없다.
   context.getClass.mockReturnValue(class TestController {});
   return { context, request };
 }

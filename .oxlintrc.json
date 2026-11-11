@@ -2,7 +2,7 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["import", "typescript", "unicorn", "node"],
   "categories": {
-    "correctness": "off"
+    "correctness": "error"
   },
   "options": {
     "denyWarnings": true,
@@ -37,7 +37,14 @@
         "ts-ignore": true,
         "ts-nocheck": true
       }
-    ]
+    ],
+    "typescript/no-extraneous-class": [
+      "error",
+      {
+        "allowWithDecorator": true
+      }
+    ],
+    "unicorn/no-static-only-class": "error"
   },
   "overrides": [
     {
@@ -223,6 +230,88 @@
       ],
       "rules": {
         "eslint/object-shorthand": "error"
+      }
+    },
+    {
+      "files": ["apps/api/src/modules/*/*/domain/**/*.ts", "apps/api/src/modules/*/shared/**/*.ts"],
+      "excludeFiles": [
+        "**/*.spec.ts",
+        "**/*.test.ts",
+        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@nestjs/|(?:^|/)platform(?:/|$)",
+                "message": "Domain은 framework·ORM·platform 구현에 의존할 수 없습니다."
+              },
+              {
+                "regex": "(?:^|/)(?:application|infrastructure|presentation)(?:/|$)",
+                "message": "Domain은 Application·Infrastructure·Presentation에 의존할 수 없습니다."
+              },
+              {
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
+              },
+              {
+                "regex": "^@aido/api(?:$|/(?:contracts|common)(?:/|$))",
+                "message": "Domain·Application은 계약 타입을 쓰지 않는다. vocabulary·errors만 허용"
+              }
+            ]
+          }
+        ],
+        "typescript/consistent-type-imports": "error"
+      }
+    },
+    {
+      "files": ["apps/api/src/modules/*/*/application/**/*.ts"],
+      "excludeFiles": [
+        "**/*.spec.ts",
+        "**/*.test.ts",
+        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@nestjs/|(?:^|/)platform(?:/|$)",
+                "message": "Application은 framework·ORM·platform 구현에 의존할 수 없습니다."
+              },
+              {
+                "regex": "(?:^|/)(?:infrastructure|presentation)(?:/|$)",
+                "message": "Application은 Infrastructure·Presentation 구현에 의존할 수 없습니다."
+              },
+              {
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
+              },
+              {
+                "regex": "^@aido/api(?:$|/(?:contracts|common)(?:/|$))",
+                "message": "Domain·Application은 계약 타입을 쓰지 않는다. vocabulary·errors만 허용"
+              }
+            ]
+          }
+        ],
+        "typescript/consistent-type-imports": "error"
+      }
+    },
+    {
+      "files": ["apps/api/src/modules/*/*/**/*.ts"],
+      "excludeFiles": [
+        "apps/api/src/modules/*/{domain,application,infrastructure,presentation}/**"
+      ],
+      "rules": {
+        "typescript/parameter-properties": [
+          "error",
+          {
+            "prefer": "class-property"
+          }
+        ]
       }
     }
   ]

@@ -877,10 +877,8 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       // When
       const result = await linkOAuthAccount.execute({
         userId: testUserId,
-        ...{
-          provider: "KAKAO",
-          accessToken: kakaoToken,
-        },
+        provider: "KAKAO",
+        accessToken: kakaoToken,
       });
 
       // Then
@@ -904,10 +902,8 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       // When
       const result = await linkOAuthAccount.execute({
         userId: testUserId,
-        ...{
-          provider: "NAVER",
-          accessToken: naverToken,
-        },
+        provider: "NAVER",
+        accessToken: naverToken,
       });
 
       // Then
