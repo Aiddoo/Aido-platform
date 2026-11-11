@@ -41,6 +41,7 @@ import type { MarketingPushPromptRepository } from '@src/features/notification/r
 import type { NotificationBadgeService } from '@src/features/notification/services/notification-badge.service';
 import type { PushRegistrationService } from '@src/features/notification/services/push-registration.service';
 import type { PushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
+import type { PushOnboardingGuardStore } from '@src/features/notification/stores/push-onboarding-guard.store';
 import type { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import type { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
@@ -114,6 +115,8 @@ export interface DIContainer extends SharedDependencies {
   notificationBadgeService: NotificationBadgeService;
   /** 눌린 푸시 응답 슬롯 */
   pushNotificationEntryStore: PushNotificationEntryStore;
+  /** 앱 화면 묶음이 그린 알림 화면 guard 값 */
+  pushOnboardingGuardStore: PushOnboardingGuardStore;
   pushRegistrationService: PushRegistrationService;
   marketingPushPromptRepository: MarketingPushPromptRepository;
   todoNudgeService: TodoNudgeService;
@@ -298,6 +301,9 @@ export function useNotificationApi() {
 }
 export function usePushNotificationEntryStore() {
   return useDI().pushNotificationEntryStore;
+}
+export function usePushOnboardingGuardStore() {
+  return useDI().pushOnboardingGuardStore;
 }
 export function usePushRegistrationService() {
   return useDI().pushRegistrationService;

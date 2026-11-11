@@ -78,6 +78,7 @@ import { DeviceIdService } from '@src/features/notification/services/device-id.s
 import { NotificationBadgeService } from '@src/features/notification/services/notification-badge.service';
 import { PushRegistrationService } from '@src/features/notification/services/push-registration.service';
 import { createPushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
+import { createPushOnboardingGuardStore } from '@src/features/notification/stores/push-onboarding-guard.store';
 import { TodoCategoryService } from '@src/features/planning/category/apis/todo-category.service';
 import { SubTodoService } from '@src/features/planning/todo/apis/sub-todo.service';
 import { TodoService } from '@src/features/planning/todo/apis/todo.service';
@@ -346,6 +347,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       logger,
     }),
     pushNotificationEntryStore: createPushNotificationEntryStore(),
+    pushOnboardingGuardStore: createPushOnboardingGuardStore(),
     pushRegistrationService,
     marketingPushPromptRepository,
     todoNudgeService: new TodoNudgeService(authHttpClient),
