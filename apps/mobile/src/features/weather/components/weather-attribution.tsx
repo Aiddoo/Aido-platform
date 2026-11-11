@@ -122,7 +122,7 @@ WeatherAttribution.Mark = function Mark({
       ) : (
         <Image
           source={{ uri }}
-          style={{ height: LOGO_HEIGHT, width: LOGO_HEIGHT * aspectRatio }}
+          style={{ height: LOGO_HEIGHT, aspectRatio }}
           contentFit="contain"
           accessibilityLabel={attribution.serviceName}
           accessibilityIgnoresInvertColors

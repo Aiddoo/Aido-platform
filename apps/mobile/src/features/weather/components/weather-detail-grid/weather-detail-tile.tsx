@@ -1,8 +1,9 @@
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Box, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 
 import { WeatherCard } from '../weather-card';
@@ -24,6 +25,7 @@ interface TileLayout {
   columns: number;
   /** 타일 안쪽(여백·테두리 제외) 최소 높이. 두 칸 이상이면 타일이 정사각형이 되는 값이다. */
   bodyMinHeight: number;
+  /** 높이 0인 폭 재기 줄에 단다. 격자에 달면 타일 높이가 정해질 때 한 번 더 그린다 */
   onLayout: (event: LayoutChangeEvent) => void;
 }
 
@@ -31,8 +33,7 @@ interface TileLayout {
 export function useTileLayout(): TileLayout {
   // 앱 글자 크기가 가장 클 때는 두 칸에 값이 잘리므로 한 칸으로 쌓는다
   const isLargeText = useFontScale().fontScale === 'xlarge';
-  const [width, setWidth] = useState(0);
-  const handleLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
+  const [{ width }, handleLayout] = useLayoutSize();
   const wideColumns = width >= FOUR_COLUMN_MIN_WIDTH ? 4 : 2;
   const columns = isLargeText ? wideColumns / 2 : wideColumns;
   const tileSide = (width - TILE_GRID_GAP * (columns - 1)) / columns;
@@ -167,11 +168,8 @@ export function WeatherDialTile({
   children,
 }: WeatherDialTileProps) {
   const { t } = useTranslation('weather');
-  const [size, setSize] = useState(0);
-  const handleLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    setSize(Math.floor(Math.min(width, height, DIAL_MAX_SIZE)));
-  };
+  const [box, handleLayout] = useLayoutSize();
+  const size = Math.floor(Math.min(box.width, box.height, DIAL_MAX_SIZE));
 
   return (
     <WeatherTile

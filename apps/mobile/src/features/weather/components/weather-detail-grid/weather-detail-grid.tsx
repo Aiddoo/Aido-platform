@@ -158,7 +158,8 @@ export function WeatherDetailGrid() {
   const cloudCoverNoteKey = getCloudCoverNoteKey(current);
 
   return (
-    <Box onLayout={onLayout}>
+    <Box>
+      <Box onLayout={onLayout} />
       <Grid columns={columns} gap={TILE_GRID_GAP}>
         <GridItem>
           <WeatherTextTile
@@ -322,7 +323,8 @@ WeatherDetailGrid.Loading = function Loading() {
   const { columns, bodyMinHeight, onLayout } = useTileLayout();
 
   return (
-    <Box onLayout={onLayout}>
+    <Box>
+      <Box onLayout={onLayout} />
       <Grid columns={columns} gap={TILE_GRID_GAP}>
         {range(LOADING_TILE_COUNT).map((index) => (
           <GridItem key={index}>
