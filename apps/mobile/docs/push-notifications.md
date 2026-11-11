@@ -22,8 +22,8 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | `schemas/push-permission-deferred-at-storage.schema.ts`·`push-notice-dismissed-at-storage.schema.ts` | 알림 화면·피드 안내를 닫은 시각을 계정마다 저장하는 저장 값 정의                                            |
 | `queries/push-permission.{queries,mutations}.ts`, `push-permission-cache.ts`                         | 권한 조회와 요청·설정 열기·앱 푸시 켜기. 쿼리 키 루트는 `['device', 'push-permission']`                     |
 | `hooks/use-push-permission-action.ts`                                                                | `usePushPermissionAction({ source })` → `{ runStep(step), isPending }`. 권한 단계 실행과 추적의 유일한 입구 |
-| `hooks/use-push-device-sync.ts`                                                                      | 로그인한 동안 보고 시점을 모은다(`NotificationProvider`가 한 번 호출)                                       |
-| `hooks/use-push-notification-response.ts`                                                            | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                                                          |
+| `hooks/use-push-device-sync.ts`                                                                      | 기기 등록을 서버와 맞춘다. 로그인한 동안 보고 시점을 모으고 로그아웃 상태면 해제를 다시 보낸다              |
+| `hooks/use-push-notification-response.ts`                                                            | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출하고, 끝난 effect의 늦은 결과는 버린다                        |
 | `hooks/use-push-notification-entry.ts`                                                               | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                       |
 | `stores/push-notification-entry.store.ts`                                                            | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다                                                     |
 | `stores/push-onboarding-guard.store.ts`                                                              | 앱 화면 묶음이 그린 알림 화면 guard 값. 피드가 열 차례를 이 값으로 읽고 DI가 소유한다                       |
@@ -64,15 +64,16 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | 할 일 시간 `todo-time` | 아직 묻지 않음 / 거절                                  | `SYSTEM_DIALOG`: 그 자리에서 시스템 창 / `DENIED_NOTICE`: 칩 아래 한 줄 "설정 열기"      |
 | 피드 `feed`            | 거절 + 오늘 알림이 갈 할 일이 남음 + 닫은 지 14일 지남 | `DENIED_NOTICE`: `PushPermissionNotice`(다시 물을 수 있으면 시스템 창, 아니면 설정 열기) |
 
-- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={usePushOnboardingGuard()} redirectTo=".."` 안에 있다. 판정은 이 guard 한 곳에서 하고 그린 값을 `PushOnboardingGuardStore`에 남긴다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) guard가 열린 채 그려진 뒤에만 연다. 피드가 따로 판정하면 다시 연 앱에서 권한을 읽은 순간 피드가 guard보다 먼저 `true`를 보고 열어, 화면이 곧바로 guard에 막혀 피드로 돌아간다. 권한이 정해지거나 닫기가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다.
+- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={usePushOnboardingGuard()} redirectTo=".."` 안에 있다. 판정은 이 guard 한 곳에서 하고 그린 값(`'open' | 'closed' | 'pending'`)을 `PushOnboardingGuardStore`에 남긴다. 다른 화면은 `usePushOnboardingGuardState()`로 읽는다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) guard가 `open`으로 그려진 뒤에만 열고, 다른 자동 화면은 `closed`일 때만 연다. 피드가 따로 판정하면 다시 연 앱에서 권한을 읽은 순간 피드가 guard보다 먼저 `true`를 보고 열어, 화면이 곧바로 guard에 막혀 피드로 돌아간다. 권한이 정해지거나 닫기가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다.
   - 본문 버튼은 시스템 창을 여는 [계속] 하나다. 나가는 길은 흐름형 화면처럼 네이티브 헤더 오른쪽 닫기이고, Android 뒤로 가기도 닫기다.
   - 시스템 창을 바로 여는 버튼은 알림 화면·피드 안내·설정 줄 모두 `permission.continue`([계속])다. HIG가 권한 전 버튼에 "허용" 대신 Continue·Next를 쓰라고 해서 날씨 위치 안내(`locationPrompt.continue`)와 같은 규칙을 따른다.
   - `redirectTo`를 비우면 열린 화면의 guard가 풀릴 때 anchor 그룹 `/(app)/(tabs)`로 replace한다. 탭이 없는 그룹 경로라 탭 묶음이 새로 생기고 글자 순 첫 탭 `(mypage)`가 열린다. `..`는 뒤로 가기라 있던 탭 묶음과 탭이 그대로 남는다.
 - 알림 화면 닫기와 피드 안내 닫기는 저장 값 정의 2개(`pushPermissionDeferredAtStoredValue`·`pushNoticeDismissedAtStoredValue`, `useStoredValue`)로 계정마다 남긴다. 로그아웃은 남기고 탈퇴는 `UserDeviceDataService.clearForUser`가 지운다.
-- 설정 > 알림 > 푸시 맨 위 `PushPermissionSettings`는 기기 알림 한 줄이다. 꺼져 있으면 줄을 눌러 다음 단계(시스템 창 또는 설정 열기)를 하고 아래 토글을 흐리게 둔다. 허용했으면 `허용됨`을 보이고 누르면 기기 설정을 연다.
+- 설정 > 알림 > 푸시 맨 위 `PushPermissionSettings`는 기기 알림 한 줄이다. 꺼져 있으면 줄을 눌러 다음 단계(시스템 창 또는 설정 열기)를 하고 아래 토글을 흐리게 둔다. 허용했으면 `허용됨`을 보이고 누르면 기기 설정을 연다(권한을 되찾는 단계가 아니라 권한 이벤트를 남기지 않는다).
+- 권한 안내·화면·토글·설정 줄·초대 환영 시트는 모두 `usePushPermissionAction({ source }).runStep(step)` 하나로 단계를 실행한다. 단계는 `PushPermissionPolicy.getNextStep`이 정한다.
 - 앱 푸시 설정을 켜면 이어서 OS 권한을 묻는다(`useUpdatePushEnabledAndAskPermissionMutationOptions`).
 - 할 일 목록 시간 옆 종 꺼짐 표시는 OS 권한과 앱 푸시 설정(`PushPermissionPolicy.canReceivePush`)으로 정한다. 피드가 한 번 읽어 목록에 넘긴다.
-- 혜택·소식(광고성) 제안은 첫 할 일 완료 뒤 시트 한 번이다(`useOfferMarketingPushAfterCompletion`). 기기 알림과 앱 푸시가 켜져 있을 때만 띄우고, 거절하면 계정마다 90일 뒤 다시 제안한다.
+- 혜택·소식(광고성) 제안은 첫 할 일 완료 뒤 시트 한 번이다(`useOfferMarketingPushAfterCompletion`). 기기 알림과 앱 푸시가 켜져 있을 때만 띄우고, 거절하면 계정마다 90일 뒤 다시 제안한다. 대상을 읽는 사이 로그아웃하거나 화면 묶음이 내려가면 띄우지 않고 답도 남기지 않는다.
 - 분석 이벤트는 [observability.md](./observability.md#푸시-권한-퍼널)를 본다. 권한 mutation은 `source`를 변수로 받아 `onSuccess`에서 한 번 추적하고 실패는 전역 오류 피드백(`meta.errorFeedback`)이 처리한다.
 
 ## 앱이 앞에 있을 때 받은 알림
@@ -114,7 +115,7 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 | 로그아웃 상태                             | 슬롯에 둔다(10분). 로그인 뒤 같은 Index 경로로 한 번만 연다                                                                                                                                                |
 | 연속 두 탭                                | 슬롯이 하나라 마지막 탭만 연다. 앞 탭의 늦은 읽음 응답은 버린다                                                                                                                                            |
 | 같은 탭이 다시 옴                         | 처리한 응답 id를 최근 20개 기억해(`rememberHandledResponse`) 콜드 스타트의 마지막 응답·리스너 중복·다시 그린 레이아웃에도 한 번만 연다                                                                     |
-| 로그아웃·세션 만료                        | 슬롯과 마지막 응답을 지운다. 진행 중 응답은 `SessionEpoch`와 슬롯 id로 버린다                                                                                                                              |
+| 로그아웃·세션 만료                        | 슬롯과 마지막 응답을 지운다. 진행 중 읽음 확인은 `SessionEpoch`와 슬롯 id로, 가는 중인 수신 거부는 effect의 `AbortSignal`로 결과를 버린다                                                                  |
 | 다른 계정 알림·없는 대상                  | 읽음이 403·404면 버리고 머문다. 페이로드에 수신자 id가 없어 이것이 유일한 방어다                                                                                                                           |
 | 오프라인·5xx·읽음 지연                    | `NOTIFICATION_READ_BUDGET_MS`(800ms, 초깃값, Release 측정 뒤 확정) 안에 끝내고 연다. 서버의 `opened`가 읽음도 처리하므로 mutation이 연결될 때까지 멈췄다가 재시도한다                                      |
 | 모르는 타입, `navigation` 있음            | `navigation`을 따른다. Analytics `type`은 `UNKNOWN`이다                                                                                                                                                    |

@@ -155,8 +155,6 @@ export function useUpdateTodoCategoryMutationOptions() {
 }
 ```
 
-푸시 권한 요청(`push-permission.mutations.ts`의 `useRequestPushPermissionMutationOptions`)은 지금 `errorFeedback: false`이고 `onError`가 `logger.warn`과 고정 문구 토스트를 직접 낸다. 기기 권한 실패를 Sentry 이벤트로 올릴지는 notification 정리 PR([18/32])이 정한다.
-
 - `use{Verb}{X}MutationOptions()`가 `mutationOptions`를 돌려주고 화면은 `useMutation`을 직접 부른다. 변수 타입에 이름을 붙이면 `*Variables`다. 화면 이동은 호출부가 한다.
 - `mutationFn`은 Api 결과를 반드시 `unwrap`한다. `Result.err`를 그대로 돌려주면 React Query가 성공으로 본다.
 - 오류 피드백은 mutation마다 둔 `meta.errorFeedback` 하나다: `{ feature, fallbackKey, isHandledByFeature? } | false`(없으면 `aido/mutation-error-feedback`이 막는다. 펼친 옵션은 이어받는다).
@@ -203,12 +201,12 @@ const form = useForm({
 
 ## 메모리와 수명
 
-| 지점                  | 규칙                                                                                                                                                                                                 |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 구독                  | `subscribe`·`add…Listener`는 해제 함수(`.remove()`)를 돌려주고 연결한 effect의 정리에서 부른다. 외부 값은 `useSyncExternalStore`가 먼저다                                                            |
-| 타이머                | `setTimeout`·`setInterval`·`requestAnimationFrame`은 effect에서 걸고 정리에서 지운다. 핸들러에서 건 타이머는 ref에 두고 다시 걸 때와 언마운트 때 지운다. es-toolkit `debounce`는 `cancel`까지 부른다 |
-| await 뒤              | 상태 변경·이동은 effect의 `AbortController`·`isCurrent` 플래그로, 핸들러에서 시작했으면 언마운트 ref로 막는다. 언마운트·로그아웃 뒤 `setState`·`router`를 부르지 않는다                              |
-| 최신 콜백             | effect 안에서는 `useEffectEvent`로 읽는다. deps에 넣어 타이머·구독을 다시 걸지 않는다                                                                                                                |
-| 모듈 전역             | 상한이나 지우는 시점 없는 Map·Set·캐시를 두지 않는다. 앱 수명 구독은 첫 구독자에 열고 마지막 구독자가 나가면 닫는다                                                                                  |
-| 기다리지 않는 Promise | `void` 연산자를 쓰지 않는다. 실패는 안에서 처리하거나 `.catch`로 기록하고, `.catch(noop)`은 이미 다른 곳에 보고될 때만 쓴다                                                                          |
-| Query                 | 서버 GET은 `signal`로 화면을 떠나면 멈추고, 안 쓰는 쿼리는 `gcTime`이 정리한다. 기기에 남기는 것은 `meta.persist`를 단 쿼리뿐이다                                                                    |
+| 지점                  | 규칙                                                                                                                                                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 구독                  | `subscribe`·`add…Listener`는 해제 함수(`.remove()`)를 돌려주고 연결한 effect의 정리에서 부른다. 외부 값은 `useSyncExternalStore`가 먼저다                                                                            |
+| 타이머                | `setTimeout`·`setInterval`·`requestAnimationFrame`은 effect에서 걸고 정리에서 지운다. 핸들러에서 건 타이머는 ref에 두고 다시 걸 때와 언마운트 때 지운다. es-toolkit `debounce`는 `cancel`까지 부른다                 |
+| await 뒤              | 상태 변경·이동·기록은 effect의 `AbortController`·`isCurrent` 플래그(로그아웃은 `SessionEpoch` 비교)로, 핸들러에서 시작했으면 언마운트 ref로 막는다. 언마운트·로그아웃 뒤 `setState`·`router`·저장·추적을 하지 않는다 |
+| 최신 콜백             | effect 안에서는 `useEffectEvent`로 읽는다. deps에 넣어 타이머·구독을 다시 걸지 않는다                                                                                                                                |
+| 모듈 전역             | 상한이나 지우는 시점 없는 Map·Set·캐시를 두지 않는다. 앱 수명 구독은 첫 구독자에 열고 마지막 구독자가 나가면 닫는다                                                                                                  |
+| 기다리지 않는 Promise | `void` 연산자를 쓰지 않는다. 실패는 안에서 처리하거나 `.catch`로 기록하고, `.catch(noop)`은 이미 다른 곳에 보고될 때만 쓴다                                                                                          |
+| Query                 | 서버 GET은 `signal`로 화면을 떠나면 멈추고, 안 쓰는 쿼리는 `gcTime`이 정리한다. 기기에 남기는 것은 `meta.persist`를 단 쿼리뿐이다                                                                                    |

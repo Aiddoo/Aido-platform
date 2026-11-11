@@ -207,8 +207,8 @@
 | `marketing_push_opted_out`         | `source`: `push_action`                                                                                                                    | 푸시 버튼으로 해지                                                                                                    |
 | `push_permission_prompt_shown`     | `source`: `onboarding`·`todo_time`·`feed_card`·`settings`·`paywall` · `step`                                                               | 권한 안내가 보였을 때                                                                                                 |
 | `push_permission_prompt_dismissed` | `source` · `step`                                                                                                                          | 안내를 닫음(가입 직후 화면은 헤더 닫기·Android 뒤로 가기, 카드는 14일 숨김)                                           |
-| `push_permission_requested`        | `source` · `status`: 요청 뒤 `PushPermission.status`                                                                                       | 시스템 권한 창 결과                                                                                                   |
-| `push_permission_settings_opened`  | `source`                                                                                                                                   | OS 설정 열기                                                                                                          |
+| `push_permission_requested`        | `source`(위 다섯 + `invite_welcome`) · `status`: 요청 뒤 `PushPermission.status`                                                           | 시스템 권한 창 결과. 권한 mutation `onSuccess`에서 입구마다 한 번                                                     |
+| `push_permission_settings_opened`  | `source`                                                                                                                                   | 권한을 되찾으려고 OS 설정을 열었을 때(허용한 뒤 설정 줄에서 연 것은 제외). mutation `onSuccess`에서 한 번             |
 | `badge_summary_viewed`             | `badge_type`: `perfect`·`almost`·`completed` · `completion_rate`(num) · `week_label`(string)                                               | 주간 배지                                                                                                             |
 | `badge_item_tapped`                | `badge_type` · `completion_rate` · `year` · `week`                                                                                         |                                                                                                                       |
 | `badge_share_attempted`            | `badge_type` · `year` · `week`                                                                                                             |                                                                                                                       |
@@ -219,6 +219,8 @@
 | `local_day_changed`                | `trigger`: `midnight_timer`·`foreground`·`calendar_change`                                                                                 | 진단성. 제품 지표 가치는 낮다                                                                                         |
 | `device_timezone_changed`          | `offset_bucket`: `same`·`under_3h`·`3h_to_8h`·`8h_plus` · `notice_shown`(bool)                                                             | 시간대 변경을 서버에 알린 뒤 한 번. 이름·도시는 보내지 않는다. 다음 버전 판단용: 여행 빈도, 기기 예약 전환의 가치     |
 | `offline_banner_shown`             | –                                                                                                                                          | 오프라인 전환마다(`connectOnlineManager`)                                                                             |
+
+`push_permission_requested{source=todo_time}`은 1.15.2부터 늘 수 있다. 이전에는 시트가 OS 답보다 먼저 닫히면 호출부 콜백이 사라져 빠졌고, 지금은 mutation 옵션이 남긴다. 1.15.2 전후를 비교할 때 이 차이를 뺀다. `invite_welcome`은 카드 노출(`push_permission_prompt_shown`)을 보내지 않아 노출 분모가 없다. 전환은 `invite_redeemed` 대비로만 본다.
 
 **날씨**
 
@@ -244,7 +246,7 @@
 | GA 한도        | 이벤트 이름 40자 이하: 최장 `weather_location_permission_result`(34). 예약 접두사(`firebase_`·`google_`·`ga_`) 충돌 없음. 값 100자 이하: `field` 조합이 이론상 넘을 수 있다                                            |
 | 이름 불일치    | 대부분 `object_verb(과거형)`이다. 예외: `todo_completed{is_completed:false}`(해제도 completed), `notification_center_opened`(항목 탭), `ai_parse_used`(현재형), `remind_nudge_sent`                                    |
 | 중복 의미      | `subscription_started` ↔ RC `purchase` ↔ 자동 `in_app_purchase`, `badge_opened_from_notification` ↔ `push_notification_opened{type=WEEKLY_ACHIEVEMENT}`, `memo_converted_to_todos` ↔ `voice_plan_applied{source=memo}` |
-| 타입 느슨      | `push_notification_opened.type`·`action`, `notification_center_opened.type`, `push_permission_*.step`·`status`가 `string`이다                                                                                          |
+| 타입 느슨      | `push_notification_opened.type`·`action`, `notification_center_opened.type`가 `string`이다                                                                                                                             |
 | 보내지 않는 값 | `voice_plan_failed`의 `consent-required`                                                                                                                                                                               |
 
 ---

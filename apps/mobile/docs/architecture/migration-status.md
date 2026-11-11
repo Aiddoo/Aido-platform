@@ -36,7 +36,7 @@
 
 | 기능                       | 남은 일                                                                                                                                                                              |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `notification`             | 권한 동작 9벌(→ `usePushPermissionAction`)                                                                                                                                           |
+| `notification`             | `useTimezoneChangeNotice`가 할 일을 `todoService`로 직접 읽는다(→ 쿼리 옵션 + 책임별 지역 훅), `use-notification-navigation`(→ `use-notification-destination`)                       |
 | `insights/report`          | 슬롯 래퍼 `ReportsPanel`, 수동 상태 분기, `.Error` 누락, 길이 제한 없는 `.map`                                                                                                       |
 | `planning/todo`·`composer` | 피커 격자 칸마다 `Intl`, 피드 점 깜박임, 일정 칩 2벌, `*PickerContent` 이름, feed 스크린 뼈대 3벌                                                                                    |
 | `voice`                    | `note` props 8곳, 음성 시작 체인 2벌(→ `useVoiceCaptureReadiness`), 포괄 훅, Policy 안 생성 함수                                                                                     |
@@ -74,7 +74,7 @@
 | shared value `.value`                                                                       | `aido/shared-value-accessor`                                         | 31(29줄, 5개 파일)                   |
 | `className` 잇기·삼항                                                                       | `aido/no-classname-concat`                                           | 27(27줄, 21개 파일)                  |
 | `Menu.ItemTitle` 날글자                                                                     | `aido/menu-item-title-text`                                          | 0                                    |
-| 이벤트 카탈로그                                                                             | `aido/analytics-event-catalog`                                       | 23(21줄, 9개 파일, 모두 맨 `string`) |
+| 이벤트 카탈로그                                                                             | `aido/analytics-event-catalog`                                       | 20(18줄, 9개 파일, 모두 맨 `string`) |
 | 로그 키 형식·앱 전체 유일                                                                   | `aido/log-event-key`                                                 | 5(4개 파일, 겹친 키 2개)             |
 | 테스트의 `jest.useFakeTimers`·`useRealTimers`                                               | `jest/no-restricted-jest-methods`                                    | 53(53줄, 25개 파일)                  |
 | 테스트 스냅숏                                                                               | `jest/no-restricted-matchers`                                        | 0                                    |
@@ -84,6 +84,6 @@
 | 테스트 타입 안전(`any`·`@ts-expect-error`)                                                  | `typescript/no-explicit-any`·`ban-ts-comment`                        | 0                                    |
 | 역할 폴더 이름·`hooks/use-*`·`app/` 아래 테스트                                             | ls-lint                                                              | 101(`apis/` 95, `queries/` 6)        |
 
-합계: Oxlint 263건(지시문 251줄, 138개 파일), dependency-cruiser 14건, ls-lint 101개 파일.
+합계: Oxlint 260건(지시문 248줄, 138개 파일), dependency-cruiser 14건, ls-lint 101개 파일.
 
 - `frozenNames`는 baseline이 아니라 동사 목록([observability](../observability.md#선언과-이름)) 밖인 GA 대시보드 이름의 영구 목록이다. 동사 목록을 바꾸면 규칙의 `EVENT_VERBS`와 이 목록을 함께 고친다.
