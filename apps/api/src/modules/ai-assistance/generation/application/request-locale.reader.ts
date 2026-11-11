@@ -1,3 +1,4 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
@@ -16,7 +17,7 @@ export interface RequestedLocale {
  */
 export async function resolveRequestLocale(
   reader: Pick<UserLocalePreferenceReaderPort, "read">,
-  userId: string,
+  userId: UserId,
   requested: RequestedLocale,
 ): Promise<UserLocalePreference> {
   const { timezone, locale } = requested;

@@ -6,10 +6,14 @@ import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-hos
 import { of } from "rxjs";
 
 import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
 
-import { LastActiveInterceptor } from "./last-active.interceptor.js";
+import {
+  LAST_ACTIVE_THROTTLE_MAX_ENTRIES,
+  LastActiveInterceptor,
+} from "./last-active.interceptor.js";
 
 class RecordingActivityWriter extends AuthUserActivityWriterPort {
   readonly writes: Array<[userId: string, timezone: string, appVersion: string | undefined]> = [];
@@ -21,12 +25,12 @@ class RecordingActivityWriter extends AuthUserActivityWriterPort {
 
   // 인터셉터가 붙이는 catch가 바로 다음 tick에 돌도록 async로 감싸지 않는다
   updateLastActiveAt(activity: {
-    readonly userId: string;
+    readonly userId: UserId;
     readonly timezone: string;
     readonly seenAt: Temporal.Instant;
     readonly appVersion?: string;
   }): Promise<void> {
-    this.writes.push([activity.userId, activity.timezone, activity.appVersion]);
+    this.writes.push([activity.userId.value, activity.timezone, activity.appVersion]);
     return this.#outcomes.shift()?.() ?? Promise.resolve();
   }
 }
@@ -54,10 +58,6 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
     activityWriter = new RecordingActivityWriter();
     clock = new FixedClock(Temporal.Instant.from("2026-07-26T03:00:00Z"));
     interceptor = new LastActiveInterceptor(activityWriter, createRequestClientReader(), clock);
-  });
-
-  afterEach(() => {
-    interceptor.onModuleDestroy();
   });
 
   const intercept = (user: CurrentUserPayload, headers: IncomingHttpHeaders = {}) =>
@@ -168,5 +168,24 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 
     // Then
     expect(activityWriter.writes).toHaveLength(2);
+  });
+
+  it("throttle 키가 상한을 넘으면 가장 오래 안 본 사용자부터 잊어 크기를 상한 안에 둔다", () => {
+    // Given
+    const headers = { "x-timezone": "Asia/Seoul" };
+    intercept(userOf("oldest"), headers);
+    for (let index = 0; index < LAST_ACTIVE_THROTTLE_MAX_ENTRIES; index += 1) {
+      intercept(userOf(String(index)), headers);
+    }
+    const writesBefore = activityWriter.writes.length;
+
+    // When
+    intercept(userOf(String(LAST_ACTIVE_THROTTLE_MAX_ENTRIES - 1)), headers);
+    intercept(userOf("oldest"), headers);
+
+    // Then
+    expect(activityWriter.writes.slice(writesBefore)).toEqual([
+      ["user-oldest", "Asia/Seoul", undefined],
+    ]);
   });
 });

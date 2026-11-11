@@ -2,7 +2,6 @@ import { omit } from "es-toolkit";
 
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
@@ -10,12 +9,12 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { describeSchedulerPreferenceReaderContract } from "#test/contracts/notification/scheduler-preference-reader.contract";
 import {
   describeWeeklyAchievementStatsReaderContract,
   type WeeklyStatsUserSeed,
 } from "#test/contracts/notification/weekly-achievement-stats-reader.contract";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -43,8 +42,9 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
   function createReader(): DrizzleSchedulerReader {
     return new DrizzleSchedulerReader(
       createDatabaseTransactionFixture(client).txHost,
-      new CacheService(new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 })),
+      new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
       { onboardingV2: { enabled: false, treatmentPercent: 50 } },
+      new DateClock(),
     );
   }
 
@@ -71,8 +71,8 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
     for (const span of seed.todos ?? []) {
       await client.insert(todo).values({
         ...omit(TodoFixture.create({ userId, categoryId: category?.id ?? 0 }), ["id"]),
-        startDate: parseDateOnly(span.start),
-        endDate: span.end == null ? null : parseDateOnly(span.end),
+        startDate: Temporal.PlainDate.from(span.start),
+        endDate: span.end == null ? null : Temporal.PlainDate.from(span.end),
         completed: span.completed ?? false,
       });
     }

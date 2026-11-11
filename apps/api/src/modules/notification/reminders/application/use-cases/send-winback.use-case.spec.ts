@@ -1,4 +1,3 @@
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { InMemorySchedulerDedup } from "#test/doubles/notification/in-memory-scheduler-dedup";
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
@@ -7,7 +6,7 @@ import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engag
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createWinbackNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createWinbackNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import { SendWinbackUseCase } from "./send-winback.use-case.js";
 
@@ -48,8 +47,8 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
         method: "findWinbackUsers",
         params: {
           tz: "Asia/Seoul",
-          inactiveSince: parseDateOnly("2023-12-17"),
-          inactiveUntil: parseDateOnly("2024-01-13"),
+          inactiveSince: Temporal.Instant.from("2023-12-17T00:00:00Z"),
+          inactiveUntil: Temporal.Instant.from("2024-01-13T00:00:00Z"),
         },
       },
     ]);
@@ -65,7 +64,9 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     "$inactiveDays일 미접속 사용자에게 $stage 단계 Win-back을 보내고 그 단계를 기록한다",
     async ({ lastActive, inactiveDays, stage }) => {
       // Given
-      reader.winbackUsers = [{ id: "user-1", lastActiveAt: parseDateOnly(lastActive) }];
+      reader.winbackUsers = [
+        { id: "user-1", lastActiveAt: Temporal.Instant.from(`${lastActive}T00:00:00Z`) },
+      ];
 
       // When
       const result = await strategy.execute(ctx);
@@ -101,7 +102,9 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
 
   it("저장한 언어로 보내고 지원하지 않는 언어는 영어로 보낸다", async () => {
     // Given
-    reader.winbackUsers = [{ id: "user-1", lastActiveAt: parseDateOnly("2024-01-09") }];
+    reader.winbackUsers = [
+      { id: "user-1", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
+    ];
     await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "fr" }, "user-1");
 
     // When
@@ -122,7 +125,9 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
 
   it("이미 같은 단계를 보낸 사용자는 건너뛴다", async () => {
     // Given
-    reader.winbackUsers = [{ id: "user-1", lastActiveAt: parseDateOnly("2024-01-09") }];
+    reader.winbackUsers = [
+      { id: "user-1", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
+    ];
     await dedup.recordWinbackStages([{ userId: "user-1", stage: "day7" }]);
 
     // When
@@ -147,7 +152,9 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
 
   it("오늘 이미 WINBACK을 받은 사용자는 제외한다", async () => {
     // Given
-    reader.winbackUsers = [{ id: "user-1", lastActiveAt: parseDateOnly("2024-01-09") }];
+    reader.winbackUsers = [
+      { id: "user-1", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
+    ];
     history.notified("WINBACK", ["user-1"], ctx.today);
 
     // When

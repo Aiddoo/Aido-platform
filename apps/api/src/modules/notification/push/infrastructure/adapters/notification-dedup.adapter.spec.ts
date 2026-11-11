@@ -1,4 +1,4 @@
-import type { IDedupProvider } from "#api/platform/dedup/interfaces/dedup.interface";
+import type { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 
 import { NotificationDedupAdapter } from "./notification-dedup.adapter.js";
 
@@ -9,7 +9,7 @@ interface AddedMembers {
 }
 
 // Set 키별 멤버와 TTL을 남겨 저장 계약(key·sentinel·TTL)을 상태로 확인한다
-class RecordingDedupProvider implements IDedupProvider {
+class RecordingDedupProvider implements DedupProviderPort {
   readonly added: AddedMembers[] = [];
   readonly #sets = new Map<string, Set<string>>();
 
@@ -43,12 +43,12 @@ describe("NotificationDedupAdapter", () => {
       {
         userId: "u1",
         type: "FRIEND_COMPLETED",
-        notificationDate: new Date("2026-03-09T00:00:00.000Z"),
+        notificationDate: Temporal.PlainDate.from("2026-03-09"),
       },
       {
         userId: "u2",
         type: "FRIEND_COMPLETED",
-        notificationDate: new Date("2026-03-09T00:00:00.000Z"),
+        notificationDate: Temporal.PlainDate.from("2026-03-09"),
       },
     ]);
 

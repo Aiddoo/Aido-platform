@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 /** 날씨와 겹치는지 볼, 아직 하지 않았고 시각이 정해진 할 일 한 건 */
 export interface TimedTodoView {
   readonly id: number;
@@ -8,7 +10,7 @@ export interface TimedTodoView {
 }
 
 export interface TimedTodoQuery {
-  readonly userIds: readonly string[];
+  readonly userIds: readonly UserId[];
   /** `timezone`의 오늘 */
   readonly date: Temporal.PlainDate;
   /** 할 일을 저장한 기기 시간대. 여러 날 할 일의 벽시계를 순간으로 바꾼다 */

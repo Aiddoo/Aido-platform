@@ -2,13 +2,13 @@ import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import {
-  AfterCommitTaskRegistryPort,
   DomainEventPublisherPort,
-  JobQueuePort,
   type AfterCommitEventSubscription,
   type PublishedDomainEvent,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/domain-event-publisher.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { EventSubscriptionCatalog } from "./event-subscription.catalog.js";

@@ -1,15 +1,15 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
+import { PublishNotificationUseCase } from "#api/modules/notification/notification-delivery.public";
 
 import { AdminBroadcastNotifierPort } from "../../application/ports/admin-broadcast-notifier.port.js";
 import type { AdminBroadcastMessage } from "../../application/read-models/broadcast-message.read-model.js";
 
 @Injectable()
 export class NotificationAdminBroadcastNotifierAdapter extends AdminBroadcastNotifierPort {
-  readonly #publisher: NotificationPublisher;
+  readonly #publisher: PublishNotificationUseCase;
 
-  constructor(publisher: NotificationPublisher) {
+  constructor(publisher: PublishNotificationUseCase) {
     super();
     this.#publisher = publisher;
   }

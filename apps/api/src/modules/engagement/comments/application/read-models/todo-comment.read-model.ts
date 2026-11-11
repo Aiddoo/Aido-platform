@@ -1,4 +1,7 @@
 import type { FriendTodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 
 /** 댓글 응답을 만드는 데 필요한 저장소 독립 조회 결과 */
 export interface TodoCommentReadModel {
@@ -155,15 +158,16 @@ export interface TodoDetailsReadModel {
   readonly isOwner: boolean;
 }
 
-export function listCommentIds(comments: readonly TodoCommentReadModel[]): string[] {
-  return comments.map((comment) => comment.id);
+export function listCommentIds(comments: readonly TodoCommentReadModel[]): TodoCommentId[] {
+  return comments.map((comment) => TodoCommentId.reconstitute(comment.id));
 }
 
 /** 응답에 실릴 수 있는 작성자 ID. 차단 관계를 한 번에 조회하는 후보로 쓴다 */
-export function listCommentAuthorIds(comments: readonly TodoCommentReadModel[]): string[] {
+export function listCommentAuthorIds(comments: readonly TodoCommentReadModel[]): UserId[] {
   return comments.flatMap((comment) =>
-    comment.replyToAuthorId == null
+    (comment.replyToAuthorId == null
       ? [comment.authorId]
-      : [comment.authorId, comment.replyToAuthorId],
+      : [comment.authorId, comment.replyToAuthorId]
+    ).map((authorId) => UserId.reconstitute(authorId)),
   );
 }

@@ -1,6 +1,7 @@
 import { ErrorCode, type ErrorCodeType } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { ServerFlagFeature } from "../domain/entitlement.domain-service.js";
 import type { EntitlementReaderPort } from "./ports/entitlement.reader.port.js";
@@ -19,7 +20,7 @@ export function premiumFeatureDenied(feature: ServerFlagFeature): ApplicationExc
 /** 쓸 수 없는 기능이면 그 기능의 거부 코드로 던진다. */
 export async function assertEntitled(
   entitlements: Pick<EntitlementReaderPort, "can">,
-  userId: string,
+  userId: UserId,
   feature: ServerFlagFeature,
 ): Promise<void> {
   if (!(await entitlements.can(userId, feature))) {
@@ -30,7 +31,7 @@ export async function assertEntitled(
 /** 잠금을 잡은 UoW 안에서 최신 상태로 다시 확인한다. */
 export async function assertEntitledInTx(
   entitlements: Pick<EntitlementReaderPort, "canInTx">,
-  userId: string,
+  userId: UserId,
   feature: ServerFlagFeature,
 ): Promise<void> {
   if (!(await entitlements.canInTx(userId, feature))) {

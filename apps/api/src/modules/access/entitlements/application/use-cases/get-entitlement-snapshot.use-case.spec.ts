@@ -15,7 +15,7 @@ import {
   type AccessUserInput,
 } from "#test/fixtures/access/access-user.fixture";
 
-import { NO_RESOURCE_BONUSES, type ResourceBonuses } from "../../domain/entitlements.constants.js";
+import { NO_FEATURE_GRANTS, type FeatureGrants } from "../../domain/entitlements.constants.js";
 import {
   OwnedFeatureUsageReaderPort,
   type OwnedFeatureUsage,
@@ -42,7 +42,7 @@ class StubOwnedFeatureUsageReader extends OwnedFeatureUsageReaderPort {
 
 function setup(input: {
   readonly user?: AccessUserInput;
-  readonly resourceBonuses?: ResourceBonuses;
+  readonly grants?: FeatureGrants;
   readonly cheerUsed?: number;
   readonly friends?: number;
   readonly categories?: number;
@@ -51,10 +51,7 @@ function setup(input: {
     [ACCESS_FIXTURE_USER_ID, createAccessUserFixture(input.user)],
   ]);
   const accessStateReader = new InMemoryAccessStateReader(users);
-  accessStateReader.resourceBonuses.grant(
-    ACCESS_FIXTURE_USER_ID,
-    input.resourceBonuses ?? NO_RESOURCE_BONUSES,
-  );
+  accessStateReader.featureGrants.seed(ACCESS_FIXTURE_USER_ID, input.grants ?? NO_FEATURE_GRANTS);
   const quotaUsageRepository = new InMemoryQuotaUsageRepository(users);
   const ownedFeatureUsageReader = new StubOwnedFeatureUsageReader({
     daily: {
@@ -92,7 +89,7 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
     const snapshot = await fixture.execute();
 
     // Then
-    expect(snapshot).toMatchObject({ isPremium: false, tier: "FREE" });
+    expect(snapshot).toMatchObject({ isPremium: false, tier: "FREE", plan: "free" });
     expect(Object.keys(snapshot.features)).toEqual([...PLAN_FEATURE_KEYS]);
     expect(snapshot.features.AI_PARSE).toMatchObject({ used: 3, remaining: 7, period: "month" });
     expect(snapshot.features.AI_PARSE.resetsAt?.toString()).toBe("2026-04-30T15:00:00Z");
@@ -163,7 +160,7 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
 
   it("친구 한도는 초대 보상 자리를 더한 한도로 남은 자리를 센다", async () => {
     // Given
-    const fixture = setup({ friends: PLAN_CATALOG.FRIEND.free, resourceBonuses: { FRIEND: 2 } });
+    const fixture = setup({ friends: PLAN_CATALOG.FRIEND.free, grants: { FRIEND: 2 } });
 
     // When
     const snapshot = await fixture.execute();
@@ -202,20 +199,29 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
     });
   });
 
-  it("ADMIN은 카테고리·친구 모두 무제한이라 개수를 싣지 않는다", async () => {
+  it("ADMIN은 프리미엄과 같은 한도·사용량을 받고 카테고리는 프리미엄 한도로 센다", async () => {
     // Given
-    const fixture = setup({ user: { role: "ADMIN" }, friends: 40, categories: 40 });
+    const usage = { friends: 40, categories: PLAN_CATALOG.TODO_CATEGORY.premium + 1 };
+    const admin = setup({ user: { role: "ADMIN" }, ...usage });
+    const premium = setup({ user: { subscriptionStatus: "ACTIVE" }, ...usage });
 
     // When
-    const snapshot = await fixture.execute();
+    const adminSnapshot = await admin.execute();
+    const premiumSnapshot = await premium.execute();
 
     // Then
-    expect(snapshot.features.TODO_CATEGORY).toMatchObject({
-      limit: null,
-      used: null,
-      remaining: null,
+    expect(adminSnapshot).toMatchObject({ tier: "ADMIN", plan: "premium", isPremium: false });
+    expect(adminSnapshot.features).toEqual(premiumSnapshot.features);
+    expect(adminSnapshot.features.TODO_CATEGORY).toMatchObject({
+      limit: PLAN_CATALOG.TODO_CATEGORY.premium,
+      used: PLAN_CATALOG.TODO_CATEGORY.premium + 1,
+      remaining: 0,
     });
-    expect(snapshot.features.FRIEND).toMatchObject({ limit: null, used: null, remaining: null });
+    expect(adminSnapshot.features.AI_PARSE).toMatchObject({
+      limit: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+      isFairUse: true,
+    });
+    expect(adminSnapshot.features.FRIEND).toMatchObject({ limit: null, used: null });
   });
 
   it("사용자가 없으면 USER_0601이다", async () => {

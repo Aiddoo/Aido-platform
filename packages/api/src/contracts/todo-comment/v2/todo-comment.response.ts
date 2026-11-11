@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { TODO_COMMENT_LIMITS } from "../../../vocabulary/todo-comment.constants.js";
 import {
   todoCommentAuthorSchema,
@@ -27,7 +28,7 @@ export const todoCommentV2ViewerSchema = todoCommentViewerSchema
 
 export const todoCommentV2ReplyTargetSchema = z
   .object({
-    commentId: z.cuid().describe("답한 글 ID (같은 묶음의 댓글 또는 답글)"),
+    commentId: entityIdSchema.describe("답한 글 ID (같은 묶음의 댓글 또는 답글)"),
     authorName: z
       .string()
       .nullable()
@@ -38,10 +39,9 @@ export const todoCommentV2ReplyTargetSchema = z
 /** 댓글과 답글이 같은 모양이다. 답글이면 threadCommentId가 묶음 머리 댓글이다. */
 export const todoCommentV2Schema = z
   .object({
-    id: z.cuid().describe("댓글 ID (CUID)"),
+    id: entityIdSchema.describe("댓글 ID"),
     todoId: z.number().int().positive().describe("할 일 ID"),
-    threadCommentId: z
-      .cuid()
+    threadCommentId: entityIdSchema
       .nullable()
       .describe("답글이 속한 묶음의 머리 댓글 ID (댓글이면 null)"),
     replyTo: todoCommentV2ReplyTargetSchema.nullable().describe("답글 대상 (댓글이면 null)"),
@@ -91,9 +91,8 @@ export const todoCommentThreadSchema = z
 
 export const todoCommentThreadAnchorSchema = z
   .object({
-    threadCommentId: z.cuid().describe("anchorCommentId가 속한 묶음 머리 댓글 ID"),
-    replyId: z
-      .cuid()
+    threadCommentId: entityIdSchema.describe("anchorCommentId가 속한 묶음 머리 댓글 ID"),
+    replyId: entityIdSchema
       .nullable()
       .describe("anchorCommentId가 답글이면 그 ID (replies의 aroundReplyId로 쓴다), 댓글이면 null"),
   })

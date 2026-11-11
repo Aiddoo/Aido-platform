@@ -20,13 +20,14 @@ import type { FollowNotifierPort } from "../ports/follow-notifier.port.js";
 import type { FollowRepositoryPort } from "../ports/follow.repository.port.js";
 import type { FriendLimitReaderPort } from "../ports/friend-limit.reader.port.js";
 import type { FriendProfileReaderPort } from "../ports/friend-profile.reader.port.js";
-import type {
-  EstablishFriendshipInput,
-  FriendshipEstablishment,
-} from "../ports/friendship-establisher.port.js";
+import type { FriendshipEstablishment } from "../ports/friendship-establisher.port.js";
 import type { CheckFirstFriendMilestoneUseCase } from "./check-first-friend-milestone.use-case.js";
 
-export type EstablishFriendshipCommand = EstablishFriendshipInput;
+export interface EstablishFriendshipCommand {
+  readonly requesterId: string;
+  readonly targetUserId: string;
+  readonly shouldNotifyFriends: boolean;
+}
 
 export interface EstablishFriendshipDependencies {
   readonly unitOfWork: UnitOfWorkPort;
@@ -41,7 +42,7 @@ export interface EstablishFriendshipDependencies {
     | "save"
   >;
   readonly profileReader: Pick<FriendProfileReaderPort, "findDisplayName">;
-  readonly limitReader: Pick<FriendLimitReaderPort, "readMaxFriendCountInTx">;
+  readonly limitReader: Pick<FriendLimitReaderPort, "readLimitInTx">;
   readonly cache: FriendshipCacheInvalidator;
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew" | "notifyFollowMutual">;
   readonly checkFirstFriendMilestone: Pick<CheckFirstFriendMilestoneUseCase, "execute">;
@@ -103,7 +104,7 @@ export class EstablishFriendshipUseCase {
   async #isAtFriendLimit(userId: UserId): Promise<boolean> {
     const { followRepository, limitReader } = this.#dependencies;
     const [maxFriendCount, friendCount] = await Promise.all([
-      limitReader.readMaxFriendCountInTx(userId),
+      limitReader.readLimitInTx(userId),
       followRepository.countMutualFriends(userId),
     ]);
     return hasReachedFriendLimit({ maxFriendCount, friendCount });
@@ -193,7 +194,7 @@ export class EstablishFriendshipUseCase {
       userId: requesterId.value,
       targetUserId: targetUserId.value,
     });
-    await invalidateFriendshipCaches(cache, requesterId.value, targetUserId.value);
+    await invalidateFriendshipCaches(cache, requesterId, targetUserId);
     if (shouldNotifyFriends) {
       notifier.notifyFollowMutual({
         userId: targetUserId.value,

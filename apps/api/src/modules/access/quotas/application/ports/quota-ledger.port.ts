@@ -1,14 +1,13 @@
 import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { QuotaRefundReason } from "../../domain/quotas.constants.js";
 import type { MeteredFeatureQuota } from "../read-models/metered-feature-quota.read-model.js";
 import type { QuotaReservation } from "../read-models/quota-reservation.read-model.js";
 
-// 옛 Symbol 토큰. ai·voice·identity가 클래스 토큰으로 옮길 때까지 같은 인스턴스를 가리키는 별칭으로 남긴다
-export const QUOTA_LEDGER = Symbol("QUOTA_LEDGER");
-
 export interface QuotaReserveInput {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly feature: MeteredFeatureKey;
   /** 사용자 행동 한 번을 가리키는 키(Idempotency-Key). 키가 없는 출시 앱 요청도 원장에 한 줄을 남긴다. */
   readonly idempotencyKey: string | null;
@@ -41,5 +40,5 @@ export abstract class QuotaLedgerPort {
    * false를 돌려주므로, false면 호출부는 응답에 charged:false를 주장하지 않는다.
    */
   abstract refund(reservation: QuotaReservation, reason: QuotaRefundReason): Promise<boolean>;
-  abstract read(userId: string, feature: MeteredFeatureKey): Promise<MeteredFeatureQuota>;
+  abstract read(userId: UserId, feature: MeteredFeatureKey): Promise<MeteredFeatureQuota>;
 }

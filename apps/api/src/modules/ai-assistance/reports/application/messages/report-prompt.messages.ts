@@ -15,8 +15,6 @@ import { buildReportContext, type ReportPromptInput } from "./report-context.mes
 import { REPORT_SYSTEM_EN } from "./report-system-en.messages.js";
 import { REPORT_SYSTEM_KO } from "./report-system-ko.messages.js";
 
-export type { ReportPromptInput } from "./report-context.messages.js";
-
 const SUMMARY_MAX_LENGTH = 600;
 const TIP_MAX_LENGTH = 120;
 const MAX_TIPS = 3;

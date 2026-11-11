@@ -1,14 +1,12 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { diffInDays } from "#api/shared/domain/date/utils/compare";
-import { toDateString } from "#api/shared/domain/date/utils/format";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import { createWinbackNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createWinbackNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { elapsedDaysUntil, utcStartOf } from "../../domain/reminder-day.domain-service.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { resolveWinbackStage } from "../../domain/winback-stage.constants.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
@@ -35,8 +33,8 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
     const { tz, today } = ctx;
-    const cutoffStart = subtractDays(30, today);
-    const cutoffEnd = subtractDays(3, today);
+    const cutoffStart = utcStartOf(today.subtract({ days: 30 }));
+    const cutoffEnd = utcStartOf(today.subtract({ days: 3 }));
 
     // 3~30일 미접속 유저
     const users = await this.#dependencies.reader.findWinbackUsers({
@@ -70,7 +68,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
           return null;
         }
 
-        const inactiveDays = diffInDays(today, user.lastActiveAt);
+        const inactiveDays = elapsedDaysUntil(today, user.lastActiveAt);
         const stage = resolveWinbackStage(inactiveDays);
         const alreadySent = await this.#dependencies.schedulerDedup.hasWinbackStage(user.id, stage);
         return { user, stage, inactiveDays, alreadySent };
@@ -92,7 +90,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
         variantContext: {
           campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.${check.stage}`,
           recipientId: check.user.id,
-          occurrenceKey: toDateString(today),
+          occurrenceKey: today.toString(),
         },
       });
       notifications.push({

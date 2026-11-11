@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { NudgeReaderPort } from "#api/modules/social/nudges/application/ports/nudge.reader.port";
 import type { NudgeRepositoryPort } from "#api/modules/social/nudges/application/ports/nudge.repository.port";
 import type { Nudge, NudgePrimitives } from "#api/modules/social/nudges/domain/nudge.aggregate";
@@ -103,7 +104,10 @@ export function describeNudgeRepositoryContract(
       });
 
       // When
-      const lastForTodo = await repository.findLastSentForTodo(SENDER_ID, todoId);
+      const lastForTodo = await repository.findLastSentForTodo(
+        SENDER_ID,
+        TodoId.reconstitute(todoId),
+      );
       const lastTo = await repository.findLastSentTo(SENDER_ID, RECEIVER_ID);
       const none = await repository.findLastSentTo(OTHER_USER_ID, RECEIVER_ID);
 
@@ -151,8 +155,8 @@ export function describeNudgeRepositoryContract(
       const todoId = await addTodo(seed);
 
       // When
-      const target = await repository.findTargetTodo(todoId);
-      const missing = await repository.findTargetTodo(todoId + 1000);
+      const target = await repository.findTargetTodo(TodoId.reconstitute(todoId));
+      const missing = await repository.findTargetTodo(TodoId.reconstitute(todoId + 1000));
 
       // Then
       expect(target?.value).toEqual({
@@ -178,9 +182,9 @@ export function describeNudgeRepositoryContract(
       };
 
       // When
-      const locked = await repository.lockInteractionTodo(todoId, RECEIVER_ID);
-      const found = await repository.findInteractionTodo(todoId, RECEIVER_ID);
-      const foreign = await repository.findInteractionTodo(todoId, SENDER_ID);
+      const locked = await repository.lockInteractionTodo(TodoId.reconstitute(todoId), RECEIVER_ID);
+      const found = await repository.findInteractionTodo(TodoId.reconstitute(todoId), RECEIVER_ID);
+      const foreign = await repository.findInteractionTodo(TodoId.reconstitute(todoId), SENDER_ID);
 
       // Then
       expect({ locked, found, foreign }).toEqual({
@@ -340,7 +344,10 @@ export function describeNudgeRepositoryContract(
       // Given
       const { repository, addTodo } = await createSubject();
       const todoId = await addTodo(createNudgeTodoSeed({ completed: true }));
-      const emptyLast = await repository.findLastThankedAt(todoId, RECEIVER_ID);
+      const emptyLast = await repository.findLastThankedAt(
+        TodoId.reconstitute(todoId),
+        RECEIVER_ID,
+      );
       await saveNudge(repository, { todoId, thankedAt: NUDGE_FIXTURE_NOW });
       await saveNudge(repository, {
         todoId,
@@ -350,10 +357,22 @@ export function describeNudgeRepositoryContract(
       const lastReceived = await saveNudge(repository, { todoId });
 
       // When
-      const thankedCount = await repository.countThankedRecipients(todoId, RECEIVER_ID);
-      const lastThankedAt = await repository.findLastThankedAt(todoId, RECEIVER_ID);
-      const lastReceivedId = await repository.findLastReceivedNudgeId(todoId, RECEIVER_ID);
-      const noneReceived = await repository.findLastReceivedNudgeId(todoId, SENDER_ID);
+      const thankedCount = await repository.countThankedRecipients(
+        TodoId.reconstitute(todoId),
+        RECEIVER_ID,
+      );
+      const lastThankedAt = await repository.findLastThankedAt(
+        TodoId.reconstitute(todoId),
+        RECEIVER_ID,
+      );
+      const lastReceivedId = await repository.findLastReceivedNudgeId(
+        TodoId.reconstitute(todoId),
+        RECEIVER_ID,
+      );
+      const noneReceived = await repository.findLastReceivedNudgeId(
+        TodoId.reconstitute(todoId),
+        SENDER_ID,
+      );
 
       // Then
       expect(emptyLast).toBeNull();
@@ -376,9 +395,9 @@ export function describeNudgeRepositoryContract(
       await saveNudge(repository, { todoId, senderId: NUDGE_FIXTURE_OTHER_USER_ID });
       const query = {
         ownerId: RECEIVER_ID,
-        todoId,
+        todoId: TodoId.reconstitute(todoId),
         throughNudgeId: otherNudge.id,
-        friendIds: [NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_OTHER_USER_ID],
+        friendIds: [SENDER_ID, OTHER_USER_ID],
       };
 
       // When
@@ -420,18 +439,18 @@ export function describeNudgeRepositoryContract(
         createNudgeTodoSeed({ completed: true, visibility: "PRIVATE" }),
       );
       const privateNudge = await saveNudge(repository, { todoId: privateTodoId });
-      const friendIds = [NUDGE_FIXTURE_SENDER_ID];
+      const friendIds = [SENDER_ID];
 
       // When
       const thanked = await repository.listThanksCandidates({
         ownerId: RECEIVER_ID,
-        todoId,
+        todoId: TodoId.reconstitute(todoId),
         throughNudgeId: unthanked.id,
         friendIds,
       });
       const privateCandidates = await repository.listThanksCandidates({
         ownerId: RECEIVER_ID,
-        todoId: privateTodoId,
+        todoId: TodoId.reconstitute(privateTodoId),
         throughNudgeId: privateNudge.id,
         friendIds,
       });

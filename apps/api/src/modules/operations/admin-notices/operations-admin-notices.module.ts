@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 
-import { DatabaseModule } from "#api/platform/database/index";
+import { DatabaseModule } from "#api/platform/database/database.module";
 
 import { AdminEventNotifierPort } from "./application/ports/admin-event-notifier.port.js";
 import { operationsAdminNoticesConfig } from "./operations-admin-notices.config.js";

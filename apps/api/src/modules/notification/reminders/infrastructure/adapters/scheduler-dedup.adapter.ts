@@ -1,18 +1,15 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import {
-  DEDUP_PROVIDER,
-  type IDedupProvider,
-} from "#api/platform/dedup/interfaces/dedup.interface";
+import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 
 import { SchedulerDedupPort } from "../../application/ports/scheduler-dedup.port.js";
 import { SCHEDULER_DEDUP_TTL_MS, SchedulerDedupKey } from "../cache/scheduler-dedup.keyspace.js";
 
 @Injectable()
 export class SchedulerDedupAdapter extends SchedulerDedupPort {
-  readonly #dedupProvider: IDedupProvider;
+  readonly #dedupProvider: DedupProviderPort;
 
-  constructor(@Inject(DEDUP_PROVIDER) dedupProvider: IDedupProvider) {
+  constructor(dedupProvider: DedupProviderPort) {
     super();
     this.#dedupProvider = dedupProvider;
   }

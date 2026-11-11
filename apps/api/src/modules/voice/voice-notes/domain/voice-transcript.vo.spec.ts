@@ -38,14 +38,14 @@ describe("VoiceTranscript", () => {
   });
 
   it.each([
-    { sentenceIndex: 1, startMs: 2_000 },
+    { sentenceIndex: 1, startMs: 2000 },
     { sentenceIndex: 2, startMs: null },
     { sentenceIndex: null, startMs: null },
   ])("문장 번호 $sentenceIndex의 시각은 $startMs다", ({ sentenceIndex, startMs }) => {
     // Given
     const value = transcript("첫 문장 다음 문장", [
       { startMs: 0, text: "첫 문장" },
-      { startMs: 2_000, text: "다음 문장" },
+      { startMs: 2000, text: "다음 문장" },
     ]);
     // When
     const found = value.startMsAt(sentenceIndex);

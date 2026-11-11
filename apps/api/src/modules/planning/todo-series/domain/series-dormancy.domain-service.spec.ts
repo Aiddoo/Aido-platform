@@ -1,8 +1,8 @@
 import { isDormantSince, isSeriesOwnerDormant } from "./series-dormancy.domain-service.js";
 
 const OWNER = {
-  lastActiveAt: new Date("2026-09-06T03:00:00.000Z"),
-  signedUpAt: new Date("2026-01-01T03:00:00.000Z"),
+  lastActiveAt: Temporal.Instant.from("2026-09-06T03:00:00.000Z"),
+  signedUpAt: Temporal.Instant.from("2026-01-01T03:00:00.000Z"),
   timezone: "Asia/Seoul",
 };
 
@@ -14,7 +14,7 @@ describe("isSeriesOwnerDormant — 휴면 판단", () => {
     { name: "61일째 자정부터 휴면이다", at: "2026-11-05T15:00:00.000Z", expected: true },
   ])("$name", ({ at, expected }) => {
     // When
-    const dormant = isSeriesOwnerDormant(OWNER, new Date(at));
+    const dormant = isSeriesOwnerDormant(OWNER, Temporal.Instant.from(at));
     // Then
     expect(dormant).toBe(expected);
   });
@@ -24,9 +24,13 @@ describe("isSeriesOwnerDormant — 휴면 판단", () => {
     { timezone: "America/Los_Angeles", expected: false },
   ])("같은 순간이라도 $timezone 달력으로 잰다", ({ timezone, expected }) => {
     // Given
-    const owner = { ...OWNER, lastActiveAt: new Date("2026-09-06T12:00:00.000Z"), timezone };
+    const owner = {
+      ...OWNER,
+      lastActiveAt: Temporal.Instant.from("2026-09-06T12:00:00.000Z"),
+      timezone,
+    };
     // When
-    const dormant = isSeriesOwnerDormant(owner, new Date("2026-11-05T15:00:00.000Z"));
+    const dormant = isSeriesOwnerDormant(owner, Temporal.Instant.from("2026-11-05T15:00:00.000Z"));
     // Then
     expect(dormant).toBe(expected);
   });
@@ -39,7 +43,7 @@ describe("isSeriesOwnerDormant — 휴면 판단", () => {
     // Given
     const owner = { ...OWNER, timezone };
     // When
-    const dormant = isSeriesOwnerDormant(owner, new Date("2026-11-05T15:00:00.000Z"));
+    const dormant = isSeriesOwnerDormant(owner, Temporal.Instant.from("2026-11-05T15:00:00.000Z"));
     // Then
     expect(dormant).toBe(true);
   });
@@ -48,12 +52,18 @@ describe("isSeriesOwnerDormant — 휴면 판단", () => {
     // Given
     const justSignedUp = {
       lastActiveAt: null,
-      signedUpAt: new Date("2026-09-06T03:00:00.000Z"),
+      signedUpAt: Temporal.Instant.from("2026-09-06T03:00:00.000Z"),
       timezone: "Asia/Seoul",
     };
     // When
-    const onDay60 = isSeriesOwnerDormant(justSignedUp, new Date("2026-11-05T03:00:00.000Z"));
-    const onDay61 = isSeriesOwnerDormant(justSignedUp, new Date("2026-11-06T03:00:00.000Z"));
+    const onDay60 = isSeriesOwnerDormant(
+      justSignedUp,
+      Temporal.Instant.from("2026-11-05T03:00:00.000Z"),
+    );
+    const onDay61 = isSeriesOwnerDormant(
+      justSignedUp,
+      Temporal.Instant.from("2026-11-06T03:00:00.000Z"),
+    );
     // Then
     expect(onDay60).toBe(false);
     expect(onDay61).toBe(true);
@@ -61,10 +71,18 @@ describe("isSeriesOwnerDormant — 휴면 판단", () => {
 
   it("윤일을 지나도 달력 날짜로 센다", () => {
     // Given
-    const lastMovedAt = new Date("2028-01-15T00:00:00.000Z");
+    const lastMovedAt = Temporal.Instant.from("2028-01-15T00:00:00.000Z");
     // When
-    const onDay60 = isDormantSince(lastMovedAt, "UTC", new Date("2028-03-15T00:00:00.000Z"));
-    const onDay61 = isDormantSince(lastMovedAt, "UTC", new Date("2028-03-16T00:00:00.000Z"));
+    const onDay60 = isDormantSince(
+      lastMovedAt,
+      "UTC",
+      Temporal.Instant.from("2028-03-15T00:00:00.000Z"),
+    );
+    const onDay61 = isDormantSince(
+      lastMovedAt,
+      "UTC",
+      Temporal.Instant.from("2028-03-16T00:00:00.000Z"),
+    );
     // Then
     expect(onDay60).toBe(false);
     expect(onDay61).toBe(true);

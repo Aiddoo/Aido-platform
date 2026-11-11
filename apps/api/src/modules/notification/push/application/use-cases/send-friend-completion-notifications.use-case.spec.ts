@@ -17,7 +17,7 @@ import { SendFriendCompletionNotificationsUseCase } from "./send-friend-completi
 
 // 서울 2026-11-10 09:00
 const NOW = Temporal.Instant.from("2026-11-10T00:00:00Z");
-const SEOUL_NOTIFICATION_DATE = new Date("2026-11-10T00:00:00.000Z");
+const SEOUL_NOTIFICATION_DATE = Temporal.PlainDate.from("2026-11-10");
 
 const input = {
   friendId: "friend-1",
@@ -166,7 +166,7 @@ describe("SendFriendCompletionNotificationsUseCase — 친구 완료 알림", ()
         userId: "user-1",
         type: "FRIEND_COMPLETED",
         friendId: "friend-1",
-        notificationDate: SEOUL_NOTIFICATION_DATE,
+        notificationDate: Temporal.PlainDate.from("2026-11-10"),
       }),
     ]);
     const { useCase, persistBatch } = setup(history);
@@ -189,7 +189,7 @@ describe("SendFriendCompletionNotificationsUseCase — 친구 완료 알림", ()
           userId,
           type: "FRIEND_COMPLETED",
           friendId: "friend-1",
-          notificationDate: SEOUL_NOTIFICATION_DATE,
+          notificationDate: Temporal.PlainDate.from("2026-11-10"),
         }),
       ),
     );

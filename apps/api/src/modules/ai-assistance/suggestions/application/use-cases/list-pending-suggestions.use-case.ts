@@ -30,7 +30,12 @@ export class ListPendingSuggestionsUseCase {
   }
 
   async execute(query: ListPendingSuggestionsQuery): Promise<Suggestion[]> {
-    if (!(await this.#dependencies.entitlementReader.can(query.userId, "AI_SUGGESTION"))) {
+    if (
+      !(await this.#dependencies.entitlementReader.can(
+        UserId.reconstitute(query.userId),
+        "AI_SUGGESTION",
+      ))
+    ) {
       this.#dependencies.logger.warn({
         event: AiSuggestionLogEvent.PREMIUM_DENIED,
         userId: query.userId,

@@ -78,9 +78,7 @@ describe("복귀 회차 채우기", () => {
     await catchUp().execute(fixture.userId);
     // Then
     expect(fixture.records.size).toBe(91);
-    const dates = [...fixture.records.values()].map((todo) =>
-      todo.occurrenceDate?.toISOString().slice(0, 10),
-    );
+    const dates = [...fixture.records.values()].map((todo) => todo.occurrenceDate?.toString());
     expect(dates).toContain("2026-11-05");
     expect(dates).not.toContain("2026-11-04");
     expect(fixture.logger.messages).toContainEqual(
@@ -117,7 +115,10 @@ describe("복귀 회차 채우기", () => {
     await service.execute(fixture.userId);
     // Then
     expect(findIdsBehind).toHaveBeenCalledTimes(2);
-    expect(findIdsBehind).toHaveBeenLastCalledWith(fixture.userId, "2026-11-07");
+    expect(findIdsBehind).toHaveBeenLastCalledWith(
+      UserId.reconstitute(fixture.userId),
+      "2026-11-07",
+    );
   });
 
   it("UTC 날짜가 하루 늦은 시간대의 오늘도 조회 범위에 넣는다", async () => {
@@ -127,7 +128,7 @@ describe("복귀 회차 채우기", () => {
     // When
     await catchUp().execute(fixture.userId);
     // Then
-    expect(findIdsBehind).toHaveBeenCalledWith(fixture.userId, "2026-11-05");
+    expect(findIdsBehind).toHaveBeenCalledWith(UserId.reconstitute(fixture.userId), "2026-11-05");
   });
 
   it("같은 사용자의 동시 요청은 한 번의 복귀를 함께 기다린다", async () => {

@@ -1,13 +1,15 @@
 import { currentUserSchema } from "@aido/api";
 import { Logger } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
 import request from "supertest";
 import { z } from "zod";
 
-import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
-import { appConfig } from "#api/platform/config/app.config";
+import {
+  type BillingSubscriptionsConfig,
+  billingSubscriptionsConfig,
+} from "#api/modules/billing/subscriptions/billing-subscriptions.config";
+import type { AppEnvironment } from "#api/platform/config/schemas/app.schema";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
-import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
@@ -18,27 +20,34 @@ const at = new Date("2027-01-04T12:00:00.000Z");
 const expiresAt = new Date("2027-02-04T12:00:00.000Z");
 const loggedEventSchema = z.object({ event: z.string() });
 
+function billingIn(environment: AppEnvironment): BillingSubscriptionsConfig {
+  return billingSubscriptionsConfig.parse({
+    NODE_ENV: "production",
+    APP_ENV: environment,
+    REVENUECAT_WEBHOOK_SECRET: webhookSecret,
+  });
+}
+
 describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)", () => {
   let context: E2eTestContext;
   const alert = new RecordingOperationalAlert();
+  const billing = billingIn("production");
 
   beforeAll(async () => {
     context = await createE2eApp({
       customizeBuilder: (builder) =>
         builder
-          .overrideProvider(OPERATIONAL_ALERT)
+          .overrideProvider(OperationalAlertPort)
           .useValue(alert)
           .overrideProvider(billingSubscriptionsConfig.KEY)
-          .useValue({
-            revenuecat: { webhookSecret, projectId: undefined, apiV2SecretKey: undefined },
-          }),
+          .useValue(billing),
       additionalResetters: [() => alert.alerts.splice(0)],
     });
   });
 
-  // 배포 환경은 시작할 때 한 번 읽으므로 앱이 받은 설정 값을 테스트마다 바꾼다
-  function deployTo(appEnv: ConfigType<typeof appConfig>["appEnv"]): void {
-    context.module.get<ConfigType<typeof appConfig>>(appConfig.KEY).appEnv = appEnv;
+  // 배포 환경은 시작할 때 한 번 읽으므로 앱이 받은 billing 설정 값을 테스트마다 바꾼다
+  function deployTo(environment: AppEnvironment): void {
+    Object.assign(billing, billingIn(environment));
   }
 
   beforeEach(async () => {

@@ -35,7 +35,7 @@ export interface SendCheerDependencies {
     CheerRepositoryPort,
     "nextId" | "countSentBetween" | "findLastSent" | "save"
   >;
-  readonly limitReader: Pick<CheerLimitReaderPort, "readDailyLimitInTx" | "readDailyQuotaInTx">;
+  readonly limitReader: Pick<CheerLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
   readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
   readonly notifier: CheerNotifierPort;
   readonly clock: ClockPort;
@@ -67,7 +67,7 @@ export class SendCheerUseCase {
     if (senderId.equals(receiverId)) {
       throw cannotCheerSelf();
     }
-    if (!(await followReader.isMutualFriend(senderId.value, receiverId.value))) {
+    if (!(await followReader.isMutualFriend(senderId, receiverId))) {
       throw cheerTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : CheerMessage.create(command.message);
@@ -81,11 +81,11 @@ export class SendCheerUseCase {
         CheerLockKeys.cooldown(senderId, receiverId),
       ]);
 
-      const dailyLimit = await limitReader.readDailyLimitInTx(senderId);
+      const dailyLimit = await limitReader.readLimitInTx(senderId);
       const used = await cheerRepository.countSentBetween(senderId, window);
       if (dailyLimit != null && used >= dailyLimit) {
         throw cheerDailyLimitReached(
-          await limitReader.readDailyQuotaInTx(senderId, { used, resetsAt: window.endsAt }),
+          await limitReader.readFeatureQuotaInTx(senderId, { used, resetsAt: window.endsAt }),
         );
       }
 
@@ -106,7 +106,7 @@ export class SendCheerUseCase {
         now: requestedAt,
       });
       await cheerRepository.save(created);
-      return { cheer: created, senderName: await followReader.getUserDisplayName(senderId.value) };
+      return { cheer: created, senderName: await followReader.getUserDisplayName(senderId) };
     });
 
     logger.log({

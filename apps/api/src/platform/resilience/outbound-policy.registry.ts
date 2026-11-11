@@ -1,9 +1,6 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
-import {
-  OPERATIONAL_ALERT,
-  type OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import { PlatformLogEvent } from "../logging/platform.log-events.js";
 import {
@@ -24,7 +21,7 @@ export class OutboundPolicyRegistry {
   readonly #policies = new Map<string, OutboundPolicy>();
   readonly #events: OutboundPolicyEvents;
 
-  constructor(@Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort) {
+  constructor(alert: OperationalAlertPort) {
     this.#events = {
       onOpened: (event) => this.#opened(event, alert),
       onHalfOpened: (policy, breaker) =>
@@ -63,9 +60,7 @@ export class OutboundPolicyRegistry {
     });
     if (breaker.alert != null) {
       alert.raise({
-        key: breaker.alert.key,
-        severity: "error",
-        message: breaker.alert.message,
+        ...breaker.alert,
         tags: { policy, breaker: breaker.name, ...failure },
         details: { cooldownMs: breaker.halfOpenAfterMs },
       });

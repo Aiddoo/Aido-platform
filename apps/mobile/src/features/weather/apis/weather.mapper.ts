@@ -1,14 +1,28 @@
-import type { WeatherLocationResponse, WeatherReportResponse } from '@aido/api';
+import type { WeatherBriefing, WeatherLocationResponse, WeatherReportResponse } from '@aido/api';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
-import type { RegisteredLocation } from '../domains/weather-report.model';
-import type { WeatherReport } from '../domains/weather-report.model';
+import type {
+  RegisteredLocation,
+  WeatherReport,
+  WeatherReportBriefing,
+} from '../domains/weather-report.model';
 
 export function toRegisteredLocation(dto: WeatherLocationResponse): RegisteredLocation {
   return {
     latitude: dto.latitude,
     longitude: dto.longitude,
     timezone: dto.timezone,
+  };
+}
+
+function toWeatherReportBriefing(dto: WeatherBriefing): WeatherReportBriefing {
+  return {
+    reason: dto.reason,
+    affectedTodoIds: dto.affectedTodoIds,
+    rescheduleOptions: dto.rescheduleOptions.map(({ todoId, options }) => ({
+      todoId,
+      options: options.map((option) => ({ ...option, startsAt: toInstant(option.startsAt) })),
+    })),
   };
 }
 
@@ -46,5 +60,6 @@ export function toWeatherReport(dto: WeatherReportResponse): WeatherReport {
     airQuality: dto.airQuality,
     attribution: dto.attribution,
     fetchedAt: toInstant(dto.fetchedAt),
+    briefing: dto.briefing == null ? null : toWeatherReportBriefing(dto.briefing),
   };
 }

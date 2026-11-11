@@ -88,27 +88,29 @@ export class DrizzleUserBlockRepository implements UserBlockRepositoryPort, User
     await this.#db.delete(userBlock).where(eq(userBlock.id, block.id.value));
   }
 
-  async findRelation(userId: string, otherUserId: string): Promise<UserBlockRelation> {
+  async findRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation> {
     const rows = await this.#db
       .select({ blockerId: userBlock.blockerId })
       .from(userBlock)
       .where(
         or(
-          and(eq(userBlock.blockerId, userId), eq(userBlock.blockedId, otherUserId)),
-          and(eq(userBlock.blockerId, otherUserId), eq(userBlock.blockedId, userId)),
+          and(eq(userBlock.blockerId, userId.value), eq(userBlock.blockedId, otherUserId.value)),
+          and(eq(userBlock.blockerId, otherUserId.value), eq(userBlock.blockedId, userId.value)),
         ),
       );
     return {
-      isBlocking: rows.some((row) => row.blockerId === userId),
-      isBlockedBy: rows.some((row) => row.blockerId === otherUserId),
+      isBlocking: rows.some((row) => row.blockerId === userId.value),
+      isBlockedBy: rows.some((row) => row.blockerId === otherUserId.value),
     };
   }
 
   async findBlockedCounterpartIds(
-    viewerId: string,
-    candidateUserIds: readonly string[],
+    viewerId: UserId,
+    candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>> {
-    const candidates = candidateUserIds.filter((userId) => userId !== viewerId);
+    const candidates = candidateUserIds
+      .map((userId) => userId.value)
+      .filter((userId) => userId !== viewerId.value);
     if (candidates.length === 0) {
       return new Set();
     }
@@ -117,10 +119,12 @@ export class DrizzleUserBlockRepository implements UserBlockRepositoryPort, User
       .from(userBlock)
       .where(
         or(
-          and(eq(userBlock.blockerId, viewerId), inArray(userBlock.blockedId, candidates)),
-          and(eq(userBlock.blockedId, viewerId), inArray(userBlock.blockerId, candidates)),
+          and(eq(userBlock.blockerId, viewerId.value), inArray(userBlock.blockedId, candidates)),
+          and(eq(userBlock.blockedId, viewerId.value), inArray(userBlock.blockerId, candidates)),
         ),
       );
-    return new Set(rows.map((row) => (row.blockerId === viewerId ? row.blockedId : row.blockerId)));
+    return new Set(
+      rows.map((row) => (row.blockerId === viewerId.value ? row.blockedId : row.blockerId)),
+    );
   }
 }

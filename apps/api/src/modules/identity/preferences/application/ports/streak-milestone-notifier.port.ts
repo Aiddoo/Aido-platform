@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 /**
  * 스트릭 마일스톤 알림 포트.
  *
@@ -5,5 +7,5 @@
  * 어댑터가 notification 큐로 위임한다.
  */
 export abstract class StreakMilestoneNotifierPort {
-  abstract notifyStreak3Reached(userId: string): void;
+  abstract notifyStreak3Reached(userId: UserId): void;
 }

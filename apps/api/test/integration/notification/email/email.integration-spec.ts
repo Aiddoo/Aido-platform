@@ -8,14 +8,11 @@ import { notificationEmailConfig } from "#api/modules/notification/email/notific
 import { NotificationEmailModule } from "#api/modules/notification/email/notification-email.module";
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
-import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import {
-  OPERATIONAL_ALERT,
-  OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
@@ -27,6 +24,13 @@ import {
 } from "#test/mocks/resend-http.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+const FIXTURE_EMAIL_CONFIG = notificationEmailConfig.parse({
+  NODE_ENV: "test",
+  EMAIL_PROVIDER: "resend",
+  RESEND_API_KEY: "fixture-api-key",
+  EMAIL_FROM: "noreply@integration-test.com",
+  EMAIL_FROM_NAME: "Integration Test",
+});
 const recipient = "private@example.com";
 const code = "987654";
 const expiryMinutes = 15;
@@ -41,8 +45,7 @@ const alerts = new RecordingOperationalAlert();
 @Module({
   providers: [
     { provide: JobQueuePort, useValue: jobQueue },
-    { provide: USAGE_METER, useValue: meter },
-    { provide: OPERATIONAL_ALERT, useValue: alerts },
+    { provide: UsageMeterPort, useValue: meter },
     { provide: OperationalAlertPort, useValue: alerts },
     { provide: ClockPort, useClass: DateClock },
     OutboundPolicyRegistry,
@@ -56,8 +59,7 @@ const alerts = new RecordingOperationalAlert();
   ],
   exports: [
     JobQueuePort,
-    USAGE_METER,
-    OPERATIONAL_ALERT,
+    UsageMeterPort,
     OperationalAlertPort,
     ClockPort,
     OutboundPolicyRegistry,
@@ -82,12 +84,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
       imports: [PlatformStubModule, NotificationEmailModule],
     })
       .overrideProvider(notificationEmailConfig.KEY)
-      .useValue({
-        provider: "resend",
-        apiKey: "fixture-api-key",
-        from: "noreply@integration-test.com",
-        fromName: "Integration Test",
-      })
+      .useValue(FIXTURE_EMAIL_CONFIG)
       .compile();
     sender = module.get(SendTransactionalEmailUseCase);
     processor = module.get(EmailDeliveryQueueProcessor);

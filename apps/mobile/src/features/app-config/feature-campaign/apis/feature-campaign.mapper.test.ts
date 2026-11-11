@@ -1,23 +1,28 @@
-import type { FeatureDiscoveryResponse } from '@aido/api';
+import { type FeatureDiscoveryResponse, featureDiscoveryResponseSchema } from '@aido/api';
 
 import { toFeatureCampaignConfig } from './feature-campaign.mapper';
 
 describe('toFeatureCampaignConfig', () => {
-  it('활성 응답의 출시 시각을 Instant로 옮긴다', () => {
+  it('계약이 그대로 보내는 출시 시각은 1.15.0 이하 앱만 읽어 옮기지 않는다', () => {
     // Given
-    const response: FeatureDiscoveryResponse = {
+    const response: FeatureDiscoveryResponse = featureDiscoveryResponseSchema.parse({
       enabled: true,
-      campaignId: 'feature-discovery-2026-08',
-      minAppVersion: '1.8.0',
-      launchedAt: '2026-08-01T00:00:00.000Z',
+      campaignId: 'feature-discovery-2026-12',
+      minAppVersion: '1.15.0',
+      launchedAt: '2026-11-10T00:00:00.000Z',
       autoOpen: true,
-    };
+    });
 
     // When
     const result = toFeatureCampaignConfig(response);
 
     // Then
-    expect(result).toMatchObject({ enabled: true, launchedAt: '2026-08-01T00:00:00.000Z' });
+    expect(result).toEqual({
+      enabled: true,
+      campaignId: 'feature-discovery-2026-12',
+      minAppVersion: '1.15.0',
+      autoOpen: true,
+    });
   });
 
   it('비활성 응답은 비활성 도메인 값으로 유지한다', () => {

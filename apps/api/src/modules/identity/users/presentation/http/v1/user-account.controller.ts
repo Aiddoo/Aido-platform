@@ -14,10 +14,8 @@ import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
+import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { extractMetadata } from "#api/modules/identity/auth/presentation/http/v1/auth-request.mapper";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
 import { AUTH_THROTTLE } from "#api/modules/identity/auth/presentation/http/v1/auth-throttle.constants";
@@ -28,20 +26,20 @@ import {
   UpdateProfileDto,
   UpdateProfileResponseDto,
 } from "#api/modules/identity/auth/presentation/http/v1/auth.dto";
-import { Timezone } from "#api/platform/http/decorators/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { type RequestClient } from "#api/platform/http/request-client/request-client";
 import {
   AppVersion,
   CurrentRequestClient,
-  type RequestClient,
-} from "#api/platform/http/request-client/index";
+} from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
-  ApiDoc,
   ApiErrorResponse,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { DeleteAccountUseCase } from "../../../application/use-cases/delete-account.use-case.js";
 import { GetCurrentUserUseCase } from "../../../application/use-cases/get-current-user.use-case.js";

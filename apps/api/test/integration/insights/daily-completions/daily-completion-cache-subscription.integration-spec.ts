@@ -7,8 +7,8 @@ import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import {
   DomainEventPublisherPort,
   type PublishedDomainEvent,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/domain-event-publisher.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {

@@ -56,8 +56,7 @@ export class ConvertMemoToTodoUseCase {
 
     const todo = await unitOfWork.run(async () => {
       await mutationLock.acquire([
-        MemoLockKeys.memo(memoId),
-        MemoLockKeys.sortOrder(userId),
+        ...MemoLockKeys.existingMemo(memoId, userId),
         TodoCategoryLockKeys.userCategories(command.userId),
         TodoLockKeys.sortOrder(command.userId),
       ]);
@@ -67,7 +66,7 @@ export class ConvertMemoToTodoUseCase {
       }
       const staged = await todoCreator.stage({
         ...command.todo,
-        userId: command.userId,
+        userId,
         title: memo.toTodoTitle(),
         timezone: command.timezone,
         isAllDay: command.todo.isAllDay ?? true,

@@ -2,10 +2,11 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createPremiumGrantEndingNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
   NotificationRecipientLocaleReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { PremiumGrantEndingNotice } from "../../application/ports/premium-grant-ending-notice.repository.port.js";
@@ -13,11 +14,11 @@ import { PremiumGrantNotifierPort } from "../../application/ports/premium-grant-
 
 @Injectable()
 export class PremiumGrantNotifierAdapter extends PremiumGrantNotifierPort {
-  readonly #notificationPublisher: NotificationPublisher;
+  readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
 
   constructor(
-    notificationPublisher: NotificationPublisher,
+    notificationPublisher: PublishNotificationUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
   ) {
@@ -30,7 +31,9 @@ export class PremiumGrantNotifierAdapter extends PremiumGrantNotifierPort {
     if (notices.length === 0) {
       return;
     }
-    const locales = await this.#localeReader.getLocales(notices.map((notice) => notice.userId));
+    const locales = await this.#localeReader.getLocales(
+      notices.map((notice) => UserId.reconstitute(notice.userId)),
+    );
     await this.#notificationPublisher.publishBatch(
       notices.map((notice) => {
         const message = createPremiumGrantEndingNotificationMessage({

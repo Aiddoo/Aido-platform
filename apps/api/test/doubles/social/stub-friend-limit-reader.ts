@@ -1,5 +1,5 @@
 import {
-  type FriendQuota,
+  type FriendFeatureQuota,
   FriendLimitReaderPort,
 } from "#api/modules/social/friends/application/ports/friend-limit.reader.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -12,15 +12,15 @@ export class StubFriendLimitReader extends FriendLimitReaderPort {
     this.#maxFriendCounts.set(userId, maxFriendCount);
   }
 
-  async readMaxFriendCount(userId: UserId): Promise<number | null> {
+  async readLimit(userId: UserId): Promise<number | null> {
     return this.#maxFriendCounts.get(userId.value) ?? null;
   }
 
-  async readMaxFriendCountInTx(userId: UserId): Promise<number | null> {
+  async readLimitInTx(userId: UserId): Promise<number | null> {
     return this.#maxFriendCounts.get(userId.value) ?? null;
   }
 
-  async readQuotaInTx(userId: UserId, friendCount: number): Promise<FriendQuota> {
+  async readFeatureQuotaInTx(userId: UserId, friendCount: number): Promise<FriendFeatureQuota> {
     return {
       feature: "FRIEND",
       userId: userId.value,

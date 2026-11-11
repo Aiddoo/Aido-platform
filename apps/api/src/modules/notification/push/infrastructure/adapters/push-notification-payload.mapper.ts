@@ -17,6 +17,7 @@ import {
   notificationMinAppVersion,
   toWireNotificationType,
 } from "../../domain/notification-client-capability.domain-service.js";
+import { pushDeliveryOptions } from "../../domain/push-delivery-options.constants.js";
 import { isMarketingNotification } from "../../domain/push-eligibility.domain-service.js";
 import { toNotificationNavigation } from "./notification-navigation.mapper.js";
 import { toNotificationRouting } from "./notification-routing.mapper.js";
@@ -53,6 +54,7 @@ export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
         ...this.#createNotificationData(data, notificationId),
         dispatchId,
       },
+      ...pushDeliveryOptions(data.type),
       ...(isMarketing && { categoryId: "MARKETING" }),
     };
   }

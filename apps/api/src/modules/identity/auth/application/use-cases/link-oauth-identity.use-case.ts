@@ -8,6 +8,7 @@ import {
   AUTH_DEFAULTS,
   type AccountProvider,
 } from "#api/modules/identity/auth/domain/auth.constants";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import { type AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
@@ -36,13 +37,14 @@ export class LinkOAuthIdentityUseCase {
   }
 
   async execute(input: LinkOAuthIdentityCommand): Promise<{ message: string; linked: boolean }> {
-    const { userId, provider, providerAccountId, metadata } = input;
+    const { provider, providerAccountId, metadata } = input;
+    const userId = UserId.reconstitute(input.userId);
     const existingAccount = await this.#dependencies.accountRepository.findByProviderAccountId(
       provider,
       providerAccountId,
     );
     if (existingAccount != null) {
-      if (existingAccount.userId !== userId) {
+      if (existingAccount.userId !== input.userId) {
         throw oauthAccountAlreadyLinked(provider, providerAccountId);
       }
       return { message: "이미 연결된 계정입니다.", linked: false };

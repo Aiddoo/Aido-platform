@@ -5,6 +5,7 @@ import {
   type InviteQualifyReminderNotification,
   type InviteRewardedNotification,
 } from "#api/modules/social/invites/application/ports/invite-notifier.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 보낸 알림을 종류별로 남긴다. isDown이면 발송 장애처럼 던지고, quietUserIds는 야간인 사용자다
 export class RecordingInviteNotifier extends InviteNotifierPort {
@@ -35,8 +36,8 @@ export class RecordingInviteNotifier extends InviteNotifierPort {
     this.qualifyReminders.push(notification);
   }
 
-  async isInQuietHours(userId: string, _at: Temporal.Instant): Promise<boolean> {
-    return this.quietUserIds.has(userId);
+  async isInQuietHours(userId: UserId, _at: Temporal.Instant): Promise<boolean> {
+    return this.quietUserIds.has(userId.value);
   }
 
   #throwIfDown(): void {

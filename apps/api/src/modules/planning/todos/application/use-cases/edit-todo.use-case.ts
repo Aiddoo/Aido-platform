@@ -2,9 +2,12 @@ import { ErrorCode } from "@aido/api/errors";
 import type { TodoUpdateScope } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
 import type { StartSeriesFromTodoUseCase } from "../../../todo-series/application/use-cases/start-series-from-todo.use-case.js";
 import type { StopTodoSeriesUseCase } from "../../../todo-series/application/use-cases/stop-todo-series.use-case.js";
@@ -170,7 +173,10 @@ export class EditTodoUseCase {
   }
 
   async #read(id: number, userId: string): Promise<TodoReadModel> {
-    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
+    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
+      TodoId.reconstitute(id),
+      UserId.reconstitute(userId),
+    );
     if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
