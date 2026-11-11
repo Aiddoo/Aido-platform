@@ -6,28 +6,39 @@ import {
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
+import type { Logger } from '@src/core/ports/logger';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
+import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import type { Coordinates } from '../domains/weather-location.model';
 import type { RegisteredLocation } from '../domains/weather-report.model';
 import type { WeatherReport } from '../domains/weather-report.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
-import { toRegisteredLocation, toWeatherReport } from './weather.mapper';
+import { getFallbackFieldPaths, toRegisteredLocation, toWeatherReport } from './weather.mapper';
 
 export class WeatherApi {
   readonly #httpClient: HttpClient;
+  readonly #logger: Logger;
 
-  constructor(httpClient: HttpClient) {
+  constructor(httpClient: HttpClient, logger: Logger) {
     this.#httpClient = httpClient;
+    this.#logger = logger;
   }
 
-  getReport = async (signal?: AbortSignal): Promise<Result<WeatherReport, ApiError>> =>
-    parseApiResponse(
-      await this.#httpClient.get('v2/weather', { signal }),
+  getReport = async (signal?: AbortSignal): Promise<Result<WeatherReport, ApiError>> => {
+    const response = await this.#httpClient.get('v2/weather', { signal });
+    return parseApiResponse(
+      response,
       weatherReportSchema,
-      toWeatherReport,
+      (dto) => {
+        if (response.ok) {
+          this.#logFallbackFields(response.value, dto);
+        }
+        return toWeatherReport(dto);
+      },
       '[WeatherApi] Invalid getReport response',
     );
+  };
 
   updateLocation = async (
     input: UpdateWeatherLocationInput,
@@ -57,5 +68,13 @@ export class WeatherApi {
       return result;
     }
     return this.getReport(signal);
+  };
+
+  /** 계약이 모르는 열거 값을 대체값으로 읽었으면 서버가 새 값을 보내기 시작했다는 신호라 칸 경로만 남긴다 */
+  #logFallbackFields = (raw: unknown, dto: unknown) => {
+    const fields = getFallbackFieldPaths(raw, dto);
+    if (fields.length > 0) {
+      this.#logger.warn(WEATHER_LOG_EVENT.REPORT_ENUM_FALLBACK, { fields });
+    }
   };
 }

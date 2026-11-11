@@ -251,7 +251,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     getNowInstant,
   );
 
-  const weatherApi = new WeatherApi(authHttpClient);
+  const weatherApi = new WeatherApi(authHttpClient, logger);
 
   return {
     logger,
