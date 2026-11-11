@@ -785,7 +785,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.VERIFY_0753]: {
     code: "VERIFY_0753",
-    message: "인증 코드 재발송은 1분 후에 가능합니다.",
+    message: "인증 코드는 1분 뒤에 다시 보낼 수 있습니다.",
     description: "인증 코드 재발송 제한 시간이 아직 지나지 않았습니다.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
@@ -1061,7 +1061,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.NUDGE_1102]: {
     code: "NUDGE_1102",
-    message: "쿨다운 기간입니다. 24시간 후 다시 시도해주세요.",
+    message: "쿨다운 기간입니다. 24시간 뒤에 다시 시도해주세요.",
     description: "같은 할일에 대해 24시간 내 재콕 찌르기는 불가합니다.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
@@ -1097,7 +1097,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.NUDGE_1108]: {
     code: "NUDGE_1108",
-    message: "리마인드 쿨다운 기간입니다. 1시간 후 다시 시도해주세요.",
+    message: "리마인드 쿨다운 기간입니다. 1시간 뒤에 다시 시도해주세요.",
     description: "같은 친구에게 1시간 이내 리마인드 콕 찌르기를 다시 보낼 수 없습니다.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
@@ -1123,7 +1123,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.CHEER_1202]: {
     code: "CHEER_1202",
-    message: "쿨다운 기간입니다. 24시간 후 다시 시도해주세요.",
+    message: "쿨다운 기간입니다. 24시간 뒤에 다시 시도해주세요.",
     description: "같은 친구에게 24시간 내 재응원은 불가합니다.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
