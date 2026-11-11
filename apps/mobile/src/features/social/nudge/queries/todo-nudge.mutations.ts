@@ -120,6 +120,10 @@ export function useSendTodoNudgeMutationOptions() {
         haptics.notify('error');
       }
     },
+    // 할 일 상세의 콕 버튼은 서버가 계산한 permissions.canNudge를 따른다
+    onSettled: (_data, _error, { todoId }) => {
+      invalidateTodoDetails(queryClient, { todoId });
+    },
     meta: {
       errorFeedback: {
         feature: 'todo_nudge',

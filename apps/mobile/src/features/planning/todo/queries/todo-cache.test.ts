@@ -8,7 +8,7 @@ import type { DailyCompletionsResult } from '../domains/daily-completion.model';
 import type { Todo, TodoListResult, TodoSummary } from '../domains/todo.model';
 import {
   getCachedTodoDateSpan,
-  invalidateFeedTodos,
+  invalidateCategorizedTodos,
   invalidateTodoDependentQueries,
   invalidateTodos,
   invalidateTodoSummaries,
@@ -363,16 +363,19 @@ describe('바뀐 날짜를 모를 때의 무효화', () => {
     expect(isInvalidated(client, listKey)).toBe(false);
   });
 
-  it('피드를 새로 고치면 목록과 완료 통계만 무효화한다', async () => {
+  it('카테고리 이름·색이 바뀌면 목록·완료 통계·상세만 무효화한다', async () => {
     // Given
     const client = createSeededClient();
+    const detailKey = TODO_QUERY_KEYS.detail({ todoId: 7 });
+    client.getQueryCache().build(client, { queryKey: detailKey });
 
     // When
-    await invalidateFeedTodos(client);
+    await invalidateCategorizedTodos(client);
 
     // Then
     expect(isInvalidated(client, listKey)).toBe(true);
     expect(isInvalidated(client, completionKey)).toBe(true);
+    expect(isInvalidated(client, detailKey)).toBe(true);
     expect(isInvalidated(client, friendKey)).toBe(false);
     expect(isInvalidated(client, categoryKey)).toBe(false);
   });

@@ -43,7 +43,7 @@ import { FriendRemindNudgeAction } from '@src/features/social/nudge/components/f
 import { FriendTodoNudgeAction } from '@src/features/social/nudge/components/friend-todo-nudge-action';
 import { NudgeLimitBanner } from '@src/features/social/nudge/components/nudge-limit-banner';
 import { invalidateNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
-import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
+import { refetchWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
@@ -181,9 +181,11 @@ function MyFeed({
   const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
   const isReminderOff = useIsPushReminderOff();
   const whatsNew = useWhatsNewFeed({ isStable, isOnboardingSettled: isPushOnboardingSettled });
-  const [isRefreshing, handleRefresh] = useRefresh(() =>
-    Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
-  );
+  const [isRefreshing, handleRefresh] = useRefresh(() => {
+    // 날씨는 위치부터 다시 읽어 늦을 수 있다. 당김 표시는 할 일만 기다리고 날씨 실패는 날씨 칸이 보인다
+    refetchWeather(queryClient).catch(noop);
+    return invalidateFeedTodos(queryClient);
+  });
 
   return (
     <ScrollViewContainer

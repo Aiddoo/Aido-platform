@@ -46,10 +46,6 @@ export function removeOutdatedWeatherReports(
   });
 }
 
-export function invalidateWeather(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: WEATHER_QUERY_KEYS.all });
-}
-
 export function refetchWeatherLocation(queryClient: QueryClient) {
   return queryClient.refetchQueries({ queryKey: WEATHER_QUERY_KEYS.location() });
 }

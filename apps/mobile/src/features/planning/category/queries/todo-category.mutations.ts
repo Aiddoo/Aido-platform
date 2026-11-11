@@ -4,7 +4,7 @@ import { isLimitedFeatureError } from '@src/features/billing/subscription/domain
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import {
-  invalidateFeedTodos,
+  invalidateCategorizedTodos,
   invalidateTodos,
   invalidateWidgetSummary,
 } from '@src/features/planning/todo/queries/todo-cache';
@@ -155,8 +155,8 @@ export function useUpdateTodoCategoryMutationOptions() {
             old && withCategoryChanged(old, variables.id, pick(savedCategory, ['name', 'color'])),
         );
       }
-      // 할 일 행과 달력 점이 카테고리 이름·색을 함께 보여 준다
-      invalidateFeedTodos(queryClient);
+      // 할 일 행·달력 점·상세가 카테고리 이름·색을 함께 보여 준다
+      invalidateCategorizedTodos(queryClient);
       toast.success(t('todo:toast.categoryUpdated'));
       trackEvent('category_updated', {
         field: getCategoryUpdatedField(previous, variables.input),
