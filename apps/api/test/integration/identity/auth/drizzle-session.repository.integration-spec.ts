@@ -60,7 +60,7 @@ describe("DrizzleSessionRepository (실제 PostgreSQL)", () => {
 
     // When
     await repository.save(session);
-    const found = await repository.findById(session.id.value);
+    const found = await repository.findById(session.id);
 
     // Then
     expect(found?.toPrimitives()).toEqual(session.toPrimitives());

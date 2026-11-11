@@ -9,10 +9,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import request from "supertest";
 
-import {
-  TODO_COMMENT_NOTIFICATION,
-  type TodoCommentNotificationPort,
-} from "#api/modules/engagement/application/ports/comments/todo-comment-notification.port";
+import { TodoCommentNotificationPort } from "#api/modules/engagement/comments/application/ports/todo-comment-notification.port";
 import { notification } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -72,8 +69,7 @@ describe("댓글 상태 HTTP 회귀", () => {
     const todoId = await createTodo(owner.accessToken);
     const privateContent = "알림에 포함되면 안 되는 비공개 댓글 내용";
     const commentId = await writeComment(owner.accessToken, todoId, privateContent);
-    const commentNotification =
-      context.module.get<TodoCommentNotificationPort>(TODO_COMMENT_NOTIFICATION);
+    const commentNotification = context.module.get(TodoCommentNotificationPort);
     vi.spyOn(commentNotification, "notifyCommentLiked").mockRejectedValueOnce(
       new Error("notification fixture failure"),
     );
@@ -109,7 +105,10 @@ describe("댓글 상태 HTTP 회귀", () => {
 
     // Then
     expect(todoCommentLikeResponseSchema.parse(retry.body.data)).toEqual(first.body.data);
-    expect(await findLike()).toMatchObject({ isActive: true, notifiedAt: expect.any(Date) });
+    expect(await findLike()).toMatchObject({
+      isActive: true,
+      notifiedAt: expect.any(Temporal.Instant),
+    });
     expect(await client.query.todoComment.findFirst({ where: { id: commentId } })).toMatchObject({
       likeCount: 1,
     });
@@ -134,8 +133,11 @@ describe("댓글 상태 HTTP 회귀", () => {
     // Given
     const owner = await context.helpers.createVerifiedUser("comment-focus@test.com", "Test1234!");
     const todoId = await createTodo(owner.accessToken);
+    // 작성 시각은 ClockPort가 정해 가짜 시계에서도 쓴 순서가 남도록 요청마다 1ms씩 옮긴다
     const rootId = await writeComment(owner.accessToken, todoId, "뿌리 댓글");
+    vi.setSystemTime(new Date(COMMENT_TIME.getTime() + 1));
     const childId = await writeComment(owner.accessToken, todoId, "중간 답글", rootId);
+    vi.setSystemTime(new Date(COMMENT_TIME.getTime() + 2));
     const leafId = await writeComment(owner.accessToken, todoId, "마지막 답글", childId);
     vi.setSystemTime(new Date(COMMENT_TIME.getTime() + 1000));
     const otherRootId = await writeComment(owner.accessToken, todoId, "다른 대화");

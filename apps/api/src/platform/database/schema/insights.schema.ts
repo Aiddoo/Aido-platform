@@ -1,31 +1,23 @@
-import {
-  pgTable,
-  integer,
-  text,
-  timestamp,
-  serial,
-  date,
-  index,
-  foreignKey,
-  unique,
-} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, integer, text, serial, index, foreignKey, unique } from "drizzle-orm/pg-core";
 
+import { instant, plainDate } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import { user } from "./identity.schema.js";
 
 export const dailyCompletion = pgTable(
   "DailyCompletion",
   {
-    achievedAt: timestamp({ precision: 3 }).notNull(),
+    achievedAt: instant().notNull(),
     completedTodos: integer().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    date: date({ mode: "date" }).notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    date: plainDate().notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     totalTodos: integer().notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. insert-or-update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [
@@ -43,9 +35,11 @@ export const dailyCompletion = pgTable(
 export const weeklyAchievement = pgTable(
   "WeeklyAchievement",
   {
-    achievedAt: timestamp({ precision: 3 }).notNull(),
+    achievedAt: instant().notNull(),
     completedTodos: integer().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: serial().primaryKey(),
     totalTodos: integer().notNull(),
     userId: text().notNull(),

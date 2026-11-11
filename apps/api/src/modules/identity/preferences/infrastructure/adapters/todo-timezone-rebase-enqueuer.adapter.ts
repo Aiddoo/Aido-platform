@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/planning-todo-timezone-jobs.public";
+import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/todos/planning-todo-timezone-jobs.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoTimezoneRebaseEnqueuerPort } from "../../application/ports/todo-timezone-rebase-enqueuer.port.js";
 
@@ -12,7 +13,7 @@ export class TodoTimezoneRebaseEnqueuerAdapter implements TodoTimezoneRebaseEnqu
     this.#queue = queue;
   }
 
-  enqueueRebase(userId: string, at: Date): Promise<void> {
-    return this.#queue.enqueueRebase(userId, at);
+  enqueueRebase(userId: UserId, at: Temporal.Instant): Promise<void> {
+    return this.#queue.enqueueRebase(userId.value, at);
   }
 }

@@ -13,7 +13,11 @@ import {
   type RefreshPushTimezoneCommand,
   RefreshPushTimezoneUseCase,
 } from "../../../application/use-cases/refresh-push-timezone.use-case.js";
-import { TimezoneSelfHealInterceptor } from "./timezone-self-heal.interceptor.js";
+import {
+  TIMEZONE_SELF_HEAL_MAX_ENTRIES,
+  TIMEZONE_SELF_HEAL_TTL_MS,
+  TimezoneSelfHealInterceptor,
+} from "./timezone-self-heal.interceptor.js";
 
 class RecordingRefreshPushTimezone extends RefreshPushTimezoneUseCase {
   readonly commands: RefreshPushTimezoneCommand[] = [];
@@ -68,10 +72,6 @@ describe("TimezoneSelfHealInterceptor", () => {
     nestLogger = new RecordingNestLogger();
     Logger.overrideLogger(nestLogger);
     interceptor = new TimezoneSelfHealInterceptor(refresh, createRequestClientReader(), clock);
-  });
-
-  afterEach(() => {
-    interceptor.onModuleDestroy();
   });
 
   const intercept = (userId: string | undefined, headers: IncomingHttpHeaders) =>
@@ -195,7 +195,7 @@ describe("TimezoneSelfHealInterceptor", () => {
     intercept("u1", headers);
 
     // When
-    clock.advanceBy({ milliseconds: TimezoneSelfHealInterceptor.THROTTLE_MS - 1 });
+    clock.advanceBy({ milliseconds: TIMEZONE_SELF_HEAL_TTL_MS - 1 });
     intercept("u1", headers);
     const beforeExpiry = refresh.commands.length;
     clock.advanceBy({ milliseconds: 1 });
@@ -212,5 +212,24 @@ describe("TimezoneSelfHealInterceptor", () => {
 
     // Then
     expect(refresh.commands).toEqual([]);
+  });
+
+  it("스로틀 중인 사용자가 상한을 넘으면 가장 오래 안 본 사용자부터 잊어 크기를 상한 안에 둔다", () => {
+    // Given
+    const headers = { "x-timezone": "Asia/Seoul" };
+    intercept("oldest", headers);
+    for (let index = 0; index < TIMEZONE_SELF_HEAL_MAX_ENTRIES; index += 1) {
+      intercept(`user-${index}`, headers);
+    }
+    const commandsBefore = refresh.commands.length;
+
+    // When
+    intercept(`user-${TIMEZONE_SELF_HEAL_MAX_ENTRIES - 1}`, headers);
+    intercept("oldest", headers);
+
+    // Then
+    expect(refresh.commands.slice(commandsBefore)).toEqual([
+      { userId: "oldest", timezone: "Asia/Seoul" },
+    ]);
   });
 });

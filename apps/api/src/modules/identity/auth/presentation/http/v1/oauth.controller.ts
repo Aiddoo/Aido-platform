@@ -19,6 +19,7 @@ import { ApiHeader, ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 
+import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { CompleteOAuthAuthorizationUseCase } from "#api/modules/identity/auth/application/use-cases/complete-oauth-authorization.use-case";
 import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
@@ -28,26 +29,23 @@ import { LinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/
 import { LoginWithMobileOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-mobile-oauth-token.use-case";
 import { StartOAuthAuthorizationUseCase } from "#api/modules/identity/auth/application/use-cases/start-oauth-authorization.use-case";
 import type { OAuthMode } from "#api/modules/identity/auth/domain/auth.constants";
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { Public } from "#api/modules/identity/auth/presentation/http/decorators/public.decorator";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
+import { type RequestClient } from "#api/platform/http/request-client/request-client";
 import {
   AppVersion,
   CurrentRequestClient,
-  type RequestClient,
-} from "#api/platform/http/request-client/index";
+} from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiErrorResponse,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 

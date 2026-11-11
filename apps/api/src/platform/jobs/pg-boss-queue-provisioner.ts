@@ -1,6 +1,6 @@
 import type { QueueOptions, UpdateQueueOptions } from "pg-boss";
 
-import type { JobRetryPolicy } from "#api/shared/application/ports/job-runtime.port";
+import type { JobRetryPolicy } from "#api/shared/application/ports/job-queue.port";
 
 interface QueueProvisioningClient {
   createQueue(name: string, options?: QueueOptions): Promise<void>;

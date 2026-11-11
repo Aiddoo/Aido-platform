@@ -9,7 +9,7 @@ interface FeatureDiscoveryConfig {
 }
 
 function createAdapter(featureDiscovery: FeatureDiscoveryConfig) {
-  return new EnvironmentFeatureDiscoveryCampaignAdapter({ featureDiscovery });
+  return new EnvironmentFeatureDiscoveryCampaignAdapter(featureDiscovery);
 }
 
 describe("EnvironmentFeatureDiscoveryCampaignAdapter — 환경 설정에 따른 기능 비활성화", () => {

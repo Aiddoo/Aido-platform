@@ -1,4 +1,4 @@
-import type { INestApplication } from "@nestjs/common";
+import type { INestApplication, ModuleMetadata } from "@nestjs/common";
 /**
  * E2E 테스트 앱 팩토리
  *
@@ -9,19 +9,19 @@ import type { INestApplication } from "@nestjs/common";
  * - Native StandardSchemaValidationPipe
  * - PinoLogger 억제
  */
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { ThrottlerGuard } from "@nestjs/throttler";
-import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types.js";
+import { vi } from "vitest";
 
+import { setupApiDocs } from "#api/api-docs";
 import { AppModule } from "#api/app.module";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
-import { ReportGenerationJob } from "#api/modules/ai-assistance/infrastructure/jobs/reports/report-generation.job";
-import { SuggestionAnalysisJob } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/suggestion-analysis.job";
-import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
-import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
+import { ReportGenerationScheduler } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.scheduler";
+import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
+import { SuggestionAnalysisScheduler } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.scheduler";
 import {
   type OAuthIdentityProviderPort,
   OAuthIdentityProviderRegistryPort,
@@ -34,60 +34,50 @@ import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastruc
 import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
 import { AccountPurgeProcessor } from "#api/modules/identity/users/infrastructure/jobs/account-purge.processor";
 import { AccountPurgeScheduler } from "#api/modules/identity/users/infrastructure/jobs/account-purge.scheduler";
-import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
-import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
-import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";
-import { EmailDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/email/email-delivery-queue.processor";
-import { TimezoneReminderProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/timezone-reminder-queue.processor";
-import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.processor";
-import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
-import { RetentionQueueService } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.service";
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
+import { PushProviderPort } from "#api/modules/notification/push/application/ports/push-provider.port";
+import { NotificationQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.processor";
+import { TimezoneReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-queue.processor";
+import { TimezoneReminderSweepScheduler } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-sweep.scheduler";
+import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
 import { DailySignupSummaryScheduler } from "#api/modules/operations/admin-notices/infrastructure/jobs/daily-signup-summary.scheduler";
-import { TodoSeriesMaterializationJob } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.job";
-import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.processor";
-import { PlanApplicationCleanupJob } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.job";
-import { PlanApplicationCleanupProcessor } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.processor";
-import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
-import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
-import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
-import { WEATHER_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
-import { WEATHER_REPORT_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
+import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.processor";
+import { TodoSeriesMaterializationScheduler } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.scheduler";
+import { PlanApplicationCleanupProcessor } from "#api/modules/voice/action-plans/infrastructure/jobs/plan-application-cleanup.processor";
+import { PlanApplicationCleanupScheduler } from "#api/modules/voice/action-plans/infrastructure/jobs/plan-application-cleanup.scheduler";
+import { AirQualityProviderPort } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
+import { LifestyleIndexProviderPort } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
+import { SunTimeProviderPort } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
+import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
+import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import { DRIZZLE } from "#api/platform/database/index";
-import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
+import { DRIZZLE } from "#api/platform/database/database.client";
 import { configureApplication } from "#api/platform/http/configure-application";
-import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  DOMAIN_EVENT_PUBLISHER,
-  JOB_RUNTIME,
-  JobQueuePort,
-} from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
+import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
 import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider.js";
 import { FakeEmailService } from "../../mocks/fake-email.service.js";
-import { FakeJobRuntime } from "../../mocks/fake-job-runtime.js";
 import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider.js";
 import { FakeLogger } from "../../mocks/fake-logger.service.js";
 import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry.js";
 import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service.js";
 import { FakePasswordHasher } from "../../mocks/fake-password-hasher.js";
-import { FakePushProvider } from "../../mocks/fake-push.provider.js";
 import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider.js";
 import { FakeWeatherProvider } from "../../mocks/fake-weather.provider.js";
 import { TestDatabase } from "../../setup/test-database.js";
 import { E2eHelpers } from "./e2e-helpers.js";
 import { createE2eTestStateResetter, type TestStateResetter } from "./e2e-test-state.js";
-import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher.js";
 
 /* ── 백그라운드 작업 격리 대상 ────────────────────────── */
 
@@ -95,25 +85,23 @@ const BACKGROUND_PROCESSORS = [
   TodoSeriesMaterializationProcessor,
   AdminNotificationProcessor,
   EmailDeliveryQueueProcessor,
-  TimezoneReminderProcessor,
+  TimezoneReminderQueueProcessor,
   TodoReminderQueueProcessor,
   SuggestionAnalysisProcessor,
   ReportGenerationProcessor,
   AccountPurgeProcessor,
   NotificationQueueProcessor,
-  RetentionQueueProcessor,
   PlanApplicationCleanupProcessor,
 ];
 
 const BACKGROUND_JOBS = [
   DailySignupSummaryScheduler,
-  TimezoneAwareReminderOrchestrator,
-  SuggestionAnalysisJob,
-  ReportGenerationJob,
+  TimezoneReminderSweepScheduler,
+  SuggestionAnalysisScheduler,
+  ReportGenerationScheduler,
   AccountPurgeScheduler,
-  TodoSeriesMaterializationJob,
-  PlanApplicationCleanupJob,
-  RetentionQueueService,
+  TodoSeriesMaterializationScheduler,
+  PlanApplicationCleanupScheduler,
 ];
 
 export interface E2eTestContext {
@@ -137,13 +125,20 @@ export interface E2eAppOptions {
   customizeBuilder?: (
     builder: ReturnType<typeof Test.createTestingModule>,
   ) => ReturnType<typeof Test.createTestingModule>;
+  /** AppModule 옆에 붙이는 테스트 전용 모듈(공개 데코레이터·가드를 실제 라우트처럼 검증할 때) */
+  imports?: ModuleMetadata["imports"];
   /** suite에서 추가로 override한 fake의 상태 초기화 함수 */
   additionalResetters?: readonly TestStateResetter[];
   /** @internal 앱 재시작 테스트에서 동일 PostgreSQL을 재사용 */
   testDatabase?: TestDatabase;
+  /** 설정은 앱이 시작할 때 env를 한 번 읽는다. 배포 환경·비밀처럼 suite마다 다른 값은 여기로 넣는다 */
+  env?: Readonly<Record<string, string>>;
 }
 
 export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestContext> {
+  for (const [key, value] of Object.entries(options?.env ?? {})) {
+    vi.stubEnv(key, value);
+  }
   const testDatabase = options?.testDatabase ?? new TestDatabase();
   if (!options?.testDatabase) {
     await testDatabase.start();
@@ -159,16 +154,13 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeAirQualityProvider = new FakeAirQualityProvider();
   const fakeLifestyleIndexProvider = new FakeLifestyleIndexProvider();
   const fakeSunTimeProvider = new FakeSunTimeProvider();
-  const fakeJobRuntime = new FakeJobRuntime();
   const inMemoryJobQueue = new InMemoryJobQueue();
 
-  const redisMock = new RedisMock();
   const cacheAdapter = new InMemoryCacheStore({
-    defaultTtlMs: 60000,
+    defaultTtlMs: 60_000,
     maxItems: 1000,
   });
   let fakeOAuthProviderRegistry: FakeOAuthProviderRegistry | undefined;
-  let trackingEventPublisher: TrackingDomainEventPublisher | undefined;
   let module: TestingModule | undefined;
   let app: INestApplication<App> | undefined;
   let applicationClosed = false;
@@ -178,22 +170,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
       return;
     }
     applicationClosed = true;
-    const errors: unknown[] = [];
-    try {
-      await app?.close();
-    } catch (error) {
-      errors.push(error);
-    }
-
-    const results = await Promise.allSettled([
-      Promise.resolve().then(() => redisMock.disconnect()),
-    ]);
-    errors.push(
-      ...results.flatMap((result) => (result.status === "rejected" ? [result.reason] : [])),
-    );
-    if (errors.length > 0) {
-      throw new AggregateError(errors, "Failed to close E2E app resources");
-    }
+    await app?.close();
   };
 
   const closeTestResources = async (): Promise<void> => {
@@ -214,13 +191,9 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   };
 
   let builder = Test.createTestingModule({
-    imports: [AppModule],
+    imports: [AppModule, ...(options?.imports ?? [])],
   })
-    .overrideProvider(REDIS_COMMAND_CLIENT)
-    .useValue(redisMock)
-    .overrideProvider(JOB_RUNTIME)
-    .useValue(fakeJobRuntime)
-    // E2E 앱이 실제 pg-boss에 연결하지 않게 새 큐 포트도 메모리 구현으로 바꾼다
+    // E2E 앱이 실제 pg-boss에 연결하지 않게 큐 포트를 메모리 구현으로 바꾼다
     .overrideProvider(JobQueuePort)
     .useValue(inMemoryJobQueue)
     // 시각을 옮기는 테스트가 Date 가짜 시계로 ClockPort도 움직이게 한다
@@ -232,7 +205,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(testDatabase.getClient())
     .overrideProvider(Argon2PasswordHasherAdapter)
     .useClass(FakePasswordHasher)
-    .overrideProvider(TransactionalEmailSender)
+    .overrideProvider(SendTransactionalEmailUseCase)
     .useValue(fakeEmailService)
     .overrideProvider(OAuthIdentityProviderRegistryPort)
     .useFactory({
@@ -262,31 +235,22 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     })
     .overrideProvider(AdminNotifierPort)
     .useValue(fakeAdminNotifier)
-    .overrideProvider(PUSH_PROVIDER)
+    .overrideProvider(PushProviderPort)
     .useValue(fakePushProvider)
-    .overrideProvider(AI_GENERATOR)
+    .overrideProvider(AiGeneratorPort)
     .useValue(fakeAiGenerator)
-    .overrideProvider(WEATHER_PROVIDER)
+    .overrideProvider(WeatherForecastProviderPort)
     .useValue(fakeWeatherProvider)
-    .overrideProvider(WEATHER_REPORT_PROVIDER)
+    .overrideProvider(WeatherReportProviderPort)
     .useValue(stubWeatherReportProvider)
-    .overrideProvider(AIR_QUALITY_PROVIDER)
+    .overrideProvider(AirQualityProviderPort)
     .useValue(fakeAirQualityProvider)
-    .overrideProvider(LIFESTYLE_INDEX_PROVIDER)
+    .overrideProvider(LifestyleIndexProviderPort)
     .useValue(fakeLifestyleIndexProvider)
-    .overrideProvider(SUN_TIME_PROVIDER)
+    .overrideProvider(SunTimeProviderPort)
     .useValue(fakeSunTimeProvider)
     .overrideProvider(PinoLogger)
-    .useClass(FakeLogger)
-    // 도메인 이벤트 리스너의 잔류 작업을 reset이 drain할 수 있도록 추적 퍼블리셔로 교체
-    .overrideProvider(DOMAIN_EVENT_PUBLISHER)
-    .useFactory({
-      inject: [EventEmitter2, FanOutDomainEventPublisher],
-      factory: (eventEmitter: EventEmitter2, fanOut: FanOutDomainEventPublisher) => {
-        trackingEventPublisher = new TrackingDomainEventPublisher(eventEmitter, fanOut);
-        return trackingEventPublisher;
-      },
-    });
+    .useClass(FakeLogger);
 
   if (!options?.withRealThrottler) {
     builder = builder.overrideProvider(ThrottlerGuard).useValue({ canActivate: async () => true });
@@ -310,10 +274,11 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     module = await builder.compile();
     app = module.createNestApplication();
     configureApplication(app, {
-      nodeEnv: "development",
       corsOrigins: ["http://localhost:3000"],
       enableShutdownHooks: false,
     });
+    // main.ts와 같은 순서로 문서를 붙여, 개발 도구가 꺼진 설정에서 문서 경로가 열리지 않는지 E2E가 본다
+    setupApiDocs(app);
     // Supertest의 요청별 임시 서버 재시작 대신 suite 전체에서 같은 HTTP 서버를 사용한다.
     await app.listen(0, "127.0.0.1");
 
@@ -323,13 +288,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
 
     const helpers = new E2eHelpers(app, fakeEmailService);
     const reset = createE2eTestStateResetter({
-      drainBackgroundWork: async () => {
-        // commit 뒤 이벤트 작업이 정착한 후 DB를 정리한다. Push는 durable queue가 소유한다.
-        await trackingEventPublisher?.drainPendingEvents();
-      },
       cleanupDatabase: () => testDatabase.cleanup(),
       resetCache: () => cacheAdapter.reset(),
-      flushRedis: () => redisMock.flushall(),
       sharedResetters: [
         () => fakeEmailService.clear(),
         () => fakeOAuthTokenVerifierService.clear(),
@@ -342,7 +302,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakeAirQualityProvider.clear(),
         () => fakeLifestyleIndexProvider.clear(),
         () => fakeSunTimeProvider.clear(),
-        () => fakeJobRuntime.clear(),
         () => inMemoryJobQueue.clear(),
       ],
       additionalResetters: options?.additionalResetters,

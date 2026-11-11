@@ -57,7 +57,7 @@ describe("createPostgresPoolConfig", () => {
     expect(config.ssl).toEqual({ rejectUnauthorized: false });
   });
 
-  it("풀 크기·유휴·연결 대기 시간을 넘긴 값만 싣는다", () => {
+  it("풀 크기·유휴·연결 대기·쿼리 응답 시간을 넘긴 값만 싣는다", () => {
     // Given
     const url = "postgresql://user:pass@localhost:5432/aido";
 
@@ -66,6 +66,7 @@ describe("createPostgresPoolConfig", () => {
       max: 10,
       idleTimeoutMs: 10_000,
       connectionTimeoutMs: 5000,
+      queryTimeoutMs: 20_000,
     });
 
     // Then
@@ -73,6 +74,7 @@ describe("createPostgresPoolConfig", () => {
       max: 10,
       idleTimeoutMillis: 10_000,
       connectionTimeoutMillis: 5000,
+      query_timeout: 20_000,
     });
   });
 });

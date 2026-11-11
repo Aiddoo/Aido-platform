@@ -1,8 +1,8 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   integer,
   text,
-  timestamp,
   char,
   varchar,
   boolean,
@@ -13,6 +13,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import { instant } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import { user } from "./identity.schema.js";
 import { todo } from "./planning.schema.js";
@@ -23,9 +24,11 @@ export const todoComment = pgTable(
     authorId: text().notNull(),
     clientRequestId: uuid().notNull(),
     content: varchar({ length: 500 }),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    deletedAt: timestamp({ precision: 3 }),
-    editedAt: timestamp({ precision: 3 }),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
+    deletedAt: instant(),
+    editedAt: instant(),
     id: text().primaryKey().$defaultFn(createEntityId),
     likeCount: integer().default(0).notNull(),
     parentId: text(),
@@ -33,10 +36,8 @@ export const todoComment = pgTable(
     replyToCommentId: text(),
     requestFingerprint: char({ length: 64 }),
     todoId: integer().notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    // 도메인이 ClockPort 값으로 채운다. 좋아요 끄기 같은 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
   },
   (table) => [
     foreignKey({
@@ -101,13 +102,13 @@ export const todoCommentLike = pgTable(
   "TodoCommentLike",
   {
     commentId: text().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     isActive: boolean().default(true).notNull(),
-    notifiedAt: timestamp({ precision: 3 }),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
+    notifiedAt: instant(),
+    // 도메인이 ClockPort 값으로 채운다. 좋아요 끄기 같은 집합 update도 저장소가 명시한다
+    updatedAt: instant().notNull(),
     userId: text().notNull(),
   },
   (table) => [

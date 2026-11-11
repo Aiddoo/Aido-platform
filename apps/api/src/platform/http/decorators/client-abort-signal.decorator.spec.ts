@@ -3,8 +3,11 @@ import { EventEmitter } from "node:events";
 import { abortOnClientDisconnect } from "./client-abort-signal.decorator.js";
 
 class FakeResponse extends EventEmitter {
-  constructor(readonly writableFinished: boolean) {
+  readonly writableFinished: boolean;
+
+  constructor(writableFinished: boolean) {
     super();
+    this.writableFinished = writableFinished;
   }
 }
 

@@ -1,8 +1,15 @@
-const LANGUAGE_MODES = ['system', 'ko', 'en'] as const;
+import {
+  FALLBACK_LOCALE,
+  resolveSupportedLocale,
+  SUPPORTED_LOCALES,
+  type SupportedLocale,
+} from '@aido/api/vocabulary';
+
+const LANGUAGE_MODES = ['system', ...SUPPORTED_LOCALES] as const;
 
 export type LanguageMode = (typeof LANGUAGE_MODES)[number];
 
-export type ResolvedLanguage = 'ko' | 'en';
+export type ResolvedLanguage = SupportedLocale;
 
 export const LANGUAGE_MODE_STORAGE_KEY = 'aido_language';
 
@@ -29,7 +36,7 @@ export function resolveLanguage(
   return toResolvedLanguage(deviceLanguage);
 }
 
-/** ko 외에는 모두 en이다 (폴백 규칙의 단일 소스) */
+/** 언어 규칙은 서버와 같은 `resolveSupportedLocale`이다. 감지하지 못한 기기 언어만 앱에서 en으로 둔다 */
 export function toResolvedLanguage(value: string | null | undefined): ResolvedLanguage {
-  return value === 'ko' ? 'ko' : 'en';
+  return value == null ? FALLBACK_LOCALE : resolveSupportedLocale(value);
 }

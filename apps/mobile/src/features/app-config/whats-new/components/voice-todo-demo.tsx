@@ -3,7 +3,7 @@ import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import { LiveTranscript } from '@src/features/voice/components/quick-voice/live-transcript';
 import { VoiceVisual } from '@src/features/voice/components/visualizers/voice-visual';
 import {
-  VoiceTranscriptPolicy,
+  createVoiceTranscript,
   type VoiceTranscript,
 } from '@src/features/voice/domains/voice-transcript.model';
 import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
@@ -88,7 +88,7 @@ function toDemoTranscript(words: readonly string[], heardCount: number): VoiceTr
   const finalCount =
     heardCount === words.length ? heardCount : Math.max(0, heardCount - INTERIM_WORD_COUNT);
 
-  return VoiceTranscriptPolicy.createVoiceTranscript({
+  return createVoiceTranscript({
     sentences: finalCount > 0 ? [words.slice(0, finalCount).join(' ')] : [],
     interim: words.slice(finalCount, heardCount).join(' '),
   });

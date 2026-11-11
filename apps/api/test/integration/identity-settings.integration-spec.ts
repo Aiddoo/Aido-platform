@@ -2,14 +2,8 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 
-import {
-  STREAK_MILESTONE_NOTIFIER,
-  type StreakMilestoneNotifierPort,
-} from "#api/modules/identity/preferences/application/ports/streak-milestone-notifier.port";
-import {
-  USER_SETTINGS_CACHE,
-  type UserSettingsCachePort,
-} from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
+import { StreakMilestoneNotifierPort } from "#api/modules/identity/preferences/application/ports/streak-milestone-notifier.port";
+import { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
 import { GetPreferenceUseCase } from "#api/modules/identity/preferences/application/use-cases/get-preference.use-case";
 import { OnTodoToggledUseCase } from "#api/modules/identity/preferences/application/use-cases/on-todo-toggled.use-case";
 import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
@@ -18,10 +12,7 @@ import { UpdatePreferenceUseCase } from "#api/modules/identity/preferences/appli
 import { UpsertPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import {
-  REMINDER_TIMEZONE_CACHE,
-  type ReminderTimezoneCachePort,
-} from "#api/modules/notification/notification-reminders-cache.public";
+import { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -32,7 +23,9 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
@@ -47,8 +40,10 @@ import {
 type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 const at = new Date("2027-01-01T12:00:00.000Z");
-const today = new Date("2027-01-01T00:00:00.000Z");
-const yesterday = new Date("2026-12-31T00:00:00.000Z");
+const now = Temporal.Instant.from("2027-01-01T12:00:00.000Z");
+const todayDate = Temporal.PlainDate.from("2027-01-01");
+const yesterdayDate = Temporal.PlainDate.from("2026-12-31");
+const yesterdayStart = Temporal.Instant.from("2026-12-31T00:00:00.000Z");
 const weather = {
   weatherMorningEnabled: false,
   weatherMorningHour: 9,
@@ -77,7 +72,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     });
     preferences = context.module.get(DrizzleUserPreferenceRepository);
     consents = context.module.get(DrizzleUserConsentRepository);
-    unitOfWork = context.module.get(UNIT_OF_WORK);
+    unitOfWork = context.module.get(UnitOfWorkPort);
   });
 
   beforeEach(async () => {
@@ -88,8 +83,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       id: createEntityId(),
       email: "settings-owner@example.com",
       userTag: "SETPG001",
-      createdAt: at,
-      updatedAt: at,
+      createdAt: now,
+      updatedAt: now,
     });
     await client.insert(userTable).values(user);
     userId = user.id;
@@ -147,9 +142,9 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       const created = TodoFixture.create({
         userId,
         categoryId: category.id,
-        startDate: today,
+        startDate: todayDate,
         completed: true,
-        completedAt: at,
+        completedAt: instantFromDate(at),
       });
       await client.insert(todo).values(created);
     }
@@ -160,14 +155,14 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     async (exists) => {
       // Given
       if (exists) {
-        await preferences.create(userId);
+        await preferences.create(UserId.reconstitute(userId));
       }
 
       // When
       const response = await context.module
         .get(UpdatePreferenceUseCase)
         .execute({ userId, ...weather });
-      const saved = await preferences.findByUserId(userId);
+      const saved = await preferences.findByUserId(UserId.reconstitute(userId));
 
       // Then
       expect(response).toEqual(expect.objectContaining(weather));
@@ -179,7 +174,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("캐시에 저장된 설정도 timezone 자가치유와 upsert 직후 최신 값을 반환한다", async () => {
     // Given
-    await preferences.create(userId, { timezone: "UTC" });
+    await preferences.create(UserId.reconstitute(userId), { timezone: "UTC" });
     const get = context.module.get(GetPreferenceUseCase);
     expect((await get.execute({ userId })).timezone).toBe("UTC");
 
@@ -189,7 +184,9 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       .execute({ userId, timezone: "Asia/Seoul" });
 
     // Then
-    expect((await preferences.findByUserId(userId))?.timezone).toBe("Asia/Seoul");
+    expect((await preferences.findByUserId(UserId.reconstitute(userId)))?.timezone).toBe(
+      "Asia/Seoul",
+    );
     expect((await get.execute({ userId })).timezone).toBe("Asia/Seoul");
 
     // When
@@ -198,16 +195,18 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       .execute({ userId, timezone: "America/New_York" });
 
     // Then
-    expect((await preferences.findByUserId(userId))?.timezone).toBe("America/New_York");
+    expect((await preferences.findByUserId(UserId.reconstitute(userId)))?.timezone).toBe(
+      "America/New_York",
+    );
     expect((await get.execute({ userId })).timezone).toBe("America/New_York");
   });
 
   it("없는 설정과 동일 timezone은 자가치유에서 생성·캐시 무효화를 하지 않는다", async () => {
     // Given
-    const cache = context.module.get<UserSettingsCachePort>(USER_SETTINGS_CACHE);
+    const cache = context.module.get<UserSettingsCachePort>(UserSettingsCachePort);
     const invalidatePreference = vi.spyOn(cache, "invalidateUserPreference");
     const reminderTimezoneCache =
-      context.module.get<ReminderTimezoneCachePort>(REMINDER_TIMEZONE_CACHE);
+      context.module.get<ReminderTimezoneCachePort>(ReminderTimezoneCachePort);
     const invalidateTimezones = vi.spyOn(reminderTimezoneCache, "invalidateActiveTimezones");
     const refresh = context.module.get(RefreshPushTimezoneUseCase);
 
@@ -215,8 +214,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     await refresh.execute({ userId, timezone: "UTC" });
 
     // Then
-    expect(await preferences.findByUserId(userId)).toBeNull();
-    await preferences.create(userId, { timezone: "UTC" });
+    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toBeNull();
+    await preferences.create(UserId.reconstitute(userId), { timezone: "UTC" });
 
     // When
     await refresh.execute({ userId, timezone: "UTC" });
@@ -228,13 +227,13 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("timezone 전용 최초 생성은 가입 seed와 같은 DB push 기본값(true)을 쓴다", async () => {
     // Given
-    expect(await preferences.findByUserId(userId)).toBeNull();
+    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toBeNull();
 
     // When
-    await preferences.upsertTimezone(userId, "Asia/Seoul");
+    await preferences.upsertTimezone(UserId.reconstitute(userId), "Asia/Seoul");
 
     // Then
-    expect(await preferences.findByUserId(userId)).toEqual(
+    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toEqual(
       expect.objectContaining({
         timezone: "Asia/Seoul",
         pushEnabled: true,
@@ -245,13 +244,13 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("같은 날 두 완료 요청의 UPDATE가 대기해도 스트릭과 마일스톤은 한 번 반영된다", async () => {
     // Given
-    await preferences.create(userId);
+    await preferences.create(UserId.reconstitute(userId));
     await client
       .update(userPreference)
-      .set({ currentStreak: 2, longestStreak: 2, lastCompletedDate: yesterday })
+      .set({ currentStreak: 2, longestStreak: 2, lastCompletedDate: yesterdayDate })
       .where(eq(userPreference.userId, userId));
     await givenCompletedTodos();
-    const notifier = context.module.get<StreakMilestoneNotifierPort>(STREAK_MILESTONE_NOTIFIER);
+    const notifier = context.module.get<StreakMilestoneNotifierPort>(StreakMilestoneNotifierPort);
     const notification = vi.spyOn(notifier, "notifyStreak3Reached").mockImplementation(() => {});
     const lock = await holdRowLock((transaction) =>
       transaction
@@ -276,18 +275,18 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
     // Then
     expect((await requests).every((result) => result.status === "fulfilled")).toBe(true);
-    expect(await preferences.findByUserId(userId)).toEqual(
-      expect.objectContaining({ currentStreak: 3, longestStreak: 3, lastCompletedDate: today }),
+    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toEqual(
+      expect.objectContaining({ currentStreak: 3, longestStreak: 3, lastCompletedDate: todayDate }),
     );
-    expect(notification).toHaveBeenCalledExactlyOnceWith(userId);
+    expect(notification).toHaveBeenCalledExactlyOnceWith(UserId.reconstitute(userId));
   });
 
   it("늦게 도착한 완료 취소 이벤트는 최신 Todo가 모두 완료된 상태를 되돌리지 않는다", async () => {
     // Given
-    await preferences.create(userId);
+    await preferences.create(UserId.reconstitute(userId));
     await client
       .update(userPreference)
-      .set({ currentStreak: 3, longestStreak: 4, lastCompletedDate: today })
+      .set({ currentStreak: 3, longestStreak: 4, lastCompletedDate: todayDate })
       .where(eq(userPreference.userId, userId));
     await givenCompletedTodos();
 
@@ -295,14 +294,14 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     await context.module.get(OnTodoToggledUseCase).execute({ userId, completed: false });
 
     // Then
-    expect(await preferences.findByUserId(userId)).toEqual(
-      expect.objectContaining({ currentStreak: 3, longestStreak: 4, lastCompletedDate: today }),
+    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toEqual(
+      expect.objectContaining({ currentStreak: 3, longestStreak: 4, lastCompletedDate: todayDate }),
     );
   });
 
   it("동시에 서로 다른 preference 필드를 바꾸어도 지정하지 않은 값은 보존된다", async () => {
     // Given
-    await preferences.create(userId, {
+    await preferences.create(UserId.reconstitute(userId), {
       timezone: "UTC",
       weatherMorningEnabled: true,
       weatherMorningMinute: 17,
@@ -315,8 +314,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
         .for("update"),
     );
     const requests = Promise.allSettled([
-      preferences.upsert(userId, { timezone: "Asia/Seoul" }),
-      preferences.upsert(userId, {
+      preferences.upsert(UserId.reconstitute(userId), { timezone: "Asia/Seoul" }),
+      preferences.upsert(UserId.reconstitute(userId), {
         weatherMorningEnabled: false,
         weatherMorningHour: 0,
         weatherMorningMinute: undefined,
@@ -333,7 +332,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
     // Then
     expect((await requests).every((result) => result.status === "fulfilled")).toBe(true);
-    expect(await preferences.findByUserId(userId)).toEqual(
+    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toEqual(
       expect.objectContaining({
         timezone: "Asia/Seoul",
         weatherMorningEnabled: false,
@@ -346,9 +345,9 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("일반·push 마케팅 동의의 동시 부분 변경은 서로와 약관을 덮어쓰지 않는다", async () => {
     // Given
-    await consents.create(userId, {
-      termsAgreedAt: yesterday,
-      privacyAgreedAt: yesterday,
+    await consents.create(UserId.reconstitute(userId), {
+      termsAgreedAt: yesterdayStart,
+      privacyAgreedAt: yesterdayStart,
       agreedTermsVersion: "1.0.0",
     });
     const lock = await holdRowLock((transaction) =>
@@ -359,8 +358,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
         .for("update"),
     );
     const requests = Promise.allSettled([
-      consents.upsertMarketingConsent(userId, { agreedAt: at }),
-      consents.upsertMarketingPushConsent(userId, { agreedAt: at }),
+      consents.upsertMarketingConsent(UserId.reconstitute(userId), { agreedAt: now }),
+      consents.upsertMarketingPushConsent(UserId.reconstitute(userId), { agreedAt: now }),
     ]);
 
     // When
@@ -373,25 +372,25 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
     // Then
     expect((await requests).every((result) => result.status === "fulfilled")).toBe(true);
-    expect(await consents.findByUserId(userId)).toEqual(
+    expect(await consents.findByUserId(UserId.reconstitute(userId))).toEqual(
       expect.objectContaining({
-        termsAgreedAt: yesterday,
-        privacyAgreedAt: yesterday,
+        termsAgreedAt: yesterdayStart,
+        privacyAgreedAt: yesterdayStart,
         agreedTermsVersion: "1.0.0",
-        marketingAgreedAt: at,
-        marketingPushAgreedAt: at,
+        marketingAgreedAt: now,
+        marketingPushAgreedAt: now,
       }),
     );
 
     // When
-    await consents.upsertMarketingConsent(userId, { agreedAt: null });
+    await consents.upsertMarketingConsent(UserId.reconstitute(userId), { agreedAt: null });
 
     // Then
-    expect(await consents.findByUserId(userId)).toEqual(
+    expect(await consents.findByUserId(UserId.reconstitute(userId))).toEqual(
       expect.objectContaining({
         marketingAgreedAt: null,
-        marketingPushAgreedAt: at,
-        termsAgreedAt: yesterday,
+        marketingPushAgreedAt: now,
+        termsAgreedAt: yesterdayStart,
       }),
     );
   });
@@ -412,7 +411,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       await transaction.insert(userTable).values(user);
       await seed.execute({
         userId: user.id,
-        consent: { termsAgreedAt: at, privacyAgreedAt: at, agreedTermsVersion: "1.0.0" },
+        consent: { termsAgreedAt: now, privacyAgreedAt: now, agreedTermsVersion: "1.0.0" },
       });
       throw new Error("프로비저닝 후속 단계 실패");
     });
@@ -420,7 +419,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     // Then
     await expect(provision).rejects.toThrow("프로비저닝 후속 단계 실패");
     expect(await client.query.user.findFirst({ where: { id: user.id } })).toBeUndefined();
-    expect(await preferences.findByUserId(user.id)).toBeNull();
-    expect(await consents.findByUserId(user.id)).toBeNull();
+    expect(await preferences.findByUserId(UserId.reconstitute(user.id))).toBeNull();
+    expect(await consents.findByUserId(UserId.reconstitute(user.id))).toBeNull();
   });
 });

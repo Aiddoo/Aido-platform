@@ -2,10 +2,12 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { AccountTodoCommentCleanupResult } from "#api/modules/identity/users/application/ports/account-cleanup.port";
 import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
 import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
   AUTH_FIXTURE_NOW,
@@ -18,6 +20,7 @@ import {
 } from "#test/mocks/ports/account-lifecycle.stub";
 
 import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";
+import { UserAlerts } from "../users.alerts.js";
 import { PurgeDeletedAccountsUseCase } from "./purge-deleted-accounts.use-case.js";
 
 // 탈퇴 유예 30일을 하루 넘긴 시각
@@ -48,8 +51,8 @@ class FailingTodoCommentCleanup extends StubAccountTodoCommentCleanup {
 }
 
 class FailingHardDeleteUserRepository extends InMemoryAuthUserRepository {
-  override async hardDelete(id: string): Promise<void> {
-    if (id === "user-1") {
+  override async hardDelete(id: UserId): Promise<void> {
+    if (id.value === "user-1") {
       throw new Error("Delete failed");
     }
     await super.hardDelete(id);
@@ -105,6 +108,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     const securityLogRepository =
       options.securityLogRepository ?? new InMemoryAuthSecurityLogRepository();
     const logger = new SilentLogger();
+    const alert = new RecordingOperationalAlert();
     const useCase = new PurgeDeletedAccountsUseCase({
       clock: new FixedClock(AUTH_FIXTURE_NOW),
       userRepository,
@@ -113,9 +117,11 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
       usageCleanup,
       securityLogRepository,
       logger,
+      alert,
       unitOfWork: new ImmediateUnitOfWork(),
     });
     return {
+      alert,
       useCase,
       userRepository,
       notificationCleanup,
@@ -209,6 +215,12 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     expect(fixture.logger.messages).toContainEqual(
       completion({ candidateCount: 2, purgedCount: 1, skippedCount: 0, failedCount: 1 }),
     );
+    expect(fixture.alert.alerts).toEqual([
+      {
+        ...UserAlerts.ACCOUNT_PURGE_FAILED,
+        details: { candidateCount: 2, purgedCount: 1, failedCount: 1 },
+      },
+    ]);
   });
 
   it.each([
@@ -225,6 +237,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
 
       // Then
       expect(fixture.userRepository.stored("user-1")).toBeUndefined();
+      expect(fixture.alert.alerts).toEqual([]);
       expect(fixture.securityLogRepository.entries).toHaveLength(1);
       expect(fixture.todoCommentCleanup.settlements).toEqual([{ affectedTodoIds: [101] }]);
       expect(fixture.logger.messages).toEqual([
