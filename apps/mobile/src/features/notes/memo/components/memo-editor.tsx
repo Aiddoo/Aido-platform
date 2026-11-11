@@ -57,7 +57,13 @@ import {
 import { Stack, router } from 'expo-router';
 import { Menu, Separator, Spinner } from 'heroui-native';
 import { type ComponentType, useLayoutEffect, useRef, useState } from 'react';
-import { type Control, Controller, useForm, useFormState } from 'react-hook-form';
+import {
+  type Control,
+  Controller,
+  type UseFormReturn,
+  useForm,
+  useFormState,
+} from 'react-hook-form';
 import { Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -107,7 +113,22 @@ interface MemoEditorProps {
 
 export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   const navigate = useSingleTap(router.navigate);
-  const { form, canSave, isEditing, startEditing, saveChanges, discardDraft } = useMemoEditing({
+  const [memoId] = useMemoId();
+
+  const [{ data: memo }, { data: me }] = useSuspenseQueries({
+    queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
+  });
+
+  const { form, canSave, isEditing, setIsEditing, discardDraft } = useMemoForm({
+    memo,
+    accountId: me.id,
+  });
+  const saveChanges = useMemoSave({
+    memo,
+    form,
+    canSave,
+    discardDraft,
+    onFinish: () => setIsEditing(false),
     onLeave,
   });
 
@@ -144,7 +165,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
                 preserveErrorSpace={false}
                 value={value}
                 onChange={onChange}
-                onFocus={startEditing}
+                onFocus={() => setIsEditing(true)}
                 testID="memo-editor-input"
               />
             )}
@@ -166,15 +187,24 @@ MemoEditor.StackToolbar = function StackToolbar({
   onDeleted,
 }: MemoEditorToolbarProps) {
   const { t } = useTranslation(['memo', 'common']);
+  const [memoId] = useMemoId();
+
+  const [{ data: memo }, { data: me }] = useSuspenseQueries({
+    queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
+  });
   const { isSubmitting, isValid } = useFormState({ control });
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const pin = useMemoPinAction();
-  const aiParse = useMemoAiParse(onSaveChanges);
+
+  const pin = useMemoPinAction(memo);
+  const aiParse = useMemoAiParse({ accountId: me.id, onSaveChanges });
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
   const { color: pinnedTint } = useResolveClassNames('text-main');
   const { color: saveTint } = useResolveClassNames(canSave ? 'text-main' : 'text-gray-4');
+
   const pinLabel = t(pin.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin');
+  const aiSubtitle = aiParse.isParsing ? t('memo:detail.aiParsing') : aiQuota;
 
   return (
     <>
@@ -212,7 +242,7 @@ MemoEditor.StackToolbar = function StackToolbar({
           <Stack.Toolbar.MenuAction
             icon={MEMO_TOOLBAR_ICON.ai}
             disabled={aiParse.isDisabled}
-            subtitle={aiParse.isParsing ? t('memo:detail.aiParsing') : (aiQuota ?? undefined)}
+            {...(aiSubtitle != null && { subtitle: aiSubtitle })}
             onPress={aiParse.start}
           >
             {t('memo:detail.aiParse')}
@@ -255,8 +285,12 @@ MemoEditor.PaneToolbar = function PaneToolbar({
   onConverted,
   onDeleted,
 }: MemoEditorToolbarProps) {
+  const [memoId] = useMemoId();
+
+  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
   const { isSubmitting, isValid } = useFormState({ control });
-  const pin = useMemoPinAction();
+
+  const pin = useMemoPinAction(memo);
 
   return (
     <Box className="bg-white">
@@ -454,9 +488,13 @@ function MemoMoreMenu({
   onDeleted,
 }: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDeleted'>) {
   const { t } = useTranslation(['memo', 'common']);
+
+  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const aiParse = useMemoAiParse(onSaveChanges);
+
+  const aiParse = useMemoAiParse({ accountId: me.id, onSaveChanges });
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
 
@@ -563,17 +601,14 @@ function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogP
   );
 }
 
-/** 입력값·초안·편집 상태와 저장을 맡는다. 저장은 saveChanges 하나이고 andThen이 저장 뒤의 일을 고른다 */
-function useMemoEditing({ onLeave }: Pick<MemoEditorProps, 'onLeave'>) {
+/** 입력값·초안·편집 상태를 맡는다. 복원한 초안을 입력값으로 두고 비교 기준은 서버 원본이다 */
+function useMemoForm({ memo, accountId }: { memo: Memo; accountId: string }) {
   const { t } = useTranslation('memo');
   const toast = useAppToast();
-  const [memoId] = useMemoId();
-  const [{ data: memo }, { data: me }] = useSuspenseQueries({
-    queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
-  });
+
   const savedValues = { content: memo.content };
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
-    createMemoDraftKey({ userId: me.id, memoId }),
+    createMemoDraftKey({ userId: accountId, memoId: memo.id }),
     {
       sourceUpdatedAt: toEpochMs(memo.updatedAt),
       onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
@@ -584,15 +619,13 @@ function useMemoEditing({ onLeave }: Pick<MemoEditorProps, 'onLeave'>) {
     defaultValues: restoredDraft ?? savedValues,
   });
   const { isDirty, isValid } = useFormState({ control: form.control });
-  const canSave = isDirty && isValid;
+  const [isEditing, setIsEditing] = useState(restoredDraft != null);
+
   const discardDraft = useFormDraftAutosave(form.subscribe, {
     initialValues: savedValues,
     saveDraft,
     clearDraft,
   });
-  const [isEditing, setIsEditing] = useState(restoredDraft != null);
-  const updateMemo = useMutation(useUpdateMemoMutationOptions());
-  const isSavingChangesRef = useRef(false);
 
   // 복원한 초안을 입력값으로 둔 채 비교 기준만 서버 원본으로 맞춰 isDirty가 "저장 안 된 변경"을 뜻하게 한다.
   useLayoutEffect(() => {
@@ -601,12 +634,30 @@ function useMemoEditing({ onLeave }: Pick<MemoEditorProps, 'onLeave'>) {
     }
   }, [memo.content, form, restoredDraft]);
 
+  return { form, canSave: isDirty && isValid, isEditing, setIsEditing, discardDraft };
+}
+
+interface MemoSaveOptions extends Pick<MemoEditorProps, 'onLeave'> {
+  memo: Memo;
+  form: UseFormReturn<MemoFormValues>;
+  canSave: boolean;
+  discardDraft: () => void;
+  /** 저장 버튼으로 저장을 마쳤을 때 */
+  onFinish: () => void;
+}
+
+/** 고친 글자를 저장하고 andThen대로 이어 간다. 저장한 메모를 돌려주고, 저장하지 못하면 null이다 */
+function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: MemoSaveOptions) {
+  const updateMemo = useMutation(useUpdateMemoMutationOptions());
+
+  const isSavingChangesRef = useRef(false);
+
   // 바뀐 글자가 없으면 서버에 보내지 않는다. 수정 시각과 목록 순서가 괜히 바뀌지 않는다
   const saveContent = async (content: string) => {
     if (!MemoPolicy.hasContentChanged(memo, content)) {
       return memo;
     }
-    return updateMemo.mutateAsync({ memoId, values: { content: content.trim() } });
+    return updateMemo.mutateAsync({ memoId: memo.id, values: { content: content.trim() } });
   };
 
   // 저장 버튼과 뒤로 가기는 handleSubmit으로 보내 저장하는 동안(isSubmitting) 두 버튼을 끈다. 유효하지 않으면 null
@@ -620,8 +671,7 @@ function useMemoEditing({ onLeave }: Pick<MemoEditorProps, 'onLeave'>) {
         .catch(reject);
     });
 
-  /** 고친 글자를 저장하고 andThen대로 이어 간다. 저장한 메모를 돌려주고, 저장하지 못하면 null이다 */
-  const saveChanges = async ({ andThen }: { andThen: MemoSaveNextStep }): Promise<Memo | null> => {
+  return async ({ andThen }: { andThen: MemoSaveNextStep }): Promise<Memo | null> => {
     // 뒤로 가기와 메뉴는 저장할 글자가 없으면 그대로 이어 간다. 저장 버튼은 공백만 고친 글자도 받아 편집을 끝낸다
     if (!canSave && andThen !== 'finish') {
       if (andThen === 'leave') {
@@ -647,7 +697,7 @@ function useMemoEditing({ onLeave }: Pick<MemoEditorProps, 'onLeave'>) {
         .with('finish', () => {
           form.reset({ content: savedMemo.content });
           discardDraft();
-          setIsEditing(false);
+          onFinish();
           Keyboard.dismiss();
         })
         .with('leave', () => {
@@ -677,39 +727,32 @@ function useMemoEditing({ onLeave }: Pick<MemoEditorProps, 'onLeave'>) {
       }
     }
   };
-
-  return {
-    form,
-    canSave,
-    isEditing,
-    startEditing: () => setIsEditing(true),
-    saveChanges,
-    discardDraft,
-  };
 }
 
 /** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 고정 동작을 쓴다. */
-function useMemoPinAction() {
-  const [memoId] = useMemoId();
-  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
+function useMemoPinAction(memo: Memo) {
   const setPinned = useMutation(useSetMemoPinnedMutationOptions());
 
   return {
     isPinned: memo.isPinned,
     isDisabled: setPinned.isPending,
-    toggle: () => setPinned.mutate({ memoId, isPinned: !memo.isPinned }),
+    toggle: () => setPinned.mutate({ memoId: memo.id, isPinned: !memo.isPinned }),
   };
 }
 
 /** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 AI 정리 동작을 쓴다. */
-function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) {
+function useMemoAiParse({
+  accountId,
+  onSaveChanges,
+}: {
+  accountId: string;
+} & Pick<MemoEditorToolbarProps, 'onSaveChanges'>) {
   const { t } = useTranslation('errors');
   const toast = useAppToast();
   const push = useSingleTap(router.push);
   const draftService = useDraftService();
   const { timeZone } = useDateFormatContext();
   const [memoId] = useMemoId();
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
   const parseMemo = useMutation(useParseMemoMutationOptions({ memoId }));
@@ -728,7 +771,7 @@ function useMemoAiParse(onSaveChanges: MemoEditorToolbarProps['onSaveChanges']) 
     const sourceUpdatedAt = toEpochMs(savedMemo.updatedAt);
     // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다
     const draft = draftService.restore(
-      createMemoPlanDraftKey({ userId: me.id, memoId, timeZone }),
+      createMemoPlanDraftKey({ userId: accountId, memoId, timeZone }),
       {
         sourceUpdatedAt,
       },

@@ -22,7 +22,11 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
-import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  usePrefetchQuery,
+  useSuspenseInfiniteQuery,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { clamp, range } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -55,6 +59,10 @@ function getColumnCount(paneSizeClass: WindowSizeClass) {
 
 export function MemoList() {
   const { t } = useTranslation('memo');
+  const meQueryOptions = useGetMeQueryOptions();
+
+  // 메모 목록이 먼저 멈추면 내 정보 조회가 그 뒤에야 시작한다. 둘을 함께 시작한다
+  usePrefetchQuery(meQueryOptions);
   const {
     data: memos,
     fetchNextPage,
@@ -63,7 +71,7 @@ export function MemoList() {
     isFetchingNextPage,
     isFetchNextPageError,
   } = useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const { data: me } = useSuspenseQuery(meQueryOptions);
   const [voiceNotes] = useVoiceNotes(me.id);
   const hasVoiceNotes = voiceNotes.length > 0;
   const paneSizeClass = usePaneSizeClass();
