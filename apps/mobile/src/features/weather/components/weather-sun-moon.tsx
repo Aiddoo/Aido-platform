@@ -98,6 +98,7 @@ export function WeatherSunMoon() {
         <Text
           tone="onSky"
           numberOfLines={isPolar ? 2 : 1}
+          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
           className={
             isPolar
               ? 'shrink text-b1 font-semibold'

@@ -18,11 +18,13 @@ function createSource() {
 
 describe('createMinuteClockStore', () => {
   beforeEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-11-03T09:00:30.000Z'));
   });
 
   afterEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 

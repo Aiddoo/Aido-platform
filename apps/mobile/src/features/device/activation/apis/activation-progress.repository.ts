@@ -10,8 +10,10 @@ import {
   activationProgressStorageSchema,
 } from '../schemas/activation-progress-storage.schema';
 
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const KEY_PREFIX = 'aido_activation_v2';
 /** 1.15.0 이하가 계정·캠페인별로 쓰던 키. 진행은 서버 할 일 기록으로도 다시 채워져 옮기지 않고 지운다 */
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const RETIRED_KEY_PREFIX = 'aido_activation_v1';
 
 interface ClaimActivationResult {

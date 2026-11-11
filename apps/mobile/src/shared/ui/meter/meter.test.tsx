@@ -15,6 +15,7 @@ describe('Meter', () => {
     // Then
     const meter = screen.getByRole('progressbar');
     expect(meter.props.accessibilityValue).toEqual({ min: 0, max, now });
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     expect(meter.children[0]).toHaveStyle({ width: `${widthPercent}%` });
   });
 });

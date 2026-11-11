@@ -135,6 +135,7 @@ function ComparisonCard({ children, busy = false }: { children: ReactNode; busy?
   );
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 function Header() {
   const { t } = useTranslation('subscription');
   const valueColumnWidth = useValueColumnWidth();

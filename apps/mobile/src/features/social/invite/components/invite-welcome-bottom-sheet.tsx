@@ -135,6 +135,7 @@ interface WelcomeContentsProps {
   redemption: RedemptionResult;
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 InviteWelcomeBottomSheet.Contents = function Contents({ redemption }: WelcomeContentsProps) {
   const { t } = useTranslation('invite');
   // 수락 mutation이 내 정보를 다시 불러온 뒤 열리므로 보상이 이어 붙은 결과를 읽는다

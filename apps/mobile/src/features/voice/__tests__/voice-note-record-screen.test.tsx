@@ -194,6 +194,7 @@ describe('녹음 화면', () => {
 
   it('들은 내용 없이 한도를 다 쓰면 정리해준다고 말하지 않고 정리 버튼도 두지 않는다', async () => {
     // Given
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers({ advanceTimers: true });
     await renderRecordScreen(createEntitlementSnapshot({ tier: 'FREE' }));
 
@@ -205,6 +206,7 @@ describe('녹음 화면', () => {
     expect(screen.queryByText(/정리해드릴게요/)).toBeNull();
     expect(screen.queryByTestId('voice-note-summarize')).toBeNull();
     expect(screen.getByTestId('voice-note-stopped-close')).toBeTruthy();
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 
@@ -299,6 +301,7 @@ describe('녹음 화면', () => {
 
   it('인식기가 시작 신호를 주지 않으면 잠시 뒤 멈추지 않고 실패로 알린다', async () => {
     // Given
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers({ advanceTimers: true });
     const { speechRecognizer } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
@@ -311,6 +314,7 @@ describe('녹음 화면', () => {
 
     // Then
     expect(screen.getByTestId('voice-note-summarize')).toBeTruthy();
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 

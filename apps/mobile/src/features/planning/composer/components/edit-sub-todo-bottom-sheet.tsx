@@ -31,6 +31,7 @@ export function EditSubTodoBottomSheet(props: EditSubTodoBottomSheetProps) {
   );
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 EditSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () => void }) {
   const [todoId] = useTodoId();
   const [subTodoId] = useSubTodoId();

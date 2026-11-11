@@ -4,7 +4,9 @@ import { type Instant, instantSchema } from '@src/shared/date/instant';
 
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const SEEN_KEY_PREFIX = 'aido_feature_discovery_seen_v1';
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const REENTRY_KEY_PREFIX = 'aido_feature_discovery_reentry_v1';
 
 interface WhatsNewIdentity {

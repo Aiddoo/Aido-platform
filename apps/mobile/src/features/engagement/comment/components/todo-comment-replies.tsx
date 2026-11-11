@@ -69,6 +69,7 @@ export function TodoCommentReplies({ thread, anchor, isHighlightActive }: TodoCo
             label={{ kind: preview == null ? 'view' : 'viewMore', count: hiddenCount }}
             onPress={() => {
               setExpansion({ isExpanded: true, source: 'user' });
+              // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
               queryClient
                 .infiniteQuery({ ...repliesOptions, staleTime: 'static' })
                 .then((replies) => trackLoadedCount(replies.length))

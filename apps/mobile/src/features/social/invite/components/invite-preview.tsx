@@ -39,6 +39,7 @@ export function InvitePreview() {
   return <InvitePreview.Contents inviteCode={inviteCode} />;
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 InvitePreview.Contents = function Contents({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
   const { data: preview } = useSuspenseQuery(useGetInvitePreviewQueryOptions({ inviteCode }));

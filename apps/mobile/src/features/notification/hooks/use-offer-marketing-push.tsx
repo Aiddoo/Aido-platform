@@ -43,6 +43,7 @@ export function useOfferMarketingPushAfterCompletion() {
     }
     // 설정 화면을 열지 않았어도 제안할 수 있게 캐시가 없으면 받아 온다
     const [preference, consent, permission] = await Promise.all([
+      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
       queryClient.ensureQueryData(preferenceQueryOptions).catch((error: unknown) => {
         logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_PUSH_OFFER_SKIPPED, {
           error: getErrorMessage(error),
@@ -50,13 +51,16 @@ export function useOfferMarketingPushAfterCompletion() {
         return null;
       }),
       readWithoutBlocking(
+        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
         queryClient.getQueryData(consentQueryOptions.queryKey),
+        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
         () => queryClient.ensureQueryData(consentQueryOptions),
         (error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_PUSH_OFFER_SKIPPED, {
             error: getErrorMessage(error),
           }),
       ),
+      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
       queryClient.ensureQueryData(permissionQueryOptions),
     ]);
     // 기기 알림이나 앱 푸시가 꺼져 있으면 동의를 받아도 알림이 닿지 않는다

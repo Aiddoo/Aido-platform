@@ -67,6 +67,7 @@ export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
   return <ThanksSummaryRow.Contents {...props} />;
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 ThanksSummaryRow.Contents = function Contents({ todoId, onOpenThanks }: ThanksSummaryRowProps) {
   const { t } = useTranslation('todo');
   const { data } = useSuspenseInfiniteQuery(

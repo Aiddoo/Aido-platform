@@ -17,6 +17,7 @@ export function TodoScopeStep({ step, children }: TodoScopeStepProps) {
 
   return (
     <>
+      {/* oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400 */}
       <Box className={scopeRequest == null ? undefined : 'hidden'}>{children}</Box>
       {scopeRequest != null && (
         <TodoScopeSelectContent

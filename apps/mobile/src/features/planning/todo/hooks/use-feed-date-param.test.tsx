@@ -12,15 +12,18 @@ const originalCurrentStateDescriptor = Object.getOwnPropertyDescriptor(AppState,
 
 describe('피드 날짜 선택', () => {
   beforeEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     Object.defineProperty(AppState, 'currentState', {
       configurable: true,
       writable: true,
       value: 'active',
     });
+    // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
     jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() });
   });
   afterEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
     jest.restoreAllMocks();
     if (originalCurrentStateDescriptor) {

@@ -6,6 +6,7 @@ export const WEATHER_ERROR_CODE = {
   LOCATION_UNAVAILABLE: 'WEATHER_LOCATION_UNAVAILABLE',
 } as const;
 
+// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const SERVICE_UNAVAILABLE_STATUS = 503;
 
 /** 서버에 등록한 위치가 없을 때(WEATHER_1902)는 다시 시도 대신 위치 등록을 안내한다. */

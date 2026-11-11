@@ -14,6 +14,7 @@ const RENDER_SETTLE_MS = 10;
  * React 스케줄러까지 멈춰 훅 결과가 준비되지 않는다.
  */
 function freezeTimeAt(now: number) {
+  // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
   jest.spyOn(Date, 'now').mockReturnValue(now);
 }
 

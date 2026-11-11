@@ -158,11 +158,13 @@ describe('다음 로컬 자정 계산', () => {
 
 describe('getNowInstant', () => {
   afterEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 
   it('고정한 시계의 지금을 밀리초까지 같은 순간으로 돌려준다', () => {
     // Given
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers({ now: new Date('2026-10-01T14:59:59.999Z') });
 
     // When
@@ -175,6 +177,7 @@ describe('getNowInstant', () => {
 
   it('서머타임이 끝나는 날 같은 벽시계 한 시간이 두 번 와도 서로 다른 순간이다', () => {
     // Given
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers({ now: new Date('2026-11-01T08:30:00.000Z') });
     const first = getNowInstant();
 

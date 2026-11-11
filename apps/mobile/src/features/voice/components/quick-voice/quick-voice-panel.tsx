@@ -362,6 +362,7 @@ function LimitMessage({ title, description }: { title: string; description: stri
 }
 
 /** 높이를 고정해야 긴 자막이 시트를 키워 조작을 화면 밖으로 밀지 않는다(QA: 93초 발화) */
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 function SheetPanel({ center, right, onClose, testID, children }: SheetPanelProps) {
   const { height: windowHeight } = useWindowDimensions();
   const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();

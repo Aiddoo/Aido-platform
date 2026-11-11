@@ -25,6 +25,7 @@ import { toPushDevice, toPushPermission, toReportPushDeviceInput } from './push-
 import type { PushRegistrationRepository } from './push-registration.repository';
 
 const REPORT_WAIT_TIMEOUT_MS = 3_000;
+// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const TOO_MANY_REQUESTS_STATUS = 429;
 
 interface ReportedPushDevice {

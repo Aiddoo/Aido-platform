@@ -46,6 +46,7 @@ describe('invite-cache', () => {
   describe('invalidateAfterRedeem', () => {
     it('친구·요청 목록과 내 정보를 다시 불러오고 쓴 코드의 미리보기를 지운다', async () => {
       // Given
+      // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
       const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
       queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }), {
         inviter: { name: null, profileImage: null },
@@ -68,6 +69,7 @@ describe('invite-cache', () => {
   describe('invalidateOnInviteNotification', () => {
     it('초대 요약·초대한 친구 목록, 친구 목록과 내 정보를 다시 불러오게 한다', async () => {
       // Given
+      // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
       const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
 
       // When

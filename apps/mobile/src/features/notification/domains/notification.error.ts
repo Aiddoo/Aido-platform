@@ -1,6 +1,8 @@
 import { isApiError, isConnectivityError } from '@src/shared/errors';
 
+// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const FORBIDDEN_STATUS = 403;
+// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const NOT_FOUND_STATUS = 404;
 
 /** 읽음 처리가 403·404로 막히면 이 기기 계정의 알림이 아니다 */

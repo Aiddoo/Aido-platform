@@ -93,6 +93,7 @@ async function renderGate(
 describe('readWithoutBlocking', () => {
   it('연결이 있어도 응답이 오지 않으면 제한 시간 뒤 없는 값으로 이어 간다', async () => {
     // Given
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     const result = readWithoutBlocking(undefined, () => new Promise(() => undefined), noop);
 
@@ -101,6 +102,7 @@ describe('readWithoutBlocking', () => {
 
     // Then
     await expect(result).resolves.toBeNull();
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 });

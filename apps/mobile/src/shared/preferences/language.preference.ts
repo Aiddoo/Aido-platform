@@ -11,6 +11,7 @@ export type LanguageMode = (typeof LANGUAGE_MODES)[number];
 
 export type ResolvedLanguage = SupportedLocale;
 
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 export const LANGUAGE_MODE_STORAGE_KEY = 'aido_language';
 
 export function isLanguageMode(value: unknown): value is LanguageMode {

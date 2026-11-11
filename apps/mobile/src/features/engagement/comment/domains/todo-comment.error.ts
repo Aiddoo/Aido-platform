@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
 import { type ApiError, isApiError } from '@src/shared/errors';
 
+// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const TOO_MANY_REQUESTS_STATUS = 429;
 
 /** 이미 지워졌거나 볼 수 없는 댓글이다(TODO_0833, TODO_0831) */
@@ -17,6 +18,7 @@ export function isTodoCommentRateLimitedError(error: unknown): error is ApiError
 
 /** 같은 글을 다시 보내도 같은 결과인 4xx다 */
 export function isTodoCommentRejectedError(error: unknown): error is ApiError {
+  // oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
   return isApiError(error) && 400 <= error.status && error.status < 500;
 }
 

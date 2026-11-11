@@ -11,8 +11,11 @@ export interface CoachmarkRepository {
   clear(accountId: string): void;
 }
 
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const REORDER_KEY_PREFIX = 'aido_reorder_coachmark_v1';
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const FRIEND_STRIP_KEY_PREFIX = 'aido_friend_strip_hint_dismissed_v1';
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const KEY_PREFIX = 'aido_coachmark_v1';
 /** 더는 쓰지 않아 지우는 안내. 이미 본 사람에게 다시 뜰 일이 없어진 뒤에만 올린다 */
 const RETIRED_COACHMARK_KINDS: readonly string[] = ['ai-consent-notice'];

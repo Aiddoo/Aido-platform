@@ -35,11 +35,13 @@ const PAST_ACTIVE_DAYS = ['2026-10-24', '2026-10-25'];
 const REVIEW_SETTLE_MS = 2_000;
 
 beforeEach(() => {
+  // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
   jest.useFakeTimers({ now: new Date('2026-10-27T03:00:00.000Z'), doNotFake: ['nextTick'] });
   Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
 });
 
 afterEach(() => {
+  // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
   jest.useRealTimers();
 });
 
@@ -69,6 +71,7 @@ async function renderToggle() {
     },
   );
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
+  // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
 
   const toggle = async (todoId: number, completed: boolean, date: string) => {

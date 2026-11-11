@@ -179,12 +179,14 @@ describe('useVoiceCaptureSession', () => {
     const LOUD = 0.6;
 
     afterEach(() => {
+      // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
       jest.useRealTimers();
     });
 
     const startSpeaking = async () => {
       const session = await renderSession();
       await userEvent.press(screen.getByRole('button', { name: 'begin' }));
+      // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
       jest.useFakeTimers();
       await act(async () => session.speechRecognizer.emit({ type: 'start' }));
       return session;
@@ -1290,6 +1292,7 @@ describe('useVoiceCaptureSession', () => {
 
     it('멈춘 인식기를 다시 열면 이벤트와 breadcrumb으로 남긴다', async () => {
       // Given
+      // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
       jest.useFakeTimers({ advanceTimers: true });
       const { speechRecognizer, analytics, errorReporter } = await beginListening({ mode: 'note' });
 
@@ -1300,6 +1303,7 @@ describe('useVoiceCaptureSession', () => {
           speechRecognizer.emit({ type: 'volume', level: SPEAKING_VOLUME_THRESHOLD });
         }
       });
+      // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
       jest.useRealTimers();
 
       // Then

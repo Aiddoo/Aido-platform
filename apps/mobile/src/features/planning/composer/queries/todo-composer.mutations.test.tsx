@@ -34,6 +34,7 @@ async function updateFollowing(error: ApiError) {
     },
     withOverlay: true,
   });
+  // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
   const update = current.value;
   if (update == null) {

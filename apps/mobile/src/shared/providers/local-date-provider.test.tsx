@@ -18,10 +18,12 @@ const PROCESS_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 describe('앱 로컬 날짜 Provider', () => {
   beforeEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
   });
 
   afterEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 

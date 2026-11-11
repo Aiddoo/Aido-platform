@@ -138,6 +138,7 @@ describe('CoachmarkPopover', () => {
       },
     );
     await act(async () => {
+      // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
       await new Promise((resolve) => {
         setTimeout(resolve, 600);
       });
@@ -160,6 +161,7 @@ describe('CoachmarkPopover', () => {
 
       // When
       await act(async () => {
+        // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
         await new Promise((resolve) => {
           setTimeout(resolve, 600);
         });
@@ -249,6 +251,7 @@ describe('CoachmarkPopover', () => {
         di: { httpClient, syncStorage, analytics },
       });
       await act(async () => {
+        // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
         await new Promise((resolve) => {
           setTimeout(resolve, 600);
         });
@@ -261,6 +264,7 @@ describe('CoachmarkPopover', () => {
       jest.mocked(useIsFocused).mockReturnValue(false);
       await rerender(coachmark(true));
       await act(async () => {
+        // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
         await new Promise((resolve) => {
           setTimeout(resolve, 600);
         });
@@ -417,6 +421,7 @@ describe('CoachmarkPopover', () => {
 
     it('충분히 본 뒤에는 닫고 끝난 것으로 남긴다', async () => {
       // Given
+      // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
       const dateNow = jest.spyOn(Date, 'now').mockReturnValue(OPENED_AT);
       const { analytics, move, isPending } = await renderMovableCoachmark();
       dateNow.mockReturnValue(OPENED_AT + 2_000);
@@ -435,6 +440,7 @@ describe('CoachmarkPopover', () => {
 
     it('스쳐 지나가면 끝난 것으로 남기지 않고 멈춘 뒤 다시 연다', async () => {
       // Given
+      // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
       const dateNow = jest.spyOn(Date, 'now').mockReturnValue(OPENED_AT);
       const { analytics, move, isPending } = await renderMovableCoachmark();
       dateNow.mockReturnValue(OPENED_AT + 300);

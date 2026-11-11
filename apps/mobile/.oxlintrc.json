@@ -41,11 +41,12 @@
     {
       "files": ["**/*.test.{ts,tsx}", "src/testing/**", "jest.setup.ts"],
       "rules": {
-        "typescript/no-explicit-any": "off",
+        // 테스트도 운영 코드와 같은 타입 안전 규칙이다. 루트의 테스트 완화가 extends로 들어오므로 다시 적는다
+        "typescript/no-explicit-any": "error",
         "typescript/ban-ts-comment": [
           "error",
           {
-            "ts-expect-error": "allow-with-description",
+            "ts-expect-error": true,
             "ts-ignore": true,
             "ts-nocheck": true
           }
@@ -769,7 +770,34 @@
         "src/testing/**"
       ],
       "rules": {
-        "aido/component-name": "error"
+        // 위치·틀만 말하는 이름. 옵션이 기본 목록을 대신하므로 기본 10개(Body~Wrappers)도 함께 적는다
+        "aido/component-name": [
+          "error",
+          {
+            "suffixes": [
+              "Body",
+              "Bodies",
+              "Frame",
+              "Frames",
+              "Section",
+              "Sections",
+              "Block",
+              "Blocks",
+              "Wrapper",
+              "Wrappers",
+              "Detail",
+              "Details",
+              "Content",
+              "Contents",
+              "Panel",
+              "Panels",
+              "Area",
+              "Areas",
+              "Info"
+            ],
+            "standaloneNames": ["Header", "Footer"]
+          }
+        ]
       }
     },
     {
@@ -936,8 +964,8 @@
         "aido/todo-comment-test-purity": "error"
       }
     },
-    // 켜기 전 규칙. 1.15.2 [13/32]에서 위반 자리에 disable 지시문을 남기고 규칙이 처음 나오는 블록의 off를 error로 켠다.
-    // 뒤따르는 같은 규칙의 off 블록은 허용 경로라 그대로 둔다. 목록과 위반 수: docs/architecture/migration-status.md
+    // 규칙이 처음 나오는 블록이 켜는 자리이고 뒤따르는 같은 규칙의 off 블록은 허용 경로다.
+    // 남은 위반은 줄마다 `-- 1.15.2 전환 #1400` 지시문이다. 줄이는 방법: docs/architecture/guardrails.md#baseline-1400
     {
       "files": ["src/**", "app/**"],
       "excludeFiles": [
@@ -946,14 +974,14 @@
         "src/testing/**"
       ],
       "rules": {
-        "aido/query-client-location": "off",
-        "aido/storage-key-location": "off",
-        "aido/http-status-literal": "off",
-        "aido/app-state-location": "off",
-        "aido/back-handler-location": "off",
-        "aido/no-classname-concat": "off",
-        "aido/shared-value-accessor": "off",
-        "aido/menu-item-title-text": "off"
+        "aido/query-client-location": "error",
+        "aido/storage-key-location": "error",
+        "aido/http-status-literal": "error",
+        "aido/app-state-location": "error",
+        "aido/back-handler-location": "error",
+        "aido/no-classname-concat": "error",
+        "aido/shared-value-accessor": "error",
+        "aido/menu-item-title-text": "error"
       }
     },
     {
@@ -1008,28 +1036,28 @@
       ],
       "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
       "rules": {
-        "aido/track-location": "off"
+        "aido/track-location": "error"
       }
     },
     {
       "files": ["src/**/domains/*.model.ts", "src/**/*.mapper.ts"],
       "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
       "rules": {
-        "aido/no-clock-read": "off"
+        "aido/no-clock-read": "error"
       }
     },
     {
       "files": ["src/**/*log-events.ts"],
       "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
       "rules": {
-        "aido/log-event-key": "off"
+        "aido/log-event-key": "error"
       }
     },
     {
       "files": ["src/**/constants/*.events.ts", "src/shared/analytics/event-map.ts"],
       "rules": {
         "aido/analytics-event-catalog": [
-          "off",
+          "error",
           {
             // GA 대시보드가 보는 기존 이름. 바꿀 때는 별칭 기간을 두고 여기서 지운다
             "frozenNames": [
@@ -1105,14 +1133,14 @@
       ],
       "rules": {
         "jest/no-restricted-jest-methods": [
-          "off",
+          "error",
           {
             "useFakeTimers": "fake timer는 setupFakeTimersPerTest(config)로만 켭니다. 화면을 내리고 남은 타이머를 흘린 뒤 진짜 타이머로 되돌립니다.",
             "useRealTimers": "진짜 타이머로 되돌리는 일은 setupFakeTimersPerTest의 afterEach가 합니다. 바로 부르면 화면을 내릴 때 생긴 타이머가 남습니다."
           }
         ],
         "jest/no-restricted-matchers": [
-          "off",
+          "error",
           {
             "toMatchSnapshot": "스냅숏을 쓰지 않습니다. 사용자 결과(문구·동작·캐시 상태)를 단언합니다.",
             "toMatchInlineSnapshot": "스냅숏을 쓰지 않습니다. 사용자 결과(문구·동작·캐시 상태)를 단언합니다.",
@@ -1120,9 +1148,9 @@
             "toThrowErrorMatchingInlineSnapshot": "스냅숏을 쓰지 않습니다. 오류 종류·코드를 단언합니다."
           }
         ],
-        "aido/test-spy-target": "off",
-        "aido/no-real-sleep": "off",
-        "aido/no-style-assertion": "off"
+        "aido/test-spy-target": "error",
+        "aido/no-real-sleep": "error",
+        "aido/no-style-assertion": "error"
       }
     },
     {

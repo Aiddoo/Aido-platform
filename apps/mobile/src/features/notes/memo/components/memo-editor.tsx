@@ -438,6 +438,7 @@ function MemoSaveButton({ isHighlighted, className, ...props }: MemoSaveButtonPr
         <CheckmarkIcon
           width={20}
           height={20}
+          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
           colorClassName={isHighlighted ? 'text-white dark:text-gray-9' : 'text-gray-5'}
         />
       }

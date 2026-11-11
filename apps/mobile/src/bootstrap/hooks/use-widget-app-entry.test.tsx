@@ -64,6 +64,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-10-05T00:00:00Z'));
     frames = new Map();
@@ -95,6 +96,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 

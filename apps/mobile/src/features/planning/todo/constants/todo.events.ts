@@ -15,6 +15,7 @@ declare module '@src/shared/analytics/event-map' {
     };
     todo_completed: { todo_id: number; is_completed: boolean };
     todo_deleted: { todo_id: number };
+    // oxlint-disable-next-line aido/analytics-event-catalog -- 1.15.2 전환 #1400
     todo_edited: { todo_id: number; field: string };
     todo_series_edited: { scope: SeriesScope };
     todo_series_deleted: { scope: SeriesScope };

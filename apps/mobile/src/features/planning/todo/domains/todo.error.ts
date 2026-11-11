@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
 import { isApiError } from '@src/shared/errors';
 
+// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const NOT_FOUND_STATUS = 404;
 
 /** 서버는 지운 할 일과 볼 권한이 없는 할 일을 모두 404로 답한다 */

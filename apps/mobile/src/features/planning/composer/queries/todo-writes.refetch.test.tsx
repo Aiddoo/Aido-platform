@@ -297,6 +297,7 @@ type TodoWrites = ReturnType<typeof useTodoWrites>;
 
 /** TanStack notifyManager는 구독자 알림을 setTimeout(0)으로 미뤄 act 안에서 한 틱을 기다린다 */
 function deliverQueryNotifications() {
+  // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
   return new Promise((resolve) => setTimeout(resolve, 10));
 }
 

@@ -210,13 +210,19 @@ NextHourPrecipitation.Chart = function Chart({
       return;
     }
     if (isReducedMotion) {
+      // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
       lineProgress.value = 1;
+      // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
       areaOpacity.value = 1;
       return;
     }
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     lineProgress.value = 0;
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     areaOpacity.value = 0;
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     lineProgress.value = withTiming(1, { duration: DRAW_DURATION_MS, easing: LINE_EASING });
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     areaOpacity.value = withTiming(1, { duration: DRAW_DURATION_MS, easing: AREA_EASING });
     return () => {
       cancelAnimation(lineProgress);
@@ -225,8 +231,10 @@ NextHourPrecipitation.Chart = function Chart({
   }, [hasChart, isReducedMotion, lineProgress, areaOpacity]);
 
   const lineProps = useAnimatedProps(() => ({
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     strokeDashoffset: length * (1 - lineProgress.value),
   }));
+  // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
   const areaProps = useAnimatedProps(() => ({ opacity: areaOpacity.value }));
 
   if (chart == null) {

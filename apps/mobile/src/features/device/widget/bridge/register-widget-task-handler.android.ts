@@ -1,6 +1,7 @@
 import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generator';
 import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
 import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
+// oxlint-disable-next-line aido/app-state-location -- 1.15.2 전환 #1400
 import { AppState } from 'react-native';
 import { registerWidgetTaskHandler as registerNativeWidgetTaskHandler } from 'react-native-android-widget';
 

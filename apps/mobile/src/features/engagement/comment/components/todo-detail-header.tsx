@@ -111,6 +111,7 @@ function useSortChange() {
 
   const prefetchThenCommit = (sort: TodoCommentSort, commit: () => void) => {
     setIsPending(true);
+    // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
     queryClient
       .infiniteQuery(sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions)
       .catch(noop)

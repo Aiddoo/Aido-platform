@@ -117,6 +117,7 @@ const LOCKED_DESCRIPTION_KEYS = {
 } as const satisfies Record<Exclude<EntitlementFeature, PlanLimitFeatureKey>, string>;
 
 /** 잠긴 기능은 무엇을 여는지, 한도 기능은 사용량과 "무료 → 프리미엄" 숫자를 보여 준다 */
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 PremiumUpsellBottomSheet.FeatureDetail = function FeatureDetail({
   feature,
 }: {

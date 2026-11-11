@@ -117,6 +117,7 @@ describe('StoreReviewService', () => {
     // When
     const first = service.requestReviewAt(ALL_DONE, waitUntilPresentable);
     const second = await service.requestReviewAt(ALL_DONE, waitUntilPresentable);
+    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
     await new Promise((resolve) => setImmediate(resolve));
     settle?.(false);
 

@@ -42,6 +42,7 @@ function ScopeRow({
         verticalPadding="medium"
         left={
           <Box
+            // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
             className={
               isDanger
                 ? 'size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20'
@@ -75,6 +76,7 @@ interface TodoScopeSelectContentProps {
   onBack?: () => void;
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 export function TodoScopeSelectContent({
   action,
   date,

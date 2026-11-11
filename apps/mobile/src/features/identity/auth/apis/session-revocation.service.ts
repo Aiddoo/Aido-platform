@@ -13,7 +13,9 @@ import type { PendingRevocationRepository } from './pending-revocation.repositor
 export const PENDING_REVOCATION_TTL_MS = 24 * HOUR_MS;
 
 const LOGOUT_TIMEOUT_MS = 5_000;
+// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const TOO_MANY_REQUESTS_STATUS = 429;
+// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const SERVER_ERROR_STATUS = 500;
 
 interface SessionRevocationServicePorts {

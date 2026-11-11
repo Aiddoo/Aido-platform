@@ -26,6 +26,7 @@ export function AddSubTodoBottomSheet(props: AddSubTodoBottomSheetProps) {
   );
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 AddSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () => void }) {
   const [todoId] = useTodoId();
   const [date] = useTodoSheetDateKey();

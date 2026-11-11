@@ -21,6 +21,7 @@ describe('expoHapticsGateway', () => {
 
     // When
     expoHapticsGateway.notify('error');
+    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
     await new Promise((resolve) => setImmediate(resolve));
 
     // Then

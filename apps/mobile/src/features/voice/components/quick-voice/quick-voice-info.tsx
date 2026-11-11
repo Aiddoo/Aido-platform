@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Separator } from 'heroui-native';
 import { useState } from 'react';
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 export function QuickVoiceInfo() {
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();

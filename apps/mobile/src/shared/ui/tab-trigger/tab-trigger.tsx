@@ -17,7 +17,11 @@ export function LineTabTrigger({ children, numberOfLines, ...props }: TextTabTri
     <Tabs.Trigger {...props} className="py-3">
       {({ isSelected }) => (
         <Tabs.Label numberOfLines={numberOfLines}>
-          <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
+          <Text
+            size="b3"
+            // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
+            className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}
+          >
             {children}
           </Text>
         </Tabs.Label>

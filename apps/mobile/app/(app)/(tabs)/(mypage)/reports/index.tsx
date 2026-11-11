@@ -59,6 +59,7 @@ interface ReportsPanelProps {
   list: ReactNode;
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 function ReportsPanel({ heading, banner, list }: ReportsPanelProps) {
   return (
     <ScallopedContainer>

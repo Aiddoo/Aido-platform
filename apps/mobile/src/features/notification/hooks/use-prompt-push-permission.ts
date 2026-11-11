@@ -21,6 +21,7 @@ export function usePromptPushPermission() {
   const logger = useLogger();
 
   const promptIfUndetermined = async (): Promise<boolean> => {
+    // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
     const permission = await queryClient.ensureQueryData(permissionQueryOptions);
     if (
       PushPermissionPolicy.getAskMoment(permission, { surface: 'todo-time' }) !==

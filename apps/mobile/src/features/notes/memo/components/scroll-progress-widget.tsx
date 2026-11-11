@@ -35,38 +35,50 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
   const brand = useResolveClassNames('text-main');
   const border = useResolveClassNames('border-gray-3');
 
+  // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
   const isScrolling = useDerivedValue(() => 0 < progress.value && progress.value < 1);
+  // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
   const isAtEnd = useDerivedValue(() => progress.value >= 1);
+  // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
   const isVisible = useDerivedValue(() => progress.value > 0);
 
   const containerStyle = useAnimatedStyle(() => ({
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     width: withTiming(isScrolling.value ? WIDGET_SIZE.expanded : WIDGET_SIZE.collapsed, {
       duration: TIMING.normal,
     }),
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     opacity: withTiming(isVisible.value ? 1 : 0, { duration: TIMING.fast }),
     // 투명한 동안에도 Android는 터치를 받아 아래 메모 카드의 탭을 가로챈다
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     pointerEvents: isVisible.value ? 'auto' : 'none',
     transform: [
       {
+        // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
         translateY: withTiming(isVisible.value ? 0 : 20, { duration: TIMING.normal }),
       },
     ],
   }));
 
   const barOpacity = useAnimatedStyle(() => ({
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     opacity: withTiming(isScrolling.value ? 1 : 0, { duration: TIMING.fast }),
   }));
 
   const arrowOpacity = useAnimatedStyle(() => ({
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     opacity: withTiming(isAtEnd.value ? 1 : 0, { duration: TIMING.fast }),
     // 끝이 아닌 동안 투명한 화살표가 진행 막대의 터치를 받아 맨 위로 튀지 않게 한다
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     pointerEvents: isAtEnd.value ? 'auto' : 'none',
   }));
 
   const fillWidth = useAnimatedStyle(() => ({
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     width: `${interpolate(progress.value, [0, 1], [0, 100], Extrapolation.CLAMP)}%`,
   }));
 
+  // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
   const percentText = useDerivedValue(() => `${Math.round(progress.value * 100)}%`);
 
   return (

@@ -314,6 +314,7 @@ function GlyphIcon({
       height={height}
       viewBox="0 0 24 24"
       fill="none"
+      // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
       colorClassName={variant === 'mono' ? colorClassName : 'text-on-sky/[0.96]'}
       accessible={false}
       importantForAccessibility="no"

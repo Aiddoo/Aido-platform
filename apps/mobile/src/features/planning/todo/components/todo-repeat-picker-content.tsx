@@ -56,6 +56,7 @@ interface TodoRepeatPickerContentProps {
   onCancel: () => void;
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 export function TodoRepeatPickerContent({
   value,
   onChange,
@@ -122,6 +123,7 @@ TodoRepeatPickerContent.PresetChip = function PresetChip({
         size="b4"
         weight="medium"
         numberOfLines={1}
+        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
         className={isSelected ? 'text-white' : undefined}
         shade={isSelected ? undefined : 7}
       >
@@ -162,6 +164,7 @@ TodoRepeatPickerContent.DayOfWeekChip = function DayOfWeekChip({
       <Text
         size="b4"
         weight="medium"
+        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
         className={isSelected ? 'text-white' : undefined}
         shade={isSelected ? undefined : 7}
       >

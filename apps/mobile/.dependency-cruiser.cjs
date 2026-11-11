@@ -249,8 +249,6 @@ const SCHEMA_FOLDER_FEATURE_PATHS = [
   'src/features/engagement/comment/utils/',
 ];
 
-// 켜기 전 규칙. 'ignore'는 검사하지 않는다. 1.15.2 [13/32]에서 known-violations(--ignore-known)와 함께 'error'로 켠다
-const PENDING = 'ignore';
 // 지금 시각·기기 시간대를 읽는 모듈. 모델과 mapper는 시각을 인자로 받는다
 const CLOCK =
   '^src/shared/date/clock\\.ts$|^src/shared/hooks/use-(?:now|minute-now|today)\\.ts$|^src/shared/infra/localization/device-timezone\\.ts$';
@@ -259,12 +257,13 @@ function featureFolders(folders) {
   return `^src/features/.+/(?:${folders.join('|')})/`;
 }
 
-const pendingRules = [
+// 남은 위반은 .dependency-cruiser-known-violations.json(baseline #1400)에 있고 lint:deps가 --ignore-known으로 건너뛴다
+const modelAndFolderRules = [
   {
     name: 'domain-model-constants',
     comment:
       '도메인 모델은 기능 constants/를 import하지 않는다. 업무 규칙 표는 모델에 두고, constants/는 시간·한도·id·이벤트·로그 키만 둔다.',
-    severity: PENDING,
+    severity: 'error',
     from: { path: DOMAIN_MODEL },
     to: { path: featureFolders(['constants']) },
   },
@@ -272,7 +271,7 @@ const pendingRules = [
     name: 'domain-model-clock',
     comment:
       '도메인 모델은 시계·기기 시간대를 읽지 않는다. 지금·오늘·시간대는 인자(now, today, timeZone)로 받는다.',
-    severity: PENDING,
+    severity: 'error',
     from: { path: DOMAIN_MODEL },
     to: { path: CLOCK },
   },
@@ -280,7 +279,7 @@ const pendingRules = [
     name: 'mapper-purity',
     comment:
       'mapper는 순수 함수다. 로그·보고·추적 포트, shared/infra 어댑터, 시계를 import하지 않는다. OS·SDK 값의 타입을 정의한 포트(push-notification-gateway 등)는 바꿀 대상이라 가져와도 된다.',
-    severity: PENDING,
+    severity: 'error',
     from: { path: '[^/]+\\.mapper\\.tsx?$', pathNot: TEST },
     to: {
       path: [
@@ -294,7 +293,7 @@ const pendingRules = [
     name: 'api-folder-dependency',
     comment:
       'apis/의 Api·mapper는 서버 호출과 변환만 한다. repositories/·services/·stores/를 import하지 않는다. 조율은 services/가 Api를 받아 한다.',
-    severity: PENDING,
+    severity: 'error',
     from: { path: featureFolders(['apis']), pathNot: TEST },
     to: { path: featureFolders(['repositories', 'services', 'stores']) },
   },
@@ -302,7 +301,7 @@ const pendingRules = [
     name: 'repository-folder-dependency',
     comment:
       'repository는 저장 포트·storage 스키마·Logger만 쓴다. apis/·services/를 import하지 않는다.',
-    severity: PENDING,
+    severity: 'error',
     from: { path: featureFolders(['repositories']), pathNot: TEST },
     to: { path: featureFolders(['apis', 'services']) },
   },
@@ -487,7 +486,7 @@ module.exports = {
         path: '^src/core/events/|/apis/[^/]+\\.service\\.tsx?$|/ports/(?:error-reporter|logger)\\.tsx?$',
       },
     },
-    ...pendingRules,
+    ...modelAndFolderRules,
   ],
   options: {
     tsConfig: { fileName: 'tsconfig.json' },

@@ -112,11 +112,13 @@ describe('영속 캐시 복원 검증', () => {
   const logger = createLoggerStub();
 
   beforeEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     setGlobalLogger(logger);
   });
 
   afterEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
     jest.clearAllMocks();
   });

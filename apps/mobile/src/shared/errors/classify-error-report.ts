@@ -9,6 +9,7 @@ import { isKeychainLockedError } from './storage-error';
 /** event는 이슈가 되고 breadcrumb은 행적에만 남는다(4xx·BusinessError·검증 실패·네트워크·타임아웃·키체인 잠금) */
 export type ErrorReportKind = 'event' | 'breadcrumb';
 
+// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
 const SERVER_ERROR_STATUS = 500;
 
 /** 오류를 Sentry 이슈로 보낼지 정하는 유일한 곳. 어댑터는 이 판단만 따른다 */

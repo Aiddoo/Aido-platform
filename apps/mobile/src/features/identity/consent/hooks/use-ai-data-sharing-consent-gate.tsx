@@ -61,7 +61,9 @@ export function useAiDataSharingConsentGate({
 
   const readConsent = () =>
     readWithoutBlocking(
+      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
       queryClient.getQueryData(consentQueryOptions.queryKey),
+      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
       () => queryClient.query({ ...consentQueryOptions, staleTime: 'static' }),
       logConsentCheckFailure,
     );
@@ -129,6 +131,7 @@ export function useAiDataSharingConsentGate({
       // 내 정보를 기다려 마이크 권한처럼 뒤에 오는 단계가 재안내를 앞지르지 않게 한다
       readWithoutBlocking(
         getCachedMe(queryClient),
+        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
         () => queryClient.query({ ...meQueryOptions, staleTime: 'static' }),
         logConsentCheckFailure,
       ),
@@ -144,6 +147,7 @@ export function useAiDataSharingConsentGate({
 
   /** 캐시 기준으로 동의가 필요한지. 서버가 AI_1311로 거절하면 AI mutation이 캐시를 미응답으로 되돌린다 */
   const isConsentRequired = (): boolean => {
+    // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
     const consent = queryClient.getQueryData(consentQueryOptions.queryKey);
     return consent != null && !ConsentPolicy.hasAgreedToAiDataSharing(consent);
   };

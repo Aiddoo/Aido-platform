@@ -3,6 +3,7 @@ import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import { type DraftEntry, draftEntrySchema } from './draft.model';
 
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const KEY_PREFIX = 'aido_draft_v1:';
 
 export interface DraftRepository {

@@ -303,6 +303,7 @@ function TimeChip({ form }: { form: ComposerForm }) {
       icon={
         <ActionButton.Icon
           Icon={ClockIcon}
+          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
           colorClassName={displayedTime == null ? 'text-gray-5' : 'text-main'}
         />
       }
@@ -335,6 +336,7 @@ function RepeatChip({
       icon={
         <ActionButton.Icon
           Icon={RepeatIcon}
+          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
           colorClassName={repeat == null ? 'text-gray-5' : 'text-main'}
         />
       }

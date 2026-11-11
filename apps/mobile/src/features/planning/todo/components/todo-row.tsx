@@ -254,6 +254,7 @@ export function TodoProgress({ value, total, tone = 'surface' }: TodoProgressPro
         size="e1"
         tone={tone === 'onSky' ? 'onSky' : undefined}
         shade={tone === 'onSky' ? undefined : 6}
+        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
         className={tone === 'onSky' ? 'text-on-sky/60 tabular-nums' : undefined}
       >
         {value}/{total}

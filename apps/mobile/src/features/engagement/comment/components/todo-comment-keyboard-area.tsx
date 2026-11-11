@@ -8,6 +8,7 @@ import { TODO_COMMENT_INPUT_NATIVE_ID } from '../constants/todo-comment.constant
 const styles = StyleSheet.create({ gestureArea: { flex: 1 } });
 
 /** 목록과 작성 바를 함께 감싸 Android에서 키보드를 손가락으로 끌어 내리게 한다 */
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 export function TodoCommentKeyboardArea({ children }: PropsWithChildren) {
   return (
     <KeyboardGestureArea

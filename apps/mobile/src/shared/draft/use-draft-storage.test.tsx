@@ -37,6 +37,7 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
   let wrapper: (props: PropsWithChildren) => React.JSX.Element;
 
   beforeEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
     const container = createTestDi({ draftService });
@@ -46,6 +47,7 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
   });
 
   afterEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 

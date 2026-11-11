@@ -20,7 +20,7 @@ pre-commit:
       run: node --test scripts/ci/*.test.mjs
     # 폴더·파일 이름은 전체를 보되 몇 초 안에 끝난다. 코드 관례는 위 oxlint(aido 플러그인)가 본다.
     - name: ls-lint
-      glob: '{apps/api/src/**/*.ts,packages/api/src/**,apps/mobile/src/features/**/schemas/**}'
+      glob: '{apps/api/src/**/*.ts,packages/api/src/**,apps/mobile/src/features/**,apps/mobile/app/**,.ls-lint.yml}'
       run: pnpm exec ls-lint
 
 # 커밋마다 전체 검사를 돌리면 작은 커밋이 수 분씩 걸려 push 때 한 번 모아 돌린다.

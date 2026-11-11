@@ -35,7 +35,9 @@ describe('StampPress', () => {
     // Then
     const stamp = screen.getByTestId('stamp-seal').parent;
     expect(stamp).not.toBeNull();
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     expect(stamp).not.toHaveStyle({ flexGrow: 1 });
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     expect(stamp).not.toHaveStyle({ flex: 1 });
   });
 });

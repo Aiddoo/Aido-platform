@@ -231,6 +231,7 @@ describe('말로 메모 화면', () => {
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
+    // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
     httpClient.post.mockResolvedValue(
       ok({

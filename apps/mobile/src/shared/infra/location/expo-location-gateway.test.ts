@@ -17,10 +17,12 @@ const watchLocation = jest.mocked(Location.watchPositionAsync);
 
 describe('위치 구독의 종료와 복구', () => {
   beforeEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     cachedLocation.mockResolvedValue(null);
   });
   afterEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
     jest.resetAllMocks();
   });

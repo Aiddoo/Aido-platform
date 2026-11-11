@@ -15,10 +15,12 @@ const EXPECTED_STATE_CODES: ReadonlySet<string> = new Set([
 
 /** 401의 최종 판단은 호출부(`app/(app)/_layout.tsx` 안전망)가 `status`와 결합해 내리므로 인증 상태를 보지 않는다 */
 export function classifyBoundaryError(error: unknown): BoundaryErrorKind {
+  // oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
   if (isApiError(error) && error.status === 401) {
     return 'auth-transition';
   }
 
+  // oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
   if (isApiError(error) && (error.status === 404 || EXPECTED_STATE_CODES.has(error.code))) {
     return 'expected-state';
   }

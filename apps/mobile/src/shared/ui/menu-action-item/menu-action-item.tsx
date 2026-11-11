@@ -23,7 +23,12 @@ export function MenuActionItem({
   const isDanger = variant === 'danger';
   const titleElement = (
     <Menu.ItemTitle>
-      <Text size="b2" weight="medium" className={isDanger ? 'text-danger' : 'text-foreground'}>
+      <Text
+        size="b2"
+        weight="medium"
+        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
+        className={isDanger ? 'text-danger' : 'text-foreground'}
+      >
         {title}
       </Text>
     </Menu.ItemTitle>
@@ -34,6 +39,7 @@ export function MenuActionItem({
       <Icon
         width={MENU_ICON_SIZE}
         height={MENU_ICON_SIZE}
+        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
         colorClassName={isDanger ? 'text-danger' : 'text-main'}
       />
       {description == null ? (

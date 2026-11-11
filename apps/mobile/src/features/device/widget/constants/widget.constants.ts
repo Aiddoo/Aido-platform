@@ -13,7 +13,9 @@ export const ANDROID_WIDGET_DEFINITIONS = [
 ] as const;
 
 export const ANDROID_WIDGET_STORAGE_KEYS = {
+  // oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
   snapshot: 'aido_widget_snapshot_v1',
+  // oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
   snapshotUserId: 'aido_widget_snapshot_user_id_v1',
 } as const;
 

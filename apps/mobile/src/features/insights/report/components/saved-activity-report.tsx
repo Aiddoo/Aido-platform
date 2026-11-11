@@ -17,6 +17,7 @@ export function SavedActivityReport() {
   return <SavedActivityReport.Contents id={reportRoute.id} />;
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 SavedActivityReport.Contents = function Contents({ id }: { id: number }) {
   const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions({ reportId: id }));
   const { trackEvent } = useTrack();

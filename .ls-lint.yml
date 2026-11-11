@@ -146,6 +146,216 @@ ls:
     .*.*.tsx: regex:[^\s\S]
     .*.*.*.ts: regex:[^\s\S]
 
+  # 모바일 역할 폴더의 파일은 그 역할의 접미사를 단다. 테스트는 원본 이름 뒤 .test, 여러 모듈 흐름은 .flow.test다.
+  # 이름 있는 확장자 규칙이 와일드카드보다 먼저라 남은 다중 점 이름(`todo.service.ts`)은 `.*.ts`가 막는다
+  apps/mobile/src/features/**/apis:
+    .api.ts: kebab-case
+    .api.test.ts: kebab-case
+    .mapper.ts: kebab-case
+    .mapper.test.ts: kebab-case
+    .flow.test.ts: kebab-case
+    .flow.test.tsx: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/services:
+    .service.ts: kebab-case
+    .service.test.ts: kebab-case
+    .session.ts: kebab-case
+    .session.test.ts: kebab-case
+    .flow.test.ts: kebab-case
+    .flow.test.tsx: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/repositories:
+    .repository.ts: kebab-case
+    .repository.test.ts: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/stores:
+    .store.ts: kebab-case
+    .store.test.ts: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/queries:
+    .ts: regex:[a-z0-9-]+-(?:query-keys|mutation-keys|cache)
+    .test.ts: regex:[a-z0-9-]+-(?:query-keys|mutation-keys|cache)
+    .test.tsx: regex:[a-z0-9-]+-cache
+    .queries.ts: kebab-case
+    .queries.test.ts: kebab-case
+    .queries.test.tsx: kebab-case
+    .mutations.ts: kebab-case
+    .mutations.test.ts: kebab-case
+    .mutations.test.tsx: kebab-case
+    .flow.test.ts: kebab-case
+    .flow.test.tsx: kebab-case
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/hooks:
+    .ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .tsx: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .test.ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .test.tsx: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .android.ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .android.test.ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .ios.ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .flow.test.tsx: kebab-case
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+
+  # app/에는 route만 둔다. 화면 테스트는 src/features/{feature}/__tests__/{route}-screen.test.tsx다
+  apps/mobile/app:
+    .test.ts: regex:[^\s\S]
+    .test.tsx: regex:[^\s\S]
+    .*.test.ts: regex:[^\s\S]
+    .*.test.tsx: regex:[^\s\S]
+
 ignore:
   # vitest가 spec 옆에 만드는 스냅숏 폴더
   - apps/api/src/modules/*/*/**/__snapshots__
+  # 모바일 역할 폴더 이름이 아직 맞지 않는 파일(baseline #1400).
+  # ls-lint는 남은 ignore를 알리지 않으므로 파일을 옮기거나 지우는 기능 PR이 그 줄을 함께 지운다
+  - apps/mobile/src/features/app-config/app-version/apis/app-version.service.ts
+  - apps/mobile/src/features/app-config/feature-campaign/apis/feature-campaign.service.test.ts
+  - apps/mobile/src/features/app-config/feature-campaign/apis/feature-campaign.service.ts
+  - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.test.ts
+  - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.ts
+  - apps/mobile/src/features/assistant/suggestion/apis/suggestion.service.ts
+  - apps/mobile/src/features/billing/subscription/apis/entitlement.service.ts
+  - apps/mobile/src/features/billing/subscription/apis/purchases-session.test.ts
+  - apps/mobile/src/features/billing/subscription/apis/purchases-session.ts
+  - apps/mobile/src/features/billing/subscription/apis/subscription.service.test.ts
+  - apps/mobile/src/features/billing/subscription/apis/subscription.service.ts
+  - apps/mobile/src/features/device/activation/apis/activation-progress.repository.test.ts
+  - apps/mobile/src/features/device/activation/apis/activation-progress.repository.ts
+  - apps/mobile/src/features/device/activation/apis/activation.service.test.ts
+  - apps/mobile/src/features/device/activation/apis/activation.service.ts
+  - apps/mobile/src/features/device/app-icon/apis/app-icon.service.test.ts
+  - apps/mobile/src/features/device/app-icon/apis/app-icon.service.ts
+  - apps/mobile/src/features/device/coachmark/apis/coachmark.repository.test.ts
+  - apps/mobile/src/features/device/coachmark/apis/coachmark.repository.ts
+  - apps/mobile/src/features/device/coachmark/apis/coachmark.service.test.ts
+  - apps/mobile/src/features/device/coachmark/apis/coachmark.service.ts
+  - apps/mobile/src/features/device/store-review/apis/store-review.repository.test.ts
+  - apps/mobile/src/features/device/store-review/apis/store-review.repository.ts
+  - apps/mobile/src/features/device/store-review/apis/store-review.service.test.ts
+  - apps/mobile/src/features/device/store-review/apis/store-review.service.ts
+  - apps/mobile/src/features/device/widget/apis/android-widget-snapshot.repository.test.ts
+  - apps/mobile/src/features/device/widget/apis/android-widget-snapshot.repository.ts
+  - apps/mobile/src/features/device/widget/apis/widget-navigation.repository.test.ts
+  - apps/mobile/src/features/device/widget/apis/widget-navigation.repository.ts
+  - apps/mobile/src/features/device/widget/apis/widget-sync.service.test.ts
+  - apps/mobile/src/features/device/widget/apis/widget-sync.service.ts
+  - apps/mobile/src/features/engagement/comment/apis/todo-comment.service.test.ts
+  - apps/mobile/src/features/engagement/comment/apis/todo-comment.service.ts
+  - apps/mobile/src/features/identity/auth/apis/auth-session.store.test.ts
+  - apps/mobile/src/features/identity/auth/apis/auth-session.store.ts
+  - apps/mobile/src/features/identity/auth/apis/auth.service.social.test.ts
+  - apps/mobile/src/features/identity/auth/apis/auth.service.test.ts
+  - apps/mobile/src/features/identity/auth/apis/auth.service.ts
+  - apps/mobile/src/features/identity/auth/apis/log-out-device.service.test.ts
+  - apps/mobile/src/features/identity/auth/apis/log-out-device.service.ts
+  - apps/mobile/src/features/identity/auth/apis/pending-revocation.repository.ts
+  - apps/mobile/src/features/identity/auth/apis/session-cleanup.service.test.ts
+  - apps/mobile/src/features/identity/auth/apis/session-cleanup.service.ts
+  - apps/mobile/src/features/identity/auth/apis/session-query-cache.test.ts
+  - apps/mobile/src/features/identity/auth/apis/session-query-cache.ts
+  - apps/mobile/src/features/identity/auth/apis/session-revocation.service.test.ts
+  - apps/mobile/src/features/identity/auth/apis/session-revocation.service.ts
+  - apps/mobile/src/features/identity/auth/apis/user-device-data.service.test.ts
+  - apps/mobile/src/features/identity/auth/apis/user-device-data.service.ts
+  - apps/mobile/src/features/identity/auth/queries/auth-session-flow.test.tsx
+  - apps/mobile/src/features/identity/consent/apis/consent.service.test.ts
+  - apps/mobile/src/features/identity/consent/apis/consent.service.ts
+  - apps/mobile/src/features/identity/preference/apis/preference.service.test.ts
+  - apps/mobile/src/features/identity/preference/apis/preference.service.ts
+  - apps/mobile/src/features/identity/user/apis/user.service.test.ts
+  - apps/mobile/src/features/identity/user/apis/user.service.ts
+  - apps/mobile/src/features/insights/achievement/apis/achievement.service.ts
+  - apps/mobile/src/features/insights/report/apis/report.service.ts
+  - apps/mobile/src/features/notes/memo/apis/memo.mapper.structural-sharing.test.ts
+  - apps/mobile/src/features/notes/memo/apis/memo.service.test.ts
+  - apps/mobile/src/features/notes/memo/apis/memo.service.ts
+  - apps/mobile/src/features/notification/apis/device-id.service.test.ts
+  - apps/mobile/src/features/notification/apis/device-id.service.ts
+  - apps/mobile/src/features/notification/apis/marketing-push-prompt.repository.test.ts
+  - apps/mobile/src/features/notification/apis/marketing-push-prompt.repository.ts
+  - apps/mobile/src/features/notification/apis/notification-badge.service.test.ts
+  - apps/mobile/src/features/notification/apis/notification-badge.service.ts
+  - apps/mobile/src/features/notification/apis/notification-entry.store.test.ts
+  - apps/mobile/src/features/notification/apis/notification-entry.store.ts
+  - apps/mobile/src/features/notification/apis/notification.service.test.ts
+  - apps/mobile/src/features/notification/apis/notification.service.ts
+  - apps/mobile/src/features/notification/apis/push-device.service.test.ts
+  - apps/mobile/src/features/notification/apis/push-device.service.ts
+  - apps/mobile/src/features/notification/apis/push-registration.repository.ts
+  - apps/mobile/src/features/planning/category/apis/todo-category.service.test.ts
+  - apps/mobile/src/features/planning/category/apis/todo-category.service.ts
+  - apps/mobile/src/features/planning/composer/queries/todo-composer.optimistic-mutations.test.tsx
+  - apps/mobile/src/features/planning/composer/queries/todo-composer.refetch.test.tsx
+  - apps/mobile/src/features/planning/composer/queries/todo-writes.refetch.test.tsx
+  - apps/mobile/src/features/planning/todo/apis/sub-todo.service.test.ts
+  - apps/mobile/src/features/planning/todo/apis/sub-todo.service.ts
+  - apps/mobile/src/features/planning/todo/apis/todo.mapper.structural-sharing.test.ts
+  - apps/mobile/src/features/planning/todo/apis/todo.service.test.ts
+  - apps/mobile/src/features/planning/todo/apis/todo.service.ts
+  - apps/mobile/src/features/social/friend/apis/friend.service.test.ts
+  - apps/mobile/src/features/social/friend/apis/friend.service.ts
+  - apps/mobile/src/features/social/invite/apis/invite-share.service.test.ts
+  - apps/mobile/src/features/social/invite/apis/invite-share.service.ts
+  - apps/mobile/src/features/social/invite/apis/invite.service.test.ts
+  - apps/mobile/src/features/social/invite/apis/invite.service.ts
+  - apps/mobile/src/features/social/invite/apis/pending-redemption.service.test.ts
+  - apps/mobile/src/features/social/invite/apis/pending-redemption.service.ts
+  - apps/mobile/src/features/social/moderation/apis/moderation.service.ts
+  - apps/mobile/src/features/social/nudge/apis/todo-nudge.service.interactions.test.ts
+  - apps/mobile/src/features/social/nudge/apis/todo-nudge.service.test.ts
+  - apps/mobile/src/features/social/nudge/apis/todo-nudge.service.ts
+  - apps/mobile/src/features/social/nudge/queries/nudge-interaction-analytics.test.tsx
+  - apps/mobile/src/features/support/inquiry/apis/inquiry.service.test.ts
+  - apps/mobile/src/features/support/inquiry/apis/inquiry.service.ts
+  - apps/mobile/src/features/voice/apis/voice-note-draft.repository.test.ts
+  - apps/mobile/src/features/voice/apis/voice-note-draft.repository.ts
+  - apps/mobile/src/features/voice/apis/voice-note-storage.service.test.ts
+  - apps/mobile/src/features/voice/apis/voice-note-storage.service.ts
+  - apps/mobile/src/features/voice/apis/voice-recording-intake.test.ts
+  - apps/mobile/src/features/voice/apis/voice-recording-intake.ts
+  - apps/mobile/src/features/voice/apis/voice-recording.repository.test.ts
+  - apps/mobile/src/features/voice/apis/voice-recording.repository.ts
+  - apps/mobile/src/features/voice/apis/voice.service.test.ts
+  - apps/mobile/src/features/voice/apis/voice.service.ts
+  - apps/mobile/src/features/voice/queries/plan-in-progress-retry.ts
+  - apps/mobile/src/features/weather/apis/weather-location.service.ts
+  - apps/mobile/src/features/weather/apis/weather.mapper.structural-sharing.test.ts
+  - apps/mobile/src/features/weather/apis/weather.service.test.ts
+  - apps/mobile/src/features/weather/apis/weather.service.ts

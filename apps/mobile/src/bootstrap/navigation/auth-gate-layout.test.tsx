@@ -118,6 +118,7 @@ describe('root 인증 route 전환', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
   it.each(['loading', 'locked'] as const)(

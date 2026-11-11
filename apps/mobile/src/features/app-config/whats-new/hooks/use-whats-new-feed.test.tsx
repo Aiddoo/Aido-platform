@@ -103,6 +103,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
       signedUpAt: '2026-10-01T00:00:00.000Z',
       isOnboardingSettled: false,
     });
+    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
     await new Promise((resolve) => setImmediate(resolve));
     expect(router.push).not.toHaveBeenCalled();
 
@@ -125,6 +126,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     await renderFeed({ signedUpAt: '2026-10-01T00:00:00.000Z', syncStorage });
 
     // Then
+    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
     await new Promise((resolve) => setImmediate(resolve));
     expect(router.push).not.toHaveBeenCalled();
   });

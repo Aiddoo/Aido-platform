@@ -31,23 +31,28 @@ export function KeyboardAdaptiveButton({
   useKeyboardHandler({
     onStart: (event) => {
       'worklet';
+      // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
       isKeyboardOpen.value = event.height > 0;
     },
   });
 
   const containerStyle = useAnimatedStyle(() => ({
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     paddingLeft: withTiming(insets.left + (isKeyboardOpen.value ? 0 : CONTAINER_PADDING_X), {
       duration: ANIMATION_DURATION_MS,
     }),
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     paddingRight: withTiming(insets.right + (isKeyboardOpen.value ? 0 : CONTAINER_PADDING_X), {
       duration: ANIMATION_DURATION_MS,
     }),
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     paddingBottom: withTiming(isKeyboardOpen.value ? 0 : insets.bottom || DEFAULT_BOTTOM_PADDING, {
       duration: ANIMATION_DURATION_MS,
     }),
   }));
 
   const buttonStyle = useAnimatedStyle(() => ({
+    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
     borderRadius: withTiming(isKeyboardOpen.value ? 0 : BUTTON_RADIUS, {
       duration: ANIMATION_DURATION_MS,
     }),

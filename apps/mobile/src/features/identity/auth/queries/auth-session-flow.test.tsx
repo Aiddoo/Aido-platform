@@ -69,11 +69,13 @@ const OTHER_ACCOUNT_ID = 'clz7x5p8k0001qz0z8z8z8z8b';
 
 // 로그아웃이 마운트된 위젯 조회의 캐시를 비우면 떨어져 나간 쿼리에 24시간 gc 타이머가 남아 Jest 종료를 붙잡는다
 beforeEach(() => {
+  // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
   jest.useFakeTimers();
 });
 
 afterEach(() => {
   jest.clearAllTimers();
+  // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
   jest.useRealTimers();
 });
 

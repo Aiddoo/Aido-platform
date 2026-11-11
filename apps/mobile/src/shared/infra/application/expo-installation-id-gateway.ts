@@ -4,6 +4,7 @@ import { noop } from 'es-toolkit';
 import * as Application from 'expo-application';
 import * as SecureStore from 'expo-secure-store';
 
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const IOS_INSTALLATION_ID_KEY = 'aido_installation_id';
 
 /** iOS IDFV는 같은 회사 앱이 모두 지워지면 재설치 때 바뀌므로 처음 읽은 값을 키체인에 남기고, 키체인을 못 읽으면 지금 IDFV로 대신한다 */

@@ -37,6 +37,7 @@ export function NotificationListRow({
 
   return (
     <PressableFeedback {...props}>
+      {/* oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400 */}
       <HStack className={isUnread ? 'bg-highlight' : 'bg-white'}>
         {isUnread && <Box className="w-[3.5px] bg-main self-stretch" />}
 

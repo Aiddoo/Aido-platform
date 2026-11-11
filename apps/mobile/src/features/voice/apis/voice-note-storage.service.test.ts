@@ -48,6 +48,7 @@ describe('VoiceNoteStorageService', () => {
 
   it('아직 쓰지 않은 대기 쓰기만 있는 초안을 버려도 나중에 되살아나지 않는다', () => {
     // Given
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     const { service, drafts } = createService();
     drafts.scheduleSave('user-1', createSpokenVoiceNote());
@@ -58,6 +59,7 @@ describe('VoiceNoteStorageService', () => {
 
     // Then
     expect(drafts.find('user-1', 'draft-1')).toBeNull();
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 

@@ -163,6 +163,7 @@ function ReplyButton({ value, isSelected, ...props }: ReplyButtonProps) {
         <Text
           size="b3"
           weight="medium"
+          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
           className={isSelected ? 'text-main flex-1' : 'text-gray-9 flex-1'}
         >
           {t(NUDGE_REPLY_LABEL_KEYS[value])}

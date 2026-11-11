@@ -76,20 +76,21 @@ pnpm update:production "메시지"
 
 ## 스크립트
 
-| 명령어                    | 설명                                     |
-| ------------------------- | ---------------------------------------- |
-| `pnpm dev`                | 개발 서버                                |
-| `pnpm dev:android`        | Android 실행                             |
-| `pnpm dev:ios`            | iOS 실행                                 |
-| `pnpm test`               | 테스트                                   |
-| `pnpm typecheck`          | 타입 검사                                |
-| `pnpm check`              | 린트·포맷·컨벤션 검사                    |
-| `pnpm lint:deps`          | 층·경계 규칙 검사(dependency-cruiser)    |
-| `pnpm check:unused`       | 안 쓰는 파일·export·의존성 검사          |
-| `pnpm check:ipa-linkage`  | 빌드한 IPA가 expo 모듈과 연결됐는지 검사 |
-| `pnpm check:native-icons` | 네이티브 아이콘 자산 검사                |
-| `pnpm build:development`  | 개발 빌드                                |
-| `pnpm build:production`   | 프로덕션 빌드                            |
+| 명령어                    | 설명                                             |
+| ------------------------- | ------------------------------------------------ |
+| `pnpm dev`                | 개발 서버                                        |
+| `pnpm dev:android`        | Android 실행                                     |
+| `pnpm dev:ios`            | iOS 실행                                         |
+| `pnpm test`               | 테스트                                           |
+| `pnpm typecheck`          | 타입 검사                                        |
+| `pnpm check`              | 린트·포맷·컨벤션 검사                            |
+| `pnpm lint:deps`          | 층·경계 규칙 검사(dependency-cruiser)            |
+| `pnpm lint:deps:baseline` | 고친 위반을 dependency-cruiser baseline에서 지움 |
+| `pnpm check:unused`       | 안 쓰는 파일·export·의존성 검사                  |
+| `pnpm check:ipa-linkage`  | 빌드한 IPA가 expo 모듈과 연결됐는지 검사         |
+| `pnpm check:native-icons` | 네이티브 아이콘 자산 검사                        |
+| `pnpm build:development`  | 개발 빌드                                        |
+| `pnpm build:production`   | 프로덕션 빌드                                    |
 
 ## 환경별 API URL
 

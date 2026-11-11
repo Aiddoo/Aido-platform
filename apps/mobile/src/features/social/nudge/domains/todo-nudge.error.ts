@@ -9,6 +9,7 @@ export type TodoNudgeErrorCode = (typeof TODO_NUDGE_ERROR_CODE)[keyof typeof TOD
 
 /** 지워졌거나 볼 수 없는 콕이다. 다시 시도해도 같다 */
 export function isNudgeUnavailableError(error: unknown): error is ApiError {
+  // oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
   return isApiError(error) && error.status === 404;
 }
 

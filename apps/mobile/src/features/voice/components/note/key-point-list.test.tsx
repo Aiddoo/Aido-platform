@@ -70,6 +70,7 @@ describe('KeyPointList', () => {
     await renderScreen(<KeyPointList hasTimeCoachmark keyPoints={keyPoints} />, {
       di: { httpClient, analytics, syncStorage },
     });
+    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
     await new Promise((resolve) => {
       setTimeout(resolve, 600);
     });

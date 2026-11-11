@@ -64,6 +64,7 @@ describe('QuickVoiceInfo', () => {
 
   it('이번 달 AI를 다 쓴 칩을 누르면 막힌 순간과 같은 안내를 연다', async () => {
     // Given
+    // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
     jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-04T00:00:00.000Z'));
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(

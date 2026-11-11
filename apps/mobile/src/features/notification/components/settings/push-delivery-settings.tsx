@@ -23,6 +23,7 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
   return (
     <SettingsListGroup
       {...props}
+      // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
       className={PushPermissionPolicy.isPushDeliverable(permission) ? undefined : 'opacity-50'}
     >
       <SettingsListGroup.Toggle

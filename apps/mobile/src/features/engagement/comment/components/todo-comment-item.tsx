@@ -101,6 +101,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
         <TodoCommentAuthorAvatar
           author={comment.author}
           size={TodoCommentPolicy.isReply(comment) ? 'sm' : 'md'}
+          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
           className={displayState === 'active' ? undefined : 'opacity-40'}
         />
         <VStack gap={3} flex={1} className="min-w-0">
@@ -140,6 +141,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
 TodoCommentItem.Loading = function Loading({ isReply = false }: { isReply?: boolean }) {
   return (
     <HStack gap={12} align="start" className="min-w-0">
+      {/* oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400 */}
       <Skeleton className={isReply ? 'size-7 rounded-full' : 'size-9 rounded-full'} />
       <VStack gap={6} flex={1} className="min-w-0 py-1">
         <TextSkeleton size="b4" className="w-28" />
@@ -197,6 +199,7 @@ function Meta({ text, isShrinkable = false }: { text: string; isShrinkable?: boo
       shade={7}
       numberOfLines={1}
       ellipsizeMode="tail"
+      // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
       className={isShrinkable ? 'min-w-0 shrink' : 'shrink-0 tabular-nums'}
     >
       {text}
@@ -331,6 +334,7 @@ function LikeButton({ comment, scale }: { comment: TodoComment; scale: SharedVal
   const likeComment = useMutation(
     useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
   );
+  // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
   const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const isLiked = comment.viewer.isLiked;
 

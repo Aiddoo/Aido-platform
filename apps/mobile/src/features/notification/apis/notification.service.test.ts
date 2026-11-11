@@ -155,6 +155,7 @@ describe('NotificationService.markAsReadAndCheckOwnership', () => {
   }
 
   afterEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 
@@ -199,6 +200,7 @@ describe('NotificationService.markAsReadAndCheckOwnership', () => {
 
   it('응답이 예산을 넘기면 기다리지 않고 모르는 것으로 끝난다', async () => {
     // Given
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     const { httpClient, service } = setup();
     httpClient.patch.mockReturnValue(new Promise(noop));

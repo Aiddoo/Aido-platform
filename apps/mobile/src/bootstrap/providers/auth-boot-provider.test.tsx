@@ -84,6 +84,7 @@ describe('AuthBootProvider', () => {
   let requestPushRelease: jest.Mock<void, []>;
 
   beforeEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     writeSnapshot = jest.fn().mockResolvedValue(undefined);
     requestRefresh = jest.fn();
@@ -109,6 +110,7 @@ describe('AuthBootProvider', () => {
     }
     await queryClient.cancelQueries();
     jest.clearAllTimers();
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
     jest.restoreAllMocks();
   });

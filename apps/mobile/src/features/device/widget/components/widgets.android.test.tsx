@@ -248,11 +248,15 @@ describe('Android 위젯 표시 계약', () => {
 
     // When
     const nodes = render(props, 'light', createWidgetInfo(0, { width: NaN, height: 0 }));
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     const card = nodes.find((node) => node.props.style?.backgroundColor);
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     const slot = nodes.find((node) => node.props.style?.justifyContent === 'center');
 
     // Then
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     expect(slot?.props.style).toMatchObject({ width: 160, height: 160 });
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     expect(card?.props.style).toMatchObject({ width: 160, height: 160 });
   });
 });

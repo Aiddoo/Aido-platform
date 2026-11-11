@@ -68,6 +68,7 @@ const FIXED_NOW = new Date(2026, 10, 8, 12);
 
 describe('피드 URL 플로우', () => {
   beforeEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers({
       now: FIXED_NOW,
       doNotFake: [
@@ -91,6 +92,7 @@ describe('피드 URL 플로우', () => {
   });
 
   afterEach(() => {
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 

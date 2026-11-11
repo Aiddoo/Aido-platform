@@ -34,6 +34,7 @@ export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
   return <ReorderCoachmark.Contents kind={kind} accountId={user.id} />;
 }
 
+// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
 ReorderCoachmark.Contents = function Contents({
   kind,
   accountId,

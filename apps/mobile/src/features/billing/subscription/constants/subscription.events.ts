@@ -33,6 +33,7 @@ declare module '@src/shared/analytics/event-map' {
      * 퍼널 단계일 뿐 매출 집계에 쓰지 않는다(원본은 RevenueCat `purchase`). 대시보드 이력 때문에 이름을 유지한다.
      * 아래 결제 이벤트의 `is_trial`은 스토어가 그 요금제에 무료 체험을 줄 수 있다고 한 것이다(실제 체험 여부는 서버 /me)
      */
+    // oxlint-disable-next-line aido/analytics-event-catalog -- 1.15.2 전환 #1400
     subscription_started: { product_id: string; plan_type: PlanType; is_trial: boolean };
     subscription_restored: undefined;
     /** 프리미엄 안내를 띄웠다. 같은 기능을 그날 이미 닫았으면 toast다 */

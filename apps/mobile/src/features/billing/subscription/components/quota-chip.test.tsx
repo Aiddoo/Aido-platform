@@ -30,6 +30,7 @@ async function renderChip(snapshot: EntitlementSnapshot, feature: EntitlementFea
 describe('QuotaChip', () => {
   beforeEach(() => {
     // 고정 초기화 시각이 지난 스냅샷으로 보이지 않게 시계를 맞춘다
+    // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
     jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-04T00:00:00.000Z'));
   });
 

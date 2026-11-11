@@ -12,6 +12,7 @@ import { useForegroundNotificationSync } from './use-foreground-notification-syn
 async function setup(isAuthenticated: boolean) {
   const invalidateByType = jest.fn(async (_type: NotificationType) => {});
   const queryClient = createTestQueryClient();
+  // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
   const container = createTestDi({ httpClient: createHttpClientStub() });
   const wrapper = ({ children }: PropsWithChildren) => (

@@ -33,6 +33,7 @@ export function useForegroundNotificationSync({
       pendingTypes.clear();
       // 안 읽은 수도 함께 다시 받아 앱 아이콘 배지가 따라간다(`useNotificationBadgeSync`)
       const tasks: Promise<unknown>[] = [
+        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
         queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
         ...types.map((type) => invalidateByType(type)),
       ];

@@ -43,6 +43,7 @@ describe('초대 코드 입력 화면', () => {
     await user.press(screen.getByRole('button', { name: '확인' }));
 
     // Then
+    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
     await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
     expect(
       queryClient.getQueryState(INVITE_QUERY_KEYS.preview({ inviteCode: CODE })),

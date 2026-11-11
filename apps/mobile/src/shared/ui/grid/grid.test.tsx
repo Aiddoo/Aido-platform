@@ -14,6 +14,7 @@ describe('Grid 컴포넌트', () => {
     );
 
     // When
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     const style = StyleSheet.flatten(screen.getByTestId('grid').props.style);
 
     // Then
@@ -36,8 +37,11 @@ describe('Grid 컴포넌트', () => {
     );
 
     // When
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     const gridStyle = StyleSheet.flatten(screen.getByTestId('grid').props.style);
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     const firstCell = StyleSheet.flatten(screen.getByTestId('first').parent?.props.style);
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     const secondCell = StyleSheet.flatten(screen.getByTestId('second').parent?.props.style);
 
     // Then
@@ -59,6 +63,7 @@ describe('Grid 컴포넌트', () => {
 
     // When
     const item = screen.getByTestId('item');
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     const style = StyleSheet.flatten(item.props.style);
 
     // Then
@@ -80,6 +85,7 @@ describe('GridItem 컴포넌트', () => {
     );
 
     // When
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     const style = StyleSheet.flatten(screen.getByTestId('item').props.style);
 
     // Then
@@ -95,6 +101,7 @@ describe('GridItem 컴포넌트', () => {
     );
 
     // When
+    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
     const style = StyleSheet.flatten(screen.getByTestId('item').props.style);
 
     // Then

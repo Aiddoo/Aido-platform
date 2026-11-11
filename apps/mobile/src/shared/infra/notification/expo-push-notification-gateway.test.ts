@@ -105,6 +105,7 @@ describe('createExpoPushNotificationGateway', () => {
   it('APNs 등록이 끝나지 않아 토큰 발급이 멈추면 시간 제한 뒤 실패로 끝낸다', async () => {
     // Given
     // 응답하지 않는 발급
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers();
     getExpoPushTokenAsync.mockReturnValue(new Promise(() => {}));
     const issuing = gateway.getToken();
@@ -115,6 +116,7 @@ describe('createExpoPushNotificationGateway', () => {
     // Then
     await expect(issuing).rejects.toThrow(TimeoutError);
     await elapsing;
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 

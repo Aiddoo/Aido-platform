@@ -9,7 +9,9 @@ import {
 } from '../schemas/marketing-push-prompt-storage.schema';
 
 // 1.14.x까지 계정 구분 없이 쓰던 키. 지우지 않으면 다음 계정이 앞사람이 닫은 기록을 이어받는다
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const LEGACY_DEVICE_KEY = 'aido_marketing_push_prompt';
+// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
 const KEY_PREFIX = 'aido_notification_marketing_push_prompt_v1';
 
 const EMPTY_STATE: MarketingPushPromptState = { dismissedAt: null };

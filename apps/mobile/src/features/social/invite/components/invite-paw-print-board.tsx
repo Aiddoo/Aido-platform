@@ -264,6 +264,7 @@ InvitePawPrintBoard.Connector = function Connector({
     <Box
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
+      // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
       className={isHorizontal ? 'h-3' : 'h-[22px] w-3'}
       style={isHorizontal ? (length == null ? styles.fill : { width: length }) : undefined}
     >

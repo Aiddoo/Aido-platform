@@ -113,6 +113,7 @@ describe('RepeatHorizonHint', () => {
   it('매월처럼 먼 규칙이나 다음 달에 시작하는 규칙도 찾도록 미리 만드는 범위 전체를 묻는다', async () => {
     // Given
     const today = '2026-11-05';
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useFakeTimers({ now: new Date(2026, 10, 5, 9), advanceTimers: true });
 
     // When
@@ -127,6 +128,7 @@ describe('RepeatHorizonHint', () => {
         endDate: addDaysToDateKey(today, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS),
       },
     });
+    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
     jest.useRealTimers();
   });
 
@@ -137,6 +139,7 @@ describe('RepeatHorizonHint', () => {
   ])('달을 넘길 때 $name: 안내를 끝냈는지 $isConsumed', async ({ visibleMs, isConsumed }) => {
     // Given
     const openedAt = Date.now();
+    // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
     const dateNow = jest.spyOn(Date, 'now').mockReturnValue(openedAt);
     const { analytics, isCoachmarkPending, moveTo } = await renderHint({});
     await screen.findByText(INFO_TITLE, {}, { timeout: 2_000 });
@@ -170,6 +173,7 @@ describe('RepeatHorizonHint', () => {
 
     // When
     await waitFor(() => expect(httpClient.get).toHaveBeenCalled());
+    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
     await new Promise((resolve) => {
       setTimeout(resolve, 600);
     });
