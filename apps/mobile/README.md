@@ -101,7 +101,7 @@ pnpm update:production "메시지"
 
 ## 배포
 
-자세한 내용은 [DEPLOYMENT.md](./DEPLOYMENT.md) 참고.
+자세한 내용은 [build-and-release.md](./docs/build-and-release.md) 참고.
 
 스토어 문구·스크린샷 순서·릴리스 체크리스트의 단일 준비본은
 [`store-metadata/1.8.0/release.json`](./store-metadata/1.8.0/release.json)을

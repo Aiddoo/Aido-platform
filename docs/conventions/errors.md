@@ -10,7 +10,7 @@
 | 목록 | `data` 안의 기능별 schema + 공용 cursor 정보                        | [pagination.ts](../../packages/api/src/common/pagination.ts), [query.ts](../../packages/api/src/common/query.ts)                    |
 | 실패 | `{ success: false, error: { code, message, details? }, timestamp }` | `errorEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts))                                                     |
 
-- 실패의 의미는 `error.code`로 정한다. 앱은 `message`로 분기하지 않는다. HTTP 상태로 분기하는 곳은 아래 `ErrorCode`가 없는 경우뿐이다.
+- 실패의 의미는 `error.code`로 정한다. 앱은 `message`로 분기하지 않는다. HTTP 상태로 분기하는 곳은 아래 `ErrorCode`가 없는 경우(검증·없는 route·429)뿐이고, 상태 값은 `@aido/api/errors`의 `HttpStatus`를 쓴다. 앱·서버에 상태 상수를 따로 만들지 않는다.
 - `details`는 코드별 계약이다. 운영에는 [`PUBLIC_ERROR_DETAILS`](../../packages/api/src/errors/public-details.ts)에 등록한 코드의 검증된 필드만 실린다(`featureQuota`, `charged`, 반복 오류 상세 등). 앱은 등록된 값을 공유 스키마로 읽는다. 등록하지 않은 코드의 `details`는 개발 환경 진단용이라 운영 응답에 없다. 스키마와 맞지 않는 값은 운영에서 빠지므로 코드별 details를 바꾸면 등록 스키마도 함께 바꾼다.
 - `ErrorCode`는 [errors.ts](../../packages/api/src/errors/errors.ts)의 도메인 범위(`SYS 0001-0099`, `AUTH 0100-0199`, … `INVITE 2100-2199`)에서 다음 번호를 쓴다. 새 도메인은 빈 범위를 정해 같은 파일 머리 주석에 적는다. 문자열 코드를 하드코딩하지 않는다.
 - `@RawResponse` endpoint(AppConfig의 `feature-discovery`·`app-version`)만 envelope 없이 raw union을 돌려준다. 새 raw 응답은 만들지 않는다.
@@ -26,10 +26,11 @@
 
 ## 3. 모바일
 
-- 사용자 문구는 `errors` 네임스페이스에서 **키 = ErrorCode**, 해요체로 둔다. 모르는 코드는 서버 message → `errors:fallback` 순서다([i18n](../../apps/mobile/.claude/i18n-guide.md#에러-메시지)).
-- 기능 오류는 `features/{area}/{feature}/domains/{feature}.error.ts` 하나에 `{FEATURE}_ERROR_CODE` 코드 표와 `isXxxError` 판별 함수를 둔다. 던지는 쪽은 `new BusinessError(코드)`이고, 클래스가 더 필요할 때만 `BusinessError`를 확장한다.
-- 분류는 `KyHttpClient` 한 곳이 한다.
-  - 4xx·Policy 실패 → `Result.err(ApiError | XxxError)` → mutation `onError`에서 코드별로 처리한다.
-  - 5xx·네트워크·타임아웃·Zod 파싱 실패 → `throw InfraError` → Suspense 조회는 `QueryErrorBoundary` fallback(다시 시도 + 문의하기)이 받는다.
-- 한 오류는 한 곳에서만 보여 준다. 경계 fallback이 그린 오류에 토스트를 더하거나, 토스트를 띄운 mutation 오류를 경계로 다시 던지지 않는다. mutation은 경계로 가지 않으므로(`throwOnError` 미사용) 예상하지 못한 오류도 `onError`의 기본 토스트 하나로 끝낸다.
-- 예상한 상태(404 = 대상 없음)는 `classifyBoundaryError`가 `expected-state`로 나눠 예외 리포트 없이 안내 화면을 그린다.
+한 패턴만 쓴다. 상세와 예시는 [에러 처리](../../apps/mobile/docs/error-handling.md)에 있다.
+
+- **원본.** 코드·문구·`details` 스키마·`HttpStatus`는 `@aido/api/errors`, 실패 응답 모양은 `@aido/api/common`이다. 앱은 이 값을 다시 적지 않는다.
+- **분류는 `KyHttpClient` 한 곳이다.** 4xx·Policy 실패 → `Result.err(ApiError | BusinessError)`. 5xx·네트워크·타임아웃·파싱 실패 → `throw InfraError` → 조회는 `QueryErrorBoundary`가 받고 `classifyBoundaryError`가 예상한 상태(404 = 대상 없음)를 예외 보고 없이 안내 화면으로 나눈다.
+- **기능 오류는 `domains/{feature}.error.ts` 하나다.** `{FEATURE}_ERROR_CODE` 코드 표, `isXxxError` 판별, `ErrorCode` → 폼 칸 매핑을 둔다. `isApiError`·`hasCode`는 이 파일 안에서만 쓰고, 던지는 쪽은 `new BusinessError(코드)`다.
+- **한 오류는 한 곳에서 보인다.** 조회 오류는 경계 fallback, mutation 오류는 전역 `MutationCache` `onError`가 `meta.errorFeedback`을 읽어 햅틱·토스트를 한 번, 칸 오류는 `form.setError`다. 기능 `onError`는 롤백만 한다. mutation은 경계로 가지 않고(`throwOnError` 미사용) 경계가 그린 오류에 토스트를 더하지 않는다.
+- **문구.** `errors` 네임스페이스에서 키 = `ErrorCode`, 해요체다. 모르는 코드는 서버 message → `errors:fallback` 순서다([문구](../../apps/mobile/docs/dates-and-i18n.md#오류-메시지)).
+- **보고.** 예상하지 못한 오류만 전역 `onError`와 `useReportUnexpectedError`가 Sentry로 보낸다. 서비스는 삼킨 실패를 `logger.warn`으로만 남긴다.

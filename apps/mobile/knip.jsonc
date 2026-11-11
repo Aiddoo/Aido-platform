@@ -13,7 +13,7 @@
       "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
       "ignore": ["src/shared/constants/query-meta.ts"],
       "ignoreDependencies": [
-        // 코드는 import하지 않지만 share의 podspec이 RNCKakaoSocial·RNCKakaoUser를 요구해 빠지면 pod install이 실패한다 (docs/eas-build-guide.md 카카오 절)
+        // 코드는 import하지 않지만 share의 podspec이 RNCKakaoSocial·RNCKakaoUser를 요구해 빠지면 pod install이 실패한다 (docs/build-and-release.md 카카오 절)
         "@react-native-kakao/social",
         "@react-native-kakao/user",
         "expo-glass-effect",

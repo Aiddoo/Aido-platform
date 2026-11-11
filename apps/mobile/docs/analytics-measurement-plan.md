@@ -2,7 +2,7 @@
 
 **기준**: 앱 1.15.0 · Firebase 프로젝트 `aido-997b5` · 코드 대조 2026-11-06. 실제 수집은 배포 후 DebugView로 검증한다.
 
-**원칙**: 이벤트 이름과 파라미터의 단일 원본은 feature의 `constants/{feature}.events.ts`와 앱 공통 이벤트를 담은 `src/shared/analytics/event-map.ts`(`AppEventMap`)다. 이 문서는 무엇을 보고 어떤 결정을 내리는지와 GA 콘솔 설정값을 적는다. 남기는 규칙은 [observability.md](../.claude/observability.md)를 따른다.
+**원칙**: 이벤트 이름과 파라미터의 단일 원본은 feature의 `constants/{feature}.events.ts`와 앱 공통 이벤트를 담은 `src/shared/analytics/event-map.ts`(`AppEventMap`)다. 이 문서는 무엇을 보고 어떤 결정을 내리는지와 GA 콘솔 설정값을 적는다. 남기는 규칙은 [observability.md](./observability.md)를 따른다.
 
 말한 내용·전사·할 일 제목·메모 내용은 어떤 이벤트에도 싣지 않는다.
 

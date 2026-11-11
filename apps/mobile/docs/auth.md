@@ -1,8 +1,8 @@
-# 인증 가이드: 세션 수명주기와 불변식
+# 인증: 세션 수명주기와 소셜 로그인
 
-> **Owner**: Aido Mobile Team · **Last Updated**: 2026-11-11
+세션·토큰 규칙([세션](#세션-수명주기와-불변식))과 소셜 로그인·계정 연결([소셜 로그인](#소셜-로그인))을 다룬다. 인증 상태는 `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn`·`signOut`으로 쓴다. 토큰은 `TokenStore` 포트(SecureStore)에 둔다.
 
-OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)를 본다.
+# 세션 수명주기와 불변식
 
 ## 핵심 불변식: 클라이언트는 세션을 먼저 끊지 않는다
 
@@ -24,11 +24,11 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 부팅은 읽기 전용이다. 토큰을 지우지도, 저장하지도, 네트워크를 타지도 않는다.
 
-| `getRefreshToken()` | 상태                                              |
-| ------------------- | ------------------------------------------------- |
-| 값 있음             | `authenticated`                                   |
-| `null`              | `unauthenticated`                                 |
-| throw (기기 잠김)   | `locked`: 판정을 미루고 `AppState` 복귀 시 재판정 |
+| `getRefreshToken()` | 상태                                                             |
+| ------------------- | ---------------------------------------------------------------- |
+| 값 있음             | `authenticated`                                                  |
+| `null`              | `unauthenticated`                                                |
+| throw (기기 잠김)   | `locked`: 판정을 미루고 앱 복귀(`AppLifecycleGateway`) 때 재판정 |
 
 - 잠금이 아닌 읽기 실패는 그대로 던진다. `useAuthBoot`가 관측하고 미인증으로 폴백한다. 토큰은 지우지 않으므로 다음 실행에 회복할 수 있다. `locked`로 뭉개면 재판정도 계속 실패해 무한 로딩에 갇힌다.
 - `locked`를 `unauthenticated`로 확정하면 잠긴 키체인이 곧 로그아웃이 된다. iOS `getItemAsync`는 잠금 중 `null`이 아니라 throw한다.
@@ -61,9 +61,9 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 - 클라이언트 refresh 타임아웃 8초(`REFRESH_TIMEOUT_MS`)는 서버 reuse grace 10초보다 짧게 둔다. 회전 성공 뒤 응답이 유실돼도 재시도할 여백이다.
 
-## 세션 종료 사유의 두 축 (`core/observability/telemetry-event.ts`)
+## 세션 종료 사유의 두 축
 
-세션 유효성의 진실의 원천은 서버다. 그러나 왜 클라이언트가 세션을 끝냈는지는 서버가 모를 수 있어 두 축을 나눠 관측한다.
+세션 종료 이벤트의 타입은 `core/observability/telemetry-event.ts`에 있다. 세션 유효성의 진실의 원천은 서버다. 그러나 왜 클라이언트가 세션을 끝냈는지는 서버가 모를 수 있어 두 축을 나눠 관측한다.
 
 | `reason` (클라의 결정 경로) | 서버가 아는가          | `serverErrorCode`                                              |
 | --------------------------- | ---------------------- | -------------------------------------------------------------- |
@@ -71,7 +71,7 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 | `invalid-refresh-response`  | 모름 (서버는 200을 줌) | 없음                                                           |
 | `refresh-rejected`          | 안다                   | `SESSION_0704`(재사용 감지), `SESSION_0702`(만료) 등 서버 코드 |
 
-`refresh-rejected`는 서버의 `ErrorCode`를 그대로 실어 보낸다. 401 하나로 뭉개면 "세션이 만료됐다"와 "앱이 토큰 패밀리를 태우고 있다"를 구분할 수 없다. severity는 [observability.md](../.claude/observability.md#severity)를 본다.
+`refresh-rejected`는 서버의 `ErrorCode`를 그대로 실어 보낸다. 401 하나로 뭉개면 "세션이 만료됐다"와 "앱이 토큰 패밀리를 태우고 있다"를 구분할 수 없다. severity는 [observability.md](./observability.md#severity)를 본다.
 
 이미 로그아웃된 앱이 낸 401은 세션 만료가 아니다. `useAuthBoot`가 `authenticated`일 때만 `session_expired`를 보낸다. 없으면 로그인한 적 없는 유저의 이벤트가 진짜 세션 유실을 묻는다.
 
@@ -107,7 +107,7 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 
 ## 오프라인 로그아웃
 
-토큰을 지우면 인증 요청을 보낼 수 없어, 그대로 두면 서버 세션과 푸시 기기가 남는다. 서버에 닿지 못한 로그아웃(오프라인, 시간 초과, 연결 실패, 5xx)은 refresh 토큰을 `pendingRevocation`에 기록하고 나서 토큰을 지운다. 서버가 답한 4xx는 기록하지 않는다. 푸시 기기는 이 기록과 따로 기기 id와 토큰으로 푼다(세션 만료 포함, [푸시 알림](push-notifications.md#로그아웃과-배지)).
+토큰을 지우면 인증 요청을 보낼 수 없어, 그대로 두면 서버 세션과 푸시 기기가 남는다. 서버에 닿지 못한 로그아웃(오프라인, 시간 초과, 연결 실패, 5xx)은 refresh 토큰을 `pendingRevocation`에 기록하고 나서 토큰을 지운다. 서버가 답한 4xx는 기록하지 않는다. 푸시 기기는 이 기록과 따로 기기 id와 토큰으로 푼다(세션 만료 포함, [푸시 알림](./push-notifications.md#로그아웃과-배지)).
 
 | 시점                                       | 동작                                                                                       |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------ |
@@ -138,3 +138,67 @@ OAuth 로그인 흐름은 [oauth-client-guide](../.claude/oauth-client-guide.md)
 - `JWT_REFRESH_SECRET` 회전은 전체 유저 즉시 로그아웃이다. 불가피하면 이중 키 검증 기간을 두고 회전한다.
 - `JWT_REFRESH_EXPIRES_IN`(기본 7d)은 회전 때마다 새로 계산되어 활성 유저는 만료되지 않는다. 그 기간 이상 접속하지 않은 유저는 다시 로그인한다.
 - 리프레시 토큰 재사용 grace는 10초(`TOKEN_REUSE_GRACE_PERIOD_MS`)다. 클라이언트 타임아웃(8초)보다 항상 길게 둔다.
+
+# 소셜 로그인
+
+소셜 로그인과 계정 연결의 앱 쪽 흐름이다. 세션 수명과 토큰 규칙은 위 [세션](#세션-수명주기와-불변식)을 본다.
+
+## 규칙
+
+- OAuth 클라이언트 ID와 시크릿은 API 서버가 관리한다. 앱에 두지 않는다.
+- 앱은 공급자 토큰을 직접 교환하지 않는다. Google·Kakao·Naver는 서버 흐름, Apple은 네이티브 SDK다.
+- 인증 UI는 시스템 브라우저(`expo-web-browser`)와 네이티브 SDK만 쓴다. WebView를 쓰지 않는다.
+- 토큰은 `TokenStore` 포트로 저장한다.
+
+## Google·Kakao·Naver: 서버 흐름
+
+```
+AuthService.openKakaoLogin()                  # openGoogleLogin·openNaverLogin도 같다
+  → WebBrowser.openAuthSessionAsync(GET {API}/v1/auth/{provider}/start?redirect_uri&mode=login, redirectUri)
+  → 서버가 공급자 인증을 끝내고 redirectUri로 일회용 code를 돌려준다
+  → POST v1/auth/exchange { code }
+  → 토큰 저장, signIn()
+```
+
+- `redirectUri`는 `makeRedirectUri({ scheme: ENV.SCHEME, path: 'auth/{provider}' })`다. scheme은 환경별로 다르다(`app.config.ts`). 서버가 `start-oauth-authorization.use-case.ts`의 허용 패턴으로 검사하므로 scheme을 바꾸면 거기도 고친다.
+- Android는 `app.config.ts`의 `intentFilters`(`auth/kakao`·`auth/naver`·`auth/google`)로 콜백을 받는다. `app/auth/[provider].tsx`가 `maybeCompleteAuthSession()`을 불러 `openAuthSessionAsync`가 URL을 받게 한다.
+- 화면은 `useOpen{Kakao,Google,Naver}LoginMutationOptions`로 code를 받고 `useExchangeCodeMutationOptions`에 `{ code, provider }`를 넘긴다(`app/(auth)/login.tsx`).
+- 콜백 URL에 code가 없고 `error`가 있으면 그 코드의 `BusinessError`(카탈로그에 없으면 호출부 폴백 문구), 없으면 `AUTH_NO_CODE_RECEIVED`다. 창을 닫으면 `AUTH_LOGIN_CANCELLED`다.
+
+## Apple: 네이티브
+
+iOS에서만 버튼을 보인다(`process.env.EXPO_OS === 'ios'`). `usesAppleSignIn`은 `app.config.ts`에 있다.
+
+```
+AuthService.openAppleLogin()
+  → nonce 생성, SHA-256 해시를 AppleAuthentication.signInAsync에 넘김
+  → POST v1/auth/apple/callback { idToken, nonce, userName, deviceType: 'IOS' }
+  → 토큰 저장
+```
+
+- Apple은 이름을 최초 로그인에만 준다. `userName`은 `fullName.givenName`이고 없으면 보내지 않는다.
+- SDK 호출과 오류 변환은 `SocialAuthGateway`(`shared/infra/social-auth`)가 맡고, `AuthService`가 결과를 `AUTH_ERROR_CODE`로 옮긴다.
+
+## 계정 연결
+
+`AuthService.linkAccount(provider)`가 나눈다. 인증된 클라이언트로 부른다.
+
+| 공급자             | 흐름                                                                        |
+| ------------------ | --------------------------------------------------------------------------- |
+| Google·Kakao·Naver | `openAuthSessionAsync(.../start?mode=link)` → `POST v1/auth/link-with-code` |
+| Apple              | `signInAsync` → `POST v1/auth/link { provider: 'APPLE', idToken, nonce }`   |
+
+해제는 `DELETE v1/auth/linked-accounts/{provider}`다. 취소는 `isLoginCancelledError`로 걸러 토스트를 띄우지 않는다.
+
+## 분석
+
+성공 한 번에 `auth_signup`·`auth_login` 중 하나만 보낸다. 서버 응답 `isNewUser`로 고른다. [측정 규칙](./observability.md#측정-규칙)을 본다.
+
+## 오류 코드
+
+공통 소셜 오류는 `@aido/api/errors`의 `SOCIAL_02xx`다. 문구는 i18n `errors` 카탈로그에 있다. 서버 동작은 서버 문서를 본다.
+
+## 콘솔 설정의 함정
+
+- Apple은 App ID에 Sign In with Apple을 켜야 한다.
+- 공급자 콘솔의 redirect URI는 서버 콜백(`*_CALLBACK_URL`, `apps/api/src/platform/config/schemas/oauth.schema.ts`)이다. 앱의 `redirectUri`를 등록하지 않는다.

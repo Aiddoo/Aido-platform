@@ -285,8 +285,8 @@ pnpm dev                                       # API + Expo Metro
 | 계약·DB·작업        | [HTTP 계약](./apps/api/docs/http-contracts.md), [영속성](./apps/api/docs/persistence.md), [작업과 이벤트](./apps/api/docs/jobs-and-events.md), [공유 계약 패키지](./packages/api/README.md)                        |
 | 권한·설정·관측      | [유료 기능과 권한](./apps/api/docs/entitlements.md), [설정](./apps/api/docs/configuration.md), [관측](./apps/api/docs/observability.md), [보안](./apps/api/docs/security.md), [테스트](./apps/api/docs/testing.md) |
 | 공통 규칙           | [오류](./docs/conventions/errors.md), [날짜·시간](./docs/conventions/dates.md), [하위 호환](./docs/conventions/compatibility.md), [null 비교](./docs/conventions/nullish.md), [Git·PR](./docs/conventions/git.md)  |
-| 모바일              | [apps/mobile/README.md](./apps/mobile/README.md), [아키텍처](./apps/mobile/.claude/architecture.md), [UI 컴포넌트](./apps/mobile/.claude/ui-components.md)                                                         |
-| CI·배포             | [CI](./apps/api/docs/ci.md), [서버 배포](./apps/api/docs/deployment.md), [모바일 배포](./apps/mobile/DEPLOYMENT.md)                                                                                                |
+| 모바일              | [apps/mobile/README.md](./apps/mobile/README.md), [아키텍처](./apps/mobile/docs/architecture/structure.md), [UI](./apps/mobile/docs/architecture/ui.md)                                                            |
+| CI·배포             | [CI](./apps/api/docs/ci.md), [서버 배포](./apps/api/docs/deployment.md), [모바일 배포](./apps/mobile/docs/build-and-release.md)                                                                                    |
 
 ## 라이선스
 

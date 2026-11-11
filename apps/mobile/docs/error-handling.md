@@ -1,18 +1,18 @@
 # 에러 처리 가이드
 
-**Version**: 1.3.1 · **Last Updated**: 2026-11-08 · **Owner**: Aido Mobile Team
+앱의 오류 처리 규칙의 원본이다. 서버와 함께 지키는 계약(envelope, ErrorCode 범위, 한 오류는 한 곳에서)과 한 장 요약은 [공통 오류 규칙](../../../docs/conventions/errors.md)에 있다.
 
-앱의 오류 처리 규칙의 원본이다. 서버와 함께 지키는 계약(envelope, ErrorCode 범위, 한 오류는 한 곳에서)은 [공통 오류 규칙](../../../docs/conventions/errors.md)에 있다.
+- **단일 원본.** `ErrorCode`·`Errors`·코드별 `details` 스키마(`PUBLIC_ERROR_DETAILS`에 등록한 것)·`HttpStatus`는 `@aido/api/errors`, 실패 응답 모양은 `@aido/api/common`이다. 앱에 코드 문자열·상태 상수(`NOT_FOUND_STATUS` 같은)·details 모양을 다시 만들지 않는다.
 
 ## 핵심 원칙
 
 > **"이 에러를 UI가 예상하고 있는가?"**
 
-| 트랙    | 에러 타입                        | 전달 방식                    | 처리 위치                                             |
-| ------- | -------------------------------- | ---------------------------- | ----------------------------------------------------- |
-| Track 1 | `ApiError` (4xx)                 | `err()` → `unwrap()` → throw | mutation `onError`, 조회는 경계(404는 안내 화면)      |
-| Track 2 | `BusinessError` (Policy·SDK)     | `err()` → `unwrap()` → throw | mutation `onError`                                    |
-| Track 3 | `InfraError` (5xx·네트워크·파싱) | 직접 `throw`                 | 조회는 `<QueryErrorBoundary>`, mutation은 기본 토스트 |
+| 트랙    | 에러 타입                        | 전달 방식                    | 처리 위치                                                                            |
+| ------- | -------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------ |
+| Track 1 | `ApiError` (4xx)                 | `err()` → `unwrap()` → throw | mutation은 전역 오류 피드백(칸 오류는 `form.setError`), 조회는 경계(404는 안내 화면) |
+| Track 2 | `BusinessError` (Policy·SDK)     | `err()` → `unwrap()` → throw | mutation은 전역 오류 피드백                                                          |
+| Track 3 | `InfraError` (5xx·네트워크·파싱) | 직접 `throw`                 | 조회는 `<QueryErrorBoundary>`, mutation은 전역 오류 피드백                           |
 
 - 예상한 에러는 구체적으로 안내한다(코드별 분기·토스트·다이얼로그).
 - 예상하지 못한 에러는 "다시 시도"와 문의 경로만 준다.
@@ -27,7 +27,7 @@ export type Result<T, E extends CodedError = CodedError> =
   | { ok: false; error: E };
 ```
 
-Service는 `Result`를 돌려주고, `queryFn`·`mutationFn`은 `unwrap()`한다. 컴포넌트는 `Result`를 직접 다루지 않는다.
+`{Entity}Api`와 Device Service는 `Result`를 돌려주고, `queryFn`·`mutationFn`은 `unwrap()`한다. 컴포넌트는 `Result`를 직접 다루지 않는다.
 
 `mutationFn`은 반드시 `unwrap()`한다. React Query는 throw가 없으면 성공으로 본다. `Result.err()`를 그대로 돌려주면 `onSuccess`가 불린다.
 
@@ -45,7 +45,7 @@ Service는 `Result`를 돌려주고, `queryFn`·`mutationFn`은 `unwrap()`한다
 
 - [`api-failure-breadcrumb.ts`](../src/shared/infra/http/api-failure-breadcrumb.ts)의 afterResponse 훅은 **관측만 한다**(실패 breadcrumb `category: 'http'`). 분류하거나 throw하지 않는다. 훅이 분류까지 하면 5xx가 재시도하지 않는 `ApiError`로 둔갑한다. auth-client 훅은 갱신 경로인 401을 건너뛴다.
 - `resolveMessage`는 i18n `errors` 카탈로그(키 = ErrorCode) → 서버 message → `errors:fallback` 순서로 사용자 문구를 정한다.
-- Service는 `ApiError`를 그대로 전달하고, 응답 schema 검증 실패는 `ParseError`로 던진다.
+- `{Entity}Api`는 `ApiError`를 그대로 돌려주고, 응답 schema 검증 실패는 `parseApiResponse`가 `ParseError`로 던진다.
 - 재시도는 React Query가 소유한다(Ky `retry: 0`).
 
 ## Track 1: ApiError
@@ -63,23 +63,45 @@ class ApiError extends Error implements CodedError {
 }
 ```
 
-코드 분기는 `ErrorCode` 상수로 한다. 문자열 코드를 하드코딩하지 않는다.
+코드 분기는 `ErrorCode` 상수로 한다. 문자열 코드를 하드코딩하지 않는다. 상태로 분기하는 것은 `ErrorCode`가 없는 경우(검증·없는 route·429)뿐이고 `HttpStatus.NOT_FOUND`처럼 `@aido/api/errors`의 값을 쓴다.
 
-## Mutation의 onError
+## mutation 오류 피드백
+
+햅틱·토스트·Sentry는 `QueryClient`의 `MutationCache` 전역 `onError` 하나가 맡는다. mutation 옵션은 `meta.errorFeedback`만 선언한다.
 
 ```typescript
-onError: (error) => {
-  if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0503)) {
-    router.push({ pathname: './verify-email', params: { email } });
-    return;
-  }
-  // 사용자 문구가 있는 오류만 그대로 보이고 나머지는 폴백이다. 다시 던지지 않는다
-  haptics.notify('error');
-  toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.loginFailed') });
-},
+// queries/push-permission.mutations.ts
+mutationOptions({
+  mutationFn: (variables) => service.requestPermission(),
+  meta: {
+    errorFeedback: {
+      feature: 'notification',
+      fallbackKey: 'notification:permission.requestFailed',
+    },
+  },
+});
 ```
 
-`getUserFacingMessage(error)`가 사용자 문구면 그 메시지를, 아니면 `fallback`을 보여 준다. 햅틱과 토스트를 함수 하나로 묶어 `onError`에 넘기지 않는다(`check:conventions`가 막는다).
+- 전역 핸들러는 `haptics.notify('error')`와 `toast.error(getUserFacingMessage(error), { fallback: t(fallbackKey) })`를 한 번 보이고, 예상하지 못한 오류만 분류해 Sentry로 보낸다([관측](./observability.md#mutation-오류-피드백)). `getUserFacingMessage`는 사용자 문구가 있는 오류만 그대로 보이고 나머지는 `fallback`을 쓴다. `ParseError` 같은 개발용 message는 걸러 낸다.
+- 기능 mutation 옵션의 `onError`는 롤백만 한다. 낙관적 갱신을 되돌리고, 이미 지워진 대상(`TODO_0833` 등)은 캐시에서 빼 서버 상태에 맞춘다. 토스트·햅틱·`captureException`을 더하지 않고 다시 던지지 않는다. 서버가 확정한 실패의 분석 이벤트(`auth_login_failed` 등)만 함께 둔다([관측](./observability.md#어디서-추적하나)). 햅틱과 토스트를 함수 하나로 묶어 각 `onError`에 넘기지도 않는다.
+- 저장 실패는 입력값과 화면을 그대로 둔다. 오프라인 저장도 같은 길이며 `networkMode: 'always'`로 바로 실패해 토스트가 한 번만 나온다. 실제 예는 `features/social/invite/queries/invite.mutations.ts`다.
+
+### 폼의 칸 오류
+
+서버 4xx 중 특정 칸에 속한 오류(이미 쓰는 이메일 등)는 토스트 대신 `form.setError`로 그 칸에 보인다. 오류 코드와 칸의 매핑은 `domains/{feature}.error.ts`가 소유하고, 폼을 가진 호출부가 `mutate(values, { onError })`에서 매핑 결과를 `form.setError`에 넘긴다. 칸에 보인 오류는 전역 토스트로 다시 알리지 않고, 매핑이 없는 오류만 전역 피드백으로 간다.
+
+```typescript
+mutate(values, {
+  onError: (error) => {
+    const field = toSignUpFieldError(error);
+    if (field != null) {
+      form.setError(field.name, { message: t(field.messageKey) });
+    }
+  },
+});
+```
+
+SDK 오류 변환은 어댑터와 mapper 경계에서만 한다(`expo-social-auth-gateway.ts`, `subscription-error.mapper.ts`의 `toSubscriptionError`). 원래 SDK 코드는 진단용으로만 남긴다.
 
 ## 서버 오류를 읽는 곳
 
@@ -108,7 +130,7 @@ export const FRIEND_ERROR_CODE = {
   EMPTY_TAG: 'FRIEND_EMPTY_TAG',
 } as const;
 
-// Service: 던지지 않고 Result로 돌려준다
+// Device Service·Policy 경계: 던지지 않고 Result로 돌려준다
 return err(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
 
 // 판별: 코드를 넘기면 그 코드인 오류만 통과한다. 서버 ApiError도 같은 길이다
@@ -119,32 +141,13 @@ if (isCodedError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 | ----------- | ----------------------------- | ------------------------------------------------------ |
 | 코드 상수   | `{FEATURE}_ERROR_CODE`        | `features/{area}/{feature}/domains/{feature}.error.ts` |
 | 문구        | 코드를 키로 한 ko·en 항목     | `shared/i18n/locales/{ko,en}/errors.json`              |
-| 던지기      | `new BusinessError(코드)`     | Service·Policy 경계                                    |
+| 던지기      | `new BusinessError(코드)`     | Device Service·Policy 경계                             |
 | 판별        | `isCodedError(error, 코드)`   | 호출부. `match`로 분기하면 `exhaustive()`를 쓴다       |
 | 사용자 문구 | `getUserFacingMessage(error)` | `toast.error(getUserFacingMessage(error))`             |
 
 `isCodedError(error)`는 코드를 가진 모든 오류(`ApiError`, `BusinessError`와 그 하위 클래스)에 참이고, 그 타입은 `CodedError`다. 코드 상수를 둔 feature는 `domains/{feature}.error.ts`에서 `BusinessError`를 쓰거나 `isApiError`로 서버 코드를 판별한다. 하위 클래스가 필요하면 `SubscriptionError`처럼 `BusinessError`를 확장한다.
 
-## 저장 실패 알림
-
-저장 실패는 호출부가 햅틱과 토스트를 나란히 한 번씩 쓴다. 서로 다른 일이라 한 훅으로 묶지 않는다. 입력값과 화면은 그대로 둔다. 오프라인 저장 실패도 같은 길이며 `networkMode: 'always'`로 바로 실패해 토스트가 한 번만 나온다. 실제 예는 `features/social/invite/queries/invite.mutations.ts`다.
-
-```typescript
-const haptics = useHaptics();
-const toast = useAppToast();
-
-mutationOptions({
-  networkMode: 'always',
-  onError: (error) => {
-    haptics.notify('error');
-    toast.error(getUserFacingMessage(error));
-  },
-});
-```
-
-SDK 오류 변환은 어댑터·Service 경계에서만 한다(`expo-social-auth-gateway.ts`, `subscription-error.mapper.ts`의 `toSubscriptionError`). 원래 SDK 코드는 진단용으로만 남긴다.
-
-### 조회에서 예상한 상태
+## 조회에서 예상한 상태
 
 조회에서도 예상한 상태는 경계로 던지지 않는다. 구독 요금제 조회는 query options가 `toOfferingsAvailability`로 `{ status: 'available' | 'unavailable' }`를 캐시에 둔다. 관측은 조회가 아니라 요금제 자리가 안내를 보일 때 `useReportStoreUnavailable`로 남긴다.
 
@@ -156,12 +159,12 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(`expo-social-auth
 
 ## Track 3: InfraError와 QueryErrorBoundary
 
-| 서브클래스            | 발생               | `message`                                                        |
-| --------------------- | ------------------ | ---------------------------------------------------------------- |
-| `ServerError(status)` | HTTP 5xx           | `common:infraErrors.server`                                      |
-| `NetworkError`        | 네트워크 끊김      | `common:infraErrors.network`                                     |
-| `TimeoutError`        | 요청 시간 초과     | `common:infraErrors.timeout`                                     |
-| `ParseError`          | Zod 응답 검증 실패 | Service가 넘긴 개발용 문자열. `getUserFacingMessage`가 걸러 낸다 |
+| 서브클래스            | 발생               | `message`                                                                   |
+| --------------------- | ------------------ | --------------------------------------------------------------------------- |
+| `ServerError(status)` | HTTP 5xx           | `common:infraErrors.server`                                                 |
+| `NetworkError`        | 네트워크 끊김      | `common:infraErrors.network`                                                |
+| `TimeoutError`        | 요청 시간 초과     | `common:infraErrors.timeout`                                                |
+| `ParseError`          | Zod 응답 검증 실패 | `parseApiResponse`가 넘긴 개발용 문자열. `getUserFacingMessage`가 걸러 낸다 |
 
 [`QueryErrorBoundary`](../src/shared/ui/query-error-boundary/query-error-boundary.tsx)는 `classifyBoundaryError`로 잡은 오류를 나눈다.
 
@@ -173,8 +176,8 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(`expo-social-auth
 | `error`           | 그 밖(5xx·파싱 등)                                                            | `captureException`            | fallback(다시 시도 + 문의하기) |
 
 - 독립된 데이터 블록마다 `QueryErrorBoundary → Suspense → 블록`을 둬 부분 실패를 허용한다. 식별자가 바뀌면 `resetKeys`로 이전 실패를 푼다.
-- 기능 fallback은 `fallback={X.Error}`로 연결하고, 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. route 시트 안에서는 `sheet.close(INQUIRY_SHEET_EXIT)`로 닫고 이동한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
-- mutation은 경계로 가지 않는다(`throwOnError` 미사용). `ParseError`의 message는 개발용이므로, 기능 오류가 아닌 경우의 토스트는 `fallback` 문구를 쓴다.
+- 기능 fallback은 `fallback={X.Error}`로 연결하고, 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. 경계 없이 한 칸 안에서 "실패 + 다시 시도"를 보일 때는 `QueryErrorFallback.Inline`을 쓴다(직접 만든 인라인 실패 UI를 두지 않는다). route 시트 안에서는 `sheet.close(INQUIRY_SHEET_EXIT)`로 닫고 이동한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
+- mutation은 경계로 가지 않는다(`throwOnError` 미사용). 피드백은 위 [전역 오류 피드백](#mutation-오류-피드백)이다.
 
 ## 오프라인
 
@@ -199,7 +202,7 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(`expo-social-auth
 
 - 저장소는 초안과 같은 SecureStore 키로 연 AES-256 MMKV `aido.query-cache.encrypted`다. 키를 읽지 못한 실행(잠금 해제 전 실행·키체인 오류)은 `query-cache.encrypted-storage.unavailable` warn만 남기고 저장하지 않는다.
 - 조회 옵션에 `...PERSISTED_QUERY_OPTIONS`(`meta.persist` + `gcTime` 24시간)를 붙인다. 토큰·결제·배지 수·AI 제안은 붙이지 않는다.
-- 새로 붙이면 `bootstrap/query/persisted-query-schemas.ts`에 모델 스키마를 함께 더한다(빠지면 테스트가 깨진다). 복원한 값을 스키마로 검증해 깨진 조회만 버리고 서버에서 다시 받으며, 표에 없는 조회도 버린다. 값은 바꾸지 않는다. 버린 수는 `query-cache.restored-queries.dropped` warn으로 남는다.
+- 영속 조회는 쿼리 옵션의 `meta.persist`에 모델 스키마까지 둔다([data](./architecture/data.md#무효화)). 따로 등록부를 고치지 않는다. 복원한 값을 스키마로 검증해 깨진 조회만 버리고 서버에서 다시 받으며, 표에 없는 조회도 버린다. 값은 바꾸지 않는다. 버린 수는 `query-cache.restored-queries.dropped` warn으로 남는다.
 - 복원 직후 전체를 invalidate한다. 앱이 꺼지기 전의 낙관적 반영이 서버 값처럼 남지 않게 하기 위해서다.
 - 로그인한 사용자 키에만 쓰고(`useClaimDeviceDataForUser`가 주인 지정), 미인증 전환 때 `SessionCleanupService`가 `queryClient.clear()`와 함께 지운다. 앱 버전·OTA가 바뀌면 버린다(`query-cache-persistence.ts`).
 
@@ -229,14 +232,7 @@ logger.error(AI_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error)); // Sentry �
 
 ## 관측
 
-| 상황                            | 남기는 것                                      |
-| ------------------------------- | ---------------------------------------------- |
-| 예측 불가(경계 도달, 5xx·파싱)  | `captureException(error, { feature })`         |
-| 연결 오류(네트워크·타임아웃)    | `network` breadcrumb(warning)                  |
-| 도메인 신호(비자발 로그아웃 등) | `captureMessage(msg, { severity, errorCode })` |
-| 행적(HTTP 실패·화면 이동)       | `addBreadcrumb({ category, level, data })`     |
-
-예측 가능한 4xx는 event가 아니다. 전체 규칙은 [observability.md](../.claude/observability.md)에 있다.
+예상하지 못한 오류(경계 도달, 5xx·파싱)만 보고한다. mutation은 전역 `onError`, 그 밖은 `useReportUnexpectedError` 같은 훅이 보내고 서비스는 삼킨 실패를 `logger.warn`으로만 남긴다. 예측 가능한 4xx는 이벤트가 아니다. 무엇을 어느 레벨로 남기는지는 [observability.md](./observability.md#오류-분류와-한-번만-보고)에 있다.
 
 ## 참고 파일
 

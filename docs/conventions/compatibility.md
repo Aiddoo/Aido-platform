@@ -10,16 +10,16 @@
 
 ## 2. 외부 계약: 바꾸지 않는다
 
-| 계약              | 지키는 것                                                                                                                                                                                                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| REST(`/v{n}`)     | 기존 필드의 이름·타입·required/nullable·의미·오류 코드. 새 필드는 additive optional로만 추가한다([REST 계약](../../apps/api/docs/http-contracts.md))                                                                                                             |
-| 앱 버전별 동작    | 새 동작이 구 앱을 깨면 `X-App-Version` 헤더로 서버가 분기한다. 헤더가 없는 구 앱은 기존 동작이다                                                                                                                                                                 |
-| 라우트·딥링크     | 공개된 경로와 `aido://` URI. `aido://auth/callback`, `aido://auth/{provider}`는 바꾸지 않는다. 새 경로는 추가만 한다                                                                                                                                             |
-| 푸시 payload      | 의미 데이터만 보낸다. 새 앱은 `navigation`(kind별 화면·id)을, 구 앱은 함께 싣는 type·action·context·routing을 읽는다. 앱이 경로를 정하므로 라우트를 바꿔도 payload는 그대로다([Push](../../apps/api/docs/push-notifications.md#푸시-navigation-1141))            |
-| 위젯 snapshot·URI | `aido_widget_snapshot_v1` key와 저장 JSON 버전 해석, `aido://feed?…`·`aido://todo/{id}` 형식([위젯](../../apps/mobile/.claude/widgets.md))                                                                                                                       |
-| 기기 저장 key     | SecureStore 토큰 key, MMKV key, 초안 key 형식. 바꾸면 기존 설치의 로그인·설정·초안을 잃는다. SecureStore `pendingRevocation`(`{ refreshToken, expiresAt }`)도 여기에 든다([오프라인 로그아웃](../../apps/mobile/docs/authentication_guide.md#오프라인-로그아웃)) |
-| 공급자 웹훅       | RevenueCat 웹훅 경로(`POST /v1/webhooks/revenuecat`)·200 응답·`@aido/api` 웹훅 스키마. 처리하지 않는 이벤트도 200으로 받아 재전송을 막는다. 운영은 Test Store 이벤트를 받기만 하고 반영하지 않는다([결제](../../apps/api/docs/billing.md#sandbox-결제))          |
-| DB·queue·cache    | 마이그레이션은 additive로 쌓는다. 파괴적 migration 뒤에는 이전 API 이미지로 되돌리지 못한다([배포](../../apps/api/docs/deployment.md#롤백의-범위)). pg-boss job 이름·payload·Redis key/TTL은 소유 Context의 계약이다                                             |
+| 계약              | 지키는 것                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| REST(`/v{n}`)     | 기존 필드의 이름·타입·required/nullable·의미·오류 코드. 새 필드는 additive optional로만 추가한다([REST 계약](../../apps/api/docs/http-contracts.md))                                                                                                                                                                                                        |
+| 앱 버전별 동작    | 새 동작이 구 앱을 깨면 `X-App-Version` 헤더로 서버가 분기한다. 헤더가 없는 구 앱은 기존 동작이다                                                                                                                                                                                                                                                            |
+| 라우트·딥링크     | 공개된 경로와 `aido://` URI. `aido://auth/callback`, `aido://auth/{provider}`는 바꾸지 않는다. 새 경로는 추가만 한다                                                                                                                                                                                                                                        |
+| 푸시 payload      | 의미 데이터만 보낸다. 서버는 모든 푸시·알림함 행에 `navigation`(kind별 화면·id)을 계산해 싣고, 구 앱 호환을 위해 type·action·context·routing도 함께 싣는다. 최신 앱은 `navigation`만 읽는다(없거나 틀리면 알림함으로 연다). 앱이 경로를 정하므로 라우트를 바꿔도 payload는 그대로다([Push](../../apps/api/docs/push-notifications.md#푸시-navigation-1141)) |
+| 위젯 snapshot·URI | `aido_widget_snapshot_v1` key와 저장 JSON 버전 해석, `aido://feed?…`·`aido://todo/{id}` 형식([위젯](../../apps/mobile/docs/widgets.md))                                                                                                                                                                                                                     |
+| 기기 저장 key     | SecureStore 토큰 key, MMKV key, 초안 key 형식. 바꾸면 기존 설치의 로그인·설정·초안을 잃는다. SecureStore `pendingRevocation`(`{ refreshToken, expiresAt }`)도 여기에 든다([오프라인 로그아웃](../../apps/mobile/docs/auth.md#오프라인-로그아웃))                                                                                                            |
+| 공급자 웹훅       | RevenueCat 웹훅 경로(`POST /v1/webhooks/revenuecat`)·200 응답·`@aido/api` 웹훅 스키마. 처리하지 않는 이벤트도 200으로 받아 재전송을 막는다. 운영은 Test Store 이벤트를 받기만 하고 반영하지 않는다([결제](../../apps/api/docs/billing.md#sandbox-결제))                                                                                                     |
+| DB·queue·cache    | 마이그레이션은 additive로 쌓는다. 파괴적 migration 뒤에는 이전 API 이미지로 되돌리지 못한다([배포](../../apps/api/docs/deployment.md#롤백의-범위)). pg-boss job 이름·payload·Redis key/TTL은 소유 Context의 계약이다                                                                                                                                        |
 
 새 기능은 추가 API로 낸다. 서버를 먼저 배포하고 안정화를 확인한 뒤 앱을 낸다. 옛 앱 호환은 서버가 맡는다.
 
@@ -37,21 +37,26 @@
 - Gemini 전용 AI 동의 경로: 영구. 재동의를 받지 않는 한 그 동의자는 Gemini만 쓴다.
 - 옛 관리자 알림 잡 형식(`LegacyAdminNotificationSchema`, 조립 메시지를 싣던 `{ channel, notification }`의 `LegacySendDataSchema`): 배포 순간 쌓여 있는 잡을 위해 1.15.1까지 둔다. 대기 잡 보관이 24시간이라 1.15.1 배포 뒤 남은 잡이 없으면 다음 릴리스에서 지운다.
 
-모바일은 최신 코드만 둔다. 앱은 옛 서버 응답을 위한 분기를 두지 않고, 기기 저장 값과 공개 링크, 지금 서버가 주는 값만 받는다. 앱 1.15.0 출시 뒤에는 서버를 1.15 이전으로 되돌리지 않고 수정 배포로 대응한다.
+모바일은 최신 코드(1.15.2)만 둔다. 앱은 옛 앱·옛 서버를 위한 분기와 대체 경로, mapper 기본값을 두지 않고 지금 서버가 주는 값만 받는다. 남기는 것은 셋이다.
+
+1. 업그레이드한 기기의 저장 값: 아래 표의 코드로 한 번 옮기거나 읽는다.
+2. 이미 퍼진 링크: 초대 링크, 위젯 URI, 공개 딥링크.
+3. 앞으로 서버가 더할 값: 열거의 계약 `.catch`와 `parse{X}`의 `null`.
+
+그래서 1.15.2에서 알림 옛 필드(type·action·context·routing)로 목적지를 계산하던 길(`toLegacyFieldsDestination`)과 옛 댓글 route(`app/(app)/todo/[todoId]/comments/[commentId].tsx`)를 지운다. 댓글 위치는 `/todo/[todoId]?comment=`다. 알림 목적지는 서버 `navigation` 하나이고, 없거나 틀리면 알림함으로 연다. 앱 1.15.0 출시 뒤에는 서버를 1.15 이전으로 되돌리지 않고 수정 배포로 대응한다.
 
 기기에 이미 남은 값과 링크를 읽는 앱 코드도 외부 계약이다. 새 앱이 쓰지 않는 모양을 읽어 옮기거나 받아 준다.
 
-| 코드(앱)                                                                 | 읽는 것                                                                                                             | 지울 시점                                                                |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `shared/infra/storage/encrypted-draft-storage.ts` `migrateLegacyDrafts`  | 암호화 전 MMKV `aido.drafts`의 초안                                                                                 | 지우면 이전 버전에서 올라온 사용자의 저장 전 초안이 사라진다             |
-| `store-review.repository.ts` `toStoreReviewState`                        | 앱 안 확인 창을 쓰던 시절의 `completions`·`reviewRequestedAt`                                                       | 지우면 이미 평가 요청을 받은 사용자에게 다시 묻는다                      |
-| `notification-destination.ts` `toLegacyFieldsDestination`                | `navigation`이 없는 알림의 type·action·context·routing                                                              | 영구(서버가 `navigation`을 고르지 못한 알림함 항목이 화면으로 가는 경로) |
-| `app/(app)/todo/[todoId]/comments/[commentId].tsx`                       | 1.14.0 이하 대화 링크                                                                                               | 지우면 이미 받은 푸시·공유 링크가 열리지 않는다                          |
-| `widget-snapshot-storage.schema.ts` `legacyWidgetSnapshotV1Schema`       | 위젯 snapshot v1 저장 JSON                                                                                          | 영구(위젯 snapshot 버전 해석 계약)                                       |
-| `coachmark.repository.ts` `REORDER_KEY_PREFIX`·`FRIEND_STRIP_KEY_PREFIX` | 1.14.x까지 쓰던 안내 key. 지금도 이 key로 읽고 쓴다                                                                 | 영구(기기 저장 key)                                                      |
-| `marketing-push-prompt.repository.ts` `claimDeviceRecord`                | 1.14.x까지 기기 하나에 남긴 `aido_marketing_push_prompt`(`lastPromptedAt`). 로그인한 계정 key로 한 번 옮기고 지운다 | 1.16.0 이후(옮기기 전에 업데이트한 사용자가 한 번 더 제안을 받을 뿐이다) |
-| `push-permission-prompt.repository.ts` `NOTICE_DISMISSED_KEY_PREFIX`     | 1.14.x까지 쓰던 피드 안내 닫은 시각 key. 지금도 이 key로 읽고 쓴다                                                  | 영구(기기 저장 key)                                                      |
-| `activation-progress-storage.schema.ts`                                  | 1.14.x가 남긴 `pushRegistrationUnlockedAt`은 읽지 않고 버린다                                                       | 지울 코드 없음(스키마가 모르는 칸을 버린다)                              |
+| 코드(앱)                                                                | 읽는 것                                                                                                                                                              | 지울 시점                                                                |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `shared/infra/storage/encrypted-draft-storage.ts` `migrateLegacyDrafts` | 암호화 전 MMKV `aido.drafts`의 초안                                                                                                                                  | 지우면 이전 버전에서 올라온 사용자의 저장 전 초안이 사라진다             |
+| `store-review.repository.ts` `toStoreReviewState`                       | 앱 안 확인 창을 쓰던 시절의 `completions`·`reviewRequestedAt`                                                                                                        | 지우면 이미 평가 요청을 받은 사용자에게 다시 묻는다                      |
+| `widget-snapshot-storage.schema.ts` `legacyWidgetSnapshotV1Schema`      | 위젯 snapshot v1 저장 JSON                                                                                                                                           | 영구(위젯 snapshot 버전 해석 계약)                                       |
+| `coachmark.repository.ts` 이주                                          | 1.14.x까지 쓰던 `aido_reorder_coachmark_v1`·`aido_friend_strip_hint_dismissed_v1`·`aido_coachmark_v1`. 시작할 때 한 번 `aido_coachmark_v1:{account}:{kind}`로 옮긴다 | 1.16.0 이후(지우면 옮기기 전에 업데이트한 사용자에게 안내가 다시 뜬다)   |
+| `marketing-push-prompt.repository.ts` `claimDeviceRecord`               | 1.14.x까지 기기 하나에 남긴 `aido_marketing_push_prompt`(`lastPromptedAt`). 로그인한 계정 key로 한 번 옮기고 지운다                                                  | 1.16.0 이후(옮기기 전에 업데이트한 사용자가 한 번 더 제안을 받을 뿐이다) |
+| 피드 푸시 안내 저장 값(`NOTICE_DISMISSED_KEY_PREFIX`)                   | 1.14.x까지 쓰던 피드 안내 닫은 시각 key. 저장 값 정의로 옮겨도 이 key로 읽고 쓴다                                                                                    | 영구(기기 저장 key)                                                      |
+| `activation-progress-storage.schema.ts`                                 | 1.14.x가 남긴 `pushRegistrationUnlockedAt`은 읽지 않고 버린다                                                                                                        | 지울 코드 없음(스키마가 모르는 칸을 버린다)                              |
+| `voice-note-draft.schema.ts`의 새 칸 `.default`                         | 칸이 생기기 전에 저장한 말로 메모 초안                                                                                                                               | 1.16.0 이후(초안 보관 기간 `VOICE_NOTE_RETENTION_DAYS` 30일이 지난 뒤)   |
 
 호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/docs/http-contracts.md#출시-앱-호환-절차))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
 
