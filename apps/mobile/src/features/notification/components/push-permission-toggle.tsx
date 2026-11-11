@@ -1,5 +1,4 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { useTrack } from '@src/shared/analytics';
 import { SettingsListGroup } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
@@ -58,7 +57,6 @@ type PushPermissionStep = ReturnType<typeof PushPermissionPolicy.getNextStep>;
 
 /** 다음 단계에 맞는 기존 동작을 고른다. 셋 다 권한·설정 캐시를 스스로 맞춘다 */
 function useEnablePush(source: PushPermissionPromptSource) {
-  const { trackEvent } = useTrack();
   const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
   const openSettings = useMutation(useOpenPushSettingsMutationOptions());
   const enableInApp = useMutation(useUpdatePushEnabledAndAskPermissionMutationOptions());
@@ -66,16 +64,9 @@ function useEnablePush(source: PushPermissionPromptSource) {
   const mutate = (step: PushPermissionStep) =>
     match(step)
       .with(PUSH_PERMISSION_STEP.ASK, PUSH_PERMISSION_STEP.REQUEST_SYSTEM, () =>
-        requestPermission.mutate(undefined, {
-          onSuccess: (next) =>
-            trackEvent('push_permission_requested', { source, status: next.status }),
-        }),
+        requestPermission.mutate({ source }),
       )
-      .with(PUSH_PERMISSION_STEP.OPEN_SETTINGS, () =>
-        openSettings.mutate(undefined, {
-          onSuccess: () => trackEvent('push_permission_settings_opened', { source }),
-        }),
-      )
+      .with(PUSH_PERMISSION_STEP.OPEN_SETTINGS, () => openSettings.mutate({ source }))
       .with(PUSH_PERMISSION_STEP.ENABLE_IN_APP, () => enableInApp.mutate({ pushEnabled: true }))
       .with(PUSH_PERMISSION_STEP.NONE, () => undefined)
       .exhaustive();

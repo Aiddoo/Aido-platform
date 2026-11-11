@@ -45,12 +45,13 @@ export function PushPermissionOnboardingActions() {
   });
 
   const handleContinue = () => {
-    requestPermission.mutate(undefined, {
-      onSuccess: (permission) =>
-        trackEvent('push_permission_requested', { source: SOURCE, status: permission.status }),
-      // 권한 창을 띄우지 못하면 권한이 그대로라 화면이 닫히지 않는다. 앱은 알림 없이도 쓸 수 있게 넘긴다
-      onError: () => setDeferredAt(getNowInstant()),
-    });
+    requestPermission.mutate(
+      { source: SOURCE },
+      {
+        // 권한 창을 띄우지 못하면 권한이 그대로라 화면이 닫히지 않는다. 앱은 알림 없이도 쓸 수 있게 넘긴다
+        onError: () => setDeferredAt(getNowInstant()),
+      },
+    );
   };
 
   return (

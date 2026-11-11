@@ -284,7 +284,7 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
       {!isTurnedOn && (
         <TextButton
           size="small"
-          onPress={() => requestPermission.mutate()}
+          onPress={() => requestPermission.mutate({ source: 'invite_welcome' })}
           isDisabled={requestPermission.isPending}
         >
           {t('welcome.notificationButton')}

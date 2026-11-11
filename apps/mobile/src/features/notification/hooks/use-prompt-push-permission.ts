@@ -30,10 +30,7 @@ export function usePromptPushPermission() {
       return false;
     }
     trackEvent('push_permission_prompt_shown', { source: SOURCE, step: 'REQUEST_SYSTEM' });
-    requestPermission.mutate(undefined, {
-      onSuccess: (next) =>
-        trackEvent('push_permission_requested', { source: SOURCE, status: next.status }),
-    });
+    requestPermission.mutate({ source: SOURCE });
     return true;
   };
 

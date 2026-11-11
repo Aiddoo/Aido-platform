@@ -1,4 +1,3 @@
-import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { SettingsListGroup, Text } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -18,7 +17,6 @@ const SOURCE: PushPermissionPromptSource = 'settings';
 /** 푸시 알림 화면 맨 위. 기기 알림이 꺼져 있으면 아래 토글이 소용없다는 것과 켜는 한 단계를 먼저 보여 준다 */
 export function PushPermissionSettings() {
   const { t } = useTranslation('notification');
-  const { trackEvent } = useTrack();
   const { data: permission } = useSuspenseQuery(useGetPushPermissionQueryOptions());
   const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
   const openSettings = useMutation(useOpenPushSettingsMutationOptions());
@@ -35,7 +33,8 @@ export function PushPermissionSettings() {
                 {t('permission.status.granted')}
               </Text>
             }
-            onPress={() => openSettings.mutate()}
+            // 허용한 뒤 기기 설정을 여는 것은 권한을 되찾는 단계가 아니라 source 없이 열어 추적하지 않는다
+            onPress={() => openSettings.mutate({})}
           />
         ))
         .with(PUSH_PERMISSION_STEP.ASK, PUSH_PERMISSION_STEP.REQUEST_SYSTEM, () => (
@@ -52,12 +51,7 @@ export function PushPermissionSettings() {
                 {t('permission.continue')}
               </Text>
             }
-            onPress={() =>
-              requestPermission.mutate(undefined, {
-                onSuccess: (next) =>
-                  trackEvent('push_permission_requested', { source: SOURCE, status: next.status }),
-              })
-            }
+            onPress={() => requestPermission.mutate({ source: SOURCE })}
             isDisabled={requestPermission.isPending}
           />
         ))
@@ -75,11 +69,7 @@ export function PushPermissionSettings() {
                 {t('permission.card.openSettings')}
               </Text>
             }
-            onPress={() =>
-              openSettings.mutate(undefined, {
-                onSuccess: () => trackEvent('push_permission_settings_opened', { source: SOURCE }),
-              })
-            }
+            onPress={() => openSettings.mutate({ source: SOURCE })}
           />
         ))
         .exhaustive()}

@@ -104,7 +104,6 @@ PushPermissionNotice.RequestSystem = function RequestSystem({
   onDismiss,
 }: StepNoticeProps) {
   const { t } = useTranslation('notification');
-  const { trackEvent } = useTrack();
   const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
 
   return (
@@ -119,15 +118,7 @@ PushPermissionNotice.RequestSystem = function RequestSystem({
           variant="weak"
           display="inline"
           isLoading={requestPermission.isPending}
-          onPress={() =>
-            requestPermission.mutate(undefined, {
-              onSuccess: (permission) =>
-                trackEvent('push_permission_requested', {
-                  source: SOURCE,
-                  status: permission.status,
-                }),
-            })
-          }
+          onPress={() => requestPermission.mutate({ source: SOURCE })}
         >
           {t('permission.continue')}
         </Button>
@@ -143,7 +134,6 @@ PushPermissionNotice.OpenSettings = function OpenSettings({
   onDismiss,
 }: StepNoticeProps) {
   const { t } = useTranslation('notification');
-  const { trackEvent } = useTrack();
   const openSettings = useMutation(useOpenPushSettingsMutationOptions());
 
   return (
@@ -157,11 +147,7 @@ PushPermissionNotice.OpenSettings = function OpenSettings({
           size="small"
           variant="weak"
           display="inline"
-          onPress={() =>
-            openSettings.mutate(undefined, {
-              onSuccess: () => trackEvent('push_permission_settings_opened', { source: SOURCE }),
-            })
-          }
+          onPress={() => openSettings.mutate({ source: SOURCE })}
         >
           {t('permission.card.openSettings')}
         </Button>

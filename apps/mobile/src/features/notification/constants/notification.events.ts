@@ -1,12 +1,14 @@
 import type { TimezoneOffsetBucket } from '../domains/device-timezone.model';
 import type { PushOpenAppState } from '../domains/push-notification-response.model';
+import type { PushPermission, PushPermissionStep } from '../domains/push-permission.model';
 
 export type PushPermissionPromptSource =
   | 'onboarding'
   | 'todo_time'
   | 'feed_card'
   | 'settings'
-  | 'paywall';
+  | 'paywall'
+  | 'invite_welcome';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
@@ -30,12 +32,15 @@ declare module '@src/shared/analytics/event-map' {
     marketing_push_opted_in: { source: 'completion_sheet' };
     marketing_push_prompt_shown: { source: 'completion_sheet' };
     marketing_push_prompt_dismissed: { source: 'completion_sheet' };
-    // oxlint-disable-next-line aido/analytics-event-catalog -- 1.15.2 전환 #1400
-    push_permission_prompt_shown: { source: PushPermissionPromptSource; step: string };
-    // oxlint-disable-next-line aido/analytics-event-catalog -- 1.15.2 전환 #1400
-    push_permission_prompt_dismissed: { source: PushPermissionPromptSource; step: string };
-    // oxlint-disable-next-line aido/analytics-event-catalog -- 1.15.2 전환 #1400
-    push_permission_requested: { source: PushPermissionPromptSource; status: string };
+    push_permission_prompt_shown: { source: PushPermissionPromptSource; step: PushPermissionStep };
+    push_permission_prompt_dismissed: {
+      source: PushPermissionPromptSource;
+      step: PushPermissionStep;
+    };
+    push_permission_requested: {
+      source: PushPermissionPromptSource;
+      status: PushPermission['status'];
+    };
     push_permission_settings_opened: { source: PushPermissionPromptSource };
     /** 시간대 이름·도시는 보내지 않고 바뀐 폭만 보낸다. 여행 빈도와 기기 예약 전환 판단에 쓴다. */
     device_timezone_changed: {
