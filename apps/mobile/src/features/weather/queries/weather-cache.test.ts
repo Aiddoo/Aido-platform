@@ -1,6 +1,7 @@
 import { createTestQueryClient } from '@src/shared/__tests__';
 import type { QueryClient } from '@tanstack/react-query';
 
+import { createWeatherReport } from '../__tests__/weather-report.fixtures';
 import { removeOutdatedWeatherReports } from './weather-cache';
 import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 
@@ -15,8 +16,9 @@ describe('removeOutdatedWeatherReports', () => {
     // Given
     const outdated = WEATHER_QUERY_KEYS.report({ locationRevision: 1 });
     const current = WEATHER_QUERY_KEYS.report({ locationRevision: 2 });
-    queryClient.setQueryData(outdated, { id: 'old' });
-    queryClient.setQueryData(current, { id: 'new' });
+    const currentReport = createWeatherReport();
+    queryClient.setQueryData(outdated, createWeatherReport());
+    queryClient.setQueryData(current, currentReport);
     queryClient.setQueryData(WEATHER_QUERY_KEYS.location(), { status: 'denied' });
 
     // When
@@ -24,7 +26,7 @@ describe('removeOutdatedWeatherReports', () => {
 
     // Then
     expect(queryClient.getQueryData(outdated)).toBeUndefined();
-    expect(queryClient.getQueryData(current)).toEqual({ id: 'new' });
+    expect(queryClient.getQueryData(current)).toEqual(currentReport);
     expect(queryClient.getQueryData(WEATHER_QUERY_KEYS.location())).toEqual({ status: 'denied' });
   });
 });

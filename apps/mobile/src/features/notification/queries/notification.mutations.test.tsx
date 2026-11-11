@@ -88,7 +88,7 @@ describe('useMarkAsReadMutationOptions', () => {
     const gateway = createPushNotificationGatewayStub();
     const queryClient = createTestQueryClient();
     const listKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
-    const inbox: InfiniteData<NotificationListResult> = {
+    const inbox: InfiniteData<NotificationListResult, number | undefined> = {
       pages: [
         {
           notifications: [createNotification({ id: 1 }), createNotification({ id: 2 })],
@@ -128,7 +128,7 @@ describe('useMarkAsReadMutationOptions', () => {
     // Then
     const readStates = () =>
       queryClient
-        .getQueryData<InfiniteData<NotificationListResult>>(listKey)
+        .getQueryData<InfiniteData<NotificationListResult, number | undefined>>(listKey)
         ?.pages.flatMap((page) => page.notifications)
         .map(({ id, isRead }) => ({ id, isRead }));
     expect(readStates()).toEqual([

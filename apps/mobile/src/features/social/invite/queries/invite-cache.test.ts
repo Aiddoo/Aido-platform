@@ -26,7 +26,9 @@ describe('invite-cache', () => {
     it('새 요약을 바로 넣고 이전 코드 미리보기를 지운다', () => {
       // Given
       const myInvite = createInvite({ code: 'B7TZ2N' });
-      queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }), {});
+      queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }), {
+        inviter: { name: null, profileImage: null },
+      });
 
       // When
       replaceMyInvite(queryClient, myInvite);
@@ -45,7 +47,9 @@ describe('invite-cache', () => {
     it('친구·요청 목록과 내 정보를 다시 불러오고 쓴 코드의 미리보기를 지운다', async () => {
       // Given
       const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
-      queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }), {});
+      queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }), {
+        inviter: { name: null, profileImage: null },
+      });
 
       // When
       await invalidateAfterRedeem(queryClient, { inviteCode: 'K7M2QX' });

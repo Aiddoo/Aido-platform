@@ -6,7 +6,7 @@ import type { Notification, NotificationListResult } from '../domains/notificati
 import type { PushPermission } from '../domains/push-permission.model';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
-type NotificationPages = InfiniteData<NotificationListResult>;
+type NotificationPages = InfiniteData<NotificationListResult, number | undefined>;
 
 /** 읽음 처리 하나가 알림함에서 바꾼 것. 실패하면 이것만 되돌려 함께 진행 중인 다른 읽음은 남긴다 */
 export interface NotificationReadChange {

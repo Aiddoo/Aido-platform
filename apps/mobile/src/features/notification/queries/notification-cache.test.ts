@@ -24,7 +24,7 @@ const makePage = (id: number): NotificationListResult => ({
   nextCursor: null,
 });
 
-const makeData = (...ids: number[]): InfiniteData<NotificationListResult> => ({
+const makeData = (...ids: number[]): InfiniteData<NotificationListResult, number | undefined> => ({
   pages: ids.map(makePage),
   pageParams: ids.map((_, index) => (index === 0 ? undefined : index)),
 });
@@ -52,8 +52,10 @@ describe('notification cache optimistic update', () => {
 
     // When
     const change = await optimisticallyMarkNotificationsRead(client);
-    const updatedAll = client.getQueryData<InfiniteData<NotificationListResult>>(allKey);
-    const updatedCategory = client.getQueryData<InfiniteData<NotificationListResult>>(categoryKey);
+    const updatedAll =
+      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(allKey);
+    const updatedCategory =
+      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(categoryKey);
     const updatedCategoryCount = client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount());
     if (change != null) {
       revertNotificationsRead(client, change);
@@ -67,7 +69,9 @@ describe('notification cache optimistic update', () => {
       updatedCategory?.pages.flatMap((page) => page.notifications).every((item) => item.isRead),
     ).toBe(true);
     expect(updatedCategoryCount).toBe(0);
-    expect(client.getQueryData<InfiniteData<NotificationListResult>>(allKey)).toEqual(data);
+    expect(
+      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(allKey),
+    ).toEqual(data);
     expect(client.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount())).toBe(2);
   });
 
@@ -84,8 +88,10 @@ describe('notification cache optimistic update', () => {
     await optimisticallyMarkNotificationsRead(client, 1);
 
     // Then
-    const all = client.getQueryData<InfiniteData<NotificationListResult>>(allKey);
-    const category = client.getQueryData<InfiniteData<NotificationListResult>>(categoryKey);
+    const all =
+      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(allKey);
+    const category =
+      client.getQueryData<InfiniteData<NotificationListResult, number | undefined>>(categoryKey);
     expect(
       all?.pages.flatMap((page) => page.notifications).find((item) => item.id === 1)?.isRead,
     ).toBe(true);
@@ -99,7 +105,7 @@ describe('notification cache optimistic update', () => {
     // Given
     const allKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
     const page = makePage(1);
-    const data: InfiniteData<NotificationListResult> = {
+    const data: InfiniteData<NotificationListResult, number | undefined> = {
       pages: [
         {
           ...page,

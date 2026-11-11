@@ -1,4 +1,5 @@
 import { createTestQueryClient } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { invalidateWeeklyAchievements } from './achievement-cache';
@@ -18,7 +19,16 @@ describe('invalidateWeeklyAchievements', () => {
     const detail = ACHIEVEMENT_QUERY_KEYS.weeklyDetail({ year: 2026, week: 10 });
     queryClient.setQueryData(list, { pages: [], pageParams: [] });
     queryClient.setQueryData(otherYearList, { pages: [], pageParams: [] });
-    queryClient.setQueryData(detail, { id: 1 });
+    queryClient.setQueryData(detail, {
+      id: 1,
+      year: 2026,
+      week: 10,
+      dateRange: { startDate: '2026-03-02', endDate: '2026-03-08' },
+      totalTodos: 0,
+      completedTodos: 0,
+      completionRate: 0,
+      achievedAt: toInstant('2026-03-08T14:30:00.000Z'),
+    });
 
     // When
     await invalidateWeeklyAchievements(queryClient, { year: 2026 });

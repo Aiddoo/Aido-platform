@@ -1,3 +1,5 @@
 export const MEMO_MUTATION_KEYS = {
-  parse: ({ memoId }: { memoId: number }) => ['memo', 'parse', { memoId }] as const,
+  all: ['memo', 'mutation'] as const,
+  parse: ({ memoId }: { memoId: number }) =>
+    [...MEMO_MUTATION_KEYS.all, 'parse', { memoId }] as const,
 } as const;

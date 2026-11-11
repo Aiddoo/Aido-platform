@@ -84,7 +84,7 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 연결 뒤 몰래 보내지 않는다
     networkMode: 'always',
-    mutationKey: TODO_COMMENT_MUTATION_KEYS.createCommentChain(todoId),
+    mutationKey: TODO_COMMENT_MUTATION_KEYS.createCommentChain({ todoId }),
     retry: (failureCount, error) =>
       failureCount < MAX_RETRY_COUNT && isRetryableCreationError(error),
     retryDelay: (attempt) => Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS),
@@ -140,7 +140,7 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
   const todoCommentService = useTodoCommentService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const mutationKey = TODO_COMMENT_MUTATION_KEYS.updateComment(todoId);
+  const mutationKey = TODO_COMMENT_MUTATION_KEYS.updateComment({ todoId });
 
   return mutationOptions({
     // 새 댓글과 같은 이유로 오프라인에서 멈추지 않는다
@@ -203,7 +203,7 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
-  const mutationKey = TODO_COMMENT_MUTATION_KEYS.deleteComment(todoId);
+  const mutationKey = TODO_COMMENT_MUTATION_KEYS.deleteComment({ todoId });
 
   return mutationOptions({
     // 지우는 동안 메뉴 버튼이 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌린다

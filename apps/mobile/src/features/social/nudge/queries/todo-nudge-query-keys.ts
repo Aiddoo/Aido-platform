@@ -1,16 +1,36 @@
+import { type InfiniteData, queryOptions } from '@tanstack/react-query';
+
+import type {
+  NudgeInteraction,
+  NudgeInteractionPage,
+  NudgeThanksPreview,
+} from '../domains/nudge-interaction.model';
+import type { NudgeCooldownInfo, NudgeLimitInfo } from '../domains/todo-nudge.model';
 import type { NudgeDirection } from '../schemas/nudge-interaction-query-key.schema';
 
 export const TODO_NUDGE_QUERY_KEYS = {
   all: ['nudge'] as const,
   interactions: () => [...TODO_NUDGE_QUERY_KEYS.all, 'interaction'] as const,
-  interactionAvailability: () => [...TODO_NUDGE_QUERY_KEYS.interactions(), 'availability'] as const,
+  interactionAvailability: () =>
+    queryOptions<boolean>({
+      queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'availability'],
+    }).queryKey,
   interactionList: ({ direction }: { direction: NudgeDirection }) =>
-    [...TODO_NUDGE_QUERY_KEYS.interactions(), 'list', { direction }] as const,
+    queryOptions<InfiniteData<NudgeInteractionPage, number | undefined>>({
+      queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'list', { direction }],
+    }).queryKey,
   interaction: ({ nudgeId }: { nudgeId: number }) =>
-    [...TODO_NUDGE_QUERY_KEYS.interactions(), 'detail', { nudgeId }] as const,
+    queryOptions<NudgeInteraction>({
+      queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'detail', { nudgeId }],
+    }).queryKey,
   thanksPreview: ({ todoId }: { todoId: number }) =>
-    [...TODO_NUDGE_QUERY_KEYS.interactions(), 'thanks', { todoId }] as const,
-  limit: () => [...TODO_NUDGE_QUERY_KEYS.all, 'limit'] as const,
+    queryOptions<InfiniteData<NudgeThanksPreview, { cursor?: number; throughNudgeId?: number }>>({
+      queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'thanks', { todoId }],
+    }).queryKey,
+  limit: () =>
+    queryOptions<NudgeLimitInfo>({ queryKey: [...TODO_NUDGE_QUERY_KEYS.all, 'limit'] }).queryKey,
   remindCooldown: ({ userId }: { userId: string }) =>
-    [...TODO_NUDGE_QUERY_KEYS.all, 'remind-cooldown', { userId }] as const,
+    queryOptions<NudgeCooldownInfo>({
+      queryKey: [...TODO_NUDGE_QUERY_KEYS.all, 'remind-cooldown', { userId }],
+    }).queryKey,
 } as const;

@@ -5,5 +5,5 @@ import { TODO_COMMENT_MUTATION_KEYS } from '../queries/todo-comment-mutation-key
 
 export function useIsTodoCommentSubmitting(): boolean {
   const [todoId] = useTodoId();
-  return useIsMutating({ mutationKey: TODO_COMMENT_MUTATION_KEYS.submissions(todoId) }) > 0;
+  return useIsMutating({ mutationKey: TODO_COMMENT_MUTATION_KEYS.submissions({ todoId }) }) > 0;
 }

@@ -14,14 +14,17 @@ describe('invalidateAiSuggestions', () => {
 
   it('추천 목록만 다시 불러오고 리포트 상태는 그대로 둔다', async () => {
     // Given
-    queryClient.setQueryData(SUGGESTION_QUERY_KEYS.all, []);
-    queryClient.setQueryData(REPORT_QUERY_KEYS.status(), { status: 'READY' });
+    queryClient.setQueryData(SUGGESTION_QUERY_KEYS.list(), []);
+    queryClient.setQueryData(REPORT_QUERY_KEYS.status(), {
+      daysUntilWeekly: 1,
+      daysUntilMonthly: 1,
+    });
 
     // When
     await invalidateAiSuggestions(queryClient);
 
     // Then
-    expect(queryClient.getQueryState(SUGGESTION_QUERY_KEYS.all)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(SUGGESTION_QUERY_KEYS.list())?.isInvalidated).toBe(true);
     expect(queryClient.getQueryState(REPORT_QUERY_KEYS.status())?.isInvalidated).toBe(false);
   });
 });
