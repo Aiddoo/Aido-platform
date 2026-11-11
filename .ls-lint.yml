@@ -245,8 +245,6 @@ ignore:
   - apps/api/src/modules/*/*/**/__snapshots__
   # 모바일 역할 폴더 이름이 아직 맞지 않는 파일(baseline #1400).
   # ls-lint는 남은 ignore를 알리지 않으므로 파일을 옮기거나 지우는 기능 PR이 그 줄을 함께 지운다
-  - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.test.ts
-  - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.ts
   - apps/mobile/src/features/assistant/suggestion/apis/suggestion.service.ts
   - apps/mobile/src/features/engagement/comment/apis/todo-comment.service.test.ts
   - apps/mobile/src/features/engagement/comment/apis/todo-comment.service.ts

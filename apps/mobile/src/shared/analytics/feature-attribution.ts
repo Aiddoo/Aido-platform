@@ -3,22 +3,18 @@ import type { Logger } from '@src/core/ports/logger';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
-import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
-import { z } from 'zod';
+import {
+  readStoredValue,
+  removeStoredValue,
+  writeStoredValue,
+} from '@src/shared/storage/define-stored-value';
 
 import { FEATURE_ATTRIBUTION_LOG_EVENT } from './feature-attribution-log-events';
-import { type CampaignId, FEATURE_KEYS, type FeatureKey } from './feature-key';
+import type { CampaignId, FeatureKey } from './feature-key';
+import { featureAttributionStoredValue } from './schemas/feature-attribution-storage.schema';
 import { track } from './track';
 
 export const FEATURE_ATTRIBUTION_TTL_MS = 7 * DAY_MS;
-// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
-const KEY_PREFIX = 'aido_feature_attribution_v1';
-
-const persistedAttributionSchema = z.object({
-  campaignId: z.string().min(1),
-  feature: z.enum(FEATURE_KEYS),
-  expiresAt: z.number().int().positive(),
-});
 
 interface RecordAttributionInput {
   accountId: string;
@@ -41,37 +37,27 @@ export interface FeatureAttributionStore {
   consume(input: ConsumeAttributionInput): ConsumedFeatureAttribution | null;
 }
 
-function getAttributionKey(accountId: string, feature: FeatureKey): string {
-  return `${KEY_PREFIX}:${accountId}:${feature}`;
-}
-
 export function createFeatureAttributionStore(
   storage: SyncStorage,
   now: () => number = Date.now,
 ): FeatureAttributionStore {
   return {
     record({ accountId, campaignId, feature }) {
-      storage.set(
-        getAttributionKey(accountId, feature),
-        JSON.stringify({
-          campaignId,
-          feature,
-          expiresAt: now() + FEATURE_ATTRIBUTION_TTL_MS,
-        }),
+      writeStoredValue(
+        storage,
+        featureAttributionStoredValue,
+        { campaignId, feature, expiresAt: now() + FEATURE_ATTRIBUTION_TTL_MS },
+        { accountId, feature },
       );
     },
 
     consume({ accountId, feature }) {
-      const key = getAttributionKey(accountId, feature);
-      const raw = storage.get(key);
-      if (!raw) {
-        return null;
-      }
+      const scope = { accountId, feature };
+      const persisted = readStoredValue(storage, featureAttributionStoredValue, scope);
 
-      // 재진입해도 한 번만 집계되도록 반환보다 삭제가 먼저다
-      storage.remove(key);
+      // 재진입해도 한 번만 집계되도록 반환보다 삭제가 먼저다. 깨진 값도 함께 지운다
+      removeStoredValue(storage, featureAttributionStoredValue, scope);
 
-      const persisted = parseStoredJson(raw, persistedAttributionSchema);
       if (persisted == null || persisted.feature !== feature || persisted.expiresAt < now()) {
         return null;
       }

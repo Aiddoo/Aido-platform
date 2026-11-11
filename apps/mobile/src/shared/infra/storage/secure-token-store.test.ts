@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '@src/shared/constants/storage-keys';
+import { STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
 import { createMemoryStorage } from '@src/testing/fakes/memory-storage.fake';
 
 import { createSecureTokenStore } from './secure-token-store';

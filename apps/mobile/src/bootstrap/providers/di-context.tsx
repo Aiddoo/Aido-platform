@@ -12,7 +12,7 @@ import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import type { AppVersionApi } from '@src/features/app-config/app-version/apis/app-version.api';
 import type { WhatsNewCampaignApi } from '@src/features/app-config/whats-new/apis/whats-new-campaign.api';
-import type { WhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
+import type { WhatsNewRepository } from '@src/features/app-config/whats-new/repositories/whats-new.repository';
 import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import type { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
 import type { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';

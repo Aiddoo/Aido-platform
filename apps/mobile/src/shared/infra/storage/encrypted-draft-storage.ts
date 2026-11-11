@@ -1,6 +1,7 @@
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import type { Storage } from '@src/core/ports/storage';
 import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
+import { DEVICE_SECURE_STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
 import { noop } from 'es-toolkit';
 import { getRandomBytes } from 'expo-crypto';
 import { createMMKV, deleteMMKV, existsMMKV } from 'react-native-mmkv';
@@ -18,8 +19,7 @@ const DRAFT_STORAGE_ID = 'aido.drafts.encrypted';
 const LEGACY_DRAFT_STORAGE_ID = 'aido.drafts';
 // 오프라인 복원용 조회 캐시. 초안과 같은 키를 쓰되 인스턴스를 나눠 초안 정리가 캐시를 건드리지 않게 한다.
 const QUERY_CACHE_STORAGE_ID = 'aido.query-cache.encrypted';
-// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
-const DRAFT_ENCRYPTION_KEY_STORAGE_KEY = 'aido_draft_encryption_key';
+const DRAFT_ENCRYPTION_KEY_STORAGE_KEY = DEVICE_SECURE_STORAGE_KEYS.DRAFT_ENCRYPTION_KEY;
 
 type EncryptedSyncStorage = EnumerableSyncStorage & ObservableSyncStorage;
 

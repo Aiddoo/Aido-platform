@@ -37,7 +37,7 @@ import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { AppVersionApi } from '@src/features/app-config/app-version/apis/app-version.api';
 import { WhatsNewCampaignApi } from '@src/features/app-config/whats-new/apis/whats-new-campaign.api';
-import { createWhatsNewRepository } from '@src/features/app-config/whats-new/apis/whats-new.repository';
+import { createWhatsNewRepository } from '@src/features/app-config/whats-new/repositories/whats-new.repository';
 import { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
 import { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
 import { upsellDismissalStoredValue } from '@src/features/billing/subscription/schemas/upsell-dismissal-storage.schema';

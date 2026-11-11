@@ -14,6 +14,9 @@ import { pendingRedemptionStoredValue } from '@src/features/social/invite/schema
 import { offlineModelDeclinedStoredValue } from '@src/features/voice/schemas/offline-model-declined-storage.schema';
 import { recognitionLanguageStoredValue } from '@src/features/voice/schemas/recognition-language-storage.schema';
 import { toInstant } from '@src/shared/date/instant';
+import { fontScaleStoredValue } from '@src/shared/preferences/schemas/font-scale-storage.schema';
+import { languageModeStoredValue } from '@src/shared/preferences/schemas/language-mode-storage.schema';
+import { themeModeStoredValue } from '@src/shared/preferences/schemas/theme-mode-storage.schema';
 import { createMemorySyncStorage } from '@src/testing/core';
 
 import {
@@ -43,6 +46,33 @@ function releasedValue<TValue, TScope>(
 }
 
 const RELEASED_VALUES = [
+  {
+    name: 'themeModeStoredValue',
+    ...releasedValue(themeModeStoredValue, [], {
+      key: 'aido_theme_mode',
+      raw: 'dark',
+      value: 'dark',
+      area: 'device',
+    }),
+  },
+  {
+    name: 'languageModeStoredValue',
+    ...releasedValue(languageModeStoredValue, [], {
+      key: 'aido_language',
+      raw: 'en',
+      value: 'en',
+      area: 'device',
+    }),
+  },
+  {
+    name: 'fontScaleStoredValue',
+    ...releasedValue(fontScaleStoredValue, [], {
+      key: 'aido_font_scale',
+      raw: 'xlarge',
+      value: 'xlarge',
+      area: 'device',
+    }),
+  },
   {
     name: 'calendarViewModeStoredValue',
     ...releasedValue(calendarViewModeStoredValue, [], {

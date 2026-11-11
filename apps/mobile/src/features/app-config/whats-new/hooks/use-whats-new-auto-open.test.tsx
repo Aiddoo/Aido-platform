@@ -13,7 +13,7 @@ import { renderScreenHook } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
-import { createWhatsNewRepository } from '../apis/whats-new.repository';
+import { createWhatsNewRepository } from '../repositories/whats-new.repository';
 import { useWhatsNewAutoOpen } from './use-whats-new-auto-open';
 
 const USER_ID = 'user-1';

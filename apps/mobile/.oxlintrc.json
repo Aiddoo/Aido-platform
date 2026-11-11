@@ -193,9 +193,9 @@
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
               },
               {
-                "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
-                "importNames": ["useSyncStorageString"],
-                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. schemas/{name}-storage.schema.ts에 defineStoredValue를 두고 useStoredValue로 구독하세요."
+                "regex": "(?:^@src/|/)shared/storage/use-stored-value$",
+                "importNames": ["useStoredValueIn"],
+                "message": "useStoredValueIn은 DI 위 설정 Provider만 저장소를 직접 넘겨 씁니다. 기기 값은 schemas/{name}-storage.schema.ts의 저장 값 정의를 useStoredValue로 구독하세요."
               }
             ]
           }
@@ -245,9 +245,9 @@
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
               },
               {
-                "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
-                "importNames": ["useSyncStorageString"],
-                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. schemas/{name}-storage.schema.ts에 defineStoredValue를 두고 useStoredValue로 구독하세요."
+                "regex": "(?:^@src/|/)shared/storage/use-stored-value$",
+                "importNames": ["useStoredValueIn"],
+                "message": "useStoredValueIn은 DI 위 설정 Provider만 저장소를 직접 넘겨 씁니다. 기기 값은 schemas/{name}-storage.schema.ts의 저장 값 정의를 useStoredValue로 구독하세요."
               },
               {
                 "regex": "(?:^@src/|/)(?:shared/di/shared-di-context|bootstrap/providers/di-context)$",
@@ -307,9 +307,9 @@
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
               },
               {
-                "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
-                "importNames": ["useSyncStorageString"],
-                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. schemas/{name}-storage.schema.ts에 defineStoredValue를 두고 useStoredValue로 구독하세요."
+                "regex": "(?:^@src/|/)shared/storage/use-stored-value$",
+                "importNames": ["useStoredValueIn"],
+                "message": "useStoredValueIn은 DI 위 설정 Provider만 저장소를 직접 넘겨 씁니다. 기기 값은 schemas/{name}-storage.schema.ts의 저장 값 정의를 useStoredValue로 구독하세요."
               },
               {
                 "regex": "(?:^@src/|/)(?:shared/di/shared-di-context|bootstrap/providers/di-context)$",
@@ -1021,9 +1021,11 @@
       }
     },
     {
+      // shared 모듈은 역할 폴더 없이 *.repository.ts가 저장소다(shared/draft)
       "files": [
         "src/**/schemas/*-storage.schema.ts",
         "src/**/repositories/**",
+        "src/shared/**/*.repository.ts",
         "src/shared/storage/**"
       ],
       "rules": {
