@@ -1,7 +1,8 @@
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import { toInstant } from '@src/shared/date/instant';
 
-import { ConsentPolicy } from './consent.model';
+import { createConsent } from '../__tests__/consent.fixtures';
+import { ConsentPolicy, getConsentResult } from './consent.model';
 
 describe('hasAgreedToAiDataSharing', () => {
   it.each([
@@ -10,7 +11,7 @@ describe('hasAgreedToAiDataSharing', () => {
     ['UNDECIDED', false],
   ] as const)('결정이 %s면 %s를 반환한다', (aiDataSharingDecision, expected) => {
     // When
-    const result = ConsentPolicy.hasAgreedToAiDataSharing({ aiDataSharingDecision });
+    const result = ConsentPolicy.hasAgreedToAiDataSharing(createConsent({ aiDataSharingDecision }));
 
     // Then
     expect(result).toBe(expected);
@@ -20,10 +21,10 @@ describe('hasAgreedToAiDataSharing', () => {
 describe('shouldShowAiConsentRenewal', () => {
   it('이전 안내 버전에 동의했으면 바뀐 안내를 보여 준다', () => {
     // Given
-    const consent = {
+    const consent = createConsent({
       aiDataSharingDecision: 'AGREED',
       aiDataSharingConsentVersion: '2026-10-26',
-    } as const;
+    });
 
     // When
     const result = ConsentPolicy.shouldShowAiConsentRenewal(consent);
@@ -41,10 +42,9 @@ describe('shouldShowAiConsentRenewal', () => {
     '%s 다시 묻지 않는다',
     (_label, aiDataSharingDecision, aiDataSharingConsentVersion) => {
       // When
-      const result = ConsentPolicy.shouldShowAiConsentRenewal({
-        aiDataSharingDecision,
-        aiDataSharingConsentVersion,
-      });
+      const result = ConsentPolicy.shouldShowAiConsentRenewal(
+        createConsent({ aiDataSharingDecision, aiDataSharingConsentVersion }),
+      );
 
       // Then
       expect(result).toBe(false);
@@ -61,7 +61,7 @@ describe('getConsentResult', () => {
     ['둘 다 없으면(구 서버) 알리지 않음', { agreedAt: null, withdrawnAt: null }, null],
   ] as const)('%s 결과다', (_case, times, expected) => {
     // When
-    const result = ConsentPolicy.getConsentResult(times);
+    const result = getConsentResult(times);
 
     // Then
     expect(result).toEqual(expected);

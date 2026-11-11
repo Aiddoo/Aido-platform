@@ -7,7 +7,7 @@ import {
   createRescheduleOptionDto,
   createWeatherReport,
 } from '../__tests__/weather-report.fixtures';
-import { type BriefingTodo, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
+import { type BriefingTodo, getWeatherBriefing } from '../domains/weather-briefing.model';
 import type { WeatherReport } from '../domains/weather-report.model';
 import { type BriefingViewDeps, toBriefingView } from './weather-briefing.view-model';
 
@@ -40,7 +40,7 @@ const DEPS: BriefingViewDeps = {
 };
 
 function viewFor(report: WeatherReport, todos: BriefingTodo[]) {
-  const briefing = WeatherBriefingPolicy.getWeatherBriefing(report, todos, {
+  const briefing = getWeatherBriefing(report, todos, {
     now: NOW,
     timeZone: 'Asia/Seoul',
   });

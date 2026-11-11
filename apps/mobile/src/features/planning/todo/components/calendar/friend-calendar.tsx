@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { isFriendFeedUnavailableError } from '../../domains/todo.error';
 import { useCalendarRange } from '../../hooks/use-calendar-range';
 import { useGetFriendDailyCompletionsQueryOptions } from '../../queries/todo.queries';
 import { Calendar } from './calendar';
@@ -20,10 +21,13 @@ export function FriendCalendar({ friendId }: FriendCalendarProps) {
     }),
   );
 
+  // 친구가 끊어 볼 수 없게 된 상태는 다시 시도해도 같고, 아래 할 일 목록이 한 번만 안내한다
+  const shouldOfferRetry = query.isError && !isFriendFeedUnavailableError(query.error);
+
   return (
     <Calendar
       completions={query.data}
-      status={query.isError ? <Calendar.Error onRetry={() => query.refetch()} /> : undefined}
+      status={shouldOfferRetry ? <Calendar.Error onRetry={() => query.refetch()} /> : undefined}
     />
   );
 }

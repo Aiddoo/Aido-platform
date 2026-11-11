@@ -17,7 +17,7 @@ import { isNotNil } from 'es-toolkit';
 import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
-import { TodoPolicy } from '../domains/todo.model';
+import { isRecurring } from '../domains/todo.model';
 import { type Todo } from '../domains/todo.model';
 import { formatRepeatCadence } from '../utils/format-repeat-summary';
 
@@ -183,7 +183,7 @@ export function TodoScheduleLine({
   const fontScaledSize = useFontScaledSize();
   const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
   const { repeat } = todo;
-  const isRepeating = TodoPolicy.isRecurringTodo(todo);
+  const isRepeating = isRecurring(todo.recurrenceGroupId);
   const ruleLabel = repeat == null ? t('chip.repeat') : formatRepeatCadence(repeat, i18n.language);
   const spokenRule =
     repeat == null

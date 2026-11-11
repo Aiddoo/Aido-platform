@@ -38,7 +38,7 @@ export class MarkNotificationOpenedUseCase {
     if (isOpened) {
       await cache.invalidateUnreadCount(userId);
       logger.log({
-        event: NotificationDeliveryLogEvent.MARK_NOTIFICATION_OPENED_OPENED,
+        event: NotificationDeliveryLogEvent.PUSH_OPENED,
         userId: command.userId,
         notificationId: command.notificationId,
       });

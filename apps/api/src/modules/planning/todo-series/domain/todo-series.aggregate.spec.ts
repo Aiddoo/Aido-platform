@@ -315,7 +315,7 @@ describe("TodoSeries — 반복 할 일", () => {
       // When
       const check = () => series.assertWithinPastLimit(AT_NOW);
       // Then
-      expect(check).toThrowError(
+      expect(check).toThrow(
         expect.objectContaining({
           errorCode: ErrorCode.TODO_0845,
           details: { field: "startDate" },

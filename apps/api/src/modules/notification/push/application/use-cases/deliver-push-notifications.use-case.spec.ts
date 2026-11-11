@@ -307,6 +307,8 @@ class StubPushDelivery implements Pick<
         title: payload.title,
         body: payload.body,
         data: payload.data,
+        priority: payload.priority,
+        ttlSeconds: payload.ttlSeconds,
       })),
       dispatchIds: deliverable.map(({ dispatchId }) => dispatchId),
     };

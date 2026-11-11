@@ -7,7 +7,7 @@ import {
   createRescheduleOptionDto,
   createWeatherReport,
 } from '../__tests__/weather-report.fixtures';
-import { WeatherReschedulePolicy } from './weather-reschedule.model';
+import { getRescheduleTodos, WeatherReschedulePolicy } from './weather-reschedule.model';
 
 /** 서울 15:26. 16~18시(07:00Z~09:00Z) 비, 나머지는 맑다. */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
@@ -36,7 +36,7 @@ describe('getRescheduleTodos', () => {
 
   it('링크가 가리킨 할 일 중 서버가 고른 할 일만 서버 후보와 함께 돌려준다', () => {
     // When
-    const affected = WeatherReschedulePolicy.getRescheduleTodos(report, todos, {
+    const affected = getRescheduleTodos(report, todos, {
       now: NOW,
       linkedTodoIds: [1, 2],
     });
@@ -58,7 +58,7 @@ describe('getRescheduleTodos', () => {
     });
 
     // When
-    const affected = WeatherReschedulePolicy.getRescheduleTodos(heatReport, todos, {
+    const affected = getRescheduleTodos(heatReport, todos, {
       now: NOW,
       linkedTodoIds: [2],
     });
@@ -75,7 +75,7 @@ describe('getRescheduleTodos', () => {
     });
 
     // When
-    const affected = WeatherReschedulePolicy.getRescheduleTodos(emptyReport, todos, {
+    const affected = getRescheduleTodos(emptyReport, todos, {
       now: NOW,
       linkedTodoIds: [1],
     });
@@ -89,7 +89,7 @@ describe('getRescheduleTodos', () => {
     const noBriefing = createWeatherReport({ hourly: HOURLY, briefing: undefined });
 
     // When
-    const affected = WeatherReschedulePolicy.getRescheduleTodos(noBriefing, todos, {
+    const affected = getRescheduleTodos(noBriefing, todos, {
       now: NOW,
       linkedTodoIds: [1],
     });
@@ -103,7 +103,7 @@ describe('getRescheduleTodos', () => {
     const completed = [createBriefingTodo({ id: 1, completed: true })];
 
     // When
-    const affected = WeatherReschedulePolicy.getRescheduleTodos(report, completed, {
+    const affected = getRescheduleTodos(report, completed, {
       now: NOW,
       linkedTodoIds: [1],
     });
@@ -159,11 +159,12 @@ describe('findNextRescheduleOption', () => {
 describe('getMovedScheduleInput', () => {
   it('옮길 때는 날짜를 그대로 두고 기기 시간대의 시각만 바꾼다', () => {
     // Given
-    const startsAt = toInstant(new Date(2026, 10, 2, 19, 0).toISOString());
+    // 서울 19:00. 실행 기기 시간대와 상관없이 같은 순간이다
+    const startsAt = toInstant('2026-11-02T10:00:00.000Z');
 
     // When
     const input = WeatherReschedulePolicy.getMovedScheduleInput(
-      { startDate: '2026-11-02', endDate: null },
+      { startDate: '2026-11-02', endDate: null, localTime: '16:00', isAllDay: false },
       startsAt,
       'Asia/Seoul',
     );

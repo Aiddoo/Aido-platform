@@ -28,6 +28,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
+  CategoryTodoCount,
   TodoCategoryRepositoryPort,
   UpdateCategoryInput,
 } from "../../application/ports/todo-category.repository.port.js";
@@ -196,8 +197,13 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     return updated.length;
   }
 
-  getTodoCount(categoryId: TodoCategoryId): Promise<number> {
-    return this.#db.$count(todo, eq(todo.categoryId, categoryId.value));
+  async countTodos(userId: UserId, categoryId: TodoCategoryId): Promise<CategoryTodoCount> {
+    // categoryId만으로는 Todo 전체를 훑는다. (userId, categoryId) 인덱스로 좁힌다
+    const inCategory = and(eq(todo.userId, userId.value), eq(todo.categoryId, categoryId.value));
+    return {
+      total: await this.#db.$count(todo, inCategory),
+      completed: await this.#db.$count(todo, and(inCategory, eq(todo.completed, true))),
+    };
   }
 
   countActiveSeries(categoryId: TodoCategoryId): Promise<number> {
@@ -208,6 +214,7 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
   }
 
   async moveTodosToCategory(
+    userId: UserId,
     fromCategoryId: TodoCategoryId,
     toCategoryId: TodoCategoryId,
   ): Promise<void> {
@@ -215,10 +222,12 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     await this.#db
       .update(todo)
       .set({ categoryId: toCategoryId.value, updatedAt })
-      .where(eq(todo.categoryId, fromCategoryId.value));
+      .where(and(eq(todo.userId, userId.value), eq(todo.categoryId, fromCategoryId.value)));
     await this.#db
       .update(todoSeries)
       .set({ categoryId: toCategoryId.value, updatedAt })
-      .where(eq(todoSeries.categoryId, fromCategoryId.value));
+      .where(
+        and(eq(todoSeries.userId, userId.value), eq(todoSeries.categoryId, fromCategoryId.value)),
+      );
   }
 }

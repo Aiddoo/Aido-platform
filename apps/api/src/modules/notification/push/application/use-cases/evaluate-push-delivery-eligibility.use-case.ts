@@ -13,6 +13,7 @@ import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import {
   isAutomatedEngagementNotification,
+  isGeneralRateLimitExemptNotification,
   isMarketingNotification,
   isNightExemptNotification,
 } from "../../domain/push-eligibility.domain-service.js";
@@ -149,6 +150,7 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     // 단건 경로는 기존 계약대로 일반 rate counter를 설정·야간·동의보다 먼저 예약한다.
     if (
       !hasReservedRateLimit &&
+      !isGeneralRateLimitExemptNotification(data.type) &&
       (await this.#dependencies.rateLimiter.reserveGeneral({
         dispatchId: rateLimitDispatchId,
         userId: data.userId,
@@ -220,17 +222,24 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     candidates: readonly TCandidate[],
     recipients: ReadonlyMap<string, BatchPushDeliveryRecipient>,
   ): Promise<readonly PushDeliveryEligibilityDecision<TCandidate>[]> {
-    const requests = candidates.map((candidate) =>
-      this.#createRateLimitRequest(
-        candidate.data,
-        candidate.rateLimitDispatchId,
-        recipients.get(candidate.data.userId),
+    const reservable = candidates.filter(
+      (candidate) => !isGeneralRateLimitExemptNotification(candidate.data.type),
+    );
+    const limited = await this.#dependencies.rateLimiter.reserveBatch(
+      reservable.map((candidate) =>
+        this.#createRateLimitRequest(
+          candidate.data,
+          candidate.rateLimitDispatchId,
+          recipients.get(candidate.data.userId),
+        ),
       ),
     );
-    const limited = await this.#dependencies.rateLimiter.reserveBatch(requests);
+    const limitedCandidates = new Set(reservable.filter((_, index) => limited[index]));
 
-    return candidates.map((candidate, index) =>
-      limited[index] ? this.#skipped(candidate, "RATE_LIMITED") : { status: "eligible", candidate },
+    return candidates.map((candidate) =>
+      limitedCandidates.has(candidate)
+        ? this.#skipped(candidate, "RATE_LIMITED")
+        : { status: "eligible", candidate },
     );
   }
 

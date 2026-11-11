@@ -20,7 +20,7 @@ import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { type LocationReading } from '../domains/weather-location.model';
-import { WeatherReportPolicy } from '../domains/weather-report.model';
+import { findTodayOrFirstForecast } from '../domains/weather-report.model';
 import { type WeatherReport } from '../domains/weather-report.model';
 import { withDevWeatherOverride, useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
@@ -38,7 +38,7 @@ async function findReportLocation(client: QueryClient, logger: Logger, revision:
   const queryKey = WEATHER_QUERY_KEYS.report({ locationRevision: revision });
   const state = client.getQueryState<WeatherReport>(queryKey);
   if (state?.data == null && state?.fetchStatus === 'fetching') {
-    const report = await client.fetchQuery<WeatherReport>({ queryKey }).catch((error) => {
+    const report = await client.query<WeatherReport>({ queryKey }).catch((error) => {
       logger.info(WEATHER_LOG_EVENT.REPORT_LOCATION_READ_FAILED, {
         error: getErrorMessage(error),
       });
@@ -126,7 +126,10 @@ export function useGetWeatherReportQueryOptions() {
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision, devOverride }),
     queryFn: async ({ client: queryClient }) =>
-      withDevWeatherOverride(await queryClient.ensureQueryData(reportOptions), devOverride),
+      withDevWeatherOverride(
+        await queryClient.query({ ...reportOptions, staleTime: 'static' }),
+        devOverride,
+      ),
     initialData: cached == null ? undefined : withDevWeatherOverride(cached, devOverride),
     staleTime: REPORT_STALE_TIME_MS,
     retry: shouldRetryReport,
@@ -183,8 +186,7 @@ function selectScene(report: WeatherReport): WeatherSceneInput {
       'windSpeed',
     ]),
     // 해·달 카드와 같은 서버 위상을 쓴다. 받은 시각의 오늘(그 위치 시간대)이다
-    moonPhase:
-      WeatherReportPolicy.findTodayOrFirstForecast(report, report.fetchedAt)?.moonPhase ?? null,
+    moonPhase: findTodayOrFirstForecast(report, report.fetchedAt)?.moonPhase ?? null,
     latitude: report.location.latitude,
   };
 }
