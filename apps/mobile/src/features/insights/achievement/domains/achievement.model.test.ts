@@ -11,7 +11,6 @@ function createWeeklyAchievement(overrides: Partial<WeeklyAchievement> = {}) {
     id: 1,
     year: 2026,
     week: 10,
-    weekLabel: '3월 2주차',
     dateRange: { startDate: '2026-03-02', endDate: '2026-03-08' },
     totalTodos: 10,
     completedTodos: 10,

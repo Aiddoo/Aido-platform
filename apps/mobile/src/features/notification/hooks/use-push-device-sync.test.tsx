@@ -5,6 +5,7 @@ import {
   createAppLifecycleGatewayStub,
   createHttpClientStub,
   createLoggerStub,
+  createMemoryStorage,
   createPushNotificationGatewayStub,
   createTestDi,
   createTestQueryClient,
@@ -18,6 +19,7 @@ import {
   createPushDeviceResponseDto,
 } from '../__tests__/notification.fixtures';
 import { PushDeviceService } from '../apis/push-device.service';
+import { createPushRegistrationRepository } from '../apis/push-registration.repository';
 import { usePushDeviceSync } from './use-push-device-sync';
 
 describe('usePushDeviceSync', () => {
@@ -55,8 +57,11 @@ describe('usePushDeviceSync', () => {
       gateway,
       deviceIdService: { get: async () => 'ios_device-123' },
       httpClient,
+      publicHttpClient: httpClient,
+      registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
       logger: createLoggerStub(),
       getTimeZone: () => timeZone.current,
+      getLanguage: () => 'ko',
       sessionEpoch: createSessionEpoch(),
     });
     const container = createTestDi({

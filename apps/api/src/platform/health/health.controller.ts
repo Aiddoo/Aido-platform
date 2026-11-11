@@ -8,10 +8,11 @@ import { SkipThrottle } from "@nestjs/throttler";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
-import { ApiDoc, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
-import { JobRuntimeHealthIndicator } from "./indicators/job-runtime.health.js";
+import { JobQueueHealthIndicator } from "./indicators/job-queue.health.js";
 import { OutboundHealthIndicator } from "./indicators/outbound.health.js";
 import { RuntimeStatsHealthIndicator } from "./indicators/runtime-stats.health.js";
 
@@ -41,21 +42,21 @@ export class HealthController {
   readonly #exposeDetails: boolean;
   readonly #health: HealthCheckService;
   readonly #databaseHealth: DatabaseHealthIndicator;
-  readonly #jobRuntimeHealth: JobRuntimeHealthIndicator;
+  readonly #jobQueueHealth: JobQueueHealthIndicator;
   readonly #outboundHealth: OutboundHealthIndicator;
   readonly #runtimeStatsHealth: RuntimeStatsHealthIndicator;
 
   constructor(
     health: HealthCheckService,
     databaseHealth: DatabaseHealthIndicator,
-    jobRuntimeHealth: JobRuntimeHealthIndicator,
+    jobQueueHealth: JobQueueHealthIndicator,
     outboundHealth: OutboundHealthIndicator,
     runtimeStatsHealth: RuntimeStatsHealthIndicator,
     @Inject(appConfig.KEY) app: Pick<AppSettings, "instanceId" | "exposeHealthDetails">,
   ) {
     this.#health = health;
     this.#databaseHealth = databaseHealth;
-    this.#jobRuntimeHealth = jobRuntimeHealth;
+    this.#jobQueueHealth = jobQueueHealth;
     this.#outboundHealth = outboundHealth;
     this.#runtimeStatsHealth = runtimeStatsHealth;
     this.#instanceId = app.instanceId ?? randomUUID().slice(0, 8);
@@ -139,7 +140,7 @@ curl https://api.aido.com/health
   > {
     const result = await this.#health.check([
       () => this.#databaseHealth.isHealthy("database"),
-      () => this.#jobRuntimeHealth.isHealthy("queues"),
+      () => this.#jobQueueHealth.isHealthy("queues"),
       () => this.#outboundHealth.isHealthy("outbound"),
       () => this.#runtimeStatsHealth.isHealthy("runtime"),
     ]);

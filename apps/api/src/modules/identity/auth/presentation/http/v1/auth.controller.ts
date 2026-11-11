@@ -14,6 +14,7 @@ import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
+import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { ChangePasswordUseCase } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
 import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
 import { LogoutAllUseCase } from "#api/modules/identity/auth/application/use-cases/logout-all.use-case";
@@ -27,28 +28,27 @@ import { ResetPasswordUseCase } from "#api/modules/identity/auth/application/use
 import { SetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/set-password.use-case";
 import { VerifyEmailUseCase } from "#api/modules/identity/auth/application/use-cases/verify-email.use-case";
 import { refreshTokenUserSchema } from "#api/modules/identity/auth/presentation/http/decorators/authenticated-user.dto";
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { Public } from "#api/modules/identity/auth/presentation/http/decorators/public.decorator";
 import { JwtRefreshGuard } from "#api/modules/identity/auth/presentation/http/guards/jwt-refresh.guard";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
+import { type RequestClient } from "#api/platform/http/request-client/request-client";
 import {
   AppVersion,
   CurrentRequestClient,
-  type RequestClient,
-} from "#api/platform/http/request-client/index";
+} from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiErrorResponse,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import { extractMetadata } from "./auth-request.mapper.js";

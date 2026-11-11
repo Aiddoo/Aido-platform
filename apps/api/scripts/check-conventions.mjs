@@ -62,14 +62,6 @@ const MEMBER_KEYWORD =
 const NON_CODE_LINE = /^\s*(?:\/\/|\/\*|\*)/;
 const FORWARD_REF = /\bforwardRef\(/;
 const PG_ENUM_LITERAL = /pgEnum\(\s*["'`]([^"'`]+)["'`]\s*,\s*\[/g;
-// notification slice가 아직 튜플을 export하지 않아 리터럴 배열로 남은 enum. 그 slice가 domain/*.constants.ts 튜플로 옮기면 지운다
-const PENDING_LITERAL_ENUMS = new Set([
-  "NotificationType",
-  "PushDeliveryMode",
-  "PushDispatchOutboxStatus",
-  "PushRateLimitPhase",
-  "RetentionExperimentStageStatus",
-]);
 
 const args = process.argv.slice(2);
 // lefthook은 staged 파일 여러 개를 `--file a b c`로 넘긴다
@@ -157,7 +149,73 @@ function findTemplateLiteralLines(lines) {
   return inside;
 }
 
-function checkFile(rel, violations, literalEnums) {
+// 다른 Context의 진입점(*.public.ts)과 drizzle-kit·relations가 읽는 schema 묶음만 다시 내보낸다
+const RE_EXPORT_ALLOWED = new Set([
+  "src/platform/database/schema/index.ts",
+  "src/platform/database/schema/tables.schema.ts",
+]);
+const RE_EXPORT_FROM =
+  /^\s*export\s+(?:type\s+)?(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s*from\s*["'][^"']+["']/gm;
+const LOCAL_EXPORT_LIST = /^\s*export\s+(?:type\s+)?\{([^}]*)\}\s*;/gm;
+const IMPORT_BINDINGS =
+  /^\s*import\s+(?:type\s+)?(?:(\w+)\s*,?\s*)?(?:\{([^}]*)\}|\*\s+as\s+(\w+))?\s*from\s*["'][^"']+["']/gm;
+
+function importedNames(text) {
+  const names = new Set();
+  for (const match of text.matchAll(IMPORT_BINDINGS)) {
+    const [, defaultName, named, namespace] = match;
+    for (const name of [defaultName, namespace]) {
+      if (name != null) {
+        names.add(name);
+      }
+    }
+    for (const item of (named ?? "").split(",")) {
+      const local = item
+        .trim()
+        .replace(/^type\s+/, "")
+        .split(/\s+as\s+/)
+        .pop();
+      if (local) {
+        names.add(local);
+      }
+    }
+  }
+  return names;
+}
+
+// 경로를 바꾸면 import를 정의 파일로 옮겨야 해 결합만 늘리는 barrel·재수출을 막는다
+function checkReExports(rel, text, violations) {
+  if (!rel.startsWith("src/") || rel.endsWith(".public.ts") || RE_EXPORT_ALLOWED.has(rel)) {
+    return;
+  }
+  const reason =
+    "다시 내보내지 않는다. 쓰는 곳이 정의 파일을 import한다(다른 Context는 *.public.ts만).";
+  if (rel.endsWith("/index.ts")) {
+    violations.push(`${rel}: barrel(index.ts)을 두지 않는다. ${reason}`);
+    return;
+  }
+  for (const match of text.matchAll(RE_EXPORT_FROM)) {
+    violations.push(`${rel}:${lineOf(text, match.index)}: ${reason}`);
+  }
+  const imported = importedNames(text);
+  for (const match of text.matchAll(LOCAL_EXPORT_LIST)) {
+    const reExported = match[1]
+      .split(",")
+      .map(
+        (item) =>
+          item
+            .trim()
+            .replace(/^type\s+/, "")
+            .split(/\s+as\s+/)[0],
+      )
+      .filter((name) => name !== "" && imported.has(name));
+    if (reExported.length > 0) {
+      violations.push(`${rel}:${lineOf(text, match.index)}: ${reExported.join(", ")}를 ${reason}`);
+    }
+  }
+}
+
+function checkFile(rel, violations) {
   const text = readFileSync(join(apiRoot, rel), "utf8");
   if (isContextPath(rel) && !rel.endsWith(".d.ts")) {
     checkRoleSuffix(rel, violations);
@@ -181,14 +239,13 @@ function checkFile(rel, violations, literalEnums) {
     }
   });
 
+  checkReExports(rel, text, violations);
+
   if (isEnumSchemaPath(rel)) {
     for (const match of text.matchAll(PG_ENUM_LITERAL)) {
-      literalEnums.add(match[1]);
-      if (!PENDING_LITERAL_ENUMS.has(match[1])) {
-        violations.push(
-          `${rel}:${lineOf(text, match.index)}: pgEnum("${match[1]}") 값을 리터럴 배열로 적었다. @aido/api/vocabulary 또는 소유 slice domain/*.constants.ts의 튜플에서 유도한다.`,
-        );
-      }
+      violations.push(
+        `${rel}:${lineOf(text, match.index)}: pgEnum("${match[1]}") 값을 리터럴 배열로 적었다. @aido/api/vocabulary 또는 소유 slice domain/*.constants.ts의 튜플에서 유도한다.`,
+      );
     }
   }
 }
@@ -260,7 +317,6 @@ function findTrackedJunkFiles(violations) {
 }
 
 const violations = [];
-const literalEnums = new Set();
 const checksTree = selectedFiles.length === 0;
 const repoFiles = checksTree ? listRepoFiles() : null;
 if (checksTree && repoFiles == null) {
@@ -275,20 +331,13 @@ for (const rel of files) {
   if (!isCheckedFile(rel)) {
     continue;
   }
-  checkFile(rel, violations, literalEnums);
+  checkFile(rel, violations);
 }
 
 if (checksTree) {
   checkLsLintSync(violations);
   findEmptyDirectories(repoFiles, violations);
   findTrackedJunkFiles(violations);
-  for (const name of PENDING_LITERAL_ENUMS) {
-    if (!literalEnums.has(name)) {
-      violations.push(
-        `scripts/check-conventions.mjs: ${name}은 튜플로 옮겨졌다. PENDING_LITERAL_ENUMS에서 지운다.`,
-      );
-    }
-  }
 }
 
 if (violations.length > 0) {

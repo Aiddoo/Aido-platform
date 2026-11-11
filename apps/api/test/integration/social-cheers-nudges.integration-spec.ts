@@ -21,9 +21,9 @@ import {
   user as userTable,
   userProfile,
 } from "#api/platform/database/schema/index";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
+import { dayWindowIn } from "#test/fixtures/clock.fixture";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -189,16 +189,14 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         : context.module.get(NudgeRepositoryPort);
     return Promise.all(
       ["UTC", "Asia/Seoul"].map(async (tz) => {
-        const window = dayWindowInTimezone(AT, tz);
+        const at = instantFromDate(AT);
+        const window = dayWindowIn(at, tz);
         return {
           tz,
-          localDate: window.localDate,
-          startsAt: window.startsAt.toISOString(),
-          endsAt: window.endsAt.toISOString(),
-          used: await repo.countSentBetween(UserId.reconstitute(senderId), {
-            startsAt: instantFromDate(window.startsAt),
-            endsAt: instantFromDate(window.endsAt),
-          }),
+          localDate: at.toZonedDateTimeISO(tz).toPlainDate().toString(),
+          startsAt: toIsoString(window.startsAt),
+          endsAt: toIsoString(window.endsAt),
+          used: await repo.countSentBetween(UserId.reconstitute(senderId), window),
         };
       }),
     );

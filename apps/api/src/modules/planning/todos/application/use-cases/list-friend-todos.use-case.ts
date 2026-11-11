@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
-import type { PaginationService } from "#api/shared/application/pagination/index";
+import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
+import type { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type FriendPort } from "../ports/friend.port.js";
@@ -11,7 +11,7 @@ import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.
 import type { FindFriendTodosParams } from "../ports/todo-read.repository.port.js";
 import type { FriendTodoReadModel } from "../read-models/todo.read-model.js";
 
-export interface GetFriendTodosParams {
+interface GetFriendTodosParams {
   readonly userId: string;
   readonly friendUserId: string;
   readonly cursor?: number;

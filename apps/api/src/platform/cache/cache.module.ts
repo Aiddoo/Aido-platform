@@ -7,7 +7,6 @@ import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryCacheStore } from "./adapters/in-memory-cache.store.js";
 import { RedisCacheStore } from "./adapters/redis-cache.store.js";
 import { CacheStorePort } from "./cache-store.port.js";
-import { CacheService } from "./cache.service.js";
 
 /** `CACHE_TYPE=redis`이고 Redis 연결이 있으면 Redis·Valkey, 아니면 프로세스 안 lru-cache를 쓴다. */
 @Global()
@@ -27,16 +26,16 @@ export class CacheModule {
 
     return {
       module: CacheModule,
-      providers: [storeProvider, CacheService],
-      exports: [CacheStorePort, CacheService],
+      providers: [storeProvider],
+      exports: [CacheStorePort],
     };
   }
 
   static forTesting(store: CacheStorePort): DynamicModule {
     return {
       module: CacheModule,
-      providers: [{ provide: CacheStorePort, useValue: store }, CacheService],
-      exports: [CacheStorePort, CacheService],
+      providers: [{ provide: CacheStorePort, useValue: store }],
+      exports: [CacheStorePort],
     };
   }
 }

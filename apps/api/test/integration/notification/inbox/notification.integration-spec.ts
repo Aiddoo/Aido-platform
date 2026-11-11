@@ -24,7 +24,7 @@ import { PublishNotificationUseCase } from "#api/modules/notification/notificati
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
-} from "#api/modules/notification/push/application/messages/notification.messages";
+} from "#api/modules/notification/push/application/messages/scheduler-notification.messages";
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import { NotificationDedupPort } from "#api/modules/notification/push/application/ports/notification-dedup.port";
@@ -43,7 +43,7 @@ import {
   NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
   NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push/notification-push.providers";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import {
   notification,
   pushDispatch,
@@ -52,18 +52,14 @@ import {
   userPreference,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
-import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
+import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
+import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 import { paginationServiceProvider } from "#api/platform/pagination/pagination.providers";
 import { SystemClock } from "#api/platform/time/system-clock";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  AfterCommitTaskRegistryPort,
-  UNIT_OF_WORK,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
@@ -169,19 +165,17 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           useValue: { findMarketingReconfirmTargets: vi.fn(), claimMarketingReconfirm: vi.fn() },
         },
         {
-          provide: UNIT_OF_WORK,
+          provide: UnitOfWorkPort,
           useValue: transaction.uow satisfies UnitOfWorkPort,
         },
-        { provide: UnitOfWorkPort, useExisting: UNIT_OF_WORK },
         {
-          provide: AFTER_COMMIT_TASK_REGISTRY,
+          provide: AfterCommitTaskRegistryPort,
           useValue: {
             register: (task) => {
               task().catch(() => undefined);
             },
           } satisfies AfterCommitTaskRegistryPort,
         },
-        { provide: AfterCommitTaskRegistryPort, useExisting: AFTER_COMMIT_TASK_REGISTRY },
         {
           provide: PublishPushDeliveryAfterCommitUseCase,
           useValue: mockAfterCommitPublisher,
@@ -190,13 +184,13 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           provide: UserPreferenceReaderPort,
           useFactory: (
             preferenceRepository: DrizzleUserPreferenceRepository,
-            cache: CacheService,
+            cache: CacheStorePort,
           ) =>
             new ReadUserPreferencesUseCase({
               preferenceRepository,
               cache: new UserSettingsCacheAdapter(cache),
             }),
-          inject: [DrizzleUserPreferenceRepository, CacheService],
+          inject: [DrizzleUserPreferenceRepository, CacheStorePort],
         },
         UserSettingsCacheAdapter,
         { provide: UserSettingsCachePort, useExisting: UserSettingsCacheAdapter },
@@ -248,19 +242,19 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         },
         { provide: NoCacheStore, useValue: new NoCacheStore() },
         {
-          provide: CacheService,
+          provide: CacheStorePort,
           inject: [NoCacheStore],
-          useFactory: (store: NoCacheStore) => new CacheService(store),
+          useFactory: (store: NoCacheStore) => store,
         },
         {
-          provide: LOCK_PROVIDER,
+          provide: LockProviderPort,
           useValue: {
             acquire: vi.fn().mockResolvedValue(vi.fn().mockResolvedValue(undefined)),
             isLocked: vi.fn().mockResolvedValue(false),
           },
         },
         {
-          provide: DEDUP_PROVIDER,
+          provide: DedupProviderPort,
           useValue: {
             filterMembers: vi.fn().mockResolvedValue(new Set()),
             isMember: vi.fn().mockResolvedValue(false),

@@ -1,11 +1,11 @@
 import { vi } from "vitest";
 
-import type { IReminderScheduler } from "#api/modules/notification/notification-reminders.public";
+import type { TodoReminderSchedulerPort } from "#api/modules/notification/notification-reminders.public";
 
 import { ReminderSchedulerAdapter } from "./todo-reminder-scheduler.adapter.js";
 
 describe("ReminderSchedulerAdapter — scheduler 경계 위임", () => {
-  let scheduler: IReminderScheduler;
+  let scheduler: TodoReminderSchedulerPort;
   let adapter: ReminderSchedulerAdapter;
 
   beforeEach(() => {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from "../../../vocabulary/auth.constants.js";
 import type { PremiumFeature } from "../../../vocabulary/plan-catalog.constants.js";
 import {
@@ -20,7 +21,7 @@ export const accountProviderSchema = z
 
 export const authTokensSchema = z
   .object({
-    userId: z.cuid().describe("사용자 고유 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)"),
+    userId: entityIdSchema.describe("사용자 고유 ID (예: clz7x5p8k0001qz0z8z8z8z8z)"),
     accessToken: z.string().describe("JWT 액세스 토큰 (유효기간: 15분)"),
     refreshToken: z.string().describe("JWT 리프레시 토큰 (유효기간: 7일)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
@@ -67,7 +68,7 @@ export type RefreshTokens = z.infer<typeof refreshTokensSchema>;
 
 export const userProfileSchema = z
   .object({
-    id: z.cuid().describe("사용자 고유 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)"),
+    id: entityIdSchema.describe("사용자 고유 ID (예: clz7x5p8k0001qz0z8z8z8z8z)"),
     email: z.email().describe("이메일 주소"),
     emailVerifiedAt: nullableDatetimeSchema.describe(
       "이메일 인증 완료 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z, 미인증 시 null)",
@@ -97,9 +98,9 @@ export type UserProfile = z.infer<typeof userProfileSchema>;
 // JWT 페이로드에서 추출된 사용자 정보 (req.user)
 export const currentUserPayloadSchema = z
   .object({
-    userId: z.cuid().describe("사용자 고유 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)"),
+    userId: entityIdSchema.describe("사용자 고유 ID (예: clz7x5p8k0001qz0z8z8z8z8z)"),
     email: z.email().describe("이메일 주소"),
-    sessionId: z.cuid().describe("현재 세션 ID (CUID 25자, 예: clz7x5p8k0002qz0z8z8z8z8z)"),
+    sessionId: entityIdSchema.describe("현재 세션 ID (예: clz7x5p8k0002qz0z8z8z8z8z)"),
     role: userRoleSchema.describe("사용자 역할"),
   })
   .describe("JWT 페이로드 사용자 정보")
@@ -182,9 +183,9 @@ export type PremiumEntitlements = z.infer<typeof premiumEntitlementsSchema>;
 
 export const currentUserSchema = z
   .object({
-    userId: z.cuid().describe("사용자 고유 ID"),
+    userId: entityIdSchema.describe("사용자 고유 ID"),
     email: z.email().describe("이메일 주소"),
-    sessionId: z.cuid().describe("현재 세션 ID"),
+    sessionId: entityIdSchema.describe("현재 세션 ID"),
     userTag: z.string().length(8).describe("사용자 태그 (8자리 영숫자, 해시태그 검색용)"),
     role: userRoleSchema.describe("사용자 역할"),
     status: userStatusSchema.describe("계정 상태"),
@@ -288,7 +289,7 @@ export type CurrentUser = z.infer<typeof currentUserSchema>;
 
 export const sessionInfoSchema = z
   .object({
-    id: z.cuid().describe("세션 고유 ID"),
+    id: entityIdSchema.describe("세션 고유 ID"),
     deviceName: z.string().nullable().describe("기기 이름"),
     deviceType: deviceTypeSchema.nullable().describe("기기 타입"),
     ipAddress: z.string().nullable().describe("접속 IP 주소"),

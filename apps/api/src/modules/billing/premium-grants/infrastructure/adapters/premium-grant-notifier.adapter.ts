@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createPremiumGrantEndingNotificationMessage,
-  NotificationPublisher,
+  PublishNotificationUseCase,
   NotificationRecipientLocaleReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
@@ -14,11 +14,11 @@ import { PremiumGrantNotifierPort } from "../../application/ports/premium-grant-
 
 @Injectable()
 export class PremiumGrantNotifierAdapter extends PremiumGrantNotifierPort {
-  readonly #notificationPublisher: NotificationPublisher;
+  readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
 
   constructor(
-    notificationPublisher: NotificationPublisher,
+    notificationPublisher: PublishNotificationUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
   ) {

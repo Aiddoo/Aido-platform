@@ -1,6 +1,5 @@
 import { unwrap } from '@src/core/errors/result';
 import { createJsonFetcherStub } from '@src/shared/__tests__';
-import { toInstant } from '@src/shared/date/instant';
 import { ParseError } from '@src/shared/errors/infra-error';
 
 import { FeatureCampaignService } from './feature-campaign.service';
@@ -26,7 +25,6 @@ describe('FeatureCampaignService', () => {
       enabled: true,
       campaignId: 'feature-discovery-2026-08',
       minAppVersion: '1.8.0',
-      launchedAt: toInstant('2026-08-01T00:00:00.000Z'),
       autoOpen: true,
     });
   });

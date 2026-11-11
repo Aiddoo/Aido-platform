@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import {
   AuthPersistenceConflict,
   emailAlreadyRegistered,
@@ -18,7 +19,7 @@ import type { IdentityUser } from "#api/modules/identity/users/domain/identity-u
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
@@ -67,6 +68,8 @@ interface LoginWithOAuthTokenDependencies {
   readonly loginAttemptRepository: Pick<AuthLoginAttemptRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
+  // 탈퇴 유예 중에는 권한을 무료로 캐시하므로 되살리면 함께 비운다
+  readonly entitlementCache: Pick<EntitlementCacheInvalidatorPort, "invalidateEntitlements">;
   readonly issueLoginUseCase: Pick<IssueLoginUseCase, "execute">;
   readonly provisionUserUseCase: Pick<ProvisionUserUseCase, "execute">;
   readonly restoreAccount: Pick<RestoreAccountUseCase, "execute">;
@@ -347,7 +350,10 @@ export class LoginWithOAuthTokenUseCase {
       };
     });
 
-    await this.#dependencies.cacheService.invalidateUserProfile(user.id);
+    await Promise.all([
+      this.#dependencies.cacheService.invalidateUserProfile(user.id),
+      this.#dependencies.entitlementCache.invalidateEntitlements(user.id),
+    ]);
     this.#dependencies.logger.log({
       event: AuthLogEvent.ACCOUNT_RESTORED,
       userId,

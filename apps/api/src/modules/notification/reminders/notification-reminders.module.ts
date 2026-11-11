@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
 import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
+import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/weekly-achievements/insights-weekly-achievements.public";
 import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { DatabaseModule } from "#api/platform/database/database.module";

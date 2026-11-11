@@ -34,8 +34,8 @@ type PublishedBatch = Parameters<
 >[0];
 
 const locales: SupportedLocale[] = ["ko", "en"];
-const today = new Date("2026-07-27T00:00:00.000Z");
-const yesterday = new Date("2026-07-26T00:00:00.000Z");
+const today = Temporal.PlainDate.from("2026-07-27");
+const yesterday = Temporal.PlainDate.from("2026-07-26");
 const totalCompletionClaim = /모두|every\s+(?:planned\s+)?to-do|all\s+(?:done|complete)/i;
 
 describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (locale) => {

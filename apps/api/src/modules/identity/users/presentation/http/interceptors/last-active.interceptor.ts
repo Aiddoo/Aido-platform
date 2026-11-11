@@ -12,7 +12,8 @@ import type { Observable } from "rxjs";
 
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import { RequestClientReader, requestTimezoneOrUtc } from "#api/platform/http/request-client/index";
+import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
+import { requestTimezoneOrUtc } from "#api/platform/http/request-client/request-timezone";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";

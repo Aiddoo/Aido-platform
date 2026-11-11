@@ -1,11 +1,11 @@
-/** notification 주간 리마인더가 넘기는 지난주 집계. achievedAt은 그 배치의 Date를 그대로 받는다 */
+/** notification 주간 리마인더가 넘기는 지난주 집계 */
 export interface WeeklyAchievementRecordInput {
   readonly userId: string;
   readonly year: number;
   readonly week: number;
   readonly totalTodos: number;
   readonly completedTodos: number;
-  readonly achievedAt: Date;
+  readonly achievedAt: Temporal.Instant;
 }
 
 export interface RecordWeeklyAchievementsCommand {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { datetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 import { FOLLOW_STATUSES } from "../../../vocabulary/follow.constants.js";
 
 export const followStatusSchema = z.enum(FOLLOW_STATUSES);
@@ -9,9 +10,9 @@ export type FollowStatus = z.infer<typeof followStatusSchema>;
 
 export const followSchema = z
   .object({
-    id: z.cuid().describe("팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)"),
-    followerId: z.cuid().describe("팔로워 사용자 ID (CUID 25자)"),
-    followingId: z.cuid().describe("팔로잉 대상 사용자 ID (CUID 25자)"),
+    id: entityIdSchema.describe("팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)"),
+    followerId: entityIdSchema.describe("팔로워 사용자 ID"),
+    followingId: entityIdSchema.describe("팔로잉 대상 사용자 ID"),
     status: followStatusSchema.describe("친구 요청 상태 (PENDING | ACCEPTED)"),
     createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)"),
     updatedAt: datetimeSchema.describe("수정 시각 (ISO 8601 UTC, 예: 2026-01-15T10:35:00.000Z)"),
@@ -31,7 +32,7 @@ export type Follow = z.infer<typeof followSchema>;
 
 export const followUserSchema = z
   .object({
-    id: z.cuid().describe("사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)"),
+    id: entityIdSchema.describe("사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)"),
     userTag: z.string().length(8).describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
@@ -59,7 +60,7 @@ export type FollowUser = z.infer<typeof followUserSchema>;
 
 export const searchUserSchema = z
   .object({
-    id: z.cuid().describe("사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)"),
+    id: entityIdSchema.describe("사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)"),
     userTag: z.string().length(8).describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
@@ -114,8 +115,8 @@ export type SearchUsersResponse = z.infer<typeof searchUsersResponseSchema>;
 
 export const friendUserSchema = z
   .object({
-    followId: z.cuid().describe("팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)"),
-    id: z.cuid().describe("친구 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)"),
+    followId: entityIdSchema.describe("팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)"),
+    id: entityIdSchema.describe("친구 사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)"),
     userTag: z.string().length(8).describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
@@ -138,7 +139,7 @@ export type FriendUser = z.infer<typeof friendUserSchema>;
 
 export const friendRequestUserSchema = z
   .object({
-    id: z.cuid().describe("사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)"),
+    id: entityIdSchema.describe("사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)"),
     userTag: z.string().length(8).describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),

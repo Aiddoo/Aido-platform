@@ -3,11 +3,13 @@ import { z } from "zod";
 
 import {
   AfterCommitTaskRegistryPort,
-  defineEventSubscription,
-  defineQueue,
   type AfterCommitTask,
+} from "#api/shared/application/ports/after-commit-task.registry.port";
+import {
+  defineEventSubscription,
   type PublishedDomainEvent,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/domain-event-publisher.port";
+import { defineQueue } from "#api/shared/application/ports/job-queue.port";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import { EventSubscriptionCatalog } from "./event-subscription.catalog.js";

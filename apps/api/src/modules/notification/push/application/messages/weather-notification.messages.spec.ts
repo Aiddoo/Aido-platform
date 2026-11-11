@@ -2,11 +2,11 @@ import { pushNotificationDataSchema } from "@aido/api";
 
 import type { WeatherBriefingDay } from "#api/modules/weather/forecasts/weather-forecasts.public";
 
+import { formatWeatherNotificationTime } from "./notification-copy-format.messages.js";
 import {
   createWeatherEveningNotificationMessage,
   createWeatherMorningNotificationMessage,
   createWeatherRescheduleAction,
-  formatWeatherNotificationTime,
 } from "./weather-notification.messages.js";
 
 /** 서울 15:00 */

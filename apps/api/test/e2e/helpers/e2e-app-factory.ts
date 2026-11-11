@@ -55,10 +55,10 @@ import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/appl
 import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import { DRIZZLE } from "#api/platform/database/index";
+import { DRIZZLE } from "#api/platform/database/database.client";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { JobQueuePort, JobRuntimePort } from "#api/shared/application/ports/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -68,7 +68,6 @@ import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
 import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider.js";
 import { FakeEmailService } from "../../mocks/fake-email.service.js";
-import { FakeJobRuntime } from "../../mocks/fake-job-runtime.js";
 import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider.js";
 import { FakeLogger } from "../../mocks/fake-logger.service.js";
 import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry.js";
@@ -155,7 +154,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeAirQualityProvider = new FakeAirQualityProvider();
   const fakeLifestyleIndexProvider = new FakeLifestyleIndexProvider();
   const fakeSunTimeProvider = new FakeSunTimeProvider();
-  const fakeJobRuntime = new FakeJobRuntime();
   const inMemoryJobQueue = new InMemoryJobQueue();
 
   const cacheAdapter = new InMemoryCacheStore({
@@ -195,9 +193,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   let builder = Test.createTestingModule({
     imports: [AppModule, ...(options?.imports ?? [])],
   })
-    .overrideProvider(JobRuntimePort)
-    .useValue(fakeJobRuntime)
-    // E2E 앱이 실제 pg-boss에 연결하지 않게 새 큐 포트도 메모리 구현으로 바꾼다
+    // E2E 앱이 실제 pg-boss에 연결하지 않게 큐 포트를 메모리 구현으로 바꾼다
     .overrideProvider(JobQueuePort)
     .useValue(inMemoryJobQueue)
     // 시각을 옮기는 테스트가 Date 가짜 시계로 ClockPort도 움직이게 한다
@@ -306,7 +302,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakeAirQualityProvider.clear(),
         () => fakeLifestyleIndexProvider.clear(),
         () => fakeSunTimeProvider.clear(),
-        () => fakeJobRuntime.clear(),
         () => inMemoryJobQueue.clear(),
       ],
       additionalResetters: options?.additionalResetters,

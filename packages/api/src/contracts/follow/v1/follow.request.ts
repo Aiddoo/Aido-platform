@@ -1,12 +1,13 @@
 import { z } from "zod";
 
+import { entityIdSchema, entityIdSchemaWithMessage } from "../../../common/entity-id.js";
 import { USER_SEARCH_QUERY_LENGTH } from "../../../vocabulary/follow.constants.js";
 import { reorderPositionSchema } from "../../todo-category/v1/todo-category.common.js";
 
 export const userIdParamSchema = z.object({
-  userId: z
-    .cuid("유효하지 않은 사용자 ID입니다")
-    .describe("사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)"),
+  userId: entityIdSchemaWithMessage("유효하지 않은 사용자 ID입니다").describe(
+    "사용자 ID (예: clz7x5p8k0001qz0z8z8z8z8z)",
+  ),
 });
 
 export type UserIdParam = z.infer<typeof userIdParamSchema>;
@@ -22,7 +23,7 @@ export const userTagParamSchema = z.object({
 export type UserTagParam = z.infer<typeof userTagParamSchema>;
 
 export const getFollowsQuerySchema = z.object({
-  cursor: z.cuid().optional().describe("페이지네이션 커서 (CUID 25자, 선택)"),
+  cursor: entityIdSchema.optional().describe("페이지네이션 커서 (선택)"),
   limit: z
     .string()
     .regex(/^\d+$/, "숫자만 입력 가능합니다")
@@ -36,7 +37,7 @@ export const getFollowsQuerySchema = z.object({
 export type GetFollowsQuery = z.infer<typeof getFollowsQuerySchema>;
 
 export const getFriendsQuerySchema = z.object({
-  cursor: z.cuid().optional().describe("페이지네이션 커서 (CUID 25자, 선택)"),
+  cursor: entityIdSchema.optional().describe("페이지네이션 커서 (선택)"),
   limit: z
     .string()
     .regex(/^\d+$/, "숫자만 입력 가능합니다")
@@ -66,7 +67,7 @@ export const searchUsersQuerySchema = z.object({
     .describe(
       `검색어: 이름 또는 Aido ID (${USER_SEARCH_QUERY_LENGTH.MIN}-${USER_SEARCH_QUERY_LENGTH.MAX}자)`,
     ),
-  // 관련도 랭킹 keyset을 인코딩한 불투명 커서. 다른 팔로우 쿼리와 달리 CUID가 아니다.
+  // 관련도 랭킹 keyset을 인코딩한 불투명 커서. 다른 팔로우 쿼리와 달리 엔티티 ID가 아니다.
   cursor: z.string().optional().describe("페이지네이션 커서 (불투명 문자열, 선택)"),
   limit: z
     .string()
@@ -81,8 +82,7 @@ export const searchUsersQuerySchema = z.object({
 export type SearchUsersQuery = z.infer<typeof searchUsersQuerySchema>;
 
 export const reorderFriendSchema = z.object({
-  targetFollowId: z
-    .cuid("유효하지 않은 Follow ID입니다")
+  targetFollowId: entityIdSchemaWithMessage("유효하지 않은 Follow ID입니다")
     .optional()
     .describe("기준 팔로우 ID (선택, 생략 시 맨 앞/뒤로 이동)"),
   position: reorderPositionSchema.describe("이동 위치 (before: 기준 앞으로, after: 기준 뒤로)"),

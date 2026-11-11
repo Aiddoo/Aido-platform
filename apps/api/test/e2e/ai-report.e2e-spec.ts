@@ -19,7 +19,7 @@ import { toAiReportResponse } from "#api/modules/ai-assistance/reports/presentat
  * - GET /ai/reports/:id: 리포트 상세 조회
  * - 인증 에러 (401)
  */
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
@@ -57,7 +57,7 @@ describe("AI 리포트 E2E", () => {
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
       .where(eq(userTable.id, user.userId));
-    const cacheService = ctx.module.get(CacheService);
+    const cacheService = ctx.module.get(CacheStorePort);
     await cacheService.del(EntitlementCacheKey.subscription(user.userId));
     return user;
   }

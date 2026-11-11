@@ -82,6 +82,9 @@ class ClockAdvancingUnitOfWork extends ImmediateUnitOfWork {
   }
 }
 
+// 탈퇴 유예 중 비활성 계정은 권한을 무료로 캐시한다
+const FREE_ACCESS_WHILE_DELETED = { status: null, isAdmin: false, resourceBonuses: {} };
+
 async function markDeleted(fixture: CredentialFixture, deletedAt: Temporal.Instant) {
   await fixture.userRepository.saveAccountStatus(
     createIdentityUserFixture({ ...fixture.user, status: "SUSPENDED", deletedAt }),
@@ -244,6 +247,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
       const fixture = createAuthCredentialFixture();
       await markDeleted(fixture, Temporal.Instant.from(deletedAt));
       fixture.cacheService.userIds.add(fixture.user.id);
+      fixture.entitlementCache.entries.set(fixture.user.id, FREE_ACCESS_WHILE_DELETED);
       const useCase = new LoginWithPasswordUseCase({
         ...fixture,
         unitOfWork: crossesBoundary
@@ -263,6 +267,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
         expect.objectContaining({ status: "ACTIVE", deletedAt: null }),
       );
       expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(false);
+      expect(fixture.entitlementCache.entries.has(fixture.user.id)).toBe(false);
       expect(fixture.securityLogRepository.entries).toContainEqual(
         expect.objectContaining({
           event: SECURITY_EVENT.ACCOUNT_RESTORED,

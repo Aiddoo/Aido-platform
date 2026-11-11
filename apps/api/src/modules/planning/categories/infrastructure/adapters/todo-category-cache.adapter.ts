@@ -5,7 +5,7 @@ import {
   TodoCategoryCacheKey,
   TODO_CATEGORY_CACHE_TTL_MS,
 } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoCategoryCachePort } from "../../application/ports/todo-category-cache.port.js";
@@ -25,13 +25,13 @@ const TODO_CATEGORY_LIST_SCHEMA = z.array(
 ) satisfies z.ZodType<TodoCategoryWithCountReadModel[]>;
 
 /**
- * TodoCategoryCachePort의 어댑터 — 공유 CacheService에 위임한다(키·TTL은 CacheService가 소유).
+ * TodoCategoryCachePort의 어댑터 — 공유 CacheStorePort에 위임한다(키·TTL은 CacheStorePort가 소유).
  */
 @Injectable()
 export class TodoCategoryCacheAdapter implements TodoCategoryCachePort {
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort) {
     this.#cacheService = cacheService;
   }
 

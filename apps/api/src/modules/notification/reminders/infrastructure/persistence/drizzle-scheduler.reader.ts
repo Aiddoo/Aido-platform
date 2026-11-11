@@ -14,7 +14,7 @@ import {
 } from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
 import { notificationRetentionConfig } from "#api/modules/notification/retention/notification-retention.config";
 import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, userPreference } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -80,13 +80,13 @@ export class DrizzleSchedulerReader
     SchedulerPreferenceReaderPort
 {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
-  readonly #cacheService: CacheService;
+  readonly #cacheService: CacheStorePort;
   readonly #retention: RetentionSettings;
   readonly #clock: ClockPort;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    cacheService: CacheService,
+    cacheService: CacheStorePort,
     @Inject(notificationRetentionConfig.KEY) retention: RetentionSettings,
     clock: ClockPort,
   ) {

@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 
-import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import { OperationsAdminNoticesModule } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 
 import { BillingPremiumGrantsModule } from "../premium-grants/billing-premium-grants.module.js";
@@ -18,7 +18,7 @@ import { RevenueCatWebhookController } from "./presentation/http/v1/revenuecat-w
   imports: [
     BillingPremiumGrantsModule,
     OperationsAdminNoticesModule,
-    NotificationDeliveryModule,
+    NotificationPushModule,
     ConfigModule.forFeature(billingSubscriptionsConfig),
     HttpClientModule.register({
       name: REVENUECAT_HTTP_CLIENT,

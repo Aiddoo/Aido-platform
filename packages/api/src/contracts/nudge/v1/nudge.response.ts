@@ -1,12 +1,13 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import { entityIdSchema } from "../../../common/entity-id.js";
 
 export const nudgeSchema = z
   .object({
     id: z.number().int().positive().describe("찌르기 ID (양의 정수)"),
-    senderId: z.cuid().describe("보낸 사용자 ID (CUID 25자)"),
-    receiverId: z.cuid().describe("받은 사용자 ID (CUID 25자)"),
+    senderId: entityIdSchema.describe("보낸 사용자 ID"),
+    receiverId: entityIdSchema.describe("받은 사용자 ID"),
     todoId: z.number().int().positive().describe("대상 할 일 ID (양의 정수)"),
     message: z.string().max(200).nullable().describe("응원 메시지 (최대 200자, 미설정 시 null)"),
     createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)"),
@@ -30,7 +31,7 @@ export type Nudge = z.infer<typeof nudgeSchema>;
 
 export const nudgeSenderSchema = z
   .object({
-    id: z.cuid().describe("사용자 ID (CUID 25자)"),
+    id: entityIdSchema.describe("사용자 ID"),
     userTag: z.string().length(8).describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
@@ -258,8 +259,8 @@ export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
 export const remindNudgeSchema = z
   .object({
     id: z.number().int().positive().describe("리마인드 찌르기 ID (양의 정수)"),
-    senderId: z.cuid().describe("보낸 사용자 ID (CUID 25자)"),
-    receiverId: z.cuid().describe("받은 사용자 ID (CUID 25자)"),
+    senderId: entityIdSchema.describe("보낸 사용자 ID"),
+    receiverId: entityIdSchema.describe("받은 사용자 ID"),
     message: z.string().max(200).nullable().describe("독촉 메시지 (최대 200자, 미설정 시 null)"),
     createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC)"),
   })

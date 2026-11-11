@@ -14,7 +14,7 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder, UserPreferenceBuilder } from "#test/builders/index";
@@ -67,7 +67,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     notifyEndingTrials = context.module.get(NotifyEndingTrialsUseCase);
     noticeSource = context.module.get(TrialEndingNoticeRepositoryPort);
     premiumAccess = context.module.get(PremiumAccessReaderPort);
-    unitOfWork = context.module.get(UNIT_OF_WORK);
+    unitOfWork = context.module.get(UnitOfWorkPort);
   });
 
   beforeEach(async () => {

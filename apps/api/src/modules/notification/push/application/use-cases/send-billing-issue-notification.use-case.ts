@@ -3,7 +3,7 @@ import { NOTICE_DEEP_LINK_PATH } from "@aido/api/vocabulary";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { createBillingIssueNotificationMessage } from "../messages/notification.messages.js";
+import { createBillingIssueNotificationMessage } from "../messages/system-notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
 import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";

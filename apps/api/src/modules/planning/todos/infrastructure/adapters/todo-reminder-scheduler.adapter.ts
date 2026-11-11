@@ -1,9 +1,6 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import {
-  type IReminderScheduler,
-  TodoReminderSchedulerPort as NotificationReminderSchedulerPort,
-} from "#api/modules/notification/notification-reminders.public";
+import { TodoReminderSchedulerPort as NotificationReminderSchedulerPort } from "#api/modules/notification/notification-reminders.public";
 
 import type {
   TodoReminderSchedulerPort,
@@ -11,16 +8,13 @@ import type {
 } from "../../application/ports/todo-reminder-scheduler.port.js";
 
 /**
- * Todo 리마인더 포트 어댑터 — scheduler의 IReminderScheduler에 위임
+ * Todo 리마인더 포트 어댑터 — notification 리마인더 포트에 위임
  */
 @Injectable()
 export class ReminderSchedulerAdapter implements TodoReminderSchedulerPort {
-  readonly #reminderScheduler: IReminderScheduler;
+  readonly #reminderScheduler: NotificationReminderSchedulerPort;
 
-  constructor(
-    @Inject(NotificationReminderSchedulerPort)
-    reminderScheduler: IReminderScheduler,
-  ) {
+  constructor(reminderScheduler: NotificationReminderSchedulerPort) {
     this.#reminderScheduler = reminderScheduler;
   }
 

@@ -18,24 +18,26 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { Timezone } from "#api/platform/http/decorators/index";
-import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
   ApiConflictError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DomainException } from "#api/shared/domain/index";
 
 import { TodoCategoryId } from "../../../../categories/domain/todo-category-id.vo.js";
 import { localDateAt } from "../../../../shared/domain/todo-calendar.domain-service.js";

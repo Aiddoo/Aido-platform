@@ -33,13 +33,12 @@ import {
 } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -933,9 +932,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         // Then
         const rows = await rowsOf(laterSeriesId);
         expect(rows[0]?.scheduledTime).toEqual(
-          instantFromDate(
-            parseLocalDateTime(dateOf(rows[0]?.startDate) ?? "", "10:00", "Asia/Seoul"),
-          ),
+          wallClockInstant(dateOf(rows[0]?.startDate) ?? "", "10:00", "Asia/Seoul"),
         );
         expect(await seriesRow(laterSeriesId)).toMatchObject({
           scheduledLocalTime: "10:00",

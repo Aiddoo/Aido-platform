@@ -6,6 +6,8 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 import { vi } from "vitest";
 
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
 import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   AuthCachePort,
@@ -48,15 +50,15 @@ import { NotificationQueueAdapter } from "#api/modules/notification/notification
 import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { DRIZZLE } from "#api/platform/database/database.client";
 import { account, user as userTable } from "#api/platform/database/schema/index";
-import { EncryptionService } from "#api/platform/encryption/index";
+import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
@@ -182,6 +184,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
         AuthCacheAdapter,
         { provide: AuthCachePort, useExisting: AuthCacheAdapter },
+        { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
         {
           provide: AuthRegistrationNotifierPort,
           useExisting: AdminEventNotifierPort,
@@ -221,8 +224,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           useClass: FakeEmailService,
         },
         {
-          provide: CacheService,
-          useValue: new CacheService(new NoCacheStore()),
+          provide: CacheStorePort,
+          useValue: new NoCacheStore(),
         },
         {
           provide: ConfigService,

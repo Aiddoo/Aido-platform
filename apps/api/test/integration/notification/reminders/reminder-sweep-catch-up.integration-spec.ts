@@ -22,7 +22,6 @@ import type { TimezoneContext } from "#api/modules/notification/reminders/domain
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,
@@ -88,7 +87,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     const { txHost, uow } = transaction;
     reader = new DrizzleSchedulerReader(
       txHost,
-      new CacheService(new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 })),
+      new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
       { onboardingV2: { enabled: false, treatmentPercent: 50 } },
       new DateClock(),
     );

@@ -23,8 +23,8 @@ import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
 } from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
 import { cacheConfig } from "#api/platform/config/cache.config";
 
@@ -32,7 +32,7 @@ import { createMockUserProfile } from "../mocks/cache-test-utils.js";
 
 describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
   let app: INestApplication;
-  let cacheService: CacheService;
+  let cacheService: CacheStorePort;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -56,7 +56,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    cacheService = moduleFixture.get<CacheService>(CacheService);
+    cacheService = moduleFixture.get(CacheStorePort);
   });
 
   afterAll(async () => {
@@ -124,7 +124,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const shortTtlApp = shortTtlModule.createNestApplication();
       try {
         await shortTtlApp.init();
-        const shortTtlCache = shortTtlModule.get<CacheService>(CacheService);
+        const shortTtlCache = shortTtlModule.get(CacheStorePort);
 
         const sessionId = "sess_short_ttl";
         const session = {
@@ -459,7 +459,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
       const smallCacheApp = smallCacheModule.createNestApplication();
       await smallCacheApp.init();
-      const smallCache = smallCacheModule.get<CacheService>(CacheService);
+      const smallCache = smallCacheModule.get(CacheStorePort);
 
       try {
         // When - 5개 항목 저장

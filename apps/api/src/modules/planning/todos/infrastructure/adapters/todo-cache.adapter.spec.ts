@@ -1,7 +1,6 @@
 import { vi } from "vitest";
 
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FRIEND_TODOS_INITIAL_GENERATION, TodoCacheKey } from "../cache/todo-cache.keyspace.js";
@@ -35,7 +34,7 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
       defaultTtlMs: 60_000,
       maxItems: 100,
     });
-    adapter = new TodoCacheAdapter(new CacheService(backend));
+    adapter = new TodoCacheAdapter(backend);
   });
 
   it("cache miss의 DB 조회 중 무효화되면 이전 응답을 stale-fill하지 않는다", async () => {
@@ -124,7 +123,7 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
       items: [],
       pagination: { nextCursor: null, hasNext: false, size: PAGE_SIZE },
     };
-    const cacheService = new CacheService(backend);
+    const cacheService = backend;
     const generationKey = TodoCacheKey.friendTodosGeneration(OWNER_ID.value);
     const pageKey = TodoCacheKey.friendTodosFirstPageVersioned(
       OWNER_ID.value,

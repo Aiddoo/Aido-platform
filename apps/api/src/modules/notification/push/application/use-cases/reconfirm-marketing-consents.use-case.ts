@@ -6,7 +6,7 @@ import {
   marketingReconfirmCutoff,
 } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
@@ -14,7 +14,7 @@ import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-nam
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../reminders/domain/notification-campaign.constants.js";
-import { createMarketingConsentReconfirmNotificationMessage } from "../messages/notification.messages.js";
+import { createMarketingConsentReconfirmNotificationMessage } from "../messages/system-notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
 import type {
   MarketingConsentReconfirmPort,
@@ -25,7 +25,7 @@ import type { NotificationRecipientTimezoneReaderPort } from "../ports/notificat
 import type { PushQuietHoursReaderPort } from "../ports/push-quiet-hours.reader.port.js";
 import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
-export const MARKETING_CONSENT_RECONFIRM = {
+const MARKETING_CONSENT_RECONFIRM = {
   BATCH_SIZE: 500,
   /** 표시와 알림 기록을 한 트랜잭션에 남기는 수 */
   CLAIM_CHUNK_SIZE: 100,

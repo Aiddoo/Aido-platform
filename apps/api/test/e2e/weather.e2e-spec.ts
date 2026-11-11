@@ -21,18 +21,17 @@ import { AirQualityProviderPort } from "#api/modules/weather/forecasts/applicati
 import { LifestyleIndexProviderPort } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
 import { SunTimeProviderPort } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
 import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
-import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-provider";
 import { StubLifestyleIndexProvider } from "#test/doubles/weather/stub-lifestyle-index-provider";
 import { StubSunTimeProvider } from "#test/doubles/weather/stub-sun-time-provider";
 import { StubWeatherForecastProvider } from "#test/doubles/weather/stub-weather-forecast-provider";
+import { todayIn } from "#test/fixtures/clock.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 /** KMA 제공 범위가 오늘(KST) 기준이므로 고정 날짜 대신 오늘에서 떨어진 날짜를 쓴다. */
 function kstDate(offsetDays: number): string {
-  return dayWindowInTimezone(addDays(offsetDays), "Asia/Seoul").localDate;
+  return todayIn("Asia/Seoul").add({ days: offsetDays }).toString();
 }
 
 describe("날씨 E2E", () => {
@@ -477,8 +476,8 @@ describe("날씨 E2E", () => {
       },
     );
 
-    it("격자 이동은 이전 격자의 여러 날짜 cache를 지워 남은 사용자도 다시 조회한다", async () => {
-      // Given - 두 사용자가 같은 서울 grid를 공유한다.
+    it("격자를 옮겨도 이전 격자의 공유 cache를 지우지 않아 남은 사용자는 공급자를 다시 부르지 않고 옮긴 사용자는 새 격자를 조회한다", async () => {
+      // Given - 두 사용자가 같은 서울 grid를 공유하고 두 날짜의 cache가 채워져 있다.
       const mover = await ctx.helpers.createVerifiedUser("weather-move@example.com", "Test1234!");
       const remaining = await ctx.helpers.createVerifiedUser(
         "weather-remain@example.com",
@@ -498,23 +497,25 @@ describe("날씨 E2E", () => {
           .set("Authorization", `Bearer ${mover.accessToken}`)
           .expect(200);
       }
-      sunTimeProvider.dates.set("2026-07-23", { sunrise: "06:23", sunset: "19:00" });
-      sunTimeProvider.dates.set("2026-07-24", { sunrise: "06:24", sunset: "19:01" });
       // When
       const moved = await request(ctx.app.getHttpServer())
         .put("/v1/weather/location")
         .set("Authorization", `Bearer ${mover.accessToken}`)
         .send({ latitude: 35.1796, longitude: 129.0756 })
         .expect(200);
-      const first = await request(ctx.app.getHttpServer())
+      const remainingSunrises: unknown[] = [];
+      for (const date of ["2026-07-23", "2026-07-24"]) {
+        const response = await request(ctx.app.getHttpServer())
+          .get("/v1/weather/conditions")
+          .query({ date })
+          .set("Authorization", `Bearer ${remaining.accessToken}`)
+          .expect(200);
+        remainingSunrises.push(response.body.data.sunrise);
+      }
+      await request(ctx.app.getHttpServer())
         .get("/v1/weather/conditions")
         .query({ date: "2026-07-23" })
-        .set("Authorization", `Bearer ${remaining.accessToken}`)
-        .expect(200);
-      const next = await request(ctx.app.getHttpServer())
-        .get("/v1/weather/conditions")
-        .query({ date: "2026-07-24" })
-        .set("Authorization", `Bearer ${remaining.accessToken}`)
+        .set("Authorization", `Bearer ${mover.accessToken}`)
         .expect(200);
       // Then
       expect(moved.body.data).toEqual({
@@ -523,12 +524,12 @@ describe("날씨 E2E", () => {
         gridX: 98,
         gridY: 76,
       });
-      expect(first.body.data.sunrise).toBe("06:23");
-      expect(next.body.data.sunrise).toBe("06:24");
-      expect(sunTimeProvider.calls).toHaveLength(4);
-      expect(
-        sunTimeProvider.calls.every((call) => call.lat === 37.5665 && call.lon === 126.978),
-      ).toBe(true);
+      expect(remainingSunrises).toEqual(["05:23", "05:23"]);
+      expect(sunTimeProvider.calls.map((call) => [call.lat, call.lon])).toEqual([
+        [37.5665, 126.978],
+        [37.5665, 126.978],
+        [35.1796, 129.0756],
+      ]);
     });
 
     it("해외 좌표는 기존 한국 bbox validation으로 거절하고 날씨 공급자를 호출하지 않는다", async () => {

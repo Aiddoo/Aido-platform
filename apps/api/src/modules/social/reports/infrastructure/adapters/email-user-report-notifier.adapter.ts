@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
-import { SWAGGER_TAGS } from "#api/platform/http/swagger/index";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 
 import type {
   UserReportDeliveryResult,

@@ -189,20 +189,15 @@ describe('toConvertMemoToTodosRequest', () => {
 });
 
 describe('toMemoVoicePlan', () => {
-  it('이번 주말(토·일 + 그 주 일요일까지)은 반복이 아니라 토요일 한 번이다', () => {
+  it('서버가 이번 주말을 repeat 없이 토요일 한 번으로 주면 그대로 쓴다', () => {
     // Given
     const dto = createParseMemoResponseDto();
     dto.data.todos = dto.data.todos.map((todo) => ({
       ...todo,
       startDate: '2026-11-07',
-      endDate: '2026-11-08',
-      isRecurring: true,
-      repeat: {
-        frequency: 'WEEKLY',
-        interval: 1,
-        weekdays: ['SAT', 'SUN'],
-        end: { type: 'UNTIL', date: '2026-11-08' },
-      },
+      endDate: null,
+      isRecurring: false,
+      repeat: null,
     }));
 
     // When
@@ -212,7 +207,7 @@ describe('toMemoVoicePlan', () => {
     expect(plan.actions[0]).toMatchObject({ startDate: '2026-11-07', endDate: null, repeat: null });
   });
 
-  it('주말 반복의 끝이 더 뒤면 그대로 반복이다', () => {
+  it('서버가 준 주말 반복은 끝이 달라도 그대로 쓴다', () => {
     // Given
     const dto = createParseMemoResponseDto();
     dto.data.todos = dto.data.todos.map((todo) => ({

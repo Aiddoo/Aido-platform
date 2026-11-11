@@ -5,7 +5,7 @@ import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import { NotificationId } from "../../../inbox/domain/notification-id.vo.js";
 import { type RetentionNotificationCopySelection } from "../../../push/application/messages/notification-copy-catalog.messages.js";
-import { createRetentionNotificationMessage } from "../../../push/application/messages/notification.messages.js";
+import { createRetentionNotificationMessage } from "../../../push/application/messages/retention-notification.messages.js";
 import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
 import { retentionPushSkipReason } from "../../domain/push-eligibility.domain-service.js";
 import { decideRetentionStage } from "../../domain/retention-stage.domain-service.js";

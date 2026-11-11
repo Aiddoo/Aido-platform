@@ -3,7 +3,7 @@ import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name"
 import { addDaysToKey, localDateKeyAt } from "../../shared/domain/todo-calendar.domain-service.js";
 
 /** 마지막으로 움직인 날에서 이 일수를 넘기면 휴면이다. 그 날 자체는 아직 휴면이 아니다. */
-export const TODO_SERIES_DORMANT_AFTER_DAYS = 60;
+const TODO_SERIES_DORMANT_AFTER_DAYS = 60;
 
 export interface SeriesOwnerActivity {
   readonly lastActiveAt: Temporal.Instant | null;
