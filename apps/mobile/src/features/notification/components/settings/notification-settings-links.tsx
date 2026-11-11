@@ -16,9 +16,8 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
-import { PUSH_SUMMARY_LABEL_KEYS } from '../../constants/notification-labels';
 import { useGetPushPermissionQueryOptions } from '../../queries/push-permission.queries';
-import { toPushSummary } from '../../utils/push-permission.view-model';
+import { PushStatusValue } from '../push-status-value';
 
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 
@@ -26,10 +25,13 @@ type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'chil
 export function NotificationSettingsLinks(props: SettingsSectionProps) {
   const { t } = useTranslation('notification');
   const push = useSingleTap(router.push);
-  const [{ data: preference }, { data: permission }] = useSuspenseQueries({
+  const dateFormatContext = useDateFormatContext();
+
+  // 푸시 값(PushStatusValue)이 읽을 권한도 같은 경계에서 받아 값만 늦게 뜨지 않는다
+  const [{ data: preference }] = useSuspenseQueries({
     queries: [useGetPreferenceQueryOptions(), useGetPushPermissionQueryOptions()],
   });
-  const dateFormatContext = useDateFormatContext();
+
   const reminderTimes = [
     { hour: preference.morningReminderHour, minute: preference.morningReminderMinute },
     { hour: preference.eveningReminderHour, minute: preference.eveningReminderMinute },
@@ -42,11 +44,7 @@ export function NotificationSettingsLinks(props: SettingsSectionProps) {
       <SettingsListGroup.Item
         icon={<SettingsListGroup.Icon Icon={BellDuoIcon} />}
         label={t('settings.pushLabel')}
-        value={
-          <SummaryText>
-            {t(PUSH_SUMMARY_LABEL_KEYS[toPushSummary(permission, preference)])}
-          </SummaryText>
-        }
+        value={<PushStatusValue />}
         onPress={() => push('/settings/notifications/push')}
       />
       <SettingsListGroup.Separator />

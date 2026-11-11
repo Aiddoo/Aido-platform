@@ -15,3 +15,13 @@ export function toPushSummary(
   }
   return pushEnabled && !PushPermissionPolicy.isNotDetermined(permission) ? 'deviceOff' : 'off';
 }
+
+export function getPushSummaryLabelKey(summary: PushSummary) {
+  const labelKeyBySummary = {
+    on: 'settings.on',
+    off: 'settings.off',
+    deviceOff: 'settings.deviceOff',
+  } as const satisfies Record<PushSummary, string>;
+
+  return labelKeyBySummary[summary];
+}
