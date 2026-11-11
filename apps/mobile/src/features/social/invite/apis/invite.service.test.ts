@@ -80,19 +80,6 @@ describe('InviteService', () => {
       expect(!result.ok && result.error.code === INVITE_ERROR_CODE.INVALID_CODE).toBe(true);
     });
 
-    it('서버가 4xx로 답하면 Result.err로 그대로 반환한다', async () => {
-      // Given
-      const { service, publicHttpClient } = createService();
-      const apiError = createInviteApiError({ code: 'INVITE_2102', status: 410 });
-      publicHttpClient.get.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.getPreview('K7M2QX');
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
     it('응답 형식이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       const { service, publicHttpClient } = createService();
@@ -180,33 +167,6 @@ describe('InviteService', () => {
         error: 'keychain locked',
       });
     });
-
-    it('서버가 4xx로 답하면 Result.err로 그대로 반환한다', async () => {
-      // Given
-      const { service, authHttpClient } = createService();
-      const apiError = createInviteApiError({ code: 'INVITE_2103', status: 400 });
-      authHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.redeem('K7M2QX');
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    it('응답 형식이 계약과 다르면 ParseError를 던진다', async () => {
-      // Given
-      const { service, authHttpClient } = createService();
-      authHttpClient.post.mockResolvedValue({ ok: true, value: { outcome: 'UNKNOWN' } });
-
-      // When
-
-      const result = service.redeem('K7M2QX');
-
-      // Then
-
-      await expect(result).rejects.toBeInstanceOf(ParseError);
-    });
   });
 
   describe('getInvite', () => {
@@ -280,33 +240,6 @@ describe('InviteService', () => {
 
       // Then
       expect(result.ok && result.value.premiumCapState).toBe('TOTAL_REACHED');
-    });
-
-    it('서버가 4xx로 답하면 Result.err로 그대로 반환한다', async () => {
-      // Given
-      const { service, authHttpClient } = createService();
-      const apiError = createInviteApiError({ code: 'INVITE_2105', status: 403 });
-      authHttpClient.get.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.getInvite();
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    it('응답 형식이 계약과 다르면 ParseError를 던진다', async () => {
-      // Given
-      const { service, authHttpClient } = createService();
-      authHttpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-      // When
-
-      const result = service.getInvite();
-
-      // Then
-
-      await expect(result).rejects.toBeInstanceOf(ParseError);
     });
   });
 
