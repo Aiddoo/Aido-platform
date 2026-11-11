@@ -34,7 +34,7 @@ heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 �
 
 - **`gray-*` 토큰을 쓴다.** DESIGN.md는 날 회색 팔레트를 막지만, Aido의 `gray-1`~`gray-10`은 다크에서 순서가 뒤집히는 의미 토큰이다(라이트 `gray-1`이 가장 밝고 다크 `gray-1`이 가장 어두운 면).
 - 화면은 `bg-white`(다크에서 어두운 배경), 카드는 `bg-gray-1`이다. 시트 면이 `bg-white dark:bg-gray-1`이라 시트 안 카드는 `dark:bg-gray-2`를 함께 쓴다. 날씨 화면만 하늘 장면을 배경으로 두고 그 위 글자·면은 `on-sky`다.
-- 카드는 그림자 없이 면 색으로 나눈다(`SurfaceCard`의 `rounded-2xl shadow-none`). DESIGN.md의 `shadow-surface`를 쓰지 않는다. 시트 모서리는 `SHEET_RADIUS`(32)다.
+- 카드는 그림자 없이 면 색으로 나눈다(`SurfaceCard`의 `rounded-2xl`, 그림자 없음). DESIGN.md의 `shadow-surface`를 쓰지 않는다. 시트 모서리는 `SHEET_RADIUS`(32)다.
 - **비활성은 `opacity-40`이다**(`disabled:opacity-40`). DESIGN.md 기본 0.5보다 흐리다. 비활성 컨트롤은 누를 수 없다.
 
 ## 글꼴

@@ -24,7 +24,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | 목록·설정 행        | `ListRow`, `SettingsListGroup`(`ListGroup` 확장, 빈 카드 `.Empty`), `InfiniteList`                                                             | 유지. 빈 상태를 다시 그리지 않는다                                      |
 | 카드                | **`SurfaceCard`**                                                                                                                              | 직접 만든 카드와 직접 쓴 `Card`를 옮긴다                                |
 | 입력                | `Input`·`TextArea`·`BottomSheetInput`, `PasswordInput`(auth 기능)                                                                              | 유지([이유](#직접-만든-부품을-둔-이유))                                 |
-| OTP·선택·체크·토글  | heroui `InputOTP`, `RadioGroup` + `ChoiceRadio`, **Checkbox 확장**, `ControlField`(`SettingsListGroup.Toggle`)                                 | 고르는 입력은 `RadioGroup.Item`                                         |
+| OTP·선택·체크·토글  | heroui `InputOTP`, `RadioGroup` + `ChoiceRadio`, **`Checkbox`**(shared 확장), `ControlField`(`SettingsListGroup.Toggle`)                       | 고르는 입력은 `RadioGroup.Item`                                         |
 | 칩                  | **`LabelChip`**, 누르는 칩은 `ActionButton`                                                                                                    | soft 칩 복제를 옮긴다                                                   |
 | 시트·다이얼로그     | `ConfirmDialog`(`useConfirmDialog().openAsync({ onConfirm })`), **`useOpenSheet`**, **`RouteBottomSheet`**                                     | [시트](#시트)                                                           |
 | 팝오버·메뉴         | heroui `Popover` + `HintPopoverContent`, heroui `Menu` + `MenuActionItem` + **`MenuContent`**                                                  | 위험 항목 빨강은 하나                                                   |
@@ -38,16 +38,16 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 
 ## 새 공용 부품의 인터페이스
 
-- **`SurfaceCard`**: `Omit<ComponentProps<typeof Surface>, 'variant'>`. `rounded-2xl shadow-none` 면이고 시트 안 면 옵션이 있다.
-- **`LabelChip`**: heroui `Chip` + 자식 `Text` + soft 색 매핑. 크기는 셋이다: 섹션 머리 알약(`md`·`secondary`, `b4`), 라벨 배지(`sm`, `e1`), 누르는 제안(`md`, `b3`). 글자 색은 [design의 주황 두 가지](../design.md#주황-두-가지)를 따른다.
-- **`MenuContent`**: `Menu.Portal` + `Menu.Overlay` + 앱 겉모양을 한 번에 둔 `Menu.Content` 확장이다. 항목은 `MenuActionItem`(위험하면 `variant="danger"`), 고르는 메뉴는 `Menu.Item` + `Menu.ItemIndicator`다.
-- **Checkbox 확장**: heroui `Checkbox` + 앱 라벨. `isSelected`/`onSelectedChange`를 그대로 쓴다.
-- **`ScrollFade`**: `surface: 'screen' | 'sheet'`. 화면·시트 스크롤의 잘리는 쪽을 흐리게 덮는다(`ScreenScrollShadow`·`SheetScrollShadow`를 대신한다).
-- **`Mascot`**: `name`, `size`, `isCentered`. 고양이 이미지를 직접 import하지 않는다.
+- **`SurfaceCard`**(있음): `Omit<ComponentProps<typeof Surface>, 'variant'>` + `surface: 'screen' | 'sheet'`. `variant="transparent"`로 그려 `SurfaceContext`를 만들지 않고, `rounded-2xl bg-gray-1` 면이다.
+- **`LabelChip`**(있음): heroui `Chip` + 자식 `Text` + soft 색 매핑. 글자 크기는 칩 크기를 따른다(`sm` → `e1`, `md`·`lg` → `b3`). soft 변형만 지원하고 섹션 머리 알약(`secondary`, `b4`)과 누르는 제안 칩은 아직 옮기지 않았다. 글자 색은 [design의 주황 두 가지](../design.md#주황-두-가지)를 따른다.
+- **`MenuContent`**(있음): `Menu.Portal` + `Menu.Overlay` + 앱 겉모양을 한 번에 둔 `Menu.Content` 확장이다. 항목은 `MenuActionItem`(위험하면 `variant="danger"`), 고르는 메뉴는 `Menu.Item` + `Menu.ItemIndicator`다.
+- **`Checkbox`**(있음): heroui `Checkbox` 확장. 앱 체크박스 겉모양이고 `isSelected`/`onSelectedChange`를 그대로 쓴다. features에서 heroui `Checkbox`를 직접 import하지 않는다.
+- **`ScrollFade`**(있음): `surface: 'screen' | 'sheet'`. 화면·시트 스크롤의 잘리는 쪽을 흐리게 덮는다(`ScreenScrollShadow`·`SheetScrollShadow`를 대신한다).
+- **`Mascot`**(있음): `name`, `size?`, `isCentered`. 고양이 이미지를 직접 import하지 않는다.
 - **`TimeSpinner`**: `value`, `onChange`, `timeFormat`, `minimum`, `maximum`. Android 시스템 피커는 `openAndroidTimePicker()`다.
 - **`RouteBottomSheet`**: `fallbackHref`, `loading`. 대상이 있는 시트 route의 껍데기 하나이고 대상은 `useSheetTodo` 같은 route 훅으로 읽는다.
 - **`useOpenSheet()`**: `openSheet(render, options)`. route 문맥이 없는 시트(폼에 묶인 피커)를 띄운다.
-- **`QueryErrorFallback.Inline`**: 블록 안 "실패 + 다시 시도" 한 줄이다.
+- **`QueryErrorFallback.Inline`**(있음): 블록 안 "실패 + 다시 시도" 한 줄이다. `hasInquiry`를 켜면 문의하기가 붙는다.
 
 ## 직접 만든 부품을 둔 이유
 
