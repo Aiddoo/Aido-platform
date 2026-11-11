@@ -1,21 +1,22 @@
 import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
-import {
-  TODO_REPOSITORY,
-  type TodoRepositoryPort,
-} from "#api/modules/planning/application/ports/todos/todo.repository.port";
-import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
-import { AddTodoItem } from "#api/modules/planning/application/use-cases/todos/add-todo-item.use-case";
-import { CreateTodo } from "#api/modules/planning/application/use-cases/todos/create-todo.use-case";
-import { ReorderTodoItems } from "#api/modules/planning/application/use-cases/todos/reorder-todo-items.use-case";
-import { ToggleTodoComplete } from "#api/modules/planning/application/use-cases/todos/toggle-todo-complete.use-case";
-import { TodoToggledEvent } from "#api/modules/planning/domain/events/todos/todo-toggled.event";
-import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
+import { DAILY_COMPLETION_CACHE_SUBSCRIPTIONS } from "#api/modules/insights/daily-completions/infrastructure/event-handlers/daily-completion-cache.event-handler";
+import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
+import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
+import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
+import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
+import { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import { AddTodoItemUseCase } from "#api/modules/planning/todos/application/use-cases/add-todo-item.use-case";
+import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
+import { ReorderTodoItemsUseCase } from "#api/modules/planning/todos/application/use-cases/reorder-todo-items.use-case";
+import { SetTodoCompletedUseCase } from "#api/modules/planning/todos/application/use-cases/set-todo-completed.use-case";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -25,14 +26,13 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import {
-  AFTER_COMMIT_TASK_REGISTRY,
-  DOMAIN_EVENT_PUBLISHER,
-  UNIT_OF_WORK,
-  type AfterCommitTaskRegistryPort,
-  type DomainEventPublisherPort,
-  type UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -112,7 +112,13 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       .insert(todo)
       .values(
         omit(
-          TodoFixture.create({ userId, categoryId, completed: false, startDate: AT, sortOrder: 0 }),
+          TodoFixture.create({
+            userId,
+            categoryId,
+            completed: false,
+            startDate: plainDateFromDate(AT),
+            sortOrder: 0,
+          }),
           ["id"],
         ),
       )
@@ -137,6 +143,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
         todoId,
         title: `항목 ${sortOrder}`,
         sortOrder,
+        updatedAt: nowInstant(),
       })),
     );
     return readItems();
@@ -190,7 +197,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
   it("19개 item에 동시 추가하면 하나만 성공하고 20개·고유 sortOrder를 유지한다", async () => {
     // Given
     await createItems(19);
-    const add = context.module.get(AddTodoItem);
+    const add = context.module.get(AddTodoItemUseCase);
 
     // When
     const outcomes = await contend(
@@ -214,9 +221,9 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
   it("동일한 완료 요청 두 개는 모두 응답하되 실제 완료 이벤트는 한 번 발행한다", async () => {
     // Given
-    const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
-    const publishAll = vi.spyOn(publisher, "publishAll");
-    const toggle = context.module.get(ToggleTodoComplete);
+    const publisher = context.module.get(DomainEventPublisherPort);
+    const publish = vi.spyOn(publisher, "publish");
+    const toggle = context.module.get(SetTodoCompletedUseCase);
 
     // When
     const outcomes = await contend(
@@ -239,9 +246,9 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     // Then
     expect(outcomes.every((outcome) => outcome.status === "fulfilled")).toBe(true);
     expect(
-      publishAll.mock.calls
+      publish.mock.calls
         .flatMap(([events]) => events)
-        .filter((event) => event instanceof TodoToggledEvent),
+        .filter((event) => event.eventName === "planning.todo.completed"),
     ).toHaveLength(1);
     expect(
       await client.query.todo.findFirst({
@@ -254,7 +261,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
   it("한 Todo의 잠금 대기는 같은 사용자의 다른 Todo item 추가를 막지 않는다", async () => {
     // Given
     const otherTodoId = await createTodo();
-    const add = context.module.get(AddTodoItem);
+    const add = context.module.get(AddTodoItemUseCase);
     const release = await holdTodoRow();
     const blocked = add.execute({ todoId, userId, title: "대기 중", timezone: "UTC" });
 
@@ -284,11 +291,16 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     if (first === undefined) {
       throw new Error("item fixture 누락");
     }
-    const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const repository = context.module.get(TodoRepositoryPort);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
 
     // When
-    const result = unitOfWork.run(() => repository.reorderItems([first.id, 999999]));
+    const result = unitOfWork.run(() =>
+      repository.reorderItems([
+        TodoItemId.reconstitute(first.id),
+        TodoItemId.reconstitute(999_999),
+      ]),
+    );
 
     // Then
     await expect(result).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
@@ -297,20 +309,20 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
   it("부분 수정은 명시적 null·false를 저장하고 undefined는 이전 값을 유지한다", async () => {
     // Given
-    const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const repository = context.module.get(TodoRepositoryPort);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     await unitOfWork.run(() =>
-      repository.updateDetails(todoId, {
+      repository.updateDetails(TodoId.reconstitute(todoId), {
         title: "기존 제목",
         completed: true,
-        completedAt: AT,
-        endDate: new Date("2027-01-05"),
+        completedAt: instantFromDate(AT),
+        endDate: Temporal.PlainDate.from("2027-01-05"),
       }),
     );
 
     // When
     await unitOfWork.run(() =>
-      repository.updateDetails(todoId, {
+      repository.updateDetails(TodoId.reconstitute(todoId), {
         title: undefined,
         completed: false,
         completedAt: null,
@@ -335,7 +347,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const response = await context.module
-      .get(ReorderTodoItems)
+      .get(ReorderTodoItemsUseCase)
       .execute({ todoId, userId, itemIds });
     recording = null;
 
@@ -359,11 +371,11 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     recording = statements;
 
     // When
-    const response = await context.module.get(CreateTodo).execute({
-      userId,
-      categoryId,
+    const response = await context.module.get(CreateTodoUseCase).execute({
+      userId: UserId.reconstitute(userId),
+      categoryId: TodoCategoryId.reconstitute(categoryId),
       title: "반복 생성",
-      startDate: new Date("2027-01-04"),
+      startDate: Temporal.PlainDate.from("2027-01-04"),
       scheduledTime: null,
       timezone: "Asia/Seoul",
       isAllDay: true,
@@ -392,11 +404,11 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     const statements: string[] = [];
     recording = statements;
     // When
-    const response = await context.module.get(CreateTodo).execute({
-      userId,
-      categoryId,
+    const response = await context.module.get(CreateTodoUseCase).execute({
+      userId: UserId.reconstitute(userId),
+      categoryId: TodoCategoryId.reconstitute(categoryId),
       title: "매일 반복",
-      startDate: AT,
+      startDate: plainDateFromDate(AT),
       timezone: "UTC",
       items: [{ title: "항목" }],
       repeat: { frequency: "DAILY", end: { type: "NEVER" } },
@@ -417,7 +429,13 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     async function createCategory(name: string) {
       const [category] = await client
         .insert(todoCategory)
-        .values({ userId, name, color: "#123456", sortOrder: 1 })
+        .values({
+          userId,
+          name,
+          color: "#123456",
+          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+          sortOrder: 1,
+        })
         .returning();
       if (category === undefined) {
         throw new Error("category fixture 누락");
@@ -426,11 +444,11 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     }
 
     function startSeries(target: number, repeat: TodoRepeat) {
-      return context.module.get(CreateTodo).execute({
-        userId,
-        categoryId: target,
+      return context.module.get(CreateTodoUseCase).execute({
+        userId: UserId.reconstitute(userId),
+        categoryId: TodoCategoryId.reconstitute(target),
         title: "카테고리 반복",
-        startDate: AT,
+        startDate: plainDateFromDate(AT),
         timezone: "UTC",
         repeat,
       });
@@ -442,7 +460,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       const { series } = await startSeries(source, { frequency: "DAILY", end: { type: "NEVER" } });
       // When
       await context.module
-        .get(DeleteTodoCategory)
+        .get(DeleteTodoCategoryUseCase)
         .execute({ userId, categoryId: source, moveToCategoryId: categoryId });
       // Then
       const moved = await client.query.todoSeries.findFirst({ where: { id: series?.id } });
@@ -457,7 +475,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       await client.delete(todo).where(eq(todo.categoryId, source));
       // When
       const outcome = context.module
-        .get(DeleteTodoCategory)
+        .get(DeleteTodoCategoryUseCase)
         .execute({ userId, categoryId: source });
       // Then
       await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0855 });
@@ -472,7 +490,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       });
       await client.delete(todo).where(eq(todo.categoryId, source));
       // When
-      await context.module.get(DeleteTodoCategory).execute({ userId, categoryId: source });
+      await context.module.get(DeleteTodoCategoryUseCase).execute({ userId, categoryId: source });
       // Then
       expect(
         await client.query.todoSeries.findFirst({ where: { id: series?.id } }),
@@ -484,24 +502,44 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       await startSeries(categoryId, { frequency: "DAILY", end: { type: "NEVER" } });
       // When
       const usage = await context.module
-        .get<TodoRepositoryPort>(TODO_REPOSITORY)
-        .countCategoryUsage(userId, categoryId);
+        .get(TodoRepositoryPort)
+        .countCategoryUsage(UserId.reconstitute(userId), TodoCategoryId.reconstitute(categoryId));
       // Then
       expect(usage).toBe(2);
     });
   });
 
   describe("커밋 후 생성 포트", () => {
+    // 커밋 뒤 in-process 전달은 구독 이름 채널로 가므로 그 채널에 도착한 것만 커밋된 이벤트다
+    function recordCommittedOccurrencesCreated(): { readonly delivered: unknown[] } {
+      const channel = DAILY_COMPLETION_CACHE_SUBSCRIPTIONS.find(
+        ({ eventName }) => eventName === "planning.todo-series.occurrences-created",
+      )?.name;
+      if (channel == null) {
+        throw new Error("회차 생성 구독이 없습니다.");
+      }
+      const delivered: unknown[] = [];
+      const emitter = context.module.get(EventEmitter2);
+      const listener = (payload: unknown) => {
+        delivered.push(payload);
+      };
+      emitter.on(channel, listener);
+      onTestFinished(() => {
+        emitter.off(channel, listener);
+      });
+      return { delivered };
+    }
+
     function stageInsideUnitOfWork(afterStage: () => Promise<void>) {
-      const creator = context.module.get<StagedTodoCreatorPort>(STAGED_TODO_CREATOR);
-      const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
-      const registry = context.module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
+      const creator = context.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
+      const unitOfWork = context.module.get(UnitOfWorkPort);
+      const registry = context.module.get(AfterCommitTaskRegistryPort);
       return unitOfWork.run(async () => {
         const staged = await creator.stage({
-          userId,
-          categoryId,
+          userId: UserId.reconstitute(userId),
+          categoryId: TodoCategoryId.reconstitute(categoryId),
           title: "포트 반복",
-          startDate: new Date("2027-01-04"),
+          startDate: Temporal.PlainDate.from("2027-01-04"),
           scheduledTime: "09:00",
           timezone: "Asia/Seoul",
           repeat: { frequency: "DAILY", end: { type: "UNTIL", date: "2027-01-05" } },
@@ -514,47 +552,46 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     it("바깥 트랜잭션이 롤백되면 할 일도 생성 이벤트도 남지 않는다", async () => {
       // Given
-      const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
-      const publishAll = vi.spyOn(publisher, "publishAll");
+      const { delivered } = recordCommittedOccurrencesCreated();
       const failure = new Error("바깥 작업 실패");
       // When
       const outcome = stageInsideUnitOfWork(() => Promise.reject(failure));
       // Then
       await expect(outcome).rejects.toBe(failure);
-      expect(publishAll).not.toHaveBeenCalled();
+      expect(delivered).toEqual([]);
       expect(await client.$count(todo, eq(todo.title, "포트 반복"))).toBe(0);
     });
 
     it("커밋에 성공하면 그 뒤에 규칙당 생성 이벤트 하나를 낸다", async () => {
       // Given
-      const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
-      const publishAll = vi.spyOn(publisher, "publishAll");
+      const { delivered } = recordCommittedOccurrencesCreated();
       // When
       const staged = await stageInsideUnitOfWork(async () => {
-        expect(publishAll).not.toHaveBeenCalled();
+        expect(delivered).toEqual([]);
       });
       // Then
       expect(staged.todos).toHaveLength(2);
-      expect(publishAll.mock.calls.flatMap(([events]) => events)).toHaveLength(1);
+      expect(delivered).toEqual([expect.objectContaining({ userId })]);
       expect(staged.todos.every((created) => !created.isAllDay)).toBe(true);
     });
   });
 
   it("반복 item 저장이 실패하면 부모 bulk 생성도 rollback한다", async () => {
     // Given
-    const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
-    const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+    const repository = context.module.get(TodoRepositoryPort);
+    const unitOfWork = context.module.get(UnitOfWorkPort);
     const before = await client.query.todo.findMany({ columns: { id: true }, where: { userId } });
 
     // When
-    const result = unitOfWork.run(() =>
+    const result = unitOfWork.run(async () =>
       repository.insertOccurrences(
         [
           {
+            id: (await repository.nextIds(1))[0] ?? TodoId.reconstitute(0),
             userId,
             categoryId,
             title: "rollback 대상",
-            startDate: AT,
+            startDate: plainDateFromDate(AT),
             endDate: null,
             scheduledLocalTime: null,
             scheduledTime: null,
@@ -562,10 +599,10 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
             isAllDay: true,
             visibility: "PUBLIC",
             occurrenceDate: "2027-01-04",
-            createdAt: AT,
+            createdAt: instantFromDate(AT),
           },
         ],
-        "00000000-0000-4000-8000-000000000701",
+        TodoSeriesId.reconstitute("00000000-0000-4000-8000-000000000701"),
         [{ title: "x".repeat(201) }],
       ),
     );

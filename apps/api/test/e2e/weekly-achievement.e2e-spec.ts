@@ -6,7 +6,7 @@ import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import { weeklyAchievement } from "#api/platform/database/schema/index";
-import { INSIGHTS_TIME } from "#test/fixtures/insights.fixture";
+import { DAILY_COMPLETION_FIXTURE_NOW } from "#test/fixtures/insights/daily-completion.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -14,14 +14,14 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
   let context: E2eTestContext;
   beforeAll(async () => {
     context = await createE2eApp();
-  }, 60000);
+  }, 60_000);
   afterAll(async () => {
     await destroyE2eApp(context);
   });
   beforeEach(async () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(INSIGHTS_TIME);
+    vi.setSystemTime(DAILY_COMPLETION_FIXTURE_NOW.epochMilliseconds);
   });
   afterEach(() => vi.useRealTimers());
 
@@ -36,7 +36,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
           week,
           totalTodos: 5,
           completedTodos: 5,
-          achievedAt: new Date("2026-03-09T00:00:00.000Z"),
+          achievedAt: Temporal.Instant.from("2026-03-09T00:00:00Z"),
         })),
       );
   }
@@ -124,7 +124,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
           week: 10,
           totalTodos: 10,
           completedTodos: 7,
-          achievedAt: new Date("2026-03-09T00:00:00.000Z"),
+          achievedAt: Temporal.Instant.from("2026-03-09T00:00:00Z"),
         });
 
       // When

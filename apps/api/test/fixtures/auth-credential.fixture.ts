@@ -1,17 +1,18 @@
+import type { AccessTier } from "@aido/api/vocabulary";
+
 import type {
-  AccessSnapshot,
   EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
-import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
-import {
-  type AccessTier,
-  NO_RESOURCE_BONUSES,
-  resolveAllFeatureAccess,
-} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
+  UserEntitlements,
+} from "#api/modules/access/entitlements/access-entitlements.public";
+import { planOfTier } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
+import type {
+  MeteredFeatureQuota,
+  QuotaLedgerPort,
+} from "#api/modules/access/quotas/access-quotas.public";
 import type {
   PremiumAccess,
   PremiumAccessReaderPort,
-} from "#api/modules/billing/billing-subscriptions.public";
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
 import { CreateSessionUseCase } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
 import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
@@ -22,7 +23,9 @@ import { SendVerificationCodeUseCase } from "#api/modules/identity/auth/applicat
 import type {
   DailySendUsage,
   DailySendUsageReaderPort,
-} from "#api/modules/social/social-cheers.public";
+} from "#api/modules/social/cheers/social-cheers.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryEntitlementCache } from "#test/doubles/access/in-memory-entitlement-cache";
 import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
 import { InMemoryAuthLoginAttemptRepository } from "#test/doubles/identity/in-memory-auth-login-attempt.repository";
 import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
@@ -31,7 +34,9 @@ import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-aut
 import { InMemoryAuthVerificationRepository } from "#test/doubles/identity/in-memory-auth-verification.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createFeatureEntitlementsFixture } from "#test/fixtures/access/access-user.fixture";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import {
   StubAuthPasswordHasher,
@@ -137,12 +142,14 @@ export function createAuthCredentialFixture(
     verificationRepository,
     verificationCodeSecurity,
     cacheService,
+    entitlementCache: new InMemoryEntitlementCache(),
     pushDevices,
     emailSender,
     adminEventNotifier,
     retentionEnroller,
     seeder,
     logger,
+    alert: new RecordingOperationalAlert(),
     unitOfWork,
     clock,
     sessionService,
@@ -161,25 +168,26 @@ export function createAuthCredentialFixture(
 }
 
 /** 사용자별 권한 주체를 정해 두는 대역. 기능 권한은 실제 Access 정책으로 계산한다. */
-export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getAccessSnapshot"> {
+export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getEntitlements"> {
   readonly tiers = new Map<string, AccessTier>();
   readonly activeSubscriptionUserIds = new Set<string>();
 
-  async getAccessSnapshot(userId: string): Promise<AccessSnapshot> {
-    const tier = this.tiers.get(userId) ?? "FREE";
+  async getEntitlements(userId: UserId): Promise<UserEntitlements> {
+    const tier = this.tiers.get(userId.value) ?? "FREE";
     return {
       tier,
-      isPremium: this.activeSubscriptionUserIds.has(userId),
-      features: resolveAllFeatureAccess(tier, NO_RESOURCE_BONUSES),
+      plan: planOfTier(tier),
+      isPremium: this.activeSubscriptionUserIds.has(userId.value),
+      features: createFeatureEntitlementsFixture(tier),
     };
   }
 }
 
-export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
+class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
   used = 0;
   resetsAt = "2026-11-30T15:00:00.000Z";
 
-  async read(_userId: string): Promise<MeteredFeatureQuota> {
+  async read(_userId: UserId): Promise<MeteredFeatureQuota> {
     return {
       feature: "AI_PARSE",
       allowed: true,
@@ -194,26 +202,26 @@ export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read">
   }
 }
 
-export class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsage"> {
+class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsage"> {
   used = 0;
   resetsAt = new Date("2026-11-03T15:00:00.000Z");
   readonly timezones: string[] = [];
 
-  async readDailyUsage(_userId: string, timezone: string): Promise<DailySendUsage> {
+  async readDailyUsage(_userId: UserId, timezone: string): Promise<DailySendUsage> {
     this.timezones.push(timezone);
     return { used: this.used, resetsAt: new Date(this.resetsAt) };
   }
 }
 
 /** 사용자별 프리미엄 출처를 정해 두는 대역. 기본값은 프리미엄 아님이다. */
-export class StubPremiumAccessReader implements PremiumAccessReaderPort {
+class StubPremiumAccessReader implements PremiumAccessReaderPort {
   readonly accesses = new Map<string, PremiumAccess>();
   readonly requestedUserIds: string[] = [];
 
-  async getPremiumAccess(userId: string): Promise<PremiumAccess> {
-    this.requestedUserIds.push(userId);
+  async getPremiumAccess(userId: UserId): Promise<PremiumAccess> {
+    this.requestedUserIds.push(userId.value);
     return (
-      this.accesses.get(userId) ?? {
+      this.accesses.get(userId.value) ?? {
         source: null,
         endsAt: null,
         periodEndsAt: null,

@@ -1,18 +1,16 @@
-import type { Todo } from "@aido/api";
-
 import {
   type CreateTodoData,
   type StagedTodoCreation,
   StagedTodoCreatorPort,
-} from "#api/modules/planning/planning-todos.public";
-import { TodoBuilder } from "#test/builders/todo.builder";
-import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
+  type TodoReadModel,
+} from "#api/modules/planning/todos/planning-todos.public";
+import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
 
 // 받은 입력을 남기고 입력 제목의 할 일을 하나 만든다. 반복이면 recurringTodos를 회차로 돌려준다
 export class FakeStagedTodoCreator extends StagedTodoCreatorPort {
   readonly inputs: CreateTodoData[] = [];
   readonly settledTodoIds: number[] = [];
-  recurringTodos: readonly Todo[] = [];
+  recurringTodos: readonly TodoReadModel[] = [];
   failure: ((input: CreateTodoData) => unknown) | null = null;
   #nextTodoId = 1;
 
@@ -21,7 +19,7 @@ export class FakeStagedTodoCreator extends StagedTodoCreatorPort {
     if (error != null) {
       throw error;
     }
-    this.inputs.push(structuredClone(input));
+    this.inputs.push({ ...input });
     const todos = input.repeat == null ? [this.#createTodo(input)] : [...this.recurringTodos];
     return {
       todos,
@@ -32,17 +30,17 @@ export class FakeStagedTodoCreator extends StagedTodoCreatorPort {
     };
   }
 
-  #createTodo(input: CreateTodoData): Todo {
-    const record = TodoBuilder.create(input.userId)
-      .withId(this.#nextTodoId)
-      .withTitle(input.title)
-      .withCategoryId(input.categoryId)
-      .withStartDate(input.startDate)
-      .withEndDate(input.endDate ?? null)
-      .withIsAllDay(input.isAllDay ?? true)
-      .withVisibility(input.visibility ?? "PUBLIC")
-      .build();
+  #createTodo(input: CreateTodoData): TodoReadModel {
+    const todo = createTodoReadModelFixture({
+      id: this.#nextTodoId,
+      userId: input.userId.value,
+      title: input.title,
+      startDate: input.startDate.toString(),
+      endDate: input.endDate?.toString() ?? null,
+      isAllDay: input.isAllDay ?? true,
+      visibility: input.visibility ?? "PUBLIC",
+    });
     this.#nextTodoId += 1;
-    return createTodoResponseFixture(record);
+    return { ...todo, category: { ...todo.category, id: input.categoryId.value } };
   }
 }

@@ -1,9 +1,3 @@
-import {
-  WHATS_NEW_CAMPAIGN_ID,
-  LEGACY_WHATS_NEW_CAMPAIGN_ID,
-  PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
-} from '@src/features/app-config/feature-campaign/constants/feature-campaign.constants';
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
 import type { TodoExistence } from '@src/features/planning/todo/domains/todo.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
@@ -15,9 +9,6 @@ const activationProgressSchema = z.object({
 });
 export type ActivationProgress = z.infer<typeof activationProgressSchema>;
 
-const activationIdentitySchema = z.object({ accountId: z.string(), campaignId: z.string() });
-export type ActivationIdentity = z.infer<typeof activationIdentitySchema>;
-
 const activationUserSchema = z.object({ id: z.string(), createdAt: instantSchema });
 export type ActivationUser = z.infer<typeof activationUserSchema>;
 
@@ -27,53 +18,7 @@ const activationChecklistStepsSchema = z.object({
 });
 type ActivationChecklistSteps = z.infer<typeof activationChecklistStepsSchema>;
 
-// 신규 사용자 코호트는 서버 설정의 캠페인을 따른다. 소개 카드를 새 캠페인으로 바꿔도 이전 캠페인의 체크리스트가 이어진다
-const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
-  LEGACY_WHATS_NEW_CAMPAIGN_ID,
-  PREVIOUS_WHATS_NEW_CAMPAIGN_ID,
-  WHATS_NEW_CAMPAIGN_ID,
-]);
 const ACTIVATION_CHECKLIST_WINDOW_MS = 7 * DAY_MS;
-
-interface ChecklistEligibilityInput {
-  config: FeatureCampaignConfig | undefined;
-  user: ActivationUser | undefined;
-  progress: ActivationProgress;
-  now: Instant;
-}
-
-function findEnabledCampaign(
-  config: FeatureCampaignConfig,
-): { campaignId: string; launchedAt: Instant } | null {
-  if (config.enabled && ACTIVATION_CAMPAIGN_IDS.has(config.campaignId)) {
-    return {
-      campaignId: config.campaignId,
-      launchedAt: config.launchedAt,
-    };
-  }
-  return null;
-}
-
-function findActivationIdentity(
-  config: FeatureCampaignConfig | undefined,
-  user: ActivationUser | undefined,
-): ActivationIdentity | null {
-  const campaign = config ? findEnabledCampaign(config) : null;
-  if (!campaign || !user || toEpochMs(user.createdAt) < toEpochMs(campaign.launchedAt)) {
-    return null;
-  }
-  return {
-    accountId: user.id,
-    campaignId: campaign.campaignId,
-  };
-}
-
-function isNewUserCohort(
-  config: FeatureCampaignConfig | undefined,
-  user: ActivationUser | undefined,
-): boolean {
-  return findActivationIdentity(config, user) != null;
-}
 
 function isWithinTimeWindow(createdAt: number, now: number, window: number): boolean {
   const elapsed = now - createdAt;
@@ -84,17 +29,21 @@ function calculateElapsedDays(createdAt: number, now: number): number {
   return Math.max(0, Math.floor((now - createdAt) / DAY_MS));
 }
 
-/** 체크리스트 대상인지. 신규 코호트이고 활성화 전이며 가입 후 7일 안이어야 한다 */
-function shouldOfferChecklist({ config, user, progress, now }: ChecklistEligibilityInput): boolean {
-  if (!isNewUserCohort(config, user) || !user || progress.activatedAt) {
-    return false;
-  }
-
+/** 가입하고 7일 동안만 시작 체크리스트를 보이고 활성화를 센다. 서버 캠페인과 상관없이 계정만 본다 */
+function isInChecklistWindow(user: ActivationUser, now: Instant): boolean {
   return isWithinTimeWindow(
     toEpochMs(user.createdAt),
     toEpochMs(now),
     ACTIVATION_CHECKLIST_WINDOW_MS,
   );
+}
+
+/** 가입 7일 안이고 아직 활성화하지 않았으면 체크리스트를 보인다 */
+function shouldOfferChecklist(
+  user: ActivationUser,
+  { progress, now }: { progress: ActivationProgress; now: Instant },
+): boolean {
+  return progress.activatedAt == null && isInChecklistWindow(user, now);
 }
 
 // 재설치·다른 기기·웹에서 만든 할 일도 세도록 서버 기록과 기기 기록 중 하나라도 있으면 끝이다(서버를 못 읽었으면 기기만 본다)
@@ -121,7 +70,7 @@ function getDaysSinceSignup(user: ActivationUser, now: Instant): number {
 }
 
 export const ActivationPolicy = {
-  findActivationIdentity,
+  isInChecklistWindow,
   getChecklistSteps,
   getDaysSinceSignup,
   shouldOfferChecklist,

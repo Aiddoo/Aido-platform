@@ -51,21 +51,17 @@ export function InlineAlert({
 
   const contents = (
     <Alert.Content>
+      {/* HeroUI Title·Description은 Text라 안쪽 글자는 중첩 Text가 된다. iOS는 바깥 Text의 줄바꿈 규칙만 따라 규칙을 바깥에 준다 */}
       {title != null && (
-        <Alert.Title>
-          <Text
-            size="b3"
-            weight="medium"
-            tone={getTextTone(status)}
-            lineBreakStrategyIOS="hangul-word"
-          >
+        <Alert.Title lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          <Text size="b3" weight="medium" tone={getTextTone(status)}>
             {title}
           </Text>
         </Alert.Title>
       )}
       {description != null && (
-        <Alert.Description>
-          <Text size={title == null ? 'b4' : 'e1'} shade={6} lineBreakStrategyIOS="hangul-word">
+        <Alert.Description lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          <Text size={title == null ? 'b4' : 'e1'} shade={6}>
             {description}
           </Text>
         </Alert.Description>

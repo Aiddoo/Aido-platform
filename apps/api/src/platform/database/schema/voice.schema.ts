@@ -1,15 +1,16 @@
 import type { ActionPlanSource } from "@aido/api/vocabulary";
+import { sql } from "drizzle-orm";
 import {
   foreignKey,
   index,
   integer,
   pgTable,
   text,
-  timestamp,
   uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
 
+import { instant } from "../columns/temporal-columns.js";
 import { createEntityId } from "../entity-id.js";
 import { user } from "./identity.schema.js";
 
@@ -20,7 +21,9 @@ import { user } from "./identity.schema.js";
 export const planApplication = pgTable(
   "PlanApplication",
   {
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: instant()
+      .default(sql`now()`)
+      .notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     idempotencyKey: varchar({ length: 128 }).notNull(),
     memoId: integer(),

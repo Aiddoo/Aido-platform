@@ -1,0 +1,81 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "b50c948e-bd0a-4646-aac6-657668afb1d5",
+  "prevIds": [
+    "82bb2533-0b2b-4ac6-98fd-aaa4f6c6faa2"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "BroadcastCampaign",
+        "delivery"
+      ],
+      "writes": [
+        "s|col|public.BroadcastCampaign.delivery",
+        "n|col|public.BroadcastCampaign.delivery",
+        "e|col|public.BroadcastCampaign.delivery"
+      ],
+      "reads": [
+        "n|tbl|public.BroadcastCampaign",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "BroadcastCampaign",
+        "localizedContent"
+      ],
+      "writes": [
+        "s|col|public.BroadcastCampaign.localizedContent",
+        "n|col|public.BroadcastCampaign.localizedContent",
+        "e|col|public.BroadcastCampaign.localizedContent"
+      ],
+      "reads": [
+        "n|tbl|public.BroadcastCampaign",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "BroadcastCampaign",
+        "name": "delivery",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "BroadcastCampaign",
+        "name": "localizedContent",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

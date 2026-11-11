@@ -3,8 +3,8 @@
  */
 import { computeEffectiveStreak } from "./effective-streak.domain-service.js";
 
-const TODAY = new Date("2024-01-16T00:00:00.000Z");
-const YESTERDAY = new Date("2024-01-15T00:00:00.000Z");
+const TODAY = Temporal.PlainDate.from("2024-01-16");
+const YESTERDAY = Temporal.PlainDate.from("2024-01-15");
 
 describe("computeEffectiveStreak", () => {
   it("전체 완료 + 오늘 이미 반영 → 현재 스트릭 유지", () => {

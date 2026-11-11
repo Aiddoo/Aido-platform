@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { entityIdSchemaWithMessage } from "../../../common/entity-id.js";
 import {
   DEVICE_TYPES,
   OAUTH_PROVIDERS,
@@ -178,9 +179,9 @@ export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 
 export const revokeSessionSchema = z
   .object({
-    sessionId: z
-      .cuid("유효하지 않은 세션 ID입니다")
-      .describe("해제할 세션 ID (CUID 25자, 예: clz7x5p8k0002qz0z8z8z8z8z)"),
+    sessionId: entityIdSchemaWithMessage("유효하지 않은 세션 ID입니다").describe(
+      "해제할 세션 ID (예: clz7x5p8k0002qz0z8z8z8z8z)",
+    ),
   })
   .describe("세션 해제 요청");
 

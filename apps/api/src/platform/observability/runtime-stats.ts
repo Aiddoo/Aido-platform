@@ -13,7 +13,9 @@ export interface RuntimeSample {
   readonly pool: PoolStats | null;
 }
 
-export type RuntimeBreachKind = "pool-waiting" | "event-loop-delay" | "heap-usage";
+const RUNTIME_BREACH_KINDS = ["pool-waiting", "event-loop-delay", "heap-usage"] as const;
+
+export type RuntimeBreachKind = (typeof RUNTIME_BREACH_KINDS)[number];
 
 export interface RuntimeBreach {
   readonly kind: RuntimeBreachKind;
@@ -65,4 +67,12 @@ export function evaluateRuntimeSample(
     });
   }
   return { breaches, poolWaitingSinceMs };
+}
+
+/** 직전 표본에서 이미 넘어 있던 종류는 빼고 이번에 새로 넘은 것만 고른다. 넘은 상태가 이어져도 경보는 한 번이다. */
+export function newlyBreached(
+  previous: ReadonlySet<RuntimeBreachKind>,
+  breaches: readonly RuntimeBreach[],
+): RuntimeBreach[] {
+  return breaches.filter((breach) => !previous.has(breach.kind));
 }

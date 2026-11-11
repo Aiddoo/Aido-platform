@@ -17,6 +17,7 @@ export interface AuthSessionPrimitives {
   readonly userAgent: string;
   readonly lastUsedAt: Temporal.Instant;
   readonly createdAt: Temporal.Instant;
+  readonly updatedAt: Temporal.Instant;
   readonly expiresAt: Temporal.Instant;
   readonly revokedAt: Temporal.Instant | null;
 }
@@ -62,6 +63,7 @@ export class AuthSession extends AggregateRoot<SessionId, AuthSessionProps> {
       userAgent: params.userAgent,
       lastUsedAt: params.now,
       createdAt: params.now,
+      updatedAt: params.now,
       expiresAt: params.expiresAt,
       revokedAt: null,
     });
