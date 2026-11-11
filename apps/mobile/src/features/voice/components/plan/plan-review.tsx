@@ -158,7 +158,7 @@ export function PlanReview({
 
   return (
     <VStack className={className} style={style}>
-      <VStack gap={4} className="pb-4">
+      <VStack className="gap-1 pb-4">
         <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
           {match(headline)
             .with({ kind: 'todos' }, ({ count }) => t('voicePlan:plan.title', { count }))
@@ -205,7 +205,7 @@ export function PlanReview({
         </ScrollView>
       </ScrollFade>
 
-      <HStack gap={8} className="pt-3">
+      <HStack className="gap-2 pt-3">
         {secondaryAction}
         <Box className="flex-1">
           <Button
@@ -314,7 +314,7 @@ PlanReview.Loading = function Loading({
 }: Pick<PlanReviewProps, 'className' | 'style'>) {
   return (
     <VStack className={className} style={style}>
-      <VStack flex={1} gap={16}>
+      <VStack className="gap-4" flex={1}>
         <VStack gap={4}>
           <TextSkeleton size="t3" className="w-2/3" />
           <TextSkeleton size="e2" className="w-1/2" />
@@ -495,7 +495,7 @@ PlanReview.TodoRow = function TodoRow({
               </Text>
             )}
             {isDuplicate && (
-              <HStack gap={4} align="center">
+              <HStack className="gap-1" align="center">
                 <InfoIcon
                   width={fontScaledSize(DUPLICATE_ICON_SIZE)}
                   height={fontScaledSize(DUPLICATE_ICON_SIZE)}
@@ -507,7 +507,7 @@ PlanReview.TodoRow = function TodoRow({
               </HStack>
             )}
             {todo.items.length > 0 && (
-              <VStack gap={2} className="mt-1 border-l border-gray-3 pl-3">
+              <VStack className="gap-0.5 mt-1 border-l border-gray-3 pl-3">
                 {todo.items.map((item, itemIndex) => (
                   <Text
                     key={itemIndex}

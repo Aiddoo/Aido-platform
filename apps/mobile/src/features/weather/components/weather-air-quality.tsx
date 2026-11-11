@@ -50,7 +50,7 @@ export function WeatherAirQuality() {
       icon={<WeatherIcon.Card glyph="air" />}
       className="gap-0 px-4 pt-3.5 pb-4"
     >
-      <HStack gap={16} className="mt-1.5">
+      <HStack className="gap-4 mt-1.5">
         <WeatherAirQuality.Pollutant airQuality={airQuality} pollutant="pm10" />
         <WeatherAirQuality.Pollutant airQuality={airQuality} pollutant="pm25" />
       </HStack>
@@ -119,7 +119,7 @@ WeatherAirQuality.Loading = function Loading() {
   return (
     <WeatherCard className="gap-0 px-4 pt-3.5 pb-4">
       <TextSkeleton size="b4" className="w-16 opacity-40" />
-      <HStack gap={16} className="mt-1.5">
+      <HStack className="gap-4 mt-1.5">
         {range(POLLUTANT_COUNT).map((index) => (
           <VStack key={index} className="min-w-0 flex-1">
             <TextSkeleton size="b4" className="w-1/2 opacity-40" />

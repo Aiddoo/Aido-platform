@@ -75,7 +75,7 @@ export function TodoTimePicker({
       }
     >
       <VStack>
-        <VStack className="overflow-hidden rounded-xl bg-gray-1 dark:bg-gray-2 px-1 py-2" gap={8}>
+        <VStack className="gap-2 overflow-hidden rounded-xl bg-gray-1 dark:bg-gray-2 px-1 py-2">
           <ControlField
             isSelected={localIsAllDay}
             onSelectedChange={setLocalIsAllDay}
@@ -157,7 +157,7 @@ export function TodoTimePicker({
 
         <Spacing size={8} />
 
-        <HStack px={4} justify="center" align="center">
+        <HStack className="px-1" justify="center" align="center">
           <Text size="b3" shade={5}>
             {t(localIsAllDay ? 'picker.reminderInfoAllDay' : 'picker.reminderInfo')}
           </Text>

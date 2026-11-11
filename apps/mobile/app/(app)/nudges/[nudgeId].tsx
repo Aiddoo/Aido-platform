@@ -71,7 +71,7 @@ NudgeDetailScreen.Loading = function Loading() {
 
           <TextSkeleton size="t3" className="w-3/4" />
 
-          <HStack gap={12} align="center" className="p-4">
+          <HStack gap={12} align="center" p={16}>
             <Skeleton className="size-7 rounded-full" />
             <VStack flex={1} gap={4}>
               <TextSkeleton size="b3" className="w-3/4" />

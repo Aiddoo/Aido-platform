@@ -143,7 +143,7 @@ function MyInviteCodeSurface({ className, ...props }: ComponentProps<typeof VSta
   return (
     <VStack
       gap={10}
-      className={cn('rounded-[20px] border border-gray-2 bg-gray-1 px-[18px] py-4', className)}
+      className={cn('rounded-[20px] border border-gray-2 bg-gray-1 px-4.5 py-4', className)}
       {...props}
     />
   );

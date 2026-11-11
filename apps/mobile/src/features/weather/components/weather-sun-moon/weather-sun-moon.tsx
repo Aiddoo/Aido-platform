@@ -104,8 +104,8 @@ export function WeatherSunMoon() {
       <HStack
         align="baseline"
         justify="between"
-        gap={8}
-        className="mt-1.5"
+
+        className="gap-2 mt-1.5"
         accessible
         accessibilityLabel={
           headline.label == null
@@ -137,7 +137,7 @@ export function WeatherSunMoon() {
         isNight={isSunBelowHorizon(today, now)}
       />
       {sunEvents.kind === 'regular' && (
-        <HStack gap={4} className="mt-2">
+        <HStack className="gap-1 mt-2">
           <WeatherSunMoon.Fact
             label={t('sunMoon.sunrise')}
             value={sunEvents.sunrise == null ? t('details.noValue') : formatTime(sunEvents.sunrise)}
@@ -158,7 +158,7 @@ export function WeatherSunMoon() {
         </HStack>
       )}
       <Separator thickness={0.5} className="mt-3.5 bg-on-sky/[0.18]" />
-      <HStack gap={12} align="center" className="mt-3.5">
+      <HStack align="center" className="gap-3 mt-3.5">
         <WeatherMoonIcon phase={today.moonPhase} latitude={data.location.latitude} />
         <VStack className="min-w-0 flex-1" accessible>
           <Text size="b2" weight="semibold" tone="onSky" className="leading-[22px]">
@@ -221,7 +221,7 @@ WeatherSunMoon.Loading = function Loading() {
       <TextSkeleton size="b4" className="w-16 opacity-40" />
       <TextSkeleton size="t1" className="mt-1.5 w-24 opacity-40" />
       <Box style={{ height: SUN_ARC_VIEWBOX.height }} />
-      <HStack gap={4} className="mt-2">
+      <HStack className="gap-1 mt-2">
         {range(SUN_FACT_COUNT).map((index) => (
           <VStack key={index} className="min-w-0 flex-1">
             <TextSkeleton size="b4" className="w-3/5 opacity-40" />
@@ -230,7 +230,7 @@ WeatherSunMoon.Loading = function Loading() {
         ))}
       </HStack>
       <Separator thickness={0.5} className="mt-3.5 bg-on-sky/[0.18]" />
-      <HStack gap={12} align="center" className="mt-3.5">
+      <HStack align="center" className="gap-3 mt-3.5">
         <Box className="size-[46px] rounded-full bg-on-sky/[0.12]" />
         <VStack className="min-w-0 flex-1">
           <TextSkeleton size="b2" className="w-24 opacity-40" />

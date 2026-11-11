@@ -223,7 +223,7 @@ function MyFeed({
         {/* 스스로 숨는 안내는 숨을 때 간격도 함께 사라지게 아래 12를 자기 className으로 가진다 */}
         <ActivationChecklist className="mx-4 mb-3" />
 
-        <Box px={16}>
+        <Box className="px-4">
           <QueryErrorBoundary resetKeys={[selectedDateKey]} fallback={TodoList.Error}>
             <Suspense fallback={<TodoList.Loading />}>
               <TodoList key={selectedDateKey} isReminderOff={isReminderOff} />
@@ -250,7 +250,7 @@ function MyFeed({
           </Suspense>
         </QueryErrorBoundary>
 
-        <Box px={16}>
+        <Box className="px-4">
           <QueryErrorBoundary fallback={SuggestionEntry.Error}>
             <SuggestionEntry />
           </QueryErrorBoundary>
@@ -291,7 +291,7 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
       <Spacing size={8} />
 
       {/* 콕 한도는 친구와 무관해 친구를 읽는 동안·실패해도 같은 자리에 스스로 그린다 */}
-      <Box px={16}>
+      <Box className="px-4">
         <QueryErrorBoundary fallback={NudgeLimitBanner.Error}>
           <Suspense fallback={<NudgeLimitBanner.Loading />}>
             <NudgeLimitBanner />

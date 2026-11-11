@@ -257,7 +257,7 @@ DailyForecast.Item = memo(function Item({
         animation={{ entering: { value: EXPAND_ENTERING } }}
         className="gap-2 px-0 pb-3.5 pt-0.5"
       >
-        <HStack gap={8}>
+        <HStack className="gap-2">
           {day.daytime != null && (
             <PartCard
               title={t('daily.daytime', {

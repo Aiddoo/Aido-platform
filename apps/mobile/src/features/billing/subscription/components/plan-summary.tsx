@@ -74,7 +74,7 @@ PlanSummary.Premium = function Premium() {
       testID="plan-summary-premium"
     >
       <VStack gap={12}>
-        <HStack gap={12} align="center">
+        <HStack className="gap-3" align="center">
           <SettingsListGroup.Icon Icon={CrownDuoIcon} />
 
           <VStack flex={1} gap={2}>

@@ -174,8 +174,8 @@ WeatherBriefing.Card = function Card({
       className="gap-0 p-4"
     >
       <Spacing size={10} />
-      <HStack gap={12} align="start">
-        <VStack flex={1} gap={6}>
+      <HStack className="gap-3" align="start">
+        <VStack className="gap-1.5" flex={1}>
           <Text size="t3" weight="semibold" tone="onSky" className="text-[21px] tracking-[-0.6px]">
             {translate(view.headline)}
           </Text>
@@ -366,7 +366,7 @@ WeatherBriefing.Chip = function BriefingChip({
     <Chip
       variant="tertiary"
       className={cn(
-        'min-h-[26px] gap-[3px] self-start rounded-[13px] py-0 pr-[9px] pl-[7px]',
+        'min-h-[26px] gap-0.75 self-start rounded-[13px] py-0 pr-2.25 pl-1.75',
         BRIEFING_ROW_TONES[tone].chip,
         className,
       )}
@@ -475,8 +475,8 @@ WeatherBriefing.Loading = function Loading() {
     <WeatherCard className="gap-0 p-4">
       <TextSkeleton size="b4" className="w-24 opacity-40" />
       <Spacing size={10} />
-      <HStack gap={12} align="start">
-        <VStack flex={1} gap={6}>
+      <HStack className="gap-3" align="start">
+        <VStack className="gap-1.5" flex={1}>
           <TextSkeleton size="t3" className="w-full opacity-40" />
           <TextSkeleton size="b3" className="w-3/4 opacity-40" />
         </VStack>

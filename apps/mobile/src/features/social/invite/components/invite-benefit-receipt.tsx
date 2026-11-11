@@ -40,8 +40,8 @@ InviteBenefitReceipt.Contents = function Contents({ inviteCode }: { inviteCode: 
 
   return (
     <ScallopedContainer>
-      <VStack gap={14} className="px-5 pb-[18px] pt-3.5">
-        <HStack gap={12} align="center">
+      <VStack gap={14} className="px-5 pb-4.5 pt-3.5">
+        <HStack className="gap-3" align="center">
           <FillTicketIcon width={40} height={40} />
 
           <VStack gap={2} className="flex-1">
@@ -100,8 +100,8 @@ InviteBenefitReceipt.Contents = function Contents({ inviteCode }: { inviteCode: 
 InviteBenefitReceipt.Loading = function Loading() {
   return (
     <ScallopedContainer>
-      <VStack gap={14} className="px-5 pb-[18px] pt-3.5" accessibilityState={{ busy: true }}>
-        <HStack gap={12} align="center">
+      <VStack gap={14} className="px-5 pb-4.5 pt-3.5" accessibilityState={{ busy: true }}>
+        <HStack className="gap-3" align="center">
           <Skeleton className="size-10 rounded-xl" />
 
           <VStack gap={2} className="flex-1">

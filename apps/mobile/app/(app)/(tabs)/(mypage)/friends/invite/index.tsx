@@ -51,7 +51,7 @@ export default function MyInviteScreen() {
         <StyledSafeAreaView edges={['left', 'right']}>
           <ReadableContent px={16} pt={8} pb={32}>
             <VStack gap={20}>
-              <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pb-5 pt-[22px]">
+              <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pb-5 pt-5.5">
                 {/* 고양이를 먼저 그려 글자 아래에 깔고, 제목은 고양이가 보이는 폭(98pt)만큼 비켜 선다 */}
                 <Mascot
                   name="catHi"
@@ -64,17 +64,14 @@ export default function MyInviteScreen() {
                   size="t2"
                   weight="bold"
                   lineBreakStrategyIOS="hangul-word"
-                  className="mr-[98px]"
+                  className="mr-24.5"
                 >
                   {t('myInvite.heroTitle')}
                 </Text>
               </Box>
 
               {/* 친구와 내가 각각 무엇을 언제 받는지 이름표와 함께 한 줄씩 나눠 보여 준다 */}
-              <VStack
-                gap={14}
-                className="rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-4"
-              >
+              <VStack className="gap-3.5 rounded-3xl border border-gray-2 bg-gray-1 px-4.5 py-4">
                 <RewardLine
                   label={t('myInvite.rewardInviteeLabel')}
                   value={t('myInvite.rewardInvitee', { days: INVITEE_PREMIUM_DAYS })}
@@ -110,7 +107,7 @@ export default function MyInviteScreen() {
               </QueryErrorBoundary>
 
               {/* 사용 시작 조건과 상한 안내. 이 화면에서만 보여 준다 */}
-              <VStack gap={4} px={2}>
+              <VStack className="gap-1 px-0.5">
                 <Text size="b4" weight="semibold" shade={7} accessibilityRole="header">
                   {t('myInvite.notice.title')}
                 </Text>
@@ -184,7 +181,7 @@ function PawPrintBoardCard({ children }: { children: ReactNode }) {
   const { t } = useTranslation('invite');
 
   return (
-    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-5">
+    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-gray-1 px-4.5 py-5">
       <H4>{t('pawPrintBoard.title')}</H4>
       {children}
     </VStack>
@@ -194,7 +191,7 @@ function PawPrintBoardCard({ children }: { children: ReactNode }) {
 function NoticeRow({ children }: { children: string }) {
   return (
     <HStack align="start" gap={8}>
-      <Box className="mt-[9px] size-[3px] rounded-full bg-gray-5" />
+      <Box className="mt-2.25 size-[3px] rounded-full bg-gray-5" />
       <Text size="b4" shade={6} className="flex-1">
         {children}
       </Text>

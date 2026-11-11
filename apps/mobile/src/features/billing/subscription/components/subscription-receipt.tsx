@@ -65,7 +65,7 @@ export function SubscriptionReceipt() {
       )}
 
       <Box className="px-5 pt-5" testID={`subscription-receipt-${variant}`}>
-        <HStack gap={16} className="items-center">
+        <HStack className="gap-4 items-center">
           <FillTicketIcon width={40} height={40} />
 
           {/* 도장 자리를 비워 두어 긴 제목이 도장 아래로 들어가지 않게 한다 */}
@@ -127,7 +127,7 @@ export function SubscriptionReceipt() {
           {t('subscriber.benefitsTitle')}
         </Text>
 
-        <VStack gap={2}>
+        <VStack className="gap-0.5">
           <ReceiptBenefitRow shade={8} title={t('benefits.aiParsing.title')} />
           <ReceiptBenefitRow
             shade={8}
@@ -191,7 +191,7 @@ SubscriptionReceipt.Loading = function Loading() {
 
       <Box className="px-5">
         <TextSkeleton size="b3" className="mb-3 w-32" />
-        <VStack gap={2}>
+        <VStack className="gap-0.5">
           {range(BENEFIT_ROW_COUNT).map((index) => (
             <ListRow
               key={index}

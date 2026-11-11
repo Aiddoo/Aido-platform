@@ -168,7 +168,7 @@ SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
 
       <Spacing size={24} />
 
-      <VStack gap={8} className="items-center">
+      <VStack className="gap-2 items-center">
         <Paywall.RenewalNotice />
         <Paywall.Terms />
         <RestorePurchaseButton size="small" />
@@ -263,7 +263,7 @@ SubscriptionScreen.Receipt = function Receipt() {
 
           <Spacing size={16} />
 
-          <VStack gap={8} className="items-center">
+          <VStack className="gap-2 items-center">
             <RestorePurchaseButton size="medium" />
             {!isOnline && <SubscriptionOfflineActionsNotice />}
           </VStack>

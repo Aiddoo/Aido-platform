@@ -286,14 +286,14 @@ VoiceNoteResult.Loading = function Loading() {
 
   return (
     <VStack flex={1} gap={12} testID="voice-note-screen-loading">
-      <VStack gap={4}>
+      <VStack className="gap-1">
         <TextSkeleton size="t3" className="w-2/3" />
         <TextSkeleton size="e1" className="w-1/2" />
       </VStack>
       <HStack className="items-center rounded-2xl bg-gray-1 px-3 py-3">
         <Skeleton className="size-9 rounded-full" />
       </HStack>
-      <HStack flex={1} gap={20}>
+      <HStack className="gap-5" flex={1}>
         <VStack flex={1} gap={12}>
           <Tabs value="summary" onValueChange={noop} accessibilityState={{ busy: true }}>
             <Tabs.List>

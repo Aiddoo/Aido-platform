@@ -60,7 +60,7 @@ export function TodoDetailSummary() {
 
       <TodoDetailSummary.Task />
 
-      <VStack gap={10} className="ms-9">
+      <VStack className="gap-2.5 ms-9">
         <TodoDetailSummary.Schedule />
 
         <TodoDetailSummary.SubTodos />
@@ -291,14 +291,14 @@ TodoDetailSummary.Loading = function Loading() {
 
   return (
     <VStack gap={12} testID="todo-detail-card-loading">
-      <HStack gap={12} align="start">
+      <HStack className="gap-3" align="start">
         <Box className="justify-center" style={{ height: fontScaledSize(TITLE_LINE_HEIGHT) }}>
           <Skeleton className="size-6 rounded-md" />
         </Box>
         <TextSkeleton size="t3" className="w-3/5" />
       </HStack>
 
-      <VStack gap={10} className="ms-9">
+      <VStack className="gap-2.5 ms-9">
         <VStack gap={6}>
           <TextSkeleton size="b4" className="w-32" />
           <HStack gap={8} align="center">

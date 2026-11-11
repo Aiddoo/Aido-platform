@@ -308,7 +308,7 @@ VoiceNoteRecorder.StoppedControls = function StoppedControls({
             )}
         </Text>
       </SurfaceCard>
-      <HStack gap={8}>
+      <HStack className="gap-2">
         <Box flex={1}>
           {hasHeard ? (
             <Button

@@ -145,8 +145,8 @@ SuggestionsList.Item = function Item({
 
   return (
     <Box className="py-2">
-      <VStack gap={8}>
-        <VStack gap={4}>
+      <VStack className="gap-2">
+        <VStack className="gap-1">
           <HStack justify="between" align="center">
             <Text size="b2" weight="semibold" shade={9}>
               {suggestion.title}
@@ -296,8 +296,8 @@ SuggestionsList.Loading = function Loading() {
       <Box className="px-4 pb-4">
         {range(SUGGESTION_LOADING_COUNT).map((index) => (
           <Box key={index} className="py-2">
-            <VStack gap={8}>
-              <VStack gap={4}>
+            <VStack className="gap-2">
+              <VStack className="gap-1">
                 <HStack justify="between" align="center">
                   <TextSkeleton size="b2" className="w-32" />
                   <TextSkeleton size="e1" className="w-16" />
