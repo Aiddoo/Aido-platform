@@ -39,11 +39,11 @@ import {
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
 import type { ReadyPushNotificationEntry } from '../stores/push-notification-entry.store';
 import { toNotificationDestination } from '../utils/notification-destination';
-import { useNotificationEntry } from './use-notification-entry';
 import { useNotificationNavigation } from './use-notification-navigation';
+import { usePushNotificationEntry } from './use-push-notification-entry';
 
 /** 푸시 응답의 입구 하나. 마지막 응답과 응답 리스너를 슬롯 하나로 모은다 */
-export function useNotificationResponseObserver(): void {
+export function usePushNotificationResponse(): void {
   const status = useAuthStatus();
   const gateway = usePushNotification();
   const appLifecycle = useAppLifecycle();
@@ -264,7 +264,7 @@ function useOpenReadyEntry(
   entry: ReadyPushNotificationEntry | null,
   finishResponse: (responseId: string) => void,
 ) {
-  const { isEnteringApp } = useNotificationEntry();
+  const { isEnteringApp } = usePushNotificationEntry();
   const logger = useLogger();
   const navigate = useNotificationNavigation();
   const { trackEvent } = useTrack();

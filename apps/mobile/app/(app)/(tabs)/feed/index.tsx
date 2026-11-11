@@ -14,8 +14,8 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
 import { PushPermissionNotice } from '@src/features/notification/components/push-permission-notice';
 import { useIsPushReminderOff } from '@src/features/notification/hooks/use-is-push-reminder-off';
-import { useHasPendingNotificationEntry } from '@src/features/notification/hooks/use-notification-entry';
 import { useOpenPushOnboarding } from '@src/features/notification/hooks/use-open-push-onboarding';
+import { useHasPendingPushNotificationEntry } from '@src/features/notification/hooks/use-push-notification-entry';
 import { usePushOnboardingGuardState } from '@src/features/notification/hooks/use-push-onboarding-guard';
 import { AddTodoRequestEntry } from '@src/features/planning/todo/components/add-todo-request-entry';
 import { Calendar } from '@src/features/planning/todo/components/calendar/calendar';
@@ -172,7 +172,7 @@ function MyFeed({
   const [selectedDateKey] = useFeedDateKey();
   const queryClient = useQueryClient();
   const status = useAuthStatus();
-  const hasPendingNavigation = useHasPendingNotificationEntry();
+  const hasPendingNavigation = useHasPendingPushNotificationEntry();
   const isStable = useStableFeedForeground({
     isAuthenticated: status === 'authenticated',
     hasPendingNavigation,

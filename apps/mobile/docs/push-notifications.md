@@ -23,8 +23,8 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | `queries/push-permission.{queries,mutations}.ts`, `push-permission-cache.ts`                         | 권한 조회와 요청·설정 열기·앱 푸시 켜기. 쿼리 키 루트는 `['device', 'push-permission']`                     |
 | `hooks/use-push-permission-action.ts`                                                                | `usePushPermissionAction({ source })` → `{ runStep(step), isPending }`. 권한 단계 실행과 추적의 유일한 입구 |
 | `hooks/use-push-device-sync.ts`                                                                      | 로그인한 동안 보고 시점을 모은다(`NotificationProvider`가 한 번 호출)                                       |
-| `hooks/use-notification-response-observer.ts`                                                        | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                                                          |
-| `hooks/use-notification-entry.ts`                                                                    | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                       |
+| `hooks/use-push-notification-response.ts`                                                            | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                                                          |
+| `hooks/use-push-notification-entry.ts`                                                               | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                       |
 | `stores/push-notification-entry.store.ts`                                                            | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다                                                     |
 | `stores/push-onboarding-guard.store.ts`                                                              | 앱 화면 묶음이 그린 알림 화면 guard 값. 피드가 열 차례를 이 값으로 읽고 DI가 소유한다                       |
 | `apis/notification.mapper.ts`                                                                        | `toNotificationTarget`: 서버 `navigation` → 앱 `NotificationTarget`. 알림함 항목도 같은 길이다              |

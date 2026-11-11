@@ -16,7 +16,7 @@ import { act, renderRouter, waitFor } from 'expo-router/testing-library';
 import type { PropsWithChildren } from 'react';
 
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
-import { useNotificationResponseObserver } from './use-notification-response-observer';
+import { usePushNotificationResponse } from './use-push-notification-response';
 
 jest.unmock('expo-router');
 
@@ -40,7 +40,7 @@ async function setup({ status }: { status: AuthStatus }) {
   const queryClient = createTestQueryClient();
 
   function Layout() {
-    useNotificationResponseObserver();
+    usePushNotificationResponse();
     return <Slot />;
   }
 
@@ -67,7 +67,7 @@ async function setup({ status }: { status: AuthStatus }) {
   };
 }
 
-describe('useNotificationResponseObserver', () => {
+describe('usePushNotificationResponse', () => {
   it('눌린 응답을 슬롯에 받고 같은 알림이면 다시 받지 않는다', async () => {
     // Given
     const { gateway, store } = await setup({ status: 'unauthenticated' });

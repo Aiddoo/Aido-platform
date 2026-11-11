@@ -11,7 +11,7 @@ const APP_ENTRY_SEGMENTS: ReadonlySet<string | undefined> = new Set([
 ]);
 
 /** Index가 목적지로 바로 가면 피드가 focus되지 않아 피드 안내와 화면 기록이 생기지 않는다 */
-export function useNotificationEntry() {
+export function usePushNotificationEntry() {
   const status = useAuthStatus();
   const store = usePushNotificationEntryStore();
   const { pending, ready } = useSyncExternalStore(store.subscribe, store.getSnapshot);
@@ -29,7 +29,7 @@ export function useNotificationEntry() {
 }
 
 /** 눌린 푸시가 열 곳을 정하는 중이거나 아직 열리지 않았다. 피드 자동 안내가 그 앞에 끼어들지 않게 한다 */
-export function useHasPendingNotificationEntry() {
+export function useHasPendingPushNotificationEntry() {
   const store = usePushNotificationEntryStore();
 
   return useSyncExternalStore(store.subscribe, () => {

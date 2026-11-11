@@ -5,7 +5,7 @@ import type { PropsWithChildren } from 'react';
 
 import { createPushNotificationResponse } from '../__tests__/notification.fixtures';
 import { createPushNotificationEntryStore } from '../stores/push-notification-entry.store';
-import { useHasPendingNotificationEntry } from './use-notification-entry';
+import { useHasPendingPushNotificationEntry } from './use-push-notification-entry';
 
 const RESPONSE = createPushNotificationResponse({
   id: 'response-1',
@@ -20,11 +20,11 @@ async function setup() {
   const wrapper = ({ children }: PropsWithChildren) => (
     <StaticDIProvider container={container}>{children}</StaticDIProvider>
   );
-  const hook = await renderHook(() => useHasPendingNotificationEntry(), { wrapper });
+  const hook = await renderHook(() => useHasPendingPushNotificationEntry(), { wrapper });
   return { store, ...hook };
 }
 
-describe('useHasPendingNotificationEntry', () => {
+describe('useHasPendingPushNotificationEntry', () => {
   it('눌린 푸시가 열리기 전까지 대기 중이고 끝나면 풀린다', async () => {
     // Given
     const { store, result } = await setup();
