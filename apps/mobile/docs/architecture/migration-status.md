@@ -37,7 +37,6 @@
 
 | 기능                       | 남은 일                                                                                                                                                                              |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `notification`             | `useTimezoneChangeNotice`가 할 일을 `todoService`로 직접 읽는다(→ `planning/todo` PR이 만드는 다가오는 시각 할 일 쿼리 옵션 + 책임별 지역 훅)                                        |
 | `insights/report`          | 프리미엄 첫 리포트 전 `.Loading`(카드 3장) → `.Empty`(샘플 1장+문구) 높이 차이                                                                                                       |
 | `planning/todo`·`composer` | 일정 칩 2벌, `*PickerContent` 이름, feed 스크린 뼈대 3벌                                                                                                                             |
 | `voice`                    | `note` props 8곳, 음성 시작 체인 2벌(→ `useVoiceCaptureReadiness`), 포괄 훅, Policy 안 생성 함수                                                                                     |

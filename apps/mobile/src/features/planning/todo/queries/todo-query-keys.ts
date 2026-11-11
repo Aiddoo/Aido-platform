@@ -26,6 +26,12 @@ export const TODO_QUERY_KEYS = {
     queryOptions<TodoOverview>({ queryKey: [...TODO_QUERY_KEYS.completions(), 'overview'] })
       .queryKey,
 
+  // 날짜 목록(lists)과 따로 둬 할 일 쓰기의 날짜별 무효화·낙관적 갱신이 이 범위를 건드리지 않는다
+  upcomingList: ({ startDate, endDate }: { startDate: string; endDate: string }) =>
+    queryOptions<TodoListResult>({
+      queryKey: [...TODO_QUERY_KEYS.all, 'upcoming', { startDate, endDate }],
+    }).queryKey,
+
   lists: () => [...TODO_QUERY_KEYS.all, 'list'] as const,
   listByDate: ({ date }: { date: string }) =>
     queryOptions<TodoListResult>({ queryKey: [...TODO_QUERY_KEYS.lists(), { date }] }).queryKey,

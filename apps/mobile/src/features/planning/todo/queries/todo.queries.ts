@@ -15,6 +15,7 @@ import {
 import { keyBy } from 'es-toolkit';
 
 import type { TodoApi } from '../apis/todo.api';
+import { UPCOMING_TODO_WINDOW_DAYS } from '../constants/todo.constants';
 import { type DailyCompletionSummary } from '../domains/daily-completion.model';
 import { type CalendarDateRange, getCalendarMonthRanges } from '../utils/calendar-grid';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
@@ -230,6 +231,25 @@ export function useGetTodoSummaryQueryOptions({ date, userId }: TodoSummaryQuery
     staleTime: MINUTE_MS,
     refetchInterval: (query) => getTodoSummaryRefetchInterval(query.state, date),
     // 전 화면 위(AuthBootProvider)의 백그라운드 쿼리라 실패를 ErrorBoundary로 보내면 콜드 스타트 fallback이 뜬다. 실패하면 위젯만 갱신되지 않는다
+    throwOnError: false,
+  });
+}
+
+/** 오늘부터 앞으로 알림 시각을 다시 계산하는 기간의 내 할 일. 기기 시간대가 바뀐 순간에만 켜서 부른다 */
+export function useGetUpcomingTodosQueryOptions({ todayKey }: { todayKey: string }) {
+  const todoApi = useTodoApi();
+  const endDate = addDaysToDateKey(todayKey, UPCOMING_TODO_WINDOW_DAYS);
+
+  return queryOptions({
+    queryKey: TODO_QUERY_KEYS.upcomingList({ startDate: todayKey, endDate }),
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await todoApi.getTodos({ startDate: todayKey, endDate, size: TODO_PAGE_SIZE.MAX }, signal),
+      ),
+    // 바뀐 순간의 값을 한 번 본다. 실패하면 안내 없이 넘어가고 다시 묻지 않는다
+    staleTime: 0,
+    retry: false,
+    // 전 화면 위(NotificationProvider)의 조회라 실패를 ErrorBoundary로 보내지 않는다
     throwOnError: false,
   });
 }
