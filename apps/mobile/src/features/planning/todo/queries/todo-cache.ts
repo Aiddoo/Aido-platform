@@ -449,11 +449,7 @@ function isSameSpan(a: DateSpan, b: DateSpan) {
   return a.startDate === b.startDate && a.endDate === b.endDate;
 }
 
-/**
- * 반복 묶음이 아닌 할 일 하나를 고친 뒤 고치기 전·후 값으로 바뀐 조회만 맞춘다(TanStack "Updates from Mutation Responses").
- * 상세는 응답으로 고치고, 옛 날짜·새 날짜 목록과 위젯 요약, 날짜·색이 바뀌면 달력, 카테고리가 바뀌면 개수만 다시 받는다.
- * 고치기 전 값을 모르면 옛 날짜를 몰라 넓게 맞춘다
- */
+/** 반복 묶음이 아닌 할 일 하나를 고친 뒤 전·후 값으로 바뀐 조회만 맞춘다(TanStack "Updates from Mutation Responses"). 고치기 전 값을 모르면 옛 날짜를 몰라 넓게 맞춘다 */
 export function settleTodoEdit(
   queryClient: QueryClient,
   { before, after }: { before: Todo | null; after: Todo },
