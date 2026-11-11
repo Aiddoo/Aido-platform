@@ -22,6 +22,20 @@ const issuePaths = (result: { success: boolean; error?: { issues: { path: Proper
   result.error?.issues.map((issue) => issue.path.join('.')) ?? [];
 
 describe('signUpFormSchema', () => {
+  it.each([
+    ['', false],
+    ['   ', false],
+    ['가', true],
+    ['가'.repeat(20), true],
+    ['가'.repeat(21), false],
+  ])('닉네임 %j 검사 결과는 %s다', (name, expected) => {
+    // When
+    const result = signUpFormSchema.safeParse({ ...validSignUp, name });
+
+    // Then
+    expect(result.success).toBe(expected);
+  });
+
   it('필수 약관에 동의하면 선택 없이도 통과하고 이메일은 서버 규칙대로 정규화한다', () => {
     // When
     const result = signUpFormSchema.safeParse(validSignUp);
