@@ -30,7 +30,6 @@ import { useNotificationNavigation } from '../hooks/use-notification-navigation'
 import { refreshNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
-import { toDateSectionedListItems } from '../utils/date-section';
 import {
   type NotificationDestination,
   toNotificationDestination,
@@ -42,12 +41,21 @@ const NOTIFICATION_PAGE_SIZE = 10;
 
 export function NotificationList() {
   const [category] = useNotificationCategory();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
-    useSuspenseInfiniteQuery(
-      useGetNotificationsInfiniteQueryOptions({ category, limit: NOTIFICATION_PAGE_SIZE }),
-    );
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
-  const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
+  const {
+    data: listItems,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useSuspenseInfiniteQuery(
+    useGetNotificationsInfiniteQueryOptions({
+      category,
+      limit: NOTIFICATION_PAGE_SIZE,
+      todayDateKey: currentLocalDateKey,
+      timeZone: currentTimeZone,
+    }),
+  );
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => refreshNotifications(queryClient));
   const openNotification = useOpenNotification();

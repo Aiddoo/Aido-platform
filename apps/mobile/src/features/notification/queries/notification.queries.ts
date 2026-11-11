@@ -7,14 +7,23 @@ import { uniqBy } from 'es-toolkit';
 
 import type { NotificationPage } from '../domains/notification.model';
 import type { NotificationListQueryKey } from '../schemas/notification-list-query-key.schema';
+import { toDateSectionedListItems } from '../utils/date-section';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
+interface NotificationsInfiniteQueryInput extends NotificationListQueryKey {
+  /** 날짜 섹션을 나누는 기준. 키에 넣지 않아 날짜가 바뀌어도 다시 받지 않고 select만 다시 돈다 */
+  todayDateKey: string;
+  timeZone: string;
+}
+
 export function useGetNotificationsInfiniteQueryOptions({
   category,
   limit,
-}: NotificationListQueryKey) {
+  todayDateKey,
+  timeZone,
+}: NotificationsInfiniteQueryInput) {
   const notificationApi = useNotificationApi();
 
   return infiniteQueryOptions({
@@ -29,7 +38,8 @@ export function useGetNotificationsInfiniteQueryOptions({
 
     getNextPageParam: getNextCursor,
 
-    select: selectNotifications,
+    select: (infinitePages) =>
+      toDateSectionedListItems(selectNotifications(infinitePages), todayDateKey, timeZone),
   });
 }
 
