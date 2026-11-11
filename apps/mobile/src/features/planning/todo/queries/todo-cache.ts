@@ -122,7 +122,7 @@ export function snapshotTodo(
 export function findCachedTodo(
   queryClient: QueryClient,
   { date, todoId }: { date?: string; todoId: number },
-): Todo | undefined {
+): Todo | null {
   const isTarget = (todo: Todo) => todo.id === todoId;
   return (
     (date == null ? undefined : getCachedTodosByDate(queryClient, { date })?.find(isTarget)) ??
@@ -130,7 +130,8 @@ export function findCachedTodo(
     queryClient
       .getQueriesData<TodoListResult>({ queryKey: TODO_QUERY_KEYS.lists() })
       .flatMap(([, data]) => data?.todos ?? [])
-      .find(isTarget)
+      .find(isTarget) ??
+    null
   );
 }
 
@@ -455,7 +456,7 @@ function isSameSpan(a: DateSpan, b: DateSpan) {
  */
 export function settleTodoEdit(
   queryClient: QueryClient,
-  { before, after }: { before: Todo | undefined; after: Todo },
+  { before, after }: { before: Todo | null; after: Todo },
 ) {
   if (before == null) {
     return invalidateTodos(queryClient);
@@ -489,7 +490,7 @@ export function getTodoOverviewFilters(): InvalidateQueryFilters[] {
 }
 
 /** 반복 회차를 고치면 규칙이 끝났는지(3개월 반복 안내)는 서버만 안다 */
-function getRepeatOverviewFilters(todo: Todo | undefined): InvalidateQueryFilters[] {
+function getRepeatOverviewFilters(todo: Todo | null): InvalidateQueryFilters[] {
   return todo != null && TodoPolicy.isRecurringTodo(todo) ? getTodoOverviewFilters() : [];
 }
 
