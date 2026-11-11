@@ -86,6 +86,7 @@ const storage = useStoredValueStorage(upsellDismissalStoredValue); // 핸들러�
 - 무한 목록 도구는 `shared/domains/cursor-page.model.ts` 하나다: `cursorPageSchema(item, cursor)`(`{ items, nextCursor }`), `getNextCursor(page)`(`getNextPageParam`), `selectPageItems(data)`(`select`), `mapInfiniteItems(data, fn)`(캐시 패치).
   - 쪽 모델은 `cursorPageSchema(item, cursor).extend({ totalCount })`처럼 만든다. 서버의 `hasNext`·`hasMore`와 "마지막 항목 id가 커서"는 mapper가 `nextCursor`로 접고 마지막 쪽이면 `null`이다. 계약은 그대로 둔다.
   - 첫 쪽은 `initialPageParam: undefined`, 다음 쪽은 `getNextPageParam: getNextCursor`다. 위아래로 잇는 댓글 목록만 `pagination`과 자기 page param을 쓴다([todo-comments](../todo-comments.md)).
+  - 마지막 항목 id가 커서인 목록은 캐시에서 항목을 빼거나 되돌릴 때 그 쪽 `nextCursor`를 남은 마지막 항목으로 다시 맞춘다(`friend-cache.ts`). 지운 항목의 id로 이어 받으면 서버가 빈 쪽을 줘 목록이 일찍 끝난다.
 
 ## 쿼리 키
 
