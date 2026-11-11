@@ -14,6 +14,7 @@ import {
   TextButton,
   TextSkeleton,
   VStack,
+  SurfaceCard,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
@@ -136,13 +137,13 @@ VoiceNoteDraftList.Loading = function Loading() {
     >
       {range(VOICE_NOTE_PREVIEW_COUNT).map((index) => (
         <Box key={index} className="pb-2">
-          <HStack gap={12} align="center" className="rounded-2xl bg-gray-1 px-3 py-3">
+          <SurfaceCard className="flex-row items-center gap-3 px-3 py-3">
             <Skeleton className="size-10 rounded-full" />
             <VStack flex={1} gap={4}>
               <TextSkeleton size="b3" className="w-1/2" />
               <TextSkeleton size="e1" className="w-1/3" />
             </VStack>
-          </HStack>
+          </SurfaceCard>
         </Box>
       ))}
     </ScrollView>

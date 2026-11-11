@@ -1,6 +1,15 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, HStack, PauseIcon, StopIcon, Text, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  HStack,
+  PauseIcon,
+  StopIcon,
+  Text,
+  VStack,
+  SurfaceCard,
+} from '@src/shared/ui';
 import { match, P } from 'ts-pattern';
 
 import { VoiceCapturePolicy, type VoiceCaptureState } from '../../domains/voice-capture.model';
@@ -121,7 +130,7 @@ function StoppedPanel({
 
   return (
     <VStack gap={12}>
-      <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3">
+      <SurfaceCard className="gap-1 px-4 py-3">
         <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
           {state.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
         </Text>
@@ -139,7 +148,7 @@ function StoppedPanel({
               hasHeard ? t('record.failedDescription') : t('record.failedEmptyDescription'),
             )}
         </Text>
-      </VStack>
+      </SurfaceCard>
       <HStack gap={8}>
         <Box flex={1}>
           {hasHeard ? (

@@ -26,6 +26,7 @@ import {
   useSheetRoute,
   VStack,
   Image,
+  SurfaceCard,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -270,11 +271,7 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
   }
 
   return (
-    <HStack
-      gap={8}
-      align="center"
-      className={cn('rounded-2xl bg-gray-1 px-4 py-3 dark:bg-gray-2', className)}
-    >
+    <SurfaceCard surface="sheet" className={cn('flex-row items-center gap-2 px-4 py-3', className)}>
       <BellFilledIcon width={18} height={18} colorClassName="text-gray-7" />
       <Text
         size="b4"
@@ -294,7 +291,7 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
           {t('welcome.notificationButton')}
         </TextButton>
       )}
-    </HStack>
+    </SurfaceCard>
   );
 }
 

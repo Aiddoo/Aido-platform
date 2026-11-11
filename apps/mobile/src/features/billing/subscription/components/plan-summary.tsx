@@ -9,6 +9,7 @@ import {
   TextButton,
   TextSkeleton,
   VStack,
+  SurfaceCard,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
@@ -121,11 +122,11 @@ PlanSummary.Premium = function Premium() {
 
 PlanSummary.Loading = function Loading() {
   return (
-    <VStack gap={12} className="rounded-2xl bg-gray-1 p-4" accessibilityState={{ busy: true }}>
+    <SurfaceCard className="gap-3" accessibilityState={{ busy: true }}>
       <TextSkeleton size="b4" className="w-32" />
       <TextSkeleton size="b3" className="w-full" />
       <TextSkeleton size="b3" className="w-3/4" />
-    </VStack>
+    </SurfaceCard>
   );
 };
 

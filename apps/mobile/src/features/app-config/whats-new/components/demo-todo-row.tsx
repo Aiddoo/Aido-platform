@@ -20,7 +20,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { EditIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { EditIcon, HStack, SurfaceCard, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
@@ -28,7 +28,7 @@ import { match } from 'ts-pattern';
 
 /** 실제 고르기 시트(PlanReview)의 카드와 같은 값이다 */
 const UNSELECTED_TITLE_CLASS_NAME = 'text-gray-8 dark:text-gray-6';
-const PLAN_CARD_CLASS_NAME = 'flex-1 rounded-2xl bg-gray-1 px-4 py-3 dark:bg-gray-2';
+const PLAN_CARD_CLASS_NAME = 'flex-1 flex-row items-center gap-3 px-4 py-3';
 const SELECT_GAP = 12;
 const EDIT_ICON_SIZE = 16;
 
@@ -79,7 +79,7 @@ export function DemoTodoRow({
             isSelected={isSelected}
             onSelectedChange={onSelectedChange}
           />
-          <HStack gap={12} align="center" className={PLAN_CARD_CLASS_NAME}>
+          <SurfaceCard surface="sheet" className={PLAN_CARD_CLASS_NAME}>
             <VStack flex={1} gap={2}>
               <TodoTitleLine
                 label={
@@ -119,7 +119,7 @@ export function DemoTodoRow({
               height={fontScaledSize(EDIT_ICON_SIZE)}
               colorClassName="text-main"
             />
-          </HStack>
+          </SurfaceCard>
         </HStack>
       );
     })

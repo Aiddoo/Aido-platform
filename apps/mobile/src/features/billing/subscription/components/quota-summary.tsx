@@ -1,7 +1,15 @@
 import type { PlanQuotaFeatureKey } from '@aido/api/vocabulary';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { AiFilledIcon, HStack, Meter, Text, VStack, WordWrapText } from '@src/shared/ui';
+import {
+  AiFilledIcon,
+  HStack,
+  Meter,
+  Text,
+  VStack,
+  WordWrapText,
+  SurfaceCard,
+} from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -25,7 +33,7 @@ export function QuotaSummary({ action }: QuotaSummaryProps) {
   }
 
   return (
-    <VStack gap={16} className="rounded-2xl bg-gray-1 p-4" testID="quota-summary">
+    <SurfaceCard className="gap-4" testID="quota-summary">
       <HStack gap={6} align="center">
         <AiFilledIcon width={16} height={16} colorClassName="text-main" />
         <Text size="b4" weight="semibold" shade={7} className="flex-1">
@@ -35,7 +43,7 @@ export function QuotaSummary({ action }: QuotaSummaryProps) {
       </HStack>
       <QuotaRow feature="AI_PARSE" label={t('quota.aiParse')} hint={t('quota.aiParseHint')} />
       <QuotaRow feature="VOICE_NOTE" label={t('quota.voiceNote')} />
-    </VStack>
+    </SurfaceCard>
   );
 }
 

@@ -18,6 +18,7 @@ import {
   TextSkeleton,
   usePaneSizeClass,
   VStack,
+  SurfaceCard,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
@@ -185,11 +186,11 @@ MemoList.Loading = function Loading() {
       {range(columnCount).map((column) => (
         <VStack key={column} flex={1} gap={12}>
           {range(LOADING_ITEMS_PER_COLUMN).map((row) => (
-            <VStack key={row} gap={8} className="rounded-2xl bg-gray-1 p-4">
+            <SurfaceCard key={row} className="gap-2">
               <TextSkeleton size="b3" className="w-full" />
               <TextSkeleton size="b3" className="w-3/4" />
               <TextSkeleton size="e1" className="w-1/2" />
-            </VStack>
+            </SurfaceCard>
           ))}
         </VStack>
       ))}

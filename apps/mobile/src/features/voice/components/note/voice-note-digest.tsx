@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Text, VStack } from '@src/shared/ui';
+import { Text, VStack, SurfaceCard } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
 import { VoiceNotePolicy, type VoiceNote } from '../../domains/voice-note.model';
@@ -70,7 +70,7 @@ VoiceNoteDigest.Failure = function Failure({ failure }: { failure: VoiceNoteDige
   const { t } = useTranslation(['voiceNote', 'voicePlan']);
 
   return (
-    <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3" testID="voice-note-digest-failure">
+    <SurfaceCard className="gap-1 px-4 py-3" testID="voice-note-digest-failure">
       <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
         {t(`voicePlan:failure.${failure.cause}.title`)}
       </Text>
@@ -80,6 +80,6 @@ VoiceNoteDigest.Failure = function Failure({ failure }: { failure: VoiceNoteDige
         {t('voiceNote:digest.kept')}
         {failure.isFreeOfCharge ? ` ${t('voiceNote:digest.notCharged')}` : ''}
       </Text>
-    </VStack>
+    </SurfaceCard>
   );
 };

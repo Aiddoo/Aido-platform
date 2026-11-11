@@ -12,6 +12,7 @@ import {
   Text,
   TextButton,
   VStack,
+  SurfaceCard,
 } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -214,7 +215,7 @@ function Comparison({ feature }: { feature: PlanLimitFeatureKey }) {
   };
 
   return (
-    <HStack gap={12} align="center" className="rounded-2xl bg-gray-1 p-4">
+    <SurfaceCard className="flex-row items-center gap-3">
       <VStack flex={1} gap={2} align="center">
         <Text size="e1" shade={6}>
           {t('upsell.free')}
@@ -232,6 +233,6 @@ function Comparison({ feature }: { feature: PlanLimitFeatureKey }) {
           {formatAmount(premium)}
         </Text>
       </VStack>
-    </HStack>
+    </SurfaceCard>
   );
 }

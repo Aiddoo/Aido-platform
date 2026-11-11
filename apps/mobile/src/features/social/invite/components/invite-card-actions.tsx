@@ -7,7 +7,15 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { removeStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
-import { Box, Button, ReadableContent, StyledSafeAreaView, Text, TextButton } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  ReadableContent,
+  StyledSafeAreaView,
+  Text,
+  TextButton,
+  SurfaceCard,
+} from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
@@ -144,11 +152,11 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
     <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
       <ReadableContent px={20} pt={12} pb={12} gap={12}>
         {!isRewardExpected && (
-          <Box className="rounded-2xl bg-gray-1 px-4 py-3">
+          <SurfaceCard className="px-4 py-3">
             <Text size="b4" shade={7} align="center">
               {t('card.existingAccountNote')}
             </Text>
-          </Box>
+          </SurfaceCard>
         )}
 
         <Button
