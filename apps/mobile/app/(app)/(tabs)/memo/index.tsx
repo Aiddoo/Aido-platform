@@ -4,7 +4,6 @@ import {
 } from '@src/features/notes/memo/components/memo-create-button';
 import { MemoEditor } from '@src/features/notes/memo/components/memo-editor';
 import { MemoList } from '@src/features/notes/memo/components/memo-list';
-import { MemoListScrollView } from '@src/features/notes/memo/components/memo-list-scroll-view';
 import {
   useMemoDetailHandoff,
   useSelectedMemoId,
@@ -23,6 +22,7 @@ import {
   HINT_OFFSET,
   HStack,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
   Spacing,
   StyledSafeAreaView,
 } from '@src/shared/ui';
@@ -70,20 +70,12 @@ export default function MemoScreen() {
               <Spacing size={16} />
             </StyledSafeAreaView>
 
-            <MemoListScrollView>
-              {/* 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */}
-              <QueryErrorBoundary fallback={() => null}>
-                <Suspense fallback={null}>
-                  <VoiceNoteDraftList />
-                </Suspense>
-              </QueryErrorBoundary>
-
-              <QueryErrorBoundary fallback={MemoList.Error}>
-                <Suspense fallback={<MemoList.Loading />}>
-                  <MemoList />
-                </Suspense>
-              </QueryErrorBoundary>
-            </MemoListScrollView>
+            {/* 초안은 메모 목록 머리말로 함께 스크롤된다 */}
+            <QueryErrorBoundary fallback={MemoListErrorFallback}>
+              <Suspense fallback={<MemoList.Loading header={<VoiceNoteDrafts />} />}>
+                <MemoList header={<VoiceNoteDrafts />} />
+              </Suspense>
+            </QueryErrorBoundary>
           </Box>
         }
         secondary={
@@ -108,4 +100,20 @@ export default function MemoScreen() {
       />
     </>
   );
+}
+
+/** 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */
+function VoiceNoteDrafts() {
+  return (
+    <QueryErrorBoundary fallback={() => null}>
+      <Suspense fallback={null}>
+        <VoiceNoteDraftList />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
+}
+
+/** 목록을 받지 못해도 초안은 그대로 보인다 */
+function MemoListErrorFallback(props: QueryErrorFallbackProps) {
+  return <MemoList.Error {...props} header={<VoiceNoteDrafts />} />;
 }
