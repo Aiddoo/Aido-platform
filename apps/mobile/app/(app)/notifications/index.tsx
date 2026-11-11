@@ -2,14 +2,15 @@ import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { NotificationList } from '@src/features/notification/components/notification-list';
 import { SentNudgeList } from '@src/features/notification/components/sent-nudge-list';
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
-import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category';
+import {
+  useNotificationCategory,
+  useNotificationDirection,
+} from '@src/features/notification/hooks/use-notification-params';
 import {
   notificationCategoryParamSchema,
   notificationDirectionParamSchema,
 } from '@src/features/notification/schemas/notification-params.schema';
-import { useGetNudgeInteractionAvailabilityQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
 import type { NudgeDirection } from '@src/features/social/nudge/schemas/nudge-interaction-query-key.schema';
-import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -20,7 +21,6 @@ import {
   StyledSafeAreaView,
   ViewTabs,
 } from '@src/shared/ui';
-import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
@@ -28,14 +28,7 @@ import { match } from 'ts-pattern';
 export default function NotificationsScreen() {
   const { t } = useTranslation('notification');
   const [category, setCategory] = useNotificationCategory();
-  const [direction, setDirection] = useView('direction', notificationDirectionParamSchema);
-  const { data: isNudgeInteractionAvailable = false } = useQuery(
-    useGetNudgeInteractionAvailabilityQueryOptions(),
-  );
-  // 받은 콕과 보낸 콕을 나눠 보는 것은 소셜 알림뿐이고 콕 상호작용을 쓸 수 있어야 한다
-  const isDirectionSelectable =
-    category === NOTIFICATION_CATEGORY.SOCIAL && isNudgeInteractionAvailable;
-  const visibleDirection: NudgeDirection = isDirectionSelectable ? direction : 'received';
+  const [{ direction, isDirectionSelectable }, setDirection] = useNotificationDirection();
 
   return (
     <StyledSafeAreaView
@@ -68,10 +61,10 @@ export default function NotificationsScreen() {
 
           {/* 콕 상호작용을 쓰는 사용자에게만 보이는 줄이라 응답 전에는 자리를 잡지 않는다. 자리를 잡으면 대부분의 사용자에게서 나타났다 사라진다 */}
           {isDirectionSelectable && (
-            <DirectionTabs value={visibleDirection} onValueChange={setDirection} />
+            <DirectionTabs value={direction} onValueChange={setDirection} />
           )}
 
-          {match(visibleDirection)
+          {match(direction)
             .with('received', () => (
               <>
                 {/* 안 읽은 수와 모두 읽음은 모든 분류를 합친 값이라 전체 탭에만 둔다. 벨과 같은 수를 읽어 벨을 거쳐 오면 값이 이미 있고, 0이면 줄 자체가 없으니 자리를 잡지 않는다 */}

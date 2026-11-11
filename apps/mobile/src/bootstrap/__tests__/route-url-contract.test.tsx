@@ -2,7 +2,7 @@ import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/
 import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
 import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
-import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category';
+import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-params';
 import { notificationDirectionParamSchema } from '@src/features/notification/schemas/notification-params.schema';
 import { categorySettingsViewSchema } from '@src/features/planning/category/schemas/category-settings-params.schema';
 import { useFeedAction, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
