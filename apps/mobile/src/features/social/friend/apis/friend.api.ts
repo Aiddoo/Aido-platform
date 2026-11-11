@@ -37,9 +37,9 @@ import {
   toSendFriendRequestResult,
 } from './friend.mapper';
 
-type FriendServiceError = ApiError | BusinessError<FriendErrorCode>;
+type FriendApiError = ApiError | BusinessError<FriendErrorCode>;
 
-export class FriendService {
+export class FriendApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -48,7 +48,7 @@ export class FriendService {
 
   sendRequestByTag = async (
     userTag: string,
-  ): Promise<Result<SendFriendRequestResult, FriendServiceError>> => {
+  ): Promise<Result<SendFriendRequestResult, FriendApiError>> => {
     const tag = userTag.trim();
     if (!tag) {
       return err(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
@@ -61,7 +61,7 @@ export class FriendService {
       await this.#httpClient.post(`v1/follows/${encodeURIComponent(tag)}`),
       sendFriendRequestResponseSchema,
       toSendFriendRequestResult,
-      '[FriendService] Invalid sendRequest response',
+      '[FriendApi] Invalid sendRequest response',
     );
   };
 
@@ -73,7 +73,7 @@ export class FriendService {
       }),
       receivedRequestsResponseSchema,
       toFriendRequestsPage,
-      '[FriendService] Invalid getReceivedRequests response',
+      '[FriendApi] Invalid getReceivedRequests response',
     );
 
   getSentRequests = async (params?: PaginationQuery, signal?: AbortSignal) =>
@@ -84,7 +84,7 @@ export class FriendService {
       }),
       sentRequestsResponseSchema,
       toFriendRequestsPage,
-      '[FriendService] Invalid getSentRequests response',
+      '[FriendApi] Invalid getSentRequests response',
     );
 
   acceptRequest = async (userId: string) =>
@@ -92,7 +92,7 @@ export class FriendService {
       await this.#httpClient.patch(`v1/follows/${encodeURIComponent(userId)}/accept`),
       acceptFriendRequestResponseSchema,
       noop,
-      '[FriendService] Invalid acceptRequest response',
+      '[FriendApi] Invalid acceptRequest response',
     );
 
   rejectRequest = async (userId: string) =>
@@ -100,7 +100,7 @@ export class FriendService {
       await this.#httpClient.patch(`v1/follows/${encodeURIComponent(userId)}/reject`),
       rejectFriendRequestResponseSchema,
       noop,
-      '[FriendService] Invalid rejectRequest response',
+      '[FriendApi] Invalid rejectRequest response',
     );
 
   cancelRequest = async (userId: string) =>
@@ -108,7 +108,7 @@ export class FriendService {
       await this.#httpClient.delete(`v1/follows/${encodeURIComponent(userId)}`),
       cancelFriendRequestResponseSchema,
       noop,
-      '[FriendService] Invalid cancelRequest response',
+      '[FriendApi] Invalid cancelRequest response',
     );
 
   getFriends = async (params?: PaginationQuery, signal?: AbortSignal) =>
@@ -119,13 +119,13 @@ export class FriendService {
       }),
       friendsListResponseSchema,
       toFriendsPage,
-      '[FriendService] Invalid getFriends response',
+      '[FriendApi] Invalid getFriends response',
     );
 
   searchUsers = async (
     params: SearchUsersQuery,
     signal?: AbortSignal,
-  ): Promise<Result<SearchedUserPage, FriendServiceError>> => {
+  ): Promise<Result<SearchedUserPage, FriendApiError>> => {
     const query = params.query.trim();
     // 2자 미만이면 네트워크 요청 없이 실패한다
     if (!isValidSearchQuery(query)) {
@@ -139,7 +139,7 @@ export class FriendService {
       }),
       searchUsersResponseSchema,
       toSearchedUsersPage,
-      '[FriendService] Invalid searchUsers response',
+      '[FriendApi] Invalid searchUsers response',
     );
   };
 
@@ -151,7 +151,7 @@ export class FriendService {
       ),
       reorderFriendResponseSchema,
       (dto) => toFriendUser(dto.friend),
-      '[FriendService] Invalid reorderFriend response',
+      '[FriendApi] Invalid reorderFriend response',
     );
 
   removeFriend = async (userId: string) =>
@@ -159,6 +159,6 @@ export class FriendService {
       await this.#httpClient.delete(`v1/follows/${encodeURIComponent(userId)}`),
       removeFriendResponseSchema,
       noop,
-      '[FriendService] Invalid removeFriend response',
+      '[FriendApi] Invalid removeFriend response',
     );
 }

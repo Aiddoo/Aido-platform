@@ -17,14 +17,21 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient, onlineManager } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
+import { PLAN_IN_PROGRESS_RETRY } from '../constants/voice.constants';
 import type { PreparedPlanRequest } from '../domains/plan-request.model';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import type { PlannedAction, VoicePlanSource } from '../domains/voice-plan.model';
-import { getVoicePlanFailureCause } from '../domains/voice.error';
+import { getVoicePlanFailureCause, isPlanInProgressError } from '../domains/voice.error';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
 import { toAnalyticsSource, summarizePlanForAnalytics } from '../utils/voice-analytics';
-import { planInProgressRetryOptions } from './plan-in-progress-retry';
 import { reflectFeatureQuota } from './voice-plan-cache';
+
+/** 응답을 놓친 뒤 다시 보냈는데 앞선 요청이 아직 처리 중이면 안내만 하고 끝내지 않고 결과가 나올 때까지 기다린다 */
+export const planInProgressRetryOptions = {
+  retry: (failureCount: number, error: unknown) =>
+    isPlanInProgressError(error) && failureCount < PLAN_IN_PROGRESS_RETRY.maxCount,
+  retryDelay: PLAN_IN_PROGRESS_RETRY.delayMs,
+} as const;
 
 export interface ApplyActionPlanVariables {
   source: VoicePlanSource;

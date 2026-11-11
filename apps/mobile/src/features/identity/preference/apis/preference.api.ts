@@ -5,7 +5,7 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { type PreferenceChange } from '../schemas/preference-request.schema';
 import { toPreference } from './preference.mapper';
 
-export class PreferenceService {
+export class PreferenceApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -17,7 +17,7 @@ export class PreferenceService {
       await this.#httpClient.get('v1/auth/preference', { signal }),
       preferenceResponseSchema,
       toPreference,
-      '[PreferenceService] Invalid getPreference response',
+      '[PreferenceApi] Invalid getPreference response',
     );
 
   updatePreference = async (change: PreferenceChange) =>
@@ -25,6 +25,6 @@ export class PreferenceService {
       await this.#httpClient.patch('v1/auth/preference', change),
       updatePreferenceResponseSchema,
       toPreference,
-      '[PreferenceService] Invalid updatePreference response',
+      '[PreferenceApi] Invalid updatePreference response',
     );
 }

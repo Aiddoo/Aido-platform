@@ -1,5 +1,5 @@
 import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import { useConsentService } from '@src/bootstrap/providers/di-context';
+import { useConsentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
@@ -44,7 +44,7 @@ const AI_DATA_SHARING_FIELDS = [
 
 /** 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 안내 버전이다 */
 export function useUpdateAiDataSharingConsentMutationOptions() {
-  const consentService = useConsentService();
+  const consentApi = useConsentApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
@@ -53,7 +53,7 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
     networkMode: 'always',
     mutationKey: CONSENT_MUTATION_KEYS.aiDataSharing(),
     mutationFn: async ({ agreed }: ConsentAgreement) => {
-      const result = await consentService.updateAiDataSharingConsent({
+      const result = await consentApi.updateAiDataSharingConsent({
         agreed,
         version: AI_DATA_SHARING_CONSENT.VERSION,
       });
@@ -103,7 +103,7 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
 
 export function useUpdateMarketingConsentMutationOptions() {
   const showConsentResult = useConsentResultToast();
-  const consentService = useConsentService();
+  const consentApi = useConsentApi();
   const queryClient = useQueryClient();
 
   return mutationOptions({
@@ -111,7 +111,7 @@ export function useUpdateMarketingConsentMutationOptions() {
     networkMode: 'always',
     mutationKey: CONSENT_MUTATION_KEYS.marketing(),
     mutationFn: async (input: ConsentAgreement) =>
-      unwrap(await consentService.updateMarketingConsent(input)),
+      unwrap(await consentApi.updateMarketingConsent(input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
       const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
@@ -149,14 +149,14 @@ export function useUpdateMarketingConsentMutationOptions() {
 
 export function useUpdateMarketingPushConsentMutationOptions() {
   const showConsentResult = useConsentResultToast();
-  const consentService = useConsentService();
+  const consentApi = useConsentApi();
   const queryClient = useQueryClient();
 
   return mutationOptions({
     networkMode: 'always',
     mutationKey: CONSENT_MUTATION_KEYS.marketingPush(),
     mutationFn: async (input: ConsentAgreement) =>
-      unwrap(await consentService.updateMarketingPushConsent(input)),
+      unwrap(await consentApi.updateMarketingPushConsent(input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
       const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());

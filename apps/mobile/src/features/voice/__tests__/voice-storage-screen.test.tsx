@@ -1,5 +1,5 @@
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
+import { UserApi } from '@src/features/identity/user/apis/user.api';
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -55,7 +55,7 @@ async function renderVoiceStorage({
     {
       queryClient,
       di: {
-        userService: new UserService(createHttpClientStub()),
+        userApi: new UserApi(createHttpClientStub()),
         ...storage.di,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),

@@ -1,5 +1,5 @@
 import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
-import { useFriendService, useHaptics } from '@src/bootstrap/providers/di-context';
+import { useFriendApi, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
@@ -29,7 +29,7 @@ import { FRIEND_MUTATION_KEYS } from './friend-mutation-keys';
 import { FRIEND_QUERY_KEYS } from './friend-query-keys';
 
 export function useAcceptRequestMutationOptions() {
-  const friendService = useFriendService();
+  const friendApi = useFriendApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -38,7 +38,7 @@ export function useAcceptRequestMutationOptions() {
     // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (userId: string) => {
-      const result = await friendService.acceptRequest(userId);
+      const result = await friendApi.acceptRequest(userId);
       return unwrap(result);
     },
     onSuccess: async () => {
@@ -54,7 +54,7 @@ export function useAcceptRequestMutationOptions() {
 }
 
 export function useCancelRequestMutationOptions() {
-  const friendService = useFriendService();
+  const friendApi = useFriendApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
@@ -62,7 +62,7 @@ export function useCancelRequestMutationOptions() {
     // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (userId: string) => {
-      const result = await friendService.cancelRequest(userId);
+      const result = await friendApi.cancelRequest(userId);
       return unwrap(result);
     },
     onSuccess: async (_data, userId) => {
@@ -76,7 +76,7 @@ export function useCancelRequestMutationOptions() {
 }
 
 export function useRejectRequestMutationOptions() {
-  const friendService = useFriendService();
+  const friendApi = useFriendApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -85,7 +85,7 @@ export function useRejectRequestMutationOptions() {
     // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (userId: string) => {
-      const result = await friendService.rejectRequest(userId);
+      const result = await friendApi.rejectRequest(userId);
       return unwrap(result);
     },
     onSuccess: async () => {
@@ -99,7 +99,7 @@ export function useRejectRequestMutationOptions() {
 }
 
 export function useRemoveFriendMutationOptions() {
-  const friendService = useFriendService();
+  const friendApi = useFriendApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -108,7 +108,7 @@ export function useRemoveFriendMutationOptions() {
     networkMode: 'always',
     mutationKey: FRIEND_MUTATION_KEYS.writes(),
     mutationFn: async (userId: string) => {
-      const result = await friendService.removeFriend(userId);
+      const result = await friendApi.removeFriend(userId);
       return unwrap(result);
     },
     onMutate: async (userId) => {
@@ -156,7 +156,7 @@ interface ReorderFriendVariables {
 }
 
 export function useReorderFriendMutationOptions() {
-  const friendService = useFriendService();
+  const friendApi = useFriendApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -164,7 +164,7 @@ export function useReorderFriendMutationOptions() {
     // 순서를 저장하는 동안 끌기가 막힌다. 오프라인에 멈춰 두면 연결될 때까지 막히니 바로 실패해 제자리로 돌린다
     networkMode: 'always',
     mutationFn: async ({ followId, input }: ReorderFriendVariables) => {
-      const result = await friendService.reorderFriend(followId, input);
+      const result = await friendApi.reorderFriend(followId, input);
       return unwrap(result);
     },
     onSuccess: () => {
@@ -183,7 +183,7 @@ export function useSendRequestByTagMutationOptions({
   onFriendLimitInvite,
 }: { onFriendLimitInvite?: () => void } = {}) {
   const haptics = useHaptics();
-  const friendService = useFriendService();
+  const friendApi = useFriendApi();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -193,7 +193,7 @@ export function useSendRequestByTagMutationOptions({
     // 저장 후 떠나는 폼이라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 입력값을 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async (userTag: string) => {
-      const result = await friendService.sendRequestByTag(userTag);
+      const result = await friendApi.sendRequestByTag(userTag);
       return unwrap(result);
     },
     onSuccess: (result, userTag) => {

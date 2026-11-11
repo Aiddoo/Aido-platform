@@ -25,7 +25,7 @@ import {
 } from './todo-comment.mapper';
 
 /** 읽기는 v2 묶음 API, 쓰기·좋아요는 이전 앱과 같은 v1 API를 쓴다 */
-export class TodoCommentService {
+export class TodoCommentApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -37,7 +37,7 @@ export class TodoCommentService {
       await this.#httpClient.get(`v2/todos/${todoId}/comments`, { params: query, signal }),
       todoCommentThreadsResponseSchema,
       toTodoCommentThreadPage,
-      '[TodoCommentService] Invalid threads',
+      '[TodoCommentApi] Invalid threads',
     );
 
   getReplies = async (
@@ -53,7 +53,7 @@ export class TodoCommentService {
       }),
       todoCommentRepliesResponseSchema,
       toTodoCommentReplyPage,
-      '[TodoCommentService] Invalid replies',
+      '[TodoCommentApi] Invalid replies',
     );
 
   createCommentChain = async (todoId: number, input: CreateTodoCommentChainInput) =>
@@ -61,7 +61,7 @@ export class TodoCommentService {
       await this.#httpClient.post(`v1/todos/${todoId}/comments`, input),
       writtenTodoCommentChainResponseSchema,
       (dto) => toTodoCommentChain(todoId, dto),
-      '[TodoCommentService] Invalid comment chain',
+      '[TodoCommentApi] Invalid comment chain',
     );
 
   updateComment = async (todoId: number, commentId: string, input: UpdateTodoCommentInput) =>
@@ -69,7 +69,7 @@ export class TodoCommentService {
       await this.#httpClient.patch(`v1/todos/${todoId}/comments/${commentId}`, input),
       writtenTodoCommentMutationResponseSchema,
       (dto) => toMutatedComment(todoId, dto),
-      '[TodoCommentService] Invalid updated comment',
+      '[TodoCommentApi] Invalid updated comment',
     );
 
   deleteComment = async (todoId: number, commentId: string) =>
@@ -77,7 +77,7 @@ export class TodoCommentService {
       await this.#httpClient.delete(`v1/todos/${todoId}/comments/${commentId}`),
       deleteTodoCommentResponseSchema,
       toDeletedCommentId,
-      '[TodoCommentService] Invalid deleted comment',
+      '[TodoCommentApi] Invalid deleted comment',
     );
 
   setCommentLike = async (todoId: number, commentId: string, isLiked: boolean) => {
@@ -87,7 +87,7 @@ export class TodoCommentService {
       isLiked ? await this.#httpClient.put(path) : await this.#httpClient.delete(path),
       todoCommentLikeResponseSchema,
       toTodoCommentLikeResult,
-      '[TodoCommentService] Invalid comment like',
+      '[TodoCommentApi] Invalid comment like',
     );
   };
 }

@@ -12,11 +12,11 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import type { InviteShareChannel, InviteShareContent } from '../apis/invite-share.service';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import type { InviteCode } from '../domains/invite-code.model';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import { isInviteCodeFieldError, toRedeemFailureReason } from '../domains/invite.error';
+import type { InviteShareChannel, InviteShareContent } from '../services/invite-share.service';
 import { invalidateAfterRedeem, storeRedemptionResult, replaceMyInvite } from './invite-cache';
 import { INVITE_QUERY_KEYS } from './invite-query-keys';
 

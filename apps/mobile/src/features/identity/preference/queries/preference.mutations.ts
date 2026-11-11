@@ -1,4 +1,4 @@
-import { useHaptics, usePreferenceService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, usePreferenceApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
@@ -34,7 +34,7 @@ function isRejectedPreference(error: unknown) {
 
 export function useUpdatePreferenceMutationOptions() {
   const haptics = useHaptics();
-  const preferenceService = usePreferenceService();
+  const preferenceApi = usePreferenceApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -44,7 +44,7 @@ export function useUpdatePreferenceMutationOptions() {
     networkMode: 'always',
     mutationKey: PREFERENCE_MUTATION_KEYS.writes(),
     mutationFn: async ({ trackAs: _trackAs, ...change }: UpdatePreferenceVariables) =>
-      unwrap(await preferenceService.updatePreference(change)),
+      unwrap(await preferenceApi.updatePreference(change)),
     onMutate: async ({ trackAs: _trackAs, ...change }) => {
       await queryClient.cancelQueries({ queryKey: PREFERENCE_QUERY_KEYS.current() });
 

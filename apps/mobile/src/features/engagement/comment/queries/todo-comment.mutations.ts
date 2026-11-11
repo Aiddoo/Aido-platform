@@ -1,4 +1,4 @@
-import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
+import { useTodoCommentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
@@ -76,7 +76,7 @@ function isWarnedTodoCommentError(error: unknown) {
  * 답글은 그 묶음 끝에 붙이고, 새 댓글은 정렬 자리를 몰라 묶음 목록만 다시 받는다.
  */
 export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: number }) {
-  const todoCommentService = useTodoCommentService();
+  const todoCommentApi = useTodoCommentApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
@@ -89,7 +89,7 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
       failureCount < MAX_RETRY_COUNT && isRetryableCreationError(error),
     retryDelay: (attempt) => Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS),
     mutationFn: async ({ input }: CreateTodoCommentChainVariables) =>
-      unwrap(await todoCommentService.createCommentChain(todoId, input)),
+      unwrap(await todoCommentApi.createCommentChain(todoId, input)),
     onSuccess: async ({ comments }, { input }) => {
       const [first] = comments;
       trackEvent('todo_comment_created', {
@@ -137,7 +137,7 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
 }
 
 export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number }) {
-  const todoCommentService = useTodoCommentService();
+  const todoCommentApi = useTodoCommentApi();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const mutationKey = TODO_COMMENT_MUTATION_KEYS.updateComment({ todoId });
@@ -147,7 +147,7 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
     networkMode: 'always',
     mutationKey,
     mutationFn: async ({ target, input }: UpdateTodoCommentVariables) =>
-      unwrap(await todoCommentService.updateComment(todoId, target.id, input)),
+      unwrap(await todoCommentApi.updateComment(todoId, target.id, input)),
     onMutate: async ({ target, input }) => {
       await cancelTodoCommentQueries(queryClient, { todoId });
       const previous = findCachedTodoComment(queryClient, { todoId, commentId: target.id });
@@ -199,7 +199,7 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
 
 /** 지우면 행을 먼저 빼고, 실패하면 그 댓글만 원래 자리에 되돌린다 */
 export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number }) {
-  const todoCommentService = useTodoCommentService();
+  const todoCommentApi = useTodoCommentApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
@@ -210,7 +210,7 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
     networkMode: 'always',
     mutationKey,
     mutationFn: async ({ comment }: DeleteTodoCommentVariables) =>
-      unwrap(await todoCommentService.deleteComment(todoId, comment.id)),
+      unwrap(await todoCommentApi.deleteComment(todoId, comment.id)),
     onMutate: async ({ comment }) => {
       await cancelTodoCommentQueries(queryClient, { todoId });
       const placements = findTodoCommentPlacements(queryClient, { todoId, comment });
@@ -259,7 +259,7 @@ export function useSetTodoCommentLikeMutationOptions({
   todoId: number;
   commentId: string;
 }) {
-  const todoCommentService = useTodoCommentService();
+  const todoCommentApi = useTodoCommentApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
@@ -270,7 +270,7 @@ export function useSetTodoCommentLikeMutationOptions({
     scope: { id: `todo-comment-like:${commentId}` },
     mutationKey,
     mutationFn: async ({ isLiked }: SetTodoCommentLikeVariables) =>
-      unwrap(await todoCommentService.setCommentLike(todoId, commentId, isLiked)),
+      unwrap(await todoCommentApi.setCommentLike(todoId, commentId, isLiked)),
     onMutate: async ({ isLiked }) => {
       await cancelTodoCommentQueries(queryClient, { todoId });
       const target = findCachedTodoComment(queryClient, { todoId, commentId });

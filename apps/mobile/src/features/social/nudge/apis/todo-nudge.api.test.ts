@@ -8,15 +8,15 @@ import {
   createSendNudgeResponseDto,
   INVALID_DTO,
 } from '../__tests__/todo-nudge.fixtures';
-import { TodoNudgeService } from './todo-nudge.service';
+import { TodoNudgeApi } from './todo-nudge.api';
 
-describe('TodoNudgeService', () => {
+describe('TodoNudgeApi', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
-  let service: TodoNudgeService;
+  let service: TodoNudgeApi;
 
   beforeEach(() => {
     httpClient = createHttpClientStub();
-    service = new TodoNudgeService(httpClient);
+    service = new TodoNudgeApi(httpClient);
   });
 
   describe('sendNudge', () => {
@@ -130,10 +130,10 @@ describe('TodoNudgeService', () => {
   });
 });
 
-describe('TodoNudgeService의 콕 주고받기 계약', () => {
+describe('TodoNudgeApi의 콕 주고받기 계약', () => {
   const setup = () => {
     const httpClient = createHttpClientStub();
-    return { httpClient, service: new TodoNudgeService(httpClient) };
+    return { httpClient, service: new TodoNudgeApi(httpClient) };
   };
 
   it('보낸 콕 목록의 방향과 커서, 취소 신호를 그대로 전송한다', async () => {

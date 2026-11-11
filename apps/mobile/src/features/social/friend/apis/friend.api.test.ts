@@ -7,15 +7,15 @@ import {
   createSendFriendRequestDto,
 } from '../__tests__/friend.fixtures';
 import { FRIEND_ERROR_CODE } from '../domains/friend.error';
-import { FriendService } from './friend.service';
+import { FriendApi } from './friend.api';
 
-describe('FriendService', () => {
+describe('FriendApi', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
-  let service: FriendService;
+  let service: FriendApi;
 
   beforeEach(() => {
     httpClient = createHttpClientStub();
-    service = new FriendService(httpClient);
+    service = new FriendApi(httpClient);
   });
 
   describe('sendRequestByTag', () => {

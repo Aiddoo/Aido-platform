@@ -48,7 +48,7 @@ describe('getUserFacingMessage — 토스트에 그대로 보여 줄 오류 문�
 
   it('ParseError의 개발자용 검증 메시지는 숨긴다', () => {
     // Given
-    const error = new ParseError('[InquiryService] Invalid createInquiry response: id required');
+    const error = new ParseError('[InquiryApi] Invalid createInquiry response: id required');
 
     // When
     const message = getUserFacingMessage(error);

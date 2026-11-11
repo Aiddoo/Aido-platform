@@ -7,7 +7,7 @@ import { SUGGESTION_LOG_EVENT } from '../constants/suggestion-log-events';
 import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
 import { toAiSuggestion } from './suggestion.mapper';
 
-export class SuggestionService {
+export class SuggestionApi {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
 
@@ -21,7 +21,7 @@ export class SuggestionService {
       await this.#httpClient.get('v1/ai/suggestions', { signal }),
       suggestionListResponseSchema,
       (dto) => dto.suggestions.map(toAiSuggestion),
-      '[SuggestionService] Invalid getSuggestions response',
+      '[SuggestionApi] Invalid getSuggestions response',
       this.#logInvalid('getSuggestions'),
     );
 
@@ -30,7 +30,7 @@ export class SuggestionService {
       await this.#httpClient.patch(`v1/ai/suggestions/${suggestionId}`, input),
       suggestionActionResponseSchema,
       (dto) => toAiSuggestion(dto.suggestion),
-      '[SuggestionService] Invalid actOnSuggestion response',
+      '[SuggestionApi] Invalid actOnSuggestion response',
       this.#logInvalid('actOnSuggestion'),
     );
 

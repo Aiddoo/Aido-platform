@@ -12,7 +12,7 @@ import type { UserReportRequest } from '../schemas/user-report-request.schema';
 import { toBlockedUsersPage } from './user-block.mapper';
 
 /** 사용자 차단·해제·목록과 콘텐츠 신고. 차단 효과(친구 끊기, 서로 가리기)는 서버가 맡는다 */
-export class ModerationService {
+export class ModerationApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -24,7 +24,7 @@ export class ModerationService {
       await this.#httpClient.post(`v1/blocks/${encodeURIComponent(userId)}`),
       blockUserResponseSchema,
       noop,
-      '[ModerationService] Invalid blockUser response',
+      '[ModerationApi] Invalid blockUser response',
     );
 
   unblockUser = async (userId: string) =>
@@ -32,7 +32,7 @@ export class ModerationService {
       await this.#httpClient.delete(`v1/blocks/${encodeURIComponent(userId)}`),
       unblockUserResponseSchema,
       noop,
-      '[ModerationService] Invalid unblockUser response',
+      '[ModerationApi] Invalid unblockUser response',
     );
 
   getBlockedUsers = async (params: { cursor?: string; limit: number }, signal?: AbortSignal) =>
@@ -43,7 +43,7 @@ export class ModerationService {
       }),
       blockedUsersResponseSchema,
       toBlockedUsersPage,
-      '[ModerationService] Invalid getBlockedUsers response',
+      '[ModerationApi] Invalid getBlockedUsers response',
     );
 
   reportContent = async (request: UserReportRequest) =>
@@ -51,6 +51,6 @@ export class ModerationService {
       await this.#httpClient.post('v1/reports', request),
       createUserReportResponseSchema,
       noop,
-      '[ModerationService] Invalid reportContent response',
+      '[ModerationApi] Invalid reportContent response',
     );
 }

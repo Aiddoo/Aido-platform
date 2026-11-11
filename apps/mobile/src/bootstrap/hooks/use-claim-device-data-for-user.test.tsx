@@ -7,7 +7,7 @@ import {
 import { ok } from '@src/core/errors/result';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
+import { UserApi } from '@src/features/identity/user/apis/user.api';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
@@ -55,7 +55,7 @@ describe('useClaimDeviceDataForUser', () => {
       queryCacheStorage,
       analytics: createAnalyticsStub(),
       errorReporter: createErrorReporterStub(),
-      userService: new UserService(httpClient),
+      userApi: new UserApi(httpClient),
     });
     wrapper = ({ children }) => (
       <StaticDIProvider container={container}>

@@ -3,7 +3,7 @@ import { err } from '@src/core/errors/result';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { createHttpClientStub } from '@src/testing/core';
 
-import { TodoCommentService } from './todo-comment.service';
+import { TodoCommentApi } from './todo-comment.api';
 
 const COMMENT_ID = 'cm12345678901234567890123';
 const REPLY_ID = 'cm22345678901234567890123';
@@ -49,11 +49,11 @@ const PAGINATION = {
   size: 30,
 };
 
-describe('TodoCommentService', () => {
+describe('TodoCommentApi', () => {
   it('묶음 목록은 v2 endpoint에서 anchor와 함께 읽고 signal을 넘긴다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    const service = new TodoCommentService(httpClient);
+    const service = new TodoCommentApi(httpClient);
     const signal = new AbortController().signal;
     httpClient.get.mockResolvedValue({
       ok: true,
@@ -82,7 +82,7 @@ describe('TodoCommentService', () => {
   it('답글은 묶음 머리의 replies endpoint에서 cursor를 그대로 보낸다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    const service = new TodoCommentService(httpClient);
+    const service = new TodoCommentApi(httpClient);
     httpClient.get.mockResolvedValue({
       ok: true,
       value: {
@@ -105,7 +105,7 @@ describe('TodoCommentService', () => {
   it('계약과 다른 응답은 ParseError로 던져 QueryErrorBoundary가 받게 한다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    const service = new TodoCommentService(httpClient);
+    const service = new TodoCommentApi(httpClient);
     httpClient.get.mockResolvedValue({
       ok: true,
       value: { items: [{}], pagination: PAGINATION, anchor: null },
@@ -121,7 +121,7 @@ describe('TodoCommentService', () => {
   it('이미 지운 글처럼 예측한 4xx는 Result 오류로 그대로 넘긴다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    const service = new TodoCommentService(httpClient);
+    const service = new TodoCommentApi(httpClient);
     const apiError = new ApiError('TODO_0833', '삭제된 댓글', 409);
     httpClient.put.mockResolvedValue(err(apiError));
 
@@ -136,7 +136,7 @@ describe('TodoCommentService', () => {
   it('답글 쓰기는 v1 POST에 답할 글 id를 parentId로 보낸다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    const service = new TodoCommentService(httpClient);
+    const service = new TodoCommentApi(httpClient);
     const input = {
       parentId: REPLY_ID,
       items: [{ clientRequestId: 'f43a3111-dc5e-4c62-b584-03b7c49124da', content: '답글' }],

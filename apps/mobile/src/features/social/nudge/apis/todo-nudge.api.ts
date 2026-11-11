@@ -48,9 +48,9 @@ import {
   toSendRemindNudgeResult,
 } from './todo-nudge.mapper';
 
-export type TodoNudgeServiceError = ApiError | BusinessError<TodoNudgeErrorCode>;
+export type TodoNudgeApiError = ApiError | BusinessError<TodoNudgeErrorCode>;
 
-export class TodoNudgeService {
+export class TodoNudgeApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -59,7 +59,7 @@ export class TodoNudgeService {
 
   sendNudge = async (
     input: CreateNudgeInput,
-  ): Promise<Result<SendTodoNudgeResult, TodoNudgeServiceError>> => {
+  ): Promise<Result<SendTodoNudgeResult, TodoNudgeApiError>> => {
     if (isMessageTooLong(input)) {
       return err(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
     }
@@ -72,7 +72,7 @@ export class TodoNudgeService {
       }),
       createNudgeResponseSchema,
       toSendNudgeResult,
-      '[TodoNudgeService] Invalid sendNudge response',
+      '[TodoNudgeApi] Invalid sendNudge response',
     );
   };
 
@@ -81,12 +81,12 @@ export class TodoNudgeService {
       await this.#httpClient.get('v1/nudges/limit', { signal }),
       nudgeLimitInfoSchema,
       toNudgeLimitInfo,
-      '[TodoNudgeService] Invalid getLimitInfo response',
+      '[TodoNudgeApi] Invalid getLimitInfo response',
     );
 
   sendRemindNudge = async (
     input: CreateRemindNudgeInput,
-  ): Promise<Result<SendTodoNudgeResult, TodoNudgeServiceError>> => {
+  ): Promise<Result<SendTodoNudgeResult, TodoNudgeApiError>> => {
     if (isMessageTooLong(input)) {
       return err(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
     }
@@ -98,7 +98,7 @@ export class TodoNudgeService {
       }),
       createRemindNudgeResponseSchema,
       toSendRemindNudgeResult,
-      '[TodoNudgeService] Invalid sendRemindNudge response',
+      '[TodoNudgeApi] Invalid sendRemindNudge response',
     );
   };
 
@@ -110,7 +110,7 @@ export class TodoNudgeService {
       await this.#httpClient.get(`v1/nudges/remind/cooldown/${userId}`, { signal }),
       nudgeCooldownInfoSchema,
       toNudgeCooldownInfo,
-      '[TodoNudgeService] Invalid getRemindCooldownInfo response',
+      '[TodoNudgeApi] Invalid getRemindCooldownInfo response',
     );
 
   getInteractionAvailability = async (signal?: AbortSignal): Promise<Result<boolean, ApiError>> =>
@@ -118,7 +118,7 @@ export class TodoNudgeService {
       await this.#httpClient.get('v1/nudges/interactions/availability', { signal }),
       nudgeInteractionAvailabilityResponseSchema,
       ({ enabled }) => enabled,
-      '[TodoNudgeService] Invalid getInteractionAvailability response',
+      '[TodoNudgeApi] Invalid getInteractionAvailability response',
     );
 
   getInteractions = async (
@@ -129,7 +129,7 @@ export class TodoNudgeService {
       await this.#httpClient.get('v1/nudges/interactions', { params: query, signal }),
       nudgeInteractionsResponseSchema,
       toNudgeInteractionPage,
-      '[TodoNudgeService] Invalid getInteractions response',
+      '[TodoNudgeApi] Invalid getInteractions response',
     );
 
   getInteraction = async (
@@ -140,7 +140,7 @@ export class TodoNudgeService {
       await this.#httpClient.get(`v1/nudges/${nudgeId}/interaction`, { signal }),
       nudgeInteractionResponseSchema,
       toNudgeInteraction,
-      '[TodoNudgeService] Invalid getInteraction response',
+      '[TodoNudgeApi] Invalid getInteraction response',
     );
 
   replyToNudge = async (
@@ -151,7 +151,7 @@ export class TodoNudgeService {
       await this.#httpClient.put(`v1/nudges/${nudgeId}/reply`, input),
       nudgeInteractionResponseSchema,
       toNudgeInteraction,
-      '[TodoNudgeService] Invalid replyToNudge response',
+      '[TodoNudgeApi] Invalid replyToNudge response',
     );
 
   getThanksPreview = async (
@@ -166,7 +166,7 @@ export class TodoNudgeService {
       }),
       nudgeThanksPreviewEnvelopeSchema,
       toNudgeThanksPreview,
-      '[TodoNudgeService] Invalid getThanksPreview response',
+      '[TodoNudgeApi] Invalid getThanksPreview response',
     );
 
   sendThanks = async (
@@ -177,6 +177,6 @@ export class TodoNudgeService {
       await this.#httpClient.put(`v1/nudges/todos/${todoId}/thanks`, input),
       sendNudgeThanksResponseSchema,
       ({ sentCount }) => sentCount,
-      '[TodoNudgeService] Invalid sendThanks response',
+      '[TodoNudgeApi] Invalid sendThanks response',
     );
 }

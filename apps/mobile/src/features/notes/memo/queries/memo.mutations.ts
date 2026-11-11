@@ -17,8 +17,8 @@ import {
   getVoicePlanFailureCause,
   isPlanKeyConflictError,
 } from '@src/features/voice/domains/voice.error';
-import { planInProgressRetryOptions } from '@src/features/voice/queries/plan-in-progress-retry';
 import { reflectFeatureQuota } from '@src/features/voice/queries/voice-plan-cache';
+import { planInProgressRetryOptions } from '@src/features/voice/queries/voice.mutations';
 import { createPlanReviewDraft } from '@src/features/voice/utils/plan-review-draft';
 import {
   summarizePlanForAnalytics,

@@ -18,7 +18,7 @@ import {
   toUpdateMarketingPushConsentResult,
 } from './consent.mapper';
 
-export class ConsentService {
+export class ConsentApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -30,7 +30,7 @@ export class ConsentService {
       await this.#httpClient.get('v1/auth/consent', { signal }),
       consentEnvelopeSchema,
       toConsent,
-      '[ConsentService] Invalid getConsent response',
+      '[ConsentApi] Invalid getConsent response',
     );
 
   updateMarketingConsent = async (input: ConsentAgreement) =>
@@ -38,7 +38,7 @@ export class ConsentService {
       await this.#httpClient.patch('v1/auth/consent/marketing', input),
       updateMarketingConsentEnvelopeSchema,
       toUpdateMarketingConsentResult,
-      '[ConsentService] Invalid updateMarketingConsent response',
+      '[ConsentApi] Invalid updateMarketingConsent response',
     );
 
   updateMarketingPushConsent = async (input: ConsentAgreement) =>
@@ -46,7 +46,7 @@ export class ConsentService {
       await this.#httpClient.patch('v1/auth/consent/marketing-push', input),
       updateMarketingPushConsentEnvelopeSchema,
       toUpdateMarketingPushConsentResult,
-      '[ConsentService] Invalid updateMarketingPushConsent response',
+      '[ConsentApi] Invalid updateMarketingPushConsent response',
     );
 
   updateAiDataSharingConsent = async (input: UpdateAiDataSharingConsentInput) =>
@@ -54,6 +54,6 @@ export class ConsentService {
       await this.#httpClient.patch('v1/auth/consent/ai-data-sharing', input),
       updateAiDataSharingConsentResponseSchema,
       toUpdateAiDataSharingConsentResult,
-      '[ConsentService] Invalid updateAiDataSharingConsent response',
+      '[ConsentApi] Invalid updateAiDataSharingConsent response',
     );
 }

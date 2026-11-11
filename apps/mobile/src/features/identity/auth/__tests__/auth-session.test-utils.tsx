@@ -8,7 +8,7 @@ import { ok } from '@src/core/errors/result';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
+import { UserApi } from '@src/features/identity/user/apis/user.api';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
@@ -75,7 +75,7 @@ export function createAuthSession({ tokens, tokenStore, di }: AuthSessionOptions
     errorReporter,
     widgetBridge: { writeSnapshot },
     deviceIdStore: createMemoryDeviceIdStore('device-1'),
-    userService: new UserService(userHttp),
+    userApi: new UserApi(userHttp),
     todoApi: new TodoApi(createHttpClientStub()),
     ...di,
   });

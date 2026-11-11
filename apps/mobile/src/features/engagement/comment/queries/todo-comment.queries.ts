@@ -1,5 +1,5 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
-import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
+import { useTodoCommentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
@@ -47,14 +47,14 @@ export function useGetTodoCommentThreadsInfiniteQueryOptions({
   sort,
   anchorCommentId,
 }: TodoCommentThreadsQueryInput) {
-  const todoCommentService = useTodoCommentService();
+  const todoCommentApi = useTodoCommentApi();
 
   return infiniteQueryOptions({
     queryKey: TODO_COMMENT_QUERY_KEYS.threads({ todoId, sort, anchorCommentId }),
     initialPageParam: INITIAL_TODO_COMMENT_PAGE_PARAM,
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await todoCommentService.getThreads(
+        await todoCommentApi.getThreads(
           todoId,
           toThreadsQuery(pageParam, { sort, anchorCommentId }),
           signal,
@@ -78,14 +78,14 @@ export function useGetTodoCommentRepliesInfiniteQueryOptions({
   aroundReplyId,
   isEnabled,
 }: TodoCommentRepliesQueryInput) {
-  const todoCommentService = useTodoCommentService();
+  const todoCommentApi = useTodoCommentApi();
 
   return infiniteQueryOptions({
     queryKey: TODO_COMMENT_QUERY_KEYS.replies({ todoId, commentId, aroundReplyId }),
     initialPageParam: INITIAL_TODO_COMMENT_PAGE_PARAM,
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await todoCommentService.getReplies(
+        await todoCommentApi.getReplies(
           todoId,
           commentId,
           toRepliesQuery(pageParam, { aroundReplyId }),

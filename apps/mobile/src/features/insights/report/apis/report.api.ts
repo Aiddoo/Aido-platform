@@ -11,7 +11,7 @@ import { REPORT_LOG_EVENT } from '../constants/report-log-events';
 import type { GetAiReportsQuery } from '../schemas/report-list-request.schema';
 import { toAiReport, toReportStatus } from './report.mapper';
 
-export class ReportService {
+export class ReportApi {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
 
@@ -25,7 +25,7 @@ export class ReportService {
       await this.#httpClient.get('v1/ai/reports/status', { signal }),
       reportStatusResponseSchema,
       (dto) => toReportStatus(dto.status),
-      '[ReportService] Invalid getReportStatus response',
+      '[ReportApi] Invalid getReportStatus response',
       this.#logInvalid('getReportStatus'),
     );
 
@@ -37,7 +37,7 @@ export class ReportService {
       }),
       aiReportListResponseSchema,
       (dto) => dto.reports.map(toAiReport),
-      '[ReportService] Invalid getReports response',
+      '[ReportApi] Invalid getReports response',
       this.#logInvalid('getReports'),
     );
 
@@ -46,7 +46,7 @@ export class ReportService {
       await this.#httpClient.get(`v1/ai/reports/${id}`, { signal }),
       aiReportResponseSchema,
       (dto) => toAiReport(dto.report),
-      '[ReportService] Invalid getReportById response',
+      '[ReportApi] Invalid getReportById response',
       this.#logInvalid('getReportById'),
     );
 

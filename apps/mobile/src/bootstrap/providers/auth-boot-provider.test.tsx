@@ -10,7 +10,7 @@ import { createPendingRevocationRepository } from '@src/features/identity/auth/r
 import { SessionCleanupService } from '@src/features/identity/auth/services/session-cleanup.service';
 import { SessionRevocationService } from '@src/features/identity/auth/services/session-revocation.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
+import { UserApi } from '@src/features/identity/user/apis/user.api';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { createDraftKey } from '@src/shared/draft/draft.model';
@@ -120,7 +120,7 @@ describe('AuthBootProvider', () => {
     const todoApi = new TodoApi(createHttpClientStub());
     const userHttpClient = createHttpClientStub();
     userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-    const userService = new UserService(userHttpClient);
+    const userApi = new UserApi(userHttpClient);
 
     const mountedProvider = await render(
       <StaticDIProvider
@@ -130,7 +130,7 @@ describe('AuthBootProvider', () => {
           errorReporter,
           analytics,
           todoApi,
-          userService,
+          userApi,
           widgetBridge: { writeSnapshot },
           sessionCleanupService: new SessionCleanupService({
             userDeviceData: { clearForUser: noop },

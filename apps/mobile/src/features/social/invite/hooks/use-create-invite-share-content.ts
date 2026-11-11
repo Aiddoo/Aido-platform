@@ -1,8 +1,8 @@
 import { useTranslation } from '@src/shared/i18n';
 
-import type { InviteShareContent } from '../apis/invite-share.service';
 import { INVITEE_PREMIUM_DAYS } from '../constants/invite.constants';
 import type { Invite } from '../domains/invite.model';
+import type { InviteShareContent } from '../services/invite-share.service';
 
 /** 내 초대와 보내는 사람 이름으로 사용자 언어의 공유 문구를 만드는 함수를 돌려준다 */
 export function useCreateInviteShareContent() {

@@ -1,4 +1,4 @@
-import { useUserService } from '@src/bootstrap/providers/di-context';
+import { useUserApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
@@ -29,7 +29,7 @@ function writeChangedProfileFields(
 }
 
 export function useUpdateProfileMutationOptions() {
-  const userService = useUserService();
+  const userApi = useUserApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -38,7 +38,7 @@ export function useUpdateProfileMutationOptions() {
     networkMode: 'always',
     mutationKey: USER_MUTATION_KEYS.updateProfile(),
     mutationFn: async (input: ProfileChange) => {
-      const result = await userService.updateProfile(input);
+      const result = await userApi.updateProfile(input);
       return unwrap(result);
     },
     onMutate: async (input) => {

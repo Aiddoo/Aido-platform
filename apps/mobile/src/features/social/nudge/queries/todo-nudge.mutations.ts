@@ -1,4 +1,4 @@
-import { useHaptics, useTodoNudgeService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoNudgeApi } from '@src/bootstrap/providers/di-context';
 import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
@@ -21,7 +21,7 @@ import { invalidateNudgeInteractions } from './todo-nudge-cache';
 import { TODO_NUDGE_QUERY_KEYS } from './todo-nudge-query-keys';
 
 export function useReplyToNudgeMutationOptions() {
-  const todoNudgeService = useTodoNudgeService();
+  const todoNudgeApi = useTodoNudgeApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
@@ -29,7 +29,7 @@ export function useReplyToNudgeMutationOptions() {
     // 화면에 머물며 답장 버튼이 응답까지 꺼진다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async ({ nudgeId, input }: { nudgeId: number; input: ReplyToNudgeInput }) =>
-      unwrap(await todoNudgeService.replyToNudge(nudgeId, input)),
+      unwrap(await todoNudgeApi.replyToNudge(nudgeId, input)),
     onSuccess: (data, variables) => {
       trackEvent('nudge_replied', { reply_kind: variables.input.replyKind });
       queryClient.setQueryData(
@@ -47,7 +47,7 @@ export function useReplyToNudgeMutationOptions() {
 }
 
 export function useSendNudgeThanksMutationOptions() {
-  const todoNudgeService = useTodoNudgeService();
+  const todoNudgeApi = useTodoNudgeApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
@@ -55,7 +55,7 @@ export function useSendNudgeThanksMutationOptions() {
     // 감사 버튼이 응답까지 돈다. 답장과 같은 이유로 오프라인에서 멈추지 않는다
     networkMode: 'always',
     mutationFn: async ({ todoId, input }: { todoId: number; input: SendNudgeThanksInput }) =>
-      unwrap(await todoNudgeService.sendThanks(todoId, input)),
+      unwrap(await todoNudgeApi.sendThanks(todoId, input)),
     onSuccess: (recipientCount) => {
       if (recipientCount > 0) {
         trackEvent('nudge_thanks_sent', { recipient_count: recipientCount });
@@ -75,7 +75,7 @@ export function useSendNudgeThanksMutationOptions() {
 
 export function useSendRemindNudgeMutationOptions() {
   const haptics = useHaptics();
-  const todoNudgeService = useTodoNudgeService();
+  const todoNudgeApi = useTodoNudgeApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -84,7 +84,7 @@ export function useSendRemindNudgeMutationOptions() {
     // 저장 후 떠나는 시트라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (input: CreateRemindNudgeInput) =>
-      unwrap(await todoNudgeService.sendRemindNudge(input)),
+      unwrap(await todoNudgeApi.sendRemindNudge(input)),
     onSuccess: (_data, variables) => {
       haptics.notify('success');
       queryClient.invalidateQueries({
@@ -99,7 +99,7 @@ export function useSendRemindNudgeMutationOptions() {
 
 export function useSendTodoNudgeMutationOptions() {
   const haptics = useHaptics();
-  const todoNudgeService = useTodoNudgeService();
+  const todoNudgeApi = useTodoNudgeApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -107,7 +107,7 @@ export function useSendTodoNudgeMutationOptions() {
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: CreateNudgeInput) => unwrap(await todoNudgeService.sendNudge(input)),
+    mutationFn: async (input: CreateNudgeInput) => unwrap(await todoNudgeApi.sendNudge(input)),
     onSuccess: () => {
       haptics.notify('success');
       queryClient.invalidateQueries({ queryKey: TODO_NUDGE_QUERY_KEYS.limit() });

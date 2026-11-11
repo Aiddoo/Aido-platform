@@ -17,11 +17,11 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import type { ComponentProps, ReactNode } from 'react';
 
-import type { InviteShareChannel } from '../apis/invite-share.service';
 import { useCopiedFeedback } from '../hooks/use-copied-feedback';
 import { useCreateInviteShareContent } from '../hooks/use-create-invite-share-content';
 import { useShareInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
+import type { InviteShareChannel } from '../services/invite-share.service';
 
 export function InviteShareActions(props: ComponentProps<typeof VStack>) {
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({

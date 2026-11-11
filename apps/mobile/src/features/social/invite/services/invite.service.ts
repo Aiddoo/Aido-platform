@@ -11,6 +11,12 @@ import type { Logger } from '@src/core/ports/logger';
 import { BusinessError, getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
+import {
+  toInvite,
+  toInvitedFriendsPage,
+  toInvitePreview,
+  toRedemptionResult,
+} from '../apis/invite.mapper';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { parseInviteCode } from '../domains/invite-code.model';
 import type { InvitePreview } from '../domains/invite-preview.model';
@@ -23,12 +29,6 @@ import {
   invitedFriendsResponseSchema,
   redeemResponseSchema,
 } from '../schemas/invite-response.schema';
-import {
-  toInvite,
-  toInvitedFriendsPage,
-  toInvitePreview,
-  toRedemptionResult,
-} from './invite.mapper';
 import type { PendingRedemptionService } from './pending-redemption.service';
 
 type InviteServiceError = ApiError | BusinessError<InviteErrorCode>;

@@ -1,4 +1,4 @@
-import { useHaptics, useSuggestionService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useSuggestionApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
@@ -20,7 +20,7 @@ interface ActOnSuggestionVariables {
 
 export function useActOnSuggestionMutationOptions() {
   const haptics = useHaptics();
-  const suggestionService = useSuggestionService();
+  const suggestionApi = useSuggestionApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -30,7 +30,7 @@ export function useActOnSuggestionMutationOptions() {
     // 수락 시트와 거절 버튼이 응답까지 돈다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async ({ suggestionId, input }: ActOnSuggestionVariables) =>
-      unwrap(await suggestionService.actOnSuggestion(suggestionId, input)),
+      unwrap(await suggestionApi.actOnSuggestion(suggestionId, input)),
     onSuccess: async (_result, { input }) => {
       trackEvent('ai_suggestion_acted', { action: input.action });
       toast.success(

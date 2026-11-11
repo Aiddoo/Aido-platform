@@ -10,7 +10,7 @@ import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-
 import { createSessionManager } from '@src/core/session/session-manager';
 import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserService } from '@src/features/identity/user/apis/user.service';
+import { UserApi } from '@src/features/identity/user/apis/user.api';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { useUpdateProfileMutationOptions } from '@src/features/identity/user/queries/user.mutations';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -985,7 +985,7 @@ describe('토큰 만료', () => {
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
     const session = createAuthSession({
       tokenStore,
-      di: { userService: new UserService(new KyHttpClient(client)) },
+      di: { userApi: new UserApi(new KyHttpClient(client)) },
     });
     return { ...session, client };
   }

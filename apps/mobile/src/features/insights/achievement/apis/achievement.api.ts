@@ -8,7 +8,7 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import type { GetAchievementsQuery } from '../schemas/achievement-list-request.schema';
 import { toWeeklyAchievement, toWeeklyAchievementPage } from './achievement.mapper';
 
-export class AchievementService {
+export class AchievementApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -26,7 +26,7 @@ export class AchievementService {
       }),
       weeklyAchievementListResponseSchema,
       toWeeklyAchievementPage,
-      '[AchievementService] Invalid getWeeklyAchievements response',
+      '[AchievementApi] Invalid getWeeklyAchievements response',
     );
 
   getWeeklyAchievement = async (year: number, week: number, signal?: AbortSignal) =>
@@ -34,6 +34,6 @@ export class AchievementService {
       await this.#httpClient.get(`v1/weekly-achievements/${year}/${week}`, { signal }),
       weeklyAchievementDetailResponseSchema,
       toWeeklyAchievement,
-      '[AchievementService] Invalid getWeeklyAchievement response',
+      '[AchievementApi] Invalid getWeeklyAchievement response',
     );
 }

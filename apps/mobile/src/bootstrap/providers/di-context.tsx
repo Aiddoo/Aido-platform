@@ -13,7 +13,7 @@ import type { SessionEpoch } from '@src/core/session/session-epoch';
 import type { AppVersionApi } from '@src/features/app-config/app-version/apis/app-version.api';
 import type { WhatsNewCampaignApi } from '@src/features/app-config/whats-new/apis/whats-new-campaign.api';
 import type { WhatsNewRepository } from '@src/features/app-config/whats-new/repositories/whats-new.repository';
-import type { SuggestionService } from '@src/features/assistant/suggestion/apis/suggestion.service';
+import type { SuggestionApi } from '@src/features/assistant/suggestion/apis/suggestion.api';
 import type { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
 import type { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';
 import type { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
@@ -24,18 +24,18 @@ import type { CoachmarkRepository } from '@src/features/device/coachmark/reposit
 import type { StoreReviewService } from '@src/features/device/store-review/services/store-review.service';
 import type { WidgetNavigationRepository } from '@src/features/device/widget/repositories/widget-navigation.repository';
 import type { WidgetSyncService } from '@src/features/device/widget/services/widget-sync.service';
-import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
+import type { TodoCommentApi } from '@src/features/engagement/comment/apis/todo-comment.api';
 import type { AuthApi } from '@src/features/identity/auth/apis/auth.api';
 import type { LogOutDeviceService } from '@src/features/identity/auth/services/log-out-device.service';
 import type { SessionCleanupService } from '@src/features/identity/auth/services/session-cleanup.service';
 import type { SessionRevocationService } from '@src/features/identity/auth/services/session-revocation.service';
 import type { SignInService } from '@src/features/identity/auth/services/sign-in.service';
 import type { AuthSessionStore } from '@src/features/identity/auth/stores/auth-session.store';
-import type { ConsentService } from '@src/features/identity/consent/apis/consent.service';
-import type { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
-import type { UserService } from '@src/features/identity/user/apis/user.service';
-import type { AchievementService } from '@src/features/insights/achievement/apis/achievement.service';
-import type { ReportService } from '@src/features/insights/report/apis/report.service';
+import type { ConsentApi } from '@src/features/identity/consent/apis/consent.api';
+import type { PreferenceApi } from '@src/features/identity/preference/apis/preference.api';
+import type { UserApi } from '@src/features/identity/user/apis/user.api';
+import type { AchievementApi } from '@src/features/insights/achievement/apis/achievement.api';
+import type { ReportApi } from '@src/features/insights/report/apis/report.api';
 import type { MemoApi } from '@src/features/notes/memo/apis/memo.api';
 import type { NotificationApi } from '@src/features/notification/apis/notification.api';
 import type { MarketingPushPromptRepository } from '@src/features/notification/repositories/marketing-push-prompt.repository';
@@ -46,13 +46,13 @@ import type { PushOnboardingGuardStore } from '@src/features/notification/stores
 import type { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
 import type { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import type { TodoApi } from '@src/features/planning/todo/apis/todo.api';
-import type { FriendService } from '@src/features/social/friend/apis/friend.service';
-import type { InviteShareService } from '@src/features/social/invite/apis/invite-share.service';
-import type { InviteService } from '@src/features/social/invite/apis/invite.service';
-import type { PendingRedemptionService } from '@src/features/social/invite/apis/pending-redemption.service';
-import type { ModerationService } from '@src/features/social/moderation/apis/moderation.service';
-import type { TodoNudgeService } from '@src/features/social/nudge/apis/todo-nudge.service';
-import type { InquiryService } from '@src/features/support/inquiry/apis/inquiry.service';
+import type { FriendApi } from '@src/features/social/friend/apis/friend.api';
+import type { InviteShareService } from '@src/features/social/invite/services/invite-share.service';
+import type { InviteService } from '@src/features/social/invite/services/invite.service';
+import type { PendingRedemptionService } from '@src/features/social/invite/services/pending-redemption.service';
+import type { ModerationApi } from '@src/features/social/moderation/apis/moderation.api';
+import type { TodoNudgeApi } from '@src/features/social/nudge/apis/todo-nudge.api';
+import type { InquiryApi } from '@src/features/support/inquiry/apis/inquiry.api';
 import type { VoiceApi } from '@src/features/voice/apis/voice.api';
 import type { VoiceNoteDraftRepository } from '@src/features/voice/repositories/voice-note-draft.repository';
 import type { VoiceRecordingRepository } from '@src/features/voice/repositories/voice-recording.repository';
@@ -88,30 +88,30 @@ export interface DIContainer extends SharedDependencies {
   /** 오프라인 조회 캐시(사용자 범위 로컬 상태) */
   queryCacheStorage: QueryCacheStorage;
 
-  achievementService: AchievementService;
-  reportService: ReportService;
-  suggestionService: SuggestionService;
-  consentService: ConsentService;
+  achievementApi: AchievementApi;
+  reportApi: ReportApi;
+  suggestionApi: SuggestionApi;
+  consentApi: ConsentApi;
   authApi: AuthApi;
   signInService: SignInService;
-  preferenceService: PreferenceService;
+  preferenceApi: PreferenceApi;
   activationService: ActivationService;
   activationProgressRepository: ActivationProgressRepository;
   appVersionApi: AppVersionApi;
   appIconService: AppIconService;
-  friendService: FriendService;
+  friendApi: FriendApi;
   inviteService: InviteService;
   pendingRedemptionService: PendingRedemptionService;
   inviteShareService: InviteShareService;
   whatsNewCampaignApi: WhatsNewCampaignApi;
   whatsNewRepository: WhatsNewRepository;
-  inquiryService: InquiryService;
+  inquiryApi: InquiryApi;
   memoApi: MemoApi;
   voiceApi: VoiceApi;
-  moderationService: ModerationService;
+  moderationApi: ModerationApi;
   subTodoApi: SubTodoApi;
   todoApi: TodoApi;
-  todoCommentService: TodoCommentService;
+  todoCommentApi: TodoCommentApi;
   todoCategoryApi: TodoCategoryApi;
   notificationApi: NotificationApi;
   notificationBadgeService: NotificationBadgeService;
@@ -121,10 +121,10 @@ export interface DIContainer extends SharedDependencies {
   pushOnboardingGuardStore: PushOnboardingGuardStore;
   pushRegistrationService: PushRegistrationService;
   marketingPushPromptRepository: MarketingPushPromptRepository;
-  todoNudgeService: TodoNudgeService;
+  todoNudgeApi: TodoNudgeApi;
   coachmarkRepository: CoachmarkRepository;
   storeReviewService: StoreReviewService;
-  userService: UserService;
+  userApi: UserApi;
   purchasesSession: PurchasesSession;
   subscriptionService: SubscriptionService;
   entitlementApi: EntitlementApi;
@@ -226,17 +226,17 @@ export function useQueryCacheStorage() {
   return useDI().queryCacheStorage;
 }
 
-export function useAchievementService() {
-  return useDI().achievementService;
+export function useAchievementApi() {
+  return useDI().achievementApi;
 }
-export function useReportService() {
-  return useDI().reportService;
+export function useReportApi() {
+  return useDI().reportApi;
 }
-export function useSuggestionService() {
-  return useDI().suggestionService;
+export function useSuggestionApi() {
+  return useDI().suggestionApi;
 }
-export function useConsentService() {
-  return useDI().consentService;
+export function useConsentApi() {
+  return useDI().consentApi;
 }
 export function useAuthApi() {
   return useDI().authApi;
@@ -244,8 +244,8 @@ export function useAuthApi() {
 export function useSignInService() {
   return useDI().signInService;
 }
-export function usePreferenceService() {
-  return useDI().preferenceService;
+export function usePreferenceApi() {
+  return useDI().preferenceApi;
 }
 export function useActivationService() {
   return useDI().activationService;
@@ -253,8 +253,8 @@ export function useActivationService() {
 export function useAppVersionApi() {
   return useDI().appVersionApi;
 }
-export function useFriendService() {
-  return useDI().friendService;
+export function useFriendApi() {
+  return useDI().friendApi;
 }
 export function useInviteService() {
   return useDI().inviteService;
@@ -271,8 +271,8 @@ export function useWhatsNewCampaignApi() {
 export function useWhatsNewRepository() {
   return useDI().whatsNewRepository;
 }
-export function useInquiryService() {
-  return useDI().inquiryService;
+export function useInquiryApi() {
+  return useDI().inquiryApi;
 }
 export function useMemoApi() {
   return useDI().memoApi;
@@ -280,8 +280,8 @@ export function useMemoApi() {
 export function useVoiceApi() {
   return useDI().voiceApi;
 }
-export function useModerationService() {
-  return useDI().moderationService;
+export function useModerationApi() {
+  return useDI().moderationApi;
 }
 export function useSubTodoApi() {
   return useDI().subTodoApi;
@@ -289,8 +289,8 @@ export function useSubTodoApi() {
 export function useTodoApi() {
   return useDI().todoApi;
 }
-export function useTodoCommentService() {
-  return useDI().todoCommentService;
+export function useTodoCommentApi() {
+  return useDI().todoCommentApi;
 }
 export function useTodoCategoryApi() {
   return useDI().todoCategoryApi;
@@ -313,14 +313,14 @@ export function usePushRegistrationService() {
 export function useMarketingPushPromptRepository() {
   return useDI().marketingPushPromptRepository;
 }
-export function useTodoNudgeService() {
-  return useDI().todoNudgeService;
+export function useTodoNudgeApi() {
+  return useDI().todoNudgeApi;
 }
 export function useStoreReviewService() {
   return useDI().storeReviewService;
 }
-export function useUserService() {
-  return useDI().userService;
+export function useUserApi() {
+  return useDI().userApi;
 }
 export function usePurchasesSession() {
   return useDI().purchasesSession;

@@ -45,8 +45,8 @@ async function renderHint({
   // 내 정보가 오면 CoachmarkPopover가 대상을 Popover 안으로 옮겨 다시 마운트한다.
   // 그 전에 찾은 줄은 떨어져 나가 눌러도 아무 일이 없으므로, 앱처럼 캐시에 넣고 시작한다.
   const queryClient = createTestQueryClient();
-  const { userService } = createTestDi({ httpClient: userHttpClient });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), unwrap(await userService.getCurrentUser()));
+  const { userApi } = createTestDi({ httpClient: userHttpClient });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), unwrap(await userApi.getCurrentUser()));
   const syncStorage = createMemoryObservableSyncStorage();
   const coachmarkRepository = createCoachmarkRecords(syncStorage);
   if (isSeen) {

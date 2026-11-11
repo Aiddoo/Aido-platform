@@ -4,7 +4,7 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { toInquiryResult } from './inquiry.mapper';
 
-export class InquiryService {
+export class InquiryApi {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
@@ -16,6 +16,6 @@ export class InquiryService {
       await this.#httpClient.post('v1/inquiries', input),
       createInquiryResponseSchema,
       toInquiryResult,
-      '[InquiryService] Invalid createInquiry response',
+      '[InquiryApi] Invalid createInquiry response',
     );
 }
