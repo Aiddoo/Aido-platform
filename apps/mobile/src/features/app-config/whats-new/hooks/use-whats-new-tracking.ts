@@ -5,6 +5,7 @@ import { getErrorMessage } from '@src/shared/errors';
 import { useEffect, useRef } from 'react';
 
 import { WHATS_NEW_LOG_EVENT } from '../constants/whats-new-log-events';
+import type { WhatsNewStep } from '../constants/whats-new.events';
 import type { Release } from '../domains/whats-new.model';
 import type { WhatsNewSource } from '../schemas/whats-new-params.schema';
 
@@ -21,7 +22,7 @@ export function useWhatsNewTracking({ release, source, accountId }: WhatsNewTrac
   const featureAttribution = useFeatureAttribution();
   const logger = useLogger();
   const isFinishedRef = useRef(false);
-  const viewedStepsRef = useRef(new Set<string>());
+  const viewedStepsRef = useRef(new Set<WhatsNewStep>());
 
   // 캠페인이 없는 지난 출시는 자동으로 열리지 않아 캠페인 지표를 남기지 않는다
   useEffect(() => {
@@ -41,7 +42,7 @@ export function useWhatsNewTracking({ release, source, accountId }: WhatsNewTrac
     isFinishedRef.current = true;
   };
 
-  const trackStepViewed = ({ step, index }: { step: string; index: number }) => {
+  const trackStepViewed = ({ step, index }: { step: WhatsNewStep; index: number }) => {
     if (viewedStepsRef.current.has(step)) {
       return;
     }
@@ -49,7 +50,7 @@ export function useWhatsNewTracking({ release, source, accountId }: WhatsNewTrac
     trackEvent('whats_new_step_viewed', { release_id: releaseId, step, index, source });
   };
 
-  const trackCta = ({ step, feature }: { step: string; feature: FeatureKey }) => {
+  const trackCta = ({ step, feature }: { step: WhatsNewStep; feature: FeatureKey }) => {
     trackEvent('whats_new_cta_pressed', { release_id: releaseId, step });
     if (campaignId == null) {
       return;

@@ -8,7 +8,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pickBy } from 'es-toolkit';
 
 import { isInvalidTimeRangeError, isPremiumReminderTimeError } from '../domains/preference.error';
-import { type PreferenceChange } from '../schemas/preference-request.schema';
+import { PREFERENCE_SETTINGS, type PreferenceChange } from '../schemas/preference-request.schema';
 import { PREFERENCE_MUTATION_KEYS } from './preference-mutation-keys';
 import { PREFERENCE_QUERY_KEYS } from './preference-query-keys';
 
@@ -58,10 +58,13 @@ export function useUpdatePreferenceMutationOptions() {
     },
     onSuccess: (data, { trackAs, ...change }) => {
       if (trackAs) {
-        trackEvent('settings_changed', { setting: trackAs.setting, value: String(trackAs.value) });
+        trackEvent('settings_changed', { setting: trackAs.setting, value: `${trackAs.value}` });
       } else {
-        for (const [setting, value] of Object.entries(change)) {
-          trackEvent('settings_changed', { setting, value: String(value) });
+        for (const setting of PREFERENCE_SETTINGS) {
+          const value = change[setting];
+          if (value != null) {
+            trackEvent('settings_changed', { setting, value: `${value}` });
+          }
         }
       }
       // invalidate 대신 응답을 직접 써 깜빡임을 막되, 다른 저장이 진행 중이면 그 변경이 없어 마지막 응답이 맞춘다

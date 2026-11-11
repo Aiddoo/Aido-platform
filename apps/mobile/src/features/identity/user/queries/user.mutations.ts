@@ -5,7 +5,7 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
 import { type UpdateProfileResult } from '../domains/user.model';
-import { type ProfileChange } from '../schemas/update-profile-request.schema';
+import { PROFILE_FIELDS, type ProfileChange } from '../schemas/update-profile-request.schema';
 import { USER_MUTATION_KEYS } from './user-mutation-keys';
 import { USER_QUERY_KEYS } from './user-query-keys';
 
@@ -61,7 +61,9 @@ export function useUpdateProfileMutationOptions() {
       return { previousData };
     },
     onSuccess: (data, input) => {
-      trackEvent('profile_edited', { field: Object.keys(input).join(',') });
+      for (const field of PROFILE_FIELDS.filter((name) => name in input)) {
+        trackEvent('profile_edited', { field });
+      }
       if (isLastMutation(queryClient, USER_MUTATION_KEYS.updateProfile())) {
         writeChangedProfileFields(queryClient, input, data);
       }

@@ -62,7 +62,7 @@ export function AchievementSummary() {
   const latest = weeklyAchievements.items[0];
   const latestBadgeType = latest == null ? null : AchievementPolicy.getBadgeType(latest);
   const latestCompletionRate = latest?.completionRate;
-  const latestWeekKey = latest == null ? null : `${latest.year}-W${latest.week}`;
+  const latestWeekKey = latest == null ? null : (`${latest.year}-W${latest.week}` as const);
 
   useEffect(() => {
     if (latestBadgeType == null || latestCompletionRate == null || latestWeekKey == null) {

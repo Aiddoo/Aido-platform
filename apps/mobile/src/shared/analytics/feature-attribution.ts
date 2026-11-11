@@ -7,7 +7,7 @@ import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 import { z } from 'zod';
 
 import { FEATURE_ATTRIBUTION_LOG_EVENT } from './feature-attribution-log-events';
-import { FEATURE_KEYS, type FeatureKey } from './feature-key';
+import { type CampaignId, FEATURE_KEYS, type FeatureKey } from './feature-key';
 import { track } from './track';
 
 export const FEATURE_ATTRIBUTION_TTL_MS = 7 * DAY_MS;
@@ -22,7 +22,7 @@ const persistedAttributionSchema = z.object({
 
 interface RecordAttributionInput {
   accountId: string;
-  campaignId: string;
+  campaignId: CampaignId;
   feature: FeatureKey;
 }
 
@@ -32,7 +32,7 @@ interface ConsumeAttributionInput {
 }
 
 interface ConsumedFeatureAttribution {
-  campaignId: string;
+  campaignId: CampaignId;
   feature: FeatureKey;
 }
 

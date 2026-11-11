@@ -31,7 +31,7 @@ import {
   useFlingGesture,
 } from 'react-native-gesture-handler';
 
-import { DEMO_PLANNED_TODOS } from '../constants/release-1-15-0.constants';
+import { DEMO_PLANNED_TODOS, RELEASE_1_15_0_STEPS } from '../constants/release-1-15-0.constants';
 import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
@@ -54,16 +54,6 @@ const FINISH_CAT_SIZE = 140;
 const FEATURE_ICON_CIRCLE_SIZE = 40;
 const FEATURE_ICON_SIZE = 22;
 
-const RELEASE_1_15_0_STEPS = [
-  'intro',
-  'voiceTodoCapture',
-  'voiceTodoReview',
-  'voiceTodoList',
-  'voiceNoteRecord',
-  'voiceNoteResult',
-  'freeQuota',
-  'finish',
-] as const;
 type Release1150Step = (typeof RELEASE_1_15_0_STEPS)[number];
 type Release1150StepMap = Record<Release1150Step, object>;
 
