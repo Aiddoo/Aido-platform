@@ -1,6 +1,5 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
-import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { useCopyToClipboard } from '@src/shared/hooks/use-copy-to-clipboard';
@@ -217,10 +216,9 @@ function CommentText({
   onLongPress: () => void;
 }) {
   const { t } = useTranslation('todoComment');
-  const [todoId] = useTodoId();
   const burst = useTodoCommentHeartBurstValues();
   const likeComment = useMutation(
-    useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
+    useSetTodoCommentLikeMutationOptions({ todoId: comment.todoId, commentId: comment.id }),
   );
   const { trackEvent } = useTrack();
   const [isHintPending, completeHint] = useMyPendingCoachmark('comment-double-tap');
@@ -329,10 +327,9 @@ function Placeholder({ state }: { state: 'deleted' | 'blockedAuthor' }) {
 
 function LikeButton({ comment, scale }: { comment: TodoComment; scale: SharedValue<number> }) {
   const { t } = useTranslation('todoComment');
-  const [todoId] = useTodoId();
   const isReducedMotion = useIsReduceMotionEnabled();
   const likeComment = useMutation(
-    useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
+    useSetTodoCommentLikeMutationOptions({ todoId: comment.todoId, commentId: comment.id }),
   );
   // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
   const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -386,7 +383,6 @@ function ReplyButton({
   rowRef: RefObject<ComponentRef<typeof View> | null>;
 }) {
   const { t } = useTranslation('todoComment');
-  const [todoId] = useTodoId();
   const { trackEvent } = useTrack();
   const { reset } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();
@@ -406,7 +402,7 @@ function ReplyButton({
       onPress={() => {
         reset(toReplyFormValues(comment));
         trackEvent('todo_comment_reply_started', {
-          todo_id: todoId,
+          todo_id: comment.todoId,
           target: TodoCommentPolicy.isReply(comment) ? 'reply' : 'comment',
         });
         reveal(rowRef);
@@ -428,14 +424,15 @@ interface ActionMenuProps {
 
 /** ⋯와 길게 누르기가 같은 메뉴를 연다. 내 글은 수정·복사·삭제, 남의 글은 복사·신고·차단이다 */
 function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) {
-  const [todoId] = useTodoId();
   const { t } = useTranslation(['todoComment', 'moderation']);
   const push = useSingleTap(router.push);
   const { copy } = useCopyToClipboard();
   const confirmDialog = useConfirmDialog();
   const { reset, getValues } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();
-  const deleteComment = useMutation(useDeleteTodoCommentMutationOptions({ todoId }));
+  const deleteComment = useMutation(
+    useDeleteTodoCommentMutationOptions({ todoId: comment.todoId }),
+  );
   const author = comment.author;
   const authorName = author?.name ?? t('moderation:fallbackName');
   const hasPrimaryActions =
@@ -535,7 +532,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
             onPress={() =>
               push({
                 pathname: '/todo/[todoId]/comments/[commentId]/report',
-                params: { todoId, commentId: comment.id },
+                params: { todoId: comment.todoId, commentId: comment.id },
               })
             }
           />
