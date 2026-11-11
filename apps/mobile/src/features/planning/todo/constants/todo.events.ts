@@ -1,5 +1,10 @@
+import type { UpdateTodoInput } from '../schemas/todo-request.schema';
+
 type TodoCreationEntry = 'manual' | 'recurring';
 type SeriesScope = 'THIS_ONLY' | 'THIS_AND_FOLLOWING' | 'ALL';
+type TodoEditedField = keyof UpdateTodoInput;
+/** 고친 칸 이름을 고친 순서대로 쉼표로 이은 값(`title,startDate`). 다중 칸 버킷은 대시보드를 확인한 뒤 정한다 */
+export type TodoEditedFields = TodoEditedField | `${TodoEditedField},${string}`;
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
@@ -15,8 +20,7 @@ declare module '@src/shared/analytics/event-map' {
     };
     todo_completed: { todo_id: number; is_completed: boolean };
     todo_deleted: { todo_id: number };
-    // oxlint-disable-next-line aido/analytics-event-catalog -- 1.15.2 전환 #1400
-    todo_edited: { todo_id: number; field: string };
+    todo_edited: { todo_id: number; field?: TodoEditedFields };
     todo_series_edited: { scope: SeriesScope };
     todo_series_deleted: { scope: SeriesScope };
     todo_series_stopped: undefined;
@@ -28,5 +32,3 @@ declare module '@src/shared/analytics/event-map' {
     todo_reordered: { source: 'feed' };
   }
 }
-
-export {};

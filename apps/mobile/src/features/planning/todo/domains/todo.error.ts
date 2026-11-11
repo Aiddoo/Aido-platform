@@ -1,12 +1,9 @@
-import { ErrorCode } from '@aido/api/errors';
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { isApiError } from '@src/shared/errors';
-
-// oxlint-disable-next-line aido/http-status-literal -- 1.15.2 전환 #1400
-const NOT_FOUND_STATUS = 404;
 
 /** 서버는 지운 할 일과 볼 권한이 없는 할 일을 모두 404로 답한다 */
 export function isTodoUnavailableError(error: unknown) {
-  return isApiError(error) && error.status === NOT_FOUND_STATUS;
+  return isApiError(error) && error.status === HttpStatus.NOT_FOUND;
 }
 
 /** 친구가 끊거나 차단해 친구의 할 일·완료 현황을 더는 볼 수 없다. 다시 시도해도 같아 안내와 내 피드로 가는 길을 보인다 */

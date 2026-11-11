@@ -8,6 +8,7 @@ import {
   invalidateTodoCategories,
 } from '@src/features/planning/category/queries/todo-category-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
+import type { TodoEditedFields } from '@src/features/planning/todo/constants/todo.events';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import {
   findTodoSeriesFailure,
@@ -382,6 +383,30 @@ export function useUpdateSubTodoMutationOptions() {
   });
 }
 
+// 수정 폼이 칸을 담는 순서다. 분석의 field 값이 이 순서로 이어진다
+const TODO_EDITED_FIELD_ORDER = [
+  'title',
+  'categoryId',
+  'startDate',
+  'endDate',
+  'scheduledTime',
+  'isAllDay',
+  'visibility',
+] as const satisfies readonly (keyof UpdateTodoInput)[];
+
+// 칸을 고치지 않고 반복만 바꾼 수정(단일 → 반복 포함)은 repeat 한 칸으로 남긴다
+function toEditedFields(
+  input: UpdateTodoInput,
+  options: TodoSeriesEditOptions = {},
+): TodoEditedFields | null {
+  const [first, ...rest] = TODO_EDITED_FIELD_ORDER.filter((field) => field in input);
+  if (first == null) {
+    // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 바꾼 것이다
+    return options.repeat === undefined ? null : 'repeat';
+  }
+  return rest.length === 0 ? first : `${first},${rest.join(',')}`;
+}
+
 interface UpdateTodoVariables {
   todoId: number;
   input: UpdateTodoInput;
@@ -414,8 +439,10 @@ export function useUpdateTodoMutationOptions() {
         invalidateTodos(queryClient);
       }
       toast.success(t('todo:toast.todoUpdated'));
-      const field = Object.keys(variables.input).join(',');
-      trackEvent('todo_edited', { todo_id: variables.todoId, field });
+      trackEvent('todo_edited', {
+        todo_id: variables.todoId,
+        field: toEditedFields(variables.input, variables.options) ?? undefined,
+      });
       if (variables.options?.scope != null) {
         trackEvent('todo_series_edited', { scope: variables.options.scope });
       }
