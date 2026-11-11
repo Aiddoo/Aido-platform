@@ -34,7 +34,7 @@ import { StrictMode } from 'react';
 
 import { AppProviders } from './app-providers';
 import { createCompositionRoot } from './create-composition-root';
-import { useAuthService, useSessionEpoch, useTokenStore } from './di-context';
+import { useAuthApi, useSessionEpoch, useTokenStore } from './di-context';
 
 const ACCOUNT_TOKENS: AuthTokenPair = { accessToken: 'access-a', refreshToken: 'refresh-a' };
 const MOUNT_COUNT = 20;
@@ -126,7 +126,7 @@ interface MountedApp {
   tokenStore: ReturnType<typeof useTokenStore>;
   sessionEpoch: ReturnType<typeof useSessionEpoch>;
   queryClient: ReturnType<typeof useQueryClient>;
-  authService: ReturnType<typeof useAuthService>;
+  authApi: ReturnType<typeof useAuthApi>;
 }
 
 function AppProbe({ onRender }: { onRender: (app: MountedApp) => void }) {
@@ -135,7 +135,7 @@ function AppProbe({ onRender }: { onRender: (app: MountedApp) => void }) {
     tokenStore: useTokenStore(),
     sessionEpoch: useSessionEpoch(),
     queryClient: useQueryClient(),
-    authService: useAuthService(),
+    authApi: useAuthApi(),
   });
   return null;
 }
@@ -241,7 +241,7 @@ describe('AppProviders', () => {
     expect(second.mounted.tokenStore).toBe(first.mounted.tokenStore);
     expect(second.mounted.sessionEpoch).toBe(first.mounted.sessionEpoch);
     expect(second.mounted.queryClient).toBe(first.mounted.queryClient);
-    expect(second.mounted.authService).not.toBe(first.mounted.authService);
+    expect(second.mounted.authApi).not.toBe(first.mounted.authApi);
     await expect(second.mounted.tokenStore.getRefreshToken()).resolves.toBe(
       ACCOUNT_TOKENS.refreshToken,
     );

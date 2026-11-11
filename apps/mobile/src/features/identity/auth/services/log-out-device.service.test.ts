@@ -23,10 +23,10 @@ const createStubServices = ({
   const calls: {
     unregister: TimeoutConfig[];
     logout: TimeoutConfig[];
-    clearLocalSession: number;
+    tokenClears: number;
     recorded: string[];
     pushReleaseRequests: number;
-  } = { unregister: [], logout: [], clearLocalSession: 0, recorded: [], pushReleaseRequests: 0 };
+  } = { unregister: [], logout: [], tokenClears: 0, recorded: [], pushReleaseRequests: 0 };
   return {
     calls,
     pushRegistrationService: {
@@ -38,16 +38,18 @@ const createStubServices = ({
         calls.pushReleaseRequests += 1;
       },
     },
-    authService: {
+    authApi: {
       logout: (config?: TimeoutConfig) => {
         calls.logout.push(config);
         return logout();
       },
-      clearLocalSession: async () => {
-        calls.clearLocalSession += 1;
+    },
+    tokenStore: {
+      getRefreshToken: async (): Promise<string | null> => 'refresh-a',
+      clear: async () => {
+        calls.tokenClears += 1;
       },
     },
-    tokenStore: { getRefreshToken: async () => 'refresh-a' },
     sessionRevocationService: {
       record: async (refreshToken: string) => {
         calls.recorded.push(refreshToken);
@@ -70,7 +72,7 @@ describe('LogOutDeviceService.logOut', () => {
     // Then
     expect(stub.calls.unregister).toEqual([]);
     expect(stub.calls.logout).toEqual([]);
-    expect(stub.calls.clearLocalSession).toBe(1);
+    expect(stub.calls.tokenClears).toBe(1);
   });
 
   it('온라인이면 푸시 토큰 해제와 로그아웃 요청에 짧은 timeout을 건다', async () => {
@@ -115,7 +117,7 @@ describe('LogOutDeviceService.logOut', () => {
 
     // Then
     expect(stub.calls.recorded).toEqual(['refresh-a']);
-    expect(stub.calls.clearLocalSession).toBe(1);
+    expect(stub.calls.tokenClears).toBe(1);
   });
 
   it.each([
@@ -170,7 +172,7 @@ describe('LogOutDeviceService.logOut', () => {
     }).logOut({ isOnline: false });
 
     // Then
-    expect(stub.calls.clearLocalSession).toBe(1);
+    expect(stub.calls.tokenClears).toBe(1);
   });
 
   it('토큰을 읽지 못해도 이 기기의 토큰은 지운다', async () => {
@@ -181,6 +183,7 @@ describe('LogOutDeviceService.logOut', () => {
     await new LogOutDeviceService({
       ...stub,
       tokenStore: {
+        ...stub.tokenStore,
         getRefreshToken: async () => {
           throw new Error('keychain read failed');
         },
@@ -189,7 +192,7 @@ describe('LogOutDeviceService.logOut', () => {
     }).logOut({ isOnline: false });
 
     // Then
-    expect(stub.calls.clearLocalSession).toBe(1);
+    expect(stub.calls.tokenClears).toBe(1);
     expect(stub.calls.recorded).toEqual([]);
   });
 
@@ -217,8 +220,7 @@ describe('LogOutDeviceService.logOut', () => {
     // Given
     const stub = createStubServices();
     const { sessionEpoch } = stub;
-    const authService = {
-      ...stub.authService,
+    const authApi = {
       logout: async () => {
         sessionEpoch.advance();
         return ok(undefined);
@@ -232,14 +234,14 @@ describe('LogOutDeviceService.logOut', () => {
     // When
     const outcome = await new LogOutDeviceService({
       ...stub,
-      authService,
-      tokenStore: { getRefreshToken },
+      authApi,
+      tokenStore: { ...stub.tokenStore, getRefreshToken },
       logger: createLoggerStub(),
     }).logOut({ isOnline: true });
 
     // Then
     expect(outcome).toBe('superseded');
-    expect(stub.calls.clearLocalSession).toBe(0);
+    expect(stub.calls.tokenClears).toBe(0);
     expect(stub.calls.pushReleaseRequests).toBe(0);
   });
 
@@ -247,8 +249,7 @@ describe('LogOutDeviceService.logOut', () => {
     // Given
     const stub = createStubServices();
     const { sessionEpoch } = stub;
-    const authService = {
-      ...stub.authService,
+    const authApi = {
       logout: async () => {
         sessionEpoch.advance();
         return ok(undefined);
@@ -262,22 +263,22 @@ describe('LogOutDeviceService.logOut', () => {
     // When
     const outcome = await new LogOutDeviceService({
       ...stub,
-      authService,
-      tokenStore: { getRefreshToken },
+      authApi,
+      tokenStore: { ...stub.tokenStore, getRefreshToken },
       logger: createLoggerStub(),
     }).logOut({ isOnline: true });
 
     // Then
     expect(outcome).toBe('ended');
-    expect(stub.calls.clearLocalSession).toBe(0);
+    expect(stub.calls.tokenClears).toBe(0);
   });
 
   it('토큰을 지우지 못해도 세션은 끝낸 것으로 판정한다', async () => {
     // Given
     const stub = createStubServices();
-    const authService = {
-      ...stub.authService,
-      clearLocalSession: async () => {
+    const tokenStore = {
+      ...stub.tokenStore,
+      clear: async () => {
         throw new Error('keychain delete failed');
       },
     };
@@ -285,7 +286,7 @@ describe('LogOutDeviceService.logOut', () => {
     // When
     const outcome = await new LogOutDeviceService({
       ...stub,
-      authService,
+      tokenStore,
       logger: createLoggerStub(),
     }).logOut({ isOnline: false });
 

@@ -10,7 +10,8 @@ import {
   createHttpClientStub,
 } from '@src/testing/core';
 
-import { createPendingRevocationRepository } from './pending-revocation.repository';
+import { AuthApi } from '../apis/auth.api';
+import { createPendingRevocationRepository } from '../apis/pending-revocation.repository';
 import { PENDING_REVOCATION_TTL_MS, SessionRevocationService } from './session-revocation.service';
 
 const NOW = Date.UTC(2026, 10, 7);
@@ -38,7 +39,7 @@ function setup() {
   const service = new SessionRevocationService({
     repository,
     requestRefresh,
-    publicHttpClient,
+    authApi: new AuthApi({ publicHttpClient, authHttpClient: createHttpClientStub() }),
     logger: { info: record, warn: record },
     now: () => now,
   });
@@ -311,9 +312,12 @@ describe('SessionRevocationService', () => {
     const service = new SessionRevocationService({
       repository,
       requestRefresh,
-      publicHttpClient: new KyHttpClient(
-        createPublicClient({ errorReporter: createErrorReporterStub() }),
-      ),
+      authApi: new AuthApi({
+        publicHttpClient: new KyHttpClient(
+          createPublicClient({ errorReporter: createErrorReporterStub() }),
+        ),
+        authHttpClient: createHttpClientStub(),
+      }),
       logger: { info: jest.fn(), warn: jest.fn() },
       now: Date.now,
     });

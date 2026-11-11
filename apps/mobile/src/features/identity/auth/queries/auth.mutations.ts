@@ -1,8 +1,9 @@
 import {
-  useAuthService,
+  useAuthApi,
   useHaptics,
   useLogOutDeviceService,
   useSessionCleanupService,
+  useSignInService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -56,7 +57,7 @@ function isVerificationCodeRejection(error: unknown) {
 export function useEmailLoginMutationOptions() {
   const haptics = useHaptics();
   const push = useSingleTap(router.push);
-  const authService = useAuthService();
+  const signInService = useSignInService();
   const { trackEvent } = useTrack();
   const { signIn } = useAuthSession();
   const toast = useAppToast();
@@ -64,7 +65,7 @@ export function useEmailLoginMutationOptions() {
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async ({ email, password }: { email: string; password: string }) =>
-      unwrap(await authService.emailLogin(email, password)),
+      unwrap(await signInService.emailLogin({ email, password })),
     onSuccess: (data) => {
       signIn();
       if (data.accountRestored) {
@@ -89,7 +90,7 @@ export function useEmailLoginMutationOptions() {
 }
 
 export function useExchangeCodeMutationOptions() {
-  const authService = useAuthService();
+  const signInService = useSignInService();
   const { trackEvent } = useTrack();
   const { signIn } = useAuthSession();
   const toast = useAppToast();
@@ -98,7 +99,7 @@ export function useExchangeCodeMutationOptions() {
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async ({ code }: ExchangeCodeInput & { provider: OAuthProviderSlug }) =>
-      unwrap(await authService.exchangeCode({ code })),
+      unwrap(await signInService.exchangeCode({ code })),
     onSuccess: (data, variables) => {
       signIn();
       if (data.accountRestored) {
@@ -124,7 +125,7 @@ export function useExchangeCodeMutationOptions() {
 }
 
 export function useOpenAppleLoginMutationOptions() {
-  const authService = useAuthService();
+  const signInService = useSignInService();
   const { signIn } = useAuthSession();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
@@ -132,7 +133,7 @@ export function useOpenAppleLoginMutationOptions() {
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async () => unwrap(await authService.openAppleLogin()),
+    mutationFn: async () => unwrap(await signInService.openAppleLogin()),
     onSuccess: (data) => {
       signIn();
       if (data.accountRestored) {
@@ -158,12 +159,12 @@ export function useOpenAppleLoginMutationOptions() {
 }
 
 export function useOpenGoogleLoginMutationOptions() {
-  const authService = useAuthService();
+  const signInService = useSignInService();
   const haptics = useHaptics();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async () => unwrap(await authService.openGoogleLogin()),
+    mutationFn: async () => unwrap(await signInService.openGoogleLogin()),
     onError: (error) => {
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
@@ -181,12 +182,12 @@ export function useOpenGoogleLoginMutationOptions() {
 }
 
 export function useOpenKakaoLoginMutationOptions() {
-  const authService = useAuthService();
+  const signInService = useSignInService();
   const haptics = useHaptics();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async () => unwrap(await authService.openKakaoLogin()),
+    mutationFn: async () => unwrap(await signInService.openKakaoLogin()),
     onError: (error) => {
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
@@ -204,12 +205,12 @@ export function useOpenKakaoLoginMutationOptions() {
 }
 
 export function useOpenNaverLoginMutationOptions() {
-  const authService = useAuthService();
+  const signInService = useSignInService();
   const haptics = useHaptics();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async () => unwrap(await authService.openNaverLogin()),
+    mutationFn: async () => unwrap(await signInService.openNaverLogin()),
     onError: (error) => {
       // 사용자가 직접 닫은 소셜 인증 창은 실패 문구 없이 햅틱만 울린다
       if (isLoginCancelledError(error)) {
@@ -250,7 +251,7 @@ export function useLogoutMutationOptions() {
 
 export function useDeleteAccountMutationOptions() {
   const haptics = useHaptics();
-  const authService = useAuthService();
+  const signInService = useSignInService();
   const { trackEvent, resetData } = useTrack();
   const toast = useAppToast();
   const { signOut } = useAuthSession();
@@ -263,7 +264,7 @@ export function useDeleteAccountMutationOptions() {
     // 세션 만료가 먼저 커밋되면 정리가 콜백을 지워 초안·안내 기록이 남으므로 콜백에 두지 않는다
     mutationFn: async (input: DeleteAccountInput) => {
       const accountId = getCachedMe(queryClient)?.id;
-      unwrap(await authService.deleteAccount(input));
+      unwrap(await signInService.deleteAccount(input));
       haptics.notify('success');
       toast.success(t('auth:toasts.accountDeleted'));
       trackEvent('auth_account_deleted');
@@ -292,13 +293,13 @@ export function useDeleteAccountMutationOptions() {
 export function useRegisterMutationOptions() {
   const replace = useSingleTap(router.replace);
   const haptics = useHaptics();
-  const authService = useAuthService();
+  const authApi = useAuthApi();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: RegisterInput) => unwrap(await authService.register(input)),
+    mutationFn: async (input: RegisterInput) => unwrap(await authApi.register(input)),
     onSuccess: ({ isEmailSent }) => {
       trackEvent('auth_signup', { method: 'email' });
       if (!isEmailSent) {
@@ -329,12 +330,12 @@ export function useRegisterMutationOptions() {
 }
 
 export function useVerifyEmailMutationOptions() {
-  const authService = useAuthService();
+  const signInService = useSignInService();
   const { signIn } = useAuthSession();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: VerifyEmailInput) => unwrap(await authService.verifyEmail(input)),
+    mutationFn: async (input: VerifyEmailInput) => unwrap(await signInService.verifyEmail(input)),
     onSuccess: () => {
       signIn();
     },
@@ -343,13 +344,13 @@ export function useVerifyEmailMutationOptions() {
 }
 
 export function useResendVerificationMutationOptions() {
-  const authService = useAuthService();
+  const authApi = useAuthApi();
   const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async (input: ResendVerificationInput) =>
-      unwrap(await authService.resendVerification(input)),
+      unwrap(await authApi.resendVerification(input)),
     onSuccess: () => {
       toast.success(t('auth:toasts.codeResent'));
     },
@@ -358,12 +359,11 @@ export function useResendVerificationMutationOptions() {
 }
 
 export function useForgotPasswordMutationOptions() {
-  const authService = useAuthService();
+  const authApi = useAuthApi();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: ForgotPasswordInput) =>
-      unwrap(await authService.forgotPassword(input)),
+    mutationFn: async (input: ForgotPasswordInput) => unwrap(await authApi.forgotPassword(input)),
     meta: { errorFeedback: { feature: 'auth', fallbackKey: 'auth:toasts.requestFailed' } },
   });
 }
@@ -371,12 +371,12 @@ export function useForgotPasswordMutationOptions() {
 export function useResetPasswordMutationOptions() {
   const haptics = useHaptics();
   const replace = useSingleTap(router.replace);
-  const authService = useAuthService();
+  const authApi = useAuthApi();
   const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: ResetPasswordInput) => unwrap(await authService.resetPassword(input)),
+    mutationFn: async (input: ResetPasswordInput) => unwrap(await authApi.resetPassword(input)),
     onSuccess: () => {
       haptics.notify('success');
       toast.success(t('auth:toasts.passwordResetDone'));
@@ -402,13 +402,12 @@ export function useResetPasswordMutationOptions() {
 export function useChangePasswordMutationOptions() {
   const haptics = useHaptics();
   const goBack = useSingleTap(router.back);
-  const authService = useAuthService();
+  const authApi = useAuthApi();
   const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: ChangePasswordInput) =>
-      unwrap(await authService.changePassword(input)),
+    mutationFn: async (input: ChangePasswordInput) => unwrap(await authApi.changePassword(input)),
     onSuccess: () => {
       haptics.notify('success');
       toast.success(t('auth:toasts.passwordChanged'));
@@ -431,7 +430,7 @@ export function useChangePasswordMutationOptions() {
 }
 
 export function useLinkAccountMutationOptions() {
-  const authService = useAuthService();
+  const signInService = useSignInService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -440,7 +439,7 @@ export function useLinkAccountMutationOptions() {
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async (provider: OAuthProviderSlug) =>
-      unwrap(await authService.linkAccount(provider)),
+      unwrap(await signInService.linkAccount(provider)),
     onSuccess: async (_data, provider) => {
       toast.success(
         t('auth:toasts.accountLinked', {
@@ -468,15 +467,14 @@ export function useLinkAccountMutationOptions() {
 }
 
 export function useUnlinkAccountMutationOptions() {
-  const authService = useAuthService();
+  const authApi = useAuthApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (provider: OAuthProvider) =>
-      unwrap(await authService.unlinkAccount(provider)),
+    mutationFn: async (provider: OAuthProvider) => unwrap(await authApi.unlinkAccount(provider)),
     onSuccess: async (_data, provider) => {
       toast.success(
         t('auth:toasts.accountUnlinked', { provider: getOAuthProviderLabel(provider) }),

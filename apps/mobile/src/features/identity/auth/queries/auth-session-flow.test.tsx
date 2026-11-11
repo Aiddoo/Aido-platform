@@ -37,7 +37,6 @@ import {
   createHttpClientStub,
   createAnalyticsStub,
   createPendingResponse,
-  createSocialAuthGatewayStub,
 } from '@src/testing/core';
 import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
@@ -49,10 +48,10 @@ import {
   createAuthTokensDto,
   createDeleteAccountDto,
 } from '../__tests__/auth.fixtures';
-import { AuthService } from '../apis/auth.service';
-import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from '../apis/log-out-device.service';
+import { AuthApi } from '../apis/auth.api';
 import { useAuthSession } from '../hooks/use-auth-session';
 import { useAuthStatus } from '../hooks/use-auth-status';
+import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from '../services/log-out-device.service';
 import {
   useDeleteAccountMutationOptions,
   useEmailLoginMutationOptions,
@@ -744,20 +743,13 @@ describe('로그아웃과 늦은 갱신', () => {
         errorReporter: createErrorReporterStub(),
       }),
     );
-    const authService = new AuthService({
-      publicHttpClient: createHttpClientStub(),
-      authHttpClient: http,
-      tokenStore,
-      socialAuthGateway: createSocialAuthGatewayStub(),
-      deviceType: 'IOS',
-      logger: createLoggerStub(),
-    });
+    const authApi = new AuthApi({ publicHttpClient: createHttpClientStub(), authHttpClient: http });
     const todosRequest = http.get('v1/todos').catch(() => undefined);
     await act(async () => {
       await jest.advanceTimersByTimeAsync(0);
     });
     const logout = new LogOutDeviceService({
-      authService,
+      authApi,
       pushRegistrationService: { unregister: async () => ok(undefined), requestRelease: () => {} },
       tokenStore,
       sessionRevocationService: { record: async () => undefined },
@@ -1110,16 +1102,7 @@ describe('토큰 만료', () => {
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
     const session = createAuthSession({
       tokenStore,
-      di: {
-        authService: new AuthService({
-          publicHttpClient: createHttpClientStub(),
-          authHttpClient: http,
-          tokenStore,
-          socialAuthGateway: createSocialAuthGatewayStub(),
-          deviceType: 'IOS',
-          logger: createLoggerStub(),
-        }),
-      },
+      di: { authHttpClient: http },
     });
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), logout: useMutation(useLogoutMutationOptions()) }),

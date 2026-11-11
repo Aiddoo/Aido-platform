@@ -26,10 +26,11 @@ import type { WidgetNavigationRepository } from '@src/features/device/widget/api
 import type { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.service';
 import type { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import type { AuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
-import type { AuthService } from '@src/features/identity/auth/apis/auth.service';
-import type { LogOutDeviceService } from '@src/features/identity/auth/apis/log-out-device.service';
+import type { AuthApi } from '@src/features/identity/auth/apis/auth.api';
 import type { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
-import type { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
+import type { LogOutDeviceService } from '@src/features/identity/auth/services/log-out-device.service';
+import type { SessionRevocationService } from '@src/features/identity/auth/services/session-revocation.service';
+import type { SignInService } from '@src/features/identity/auth/services/sign-in.service';
 import type { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import type { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import type { UserService } from '@src/features/identity/user/apis/user.service';
@@ -91,7 +92,8 @@ export interface DIContainer extends SharedDependencies {
   reportService: ReportService;
   suggestionService: SuggestionService;
   consentService: ConsentService;
-  authService: AuthService;
+  authApi: AuthApi;
+  signInService: SignInService;
   preferenceService: PreferenceService;
   activationService: ActivationService;
   activationProgressRepository: ActivationProgressRepository;
@@ -236,8 +238,11 @@ export function useSuggestionService() {
 export function useConsentService() {
   return useDI().consentService;
 }
-export function useAuthService() {
-  return useDI().authService;
+export function useAuthApi() {
+  return useDI().authApi;
+}
+export function useSignInService() {
+  return useDI().signInService;
 }
 export function usePreferenceService() {
   return useDI().preferenceService;

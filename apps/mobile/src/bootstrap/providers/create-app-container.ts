@@ -54,13 +54,14 @@ import { WidgetSyncService } from '@src/features/device/widget/apis/widget-sync.
 import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
 import { TodoCommentService } from '@src/features/engagement/comment/apis/todo-comment.service';
 import { createAuthSessionStore } from '@src/features/identity/auth/apis/auth-session.store';
-import { AuthService } from '@src/features/identity/auth/apis/auth.service';
-import { LogOutDeviceService } from '@src/features/identity/auth/apis/log-out-device.service';
+import { AuthApi } from '@src/features/identity/auth/apis/auth.api';
 import { createPendingRevocationRepository } from '@src/features/identity/auth/apis/pending-revocation.repository';
 import { SessionCleanupService } from '@src/features/identity/auth/apis/session-cleanup.service';
 import { createSessionQueryCache } from '@src/features/identity/auth/apis/session-query-cache';
-import { SessionRevocationService } from '@src/features/identity/auth/apis/session-revocation.service';
 import { UserDeviceDataService } from '@src/features/identity/auth/apis/user-device-data.service';
+import { LogOutDeviceService } from '@src/features/identity/auth/services/log-out-device.service';
+import { SessionRevocationService } from '@src/features/identity/auth/services/session-revocation.service';
+import { SignInService } from '@src/features/identity/auth/services/sign-in.service';
 import { ConsentService } from '@src/features/identity/consent/apis/consent.service';
 import { PreferenceService } from '@src/features/identity/preference/apis/preference.service';
 import { UserService } from '@src/features/identity/user/apis/user.service';
@@ -191,20 +192,13 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
   const queryCacheStorage = ports.queryCacheStorage ?? disabledQueryCacheStorage;
 
   const draftService = new DraftService(createDraftRepository(draftStorage), Date.now);
+  const authApi = new AuthApi({ publicHttpClient, authHttpClient });
   const sessionRevocationService = new SessionRevocationService({
     repository: createPendingRevocationRepository(ports.storage),
     requestRefresh: ports.requestRefresh,
-    publicHttpClient,
+    authApi,
     logger,
     now: Date.now,
-  });
-  const authService = new AuthService({
-    publicHttpClient,
-    authHttpClient,
-    tokenStore,
-    socialAuthGateway: ports.socialAuth,
-    deviceType: ports.platform === 'ios' ? 'IOS' : 'ANDROID',
-    logger,
   });
 
   const activationProgressRepository = createActivationProgressRepository(syncStorage);
@@ -309,7 +303,14 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     reportService: new ReportService(authHttpClient, logger),
     suggestionService: new SuggestionService(authHttpClient, logger),
     consentService: new ConsentService(authHttpClient),
-    authService,
+    authApi,
+    signInService: new SignInService({
+      authApi,
+      tokenStore,
+      socialAuthGateway: ports.socialAuth,
+      deviceType: ports.platform === 'ios' ? 'IOS' : 'ANDROID',
+      logger,
+    }),
     preferenceService: new PreferenceService(authHttpClient),
     activationService: new ActivationService(activationProgressRepository),
     activationProgressRepository,
@@ -390,7 +391,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     ),
     widgetNavigationRepository: createWidgetNavigationRepository(ports.widgetStorage),
     logOutDeviceService: new LogOutDeviceService({
-      authService,
+      authApi,
       pushRegistrationService,
       tokenStore,
       sessionRevocationService,

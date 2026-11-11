@@ -1,5 +1,5 @@
 import { AuthBootProvider } from '@src/bootstrap/providers/auth-boot-provider';
-import { type DIContainer, StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { MutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
@@ -23,6 +23,7 @@ import {
   createTestDi,
   createTestQueryClient,
 } from '@src/testing/core';
+import type { TestDiOverrides } from '@src/testing/di';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
@@ -38,7 +39,8 @@ export const ACCOUNT_A_TOKENS: AuthTokenPair = {
 interface AuthSessionOptions {
   tokens?: AuthTokenPair;
   tokenStore?: TokenStore;
-  di?: Partial<DIContainer>;
+  /** Service를 바꾸거나, 포트(`authHttpClient` 등)를 넣어 그 포트를 쓰는 Service를 다시 조립한다 */
+  di?: TestDiOverrides;
 }
 
 /** 네트워크 경계만 stub이고 AuthBootProvider와 운영과 같은 조립(`createAppContainer`)의 Service는 실제 코드다 */

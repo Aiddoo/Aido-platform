@@ -1,12 +1,16 @@
 import type {
+  AppleMobileCallbackInput,
   ChangePasswordResponse,
   DeleteAccountResponse,
   ForgotPasswordResponse,
   LinkedAccount as LinkedAccountDto,
   LinkedAccountsResponse,
+  LinkSocialAccountInput,
+  LoginInput,
   ResendVerificationResponse,
   ResetPasswordResponse,
 } from '@aido/api';
+import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
 import {
@@ -20,6 +24,31 @@ import {
 } from '../domains/auth.model';
 import { type LinkedAccount, type LinkedAccountsResult } from '../domains/oauth.model';
 import { type AuthTokensEnvelope, type RegisterEnvelope } from '../schemas/auth-response.schema';
+
+type AppleCredential = Extract<AppleSignInResult, { type: 'success' }>;
+type SessionDeviceType = NonNullable<LoginInput['deviceType']>;
+
+export function toEmailLoginRequest(
+  { email, password }: Pick<LoginInput, 'email' | 'password'>,
+  deviceType: SessionDeviceType,
+): LoginInput {
+  return { email, password, deviceType };
+}
+
+/** Apple은 이름을 처음 로그인에만 준다. 없으면 보내지 않는다 */
+export function toAppleSignInRequest(
+  { identityToken, nonce, givenName }: AppleCredential,
+  deviceType: SessionDeviceType,
+): AppleMobileCallbackInput {
+  return { idToken: identityToken, nonce, userName: givenName ?? undefined, deviceType };
+}
+
+export function toAppleLinkRequest({
+  identityToken,
+  nonce,
+}: AppleCredential): LinkSocialAccountInput {
+  return { provider: 'APPLE', idToken: identityToken, nonce };
+}
 
 export function toAuthTokens(dto: AuthTokensEnvelope): AuthTokens {
   return {
