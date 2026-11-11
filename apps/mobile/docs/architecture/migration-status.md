@@ -42,7 +42,7 @@
 | `billing/subscription`     | 결제 화면 `ScrollView` 3개(영수증·시작 화면·요금제 뼈대), `useSubscriptionReceipt`가 내 정보를 다시 suspend(PlanSummary 등 호출부가 많아 인자로 바꾸지 않음)                                                                                                                                                                               |
 | `social/*`                 | `InviteCodePolicy`(원문 문자열을 받는 함수, Policy 밖으로), `nudge-interaction` Policy 3개 한 파일(→ 엔티티별), `TodoReportPolicy` 이름, 친구 검색창(`Stack.SearchBar`)은 `autoCorrect`를 받지 않아 자동 수정을 끌 수 없다. 친구·초대에는 상세 route로 들어가는 행이 없어 `Link` 대상이 아니다(친구 줄은 같은 피드의 세터, 초대 행은 버튼) |
 | `identity/*`               | `user`·`consent`·`preference`의 `apis/*.service.ts`(→ `*.api.ts`, 이름만)                                                                                                                                                                                                                                                                  |
-| `device/*`                 | iOS에서 위젯 저장소가 no-op인데 그 위에 navigation repository·헤드리스 실패 읽기를 두는 것(동작 영향 없음), 코치마크 말풍선 테스트의 실제 sleep 4줄·`Date.now` spy 2줄(fake timer에서 heroui Popover·Query 흐름이 흔들려 남김)                                                                                                             |
+| `device/*`                 | iOS에서 위젯 저장소가 no-op인데 그 위에 navigation repository·헤드리스 실패 읽기를 두는 것(동작 영향 없음)                                                                                                                                                                                                                                 |
 
 ## 의도한 화면 차이 (1.15.2 출시 노트에 옮긴다)
 
@@ -71,14 +71,14 @@
 | `Menu.ItemTitle` 날글자                                                                     | `aido/menu-item-title-text`                                          | 0                                    |
 | 이벤트 카탈로그                                                                             | `aido/analytics-event-catalog`                                       | 18(16줄, 7개 파일, 모두 맨 `string`) |
 | 로그 키 형식·앱 전체 유일                                                                   | `aido/log-event-key`                                                 | 3(3개 파일, 겹친 키 1개)             |
-| 테스트의 `jest.useFakeTimers`·`useRealTimers`                                               | `jest/no-restricted-jest-methods`                                    | 45(45줄, 21개 파일)                  |
+| 테스트의 `jest.useFakeTimers`·`useRealTimers`                                               | `jest/no-restricted-jest-methods`                                    | 0                                    |
 | 테스트 스냅숏                                                                               | `jest/no-restricted-matchers`                                        | 0                                    |
-| spy `Date.now`·`AppState`·`invalidateQueries`                                               | `aido/test-spy-target`                                               | 13(7·0·6, 10개 파일)                 |
-| 실제 sleep                                                                                  | `aido/no-real-sleep`                                                 | 11(11줄, 7개 파일)                   |
-| 스타일 단언                                                                                 | `aido/no-style-assertion`                                            | 17(10줄, 3개 파일)                   |
+| spy `Date.now`·`AppState`·`invalidateQueries`                                               | `aido/test-spy-target`                                               | 0                                    |
+| 실제 sleep                                                                                  | `aido/no-real-sleep`                                                 | 0                                    |
+| 스타일 단언                                                                                 | `aido/no-style-assertion`                                            | 0                                    |
 | 테스트 타입 안전(`any`·`@ts-expect-error`)                                                  | `typescript/no-explicit-any`·`ban-ts-comment`                        | 0                                    |
 | 역할 폴더 이름·`hooks/use-*`·`app/` 아래 테스트                                             | ls-lint                                                              | 30(`apis/` 27, `queries/` 3)         |
 
-합계: Oxlint 173건(지시문 162줄, 91개 파일), dependency-cruiser 3건, ls-lint 30개 파일. `notes/memo`·`planning/category`는 [22/32]에서 0이다(리포트·제안과 함께 쓰는 `ai.response-parse.failed` 로그 키 하나만 주인을 정할 때까지 남는다).
+합계: Oxlint 87건(지시문 83줄, 52개 파일), dependency-cruiser 3건, ls-lint 30개 파일. `notes/memo`·`planning/category`는 [22/32]에서 0이다(리포트·제안과 함께 쓰는 `ai.response-parse.failed` 로그 키 하나만 주인을 정할 때까지 남는다).
 
 - `frozenNames`는 baseline이 아니라 동사 목록([observability](../observability.md#선언과-이름)) 밖인 GA 대시보드 이름의 영구 목록이다. 동사 목록을 바꾸면 규칙의 `EVENT_VERBS`와 이 목록을 함께 고친다.
