@@ -16,6 +16,7 @@ import {
   STACK_MORE_ICON,
   Text,
   useStackScreenOptions,
+  MenuContent,
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
@@ -144,24 +145,15 @@ function TodoModerationMenu() {
           accessibilityState={{ expanded: isOpen }}
         />
       </Menu.Trigger>
-      <Menu.Portal disableFullWindowOverlay={false}>
-        <Menu.Overlay />
-        <Menu.Content
-          presentation="popover"
-          placement="bottom"
-          align="end"
-          width={ACTION_MENU_WIDTH}
-          className="rounded-2xl border border-gray-2 bg-gray-1"
-        >
-          <MenuActionItem Icon={FlagIcon} title={t('menu.report')} onPress={moderation.report} />
-          <MenuActionItem
-            Icon={BlockIcon}
-            title={t('block.action')}
-            variant="danger"
-            onPress={moderation.block}
-          />
-        </Menu.Content>
-      </Menu.Portal>
+      <MenuContent width={ACTION_MENU_WIDTH}>
+        <MenuActionItem Icon={FlagIcon} title={t('menu.report')} onPress={moderation.report} />
+        <MenuActionItem
+          Icon={BlockIcon}
+          title={t('block.action')}
+          variant="danger"
+          onPress={moderation.block}
+        />
+      </MenuContent>
     </Menu>
   );
 }

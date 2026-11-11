@@ -33,6 +33,7 @@ import {
   useFetchNextPage,
   useOverlay,
   VStack,
+  MenuContent,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -255,36 +256,27 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
           <MoreIcon width={18} height={18} colorClassName="text-gray-6" />
         </PressableFeedback>
       </Menu.Trigger>
-      <Menu.Portal disableFullWindowOverlay={false}>
-        <Menu.Overlay />
-        <Menu.Content
-          presentation="popover"
-          placement="bottom"
-          align="end"
-          width={180}
-          className="rounded-2xl border border-gray-2 bg-gray-1"
-        >
-          <MenuActionItem
-            Icon={FlagIcon}
-            title={t('menu.report')}
-            onPress={() => {
-              const target = createProfileReportTarget({ userId });
-              push({
-                pathname: '/users/[userId]/report',
-                params: { userId, name: displayName, targetType: target.targetType },
-              });
-            }}
-          />
-          <MenuActionItem
-            Icon={BlockIcon}
-            title={t('block.action')}
-            variant="danger"
-            onPress={() =>
-              push({ pathname: '/users/[userId]/block', params: { userId, name: displayName } })
-            }
-          />
-        </Menu.Content>
-      </Menu.Portal>
+      <MenuContent width={180}>
+        <MenuActionItem
+          Icon={FlagIcon}
+          title={t('menu.report')}
+          onPress={() => {
+            const target = createProfileReportTarget({ userId });
+            push({
+              pathname: '/users/[userId]/report',
+              params: { userId, name: displayName, targetType: target.targetType },
+            });
+          }}
+        />
+        <MenuActionItem
+          Icon={BlockIcon}
+          title={t('block.action')}
+          variant="danger"
+          onPress={() =>
+            push({ pathname: '/users/[userId]/block', params: { userId, name: displayName } })
+          }
+        />
+      </MenuContent>
     </Menu>
   );
 }

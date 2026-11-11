@@ -28,6 +28,7 @@ import {
   TrashIcon,
   useConfirmDialog,
   VStack,
+  MenuContent,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation } from '@tanstack/react-query';
@@ -498,73 +499,64 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           />
         </PressableFeedback>
       </Menu.Trigger>
-      <Menu.Portal disableFullWindowOverlay={false}>
-        <Menu.Overlay />
-        <Menu.Content
-          presentation="popover"
-          placement="bottom"
-          align="end"
-          width={MENU_WIDTH}
-          className="rounded-2xl border border-gray-2 bg-gray-1"
-        >
-          {TodoCommentPolicy.canEditComment(comment) && (
-            <MenuActionItem
-              Icon={EditIcon}
-              title={t('actions.edit')}
-              testID="todo-comment-edit"
-              onPress={() => {
-                reset(toEditFormValues(comment));
-                reveal(rowRef);
-              }}
-            />
-          )}
-          {TodoCommentPolicy.canCopyComment(comment) && (
-            <MenuActionItem
-              Icon={CopyIcon}
-              title={t('actions.copy')}
-              testID="todo-comment-copy"
-              onPress={copyContent}
-            />
-          )}
-          {hasPrimaryActions && hasSecondaryActions && <Separator className="my-1" />}
-          {TodoCommentPolicy.canDeleteComment(comment) && (
-            <MenuActionItem
-              Icon={TrashIcon}
-              title={t('actions.delete')}
-              variant="danger"
-              testID="todo-comment-delete"
-              onPress={confirmDelete}
-            />
-          )}
-          {TodoCommentPolicy.canReportComment(comment) && (
-            <MenuActionItem
-              Icon={FlagIcon}
-              title={t('actions.report')}
-              testID="todo-comment-report"
-              onPress={() =>
-                push({
-                  pathname: '/todo/[todoId]/comments/[commentId]/report',
-                  params: { todoId, commentId: comment.id },
-                })
-              }
-            />
-          )}
-          {author != null && TodoCommentPolicy.canBlockCommentAuthor(comment) && (
-            <MenuActionItem
-              Icon={BlockIcon}
-              title={t('actions.block', { name: authorName })}
-              variant="danger"
-              testID="todo-comment-block"
-              onPress={() =>
-                push({
-                  pathname: '/users/[userId]/block',
-                  params: { userId: author.id, name: authorName },
-                })
-              }
-            />
-          )}
-        </Menu.Content>
-      </Menu.Portal>
+      <MenuContent width={MENU_WIDTH}>
+        {TodoCommentPolicy.canEditComment(comment) && (
+          <MenuActionItem
+            Icon={EditIcon}
+            title={t('actions.edit')}
+            testID="todo-comment-edit"
+            onPress={() => {
+              reset(toEditFormValues(comment));
+              reveal(rowRef);
+            }}
+          />
+        )}
+        {TodoCommentPolicy.canCopyComment(comment) && (
+          <MenuActionItem
+            Icon={CopyIcon}
+            title={t('actions.copy')}
+            testID="todo-comment-copy"
+            onPress={copyContent}
+          />
+        )}
+        {hasPrimaryActions && hasSecondaryActions && <Separator className="my-1" />}
+        {TodoCommentPolicy.canDeleteComment(comment) && (
+          <MenuActionItem
+            Icon={TrashIcon}
+            title={t('actions.delete')}
+            variant="danger"
+            testID="todo-comment-delete"
+            onPress={confirmDelete}
+          />
+        )}
+        {TodoCommentPolicy.canReportComment(comment) && (
+          <MenuActionItem
+            Icon={FlagIcon}
+            title={t('actions.report')}
+            testID="todo-comment-report"
+            onPress={() =>
+              push({
+                pathname: '/todo/[todoId]/comments/[commentId]/report',
+                params: { todoId, commentId: comment.id },
+              })
+            }
+          />
+        )}
+        {author != null && TodoCommentPolicy.canBlockCommentAuthor(comment) && (
+          <MenuActionItem
+            Icon={BlockIcon}
+            title={t('actions.block', { name: authorName })}
+            variant="danger"
+            testID="todo-comment-block"
+            onPress={() =>
+              push({
+                pathname: '/users/[userId]/block',
+                params: { userId: author.id, name: authorName },
+              })
+            }
+          />
+        )}
+      </MenuContent>
     </Menu>
   );
 }

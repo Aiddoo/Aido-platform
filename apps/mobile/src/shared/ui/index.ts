@@ -188,3 +188,4 @@ export { VStack } from './v-stack';
 
 export { splitWords, WordWrapText } from './word-wrap-text';
 export { MenuActionItem } from './menu-action-item';
+export { MenuContent } from './menu-content';

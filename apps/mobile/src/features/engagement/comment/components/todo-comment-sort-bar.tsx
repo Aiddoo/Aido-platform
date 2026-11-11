@@ -1,6 +1,6 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowRightIcon, HStack, Text } from '@src/shared/ui';
+import { ArrowRightIcon, HStack, Text, MenuContent } from '@src/shared/ui';
 import { Menu, type MenuKey, PressableFeedback, Spinner } from 'heroui-native';
 import { type ComponentProps, useState } from 'react';
 import { match } from 'ts-pattern';
@@ -58,38 +58,37 @@ export function TodoCommentSortBar({
           )}
         </PressableFeedback>
       </Menu.Trigger>
-      <Menu.Portal disableFullWindowOverlay={false}>
-        <Menu.Overlay />
-        <Menu.Content
-          presentation="popover"
-          placement="bottom"
-          align="end"
-          width={SORT_MENU_WIDTH}
-          className="rounded-2xl border border-gray-2 bg-gray-1"
+      <MenuContent width={SORT_MENU_WIDTH}>
+        <Menu.Group
+          selectionMode="single"
+          selectedKeys={new Set([value])}
+          onSelectionChange={(selectedKeys) => {
+            const [selected] = selectedKeys;
+            const next = toSort(selected);
+            if (next != null && next !== value) {
+              onChange(next);
+            }
+          }}
+          shouldCloseOnSelect
         >
-          <Menu.Group
-            selectionMode="single"
-            selectedKeys={new Set([value])}
-            onSelectionChange={(selectedKeys) => {
-              const [selected] = selectedKeys;
-              const next = toSort(selected);
-              if (next != null && next !== value) {
-                onChange(next);
-              }
-            }}
-            shouldCloseOnSelect
-          >
-            <Menu.Item id={TODO_COMMENT_SORT.LATEST}>
-              <Menu.ItemIndicator />
-              <Menu.ItemTitle>{t('sort.latest')}</Menu.ItemTitle>
-            </Menu.Item>
-            <Menu.Item id={TODO_COMMENT_SORT.POPULAR}>
-              <Menu.ItemIndicator />
-              <Menu.ItemTitle>{t('sort.popular')}</Menu.ItemTitle>
-            </Menu.Item>
-          </Menu.Group>
-        </Menu.Content>
-      </Menu.Portal>
+          <Menu.Item id={TODO_COMMENT_SORT.LATEST}>
+            <Menu.ItemIndicator />
+            <Menu.ItemTitle>
+              <Text size="b2" weight="medium" className="text-foreground">
+                {t('sort.latest')}
+              </Text>
+            </Menu.ItemTitle>
+          </Menu.Item>
+          <Menu.Item id={TODO_COMMENT_SORT.POPULAR}>
+            <Menu.ItemIndicator />
+            <Menu.ItemTitle>
+              <Text size="b2" weight="medium" className="text-foreground">
+                {t('sort.popular')}
+              </Text>
+            </Menu.ItemTitle>
+          </Menu.Item>
+        </Menu.Group>
+      </MenuContent>
     </Menu>
   );
 }

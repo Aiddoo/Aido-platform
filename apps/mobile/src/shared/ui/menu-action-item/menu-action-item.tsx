@@ -34,7 +34,7 @@ export function MenuActionItem({
       <Icon
         width={MENU_ICON_SIZE}
         height={MENU_ICON_SIZE}
-        colorClassName={isDanger ? 'text-error' : 'text-main'}
+        colorClassName={isDanger ? 'text-danger' : 'text-main'}
       />
       {description == null ? (
         titleElement

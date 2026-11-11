@@ -42,6 +42,7 @@ import {
   useOverlay,
   useStackBackToolbar,
   VStack,
+  MenuContent,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
@@ -477,38 +478,29 @@ function MemoMoreMenu({
             icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
           />
         </Menu.Trigger>
-        <Menu.Portal disableFullWindowOverlay={false}>
-          <Menu.Overlay />
-          <Menu.Content
-            presentation="popover"
-            placement="bottom"
-            align="end"
-            width={MEMO_MORE_MENU_WIDTH}
-            className="rounded-2xl border border-gray-2 bg-gray-1"
-          >
-            <MenuActionItem
-              testID="memo-ai-review"
-              Icon={AiFilledIcon}
-              title={t('memo:detail.aiParse')}
-              description={aiQuota}
-              isDisabled={aiParse.isDisabled}
-              onPress={aiParse.start}
-            />
-            <MenuActionItem
-              testID="memo-convert-to-todo"
-              Icon={CheckmarkIcon}
-              title={t('memo:detail.convertToTodo')}
-              isDisabled={convertSheet.isDisabled}
-              onPress={convertSheet.open}
-            />
-            <MenuActionItem
-              Icon={TrashIcon}
-              title={t('common:actions.delete')}
-              variant="danger"
-              onPress={() => setIsDeleteDialogOpen(true)}
-            />
-          </Menu.Content>
-        </Menu.Portal>
+        <MenuContent width={MEMO_MORE_MENU_WIDTH}>
+          <MenuActionItem
+            testID="memo-ai-review"
+            Icon={AiFilledIcon}
+            title={t('memo:detail.aiParse')}
+            description={aiQuota}
+            isDisabled={aiParse.isDisabled}
+            onPress={aiParse.start}
+          />
+          <MenuActionItem
+            testID="memo-convert-to-todo"
+            Icon={CheckmarkIcon}
+            title={t('memo:detail.convertToTodo')}
+            isDisabled={convertSheet.isDisabled}
+            onPress={convertSheet.open}
+          />
+          <MenuActionItem
+            Icon={TrashIcon}
+            title={t('common:actions.delete')}
+            variant="danger"
+            onPress={() => setIsDeleteDialogOpen(true)}
+          />
+        </MenuContent>
       </Menu>
 
       <MemoDeleteDialog
