@@ -16,8 +16,7 @@ import { useForm, type UseFormReturn, useFormState, useWatch } from 'react-hook-
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { TODO_REPEAT_WEEKDAYS, TODO_REPEAT_WEEKEND_DAYS } from '../constants/todo-repeat.constants';
-import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { getRepeatPresetDays, TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { type TodoRepeat } from '../domains/todo-repeat.model';
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
 import {
@@ -197,16 +196,20 @@ TodoRepeatPicker.DayOfWeekSelector = function DayOfWeekSelector({ form }: { form
         />
         <TodoRepeatPicker.PresetChip
           label={t('picker.presetWeekdays')}
-          isSelected={isPresetSelected(TODO_REPEAT_WEEKDAYS)}
+          isSelected={isPresetSelected(getRepeatPresetDays('WEEKDAYS'))}
           onPress={() =>
-            applyFormValues(withTodoRepeatFormPreset(form.getValues(), TODO_REPEAT_WEEKDAYS))
+            applyFormValues(
+              withTodoRepeatFormPreset(form.getValues(), getRepeatPresetDays('WEEKDAYS')),
+            )
           }
         />
         <TodoRepeatPicker.PresetChip
           label={t('picker.presetWeekends')}
-          isSelected={isPresetSelected(TODO_REPEAT_WEEKEND_DAYS)}
+          isSelected={isPresetSelected(getRepeatPresetDays('WEEKENDS'))}
           onPress={() =>
-            applyFormValues(withTodoRepeatFormPreset(form.getValues(), TODO_REPEAT_WEEKEND_DAYS))
+            applyFormValues(
+              withTodoRepeatFormPreset(form.getValues(), getRepeatPresetDays('WEEKENDS')),
+            )
           }
         />
         {DAYS_OF_WEEK.map((day) => (
@@ -262,11 +265,11 @@ TodoRepeatPicker.RepeatSummary = function RepeatSummary({ form }: { form: Repeat
       () => t('picker.repeatDaily'),
     )
     .when(
-      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, TODO_REPEAT_WEEKDAYS),
+      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, getRepeatPresetDays('WEEKDAYS')),
       () => t('picker.repeatWeekdays'),
     )
     .when(
-      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, TODO_REPEAT_WEEKEND_DAYS),
+      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, getRepeatPresetDays('WEEKENDS')),
       () => t('picker.repeatWeekends'),
     )
     .otherwise(() => t('picker.repeatWeekly', { days }));

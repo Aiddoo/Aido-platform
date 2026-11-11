@@ -6,7 +6,7 @@ import { toDateKey } from '@src/shared/date/zoned';
 import { without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
+import { TODO_REPEAT_DEFAULT_COUNT } from '../constants/todo-repeat.constants';
 import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { type TodoRepeat } from '../domains/todo-repeat.model';
 import { toTodoRepeat, type TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
@@ -25,7 +25,7 @@ export function toTodoRepeatFormValues(
     monthDay: null,
     endType: 'UNTIL' as const,
     untilDate: null,
-    count: TODO_REPEAT_COUNT.DEFAULT,
+    count: TODO_REPEAT_DEFAULT_COUNT,
   };
 
   if (repeat == null) {

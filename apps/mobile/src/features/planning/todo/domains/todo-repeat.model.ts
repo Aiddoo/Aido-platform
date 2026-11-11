@@ -27,11 +27,19 @@ import { isEqual } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import {
-  TODO_REPEAT_COUNT,
-  TODO_REPEAT_WEEKDAYS as WEEKDAYS,
-  TODO_REPEAT_WEEKEND_DAYS as WEEKEND_DAYS,
-} from '../constants/todo-repeat.constants';
+/** 반복을 횟수로 끝낼 때의 범위. 서버 시리즈 한도와 같다 */
+export const todoRepeatCountSchema = z.int().min(1).max(TODO_SERIES_LIMITS.MAX_COUNT);
+
+/** 평일·주말 반복으로 읽는 요일 묶음. 반복 피커의 평일·주말 칩도 같은 요일을 고른다 */
+const REPEAT_PRESET_DAYS = {
+  WEEKDAYS: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+  WEEKENDS: ['SAT', 'SUN'],
+} as const satisfies Record<'WEEKDAYS' | 'WEEKENDS', readonly DayOfWeek[]>;
+type RepeatPreset = keyof typeof REPEAT_PRESET_DAYS;
+
+export function getRepeatPresetDays(preset: RepeatPreset): readonly DayOfWeek[] {
+  return REPEAT_PRESET_DAYS[preset];
+}
 
 const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
@@ -44,7 +52,7 @@ const todoRepeatEndSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('UNTIL'), date: z.iso.date() }),
   z.object({
     type: z.literal('COUNT'),
-    count: z.int().min(TODO_REPEAT_COUNT.MIN).max(TODO_REPEAT_COUNT.MAX),
+    count: todoRepeatCountSchema,
   }),
 ]);
 export type TodoRepeatEnd = z.infer<typeof todoRepeatEndSchema>;
@@ -89,11 +97,11 @@ export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
           () => 'DAILY',
         )
         .when(
-          (days) => hasSameDaysOfWeek(days, WEEKDAYS),
+          (days) => hasSameDaysOfWeek(days, REPEAT_PRESET_DAYS.WEEKDAYS),
           () => 'WEEKDAYS',
         )
         .when(
-          (days) => hasSameDaysOfWeek(days, WEEKEND_DAYS),
+          (days) => hasSameDaysOfWeek(days, REPEAT_PRESET_DAYS.WEEKENDS),
           () => 'WEEKENDS',
         )
         .otherwise(() => 'WEEKLY'),

@@ -11,8 +11,7 @@ import { toDateKey } from '@src/shared/date/zoned';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
-import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { TodoRepeatPolicy, todoRepeatCountSchema } from '../domains/todo-repeat.model';
 import { type TodoRepeat, type TodoRepeatEnd } from '../domains/todo-repeat.model';
 
 const todoRepeatFormShape = z.object({
@@ -24,7 +23,7 @@ const todoRepeatFormShape = z.object({
   monthDay: z.int().min(1).max(TODO_REPEAT_MONTH_DAY_MAX).nullable(),
   endType: z.enum(TODO_REPEAT_END_TYPES),
   untilDate: instantFieldSchema.nullable(),
-  count: z.int().min(TODO_REPEAT_COUNT.MIN).max(TODO_REPEAT_COUNT.MAX),
+  count: todoRepeatCountSchema,
 });
 
 export type TodoRepeatFormValues = z.input<typeof todoRepeatFormShape>;

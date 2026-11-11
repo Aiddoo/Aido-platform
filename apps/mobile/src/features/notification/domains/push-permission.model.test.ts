@@ -1,10 +1,6 @@
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { createPushPermission } from '../__tests__/notification.fixtures';
-import {
-  PUSH_ONBOARDING_WINDOW_DAYS,
-  PUSH_PROMPT_SNOOZE_DAYS,
-} from '../constants/notification.constants';
 import { PushPermissionPolicy } from './push-permission.model';
 
 const NOW = toInstant('2026-11-04T09:00:00.000Z');
@@ -139,7 +135,7 @@ describe('getAskMoment', () => {
     [
       '가입한 지 하루가 지난 기존 사용자에게는 띄우지 않는다',
       NOT_ASKED,
-      shiftedFromNow(-PUSH_ONBOARDING_WINDOW_DAYS * DAY_MS),
+      shiftedFromNow(-1 * DAY_MS),
       NO_ANSWER,
       null,
     ],
@@ -181,20 +177,8 @@ describe('getAskMoment', () => {
     ['거절했고 알림이 갈 할 일이 있으면 꺼짐 안내', DENIED, true, null, 'DENIED_NOTICE'],
     ['알림이 갈 할 일이 없으면 안내하지 않는다', DENIED, false, null, null],
     ['아직 묻지 않았으면 피드에서는 묻지 않는다', NOT_ASKED, true, null, null],
-    [
-      '닫은 지 14일이 되기 직전까지 숨긴다',
-      DENIED,
-      true,
-      shiftedFromNow(-PUSH_PROMPT_SNOOZE_DAYS * DAY_MS + 1),
-      null,
-    ],
-    [
-      '닫은 지 14일째부터 다시 보인다',
-      DENIED,
-      true,
-      shiftedFromNow(-PUSH_PROMPT_SNOOZE_DAYS * DAY_MS),
-      'DENIED_NOTICE',
-    ],
+    ['닫은 지 14일이 되기 직전까지 숨긴다', DENIED, true, shiftedFromNow(-14 * DAY_MS + 1), null],
+    ['닫은 지 14일째부터 다시 보인다', DENIED, true, shiftedFromNow(-14 * DAY_MS), 'DENIED_NOTICE'],
   ] as const)(
     '피드에서 %s',
     (_label, permission, hasUpcomingTimedTodo, noticeDismissedAt, expected) => {

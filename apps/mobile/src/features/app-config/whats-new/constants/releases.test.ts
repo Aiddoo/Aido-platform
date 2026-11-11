@@ -2,9 +2,12 @@ import { i18n } from '@src/shared/i18n';
 import { compareSemanticVersions } from '@src/shared/utils/semantic-version';
 import { orderBy, sortBy } from 'es-toolkit';
 
-import { WhatsNewPolicy } from '../domains/whats-new.model';
+import {
+  getLatestTourReleaseId,
+  tourReleaseIdSchema,
+  WhatsNewPolicy,
+} from '../domains/whats-new.model';
 import { RELEASES } from './releases';
-import { TOUR_RELEASE_IDS } from './whats-new.constants';
 
 describe('RELEASES', () => {
   it('늦게 나온 출시일수록 버전이 높아 목록의 최신 표시와 버전이 어긋나지 않는다', () => {
@@ -32,9 +35,9 @@ describe('RELEASES', () => {
     const tourIds = RELEASES.flatMap((release) => WhatsNewPolicy.findTourId(release) ?? []);
 
     // Then
-    expect(TOUR_RELEASE_IDS[0]).toBe(WhatsNewPolicy.getLatestRelease(RELEASES).id);
+    expect(getLatestTourReleaseId()).toBe(WhatsNewPolicy.getLatestRelease(RELEASES).id);
     expect(tourIds.every((id) => latestTwoIds.includes(id))).toBe(true);
-    expect(tourIds).toHaveLength(TOUR_RELEASE_IDS.length);
+    expect(tourIds).toHaveLength(tourReleaseIdSchema.options.length);
   });
 
   it('서버가 자동으로 열 수 있는(캠페인이 있는) 출시는 모두 소개가 있다', () => {

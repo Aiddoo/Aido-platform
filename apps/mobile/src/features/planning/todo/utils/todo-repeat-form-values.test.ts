@@ -1,6 +1,6 @@
 import { instantFromDate } from '@src/shared/date/native-date';
 
-import { TODO_REPEAT_WEEKDAYS } from '../constants/todo-repeat.constants';
+import { getRepeatPresetDays } from '../domains/todo-repeat.model';
 import type { TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
 import {
   isTodoRepeatFormPreset,
@@ -30,7 +30,7 @@ const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeat
 describe('반복 요일 프리셋', () => {
   it('격주나 매월이면 요일이 같아도 프리셋이 켜진 것으로 보지 않는다', () => {
     // Given
-    const days = [...TODO_REPEAT_WEEKDAYS];
+    const days = [...getRepeatPresetDays('WEEKDAYS')];
 
     // When
     const weekly = isTodoRepeatFormPreset(createValues({ weekdays: days }), days);
@@ -45,7 +45,7 @@ describe('반복 요일 프리셋', () => {
 
   it('켜진 프리셋을 다시 누르면 요일을 비우고 꺼진 프리셋은 매주로 맞춘다', () => {
     // Given
-    const days = [...TODO_REPEAT_WEEKDAYS];
+    const days = [...getRepeatPresetDays('WEEKDAYS')];
 
     // When
     const cleared = withTodoRepeatFormPreset(createValues({ weekdays: days }), days);
