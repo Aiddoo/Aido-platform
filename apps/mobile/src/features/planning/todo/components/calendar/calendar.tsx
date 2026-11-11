@@ -15,7 +15,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
-import { Box, HStack, Result, Text, usePaneColumns, VStack } from '@src/shared/ui';
+import { Box, HStack, usePaneColumns, VStack, QueryErrorFallback } from '@src/shared/ui';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
@@ -311,11 +311,11 @@ Calendar.Error = function ErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
 
   return (
-    <HStack py={4} align="center" gap={8}>
-      <Text size="e1" shade={6} className="flex-1">
-        {t('todo:calendar.loadFailed')}
-      </Text>
-      <Result.Button onPress={onRetry}>{t('common:actions.retry')}</Result.Button>
-    </HStack>
+    <QueryErrorFallback.Inline
+      message={t('todo:calendar.loadFailed')}
+      messageProps={{ size: 'e1' }}
+      reset={onRetry}
+      py={4}
+    />
   );
 };

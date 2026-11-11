@@ -38,6 +38,12 @@ X.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 };
 ```
 
+카드·스트립 안의 한 줄 안내는 `QueryErrorFallback.Inline`입니다. 메시지와 다시 시도 버튼을 한 줄에 놓고, `hasInquiry`를 켜면 문의하기가 버튼 아래에 붙습니다. 바깥 여백·배경은 `className`·`pl` 같은 `HStack` props로, 글자 크기는 `messageProps`로 정합니다.
+
+```tsx
+<QueryErrorFallback.Inline message={t('friend:list.loadFailed')} reset={reset} hasInquiry />
+```
+
 route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으로 바꿉니다(`INQUIRY_SHEET_EXIT`, 문의에서 돌아오면
 시트 아래 화면). fallback이 `sheet`를 받을 수 있게 경계에서 넘깁니다.
 

@@ -12,15 +12,14 @@ import {
   Box,
   HStack,
   PlusIcon,
-  QueryErrorActions,
   type QueryErrorFallbackProps,
   RefreshIcon,
-  Result,
   Text,
   TextSkeleton,
   useAdaptivePaneLayoutKey,
   useFetchNextPage,
   VStack,
+  QueryErrorFallback,
 } from '@src/shared/ui';
 import { TEXT_SIZE_CLASSES } from '@src/shared/ui/text/text.variants';
 import { cn } from '@src/shared/utils/cn';
@@ -239,21 +238,15 @@ FriendStrip.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const edgeInsets = useStripEdgeInsets();
 
   return (
-    <HStack
+    <QueryErrorFallback.Inline
+      message={t('friend:list.loadFailed')}
+      messageProps={{ numberOfLines: 2 }}
+      reset={reset}
+      hasInquiry
       pl={STRIP_PADDING + edgeInsets.start}
       pr={STRIP_PADDING + edgeInsets.end}
-      gap={8}
-      align="center"
       style={{ height }}
-    >
-      <Text size="b4" shade={6} numberOfLines={2} className="flex-1">
-        {t('friend:list.loadFailed')}
-      </Text>
-      <VStack align="center" gap={2}>
-        <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
-        <QueryErrorActions.Inquiry />
-      </VStack>
-    </HStack>
+    />
   );
 };
 

@@ -1,7 +1,13 @@
 import { useTranslation } from '@src/shared/i18n';
+import { cn } from '@src/shared/utils/cn';
 
+import { HStack } from '../h-stack/h-stack';
+import type { HStackProps } from '../h-stack/h-stack.types';
 import { ErrorIllustration, type IllustrationSize } from '../illustration';
 import { Result } from '../result/result';
+import { Text } from '../text/text';
+import type { TextProps } from '../text/text.types';
+import { VStack } from '../v-stack/v-stack';
 import { QueryErrorActions } from './query-error-actions';
 import type { QueryErrorFallbackProps as BoundaryFallbackProps } from './query-error-boundary';
 
@@ -40,3 +46,39 @@ export function QueryErrorFallback({
     />
   );
 }
+
+type QueryErrorFallbackInlineProps = Omit<HStackProps, 'children'> &
+  Pick<BoundaryFallbackProps, 'reset'> & {
+    message: string;
+    messageProps?: Omit<TextProps, 'children'>;
+    /** 문의하기를 함께 보일 때. 시트·다이얼로그 안에서는 `onInquiry`로 먼저 닫고 문의로 간다 */
+    hasInquiry?: boolean;
+    onInquiry?: () => void;
+  };
+
+QueryErrorFallback.Inline = function Inline({
+  message,
+  messageProps,
+  reset,
+  hasInquiry = false,
+  onInquiry,
+  ...rowProps
+}: QueryErrorFallbackInlineProps) {
+  const { t } = useTranslation('common');
+
+  return (
+    <HStack gap={8} align="center" {...rowProps}>
+      <Text size="b4" shade={6} {...messageProps} className={cn('flex-1', messageProps?.className)}>
+        {message}
+      </Text>
+      {hasInquiry ? (
+        <VStack align="center" gap={2}>
+          <Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>
+          <QueryErrorActions.Inquiry onPress={onInquiry} />
+        </VStack>
+      ) : (
+        <Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>
+      )}
+    </HStack>
+  );
+};

@@ -7,12 +7,12 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
   PawIcon,
-  Result,
   Text,
   TextSkeleton,
   VStack,
   type QueryErrorFallbackProps,
   Image,
+  QueryErrorFallback,
 } from '@src/shared/ui';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -115,11 +115,10 @@ NudgeLimitBanner.Loading = function Loading() {
 NudgeLimitBanner.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
-    <HStack gap={8} align="center" className="rounded-xl bg-gray-1 p-3">
-      <Text size="b4" shade={6} className="flex-1">
-        {t('todo:nudge.statusUnavailable')}
-      </Text>
-      <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
-    </HStack>
+    <QueryErrorFallback.Inline
+      message={t('todo:nudge.statusUnavailable')}
+      reset={reset}
+      className="rounded-xl bg-gray-1 p-3"
+    />
   );
 };
