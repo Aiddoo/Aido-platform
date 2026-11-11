@@ -41,7 +41,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     onReported: markReported,
   });
   useTimezoneChangeNotice({ accountId, reportCount });
-  useNotificationBadgeSync(status);
+  useNotificationBadgeSync({ authStatus: status });
 
   return children;
 }

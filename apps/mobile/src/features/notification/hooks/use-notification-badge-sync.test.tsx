@@ -27,7 +27,7 @@ async function setup() {
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </StaticDIProvider>
   );
-  await renderHook(() => useNotificationBadgeSync('authenticated'), { wrapper });
+  await renderHook(() => useNotificationBadgeSync({ authStatus: 'authenticated' }), { wrapper });
   await waitFor(() => expect(gateway.setBadgeCount).toHaveBeenLastCalledWith(3));
   return { server, gateway, queryClient };
 }

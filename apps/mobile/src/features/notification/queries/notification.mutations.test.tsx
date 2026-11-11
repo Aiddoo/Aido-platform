@@ -50,7 +50,7 @@ async function setup() {
   );
   const { result } = await renderHook(
     () => {
-      useNotificationBadgeSync('authenticated');
+      useNotificationBadgeSync({ authStatus: 'authenticated' });
       return useMutation(useRecordPushOpenedMutationOptions());
     },
     { wrapper },
@@ -106,7 +106,7 @@ describe('useMarkAsReadMutationOptions', () => {
     );
     const { result } = await renderHook(
       () => {
-        useNotificationBadgeSync('authenticated');
+        useNotificationBadgeSync({ authStatus: 'authenticated' });
         return useMutation(useMarkAsReadMutationOptions());
       },
       { wrapper },
