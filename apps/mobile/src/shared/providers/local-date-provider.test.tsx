@@ -5,6 +5,7 @@ import {
   createErrorReporterStub,
   createTestDi,
 } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -17,15 +18,7 @@ interface FakeDeviceCalendar {
 const PROCESS_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 describe('앱 로컬 날짜 Provider', () => {
-  beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   async function setup(device: FakeDeviceCalendar = { timeZone: PROCESS_TIME_ZONE }) {
     const analytics = createAnalyticsStub();

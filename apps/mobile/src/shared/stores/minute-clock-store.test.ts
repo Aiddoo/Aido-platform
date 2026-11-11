@@ -1,3 +1,5 @@
+import { setupFakeTimersPerTest } from '@src/testing/timers';
+
 import { createMinuteClockStore, toMinuteStart } from './minute-clock-store';
 
 function createSource() {
@@ -17,16 +19,7 @@ function createSource() {
 }
 
 describe('createMinuteClockStore', () => {
-  beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2026-11-03T09:00:30.000Z'));
-  });
-
-  afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest({ now: new Date('2026-11-03T09:00:30.000Z') });
 
   it('같은 분 안에서는 같은 시각을 돌려준다', () => {
     // Given

@@ -1,5 +1,6 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { createMemorySyncStorage, createTestDi } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { useForm } from 'react-hook-form';
@@ -36,19 +37,14 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
   let draftService: DraftService;
   let wrapper: (props: PropsWithChildren) => React.JSX.Element;
 
+  setupFakeTimersPerTest();
+
   beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
     const container = createTestDi({ draftService });
     wrapper = ({ children }) => (
       <StaticDIProvider container={container}>{children}</StaticDIProvider>
     );
-  });
-
-  afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
   });
 
   it('디바운스가 끝나기 전에 언마운트되면 마지막 입력을 즉시 저장해 다음 마운트 첫 렌더에서 복원한다', async () => {

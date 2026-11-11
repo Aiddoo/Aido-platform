@@ -1,4 +1,5 @@
 import { createLoggerStub } from '@src/testing/ports/logger.stub';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { TimeoutError } from 'es-toolkit';
 import { PermissionStatus } from 'expo';
 import * as Notifications from 'expo-notifications';
@@ -102,22 +103,22 @@ describe('createExpoPushNotificationGateway', () => {
     expect(remove).toHaveBeenCalledTimes(1);
   });
 
-  it('APNs 등록이 끝나지 않아 토큰 발급이 멈추면 시간 제한 뒤 실패로 끝낸다', async () => {
-    // Given
-    // 응답하지 않는 발급
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
-    getExpoPushTokenAsync.mockReturnValue(new Promise(() => {}));
-    const issuing = gateway.getToken();
+  describe('토큰 발급 시간 제한', () => {
+    setupFakeTimersPerTest();
 
-    // When
-    const elapsing = jest.advanceTimersByTimeAsync(PUSH_TOKEN_ISSUE_TIMEOUT_MS);
+    it('APNs 등록이 끝나지 않아 토큰 발급이 멈추면 시간 제한 뒤 실패로 끝낸다', async () => {
+      // Given
+      // 응답하지 않는 발급
+      getExpoPushTokenAsync.mockReturnValue(new Promise(() => {}));
+      const issuing = gateway.getToken();
 
-    // Then
-    await expect(issuing).rejects.toThrow(TimeoutError);
-    await elapsing;
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
+      // When
+      const elapsing = jest.advanceTimersByTimeAsync(PUSH_TOKEN_ISSUE_TIMEOUT_MS);
+
+      // Then
+      await expect(issuing).rejects.toThrow(TimeoutError);
+      await elapsing;
+    });
   });
 
   it('알림 응답은 SDK 모양 없이 식별자·버튼·data만 담아 알린다', () => {
