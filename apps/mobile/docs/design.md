@@ -6,29 +6,43 @@
 
 ## 테마 토큰
 
-heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 회색과 주황이라 heroui 변수를 모두 앱 값으로 덮어쓴다.
+heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 회색과 주황이라 앱 화면에 그려지는 heroui 변수를 `global.css`의 `light`·`dark`에서 앱 값으로 덮는다.
 
-| heroui 변수                                                     | Aido 값                                           | 쓰임                       |
-| --------------------------------------------------------------- | ------------------------------------------------- | -------------------------- |
-| `--background`·`--foreground`·`--surface`·`--muted`·`--default` | 무채색 앱 값(`global.css`의 `light`·`dark`)       | 화면·글자·카드 면          |
-| `--accent`·`--danger`·`--warning`                               | 앱 주황·빨강·노랑                                 | 컨트롤 선택·파괴 동작·주의 |
-| `--separator`                                                   | `--gray-2`                                        | 실선 구분선 하나           |
-| `--border`                                                      | `--gray-3`                                        | 카드·컨트롤 테두리         |
-| `--field-*`                                                     | 배경 `--gray-1`, 테두리 `--gray-2`, 초점 `--main` | shared `Input` filled 모양 |
-| `--overlay`                                                     | 라이트 `--white`, 다크 `--gray-1`                 | 시트·메뉴·다이얼로그 면    |
-| `--surface-secondary`                                           | `--gray-2`                                        | 한 단계 낮은 면            |
+| heroui 변수                                                     | 라이트                 | 다크                   | 그려지는 곳                                                                             |
+| --------------------------------------------------------------- | ---------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
+| `--background`·`--foreground`·`--surface`·`--muted`·`--default` | 무채색 앱 값           | 무채색 앱 값           | 화면·글자·카드 면, `Tabs` 바탕, 꺼진 Switch                                             |
+| `--accent`·`--danger`·`--warning`·`--success`                   | 앱 주황·빨강·노랑·초록 | 라이트와 같다          | 컨트롤 선택·파괴 동작·주의·완료                                                         |
+| `--separator`                                                   | `--gray-5`             | `--gray-2`             | `Separator` 기본색, InputOTP 가운데 줄(50%)                                             |
+| `--border`                                                      | `--gray-4`             | `--gray-2`             | `HintPopover` 테두리·화살표, 팝오버 안 `bg-border` 줄(`plan-review`·`quick-voice-info`) |
+| `--overlay`                                                     | heroui 기본(`--white`) | `--gray-1`(전 #18181b) | `ConfirmDialog`·`HintPopover` 면. 시트 면(`bg-white dark:bg-gray-1`)과 같다             |
+| `--field-background`                                            | heroui 기본(`--white`) | `--gray-1`(전 #18181b) | Checkbox 안쪽, InputOTP 칸                                                              |
+| `--segment`                                                     | heroui 기본(`--white`) | `--gray-2`(전 #46464c) | primary `Tabs`의 선택 알약                                                              |
 
-- 매핑을 바꾸면 라이트·다크 스크린샷으로 Switch, Checkbox, Radio, Spinner, Chip soft, Tabs, Menu·Popover, InputOTP, 구분선을 확인한다. 아직 기본값인 변수는 [migration-status](./architecture/migration-status.md)에 있다.
+선 색의 전후와 대비다. 화면은 `bg-white`(다크 #121212), 면은 카드·메뉴의 `gray-1`이다.
+
+| 변수          | 테마   | heroui 기본 → Aido           | 화면 위       | `gray-1` 면 위 |
+| ------------- | ------ | ---------------------------- | ------------- | -------------- |
+| `--separator` | 라이트 | #aaaaad → `--gray-5` #bdbdbd | 2.32 → 1.88:1 | 2.18 → 1.77:1  |
+| `--separator` | 다크   | #47474b → `--gray-2` #424242 | 2.03 → 1.86:1 | 1.74 → 1.60:1  |
+| `--border`    | 라이트 | #dedee0 → `--gray-4` #dedede | 1.34 → 1.35:1 | 1.27 → 1.27:1  |
+| `--border`    | 다크   | #28282c → `--gray-2` #424242 | 1.28 → 1.86:1 | 1.10 → 1.60:1  |
+
+- 구분선은 iOS 불투명 구분선(라이트 #c6c6c8, 다크 #38383a)에 가장 가까운 앱 회색이다. 화면과 `gray-1` 면(댓글 ⋯ 메뉴 등) 위에서 모두 1.5:1 이상으로 보이고 조용하다. 직접 색을 준 실선(`gray-2`·`gray-3`)은 이 토큰으로 옮긴다([migration-status](./architecture/migration-status.md)).
+- 테두리는 heroui 기본과 같은 밝기에서 푸른 기만 뺐다. 다크는 시트·메뉴 면(`--gray-1`) 위에서 보이도록 구분선과 같은 `--gray-2`다.
+- InputOTP 가운데 줄(구분선 50%)은 라이트 #d4d4d6 → #dedede(`--gray-4`와 같다), 다크 #2d2d2f → #2a2a2a라 덮지 않는다.
+- 나머지 heroui 변수는 기본값이다. 무채색(`--snow`·`--backdrop`·그림자), 위 값을 따르는 것(`--focus`·`--field-placeholder`·대부분의 `*-foreground`), 거의 검정인 글자(라이트 `--default-foreground` #18181b), 앱에 그려지지 않는 것(`--surface-secondary`·`--surface-tertiary`·`--field-foreground`·`--field-border`)이다. 그려지기 시작하면 이 표에 먼저 더한다.
+- 매핑을 바꾸면 라이트·다크 스크린샷으로 Switch, Checkbox, Radio, Spinner, Chip soft, Tabs, Menu·Popover, InputOTP, 구분선을 확인한다.
 - 앱 토큰은 `@theme inline`에 있다: `main`, `secondary`, `error`, `error-light`, `success`, `info`, `warning-text`, `highlight`, `white`, `gray-1`~`gray-10`, `on-sky`.
 
 ### 주황 두 가지
 
-| 토큰       | 역할                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------ |
-| `--main`   | 브랜드 채움(코랄 #FF6843 계열): 주 버튼 면, 강조 아이콘, 일러스트 포인트, 입력 초점 테두리 |
-| `--accent` | heroui 컨트롤의 선택·초점(Switch, Checkbox, Radio, Tabs, Spinner). 대비 때문에 더 진하다   |
+| 토큰       | 값      | 역할                                                                                                       |
+| ---------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `--main`   | #FF6843 | 브랜드 채움: 주 버튼 면, 강조 아이콘, 일러스트 포인트, 입력 초점 테두리                                    |
+| `--accent` | #F0503D | heroui 컨트롤의 선택·초점: Switch 켬, Checkbox·Radio 선택, `Tabs` 밑줄, InputOTP 초점 칸, Spinner, soft 칩 |
 
-- soft accent 면 위 글자는 `text-accent-soft-foreground`다(라이트 4.1:1·다크 4.2:1). `text-main`은 2.6:1이라 작은 글자에 쓰지 않는다.
+- accent가 더 진한 이유는 대비다. 흰 화면 위 컨트롤 면이 accent 3.55:1로 WCAG 비텍스트 기준 3:1을 넘고 main은 2.87:1이다. 선택 표시 위 흰 체크·점(`--accent-foreground`)은 3.46:1이다.
+- soft accent 칩 글자는 `text-accent-soft-foreground`다. 칩 면 위에서 라이트는 흰 면 3.84:1·`gray-1` 3.63:1·`gray-2` 3.55:1로 작은 글자 4.5:1에 못 미치고, 다크는 화면 5.54:1·`gray-1` 4.70:1·`gray-2` 3.08:1이다. `text-main`은 같은 면에서 라이트 2.21~2.39:1이라 쓰지 않는다.
 
 ## 회색·면·모양
 
