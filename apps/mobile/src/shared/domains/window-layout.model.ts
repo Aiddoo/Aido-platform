@@ -57,11 +57,7 @@ function getPaneColumns(window: AppWindow, area: PaneAreaSize): PaneColumns {
   return { isSplit: true, primaryWidth: area.foldX ?? PRIMARY_PANE_WIDTH[sizeClass] };
 }
 
-/**
- * 짧은 변(Android smallest width)으로 재야 가로로 든 휴대폰이 넓은 창으로 풀리지 않고, 돌려도 결정이 바뀌지 않는다.
- * Android 16+은 짧은 변 600dp 이상 화면에서 앱의 방향 고정을 무시하므로 같은 기준으로 그 아래만 묶는다.
- * iOS는 Info.plist(iPhone 세로, iPad 네 방향)가 정해 앱이 실행 중에 바꾸지 않는다(null).
- */
+/** 짧은 변(Android smallest width)으로 재 가로로 든 휴대폰이 넓은 창이 되지 않게 하고, Android 16+이 600dp 이상에서 방향 고정을 무시하는 기준과 맞춘다. iOS는 Info.plist가 정해 null이다 */
 function getOrientationLock(window: AppWindow): OrientationLock | null {
   if (window.os === 'ios') {
     return null;

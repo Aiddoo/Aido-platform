@@ -1,14 +1,6 @@
 import { t } from '@src/shared/i18n';
 
-/**
- * 인프라 에러 - ErrorBoundary에서 처리
- * - 5xx 서버 에러
- * - 네트워크 에러
- * - 타임아웃
- * - 응답 파싱 실패
- *
- * UI에서 개별 처리하지 않고 ErrorBoundary로 전파됨
- */
+/** 5xx·네트워크·타임아웃·응답 파싱 실패. UI에서 따로 처리하지 않고 ErrorBoundary로 전파한다 */
 export abstract class InfraError extends Error {
   abstract override readonly name: string;
   abstract readonly statusCode: number | null;

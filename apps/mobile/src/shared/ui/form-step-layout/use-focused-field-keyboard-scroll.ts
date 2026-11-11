@@ -50,11 +50,7 @@ function measureInContent(node: Pick<HostInstance, 'measureLayout'>, content: Ho
   });
 }
 
-/**
- * 화면 폼에서 포커스한 칸 전체(라벨·입력 칸·오류 문구·글자 수)를 키보드 위 버튼 위에 보이게 한다.
- * `KeyboardAwareScrollView`는 커서 줄만 올려 칸 아래가 버튼에 가리므로, 같은 라이브러리의 키보드·포커스 이벤트로
- * 키보드와 같은 프레임에 UI 스레드에서 스크롤한다
- */
+/** 포커스한 칸 전체(라벨·입력·오류 문구·글자 수)를 키보드 위 버튼 위에 보이게 한다. KeyboardAwareScrollView는 커서 줄만 올려, 같은 라이브러리 이벤트로 UI 스레드에서 같은 프레임에 스크롤한다 */
 export function useFocusedFieldKeyboardScroll() {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollOffset(scrollRef);
