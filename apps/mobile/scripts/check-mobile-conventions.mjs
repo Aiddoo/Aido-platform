@@ -1888,44 +1888,197 @@ function checkLowerLayerImports(sourceFile, relativePath, errors, repositoryRoot
   }
 }
 
-function collectFeatureImports(sourceFile, findings, featureEdges, errors, repositoryRoot) {
+const DI_CONTEXT_FILE = 'apps/mobile/src/bootstrap/providers/di-context.tsx';
+const DI_CONTEXT_MODULE = '@src/bootstrap/providers/di-context';
+const SHARED_DI_CONTEXT_MODULE = '@src/shared/di/shared-di-context';
+const DI_HOOK_NAME = /^use[A-Z]/u;
+
+/** `return useDI().field` 한 줄이면 field, 아니면 null */
+function getReturnedDiField(declaration) {
+  const statements = declaration.body?.statements ?? [];
+  const [statement] = statements;
+  if (
+    statements.length !== 1 ||
+    !ts.isReturnStatement(statement) ||
+    statement.expression === undefined ||
+    !ts.isPropertyAccessExpression(statement.expression)
+  ) {
+    return null;
+  }
+  const { expression, name } = statement.expression;
+  return ts.isCallExpression(expression) && getCallName(expression.expression) === 'useDI'
+    ? name.text
+    : null;
+}
+
+/**
+ * di-context의 `use{X}` 훅이 돌려주는 값의 주인 feature. `DIContainer` 필드 타입을 import한 경로에서 읽어
+ * 컨테이너가 바뀌면 함께 바뀐다. 주인이 feature가 아니면(core·shared·bootstrap) 담지 않는다
+ */
+function loadDiHookOwners(repositoryRoot, errors) {
+  const path = resolve(repositoryRoot, DI_CONTEXT_FILE);
+  if (!existsSync(path)) {
+    return new Map();
+  }
+  const sourceFile = ts.createSourceFile(
+    path,
+    readFileSync(path, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const typeModules = new Map();
+  const fieldTypes = new Map();
+  const hookFields = new Map();
+  for (const statement of sourceFile.statements) {
+    if (ts.isImportDeclaration(statement)) {
+      const bindings = statement.importClause?.namedBindings;
+      if (bindings !== undefined && ts.isNamedImports(bindings)) {
+        for (const element of bindings.elements) {
+          typeModules.set(element.name.text, statement.moduleSpecifier.text);
+        }
+      }
+    } else if (ts.isInterfaceDeclaration(statement) && statement.name.text === 'DIContainer') {
+      for (const member of statement.members) {
+        const name = getPropertyName(member.name);
+        if (
+          name !== null &&
+          ts.isPropertySignature(member) &&
+          member.type !== undefined &&
+          ts.isTypeReferenceNode(member.type) &&
+          ts.isIdentifier(member.type.typeName)
+        ) {
+          fieldTypes.set(name, member.type.typeName.text);
+        }
+      }
+    } else if (
+      ts.isFunctionDeclaration(statement) &&
+      statement.name !== undefined &&
+      DI_HOOK_NAME.test(statement.name.text) &&
+      statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      const field = getReturnedDiField(statement);
+      if (field === null) {
+        errors.push(
+          `${getLocation(sourceFile, statement, repositoryRoot)} di-context의 ${statement.name.text}는 \`return useDI().필드\` 한 줄로 씁니다. 층 검사가 돌려주는 값의 주인을 읽어야 합니다.`,
+        );
+      } else {
+        hookFields.set(statement.name.text, field);
+      }
+    }
+  }
+  const owners = new Map();
+  for (const [hook, field] of hookFields) {
+    const moduleName = typeModules.get(fieldTypes.get(field));
+    const featurePath = moduleName === undefined ? null : getImportedFeaturePath(moduleName, path);
+    const owner = featurePath === null ? null : getFeatureName(featurePath);
+    if (owner !== null) {
+      owners.set(hook, owner);
+    }
+  }
+  return owners;
+}
+
+/** 타입이 아닌 이름으로 가져온 DI 훅과 그 주인 feature */
+function getDiHookTargets(statement, diHookOwners) {
+  const clause = ts.isImportDeclaration(statement) ? statement.importClause : undefined;
+  const bindings = clause?.isTypeOnly ? undefined : clause?.namedBindings;
+  if (bindings === undefined || !ts.isNamedImports(bindings)) {
+    return [];
+  }
+  return bindings.elements.flatMap((element) => {
+    const hook = (element.propertyName ?? element.name).text;
+    const target = diHookOwners.get(hook);
+    return element.isTypeOnly || target === undefined ? [] : [{ hook, target }];
+  });
+}
+
+/** feature와 app/의 DI 입구는 di-context 하나다. shared-di-context는 shared가 bootstrap을 못 봐서 나눈 것이다 */
+function checkDiEntryImports(sourceFile, relativePath, errors, repositoryRoot) {
+  if (
+    !relativePath.startsWith(FEATURE_SOURCE_ROOT) &&
+    !relativePath.startsWith('apps/mobile/app/')
+  ) {
+    return;
+  }
+  for (const statement of getModuleStatements(sourceFile)) {
+    if (statement.moduleSpecifier.text === SHARED_DI_CONTEXT_MODULE) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} feature와 app/은 DI 훅을 ${DI_CONTEXT_MODULE}에서 꺼냅니다. 빠진 훅은 di-context가 다시 내보내게 하세요.`,
+      );
+    }
+  }
+}
+
+function recordFeatureImport({
+  owner,
+  target,
+  location,
+  isAllowedUpward,
+  upwardMessage,
+  findings,
+  featureEdges,
+  errors,
+}) {
+  if (target === owner) {
+    return;
+  }
+  if (!featureEdges.has(owner)) {
+    featureEdges.set(owner, new Set());
+  }
+  featureEdges.get(owner).add(target);
+  const ownerLayer = FEATURE_LAYERS.get(owner);
+  const targetLayer = FEATURE_LAYERS.get(target);
+  if (ownerLayer === undefined || targetLayer === undefined) {
+    errors.push(
+      `${location} ${ownerLayer === undefined ? owner : target}의 층이 정해지지 않았습니다. FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더하세요.`,
+    );
+    return;
+  }
+  if (ownerLayer < targetLayer && !isAllowedUpward) {
+    findings.push({ rule: 'feature-upward', key: `${owner} -> ${target}`, message: upwardMessage });
+  }
+}
+
+function collectFeatureImports(
+  sourceFile,
+  { findings, featureEdges, diHookOwners },
+  errors,
+  repositoryRoot,
+) {
   const owner = getFeatureName(sourceFile.fileName);
   if (owner === null) {
     return;
   }
+  const collected = { owner, findings, featureEdges, errors };
   for (const statement of getModuleStatements(sourceFile)) {
-    const importedPath = getImportedFeaturePath(
-      statement.moduleSpecifier.text,
-      sourceFile.fileName,
-    );
-    const target = importedPath === null ? null : getFeatureName(importedPath);
-    if (target === null || target === owner) {
-      continue;
-    }
-    if (!featureEdges.has(owner)) {
-      featureEdges.set(owner, new Set());
-    }
-    featureEdges.get(owner).add(target);
+    const moduleName = statement.moduleSpecifier.text;
     const location = getLocation(sourceFile, statement, repositoryRoot);
-    const ownerLayer = FEATURE_LAYERS.get(owner);
-    const targetLayer = FEATURE_LAYERS.get(target);
-    if (ownerLayer === undefined || targetLayer === undefined) {
-      errors.push(
-        `${location} ${ownerLayer === undefined ? owner : target}의 층이 정해지지 않았습니다. FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더하세요.`,
-      );
+    if (moduleName === DI_CONTEXT_MODULE) {
+      for (const { hook, target } of getDiHookTargets(statement, diHookOwners)) {
+        recordFeatureImport({
+          ...collected,
+          target,
+          location,
+          isAllowedUpward: false,
+          upwardMessage: `${location} 위층 ${target}의 값을 ${hook}로 꺼냅니다. 위층의 Service·저장소는 쓰지 않습니다. 이벤트로 알리거나 app/에서 조립해 인자로 넘기세요.`,
+        });
+      }
       continue;
     }
-    if (
-      ownerLayer < targetLayer &&
-      !isTypeOnlyStatement(statement) &&
-      !ANY_LAYER_IMPORT_PATTERN.test(importedPath)
-    ) {
-      findings.push({
-        rule: 'feature-upward',
-        key: `${owner} -> ${target}`,
-        message: `${location} 위층 ${target}의 코드를 import합니다. 위층에서 가져와도 되는 것은 타입, 모델(Policy), *-cache입니다. app/에서 조립하거나 슬롯으로 넘기세요.`,
-      });
+    const importedPath = getImportedFeaturePath(moduleName, sourceFile.fileName);
+    const target = importedPath === null ? null : getFeatureName(importedPath);
+    if (target === null) {
+      continue;
     }
+    recordFeatureImport({
+      ...collected,
+      target,
+      location,
+      isAllowedUpward:
+        isTypeOnlyStatement(statement) || ANY_LAYER_IMPORT_PATTERN.test(importedPath),
+      upwardMessage: `${location} 위층 ${target}의 코드를 import합니다. 위층에서 가져와도 되는 것은 타입, 모델(Policy), *-cache입니다. app/에서 조립하거나 슬롯으로 넘기세요.`,
+    });
   }
 }
 
@@ -2560,6 +2713,7 @@ export function shrinkAllowlist(findings, allowlist) {
 export function collectArchitectureFindings(repositoryRoot, errors) {
   const findings = [];
   const featureEdges = new Map();
+  const diHookOwners = loadDiHookOwners(repositoryRoot, errors);
   for (const file of ['apps/mobile/src', 'apps/mobile/app'].flatMap((root) =>
     getSourceFiles(repositoryRoot, root),
   )) {
@@ -2574,7 +2728,13 @@ export function collectArchitectureFindings(repositoryRoot, errors) {
     collectRatchetFindings(sourceFile, relativePath, findings, repositoryRoot);
     if (!isTestSource(relativePath)) {
       checkLowerLayerImports(sourceFile, relativePath, errors, repositoryRoot);
-      collectFeatureImports(sourceFile, findings, featureEdges, errors, repositoryRoot);
+      checkDiEntryImports(sourceFile, relativePath, errors, repositoryRoot);
+      collectFeatureImports(
+        sourceFile,
+        { findings, featureEdges, diHookOwners },
+        errors,
+        repositoryRoot,
+      );
     }
   }
   collectBidirectionalFindings(featureEdges, findings);

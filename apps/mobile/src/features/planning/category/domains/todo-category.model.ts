@@ -82,6 +82,11 @@ export function hasChanges(category: TodoCategory, values: Pick<TodoCategory, 'n
   return category.name !== values.name || category.color !== values.color;
 }
 
+// 서버 응답 전의 임시 행은 음수 id다. 임시 id로는 요청을 보낼 수 없어 행 버튼·옮길 곳·순서 바꾸기에서 뺀다
+export function isOptimisticCategory(category: TodoCategory) {
+  return category.id < 0;
+}
+
 export function canReorder(categories: readonly TodoCategory[]) {
   return categories.length >= MIN_REORDERABLE_COUNT;
 }
@@ -111,6 +116,7 @@ export const TodoCategoryPolicy = {
   findCategory,
   getInitialCategoryId,
   hasChanges,
+  isOptimisticCategory,
   canReorder,
   getMoveTargets,
   findMoveTarget,

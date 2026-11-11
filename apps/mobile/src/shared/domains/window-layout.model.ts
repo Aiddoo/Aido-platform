@@ -33,6 +33,9 @@ type OrientationLock = 'portrait' | 'unlocked';
 /** 목록 칸의 최소 폭. 상세 칸이 남은 폭을 채운다 */
 const PRIMARY_PANE_WIDTH = { medium: 320, expanded: 400 } as const;
 
+/** 이보다 낮은 창은 키보드를 올린 시트에 입력칸·두 줄 내용·주 버튼이 함께 들어가지 않는다. 접은 iPhone Duo(678)는 색 두 줄이 밀려났고 SE(667)도 같은 배치를 쓴다 */
+const SHORT_WINDOW_HEIGHT = 720;
+
 /** Mac은 창 폭과 관계없이 모바일과 같은 경험을 주는 제품 결정이다 */
 function getSizeClass(window: AppWindow): WindowSizeClass {
   return window.isDesktop ? 'compact' : getWindowSizeClass(window.width);
@@ -67,9 +70,15 @@ function getOrientationLock(window: AppWindow): OrientationLock | null {
   return getWindowSizeClass(smallestWidth) === 'compact' ? 'portrait' : 'unlocked';
 }
 
+/** 시트 안 여러 줄 선택지를 가로 한 줄로 줄일 만큼 낮은 창 */
+function isShortWindow(window: AppWindow): boolean {
+  return window.height < SHORT_WINDOW_HEIGHT;
+}
+
 export const WindowLayoutPolicy = {
   getSizeClass,
   getPaneSizeClass,
   getPaneColumns,
   getOrientationLock,
+  isShortWindow,
 } as const;

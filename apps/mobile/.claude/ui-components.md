@@ -118,7 +118,7 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
 - 고정 헤더·하단 버튼·빈/오류 상태·가상화 리스트 화면은 그 화면 루트 컨테이너의 `edges`에 `left`/`right`를 더한다.
 - `SafeAreaView`는 가장 가까운 `SafeAreaProvider`의 inset을 쓴다. 같은 축을 중첩하면 두 번 패딩되므로 한 곳에만 둔다. 네이티브 Stack 헤더, `KeyboardAdaptiveButton`, 바텀시트, 토스트는 스스로 처리한다.
 - `AdaptivePane`은 pane마다 provider를 두어 레일에 닿는 pane만 inset을 받는다.
-- 화면 가장자리까지 닿는 가로 스크롤은 레일 밑까지 밀리고 내용만 피한다. 스크롤 뷰를 inset 안에 가두지 않고 내용 앞뒤 여백에 `useSafeAreaInsets()`의 그쪽 inset을 더한다(RTL이면 left·right를 앞뒤로 바꿔 읽는다). 지금은 친구 줄(`FriendStrip`)이다. 페이지 넘김 목록(달력 `calendar-pager`, 결제 혜택 `benefit-carousel`)은 쪽 폭이 칸 폭과 같아야 해 inset 안에 두고, 카드 안 목록(시간별 예보)과 시트 안 칩 줄(`SheetChipRow`, 반복 프리셋)은 카드·시트 가장자리까지라 레일과 닿지 않는다. 시트는 레일을 덮어 그린다(`getSheetLayout`).
+- 화면 가장자리까지 닿는 가로 스크롤은 레일 밑까지 밀리고 내용만 피한다. 스크롤 뷰를 inset 안에 가두지 않고 내용 앞뒤 여백에 `useSafeAreaInsets()`의 그쪽 inset을 더한다(RTL이면 left·right를 앞뒤로 바꿔 읽는다). 지금은 친구 줄(`FriendStrip`)이다. 페이지 넘김 목록(달력 `calendar-pager`, 결제 혜택 `benefit-carousel`)은 쪽 폭이 칸 폭과 같아야 해 inset 안에 두고, 카드 안 목록(시간별 예보)과 시트 안 칩 줄(`SheetChipRow`, 반복 프리셋)은 카드·시트 가장자리까지라 레일과 닿지 않는다. 시트는 레일을 덮어 그리고, 키보드 시트의 내용·footer는 덮은 레일만큼 들인다(`getSheetLayout`, `getKeyboardSheetContentPadding`).
 - 화면 가장자리에 붙는 떠 있는 UI는 inset을 더한다. 토스트·Popover·Menu는 heroui가 `insets.left/right + 12`로 두고, 앱 토스트는 위 inset만 바꾼다. NativeTabs 위에서 `insets.bottom`에 탭 바 높이 상수를 더하지 않는다.
 - 마이 탭 `MyPageStack`은 Stack 바깥에 provider 하나를 두고, 화면 안 두 칸에는 닿는 가장자리의 inset만 `SafeAreaInsetsContext`로 넘긴다. 이 값은 JS context라 네이티브 `SafeAreaView`에는 닿지 않는다. 칸 안에서는 `SafeAreaScrollView`·`useSafeAreaInsets`로 피한다([adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md#칸-안의-safe-area)).
 - Stack 화면 헤더는 네이티브 헤더와 `Stack.Toolbar` 네이티브 버튼을 쓴다. iOS가 레일·가로 바·Split View 바깥쪽으로 배치하고, 커스텀 뷰 버튼은 레일에서 빠진다([stack-header.md](../src/shared/ui/stack-header/stack-header.md)).
@@ -220,6 +220,8 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
   - 예외는 마이 탭 하나다. 상세 칸이 Stack이라 헤더를 전체 폭으로 두고 메뉴를 화면마다 본문 왼쪽 칸에 그린다(`MyPageStack`). iPadOS 세로의 떠 있는 탭 바가 칸 안 헤더의 뒤로 가기를 가리기 때문이다. [내 정보 메뉴](../src/shared/ui/adaptive-pane/adaptive-pane.md#내-정보-메뉴-전체-폭-헤더--화면마다-메뉴-칸).
 - **Duo 세로 레일(84pt)과 iOS 분할 화면·배치 전환은 safe area inset으로 피한다.** [가로 safe area](#가로-safe-area-iphone-duo-세로-레일)를 따른다.
 - **Mac(Designed for iPad)은 항상 `compact`다.** 제품 결정이다(`IS_IOS_APP_ON_MAC`).
+- **낮은 창은 시트 안 여러 줄 선택지를 한 줄로 민다.** 창 높이 720pt 미만(`WindowLayoutPolicy.isShortWindow`, 접은 iPhone Duo 678·SE 667)은 키보드를 올린 시트에 입력칸·두 줄 내용·주 버튼이 함께 들어가지 않는다. 카테고리 색은 `SheetChipRow` 한 줄로 두고 고른 색을 처음부터 보이게 민다. 키보드 시트가 열린 동안 keyboard-controller는 꺼져 그 훅으로 키보드 높이를 읽을 수 없어 창 높이로 정한다.
+- **좁은 칸·큰 글자의 머리 줄은 `flex-wrap`에 맡기지 않는다.** 감싸기는 보이는 글자 길이로 줄 수가 갈려 넘길 때마다 배치가 바뀌고, 넘친 버튼만 다음 줄 오른쪽에 매달린다. 그 언어·보기에서 가장 긴 라벨을 보이지 않는 견본으로 재어 그리기 전에 한 줄·두 줄을 정한다(`CalendarHeader`, `getCalendarHeaderLayout`).
 - **방향은 화면이 정하지 않는다.** 휴대폰은 가로를 지원하지 않고, 태블릿과 펼친 폴더블·두 화면은 돌릴 수 있다. Android는 앱 설정에서 방향을 묶지 않고 창의 짧은 변이 600dp 미만이면 실행 중에 세로로 묶는다(`WindowLayoutPolicy.getOrientationLock`, `useOrientationLock`, [Android 큰 화면 방향 권장](https://developer.android.com/develop/adaptive-apps/cookbook/orientation-restriction)). 펼친 폴더블·태블릿은 가로로도 쓰므로 화면은 세로를 가정한 고정 높이를 두지 않고 창 높이에 맞춰 줄인다.
 
 | 기기·자세                     | 창 짧은 변 | 방향                                                                                                    |
@@ -247,7 +249,7 @@ Android에는 단어 단위 줄바꿈 Text prop이 없다. `lineBreakStrategyIOS
 | `ModalBottomSheet`                  | 시트 위에 시트 (`BottomSheet` + `useOverlay`) | X             |
 | `SheetRouteScreen`, `useSheetRoute` | 대상이 있는 시트를 Expo Router route로 띄움   | 안쪽 시트대로 |
 
-- **그리는 곳:** 모든 시트는 HeroUI `BottomSheet` + `BottomSheet.Portal`이고 호스트는 `OverlayProvider`가 가진다. 앱 기본 PortalHost는 Query·DI 바깥이라 쓰지 않는다. HeroUI `*.Portal`을 직접 쓸 때는 `usePortalTarget()`을 펼쳐 넘긴다.
+- **그리는 곳:** 모든 시트는 HeroUI `BottomSheet` + `BottomSheet.Portal`이고 호스트는 `OverlayProvider`가 가진다. 앱 기본 PortalHost는 Query·DI 바깥이라 쓰지 않는다. HeroUI `*.Portal`을 직접 쓸 때는 `@src/shared/ui/bottom-sheet`의 `usePortalTarget()`을 펼쳐 넘긴다.
 - **Context:** Portal은 Context를 잇지 못한다. 시트 안에서 읽는 Context는 시트 안에 둔다. 폼은 Context 없이 `form`·`control`을 props로 넘기고, `footer`에서 읽을 때도 그렇다.
 - **스크롤:** 내용은 시트 안에서 스크롤되므로 세로 스크롤 컨테이너를 또 두지 않는다(가로 스크롤은 무방).
 - **내용과 `footer`:** 내용(칩 줄·보내기 줄 포함)은 `children` 흐름에 두고, 작은 화면·큰 글자·키보드에 가려도 보여야 할 주 동작 버튼만 `footer`에 둔다. gorhom 동적 크기는 흐름의 내용만 재므로 시트가 첫 프레임부터 최종 높이로 올라온다.

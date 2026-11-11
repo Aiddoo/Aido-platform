@@ -165,7 +165,7 @@ describe('Release1150Steps', () => {
     expect(captureFinishButton).not.toBeOnTheScreen();
   });
 
-  it('마무리의 말로 할 일 만들기 카드는 흐름을 닫고 할 일 추가 시트에서 바로 말하기를 시작하게 한다', async () => {
+  it('마무리의 말로 할 일 만들기 카드는 흐름을 닫고 피드에서 할 일 추가 시트를 열어 바로 말하기를 시작하게 한다', async () => {
     // Given
     const { analytics, unmount } = await renderSteps();
     await goToFinish();
@@ -176,8 +176,8 @@ describe('Release1150Steps', () => {
 
     // Then
     expect(router.dismissTo).toHaveBeenCalledWith({
-      pathname: '/todo/new',
-      params: { startVoice: '1' },
+      pathname: '/feed',
+      params: { action: 'add-voice-todo' },
     });
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', {
       campaign_id: RELEASE_1_15_0.campaignId,

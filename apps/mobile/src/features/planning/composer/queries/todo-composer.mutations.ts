@@ -1,11 +1,6 @@
-import {
-  useActivationService,
-  useHaptics,
-  useTodoService,
-  useSubTodoService,
-} from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoService, useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { getCachedActivationContext } from '@src/features/device/activation/queries/activation-cache';
+import { emitTodoCreated } from '@src/core/events/todo-created';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
@@ -24,7 +19,7 @@ import {
   isCategoryTodoLimitError,
   isRecurringCategoryTodoLimitError,
 } from '@src/features/planning/todo/domains/todo.error';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { getVisibility } from '@src/features/planning/todo/domains/todo.model';
 import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
 import {
   appendTodoToList,
@@ -52,7 +47,6 @@ import type {
   TodoSeriesEditOptions,
 } from '@src/features/planning/todo/schemas/todo-series-request.schema';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -66,7 +60,6 @@ interface CreateTodoVariables {
 export function useCreateTodoMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
-  const activationService = useActivationService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -107,7 +100,7 @@ export function useCreateTodoMutationOptions() {
         localTime: input.scheduledTime ?? null,
         scheduledAt: null,
         isAllDay: input.isAllDay,
-        visibility: TodoPolicy.getVisibility(input),
+        visibility: getVisibility(input.visibility),
         recurrenceGroupId: null,
         repeat: null,
         subTodos: [],
@@ -129,10 +122,7 @@ export function useCreateTodoMutationOptions() {
         changeCachedCategoryTodoCount(queryClient, { categoryId: saved.category.id, delta: 1 });
       }
       updateCachedTodoExistence(queryClient, withTodoCreated);
-      activationService.recordTodoCreated({
-        ...getCachedActivationContext(queryClient),
-        now: getNowInstant(),
-      });
+      emitTodoCreated();
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
         source: 'manual',
@@ -140,7 +130,7 @@ export function useCreateTodoMutationOptions() {
         is_recurring: false,
         has_scheduled_time: !!input.scheduledTime,
         is_all_day: input.isAllDay,
-        visibility: TodoPolicy.getVisibility(input),
+        visibility: getVisibility(input.visibility),
       });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {
@@ -266,7 +256,6 @@ interface CreateRecurringTodoVariables {
 export function useCreateRecurringTodoMutationOptions() {
   const haptics = useHaptics();
   const todoService = useTodoService();
-  const activationService = useActivationService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -279,10 +268,7 @@ export function useCreateRecurringTodoMutationOptions() {
       return unwrap(result);
     },
     onSuccess: (_, { input }) => {
-      activationService.recordTodoCreated({
-        ...getCachedActivationContext(queryClient),
-        now: getNowInstant(),
-      });
+      emitTodoCreated();
       invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));
       trackEvent('todo_created', {

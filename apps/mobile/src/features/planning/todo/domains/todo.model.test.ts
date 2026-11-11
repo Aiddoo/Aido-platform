@@ -3,6 +3,7 @@ import { toInstant } from '@src/shared/date/instant';
 import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
 import {
   getShiftedEndDate,
+  getVisibility,
   hasScheduleChanged,
   isPrivateVisibility,
   TodoPolicy,
@@ -221,7 +222,7 @@ describe('getVisibility', () => {
     ['PRIVATE', 'PRIVATE'],
   ] as const)('공개 범위를 %s로 두면 %s로 본다', (visibility, expected) => {
     // When
-    const result = TodoPolicy.getVisibility({ visibility });
+    const result = getVisibility(visibility);
 
     // Then
     expect(result).toBe(expected);

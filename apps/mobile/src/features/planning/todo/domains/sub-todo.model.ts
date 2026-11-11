@@ -118,11 +118,6 @@ export function withSubTodoConfirmed(
   );
 }
 
-// 임시 항목이 응답으로 바뀌기 전에 순서를 보내면 임시 id가 요청에 섞인다
-export function canReorderSubTodos(subTodos: readonly SubTodo[]): boolean {
-  return subTodos.every((subTodo) => !isOptimisticSubTodo(subTodo));
-}
-
 // 제목이 그대로면 요청을 보내지 않는다
 export function hasTitleChanged(subTodo: SubTodo, title: string): boolean {
   return subTodo.title !== title;
@@ -133,7 +128,6 @@ export const SubTodoPolicy = {
   hasSubTodos,
   canAddSubTodo,
   isOptimisticSubTodo,
-  canReorderSubTodos,
   hasTitleChanged,
   withSubTodoCompleted,
   withSubTodoAdded,

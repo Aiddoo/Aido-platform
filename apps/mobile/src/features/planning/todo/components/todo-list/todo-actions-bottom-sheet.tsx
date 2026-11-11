@@ -256,6 +256,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           isDanger
           isDisabled={isBusy}
           onPress={handleDelete}
+          testID="todo-action-delete"
         />
       </VStack>
     </TodoScopeStep>

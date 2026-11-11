@@ -15,7 +15,3 @@
 | 오류      | `TODO_0841`(없음)·`0842`(상한)·`0843`(맞는 날짜 없음)·`0844`(반복 아님)·`0845`(설정 오류)·`0846`(끝남). 공개 상세는 `PUBLIC_ERROR_DETAILS`에 있다                                                                      |
 
 오래 앱을 열지 않은 무료 사용자의 규칙은 멈춘다([휴면·복귀](todo-series-dormancy.md)).
-
-## 전환 중
-
-아직 옮기지 않은 Context는 옛 구조(`modules/<context>/<layer>/<slice>`)라 위 이름·경로가 지금 코드와 같다. 새 구조의 경로·이름은 [아키텍처](architecture.md)와 [이름 사전](conventions.md)을 따른다.
