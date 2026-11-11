@@ -1,8 +1,9 @@
-import { WeatherEnabledToggle } from '@src/features/notification/components/settings/weather-enabled-toggle';
-import { WeatherTimeInput } from '@src/features/notification/components/settings/weather-time-input';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { Suspense } from 'react';
+
+import { WeatherEnabledToggle } from './weather-enabled-toggle';
+import { WeatherTimeInput } from './weather-time-input';
 
 /** 마이 탭 알림 설정과 날씨 화면 종 버튼이 같은 화면을 각자의 Stack에 연다. 날씨에서 열면 뒤로 가기가 날씨로 돌아간다 */
 export function WeatherNotificationSettings() {

@@ -1,4 +1,4 @@
-import { WeatherNotificationSettings } from '@src/bootstrap/navigation/weather-notification-settings';
+import { WeatherNotificationSettings } from '@src/features/notification/components/settings/weather-notification-settings';
 
 export default function WeatherSettingsRoute() {
   return <WeatherNotificationSettings />;
