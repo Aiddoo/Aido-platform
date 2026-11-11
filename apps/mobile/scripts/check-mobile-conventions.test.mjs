@@ -893,6 +893,120 @@ test('서로 import하면 타입만이어도 거부하고 허용 목록에 있�
   );
 });
 
+const DI_CONTEXT = 'apps/mobile/src/bootstrap/providers/di-context.tsx';
+const DI_CONTEXT_SOURCE = `
+  import type { Logger } from '@src/core/ports/logger';
+  import type { ActivationService } from '@src/features/device/activation/apis/activation.service';
+  import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
+
+  export interface DIContainer {
+    logger: Logger;
+    activationService: ActivationService;
+    todoService: TodoService;
+  }
+
+  function useDI(): DIContainer {
+    return use(DIContext);
+  }
+
+  export function useLogger() {
+    return useDI().logger;
+  }
+  export function useActivationService() {
+    return useDI().activationService;
+  }
+  export function useTodoService() {
+    return useDI().todoService;
+  }
+`;
+
+test('위층 feature의 Service를 DI 훅으로 꺼내면 거부한다', () => {
+  withFixture(
+    {
+      [DI_CONTEXT]: DI_CONTEXT_SOURCE,
+      'apps/mobile/src/features/voice/queries/voice.mutations.ts': `
+        import type { DIContainer } from '@src/bootstrap/providers/di-context';
+        import { useActivationService, useLogger } from '@src/bootstrap/providers/di-context';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /voice\.mutations\.ts:3/u);
+      assert.match(errors[0], /위층 device\/activation의 값을 useActivationService로/u);
+    },
+  );
+});
+
+test('아래 층과 같은 층 feature의 값을 DI 훅으로 꺼내는 것은 한 방향이면 통과한다', () => {
+  withFixture(
+    {
+      [DI_CONTEXT]: DI_CONTEXT_SOURCE,
+      'apps/mobile/src/features/planning/composer/queries/todo-composer.mutations.ts': `
+        import { useTodoService } from '@src/bootstrap/providers/di-context';
+      `,
+      'apps/mobile/src/features/notes/memo/queries/memo.mutations.ts': `
+        import { useActivationService } from '@src/bootstrap/providers/di-context';
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('DI 훅으로 꺼낸 것도 양방향에 센다', () => {
+  withFixture(
+    {
+      [DI_CONTEXT]: DI_CONTEXT_SOURCE,
+      'apps/mobile/src/features/notes/memo/queries/memo.mutations.ts': `
+        import { useActivationService } from '@src/bootstrap/providers/di-context';
+      `,
+      'apps/mobile/src/features/device/activation/components/checklist.tsx': `
+        import { MemoRow } from '@src/features/notes/memo/components/memo-row';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /device\/activation와 notes\/memo가 서로/u);
+    },
+  );
+});
+
+test('feature와 app/이 shared-di-context를 import하면 거부하고 shared는 통과한다', () => {
+  const sharedDiImport = `import { useAppLifecycle } from '@src/shared/di/shared-di-context';`;
+  withFixture(
+    {
+      'apps/mobile/src/features/weather/hooks/use-is-weather-scene-running.ts': sharedDiImport,
+      'apps/mobile/app/(app)/weather/index.tsx': sharedDiImport,
+      'apps/mobile/src/shared/hooks/use-is-foreground.ts': sharedDiImport,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /use-is-weather-scene-running\.ts:1/u);
+      assert.match(errors.join('\n'), /weather\/index\.tsx:1/u);
+    },
+  );
+});
+
+test('di-context 훅이 useDI().필드 한 줄이 아니면 주인을 읽을 수 없어 거부한다', () => {
+  withFixture(
+    {
+      [DI_CONTEXT]: `
+        import type { TodoService } from '@src/features/planning/todo/apis/todo.service';
+        export interface DIContainer { todoService: TodoService }
+        export function useTodoService() {
+          const container = useDI();
+          return container.todoService;
+        }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /useTodoService는 `return useDI\(\)\.필드` 한 줄/u);
+    },
+  );
+});
+
 test('층이 정해지지 않은 feature를 import하면 거부한다', () => {
   withFixture(
     {

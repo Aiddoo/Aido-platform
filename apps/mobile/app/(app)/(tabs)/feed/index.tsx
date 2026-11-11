@@ -86,7 +86,7 @@ export default function FeedScreen() {
       <NotificationBellToolbar />
       <AdaptivePane
         primary={
-          <Box flex={1} className="bg-white">
+          <Box flex={1} className="bg-white" testID="feed-screen">
             {/* 친구 줄은 세로 레일 밑까지 밀리고 내용만 레일을 피해 스스로 inset을 둔다 */}
             <QueryErrorBoundary fallback={FriendStrip.Error}>
               <Suspense fallback={<FriendStrip.Loading />}>

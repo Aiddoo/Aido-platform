@@ -1,0 +1,25 @@
+appId: ${MAESTRO_APP_ID}
+name: 앱 데이터를 비우고 개발 서버 번들로 로그인 화면을 연다
+---
+- runFlow:
+    label: iOS는 로그인 토큰이 남는 Keychain도 비운다
+    when:
+      platform: iOS
+    commands:
+      - clearKeychain
+- launchApp:
+    clearState: true
+    stopApp: true
+    permissions:
+      notifications: allow
+      all: deny
+- runFlow:
+    label: 개발 빌드는 Metro 번들에 연결한다
+    when:
+      true: ${output.config.devClientLink}
+    commands:
+      - openLink: ${output.config.devClientLink}
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.auth.emailEntry}
+    timeout: 60000

@@ -225,10 +225,10 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
       { timeout: 10_000 },
     );
     release.resolve();
-    await removal;
 
-    // Then
+    // Then: 잠금이 풀리기 전에는 끝나지 않으므로 removal을 기다리기 전에 거부 처리기를 건다
     await expect(update).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
+    await removal;
     expect(await client.$count(todo, eq(todo.id, targetId))).toBe(0);
   });
 });

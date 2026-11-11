@@ -475,7 +475,7 @@ function TodoHandlingOption({
   ...props
 }: TodoHandlingOptionProps) {
   return (
-    <RadioGroup.Item value={value} testID={`category-delete-${value}`} {...props}>
+    <RadioGroup.Item value={value} testID={`category-delete-handling-${value}`} {...props}>
       <VStack gap={4} className="flex-1">
         <HStack align="center" gap={12}>
           <Box className="flex-1">

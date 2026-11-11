@@ -159,7 +159,8 @@ describe('findNextRescheduleOption', () => {
 describe('getMovedScheduleInput', () => {
   it('옮길 때는 날짜를 그대로 두고 기기 시간대의 시각만 바꾼다', () => {
     // Given
-    const startsAt = toInstant(new Date(2026, 10, 2, 19, 0).toISOString());
+    // 서울 19:00. 실행 기기 시간대와 상관없이 같은 순간이다
+    const startsAt = toInstant('2026-11-02T10:00:00.000Z');
 
     // When
     const input = WeatherReschedulePolicy.getMovedScheduleInput(

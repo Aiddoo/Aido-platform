@@ -52,6 +52,7 @@ export function CategorySelectInput({
           return (
             <PressableFeedback
               key={category.id}
+              testID={`category-select-option-${category.id}`}
               accessibilityRole="button"
               accessibilityLabel={category.name}
               accessibilityState={{ selected: isSelected }}
@@ -81,7 +82,12 @@ export function CategorySelectInput({
         })}
       </VStack>
 
-      <Button size="large" onPress={() => onSubmit(localCategoryId)} isLoading={isLoading}>
+      <Button
+        size="large"
+        testID="category-select-submit"
+        onPress={() => onSubmit(localCategoryId)}
+        isLoading={isLoading}
+      >
         {submitLabel}
       </Button>
     </VStack>
