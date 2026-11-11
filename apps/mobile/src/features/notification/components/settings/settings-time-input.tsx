@@ -39,7 +39,7 @@ function TimePicker({ style, ...props }: TimePickerProps) {
   );
 }
 
-interface TimePickerSheetContentProps extends Omit<
+interface ConfirmableTimePickerProps extends Omit<
   TimePickerProps,
   'value' | 'onChange' | 'onValueChange'
 > {
@@ -49,14 +49,14 @@ interface TimePickerSheetContentProps extends Omit<
   onConfirm: (date: Date) => void;
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-function TimePickerSheetContent({
+/** 시트 안 iOS 피커. 돌리는 값은 초안이고 확인을 눌러야 바뀐다 */
+function ConfirmableTimePicker({
   title,
   initialValue,
   onCancel,
   onConfirm,
   ...pickerProps
-}: TimePickerSheetContentProps) {
+}: ConfirmableTimePickerProps) {
   const [draft, setDraft] = useState(initialValue);
 
   return (
@@ -171,7 +171,7 @@ export function SettingsTimeInput({
             }
           }}
         >
-          <TimePickerSheetContent
+          <ConfirmableTimePicker
             title={itemProps.label}
             initialValue={toPickerDate(value)}
             minimumDate={minimumDate}

@@ -2,6 +2,7 @@ import { useUpdatePreferenceMutationOptions } from '@src/features/identity/prefe
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTranslation } from '@src/shared/i18n';
 import { BellDuoIcon, MoonDuoIcon, SettingsListGroup } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
@@ -23,8 +24,7 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
   return (
     <SettingsListGroup
       {...props}
-      // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-      className={PushPermissionPolicy.isPushDeliverable(permission) ? undefined : 'opacity-50'}
+      className={cn(!PushPermissionPolicy.isPushDeliverable(permission) && 'opacity-50')}
     >
       <SettingsListGroup.Toggle
         icon={<SettingsListGroup.Icon Icon={BellDuoIcon} />}
