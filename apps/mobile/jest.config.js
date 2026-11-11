@@ -9,7 +9,7 @@ const base = {
   resolver: '<rootDir>/jest.resolver.cjs',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   // 첫 렌더가 늦게 불러오는 모듈을 변환하는 시간이 변환 캐시가 비었거나 CI처럼 느린 곳에서 5초를 넘긴다
-  testTimeout: 15_000,
+  testTimeout: 10_000,
   clearMocks: true,
   restoreMocks: true,
   // d3-shape·d3-path는 ESM 전용(.mjs)으로 배포된다. preset의 [jt]sx? 변환에 .mjs만 더한다
@@ -30,11 +30,7 @@ const base = {
     '^@assets/(.*)$': '<rootDir>/assets/$1',
 
     // Monorepo packages
-    '^@aido/api/vocabulary$': '<rootDir>/../../packages/api/src/vocabulary',
-    '^@aido/api$': '<rootDir>/../../packages/api/src',
-    '^@aido/api/errors$': '<rootDir>/../../packages/api/src/errors',
-    '^@aido/api/common$': '<rootDir>/../../packages/api/src/common',
-    '^@aido/api/contracts/(.*)$': '<rootDir>/../../packages/api/src/contracts/$1',
+    '^@aido/api(?:/(.*))?$': '<rootDir>/../../packages/api/src/$1',
 
     // Native module mocks
     '^expo-secure-store$': '<rootDir>/src/testing/mocks/expo-secure-store.ts',
@@ -56,6 +52,12 @@ const base = {
 module.exports = {
   // 워크트리마다 감시자를 띄우지 않고 파일 목록만 읽는다
   watchman: false,
+  // 폐기된 Jest API를 쓰면 조용히 넘어가지 않고 실패한다
+  errorOnDeprecated: true,
+  // 기본 위치(OS 임시 폴더)는 워크트리끼리 변환 캐시가 섞이고 청소되기도 한다
+  cacheDirectory: '<rootDir>/node_modules/.cache/jest',
+  // worker별 힙 사용량을 CI 로그에 남겨 workerIdleMemoryLimit 조정 근거로 쓴다
+  logHeapUsage: process.env.CI === 'true',
   // 기본값(코어 수 - 1)은 다른 작업과 함께 돌 때 기기를 포화시킨다. CI는 --maxWorkers로 덮어쓴다
   maxWorkers: resolveTestWorkers(process.env, '50%'),
   // worker가 파일을 돌수록 1.4GB 넘게 자라 실행 전체 RSS가 16GB에 이른다. 넘긴 worker를 새로 띄워 최대 메모리를 묶는다

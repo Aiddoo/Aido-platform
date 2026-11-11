@@ -1,17 +1,3 @@
-// Expo installs `fetch` as an enumerable lazy getter. Jest 29 enumerates globals
-// after disposing the test environment, which can evaluate that getter too late and
-// fail while loading ExpoModulesCoreJSLogger. Restore the original Node fetch eagerly
-// for tests; individual HTTP tests can still replace it with their own mock.
-const isFetch = (value: unknown): value is typeof fetch => typeof value === 'function';
-
-const originalFetch: unknown =
-  Object.getOwnPropertyDescriptor(globalThis, 'originalfetch')?.value ??
-  Object.getOwnPropertyDescriptor(globalThis, 'originalFetch')?.value;
-
-if (isFetch(originalFetch)) {
-  globalThis.fetch = originalFetch;
-}
-
 // jest는 Node에서 돌아 앱의 Hermes에 없는 메서드도 그냥 통과한다. 앱에서 실측한 빈칸을 Node에서도 비운다.
 // 같은 목록을 .oxlintrc.json의 no-restricted-properties가 소스에서도 막는다.
 Reflect.deleteProperty(Array.prototype, 'toSorted');
@@ -94,7 +80,9 @@ jest.mock('react-native-svg', () => {
 
 // 화면을 먼저 정리(unmount)한 뒤 테스트 QueryClient를 비운다.
 // 순서가 반대면 unmount 때 쿼리별 gcTime으로 정리 타이머가 다시 걸려 Jest 종료를 붙잡는다.
-const { cleanup } = require('@testing-library/react-native');
+const { cleanup, configure } = require('@testing-library/react-native');
+// 기본 1초는 변환 캐시가 비었거나 기기가 바쁠 때 첫 렌더를 기다리다 실패한다
+configure({ asyncUtilTimeout: 3000 });
 const { clearTestQueryClients } = require('./src/testing/query-client');
 afterEach(async () => {
   await cleanup();
