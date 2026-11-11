@@ -27,18 +27,12 @@ export interface TodoCommentThreadPlacement extends TodoCommentPlacement {
   thread: TodoCommentThread;
 }
 
-function mapPreservingIdentity<T>(items: readonly T[], transform: (item: T) => T): readonly T[] {
-  const nextItems = items.map(transform);
-
-  return nextItems.some((nextItem, index) => nextItem !== items[index]) ? nextItems : items;
-}
-
+/** 바뀌지 않은 페이지·묶음의 참조는 setQueriesData가 구조 공유로 되돌리므로 여기서는 새로 만들어도 된다 */
 function mapPages<TPage extends { items: readonly unknown[] }>(
   data: InfiniteData<TPage, TodoCommentPageParam>,
   transformPage: (page: TPage) => TPage,
 ): InfiniteData<TPage, TodoCommentPageParam> {
-  const pages = mapPreservingIdentity(data.pages, transformPage);
-  return pages === data.pages ? data : { ...data, pages: [...pages] };
+  return { ...data, pages: data.pages.map(transformPage) };
 }
 
 function findPlacement<TItem>(
@@ -80,13 +74,12 @@ function patchThread(
   commentId: string,
   transform: TodoCommentTransform,
 ): TodoCommentThread {
-  const comment = patchComment(thread.comment, commentId, transform);
-  const previewReply =
-    thread.previewReply == null ? null : patchComment(thread.previewReply, commentId, transform);
-
-  return comment === thread.comment && previewReply === thread.previewReply
-    ? thread
-    : { ...thread, comment, previewReply };
+  return {
+    ...thread,
+    comment: patchComment(thread.comment, commentId, transform),
+    previewReply:
+      thread.previewReply == null ? null : patchComment(thread.previewReply, commentId, transform),
+  };
 }
 
 export function patchCommentInThreadPages(
@@ -98,12 +91,10 @@ export function patchCommentInThreadPages(
     return data;
   }
 
-  return mapPages(data, (page) => {
-    const items = mapPreservingIdentity(page.items, (thread) =>
-      patchThread(thread, commentId, transform),
-    );
-    return items === page.items ? page : { ...page, items: [...items] };
-  });
+  return mapPages(data, (page) => ({
+    ...page,
+    items: page.items.map((thread) => patchThread(thread, commentId, transform)),
+  }));
 }
 
 export function patchCommentInReplyPages(
@@ -115,12 +106,10 @@ export function patchCommentInReplyPages(
     return data;
   }
 
-  return mapPages(data, (page) => {
-    const items = mapPreservingIdentity(page.items, (reply) =>
-      patchComment(reply, commentId, transform),
-    );
-    return items === page.items ? page : { ...page, items: [...items] };
-  });
+  return mapPages(data, (page) => ({
+    ...page,
+    items: page.items.map((reply) => patchComment(reply, commentId, transform)),
+  }));
 }
 
 export function findCommentInThreadPages(
@@ -151,15 +140,12 @@ export function removeCommentFromThreadPages(
     return data;
   }
 
-  return mapPages(data, (page) => {
-    const items = compact(
+  return mapPages(data, (page) => ({
+    ...page,
+    items: compact(
       page.items.map((thread) => TodoCommentPolicy.withCommentRemoved(thread, removed)),
-    );
-    const isUnchanged =
-      items.length === page.items.length &&
-      items.every((thread, index) => thread === page.items[index]);
-    return isUnchanged ? page : { ...page, items };
-  });
+    ),
+  }));
 }
 
 export function removeCommentFromReplyPages(
@@ -170,10 +156,10 @@ export function removeCommentFromReplyPages(
     return data;
   }
 
-  return mapPages(data, (page) => {
-    const items = TodoCommentPolicy.withRepliesRemoved(page.items, commentId);
-    return items.length === page.items.length ? page : { ...page, items };
-  });
+  return mapPages(data, (page) => ({
+    ...page,
+    items: TodoCommentPolicy.withRepliesRemoved(page.items, commentId),
+  }));
 }
 
 export function addRepliesToThreadPages(
@@ -185,14 +171,14 @@ export function addRepliesToThreadPages(
     return data;
   }
 
-  return mapPages(data, (page) => {
-    const items = mapPreservingIdentity(page.items, (thread) =>
+  return mapPages(data, (page) => ({
+    ...page,
+    items: page.items.map((thread) =>
       thread.comment.id === threadCommentId
         ? TodoCommentPolicy.withReplyAdded(thread, replies)
         : thread,
-    );
-    return items === page.items ? page : { ...page, items: [...items] };
-  });
+    ),
+  }));
 }
 
 /** 방금 쓴 답글은 마지막 페이지 끝에 붙여 바로 보인다. 남은 페이지를 받으면 flattenReplies가 작성 순 자리로 옮긴다 */
@@ -249,17 +235,17 @@ export function restoreCommentInThreadPages(
     return withItemInserted(data, placement, placement.thread);
   }
 
-  return mapPages(data, (page) => {
-    const items = mapPreservingIdentity(page.items, (thread) => {
+  return mapPages(data, (page) => ({
+    ...page,
+    items: page.items.map((thread) => {
       if (thread.comment.id !== threadId) {
         return thread;
       }
       return removed.id === threadId
         ? { ...thread, comment: removed }
         : TodoCommentPolicy.withReplyAdded(thread, [removed]);
-    });
-    return items === page.items ? page : { ...page, items: [...items] };
-  });
+    }),
+  }));
 }
 
 export function restoreCommentInReplyPages(

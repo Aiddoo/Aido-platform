@@ -41,7 +41,7 @@ function replyPages(hasNext: boolean, ...pages: TodoComment[][]): TodoCommentRep
 }
 
 describe('todo-comment-cache-pages', () => {
-  it('댓글 하나만 바꾸고 나머지 묶음과 페이지는 같은 참조로 둔다', () => {
+  it('댓글 하나만 바꾸고 나머지 묶음은 그대로 둔다', () => {
     // Given
     const target = createTodoCommentThread();
     const other = createTodoCommentThread({
@@ -58,21 +58,7 @@ describe('todo-comment-cache-pages', () => {
 
     // Then
     expect(next?.pages[0]?.items[0]?.comment.likeCount).toBe(7);
-    expect(next?.pages[1]).toBe(data.pages[1]);
-  });
-
-  it('대상이 없으면 캐시를 그대로 돌려준다', () => {
-    // Given
-    const data = threadPages([createTodoCommentThread()]);
-
-    // When
-    const next = patchCommentInThreadPages(data, 'missing', (comment) => ({
-      ...comment,
-      likeCount: 1,
-    }));
-
-    // Then
-    expect(next).toBe(data);
+    expect(next?.pages[1]).toEqual(data.pages[1]);
   });
 
   it('대표 답글로 보인 답글도 묶음 캐시에서 찾는다', () => {
@@ -144,7 +130,7 @@ describe('todo-comment-cache-pages', () => {
 
     // Then
     expect(next?.pages[0]?.items[0]?.replySummary.totalCount).toBe(2);
-    expect(next?.pages[0]?.items[1]).toBe(other);
+    expect(next?.pages[0]?.items[1]).toEqual(other);
   });
 
   const repliedThread = createTodoCommentThread({
