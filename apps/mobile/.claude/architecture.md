@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-**Version**: 3.1.2 · **Last Updated**: 2026-11-11 · **Owner**: Aido Mobile Team
+**Version**: 3.2.0 · **Last Updated**: 2026-11-11 · **Owner**: Aido Mobile Team
 
 Feature-based Layered Architecture로 만든 React Native/Expo 앱의 규칙이다. 앱에만 해당하는 규칙을 여기에 둔다. 기준 코드는 `features/notes/memo`와 메모 화면이다. 다른 feature와의 차이는 [아직 옮기지 않은 것](#아직-옮기지-않은-것)에 적는다.
 
@@ -31,8 +31,12 @@ src/
 │   ├── hooks/                    # 앱 시작 때 한 번 도는 훅 (use-auth-boot, use-sync-user-identity, use-claim-device-data-for-user, use-widget-app-entry)
 │   ├── navigation/               # 인증 게이트 레이아웃, 콜드 스타트 링크, 루트 오류 경계 로그 키
 │   ├── providers/                # 루트에 끼우는 Provider와 DI 조립
-│   │   ├── di-provider.tsx       # 서비스·어댑터 조립 (한 곳)
-│   │   └── di-context.tsx        # DIContainer 타입과 use{X} 훅
+│   │   ├── composition-root.ts          # 프로세스 수명 객체의 유일한 주인 (그런 모듈 수준 값은 여기만)
+│   │   ├── create-composition-root.ts   # 프로세스에 한 번 만들고 다시 쓰는 로직 (테스트는 stub 포트로)
+│   │   ├── create-device-ports.ts       # 기기 어댑터 조립
+│   │   ├── create-app-container.ts      # 포트로 Service·저장소 조립 (순수 함수, 마운트마다)
+│   │   ├── di-provider.tsx              # 마운트마다 컨테이너 하나, 시작 정리는 effect
+│   │   └── di-context.tsx               # DIContainer 타입과 use{X} 훅. feature와 app/의 유일한 DI 입구
 │   ├── query/                    # QueryClient 설정, 캐시 복원, 재시도, 온라인 감시
 │   └── startup/                  # 앱 시작 때 한 번 하는 정리 (startup-key-cleanup.ts)
 ├── core/
@@ -51,8 +55,8 @@ src/
 │   ├── hooks/                    # 여러 파일이 쓰는 훅 (route 읽기, 상태 튜플)
 │   ├── utils/                    # {feature}-draft.ts, {name}.view-model.ts, 순수 계산
 │   └── __tests__/                # {entity}.fixtures.ts, {feature}.test-utils.ts
-└── shared/                       # analytics, config, constants, date, di, draft, errors, hooks, i18n,
-                                  # infra(어댑터), preferences, providers, schemas, stores, types, ui, utils
+└── shared/                       # analytics, config, constants, date, di, domains(여러 feature의 모델이 쓰는 규칙: entity-id),
+                                  # draft, errors, hooks, i18n, infra(어댑터), preferences, providers, schemas, stores, types, ui, utils
 ```
 
 - 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 둔다. `create{Name}Repository` 함수 하나가 `{Name}Repository` 인터페이스를 돌려주고 메서드는 화살표 속성이다. 위젯의 네이티브 경계는 `features/device/widget/bridge/`에 둔다.
@@ -125,8 +129,8 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 **정해 둔 자리**
 
-- **`device/*`**: 기기 전용이라는 묶음일 뿐 한 층이 아니다. 실제로 보는 대상에 맞춰 각각 둔다. `activation`은 체크리스트가 할 일, 알림, 초대를 읽어 4층이고, 아래에서는 `activation-cache`만 쓴다. 할 일은 활성화가 읽으므로 완료 기록을 `todo-completion-changed` 이벤트로 알리고, `(app)/_layout`이 `useRecordTodoCompletion`으로 받는다. `app-icon`은 마이페이지가 쓰고 아무것도 보지 않아 1층이다.
-- **`app-config/feature-campaign`**: 캠페인 설정 조회뿐이라 1층이다. `whats-new`, `activation`이 읽는다.
+- **`device/*`**: 기기 전용이라는 묶음일 뿐 한 층이 아니다. 실제로 보는 대상에 맞춰 각각 둔다. `activation`은 체크리스트가 할 일, 알림, 초대를 읽어 4층이고 아래·같은 층은 `activation`을 부르지 않는다. 할 일을 만드는 기능(할 일 작성, 메모 변환, 말로 계획, 제안 수락)은 `todo-created`로, 할 일은 완료를 `todo-completion-changed`로 알리고, `(app)/_layout`이 `useRecordTodoCreated`·`useRecordTodoCompletion`으로 받아 기록한다. 기록이 실패해도 알린 쪽 mutation의 나머지 `onSuccess`는 이어진다. `app-icon`은 마이페이지가 쓰고 아무것도 보지 않아 1층이다.
+- **`app-config/feature-campaign`**: 캠페인 설정 조회뿐이라 1층이다. `whats-new`가 읽는다.
 - **`billing/subscription/apis/entitlement.mapper`**: 응답의 한도 조각을 여러 기능의 mapper와 mutation이 읽는다. 다른 feature의 `apis/`는 가져오지 않는 것이 원칙이고 이 파일과 순수 변환인 `planning/todo/apis/todo-repeat.mapper`만 예외다. 조립할 일이 아니라 변환이라 자리를 옮기지 않는다.
 - **`shared/__tests__`**: 테스트 도구는 조립을 위해 위층을 볼 수 있다. 운영 코드만 층 규칙을 받는다.
 - **`app/` 안 route 간 import**: `app/` 안 파일은 모두 route가 되어 공용 파일을 옆에 둘 수 없고, 조립 대상이 여러 층이면 feature로 내릴 수도 없다. 그래서 두 route가 같은 조립을 쓰면 route 파일에서 export하지 않고 5층인 `bootstrap/navigation/`에 컴포넌트로 둔다(`(tabs)/(mypage)/_layout`과 `(tabs)/(mypage)/mypage/index`가 `MyPageMenuPane`을, `(tabs)/(mypage)/_layout`이 `MyPageStack`을, `/settings/subscription`과 `/paywall`이 `SubscriptionCheckout`을, `/settings/notifications/weather`와 `/weather/settings`가 `WeatherNotificationSettings`를 쓴다).
@@ -138,7 +142,7 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 | 화면 조각을 함께 보여 줌                   | **슬롯.** `app/`이 조립해 `ReactNode`나 컴포넌트를 prop으로 넘긴다. 받은 쪽이 값을 넘겨 그려야 할 때만 컴포넌트다(`ProfileRow`의 `tierChip`, `FriendTodoList`의 `rowAction`)                                                                                                     |
 | 위층 값이나 동작이 필요함                  | **인자.** 호출한 쪽이 값이나 콜백을 인자, prop, 생성자 포트로 넘긴다(`useStableFeedForeground`, `PlanReview`의 `onMemoChanged`, `AddFriendForm`의 `onFriendLimitInvite`, `SessionCleanupService`의 `userDeviceData`)                                                             |
 | 다른 기능의 캐시를 갱신                    | **캐시.** 대상이 정해졌으면 위층의 `*-cache` 함수를 쓴다. 대상이 여럿이면 아래층 `*-cache`가 무효화하고 위층 쿼리가 `meta`로 신청한다(`invalidateTodoDependentQueries`와 `refreshOnTodoChange`, `refreshOnPremiumChange`, `invalidateAfterBlockChange`와 `refreshOnBlockChange`) |
-| 캐시 밖에서 받거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-expired`, `todo-completion-changed`)                                                                                                                                                                                 |
+| 캐시 밖에서 받거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-expired`, `todo-created`, `todo-completion-changed`)                                                                                                                                                                 |
 
 코드에 있는 7가지는 위 4가지로 묶인다. 컴포넌트 prop은 슬롯, 콜백은 인자, `meta`는 캐시다. 새 방법을 더하지 않는다.
 
@@ -146,47 +150,49 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 `pnpm --filter @aido/mobile check:conventions`(`scripts/check-mobile-conventions.mjs`)가 다음을 실패시킨다.
 
-| 검사                 | 내용                                                                                                                                                                                                                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| SDK import           | `SDK_MODULES`를 `shared/infra` 밖에서 import(테스트 제외). [Port·Adapter·DI](#portadapterdi)                                                                                                                                                                                                           |
-| 클라이언트 모델      | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import(테스트 제외). 메모는 `apis`·`schemas` 밖 전체가 대상이고, 목록에 없는 경로는 검사하지 않는다                                                                                                                                 |
-| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트·`__tests__` 제외). 옮긴 feature와 폴더만 대상이다                                                                                                                                                                           |
-| 스키마 파일 이름     | `features/**/schemas/` 파일이 `-form`·`-params`·`-draft`·`-query-key`·`-storage`·`-request`·`-response`·`-payload`·`-entry`(`.schema.ts`) 밖의 이름. 모델은 `domains/{entity}.model.ts`로 옮긴다                                                                                                       |
-| 엄격한 없음 비교     | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                                                                                                                                                                                               |
-| Hermes에 없는 메서드 | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다                                                                                                                                                                           |
-| 테스트 QueryClient   | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                                                                                                                                                                                           |
-| 피처 경계            | 다른 피처를 상대 경로로 import                                                                                                                                                                                                                                                                         |
-| `TodoCheckbox`       | `isChecked`·`onCheckedChange` 금지. 원본 `isSelected`·`onSelectedChange`를 쓴다                                                                                                                                                                                                                        |
-| 댓글 feature         | [todo-comments](./todo-comments.md)의 경계. 금지 route, 식별자 props, 재수출, 인라인 query 옵션, 직접 `router.push`, 테스트 위치. `features/engagement/comment`와 할 일 상세 route에만 걸린다                                                                                                          |
-| `core`·`shared` 층   | `core`가 `shared`·feature·`bootstrap`을, `shared`가 feature·`bootstrap`을 import(테스트 도구 제외). 허용 목록 없음                                                                                                                                                                                     |
-| 위층 import          | [층과 의존](#층과-의존)에서 위층의 타입, 모델, `*-cache` 밖을 import. 층 표에 없는 feature도 거부                                                                                                                                                                                                      |
-| 양방향               | 두 feature가 서로 import(타입 포함)                                                                                                                                                                                                                                                                    |
-| 시트 route           | `SheetRouteScreen`을 그리는 `app/` route가 `safeParse` 결과의 `.data`를 읽음. route는 검증과 `Redirect`만, 대상은 시트가 route 훅으로 읽는다                                                                                                                                                           |
-| 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                                                                                                                              |
-| Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`. feature `*.model.ts`가 `XPolicy`·타입 밖의 함수·상수를 export(상수는 `constants/`)                                                                                                                                                               |
-| 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                                                                                                                           |
-| 함수 이름            | 값을 만드는 동사 뒤에 출처를 붙인 `getXFromY`·`toXFromY`·`useXFromY`류와 `tryX`(테스트 제외). `removeXFromY`처럼 동작이 일어나는 곳을 말하는 이름은 통과한다                                                                                                                                           |
-| 파일 접두사          | feature 이름이 entity 이름을 줄인 것(`nudge`→`todo-nudge`)일 때 `schemas`·`domains`·`apis`·`queries`·`constants`·`__tests__`의 entity·feature 수준 파일(`*.model`·`*-cache`·`*.events` 등)이 줄인 이름으로 시작. 역할 이름 파일(`nudge-params.schema`)과 다른 entity(`nudge-interaction.*`)는 통과한다 |
-| 타입 이름            | 폼 값 `*FormInput`(`*FormValues`로), `queries/*.mutations.ts`의 `*Params`·`*Args`(`*Variables`로). `Params`는 route 값에만 쓴다                                                                                                                                                                        |
-| 테스트 mock          | 어댑터 테스트 밖의 모듈 `jest.mock`과 어댑터 테스트의 앱 모듈 mock. 허용 목록 없음                                                                                                                                                                                                                     |
-| 분석 입구            | feature의 `useAnalytics`. `useTrack`만 쓴다                                                                                                                                                                                                                                                            |
-| mutation 실패 처리   | `*.mutations.ts`의 `onError`에 함수를 넘김(`onError: showFailure`). 햅틱·토스트·보고는 그 자리에 나란히 적는다                                                                                                                                                                                         |
-| 캐시 helper          | `queries/*-cache.ts`가 `core/events`·`ErrorReporter`·`Logger`·Service를 import. 이벤트 발행·보고·기기 저장은 호출부가 한다                                                                                                                                                                             |
-| 기기 저장 읽기       | feature와 `app/`의 `useSyncStorageString`. 값의 repository가 읽기·쓰기·`subscribe`를 갖고 `useSyncExternalStore`로 구독한다. `shared/providers`와 테스트는 예외                                                                                                                                        |
-| worklet 기본값       | `'worklet'` 함수의 매개변수 기본값(구조 분해 기본값 포함). Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 죽는다. 호출부가 값을 넘긴다                                                                                                                                                            |
-| RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                                                                                                                           |
-| 단계 렌더러          | `X.Render(...)` 함수 호출. `useStepper`의 `Render`는 훅을 쓰는 컴포넌트라 `<X.Render … />` JSX로만 그린다(React Compiler가 호출을 건너뛰면 훅 수가 달라진다)                                                                                                                                           |
-| `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                                                                                                                               |
-| `Tabs.Label` 날글자  | 앱 글꼴을 따르지 않는 라벨 안의 글자. `SegmentTabTrigger`, `LineTabTrigger`나 자식 `<Text>`                                                                                                                                                                                                            |
-| 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                                                                                                                              |
-| 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                                                                                                                          |
-| 폼 모양              | `FormProvider`·`useFormContext`·`FormField`, 변수 이름 `form` 아님, `useForm` 제네릭. 폼은 `form`을 props로 넘기고 `Controller`로 쓴다                                                                                                                                                                 |
-| 범위 비교 순서       | `x >= a && x <= b`류. 왼쪽에서 오른쪽으로 읽히게 `a <= x && x <= b`로 쓴다                                                                                                                                                                                                                             |
-| 판별 이름            | 선언 이름 `isNot*`, `hasNo*`, `is*Allowed`, `is*Eligible`. 가져온 라이브러리 이름과 구조 분해한 계약 필드, OS 상태 `isNotDetermined`은 예외                                                                                                                                                            |
-| 여백 표기            | 한 태그에 spacing prop(`p`, `px`, `pb` 등)과 `className`을 함께 씀. 여백은 `className`으로 쓴다(`gap`·`flex` prop은 대상이 아니다)                                                                                                                                                                     |
-| 아이콘 prop          | `StyledIcon`·`typeof XIcon` 타입 prop의 이름이 `Icon`(또는 `XIcon`)이 아님. 컴포넌트는 `Icon: StyledIcon`, 그려 둔 요소는 `icon: ReactNode`                                                                                                                                                            |
-| 로딩 조각 이름       | 네임스페이스에 거는 `X.YSkeleton`. `X.Loading`(행마다면 `X.Item.Loading`)으로 건다                                                                                                                                                                                                                     |
-| 조각 함수 이름       | `X.Y = function Z`에서 `Z`가 `Y`와 다름. `.Error`는 `ErrorFallback`, 가져온 이름을 가리면 다른 이름. 테스트 mock은 예외                                                                                                                                                                                |
+| 검사                 | 내용                                                                                                                                                                                                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SDK import           | `SDK_MODULES`를 `shared/infra` 밖에서 import(테스트 제외). [Port·Adapter·DI](#portadapterdi)                                                                                                                                                                                                            |
+| 클라이언트 모델      | `CLIENT_OWNED_MODEL_PATHS` 아래에서 `@aido/api` 루트·`contracts/*` import(테스트 제외). 메모는 `apis`·`schemas` 밖 전체가 대상이고, 목록에 없는 경로는 검사하지 않는다                                                                                                                                  |
+| 스키마 폴더          | `SCHEMA_FOLDER_FEATURE_PATHS` 아래에서 `schemas/` 밖의 `zod` import(테스트·`__tests__` 제외). 옮긴 feature와 폴더만 대상이다                                                                                                                                                                            |
+| 스키마 파일 이름     | `features/**/schemas/` 파일이 `-form`·`-params`·`-draft`·`-query-key`·`-storage`·`-request`·`-response`·`-payload`·`-entry`(`.schema.ts`) 밖의 이름. 모델은 `domains/{entity}.model.ts`로 옮긴다                                                                                                        |
+| 엄격한 없음 비교     | 표시 없는 `=== null` 류. [nullish](../../../docs/conventions/nullish.md)                                                                                                                                                                                                                                |
+| Hermes에 없는 메서드 | `toSorted`, `Array.fromAsync`. typecheck는 통과하고 호출한 순간 앱에서만 죽는다. `jest.setup.ts`도 Node에서 같은 것을 지운다                                                                                                                                                                            |
+| 테스트 QueryClient   | 테스트에서 `new QueryClient`. `createTestQueryClient`를 쓴다                                                                                                                                                                                                                                            |
+| 피처 경계            | 다른 피처를 상대 경로로 import                                                                                                                                                                                                                                                                          |
+| `TodoCheckbox`       | `isChecked`·`onCheckedChange` 금지. 원본 `isSelected`·`onSelectedChange`를 쓴다                                                                                                                                                                                                                         |
+| 댓글 feature         | [todo-comments](./todo-comments.md)의 경계. 금지 route, 식별자 props, 재수출, 인라인 query 옵션, 직접 `router.push`, 테스트 위치. `features/engagement/comment`와 할 일 상세 route에만 걸린다                                                                                                           |
+| `core`·`shared` 층   | `core`가 `shared`·feature·`bootstrap`을, `shared`가 feature·`bootstrap`을 import(테스트 도구 제외). 허용 목록 없음                                                                                                                                                                                      |
+| 위층 import          | [층과 의존](#층과-의존)에서 위층의 타입, 모델, `*-cache` 밖을 import. 층 표에 없는 feature도 거부. `di-context`의 `use{X}` 훅은 돌려주는 값의 주인 feature를 import한 것으로 센다(주인은 `DIContainer` 필드 타입의 import 경로에서 읽는다)                                                              |
+| 양방향               | 두 feature가 서로 import(타입 포함). DI 훅도 위와 같이 센다                                                                                                                                                                                                                                             |
+| DI 입구              | feature와 `app/`이 `shared/di/shared-di-context`를 import. `di-context`가 그 훅을 모두 다시 내보낸다                                                                                                                                                                                                    |
+| 시트 route           | `SheetRouteScreen`을 그리는 `app/` route가 `safeParse` 결과의 `.data`를 읽음. route는 검증과 `Redirect`만, 대상은 시트가 route 훅으로 읽는다                                                                                                                                                            |
+| 금지 이름            | `features`·`app`의 컴포넌트 이름이 `Body`, `Frame`, `Section`, `Blocks`, `Wrapper`로 끝남                                                                                                                                                                                                               |
+| Policy Facade        | `XPolicy`의 별칭, 인라인 함수, 메서드, 모델의 `this`. 멤버 첫 인자가 모델 일부(`Pick`·`Partial`·`Omit`·`Required`, 객체 리터럴 타입, 교차 타입, `Model['field']`, 그런 모양의 같은 파일 `type` 별칭·타입 인자 제약). feature `*.model.ts`가 `XPolicy`·타입 밖의 함수·상수를 export(상수는 `constants/`) |
+| 모델 import          | `domains/*.model.ts`가 `@aido/api` 루트·`contracts/*`, 문구(`@src/shared/i18n`·`i18next`·`react-i18next`), `@src/shared/ui`, `react-native`, `react`를 import. `@aido/api/vocabulary`·`errors`는 통과한다                                                                                               |
+| 함수 형태            | 모듈 수준 화살표·함수 표현식(테스트 제외), `xxxOf` 함수 이름. 허용 목록 없음                                                                                                                                                                                                                            |
+| 함수 이름            | 값을 만드는 동사 뒤에 출처를 붙인 `getXFromY`·`toXFromY`·`useXFromY`류와 `tryX`(테스트 제외). `removeXFromY`처럼 동작이 일어나는 곳을 말하는 이름은 통과한다                                                                                                                                            |
+| 파일 접두사          | feature 이름이 entity 이름을 줄인 것(`nudge`→`todo-nudge`)일 때 `schemas`·`domains`·`apis`·`queries`·`constants`·`__tests__`의 entity·feature 수준 파일(`*.model`·`*-cache`·`*.events` 등)이 줄인 이름으로 시작. 역할 이름 파일(`nudge-params.schema`)과 다른 entity(`nudge-interaction.*`)는 통과한다  |
+| 타입 이름            | 폼 값 `*FormInput`(`*FormValues`로), `queries/*.mutations.ts`의 `*Params`·`*Args`(`*Variables`로). `Params`는 route 값에만 쓴다                                                                                                                                                                         |
+| 테스트 mock          | 어댑터 테스트 밖의 모듈 `jest.mock`과 어댑터 테스트의 앱 모듈 mock. 허용 목록 없음                                                                                                                                                                                                                      |
+| 분석 입구            | feature의 `useAnalytics`. `useTrack`만 쓴다                                                                                                                                                                                                                                                             |
+| mutation 실패 처리   | `*.mutations.ts`의 `onError`에 함수를 넘김(`onError: showFailure`). 햅틱·토스트·보고는 그 자리에 나란히 적는다                                                                                                                                                                                          |
+| 캐시 helper          | `queries/*-cache.ts`가 `core/events`·`ErrorReporter`·`Logger`·Service를 import. 이벤트 발행·보고·기기 저장은 호출부가 한다                                                                                                                                                                              |
+| 기기 저장 읽기       | feature와 `app/`의 `useSyncStorageString`. 값의 repository가 읽기·쓰기·`subscribe`를 갖고 `useSyncExternalStore`로 구독한다. `shared/providers`와 테스트는 예외                                                                                                                                         |
+| worklet 기본값       | `'worklet'` 함수의 매개변수 기본값(구조 분해 기본값 포함). Reanimated가 모듈 값을 잡아 주지 않아 UI 스레드에서 죽는다. 호출부가 값을 넘긴다                                                                                                                                                             |
+| RN UI                | `react-native`의 `Image`, `ActivityIndicator`, `Alert.alert`                                                                                                                                                                                                                                            |
+| 단계 렌더러          | `X.Render(...)` 함수 호출. `useStepper`의 `Render`는 훅을 쓰는 컴포넌트라 `<X.Render … />` JSX로만 그린다(React Compiler가 호출을 건너뛰면 훅 수가 달라진다)                                                                                                                                            |
+| `Chip.Label`         | 앱 글꼴을 따르지 않는 `Chip.Label`. 글자는 자식 `<Text>`                                                                                                                                                                                                                                                |
+| `Tabs.Label` 날글자  | 앱 글꼴을 따르지 않는 라벨 안의 글자. `SegmentTabTrigger`, `LineTabTrigger`나 자식 `<Text>`                                                                                                                                                                                                             |
+| 화면의 역할 판별     | `domains/` 밖의 `=== USER_ROLE.X`, `=== PREMIUM_SOURCE.X`                                                                                                                                                                                                                                               |
+| 쿼리 키 자리         | `constants/*query-keys.ts` 밖의 `queryKey: [`                                                                                                                                                                                                                                                           |
+| 폼 모양              | `FormProvider`·`useFormContext`·`FormField`, 변수 이름 `form` 아님, `useForm` 제네릭. 폼은 `form`을 props로 넘기고 `Controller`로 쓴다                                                                                                                                                                  |
+| 범위 비교 순서       | `x >= a && x <= b`류. 왼쪽에서 오른쪽으로 읽히게 `a <= x && x <= b`로 쓴다                                                                                                                                                                                                                              |
+| 판별 이름            | 선언 이름 `isNot*`, `hasNo*`, `is*Allowed`, `is*Eligible`. 가져온 라이브러리 이름과 구조 분해한 계약 필드, OS 상태 `isNotDetermined`은 예외                                                                                                                                                             |
+| 여백 표기            | 한 태그에 spacing prop(`p`, `px`, `pb` 등)과 `className`을 함께 씀. 여백은 `className`으로 쓴다(`gap`·`flex` prop은 대상이 아니다)                                                                                                                                                                      |
+| 아이콘 prop          | `StyledIcon`·`typeof XIcon` 타입 prop의 이름이 `Icon`(또는 `XIcon`)이 아님. 컴포넌트는 `Icon: StyledIcon`, 그려 둔 요소는 `icon: ReactNode`                                                                                                                                                             |
+| 로딩 조각 이름       | 네임스페이스에 거는 `X.YSkeleton`. `X.Loading`(행마다면 `X.Item.Loading`)으로 건다                                                                                                                                                                                                                      |
+| 조각 함수 이름       | `X.Y = function Z`에서 `Z`가 `Y`와 다름. `.Error`는 `ErrorFallback`, 가져온 이름을 가리면 다른 이름. 테스트 mock은 예외                                                                                                                                                                                 |
 
 **이미 있는 위반:** 허용 목록(`scripts/mobile-conventions-allowlist.json`)에는 끊지 못한 양방향 쌍(`feature-bidirectional`) 하나(`planning/category <-> planning/todo`)만 이유와 함께 남았다. 나머지 규칙의 허용 목록은 비었다. 수를 넘으면 막고, 수가 줄면 목록도 줄이라고 실패한다. 고친 뒤 `pnpm check:conventions --shrink-allowlist`로 줄인다. 이 명령은 수를 줄이거나 항목을 지우기만 하고 새 위반을 넣지 않는다. 새 항목은 이유와 함께 직접 적는다.
 
@@ -196,12 +202,13 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 이 문서의 규칙은 옮긴 뒤의 모양이다. 지금 코드가 다른 곳을 적는다(2026-11-08 `check:conventions`와 grep 기준). 고칠 때 규칙 쪽으로 옮기고 이 표에서 지운다. 검사가 세는 양방향 쌍의 목록은 `scripts/mobile-conventions-allowlist.json`에 있다.
 
-| 규칙                    | 지금 코드                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [사용성](#사용성)       | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                                                                                                                                                                                                                                         |
-| [모델](#모델과-policy)  | 모델 스키마는 모두 `domains/`에 있다(`schemas/`의 역할 접미사 밖 파일 0개). 모델 파일 4개가 `schemas/`의 폼·요청·푸시 모양을 import한다: `notification.model.ts`(`PushNotificationPayload`·`NotificationNavigation`), `voice-note.model.ts`(`planReviewDraftSchema`), `todo-comment-composer.model.ts`(`TodoCommentComposerMode`·`TodoCommentChainInput`), `todo-change.model.ts`(`TodoUpdateChanges`). 손댈 때 모델 모양으로 정의하고 mapper가 바꾼다 |
-| [층과 의존](#층과-의존) | 양방향 1쌍 `planning/category <-> planning/todo`. 카테고리 변경마다 다시 받는 할 일 범위가 달라 `meta` 태그 하나로 묶으면 범위가 바뀌고, 이벤트는 갱신을 mutation 밖으로 숨긴다. 이유는 허용 목록에 있다. 허용 외 위층 import 없음                                                                                                                                                                                                                     |
-| 테스트·UI               | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                                                                                                                                                                                                                                       |
+| 규칙                             | 지금 코드                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [사용성](#사용성)                | `AddFriendForm`(RN `ScrollView` + `keyboardShouldPersistTaps="always"`). 코드로만 확인했고 기기 재현은 안 했다                                                                                                                                                                                                                                                                                                                                         |
+| [모델](#모델과-policy)           | 모델 스키마는 모두 `domains/`에 있다(`schemas/`의 역할 접미사 밖 파일 0개). 모델 파일 4개가 `schemas/`의 폼·요청·푸시 모양을 import한다: `notification.model.ts`(`PushNotificationPayload`·`NotificationNavigation`), `voice-note.model.ts`(`planReviewDraftSchema`), `todo-comment-composer.model.ts`(`TodoCommentComposerMode`·`TodoCommentChainInput`), `todo-change.model.ts`(`TodoUpdateChanges`). 손댈 때 모델 모양으로 정의하고 mapper가 바꾼다 |
+| [Policy 첫 인자](#모델과-policy) | 모델 일부를 받는 Policy 멤버는 없다. `SubTodoPolicy`의 `withSubTodo*`는 할 일(`Todo`)을 고치는 함수라 `TodoPolicy` 쪽이 맞는데 `todo-composer.mutations.ts`의 하위 할 일 낙관적 갱신이 불러 그대로 둔다                                                                                                                                                                                                                                                |
+| [층과 의존](#층과-의존)          | 양방향 1쌍 `planning/category <-> planning/todo`. 카테고리 변경마다 다시 받는 할 일 범위가 달라 `meta` 태그 하나로 묶으면 범위가 바뀌고, 이벤트는 갱신을 mutation 밖으로 숨긴다. 이유는 허용 목록에 있다. DI 훅까지 세어 위층 import(`feature-upward`) 허용 목록은 0개다                                                                                                                                                                               |
+| 테스트·UI                        | [testing-guide](./testing-guide.md#아직-옮기지-않은-것), [ui-components](./ui-components.md#아직-옮기지-않은-것)                                                                                                                                                                                                                                                                                                                                       |
 
 ---
 
@@ -233,13 +240,13 @@ Screen(app/) → components·hooks·queries → Service(apis/) → Port(core/por
 
 기준은 frontend-fundamentals-mock-exam-1이다. 파일 구조는 따르지 않고 서비스는 우리 DI로 받는다. 같은 역할의 앱 코드는 다음과 같다.
 
-| 참고 저장소                                | 앱                                                                      |
-| ------------------------------------------ | ----------------------------------------------------------------------- |
-| `SavingsCalculatorPage`                    | `app/(app)/(tabs)/memo/index.tsx`                                       |
-| `ProductList`(`.Item`·`.Loading`·`.Error`) | `MemoList`                                                              |
-| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoId`로 읽음          |
-| `AmountInput`                              | `Omit<ComponentProps<typeof 원본>, …>` 확장(`MemoActionButton`)         |
-| `saving-product.model.ts`                  | `memo.model.ts`. 단, 참고 저장소의 Policy 인라인 메서드는 따르지 않는다 |
+| 참고 저장소                                | 앱                                                                                           |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `SavingsCalculatorPage`                    | `app/(app)/(tabs)/memo/index.tsx`                                                            |
+| `ProductList`(`.Item`·`.Loading`·`.Error`) | `MemoList`                                                                                   |
+| `CalculationResult`(`.Contents`, `Record`) | 선택 없음은 `MemoEditor.Empty`, 좁혀진 id는 `useMemoId`로 읽음                               |
+| `AmountInput`                              | `Omit<ComponentProps<typeof 원본>, …>` 확장(`MemoActionButton`)                              |
+| `saving-product.model.ts`                  | `memo.model.ts`. Policy는 인라인 메서드 대신 모듈 함수를 모으고 첫 인자로 모델 전체를 받는다 |
 
 ```tsx
 // app/(app)/(tabs)/memo/index.tsx
@@ -431,7 +438,7 @@ interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeed
 ```tsx
 // features/notes/memo/components/memo-list.tsx
 MemoList.Loading = function Loading() {
-  const columnCount = getColumnCount(useWindowSizeClass());
+  const columnCount = getColumnCount(usePaneSizeClass());
 
   return (
     <HStack gap={12} align="start">
@@ -503,6 +510,7 @@ MemoList.Loading = function Loading() {
 | `theme-provider`, `font-scale-provider`, `language-provider` | 유지(저장소는 `useSyncStorageString`) | 값의 원천은 `ObservableSyncStorage` 하나다. 셋은 DI 위에 있어 `syncStorage` prop(기본 `deviceSyncStorage`)을 `useSyncStorageString(storage, key)`에 넘기고, 파생(해석·적용)만 Provider가 한다. 키(`aido_theme_mode`, `aido_font_scale`, `aido_language`)와 값은 그대로다                                     |
 | `local-date-provider`                                        | 유지                                  | 저장 값이 아니라 자정 타이머·AppState·기기 달력에서 파생한 상태의 단일 소유자다. 원천이 MMKV가 아니다                                                                                                                                                                                                        |
 | `keyboard-bottom-gap-provider`                               | 유지                                  | 하위 트리마다 `measureInWindow`로 잰 레이아웃 값이다. 저장소가 아니라 서브트리 범위 값이다                                                                                                                                                                                                                   |
+| `pane-area`                                                  | 유지(UI 내부)                         | 탭 Stack이 `onLayout`으로 잰 폭이다. 화면·목록 행·칸이 같은 폭으로 칸 나누기를 정해야 해 여러 층에서 읽는다. iPad 탭 사이드바는 창 폭을 바꾸지 않아 `useWindowDimensions`로 대신할 수 없다. `keyboard-bottom-gap-provider`처럼 서브트리 범위의 레이아웃 값이다                                               |
 | `todo-comment-expansion`                                     | 유지(UI 내부)                         | 댓글 세션 하나의 펼친 묶음 `Map`이다. 묶음 행과 작성 바(게시하면 그 묶음을 펼친다)가 `FlashList` 행 안팎에서 함께 쓰고 세션이 끝나면 사라져야 한다. props로는 목록·행·답글 여러 층을 거치고, 모듈 저장소는 세션(넓은 화면 pane과 Stack 화면)마다 나뉘지 않고 화면을 떠나도 남는다. 서버 값도 URL 값도 아니다 |
 | `todo-comment-reveal`                                        | 유지(UI 내부)                         | 목록·작성 바 ref, Reanimated 공유 값, 키보드 이벤트 뒤 `measureInWindow`로 재는 스크롤 동작을 나눈다. 값은 바뀌지 않는 ref와 함수라 소비자가 다시 그려지지 않는다. `keyboard-bottom-gap-provider`처럼 서브트리 범위의 레이아웃 값이다                                                                        |
 
@@ -529,17 +537,18 @@ MemoList.Loading = function Loading() {
 
 ### 메모리 누수를 만들지 않는다
 
-| 지점          | 규칙                                                                                                                   |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| 리스너·구독   | `subscribe`·`add…Listener`는 해제 함수를 돌려주고 effect 정리에서 부른다. 외부 값은 `useSyncExternalStore`를 먼저 본다 |
-| 타이머        | 정리에서 `clear`한다. es-toolkit `debounce`의 `flush`는 타이머를 남기므로 `cancel`까지 부른다(`useFormDraftAutosave`)  |
-| 요청          | 서버 GET은 `signal`을 Service → HttpClient까지 넘겨 화면을 떠나면 멈춘다(`memoService.getMemo(memoId, signal)`)        |
-| 음성 인식     | 언마운트 때 구독을 풀고 `abort()`한다                                                                                  |
-| overlay       | `useOverlay`로 받아 소유 컴포넌트가 사라지면 함께 내려간다. 열 때 값이 굳으니 안에서 조회한다                          |
-| 전역 Map·배열 | 지우는 시점 없이 쌓지 않는다                                                                                           |
-| Query 키      | 안 쓰는 Query는 `gcTime`으로 정리한다. 영속 대상만 `persist`한다                                                       |
+| 지점          | 규칙                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 리스너·구독   | `subscribe`·`add…Listener`는 해제 함수를 돌려주고 effect 정리에서 부른다. 외부 값은 `useSyncExternalStore`를 먼저 본다          |
+| 타이머        | 정리에서 `clear`한다. es-toolkit `debounce`의 `flush`는 타이머를 남기므로 `cancel`까지 부른다(`useFormDraftAutosave`)           |
+| 요청          | 서버 GET은 `signal`을 Service → HttpClient까지 넘겨 화면을 떠나면 멈춘다(`memoService.getMemo(memoId, signal)`)                 |
+| 음성 인식     | 언마운트 때 구독을 풀고 `abort()`한다                                                                                           |
+| overlay       | `useOverlay`로 받아 소유 컴포넌트가 사라지면 함께 내려간다. 열 때 값이 굳으니 안에서 조회한다                                   |
+| 전역 Map·배열 | 지우는 시점 없이 쌓지 않는다                                                                                                    |
+| Query 키      | 안 쓰는 Query는 `gcTime`으로 정리한다. 영속 대상만 `persist`한다                                                                |
+| DI 조립       | `createAppContainer`와 Service·저장소 생성자는 구독·타이머·저장소 쓰기를 하지 않는다. 연결은 쓰는 Provider·훅의 effect가 맡는다 |
 
-앱 전체의 메모리를 측정하거나 감사하지는 않았다. 위 규칙은 코드를 고칠 때 보는 기준이다.
+앱 전체의 메모리를 측정하지는 않았다. `app-providers.test.tsx`가 앱 Provider 트리를 stub 포트로 여러 번 올렸다 내려 구독·타이머 수가 처음으로 돌아오고 내린 뒤 이벤트가 상태를 바꾸지 않는지 확인한다. 위 규칙은 코드를 고칠 때 보는 기준이다.
 
 ### 타이머·구독 정리
 
@@ -734,9 +743,9 @@ const saveMemo = (onFailed: (error: unknown) => void) =>
 - 초안은 `useDraftStorage(draftKey)`가 첫 렌더에 한 번 동기로 읽어 `defaultValues`에 넣는다. 빈 값으로 그린 뒤 채우지 않는다.
 - `useFormDraftAutosave(form.subscribe, …)`가 렌더 없이 디바운스 저장한다. 언마운트(폴더블 전환) 때 대기 중인 저장을 flush하고, 제출 성공·취소는 반환된 함수로 대기 저장까지 취소한 뒤 지운다.
 - 키는 `utils/{feature}-draft.ts`의 순수 함수(`createTodoCommentDraftKey`, `createMemoDraftKey`)가 `createDraftKey`로 만든다. 사용자 id가 항상 들어간다.
-- 명시적 로그아웃·탈퇴 때만 `useAuthBoot`가 초안을 모두 지운다. 세션 만료는 초안을 남겨 같은 사용자가 이어 쓰게 한다. 로그인 후 `useClaimDeviceDataForUser`가 다른 소유자의 초안을 지운다. 7일 지난 초안(`DRAFT_TTL_MS`)은 앱 시작 때 정리한다.
-- 초안 저장소는 MMKV `encryptionKey`(AES-256)로 암호화하고 키는 SecureStore에 둔다. 키 조회가 비동기라 `app/_layout.tsx`가 `useEncryptedStorageBootstrap`으로 스플래시 구간에 미리 열어 `DIProvider`에 넘긴다. 초안 화면이 동기로 복원하기 위해서다.
-- 열기에 실패하면 초안 기능만 꺼지고(`disabledDraftStorage`) 앱은 동작하며 Sentry에 보고한다.
+- 명시적 로그아웃·탈퇴 때만 `useAuthBoot`가 초안을 모두 지운다. 세션 만료는 초안을 남겨 같은 사용자가 이어 쓰게 한다. 로그인 후 `useClaimDeviceDataForUser`가 다른 소유자의 초안을 지운다. 7일 지난 초안(`DRAFT_TTL_MS`)은 앱 시작 뒤 effect에서 정리한다. 복원은 시각을 직접 비교해 정리 전에도 지난 초안을 돌려주지 않는다.
+- 초안 저장소는 MMKV `encryptionKey`(AES-256)로 암호화하고 키는 SecureStore에 둔다. 키 조회가 비동기라 `AppProviders`가 `app/_layout.tsx`에서 받은 `compositionRoot`로 스플래시 구간에 미리 연다. 초안 화면이 동기로 복원하기 위해서다. 연 저장소는 프로세스에 하나라 루트 "다시 시도"가 다시 열지 않는다.
+- 열기에 실패하면 초안 기능만 꺼지고(`disabledDraftStorage`) 앱은 동작하며 Sentry에 프로세스당 한 번 보고한다. 실패는 기억하지 않아 다음 마운트(루트 "다시 시도")가 다시 연다.
 - 편집 초안은 서버 원본 수정 시각(epoch ms)을 함께 저장한다. 원본이 더 새로우면 초안을 버리고 toast로 알린다.
 - 비밀번호·인증 코드는 초안으로 저장하지 않는다.
 - 접기·펼치기에서 컴포넌트를 살릴 수 있으면 초안보다 재마운트를 없애는 쪽을 먼저 택한다(`AdaptivePane`).
@@ -818,7 +827,7 @@ export function canCreateMemo(limit: MemoResourceLimit) {
 }
 
 /** 저장은 앞뒤 공백을 빼고 하므로 공백만 고친 글자는 바뀐 것이 아니다 */
-export function hasContentChanged(memo: Pick<Memo, 'content'>, content: string) {
+export function hasContentChanged(memo: Memo, content: string) {
   return content.trim() !== memo.content;
 }
 
@@ -845,7 +854,42 @@ export function toMemo(dto: MemoDto): Memo {
 
 **이름은 동사로 시작한다.** `get*`(값 읽기·파생), `calculate*`(계산), `is*`·`has*`·`can*`·`should*`(판정, 접두사 뜻은 [이름](#이름)의 표), `find*`(검색), `create*`(생성), `with*`(불변 갱신). 부정 이름은 쓰지 않는다. `xxxOf`는 쓰지 않는다. Facade 키는 export한 함수 이름 그대로다. 별칭을 두지 않아야 검색 한 번에 정의와 사용처가 나온다.
 
-**첫 인자는 모델이다.** 값이 하나만 필요해도 `Pick<Memo, 'content'>`로 받아 필드가 바뀌면 타입이 알려 주게 한다. 흩어진 필드 나열이나 DTO를 받지 않는다.
+**Policy 멤버의 첫 인자는 모델 전체다.** 값이 하나만 필요해도 `category: TodoCategory`로 받고 `Pick<TodoCategory, …>`·`Partial`·객체 리터럴로 좁히지 않는다. 모델에 필드가 늘거나 줄어도 Policy 서명과 호출부가 그대로다. 목록 규칙은 `readonly TodoCategory[]`를 첫 인자로 받는다. 모델은 `domains/{entity}.model.ts`의 Zod 스키마와 `z.infer` 타입이고 흩어진 필드 나열이나 DTO를 받지 않는다.
+
+```typescript
+// Before: 필드가 바뀌면 Pick과 호출부의 객체 리터럴이 함께 바뀐다
+function canNudgeTodoInRange(
+  input: { canNudge: boolean; isCompleted: boolean; startDate: string; endDate: string | null },
+  targetDate: string,
+) {
+  return input.canNudge && !input.isCompleted && TodoPolicy.isTodoOnDate(input, targetDate);
+}
+TodoNudgePolicy.canNudgeTodoInRange(
+  {
+    canNudge: detail.permissions.canNudge,
+    isCompleted: detail.todo.completed,
+    startDate: detail.todo.startDate,
+    endDate: detail.todo.endDate,
+  },
+  todayKey,
+);
+
+// After: 모델 전체를 받고 호출부는 가진 모델을 그대로 넘긴다
+function canNudgeTodoInRange(details: TodoDetails, targetDate: string) {
+  return (
+    details.permissions.canNudge &&
+    !details.todo.completed &&
+    TodoPolicy.isTodoOnDate(details.todo, targetDate)
+  );
+}
+TodoNudgePolicy.canNudgeTodoInRange(detail, todayKey);
+```
+
+**모델 일부만 가진 곳의 규칙은 Policy 밖 함수다.** 폼 값, 입력한 검색어, route의 id, `select`로 일부만 구독한 조회 결과처럼 호출부가 모델 일부만 가지면 그 규칙은 엔티티 규칙이 아니다. 가짜 모델을 만들지 말고 필요한 값만 받는 순수 함수로 export한다(`isValidSearchQuery(query)`, `isPrivateVisibility(visibility)`, `getTodayKey(report, now)`). Policy 멤버도 그 함수를 직접 불러 조합한다(`isRecurringTodo(todo)`는 `isRecurring(todo.recurrenceGroupId)`). 아래 층의 순수 함수는 지금처럼 필요한 값만 받는다(`calculateExpectedAmount(monthlyAmount, term, annualRate)`).
+
+**Policy는 모듈 함수를 모은 객체다.** `export const TodoCategoryPolicy = { canReorder, findMoveTarget } as const`처럼 이름 있는 모듈 함수만 모은다. 인라인 메서드와 `this`를 쓰지 않아 콜백으로 넘겨도 안전하고(`filter(InvitedFriendPolicy.orderByWaitingFirst)`), 함수끼리는 서로를 직접 부른다. 한 Policy는 한 엔티티의 규칙만 둔다. 두 엔티티가 섞이면 엔티티마다 나눈다(`TodoCategoryPolicy`·`TodoCategoryDeletionPolicy`, `ReportPolicy`·`ReportStatusPolicy`, `PendingRedemptionPolicy`·`InviteRedemptionPolicy`). 같은 집합의 부분(보고서의 요일 패턴, 예보의 시간별 칸)은 한 Policy에 둔다.
+
+**모델 파일은 업무 규칙만 import한다.** `@aido/api` 루트·`contracts/*`, 문구(i18n), `shared/ui`, `react-native`, React를 import하지 않는다. 용어(`@aido/api/vocabulary`)와 오류 코드(`@aido/api/errors`), 날짜·상수 도구는 쓴다.
 
 **Policy가 하지 않는 것.**
 
@@ -1021,29 +1065,52 @@ export function useCreateMemoMutationOptions() {
 
 ### 낙관적 갱신
 
-여러 화면이 같은 값을 보여 주면 캐시로(TanStack "Optimistic Updates"의 via the cache), 그 버튼 하나만 보여 주면 `useMutation`의 `variables`로 그린다. 되돌릴 수 없는 삭제(카테고리 삭제)는 미리 빼지 않고 버튼만 불러오는 중으로 둔다. 캐시로 할 때는 순서가 하나다.
+여러 화면이 같은 값을 보여 주면 캐시로(TanStack "Optimistic Updates"의 via the cache), 그 버튼 하나만 보여 주면 `useMutation`의 `variables`로 그린다. 되돌릴 수 없는 삭제(카테고리 삭제)는 미리 빼지 않고 버튼만 불러오는 중으로 둔다. 캐시로 할 때는 순서가 하나고, 같은 캐시를 쓰는 뮤테이션은 함께 진행된다고 보고 짠다(TkDodo "Concurrent Optimistic Updates"). 새 공용 helper를 만들지 않고 아래 순서를 각 옵션에 그대로 쓴다.
 
-1. `onMutate`: 덮어쓸 수 있는 키만 `cancelQueries`(단건은 `exact: true`) → `getQueryData`로 스냅샷 → `setQueryData(key, (old) => old && withX(old, …))` → 스냅샷을 돌려준다. updater는 `*-cache.ts`의 순수 함수다(`withCategoryAdded`). 업무 규칙이면 `domains/*.model.ts` Policy다.
-2. `onError`: 돌려받은 스냅샷으로 되돌린다. 같은 키를 동시에 쓰는 뮤테이션이 있으면 통째로 덮지 않고 그 변경만 되돌린다.
-3. `onSettled`: 바뀐 키만 무효화한다. 동시에 쓰는 뮤테이션은 `mutationKey`를 두고 `isMutating({ mutationKey }) === 1`일 때만 다시 받는다.
+1. `mutationKey`: `{FEATURE}_MUTATION_KEYS.writes()`로 그 캐시를 쓰는 뮤테이션을 한 묶음으로 센다. 하트처럼 댓글마다 세야 하면 뒤에 entity를 붙인다.
+2. `onMutate`: 덮어쓸 수 있는 키만 `cancelQueries`(단건은 `exact: true`) → 이 뮤테이션이 바꾸는 entity·칸만 읽어 둔다(이름·색, 지운 행과 자리) → `setQueryData(key, (old) => old && withX(old, …))`. updater는 `*-cache.ts`의 순수 함수다(`withCategoryChanged`). 업무 규칙이면 `domains/*.model.ts` Policy다.
+3. `onError`: 읽어 둔 값으로 같은 updater를 **지금 캐시**에 다시 적용해 그 entity만 되돌린다. `setQueryData(key, snapshot)`로 통째로 덮지 않는다. 그사이 바뀐 할 일 수·다른 행·다른 하트가 지워진다.
+4. `onSuccess`: 응답이 확정한 칸은 `isMutating({ mutationKey }) === 1`일 때만 쓴다. 앞 응답이 뒤에 누른 값을 덮어 깜빡이지 않게 한다. 만들기는 임시 id를 서버 행으로 바꾸고, 그사이 다시 받아 임시 행이 없으면 서버 행이 없을 때만 붙인다(`withCategorySaved`·`withTodoSaved`).
+5. `onSettled`: 응답이 바뀐 값을 다 담으면 실패하고 마지막일 때만 다시 받는다. 담지 못하면(읽음 처리의 안 읽은 수, 친구 끊기) 마지막일 때만 다시 받는다.
+6. `scope`는 버튼이 잠기지 않는 연타처럼 서버에 보낸 순서가 중요할 때만 둔다(댓글 하트). 기본 `networkMode`라 오프라인에 멈춘 뮤테이션은 낙관적 값을 지키고 마지막 실패에서만 되돌린다.
 
 ```typescript
 // features/planning/category/queries/todo-category.mutations.ts
+mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes(),
 onMutate: async ({ id, input }) => {
   await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
-  const previousData = queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list());
+  const previous = TodoCategoryPolicy.findCategory(
+    queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
+    id,
+  );
   queryClient.setQueryData(
     TODO_CATEGORY_QUERY_KEYS.list(),
     (old) => old && withCategoryChanged(old, id, input),
   );
-  return { previousData };
+  return { previous };
 },
-onError: (_error, _variables, context) => {
-  if (context?.previousData != null) {
-    queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
+onSuccess: (saved, { id }) => {
+  if (isLastCategoryWrite(queryClient)) {
+    queryClient.setQueryData(
+      TODO_CATEGORY_QUERY_KEYS.list(),
+      (old) => old && withCategoryChanged(old, id, pick(saved, ['name', 'color'])),
+    );
   }
 },
-onSettled: () => invalidateTodoCategories(queryClient),
+onError: (_error, { id }, context) => {
+  const previous = context?.previous;
+  if (previous != null) {
+    queryClient.setQueryData(
+      TODO_CATEGORY_QUERY_KEYS.list(),
+      (old) => old && withCategoryChanged(old, id, pick(previous, ['name', 'color'])),
+    );
+  }
+},
+onSettled: (_data, error) => {
+  if (error != null && isLastCategoryWrite(queryClient)) {
+    invalidateTodoCategories(queryClient);
+  }
+},
 ```
 
 ### 할 일 목록의 낙관적 갱신
@@ -1053,12 +1120,12 @@ onSettled: () => invalidateTodoCategories(queryClient),
 - 날짜는 할 일의 `startDate`가 아니라 보고 있는 목록의 `date`다. 여러 날 할 일은 여러 날짜 목록에 있다.
 - `onMutate`: `beginTodoWrite`로 그 목록·상세(달력까지 바꾸면 그날을 담은 완료 범위)만 멈추고, 돌려받은 표를 context에 담는다. `updateCachedTodo`로 목록·상세를 함께 고치고 달력은 `syncDailyCompletionWithList`로 목록에서 다시 계산한다.
 - `onError`: 스냅샷을 통째로 덮지 않고 그 변경만 되돌린다. 통째로 덮으면 함께 진행 중인 다른 변경을 지운다.
-- `onSuccess`: 응답이 확정한 값(만든 할 일, 존재 여부, 카테고리 개수)은 `setQueryData`로 고친다.
+- `onSuccess`: 응답이 확정한 값(만든 할 일, 존재 여부, 카테고리 개수)은 `setQueryData`로 고친다. 체크는 마지막 쓰기(`isLastTodoWrite`)이고 캐시의 완료 값이 응답과 다를 때만 쓴다. `setQueryData`는 낡음 표시를 지워 함께 끝난 다른 쓰기가 표시한 목록을 다시 받지 않게 되기 때문이다.
 - `onSettled`: `mutationKey`에 `TODO_MUTATION_KEYS`를 두고 `settleTodoWrite`만 부른다. 확정된 목록·하루짜리 달력은 다시 받지 않고, 기간 안의 다른 날짜 목록·겹치는 달력 범위·위젯 요약만 낡음(`refetchType: 'none'`)으로 표시한다. 실패했거나 다른 쓰기와 겹쳤으면 고친 목록·상세·달력까지 맞춘다. 마지막 쓰기만 화면에 붙은 낡은 조회를 다시 받아 낙관적 값이 되돌아가지 않는다.
 - 되돌릴 값과 기간은 `findCachedTodo`로 그날 목록 → 상세 → 다른 날짜 목록 순으로 읽는다. 알림으로 연 상세는 그날 목록이 없다.
 - 저장을 기다리는 시트(제목·날짜·시각·카테고리 고치기)는 낙관적으로 쓰지 않는다. 같은 `listWrites` 키로 세고 `onSuccess`에서 `settleTodoEdit`로 고치기 전·후 값의 날짜 목록·위젯 요약, 날짜·색이 바뀌면 달력, 카테고리가 바뀌면 개수만 맞춘다. 반복 범위·규칙을 바꾸면 바뀐 회차를 몰라 `invalidateTodos`다.
 - 하위 항목 진행(막대·"2/4")은 저장하지 않고 `SubTodoPolicy.getSubTodoStats`로 항목 목록에서 센다. 항목 추가는 끝낸 할 일일 때만 완료가 풀려 달력·위젯·존재 여부를 맞춘다.
-- 임시 id는 음수다(`createOptimisticId`). 임시 행은 `TodoPolicy.isOptimisticTodo`·`SubTodoPolicy.isOptimisticSubTodo`로 막고, 응답이 오면 다시 받기 전에 서버 id로 바꾼다.
+- 임시 id는 음수다(`createOptimisticId`). 임시 행은 `TodoPolicy.isOptimisticTodo`·`SubTodoPolicy.isOptimisticSubTodo`·`TodoCategoryPolicy.isOptimisticCategory`로 막고, 응답이 오면 다시 받기 전에 서버 id로 바꾼다. 그사이 다시 받아 임시 행이 없으면 서버 행이 없을 때만 붙인다(`saveCreatedTodo`). 임시 행은 버튼을 끄거나 핸들러를 비우고(`onSelectedChange={isOptimistic ? undefined : …}`), 순서 바꾸기는 `useReorderableList`의 `isOptimistic`에 같은 규칙을 넘겨 끌기를 끄고 임시 id가 섞인 순서는 보내지 않는다. route는 양수 id만 받아 임시 id로 시트를 열 수 없다.
 
 ---
 
@@ -1072,15 +1139,16 @@ onSettled: () => invalidateTodoCategories(queryClient),
 ## Port·Adapter·DI
 
 ```
-core/ports (인터페이스) ← shared/infra (어댑터) ← di-provider (조립) → di-context (use{X} 훅) → 컴포넌트·쿼리
-                                                      └→ shared-di-context (shared가 쓰는 포트만 나눈 훅)
+core/ports (인터페이스) ← shared/infra (어댑터) ← createDevicePorts ← composition-root (프로세스에 한 번)
+composition-root → ports → DIProvider: createAppContainer(ports) (마운트마다) → di-context (use{X} 훅) → 컴포넌트·쿼리
+                                                                          └→ shared-di-context (shared가 쓰는 포트만 나눈 훅)
 ```
 
-`shared`는 `bootstrap`을 import하지 못하므로 `shared`가 쓰는 포트(`logger`, `analytics`, `errorReporter`, `haptics`, `externalLink`, `systemShare`, `syncStorage` 등)는 `shared/di/shared-di-context`의 훅으로 읽는다. feature와 `app/`은 입구 하나인 `di-context`에서만 꺼낸다. `di-context`가 필요한 `shared-di-context` 훅을 다시 내보낸다.
+`shared`는 `bootstrap`을 import하지 못하므로 `shared`가 쓰는 포트(`logger`, `analytics`, `errorReporter`, `haptics`, `externalLink`, `systemShare`, `syncStorage` 등)는 `shared/di/shared-di-context`의 훅으로 읽는다. feature와 `app/`은 입구 하나인 `di-context`에서만 꺼낸다. `di-context`가 `shared-di-context` 훅을 모두 다시 내보내고, feature와 `app/`이 `shared-di-context`를 import하면 `check:conventions`가 막는다.
 
 왜 이렇게 하나:
 
-1. **라이브러리를 쉽게 바꾼다.** 앱 코드는 포트만 안다. 라이브러리를 바꾸면 어댑터 파일과 `di-provider`만 바뀐다. 어댑터 밖이 바뀌면 포트 설계가 틀린 것이다.
+1. **라이브러리를 쉽게 바꾼다.** 앱 코드는 포트만 안다. 라이브러리를 바꾸면 어댑터 파일과 `create-device-ports`만 바뀐다. 어댑터 밖이 바뀌면 포트 설계가 틀린 것이다.
 2. **실제와 가깝게 테스트한다.** `jest.mock`으로 모듈을 가로채지 않고 포트 stub만 끼운다. 서비스·모델·화면은 실제 코드가 돈다. [testing-guide](./testing-guide.md#stub-우선-di-테스트).
 3. **기기에 없는 상황을 만든다.** 마이크 없는 시뮬레이터, 전화로 끊긴 인식, 결제 실패를 구현체 교체로 재현한다.
 
@@ -1100,27 +1168,40 @@ stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(H
 - **어댑터가 쓰는 관측은 주입받는다.** 어댑터와 HTTP 훅은 전역 접근자 대신 팩토리·deps로 `logger`, `errorReporter`를 받는다(`createExpoPushNotificationGateway(logger)`, `createAuthClient({ logger, errorReporter })`). 전역 `logger`는 아래 표의 곳만 쓴다.
 - **공급자 설정은 어댑터가 읽는다.** 결제 키는 `revenuecat-api-key.ts`가 `extra`에서 읽고 `env.ts`는 모른다. 포트의 초기화는 인자 없이 결과만 돌려준다(`PurchasesGateway.configure()`).
 - **포트에는 앱이 필요한 기능만 둔다.** SDK 타입을 밖으로 내보내지 않고 plain 값으로 넘긴다.
-- **조립은 `di-provider.tsx` 한 곳이다.** 서비스·저장소를 다른 곳에서 `new` 하지 않는다.
+- **조립은 `createAppContainer(ports)` 한 함수다.** 운영은 `createDevicePorts`가 만든 기기 어댑터를, 테스트는 stub 포트를 넘겨 같은 함수가 Service·저장소를 만든다. 서비스·저장소를 다른 곳에서 `new` 하지 않는다. 이 함수는 객체만 만든다. SDK·`shared/infra` import, 구독, 타이머, 전역 값 변경, 저장소 쓰기를 하지 않는다.
+- **컨테이너에는 화면이 꺼내는 것만 둔다.** Service·저장소를 만드는 데만 쓰는 포트(`Storage`, `PurchasesGateway`, HTTP 클라이언트, 토큰 갱신기)는 `AppContainerPorts`에만 있다.
 - **Mapper는 DI에 넣지 않는다.** 순수 함수라 서비스가 직접 import한다.
+
+### 수명
+
+| 수명     | 무엇                                                                                                                                                                                                                          | 만드는 곳                                                       |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 프로세스 | `Logger`(전역 `logger` 포함)·`Analytics`·`ErrorReporter`, `QueryClient`, SecureStore(`Storage`)와 암호화 저장소, `TokenStore`·`SessionEpoch`·토큰 갱신기·세션 종료, HTTP 클라이언트, 결제 SDK 게이트웨이, 그 밖의 기기 어댑터 | `composition-root.ts`가 한 번(`createDevicePorts`, 저장소 열기) |
+| 화면     | Service, 저장소(repository), 앱 store(`authSessionStore`, `notificationEntryStore`)                                                                                                                                           | `DIProvider`가 마운트마다 `createAppContainer(ports)`           |
+
+- 루트 "다시 시도"는 트리를 다시 그려 화면 수명 컨테이너만 새로 만든다. 프로세스 수명 객체는 그대로라 로그인이 남고(토큰 갱신기가 하나라 갱신이 겹쳐 세션이 끝나지 않는다), 결제 SDK를 다시 설정하지 않고(어댑터의 `configure`는 프로세스에 한 번이다), 같은 실패를 다시 보고하지 않는다.
+- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`(`compositionRoot`)에만 둔다. 예외가 아니라 규칙이다. 루트 오류 화면의 보고기만 조립이 실패해도 보고하려고 `app/_layout.tsx`에 따로 있다. 테스트는 같은 로직(`createCompositionRoot`)을 stub 포트로 만든다.
+- 암호화 저장소는 연 결과만 기억한다. 열지 못하면 그 실행은 저장을 끄고, 다음 마운트가 다시 연다(실패 보고는 프로세스에 한 번).
+- 시작 정리(지난 초안, 은퇴한 키, 평문 조회 캐시)는 렌더가 아니라 마운트 뒤 effect(`useStartupCleanup`)에서 돈다. 다시 돌아도 결과가 같아 StrictMode와 루트 "다시 시도"가 다시 불러도 된다.
+- 테스트에서 포트를 바꾸면 그 포트를 쓰는 Service가 모두 다시 조립된다. Service를 바꾸면 그 키만 바뀌고 다른 Service는 원래 것을 쓴다([testing-guide](./testing-guide.md#stub-우선-di-테스트)).
 
 ### 직접 import·`new`·전역을 허용하는 곳
 
 feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`로 만드는 곳은 아래뿐이다. 새로 늘리지 않고, 포트로 옮길 수 있으면 옮긴다.
 
-| 곳                                                                                                                                                                                                                                                                                  | 이유                                                                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 훅 경계: `useAudioPartPlaylist`(`use-voice-note-player`), `useKeepScreenAwake`(`voice-notes/record`), `useSystemLocale`(`weather-hero`, `use-temperature-unit`), `useLinkingUrl`(`use-widget-app-entry`), `CapturableView`(`achievement-summary`, `weekly-achievement-certificate`) | 라이브러리 자체가 React 훅이라 DI 값으로 바꿀 수 없다. 훅 파일 하나가 SDK를 가린다                                                                                               |
-| `app/_layout.tsx`: `initErrorReporting`, `createEnvironmentErrorReporter`, 전역 `logger`, `reloadApp`                                                                                                                                                                               | 루트 경계는 Provider 밖에서 그려진다. DI 훅을 부를 수 없다                                                                                                                       |
-| 위젯 진입점: `register-widget-task-handler.android.ts`, `android-widgets.bridge.ts`(`widgetStorage`, `getDeviceLanguage`)                                                                                                                                                           | 위젯만 깨어난 프로세스에는 앱 트리가 없다. 실패는 `widget-headless-failure.repository`에 남기고 다음 앱 시작 때 `WidgetSyncService.reportHeadlessFailure`가 오류 보고기로 보낸다 |
-| `notification-provider`(`registerForegroundNotificationPresentation`)                                                                                                                                                                                                               | 앱 시작 때 한 번 거는 모듈 수준 설정이다                                                                                                                                         |
-| `device-info`(`DEVICE_TOTAL_MEMORY_BYTES`, `IS_PHYSICAL_DEVICE`, `IOS_MAJOR_VERSION`)                                                                                                                                                                                               | 시작 때 정해지는 상수라 렌더 중 호출이 아니다. 날씨 장면 품질, 날씨 화면의 iOS 스크롤 엣지 효과 판단, 개발 API 주소만 쓴다                                                       |
-| `device-info`(`ANDROID_API_LEVEL`) — `todo-comment-keyboard-scroll-view`                                                                                                                                                                                                            | 키보드 UX다. Android 15 미만에서만 키보드 높이를 직접 보정하므로 렌더 중 읽는 시작 상수로 충분하다                                                                               |
-| `new SecureStorage`(`di-provider`, `use-encrypted-storage-bootstrap`)                                                                                                                                                                                                               | 암호화 초안 저장소는 키체인에서 키를 읽어 열린 뒤에야 DI가 만들어진다. 부트스트랩이 같은 어댑터를 따로 연다                                                                      |
-| `new VoiceRecordingIntake`(`use-voice-note-recording`)                                                                                                                                                                                                                              | 초안마다 하나씩 만들어 화면이 내려간 뒤에도 파일을 받는 수명 객체다. 상태를 갖지 않는 Service가 아니라 DI에 두지 않는다                                                          |
-| 모듈 수준 전역 `logger`: `env.ts`, `use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`, `query-cache-persistence`, `openSupportMail`, `query-error-actions`                                                                                                        | DI보다 먼저 만들어지거나(`env`, 조회 캐시 복원) 모듈 단일 저장소(접근성 설정)이거나 Provider 밖(루트 경계 문의)이라 주입할 곳이 없다                                             |
-| `query-provider`(`getAppBundleId`, `deviceSyncStorage`), `font-scale-provider`·`theme-provider`·`language-provider`(`deviceSyncStorage`, `useSystemLocale`)                                                                                                                         | `app-providers`에서 DI보다 위에 있어 훅으로 읽을 수 없다                                                                                                                         |
-| `local-date-provider`·`local-date-clock`(기기 시계), `i18n/init`(기기 언어·저장 언어), `use-window-size-class`(창 크기 경계 훅), `app/_layout.tsx`의 `wrapRootComponent`                                                                                                            | 시작 값이거나 위젯과 공용인 시계, 라이브러리 경계 훅이라 옮길 곳이 없다                                                                                                          |
-| `query-error-actions`(메타데이터·링크 어댑터)                                                                                                                                                                                                                                       | 루트 `QueryErrorBoundary`가 Provider 밖에서 그려진다                                                                                                                             |
+| 곳                                                                                                                                                                                                                                                                                  | 이유                                                                                                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 훅 경계: `useAudioPartPlaylist`(`use-voice-note-player`), `useKeepScreenAwake`(`voice-notes/record`), `useSystemLocale`(`weather-hero`, `use-temperature-unit`), `useLinkingUrl`(`use-widget-app-entry`), `CapturableView`(`achievement-summary`, `weekly-achievement-certificate`) | 라이브러리 자체가 React 훅이라 DI 값으로 바꿀 수 없다. 훅 파일 하나가 SDK를 가린다                                                                                                                                 |
+| `create-device-ports`·`composition-root`(기기 어댑터, 암호화 저장소 열기, 전역 `logger` 구현 지정, 앱이 앞에 있을 때 푸시 표시 설정 `registerForegroundNotificationPresentation`)                                                                                                   | 조립하는 곳이다. 프로세스에 한 번만 돈다                                                                                                                                                                           |
+| `app/_layout.tsx`: `initErrorReporting`, `createEnvironmentErrorReporter`, 전역 `logger`, `reloadApp`                                                                                                                                                                               | 루트 경계는 Provider 밖에서 그려진다. DI 훅을 부를 수 없고, 조립이 실패해도 보고하도록 보고기를 따로 만든다                                                                                                        |
+| 위젯 진입점: `register-widget-task-handler.android.ts`, `android-widgets.bridge.ts`(`widgetStorage`, `getDeviceLanguage`)                                                                                                                                                           | 위젯만 깨어난 프로세스에는 앱 트리가 없다. 실패는 `widget-headless-failure.repository`에 남기고 다음 앱 시작 때 `WidgetSyncService.reportHeadlessFailure`가 오류 보고기로 보낸다                                   |
+| `device-info`(`DEVICE_TOTAL_MEMORY_BYTES`, `IS_PHYSICAL_DEVICE`, `IOS_MAJOR_VERSION`)                                                                                                                                                                                               | 시작 때 정해지는 상수라 렌더 중 호출이 아니다. 날씨 장면 품질, 날씨 화면의 iOS 스크롤 엣지 효과 판단, 개발 API 주소만 쓴다                                                                                         |
+| `device-info`(`ANDROID_API_LEVEL`) — `todo-comment-keyboard-scroll-view`                                                                                                                                                                                                            | 키보드 UX다. Android 15 미만에서만 키보드 높이를 직접 보정하므로 렌더 중 읽는 시작 상수로 충분하다                                                                                                                 |
+| `new VoiceRecordingIntake`(`use-voice-note-recording`)                                                                                                                                                                                                                              | 초안마다 하나씩 만들어 화면이 내려간 뒤에도 파일을 받는 수명 객체다. 상태를 갖지 않는 Service가 아니라 DI에 두지 않는다                                                                                            |
+| 모듈 수준 전역 `logger`: `env.ts`, `use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`, `query-cache-persistence`, `openSupportMail`, `query-error-actions`                                                                                                        | DI보다 먼저 만들어지거나(`env`, 조회 캐시 복원) 모듈 단일 저장소(접근성 설정)이거나 Provider 밖(루트 경계 문의)이라 주입할 곳이 없다. 전역 `logger`의 구현은 `composition-root`가 기기 포트를 만들 때 한 번 정한다 |
+| `query-provider`(`getAppBundleId`), `font-scale-provider`·`theme-provider`·`language-provider`(`deviceSyncStorage`, `useSystemLocale`)                                                                                                                                              | `app-providers`에서 DI보다 위에 있어 훅으로 읽을 수 없다                                                                                                                                                           |
+| `local-date-provider`·`local-date-clock`(기기 시계), `i18n/init`(기기 언어·저장 언어), `use-window-size-class`(창 크기 경계 훅), `app/_layout.tsx`의 `wrapRootComponent`                                                                                                            | 시작 값이거나 위젯과 공용인 시계, 라이브러리 경계 훅이라 옮길 곳이 없다                                                                                                                                            |
+| `query-error-actions`(메타데이터·링크 어댑터)                                                                                                                                                                                                                                       | 루트 `QueryErrorBoundary`가 Provider 밖에서 그려진다                                                                                                                                                               |
 
 기기 동기 값을 렌더에서 읽는 Service는 컴포넌트가 `useXService()`로 직접 부른다(저장소 읽기라 Suspense·쿼리가 필요 없다). 서버 비동기는 쿼리 옵션 훅으로만 부른다.
 
@@ -1128,29 +1209,30 @@ feature·`app/`·`bootstrap`이 `shared/infra`를 직접 import하거나 `new`�
 
 전체 목록은 `core/ports/`에 있다.
 
-| 포트                      | 메서드 이름                                                                                                                                             | 어댑터 (`shared/infra/`)                              |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `HttpClient`              | `get`·`post`·`put`·`patch`·`delete`                                                                                                                     | `http/ky-client.ts`                                   |
-| `Storage`                 | `get`·`set`·`remove`                                                                                                                                    | `storage/secure-storage.ts`                           |
-| `SyncStorage`             | `get`·`set`·`remove`                                                                                                                                    | `storage/encrypted-draft-storage.ts`                  |
-| `ObservableSyncStorage`   | `SyncStorage` + `subscribe`(키별 변경 알림)                                                                                                             | `storage/device-sync-storage.ts`                      |
-| `EnumerableSyncStorage`   | `SyncStorage` + `keys`·`clear`                                                                                                                          | `storage/encrypted-draft-storage.ts`                  |
-| `ClipboardGateway`        | `copy`. 붙여 넣기는 입력 칸의 네이티브 메뉴에 맡긴다                                                                                                    | `clipboard/expo-clipboard-gateway.ts`                 |
-| `ExternalLinkGateway`     | `open`·`openInAppBrowser`·`openSettings`                                                                                                                | `linking/expo-external-link-gateway.ts`               |
-| `IncomingLinkGateway`     | `getInitialUrl`·`subscribe`                                                                                                                             | `linking/expo-incoming-link-gateway.ts`               |
-| `SystemShareGateway`      | `share`·`isImageShareAvailable`·`shareImage`                                                                                                            | `share/expo-system-share-gateway.ts`                  |
-| `LocationGateway`         | `getPermission`(`isGranted`, `canAskAgain`)·`requestPermission`·`recheckPermission`·`getCoordinates`·`getPlace`                                         | `location/expo-location-gateway.ts`                   |
-| `PurchasesGateway`        | `configure`·`purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`                                                                                  | `purchases/revenuecat-purchases-gateway.ts`           |
-| `SpeechRecognizer`        | `start`·`stop`·`abort`·`subscribe` 등                                                                                                                   | `speech/expo-speech-recognizer.ts`                    |
-| `PushNotificationGateway` | `getPermission`·`requestPermission`·`getToken`·`subscribe*` 등                                                                                          | `notification/expo-push-notification-gateway.ts`      |
-| `HapticsGateway`          | `selection`·`impact`·`notify`                                                                                                                           | `haptics/expo-haptics-gateway.ts`                     |
-| `NetworkStatusGateway`    | `subscribe`                                                                                                                                             | `network/expo-network-status-gateway.ts`              |
-| `ViewCaptureGateway`      | `capture`(찍을 영역은 `shared/infra/view-capture/capturable-view.tsx`의 `CapturableView`가 만든다)                                                      | `view-capture/view-shot-view-capture-gateway.ts`      |
-| `AppLifecycleGateway`     | `getCurrentState`·`subscribe`. 화면은 `useSyncExternalStore(subscribe, getCurrentState)`로 읽고, 앞으로 돌아올 때만 하는 일은 쓰는 hook 안에서 구독한다 | `app-lifecycle/react-native-app-lifecycle-gateway.ts` |
-| `IdGenerator`             | `create`                                                                                                                                                | `id-generator/expo-id-generator.ts`                   |
-| `Logger`                  | `debug`·`info`·`warn`·`error`                                                                                                                           | `logger/`                                             |
-| `Analytics`               | `trackEvent`·`trackScreenView` 등                                                                                                                       | `analytics/`                                          |
-| `ErrorReporter`           | `captureException`·`captureMessage`·`addBreadcrumb`                                                                                                     | `error-reporter/`                                     |
+| 포트                       | 메서드 이름                                                                                                                                             | 어댑터 (`shared/infra/`)                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `HttpClient`               | `get`·`post`·`put`·`patch`·`delete`                                                                                                                     | `http/ky-client.ts`                                     |
+| `Storage`                  | `get`·`set`·`remove`                                                                                                                                    | `storage/secure-storage.ts`                             |
+| `SyncStorage`              | `get`·`set`·`remove`                                                                                                                                    | `storage/encrypted-draft-storage.ts`                    |
+| `ObservableSyncStorage`    | `SyncStorage` + `subscribe`(키별 변경 알림)                                                                                                             | `storage/device-sync-storage.ts`                        |
+| `EnumerableSyncStorage`    | `SyncStorage` + `keys`·`clear`                                                                                                                          | `storage/encrypted-draft-storage.ts`                    |
+| `ClipboardGateway`         | `copy`. 붙여 넣기는 입력 칸의 네이티브 메뉴에 맡긴다                                                                                                    | `clipboard/expo-clipboard-gateway.ts`                   |
+| `ExternalLinkGateway`      | `open`·`openInAppBrowser`·`openSettings`                                                                                                                | `linking/expo-external-link-gateway.ts`                 |
+| `IncomingLinkGateway`      | `getInitialUrl`·`subscribe`                                                                                                                             | `linking/expo-incoming-link-gateway.ts`                 |
+| `SystemShareGateway`       | `share`·`isImageShareAvailable`·`shareImage`                                                                                                            | `share/expo-system-share-gateway.ts`                    |
+| `LocationGateway`          | `getPermission`(`isGranted`, `canAskAgain`)·`requestPermission`·`recheckPermission`·`getCoordinates`·`getPlace`                                         | `location/expo-location-gateway.ts`                     |
+| `PurchasesGateway`         | `configure`·`purchase`·`restore`·`getOffering`·`getStatus`·`subscribe`                                                                                  | `purchases/revenuecat-purchases-gateway.ts`             |
+| `SpeechRecognizer`         | `start`·`stop`·`abort`·`subscribe` 등                                                                                                                   | `speech/expo-speech-recognizer.ts`                      |
+| `PushNotificationGateway`  | `getPermission`·`requestPermission`·`getToken`·`subscribe*` 등                                                                                          | `notification/expo-push-notification-gateway.ts`        |
+| `HapticsGateway`           | `selection`·`impact`·`notify`                                                                                                                           | `haptics/expo-haptics-gateway.ts`                       |
+| `ScreenOrientationGateway` | `lockPortrait`·`unlock`. 언제 묶는지는 `WindowLayoutPolicy.getOrientationLock`이 정한다                                                                 | `screen-orientation/expo-screen-orientation-gateway.ts` |
+| `NetworkStatusGateway`     | `subscribe`                                                                                                                                             | `network/expo-network-status-gateway.ts`                |
+| `ViewCaptureGateway`       | `capture`(찍을 영역은 `shared/infra/view-capture/capturable-view.tsx`의 `CapturableView`가 만든다)                                                      | `view-capture/view-shot-view-capture-gateway.ts`        |
+| `AppLifecycleGateway`      | `getCurrentState`·`subscribe`. 화면은 `useSyncExternalStore(subscribe, getCurrentState)`로 읽고, 앞으로 돌아올 때만 하는 일은 쓰는 hook 안에서 구독한다 | `app-lifecycle/react-native-app-lifecycle-gateway.ts`   |
+| `IdGenerator`              | `create`                                                                                                                                                | `id-generator/expo-id-generator.ts`                     |
+| `Logger`                   | `debug`·`info`·`warn`·`error`                                                                                                                           | `logger/`                                               |
+| `Analytics`                | `trackEvent`·`trackScreenView` 등                                                                                                                       | `analytics/`                                            |
+| `ErrorReporter`            | `captureException`·`captureMessage`·`addBreadcrumb`                                                                                                     | `error-reporter/`                                       |
 
 `core/`는 `shared`와 feature를 import하지 않는다. 포트가 쓰는 관측 키와 오류 타입은 `core/observability/telemetry-keys`, `core/errors`에 있다.
 
@@ -1182,8 +1264,11 @@ export const expoClipboardGateway: ClipboardGateway = {
   },
 };
 
-// bootstrap/providers/di-provider.tsx
+// bootstrap/providers/create-device-ports.ts — 테스트는 createClipboardGatewayStub()
 clipboard: expoClipboardGateway,
+
+// bootstrap/providers/create-app-container.ts
+clipboard: ports.clipboard,
 
 // bootstrap/providers/di-context.tsx
 export function useClipboard() {
@@ -1211,7 +1296,7 @@ await clipboard.copy(comment.content ?? '');
 
 ## 넓은 화면과 기기
 
-배치는 창 폭 class(`useWindowSizeClass`)와 `AdaptivePane` 하나로 정한다. 규칙은 [ui-components](./ui-components.md#넓은-화면과-기기)에, 구현은 [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md)에 있다.
+칸 배치는 화면이 받은 폭의 class(`usePaneSizeClass`, `PaneArea`가 잰다)와 `AdaptivePane` 하나로 정하고, 창 전체 정책(방향 등)은 `useWindowSizeClass`로 정한다. 판단 규칙은 `WindowLayoutPolicy`(`shared/domains/window-layout.model.ts`)에, 화면 규칙은 [ui-components](./ui-components.md#넓은-화면과-기기)에, 구현은 [adaptive-pane.md](../src/shared/ui/adaptive-pane/adaptive-pane.md)에 있다.
 
 ---
 
@@ -1219,7 +1304,7 @@ await clipboard.copy(comment.content ?? '');
 
 1. **Model**: `domains/{entity}.model.ts`(모델 스키마·타입 + 순수 함수 + Policy)와 `{entity}.model.test.ts`(Given/When/Then, 경계값). 필요하면 `domains/{feature}.error.ts`, 폼은 `schemas/{name}-form.schema.ts`
 2. **Services + Mapper**: `apis/{entity}.mapper.ts`(응답 DTO → 모델), `apis/{feature}.service.ts`
-3. **DI 등록**: `di-provider.tsx`에 인스턴스, `di-context.tsx`에 `DIContainer` 필드와 `use{Feature}Service` 훅
+3. **DI 등록**: `create-app-container.ts`에 인스턴스, `di-context.tsx`에 `DIContainer` 필드와 `use{Feature}Service` 훅. 새 기기 어댑터면 `AppContainerPorts`에 포트, `create-device-ports.ts`에 어댑터, `createTestPorts`에 stub 기본값을 함께 더한다. 시작 때 정리할 것이 있으면 `useStartupCleanup`에 더한다
 4. **Presentations**: `constants/{feature}-query-keys.ts`, `queries/{entity}.queries.ts`, `queries/{entity}.mutations.ts`, 다른 피처가 무효화해야 하면 `queries/{feature}-cache.ts`, `components/`
 5. **라우트**: `app/` 아래에 위→아래로 읽히는 화면
 6. **테스트**: Model·Policy, Service·Mapper, 자체 로직이 있는 순수 util만

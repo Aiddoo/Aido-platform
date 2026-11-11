@@ -49,7 +49,7 @@ WeatherAirQuality.Pollutant = function Pollutant({
   airQuality,
   pollutant,
 }: {
-  airQuality: Pick<AirQuality, AirPollutant>;
+  airQuality: AirQuality;
   pollutant: AirPollutant;
 }) {
   const { t } = useTranslation('weather');

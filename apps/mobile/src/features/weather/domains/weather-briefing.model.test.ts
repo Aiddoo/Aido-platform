@@ -1,17 +1,25 @@
-import { createSubTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
+import {
+  createParentTodo,
+  createSubTodo,
+} from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { range } from 'es-toolkit';
 
 import {
   createBriefingDto,
   createBriefingTodo,
+  createForecastTodo,
   createHourlySeries,
   createRescheduleOptionDto,
   createWeatherReport,
   createWeatherReportDto,
   createWeatherReportWithHours,
 } from '../__tests__/weather-report.fixtures';
-import { WeatherBriefingPolicy } from './weather-briefing.model';
+import {
+  getBriefingState,
+  getWeatherBriefing,
+  WeatherBriefingPolicy,
+} from './weather-briefing.model';
 
 /** 서울 15:26. 16~18시(07:00Z~09:00Z) 비, 나머지는 맑다. */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
@@ -39,7 +47,7 @@ describe('getWeatherBriefing', () => {
     const dryReport = createWeatherReportWithHours(DRY_HOURS);
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(dryReport, [], CLOCK);
+    const briefing = getWeatherBriefing(dryReport, [], CLOCK);
 
     // Then
     expect(briefing).toEqual({ kind: 'noScheduledTodos' });
@@ -51,7 +59,7 @@ describe('getWeatherBriefing', () => {
     const unscheduledTodo = createBriefingTodo({ scheduledAt: null });
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(dryReport, [unscheduledTodo], CLOCK);
+    const briefing = getWeatherBriefing(dryReport, [unscheduledTodo], CLOCK);
 
     // Then
     expect(briefing).toEqual({ kind: 'noScheduledTodos' });
@@ -62,11 +70,7 @@ describe('getWeatherBriefing', () => {
     const reportWithoutBriefing = createWeatherReport({ hourly: HOURLY, briefing: undefined });
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
-      reportWithoutBriefing,
-      [createBriefingTodo()],
-      CLOCK,
-    );
+    const briefing = getWeatherBriefing(reportWithoutBriefing, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(briefing).toBeNull();
@@ -74,11 +78,7 @@ describe('getWeatherBriefing', () => {
 
   it('서버가 비와 겹친 할 일이 없다고 하면 예보상 비 시간에 할 일이 있어도 위험을 알리지 않는다', () => {
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
-      report,
-      [createBriefingTodo()],
-      CLOCK,
-    );
+    const briefing = getWeatherBriefing(report, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(briefing?.kind).toBe('rainLater');
@@ -86,11 +86,7 @@ describe('getWeatherBriefing', () => {
 
   it('서버가 비와 겹친다고 고른 할 일을 그 시간의 예보·서버가 고른 옮길 시각 후보와 함께 돌려준다', () => {
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
-      rainyReport,
-      [createBriefingTodo()],
-      CLOCK,
-    );
+    const briefing = getWeatherBriefing(rainyReport, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(briefing?.kind).toBe('rainy');
@@ -121,7 +117,7 @@ describe('getWeatherBriefing', () => {
     ];
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(serverReport, todos, CLOCK);
+    const briefing = getWeatherBriefing(serverReport, todos, CLOCK);
 
     // Then
     expect(briefing?.kind === 'rainy' && briefing.todos.map(({ todoId }) => todoId)).toEqual([
@@ -134,7 +130,7 @@ describe('getWeatherBriefing', () => {
     const todos = [createBriefingTodo({ id: 1, completed: true })];
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(rainyReport, todos, CLOCK);
+    const briefing = getWeatherBriefing(rainyReport, todos, CLOCK);
 
     // Then
     expect(briefing?.kind === 'rainy' && briefing.todos.map(({ completed }) => completed)).toEqual([
@@ -156,11 +152,7 @@ describe('getWeatherBriefing', () => {
     );
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
-      stormReport,
-      [createBriefingTodo()],
-      CLOCK,
-    );
+    const briefing = getWeatherBriefing(stormReport, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(briefing?.kind).toBe('stormy');
@@ -181,11 +173,7 @@ describe('getWeatherBriefing', () => {
     );
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
-      snowReport,
-      [createBriefingTodo()],
-      CLOCK,
-    );
+    const briefing = getWeatherBriefing(snowReport, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(briefing?.kind).toBe('snowy');
@@ -205,11 +193,7 @@ describe('getWeatherBriefing', () => {
     );
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
-      hotReport,
-      [createBriefingTodo()],
-      CLOCK,
-    );
+    const briefing = getWeatherBriefing(hotReport, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(briefing).toEqual(
@@ -233,11 +217,7 @@ describe('getWeatherBriefing', () => {
     ];
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
-      createWeatherReportWithHours(hours),
-      [],
-      CLOCK,
-    );
+    const briefing = getWeatherBriefing(createWeatherReportWithHours(hours), [], CLOCK);
 
     // Then
     expect(briefing).toEqual(
@@ -262,11 +242,7 @@ describe('getWeatherBriefing', () => {
     const lateTodo = createBriefingTodo({ scheduledAt: toInstant('2026-11-02T13:30:00.000Z') });
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(
-      createWeatherReportWithHours(hours),
-      [lateTodo],
-      CLOCK,
-    );
+    const briefing = getWeatherBriefing(createWeatherReportWithHours(hours), [lateTodo], CLOCK);
 
     // Then
     expect(briefing?.kind).toBe('dry');
@@ -284,7 +260,7 @@ describe('getWeatherBriefing', () => {
     ]);
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(clearReport, [], CLOCK);
+    const briefing = getWeatherBriefing(clearReport, [], CLOCK);
 
     // Then
     expect(briefing).toEqual({
@@ -307,7 +283,7 @@ describe('getWeatherBriefing', () => {
     ]);
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(mixedReport, [], CLOCK);
+    const briefing = getWeatherBriefing(mixedReport, [], CLOCK);
 
     // Then
     expect(briefing).toEqual({ kind: 'noScheduledTodos' });
@@ -330,7 +306,7 @@ describe('getWeatherBriefing', () => {
     const nightClock = { now: toInstant('2026-11-02T13:04:00.000Z'), timeZone: 'Asia/Seoul' };
 
     // When
-    const briefing = WeatherBriefingPolicy.getWeatherBriefing(nightReport, [], nightClock);
+    const briefing = getWeatherBriefing(nightReport, [], nightClock);
 
     // Then
     expect(briefing).toEqual({
@@ -357,7 +333,10 @@ describe('toBriefingTodo', () => {
     { schedule: { localTime: null, isAllDay: false }, expected: null },
   ])('$schedule는 브리핑 시각 $expected로 본다', ({ schedule, expected }) => {
     // When
-    const todo = WeatherBriefingPolicy.toBriefingTodo({ ...BASE, ...schedule }, SEOUL);
+    const todo = WeatherBriefingPolicy.toBriefingTodo(
+      createParentTodo({ ...BASE, ...schedule }),
+      SEOUL,
+    );
 
     // Then
     expect(todo.scheduledAt).toEqual(expected);
@@ -366,7 +345,7 @@ describe('toBriefingTodo', () => {
   it('어제 시작한 여러 날 할 일도 보고 있는 오늘의 벽시계로 본다', () => {
     // Given
     // 어제(11-01)부터 모레까지 이어지는 16:30 할 일을 오늘 목록에서 본다
-    const input = { ...BASE, localTime: '16:30', isAllDay: false };
+    const input = createParentTodo({ ...BASE, localTime: '16:30', isAllDay: false });
 
     // When
     const todo = WeatherBriefingPolicy.toBriefingTodo(input, SEOUL);
@@ -380,7 +359,7 @@ describe('toBriefingTodo', () => {
 
   it('같은 벽시계도 기기 시간대가 다르면 다른 순간으로 만든다', () => {
     // Given
-    const input = { ...BASE, localTime: '16:30', isAllDay: false };
+    const input = createParentTodo({ ...BASE, localTime: '16:30', isAllDay: false });
 
     // When
     const seoul = WeatherBriefingPolicy.toBriefingTodo(input, SEOUL);
@@ -398,7 +377,7 @@ describe('toBriefingTodo', () => {
   it('서머타임이 끝나는 날에도 벽시계 그대로의 순간을 만든다', () => {
     // Given
     // 미국 서머타임이 끝나는 2026-11-01의 로스앤젤레스 오후 3시
-    const input = { ...BASE, localTime: '15:00', isAllDay: false };
+    const input = createParentTodo({ ...BASE, localTime: '15:00', isAllDay: false });
 
     // When
     const todo = WeatherBriefingPolicy.toBriefingTodo(input, {
@@ -417,13 +396,16 @@ describe('toBriefingTodo', () => {
 
     // When
     const withSubTodos = WeatherBriefingPolicy.toBriefingTodo(
-      {
+      createParentTodo({
         ...base,
         subTodos: [1, 2, 3].map((id) => createSubTodo({ id, completed: id === 1 })),
-      },
+      }),
       SEOUL,
     );
-    const withoutSubTodos = WeatherBriefingPolicy.toBriefingTodo({ ...base, subTodos: [] }, SEOUL);
+    const withoutSubTodos = WeatherBriefingPolicy.toBriefingTodo(
+      createParentTodo({ ...base, subTodos: [] }),
+      SEOUL,
+    );
 
     // Then
     expect(withSubTodos.subTodoProgress).toEqual({ completed: 1, total: 3 });
@@ -557,7 +539,7 @@ const STATE_REPORT = createWeatherReport({
 describe('getBriefingState', () => {
   it('리포트를 받기 전이거나 받지 못했으면 자리만 잡고 실패는 리포트 경계에 맡긴다', () => {
     // When
-    const state = WeatherBriefingPolicy.getBriefingState(undefined, {
+    const state = getBriefingState(undefined, {
       now: NOW,
       deviceTimeZone: 'Asia/Seoul',
     });
@@ -571,7 +553,7 @@ describe('getBriefingState', () => {
     const later = fromEpochMs(toEpochMs(NOW) + 7 * 60 * 60_000);
 
     // When
-    const state = WeatherBriefingPolicy.getBriefingState(STATE_REPORT, {
+    const state = getBriefingState(STATE_REPORT, {
       now: later,
       deviceTimeZone: 'Asia/Seoul',
     });
@@ -585,7 +567,7 @@ describe('getBriefingState', () => {
     ['America/Los_Angeles', 'hidden'],
   ] as const)('기기 시간대가 %s이면 서울 리포트 브리핑은 %s이다', (deviceTimeZone, expected) => {
     // When
-    const state = WeatherBriefingPolicy.getBriefingState(STATE_REPORT, {
+    const state = getBriefingState(STATE_REPORT, {
       now: NOW,
       deviceTimeZone,
     });
@@ -608,7 +590,7 @@ describe('isTodoWithinRange', () => {
     ['2026-11-02T09:00:00.000Z', false],
   ] as const)('할 일 시각이 %s이면 추천 시간대 안인지는 %s다', (scheduledAt, expected) => {
     // Given
-    const todo = { scheduledAt: toInstant(scheduledAt) };
+    const todo = createForecastTodo({ scheduledAt: toInstant(scheduledAt) });
 
     // When
     const result = WeatherBriefingPolicy.isTodoWithinRange(todo, hours);
@@ -622,9 +604,9 @@ describe('getUncompletedTodoIds', () => {
   it('완료한 할 일은 빼고 남은 할 일 ID만 순서대로 반환한다', () => {
     // Given
     const todos = [
-      { todoId: 1, completed: false },
-      { todoId: 2, completed: true },
-      { todoId: 3, completed: false },
+      createForecastTodo({ todoId: 1, completed: false }),
+      createForecastTodo({ todoId: 2, completed: true }),
+      createForecastTodo({ todoId: 3, completed: false }),
     ];
 
     // When

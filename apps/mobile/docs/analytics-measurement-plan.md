@@ -114,7 +114,7 @@
 | `whats_new_step_viewed`                   | `release_id` · `step` · `index`(int) · `source`                                                                                                              | 흐름 한 번에 단계당 한 번  |
 | `whats_new_completed`                     | `release_id` · `source`                                                                                                                                      | 마지막 단계에서 완료       |
 | `whats_new_cta_pressed`                   | `release_id` · `step`                                                                                                                                        | 단계 CTA 누름              |
-| `activation_completed`                    | `campaign_id` · `days_since_signup`(int)                                                                                                                     | 활성화 체크리스트 완료     |
+| `activation_completed`                    | `days_since_signup`(int). 가입 7일 안에만 남는다(1.15.0 이하 앱은 `campaign_id`도 보냈다)                                                                    | 활성화 체크리스트 완료     |
 | `coachmark_shown` / `coachmark_dismissed` | `kind`(`CoachmarkKind`)                                                                                                                                      | 기능 안내 말풍선 노출·닫기 |
 
 **AI / 메모**
@@ -349,7 +349,7 @@ Measurement Protocol(서버 → GA)은 도입하지 않는다. 위 신호는 SQL
 | `is_recurring`   | 반복 여부       | todo_created                                                                                            |
 | `visibility`     | 공개 범위       | todo_created                                                                                            |
 | `feature`        | 기능            | premium_gate_shown, feature_card_cta, feature_action_success                                            |
-| `campaign_id`    | 캠페인          | feature_hub_*, activation_completed                                                                     |
+| `campaign_id`    | 캠페인          | feature_hub_*, feature_card_cta, feature_action_success                                                 |
 | `entry`          | 초대 진입점     | invite_entry_tapped                                                                                     |
 | `channel`        | 공유 채널       | invite_link_shared                                                                                      |
 | `outcome`        | 초대 결과       | invite_redeemed                                                                                         |

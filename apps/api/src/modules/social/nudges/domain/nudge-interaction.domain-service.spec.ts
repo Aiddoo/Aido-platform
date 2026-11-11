@@ -1,4 +1,8 @@
-import { isNudgeInteractionAvailable } from "./nudge-interaction.domain-service.js";
+import {
+  decideNudgeThanksPreviewScope,
+  isNudgeInteractionAvailable,
+  judgeNudgeThanks,
+} from "./nudge-interaction.domain-service.js";
 
 describe("isNudgeInteractionAvailable — 답장·감사 가능 여부", () => {
   it.each([
@@ -14,6 +18,46 @@ describe("isNudgeInteractionAvailable — 답장·감사 가능 여부", () => {
 
       // Then
       expect(isAvailable).toBe(expected);
+    },
+  );
+});
+
+describe("감사 판단 — 전하기와 미리보기", () => {
+  it.each([
+    {
+      isTodoCompleted: false,
+      todoVisibility: "PRIVATE" as const,
+      judgement: { ok: false, reason: "todo-not-completed" },
+      scope: "none",
+    },
+    {
+      isTodoCompleted: false,
+      todoVisibility: "PUBLIC" as const,
+      judgement: { ok: false, reason: "todo-not-completed" },
+      scope: "none",
+    },
+    {
+      isTodoCompleted: true,
+      todoVisibility: "PRIVATE" as const,
+      judgement: { ok: false, reason: "todo-not-public" },
+      scope: "summary",
+    },
+    {
+      isTodoCompleted: true,
+      todoVisibility: "PUBLIC" as const,
+      judgement: { ok: true },
+      scope: "recipients",
+    },
+  ])(
+    "완료 $isTodoCompleted·공개 범위 $todoVisibility이면 전하기는 $judgement.reason, 미리보기는 $scope",
+    ({ judgement, scope, ...todo }) => {
+      // When
+      const sendJudgement = judgeNudgeThanks(todo);
+      const previewScope = decideNudgeThanksPreviewScope(todo);
+
+      // Then
+      expect(sendJudgement).toEqual(judgement);
+      expect(previewScope).toBe(scope);
     },
   );
 });

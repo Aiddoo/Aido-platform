@@ -9,6 +9,7 @@ import type { ForegroundPushPresentation } from '@src/core/ports/push-notificati
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { instantSchema } from '@src/shared/date/instant';
+import { entityIdSchema } from '@src/shared/domains/entity-id.model';
 import { takeRight, without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -63,7 +64,7 @@ export const notificationDestinationRoutingSchema = z.discriminatedUnion('type',
   z.object({
     type: z.literal('TODO_SHARED'),
     todoId: z.int().positive(),
-    commentId: z.cuid().optional().catch(undefined),
+    commentId: entityIdSchema.optional().catch(undefined),
     ...todoTargetShape,
   }),
   z.object({ type: z.literal('FOLLOW_NEW') }),
@@ -157,13 +158,13 @@ const FOREGROUND_TAP_SETTLE_MS = SECOND_MS;
 /** 같은 응답이 다시 오는 경우(콜드 스타트의 마지막 응답과 리스너, 다시 그린 레이아웃)를 막기에 충분한 최근 기억 수 */
 const HANDLED_RESPONSE_ID_LIMIT = 20;
 
-function isAiFeature(notification: Pick<Notification, 'type'>) {
+function isAiFeature(notification: Notification) {
   return NOTIFICATION_TYPE_TRAITS[notification.type].isAiFeature;
 }
 
 /** 응원 ID가 없는 이전 알림은 null이다. 보낸 사람 이름은 1.13.0 서버부터 실리므로 이전 알림에는 없을 수 있다 */
 function findReceivedCheer(
-  notification: Pick<Notification, 'type' | 'context' | 'routing'>,
+  notification: Notification,
 ): { cheerId: number; senderId: string; senderName: string | null } | null {
   const cheerId = notification.context?.cheerId;
   const senderId = notification.context?.friendId;
@@ -177,9 +178,13 @@ function findReceivedCheer(
   return { cheerId, senderId, senderName: notification.routing?.senderName ?? null };
 }
 
-/** 알림 ID가 0이면 서버에 알림 기록이 없는 푸시라 읽음·열림을 서버에 묻지 않는다 */
-function hasServerRecord(payload: Pick<PushNotificationPayload, 'notificationId'>) {
-  return payload.notificationId > 0;
+/** 알림 ID가 0이면 서버에 알림 기록이 없는 푸시라 읽음·열림을 서버에 묻지 않는다. 서비스는 ID만 받아 값으로 묻는다 */
+export function isServerNotificationId(notificationId: number) {
+  return notificationId > 0;
+}
+
+function hasServerRecord(payload: PushNotificationPayload) {
+  return isServerNotificationId(payload.notificationId);
 }
 
 /** 받을 때 그 타입의 화면을 다시 받는지. 다시 받으면 보고 있는 화면에 새 내용이 바로 보인다 */
@@ -192,7 +197,7 @@ function isRefreshedOnReceipt(payload: Pick<PushNotificationPayload, 'type'>) {
  * 배너·소리로 가리지 않고 알림 센터에만 남긴다. 모르는 타입과 다시 받지 않는 화면은 새 내용이 보이지 않아 배너로 알린다
  */
 function getForegroundPresentation(
-  payload: Pick<PushNotificationPayload, 'type'>,
+  payload: PushNotificationPayload,
   {
     isViewingInbox,
     isViewingDestination,
@@ -218,7 +223,7 @@ function isExpiredResponse(response: Pick<PendingNotificationResponse, 'received
 
 /** 눌린 응답을 지금 어떻게 할지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
 function getResponseAction(
-  response: Pick<PendingNotificationResponse, 'actionIdentifier' | 'receivedAt'>,
+  response: PendingNotificationResponse,
   { authStatus, now }: { authStatus: AuthStatus; now: number },
 ): NotificationResponseAction {
   if (isExpiredResponse(response, now)) {
@@ -235,12 +240,7 @@ function getResponseAction(
     .exhaustive();
 }
 
-function getOpenAppState(
-  response: Pick<
-    PendingNotificationResponse,
-    'isLaunchResponse' | 'appState' | 'activeSince' | 'receivedAt'
-  >,
-): PushOpenAppState {
+function getOpenAppState(response: PendingNotificationResponse): PushOpenAppState {
   if (response.isLaunchResponse) {
     return 'cold';
   }

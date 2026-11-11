@@ -69,7 +69,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 
 ## 앱이 앞에 있을 때 받은 알림
 
-`registerForegroundNotificationPresentation`이 앱이 그려지기 전에 `setNotificationHandler`를 걸고, `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `PushNotificationPolicy.getForegroundPresentation` 하나다.
+`registerForegroundNotificationPresentation`이 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고, `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `PushNotificationPolicy.getForegroundPresentation` 하나다.
 
 | 지금 화면                                                         | 보이는 방식                           | 이유                                                                     |
 | ----------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
@@ -92,7 +92,7 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
   - 다시 로그인해 보고하면 해제 기록을 버리고, 가는 중인 해제가 있으면 끝난 뒤에 보고해 새 등록이 지워지지 않는다. 같은 값도 다시 보고하도록 보고 기록을 비운다.
   - 로그인한 적 없는 시작(`none`)과 판정 실패(`boot-failed`)는 등록을 건드리지 않는다. 잠긴 키체인처럼 세션이 살아 있을 수 있어서다.
 - 탈퇴는 앱이 해제하지 않는다. 서버 탈퇴가 전 세션과 기기를 함께 푼다. 탈퇴 전에 풀면 비밀번호 오류에도 이 기기의 알림이 끊긴다.
-- 앱 아이콘 배지는 알림함의 안 읽은 수 조회(`useGetUnreadCountQueryOptions`) 하나를 따른다. `NotificationProvider`의 `useNotificationBadgeSync`가 로그인한 동안 이 조회를 구독해, 앱이 앞으로 올 때(`focusManager`, `staleTime: 0`)·다시 연결될 때·푸시 수신과 읽음 처리의 무효화·낙관적 수정 때마다 배지를 그 수로 맞춘다. 그래서 다른 기기에서 읽거나 받은 알림도 이 기기를 열면 배지에 반영된다. 배지만 따로 서버에 묻지 않는다.
+- 앱 아이콘 배지는 알림함의 안 읽은 수 조회(`useGetUnreadCountQueryOptions`) 하나를 따른다. `NotificationProvider`의 `useNotificationBadgeSync`가 로그인한 동안 이 조회를 구독해, 앱이 앞으로 올 때(`focusManager`, `staleTime: 0`)·다시 연결될 때·푸시 수신과 읽음 처리의 무효화·낙관적 수정 때마다 배지를 그 수로 맞춘다. 그래서 다른 기기에서 읽거나 받은 알림도 이 기기를 열면 배지에 반영된다. 배지만 따로 서버에 묻지 않는다. 읽음 처리(`NOTIFICATION_MUTATION_KEYS.writes()`)는 실패하면 그 알림만 안 읽음으로 되돌리고, 마지막 처리가 끝날 때만 다시 받아 배지가 앞 처리의 값으로 깜빡이지 않는다.
 - 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 배지를 건드리지 않고, 로그아웃(`unauthenticated`)일 때만 지운다(`NotificationBadgePolicy.getBadgeCount`).
 
 ## 눌린 푸시 처리
