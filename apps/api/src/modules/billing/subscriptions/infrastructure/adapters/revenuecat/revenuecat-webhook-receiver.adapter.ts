@@ -1,12 +1,14 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
 
-import { appConfig } from "#api/platform/config/app.config";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
 import { SubscriptionAlerts } from "../../../application/subscriptions.alerts.js";
 import { SubscriptionLogEvent } from "../../../application/subscriptions.log-events.js";
 import { ApplyStoreSubscriptionEventUseCase } from "../../../application/use-cases/apply-store-subscription-event.use-case.js";
+import {
+  billingSubscriptionsConfig,
+  type BillingSubscriptionsConfig,
+} from "../../../billing-subscriptions.config.js";
 import { translateRevenueCatWebhook } from "./revenuecat-webhook-translator.adapter.js";
 
 export interface RevenueCatWebhookInput {
@@ -18,12 +20,13 @@ export class RevenueCatWebhookReceiver {
   readonly #logger = new Logger(RevenueCatWebhookReceiver.name);
   readonly #applyStoreSubscriptionEvent: Pick<ApplyStoreSubscriptionEventUseCase, "execute">;
   readonly #alert: OperationalAlertPort;
-  readonly #config: Pick<ConfigType<typeof appConfig>, "environment">;
+  readonly #config: Pick<BillingSubscriptionsConfig, "acceptsTestStorePurchases">;
 
   constructor(
     applyStoreSubscriptionEvent: ApplyStoreSubscriptionEventUseCase,
     alert: OperationalAlertPort,
-    @Inject(appConfig.KEY) config: Pick<ConfigType<typeof appConfig>, "environment">,
+    @Inject(billingSubscriptionsConfig.KEY)
+    config: Pick<BillingSubscriptionsConfig, "acceptsTestStorePurchases">,
   ) {
     this.#applyStoreSubscriptionEvent = applyStoreSubscriptionEvent;
     this.#alert = alert;
@@ -31,9 +34,8 @@ export class RevenueCatWebhookReceiver {
   }
 
   async receive({ body }: RevenueCatWebhookInput): Promise<{ received: true }> {
-    // 웹훅 연동이 하나라 Test Store 구매도 운영으로 온다. 운영은 결제 없는 구매에 프리미엄을 주지 않는다
     const translation = translateRevenueCatWebhook(body, {
-      acceptsTestStore: this.#config.environment !== "production",
+      acceptsTestStore: this.#config.acceptsTestStorePurchases,
     });
     if (translation.status === "skipped") {
       this.#logger.log({

@@ -14,13 +14,11 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { Timezone } from "#api/platform/http/decorators/index";
-import {
-  ApiDoc,
-  ApiSuccessResponse,
-  ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
+import { ApiUnauthorizedError } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { GetEntitlementSnapshotUseCase } from "../../../application/use-cases/get-entitlement-snapshot.use-case.js";
 import { toEntitlementSnapshotResponse } from "./entitlement-response.mapper.js";

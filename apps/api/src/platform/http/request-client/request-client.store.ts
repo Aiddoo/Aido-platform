@@ -8,6 +8,7 @@ import { tagRequestScope } from "#api/platform/observability/sentry-scope";
 import { parseRequestClient, type RequestClient } from "./request-client.js";
 import { assignRequestId } from "./request-id.js";
 
+// DI 토큰이 아니라 요청 클라이언트 정보를 담는 CLS 저장소 key다
 const REQUEST_CLIENT_CLS_KEY = Symbol("REQUEST_CLIENT");
 
 /**

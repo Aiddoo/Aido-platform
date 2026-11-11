@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { type AppEnvironment, type NodeEnvironment, resolveAppEnvironment } from "./app.schema.js";
+
 /**
  * 외부 서비스 연동 설정 스키마
  * 향후 확장용 - 현재는 선택적
@@ -64,9 +66,11 @@ const WEATHERKIT_KEYS = [
 export function validateWeatherKitConfig({
   value: config,
   issues,
-}: z.core.ParsePayload<ExternalConfig & { readonly NODE_ENV: string }>): void {
+}: z.core.ParsePayload<
+  ExternalConfig & { readonly NODE_ENV: NodeEnvironment; readonly APP_ENV?: AppEnvironment }
+>): void {
   const missing = WEATHERKIT_KEYS.filter((key) => (config[key] ?? "") === "");
-  const isProduction = config.NODE_ENV === "production";
+  const isProduction = resolveAppEnvironment(config) === "production";
   if (missing.length === 0 || (missing.length === WEATHERKIT_KEYS.length && !isProduction)) {
     return;
   }

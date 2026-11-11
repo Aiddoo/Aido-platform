@@ -7,7 +7,7 @@ import { jobConfig } from "#api/platform/config/job.config";
 import { type Database, DRIZZLE } from "#api/platform/database/database.client";
 import { instantFromDate, instantToDate, toIsoString } from "#api/shared/domain/time/instant";
 
-import { PG_BOSS_CLIENT, type PgBossClient } from "./pg-boss-job-runtime.adapter.js";
+import { PG_BOSS_CLIENT, type PgBossClient } from "./pg-boss-client.js";
 import type {
   ScheduleOccurrencePreview,
   ScheduleRunCounts,
@@ -16,7 +16,7 @@ import type {
 // 스케줄 options에 보관 기간이 없으면 작업은 pg-boss 기본값(7일)으로 지워진다
 const PG_BOSS_DEFAULT_DELETE_AFTER_SECONDS = 7 * 24 * 60 * 60;
 
-/** pg-boss schedule 표에 등록된 스케줄 하나. 옛 JobRuntimePort와 새 JobQueuePort 등록을 모두 담는다. */
+/** pg-boss schedule 표에 등록된 스케줄 하나. JobQueuePort가 정의의 schedules로 등록한 것. */
 export interface WatchedSchedule {
   readonly queue: string;
   /** pg-boss 스케줄 key. 비어 있으면 큐 이름 */

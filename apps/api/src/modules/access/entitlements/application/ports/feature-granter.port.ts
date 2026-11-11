@@ -1,9 +1,11 @@
 import type { GrantableFeature } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 const FEATURE_GRANT_STATUSES = ["granted", "duplicate"] as const;
 
 export interface FeatureGrantInput {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly feature: GrantableFeature;
   /** 더할 자리 수. 1 이상의 정수다 */
   readonly quantity: number;

@@ -39,7 +39,12 @@ import { Fragment, useEffect, useRef } from 'react';
 import { match } from 'ts-pattern';
 
 import { BRIEFING_ROW_TONES } from '../constants/weather-colors.constants';
-import { type BriefingResult, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
+import {
+  type BriefingResult,
+  getBriefingState,
+  getWeatherBriefing,
+  WeatherBriefingPolicy,
+} from '../domains/weather-briefing.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
@@ -88,7 +93,7 @@ export function WeatherBriefing() {
   });
   const now = useMinuteNow();
   const { timeZone: deviceTimeZone } = useDateFormatContext();
-  const state = WeatherBriefingPolicy.getBriefingState(report, { now, deviceTimeZone });
+  const state = getBriefingState(report, { now, deviceTimeZone });
 
   if (report == null || state === 'loading') {
     return <WeatherBriefing.Loading />;
@@ -97,13 +102,16 @@ export function WeatherBriefing() {
     return <WeatherBriefing.Empty />;
   }
 
-  const briefing = WeatherBriefingPolicy.getWeatherBriefing(
+  const briefing = getWeatherBriefing(
     report,
     todoList.todos.map((todo) =>
       WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),
     ),
     { now, timeZone: deviceTimeZone },
   );
+  if (briefing == null) {
+    return <WeatherBriefing.Empty />;
+  }
 
   return (
     <WeatherBriefing.Contents
@@ -135,7 +143,6 @@ WeatherBriefing.Contents = function Contents({
   const view = toBriefingView(briefing, {
     hourly,
     now,
-    timeZone: dateFormat.timeZone,
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
     formatHour: (date) => formatInstantHour(date, timeFormat, dateFormat),
     formatTemperature: (celsius) => formatTemperature(celsius, unit),
@@ -447,7 +454,7 @@ WeatherBriefing.Error = function ErrorFallback({ reset }: QueryErrorFallbackProp
   );
 };
 
-/** 오래된 데이터이거나 위치 벽시계가 기기와 다르면 할 일과 날씨를 겹쳐 안내하지 않는다. */
+/** 오래된 데이터이거나 위치 벽시계가 기기와 다르거나 서버가 영향받는 할 일을 판단하지 못했으면 할 일과 날씨를 겹쳐 안내하지 않는다. */
 WeatherBriefing.Empty = function Empty() {
   return null;
 };

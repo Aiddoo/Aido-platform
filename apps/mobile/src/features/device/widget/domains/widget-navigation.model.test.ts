@@ -1,14 +1,11 @@
+import { createWidgetNavigationCommand } from '../__tests__/widget-navigation.fixtures';
 import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '../constants/widget.constants';
-import {
-  parseWidgetNavigationUri,
-  type WidgetNavigationCommand,
-  WidgetNavigationPolicy,
-} from './widget-navigation.model';
+import { parseWidgetNavigationUri, WidgetNavigationPolicy } from './widget-navigation.model';
 
 describe('isFresh', () => {
   it('만료 직전 명령만 허용하고 만료 시점과 미래 명령은 거절한다', () => {
     // Given
-    const command = { createdAt: 1000 };
+    const command = createWidgetNavigationCommand({ createdAt: 1000 });
 
     // When
     const atCreation = WidgetNavigationPolicy.isFresh(command, 1000);
@@ -33,7 +30,7 @@ describe('isFresh', () => {
 describe('isOwnedBy', () => {
   it('계정을 바꾸면 이전 위젯의 명령을 실행하지 않는다', () => {
     // Given
-    const command = { userId: 'original-account' };
+    const command = createWidgetNavigationCommand({ userId: 'original-account' });
 
     // When
     const sameAccount = WidgetNavigationPolicy.isOwnedBy(command, 'original-account');
@@ -73,7 +70,7 @@ describe('parseWidgetNavigationUri', () => {
 });
 
 describe('getCommandState', () => {
-  const command = { createdAt: 1000, userId: 'original-account' };
+  const command = createWidgetNavigationCommand({ createdAt: 1000, userId: 'original-account' });
 
   it('만료된 명령은 계정을 몰라도 지울 명령이다', () => {
     // When
@@ -123,20 +120,12 @@ describe('canOpenWithoutOwner', () => {
 });
 
 describe('isSameCommand', () => {
-  const createCommand = (overrides: Partial<WidgetNavigationCommand> = {}) => ({
-    id: 'command-1',
-    uri: 'aido://feed',
-    userId: 'user-1',
-    createdAt: 1000,
-    ...overrides,
-  });
-
   it('id·주소·계정·만든 시각이 모두 같으면 같은 명령이다', () => {
     // Given
-    const stored = createCommand();
+    const stored = createWidgetNavigationCommand();
 
     // When
-    const result = WidgetNavigationPolicy.isSameCommand(stored, createCommand());
+    const result = WidgetNavigationPolicy.isSameCommand(stored, createWidgetNavigationCommand());
 
     // Then
     expect(result).toBe(true);
@@ -149,10 +138,13 @@ describe('isSameCommand', () => {
     { field: '만든 시각', overrides: { createdAt: 1001 } },
   ])('$field만 달라도 다른 명령이라 지우지 않는다', ({ overrides }) => {
     // Given
-    const stored = createCommand();
+    const stored = createWidgetNavigationCommand();
 
     // When
-    const result = WidgetNavigationPolicy.isSameCommand(stored, createCommand(overrides));
+    const result = WidgetNavigationPolicy.isSameCommand(
+      stored,
+      createWidgetNavigationCommand(overrides),
+    );
 
     // Then
     expect(result).toBe(false);

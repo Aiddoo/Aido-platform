@@ -4,7 +4,7 @@ import {
   defineQueue,
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
-} from "#api/shared/application/ports/index";
+} from "#api/shared/application/ports/job-queue.port";
 
 export const AiSuggestionJobKey = {
   /** UTC 시각 단위. 같은 시각의 정기 실행과 재시작 보정이 한 번만 돈다 */

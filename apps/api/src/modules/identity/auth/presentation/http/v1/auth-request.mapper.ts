@@ -1,14 +1,14 @@
 import type { Request } from "express";
 
 import type { RequestMetadata } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import type { RequestClient } from "#api/platform/http/request-client/index";
+import type { RequestClient } from "#api/platform/http/request-client/request-client";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { resolveRequestDevice } from "./request-device.mapper.js";
 
 /**
  * 요청에서 감사·관리자 알림용 메타데이터를 만든다. 구 앱은 기기 이름·타입을 본문으로 보내므로
- * 본문 값이 RequestClient의 헤더 값보다 우선한다.
+ * 기기 정보는 본문 값이 RequestClient의 헤더 값보다 우선한다.
  */
 export function extractMetadata(
   req: Pick<Request, "ip" | "headers">,
@@ -20,8 +20,6 @@ export function extractMetadata(
   return {
     ip: req.ip || undefined,
     userAgent,
-    deviceName: body?.deviceName ?? client.deviceName ?? undefined,
-    deviceType: body?.deviceType ?? client.platform ?? undefined,
     device: resolveRequestDevice({
       client,
       userAgent,

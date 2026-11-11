@@ -139,7 +139,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
           TodoFixture.create({
             userId,
             categoryId: category.id,
-            startDate: new Date(`2027-01-0${1 + Math.floor(index / 3)}T00:00:00Z`),
+            startDate: Temporal.PlainDate.from(`2027-01-0${1 + Math.floor(index / 3)}`),
             completed: index % 2 === 0,
             visibility: index === 0 ? "PRIVATE" : "PUBLIC",
             sortOrder: index,

@@ -10,6 +10,7 @@ import { TodoCommentPurgeRepositoryPort } from "#api/modules/engagement/comments
 import { CleanUpAccountTodoCommentsUseCase } from "#api/modules/engagement/comments/application/use-cases/clean-up-account-todo-comments.use-case";
 import { InvalidateCleanedTodoCachesUseCase } from "#api/modules/engagement/comments/application/use-cases/invalidate-cleaned-todo-caches.use-case";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
+import { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/comments/engagement-comments.public";
 import { TodoCommentAccountCleanupAdapter } from "#api/modules/engagement/comments/infrastructure/adapters/todo-comment-account-cleanup.adapter";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
@@ -25,6 +26,7 @@ import { DeleteActorNotificationsUseCase } from "#api/modules/notification/inbox
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
 import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import {
   TodoEngagementCounterPort,
   TodoViewCacheInvalidatorPort,
@@ -43,17 +45,16 @@ import {
 } from "#api/platform/database/schema/index";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
-import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  MUTATION_LOCK,
-  MutationLockPort,
-  UnitOfWorkPort,
-} from "#api/shared/application/ports/index";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingTodoViewCacheInvalidator } from "#test/doubles/engagement/recording-todo-view-cache-invalidator";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -65,7 +66,7 @@ import {
 } from "../../../../src/modules/identity/users/identity-users.providers.js";
 import { TestDatabase } from "../../../setup/test-database.js";
 
-const NOW = new Date("2026-08-26T00:00:00.000Z");
+const TODO_DATE = Temporal.PlainDate.from("2026-08-26");
 const PURGE_ELIGIBLE_AT = Temporal.Instant.from("2026-07-01T00:00:00.000Z");
 const COMMENT_AT = Temporal.Instant.from("2026-08-26T00:00:00.000Z");
 
@@ -123,7 +124,13 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
   }
   const [category] = await client
     .insert(todoCategory)
-    .values({ userId: owner.id, name: "Account purge", color: "#112233", sortOrder: 0 })
+    .values({
+      userId: owner.id,
+      name: "Account purge",
+      color: "#112233",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      sortOrder: 0,
+    })
     .returning();
   if (category === undefined) {
     throw new Error("category fixture was not created");
@@ -134,9 +141,10 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
       userId: owner.id,
       categoryId: category.id,
       title: "댓글 사슬을 보존할 할 일",
-      startDate: NOW,
+      startDate: TODO_DATE,
       visibility: "PUBLIC",
       commentCount: 4,
+      updatedAt: nowInstant(),
     })
     .returning();
   if (todo === undefined) {
@@ -244,7 +252,6 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: ClockPort, useClass: DateClock },
         { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         PostgresMutationLockAdapter,
-        { provide: MUTATION_LOCK, useExisting: PostgresMutationLockAdapter },
         { provide: MutationLockPort, useExisting: PostgresMutationLockAdapter },
         { provide: TodoCommentPurgeRepositoryPort, useClass: DrizzleTodoCommentPurgeRepository },
         { provide: TodoEngagementCounterPort, useClass: DrizzleTodoEngagementCounterAdapter },
@@ -273,7 +280,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: AuthSecurityLogRepositoryPort, useExisting: DrizzleSecurityLogRepository },
         accountNotificationCleanupProvider,
         accountTodoCommentCleanupProvider,
-        { provide: USAGE_METER, useClass: DrizzleUsageMeterAdapter },
+        { provide: UsageMeterPort, useClass: DrizzleUsageMeterAdapter },
         accountUsageCleanupProvider,
         purgeDeletedAccountsProvider,
       ],
@@ -393,7 +400,12 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
     }
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId: owner.id, name: "Collision", color: "#123456" })
+      .values({
+        userId: owner.id,
+        name: "Collision",
+        color: "#123456",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      })
       .returning();
     if (category === undefined) {
       throw new Error("category fixture was not created");
@@ -404,8 +416,9 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         userId: owner.id,
         categoryId: category.id,
         title: "같은 멱등 키",
-        startDate: NOW,
+        startDate: TODO_DATE,
         commentCount: 2,
+        updatedAt: nowInstant(),
       })
       .returning();
     if (todo === undefined) {
@@ -489,7 +502,10 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
     await purgeDeletedAccounts.execute();
     const { txHost } = createDatabaseTransactionFixture(client);
     const reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
-    const replyToPurged = await reader.findComment(fixture.todoId, fixture.activeGrandchildId);
+    const replyToPurged = await reader.findComment(
+      TodoId.reconstitute(fixture.todoId),
+      TodoCommentId.reconstitute(fixture.activeGrandchildId),
+    );
 
     // Then
     expect(replyToPurged).toMatchObject({
@@ -568,7 +584,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
     ).toEqual([expect.objectContaining({ type: "SYSTEM_NOTICE", body: "계정과 관계없는 내용" })]);
     expect(vi.mocked(notificationCache.invalidateUnreadCount)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(notificationCache.invalidateUnreadCount)).toHaveBeenCalledWith(
-      fixture.otherUserId,
+      UserId.reconstitute(fixture.otherUserId),
     );
     const hardDeleted = await client.query.securityLog.findFirst({
       where: { event: "ACCOUNT_HARD_DELETED" },

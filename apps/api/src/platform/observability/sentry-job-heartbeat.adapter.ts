@@ -6,7 +6,7 @@ import {
 } from "#api/shared/application/ports/job-heartbeat.port";
 
 /** 작업 worker 생존 신호를 받는 Sentry Crons 모니터. Sentry가 environment별로 나눠 보여 env로 바꾸지 않는다 */
-export const JOB_WORKER_MONITOR_SLUG = "aido-job-worker";
+const JOB_WORKER_MONITOR_SLUG = "aido-job-worker";
 
 /**
  * Sentry Crons 모니터 하나에 시작·끝 check-in을 보낸다. 모니터 설정은 check-in마다 코드 값으로 upsert해

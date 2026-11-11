@@ -1,23 +1,22 @@
 import { AI_PROVIDER_IDS } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
-  USAGE_METER,
+  UsageMeterPort,
   USAGE_SUBJECT_ALL,
   type UsageKey,
-  type UsageMeterPort,
-} from "#api/platform/metering/interfaces/usage-meter.interface";
+} from "#api/platform/metering/usage-meter.port";
 import { crossedThresholds, usagePeriod } from "#api/platform/metering/usage-period";
 import type { AlertDefinition } from "#api/shared/application/alerts/define-alerts";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import {
-  OPERATIONAL_ALERT,
-  type OperationalAlertPort,
-} from "#api/shared/application/ports/operational-alert.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
+import {
+  type AiAssistanceGenerationConfig,
+  aiAssistanceGenerationConfig,
+} from "../../ai-assistance-generation.config.js";
 import { AiAlerts } from "../../application/ai-generation.alerts.js";
 import {
   AI_SPEND_TIERS,
@@ -31,7 +30,9 @@ import { hasKnownPricing } from "./ai-model-pricing.constants.js";
 import { AiGuardLogEvent } from "./ai-provider.log-events.js";
 
 /** 추정 비용 누적(micro-USD). subject "*"는 전역, 사용자 id는 사용자 일 예산이다. */
-export const AI_SPEND_METER = "ai.spend";
+const AI_SPEND_METER = "ai.spend";
+
+type SpendBudgetConfig = Pick<AiAssistanceGenerationConfig, "providers" | "enabled" | "budget">;
 
 // 경고 기준선은 사람이 볼 것이고, 배경·전체 중단 기준선은 기능이 멈춘 것이라 심각도가 다르다
 const SPEND_TIER_ALERTS = {
@@ -64,15 +65,15 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
   readonly #users = new Map<string, number>();
   #usersDay: string | null = null;
 
-  readonly #config: TypedConfigService;
+  readonly #config: SpendBudgetConfig;
   readonly #meter: Pick<UsageMeterPort, "add" | "read">;
   readonly #alert: OperationalAlertPort;
   readonly #clock: ClockPort;
 
   constructor(
-    config: TypedConfigService,
-    @Inject(USAGE_METER) meter: Pick<UsageMeterPort, "add" | "read">,
-    @Inject(OPERATIONAL_ALERT) alert: OperationalAlertPort,
+    @Inject(aiAssistanceGenerationConfig.KEY) config: SpendBudgetConfig,
+    @Inject(UsageMeterPort) meter: Pick<UsageMeterPort, "add" | "read">,
+    alert: OperationalAlertPort,
     clock: ClockPort,
   ) {
     this.#config = config;
@@ -84,7 +85,7 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
   /** 가격표에 없는 모델은 호출마다 최고 단가로 잡혀 예산이 빠르게 닳는다. 전체 중단 전에 기동 때 알린다. */
   onModuleInit(): void {
     const unpriced = AI_PROVIDER_IDS.filter((provider) => {
-      const { apiKey, model } = this.#config.ai.providers[provider];
+      const { apiKey, model } = this.#config.providers[provider];
       return apiKey != null && !hasKnownPricing(`${provider}:${model}`);
     });
     if (unpriced.length > 0) {
@@ -99,14 +100,14 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
     readonly taskClass: AiTaskClass;
     readonly userId: string | null;
   }): Promise<AiSpendDecision> {
-    const { ai } = this.#config;
-    const enabled = ai.enabled[input.taskClass];
+    const { enabled: enabledByClass, budget } = this.#config;
+    const enabled = enabledByClass[input.taskClass];
     const spend = enabled ? await this.#readSpend(input.userId) : EMPTY_SPEND;
     return decideAiSpend({
       taskClass: input.taskClass,
       isEnabled: enabled,
       spend,
-      limits: ai.budget,
+      limits: budget,
     });
   }
 
@@ -203,7 +204,7 @@ export class AiSpendBudgetAdapter implements OnModuleInit {
     readonly monthly: number;
     readonly microUsd: number;
   }): void {
-    const { budget } = this.#config.ai;
+    const { budget } = this.#config;
     for (const tier of AI_SPEND_TIERS) {
       const windows = [
         {

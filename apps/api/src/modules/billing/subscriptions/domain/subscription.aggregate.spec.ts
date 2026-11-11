@@ -359,7 +359,7 @@ describe("Subscription — 스토어 구독 체인", () => {
     it("웹훅 대기 유예(3시간) 안의 만료 행도 접근이 없으면 끝낸다", () => {
       // Given
       const subscription = createSubscriptionFixture({ expiresAt: NOW.subtract({ hours: 1 }) });
-      const insideWait = NOW.add({ milliseconds: STORE_RENEWAL_GRACE_MS - 2 * 60 * 60 * 1_000 });
+      const insideWait = NOW.add({ milliseconds: STORE_RENEWAL_GRACE_MS - 2 * 60 * 60 * 1000 });
 
       // When
       const fields = subscription.reconcileWithStore(state({ givesAccess: false }), insideWait);

@@ -4,7 +4,7 @@ import type {
 } from "../../application/ports/email-sender.port.js";
 import { EmailMessage } from "../../domain/email-message.vo.js";
 
-export const EMAIL_CONTRACT_SCENARIOS = [
+const EMAIL_CONTRACT_SCENARIOS = [
   "success",
   "unavailable",
   "rate-limited",

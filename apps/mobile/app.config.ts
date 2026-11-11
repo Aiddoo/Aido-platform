@@ -175,7 +175,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     owner: OWNER,
     version: VERSION,
     scheme: envConfig.scheme,
-    orientation: 'portrait',
+    // 최상위 orientation은 Android MainActivity까지 세로로 묶어 펼친 폴더블·태블릿이 레터박스가 된다. iPhone 세로는 ios.infoPlist가, Android 휴대폰 세로는 앱이 실행 중에(useOrientationLock) 정한다
 
     // Branding
     icon: ICON,
@@ -208,6 +208,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         usesNonExemptEncryption: false,
       },
       infoPlist: {
+        // iPhone만 세로다. iPad는 supportsTablet이면 플러그인이 네 방향을 넣는다(UISupportedInterfaceOrientations~ipad)
+        UISupportedInterfaceOrientations: [
+          'UIInterfaceOrientationPortrait',
+          'UIInterfaceOrientationPortraitUpsideDown',
+        ],
         UIViewControllerBasedStatusBarAppearance: true,
         ...(kakaoNativeAppKey && { LSApplicationQueriesSchemes: KAKAO_QUERY_SCHEMES }),
         CFBundleAllowMixedLocalizations: true,
@@ -295,6 +300,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       './plugins/withGradleJvmArgs',
       // @react-native-kakao 모듈의 compileSdk 33을 앱 compileSdk로 맞춘다 (release AAR metadata 검사)
       './plugins/withKakaoAndroidCompileSdk',
+      './plugins/withAndroidDensityConfigChange',
       ...(isDevelopment ? [] : ['./plugins/withoutDevLauncherLocalNetwork']),
       [
         'expo-localization',

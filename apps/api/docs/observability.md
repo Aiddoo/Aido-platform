@@ -5,14 +5,14 @@
 ## 소유
 
 - Domain은 로그를 남기지 않는다.
-- Application은 `ApplicationLoggerPort`를 `Pick`으로 받는다. 이벤트 상수는 slice의 `<slice>.log-events.ts`, 경보 정의는 `<slice>.alerts.ts`([경보 카탈로그](alerts.md))다.
+- Application은 `ApplicationLoggerPort`를 `Pick`으로 받는다(조립은 `loggerFor(UseCase)`). 이벤트 상수는 slice의 `<slice>.log-events.ts`, platform 이벤트는 [platform.log-events.ts](../src/platform/logging/platform.log-events.ts), 경보 정의는 `<slice>.alerts.ts`([경보 카탈로그](alerts.md))다.
 - Infrastructure는 공급자 결과·재시도·작업 실패를, HTTP middleware·filter는 요청·HTTP 오류를 남긴다. Controller·UseCase·Repository에 같은 시작/종료 로그를 반복하지 않는다.
 - 같은 오류를 여러 층에서 다시 남기지 않는다. 4xx 업무 오류는 `errorCode`만 info·warn, 5xx만 error + 예외 보고다.
 
 ## 이벤트 키와 필드 (서버·앱 공통)
 
 - 형식은 `<context>.<subject>[.<detail>].<outcome>`다. 소문자, 단어는 하이픈, 마디는 점이다(`identity.oauth.token-exchange.failed`, 앱 `todo-comment.submit.failed`).
-- 첫 마디는 Bounded Context, platform은 기술 영역(`http`·`redis`·`cache`·`jobs`)이다. 마지막은 결과(`failed`·`completed`·`skipped` …)다.
+- 첫 마디는 Bounded Context, platform은 기술 영역(`http`·`redis`·`cache`·`jobs`·`database`·`events`)이다. 마지막은 결과(`failed`·`completed`·`skipped` …)다.
 - Sentry `feature` 태그는 첫 마디의 하이픈을 밑줄로 바꾼 값이다(앱 [observability](../../mobile/.claude/observability.md)와 같은 축).
 - `errorType`은 분류 또는 예외 클래스 이름(`toErrorType`), `errorCode`는 공유 `ErrorCode` 값만이다. 공급자 기호는 `providerError`, 공급자 HTTP 상태는 `statusCode`, Node 네트워크 code는 `networkCode`다.
 - 메시지 자리에 template literal·문자열 연결을 쓰지 않는다. `logger.warn({ event, ...fields })` 한 객체로 남긴다.
@@ -22,7 +22,7 @@
 
 ## 남기면 안 되는 값
 
-이메일, 토큰, 인증 code, OAuth state, authorization header, 공급자 사용자 ID, user tag, 할 일 제목, 말한 내용·전사, AI 입력/출력, 이메일 본문, 전체 webhook payload, 공급자 오류 본문, env 값, 새 키 이름(`*_KEYS`)의 값.
+이메일, 토큰, 인증 code, OAuth state, authorization header, 공급자 사용자 ID, user tag, 할 일 제목, 말한 내용·전사, AI 입력/출력, 이메일 본문, 전체 webhook payload, 공급자 오류 본문, env 값, 서명 키(`*_SIGNING_KEYS`)의 값.
 
 - 공급자 실패는 공급자 이름·HTTP 상태·짧은 오류 코드만 남긴다. 외부 `error.message`·stack을 logger에 그대로 넘기지 않는다.
 - 로그 정리와 호출자의 오류 계약은 별개다. 로그를 가리려고 sender result·queue throw·재시도 여부를 바꾸지 않는다.
@@ -41,7 +41,7 @@
 | 사람이 볼 상황  | `OperationalAlertPort.raise({ ...Alerts.X, tags, details, cause })`(throw하지 않음) | slice `*.alerts.ts`의 `defineAlerts` |
 | 5xx·미분류 예외 | `ExceptionReporterPort`(`GlobalExceptionFilter`가 호출)                             | 4xx는 보내지 않는다                  |
 
-- Sentry import는 `platform/observability/sentry-*`와 `instrument.ts`, `platform/config/utils/sentry-options.ts`에만 둔다. 업무 코드는 포트만 부른다.
+- Sentry import는 `platform/observability/sentry-*`, `instrument.ts`, `platform/config/utils/sentry-options.ts`, `app.module`의 `SentryModule.forRoot()`(SDK 설정 모듈)에만 둔다. 업무 코드는 포트만 부른다.
 - 경보 Sentry 이벤트: fingerprint = key(원인을 나누는 `subject`가 있으면 `key:subject`), 제목 = summary, 고정 태그 `alert_key`·`alert_context`·`severity`(·`alert_subject`), extra `runbook`. 호출부 태그는 고정 태그를 덮지 못한다.
 - 5xx: 코드로 분류해 던진 실패(`SYS_0005`·`AI_1301`·`WEATHER_1901`·502 계열)는 `http-5xx.<코드>` 한 이슈로, 분류되지 않은 `SYS_0001`은 스택으로 모은다. 같은 경로·코드·예외는 한 시간에 10건(`EXCEPTION_REPORT_THRESHOLD`·`EXCEPTION_REPORT_WINDOW_MS`)까지만 보낸다.
 - 업무 거부(계약에서 4xx로 정한 `ApplicationException`·`DomainException`)는 HTTP·웹훅·`@OnEvent`·작업 어느 경로에서도 Sentry 오류가 아니다(`isBusinessRejection`). 경보의 원인이면 예외 대신 경보 문장과 `errorCode` extra로, @sentry/nestjs가 handler에서 자동 수집한 것은 `beforeSendError`가 버린다. 사람이 봐야 하면 이름 있는 경보를 올린다.
@@ -49,7 +49,7 @@
 
 ### 환경별 어댑터
 
-선택은 [AlertingModule](../src/platform/observability/alerting.module.ts)의 표 한 곳이고, 판정은 `selectObservabilityBackend`(= `instrument.ts`의 SDK `enabled`)다. 환경은 `appConfig.environment`(APP_ENV, 없으면 NODE_ENV)다. 새 env는 없다.
+선택은 [AlertingModule](../src/platform/observability/alerting.module.ts)의 표 한 곳이고, 판정은 `selectObservabilityBackend`(= `instrument.ts`의 SDK `enabled`)다. 환경은 `appConfig.environment`([배포 환경](configuration.md#배포-환경))다. 개발에서도 경보·예외가 어디엔가 보여야 하므로 SDK만 꺼진 Sentry 어댑터를 두지 않고 로그 어댑터를 쓴다.
 
 | 환경                                          | 경보                                                          | 5xx 예외                                              | SDK  | 작업 heartbeat |
 | --------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------- | ---- | -------------- |
@@ -78,7 +78,7 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 | 결제·권한            | `billing.subscription.*`, `social.invite-reward.retry-exhausted` | 웹훅 영구 실패·원문 불일치, 대조 재시도 소진, 초대 보상 재시도 소진. 웹훅 일시 실패는 5xx 예외                                                                                                                       |
 | 푸시 발송            | `notification.push.receipt-failure-ratio-high`                   | 한 receipt 확인 실행(5분)에서 받은 receipt ≥ 20건(`PUSH_RECEIPT_FAILURE_MIN_RECEIPTS`) 중 공급자 실패(기기 미등록 제외) ≥ 20%(`PUSH_RECEIPT_FAILURE_RATIO_THRESHOLD`). Expo는 회로가 없어 발송 실패는 작업 실패 경보 |
 | AI                   | `ai.provider.*`, `ai.spend.*`                                    | 업체 결제 회로(402 1회)·인증 회로(401·403 연속 3회), 모든 업체 회로 열림, 비용 경고·배경 중단·전체 중단 기준선                                                                                                       |
-| 리마인더             | `notification.reminder.late-skips-high`                          | 15분 넘게 늦어 버린 할 일 리마인더가 1시간(`REMINDER_LATE_SKIP_WINDOW_MS`)에 20건(`REMINDER_LATE_SKIP_THRESHOLD`)                                                                                                    |
+| 리마인더             | `notification.reminder.late-skips-high`                          | 15분 넘게 늦거나 할 일 시각이 지나 버린 할 일 리마인더가 1시간(`REMINDER_LATE_SKIP_WINDOW_MS`)에 20건(`REMINDER_LATE_SKIP_THRESHOLD`)                                                                                |
 | 리마인더             | `notification.reminder.sweep-catch-up-capped`                    | 시간대 sweep이 15분 따라잡기 상한(`REMINDER_LATE_LIMIT_MINUTES`)을 넘겨 분을 버림                                                                                                                                    |
 | 작업·스케줄          | `job.failed`, `schedule.*`, `queue.dead-letter`                  | 아래 [작업 실패 경보](#작업-실패-경보)                                                                                                                                                                               |
 | DB·런타임            | `runtime.*`, `database.unique-constraint.unknown`                | 풀 대기 30초 지속, 루프 p99 > 200ms, 힙 > 85%(`RUNTIME_THRESHOLDS`, 60초 표본, 넘기 시작한 표본에서만)                                                                                                               |
@@ -91,7 +91,7 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 
 | 신호(key:subject)                | 언제                                                                                                                  | 어디서                                                  |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `job.failed:<queue>:<errorType>` | 재시도를 모두 쓰고 실패(DLQ로 옮겨질 때, `InvalidJobPayload` 포함). 남은 재시도의 실패는 `jobs.attempt.failed` 로그만 | `PgBossJobQueueAdapter`, 옛 `PgBossJobRuntimeAdapter`   |
+| `job.failed:<queue>:<errorType>` | 재시도를 모두 쓰고 실패(DLQ로 옮겨질 때, `InvalidJobPayload` 포함). 남은 재시도의 실패는 `jobs.attempt.failed` 로그만 | `PgBossJobQueueAdapter`                                 |
 | `schedule.failing:<scheduleKey>` | 마지막 두 예정 실행의 창(간격 × 2 + 30분) 안에 실패만 있다                                                            | `schedule-watchdog.v1`(15분, `missed: "skip"`)          |
 | `schedule.overdue:<scheduleKey>` | 같은 창 안에 실행이 없거나 남은 실행이 30분 넘게 멈춰 있다                                                            | 같음                                                    |
 | `queue.dead-letter:<queue>`      | 최근 15분 동안 DLQ에 작업이 들어왔다                                                                                  | 같음                                                    |
@@ -116,17 +116,20 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 
 새 유료 인프라 없이 Sentry Performance, `/health`, `OperationalAlertPort`로 본다.
 
-| 신호        | 무엇                                                                            | 어디서                                                               |
-| ----------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| 지연        | HTTP 경로별 p50·p95·p99, DB span, 공급자 호출, 작업별 p95(`queue.process` span) | Sentry Performance                                                   |
-| 트래픽·오류 | RPS, 5xx 비율, 4xx는 `errorCode`별                                              | Sentry(5xx), 로그(4xx)                                               |
-| 포화도      | 풀 `waitingCount`·`idleCount`·`totalCount`, 이벤트 루프 지연 p99, 힙·RSS        | `platform/observability/runtime-stats`(60초) → `/health` 상세·경보   |
-| 큐          | 큐별 대기·실행·실패, 가장 오래된 대기 시간, DLQ 크기                            | `JobQueueHealth`(등록된 큐 전부)                                     |
-| 외부 의존성 | 공급자별 지연·오류율·회로 상태·bulkhead 거절                                    | `outbound.circuit.*` 로그, `OutboundUsage`, Health `outbound`        |
-| DB          | 연결 수, CPU 크레딧, FreeableMemory·스왑, 느린 쿼리, autovacuum                 | CloudWatch RDS + `pg_stat_statements` + `log_min_duration_statement` |
-| 업무        | 가입·DAU·푸시 퍼널                                                              | [알림·지표](notifications.md#지표)                                   |
+| 신호        | 무엇                                                                     | 어디서                                                                                                |
+| ----------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| 지연        | HTTP 경로별 p50·p95·p99, DB span, 공급자 호출, 작업별 p95                | Sentry Performance                                                                                    |
+| 트래픽·오류 | RPS, 5xx 비율, 4xx는 `errorCode`별                                       | Sentry(5xx), 로그(4xx)                                                                                |
+| 포화도      | 풀 `waitingCount`·`idleCount`·`totalCount`, 이벤트 루프 지연 p99, 힙·RSS | [runtime-stats](../src/platform/observability/runtime-stats.ts)(60초) → `/health` `runtime` 상세·경보 |
+| 큐          | 큐별 대기·실행·실패, 가장 오래된 대기 시간, DLQ 크기                     | Health job 상태(`JobQueueRegistry`), 스케줄 감시                                                      |
+| 외부 의존성 | 공급자별 지연·오류율·회로 상태·bulkhead 거절                             | `outbound.circuit.*` 로그, `OutboundUsage`, Health `outbound`                                         |
+| DB          | 연결 수, CPU 크레딧, FreeableMemory·스왑, 느린 쿼리, autovacuum          | CloudWatch RDS + `pg_stat_statements` + `log_min_duration_statement`                                  |
+| 업무        | 가입·DAU·푸시 퍼널                                                       | [알림·지표](notifications.md#지표)                                                                    |
 
+- 판정은 순수 함수 `evaluateRuntimeSample`·`newlyBreached`이고 `runtime` 상세는 항상 up이다. 경보는 넘기 시작한 표본에서만 올린다. Swagger 설명은 계약 지문 때문에 바꾸지 않는다.
+- 공개 `/health`의 상세(`database`·`queues`·`outbound`·`runtime`·`instanceId`)는 development·staging에서만 싣는다(`appConfig.exposeHealthDetails`). 운영은 `{ status }`와 200/503만 주므로 큐·포화도 감시는 경보(`OperationalAlertPort`)와 로그로 한다.
 - 메모리: 힙 경보(`runtime.heap.usage-high`)는 사용량이 상한(`--max-old-space-size=384`)의 85%를 넘으면 뜬다. RSS(컨테이너 512MB)는 `/health` runtime 상세에만 싣고 경보가 없으니 배포 사이 추세로 본다. 누수 회귀는 [메모리 소크](testing.md#메모리)가 먼저 잡는다.
+- Sentry 경보 규칙과 RDS 사용자 정의 파라미터 그룹은 사용자 승인 뒤 만든다.
 
 ### 표본 비율 (`tracesSampler`)
 
@@ -169,9 +172,3 @@ Developer 플랜(2026-11-10 [요금 페이지](https://sentry.io/pricing/) 확�
 ## 확인할 증거
 
 업무 로그 변경은 합성 민감값이 logger 인자에 들어가지 않는지와 성공·실패 격리를 함께 본다. HTTP 설정 변경은 실제 Nest 요청을 Pino stream으로 받아 reqId·event·query·header 비노출을 본다. logger spy로 Sentry까지 확인했다고 주장하지 않는다. 수집 범위는 `sentry-options.spec`이 SDK가 푼 `dataCollection` 값으로 확인한다.
-
-## 전환 중
-
-- `app.module`의 `SentryModule.forRoot()`는 SDK 설정 모듈이라 그대로 둔다.
-- [runtime-stats](../src/platform/observability/runtime-stats.ts)는 60초마다 표본을 재서 `/health`의 `runtime` 상세(항상 up)에 싣고, 판정은 순수 함수 `evaluateRuntimeSample`·`newlyBreached`다. Swagger 설명은 계약 지문 때문에 바꾸지 않았다.
-- platform 로그 이벤트 상수는 [platform.log-events.ts](../src/platform/logging/platform.log-events.ts)다. 아직 옮기지 않은 Context는 `application/observability/<slice>/*.events.ts`와 Nest Logger 연결 factory를 쓴다. 옮긴 Context는 `apps/api/architecture.ratchet.json`의 `migratedContexts`에 있다.

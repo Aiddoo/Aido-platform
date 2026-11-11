@@ -67,8 +67,8 @@ export function OverlayProvider({
   const state = useMemo(() => ({ hasActiveOverlay: overlays.size > 0 }), [overlays.size]);
 
   return (
-    <OverlayContext.Provider value={controller}>
-      <OverlayStateContext.Provider value={state}>
+    <OverlayContext value={controller}>
+      <OverlayStateContext value={state}>
         <PortalTargetContext value={portalTarget}>
           {children}
           {[...overlays.entries()].map(([id, { element, version }]) => (
@@ -76,7 +76,7 @@ export function OverlayProvider({
           ))}
           <PortalHost name={hostName} />
         </PortalTargetContext>
-      </OverlayStateContext.Provider>
-    </OverlayContext.Provider>
+      </OverlayStateContext>
+    </OverlayContext>
   );
 }

@@ -16,7 +16,7 @@ import { pick } from 'es-toolkit';
 
 import { CONSENT_MUTATION_KEYS } from '../constants/consent-mutation-keys';
 import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
-import { type Consent, ConsentPolicy } from '../domains/consent.model';
+import { type Consent, getConsentResult } from '../domains/consent.model';
 import { useConsentResultToast } from '../hooks/use-consent-result-toast';
 import { type ConsentAgreement } from '../schemas/consent-request.schema';
 import { invalidateConsent } from './consent-cache';
@@ -139,7 +139,7 @@ export function useUpdateMarketingConsentMutationOptions() {
     },
     onSuccess: (data) => {
       // 구 서버가 처리 일시를 주지 않으면 알리지 않는다
-      const result = ConsentPolicy.getConsentResult({
+      const result = getConsentResult({
         agreedAt: data.marketingAgreedAt,
         withdrawnAt: data.marketingWithdrawnAt,
       });
@@ -192,7 +192,7 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       return { previousData };
     },
     onSuccess: (data) => {
-      const result = ConsentPolicy.getConsentResult({
+      const result = getConsentResult({
         agreedAt: data.marketingPushAgreedAt,
         withdrawnAt: data.marketingPushWithdrawnAt,
       });

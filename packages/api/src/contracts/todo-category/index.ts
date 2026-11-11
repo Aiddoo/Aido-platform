@@ -12,6 +12,8 @@ export {
   updateTodoCategorySchema,
 } from "./v1/todo-category.request.js";
 export {
+  type CategoryDeletionResult,
+  categoryDeletionResultSchema,
   type CreateTodoCategoryResponse,
   createTodoCategoryResponseSchema,
   type DeleteTodoCategoryResponse,
@@ -19,6 +21,8 @@ export {
   type ReorderTodoCategoryResponse,
   reorderTodoCategoryResponseSchema,
   type TodoCategory,
+  type TodoCategoryDeletionPreview,
+  todoCategoryDeletionPreviewSchema,
   type TodoCategoryListResponse,
   type TodoCategoryResponse,
   type TodoCategorySummary,

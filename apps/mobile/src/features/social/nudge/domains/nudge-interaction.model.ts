@@ -1,4 +1,5 @@
-import { NUDGE_REPLY_KINDS, type TodoVisibility } from '@aido/api/vocabulary';
+import { NUDGE_REPLY_KINDS } from '@aido/api/vocabulary';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { instantSchema } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -38,7 +39,7 @@ const nudgeInteractionStatusSchema = z.enum([
 ]);
 export type NudgeInteractionStatus = z.infer<typeof nudgeInteractionStatusSchema>;
 
-const nudgeThanksPreviewSchema = z.object({
+export const nudgeThanksPreviewSchema = z.object({
   todoId: z.number(),
   throughNudgeId: z.number().nullable(),
   totalRecipients: z.int().nonnegative(),
@@ -64,9 +65,7 @@ interface NudgeThanksSummary {
   pendingRecipientCount: number;
 }
 
-export function getNudgeInteractionStatus(
-  nudge: Pick<NudgeInteraction, 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'>,
-): NudgeInteractionStatus {
+export function getNudgeInteractionStatus(nudge: NudgeInteraction): NudgeInteractionStatus {
   return match({
     isAvailable: nudge.isAvailable,
     isTodoCompleted: nudge.isTodoCompleted,
@@ -83,29 +82,19 @@ export function getNudgeInteractionStatus(
 }
 
 // 완료한 공개 할 일의 주인만 인사를 받는다. 할 일은 주인만 고칠 수 있어 수정 권한으로 주인을 안다
-export function canThankTodo(
-  todo: { completed: boolean; visibility: TodoVisibility },
-  { canEditTodo }: { canEditTodo: boolean },
-): boolean {
+export function canThankTodo(todo: Todo, { canEditTodo }: { canEditTodo: boolean }): boolean {
   return canEditTodo && todo.completed && todo.visibility === 'PUBLIC';
 }
 
-export function isReceivedBy(nudge: Pick<NudgeInteraction, 'receiverId'>, userId: string): boolean {
+export function isReceivedBy(nudge: NudgeInteraction, userId: string): boolean {
   return nudge.receiverId === userId;
 }
 
-export function hasThankableRecipients(
-  preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>,
-): boolean {
+export function hasThankableRecipients(preview: NudgeThanksPreview): boolean {
   return preview.throughNudgeId != null && preview.recipients.length > 0;
 }
 
-export function getThanksSummary(
-  preview: Pick<
-    NudgeThanksPreview,
-    'throughNudgeId' | 'recipients' | 'totalRecipients' | 'thankedRecipientCount'
-  >,
-): NudgeThanksSummary {
+export function getThanksSummary(preview: NudgeThanksPreview): NudgeThanksSummary {
   const pendingRecipientCount = hasThankableRecipients(preview) ? preview.totalRecipients : 0;
   const state = match({
     hasPending: pendingRecipientCount > 0,
@@ -123,13 +112,7 @@ export function getThanksSummary(
 type NudgeResponseStage = 'unavailable' | 'reply' | 'thanksPrompt' | 'thanked' | 'status';
 
 // 받은 사람은 끝나지 않은 할 일이면 답장이 먼저고, 완료된 뒤에는 고맙다고 했는지로 가른다
-export function getResponseStage(
-  nudge: Pick<
-    NudgeInteraction,
-    'receiverId' | 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'
-  >,
-  userId: string,
-): NudgeResponseStage {
+export function getResponseStage(nudge: NudgeInteraction, userId: string): NudgeResponseStage {
   const status = getNudgeInteractionStatus(nudge);
   if (status === 'UNAVAILABLE') {
     return 'unavailable';
@@ -149,7 +132,13 @@ export const NudgeInteractionPolicy = {
   getNudgeInteractionStatus,
   getResponseStage,
   isReceivedBy,
-  canThankTodo,
+} as const;
+
+export const NudgeThanksPreviewPolicy = {
   hasThankableRecipients,
   getThanksSummary,
+} as const;
+
+export const TodoThanksPolicy = {
+  canThankTodo,
 } as const;

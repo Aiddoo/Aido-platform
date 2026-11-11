@@ -1,10 +1,8 @@
-// DB NotificationType enum과 같은 값이다. 도메인·애플리케이션이 스키마에 묶이지 않도록 여기서 소유한다
-const NOTIFICATION_TYPES = [
+// DB NotificationType enum 값을 같은 순서로 둔다(순서를 바꾸면 enum 마이그레이션이 생긴다). 도메인이 스키마에 묶이지 않도록 여기서 소유한다
+export const NOTIFICATION_TYPES = [
   "FOLLOW_NEW",
   "FOLLOW_ACCEPTED",
   "NUDGE_RECEIVED",
-  "NUDGE_REPLIED",
-  "NUDGE_THANKED",
   "CHEER_RECEIVED",
   "DAILY_COMPLETE",
   "FRIEND_COMPLETED",
@@ -13,12 +11,12 @@ const NOTIFICATION_TYPES = [
   "MORNING_REMINDER",
   "EVENING_REMINDER",
   "WEEKLY_ACHIEVEMENT",
-  "WEEKLY_REPORT",
-  "MONTHLY_REPORT",
-  "AI_SUGGESTION",
   "SYSTEM_NOTICE",
   "ADMIN_BROADCAST",
   "ADMIN_TARGETED",
+  "MONTHLY_REPORT",
+  "AI_SUGGESTION",
+  "WEEKLY_REPORT",
   "WINBACK",
   "SOCIAL_DIGEST",
   "NUDGE_SUGGEST",
@@ -26,11 +24,13 @@ const NOTIFICATION_TYPES = [
   "STREAK_AT_RISK",
   "WEATHER_MORNING",
   "WEATHER_EVENING",
+  "NUDGE_REPLIED",
+  "NUDGE_THANKED",
   "INVITE_JOINED",
   "INVITE_REWARDED",
+  "PREMIUM_GRANT_ENDING",
   "INVITE_PROGRESS",
   "INVITE_QUALIFY_REMINDER",
-  "PREMIUM_GRANT_ENDING",
   // 서버 전용. 앱 계약 enum에 없어 푸시·알림함에는 SYSTEM_NOTICE로 보낸다(toWireNotificationType)
   "PREMIUM_TRIAL_ENDING",
   // 서버 전용. 연간 구독 자동 갱신 7일 전 안내. 앱에는 SYSTEM_NOTICE로 보낸다

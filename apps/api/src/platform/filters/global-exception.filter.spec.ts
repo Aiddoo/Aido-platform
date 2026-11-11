@@ -12,6 +12,7 @@ import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-hos
 import { Test } from "@nestjs/testing";
 import { vi, type Mock } from "vitest";
 
+import { resolveDevTools } from "#api/platform/config/app.config";
 import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { ApplicationException } from "#api/shared/application/application.exception";
@@ -39,16 +40,11 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let reporter: RecordingExceptionReporter;
   let alerts: RecordingOperationalAlert;
 
-  const createFilter = (isDevelopment = true) => {
+  const createFilter = (exposeErrorDetails = true) => {
+    const devTools = resolveDevTools({ isLocalRun: exposeErrorDetails, nodeEnv: "development" });
     reporter = new RecordingExceptionReporter();
     alerts = new RecordingOperationalAlert();
-    return new GlobalExceptionFilter(
-      logger,
-      { nodeEnv: isDevelopment ? "development" : "production" },
-      messages,
-      reporter,
-      alerts,
-    );
+    return new GlobalExceptionFilter(logger, { devTools }, messages, reporter, alerts);
   };
 
   beforeAll(async () => {
@@ -77,19 +73,6 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   });
 
   describe("PostgreSQL unique violation 에러 처리", () => {
-    it("알려진 constraint(email)를 업무 오류으로 매핑해야 한다", () => {
-      // Given
-      const error = sqlQueryError("23505", "User_email_key");
-
-      // When
-      filter.catch(error, host);
-
-      // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
-      const jsonArg = mockResponse.json.mock.calls[0]?.[0];
-      expect(jsonArg?.error.code).toBe(ErrorCode.EMAIL_0501);
-    });
-
     it("알 수 없는 constraint를 SYS_0004 (409)로 폴백해야 한다", () => {
       // Given
       const error = sqlQueryError("23505");
@@ -112,15 +95,6 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       ]);
     });
 
-    it("알려진 옛 제약은 경보 없이 업무 오류로 바꾼다", () => {
-      // When
-      filter.catch(sqlQueryError("23505", "User_email_key"), host);
-
-      // Then
-      expect(mockResponse.json.mock.calls[0]?.[0]?.error.code).toBe(ErrorCode.EMAIL_0501);
-      expect(alerts.alerts).toEqual([]);
-    });
-
     it("SQLSTATE 23503 FK constraint violation은 400 SYS_0002로 처리해야 한다", () => {
       // Given
       const error = sqlQueryError("23503");
@@ -140,6 +114,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       ["연결 예외(08006)", sqlQueryError("08006")],
       ["관리자 종료(57P01)", sqlQueryError("57P01")],
       ["풀 대기 초과", new Error("timeout exceeded when trying to connect")],
+      ["연결 시간 초과", new Error("Connection terminated due to connection timeout")],
+      ["답이 없는 쿼리", new Error("Query read timeout")],
     ])("일시적 DB 문제 %s는 503 SYS_0005로 처리하고 예외 보고로 보낸다", (_, error) => {
       // When
       filter.catch(error, host);
@@ -541,12 +517,12 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       업무_오류: () => new ApplicationException(ErrorCode.SYS_0002, { reason: "invalid" }),
       HttpException: () => new HttpException({ message: ["a", "b"] }, HttpStatus.BAD_REQUEST),
       알_수_없는_에러: () => new Error("boom"),
-      데이터베이스_에러: () => sqlQueryError("23505", "User_email_key"),
+      데이터베이스_에러: () => sqlQueryError("23505"),
     };
 
     it.each(Object.entries(exceptions))("%s 응답이 envelope 스키마를 만족한다", (_name, create) => {
-      for (const isDevelopment of [true, false]) {
-        createFilter(isDevelopment).catch(create(), host);
+      for (const exposeErrorDetails of [true, false]) {
+        createFilter(exposeErrorDetails).catch(create(), host);
         const body = mockResponse.json.mock.lastCall?.[0];
         expect(errorEnvelopeSchema.safeParse(body).success).toBe(true);
       }

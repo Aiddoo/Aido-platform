@@ -8,11 +8,10 @@ import {
   HttpStatus,
   Inject,
 } from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
 
-import { appConfig } from "#api/platform/config/app.config";
+import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import {
   classifyDatabaseError,
   databaseConstraint,
@@ -30,7 +29,6 @@ import { ExceptionReporterPort } from "#api/shared/application/ports/exception-r
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
-import { LEGACY_CONSTRAINT_ERRORS } from "./legacy-constraint-errors.js";
 import {
   concurrentModification,
   internalServerError,
@@ -78,13 +76,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   constructor(
     logger: PinoLogger,
-    @Inject(appConfig.KEY) app: Pick<ConfigType<typeof appConfig>, "nodeEnv">,
+    @Inject(appConfig.KEY) app: Pick<AppSettings, "devTools">,
     messages: ErrorMessageTranslator,
     exceptionReporter: ExceptionReporterPort,
     operationalAlert: OperationalAlertPort,
   ) {
     this.#logger = logger;
-    this.#exposeErrorDetails = app.nodeEnv === "development";
+    this.#exposeErrorDetails = app.devTools.exposeErrorDetails;
     this.#messages = messages;
     this.#exceptionReporter = exceptionReporter;
     this.#operationalAlert = operationalAlert;
@@ -245,6 +243,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         );
       case "connection":
       case "pool-timeout":
+      case "query-timeout":
       case "statement-timeout":
       case "lock-timeout":
         this.#logger.warn({
@@ -264,15 +263,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
   }
 
-  /** 저장소가 번역하지 않은 unique 충돌. 알려진 옛 제약은 업무 오류, 모르는 제약은 SYS_0004 + 경보다. */
+  /** 저장소가 번역하지 않은 unique 충돌은 SYS_0004 + 경보다. 저장소가 자기 제약을 번역한다. */
   #mapUniqueConstraintError(error: unknown): ErrorCodedException {
     const constraint = databaseConstraint(error) ?? "unknown";
-    const legacyError = Object.hasOwn(LEGACY_CONSTRAINT_ERRORS, constraint)
-      ? LEGACY_CONSTRAINT_ERRORS[constraint]
-      : undefined;
-    if (legacyError != null) {
-      return legacyError();
-    }
     this.#logger.warn({ event: PlatformLogEvent.DATABASE_UNIQUE_CONSTRAINT_UNKNOWN, constraint });
     this.#operationalAlert.raise({
       ...DatabaseAlerts.UNIQUE_CONSTRAINT_UNKNOWN,

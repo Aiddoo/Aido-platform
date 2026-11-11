@@ -24,8 +24,7 @@ export class CheckInvitePairReachabilityUseCase {
   }
 
   async execute(query: CheckInvitePairReachabilityQuery): Promise<boolean> {
-    const inviteeId = query.inviteeId.value;
-    const inviterId = query.inviterId.value;
+    const { inviteeId, inviterId } = query;
     const [areFriends, relation] = await Promise.all([
       this.#dependencies.followReader.isCurrentMutualFriend(inviteeId, inviterId),
       this.#dependencies.blockReader.findRelation(inviteeId, inviterId),

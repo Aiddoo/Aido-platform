@@ -434,32 +434,3 @@ describe('서버와 같은 회차 표', () => {
     expect(occurrences).toEqual(expected);
   });
 });
-
-describe('isSingleWeekendRepeat', () => {
-  const WEEKEND: TodoRepeat = {
-    frequency: 'WEEKLY',
-    interval: 1,
-    weekdays: ['SAT', 'SUN'],
-    end: { type: 'UNTIL', date: '2026-11-08' },
-  };
-
-  it('토·일 주간 반복이 시작 다음 날에 끝나면 주말 한 번이다', () => {
-    // When
-    const isSingle = TodoRepeatPolicy.isSingleWeekendRepeat(WEEKEND, '2026-11-07');
-
-    // Then
-    expect(isSingle).toBe(true);
-  });
-
-  it.each([
-    ['끝이 더 뒤면', { ...WEEKEND, end: { type: 'UNTIL', date: '2026-11-29' } }],
-    ['끝이 없으면', { ...WEEKEND, end: { type: 'NEVER' } }],
-    ['요일에 일요일이 없으면', { ...WEEKEND, weekdays: ['SAT'] }],
-  ] satisfies [string, TodoRepeat][])('%s 반복이다', (_case, repeat) => {
-    // When
-    const isSingle = TodoRepeatPolicy.isSingleWeekendRepeat(repeat, '2026-11-07');
-
-    // Then
-    expect(isSingle).toBe(false);
-  });
-});

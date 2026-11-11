@@ -1,5 +1,7 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 /** 예약 작업이 사용자의 앱이 AI 동의를 받는 버전인지 알기 위해 읽는 앱 버전. */
 export abstract class AiClientAppVersionReaderPort {
   /** 사용자가 쓰는 기기 중 가장 높은 앱 버전. 알 수 없으면 null */
-  abstract findLatestAppVersion(userId: string): Promise<string | null>;
+  abstract findLatestAppVersion(userId: UserId): Promise<string | null>;
 }

@@ -18,21 +18,23 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
-import { Timezone } from "#api/platform/http/decorators/index";
-import { UserIdParamDto } from "#api/platform/http/dtos/index";
-import { AppVersion } from "#api/platform/http/request-client/index";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
+import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
   ApiConflictError,
-  ApiCreatedResponse,
-  ApiDoc,
   ApiForbiddenError,
   ApiNotFoundError,
-  ApiSuccessResponse,
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import {
+  ApiCreatedResponse,
+  ApiSuccessResponse,
+} from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { GetCheerCooldownUseCase } from "../../../application/use-cases/get-cheer-cooldown.use-case.js";
 import { GetCheerLimitUseCase } from "../../../application/use-cases/get-cheer-limit.use-case.js";

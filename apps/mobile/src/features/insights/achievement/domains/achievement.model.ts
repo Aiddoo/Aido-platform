@@ -5,7 +5,6 @@ export const weeklyAchievementSchema = z.object({
   id: z.int(),
   year: z.int(),
   week: z.int().min(1).max(53),
-  weekLabel: z.string(),
   dateRange: z.object({ startDate: z.iso.date(), endDate: z.iso.date() }),
   totalTodos: z.int().nonnegative(),
   completedTodos: z.int().nonnegative(),
@@ -37,7 +36,7 @@ const PERFECT_COMPLETION_RATE = 100;
 const ALMOST_COMPLETION_RATE = 90;
 
 // 완료율 100%는 빈틈없는 한 주, 90% 이상은 아깝다 한 끗, 나머지는 꾸준한 한 걸음
-export function getBadgeType(achievement: Pick<WeeklyAchievement, 'completionRate'>): BadgeType {
+export function getBadgeType(achievement: WeeklyAchievement): BadgeType {
   if (achievement.completionRate >= PERFECT_COMPLETION_RATE) {
     return 'perfect';
   }

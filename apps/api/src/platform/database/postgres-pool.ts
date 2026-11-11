@@ -1,12 +1,17 @@
+import { Logger } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { Pool, type PoolConfig } from "pg";
 
 import type { databaseConfig } from "#api/platform/config/database.config";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
+
+import { classifyDatabaseError, databaseSqlState } from "./database-error.util.js";
 
 export interface PostgresPoolOptions {
   readonly max?: number;
   readonly idleTimeoutMs?: number;
   readonly connectionTimeoutMs?: number;
+  readonly queryTimeoutMs?: number;
   readonly allowUnverifiedTls?: boolean;
 }
 
@@ -41,10 +46,21 @@ export function createPostgresPoolConfig(
     ...(options.connectionTimeoutMs != null && {
       connectionTimeoutMillis: options.connectionTimeoutMs,
     }),
+    ...(options.queryTimeoutMs != null && { query_timeout: options.queryTimeoutMs }),
   };
 }
 
 export function createPostgresPool(database: ConfigType<typeof databaseConfig>): Pool {
   const { url, poolMax, ...options } = database;
-  return new Pool(createPostgresPoolConfig(url, { max: poolMax, ...options }));
+  const pool = new Pool(createPostgresPoolConfig(url, { max: poolMax, ...options }));
+  const logger = new Logger("PostgresPool");
+  // 유휴 연결이 끊기면 pg-pool이 그 연결을 빼고 error를 낸다. 듣는 쪽이 없으면 프로세스가 죽는다
+  pool.on("error", (error) => {
+    logger.warn({
+      event: PlatformLogEvent.DATABASE_IDLE_CONNECTION_FAILED,
+      kind: classifyDatabaseError(error),
+      sqlState: databaseSqlState(error) ?? "none",
+    });
+  });
+  return pool;
 }

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 
 import {
   CheerNotifierPort,
@@ -9,9 +9,9 @@ import {
 
 @Injectable()
 export class CheerNotifierAdapter extends CheerNotifierPort {
-  readonly #queue: NotificationQueueService;
+  readonly #queue: NotificationQueueAdapter;
 
-  constructor(queue: NotificationQueueService) {
+  constructor(queue: NotificationQueueAdapter) {
     super();
     this.#queue = queue;
   }

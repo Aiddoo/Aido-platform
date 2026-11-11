@@ -3,11 +3,12 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type MutationLockPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
-import { dateKeyOf } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
   CreatedOccurrence,
@@ -57,14 +58,15 @@ export class StartSeriesFromTodoUseCase {
    */
   async assertCanStart(todoId: number, userId: string): Promise<void> {
     const { todoRepository, seriesRepository } = this.#dependencies;
-    const todo = await todoRepository.findByIdAndUserId(todoId, userId);
+    const ownerId = UserId.reconstitute(userId);
+    const todo = await todoRepository.findByIdAndUserId(TodoId.reconstitute(todoId), ownerId);
     if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
     if (todo.seriesId != null) {
       throw new ApplicationException(ErrorCode.TODO_0845, { field: "scope" });
     }
-    const activeCount = await seriesRepository.countActiveByUserId(userId);
+    const activeCount = await seriesRepository.countActiveByUserId(ownerId);
     if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {
       throw new ApplicationException(ErrorCode.TODO_0842, {
         limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
@@ -84,13 +86,16 @@ export class StartSeriesFromTodoUseCase {
       TodoLockKeys.todo(todoId),
     ]);
     await this.assertCanStart(todoId, userId);
-    const todo = await todoRepository.findByIdAndUserId(todoId, userId);
+    const todo = await todoRepository.findByIdAndUserId(
+      TodoId.reconstitute(todoId),
+      UserId.reconstitute(userId),
+    );
     if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
     const scheduledLocalTime = todo.localTimeIn(timezone);
     const now = this.#dependencies.clock.now();
-    const startDate = dateKeyOf(todo.schedule.startDate);
+    const startDate = todo.schedule.startDate.toString();
     const series = TodoSeries.create({
       id: TodoSeriesId.generate(),
       userId: todo.userId,
@@ -113,7 +118,7 @@ export class StartSeriesFromTodoUseCase {
     await seriesRepository.insert(series);
     // 시작일이 규칙에 맞지 않으면 다음 맞는 날로 옮겨 그 할 일을 첫 회차로 쓴다.
     const firstTime = resolveScheduledInstant(first.occurrenceDate, scheduledLocalTime, timezone);
-    await todoRepository.attachToSeries(todoId, series.id.value, {
+    await todoRepository.attachToSeries(todo.id, series.id, {
       occurrenceDate: first.occurrenceDate,
       scheduledLocalTime,
       scheduledTime: firstTime,

@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import {
   ACCESS_FIXTURE_NOW,
@@ -19,13 +20,14 @@ function setup(input: AccessUserInput = {}) {
     options: { readonly idempotencyKey?: string; readonly requestHash?: string } = {},
   ) =>
     fixture.ledger.reserve({
-      userId: fixture.userId,
+      userId: UserId.reconstitute(fixture.userId),
       feature: "AI_PARSE",
       idempotencyKey: options.idempotencyKey ?? null,
       requestHash: options.requestHash,
       reason: "parse-todo",
     });
-  const used = async () => (await fixture.ledger.read(fixture.userId, "AI_PARSE")).used;
+  const used = async () =>
+    (await fixture.ledger.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used;
   const chargeOf = (chargeId: string) =>
     fixture.quotaChargeRepository.all.find((charge) => charge.id === chargeId);
   return { ...fixture, clock, reserve, used, chargeOf };

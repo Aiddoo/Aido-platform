@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { Todo } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
@@ -26,7 +27,7 @@ export class PublishTodoCreationUseCase {
       todoId: created.id.value,
       userId,
     });
-    await this.#invalidateCaches(userId);
+    await this.#invalidateCaches(created.userId);
   }
 
   async publishSeriesStarted(
@@ -44,10 +45,10 @@ export class PublishTodoCreationUseCase {
 
   /** 커밋 뒤 실행한다. 리마인더·이벤트는 회차와 함께 커밋됐다. */
   async publishOccurrences(series: TodoSeries): Promise<void> {
-    await this.#invalidateCaches(series.userId.value);
+    await this.#invalidateCaches(series.userId);
   }
 
-  async #invalidateCaches(userId: string): Promise<void> {
+  async #invalidateCaches(userId: UserId): Promise<void> {
     await this.#dependencies.todoCache.invalidateTodoCategories(userId);
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
   }

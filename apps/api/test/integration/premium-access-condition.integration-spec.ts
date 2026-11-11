@@ -6,7 +6,6 @@ import { activeSubscriptionCondition } from "#api/modules/access/entitlements/in
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -20,8 +19,8 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
-const TODAY = new Date("2026-11-03T00:00:00.000Z");
-const TOMORROW = new Date("2026-11-04T00:00:00.000Z");
+const TODAY = Temporal.PlainDate.from("2026-11-03");
+const TOMORROW = Temporal.PlainDate.from("2026-11-04");
 
 type Scenario =
   | "expiredProjection"
@@ -48,9 +47,12 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     client = await database.start();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
     const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzleSchedulerReader(txHost, new CacheService(memory), {
-      onboardingV2: { enabled: false, treatmentPercent: 50 },
-    });
+    reader = new DrizzleSchedulerReader(
+      txHost,
+      memory,
+      { onboardingV2: { enabled: false, treatmentPercent: 50 } },
+      new DateClock(),
+    );
     entitlementReader = new DrizzleAccessStateReader(txHost);
     entitlement = new EntitlementReaderAdapter(
       new GetResolvedAccessUseCase({
@@ -171,8 +173,8 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       Object.entries(userIds).map(async ([scenario, id]) => ({
         scenario,
         sql: !freeIds.has(id),
-        service: await entitlement.canInTx(id, "AI_REPORT"),
-        plan: (await entitlement.getEntitlements(id)).plan === "premium",
+        service: await entitlement.canInTx(UserId.reconstitute(id), "AI_REPORT"),
+        plan: (await entitlement.getEntitlements(UserId.reconstitute(id))).plan === "premium",
       })),
     );
 
@@ -201,7 +203,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
           scenario,
           sql: sqlPaid.get(id),
           ts: state != null && hasPaidAccess({ state, now: instantFromDate(at) }),
-          isPremium: (await entitlement.getEntitlements(id)).isPremium,
+          isPremium: (await entitlement.getEntitlements(UserId.reconstitute(id))).isPremium,
         };
       }),
     );

@@ -11,9 +11,9 @@ import {
 } from "./invite.fixture.js";
 
 export const INVITE_REDEMPTION_FIXTURE_ID = "c0000000000000000000rdm01";
-export const INVITE_REDEMPTION_FIXTURE_JOINED_AT = INVITE_FIXTURE_NOW;
+const INVITE_REDEMPTION_FIXTURE_JOINED_AT = INVITE_FIXTURE_NOW;
 // 수락 14일 뒤
-export const INVITE_REDEMPTION_FIXTURE_EXPIRES_AT = Temporal.Instant.from("2028-03-13T03:00:00Z");
+const INVITE_REDEMPTION_FIXTURE_EXPIRES_AT = Temporal.Instant.from("2028-03-13T03:00:00Z");
 
 export function activeDaysOf(...dateKeys: readonly string[]): Temporal.PlainDate[] {
   return dateKeys.map((dateKey) => Temporal.PlainDate.from(dateKey));

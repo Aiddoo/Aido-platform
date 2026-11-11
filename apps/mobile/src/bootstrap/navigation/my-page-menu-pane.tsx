@@ -13,7 +13,6 @@ import { PushStatusValue } from '@src/features/notification/components/push-stat
 import { FriendCountValue } from '@src/features/social/friend/components/friend-count-value';
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import type { FontScale } from '@src/shared/preferences/font-scale.preference';
 import type { ThemeMode } from '@src/shared/preferences/theme-mode.preference';
@@ -39,6 +38,7 @@ import {
   TermsDuoIcon,
   Text,
   ThemeDuoIcon,
+  usePaneSizeClass,
   VoiceDuoIcon,
   VStack,
 } from '@src/shared/ui';
@@ -49,7 +49,7 @@ import { match } from 'ts-pattern';
 export function MyPageMenuPane() {
   const { t } = useTranslation(['user', 'settings']);
   const isInviteAvailable = useIsInviteAvailable();
-  const isCompact = useWindowSizeClass() === 'compact';
+  const isCompact = usePaneSizeClass() === 'compact';
 
   return (
     <MyPageMenuNavigationProvider>

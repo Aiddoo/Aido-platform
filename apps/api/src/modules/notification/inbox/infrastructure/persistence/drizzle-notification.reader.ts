@@ -4,6 +4,7 @@ import { and, count, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NotificationMilestone } from "../../../push/domain/notification-milestone.constants.js";
 import type {
@@ -39,7 +40,7 @@ export class DrizzleNotificationReader
         ? undefined
         : await this.#db.query.notification.findFirst({
             columns: { id: true, createdAt: true },
-            where: { id: afterNotificationId },
+            where: { id: afterNotificationId.value },
           });
     if (afterNotificationId != null && anchor == null) {
       return [];
@@ -50,7 +51,7 @@ export class DrizzleNotificationReader
       .from(notification)
       .where(
         and(
-          eq(notification.userId, userId),
+          eq(notification.userId, userId.value),
           unreadOnly ? eq(notification.isRead, false) : undefined,
           types != null ? inArray(notification.type, [...types]) : undefined,
           anchor &&
@@ -64,11 +65,11 @@ export class DrizzleNotificationReader
       .limit(limit);
   }
 
-  countUnread(userId: string, types?: readonly NotificationType[]): Promise<number> {
+  countUnread(userId: UserId, types?: readonly NotificationType[]): Promise<number> {
     return this.#db.$count(
       notification,
       and(
-        eq(notification.userId, userId),
+        eq(notification.userId, userId.value),
         eq(notification.isRead, false),
         types ? inArray(notification.type, [...types]) : undefined,
       ),

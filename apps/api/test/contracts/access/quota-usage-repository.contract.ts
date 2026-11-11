@@ -17,7 +17,7 @@ const APRIL = QuotaWindow.monthOf(NOW);
 const MAY_START = Temporal.Instant.from("2026-04-30T15:00:00Z");
 const MAY = QuotaWindow.monthOf(MAY_START);
 
-export interface SeedQuotaUserInput {
+interface SeedQuotaUserInput {
   readonly id: string;
   /** User.aiUsageCount·aiUsageResetAt(AI_PLAN 카운터) */
   readonly aiUsageCount: number;

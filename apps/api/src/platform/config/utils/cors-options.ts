@@ -3,9 +3,7 @@ import { uniq } from "es-toolkit";
 
 import { REQUEST_ID_HEADER } from "#api/platform/http/request-client/request-id";
 
-import type { EnvConfig } from "../schemas/index.js";
-
-const DEVELOPMENT_ORIGINS = [
+const LOCAL_DEVELOPMENT_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:8080",
   "http://localhost:8081",
@@ -19,15 +17,16 @@ const PUBLIC_WEB_ORIGINS = ["https://aido.kr", "https://www.aido.kr"];
 // 앱·웹의 Sentry가 보낸 추적을 서버 span이 이어 받는다. 값은 추적 ID·표본 결정뿐이다
 const TRACE_CONTINUATION_HEADERS = ["sentry-trace", "baggage"];
 
-export function createCorsOptions(
-  nodeEnv: EnvConfig["NODE_ENV"],
-  corsOrigins: string[],
-): CorsOptions {
+export function createCorsOptions(input: {
+  readonly corsOrigins: readonly string[];
+  readonly localCorsOrigins: boolean;
+}): CorsOptions {
   return {
-    origin:
-      nodeEnv === "development"
-        ? DEVELOPMENT_ORIGINS
-        : uniq([...corsOrigins, ...PUBLIC_WEB_ORIGINS]),
+    origin: uniq([
+      ...input.corsOrigins,
+      ...PUBLIC_WEB_ORIGINS,
+      ...(input.localCorsOrigins ? LOCAL_DEVELOPMENT_ORIGINS : []),
+    ]),
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [

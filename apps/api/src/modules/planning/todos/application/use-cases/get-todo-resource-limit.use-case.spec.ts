@@ -4,6 +4,7 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
+  PLANNING_INSTANT,
   PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
@@ -28,7 +29,7 @@ describe("할 일 리소스 한도 조회", () => {
     fixture.records.set(2, {
       ...createPlanningTodo(fixture.userId, 2),
       completed: true,
-      completedAt: PLANNING_TIME,
+      completedAt: PLANNING_INSTANT,
     });
     fixture.records.set(3, createPlanningTodo("other-user", 3));
     // When

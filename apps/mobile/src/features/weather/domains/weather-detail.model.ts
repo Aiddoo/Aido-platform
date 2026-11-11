@@ -55,7 +55,7 @@ export type NextSunEvent =
 
 /** 오늘 아직 지나지 않은 일출·일몰, 둘 다 지났으면 내일 일출. 모두 없으면 null이다. */
 function findNextSunEvent(
-  today: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
+  today: DailyForecastEntry,
   tomorrow: Pick<DailyForecastEntry, 'sunrise'> | null,
   now: Instant,
 ): NextSunEvent | null {
@@ -78,9 +78,7 @@ interface Duration {
   minutes: number;
 }
 
-function findDaylightDuration(
-  day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
-): Duration | null {
+function findDaylightDuration(day: DailyForecastEntry): Duration | null {
   if (day.sunrise == null || day.sunset == null) {
     return null;
   }

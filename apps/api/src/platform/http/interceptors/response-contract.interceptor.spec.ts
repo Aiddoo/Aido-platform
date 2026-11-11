@@ -7,8 +7,8 @@ import { z } from "zod";
 
 import { HttpLogEvent } from "#api/platform/logging/http-log";
 
-import { RawResponse } from "../decorators/index.js";
-import { ApiSuccessResponse } from "../swagger/index.js";
+import { RawResponse } from "../decorators/raw-response.decorator.js";
+import { ApiSuccessResponse } from "../swagger/decorators/api-response.decorator.js";
 import { ResponseContractInterceptor } from "./response-contract.interceptor.js";
 import { ResponseTransformInterceptor } from "./response-transform.interceptor.js";
 

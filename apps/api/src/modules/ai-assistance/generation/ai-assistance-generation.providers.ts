@@ -6,10 +6,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { AiGeneratorPort } from "./application/ports/ai-generator.port.js";
 import { AiClientAppVersionReaderPort } from "./application/ports/client-app-version.reader.port.js";
-import {
-  USER_LOCALE_PREFERENCE_READER,
-  UserLocalePreferenceReaderPort,
-} from "./application/ports/user-locale-preference.reader.port.js";
+import { UserLocalePreferenceReaderPort } from "./application/ports/user-locale-preference.reader.port.js";
 import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.reader.js";
 import {
   type AiProviderAdapter,
@@ -35,7 +32,6 @@ export const AI_ASSISTANCE_GENERATION_PROVIDERS = [
   AiSpendBudgetAdapter,
   { provide: AiGeneratorPort, useClass: AiSdkGeneratorAdapter },
   { provide: UserLocalePreferenceReaderPort, useClass: UserLocalePreferenceReaderAdapter },
-  { provide: USER_LOCALE_PREFERENCE_READER, useExisting: UserLocalePreferenceReaderPort },
   { provide: AiClientAppVersionReaderPort, useClass: LatestClientAppVersionAdapter },
   provideUseCase(ScheduledAiConsentReader, {
     consentReader: AiDataSharingConsentReaderPort,

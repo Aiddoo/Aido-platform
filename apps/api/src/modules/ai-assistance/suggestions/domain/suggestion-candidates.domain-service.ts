@@ -16,7 +16,7 @@ export const MAX_SUGGESTION_CANDIDATES = 30;
 /** 시작 단계(기록 3개 미만)에서 고를 수 있는 제안 수 */
 const MAX_STARTER_PICKS = 2;
 
-export const SUGGESTION_MODES = ["PATTERN", "STARTER"] as const;
+const SUGGESTION_MODES = ["PATTERN", "STARTER"] as const;
 
 export type SuggestionMode = (typeof SUGGESTION_MODES)[number];
 

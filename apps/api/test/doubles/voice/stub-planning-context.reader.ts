@@ -3,7 +3,7 @@ import {
   PlanningContextReaderPort,
 } from "#api/modules/voice/action-plans/application/ports/planning-context.reader.port";
 
-export const STUB_PLANNING_CONTEXT: PlanningContext = {
+const STUB_PLANNING_CONTEXT: PlanningContext = {
   categories: [{ id: 1, name: "업무" }],
   upcomingTodos: [],
 };

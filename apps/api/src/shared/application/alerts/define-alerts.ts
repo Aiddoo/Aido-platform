@@ -1,8 +1,8 @@
 import { mapValues } from "es-toolkit";
 
-export const ALERT_SEVERITIES = ["warning", "error"] as const;
+const ALERT_SEVERITIES = ["warning", "error"] as const;
 
-export type AlertSeverity = (typeof ALERT_SEVERITIES)[number];
+type AlertSeverity = (typeof ALERT_SEVERITIES)[number];
 
 /**
  * 사람이 확인해야 하는 운영 상황 하나의 정의. key는 Sentry fingerprint라 한 이슈로 모이고,

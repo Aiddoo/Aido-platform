@@ -34,14 +34,15 @@ export class GetFriendsUseCase {
   async execute(query: GetFriendsQuery): Promise<GetFriendsResult> {
     const { friendshipReader, followReader } = this.#dependencies;
     const size = clampPageSize(query.size);
+    const userId = UserId.reconstitute(query.userId);
     const [friends, totalCount] = await Promise.all([
       friendshipReader.listFriends({
-        userId: UserId.reconstitute(query.userId),
+        userId,
         afterFriendshipId: query.cursor == null ? null : FriendshipId.reconstitute(query.cursor),
         tagSearch: query.search ?? null,
         limit: size + 1,
       }),
-      followReader.countFriends(query.userId),
+      followReader.countFriends(userId),
     ]);
     return {
       page: toCursorPage({ rows: friends, size, toCursor: (friend) => friend.friendshipId }),

@@ -1,6 +1,6 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { ReminderTimezoneCachePort } from "../ports/reminder-timezone-cache.port.js";
 import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-rebase-enqueuer.port.js";
@@ -29,12 +29,13 @@ export class UpsertPushTimezoneUseCase {
   }
 
   async execute(input: UpsertPushTimezoneCommand): Promise<void> {
-    const { userId, timezone } = input;
+    const { timezone } = input;
+    const userId = UserId.reconstitute(input.userId);
     await this.#dependencies.unitOfWork.run(async () => {
       if (await this.#dependencies.preferenceRepository.upsertTimezone(userId, timezone)) {
         await this.#dependencies.todoTimezoneRebase.enqueueRebase(
           userId,
-          instantToDate(this.#dependencies.clock.now()),
+          this.#dependencies.clock.now(),
         );
       }
     });

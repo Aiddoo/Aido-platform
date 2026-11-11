@@ -17,7 +17,7 @@ export const TodoCategoryFixture = {
    */
   create: (overrides: Partial<TodoCategory> = {}): TodoCategory => {
     const id = ++categoryCounter;
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? id,
@@ -66,7 +66,7 @@ export const TodoFixture = {
    */
   create: (overrides: Partial<Todo> = {}): Todo => {
     const id = ++todoCounter;
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
 
     return {
       id: overrides.id ?? id,
@@ -75,7 +75,7 @@ export const TodoFixture = {
       title: overrides.title ?? `Test Todo ${id}`,
       completed: overrides.completed ?? false,
       completedAt: overrides.completedAt ?? null,
-      startDate: overrides.startDate ?? now,
+      startDate: overrides.startDate ?? now.toZonedDateTimeISO("UTC").toPlainDate(),
       endDate: overrides.endDate ?? null,
       scheduledLocalTime: overrides.scheduledLocalTime ?? null,
       scheduledTime: overrides.scheduledTime ?? null,
@@ -95,7 +95,7 @@ export const TodoFixture = {
    * 완료된 Todo 생성
    */
   createCompleted: (overrides: Partial<Todo> = {}): Todo => {
-    const now = new Date();
+    const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
     return TodoFixture.create({
       completed: true,
       completedAt: now,

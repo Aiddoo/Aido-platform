@@ -39,7 +39,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
     requestPasswordReset = module.get(RequestPasswordResetUseCase);
     resetPassword = module.get(ResetPasswordUseCase);
     loginWithPassword = module.get(LoginWithPasswordUseCase);
-  }, 60000);
+  }, 60_000);
 
   beforeEach(async () => {
     suppressLogger();

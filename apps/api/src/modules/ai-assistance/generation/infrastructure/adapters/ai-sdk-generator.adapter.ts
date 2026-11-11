@@ -1,15 +1,18 @@
 import { createHash } from "node:crypto";
 
 import { AI_PROVIDER_IDS, type AiProviderId } from "@aido/api/vocabulary";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { generateText, Output } from "ai";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundRejectedError } from "#api/platform/resilience/outbound-policy.errors";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
+import {
+  type AiAssistanceGenerationConfig,
+  aiAssistanceGenerationConfig,
+} from "../../ai-assistance-generation.config.js";
 import { AiAlerts } from "../../application/ai-generation.alerts.js";
 import {
   AiGenerationError,
@@ -21,9 +24,9 @@ import {
   type AiGenerationRequest,
   type AiGenerationResult,
   AiGeneratorPort,
-  type AiTaskClass,
 } from "../../application/ports/ai-generator.port.js";
 import { planAiRoute, resolveAttemptTime } from "../../domain/ai-route.domain-service.js";
+import { type AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 import {
   type AiGenerationPolicy,
   resolveGenerationPolicy,
@@ -49,6 +52,8 @@ import { AiSpendBudgetAdapter } from "./ai-spend-budget.adapter.js";
 
 /** 사람이 키·요청을 확인해야 하는 실패. 다음 업체로 넘기면서 error로 남긴다. */
 const OPERATOR_FAILURES: ReadonlySet<AiFailureKind> = new Set(["AUTH", "BAD_REQUEST"]);
+
+type GeneratorConfig = Pick<AiAssistanceGenerationConfig, "breaker" | "tasks" | "providerOrder">;
 
 /** 스키마 불일치(shouldRetrySameProvider)는 첫 업체에만 한 번 더 묻는다. */
 const MAX_CALLS_PER_PROVIDER = 2;
@@ -107,12 +112,12 @@ export class AiSdkGeneratorAdapter extends AiGeneratorPort {
   readonly #classPolicies: Readonly<Record<AiTaskClass, OutboundPolicy>>;
   readonly #inflight = new Map<string, Promise<AiGenerationResult<unknown>>>();
 
-  readonly #config: TypedConfigService;
+  readonly #config: GeneratorConfig;
   readonly #spend: AiSpendBudgetAdapter;
   readonly #alert: Pick<OperationalAlertPort, "raise">;
 
   constructor(
-    config: TypedConfigService,
+    @Inject(aiAssistanceGenerationConfig.KEY) config: GeneratorConfig,
     providers: AiProviderCatalog,
     policies: OutboundPolicyRegistry,
     spend: AiSpendBudgetAdapter,
@@ -126,7 +131,7 @@ export class AiSdkGeneratorAdapter extends AiGeneratorPort {
     this.#providerPolicies = new Map(
       AI_PROVIDER_IDS.map((provider) => [
         provider,
-        policies.get(createAiProviderPolicy(provider, config.ai.breaker)),
+        policies.get(createAiProviderPolicy(provider, config.breaker)),
       ]),
     );
     this.#classPolicies = {
@@ -194,7 +199,7 @@ export class AiSdkGeneratorAdapter extends AiGeneratorPort {
   }
 
   async #generateOnce<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
-    const settings = this.#config.ai.tasks[request.task];
+    const settings = this.#config.tasks[request.task];
     const policy = resolveGenerationPolicy(request.task, request.taskClass, settings);
     const cost = new CostMeter();
     const chainSignals: AbortSignal[] = [];
@@ -228,7 +233,7 @@ export class AiSdkGeneratorAdapter extends AiGeneratorPort {
   ): Promise<AiGenerationResult<T>> {
     const { policy, signal, cost } = context;
     const routeInput = {
-      order: this.#config.ai.providerOrder,
+      order: this.#config.providerOrder,
       configured: new Set(
         this.#providers
           .list()

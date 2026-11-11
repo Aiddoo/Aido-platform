@@ -1,6 +1,6 @@
+import type { CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { ListActiveSessionsUseCase } from "#api/modules/identity/auth/application/use-cases/list-active-sessions.use-case";
 import { RevokeSessionUseCase } from "#api/modules/identity/auth/application/use-cases/revoke-session.use-case";
-import type { CurrentUserPayload } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";
 import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 import {

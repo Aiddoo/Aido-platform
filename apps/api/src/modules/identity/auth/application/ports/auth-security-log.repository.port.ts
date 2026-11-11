@@ -1,7 +1,9 @@
 import type { SecurityEvent } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 export interface NewSecurityLog {
-  readonly userId?: string;
+  readonly userId?: UserId;
   readonly event: SecurityEvent;
   readonly ipAddress: string;
   readonly userAgent: string;

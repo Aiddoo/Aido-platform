@@ -192,11 +192,8 @@ export class RedeemInviteUseCase {
     const inviteeId = UserId.reconstitute(identity.userId);
     // 친구 수가 많아도 두 사람 쌍만 확인한다
     const [areAlreadyFriends, blockRelation, previous, hasClaimedReward] = await Promise.all([
-      this.#dependencies.followReader.isCurrentMutualFriend(
-        inviteeId.value,
-        invite.inviterId.value,
-      ),
-      this.#dependencies.blockReader.findRelation(inviteeId.value, invite.inviterId.value),
+      this.#dependencies.followReader.isCurrentMutualFriend(inviteeId, invite.inviterId),
+      this.#dependencies.blockReader.findRelation(inviteeId, invite.inviterId),
       this.#dependencies.inviteRedemptionRepository.findByInviteeIdForUpdate(inviteeId),
       this.#dependencies.rewardClaimRepository.existsAny(claims),
     ]);
@@ -364,8 +361,8 @@ export class RedeemInviteUseCase {
     shouldNotifyFriends: boolean,
   ): Promise<Exclude<FriendshipEstablishment, "UNAVAILABLE">> {
     const established = await this.#dependencies.friendshipEstablisher.establish({
-      requesterId: inviteeId.value,
-      targetUserId: inviterId.value,
+      requesterId: inviteeId,
+      targetUserId: inviterId,
       shouldNotifyFriends,
     });
     if (established === "UNAVAILABLE") {

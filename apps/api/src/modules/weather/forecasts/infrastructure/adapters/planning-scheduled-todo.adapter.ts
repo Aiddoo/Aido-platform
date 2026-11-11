@@ -23,7 +23,7 @@ export class PlanningScheduledTodoAdapter implements ScheduledTodoReaderPort {
     readonly until: Temporal.Instant;
   }): Promise<ScheduledTodo[]> {
     const todos = await this.#todoSchedule.listPendingTimedTodos({
-      userIds: [params.userId.value],
+      userIds: [params.userId],
       date: params.date,
       timezone: params.timezone,
       from: params.from,

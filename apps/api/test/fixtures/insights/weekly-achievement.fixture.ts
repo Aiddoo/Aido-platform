@@ -33,7 +33,7 @@ export function createWeeklyAchievementRecordInputFixture(
     week: 10,
     totalTodos: 5,
     completedTodos: 3,
-    achievedAt: new Date(WEEKLY_ACHIEVEMENT_FIXTURE_NOW.epochMilliseconds),
+    achievedAt: WEEKLY_ACHIEVEMENT_FIXTURE_NOW,
     ...overrides,
   };
 }

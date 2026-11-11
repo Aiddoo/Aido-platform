@@ -12,7 +12,7 @@ interface ModelPrice {
 }
 
 /** 공식 가격표(2026-11-05). 모델을 env로 바꾸면 여기에도 더해야 비용이 추정된다. */
-export const AI_MODEL_PRICING: Readonly<Record<string, ModelPrice>> = {
+const AI_MODEL_PRICING: Readonly<Record<string, ModelPrice>> = {
   "anthropic:claude-haiku-5-5": { input: 0.1, cacheRead: 0.01, cacheWrite: 0.125, output: 0.5 },
   "google:gemini-3.1-flash-lite": { input: 0.25, cacheRead: 0.025, cacheWrite: 0.25, output: 1.5 },
   "openai:gpt-6-luna": { input: 0.1, cacheRead: 0.01, cacheWrite: 0.125, output: 0.5 },
