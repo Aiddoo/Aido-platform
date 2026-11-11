@@ -108,6 +108,7 @@ stepper.history.replace('verification', (prev) => ({ ...prev, email: nextEmail }
 - context가 빈 단계는 context 인자를 생략한다. `push`·`replace`는 값이나 updater `(prev) => next`를 받는다.
 - 단계 추적은 `onStepChange` 하나다(`auth_signup_step_viewed`, `auth_password_reset_step_viewed`). 단계 컴포넌트에서 따로 추적하지 않는다.
 - 단계 안에 `useState`로 또 단계를 두지 않는다. 화면이 바뀌는 입력 묶음은 모두 진짜 단계여서 Android 뒤로 가기가 단계마다 한 칸씩 돈다.
+- 칸이 하나씩 늘어나는 입력(가입의 이름 → 이메일, 새 비밀번호 → 확인)은 이웃 단계에 같은 렌더러 함수를 넘긴다. 같은 렌더러로 이어진 단계는 한 화면이라 다시 마운트되지 않아 입력 포커스와 키보드가 남는다. 렌더러가 다르면 단계마다 새로 마운트된다.
 - `<stepper.Render … />` JSX로만 그린다. 렌더러는 단계 컴포넌트를 돌려주기만 하고 훅은 단계 컴포넌트 안에서 쓴다. 폼은 흐름 컴포넌트가 소유해 앞 단계로 돌아가도 값이 남는다.
 - 단계는 URL로 복원하지 않는다. 네이티브 헤더 제목·툴바가 단계를 따르면 스크린이 `useStepper`를 갖고 폼에 `stepper`를 넘긴다(`app/(auth)/sign-up.tsx`).
 
