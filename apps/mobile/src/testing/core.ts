@@ -53,7 +53,7 @@ export { createSystemShareGatewayStub } from './ports/system-share-gateway.stub'
 export { createTestDi, createTestPorts } from './di';
 export { createViewCaptureGatewayStub } from './ports/view-capture-gateway.stub';
 export { createVoiceNoteStorageFake } from './fakes/voice-note-storage.fake';
-export { createTestQueryClient } from './query-client';
+export { createTestQueryClient, deliverQueryNotifications } from './query-client';
 export { runKyAfterResponseHook } from './ky-after-response-hook';
 export { setupFakeTimersPerTest } from './timers';
 export { stubWindowDimensions } from './window-dimensions';

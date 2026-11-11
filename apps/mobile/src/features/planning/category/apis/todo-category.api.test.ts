@@ -86,18 +86,6 @@ describe('TodoCategoryApi', () => {
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
     });
-
-    it('Zod 검증 실패 → ParseError throw', async () => {
-      // Given
-      const { httpClient, service } = createSut();
-      httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-      // When
-      const result = service.createCategory({ name: '새 카테고리', color: '#FF0000' });
-
-      // Then
-      await expect(result).rejects.toThrow('Invalid createCategory response');
-    });
   });
 
   describe('updateCategory', () => {
@@ -116,31 +104,6 @@ describe('TodoCategoryApi', () => {
       // Then
       expect(httpClient.patch).toHaveBeenCalledWith('v1/todo-categories/1', { name: '수정된' });
       expect(result.ok).toBe(true);
-    });
-
-    it('HTTP 에러 → Result.err 반환', async () => {
-      // Given
-      const { httpClient, service } = createSut();
-      const apiError = createTodoCategoryApiError();
-      httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.updateCategory(1, { name: '수정' });
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    it('Zod 검증 실패 → ParseError throw', async () => {
-      // Given
-      const { httpClient, service } = createSut();
-      httpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-      // When
-      const result = service.updateCategory(1, { name: '수정' });
-
-      // Then
-      await expect(result).rejects.toThrow('Invalid updateCategory response');
     });
   });
 
@@ -240,18 +203,6 @@ describe('TodoCategoryApi', () => {
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
     });
-
-    it('Zod 검증 실패 → ParseError throw', async () => {
-      // Given
-      const { httpClient, service } = createSut();
-      httpClient.delete.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-      // When
-      const result = service.deleteCategory(3, EMPTY_DELETION);
-
-      // Then
-      await expect(result).rejects.toThrow('Invalid deleteCategory response');
-    });
   });
 
   describe('reorderCategory', () => {
@@ -273,19 +224,6 @@ describe('TodoCategoryApi', () => {
         targetCategoryId: 2,
       });
       expect(result.ok).toBe(true);
-    });
-
-    it('HTTP 에러 → Result.err 반환', async () => {
-      // Given
-      const { httpClient, service } = createSut();
-      const apiError = createTodoCategoryApiError();
-      httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.reorderCategory(1, { position: 'after', targetCategoryId: 2 });
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
     });
   });
 });

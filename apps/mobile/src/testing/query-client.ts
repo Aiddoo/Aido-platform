@@ -1,5 +1,5 @@
 import { createAppMutationCache } from '@src/bootstrap/query/mutation-error-feedback-cache';
-import { QueryClient, type QueryClientConfig } from '@tanstack/react-query';
+import { notifyManager, QueryClient, type QueryClientConfig } from '@tanstack/react-query';
 
 const createdClients = new Set<QueryClient>();
 
@@ -30,4 +30,14 @@ export function clearTestQueryClients(): void {
     client.clear();
   }
   createdClients.clear();
+}
+
+/** 쿼리 알림이 다 나갈 때까지 기다리는 스케줄러 차례 수. 비동기 onMutate가 남긴 알림은 다음 차례에 잡힌다 */
+const NOTIFICATION_ROUNDS = 3;
+
+/** TanStack notifyManager는 구독자 알림을 다음 틱으로 미룬다. 같은 스케줄러에 여러 번 줄을 서 앞선 알림이 다 나간 뒤 돌아온다 */
+export async function deliverQueryNotifications() {
+  for (let round = 0; round < NOTIFICATION_ROUNDS; round += 1) {
+    await new Promise<void>((resolve) => notifyManager.schedule(resolve));
+  }
 }

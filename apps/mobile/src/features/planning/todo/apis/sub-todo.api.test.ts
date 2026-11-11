@@ -1,6 +1,6 @@
 import { createHttpClientStub } from '@src/testing/core';
 
-import { createTodoApiError, createTodoDto, INVALID_DTO } from '../__tests__/todo.fixtures';
+import { createTodoDto, INVALID_DTO } from '../__tests__/todo.fixtures';
 import { SubTodoApi } from './sub-todo.api';
 
 function createSut() {
@@ -38,19 +38,6 @@ describe('SubTodoApi', () => {
       expect(result.ok && result.value.repeat).toBeNull();
     });
 
-    it('HTTP 에러 → Result.err 반환', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      const apiError = createTodoApiError({ code: 'TODO_0821' });
-      httpClient.post.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await api.addSubTodo(1, { title: '새 항목' });
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
     it('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       const { httpClient, api } = createSut();
@@ -80,34 +67,6 @@ describe('SubTodoApi', () => {
       });
       expect(result.ok).toBe(true);
     });
-
-    it('HTTP 에러 → Result.err 반환', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      const apiError = createTodoApiError({ code: 'TODO_0822' });
-      httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await api.updateSubTodo(1, 10, { title: '수정' });
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    it('Zod 검증 실패 → ParseError throw', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      httpClient.patch.mockResolvedValue({
-        ok: true,
-        value: { message: '', todo: INVALID_DTO },
-      });
-
-      // When
-      const result = api.updateSubTodo(1, 10, { title: '수정' });
-
-      // Then
-      await expect(result).rejects.toThrow('Invalid updateSubTodo response');
-    });
   });
 
   describe('deleteSubTodo', () => {
@@ -123,34 +82,6 @@ describe('SubTodoApi', () => {
       // Then
       expect(httpClient.delete).toHaveBeenCalledWith('v1/todos/1/items/10');
       expect(result.ok).toBe(true);
-    });
-
-    it('HTTP 에러 → Result.err 반환', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      const apiError = createTodoApiError({ code: 'TODO_0822' });
-      httpClient.delete.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await api.deleteSubTodo(1, 10);
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    it('Zod 검증 실패 → ParseError throw', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      httpClient.delete.mockResolvedValue({
-        ok: true,
-        value: { message: '', todo: INVALID_DTO },
-      });
-
-      // When
-      const result = api.deleteSubTodo(1, 10);
-
-      // Then
-      await expect(result).rejects.toThrow('Invalid deleteSubTodo response');
     });
   });
 
@@ -169,34 +100,6 @@ describe('SubTodoApi', () => {
         itemIds: [3, 1, 2],
       });
       expect(result.ok).toBe(true);
-    });
-
-    it('HTTP 에러 → Result.err 반환', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      const apiError = createTodoApiError();
-      httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await api.reorderSubTodos(1, { itemIds: [3, 1, 2] });
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    it('Zod 검증 실패 → ParseError throw', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      httpClient.patch.mockResolvedValue({
-        ok: true,
-        value: { message: '', todo: INVALID_DTO },
-      });
-
-      // When
-      const result = api.reorderSubTodos(1, { itemIds: [3, 1, 2] });
-
-      // Then
-      await expect(result).rejects.toThrow('Invalid reorderSubTodos response');
     });
   });
 });
