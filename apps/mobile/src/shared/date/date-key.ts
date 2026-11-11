@@ -1,14 +1,26 @@
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 
-// Hinnant의 civil 날짜 ↔ 일수 변환(proleptic 그레고리력)이다. Hermes에 Temporal이 없고 폴리필은 spike에서 버렸다
+// Hinnant의 civil 날짜 ↔ 일수 변환(proleptic 그레고리력, "chrono-Compatible Low-Level Date Algorithms")이다.
+// Hermes에 Temporal이 없고 폴리필은 spike에서 버렸다. 3월을 해의 첫 달로 세면 윤일이 해의 끝에 와 식이 단순해진다
 const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const MONTHS_PER_YEAR = 12;
 const FEBRUARY = 2;
+const MARCH = 3;
 const LEAP_FEBRUARY_DAYS = 29;
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
-const DAYS_PER_ERA = 146_097;
+const YEARS_PER_LEAP_CYCLE = 4;
+const YEARS_PER_CENTURY = 100;
+// 그레고리력은 400년마다 요일과 윤년이 똑같이 되풀이된다
 const YEARS_PER_ERA = 400;
-// 0000-03-01부터 1970-01-01까지의 일수. 3월을 해의 첫 달로 세면 윤일이 해의 끝에 온다
+const DAYS_PER_COMMON_YEAR = 365;
+const DAYS_PER_4_COMMON_YEARS = 1460;
+const DAYS_PER_CENTURY = 36_524;
+const DAYS_PER_ERA = 146_097;
+// 3월부터 7월까지 다섯 달이 153일이고 이 길이 패턴이 되풀이돼, 3월 기준 달과 그 앞의 일수를 한 식으로 오간다
+const MARCH_TO_JULY_DAYS = 153;
+const MARCH_TO_JULY_MONTHS = 5;
+const MONTH_LENGTH_ROUNDING = 2;
+// 0000-03-01부터 1970-01-01까지의 일수
 const EPOCH_SHIFT_DAYS = 719_468;
 // 1970-01-01은 목요일이다
 const EPOCH_DAY_OF_WEEK = 4;
@@ -21,7 +33,10 @@ export interface CivilDate {
 }
 
 function isLeapYear(year: number): boolean {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  return (
+    (year % YEARS_PER_LEAP_CYCLE === 0 && year % YEARS_PER_CENTURY !== 0) ||
+    year % YEARS_PER_ERA === 0
+  );
 }
 
 function getDaysInMonth(year: number, month: number): number {
@@ -46,14 +61,53 @@ export function parseDateKey(dateKey: string): CivilDate | null {
   return isRealDate ? { year, month, day } : null;
 }
 
+/** 3월=0 … 2월=11 */
+function toMarchBasedMonth(month: number): number {
+  return (month - MARCH + MONTHS_PER_YEAR) % MONTHS_PER_YEAR;
+}
+
+function fromMarchBasedMonth(marchBasedMonth: number): number {
+  return ((marchBasedMonth + MARCH - 1) % MONTHS_PER_YEAR) + 1;
+}
+
+/** 3월 1일부터 그 달 1일 앞까지의 일수 */
+function getDaysBeforeMarchBasedMonth(marchBasedMonth: number): number {
+  return Math.floor(
+    (MARCH_TO_JULY_DAYS * marchBasedMonth + MONTH_LENGTH_ROUNDING) / MARCH_TO_JULY_MONTHS,
+  );
+}
+
+/** 3월 1일부터 센 일수가 속한 3월 기준 달 */
+function toMarchBasedMonthOfYearDay(dayOfYear: number): number {
+  return Math.floor(
+    (MARCH_TO_JULY_MONTHS * dayOfYear + MONTH_LENGTH_ROUNDING) / MARCH_TO_JULY_DAYS,
+  );
+}
+
+/** 400년 주기 안에서 그 해 3월 1일 앞까지의 일수 */
+function getDaysBeforeYearOfEra(yearOfEra: number): number {
+  return (
+    yearOfEra * DAYS_PER_COMMON_YEAR +
+    Math.floor(yearOfEra / YEARS_PER_LEAP_CYCLE) -
+    Math.floor(yearOfEra / YEARS_PER_CENTURY)
+  );
+}
+
+/** 400년 주기 안의 일수가 속한 해. 윤일을 빼 모든 해를 365일로 맞춘 뒤 나눈다 */
+function toYearOfEra(dayOfEra: number): number {
+  const leapDays =
+    Math.floor(dayOfEra / DAYS_PER_4_COMMON_YEARS) -
+    Math.floor(dayOfEra / DAYS_PER_CENTURY) +
+    Math.floor(dayOfEra / (DAYS_PER_ERA - 1));
+  return Math.floor((dayOfEra - leapDays) / DAYS_PER_COMMON_YEAR);
+}
+
 function toEpochDay({ year, month, day }: CivilDate): number {
   const marchYear = month <= FEBRUARY ? year - 1 : year;
   const era = Math.floor(marchYear / YEARS_PER_ERA);
   const yearOfEra = marchYear - era * YEARS_PER_ERA;
-  const marchMonth = month > FEBRUARY ? month - 3 : month + 9;
-  const dayOfYear = Math.floor((153 * marchMonth + 2) / 5) + day - 1;
-  const dayOfEra =
-    yearOfEra * 365 + Math.floor(yearOfEra / 4) - Math.floor(yearOfEra / 100) + dayOfYear;
+  const dayOfYear = getDaysBeforeMarchBasedMonth(toMarchBasedMonth(month)) + day - 1;
+  const dayOfEra = getDaysBeforeYearOfEra(yearOfEra) + dayOfYear;
   return era * DAYS_PER_ERA + dayOfEra - EPOCH_SHIFT_DAYS;
 }
 
@@ -61,42 +115,32 @@ function toCivilDate(epochDay: number): CivilDate {
   const shifted = epochDay + EPOCH_SHIFT_DAYS;
   const era = Math.floor(shifted / DAYS_PER_ERA);
   const dayOfEra = shifted - era * DAYS_PER_ERA;
-  const yearOfEra = Math.floor(
-    (dayOfEra -
-      Math.floor(dayOfEra / 1460) +
-      Math.floor(dayOfEra / 36_524) -
-      Math.floor(dayOfEra / (DAYS_PER_ERA - 1))) /
-      365,
-  );
-  const dayOfYear =
-    dayOfEra - (365 * yearOfEra + Math.floor(yearOfEra / 4) - Math.floor(yearOfEra / 100));
-  const marchMonth = Math.floor((5 * dayOfYear + 2) / 153);
-  const day = dayOfYear - Math.floor((153 * marchMonth + 2) / 5) + 1;
-  const month = marchMonth < 10 ? marchMonth + 3 : marchMonth - 9;
+  const yearOfEra = toYearOfEra(dayOfEra);
+  const dayOfYear = dayOfEra - getDaysBeforeYearOfEra(yearOfEra);
+  const marchBasedMonth = toMarchBasedMonthOfYearDay(dayOfYear);
+  const day = dayOfYear - getDaysBeforeMarchBasedMonth(marchBasedMonth) + 1;
+  const month = fromMarchBasedMonth(marchBasedMonth);
   const year = yearOfEra + era * YEARS_PER_ERA + (month <= FEBRUARY ? 1 : 0);
   return { year, month, day };
 }
 
 /** 0=일 … 6=토 */
-function getWeekday(epochDay: number): number {
+function toDayOfWeek(epochDay: number): number {
   return (((epochDay + EPOCH_DAY_OF_WEEK) % DAYS_PER_WEEK) + DAYS_PER_WEEK) % DAYS_PER_WEEK;
 }
 
 /** 월요일 시작 주의 월요일까지 지난 일수 */
 function getDaysSinceMonday(epochDay: number): number {
-  return (getWeekday(epochDay) + DAYS_PER_WEEK - 1) % DAYS_PER_WEEK;
+  return (toDayOfWeek(epochDay) + DAYS_PER_WEEK - 1) % DAYS_PER_WEEK;
 }
 
-/** 잘못된 key에서 나온 날짜는 빈 문자열이다 */
-function formatDateKey(date: CivilDate | null): string {
-  if (date == null) {
-    return '';
-  }
+function formatDateKey(date: CivilDate): string {
   const month = String(date.month).padStart(2, '0');
   const day = String(date.day).padStart(2, '0');
   return `${String(date.year).padStart(4, '0')}-${month}-${day}`;
 }
 
+// 잘못된 key에서 나온 날짜는 빈 문자열이다. DateKey brand로 경계에서 막기 전까지의 약속이다(migration-status)
 function shiftDateKey(dateKey: string, toEpochDayShift: (epochDay: number) => number): string {
   const date = parseDateKey(dateKey);
   return date == null ? '' : formatDateKey(toCivilDate(toEpochDayShift(toEpochDay(date))));
@@ -120,7 +164,7 @@ export function addMonthsToDateKey(dateKey: string, months: number): string {
 
 export function getMonthStartDateKey(dateKey: string): string {
   const date = parseDateKey(dateKey);
-  return formatDateKey(date == null ? null : { ...date, day: 1 });
+  return date == null ? '' : formatDateKey({ ...date, day: 1 });
 }
 
 /** 두 YYYY-MM-DD의 달 차이 (to - from). 일은 보지 않고 달만 센다. */
@@ -146,7 +190,7 @@ export function diffDateKeysInDays(from: string, to: string): number {
 /** YYYY-MM-DD의 요일 (0=일 … 6=토, Date#getDay()와 같은 인덱스). */
 export function getDayOfWeek(dateKey: string): number {
   const date = parseDateKey(dateKey);
-  return date == null ? Number.NaN : getWeekday(toEpochDay(date));
+  return date == null ? Number.NaN : toDayOfWeek(toEpochDay(date));
 }
 
 /** 그 날이 속한 월요일 시작 주의 월요일. 일요일은 앞선 월요일로 간다. */
@@ -180,9 +224,7 @@ export function getDaysInDateKeyMonth(dateKey: string): number {
 
 export function getMonthEndDateKey(dateKey: string): string {
   const date = parseDateKey(dateKey);
-  return formatDateKey(
-    date == null ? null : { ...date, day: getDaysInMonth(date.year, date.month) },
-  );
+  return date == null ? '' : formatDateKey({ ...date, day: getDaysInMonth(date.year, date.month) });
 }
 
 export function isSameMonthDateKey(first: string, second: string): boolean {
