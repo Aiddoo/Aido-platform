@@ -626,6 +626,9 @@ importers:
 
   .:
     devDependencies:
+      '@aido/oxlint-plugin':
+        specifier: workspace:*
+        version: link:tooling/oxlint-plugin-aido
       '@changesets/cli':
         specifier: 'catalog:'
         version: 3.0.3
@@ -1238,6 +1241,12 @@ importers:
       pg-boss:
         specifier: 'catalog:'
         version: 12.38.1(@opentelemetry/api@1.9.1)
+
+  tooling/oxlint-plugin-aido:
+    devDependencies:
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.93.0
 
   tooling/typescript: {}
 

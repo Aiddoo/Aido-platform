@@ -43,6 +43,7 @@
     "version-packages": "changeset version && node scripts/release/sync-versions.mjs"
   },
   "devDependencies": {
+    "@aido/oxlint-plugin": "workspace:*",
     "@changesets/cli": "catalog:",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
