@@ -26,6 +26,7 @@ function generateCurrentUserDto(): CurrentUserResponse {
     willRenew: false,
     bankedPremiumDays: 0,
     premiumGrantEndedAt: null,
+    premiumIsTrial: false,
     isPremium: false,
   };
 }

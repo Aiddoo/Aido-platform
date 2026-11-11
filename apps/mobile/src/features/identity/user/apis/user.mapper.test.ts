@@ -70,8 +70,8 @@ describe('toUser', () => {
   });
 
   it.each([
-    ['1.15.0 서버가 체험이라고 보내면 체험으로 옮긴다', true, true],
-    ['1.15.0 전 서버라 체험 필드가 없으면 체험이 아닌 것으로 읽는다', undefined, false],
+    ['서버가 체험이라고 보내면 체험으로 옮긴다', true, true],
+    ['서버가 체험이 아니라고 보내면 체험이 아닌 것으로 옮긴다', false, false],
   ] as const)('%s', (_case, premiumIsTrial, expected) => {
     // Given
     const dto = { ...PREMIUM_ME_EXAMPLES.trialDuringReward, premiumIsTrial };
