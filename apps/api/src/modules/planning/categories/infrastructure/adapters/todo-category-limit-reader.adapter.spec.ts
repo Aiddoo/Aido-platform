@@ -49,7 +49,7 @@ describe("TodoCategoryLimitReaderAdapter", () => {
     const adapter = new TodoCategoryLimitReaderAdapter(entitlementReader);
 
     // When
-    const result = await adapter.readLimitInTx("user-123");
+    const result = await adapter.readLimitInTx(UserId.reconstitute("user-123"));
 
     // Then
     expect(result).toBe(3);
@@ -64,7 +64,7 @@ describe("TodoCategoryLimitReaderAdapter", () => {
     const adapter = new TodoCategoryLimitReaderAdapter(entitlementReader);
 
     // When
-    await adapter.readFeatureQuotaInTx("user-123", 3);
+    await adapter.readFeatureQuotaInTx(UserId.reconstitute("user-123"), 3);
 
     // Then
     expect(entitlementReader.quotaReads).toEqual([

@@ -300,7 +300,7 @@ describe("beforeSendError — 업무 거부는 어느 경로에서도 오류로 
     for (const error of [rejected, outage, bug]) {
       Sentry.captureException(error);
     }
-    await Sentry.flush(1_000);
+    await Sentry.flush(1000);
 
     // Then - 이벤트 처리는 비동기라 순서는 보지 않는다
     expect(passed).toHaveLength(2);

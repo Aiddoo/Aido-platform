@@ -281,7 +281,7 @@ describe("resolveTodoSchedule — 모델이 낸 범위 밖의 큰 수", () => {
 
   it.each([
     { name: "Temporal 달력 범위를 넘는 일수", date: { kind: "OFFSET_DAYS", amount: 400_000_000 } },
-    { name: "다섯 자리 연도가 되는 내년 초", date: { kind: "YEAR_START", amount: 8_000 } },
+    { name: "다섯 자리 연도가 되는 내년 초", date: { kind: "YEAR_START", amount: 8000 } },
     {
       name: "다섯 자리 연도의 날짜",
       date: { kind: "CALENDAR_DATE", year: 12_026, month: 1, day: 1 },

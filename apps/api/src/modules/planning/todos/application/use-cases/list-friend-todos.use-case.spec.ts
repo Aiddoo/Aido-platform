@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -39,7 +40,14 @@ describe("친구 할 일 목록 조회", () => {
     expect(cached).toEqual(first);
     expect(cached.items[0]?.userId).toBe("friend-user");
     expect(
-      (await fixture.todoCache.readFriendTodosFirstPage("friend-user", "-", "-", 20)).page,
+      (
+        await fixture.todoCache.readFriendTodosFirstPage(
+          UserId.reconstitute("friend-user"),
+          "-",
+          "-",
+          20,
+        )
+      ).page,
     ).toEqual(first);
   });
   it("캐시가 있어도 맞팔이 해제되면 거부한다", async () => {
@@ -74,7 +82,7 @@ describe("친구 할 일 목록 조회", () => {
     // When
     const cursorPage = await useCase.execute({ ...input, cursor: 3 });
     const stored = await fixture.todoCache.readFriendTodosFirstPage(
-      "friend-user",
+      UserId.reconstitute("friend-user"),
       "2026-05-01",
       "2026-05-31",
       2,
@@ -83,7 +91,14 @@ describe("친구 할 일 목록 조회", () => {
     expect(cursorPage.items[0]?.id).toBe(2);
     expect(stored.page?.items[0]?.id).toBe(3);
     expect(
-      (await fixture.todoCache.readFriendTodosFirstPage("friend-user", "-", "-", 2)).page,
+      (
+        await fixture.todoCache.readFriendTodosFirstPage(
+          UserId.reconstitute("friend-user"),
+          "-",
+          "-",
+          2,
+        )
+      ).page,
     ).toBeUndefined();
   });
   it("잘못된 날짜는 친구 권한 오류보다 먼저 반환한다", async () => {

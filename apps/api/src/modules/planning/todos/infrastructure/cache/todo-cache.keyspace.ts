@@ -9,10 +9,6 @@ export const TODO_CACHE_TTL_MS = {
 export const FRIEND_TODOS_INITIAL_GENERATION = "initial";
 
 export const TodoCacheKey = {
-  // v2 배포 전 Redis 키 계약. 새 reader는 읽지 않고 invalidate/TTL로만 정리한다.
-  friendTodosFirstPage: (ownerUserId: string, startDate: string, endDate: string, size: number) =>
-    cacheKey("todo", "friend-view-v1", ownerUserId, startDate, endDate, String(size)),
-  friendTodosPattern: (ownerUserId: string) => cachePattern("todo", "friend-view-v1", ownerUserId),
   friendTodosGeneration: (ownerUserId: string) =>
     cacheKey("todo", "friend-view-v2-generation", ownerUserId),
   friendTodosFirstPageVersioned: (

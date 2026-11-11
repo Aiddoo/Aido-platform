@@ -353,7 +353,7 @@ describe("ParseTodoUseCase", () => {
       task: "parse-todo",
       taskClass: "interactive",
       userId: fixture.input.userId,
-      maxInputChars: 5_000,
+      maxInputChars: 5000,
       promptVersion: "parse-todo@9",
       agreedConsentVersion: "2026-10-26",
     });

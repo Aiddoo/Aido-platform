@@ -1,6 +1,7 @@
 import { DrizzleTodoScheduleReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-schedule.reader";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoCategoryFixture, TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
@@ -72,7 +73,7 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
 
   function listToday(userIds: readonly string[], timezone = SEOUL) {
     return reader.listPendingTimedTodos({
-      userIds,
+      userIds: userIds.map((userId) => UserId.reconstitute(userId)),
       date: TODAY,
       timezone,
       from: FROM,
@@ -195,7 +196,7 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
 
     // When
     const todos = await reader.listPendingTimedTodos({
-      userIds: [userId],
+      userIds: [UserId.reconstitute(userId)],
       date: TODAY,
       timezone: "America/Los_Angeles",
       from: instantFromDate(new Date("2026-11-02T15:00:00.000Z")),

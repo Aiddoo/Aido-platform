@@ -57,14 +57,11 @@ function toDailyCompletionSummary(dto: DailyCompletionSummaryDTO): DailyCompleti
 export function toDailyCompletionsResult(
   dto: DailyCompletionsRangeResponse,
 ): DailyCompletionsResult {
-  return DailyCompletionPolicy.withMultiDayTodoSpans(
-    {
-      completions: dto.completions.map(toDailyCompletionSummary),
-      totalCompleteDays: dto.totalCompleteDays,
-      dateRange: dto.dateRange,
-    },
-    dto.multiDayTodos ?? [],
-  );
+  return {
+    completions: dto.completions.map(toDailyCompletionSummary),
+    totalCompleteDays: dto.totalCompleteDays,
+    dateRange: dto.dateRange,
+  };
 }
 
 export function toTodoSummary(dto: TodoSummaryResponse): TodoSummary {

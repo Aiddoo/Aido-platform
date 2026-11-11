@@ -34,6 +34,6 @@ export class UserProvisioningSeederAdapter implements UserProvisioningSeederPort
   }
 
   async seedDefaultCategories(userId: UserId, locale?: SupportedLocale): Promise<void> {
-    await this.#categoryProvisioner.seed(userId.value, locale);
+    await this.#categoryProvisioner.seed(userId, locale);
   }
 }

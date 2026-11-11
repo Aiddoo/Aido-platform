@@ -21,7 +21,7 @@ const ADMIN = { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null 
 
 const segments = [
   { startMs: 0, text: "다음 주 일정을 정했습니다.", isBookmarked: false },
-  { startMs: 4_200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
+  { startMs: 4200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
 ];
 
 function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
@@ -118,7 +118,7 @@ describe("DigestVoiceNoteUseCase", () => {
     // Then
     const parsed = voiceNoteDigestResponseSchema.parse(response);
     expect(parsed.keyPoints).toEqual([
-      { text: "회의록", startMs: 4_200 },
+      { text: "회의록", startMs: 4200 },
       { text: "번호 없음", startMs: null },
       { text: "범위 밖", startMs: null },
     ]);

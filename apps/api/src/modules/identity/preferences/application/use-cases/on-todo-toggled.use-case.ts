@@ -1,8 +1,8 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import type { StreakCompletionPlan } from "../../domain/streak.vo.js";
 import type { UserPreference } from "../../domain/user-preference.aggregate.js";
@@ -40,10 +40,7 @@ export class OnTodoToggledUseCase {
   async execute(input: OnTodoToggledCommand): Promise<void> {
     const userId = UserId.reconstitute(input.userId);
     try {
-      const today = this.#dependencies.clock
-        .now()
-        .toZonedDateTimeISO(resolveTimezone(input.timezone ?? "UTC"))
-        .toPlainDate();
+      const today = localDateIn(this.#dependencies.clock.now(), input.timezone);
       // 충돌은 오류가 아니라 false로 오고 다 쓰면 경고만 남겨 es-toolkit retry(오류 재시도·시도 사이 타이머)를 쓰지 않는다
       for (let attempt = 0; attempt < MAX_STREAK_UPDATE_ATTEMPTS; attempt += 1) {
         const stats = await this.#statsForDay(userId, today);

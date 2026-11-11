@@ -1,5 +1,5 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
+import { createNudgeMessageReportTarget } from '@src/features/social/moderation/domains/user-report.model';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_MENU_ICON, STACK_MORE_ICON } from '@src/shared/ui';
@@ -29,7 +29,7 @@ export function NudgeModerationToolbar() {
         <Stack.Toolbar.MenuAction
           icon={STACK_MENU_ICON.report}
           onPress={() => {
-            const target = UserReportPolicy.createNudgeMessageReportTarget({
+            const target = createNudgeMessageReportTarget({
               nudgeId: nudge.id,
               senderId: nudge.senderId,
             });

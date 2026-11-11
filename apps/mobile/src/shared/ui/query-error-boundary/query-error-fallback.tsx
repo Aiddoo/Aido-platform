@@ -34,7 +34,9 @@ export function QueryErrorFallback({
       icon={<ErrorIllustration size={illustrationSize} />}
       title={title ?? t('errorBoundary.title')}
       description={description ?? t('errorBoundary.description')}
-      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
+      button={
+        <QueryErrorActions testID="query-error-retry" onRetry={reset} onInquiry={onInquiry} />
+      }
     />
   );
 }

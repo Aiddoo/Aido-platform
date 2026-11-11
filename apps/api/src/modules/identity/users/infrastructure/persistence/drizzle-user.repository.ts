@@ -26,8 +26,8 @@ import {
 } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import type { UserStatus } from "../../../auth/domain/auth.constants.js";
 import { toIdentityUser } from "../../../auth/infrastructure/persistence/auth-row.mapper.js";
@@ -196,7 +196,7 @@ export class DrizzleUserRepository
   ): Promise<void> {
     const { timezone, appVersion, seenAt } = activity;
     const id = activity.userId.value;
-    const localDate = seenAt.toZonedDateTimeISO(resolveTimezone(timezone)).toPlainDate();
+    const localDate = localDateIn(seenAt, timezone);
 
     await this.#db.execute(sql`
       WITH updated_user AS (

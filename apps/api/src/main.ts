@@ -1,4 +1,3 @@
-import "./shared/domain/date/dayjs.setup.js";
 import type { ConfigType } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { Logger } from "nestjs-pino";

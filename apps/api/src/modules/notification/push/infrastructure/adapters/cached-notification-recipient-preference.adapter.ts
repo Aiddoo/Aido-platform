@@ -35,16 +35,16 @@ export class CachedNotificationRecipientPreferenceAdapter
     this.#preferenceReader = preferenceReader;
   }
 
-  async getPreference(userId: string): Promise<NotificationDeliveryPreference> {
-    const preference = await this.#preferenceReader.read(UserId.reconstitute(userId));
+  async getPreference(userId: UserId): Promise<NotificationDeliveryPreference> {
+    const preference = await this.#preferenceReader.read(userId);
     return {
       ...preference,
       locale: preference.locale ?? DEFAULT_LOCALE,
     };
   }
 
-  async getLocale(userId: string): Promise<SupportedLocale> {
-    const preference = await this.#preferenceReader.read(UserId.reconstitute(userId));
+  async getLocale(userId: UserId): Promise<SupportedLocale> {
+    const preference = await this.#preferenceReader.read(userId);
     // 마지막 요청 언어는 아직 어디에도 저장하지 않는다
     return resolveRecipientLocale({
       storedLocale: preference.locale ?? null,
@@ -52,12 +52,14 @@ export class CachedNotificationRecipientPreferenceAdapter
     });
   }
 
-  async getLocales(userIds: readonly string[]): Promise<ReadonlyMap<string, SupportedLocale>> {
-    const uniqueUserIds = uniq(userIds);
+  async getLocales(userIds: readonly UserId[]): Promise<ReadonlyMap<string, SupportedLocale>> {
+    const uniqueUserIds = uniq(userIds.map((userId) => userId.value));
     if (uniqueUserIds.length === 0) {
       return new Map();
     }
-    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(uniqueUserIds);
+    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(
+      uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
+    );
     const storedLocales = new Map(
       preferences.map((preference) => [preference.userId, preference.locale]),
     );
@@ -77,7 +79,9 @@ export class CachedNotificationRecipientPreferenceAdapter
     if (uniqueUserIds.length === 0) {
       return new Map();
     }
-    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(uniqueUserIds);
+    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(
+      uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
+    );
     const timezones = new Map(
       preferences.map((preference) => [preference.userId, preference.timezone]),
     );

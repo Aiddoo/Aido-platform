@@ -66,7 +66,7 @@ export interface SubscriptionEventPayload {
   premium?: PremiumAccessSummary;
 }
 
-export interface SubscriptionTransfer {
+interface SubscriptionTransfer {
   readonly from: readonly string[];
   readonly to: readonly string[];
 }

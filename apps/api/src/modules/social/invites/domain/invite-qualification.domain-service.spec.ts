@@ -30,19 +30,16 @@ describe("invite-qualification — 사용 시작 판정", () => {
     expect(days).toEqual([seoul, losAngeles]);
   });
 
-  it.each(["Mars/Base", "", "KST"])(
-    "저장된 시간대 %j를 알 수 없으면 옛 날짜 함수처럼 UTC 날짜로 센다",
-    (raw) => {
-      // Given
-      const occurredAt = Temporal.Instant.from("2028-02-28T15:00:00Z");
+  it.each(["Mars/Base", "", "KST"])("저장된 시간대 %j를 알 수 없으면 UTC 날짜로 센다", (raw) => {
+    // Given
+    const occurredAt = Temporal.Instant.from("2028-02-28T15:00:00Z");
 
-      // When
-      const day = localActivityDate(occurredAt, TimeZone.reconstitute(raw));
+    // When
+    const day = localActivityDate(occurredAt, TimeZone.reconstitute(raw));
 
-      // Then
-      expect(day.toString()).toBe("2028-02-28");
-    },
-  );
+    // Then
+    expect(day.toString()).toBe("2028-02-28");
+  });
 
   it.each([
     { count: 1, expected: false },

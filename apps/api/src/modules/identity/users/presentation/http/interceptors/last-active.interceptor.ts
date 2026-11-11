@@ -12,15 +12,15 @@ import type { Observable } from "rxjs";
 
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import { RequestClientReader, requestTimezoneOrUtc } from "#api/platform/http/request-client/index";
+import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
+import { requestTimezoneOrUtc } from "#api/platform/http/request-client/request-timezone";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
-export const LAST_ACTIVE_THROTTLE_TTL_MS = 60 * 60 * 1000;
+const LAST_ACTIVE_THROTTLE_TTL_MS = 60 * 60 * 1000;
 // 한 시간에 이보다 많은 키가 생기면 가장 오래 안 본 키를 잊는다. 잊힌 사용자는 같은 값을 한 번 더 쓸 뿐이다
 export const LAST_ACTIVE_THROTTLE_MAX_ENTRIES = 10_000;
 
@@ -75,7 +75,7 @@ export class LastActiveInterceptor implements NestInterceptor {
   #touchLastActive(userId: string, timezone: string, appVersion: string | undefined): void {
     const seenAt = this.#clock.now();
     const touchedAt = seenAt.epochMilliseconds;
-    const localDate = localDateInTimezone(instantToDate(seenAt), timezone);
+    const localDate = localDateIn(seenAt, timezone).toString();
     const throttleKey = `${userId}:${localDate}:${appVersion ?? ""}`;
     const lastUpdated = this.#throttle.get(throttleKey);
 

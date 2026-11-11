@@ -1,3 +1,4 @@
+import type { NotificationId } from "#api/modules/notification/inbox/domain/notification-id.vo";
 import { RetentionRepositoryPort } from "#api/modules/notification/retention/application/ports/retention.repository.port";
 import type {
   RetentionStageCandidate,
@@ -9,6 +10,7 @@ import {
   type RetentionVariant,
 } from "#api/modules/notification/retention/domain/retention.constants";
 import type { retentionExperimentStageStatus } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createRetentionStageCandidateFixture } from "#test/fixtures/notification/retention-stage-candidate.fixture";
 
 type StageStatus = (typeof retentionExperimentStageStatus.enumValues)[number];
@@ -82,15 +84,16 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
     }));
   }
 
-  async enroll(input: {
-    readonly userId: string;
+  async enroll(params: {
+    readonly userId: UserId;
     readonly variant: RetentionVariant;
     readonly startedAt: Temporal.Instant | null;
   }): Promise<void> {
+    const input = { ...params, userId: params.userId.value };
     if (this.enrollments.some((enrollment) => enrollment.userId === input.userId)) {
       return;
     }
-    this.enrollments.push({ ...input });
+    this.enrollments.push(input);
     this.#sequence += 1;
     this.#assignmentIdByUser.set(input.userId, `retention-assignment-${this.#sequence}`);
     if (input.startedAt != null) {
@@ -102,7 +105,8 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
     this.#profiles.set(userId, profile);
   }
 
-  async activate(userId: string, startedAt: Temporal.Instant): Promise<boolean> {
+  async activate(user: UserId, startedAt: Temporal.Instant): Promise<boolean> {
+    const userId = user.value;
     const enrollment = this.enrollments.find((item) => item.userId === userId);
     if (enrollment == null || enrollment.startedAt != null) {
       return false;
@@ -149,9 +153,10 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
 
   async linkStageNotification(
     stageId: string,
-    notificationId: number,
+    notification: NotificationId,
     _linkedAt: Temporal.Instant,
   ): Promise<void> {
+    const notificationId = notification.value;
     const stage = this.#require(stageId);
     stage.notificationId = notificationId;
   }

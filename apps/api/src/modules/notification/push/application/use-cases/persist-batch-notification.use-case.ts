@@ -1,4 +1,4 @@
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import { type NotificationRepositoryPort } from "../../../inbox/application/ports/notification.repository.port.js";

@@ -40,6 +40,16 @@ export const unregisterPushTokenQuerySchema = z.object({
 
 export type UnregisterPushTokenQuery = z.infer<typeof unregisterPushTokenQuerySchema>;
 
+/** 세션이 끝난 기기의 해제. 로그인 없이 받으므로 기기 ID와 그 기기에 등록된 토큰이 모두 맞을 때만 지운다. */
+export const unregisterPushDeviceByTokenSchema = z.object({
+  deviceId: pushDeviceIdSchema.describe(
+    "앱이 만든 기기 식별자. ios_ 또는 android_로 시작 (최대 100자)",
+  ),
+  token: expoPushTokenSchema.describe("이 기기가 마지막으로 보고한 Expo 푸시 토큰"),
+});
+
+export type UnregisterPushDeviceByTokenInput = z.infer<typeof unregisterPushDeviceByTokenSchema>;
+
 export const pushDeviceParamSchema = z.object({
   deviceId: pushDeviceIdSchema.describe(
     "앱이 만든 기기 식별자. ios_ 또는 android_로 시작 (최대 100자)",

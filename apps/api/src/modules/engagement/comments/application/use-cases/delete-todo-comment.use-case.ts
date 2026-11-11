@@ -57,7 +57,7 @@ export class DeleteTodoCommentUseCase {
             commentId: command.commentId,
             userId: command.userId,
           },
-          run: () => todoViewCache.invalidateForTodo(command.todoId),
+          run: () => todoViewCache.invalidateForTodo(TodoId.reconstitute(command.todoId)),
         },
       ]);
     }
@@ -94,7 +94,7 @@ export class DeleteTodoCommentUseCase {
     if (!isDeleted) {
       return false;
     }
-    if (!(await engagementCounter.decrementCommentCount(command.todoId))) {
+    if (!(await engagementCounter.decrementCommentCount(todoId))) {
       throw commentStateConflict(command.commentId);
     }
     await repository.save(comment);

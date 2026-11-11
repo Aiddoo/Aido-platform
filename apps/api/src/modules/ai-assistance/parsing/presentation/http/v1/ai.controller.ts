@@ -14,19 +14,22 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { ClientAbortSignal, Locale, Timezone } from "#api/platform/http/decorators/index";
-import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
+import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
+import { Locale } from "#api/platform/http/decorators/locale.decorator";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { type RequestClient } from "#api/platform/http/request-client/request-client";
+import { CurrentRequestClient } from "#api/platform/http/request-client/request-client.decorator";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
-  ApiDoc,
   ApiErrorCodesResponse,
   ApiServiceUnavailableError,
   ApiForbiddenError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
   ApiUnprocessableError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetAiUsageUseCase } from "../../../application/use-cases/get-ai-usage.use-case.js";

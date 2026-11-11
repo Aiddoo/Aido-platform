@@ -1,5 +1,8 @@
 import type { Todo as TodoResponse } from "@aido/api";
 
+import type { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
+import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import type { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import type {
   FindFriendTodosParams,
@@ -13,6 +16,7 @@ import type {
   FriendTodoReadModel,
   TodoReadModel,
 } from "#api/modules/planning/todos/application/read-models/todo.read-model";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
 import {
   createTodoReadModelFromRecord,
@@ -37,9 +41,9 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     this.categories = categories;
     this.seriesStore = seriesStore;
   }
-  async findByIdAndUserId(id: number, userId: string): Promise<TodoReadModel | null> {
-    const saved = this.records.get(id);
-    if (saved === undefined || saved.userId !== userId) {
+  async findByIdAndUserId(id: TodoId, userId: UserId): Promise<TodoReadModel | null> {
+    const saved = this.records.get(id.value);
+    if (saved === undefined || saved.userId !== userId.value) {
       return null;
     }
     const record = copyTodoRecord(saved);
@@ -47,16 +51,16 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     record.category = this.categories.get(record.categoryId) ?? null;
     return createTodoReadModelFromRecord(record);
   }
-  async findOwnerId(id: number): Promise<string | null> {
-    return this.records.get(id)?.userId ?? null;
+  async findOwnerId(id: TodoId): Promise<string | null> {
+    return this.records.get(id.value)?.userId ?? null;
   }
-  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoReadModel[]> {
+  async findManyBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]> {
     const records = [...this.records.values()]
-      .filter((record) => record.userId === userId && record.seriesId === seriesId)
+      .filter((record) => record.userId === userId.value && record.seriesId === seriesId.value)
       .sort((left, right) => left.sortOrder - right.sortOrder);
     const responses: TodoReadModel[] = [];
     for (const record of records) {
-      const response = await this.findByIdAndUserId(record.id, userId);
+      const response = await this.findByIdAndUserId(TodoId.reconstitute(record.id), userId);
       if (response !== null) {
         responses.push(response);
       }
@@ -69,35 +73,35 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
   async findPublicTodosByUserId(_params: FindFriendTodosParams): Promise<FriendTodoReadModel[]> {
     return structuredClone(this.queryResults);
   }
-  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+  async countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number> {
     const activeSeries = [...this.seriesStore.values()].filter(
       (series) =>
-        series.userId.value === userId && series.categoryId === categoryId && series.isActive,
+        series.userId.equals(userId) && series.categoryId === categoryId.value && series.isActive,
     ).length;
     return (
       activeSeries +
       [...this.records.values()].filter(
         (record) =>
-          record.userId === userId &&
-          record.categoryId === categoryId &&
+          record.userId === userId.value &&
+          record.categoryId === categoryId.value &&
           !record.completed &&
           record.seriesId === null,
       ).length
     );
   }
-  async countCompletedByUser(userId: string): Promise<number> {
+  async countCompletedByUser(userId: UserId): Promise<number> {
     return [...this.records.values()].filter(
-      (record) => record.userId === userId && record.completed,
+      (record) => record.userId === userId.value && record.completed,
     ).length;
   }
   async getTodayTodoStats(
-    _userId: string,
+    _userId: UserId,
     _today: Temporal.PlainDate,
   ): Promise<{ total: number; completed: number }> {
     return { ...this.dayStats };
   }
   async findTodayTopTodos(
-    _userId: string,
+    _userId: UserId,
     _today: Temporal.PlainDate,
     _limit: number,
   ): Promise<TodaySummaryTodoRow[]> {

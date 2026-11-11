@@ -20,9 +20,9 @@ import {
   rewardGrant,
   user,
 } from "#api/platform/database/schema/index";
-import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -167,7 +167,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     await ctx.testDatabase
       .getClient()
       .update(user)
-      .set({ createdAt: instantFromDate(subtractDays(8)) })
+      .set({ createdAt: nowInstant().subtract({ hours: 24 * 8 }) })
       .where(eq(user.id, veteran.userId));
     const code = await inviteCodeOf(inviter);
 
@@ -210,7 +210,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     // Given
     const inviter = await ctx.helpers.createVerifiedUser("store-inviter@test.com", PASSWORD);
     const invitee = await ctx.helpers.createVerifiedUser("store-invitee@test.com", PASSWORD);
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const subscriptions = ctx.module.get(SubscriptionRepositoryPort);
     const now = Temporal.Now.instant();
     await subscriptions.save(

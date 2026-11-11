@@ -1,6 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   addDaysToKey,
@@ -13,7 +14,7 @@ import type { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use
 
 export const TODO_SERIES_CATCH_UP_BUDGET = {
   /** 앱 요청 제한(10초) 안에 목록을 돌려주도록 이 시간이 지나면 남은 규칙은 다음 요청이나 밤 작업에 맡긴다. */
-  DEADLINE_MS: 5_000,
+  DEADLINE_MS: 5000,
   /** 실패·시간 초과 뒤 다시 시도할 때까지. 고장 난 규칙이 목록 요청마다 비용을 더하지 않게 한다. */
   RETRY_AFTER_MS: 60_000,
 } as const;
@@ -71,10 +72,11 @@ export class CatchUpTodoSeriesUseCase {
     const startedAt = performance.now();
     const { seriesRepository, seriesOwner, logger } = this.#dependencies;
     try {
-      const behindIds = await seriesRepository.findIdsBehind(userId, through);
+      const ownerId = UserId.reconstitute(userId);
+      const behindIds = await seriesRepository.findIdsBehind(ownerId, through);
       // 세션 캐시(30초) 동안은 정지·탈퇴 대기 계정의 토큰도 통과한다.
       const seriesIds =
-        behindIds.length > 0 && (await seriesOwner.findOperatingOwners([userId])).has(userId)
+        behindIds.length > 0 && (await seriesOwner.findOperatingOwners([ownerId])).has(userId)
           ? behindIds
           : [];
       const { createdCount, failedCount, timedOut } = await this.#materializeAll(userId, seriesIds);

@@ -9,7 +9,7 @@ import {
 import { LRUCache } from "lru-cache";
 import type { Observable } from "rxjs";
 
-import { RequestClientReader } from "#api/platform/http/request-client/index";
+import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 

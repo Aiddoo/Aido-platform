@@ -87,7 +87,7 @@ describe("회차 채우기", () => {
       fixture.todoSeriesRepository,
     );
     vi.spyOn(fixture.todoSeriesRepository, "lockForUpdate").mockImplementation(async (id) => {
-      if (id === "series-1") {
+      if (id.value === "series-1") {
         throw new Error("저장 실패");
       }
       return lockForUpdate(id);

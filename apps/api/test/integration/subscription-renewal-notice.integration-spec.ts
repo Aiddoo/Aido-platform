@@ -1,9 +1,9 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 import { and, eq } from "drizzle-orm";
 
+import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import { NotifyUpcomingRenewalsUseCase } from "#api/modules/billing/subscriptions/application/use-cases/notify-upcoming-renewals.use-case";
-import { PremiumAccessReaderPort } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -25,7 +25,7 @@ import {
   type E2eTestContext,
 } from "../e2e/helpers/e2e-app-factory.js";
 
-const DAY_MS = 24 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 // 런던 12:00(낮)이라 야간으로 미루지 않는다
 const at = new Date("2027-01-04T12:00:00.000Z");
 const periodEndsAt = new Date("2027-01-10T12:00:00.000Z");

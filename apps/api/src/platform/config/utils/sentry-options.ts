@@ -67,7 +67,7 @@ interface HttpTraceRule {
 }
 
 /** 경로별 표본 비율. 위에서부터 처음 맞는 규칙을 쓰고, 맞는 규칙이 없으면 기본 비율이다. */
-export const HTTP_TRACE_RULES: readonly HttpTraceRule[] = [
+const HTTP_TRACE_RULES: readonly HttpTraceRule[] = [
   // 컨테이너 상태 확인이 주기적으로 부른다
   { path: /^\/(?:health(?:\/.*)?)?$/, rate: 0 },
   // 앱이 화면에 돌아올 때마다 부르는 가벼운 조회라 요청 수에 비해 볼 것이 없다
@@ -89,7 +89,7 @@ export const HTTP_TRACE_RULES: readonly HttpTraceRule[] = [
 export const DEFAULT_HTTP_TRACE_RATE = 0.1;
 
 /** 큐별 표본 비율. 매분 도는 큐는 낮게, 드물고 중요한 큐는 모두 본다. 없는 큐는 기본 비율이다. */
-export const JOB_TRACE_RATES: ReadonlyMap<string, number> = new Map([
+const JOB_TRACE_RATES: ReadonlyMap<string, number> = new Map([
   ["timezone-reminder.v1", 0.01],
   ["retention.v1", 0.01],
   ["push-delivery.v1", 0.01],

@@ -1,7 +1,7 @@
 import type { Provider } from "@nestjs/common";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
-import { PaginationService } from "#api/shared/application/pagination/index";
+import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";

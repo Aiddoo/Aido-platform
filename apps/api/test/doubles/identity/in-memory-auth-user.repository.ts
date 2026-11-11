@@ -11,7 +11,7 @@ import {
 } from "#api/modules/identity/users/domain/identity-user.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-export const IN_MEMORY_USER_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
+const IN_MEMORY_USER_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
 type UserProfile = NonNullable<AuthUserProfileRecord["profile"]>;
 

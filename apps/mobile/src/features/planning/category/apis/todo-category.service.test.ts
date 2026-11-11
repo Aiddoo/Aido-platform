@@ -3,11 +3,14 @@ import { createHttpClientStub } from '@src/shared/__tests__';
 
 import {
   createTodoCategoryApiError,
+  createTodoCategoryDeletionPreviewDto,
   createTodoCategoryDto,
   createTodoCategoryListDto,
   INVALID_DTO,
 } from '../__tests__/todo-category.fixtures';
 import { TodoCategoryService } from './todo-category.service';
+
+const EMPTY_DELETION = { todoHandling: null, moveToCategoryId: null };
 
 function createSut() {
   const httpClient = createHttpClientStub();
@@ -141,8 +144,52 @@ describe('TodoCategoryService', () => {
     });
   });
 
+  describe('getDeletionPreview', () => {
+    it('미리보기 경로로 묻고 처리 방식을 고를 수 있는 미리보기로 바꾼다', async () => {
+      // Given
+      const { httpClient, service } = createSut();
+      httpClient.get.mockResolvedValue({ ok: true, value: createTodoCategoryDeletionPreviewDto() });
+
+      // When
+      const result = await service.getDeletionPreview(3);
+
+      // Then
+      expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories/3/deletion-preview', {
+        signal: undefined,
+      });
+      expect(unwrap(result)).toEqual({
+        todoCount: 12,
+        completedTodoCount: 3,
+        activeSeriesCount: 2,
+        isLastCategory: false,
+        isTodoHandlingSupported: true,
+      });
+    });
+  });
+
   describe('deleteCategory', () => {
-    it('moveToCategoryId를 query params로 전달', async () => {
+    it.each([
+      {
+        title: '옮기면 처리 방식과 옮길 곳을 보낸다',
+        deletion: { todoHandling: 'move', moveToCategoryId: 1 },
+        params: { todoHandling: 'move', moveToCategoryId: 1 },
+      },
+      {
+        title: '함께 지우면 처리 방식만 보낸다',
+        deletion: { todoHandling: 'delete', moveToCategoryId: null },
+        params: { todoHandling: 'delete' },
+      },
+      {
+        title: '옛 서버로 옮기면 출시 앱처럼 옮길 곳만 보낸다',
+        deletion: { todoHandling: null, moveToCategoryId: 1 },
+        params: { moveToCategoryId: 1 },
+      },
+      {
+        title: '옮기거나 지울 할 일이 없으면 아무 query도 보내지 않는다',
+        deletion: { todoHandling: null, moveToCategoryId: null },
+        params: {},
+      },
+    ] as const)('$title', async ({ deletion, params }) => {
       // Given
       const { httpClient, service } = createSut();
       httpClient.delete.mockResolvedValue({
@@ -151,26 +198,51 @@ describe('TodoCategoryService', () => {
       });
 
       // When
-      const result = await service.deleteCategory(3, { moveToCategoryId: 1 });
+      await service.deleteCategory(3, deletion);
 
       // Then
-      expect(httpClient.delete).toHaveBeenCalledWith('v1/todo-categories/3', {
-        params: { moveToCategoryId: 1 },
-      });
-      expect(result).toEqual({ ok: true, value: undefined });
+      expect(httpClient.delete).toHaveBeenCalledWith('v1/todo-categories/3', { params });
     });
 
-    it('할일 존재 → TODO_CATEGORY_0855 에러', async () => {
+    it('서버가 준 결과를 돌려주고, 결과가 없는 옛 서버면 null이다', async () => {
+      // Given
+      const { httpClient, service } = createSut();
+      const deletion = { todoHandling: 'move', moveToCategoryId: 1 } as const;
+      httpClient.delete
+        .mockResolvedValueOnce({
+          ok: true,
+          value: {
+            message: '카테고리가 삭제되었습니다.',
+            result: { todoHandling: 'move', todoCount: 12, seriesCount: 2, moveToCategoryId: 1 },
+          },
+        })
+        .mockResolvedValueOnce({ ok: true, value: { message: '카테고리가 삭제되었습니다.' } });
+
+      // When
+      const withResult = await service.deleteCategory(3, deletion);
+      const legacy = await service.deleteCategory(3, deletion);
+
+      // Then
+      expect(unwrap(withResult)).toEqual({
+        todoHandling: 'move',
+        todoCount: 12,
+        seriesCount: 2,
+        moveToCategoryId: 1,
+      });
+      expect(unwrap(legacy)).toBeNull();
+    });
+
+    it('마지막 카테고리 → TODO_CATEGORY_0854 에러', async () => {
       // Given
       const { httpClient, service } = createSut();
       const apiError = createTodoCategoryApiError({
-        code: 'TODO_CATEGORY_0855',
-        message: '카테고리에 할 일이 있어요',
+        code: 'TODO_CATEGORY_0854',
+        message: '카테고리는 1개 이상 있어야 해요',
       });
       httpClient.delete.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.deleteCategory(3);
+      const result = await service.deleteCategory(3, EMPTY_DELETION);
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
@@ -182,7 +254,7 @@ describe('TodoCategoryService', () => {
       httpClient.delete.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When
-      const result = service.deleteCategory(3);
+      const result = service.deleteCategory(3, EMPTY_DELETION);
 
       // Then
       await expect(result).rejects.toThrow('Invalid deleteCategory response');

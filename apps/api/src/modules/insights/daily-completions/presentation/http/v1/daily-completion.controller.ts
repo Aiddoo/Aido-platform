@@ -7,14 +7,14 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
-import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
-  ApiDoc,
   ApiForbiddenError,
-  ApiSuccessResponse,
   ApiUnauthorizedError,
-  SWAGGER_TAGS,
-} from "#api/platform/http/swagger/index";
+} from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
+import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { GetDailyCompletionsUseCase } from "../../../application/use-cases/get-daily-completions.use-case.js";
 import { GetFriendDailyCompletionsUseCase } from "../../../application/use-cases/get-friend-daily-completions.use-case.js";

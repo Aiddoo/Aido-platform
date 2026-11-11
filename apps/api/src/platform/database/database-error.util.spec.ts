@@ -82,7 +82,7 @@ describe("PostgreSQL 오류 변환 경계", () => {
     undefined,
     null,
     "40001",
-    40001,
+    40_001,
     { code: "40001" },
     { kind: "sql_query", sqlState: "40001" },
   ])("Error가 아닌 cause %j는 정규화된 DB 오류로 취급하지 않는다", (cause) => {

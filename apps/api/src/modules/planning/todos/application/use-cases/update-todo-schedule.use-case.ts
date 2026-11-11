@@ -3,8 +3,11 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoSchedule } from "../../../shared/domain/todo-schedule.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -50,11 +53,13 @@ export class UpdateTodoScheduleUseCase {
 
   async execute(input: UpdateTodoScheduleInput): Promise<TodoReadModel> {
     const { id, userId, schedule } = input;
+    const todoId = TodoId.reconstitute(id);
+    const ownerId = UserId.reconstitute(userId);
     const timezone = await this.#dependencies.timezoneResolver.execute(userId, input.timezone);
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(id)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
+      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
@@ -72,7 +77,7 @@ export class UpdateTodoScheduleUseCase {
       if (!rescheduled) {
         return;
       }
-      await this.#dependencies.todoRepository.updateSchedule(id, todo.schedule.toPrimitives());
+      await this.#dependencies.todoRepository.updateSchedule(todoId, todo.schedule.toPrimitives());
       await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
 
@@ -82,9 +87,9 @@ export class UpdateTodoScheduleUseCase {
       userId,
     });
 
-    await this.#dependencies.todoCache.invalidateFriendTodos(userId);
+    await this.#dependencies.todoCache.invalidateFriendTodos(ownerId);
 
-    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
+    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, ownerId);
     if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }

@@ -6,7 +6,7 @@ import { cacheConfig, selectSharedRedis } from "../config/cache.config.js";
 import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants.js";
 import { InMemoryDedupAdapter } from "./adapters/in-memory-dedup.adapter.js";
 import { RedisDedupAdapter } from "./adapters/redis-dedup.adapter.js";
-import { DEDUP_PROVIDER, type IDedupProvider } from "./interfaces/dedup.interface.js";
+import { DedupProviderPort } from "./dedup-provider.port.js";
 
 /**
  * 중복 방지 모듈
@@ -33,8 +33,8 @@ export class DedupModule {
    */
   static forRoot(): DynamicModule {
     const dedupProvider: Provider = {
-      provide: DEDUP_PROVIDER,
-      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis): IDedupProvider => {
+      provide: DedupProviderPort,
+      useFactory: (cache: ConfigType<typeof cacheConfig>, redis?: Redis): DedupProviderPort => {
         const shared = selectSharedRedis(cache, redis);
         return shared == null ? new InMemoryDedupAdapter() : new RedisDedupAdapter(shared);
       },
@@ -44,7 +44,7 @@ export class DedupModule {
     return {
       module: DedupModule,
       providers: [dedupProvider],
-      exports: [DEDUP_PROVIDER],
+      exports: [DedupProviderPort],
     };
   }
 
@@ -59,11 +59,11 @@ export class DedupModule {
    *   imports: [DedupModule.forTesting(mockAdapter)],
    * }).compile();
    */
-  static forTesting(adapter: IDedupProvider): DynamicModule {
+  static forTesting(adapter: DedupProviderPort): DynamicModule {
     return {
       module: DedupModule,
-      providers: [{ provide: DEDUP_PROVIDER, useValue: adapter }],
-      exports: [DEDUP_PROVIDER],
+      providers: [{ provide: DedupProviderPort, useValue: adapter }],
+      exports: [DedupProviderPort],
     };
   }
 }

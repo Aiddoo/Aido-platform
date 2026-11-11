@@ -9,12 +9,12 @@ import { match } from 'ts-pattern';
 
 import { useFeedAction, useFeedDateKey } from '../hooks/use-feed-params';
 
-/** 위젯·딥링크의 할 일 추가 요청을 받아 기본 카테고리로 추가 시트를 연다. */
+/** 위젯·딥링크·다른 탭의 할 일 추가 요청을 받아 기본 카테고리로 추가 시트를 연다. 피드 위에 열어야 만든 할 일이 시트 뒤에 보인다 */
 export function AddTodoRequestEntry() {
   const { t } = useTranslation(['widget', 'common']);
   const [action, setAction] = useFeedAction();
   const [selectedDateKey] = useFeedDateKey();
-  const isRequested = action === 'add-todo';
+  const isRequested = action != null;
   const categories = useQuery({
     ...useGetTodoCategoriesQueryOptions(),
     enabled: isRequested,
@@ -32,10 +32,17 @@ export function AddTodoRequestEntry() {
 
     const frameId = requestAnimationFrame(() => {
       setAction(undefined);
-      router.push({ pathname: '/todo/new', params: { date: selectedDateKey, categoryId } });
+      router.push({
+        pathname: '/todo/new',
+        params: {
+          date: selectedDateKey,
+          categoryId,
+          ...(action === 'add-voice-todo' && { startVoice: '1' }),
+        },
+      });
     });
     return () => cancelAnimationFrame(frameId);
-  }, [isRequested, categoryId, selectedDateKey, setAction]);
+  }, [action, isRequested, categoryId, selectedDateKey, setAction]);
 
   const createEntryStatus = !isRequested
     ? ('idle' as const)

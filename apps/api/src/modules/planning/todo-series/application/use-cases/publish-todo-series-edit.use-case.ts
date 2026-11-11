@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
 
@@ -22,7 +23,8 @@ export class PublishTodoSeriesEditUseCase {
 
   async execute(effect: TodoSeriesEditEffect): Promise<void> {
     const { todoCache } = this.#dependencies;
-    await todoCache.invalidateTodoCategories(effect.userId);
-    await todoCache.invalidateFriendTodos(effect.userId);
+    const userId = UserId.reconstitute(effect.userId);
+    await todoCache.invalidateTodoCategories(userId);
+    await todoCache.invalidateFriendTodos(userId);
   }
 }

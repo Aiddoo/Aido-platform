@@ -8,10 +8,11 @@ import { SkipThrottle } from "@nestjs/throttler";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
-import { ApiDoc, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
+import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
+import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
-import { JobRuntimeHealthIndicator } from "./indicators/job-runtime.health.js";
+import { JobQueueHealthIndicator } from "./indicators/job-queue.health.js";
 import { OutboundHealthIndicator } from "./indicators/outbound.health.js";
 import { RuntimeStatsHealthIndicator } from "./indicators/runtime-stats.health.js";
 
@@ -39,15 +40,25 @@ function describeHealthResponse(status: "ok" | "error"): SchemaObject {
 export class HealthController {
   readonly #instanceId: string;
   readonly #exposeDetails: boolean;
+  readonly #health: HealthCheckService;
+  readonly #databaseHealth: DatabaseHealthIndicator;
+  readonly #jobQueueHealth: JobQueueHealthIndicator;
+  readonly #outboundHealth: OutboundHealthIndicator;
+  readonly #runtimeStatsHealth: RuntimeStatsHealthIndicator;
 
   constructor(
-    private readonly health: HealthCheckService,
-    private readonly databaseHealth: DatabaseHealthIndicator,
-    private readonly jobRuntimeHealth: JobRuntimeHealthIndicator,
-    private readonly outboundHealth: OutboundHealthIndicator,
-    private readonly runtimeStatsHealth: RuntimeStatsHealthIndicator,
+    health: HealthCheckService,
+    databaseHealth: DatabaseHealthIndicator,
+    jobQueueHealth: JobQueueHealthIndicator,
+    outboundHealth: OutboundHealthIndicator,
+    runtimeStatsHealth: RuntimeStatsHealthIndicator,
     @Inject(appConfig.KEY) app: Pick<AppSettings, "instanceId" | "exposeHealthDetails">,
   ) {
+    this.#health = health;
+    this.#databaseHealth = databaseHealth;
+    this.#jobQueueHealth = jobQueueHealth;
+    this.#outboundHealth = outboundHealth;
+    this.#runtimeStatsHealth = runtimeStatsHealth;
     this.#instanceId = app.instanceId ?? randomUUID().slice(0, 8);
     this.#exposeDetails = app.exposeHealthDetails;
   }
@@ -127,11 +138,11 @@ curl https://api.aido.com/health
   async check(): Promise<
     Pick<HealthCheckResult, "status"> | (HealthCheckResult & { instanceId: string })
   > {
-    const result = await this.health.check([
-      () => this.databaseHealth.isHealthy("database"),
-      () => this.jobRuntimeHealth.isHealthy("queues"),
-      () => this.outboundHealth.isHealthy("outbound"),
-      () => this.runtimeStatsHealth.isHealthy("runtime"),
+    const result = await this.#health.check([
+      () => this.#databaseHealth.isHealthy("database"),
+      () => this.#jobQueueHealth.isHealthy("queues"),
+      () => this.#outboundHealth.isHealthy("outbound"),
+      () => this.#runtimeStatsHealth.isHealthy("runtime"),
     ]);
     // 운영은 공개 응답에 큐 이름·실패 수·런타임 수치를 싣지 않는다. 실패는 지금처럼 503이다
     if (!this.#exposeDetails) {

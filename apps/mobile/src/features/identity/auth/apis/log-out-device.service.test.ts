@@ -18,19 +18,24 @@ type TimeoutConfig = Pick<RequestConfig, 'timeout'> | undefined;
 
 const createStubServices = ({
   logout = async (): Promise<Result<void, ApiError>> => ok(undefined),
+  unregister = async (): Promise<Result<void, ApiError>> => ok(undefined),
 } = {}) => {
   const calls: {
     unregister: TimeoutConfig[];
     logout: TimeoutConfig[];
     clearLocalSession: number;
     recorded: string[];
-  } = { unregister: [], logout: [], clearLocalSession: 0, recorded: [] };
+    pushReleaseRequests: number;
+  } = { unregister: [], logout: [], clearLocalSession: 0, recorded: [], pushReleaseRequests: 0 };
   return {
     calls,
     pushDeviceService: {
-      unregister: async (config?: TimeoutConfig) => {
+      unregister: (config?: TimeoutConfig) => {
         calls.unregister.push(config);
-        return ok(undefined);
+        return unregister();
+      },
+      requestRelease: () => {
+        calls.pushReleaseRequests += 1;
       },
     },
     authService: {
@@ -235,6 +240,7 @@ describe('LogOutDeviceService.logOut', () => {
     // Then
     expect(outcome).toBe('superseded');
     expect(stub.calls.clearLocalSession).toBe(0);
+    expect(stub.calls.pushReleaseRequests).toBe(0);
   });
 
   it('세션이 끝났고 새 토큰도 없으면 사용자가 나간 것으로 끝낸다', async () => {
@@ -286,4 +292,53 @@ describe('LogOutDeviceService.logOut', () => {
     // Then
     expect(outcome).toBe('ended');
   });
+  it('오프라인 로그아웃은 서버에 알리지 못해 연결되면 기기 id와 토큰으로 푸시를 풀도록 요청한다', async () => {
+    // Given
+    const stub = createStubServices();
+
+    // When
+    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+      isOnline: false,
+    });
+
+    // Then
+    expect(stub.calls.pushReleaseRequests).toBe(1);
+  });
+
+  it('온라인 로그아웃은 인증한 해제가 성공하면 공개 해제를 따로 요청하지 않는다', async () => {
+    // Given
+    const stub = createStubServices();
+
+    // When
+    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+      isOnline: true,
+    });
+
+    // Then
+    expect(stub.calls.pushReleaseRequests).toBe(0);
+  });
+
+  it.each([
+    ['서버가 거절', async () => err(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401))],
+    [
+      '연결 실패',
+      async (): Promise<Result<void, ApiError>> => {
+        throw new NetworkError();
+      },
+    ],
+  ])(
+    '온라인 로그아웃이라도 인증한 해제가 %s하면 공개 해제를 요청한다',
+    async (_name, unregister) => {
+      // Given
+      const stub = createStubServices({ unregister });
+
+      // When
+      await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+        isOnline: true,
+      });
+
+      // Then
+      expect(stub.calls.pushReleaseRequests).toBe(1);
+    },
+  );
 });

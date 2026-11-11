@@ -1,15 +1,9 @@
-import {
-  useActivationService,
-  useHaptics,
-  useLogger,
-  useSuggestionService,
-} from '@src/bootstrap/providers/di-context';
+import { useHaptics, useLogger, useSuggestionService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import { emitTodoCreated } from '@src/core/events/todo-created';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { getCachedActivationContext } from '@src/features/device/activation/queries/activation-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
 import { ApiError, getUserFacingMessage, toError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -28,7 +22,6 @@ interface ActOnSuggestionVariables {
 export function useActOnSuggestionMutationOptions() {
   const haptics = useHaptics();
   const suggestionService = useSuggestionService();
-  const activationService = useActivationService();
   const { trackEvent } = useTrack();
   const logger = useLogger();
   const queryClient = useQueryClient();
@@ -49,10 +42,7 @@ export function useActOnSuggestionMutationOptions() {
       );
 
       if (input.action === 'accept') {
-        activationService.recordTodoCreated({
-          ...getCachedActivationContext(queryClient),
-          now: getNowInstant(),
-        });
+        emitTodoCreated();
         invalidateTodos(queryClient);
         // 수락하면 시트를 닫고 피드로 떠나므로 다시 받기를 기다리지 않는다
         invalidateAiSuggestions(queryClient);

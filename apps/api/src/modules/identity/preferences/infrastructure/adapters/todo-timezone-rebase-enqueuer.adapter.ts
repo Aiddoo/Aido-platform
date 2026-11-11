@@ -13,7 +13,7 @@ export class TodoTimezoneRebaseEnqueuerAdapter implements TodoTimezoneRebaseEnqu
     this.#queue = queue;
   }
 
-  enqueueRebase(userId: UserId, at: Date): Promise<void> {
+  enqueueRebase(userId: UserId, at: Temporal.Instant): Promise<void> {
     return this.#queue.enqueueRebase(userId.value, at);
   }
 }

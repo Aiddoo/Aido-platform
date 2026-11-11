@@ -3,7 +3,8 @@ import { ErrorCode } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type MutationLockPort, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { CategoryColor } from "../../domain/category-color.vo.js";
@@ -46,12 +47,14 @@ export class CreateTodoCategoryUseCase {
   }
 
   async execute(input: CreateTodoCategoryInput): Promise<TodoCategory> {
-    const { userId } = input;
+    const userId = UserId.reconstitute(input.userId);
     const name = CategoryName.create(input.name);
     const color = CategoryColor.create(input.color);
 
     const created = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.mutationLock.acquire([TodoCategoryLockKeys.userCategories(userId)]);
+      await this.#dependencies.mutationLock.acquire([
+        TodoCategoryLockKeys.userCategories(input.userId),
+      ]);
 
       const maxCount = await this.#dependencies.limitReader.readLimitInTx(userId);
       const categoryCount = await this.#dependencies.repository.countByUserId(userId);
@@ -75,7 +78,7 @@ export class CreateTodoCategoryUseCase {
       const maxSortOrder = await repository.getMaxSortOrder(userId);
       const category = TodoCategory.create({
         id: await repository.nextId(),
-        userId: UserId.reconstitute(userId),
+        userId,
         name,
         color,
         sortOrder: maxSortOrder + 1,
@@ -88,7 +91,7 @@ export class CreateTodoCategoryUseCase {
     await this.#dependencies.cache.invalidate(userId);
     this.#dependencies.logger.debug({
       event: TodoCategoryLogEvent.CREATED,
-      userId,
+      userId: input.userId,
       categoryId: created.id.value,
     });
     return created;

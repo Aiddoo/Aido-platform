@@ -1,4 +1,5 @@
 import type { TimezoneOffsetBucket } from '../domains/device-timezone.model';
+import type { PushOpenAppState } from '../domains/notification.model';
 
 export type PushPermissionPromptSource =
   | 'onboarding'
@@ -12,6 +13,8 @@ declare module '@src/shared/analytics/event-map' {
     push_notification_opened: {
       type: string;
       action: string;
+      /** 꺼진 앱(cold)·뒤에 있던 앱·쓰는 중 앱에서 누른 탭을 나눠 재방문을 만든 열림을 센다 */
+      app_state: PushOpenAppState;
       campaign_key?: string;
       variant_id?: string;
       purpose?: string;

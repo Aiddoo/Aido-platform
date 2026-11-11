@@ -1,7 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import {
   toTodoSeriesReadModel,
@@ -26,8 +28,8 @@ export class GetTodoSeriesUseCase {
 
   async execute(input: GetTodoSeriesInput): Promise<TodoSeriesReadModel> {
     const series = await this.#dependencies.seriesRepository.findByIdAndUserId(
-      input.seriesId,
-      input.userId,
+      TodoSeriesId.reconstitute(input.seriesId),
+      UserId.reconstitute(input.userId),
     );
     if (series == null) {
       throw new ApplicationException(ErrorCode.TODO_0841, { seriesId: input.seriesId });

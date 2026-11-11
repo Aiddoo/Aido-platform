@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
+import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 
 import { AiAssistanceGenerationModule } from "../generation/ai-assistance-generation.module.js";
 import { AI_ASSISTANCE_REPORTS_PROVIDERS } from "./ai-assistance-reports.providers.js";

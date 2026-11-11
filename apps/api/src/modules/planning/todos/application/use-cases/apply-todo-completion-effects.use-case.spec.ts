@@ -50,7 +50,7 @@ function setUp(options: {
   };
   const streak: StreakPort = {
     recordTodoToggle: async (userId, completed, timezone) => {
-      streakRecords.push({ userId, completed, timezone });
+      streakRecords.push({ userId: userId.value, completed, timezone });
     },
     getStreakContext: async () => ({ currentStreak: 0, lastCompletedDate: null }),
   };

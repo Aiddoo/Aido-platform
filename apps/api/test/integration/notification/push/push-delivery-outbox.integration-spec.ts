@@ -64,7 +64,7 @@ async function waitForBlockedDatabaseQuery(db: TestDatabaseClient): Promise<void
       `);
       expect(waiting.rows[0]?.blocked).toBe(true);
     },
-    { timeout: 5_000, interval: 10 },
+    { timeout: 5000, interval: 10 },
   );
 }
 
@@ -320,7 +320,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const second = await stageNotification({ userId: user.id, suffix: "second" });
     const firstClaimed = deferred();
     const releaseFirst = deferred();
-    const lockedAt = nowInstant().add({ milliseconds: 1_000 });
+    const lockedAt = nowInstant().add({ milliseconds: 1000 });
 
     const firstTransaction = inTransaction(async () => {
       const claimed = await outbox(host).claimAvailable({ limit: 1, lockedAt });
@@ -684,7 +684,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const claimedOutbox = await inTransaction(() =>
       outbox(host).claimByDispatchIds(
         [staged.dispatchId],
-        nowInstant().add({ milliseconds: 1_000 }),
+        nowInstant().add({ milliseconds: 1000 }),
       ),
     );
     expect(claimedOutbox).toEqual([

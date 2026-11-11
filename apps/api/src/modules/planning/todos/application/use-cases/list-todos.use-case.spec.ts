@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -8,6 +9,7 @@ import {
 } from "#test/fixtures/planning/planning-todos.fixture";
 import { createTodoReadModelFromRecord } from "#test/fixtures/todo-response.fixture";
 
+import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { ListTodosUseCase } from "./list-todos.use-case.js";
 
 describe("할 일 목록 조회", () => {
@@ -57,10 +59,10 @@ describe("할 일 목록 조회", () => {
     });
     // Then
     expect(query).toHaveBeenCalledWith({
-      userId: fixture.userId,
+      userId: UserId.reconstitute(fixture.userId),
       cursor: 5,
       size: 10,
-      categoryId: 1,
+      categoryId: TodoCategoryId.reconstitute(1),
       completed: false,
       startDate,
       endDate,
