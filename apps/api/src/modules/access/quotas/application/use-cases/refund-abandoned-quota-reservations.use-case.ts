@@ -9,7 +9,7 @@ import {
   QUOTA_STALE_RESERVATION_ALERT_AFTER_MS,
 } from "../../domain/quotas.constants.js";
 import type { QuotaChargeRepositoryPort } from "../ports/quota-charge.repository.port.js";
-import { QuotaAlertKey } from "../quotas.alerts.js";
+import { QuotaAlerts } from "../quotas.alerts.js";
 import { QuotaLogEvent } from "../quotas.log-events.js";
 import {
   refundChargeUnderUserLock,
@@ -83,9 +83,7 @@ export class RefundAbandonedQuotaReservationsUseCase {
     if (failedCount > 0 || staleCount > 0) {
       // 돌려주지 못한 예약은 그 사용자의 한도를 월말까지 깎는다
       alert.raise({
-        key: QuotaAlertKey.STALE_RESERVATION,
-        severity: "error",
-        message: "횟수 예약을 돌려주지 못하고 있습니다.",
+        ...QuotaAlerts.STALE_RESERVATION,
         details: { failedCount, staleCount },
       });
     }

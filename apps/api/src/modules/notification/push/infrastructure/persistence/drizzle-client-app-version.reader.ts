@@ -3,6 +3,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { ClientAppVersionReaderPort } from "../../application/ports/client-app-version.reader.port.js";
 
@@ -15,10 +16,10 @@ export class DrizzleClientAppVersionReader implements ClientAppVersionReaderPort
     this.#txHost = txHost;
   }
 
-  async findLatestAppVersion(userId: string): Promise<string | null> {
+  async findLatestAppVersion(userId: UserId): Promise<string | null> {
     const tokens = await this.#txHost.tx.query.pushToken.findMany({
       columns: { appVersion: true },
-      where: { userId, isActive: true, appVersion: { isNotNull: true } },
+      where: { userId: userId.value, isActive: true, appVersion: { isNotNull: true } },
     });
 
     let latest: string | null = null;

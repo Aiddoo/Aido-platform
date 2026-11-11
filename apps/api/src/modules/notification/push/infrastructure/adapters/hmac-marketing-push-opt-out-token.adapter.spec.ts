@@ -1,10 +1,6 @@
 import { createHmac } from "node:crypto";
 
-import { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
-
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import { HmacMarketingPushOptOutTokenAdapter } from "./hmac-marketing-push-opt-out-token.adapter.js";
 
@@ -12,33 +8,13 @@ const secret = "test-jwt-secret-at-least-32-characters";
 const currentKey = "current-opt-out-key-at-least-32-characters";
 const previousKey = "previous-opt-out-key-at-least-32-characters";
 
-// 서명에 쓰는 두 설정만 덮어쓴다
-class StubSigningConfig extends TypedConfigService {
-  readonly #jwtSecret: string;
-  readonly #optOutTokenSigningKeys: string | undefined;
-
-  constructor(jwtSecret: string, optOutTokenSigningKeys: string | undefined) {
-    super(new ConfigService<EnvConfig, true>({}));
-    this.#jwtSecret = jwtSecret;
-    this.#optOutTokenSigningKeys = optOutTokenSigningKeys;
-  }
-
-  override get jwtSecret(): string {
-    return this.#jwtSecret;
-  }
-
-  override get optOutTokenSigningKeys(): string | undefined {
-    return this.#optOutTokenSigningKeys;
-  }
-}
-
 function createAdapter(
   optOutTokenSigningKeys?: string,
   jwtSecret = secret,
 ): HmacMarketingPushOptOutTokenAdapter {
-  return new HmacMarketingPushOptOutTokenAdapter(
-    new StubSigningConfig(jwtSecret, optOutTokenSigningKeys),
-  );
+  return new HmacMarketingPushOptOutTokenAdapter({
+    optOutTokenSigning: { configured: optOutTokenSigningKeys, legacySecret: jwtSecret },
+  });
 }
 
 describe("HmacMarketingPushOptOutTokenAdapter", () => {

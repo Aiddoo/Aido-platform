@@ -3,7 +3,6 @@ import { DrizzleBlockedUserReader } from "#api/modules/social/blocks/infrastruct
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
 import { follow, user, userBlock, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 import { describeUserBlockRepositoryContract } from "#test/contracts/social/user-block-repository.contract";
 import { FollowFixture, UserFixture } from "#test/fixtures/index";
 import {
@@ -31,15 +30,16 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
 
   beforeEach(async () => {
     await database.cleanup();
-    await client
-      .insert(user)
-      .values([
-        UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKER_ID }),
-        UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKED_ID, userTag: "BLOCKED1" }),
-        UserFixture.create({ id: USER_BLOCK_FIXTURE_OTHER_USER_ID, userTag: "OTHER001" }),
-        UserFixture.create({ id: DELETED_USER_ID, deletedAt: new Date("2026-11-01T00:00:00Z") }),
-        UserFixture.create({ id: SUSPENDED_USER_ID, status: "SUSPENDED" }),
-      ]);
+    await client.insert(user).values([
+      UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKER_ID }),
+      UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKED_ID, userTag: "BLOCKED1" }),
+      UserFixture.create({ id: USER_BLOCK_FIXTURE_OTHER_USER_ID, userTag: "OTHER001" }),
+      UserFixture.create({
+        id: DELETED_USER_ID,
+        deletedAt: Temporal.Instant.from("2026-11-01T00:00:00Z"),
+      }),
+      UserFixture.create({ id: SUSPENDED_USER_ID, status: "SUSPENDED" }),
+    ]);
   });
 
   afterAll(async () => {
@@ -61,7 +61,7 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
       id,
       blockerId: USER_BLOCK_FIXTURE_BLOCKER_ID,
       blockedId,
-      createdAt: instantToDate(createdAt),
+      createdAt,
     });
   }
 
@@ -116,22 +116,18 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
     });
 
     // When
+    const blockedId = UserId.reconstitute(USER_BLOCK_FIXTURE_BLOCKED_ID);
+    const otherUserId = UserId.reconstitute(USER_BLOCK_FIXTURE_OTHER_USER_ID);
     const relations = [
-      await repository.findRelation(USER_BLOCK_FIXTURE_BLOCKER_ID, USER_BLOCK_FIXTURE_BLOCKED_ID),
-      await repository.findRelation(
-        USER_BLOCK_FIXTURE_BLOCKER_ID,
-        USER_BLOCK_FIXTURE_OTHER_USER_ID,
-      ),
-      await repository.findRelation(
-        USER_BLOCK_FIXTURE_BLOCKED_ID,
-        USER_BLOCK_FIXTURE_OTHER_USER_ID,
-      ),
+      await repository.findRelation(BLOCKER_ID, blockedId),
+      await repository.findRelation(BLOCKER_ID, otherUserId),
+      await repository.findRelation(blockedId, otherUserId),
     ];
-    const counterparts = await repository.findBlockedCounterpartIds(USER_BLOCK_FIXTURE_BLOCKER_ID, [
-      USER_BLOCK_FIXTURE_BLOCKER_ID,
-      USER_BLOCK_FIXTURE_BLOCKED_ID,
-      USER_BLOCK_FIXTURE_OTHER_USER_ID,
-      SUSPENDED_USER_ID,
+    const counterparts = await repository.findBlockedCounterpartIds(BLOCKER_ID, [
+      BLOCKER_ID,
+      blockedId,
+      otherUserId,
+      UserId.reconstitute(SUSPENDED_USER_ID),
     ]);
 
     // Then

@@ -2,6 +2,7 @@ import { DrizzleInviteRedemptionRepository } from "#api/modules/social/invites/i
 import { DrizzleRewardGrantRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-reward-grant.repository";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeRewardGrantRepositoryContract } from "#test/contracts/social/reward-grant-repository.contract";
+import { DateClock } from "#test/doubles/platform/date-clock";
 import { createInviteRedemptionFixture } from "#test/fixtures/social/invite-redemption.fixture";
 import {
   INVITE_FIXTURE_INVITER_ID,
@@ -35,7 +36,7 @@ describe("DrizzleRewardGrantRepository (실제 PostgreSQL)", () => {
     const { txHost } = createDatabaseTransactionFixture(client);
     return {
       grants: new DrizzleRewardGrantRepository(txHost),
-      redemptions: new DrizzleInviteRedemptionRepository(txHost),
+      redemptions: new DrizzleInviteRedemptionRepository(txHost, new DateClock()),
     };
   }
 

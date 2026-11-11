@@ -1,6 +1,7 @@
 import { ClsPluginTransactional } from "@nestjs-cls/transactional";
 import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { Module } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule, type ThrottlerStorage } from "@nestjs/throttler";
@@ -8,9 +9,7 @@ import { SentryModule } from "@sentry/nestjs/setup";
 import { ClsModule } from "nestjs-cls";
 
 import { AccessModule } from "#api/modules/access/access.module";
-import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import { AiAssistanceReportsModule } from "#api/modules/ai-assistance/ai-assistance-reports.public";
-import { AiAssistanceSuggestionsModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
+import { AiAssistanceModule } from "#api/modules/ai-assistance/ai-assistance.module";
 import { AppConfigModule as AppConfigContextModule } from "#api/modules/app-config/app-config.module";
 import { BillingModule } from "#api/modules/billing/billing.module";
 import { EngagementModule } from "#api/modules/engagement/engagement.module";
@@ -25,35 +24,35 @@ import { OperationsModule } from "#api/modules/operations/operations.module";
 import { PlanningModule } from "#api/modules/planning/planning.module";
 import { SocialModule } from "#api/modules/social/social.module";
 import { SupportModule } from "#api/modules/support/support.module";
-import { VoiceModule } from "#api/modules/voice/voice.public";
+import { VoiceModule } from "#api/modules/voice/voice.module";
 import { WeatherModule } from "#api/modules/weather/weather.module";
-import { CacheModule } from "#api/platform/cache/index";
-import { AppConfigModule, TypedConfigService } from "#api/platform/config/index";
-import { DatabaseModule, DRIZZLE } from "#api/platform/database/index";
-import { DedupModule } from "#api/platform/dedup/index";
-import { EncryptionModule } from "#api/platform/encryption/index";
-import { DomainEventsModule } from "#api/platform/events/index";
-import { HealthModule } from "#api/platform/health/index";
-import {
-  REQUEST_CLIENT_CLS_MIDDLEWARE,
-  RequestClientModule,
-} from "#api/platform/http/request-client/index";
+import { CacheModule } from "#api/platform/cache/cache.module";
+import { AppConfigModule } from "#api/platform/config/config.module";
+import { throttleConfig } from "#api/platform/config/throttle.config";
+import { DRIZZLE } from "#api/platform/database/database.client";
+import { DatabaseModule } from "#api/platform/database/database.module";
+import { DedupModule } from "#api/platform/dedup/dedup.module";
+import { EncryptionModule } from "#api/platform/encryption/encryption.module";
+import { DomainEventsModule } from "#api/platform/events/domain-events.module";
+import { HealthModule } from "#api/platform/health/health.module";
+import { RequestClientModule } from "#api/platform/http/request-client/request-client.module";
+import { REQUEST_CLIENT_CLS_MIDDLEWARE } from "#api/platform/http/request-client/request-client.store";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
-import { JobRuntimeModule } from "#api/platform/jobs/job-runtime.module";
-import { LockModule } from "#api/platform/lock/index";
-import { LoggerModule } from "#api/platform/logging/index";
-import { MeteringModule } from "#api/platform/metering/index";
+import { JobQueueModule } from "#api/platform/jobs/job-queue.module";
+import { LockModule } from "#api/platform/lock/lock.module";
+import { LoggerModule } from "#api/platform/logging/logger.module";
+import { MeteringModule } from "#api/platform/metering/metering.module";
 import { AlertingModule } from "#api/platform/observability/alerting.module";
 import { PaginationModule } from "#api/platform/pagination/pagination.module";
-import { RedisModule } from "#api/platform/redis/index";
-import { ResilienceModule } from "#api/platform/resilience/index";
+import { RedisModule } from "#api/platform/redis/redis.module";
+import { ResilienceModule } from "#api/platform/resilience/resilience.module";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
+import { THROTTLER_STORAGE } from "#api/platform/throttle/throttle.constants";
+import { ThrottleModule } from "#api/platform/throttle/throttle.module";
 import {
   DAILY_THROTTLER_OPTIONS,
-  THROTTLER_STORAGE,
-  ThrottleModule,
   UserAwareThrottlerGuard,
-} from "#api/platform/throttle/index";
+} from "#api/platform/throttle/user-aware-throttler.guard";
 import { TimeModule } from "#api/platform/time/time.module";
 
 import { AppController } from "./app.controller.js";
@@ -80,15 +79,15 @@ import { AppService } from "./app.service.js";
     }),
     RequestClientModule,
     EncryptionModule,
-    // 도메인 이벤트 — 발행 포트는 DomainEventsModule(@Global), 전송은 EventEmitter2.
-    // 와일드카드 off(기본값): 구독은 명시적 이벤트명(@OnEvent)만 사용한다.
+    // 도메인 이벤트 — 발행 포트는 DomainEventsModule(@Global), after-commit 구독의 커밋 뒤 전달은 EventEmitter2.
+    // 와일드카드 off(기본값): 구독 이름 채널만 쓴다.
     EventEmitterModule.forRoot(),
     DomainEventsModule,
     RedisModule.forRoot(),
     CacheModule.forRoot(),
     DedupModule.forRoot(),
     LockModule.forRoot(),
-    JobRuntimeModule,
+    JobQueueModule,
     AlertingModule,
     ResilienceModule,
     MeteringModule,
@@ -99,12 +98,12 @@ import { AppService } from "./app.service.js";
     PaginationModule,
     ThrottlerModule.forRootAsync({
       imports: [ThrottleModule.forRoot()],
-      inject: [TypedConfigService, { token: THROTTLER_STORAGE, optional: true }],
-      useFactory: (config: TypedConfigService, storage?: ThrottlerStorage) => ({
+      inject: [throttleConfig.KEY, { token: THROTTLER_STORAGE, optional: true }],
+      useFactory: (config: ConfigType<typeof throttleConfig>, storage?: ThrottlerStorage) => ({
         throttlers: [
           {
-            ttl: config.throttleTtl,
-            limit: config.throttleLimit,
+            ttl: config.ttlMs,
+            limit: config.limit,
           },
           DAILY_THROTTLER_OPTIONS,
         ],
@@ -114,9 +113,7 @@ import { AppService } from "./app.service.js";
 
     OperationsModule,
     AppConfigContextModule,
-    AiAssistanceParsingModule,
-    AiAssistanceReportsModule,
-    AiAssistanceSuggestionsModule,
+    AiAssistanceModule,
     VoiceModule,
     IdentityModule,
     SocialModule,

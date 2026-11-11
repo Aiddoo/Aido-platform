@@ -1,5 +1,7 @@
 import { uniq } from "es-toolkit";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import type { InboxNotification } from "../../../inbox/application/read-models/inbox-notification.read-model.js";
 import type { NotificationTodoTargetReaderPort } from "../ports/notification-todo-target.reader.port.js";
@@ -47,7 +49,9 @@ export class PublishNotificationUseCase {
       return items;
     }
 
-    const targets = await this.#dependencies.todoTargetReader.findTodoTargets(todoIds);
+    const targets = await this.#dependencies.todoTargetReader.findTodoTargets(
+      todoIds.map((todoId) => TodoId.reconstitute(todoId)),
+    );
     return items.map((item) => {
       const target = item.todoId == null ? undefined : targets.get(item.todoId);
       if (target == null) {

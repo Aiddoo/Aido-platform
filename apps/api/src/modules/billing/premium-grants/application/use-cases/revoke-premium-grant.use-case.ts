@@ -49,7 +49,7 @@ export class RevokePremiumGrantUseCase {
     const { userId } = found;
 
     const revokedGrantCount = await unitOfWork.run(async () => {
-      if (!(await userLock.lockById(userId.value))) {
+      if (!(await userLock.lockById(userId))) {
         return 0;
       }
       // 잠금 뒤 최신 상태로 다시 판단해 정리 작업·다른 취소와 겹쳐도 한 번만 바꾼다
@@ -75,7 +75,7 @@ export class RevokePremiumGrantUseCase {
     }
 
     try {
-      await this.#dependencies.cache.invalidate(userId.value);
+      await this.#dependencies.cache.invalidate(userId);
     } catch (error) {
       logger.warn({
         event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,

@@ -31,7 +31,7 @@ export function createTodoPrimitivesFixture(
     sortOrder: 0,
     completed: false,
     completedAt: null,
-    startDate: new Date("2026-11-10T00:00:00.000Z"),
+    startDate: Temporal.PlainDate.from("2026-11-10"),
     endDate: null,
     scheduledLocalTime: null,
     scheduledTime: null,

@@ -13,6 +13,10 @@ import {
   user as userTable,
   userActivityDay,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -33,7 +37,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     testDb = new TestDatabase();
     client = await testDb.start();
     const { txHost } = createDatabaseTransactionFixture(client);
-    activityWriter = new DrizzleUserRepository(txHost);
+    activityWriter = new DrizzleUserRepository(txHost, new DateClock());
     growthMetrics = new DrizzleGrowthMetricsReader(txHost);
   }, 60_000);
 
@@ -52,18 +56,19 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       email: "activity@example.com",
       userTag: "ACT00001",
       status: "ACTIVE",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
     });
 
     // When
     await activityWriter.updateLastActiveAt({
-      userId: "activity-user",
+      userId: UserId.reconstitute("activity-user"),
       timezone: "Asia/Seoul",
       seenAt: seenNow(),
     });
     const first = await client.query.userActivityDay.findFirst({
       where: { userId: "activity-user" },
     });
-    const preservedFirstSeenAt = new Date("2025-01-01T00:00:00.000Z");
+    const preservedFirstSeenAt = Temporal.Instant.from("2025-01-01T00:00:00.000Z");
     await client
       .update(userActivityDay)
       .set({ firstSeenAt: preservedFirstSeenAt, lastSeenAt: preservedFirstSeenAt })
@@ -71,7 +76,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     await Promise.all(
       Array.from({ length: 6 }, () =>
         activityWriter.updateLastActiveAt({
-          userId: "activity-user",
+          userId: UserId.reconstitute("activity-user"),
           timezone: "Asia/Seoul",
           seenAt: seenNow(),
         }),
@@ -97,10 +102,10 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
-    }).format(row.lastSeenAt);
-    expect(row.localDate.toISOString().slice(0, 10)).toBe(expectedLocalDate);
+    }).format(row.lastSeenAt.epochMilliseconds);
+    expect(row.localDate.toString()).toBe(expectedLocalDate);
     expect(row.firstSeenAt).toEqual(preservedFirstSeenAt);
-    expect(row.lastSeenAt.getTime()).toBeGreaterThan(preservedFirstSeenAt.getTime());
+    expect(Temporal.Instant.compare(row.lastSeenAt, preservedFirstSeenAt)).toBe(1);
     expect(user.lastActiveAt).toEqual(row.lastSeenAt);
   });
 
@@ -111,6 +116,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       email: "out-of-order@example.com",
       userTag: "ACT00002",
       status: "ACTIVE",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
     });
     const otherWriter = createActivityWriter(client);
     const earlier = new Date("2026-07-26T15:10:00.000Z");
@@ -123,13 +129,13 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       // When
       vi.setSystemTime(later);
       await activityWriter.updateLastActiveAt({
-        userId: "out-of-order-user",
+        userId: UserId.reconstitute("out-of-order-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
       vi.setSystemTime(earlier);
       await otherWriter.updateLastActiveAt({
-        userId: "out-of-order-user",
+        userId: UserId.reconstitute("out-of-order-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
@@ -144,9 +150,9 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     const user = requireRecord(
       await client.query.user.findFirst({ where: { id: "out-of-order-user" } }),
     );
-    expect(row.firstSeenAt).toEqual(earlier);
-    expect(row.lastSeenAt).toEqual(later);
-    expect(user.lastActiveAt).toEqual(later);
+    expect(row.firstSeenAt).toEqual(instantFromDate(earlier));
+    expect(row.lastSeenAt).toEqual(instantFromDate(later));
+    expect(user.lastActiveAt).toEqual(instantFromDate(later));
   });
 
   it("병렬 최초 insert 충돌에서도 첫·마지막 활동 시각의 극값을 남긴다", async () => {
@@ -156,6 +162,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       email: "parallel-insert@example.com",
       userTag: "ACT00003",
       status: "ACTIVE",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
     });
     const otherWriter = createActivityWriter(client);
     const earlier = new Date("2026-07-26T16:10:00.000Z");
@@ -168,13 +175,13 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       // When
       vi.setSystemTime(earlier);
       const earlierWrite = activityWriter.updateLastActiveAt({
-        userId: "parallel-insert-user",
+        userId: UserId.reconstitute("parallel-insert-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
       vi.setSystemTime(later);
       const laterWrite = otherWriter.updateLastActiveAt({
-        userId: "parallel-insert-user",
+        userId: UserId.reconstitute("parallel-insert-user"),
         timezone: "Asia/Seoul",
         seenAt: seenNow(),
       });
@@ -190,9 +197,9 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     const user = requireRecord(
       await client.query.user.findFirst({ where: { id: "parallel-insert-user" } }),
     );
-    expect(row.firstSeenAt).toEqual(earlier);
-    expect(row.lastSeenAt).toEqual(later);
-    expect(user.lastActiveAt).toEqual(later);
+    expect(row.firstSeenAt).toEqual(instantFromDate(earlier));
+    expect(row.lastSeenAt).toEqual(instantFromDate(later));
+    expect(user.lastActiveAt).toEqual(instantFromDate(later));
   });
 
   it("가입 현지 날짜, 측정 시작, 성숙 cohort, DAU/WAU/MAU를 집계한다", async () => {
@@ -281,7 +288,10 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 });
 
 function createActivityWriter(client: TestDatabaseClient): DrizzleUserRepository {
-  return new DrizzleUserRepository(createDatabaseTransactionFixture(client).txHost);
+  return new DrizzleUserRepository(
+    createDatabaseTransactionFixture(client).txHost,
+    new DateClock(),
+  );
 }
 
 async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
@@ -290,33 +300,34 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       id: "pre-measurement",
       email: "pre@example.com",
       userTag: "GROW0001",
-      createdAt: new Date("2026-05-31T12:00:00.000Z"),
+      createdAt: Temporal.Instant.from("2026-05-31T12:00:00.000Z"),
     },
     {
       id: "activated-retained",
       email: "activated@example.com",
       userTag: "GROW0002",
-      createdAt: new Date("2026-06-01T15:30:00.000Z"),
+      createdAt: Temporal.Instant.from("2026-06-01T15:30:00.000Z"),
     },
     {
       id: "not-activated",
       email: "inactive@example.com",
       userTag: "GROW0003",
-      createdAt: new Date("2026-06-10T10:00:00.000Z"),
+      createdAt: Temporal.Instant.from("2026-06-10T10:00:00.000Z"),
     },
     {
       id: "immature-d30",
       email: "immature@example.com",
       userTag: "GROW0004",
-      createdAt: new Date("2026-07-20T10:00:00.000Z"),
+      createdAt: Temporal.Instant.from("2026-07-20T10:00:00.000Z"),
     },
   ];
   await client.insert(userTable).values([
-    ...users.map((user) => ({ ...user, status: "ACTIVE" as const })),
+    ...users.map((user) => ({ ...user, status: "ACTIVE" as const, updatedAt: user.createdAt })),
     {
       ...DELETED_COMMENT_AUTHOR,
       status: "LOCKED" as const,
-      createdAt: new Date("2026-06-05T00:00:00.000Z"),
+      updatedAt: Temporal.Instant.from("2026-06-05T00:00:00.000Z"),
+      createdAt: Temporal.Instant.from("2026-06-05T00:00:00.000Z"),
     },
   ]);
   await client.insert(account).values(
@@ -324,6 +335,7 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       userId: user.id,
       provider: "CREDENTIAL" as const,
       providerAccountId: `growth-${user.id}`,
+      updatedAt: Temporal.Now.instant(),
     })),
   );
   await client
@@ -339,11 +351,14 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       activity("immature-d30", "2026-07-27", "UTC", "2026-07-27T10:00:00.000Z"),
     ]);
 
-  await client
-    .insert(todoCategory)
-    .values(
-      users.map((user) => ({ userId: user.id, name: `category-${user.id}`, color: "#000000" })),
-    );
+  await client.insert(todoCategory).values(
+    users.map((user) => ({
+      userId: user.id,
+      name: `category-${user.id}`,
+      color: "#000000",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    })),
+  );
   const categories = await client
     .select({ id: todoCategory.id, userId: todoCategory.userId })
     .from(todoCategory);
@@ -363,27 +378,30 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       userId: "activated-retained",
       categoryId: activatedCategory,
       title: "created within window",
-      startDate: new Date("2026-06-02T00:00:00.000Z"),
-      createdAt: new Date(activatedSignup.getTime() + 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-06-02"),
+      createdAt: activatedSignup.add({ milliseconds: 60 * 60 * 1000 }),
       completed: false,
+      updatedAt: nowInstant(),
     },
     {
       userId: "activated-retained",
       categoryId: activatedCategory,
       title: "completed within window",
-      startDate: new Date("2026-06-02T00:00:00.000Z"),
-      createdAt: new Date(activatedSignup.getTime() - 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-06-02"),
+      createdAt: activatedSignup.subtract({ milliseconds: 60 * 60 * 1000 }),
       completed: true,
-      completedAt: new Date(activatedSignup.getTime() + 2 * 60 * 60 * 1000),
+      completedAt: activatedSignup.add({ milliseconds: 2 * 60 * 60 * 1000 }),
+      updatedAt: nowInstant(),
     },
     {
       userId: "immature-d30",
       categoryId: immatureCategory,
       title: "activated",
-      startDate: new Date("2026-07-20T00:00:00.000Z"),
-      createdAt: new Date(immatureSignup.getTime() + 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-07-20"),
+      createdAt: immatureSignup.add({ milliseconds: 60 * 60 * 1000 }),
       completed: true,
-      completedAt: new Date(immatureSignup.getTime() + 2 * 60 * 60 * 1000),
+      completedAt: immatureSignup.add({ milliseconds: 2 * 60 * 60 * 1000 }),
+      updatedAt: nowInstant(),
     },
   ]);
 }
@@ -395,17 +413,24 @@ async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> 
     email: "deleted-growth@example.com",
     userTag: "GROW0005",
     status: "ACTIVE",
-    createdAt: signupAt,
-    deletedAt: new Date("2026-07-31T00:00:00.000Z"),
+    createdAt: instantFromDate(signupAt),
+    updatedAt: instantFromDate(signupAt),
+    deletedAt: Temporal.Instant.from("2026-07-31T00:00:00.000Z"),
   });
   await client.insert(account).values({
     userId: "deleted-growth-user",
     provider: "CREDENTIAL",
     providerAccountId: "growth-deleted-growth-user",
+    updatedAt: Temporal.Now.instant(),
   });
   const [category] = await client
     .insert(todoCategory)
-    .values({ userId: "deleted-growth-user", name: "deleted-user-category", color: "#000000" })
+    .values({
+      userId: "deleted-growth-user",
+      name: "deleted-user-category",
+      color: "#000000",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    })
     .returning();
   const categoryId = requireRecord(category).id;
   await client.insert(todo).values([
@@ -413,18 +438,20 @@ async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> 
       userId: "deleted-growth-user",
       categoryId,
       title: "deleted created",
-      startDate: new Date("2026-06-01T00:00:00.000Z"),
-      createdAt: new Date(signupAt.getTime() + 60 * 60 * 1000),
+      startDate: Temporal.PlainDate.from("2026-06-01"),
+      createdAt: instantFromDate(new Date(signupAt.getTime() + 60 * 60 * 1000)),
       completed: false,
+      updatedAt: nowInstant(),
     },
     {
       userId: "deleted-growth-user",
       categoryId,
       title: "deleted completed",
-      startDate: new Date("2026-06-01T00:00:00.000Z"),
-      createdAt: signupAt,
+      startDate: Temporal.PlainDate.from("2026-06-01"),
+      createdAt: instantFromDate(signupAt),
       completed: true,
-      completedAt: new Date(signupAt.getTime() + 2 * 60 * 60 * 1000),
+      completedAt: instantFromDate(new Date(signupAt.getTime() + 2 * 60 * 60 * 1000)),
+      updatedAt: nowInstant(),
     },
   ]);
   await client
@@ -438,10 +465,10 @@ async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> 
 }
 
 function activity(userId: string, localDate: string, timezone: string, seenAt: string) {
-  const timestamp = new Date(seenAt);
+  const timestamp = Temporal.Instant.from(seenAt);
   return {
     userId,
-    localDate: new Date(`${localDate}T00:00:00.000Z`),
+    localDate: Temporal.PlainDate.from(localDate),
     timezone,
     firstSeenAt: timestamp,
     lastSeenAt: timestamp,

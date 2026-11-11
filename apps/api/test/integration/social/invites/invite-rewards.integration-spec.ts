@@ -1,12 +1,8 @@
 import { Logger } from "@nestjs/common";
 import { and, count, eq, inArray } from "drizzle-orm";
 
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import {
-  PREMIUM_ACCESS_READER,
-  type PremiumAccessReaderPort,
-} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { InviteNotifierPort } from "#api/modules/social/invites/application/ports/invite-notifier.port";
@@ -38,7 +34,7 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
 import { UserFixture } from "#test/fixtures/index";
@@ -99,7 +95,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         id,
         userTag,
         email: `${userTag.toLowerCase()}@example.test`,
-        createdAt: JOINED_AT,
+        createdAt: instantFromDate(JOINED_AT),
       }),
     );
     return id;
@@ -249,8 +245,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     expect(await premiumGrantsOf(inviterId)).toEqual([
       { durationDays: 7, status: "ACTIVE", endsAt: new Date("2028-03-06T03:00:00.000Z") },
     ]);
-    const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(await entitlement.getLimitInTx(inviterId, "FRIEND")).toBeNull();
+    const entitlement = context.module.get(EntitlementReaderPort);
+    expect(
+      await entitlement.getFeatureLimitInTx(UserId.reconstitute(inviterId), "FRIEND"),
+    ).toBeNull();
     const repository = context.module.get(InviteRedemptionRepositoryPort);
     expect(await repository.summarizeByInviterId(UserId.reconstitute(inviterId))).toEqual({
       joinedCount: 0,
@@ -310,10 +308,11 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       inviteeId: earlierInviteeId,
       status: "REWARDED",
       timezone: "Asia/Seoul",
-      joinedAt: JOINED_AT,
-      qualifiedAt: JOINED_AT,
-      rewardedAt: JOINED_AT,
-      expiresAt: JOINED_AT,
+      joinedAt: instantFromDate(JOINED_AT),
+      qualifiedAt: instantFromDate(JOINED_AT),
+      rewardedAt: instantFromDate(JOINED_AT),
+      expiresAt: instantFromDate(JOINED_AT),
+      updatedAt: instantFromDate(JOINED_AT),
     });
     await client.insert(rewardGrant).values({
       recipientId: inviterId,
@@ -322,8 +321,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       rewardType: "PREMIUM_DAYS",
       quantity: 30,
       status: "APPLIED",
-      appliedAt: JOINED_AT,
-      createdAt: JOINED_AT,
+      appliedAt: instantFromDate(JOINED_AT),
+      createdAt: instantFromDate(JOINED_AT),
+      updatedAt: instantFromDate(JOINED_AT),
     });
     await recordActivity.execute({
       inviteeId,
@@ -383,21 +383,23 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     );
 
     // Then
-    const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    const reader = context.module.get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER);
+    const entitlement = context.module.get(EntitlementReaderPort);
+    const reader = context.module.get<PremiumAccessReaderPort>(PremiumAccessReaderPort);
     for (const { inviterId } of scenarios) {
-      expect(await reader.getPremiumAccess(inviterId)).toMatchObject({
+      expect(await reader.getPremiumAccess(UserId.reconstitute(inviterId))).toMatchObject({
         source: "STORE",
         periodEndsAt: storeExpiry,
         bankedDays: 7,
       });
-      expect(await entitlement.canInTx(inviterId, "AI_REPORT")).toBe(true);
+      expect(await entitlement.canInTx(UserId.reconstitute(inviterId), "AI_REPORT")).toBe(true);
       const projection = await client.query.user.findFirst({
         where: { id: inviterId },
         columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
       });
       expect(projection?.subscriptionStatus).toBe("ACTIVE");
-      expect(projection?.subscriptionExpiresAt?.getTime()).toBeGreaterThan(storeExpiry.getTime());
+      expect(projection?.subscriptionExpiresAt?.epochMilliseconds).toBeGreaterThan(
+        storeExpiry.getTime(),
+      );
     }
   });
 
@@ -407,13 +409,17 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const now = Temporal.Instant.from("2028-03-15T03:00:00.000Z");
     const windowStart = rewardCapWindowStart(now);
     const grants = [
-      { sourceId: "leap-window-start", quantity: 7, createdAt: instantToDate(windowStart) },
+      { sourceId: "leap-window-start", quantity: 7, createdAt: windowStart },
       {
         sourceId: "leap-window-in",
         quantity: 7,
-        createdAt: instantToDate(windowStart.add({ milliseconds: 1 })),
+        createdAt: windowStart.add({ milliseconds: 1 }),
       },
-      { sourceId: "leap-old", quantity: 76, createdAt: new Date("2027-12-01T00:00:00.000Z") },
+      {
+        sourceId: "leap-old",
+        quantity: 76,
+        createdAt: Temporal.Instant.from("2027-12-01T00:00:00.000Z"),
+      },
     ];
     for (const grant of grants) {
       await client.insert(rewardGrant).values({
@@ -425,6 +431,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         status: "APPLIED",
         appliedAt: grant.createdAt,
         createdAt: grant.createdAt,
+        updatedAt: grant.createdAt,
       });
     }
     const repository = context.module.get(RewardGrantRepositoryPort);
@@ -440,7 +447,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     expect(remainingPremiumDays(summary)).toBe(0);
   });
 
-  it("ADMIN이 초대한 사람이어도 보상 기간·친구 자리·보상 알림을 받고 role과 무제한 한도는 그대로다", async () => {
+  it("ADMIN이 초대한 사람이어도 보상 기간·친구 자리·보상 알림을 받고 role과 프리미엄 한도(친구 무제한)는 그대로다", async () => {
     // Given
     const { inviterId, redemptionId } = await qualified("ADMININV", "ADMINVTE");
     await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, inviterId));
@@ -463,8 +470,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       (await client.query.user.findFirst({ where: { id: inviterId }, columns: { role: true } }))
         ?.role,
     ).toBe("ADMIN");
-    const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(await entitlement.getLimitInTx(inviterId, "FRIEND")).toBeNull();
+    const entitlement = context.module.get(EntitlementReaderPort);
+    expect(
+      await entitlement.getFeatureLimitInTx(UserId.reconstitute(inviterId), "FRIEND"),
+    ).toBeNull();
   });
 
   it("정비 작업은 마감이 지난 수락만 거절하고 남은 지급이 있는 수락의 작업을 다시 만든다", async () => {

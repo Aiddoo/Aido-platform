@@ -1,23 +1,18 @@
-import {
-  useActivationService,
-  useHaptics,
-  useVoiceService,
-} from '@src/bootstrap/providers/di-context';
+import { useHaptics, useVoiceService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import { emitTodoCreated } from '@src/core/events/todo-created';
 import {
   findErrorFeatureQuota,
   isFreeOfChargeError,
 } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
-import { getCachedActivationContext } from '@src/features/device/activation/queries/activation-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -56,7 +51,6 @@ export function useApplyActionPlanMutationOptions({
 }: ApplyActionPlanMutationOptionsInput) {
   const haptics = useHaptics();
   const voiceService = useVoiceService();
-  const activationService = useActivationService();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const toast = useAppToast();
@@ -80,10 +74,7 @@ export function useApplyActionPlanMutationOptions({
     onSuccess: ({ todoCount, hasMemo }, { source, sourceMemoId, skippedCount }) => {
       onSaved?.({ todoCount });
       haptics.notify('success');
-      activationService.recordTodoCreated({
-        ...getCachedActivationContext(queryClient),
-        now: getNowInstant(),
-      });
+      emitTodoCreated();
       invalidateTodos(queryClient);
       if (hasMemo || sourceMemoId != null) {
         onMemoChanged();

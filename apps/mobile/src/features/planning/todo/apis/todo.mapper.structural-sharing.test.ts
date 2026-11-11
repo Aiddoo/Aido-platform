@@ -36,7 +36,7 @@ describe('Todo 클라이언트 모델과 캐시', () => {
 
     // Then
     expect(TodoPolicy.isRecurringTodo(todo)).toBe(true);
-    expect(SubTodoPolicy.getSubTodoStats(todo)).toEqual({ total: 4, completed: 1 });
+    expect(SubTodoPolicy.getSubTodoStats(todo.subTodos)).toEqual({ total: 4, completed: 1 });
     expect(todo).not.toHaveProperty('itemStats');
     expect(todo).not.toHaveProperty('subTodoStats');
     expect(todo).not.toHaveProperty('items');

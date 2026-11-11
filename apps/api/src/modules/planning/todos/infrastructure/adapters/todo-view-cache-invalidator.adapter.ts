@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoViewCacheInvalidatorPort } from "../../application/ports/todo-view-cache-invalidator.port.js";
 import { InvalidateTodoViewCacheUseCase } from "../../application/use-cases/invalidate-todo-view-cache.use-case.js";
 
@@ -11,7 +12,7 @@ export class TodoViewCacheInvalidatorAdapter implements TodoViewCacheInvalidator
     this.#invalidateTodoViewCache = invalidateTodoViewCache;
   }
 
-  invalidateForTodo(todoId: number): Promise<void> {
+  invalidateForTodo(todoId: TodoId): Promise<void> {
     return this.#invalidateTodoViewCache.execute(todoId);
   }
 }

@@ -7,7 +7,7 @@ export type SigningKeysParseResult =
   | { readonly success: true; readonly keys: readonly SigningKey[] }
   | { readonly success: false; readonly reason: string };
 
-export const SIGNING_KEY_MIN_SECRET_LENGTH = 32;
+const SIGNING_KEY_MIN_SECRET_LENGTH = 32;
 // kid는 토큰 안에 `.` 구분자와 함께 실리므로 URL에 안전한 문자만 받는다.
 const KID_PATTERN = /^[A-Za-z0-9_-]{1,32}$/;
 const LEGACY_KID = "legacy";
@@ -41,7 +41,7 @@ export class SigningKeyRing {
   readonly #keys: readonly SigningKey[];
   readonly #legacy: SigningKey;
 
-  private constructor(keys: readonly SigningKey[], legacy: SigningKey) {
+  constructor(keys: readonly SigningKey[], legacy: SigningKey) {
     this.#keys = keys;
     this.#legacy = legacy;
   }
@@ -66,7 +66,7 @@ export class SigningKeyRing {
     return this.#keys[0] ?? this.#legacy;
   }
 
-  /** kid 없는 배포 전 토큰을 검증하는 키. 다음 릴리스에서 기존 비밀값 대체를 지운다. */
+  /** kid 없이 JWT_SECRET으로 서명해 이미 보낸 댓글 커서·광고 수신 거부 링크를 검증한다. 운영에 *_SIGNING_KEYS를 넣고 1.15.2에서 JWT_SECRET 대체를 지운다. */
   get legacy(): SigningKey {
     return this.#legacy;
   }

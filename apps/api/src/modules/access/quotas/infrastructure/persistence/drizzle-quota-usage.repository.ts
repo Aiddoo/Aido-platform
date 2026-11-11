@@ -9,15 +9,13 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { quotaUsage } from "#api/platform/database/schema/access.schema";
 import { user } from "#api/platform/database/schema/identity.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import { QuotaUsageRepositoryPort } from "../../application/ports/quota-usage.repository.port.js";
 import { QuotaWindow } from "../../domain/quota-window.vo.js";
 
-/** AI_PLAN 카운터. User 시각 칸은 identity가 아직 Date로 둔다 */
 interface AiPlanCounter {
   readonly count: number;
-  readonly resetAt: Date;
+  readonly resetAt: Temporal.Instant;
 }
 
 /**
@@ -46,9 +44,7 @@ export class DrizzleQuotaUsageRepository extends QuotaUsageRepositoryPort {
     return match(meter)
       .with("AI_PLAN", async () => {
         const counter = await this.#findAiPlanCounter(userId);
-        return counter != null && window.contains(instantFromDate(counter.resetAt))
-          ? counter.count
-          : 0;
+        return counter != null && window.contains(counter.resetAt) ? counter.count : 0;
       })
       .with("VOICE_NOTE", async () => {
         const [row] = await this.#db
@@ -81,7 +77,7 @@ export class DrizzleQuotaUsageRepository extends QuotaUsageRepositoryPort {
     return match(meter)
       .with("AI_PLAN", async () => {
         const counter = requireRecord(await this.#findAiPlanCounter(userId));
-        const isCurrent = window.contains(instantFromDate(counter.resetAt));
+        const isCurrent = window.contains(counter.resetAt);
         const used = isCurrent ? counter.count : 0;
         if (limit != null && used + amount > limit) {
           return false;
@@ -91,7 +87,8 @@ export class DrizzleQuotaUsageRepository extends QuotaUsageRepositoryPort {
           .update(user)
           .set({
             aiUsageCount: used + amount,
-            aiUsageResetAt: isCurrent ? counter.resetAt : instantToDate(now),
+            aiUsageResetAt: isCurrent ? counter.resetAt : now,
+            updatedAt: now,
           })
           .where(and(eq(user.id, userId.value), eq(user.aiUsageCount, counter.count)))
           .returning({ id: user.id });
@@ -129,15 +126,12 @@ export class DrizzleQuotaUsageRepository extends QuotaUsageRepositoryPort {
     return match(meter)
       .with("AI_PLAN", async () => {
         const counter = await this.#findAiPlanCounter(userId);
-        if (
-          counter == null ||
-          QuotaWindow.monthOf(instantFromDate(counter.resetAt)).periodKey !== periodKey
-        ) {
+        if (counter == null || QuotaWindow.monthOf(counter.resetAt).periodKey !== periodKey) {
           return false;
         }
         const updated = await this.#db
           .update(user)
-          .set({ aiUsageCount: sql`${user.aiUsageCount} - ${amount}` })
+          .set({ aiUsageCount: sql`${user.aiUsageCount} - ${amount}`, updatedAt: now })
           .where(
             and(
               eq(user.id, userId.value),

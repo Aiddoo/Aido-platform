@@ -10,7 +10,7 @@ import { PlanningCategoriesModule } from "../categories/planning-categories.modu
 import { CategoryOwnershipPort } from "./application/ports/category-ownership.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
 import { TodoOwnerTimezonePort } from "./application/ports/todo-owner-timezone.port.js";
-import { TODO_PLAN_READER, TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
+import { TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
 import { TodoReadRepositoryPort } from "./application/ports/todo-read.repository.port.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
 import { TodoRepositoryPort } from "./application/ports/todo.repository.port.js";
@@ -31,7 +31,6 @@ import { DrizzleTodoRepository } from "./infrastructure/persistence/drizzle-todo
     DrizzleTodoReadRepository,
     { provide: TodoReadRepositoryPort, useExisting: DrizzleTodoReadRepository },
     { provide: TodoPlanReaderPort, useExisting: DrizzleTodoReadRepository },
-    { provide: TODO_PLAN_READER, useExisting: TodoPlanReaderPort },
     { provide: TodoCachePort, useClass: TodoCacheAdapter },
     { provide: TodoReminderSchedulerPort, useClass: ReminderSchedulerAdapter },
     { provide: CategoryOwnershipPort, useClass: CategoryOwnershipAdapter },
@@ -47,7 +46,6 @@ import { DrizzleTodoRepository } from "./infrastructure/persistence/drizzle-todo
     TodoRepositoryPort,
     TodoReadRepositoryPort,
     TodoPlanReaderPort,
-    TODO_PLAN_READER,
     TodoCachePort,
     TodoReminderSchedulerPort,
     CategoryOwnershipPort,

@@ -16,10 +16,10 @@ describe("할 일 Read Model 행 매퍼", () => {
   it("시각은 ms 3자리 UTC 문자열, 날짜 칸은 YYYY-MM-DD로 준다", () => {
     // Given
     const row = TodoBuilder.create("user-123")
-      .withStartDate(new Date("2024-01-15T00:00:00.000Z"))
-      .withEndDate(new Date("2024-01-16T00:00:00.000Z"))
-      .withScheduledTime(new Date("2024-01-15T10:00:00Z"))
-      .withCreatedAt(new Date("2024-01-10T12:00:00Z"))
+      .withStartDate(Temporal.PlainDate.from("2024-01-15"))
+      .withEndDate(Temporal.PlainDate.from("2024-01-16"))
+      .withScheduledTime(Temporal.Instant.from("2024-01-15T10:00:00Z"))
+      .withCreatedAt(Temporal.Instant.from("2024-01-10T12:00:00Z"))
       .build();
 
     // When
@@ -60,8 +60,8 @@ describe("할 일 Read Model 행 매퍼", () => {
     // Given
     const row = TodoBuilder.create("user-123")
       .withSeriesId("series-1")
-      .withOccurrenceDate(new Date("2026-11-02T00:00:00.000Z"))
-      .withStartDate(new Date("2026-11-04T00:00:00.000Z"))
+      .withOccurrenceDate(Temporal.PlainDate.from("2026-11-02"))
+      .withStartDate(Temporal.PlainDate.from("2026-11-04"))
       .build();
 
     // When
@@ -88,7 +88,7 @@ describe("할 일 Read Model 행 매퍼", () => {
     // When
     const todo = toTodoReadModel({
       ...row,
-      series: { ...WEEKLY_RULE, repeatUntil: new Date("2026-12-31T00:00:00.000Z") },
+      series: { ...WEEKLY_RULE, repeatUntil: Temporal.PlainDate.from("2026-12-31") },
     });
 
     // Then

@@ -5,11 +5,16 @@
   "type": "module",
   "main": "./vitest.preset.ts",
   "exports": {
-    ".": "./vitest.preset.ts"
+    ".": "./vitest.preset.ts",
+    "./test-workers": {
+      "types": "./test-workers.d.mts",
+      "default": "./test-workers.mjs"
+    }
+  },
+  "scripts": {
+    "test": "node --test test-workers.test.mjs"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "catalog:",
-    "typescript": "catalog:",
     "vitest": "catalog:"
   }
 }

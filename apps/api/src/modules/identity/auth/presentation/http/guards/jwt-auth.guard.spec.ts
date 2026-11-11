@@ -5,7 +5,9 @@ import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-hos
 import { JwtService } from "@nestjs/jwt";
 
 import { AuthenticateSessionUseCase } from "#api/modules/identity/auth/application/use-cases/authenticate-session.use-case";
+import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
 import { JwtTokenIssuerAdapter } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
@@ -222,9 +224,9 @@ describe("JwtAuthGuard — access 토큰 검증(Passport 대체)", () => {
     // Given
     const issuer = new JwtTokenIssuerAdapter(new JwtService(), JWT);
     const { accessToken, refreshToken } = await issuer.generateTokenPair(
-      AUTH_FIXTURE_USER_ID,
+      UserId.reconstitute(AUTH_FIXTURE_USER_ID),
       "user@example.com",
-      AUTH_FIXTURE_SESSION_ID,
+      SessionId.reconstitute(AUTH_FIXTURE_SESSION_ID),
       "USER",
       "token-family",
       1,

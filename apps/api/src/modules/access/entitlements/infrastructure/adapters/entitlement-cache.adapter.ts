@@ -1,10 +1,15 @@
+import { GRANTABLE_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import {
+  GenerationGuardedCache,
+  type GenerationGuardedCacheKey,
+} from "#api/platform/cache/generation-guarded-cache";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { EntitlementSubscriptionInvalidatorPort } from "../../application/ports/entitlement-cache-invalidator.port.js";
+import type { EntitlementCacheInvalidatorPort } from "../../application/ports/entitlement-cache-invalidator.port.js";
 import {
   EntitlementCachePort,
   type CachedAccessState,
@@ -18,28 +23,35 @@ const CACHED_ACCESS_STATE_SCHEMA = z.looseObject({
   status: z.string().nullable(),
   isAdmin: z.boolean(),
   accessDeadlineMs: z.number().nullable().optional(),
-  resourceBonuses: z.object({ FRIEND: z.number() }),
+  resourceBonuses: z.partialRecord(z.enum(GRANTABLE_FEATURE_KEYS), z.number()),
 }) satisfies z.ZodType<CachedAccessState>;
+
+function subscriptionKey(userId: UserId): GenerationGuardedCacheKey {
+  return {
+    valueKey: EntitlementCacheKey.subscription(userId.value),
+    generationKey: EntitlementCacheKey.subscriptionGeneration(userId.value),
+  };
+}
 
 // 다른 Context(billing)가 비우는 문도 같은 key를 쓰므로 한 어댑터가 두 포트를 맡는다
 @Injectable()
 export class EntitlementCacheAdapter
   extends EntitlementCachePort
-  implements EntitlementSubscriptionInvalidatorPort
+  implements EntitlementCacheInvalidatorPort
 {
-  readonly #cacheService: CacheService;
+  readonly #cache: GenerationGuardedCache;
 
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheStorePort) {
     super();
-    this.#cacheService = cacheService;
+    this.#cache = new GenerationGuardedCache(cacheService, ENTITLEMENT_CACHE_TTL_MS);
   }
 
   wrap(
     userId: UserId,
     factory: () => Promise<CachedAccessState>,
   ): Promise<CachedAccessState | null> {
-    return this.#cacheService.wrap(
-      EntitlementCacheKey.subscription(userId.value),
+    return this.#cache.wrap(
+      subscriptionKey(userId),
       CACHED_ACCESS_STATE_SCHEMA,
       factory,
       ENTITLEMENT_CACHE_TTL_MS,
@@ -47,10 +59,10 @@ export class EntitlementCacheAdapter
   }
 
   async invalidate(userId: UserId): Promise<void> {
-    await this.invalidateSubscription(userId.value);
+    await this.invalidateEntitlements(userId);
   }
 
-  async invalidateSubscription(userId: string): Promise<void> {
-    await this.#cacheService.del(EntitlementCacheKey.subscription(userId));
+  async invalidateEntitlements(userId: UserId): Promise<void> {
+    await this.#cache.invalidate(subscriptionKey(userId));
   }
 }

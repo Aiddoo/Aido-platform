@@ -80,8 +80,8 @@ describe("CheckQuotaRemainingUseCase — 남은 횟수 선검사", () => {
       input: { subscriptionStatus: "ACTIVE", aiUsageCount: 50 },
     },
     {
-      label: "공정 사용 상한을 넘긴 ADMIN",
-      input: { role: "ADMIN", aiUsageCount: PLAN_CATALOG.AI_PARSE.fairUse.premium + 1 },
+      label: "공정 사용 상한 아래의 ADMIN",
+      input: { role: "ADMIN", aiUsageCount: PLAN_CATALOG.AI_PARSE.fairUse.premium - 1 },
     },
   ])("$label 사용자는 통과한다", async ({ input }) => {
     // Given
@@ -92,5 +92,26 @@ describe("CheckQuotaRemainingUseCase — 남은 횟수 선검사", () => {
 
     // Then
     await expect(execution).resolves.toBeUndefined();
+  });
+
+  it.each([
+    { label: "프리미엄", input: { subscriptionStatus: "ACTIVE" } },
+    { label: "ADMIN", input: { role: "ADMIN" } },
+  ])("$label이 공정 사용 상한에 닿으면 같은 AI_1303과 공정 사용 한도를 준다", async ({ input }) => {
+    // Given
+    const fairUse = PLAN_CATALOG.AI_PARSE.fairUse.premium;
+    const fixture = setup({ ...input, aiUsageCount: fairUse });
+
+    // When
+    const execution = fixture.useCase.execute({ userId: fixture.userId, meter: "AI_PLAN" });
+
+    // Then
+    await expect(execution).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1303,
+      details: {
+        charged: false,
+        featureQuota: { limit: fairUse, used: fairUse, remaining: 0, isFairUse: true },
+      },
+    });
   });
 });

@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 
 import { LinkOAuthIdentityUseCase } from "./link-oauth-identity.use-case.js";
@@ -36,7 +37,7 @@ describe("LinkOAuthIdentity — 소셜 신원 연결의 공통 저장 계약", (
     // Given
     const fixture = createAuthOAuthFixture();
     await fixture.accountRepository.createOAuthAccount({
-      userId: fixture.user.id,
+      userId: UserId.reconstitute(fixture.user.id),
       provider: "GOOGLE",
       providerAccountId: "google-account",
     });
@@ -71,7 +72,7 @@ describe("LinkOAuthIdentity — 소셜 신원 연결의 공통 저장 계약", (
       // Given
       const fixture = createAuthOAuthFixture(provider);
       await fixture.accountRepository.createOAuthAccount({
-        userId: "other-user",
+        userId: UserId.reconstitute("other-user"),
         provider,
         providerAccountId: "other-account",
       });

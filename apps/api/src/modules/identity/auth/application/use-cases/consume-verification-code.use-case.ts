@@ -5,6 +5,7 @@ import { match } from "ts-pattern";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { judgeVerificationAttempt } from "../../domain/auth-verification.domain-service.js";
 import type { VerificationType } from "../../domain/auth.constants.js";
@@ -38,7 +39,8 @@ export class ConsumeVerificationCodeUseCase {
 
   async execute(command: ConsumeVerificationCodeCommand): Promise<void> {
     const { verificationRepository, verificationCodeSecurity, clock, logger } = this.#dependencies;
-    const { userId, type } = command;
+    const { type } = command;
+    const userId = UserId.reconstitute(command.userId);
     const now = clock.now();
     const verification = await verificationRepository.findValidByUserIdAndType(userId, type, now);
     const tokenHash = verificationCodeSecurity.hash(command.code);
@@ -46,8 +48,12 @@ export class ConsumeVerificationCodeUseCase {
 
     if (!judgement.ok) {
       if (judgement.reason === "mismatch" && verification != null) {
-        await verificationRepository.incrementAttempts(verification.id.value);
-        logger.warn({ event: AuthLogEvent.VERIFICATION_FAILED, userId, verificationType: type });
+        await verificationRepository.incrementAttempts(verification.id);
+        logger.warn({
+          event: AuthLogEvent.VERIFICATION_FAILED,
+          userId: command.userId,
+          verificationType: type,
+        });
       }
       throw match(judgement.reason)
         .with("exhausted", () => new ApplicationException(ErrorCode.VERIFY_0754))
@@ -62,7 +68,7 @@ export class ConsumeVerificationCodeUseCase {
     }
 
     const consumed = await verificationRepository.consume({
-      id: judgement.verification.id.value,
+      id: judgement.verification.id,
       userId,
       type,
       tokenHash,
@@ -73,6 +79,10 @@ export class ConsumeVerificationCodeUseCase {
       throw new ApplicationException(ErrorCode.VERIFY_0751);
     }
 
-    logger.log({ event: AuthLogEvent.VERIFICATION_CONSUMED, userId, verificationType: type });
+    logger.log({
+      event: AuthLogEvent.VERIFICATION_CONSUMED,
+      userId: command.userId,
+      verificationType: type,
+    });
   }
 }

@@ -1,8 +1,9 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
 
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 
-import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { encryptionConfig } from "#api/platform/config/encryption.config";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
@@ -15,9 +16,8 @@ const DEFAULT_SALT = "aido-token-encryption";
 export class EncryptionService {
   readonly #key: Buffer;
 
-  constructor(configService: TypedConfigService) {
-    const salt = configService.tokenEncryptionSalt ?? DEFAULT_SALT;
-    this.#key = scryptSync(configService.tokenEncryptionKey, salt, KEY_LENGTH);
+  constructor(@Inject(encryptionConfig.KEY) config: ConfigType<typeof encryptionConfig>) {
+    this.#key = scryptSync(config.key, config.salt ?? DEFAULT_SALT, KEY_LENGTH);
   }
 
   encrypt(plaintext: string): string {

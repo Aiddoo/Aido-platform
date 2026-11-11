@@ -3,8 +3,9 @@ import request from "supertest";
 import { assert } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
-import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
-import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+import { toAiReportResponse } from "#api/modules/ai-assistance/reports/presentation/http/v1/ai-report-response.mapper";
 /**
  * AI 리포트 모듈 E2E 테스트
  *
@@ -18,7 +19,7 @@ import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases
  * - GET /ai/reports/:id: 리포트 상세 조회
  * - 인증 에러 (401)
  */
-import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
@@ -35,10 +36,10 @@ describe("AI 리포트 E2E", () => {
 
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
-  }, 60000);
+  }, 60_000);
 
   afterAll(async () => {
     await destroyE2eApp(ctx);
@@ -56,7 +57,7 @@ describe("AI 리포트 E2E", () => {
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
       .where(eq(userTable.id, user.userId));
-    const cacheService = ctx.module.get(CacheService);
+    const cacheService = ctx.module.get(CacheStorePort);
     await cacheService.del(EntitlementCacheKey.subscription(user.userId));
     return user;
   }
@@ -180,7 +181,13 @@ describe("AI 리포트 E2E", () => {
     const client = ctx.testDatabase.getClient();
     const [category] = await client
       .insert(todoCategory)
-      .values({ userId, name: "업무", color: "#3B82F6", sortOrder: 99 })
+      .values({
+        userId,
+        name: "업무",
+        color: "#3B82F6",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        sortOrder: 99,
+      })
       .returning();
     assert.exists(category);
     const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -189,7 +196,7 @@ describe("AI 리포트 E2E", () => {
       userId,
       categoryId: category.id,
       title: "주간 리포트 기록",
-      startDate: new Date(`${seoulDate.format(lastWeek)}T00:00:00Z`),
+      startDate: Temporal.PlainDate.from(seoulDate.format(lastWeek)),
     });
     await client.insert(todo).values(row);
   }
@@ -205,28 +212,28 @@ describe("AI 리포트 E2E", () => {
 
       // When
       const report = await ctx.module
-        .get(GenerateReport)
+        .get(GenerateReportUseCase)
         .execute({ userId: user.userId, timezone: "Asia/Seoul", type: "WEEKLY", locale });
       assert.exists(report);
       const response = await request(ctx.app.getHttpServer())
-        .get(`/v1/ai/reports/${report.id}`)
+        .get(`/v1/ai/reports/${report.id.value}`)
         .set("Authorization", `Bearer ${user.accessToken}`);
 
       // Then
       expect(response.status).toBe(200);
       expect(response.body.data.report.aiSummary).toBe(raw.summary);
       expect(response.body.data.report.aiTips).toEqual(raw.tips);
-      expect(response.body.data.report.periodLabel).toBe(report.periodLabel);
+      expect(response.body.data.report.periodLabel).toBe(toAiReportResponse(report).periodLabel);
       expect(fakeAiGenerator.getCallCount()).toBe(1);
       const stored = await ctx.testDatabase
         .getClient()
-        .query.aiReport.findFirst({ where: { id: report.id } });
+        .query.aiReport.findFirst({ where: { id: report.id.value } });
       expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@3" });
 
       // When
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");
       const denied = await request(ctx.app.getHttpServer())
-        .get(`/v1/ai/reports/${report.id}`)
+        .get(`/v1/ai/reports/${report.id.value}`)
         .set("Authorization", `Bearer ${other.accessToken}`);
 
       // Then

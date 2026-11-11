@@ -1,6 +1,6 @@
 import {
-  NO_RESOURCE_BONUSES,
-  type ResourceBonuses,
+  NO_FEATURE_GRANTS,
+  type FeatureGrants,
 } from "#api/modules/access/entitlements/domain/entitlements.constants";
 import { CommitQuotaReservationUseCase } from "#api/modules/access/quotas/application/use-cases/commit-quota-reservation.use-case";
 import { GetMeteredFeatureQuotaUseCase } from "#api/modules/access/quotas/application/use-cases/get-metered-feature-quota.use-case";
@@ -38,13 +38,13 @@ export const QUOTA_LEDGER_TIME = new Date(ACCESS_FIXTURE_NOW.epochMilliseconds);
  */
 export function createQuotaLedgerFixture(
   input: AccessUserInput = {},
-  resourceBonuses: ResourceBonuses = NO_RESOURCE_BONUSES,
+  grants: FeatureGrants = NO_FEATURE_GRANTS,
   options: { readonly clock?: ClockPort } = {},
 ) {
   const userId = ACCESS_FIXTURE_USER_ID;
   const users = new Map<string, InMemoryAccessUser>([[userId, createAccessUserFixture(input)]]);
   const accessStateReader = new InMemoryAccessStateReader(users);
-  accessStateReader.resourceBonuses.grant(userId, resourceBonuses);
+  accessStateReader.featureGrants.seed(userId, grants);
   const quotaChargeRepository = new InMemoryQuotaChargeRepository();
   const quotaUsageRepository = new InMemoryQuotaUsageRepository(users);
   const unitOfWork = new ImmediateUnitOfWork();

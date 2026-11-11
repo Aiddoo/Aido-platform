@@ -1,7 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
-import { groupBy } from "es-toolkit";
+import { groupBy, uniq } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { subscription } from "#api/platform/database/schema/billing.schema";
@@ -89,9 +89,7 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
         periodType: subscription.periodType,
       })
       .from(subscription)
-      .where(
-        and(inArray(subscription.userId, [...new Set(userIds)]), isNull(subscription.deletedAt)),
-      );
+      .where(and(inArray(subscription.userId, uniq(userIds)), isNull(subscription.deletedAt)));
     const chainsByUser = groupBy(
       rows.map((row) => ({ ...row, periodType: toStorePeriodType(row.periodType) })),
       (row) => row.userId,

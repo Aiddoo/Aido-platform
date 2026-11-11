@@ -1,5 +1,3 @@
-import { ConfigService } from "@nestjs/config";
-
 import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
 import { hasPaidAccess } from "#api/modules/access/entitlements/domain/paid-access.domain-service";
 import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
@@ -8,9 +6,6 @@ import { activeSubscriptionCondition } from "#api/modules/access/entitlements/in
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { CacheService } from "#api/platform/cache/cache.service";
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -24,8 +19,8 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
-const TODAY = new Date("2026-11-03T00:00:00.000Z");
-const TOMORROW = new Date("2026-11-04T00:00:00.000Z");
+const TODAY = Temporal.PlainDate.from("2026-11-03");
+const TOMORROW = Temporal.PlainDate.from("2026-11-04");
 
 type Scenario =
   | "expiredProjection"
@@ -54,8 +49,9 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     const { txHost } = createDatabaseTransactionFixture(client);
     reader = new DrizzleSchedulerReader(
       txHost,
-      new CacheService(memory),
-      new TypedConfigService(new ConfigService<EnvConfig, true>({})),
+      memory,
+      { onboardingV2: { enabled: false, treatmentPercent: 50 } },
+      new DateClock(),
     );
     entitlementReader = new DrizzleAccessStateReader(txHost);
     entitlement = new EntitlementReaderAdapter(
@@ -85,7 +81,12 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       free: createEntityId(),
     };
     const active = (id: string, subscriptionExpiresAt: Date | null) =>
-      UserFixture.create({ id, subscriptionStatus: "ACTIVE", subscriptionExpiresAt });
+      UserFixture.create({
+        id,
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt:
+          subscriptionExpiresAt == null ? null : instantFromDate(subscriptionExpiresAt),
+      });
     await client
       .insert(user)
       .values([
@@ -165,20 +166,24 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     );
   });
 
-  it("SQL 조건은 모든 경우에 EntitlementReaderAdapter의 프리미엄 판단과 같다", async () => {
+  it("SQL 조건은 모든 경우(ADMIN·스토어 유예 포함)에 EntitlementReaderAdapter의 premium 요금제 판단과 같다", async () => {
     // When
     const freeIds = await reader.findFreeRecipientIds(Object.values(userIds));
     const decisions = await Promise.all(
       Object.entries(userIds).map(async ([scenario, id]) => ({
         scenario,
         sql: !freeIds.has(id),
-        service: await entitlement.canInTx(id, "AI_REPORT"),
+        service: await entitlement.canInTx(UserId.reconstitute(id), "AI_REPORT"),
+        plan: (await entitlement.getEntitlements(UserId.reconstitute(id))).plan === "premium",
       })),
     );
 
     // Then
     for (const decision of decisions) {
-      expect(decision.sql, decision.scenario).toBe(decision.service);
+      expect([decision.service, decision.plan], decision.scenario).toEqual([
+        decision.sql,
+        decision.sql,
+      ]);
     }
   });
 
@@ -198,7 +203,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
           scenario,
           sql: sqlPaid.get(id),
           ts: state != null && hasPaidAccess({ state, now: instantFromDate(at) }),
-          isPremium: (await entitlement.getAccessSnapshot(id)).isPremium,
+          isPremium: (await entitlement.getEntitlements(UserId.reconstitute(id))).isPremium,
         };
       }),
     );

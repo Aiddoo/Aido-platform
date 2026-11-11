@@ -1,19 +1,19 @@
 import request from "supertest";
 import { vi, type MockInstance } from "vitest";
 
-import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
-import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-describe("영속 job runtime 상태 확인 E2E", () => {
+describe("작업 큐 상태 확인 E2E", () => {
   let ctx: E2eTestContext;
-  const runtime = new FakeJobRuntime();
-  let health: MockInstance<typeof runtime.health>;
+  const jobQueue = new InMemoryJobQueue();
+  let health: MockInstance<typeof jobQueue.health>;
 
   beforeAll(async () => {
     ctx = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(JOB_RUNTIME).useValue(runtime),
+      customizeBuilder: (builder) => builder.overrideProvider(JobQueuePort).useValue(jobQueue),
       additionalResetters: [() => health?.mockClear()],
     });
   });
@@ -23,7 +23,7 @@ describe("영속 job runtime 상태 확인 E2E", () => {
   });
 
   beforeEach(async () => {
-    health = vi.spyOn(runtime, "health");
+    health = vi.spyOn(jobQueue, "health");
     await ctx.reset();
   });
 
@@ -36,7 +36,8 @@ describe("영속 job runtime 상태 확인 E2E", () => {
       backend: "postgres",
       degraded: false,
       queues: {
-        "ai-suggestion-analysis.v1": {
+        // 부팅 때 worker를 등록한 큐가 목록에 들어간다
+        "invite-reward.v1": {
           active: 0,
           waiting: 0,
           failed: 0,

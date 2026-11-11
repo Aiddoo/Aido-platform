@@ -1,7 +1,7 @@
 import type { Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 
 import { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -11,10 +11,7 @@ import { NudgeUsageReader } from "./application/nudge-usage.reader.js";
 import { NudgeInteractionConfigPort } from "./application/ports/nudge-interaction-config.port.js";
 import { NudgeLimitReaderPort } from "./application/ports/nudge-limit.reader.port.js";
 import { NudgeNotifierPort } from "./application/ports/nudge-notifier.port.js";
-import {
-  NUDGE_USAGE_READER,
-  NudgeUsageReaderPort,
-} from "./application/ports/nudge-usage.reader.port.js";
+import { NudgeUsageReaderPort } from "./application/ports/nudge-usage.reader.port.js";
 import { NudgeReaderPort } from "./application/ports/nudge.reader.port.js";
 import { NudgeRepositoryPort } from "./application/ports/nudge.repository.port.js";
 import { GetNudgeCooldownUseCase } from "./application/use-cases/get-nudge-cooldown.use-case.js";
@@ -34,6 +31,7 @@ import { SendRemindNudgeUseCase } from "./application/use-cases/send-remind-nudg
 import { NudgeLimitReaderAdapter } from "./infrastructure/adapters/nudge-limit-reader.adapter.js";
 import { NudgeNotifierAdapter } from "./infrastructure/adapters/nudge-notifier.adapter.js";
 import { DrizzleNudgeRepository } from "./infrastructure/persistence/drizzle-nudge.repository.js";
+import { socialNudgesConfig } from "./social-nudges.config.js";
 
 export const SOCIAL_NUDGES_PROVIDERS = [
   { provide: NudgeRepositoryPort, useClass: DrizzleNudgeRepository },
@@ -42,14 +40,13 @@ export const SOCIAL_NUDGES_PROVIDERS = [
   { provide: NudgeNotifierPort, useClass: NudgeNotifierAdapter },
   {
     provide: NudgeInteractionConfigPort,
-    inject: [TypedConfigService],
-    useFactory: (config: TypedConfigService): NudgeInteractionConfigPort => ({
-      isEnabled: config.nudge.interactionsEnabled,
+    inject: [socialNudgesConfig.KEY],
+    useFactory: (config: ConfigType<typeof socialNudgesConfig>): NudgeInteractionConfigPort => ({
+      isEnabled: config.interactionsEnabled,
     }),
   },
   provideUseCase(NudgeUsageReader, { nudgeRepository: NudgeRepositoryPort, clock: ClockPort }),
   { provide: NudgeUsageReaderPort, useExisting: NudgeUsageReader },
-  { provide: NUDGE_USAGE_READER, useExisting: NudgeUsageReaderPort },
   provideUseCase(SendNudgeUseCase, {
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
@@ -91,6 +88,7 @@ export const SOCIAL_NUDGES_PROVIDERS = [
     clock: ClockPort,
   }),
   provideUseCase(MarkNudgeReadUseCase, {
+    unitOfWork: UnitOfWorkPort,
     nudgeRepository: NudgeRepositoryPort,
     clock: ClockPort,
     logger: loggerFor(MarkNudgeReadUseCase),

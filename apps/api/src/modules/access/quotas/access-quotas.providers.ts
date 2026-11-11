@@ -8,7 +8,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { AccessStateReaderPort } from "../entitlements/application/ports/access-state.reader.port.js";
 import { QuotaChargeRepositoryPort } from "./application/ports/quota-charge.repository.port.js";
-import { QUOTA_LEDGER, QuotaLedgerPort } from "./application/ports/quota-ledger.port.js";
+import { QuotaLedgerPort } from "./application/ports/quota-ledger.port.js";
 import { QuotaUsageRepositoryPort } from "./application/ports/quota-usage.repository.port.js";
 import { CheckQuotaRemainingUseCase } from "./application/use-cases/check-quota-remaining.use-case.js";
 import { CommitQuotaReservationUseCase } from "./application/use-cases/commit-quota-reservation.use-case.js";
@@ -27,8 +27,6 @@ export const ACCESS_QUOTAS_PROVIDERS = [
   { provide: QuotaChargeRepositoryPort, useClass: DrizzleQuotaChargeRepository },
   { provide: QuotaUsageRepositoryPort, useClass: DrizzleQuotaUsageRepository },
   { provide: QuotaLedgerPort, useClass: QuotaLedgerAdapter },
-  // 옛 Symbol 토큰은 소비 Context가 옮길 때까지 클래스 토큰과 같은 인스턴스를 가리킨다
-  { provide: QUOTA_LEDGER, useExisting: QuotaLedgerPort },
   provideUseCase(ReserveQuotaUseCase, {
     unitOfWork: UnitOfWorkPort,
     userMutationLock: UserMutationLockPort,

@@ -35,14 +35,14 @@ export interface TodoPrimitives {
   readonly sortOrder: number;
   readonly completed: boolean;
   readonly completedAt: Temporal.Instant | null;
-  readonly startDate: Date;
-  readonly endDate: Date | null;
+  readonly startDate: Temporal.PlainDate;
+  readonly endDate: Temporal.PlainDate | null;
   readonly scheduledLocalTime: string | null;
-  readonly scheduledTime: Date | null;
+  readonly scheduledTime: Temporal.Instant | null;
   readonly isAllDay: boolean;
   readonly visibility: TodoVisibility;
   readonly seriesId: string | null;
-  readonly occurrenceDate: Date | null;
+  readonly occurrenceDate: Temporal.PlainDate | null;
   readonly items: readonly TodoItemPrimitives[];
   readonly createdAt: Temporal.Instant;
   readonly updatedAt: Temporal.Instant;
@@ -51,8 +51,8 @@ export interface TodoPrimitives {
 export interface TodoDetailsPatch {
   readonly title?: string;
   readonly categoryId?: number;
-  readonly startDate?: Date;
-  readonly endDate?: Date | null;
+  readonly startDate?: Temporal.PlainDate;
+  readonly endDate?: Temporal.PlainDate | null;
   readonly scheduledLocalTime?: string | null;
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
@@ -69,7 +69,7 @@ interface TodoProps {
   schedule: TodoSchedule;
   visibility: TodoVisibility;
   readonly seriesId: string | null;
-  readonly occurrenceDate: Date | null;
+  readonly occurrenceDate: Temporal.PlainDate | null;
   items: TodoItem[];
   readonly createdAt: Temporal.Instant;
   updatedAt: Temporal.Instant;
@@ -127,8 +127,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
       }),
       visibility: primitives.visibility,
       seriesId: primitives.seriesId,
-      occurrenceDate:
-        primitives.occurrenceDate == null ? null : new Date(primitives.occurrenceDate),
+      occurrenceDate: primitives.occurrenceDate,
       items: primitives.items.map((item) => TodoItem.reconstitute(item)),
       createdAt: primitives.createdAt,
       updatedAt: primitives.updatedAt,
@@ -171,8 +170,8 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     return this.props.seriesId;
   }
 
-  get occurrenceDate(): Date | null {
-    return this.props.occurrenceDate == null ? null : new Date(this.props.occurrenceDate);
+  get occurrenceDate(): Temporal.PlainDate | null {
+    return this.props.occurrenceDate;
   }
 
   get items(): readonly TodoItem[] {
@@ -251,7 +250,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     const scheduledTime = this.props.schedule.scheduledTime;
     if (reopened) {
       this.#restoreReminders();
-    } else if (scheduledTime?.getTime() !== previousScheduledTime?.getTime()) {
+    } else if (!isSameInstant(scheduledTime, previousScheduledTime)) {
       // 수정 화면의 일반 PATCH로 시각을 바꿔도 옛 시각의 예약이 남지 않게 한다.
       this.raise(new TodoRescheduledEvent(this.id.value, this.props.userId.value, scheduledTime));
     }
@@ -405,6 +404,10 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     }
     return item;
   }
+}
+
+function isSameInstant(left: Temporal.Instant | null, right: Temporal.Instant | null): boolean {
+  return left == null || right == null ? left === right : left.equals(right);
 }
 
 function toSchedulePatch(patch: TodoDetailsPatch): TodoSchedulePatch {

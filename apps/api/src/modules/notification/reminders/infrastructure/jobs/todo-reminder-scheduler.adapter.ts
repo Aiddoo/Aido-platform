@@ -27,7 +27,11 @@ export class TodoReminderSchedulerAdapter extends TodoReminderSchedulerPort {
     this.#clock = clock;
   }
 
-  async scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
+  async scheduleReminder(
+    todoId: number,
+    scheduledTime: Temporal.Instant,
+    userId: string,
+  ): Promise<void> {
     await this.cancelReminders([todoId]);
     await this.scheduleReminders([{ todoId, scheduledTime, userId }]);
   }
@@ -35,7 +39,7 @@ export class TodoReminderSchedulerAdapter extends TodoReminderSchedulerPort {
   async scheduleReminders(reminders: readonly ReminderSchedule[]): Promise<void> {
     const now = this.#clock.now();
     const jobs = reminders.flatMap(({ todoId, scheduledTime, userId }) =>
-      planReminderJobs(scheduledTime.getTime(), now.epochMilliseconds).map(
+      planReminderJobs(scheduledTime.epochMilliseconds, now.epochMilliseconds).map(
         (job): EnqueueManyJob<TodoReminderRuntimeJob> => ({
           payload: {
             name: TODO_REMINDER_JOB_NAME,

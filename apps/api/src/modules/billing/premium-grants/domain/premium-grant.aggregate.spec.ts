@@ -12,7 +12,7 @@ import { PremiumGrantId } from "./premium-grant-id.vo.js";
 import { bankedRemainderSourceKey, PremiumGrant } from "./premium-grant.aggregate.js";
 
 const NOW = PREMIUM_GRANT_FIXTURE_NOW;
-const HOUR = 60 * 60 * 1_000;
+const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
 function createGrant(

@@ -1,43 +1,41 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  ENTITLEMENT_READER,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
+import {
   FriendLimitReaderPort,
-  FriendQuota,
+  type FriendFeatureQuota,
 } from "../../application/ports/friend-limit.reader.port.js";
 
 @Injectable()
-export class FriendLimitReaderAdapter implements FriendLimitReaderPort {
+export class FriendLimitReaderAdapter extends FriendLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getLimit" | "getLimitInTx" | "readFeatureQuotaInTx"
+    "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
   >;
 
   constructor(
-    @Inject(ENTITLEMENT_READER)
+    @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getLimit" | "getLimitInTx" | "readFeatureQuotaInTx"
+      "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
     >,
   ) {
+    super();
     this.#entitlementReader = entitlementReader;
   }
 
-  readMaxFriendCount(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getLimit(userId.value, "FRIEND");
+  readLimit(userId: UserId): Promise<number | null> {
+    return this.#entitlementReader.getFeatureLimit(userId, "FRIEND");
   }
 
-  readMaxFriendCountInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getLimitInTx(userId.value, "FRIEND");
+  readLimitInTx(userId: UserId): Promise<number | null> {
+    return this.#entitlementReader.getFeatureLimitInTx(userId, "FRIEND");
   }
 
-  readQuotaInTx(userId: UserId, friendCount: number): Promise<FriendQuota> {
-    return this.#entitlementReader.readFeatureQuotaInTx(userId.value, "FRIEND", {
+  readFeatureQuotaInTx(userId: UserId, friendCount: number): Promise<FriendFeatureQuota> {
+    return this.#entitlementReader.getFeatureQuotaInTx(userId, "FRIEND", {
       used: friendCount,
       resetsAt: null,
     });

@@ -30,6 +30,7 @@ export class IssueInviteUseCase {
   async execute(command: IssueInviteCommand): Promise<Invite> {
     const { inviteRepository, codeGenerator } = this.#dependencies;
     const id = await inviteRepository.nextId();
+    // 코드 충돌은 오류가 아니라 false로 와 바로 다시 시도해 es-toolkit retry(오류 재시도·시도 사이 타이머)를 쓰지 않는다
     for (let attempt = 0; attempt < INVITE_CODE_MAX_ATTEMPTS; attempt++) {
       const invite = Invite.create({
         id,

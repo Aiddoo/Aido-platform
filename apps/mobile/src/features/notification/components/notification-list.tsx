@@ -1,7 +1,7 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { UserReportPolicy } from '@src/features/social/moderation/domains/user-report.model';
+import { createCheerMessageReportTarget } from '@src/features/social/moderation/domains/user-report.model';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -120,7 +120,7 @@ NotificationList.Item = function Item({ notification, onOpen }: NotificationItem
     receivedCheer == null
       ? undefined
       : () => {
-          const target = UserReportPolicy.createCheerMessageReportTarget(receivedCheer);
+          const target = createCheerMessageReportTarget(receivedCheer);
           push({
             pathname: '/users/[userId]/report',
             params: {
@@ -185,6 +185,7 @@ function useOpenNotification() {
         context: notification.context,
         routing: notification.routing,
         action: notification.action,
+        navigation: notification.navigation,
       },
       { shouldOpenToday: true, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
     );

@@ -1,6 +1,7 @@
+import { toIsoString } from "#api/shared/domain/time/instant";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
-import { createFollowAcceptedNotificationMessage } from "../../../../push/application/messages/notification.messages.js";
+import { createFollowAcceptedNotificationMessage } from "../../../../push/application/messages/social-notification.messages.js";
 import {
   renderInboxCopy,
   toNotificationInboxResponse,
@@ -30,7 +31,7 @@ describe("notification-response.mapper — 알림 응답", () => {
         title: notification.title,
         body: notification.body,
         isRead: false,
-        createdAt: notification.createdAt.toISOString(),
+        createdAt: toIsoString(notification.createdAt),
         readAt: null,
       });
     });

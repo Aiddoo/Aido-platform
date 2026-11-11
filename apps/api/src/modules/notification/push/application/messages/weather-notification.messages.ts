@@ -5,21 +5,19 @@ import {
 } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
-
-import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
 import type {
   EveningWeatherBriefing,
   MorningWeatherBriefing,
-} from "../../../reminders/domain/weather-briefing.domain-service.js";
+} from "#api/modules/weather/forecasts/weather-forecasts.public";
+import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
+
+import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
 import type {
   NotificationMessage,
   NotificationVariantContext,
 } from "./notification-copy-catalog.messages.js";
 import { WEATHER_COPY, WEATHER_FALLBACK_COPY } from "./notification-copy-templates.messages.js";
 import { renderNotificationTemplate } from "./notification-copy.messages.js";
-
-export { formatWeatherNotificationTime } from "./notification-copy-format.messages.js";
 
 interface LocalizedWeatherInput {
   readonly locale?: SupportedLocale;

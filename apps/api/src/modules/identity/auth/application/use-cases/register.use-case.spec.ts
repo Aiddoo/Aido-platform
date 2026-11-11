@@ -56,8 +56,6 @@ describe("Register — 이메일 계정 등록", () => {
     const metadata = {
       ip: "192.0.2.1",
       userAgent: "Aido-Test",
-      deviceType: "ANDROID",
-      deviceName: "Galaxy S24",
       device: { devicePlatform: "ANDROID" as const, deviceModel: "Galaxy S24" },
     };
     // When

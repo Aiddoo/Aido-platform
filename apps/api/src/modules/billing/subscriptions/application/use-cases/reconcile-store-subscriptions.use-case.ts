@@ -58,7 +58,7 @@ export class ReconcileStoreSubscriptionsUseCase {
       candidates.length === 0
         ? []
         : await statusReader.read(
-            candidates.map((subscription) => subscription.storeSubscriptionId.value),
+            candidates.map((subscription) => subscription.storeSubscriptionId),
           );
     if (states == null || states.length === 0) {
       return UNCHANGED;
@@ -66,7 +66,7 @@ export class ReconcileStoreSubscriptionsUseCase {
     const stateByChain = new Map(states.map((state) => [state.storeSubscriptionId, state]));
 
     const corrections = await this.#dependencies.unitOfWork.run(async () => {
-      if (!(await this.#dependencies.userLock.lockById(command.userId))) {
+      if (!(await this.#dependencies.userLock.lockById(userId))) {
         return [];
       }
       // 읽는 동안 처리된 웹훅이 있을 수 있어 잠근 뒤 행을 다시 읽는다
@@ -90,7 +90,7 @@ export class ReconcileStoreSubscriptionsUseCase {
     if (corrections.length === 0) {
       return UNCHANGED;
     }
-    await this.#dependencies.cache.invalidate(command.userId);
+    await this.#dependencies.cache.invalidate(userId);
     return { correctedCount: corrections.length, fields: uniq(corrections.flat()) };
   }
 }

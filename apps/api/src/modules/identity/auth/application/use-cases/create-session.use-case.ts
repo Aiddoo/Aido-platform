@@ -1,6 +1,7 @@
 import type { UserRole } from "@aido/api/vocabulary";
 
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AuthSession } from "../../domain/auth-session.aggregate.js";
 import type { AuthTokenIssuerPort, TokenPair } from "../ports/auth-crypto.port.js";
@@ -47,9 +48,9 @@ export class CreateSessionUseCase {
     const sessionId = await sessionRepository.nextId();
     const tokenFamily = tokenService.generateTokenFamily();
     const tokens = await tokenService.generateTokenPair(
-      command.userId,
+      UserId.reconstitute(command.userId),
       command.email,
-      sessionId.value,
+      sessionId,
       command.role,
       tokenFamily,
       1,

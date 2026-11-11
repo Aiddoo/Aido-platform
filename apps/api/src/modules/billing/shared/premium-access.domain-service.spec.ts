@@ -69,7 +69,7 @@ describe("PremiumAccessDomainService", () => {
       const endsAt = premiumGrantEndsAt(startsAt, 7);
 
       // Then
-      expect(endsAt.epochMilliseconds - startsAt.epochMilliseconds).toBe(7 * 24 * 60 * 60 * 1_000);
+      expect(endsAt.epochMilliseconds - startsAt.epochMilliseconds).toBe(7 * 24 * 60 * 60 * 1000);
     });
   });
 
@@ -655,9 +655,9 @@ describe("PremiumAccessDomainService", () => {
     it.each([
       { endsAt: "2028-02-26T12:00:00.000Z", expected: 0 },
       { endsAt: "2028-02-26T12:00:00.001Z", expected: 1 },
-      { endsAt: "2028-02-28T12:00:00.001Z", expected: 2 * 24 * 60 * 60 * 1_000 + 1 },
+      { endsAt: "2028-02-28T12:00:00.001Z", expected: 2 * 24 * 60 * 60 * 1000 + 1 },
       // 윤일 2028-02-29를 지나도 하루는 24시간이다
-      { endsAt: "2028-03-02T12:00:00.000Z", expected: 5 * 24 * 60 * 60 * 1_000 },
+      { endsAt: "2028-03-02T12:00:00.000Z", expected: 5 * 24 * 60 * 60 * 1000 },
     ])("$endsAt에 끝나는 기간을 지금 끊으면 $expected ms가 남는다", ({ endsAt, expected }) => {
       // Given
       const current = grant({ endsAt: Temporal.Instant.from(endsAt) });
@@ -671,8 +671,8 @@ describe("PremiumAccessDomainService", () => {
 
     it.each([
       { remainingMs: 1, expected: 1 },
-      { remainingMs: 2 * 24 * 60 * 60 * 1_000, expected: 2 },
-      { remainingMs: 2 * 24 * 60 * 60 * 1_000 + 1, expected: 3 },
+      { remainingMs: 2 * 24 * 60 * 60 * 1000, expected: 2 },
+      { remainingMs: 2 * 24 * 60 * 60 * 1000 + 1, expected: 3 },
     ])("남은 $remainingMs ms는 표시 일수 $expected일로 올린다", ({ remainingMs, expected }) => {
       // Given / When
       const days = premiumGrantDaysOf(remainingMs);

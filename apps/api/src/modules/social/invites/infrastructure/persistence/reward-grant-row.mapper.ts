@@ -1,5 +1,4 @@
 import type { rewardGrant } from "#api/platform/database/schema/index";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 import { RewardGrant } from "../../domain/reward-grant.entity.js";
 
@@ -29,10 +28,9 @@ export const REWARD_GRANT_COLUMNS = {
 } as const;
 
 export function toRewardGrant(row: RewardGrantRow): RewardGrant {
-  return RewardGrant.reconstitute({ ...row, createdAt: instantFromDate(row.createdAt) });
+  return RewardGrant.reconstitute(row);
 }
 
 export function toRewardGrantRow(grant: RewardGrant): RewardGrantRow {
-  const primitives = grant.toPrimitives();
-  return { ...primitives, createdAt: instantToDate(primitives.createdAt) };
+  return grant.toPrimitives();
 }

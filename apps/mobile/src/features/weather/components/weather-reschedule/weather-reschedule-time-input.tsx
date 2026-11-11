@@ -6,7 +6,7 @@ import { SettingsListGroup, Text } from '@src/shared/ui';
 import { Chip, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import type { RescheduleOption } from '../../domains/weather-reschedule.model';
+import type { RescheduleOption } from '../../domains/weather-report.model';
 import { useTemperatureUnit } from '../../hooks/use-temperature-unit';
 import { formatTemperature } from '../../utils/weather-temperature';
 

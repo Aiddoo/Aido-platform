@@ -1,9 +1,6 @@
 import { Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 
-import type { EnvConfig } from "#api/platform/config/schemas/index";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
@@ -22,7 +19,13 @@ const token = "ExponentPushToken[notification14-synthetic-token]";
 const credential = "notification14-synthetic-credential-not-real";
 const body = "notification14-synthetic-private-body";
 const privateMessage = `${credential}; token=${token}; body=${body}`;
-const payload = () => ({ token, title: "fixture notification", body });
+const payload = () => ({
+  token,
+  title: "fixture notification",
+  body,
+  priority: "high" as const,
+  ttlSeconds: 3600,
+});
 const sendPath = "/--/api/v2/push/send";
 let provider: ExpoPushSenderAdapter;
 let warn: ReturnType<typeof vi.spyOn>;
@@ -60,7 +63,7 @@ beforeEach(() => {
     return expected.response;
   });
   provider = new ExpoPushSenderAdapter(
-    new TypedConfigService(new ConfigService<EnvConfig, true>({ EXPO_ACCESS_TOKEN: credential })),
+    { expoAccessToken: credential },
     new OutboundPolicyRegistry(new RecordingOperationalAlert()),
   );
 });

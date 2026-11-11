@@ -2,10 +2,11 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, gt, isNull, not } from "drizzle-orm";
 
-import { activeSubscriptionCondition } from "#api/modules/access/access-entitlement-sql.public";
+import { activeSubscriptionCondition } from "#api/modules/access/entitlements/access-entitlements.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user } from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -15,14 +16,15 @@ import {
   UserSubscriptionProjectionRepositoryPort,
 } from "../../application/ports/user-subscription-projection.repository.port.js";
 
-// User 행은 identity가 소유하고 시간 칸이 아직 Date라 이 저장소가 경계에서 바꾼다
 @Injectable()
 export class DrizzleUserSubscriptionProjectionRepository extends UserSubscriptionProjectionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     super();
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -30,12 +32,12 @@ export class DrizzleUserSubscriptionProjectionRepository extends UserSubscriptio
   }
 
   async update(userId: UserId, projection: UserSubscriptionProjection): Promise<void> {
-    const expiresAt = projection.subscriptionExpiresAt;
     const updated = await this.#db
       .update(user)
       .set({
         subscriptionStatus: projection.subscriptionStatus,
-        subscriptionExpiresAt: expiresAt == null ? expiresAt : instantToDate(expiresAt),
+        subscriptionExpiresAt: projection.subscriptionExpiresAt,
+        updatedAt: this.#clock.now(),
       })
       .where(eq(user.id, userId.value))
       .returning({ id: user.id });

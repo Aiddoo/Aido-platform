@@ -1,10 +1,10 @@
+import { toIsoString } from "#api/shared/domain/time/instant";
+
 import {
   addDaysToKey,
-  dateKeyOf,
-  localDateKeyIn,
+  localDateKeyAt,
   localTimeIn,
   resolveScheduledInstant,
-  utcMidnightOf,
 } from "./todo-calendar.domain-service.js";
 
 const SEOUL = "Asia/Seoul";
@@ -80,7 +80,7 @@ describe("resolveScheduledInstant — 떠 있는 벽시계를 순간으로", () 
     const instant = resolveScheduledInstant(date, time, zone);
 
     // Then
-    expect(instant?.toISOString()).toBe(expected);
+    expect(instant == null ? null : toIsoString(instant)).toBe(expected);
   });
 
   it("벽시계가 없으면 순간도 없다(종일)", () => {
@@ -92,7 +92,7 @@ describe("resolveScheduledInstant — 떠 있는 벽시계를 순간으로", () 
   });
 });
 
-describe("localDateKeyIn·localTimeIn — 순간의 현지 달력·벽시계", () => {
+describe("localDateKeyAt·localTimeIn — 순간의 현지 달력·벽시계", () => {
   it.each([
     {
       label: "서울 자정 직전",
@@ -138,10 +138,10 @@ describe("localDateKeyIn·localTimeIn — 순간의 현지 달력·벽시계", (
     },
   ])("$label", ({ at, zone, date, time }) => {
     // Given
-    const moment = new Date(at);
+    const moment = Temporal.Instant.from(at);
 
     // When
-    const result = { date: localDateKeyIn(moment, zone), time: localTimeIn(moment, zone) };
+    const result = { date: localDateKeyAt(moment, zone), time: localTimeIn(moment, zone) };
 
     // Then
     expect(result).toEqual({ date, time });
@@ -160,17 +160,5 @@ describe("날짜 키 — DATE 칸 경계", () => {
 
     // Then
     expect(key).toBe(expected);
-  });
-
-  it("UTC 자정 Date와 날짜 키를 오가도 같은 날이다", () => {
-    // Given
-    const keys = ["2026-01-01", "2028-02-29", "2026-12-31"];
-
-    // When
-    const roundTrip = keys.map((key) => dateKeyOf(utcMidnightOf(key)));
-
-    // Then
-    expect(roundTrip).toEqual(keys);
-    expect(utcMidnightOf("2028-02-29").toISOString()).toBe("2028-02-29T00:00:00.000Z");
   });
 });

@@ -1,13 +1,14 @@
-import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
-import { match } from "ts-pattern";
 
-import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
+import {
+  AuthPersistenceConflict,
+  oauthAccountAlreadyLinked,
+} from "#api/modules/identity/auth/application/auth.errors";
 import {
   AUTH_DEFAULTS,
   type AccountProvider,
 } from "#api/modules/identity/auth/domain/auth.constants";
-import { ApplicationException } from "#api/shared/application/application.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import { type AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
@@ -36,14 +37,15 @@ export class LinkOAuthIdentityUseCase {
   }
 
   async execute(input: LinkOAuthIdentityCommand): Promise<{ message: string; linked: boolean }> {
-    const { userId, provider, providerAccountId, metadata } = input;
+    const { provider, providerAccountId, metadata } = input;
+    const userId = UserId.reconstitute(input.userId);
     const existingAccount = await this.#dependencies.accountRepository.findByProviderAccountId(
       provider,
       providerAccountId,
     );
     if (existingAccount != null) {
-      if (existingAccount.userId !== userId) {
-        throw this.#alreadyLinked(input);
+      if (existingAccount.userId !== input.userId) {
+        throw oauthAccountAlreadyLinked(provider, providerAccountId);
       }
       return { message: "이미 연결된 계정입니다.", linked: false };
     }
@@ -65,36 +67,10 @@ export class LinkOAuthIdentityUseCase {
         error instanceof AuthPersistenceConflict &&
         error.kind === "OAUTH_ACCOUNT_ALREADY_LINKED"
       ) {
-        throw this.#alreadyLinked(input);
+        throw oauthAccountAlreadyLinked(provider, providerAccountId);
       }
       throw error;
     }
     return { message: "계정이 연결되었습니다.", linked: true };
-  }
-
-  #alreadyLinked(input: LinkOAuthIdentityCommand): ApplicationException {
-    const { provider, providerAccountId } = input;
-    return match(provider)
-      .with(
-        "KAKAO",
-        () => new ApplicationException(ErrorCode.KAKAO_0306, { kakaoId: providerAccountId }),
-      )
-      .with(
-        "APPLE",
-        () => new ApplicationException(ErrorCode.APPLE_0355, { appleId: providerAccountId }),
-      )
-      .with(
-        "GOOGLE",
-        () => new ApplicationException(ErrorCode.GOOGLE_0405, { googleId: providerAccountId }),
-      )
-      .with(
-        "NAVER",
-        () => new ApplicationException(ErrorCode.NAVER_0455, { naverId: providerAccountId }),
-      )
-      .with(
-        "CREDENTIAL",
-        () => new ApplicationException(ErrorCode.USER_0604, { provider, providerAccountId }),
-      )
-      .exhaustive();
   }
 }

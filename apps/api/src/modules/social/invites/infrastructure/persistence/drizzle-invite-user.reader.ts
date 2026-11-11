@@ -3,7 +3,6 @@ import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { InviteUserReaderPort } from "../../application/ports/invite-user.reader.port.js";
 import type { InviteeIdentity } from "../../application/read-models/invitee-identity.read-model.js";
@@ -35,7 +34,7 @@ export class DrizzleInviteUserReader implements InviteUserReaderPort {
     return {
       userId: found.id,
       displayName: found.profile?.name ?? found.userTag,
-      joinedAt: instantFromDate(found.createdAt),
+      joinedAt: found.createdAt,
       verifiedEmail: found.emailVerifiedAt == null ? null : found.email,
       providerAccounts: found.accounts.map((account) => ({
         provider: account.provider,

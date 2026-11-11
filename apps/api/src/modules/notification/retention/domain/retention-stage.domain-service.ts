@@ -1,21 +1,17 @@
-import dayjs from "dayjs";
-
-import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
-import { diffInDays } from "#api/shared/domain/date/utils/compare";
-import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { RetentionStageName } from "./retention.constants.js";
 
 // SQL 후보 조회(due 필터)가 같은 기준을 쓰므로 한 곳에 둔다
 export const RETENTION_STAGE_TIMING = {
-  d0MinWaitMs: 2 * TIME_UNIT.MS_PER_HOUR,
+  d0MinWaitMs: 2 * 60 * 60_000,
   targetDay: { D1: 1, D3: 3, D7: 7 },
   sendLocalTime: { hour: 10, minute: 30 },
 } as const;
 
 export interface RetentionStageTiming {
-  readonly startedAt: Date;
-  readonly now: Date;
+  readonly startedAt: Temporal.Instant;
+  readonly now: Temporal.Instant;
   readonly timezone: string;
 }
 
@@ -47,7 +43,8 @@ export function isRetentionStageDue(
   if (stage === "D0") {
     return (
       day > 0 ||
-      timing.now.getTime() - timing.startedAt.getTime() >= RETENTION_STAGE_TIMING.d0MinWaitMs
+      timing.now.epochMilliseconds - timing.startedAt.epochMilliseconds >=
+        RETENTION_STAGE_TIMING.d0MinWaitMs
     );
   }
   const targetDay = RETENTION_STAGE_TIMING.targetDay[stage];
@@ -114,11 +111,20 @@ export function decideRetentionStage(
     : { kind: "SEND", route: "/feed", variantId: "d7_restart" };
 }
 
-function localDayDifference(from: Date, to: Date, timezone: string): number {
-  return diffInDays(startOfDayInTimezone(to, timezone), startOfDayInTimezone(from, timezone));
+function localDayDifference(
+  from: Temporal.Instant,
+  to: Temporal.Instant,
+  timezone: string,
+): number {
+  return localDateIn(to, timezone).since(localDateIn(from, timezone)).days;
 }
 
-function isAtOrAfterLocalTime(date: Date, timezone: string, hour: number, minute: number): boolean {
-  const local = dayjs(date).tz(resolveTimezone(timezone));
-  return local.hour() > hour || (local.hour() === hour && local.minute() >= minute);
+function isAtOrAfterLocalTime(
+  instant: Temporal.Instant,
+  timezone: string,
+  hour: number,
+  minute: number,
+): boolean {
+  const local = instant.toZonedDateTimeISO(resolveTimezone(timezone));
+  return local.hour > hour || (local.hour === hour && local.minute >= minute);
 }

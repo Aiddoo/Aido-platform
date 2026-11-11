@@ -132,8 +132,11 @@ function findSkyChange(hours: readonly HourlyForecastEntry[]) {
   return { from, to, changesAt: hour.startsAt };
 }
 
-/** 문장은 화면이 i18n 키로 만들고 여기서는 비·눈 → 하늘 변화 → 하늘과 기온 정점 순으로 재료를 고른다 */
-function getHourlySummary(
+/**
+ * 문장은 화면이 i18n 키로 만들고 여기서는 비·눈 → 하늘 변화 → 하늘과 기온 정점 순으로 재료를 고른다.
+ * 시간별 카드는 예보 일부만 구독해 Policy 없이 필요한 칸만 받는다
+ */
+export function getHourlySummary(
   report: Pick<WeatherReport, 'location' | 'hourly' | 'current'>,
   now: Instant,
 ): HourlySummary | null {
@@ -185,7 +188,3 @@ function getHourlySummary(
     peak: findTemperaturePeak(hours),
   };
 }
-
-export const WeatherHourlyPolicy = {
-  getHourlySummary,
-} as const;

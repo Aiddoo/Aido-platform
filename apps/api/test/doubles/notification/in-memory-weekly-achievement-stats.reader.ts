@@ -3,13 +3,10 @@ import {
   type WeeklyStatsParams,
 } from "#api/modules/notification/reminders/application/ports/weekly-achievement-stats-reader.port";
 import type { UserTodoCount } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import type { WeeklyStatsUserSeed } from "#test/contracts/notification/weekly-achievement-stats-reader.contract";
 
-const DAY_MS = 24 * 60 * 60_000;
-
-function dayNumberOf(date: Date): number {
-  return Math.floor(date.getTime() / DAY_MS);
+function dayNumberOf(date: Temporal.PlainDate): number {
+  return Temporal.PlainDate.from("1970-01-01").until(date).days;
 }
 
 interface StoredTodo {
@@ -38,8 +35,8 @@ export class InMemoryWeeklyAchievementStatsReader extends WeeklyAchievementStats
       timezone: seed.timezone,
       isFree: (seed.plan ?? "FREE") === "FREE",
       todos: (seed.todos ?? []).map((todo) => ({
-        firstDay: dayNumberOf(parseDateOnly(todo.start)),
-        lastDay: dayNumberOf(parseDateOnly(todo.end ?? todo.start)),
+        firstDay: dayNumberOf(Temporal.PlainDate.from(todo.start)),
+        lastDay: dayNumberOf(Temporal.PlainDate.from(todo.end ?? todo.start)),
         completed: todo.completed ?? false,
       })),
     });
