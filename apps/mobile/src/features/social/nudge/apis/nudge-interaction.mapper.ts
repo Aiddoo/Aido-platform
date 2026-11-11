@@ -1,8 +1,4 @@
-import type {
-  NudgeInteractionResponse,
-  NudgeInteractionsResponse,
-  NudgeThanksPreviewResponse,
-} from '@aido/api';
+import type { NudgeInteractionResponse, NudgeInteractionsResponse } from '@aido/api';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
 import type {
@@ -10,6 +6,7 @@ import type {
   NudgeInteractionPage,
   NudgeThanksPreview,
 } from '../domains/nudge-interaction.model';
+import type { NudgeThanksPreviewEnvelope } from '../schemas/nudge-response.schema';
 
 export function toNudgeInteraction(dto: NudgeInteractionResponse): NudgeInteraction {
   return {
@@ -39,7 +36,7 @@ export function toNudgeInteractionPage(dto: NudgeInteractionsResponse): NudgeInt
   };
 }
 
-export function toNudgeThanksPreview(dto: NudgeThanksPreviewResponse): NudgeThanksPreview {
+export function toNudgeThanksPreview(dto: NudgeThanksPreviewEnvelope): NudgeThanksPreview {
   return {
     todoId: dto.todoId,
     throughNudgeId: dto.throughNudgeId,
@@ -51,7 +48,7 @@ export function toNudgeThanksPreview(dto: NudgeThanksPreviewResponse): NudgeThan
       name: recipient.name ?? recipient.userTag,
       profileImage: recipient.profileImage,
     })),
-    thankedRecipientCount: dto.thankedRecipientCount ?? 0,
-    lastThankedAt: toNullableInstant(dto.lastThankedAt ?? null),
+    thankedRecipientCount: dto.thankedRecipientCount,
+    lastThankedAt: toNullableInstant(dto.lastThankedAt),
   };
 }

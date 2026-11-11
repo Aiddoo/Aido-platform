@@ -8,7 +8,6 @@ import {
   nudgeInteractionResponseSchema,
   nudgeInteractionsResponseSchema,
   nudgeLimitInfoSchema,
-  nudgeThanksPreviewResponseSchema,
   sendNudgeThanksResponseSchema,
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
@@ -36,6 +35,7 @@ import type {
   ReplyToNudgeInput,
   SendNudgeThanksInput,
 } from '../schemas/nudge-request.schema';
+import { nudgeThanksPreviewEnvelopeSchema } from '../schemas/nudge-response.schema';
 import {
   toNudgeInteraction,
   toNudgeInteractionPage,
@@ -164,7 +164,7 @@ export class TodoNudgeService {
         params: query,
         signal,
       }),
-      nudgeThanksPreviewResponseSchema,
+      nudgeThanksPreviewEnvelopeSchema,
       toNudgeThanksPreview,
       '[TodoNudgeService] Invalid getThanksPreview response',
     );

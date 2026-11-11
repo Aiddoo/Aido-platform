@@ -45,9 +45,15 @@ describe('콕 응답을 클라이언트 모델로 변환', () => {
 });
 
 describe('감사 미리보기 페이지 변환', () => {
-  it('이전 서버의 전체 목록 응답은 마지막 페이지로 해석한다', () => {
+  it('쪽 정보가 없는 전체 목록 응답은 마지막 페이지로 해석한다', () => {
     // Given
-    const dto = { todoId: 1, throughNudgeId: 10, recipients: [createNudgeInteractionDto().sender] };
+    const dto = {
+      todoId: 1,
+      throughNudgeId: 10,
+      recipients: [createNudgeInteractionDto().sender],
+      thankedRecipientCount: 0,
+      lastThankedAt: null,
+    };
     // When
     const preview = toNudgeThanksPreview(dto);
     // Then
@@ -85,6 +91,8 @@ describe('감사 미리보기 페이지 변환', () => {
       totalRecipients: 1000,
       nextCursor: 80,
       hasNext: true,
+      thankedRecipientCount: 0,
+      lastThankedAt: null,
     };
     // When
     const preview = toNudgeThanksPreview(dto);
@@ -106,6 +114,8 @@ describe('감사 미리보기 페이지 변환', () => {
       totalRecipients: 0,
       nextCursor: null,
       hasNext: false,
+      thankedRecipientCount: 0,
+      lastThankedAt: null,
     };
     // When
     const preview = toNudgeThanksPreview(dto);

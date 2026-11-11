@@ -74,6 +74,8 @@ describe('TodoNudgeService의 콕 주고받기 계약', () => {
         totalRecipients: 40,
         nextCursor: null,
         hasNext: false,
+        thankedRecipientCount: 0,
+        lastThankedAt: null,
       },
     });
     // When
