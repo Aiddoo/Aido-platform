@@ -2,9 +2,8 @@ import { subscribeNotificationsChanged } from '@src/core/events/notifications-ch
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import type { NotificationType } from '@src/features/notification/domains/notification.model';
-import { useForegroundNotificationListener } from '@src/features/notification/hooks/use-foreground-notification-listener';
-import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
 import { useForegroundPushPresentation } from '@src/features/notification/hooks/use-foreground-push-presentation';
+import { useForegroundPushSync } from '@src/features/notification/hooks/use-foreground-push-sync';
 import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-notification-badge-sync';
 import { usePushDeviceReleaseFlush } from '@src/features/notification/hooks/use-push-device-release-flush';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
@@ -25,17 +24,13 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     (type: NotificationType) => invalidateOnNotificationReceived(queryClient, type),
     [queryClient],
   );
-  const handleForegroundNotification = useForegroundNotificationSync({
-    isAuthenticated,
-    invalidateByType,
-  });
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const accountId = isAuthenticated ? (me?.id ?? null) : null;
   const { currentTimeZone } = useLocalDate();
   const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);
 
   useForegroundPushPresentation();
-  useForegroundNotificationListener(handleForegroundNotification);
+  useForegroundPushSync({ authStatus: status, invalidateByType });
   useEffect(
     () => subscribeNotificationsChanged(() => invalidateNotifications(queryClient)),
     [queryClient],

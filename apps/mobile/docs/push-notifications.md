@@ -87,7 +87,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | 그 밖의 화면, 모르는 타입, 계약에 맞지 않는 data, 판단 실패       | `banner`: 배너·목록·소리              | 앱이 뒤에 있을 때와 같게 알린다. 판단 전(그려지기 전)에 온 알림도 배너다 |
 
 - "여는 화면"은 경로와 보는 대상 id(할 일·친구·콕)가 모두 같을 때다. 날짜·진입 경로·댓글 위치(`date`·`entry`·`comment`)는 비교하지 않는다(`isViewingNotificationDestination`).
-- 어느 쪽이든 받은 즉시 알림함·안 읽은 수와 그 타입의 화면을 다시 받는다(`useForegroundNotificationSync`). 배지는 그 수를 따른다.
+- 어느 쪽이든 받은 즉시 알림함·안 읽은 수와 그 타입의 화면을 다시 받는다(`useForegroundPushSync`). 배지는 그 수를 따른다.
 - `shouldSetBadge`는 끈다. 배지는 안 읽은 수 조회 하나가 맞춘다.
 
 ## 로그아웃과 배지
