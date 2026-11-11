@@ -83,17 +83,26 @@ describe('useNotificationResponseObserver', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it('data가 계약에 맞지 않으면 슬롯에 넣지 않고 경고를 남긴다', async () => {
+  it('서버의 새 navigation은 버려 알림함으로 열고 버린 칸의 경로를 남긴다', async () => {
     // Given
-    const { gateway, logger, store } = await setup({ status: 'unauthenticated' });
+    const { gateway, logger, store } = await setup({ status: 'authenticated' });
 
     // When
-    await act(async () => gateway.emitResponse({ ...RESPONSE, data: { context: 'broken' } }));
+    await act(async () =>
+      gateway.emitResponse({
+        ...RESPONSE,
+        data: { ...RESPONSE.data, navigation: { kind: 'NEW_SCREEN' } },
+      }),
+    );
 
     // Then
-    expect(store.getState().pending).toBeNull();
-    expect(gateway.clearLastResponse).not.toHaveBeenCalled();
-    expect(logger.warn).toHaveBeenCalledTimes(1);
+    expect(store.getState().ready?.destination).toEqual({ kind: 'route', href: '/notifications' });
+    expect(logger.warn).toHaveBeenCalledWith('notification.push.parse-dropped', {
+      source: 'response',
+      responseId: 'response-1',
+      droppedPaths: ['navigation.kind'],
+      isReadable: true,
+    });
   });
 
   it('로그아웃하면 슬롯과 마지막 응답을 지운다', async () => {

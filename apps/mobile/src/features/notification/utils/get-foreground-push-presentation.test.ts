@@ -1,4 +1,4 @@
-import { createPushNotificationPayload } from '../__tests__/notification.fixtures';
+import { createPushNotification } from '../__tests__/notification.fixtures';
 import { getForegroundPushPresentation } from './get-foreground-push-presentation';
 
 describe('getForegroundPushPresentation', () => {
@@ -35,10 +35,10 @@ describe('getForegroundPushPresentation', () => {
     ],
   ] as const)('%s(%s) %s로 보인다', (_case, type, viewing, expected) => {
     // Given
-    const payload = createPushNotificationPayload({ type });
+    const pushNotification = createPushNotification({ type });
 
     // When
-    const presentation = getForegroundPushPresentation(payload, viewing);
+    const presentation = getForegroundPushPresentation(pushNotification, viewing);
 
     // Then
     expect(presentation).toBe(expected);

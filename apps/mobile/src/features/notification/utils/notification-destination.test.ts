@@ -1,4 +1,4 @@
-import type { NotificationNavigation } from '../schemas/push-notification-payload.schema';
+import type { NotificationTarget } from '../domains/notification.model';
 import {
   isViewingNotificationDestination,
   type NotificationDestination,
@@ -10,36 +10,28 @@ const VIEWER = 'cmviewer00000000000000001';
 const FRIEND = 'cmfriend00000000000000001';
 const DATE = '2026-08-14';
 
-function todoNavigation(owner: { todoOwnerId?: string; todoDate?: string } = {}) {
-  return { kind: 'TODO', todoId: 42, ...owner } satisfies NotificationNavigation;
+function todoTarget({
+  ownerId = null,
+  dateKey = null,
+}: { ownerId?: string | null; dateKey?: string | null } = {}) {
+  return { kind: 'TODO', todoId: 42, ownerId, dateKey } satisfies NotificationTarget;
 }
 
-function todoCommentNavigation(owner: { todoOwnerId?: string; todoDate?: string } = {}) {
+function todoCommentTarget(owner: { ownerId?: string; dateKey?: string } = {}) {
   return {
+    ...todoTarget(owner),
     kind: 'TODO_COMMENT',
-    todoId: 42,
     commentId: COMMENT_ID,
-    threadCommentId: COMMENT_ID,
-    activityKind: 'REPLY',
-    ...owner,
-  } satisfies NotificationNavigation;
+  } satisfies NotificationTarget;
 }
 
 describe('toNotificationDestination', () => {
-  it('서버가 목적지를 싣지 못한 알림은 알림함을 연다', () => {
-    // When
-    const destination = toNotificationDestination(undefined, { windowSizeClass: 'compact' });
-
-    // Then
-    expect(destination).toEqual({ kind: 'route', href: '/notifications' });
-  });
-
   it('접힌 화면은 주인·날짜가 있어도 할 일 상세 화면을 연다', () => {
     // When
-    const destination = toNotificationDestination(
-      todoNavigation({ todoOwnerId: FRIEND, todoDate: DATE }),
-      { windowSizeClass: 'compact', viewerId: VIEWER },
-    );
+    const destination = toNotificationDestination(todoTarget({ ownerId: FRIEND, dateKey: DATE }), {
+      windowSizeClass: 'compact',
+      viewerId: VIEWER,
+    });
 
     // Then
     expect(destination).toEqual({
@@ -50,8 +42,8 @@ describe('toNotificationDestination', () => {
 
   it.each(['medium', 'expanded'] as const)('%s 화면은 할 일을 피드 상세 pane에 고른다', (size) => {
     // When
-    const todo = toNotificationDestination(todoNavigation(), { windowSizeClass: size });
-    const comment = toNotificationDestination(todoCommentNavigation(), { windowSizeClass: size });
+    const todo = toNotificationDestination(todoTarget(), { windowSizeClass: size });
+    const comment = toNotificationDestination(todoCommentTarget(), { windowSizeClass: size });
 
     // Then
     expect(todo).toEqual({ kind: 'route', href: { pathname: '/feed', params: { todoId: 42 } } });
@@ -64,32 +56,32 @@ describe('toNotificationDestination', () => {
   it.each([
     [
       '친구 할 일 댓글은 그 친구의 그 날짜 피드',
-      todoCommentNavigation({ todoOwnerId: FRIEND, todoDate: DATE }),
+      todoCommentTarget({ ownerId: FRIEND, dateKey: DATE }),
       VIEWER,
       { friendId: FRIEND, date: DATE, todoId: 42, comment: COMMENT_ID },
     ],
     [
       '친구 할 일은 그 친구의 그 날짜 피드',
-      todoNavigation({ todoOwnerId: FRIEND, todoDate: DATE }),
+      todoTarget({ ownerId: FRIEND, dateKey: DATE }),
       VIEWER,
       { friendId: FRIEND, date: DATE, todoId: 42 },
     ],
     [
       '내 할 일은 내 피드의 그 날짜',
-      todoNavigation({ todoOwnerId: VIEWER, todoDate: DATE }),
+      todoTarget({ ownerId: VIEWER, dateKey: DATE }),
       VIEWER,
       { date: DATE, todoId: 42 },
     ],
     [
       '나를 모르면 친구로 단정하지 않고 날짜만 맞춘다',
-      todoNavigation({ todoOwnerId: FRIEND, todoDate: DATE }),
+      todoTarget({ ownerId: FRIEND, dateKey: DATE }),
       undefined,
       { date: DATE, todoId: 42 },
     ],
-    ['주인·날짜가 없으면 피드의 기본 날짜', todoNavigation(), VIEWER, { todoId: 42 }],
-  ] as const)('펼친 화면 목록 pane: %s', (_case, navigation, viewerId, params) => {
+    ['주인·날짜가 없으면 피드의 기본 날짜', todoTarget(), VIEWER, { todoId: 42 }],
+  ] as const)('펼친 화면 목록 pane: %s', (_case, target, viewerId, params) => {
     // When
-    const destination = toNotificationDestination(navigation, {
+    const destination = toNotificationDestination(target, {
       windowSizeClass: 'medium',
       viewerId,
     });

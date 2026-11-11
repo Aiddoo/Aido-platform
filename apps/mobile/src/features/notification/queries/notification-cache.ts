@@ -1,4 +1,3 @@
-import { getNowInstant } from '@src/shared/date/clock';
 import { mapInfiniteItems, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 import { uniq } from 'es-toolkit';
@@ -20,7 +19,7 @@ export interface NotificationReadChange {
 function withNotificationsPatched(
   pages: NotificationPages,
   isTarget: (notification: Notification) => boolean,
-  patch: Pick<Notification, 'isRead' | 'readAt'>,
+  patch: Pick<Notification, 'isRead'>,
 ): NotificationPages {
   return mapInfiniteItems(pages, (notification) =>
     isTarget(notification) ? { ...notification, ...patch } : notification,
@@ -63,7 +62,6 @@ export async function optimisticallyMarkNotificationsRead(
   // 하나 읽기는 목록에 안 읽음으로 있을 때만 하나를 뺀다. 수를 아직 모르면 채우지 않고 서버 값을 기다린다
   const readCount =
     notificationId == null ? (unreadCount ?? 0) : Math.min(notificationIds.length, 1);
-  const readAt = getNowInstant();
 
   notifyManager.batch(() => {
     queryClient.setQueriesData<NotificationPages>(
@@ -73,7 +71,7 @@ export async function optimisticallyMarkNotificationsRead(
         withNotificationsPatched(
           pages,
           (notification) => notificationIds.includes(notification.id),
-          { isRead: true, readAt },
+          { isRead: true },
         ),
     );
     queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), (old) =>
@@ -93,7 +91,7 @@ export function revertNotificationsRead(queryClient: QueryClient, change: Notifi
         withNotificationsPatched(
           pages,
           (notification) => change.notificationIds.includes(notification.id),
-          { isRead: false, readAt: null },
+          { isRead: false },
         ),
     );
     queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), (old) =>

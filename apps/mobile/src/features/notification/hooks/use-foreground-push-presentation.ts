@@ -1,4 +1,4 @@
-import { usePushNotification } from '@src/bootstrap/providers/di-context';
+import { useLogger, usePushNotification } from '@src/bootstrap/providers/di-context';
 import type {
   ForegroundPushPresentation,
   ReceivedPushNotification,
@@ -9,7 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useGlobalSearchParams, usePathname } from 'expo-router';
 import { useEffect, useEffectEvent } from 'react';
 
-import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
+import { parsePushNotification } from '../apis/push-notification.mapper';
+import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { getForegroundPushPresentation } from '../utils/get-foreground-push-presentation';
 import {
   isViewingNotificationDestination,
@@ -20,6 +21,7 @@ import {
 /** 앱이 앞에 있을 때 받은 알림을 지금 보고 있는 화면에 맞춰 배너로 보일지 정한다 */
 export function useForegroundPushPresentation() {
   const gateway = usePushNotification();
+  const logger = useLogger();
   const queryClient = useQueryClient();
   const windowSizeClass = useWindowSizeClass();
   const pathname = usePathname();
@@ -27,16 +29,25 @@ export function useForegroundPushPresentation() {
 
   const decide = useEffectEvent(
     (notification: ReceivedPushNotification): ForegroundPushPresentation => {
-      const payload = pushNotificationPayloadSchema.safeParse(notification.data);
-      if (!payload.success) {
+      const { notification: pushNotification, droppedPaths } = parsePushNotification(
+        notification.data,
+      );
+      if (droppedPaths.length > 0) {
+        logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PAYLOAD_DROPPED, {
+          source: 'foreground',
+          droppedPaths,
+          isReadable: pushNotification != null,
+        });
+      }
+      if (pushNotification == null) {
         return 'banner';
       }
       const currentRoute = { pathname, params };
-      const destination = toNotificationDestination(payload.data.navigation, {
+      const destination = toNotificationDestination(pushNotification.target, {
         windowSizeClass,
         viewerId: getCachedMe(queryClient)?.id,
       });
-      return getForegroundPushPresentation(payload.data, {
+      return getForegroundPushPresentation(pushNotification, {
         isViewingInbox: isViewingNotificationDestination(
           NOTIFICATION_INBOX_DESTINATION,
           currentRoute,

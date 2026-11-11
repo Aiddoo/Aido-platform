@@ -5,6 +5,7 @@ import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import type { Href } from 'expo-router';
 
 import { NAVIGATION_CASES } from '../__tests__/notification-navigation-cases';
+import { toNotificationTarget } from '../apis/notification.mapper';
 import {
   type NotificationDestination,
   toNotificationDestination,
@@ -61,7 +62,7 @@ describe('알림 목적지와 라우트 파일', () => {
   )('$name: 서버 navigation의 목적지는 있는 화면이다', ({ navigation }) => {
     // When
     const destinations = WINDOW_SIZE_CLASSES.map((windowSizeClass) =>
-      toNotificationDestination(navigation, { windowSizeClass }),
+      toNotificationDestination(toNotificationTarget(navigation), { windowSizeClass }),
     );
 
     // Then
@@ -70,9 +71,12 @@ describe('알림 목적지와 라우트 파일', () => {
     });
   });
 
-  it('목적지가 없는 알림이 여는 알림함은 있는 화면이다', () => {
+  it('읽지 못한 알림이 여는 알림함은 있는 화면이다', () => {
     // When
-    const destination = toNotificationDestination(undefined, { windowSizeClass: 'compact' });
+    const destination = toNotificationDestination(
+      { kind: 'NOTIFICATIONS' },
+      { windowSizeClass: 'compact' },
+    );
 
     // Then
     expect(getRouteDestinationPathnames([destination])).toEqual(['/notifications']);

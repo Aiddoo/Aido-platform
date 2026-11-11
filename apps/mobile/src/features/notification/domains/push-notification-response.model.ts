@@ -5,7 +5,7 @@ import { takeRight, without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import type { PushNotificationPayload } from '../schemas/push-notification-payload.schema';
+import type { PushNotification } from './push-notification.model';
 
 /** 마케팅 푸시의 수신 거부 버튼. 앱이 서버 categoryId(MARKETING)에 등록하고, 누르면 이 id로 돌아온다 */
 export const marketingOptOutActionSchema = z.literal('MARKETING_OPT_OUT');
@@ -17,7 +17,7 @@ export type PushOpenAppState = 'cold' | 'background' | 'foreground';
 export interface PushNotificationResponse {
   id: string;
   actionIdentifier: string;
-  data: PushNotificationPayload;
+  notification: PushNotification;
   receivedAt: number;
   /** 시작할 때 읽은 마지막 응답이면 true. 꺼진 앱이 이 탭으로 켜졌다 */
   isLaunchResponse: boolean;

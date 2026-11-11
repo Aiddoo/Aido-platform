@@ -2,6 +2,7 @@ import { NOTIFICATION_NAVIGATION_KIND, NOTIFICATION_TYPE } from '@aido/api/vocab
 import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 
 import { NAVIGATION_CASES } from '../__tests__/notification-navigation-cases';
+import { toNotificationTarget } from '../apis/notification.mapper';
 import {
   type NotificationDestination,
   toNotificationDestination,
@@ -168,7 +169,9 @@ describe('toNotificationDestination', () => {
 
   it.each(SERVER_NAVIGATION_CASES)('$name: 접힌 화면은 정한 곳을 연다', ({ name, navigation }) => {
     // When
-    const destination = toNotificationDestination(navigation, { windowSizeClass: 'compact' });
+    const destination = toNotificationDestination(toNotificationTarget(navigation), {
+      windowSizeClass: 'compact',
+    });
 
     // Then
     expect(destination).toEqual(COMPACT_DESTINATIONS[name]);
@@ -185,7 +188,7 @@ describe('toNotificationDestination', () => {
       ),
     )('$name: 할 일이 아닌 목적지는 접힌 화면과 같다', ({ name, navigation }) => {
       // When
-      const destination = toNotificationDestination(navigation, context);
+      const destination = toNotificationDestination(toNotificationTarget(navigation), context);
 
       // Then
       expect(destination).toEqual(COMPACT_DESTINATIONS[name]);

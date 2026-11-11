@@ -26,15 +26,18 @@ import {
 } from 'react';
 
 import type { ReadyNotificationEntry } from '../apis/notification-entry.store';
+import { parsePushNotification } from '../apis/push-notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import {
   type PushNotificationResponse,
   PushNotificationResponsePolicy,
 } from '../domains/push-notification-response.model';
-import { PushNotificationPolicy } from '../domains/push-notification.model';
+import {
+  createUnreadablePushNotification,
+  PushNotificationPolicy,
+} from '../domains/push-notification.model';
 import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
-import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
 import { toNotificationDestination } from '../utils/notification-destination';
 import { useNotificationEntry } from './use-notification-entry';
 import { useNotificationNavigation } from './use-notification-navigation';
@@ -73,17 +76,19 @@ export function useNotificationResponseObserver(): void {
       response: OsPushNotificationResponse,
       { isLaunchResponse }: { isLaunchResponse: boolean },
     ) => {
-      const parsed = pushNotificationPayloadSchema.safeParse(response.data);
-      if (!parsed.success) {
-        logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_PAYLOAD_INVALID, {
-          error: getErrorMessage(parsed.error),
+      const { notification, droppedPaths } = parsePushNotification(response.data);
+      if (droppedPaths.length > 0) {
+        logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PAYLOAD_DROPPED, {
+          source: 'response',
+          responseId: response.id,
+          droppedPaths,
+          isReadable: notification != null,
         });
-        return;
       }
       store.receive({
         id: response.id,
         actionIdentifier: response.actionIdentifier,
-        data: parsed.data,
+        notification: notification ?? createUnreadablePushNotification(),
         receivedAt: Date.now(),
         isLaunchResponse,
         appState: appLifecycle.getCurrentState(),
@@ -140,7 +145,7 @@ function useMarketingOptOut(
       authStatus: status,
       now: Date.now(),
     });
-    const token = target.data.marketingOptOutToken;
+    const token = target.notification.marketingOptOutToken;
     if (action.type === 'drop' || !token) {
       finishResponse(target.id);
       return;
@@ -204,9 +209,11 @@ function useResolveResponse(
     const epoch = sessionEpoch.current();
     const isCurrent = () =>
       sessionEpoch.current() === epoch && store.getState().pending?.id === target.id;
-    const { data } = target;
+    const { notification } = target;
     try {
-      const ownership = await notificationService.markAsReadAndCheckOwnership(data.notificationId);
+      const ownership = await notificationService.markAsReadAndCheckOwnership(
+        notification.notificationId,
+      );
       if (!isCurrent()) {
         return;
       }
@@ -216,7 +223,7 @@ function useResolveResponse(
       }
       store.markReady(
         target.id,
-        toNotificationDestination(data.navigation, {
+        toNotificationDestination(notification.target, {
           windowSizeClass,
           viewerId: getCachedMe(queryClient)?.id,
         }),
@@ -270,21 +277,21 @@ function useOpenReadyEntry(
       return;
     }
     inFlightIdRef.current = response.id;
-    const { data } = response;
+    const { notification } = response;
     try {
       if (destination.kind !== 'route' || openedByIndexIdRef.current !== response.id) {
         await navigate(destination);
       }
       try {
         trackEvent('push_notification_opened', {
-          type: data.type ?? 'UNKNOWN',
-          action: data.action.type,
+          type: notification.type ?? 'UNKNOWN',
+          action: notification.actionType,
           app_state: PushNotificationResponsePolicy.getOpenAppState(response),
-          ...(data.campaignKey && { campaign_key: data.campaignKey }),
-          ...(data.variantId && { variant_id: data.variantId }),
-          ...(data.purpose && { purpose: data.purpose }),
+          ...(notification.campaignKey && { campaign_key: notification.campaignKey }),
+          ...(notification.variantId && { variant_id: notification.variantId }),
+          ...(notification.purpose && { purpose: notification.purpose }),
         });
-        if (data.type === 'WEEKLY_ACHIEVEMENT') {
+        if (notification.type === 'WEEKLY_ACHIEVEMENT') {
           trackEvent('badge_opened_from_notification');
         }
       } catch (error) {
@@ -292,8 +299,8 @@ function useOpenReadyEntry(
           error: getErrorMessage(error),
         });
       }
-      if (PushNotificationPolicy.hasServerRecord(data)) {
-        recordOpened(data.notificationId);
+      if (PushNotificationPolicy.hasServerRecord(notification)) {
+        recordOpened(notification.notificationId);
       }
     } catch (error) {
       // 외부 링크를 열지 못한 경우다. 같은 탭을 다시 시도하지 않고 끝낸다
@@ -307,8 +314,8 @@ function useOpenReadyEntry(
   // 목적지로 못 가 피드로 보내도 사용자는 알림을 열었으므로 열람(읽음 포함)은 남긴다
   const abandon = useEffectEvent(({ response }: ReadyNotificationEntry) => {
     logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { responseId: response.id });
-    if (PushNotificationPolicy.hasServerRecord(response.data)) {
-      recordOpened(response.data.notificationId);
+    if (PushNotificationPolicy.hasServerRecord(response.notification)) {
+      recordOpened(response.notification.notificationId);
     }
     finishResponse(response.id);
   });

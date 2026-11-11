@@ -6,10 +6,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
 import { useCallback, useEffect, useMemo } from 'react';
 
+import { parsePushNotification } from '../apis/push-notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { type NotificationType } from '../domains/notification.model';
 import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
-import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
 
 const FOREGROUND_SYNC_DELAY_MS = SECOND_MS;
 
@@ -45,9 +45,10 @@ export function useForegroundNotificationSync({
 
     return {
       schedule: (notification?: ReceivedPushNotification) => {
-        const payload = pushNotificationPayloadSchema.safeParse(notification?.data);
-        if (payload.success && payload.data.type != null) {
-          pendingTypes.add(payload.data.type);
+        // 같은 푸시의 버린 칸은 포그라운드 표시 판단(useForegroundPushPresentation)이 로그로 남긴다
+        const type = parsePushNotification(notification?.data).notification?.type;
+        if (type != null) {
+          pendingTypes.add(type);
         }
         flush();
       },

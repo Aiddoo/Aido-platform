@@ -2,7 +2,7 @@ export const NOTIFICATION_LOG_EVENT = {
   SESSION_RESPONSE_CLEANUP_FAILED: 'notification.session-response-cleanup.failed',
   RESPONSE_DEFERRED: 'notification.response.deferred',
   RESPONSE_OPEN_FAILED: 'notification.response.open-failed',
-  RESPONSE_PAYLOAD_INVALID: 'notification.response-payload.invalid',
+  PUSH_PAYLOAD_DROPPED: 'notification.push.parse-dropped',
   FOREGROUND_RECEIVED: 'notification.foreground.received',
   MARKETING_CATEGORY_REGISTRATION_FAILED: 'notification.marketing-category-registration.failed',
   BADGE_SYNC_FAILED: 'notification.badge-sync.failed',

@@ -1,25 +1,14 @@
-import { toInstant } from '@src/shared/date/instant';
 import { createTestQueryClient } from '@src/testing/core';
 import type { InfiniteData } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 
+import { createNotification } from '../__tests__/notification.fixtures';
 import type { NotificationPage } from '../domains/notification.model';
 import { optimisticallyMarkNotificationsRead, revertNotificationsRead } from './notification-cache';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
 const makePage = (id: number): NotificationPage => ({
-  items: [
-    {
-      id,
-      userId: 'user-1',
-      type: 'SYSTEM_NOTICE',
-      title: 'title',
-      body: 'body',
-      isRead: false,
-      createdAt: toInstant('2026-07-14T00:00:00.000Z'),
-      readAt: null,
-    },
-  ],
+  items: [createNotification({ id, isRead: false })],
   nextCursor: null,
 });
 
@@ -106,11 +95,7 @@ describe('notification cache optimistic update', () => {
       pages: [
         {
           ...page,
-          items: page.items.map((notification) => ({
-            ...notification,
-            isRead: true,
-            readAt: toInstant('2026-07-14T01:00:00.000Z'),
-          })),
+          items: page.items.map((notification) => ({ ...notification, isRead: true })),
         },
       ],
       pageParams: [undefined],

@@ -4,7 +4,7 @@ import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 
-import { type NotificationNavigation } from '../schemas/push-notification-payload.schema';
+import type { NotificationTarget } from '../domains/notification.model';
 
 export type NotificationDestination =
   | { kind: 'none' }
@@ -65,30 +65,27 @@ export function isViewingNotificationDestination(
   );
 }
 
-export interface NotificationDestinationContext {
+interface NotificationDestinationContext {
   /** 할 일 목적지를 상세 화면으로 열지 펼친 피드의 상세 pane으로 열지 정한다 */
   windowSizeClass: WindowSizeClass;
   /** 나. 할 일 주인이 내가 아니면 펼친 화면의 목록 pane을 그 친구 피드로 연다 */
   viewerId?: string;
 }
 
-/** 서버가 푸시·알림함 행에 계산해 실은 목적지를 연다. 계산하지 못해 없으면 알림함이다 */
+/** 알림을 누르면 열 화면. 목적지는 서버가 고르고 앱은 화면 크기와 보는 사람에 맞춰 경로만 정한다 */
 export function toNotificationDestination(
-  navigation: NotificationNavigation | undefined,
+  target: NotificationTarget,
   { windowSizeClass, viewerId }: NotificationDestinationContext,
 ): NotificationDestination {
-  if (navigation == null) {
-    return NOTIFICATION_INBOX_DESTINATION;
-  }
   return (
-    match(navigation)
+    match(target)
       .returnType<NotificationDestination>()
       .with({ kind: 'NONE' }, () => ({ kind: 'none' }))
-      .with({ kind: 'EXTERNAL_URL', presentation: 'BROWSER' }, ({ url }) => ({
+      .with({ kind: 'EXTERNAL_URL', opensIn: 'BROWSER' }, ({ url }) => ({
         kind: 'browser',
         url,
       }))
-      .with({ kind: 'EXTERNAL_URL', presentation: 'WEBVIEW' }, ({ url }) => ({
+      .with({ kind: 'EXTERNAL_URL', opensIn: 'WEBVIEW' }, ({ url }) => ({
         kind: 'webview',
         url,
       }))
@@ -106,20 +103,20 @@ export function toNotificationDestination(
         kind: 'route',
         href: { pathname: '/friends', params: { view: 'receiver' } },
       }))
-      .with({ kind: 'TODO' }, ({ todoId, todoOwnerId, todoDate }) => ({
+      .with({ kind: 'TODO' }, ({ todoId, ownerId, dateKey }) => ({
         kind: 'route',
         href: toTodoDetailRoute(windowSizeClass, {
           todoId,
-          ...toTodoFeed({ ownerId: todoOwnerId, date: todoDate }, viewerId),
+          ...toTodoFeed({ ownerId, dateKey }, viewerId),
         }),
       }))
       // 댓글 알림은 할 일 상세 한 화면을 그 댓글 위치(`?comment=`)로 연다. 펼친 화면은 피드 pane이다
-      .with({ kind: 'TODO_COMMENT' }, ({ todoId, commentId, todoOwnerId, todoDate }) => ({
+      .with({ kind: 'TODO_COMMENT' }, ({ todoId, commentId, ownerId, dateKey }) => ({
         kind: 'route',
         href: toTodoDetailRoute(windowSizeClass, {
           todoId,
           comment: commentId,
-          ...toTodoFeed({ ownerId: todoOwnerId, date: todoDate }, viewerId),
+          ...toTodoFeed({ ownerId, dateKey }, viewerId),
         }),
       }))
       .with({ kind: 'NUDGE' }, ({ nudgeId }) => ({
@@ -159,11 +156,12 @@ export function toNotificationDestination(
 
 /** 펼친 화면 목록 pane의 피드. 남의 할 일이면 그 친구 피드, 내 할 일이거나 나를 모르면 내 피드다. */
 function toTodoFeed(
-  { ownerId, date }: { ownerId?: string; date?: string },
+  { ownerId, dateKey }: { ownerId: string | null; dateKey: string | null },
   viewerId: string | undefined,
 ) {
   const isFriendTodo = ownerId != null && viewerId != null && ownerId !== viewerId;
-  return { friendId: isFriendTodo ? ownerId : undefined, date };
+  // 경로 값은 없으면 빼야 URL에 실리지 않는다
+  return { friendId: isFriendTodo ? ownerId : undefined, date: dateKey ?? undefined };
 }
 
 interface TodoDetailTarget {

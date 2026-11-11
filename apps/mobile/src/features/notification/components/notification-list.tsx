@@ -115,7 +115,7 @@ interface NotificationItemProps {
 NotificationList.Item = function Item({ notification, onOpen }: NotificationItemProps) {
   const { t } = useTranslation(['notification', 'moderation']);
   const push = useSingleTap(router.push);
-  const receivedCheer = NotificationPolicy.findReceivedCheer(notification);
+  const { receivedCheer } = notification;
   const handlePress = useSingleTap(() => onOpen(notification));
 
   // 받은 응원은 길게 눌러(스크린리더는 동작 메뉴로) 메시지를 신고한다
@@ -141,7 +141,7 @@ NotificationList.Item = function Item({ notification, onOpen }: NotificationItem
       title={notification.title}
       body={notification.body}
       createdAt={notification.createdAt}
-      isUnread={!notification.isRead}
+      isUnread={NotificationPolicy.isUnread(notification)}
       testID={`notification-item-${notification.type}`}
       onPress={handlePress}
       onLongPress={handleReportCheer}
@@ -171,7 +171,7 @@ function useOpenNotification() {
   const gate = useEntitlementGate('AI_REPORT', { surface: 'notification_center' });
 
   return (notification: Notification) => {
-    if (!notification.isRead) {
+    if (NotificationPolicy.isUnread(notification)) {
       markAsRead(notification.id);
     }
 
@@ -183,14 +183,13 @@ function useOpenNotification() {
     }
 
     // 목록은 알림함 화면에만 있어, 알림함을 여는 알림은 같은 화면을 다시 열지 않고 머문다
-    const opensInbox =
-      notification.navigation == null || notification.navigation.kind === 'NOTIFICATIONS';
-    const destination: NotificationDestination = opensInbox
-      ? { kind: 'none' }
-      : toNotificationDestination(notification.navigation, {
-          windowSizeClass,
-          viewerId: getCachedMe(queryClient)?.id,
-        });
+    const destination: NotificationDestination =
+      notification.target.kind === 'NOTIFICATIONS'
+        ? { kind: 'none' }
+        : toNotificationDestination(notification.target, {
+            windowSizeClass,
+            viewerId: getCachedMe(queryClient)?.id,
+          });
     trackEvent('notification_center_opened', {
       type: notification.type,
       destination: destination.kind,
