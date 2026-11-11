@@ -61,7 +61,7 @@
 | `useMyAccountId({ isEnabled })`                        | `features/identity/user/hooks`        | `string \| null`(꺼지면 캐시가 있어도 `null`)                                                                            | id만 쓰는 `me` 직접 조회 12곳                        |
 | `usePushPermissionAction({ source })`                  | `features/notification/hooks`         | `{ runStep(step), isPending }`                                                                                           | 권한 요청·추적 6곳                                   |
 | `useVoiceCaptureReadiness({ feature, surface, mode })` | `features/voice/hooks`                | `({ locale, entry, onSubscribe }) => Promise<{ isReady }>`(한도 → 동의 → 마이크, 답을 기다리는 사이 내려가면 준비 안 됨) | `useStartVoiceNote`·`useAddTodoQuickVoice` 복제      |
-| `useWhatsNewCampaign()`                                | `features/app-config/whats-new/hooks` | `{ release, identity }`                                                                                                  | 3개 훅의 같은 조회                                   |
+| `useWhatsNewCampaign()`                                | `features/app-config/whats-new/hooks` | `{ config, isConfigLoading, release, identity, hasSeen }`                                                                | 3개 훅의 같은 조회                                   |
 
 있는 도구도 같은 일에는 하나만 쓴다.
 

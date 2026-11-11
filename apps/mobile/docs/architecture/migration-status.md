@@ -43,7 +43,6 @@
 | `social/*`                 | `InviteCodePolicy`(원문 문자열을 받는 함수, Policy 밖으로), `nudge-interaction` Policy 3개 한 파일(→ 엔티티별), `TodoReportPolicy` 이름, 친구 검색창(`Stack.SearchBar`)은 `autoCorrect`를 받지 않아 자동 수정을 끌 수 없다. 친구·초대에는 상세 route로 들어가는 행이 없어 `Link` 대상이 아니다(친구 줄은 같은 피드의 세터, 초대 행은 버튼) |
 | `identity/*`               | `user`·`consent`·`preference`의 `apis/*.service.ts`(→ `*.api.ts`, 이름만)                                                                                                                                                                                                                                                                  |
 | `device/*`                 | iOS에서 위젯 저장소가 no-op인데 그 위에 navigation repository·헤드리스 실패 읽기를 두는 것(동작 영향 없음), 코치마크 말풍선 테스트의 실제 sleep 4줄·`Date.now` spy 2줄(fake timer에서 heroui Popover·Query 흐름이 흔들려 남김)                                                                                                             |
-| `app-config/*`             | `feature-campaign` 합치기, whats-new 같은 조회 3벌(→ `useWhatsNewCampaign`)                                                                                                                                                                                                                                                                |
 
 ## 의도한 화면 차이 (1.15.2 출시 노트에 옮긴다)
 
