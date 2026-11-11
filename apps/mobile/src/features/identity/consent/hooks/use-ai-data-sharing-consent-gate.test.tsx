@@ -10,6 +10,7 @@ import { Button, Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
@@ -91,10 +92,10 @@ async function renderGate(
 }
 
 describe('readWithoutBlocking', () => {
+  setupFakeTimersPerTest();
+
   it('연결이 있어도 응답이 오지 않으면 제한 시간 뒤 없는 값으로 이어 간다', async () => {
     // Given
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
     const result = readWithoutBlocking(undefined, () => new Promise(() => undefined), noop);
 
     // When
@@ -102,8 +103,6 @@ describe('readWithoutBlocking', () => {
 
     // Then
     await expect(result).resolves.toBeNull();
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
   });
 });
 
