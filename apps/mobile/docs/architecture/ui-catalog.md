@@ -61,6 +61,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | `AppToast`                | `Toast.Title`·`.Description`·`.Action`      | heroui 글자가 고정 크기라 앱 글꼴 5단계를 따르지 않는다                                                                                                                                                                  |
 | `ActionButton`, 누르는 칩 | heroui `Chip`                               | `Chip`은 `PressableFeedback`이 아니라 눌림 크기 변화가 사라진다                                                                                                                                                          |
 | `ListRow`                 | `ListGroup.Item`                            | 제목·설명이 heroui 글꼴이고 안쪽 여백이 달라 모양이 바뀐다                                                                                                                                                               |
+| 요금제 선택 카드          | heroui `Card`                               | 고른 테두리(`border-2`)가 UI 스레드에서 전환되고 `SurfaceCard`와 역할·모서리가 달라 `AnimatedCard`로 둔다(`subscription-plan-input`, 로딩 `plan-picker`)                                                                 |
 
 - 입력의 초점·선택 색은 이제 테마([design](../design.md#테마-토큰))로 맞출 수 있어 유지 이유가 아니다. `maxLength`가 있으면 글자 수를 자동으로 보인다.
 

@@ -164,24 +164,26 @@
 
 `feature` 값은 `ai_parse`·`cheer_limit`·`nudge_limit`·`friend_limit`·`category_limit`·`ai_report`·`ai_suggestion`·`reminder_time`·`app_icon`·`voice_note`다. 빠른 말하기와 메모 AI는 `ai_parse`, 긴 녹음은 `voice_note`로 센다. `surface`(`EntitlementGateSurface`)는 `add_todo_sheet`·`memo_detail`·`category_create`·`friend_request`·`poke_banner`·`todo_nudge`·`suggestions`·`notification_center`·`app_icon_settings`·`reminder_settings`·`voice_note`다. `presentation`(`UpsellPresentation`)은 `sheet`·`toast`다. 같은 기능을 그날 시트에서 [나중에]로 닫았으면 `toast`다.
 
-| 이벤트                        | 파라미터                                                                                  | 시점과 의미                                                             |
-| ----------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `premium_gate_shown`          | `feature` · `surface` · `presentation`                                                    | 한도·프리미엄 안내 시트·토스트(`useEntitlementGate`)                    |
-| `premium_gate_cta_tapped`     | `feature` · `surface` · `presentation`                                                    | 그 시트·토스트에서 프리미엄 보기                                        |
-| `premium_upsell_dismissed`    | `feature` · `surface`                                                                     | 시트를 [나중에]·밀어 닫기로 닫음. 그날은 토스트로 바뀐다                |
-| `limit_reached_shown`         | `feature` · `surface` · `trigger`: `precheck`·`server`                                    | 횟수·개수 한도 안내                                                     |
-| `limit_reached_cta_tapped`    | `feature` · `surface`                                                                     | 한도 안내에서 프리미엄 보기                                             |
-| `paywall_viewed`              | `view`: `status`·`plans` · `feature?`                                                     | 요금제를 받아 페이월이 보였을 때. 막혀서 들어왔으면 `feature`           |
-| `paywall_plan_selected`       | `plan_type`: `annual`·`monthly` · `is_trial`                                              | 고른 요금제를 바꿨을 때. 처음 골라 둔 연간은 세지 않는다                |
-| `trial_timeline_viewed`       | `plan_type`                                                                               | 체험 일정을 페이월에서 처음 보였을 때. 요금제를 오가도 페이월마다 한 번 |
-| `paywall_benefit_viewed`      | `feature` · `index`: 혜택 칩 번호(1부터)                                                  | 혜택 장을 보였을 때. 처음 장을 포함해 페이월마다 장별로 한 번           |
-| `plan_comparison_term_opened` | `feature`                                                                                 | 비교표 이름을 눌러 설명(Popover)을 열었을 때                            |
-| `checkout_step_viewed`        | `step`: `status`·`welcome`                                                                | 구독 화면 단계가 보였을 때. `welcome`은 결제 직후 시작 화면             |
-| `premium_quickstart_tapped`   | `action`: `voice_note`·`ai_report`·`app_icon`                                             | 시작 화면에서 바로 해 볼 기능을 눌렀을 때                               |
-| `purchase_failed`             | `reason`: `network`·`server`·`store_unavailable`·`store_error` · `plan_type` · `is_trial` | 문의로 안내한 결제 실패. 취소·승인 대기는 세지 않는다                   |
-| `purchase_cancelled`          | `plan_type` · `is_trial`                                                                  | 스토어 결제 창에서 직접 취소                                            |
-| `subscription_started`        | `product_id` · `plan_type` · `is_trial`                                                   | 결제 UI 단계. 매출에 쓰지 않는다                                        |
-| `subscription_restored`       | –                                                                                         | 복원                                                                    |
+| 이벤트                           | 파라미터                                                                                  | 시점과 의미                                                             |
+| -------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `premium_gate_shown`             | `feature` · `surface` · `presentation`                                                    | 한도·프리미엄 안내 시트·토스트(`useEntitlementGate`)                    |
+| `premium_gate_cta_tapped`        | `feature` · `surface` · `presentation`                                                    | 그 시트·토스트에서 프리미엄 보기                                        |
+| `premium_upsell_dismissed`       | `feature` · `surface`                                                                     | 시트를 [나중에]·밀어 닫기로 닫음. 그날은 토스트로 바뀐다                |
+| `limit_reached_shown`            | `feature` · `surface` · `trigger`: `precheck`·`server`                                    | 횟수·개수 한도 안내                                                     |
+| `limit_reached_cta_tapped`       | `feature` · `surface`                                                                     | 한도 안내에서 프리미엄 보기                                             |
+| `paywall_viewed`                 | `view`: `status`·`plans` · `feature?`                                                     | 요금제를 받아 페이월이 보였을 때. 막혀서 들어왔으면 `feature`           |
+| `paywall_plan_selected`          | `plan_type`: `annual`·`monthly` · `is_trial`                                              | 고른 요금제를 바꿨을 때. 처음 골라 둔 연간은 세지 않는다                |
+| `trial_timeline_viewed`          | `plan_type`                                                                               | 체험 일정을 페이월에서 처음 보였을 때. 요금제를 오가도 페이월마다 한 번 |
+| `paywall_benefit_viewed`         | `feature` · `index`: 혜택 칩 번호(1부터)                                                  | 혜택 장을 보였을 때. 처음 장을 포함해 페이월마다 장별로 한 번           |
+| `plan_comparison_term_opened`    | `feature`                                                                                 | 비교표 이름을 눌러 설명(Popover)을 열었을 때                            |
+| `checkout_step_viewed`           | `step`: `status`·`welcome`                                                                | 구독 화면 단계가 보였을 때. `welcome`은 결제 직후 시작 화면             |
+| `premium_quickstart_tapped`      | `action`: `voice_note`·`ai_report`·`app_icon`                                             | 시작 화면에서 바로 해 볼 기능을 눌렀을 때                               |
+| `purchase_failed`                | `reason`: `network`·`server`·`store_unavailable`·`store_error` · `plan_type` · `is_trial` | 문의로 안내한 결제 실패. 취소·승인 대기는 세지 않는다                   |
+| `purchase_cancelled`             | `plan_type` · `is_trial`                                                                  | 스토어 결제 창에서 직접 취소                                            |
+| `subscription_started`           | `product_id` · `plan_type` · `is_trial`                                                   | 결제 UI 단계. 매출에 쓰지 않는다                                        |
+| `subscription_restored`          | –                                                                                         | 복원                                                                    |
+| `subscription_restore_failed`    | `reason`: `network`·`server`·`store_unavailable`·`store_error`                            | 복원이 문의로 안내한 실패로 끝났다. 복원할 구매가 없는 것은 세지 않는다 |
+| `subscription_management_opened` | `store`: `app_store`·`play_store`                                                         | 스토어 구독 관리 화면을 열었다                                          |
 
 `is_trial`은 스토어가 그 요금제에 무료 체험을 줄 수 있다고 했는지다(결제 전 값). 실제로 체험이 시작됐는지는 서버 `/me`의 `premiumIsTrial`과 RevenueCat `rc_trial_start`가 원천이다.
 
