@@ -544,6 +544,43 @@ ALTER TABLE "Subscription" DROP COLUMN "dataRetentionUntil";
 - **이번에 바꾸지 않음**: AI 프롬프트 예시 라벨(AI 평가가 필요), 서버 동의 푸시 날짜 형식, 무한 목록 `maxPages`, 격주 기준 주, 서버 푸시 12/24시간, 로그아웃의 DELETE→POST 순서 필요 여부.
 - **stack 정리**: 혼자서는 typecheck가 깨지는 세 구간은 재구성에서 고치는 커밋을 앞 커밋에 접는다([32.19/32], [32.27/32], [32.32/32]).
 
+## 다음 버전 후보
+
+1.15.2에서 목표 모양으로 옮기지 못한 코드와 바꾸지 않기로 한 것이다. 전에는 앱의 `migration-status.md`에 있었고 그 파일은 1.15.2 마무리에서 지웠다. 다음 버전에서 고치는 PR이 그 일을 이슈로 정한다. 걸지 않은 lint 규칙과 위반 수는 [guardrails](../../../apps/mobile/docs/architecture/guardrails.md#다음-버전-후보)에 있다.
+
+### 공용 기반
+
+- **쿼리 키·캐시**: 목표 `['device', …]` 루트, `refresh{Feature}`. 지금: 푸시 권한·날씨 위치는 `['device', …]` 루트로 옮겼다. 영속 스키마는 등록부 하나로 두기로 했다([data](../../../apps/mobile/docs/architecture/data.md#무효화))
+- **라우팅**: 목표 상세 행 `Link` + `Link.Preview`·`Link.Menu`. 지금: `Link` 행은 알림·보낸 콕·리포트·메모 카드(접힌 화면만, 메뉴는 열기·고정·삭제)·친구 할 일 행(접힌 화면만, 하위 항목이 없으면 탭으로 열기, 메뉴는 열기와 오늘의 끝나지 않은 할 일이면 콕 찌르기)·주간 성취 행(인증서 미리보기, 메뉴는 인증서 보기)·말로 남긴 메모 행(메모 탭·전체 보기, 메뉴는 열기·삭제 확인)·친구 목록 행(피드는 다른 탭이라 미리보기 없음). 길게 누르기 16곳(알림의 응원 신고는 피드 탭으로 가는 행이라 미리보기 없이 길게 누르기로 남는다)
+- **공용 훅**: 목표 `useIsAnimationActive`의 "화면 안" 조건(화면 밖 스크롤·가림은 아직 모름). 지금: 화면 안 판정 없음(`useCopiedFeedback`은 아이콘 타이머라 그대로 둔다)
+- **공용 부품**: 목표 `SurfaceCard`·`LabelChip`·`MenuContent`·`Checkbox`·`ScrollFade`·`Mascot`·`QueryErrorFallback.Inline`·`TimeSpinner`는 만들었다. 지금: 카드 아직 안 옮김: `release-row:57`, `digest-scan-preview:59`, `voice-note-player-bar:105`, `release-1-15-0-steps:317`, `voice-note-draft-list:121`, `plan-summary:60`(누르는 카드), 직접 쓴 `Card` 2곳(`weather-card`·`category-delete-bottom-sheet`, `unread-notification-card`는 화면 톤을 지키는 의도한 예외라 옮기지 않는다. 계획 §4.2의 `SurfaceCard` 전환과 다르다), 테두리 카드 2곳(`memo-list:333`·`activation-checklist:61`). `Inline` 4번째 자리 `nudges/[nudgeId].tsx`(전체 화면 `Result`). 누르는·섹션 머리 칩. 옮기면 화면이 바뀌어 디자인 결정을 기다리는 것: `NudgeLimitBanner`(설명 줄 안 발 아이콘·72pt 그림·`px-3` 여백이 `InlineAlert`와 다르다), 메모 목록 다음 쪽 실패(가운데 쌓은 문구 + '다시 시도' 버튼, `QueryErrorFallback.Inline`은 한 줄), 글자가 다른 soft 칩 2곳(`report-list` 샘플 칩 `tone="warning"`, `linked-account-list` `e2`).
+- **날짜·언어**: 목표 iOS·Android Hermes에서 [Temporal spike](../../../apps/mobile/docs/dates-and-i18n.md#temporal-spike)가 Node 26 Temporal과 같다. 지금: Android Hermes에서 아직 돌리지 않았다
+- **테스트 도구**: 목표 `src/testing/`, Jest 설정([testing-tools](../../../apps/mobile/docs/testing-tools.md#jest-설정)), `pnpm test:node`. 지금: `defineFixture` 미적용 fixture 다수
+- **권한 타입**: 목표 OS 권한은 `OsPermission` 하나. 지금: 알림·음성은 옮겼다. 위치 포트는 아직 `LocationPermission{ isGranted, canAskAgain }`이고 날씨 위치 서비스 정리와 함께 옮긴다
+- **라벨 키**: 목표 `utils/{name}.view-model.ts`의 `get{X}LabelKey`. 지금: `constants/*-labels.ts` 3개(achievement, report, nudge-interaction)
+- **공유 계약**: 목표 vocabulary·common 추가, `shared/domains/user-summary.model.ts`([model](../../../apps/mobile/docs/architecture/model.md#서버와-공유)). 지금: 의도해서 앱 표기를 유지: 요금제 종류(소문자, 기기 캐시·분석), 음성 계획 출처(kebab, 저장된 초안). 이번에 올리지 않음: 이름 없는 사용자 문구 helper(키마다 뜻이 다름), `PUSH_OPEN_SOURCES`·`NUDGE_DIRECTIONS`(앱이 다시 적지 않음), 반복 빈도·종료 이름 맵(튜플이 이미 있고 앱은 유니온 판별용 리터럴), 계획 요청 사본(`voice-note.model.ts`·`memo-draft.schema.ts`는 모양이 서로 다름)
+- **대비**: 목표 글자 4.5:1, 컨트롤·그래픽 3:1(WCAG AA). 톤을 바꾸는 값은 사용자가 정한다. 지금: 라이트 soft 칩 글자 `text-accent-soft-foreground` 흰 면 3.84·`gray-1` 3.63·`gray-2` 3.55:1, 주 버튼 글자 라이트 흰색 2.87:1·다크 `text-gray-9` 2.63:1
+- **주황 역할**: 목표 한 컨트롤에 주황 하나([design](../../../apps/mobile/docs/design.md#주황-두-가지)). 지금: 밑줄 탭(`LineTabTrigger`, friends·notifications) 선택 글자 `text-main` + heroui 밑줄 `accent`
+
+### 기능별
+
+- `insights/report`: 프리미엄 첫 리포트 전 `.Loading`(카드 3장) → `.Empty`(샘플 1장+문구) 높이 차이
+- `planning/todo`·`composer`: 내 피드 스크롤이 `ScrollViewContainer`(재정렬 목록)라 `SafeAreaScrollView`가 아님
+- `notes/memo`: 메모 목록 다음 쪽은 끝의 [더 보기] 버튼(FlashList masonry + `fetchNextPage`)이고 `InfiniteList`의 자동 다음 쪽이 아니다. 바꾸면 끝에 닿을 때 저절로 받고 버튼·실패 안내가 바뀌어 디자인 결정을 기다린다
+- `voice`: 한 파일만 쓰지만 테스트가 붙은 상태 기계 훅 5개(`useVoiceNoteRecording`·`useVoiceNoteDigest`·`useDictation`·`useVoiceNoteCaptions`·`useOfferOnDeviceModel`)를 `hooks/`에 둠
+- `billing/subscription`: 결제 화면 `ScrollView` 3개(영수증·시작 화면·요금제 뼈대), `useSubscriptionReceipt`가 내 정보를 다시 suspend(PlanSummary 등 호출부가 많아 인자로 바꾸지 않음)
+- `social/*`: `TodoReportPolicy` 이름, 친구 검색창(`Stack.SearchBar`)은 `autoCorrect`를 받지 않아 자동 수정을 끌 수 없다. 친구 목록 행은 친구 피드로 가는 `Link` + `Link.Menu`(피드는 다른 탭이라 미리보기 없음)이고, 피드의 친구 줄은 같은 화면의 세터, 초대한 친구 행은 상세 route가 없고 콕이 버튼 동작이라 `Link` 대상이 아니다
+- `device/*`: iOS에서 위젯 저장소가 no-op인데 그 위에 navigation repository·헤드리스 실패 읽기를 두는 것(동작 영향 없음)
+
+### 1.15.2에서 바꾸지 않기로 한 것
+
+리뷰에서 정한 대로 이번에 바꾸지 않는다. 바꾸려면 이슈로 따로 정한다.
+
+- 무한 목록의 `maxPages`(쌓아 두는 쪽 수 상한)
+- 반복 할 일 격주의 기준 주
+- 서버 푸시의 12·24시간 기준
+- 직접 색을 준 실선 14곳(`gray-2`·`gray-3`: 시트 6곳·`friend-strip`, 밑줄 탭 목록 2곳, `SettingsListGroup`, `trial-timeline`, `plan-comparison-table`, `bg-border` 2곳)을 `--separator`로 옮기는 것. 라이트 구분선이 진해져 디자인 톤이 바뀐다
+
 ## PR 목록
 
 이 기록이 가리키는 PR이다. `[32.NN/32]`는 `[31/32]` 위에 나눠 올린 PR이다.

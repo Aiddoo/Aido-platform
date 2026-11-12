@@ -1,6 +1,6 @@
 # 구조
 
-기능을 어디에 두고, 기능 폴더에 무엇을 두고, 무엇이 무엇을 import하는지 정한다. 모델은 [model](./model.md), Api·저장소·쿼리·폼은 [data](./data.md), 상태·route는 [state-and-routing](./state-and-routing.md)이 원본이다. 아직 이 모양이 아닌 코드는 [migration-status](./migration-status.md)에만 적는다. 지금 걸린 검사와 규칙 이름은 [guardrails](./guardrails.md)다.
+기능을 어디에 두고, 기능 폴더에 무엇을 두고, 무엇이 무엇을 import하는지 정한다. 모델은 [model](./model.md), Api·저장소·쿼리·폼은 [data](./data.md), 상태·route는 [state-and-routing](./state-and-routing.md)이 원본이다. 아직 이 모양이 아닌 코드는 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다. 지금 걸린 검사와 규칙 이름은 [guardrails](./guardrails.md)다.
 
 ## 앱 폴더
 
