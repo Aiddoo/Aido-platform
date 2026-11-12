@@ -227,7 +227,7 @@ SubscriptionScreen.Receipt = function Receipt() {
   const openSubscriptionManagement = useOpenSubscriptionManagement();
   const isOnline = useIsOnline();
   const push = useSingleTap(router.push);
-  const { pathname } = useCheckoutRoute();
+  const [pathname] = useCheckoutRoute();
 
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
@@ -278,7 +278,7 @@ SubscriptionScreen.Receipt = function Receipt() {
 SubscriptionScreen.Loading = function Loading() {
   const isOnline = useIsOnline();
   const [{ view }] = useSubscriptionParams();
-  const { pathname } = useCheckoutRoute();
+  const [pathname] = useCheckoutRoute();
   const { data: hasPremiumAccess = false } = useQuery({
     ...useGetMeQueryOptions(),
     select: UserPolicy.hasPremiumAccess,

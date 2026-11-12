@@ -69,13 +69,13 @@ export default function MemoDetailRoute() {
 - **레이아웃은 자식 params를 구독하지 않는다.** 레이아웃은 내비게이터와 Provider만 둔다. 루트에서 URL을 봐야 하는 훅은 `null`을 그리는 형제 컴포넌트에 둔다: `AuthGateLayout`의 `RouteWatchers`(`useScreenTracking`, `useWidgetAppEntry`, `useInviteAppEntry`, `useAppEntrySegmentSync`)와 `NotificationProvider`의 `ForegroundPushPresentation`. 스플래시 판단이 쓰는 "앱 입구인가"는 `useAppEntrySegmentSync`가 푸시 진입 슬롯에 적고 레이아웃은 슬롯만 읽는다. `setParams`가 레이아웃을 다시 그리지 않는 것은 `auth-gate-layout.test.tsx`가 지킨다.
 - 화면 훅에서 `useGlobalSearchParams`를 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 그려진다. 현재 화면과 무관하게 읽어야 하는 위의 `null` 자식만 쓴다.
 
-| 스키마                     | 훅 → 반환                                                                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `feedParamsSchema`         | `useFeedDateKey` → `[dateKey, setDateKey]`, `useFeedFriendId` → `[friendId, setFriendId]`, `useFeedAction`, `useFeedSelectedTodoId`   |
-| `friendListParamsSchema`   | `useFriendListView` → `[view, setView]`, `useFriendListIsEditing` → `[isEditing, setIsEditing]`(파일 하나)                            |
-| `friendParamsSchema`       | `useRouteFriendId` → `[friendId]`(쿼리는 컴포넌트에서)                                                                                |
-| `invitedFriendsViewSchema` | `useInvitedFriendsView` → `[view, setView]`                                                                                           |
-| 그 밖                      | `useTodoSheetDateKey`·`useTodoCategoryId`·`useNudgeId`·`useVoiceNoteDraftId` → `[id]`, `useCheckoutRoute` → `[{ pathname, leaveTo }]` |
+| 스키마                     | 훅 → 반환                                                                                                                           |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `feedParamsSchema`         | `useFeedDateKey` → `[dateKey, setDateKey]`, `useFeedFriendId` → `[friendId, setFriendId]`, `useFeedAction`, `useFeedSelectedTodoId` |
+| `friendListParamsSchema`   | `useFriendListView` → `[view, setView]`, `useFriendListIsEditing` → `[isEditing, setIsEditing]`(파일 하나)                          |
+| `friendParamsSchema`       | `useRouteFriendId` → `[friendId]`(쿼리는 컴포넌트에서)                                                                              |
+| `invitedFriendsViewSchema` | `useInvitedFriendsView` → `[view, setView]`                                                                                         |
+| 그 밖                      | `useTodoSheetDateKey`·`useTodoCategoryId`·`useNudgeId`·`useVoiceNoteDraftId` → `[id]`, `useCheckoutRoute` → `[pathname, leaveTo]`   |
 
 - 계산 값은 튜플이 아니다(`useDateFormatContext`는 값을 돌려준다). 저장소가 없는 구독 값(`useIsOnline`)과 동작 묶음도 튜플이 아니다.
 

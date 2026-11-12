@@ -8,18 +8,14 @@ import { nudgeParamsSchema } from '@src/features/social/nudge/schemas/nudge-para
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  HStack,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   ReadableContent,
   Result,
   Spacing,
   StyledSafeAreaView,
-  TextSkeleton,
-  VStack,
 } from '@src/shared/ui';
 import { router } from 'expo-router';
-import { Skeleton } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -68,25 +64,11 @@ NudgeDetailScreen.Loading = function Loading() {
   return (
     <ScrollView contentContainerClassName="grow">
       <StyledSafeAreaView edges={['left', 'right']} className="p-6">
-        <VStack gap={24}>
-          <HStack gap={12} align="center">
-            <Skeleton className="size-12 rounded-full" />
-            <VStack flex={1} gap={4}>
-              <TextSkeleton size="b3" className="w-40" />
-              <TextSkeleton size="e1" className="w-16" />
-            </VStack>
-          </HStack>
+        <NudgeSummary.Loading />
 
-          <TextSkeleton size="t3" className="w-3/4" />
+        <Spacing size={24} />
 
-          <HStack gap={12} align="center" p={16}>
-            <Skeleton className="size-7 rounded-full" />
-            <VStack flex={1} gap={4}>
-              <TextSkeleton size="b3" className="w-3/4" />
-              <TextSkeleton size="e1" className="w-16" />
-            </VStack>
-          </HStack>
-        </VStack>
+        <NudgeTodoButton.Loading />
       </StyledSafeAreaView>
     </ScrollView>
   );

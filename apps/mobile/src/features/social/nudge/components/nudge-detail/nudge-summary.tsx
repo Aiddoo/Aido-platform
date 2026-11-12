@@ -4,8 +4,9 @@ import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
+import { Skeleton } from 'heroui-native';
 
 import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import { useNudgeId } from '../../hooks/use-nudge-id';
@@ -55,3 +56,19 @@ export function NudgeSummary() {
     </VStack>
   );
 }
+
+NudgeSummary.Loading = function Loading() {
+  return (
+    <VStack gap={24}>
+      <HStack gap={12} align="center">
+        <Skeleton className="size-12 rounded-full" />
+        <VStack flex={1} gap={4}>
+          <TextSkeleton size="b3" className="w-40" />
+          <TextSkeleton size="e1" className="w-16" />
+        </VStack>
+      </HStack>
+
+      <TextSkeleton size="t3" className="w-3/4" />
+    </VStack>
+  );
+};

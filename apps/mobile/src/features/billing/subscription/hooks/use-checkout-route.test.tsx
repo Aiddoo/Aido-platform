@@ -8,12 +8,13 @@ describe('useCheckoutRoute', () => {
     // Given
     jest.mocked(usePathname).mockReturnValue('/paywall');
     const { result } = await renderHook(() => useCheckoutRoute());
+    const [pathname, leaveTo] = result.current;
 
     // When
-    result.current.leaveTo('/reports');
+    leaveTo('/reports');
 
     // Then
-    expect(result.current.pathname).toBe('/paywall');
+    expect(pathname).toBe('/paywall');
     expect(router.dismissTo).toHaveBeenCalledWith('/reports');
     expect(router.push).not.toHaveBeenCalled();
   });
@@ -22,12 +23,13 @@ describe('useCheckoutRoute', () => {
     // Given
     jest.mocked(usePathname).mockReturnValue('/settings/subscription');
     const { result } = await renderHook(() => useCheckoutRoute());
+    const [pathname, leaveTo] = result.current;
 
     // When
-    result.current.leaveTo('/reports');
+    leaveTo('/reports');
 
     // Then
-    expect(result.current.pathname).toBe('/settings/subscription');
+    expect(pathname).toBe('/settings/subscription');
     expect(router.push).toHaveBeenCalledWith('/reports');
     expect(router.dismissTo).not.toHaveBeenCalled();
   });

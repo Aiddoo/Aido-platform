@@ -18,5 +18,5 @@ export function useCheckoutRoute() {
     router.push(href);
   });
 
-  return { pathname, leaveTo } as const;
+  return [pathname, leaveTo] as const;
 }
