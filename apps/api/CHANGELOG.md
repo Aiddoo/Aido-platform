@@ -1,5 +1,34 @@
 # @aido/server
 
+## 1.15.2
+
+### Minor Changes
+
+- 30801bb: 콕 답장·감사 기능이 서버 설정으로 꺼진 경우를 새 오류 코드 `NUDGE_1111`(404, "지금은 콕 답장과 감사를 사용할 수 없습니다.")로 알린다. 전에는 "없는 콕"과 같은 `NUDGE_1105`였다. 출시 앱(1.15.1 이하, `X-App-Version`이 없거나 1.15.2 미만)은 보낸 콕 목록이 `NUDGE_1105`로 꺼진 상태를 알아 같은 경우에 계속 `NUDGE_1105`를 받는다. "없는 콕·내 콕이 아님"은 모든 앱에 `NUDGE_1105` 그대로다. 답장·감사 API 5개의 404 문서에 `NUDGE_1111`을 더한다.
+- b19194d: 서버와 앱이 함께 지키는 한도·값 목록·알림 스키마를 `@aido/api`에 한 번만 선언한다. `notificationTypeSchema`·`notificationActionTypeSchema`·`notificationContextSchema`·`notificationActionSchema`는 `contracts/notification`에서 `common`으로, `appStoreVersionPattern`은 `contracts/app-config`에서 `vocabulary`로 옮기며(`APP_STORE_VERSION_PATTERN`) 루트 import는 그대로 쓸 수 있다.
+- 796eb98: 할 일 개요 `GET /v1/todos/overview`(`getTodoOverview`, `TodoOverviewResponseDto`)를 더한다. 할 일·완료한 할 일·진행 중인 반복이 있는지(`hasTodo`·`hasCompletedTodo`·`hasActiveRepeat`)를 서버가 계산해 한 번에 준다. `hasActiveRepeat`은 진행 중 반복 상한과 같은 기준(다음 회차가 남은 규칙)이고 휴면으로 멈춘 규칙도 센다. 기존 목록·요약 API는 그대로다.
+- c1ef3fd: 인증 코드 재발송 대기(`VERIFY_0753`, 429)의 `details.remainingSeconds`를 운영 응답에도 싣는다. 전에는 서버가 값을 만들었지만 `PUBLIC_ERROR_DETAILS`에 등록되지 않아 운영 필터가 지웠고, 값도 남은 시간이 아니라 상수 60초였다. 이제 같은 종류 코드의 마지막 발급 시각에서 남은 초(1~60, 정수)를 계산한다. `@aido/api/errors`에 `verificationResendCooldownErrorDetailsSchema`와 `hasPublicErrorDetails`를 더한다. 상태·코드·문구는 그대로이고 `details`만 새로 실린다. 출시 앱(1.15.1 이하)도 이 값을 읽어 다시 보내기 타이머를 켠다.
+
+### Patch Changes
+
+- 1b6e970: 가입 이름·프로필 이름·카테고리 이름(생성·수정)을 앞뒤 공백을 지운 뒤 검사한다. 공백만 쓴 이름은 빈 이름으로 보고 400 `SYS_0002`로 거절한다(전에는 빈 이름으로 저장됐다). 길이 상한(이름 20자, 카테고리 50자)도 공백을 지운 뒤 세므로 앞뒤 공백을 더해 넘던 이름(" 가×20 ")은 이제 통과한다. 출시 앱은 `SYS_0002`를 알아 앱 카탈로그 문구("잘못된 요청이에요"/"Invalid request")를 보인다.
+- 3a0a36a: `ApplicationException`·`DomainException`이 감싼 원본 오류를 `cause`로 받는다(세 번째 인자 `{ message?, cause? }`). AI 생성 실패(`AI_1301`·`AI_1302`·`AI_1310`), 날씨 리포트 공급자 실패(`WEATHER_1901`), 사용자 태그 충돌(`SYS_0001`)이 원본을 넘겨 Sentry에서 원인 오류가 이어진다. 응답의 코드·상태·문구·details는 그대로다.
+- 2bddbcc: 오류 기본 문구의 앞으로의 시점을 "후"에서 "뒤"로 바꾼다(`VERIFY_0753` "인증 코드는 1분 뒤에 다시 보낼 수 있습니다.", `NUDGE_1102`·`CHEER_1202` "… 24시간 뒤에 다시 시도해주세요.", `NUDGE_1108` "… 1시간 뒤에 다시 시도해주세요."). `Errors`와 서버 `ko/errors.json`이 함께 바뀌고 코드·HTTP 상태·응답 모양은 그대로다. 출시 앱은 앱 카탈로그 문구를 먼저 보여 화면이 바뀌지 않는다.
+- e5fbe50: Swagger OAuth 엔드포인트 설명의 앱 구현 가이드 경로를 새 문서(`apps/mobile/docs/auth.md`)로 고친다.
+- 1d44bf6: 마이그레이션 `drop_push_daily_budget`이 1.15.1·1.15.2 어느 코드도 쿼리하지 않는 `PushDailyBudget` 테이블을 지운다. 행이 하나라도 있으면 지우지 않고 migrate 전체를 되돌린다(API는 바뀌지 않는다). FK 때문에 `User`를 잠깐 배타 잠금하므로 잠금 대기를 0.5초로 줄여 앱 요청이 밀리지 않게 한다. `User.twoFactorEnabled`·`twoFactorSecret`, `Subscription.dataRetentionUntil`은 1.15.1 이미지가 아직 이름으로 읽고 써서 이번에는 스키마에서만 빼고(`retire_unused_columns`, 실행 SQL 없음) DB 칸은 1.16.0에 값이 비었는지 확인한 뒤 지운다. 1.15.1 CHANGELOG의 "1.15.2에서 지운다" 가운데 이 셋은 1.16.0으로 미룬 것이다. `RetentionExperimentAssignment.assignedAt`은 다른 칸에 없는 배정 시각이라 지우지 않는다. 응답 모양과 출시 계약 지문은 그대로다.
+- c996b87: 서버가 바로 만들던 `ApplicationException`·`DomainException` 265곳을 slice `<slice>.errors.ts`의 이름 있는 생성 함수로 옮기고(거부는 `application/`, 불변식은 `domain/`), 그 밖에서 바로 만드는 것을 Oxlint `aido/no-inline-coded-exception`으로 막는다. 응답의 코드·HTTP 상태·문구·details는 그대로다.
+- 30b7963: 날씨 v2 리포트 응답에서 서버가 앞으로 더할 열거 값을 그 칸만 대체값으로 읽는다(`.catch`). 날씨 상태는 `CLOUDY`, 강수 형태는 `MIXED`(분 단위 구간은 `null`), 기압 추세는 `STEADY`, 달 위상은 `NEW`, 특보 심각도는 `UNKNOWN`, 옮기기 이유는 `null`, 모르는 대기질 출처는 대기질 칸째 `null`이다. 서버가 보내는 값과 필수 칸은 같고 OpenAPI에는 해당 속성의 `default`만 더해진다.
+- 4a276ac: 주간 리포트의 `periodLabel`을 주간 성취 `weekLabel`과 같은 "11월 2주차"/"Week 2 of Nov"(주의 목요일이 속한 달의 몇째 주)로 만든다. 주차 달의 해가 사용자 저장 시간대의 올해가 아니면 연도를 붙인다("2025년 12월 1주차"/"Week 1 of Dec 2025"). 두 라벨은 `shared/domain/time/week-of-month.ts`의 `formatIsoWeekLabel` 하나에서 나오고 앱과 같은 표(`packages/api/test/fixtures/week-of-month-cases.json`)로 테스트한다. 응답 모양은 그대로(문자열)다. 주간 성취 라벨은 올해 주가 그대로이고 다른 해 주만 연도가 붙는다. 월간 라벨("2026년 3월")도 그대로다.
+- Updated dependencies [1b6e970]
+- Updated dependencies [1e28572]
+- Updated dependencies [2bddbcc]
+- Updated dependencies [30801bb]
+- Updated dependencies [b19194d]
+- Updated dependencies [796eb98]
+- Updated dependencies [c1ef3fd]
+- Updated dependencies [30b7963]
+  - @aido/api@1.15.2
+
 ## 1.15.1
 
 ### Patch Changes

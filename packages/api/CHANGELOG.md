@@ -1,5 +1,21 @@
 # @aido/api
 
+## 1.15.2
+
+### Minor Changes
+
+- 30801bb: 콕 답장·감사 기능이 서버 설정으로 꺼진 경우를 새 오류 코드 `NUDGE_1111`(404, "지금은 콕 답장과 감사를 사용할 수 없습니다.")로 알린다. 전에는 "없는 콕"과 같은 `NUDGE_1105`였다. 출시 앱(1.15.1 이하, `X-App-Version`이 없거나 1.15.2 미만)은 보낸 콕 목록이 `NUDGE_1105`로 꺼진 상태를 알아 같은 경우에 계속 `NUDGE_1105`를 받는다. "없는 콕·내 콕이 아님"은 모든 앱에 `NUDGE_1105` 그대로다. 답장·감사 API 5개의 404 문서에 `NUDGE_1111`을 더한다.
+- b19194d: 서버와 앱이 함께 지키는 한도·값 목록·알림 스키마를 `@aido/api`에 한 번만 선언한다. `notificationTypeSchema`·`notificationActionTypeSchema`·`notificationContextSchema`·`notificationActionSchema`는 `contracts/notification`에서 `common`으로, `appStoreVersionPattern`은 `contracts/app-config`에서 `vocabulary`로 옮기며(`APP_STORE_VERSION_PATTERN`) 루트 import는 그대로 쓸 수 있다.
+- 796eb98: 할 일 개요 `GET /v1/todos/overview`(`getTodoOverview`, `TodoOverviewResponseDto`)를 더한다. 할 일·완료한 할 일·진행 중인 반복이 있는지(`hasTodo`·`hasCompletedTodo`·`hasActiveRepeat`)를 서버가 계산해 한 번에 준다. `hasActiveRepeat`은 진행 중 반복 상한과 같은 기준(다음 회차가 남은 규칙)이고 휴면으로 멈춘 규칙도 센다. 기존 목록·요약 API는 그대로다.
+- c1ef3fd: 인증 코드 재발송 대기(`VERIFY_0753`, 429)의 `details.remainingSeconds`를 운영 응답에도 싣는다. 전에는 서버가 값을 만들었지만 `PUBLIC_ERROR_DETAILS`에 등록되지 않아 운영 필터가 지웠고, 값도 남은 시간이 아니라 상수 60초였다. 이제 같은 종류 코드의 마지막 발급 시각에서 남은 초(1~60, 정수)를 계산한다. `@aido/api/errors`에 `verificationResendCooldownErrorDetailsSchema`와 `hasPublicErrorDetails`를 더한다. 상태·코드·문구는 그대로이고 `details`만 새로 실린다. 출시 앱(1.15.1 이하)도 이 값을 읽어 다시 보내기 타이머를 켠다.
+
+### Patch Changes
+
+- 1b6e970: 가입 이름·프로필 이름·카테고리 이름(생성·수정)을 앞뒤 공백을 지운 뒤 검사한다. 공백만 쓴 이름은 빈 이름으로 보고 400 `SYS_0002`로 거절한다(전에는 빈 이름으로 저장됐다). 길이 상한(이름 20자, 카테고리 50자)도 공백을 지운 뒤 세므로 앞뒤 공백을 더해 넘던 이름(" 가×20 ")은 이제 통과한다. 출시 앱은 `SYS_0002`를 알아 앱 카탈로그 문구("잘못된 요청이에요"/"Invalid request")를 보인다.
+- 1e28572: `@aido/api/errors`에서 패키지 테스트만 쓰던 옛 함수·타입을 지운다: `createErrorResponse`, `ErrorResponse`(description·path가 있던 옛 응답 모양), `getErrorsByDomain`(SUBSCRIPTION 이후 도메인이 빠져 있었다), `getErrorsByHttpStatus`, `getAllErrorCodes`, `getAllErrors`, `getError`. 서버·앱은 쓰지 않았고 실패 응답 모양은 `@aido/api/common`의 `errorEnvelopeSchema`·`RestErrorResponse` 그대로다. `ErrorCode`·`Errors`·`HttpStatus`·`isErrorCode`·공개 details는 그대로다.
+- 2bddbcc: 오류 기본 문구의 앞으로의 시점을 "후"에서 "뒤"로 바꾼다(`VERIFY_0753` "인증 코드는 1분 뒤에 다시 보낼 수 있습니다.", `NUDGE_1102`·`CHEER_1202` "… 24시간 뒤에 다시 시도해주세요.", `NUDGE_1108` "… 1시간 뒤에 다시 시도해주세요."). `Errors`와 서버 `ko/errors.json`이 함께 바뀌고 코드·HTTP 상태·응답 모양은 그대로다. 출시 앱은 앱 카탈로그 문구를 먼저 보여 화면이 바뀌지 않는다.
+- 30b7963: 날씨 v2 리포트 응답에서 서버가 앞으로 더할 열거 값을 그 칸만 대체값으로 읽는다(`.catch`). 날씨 상태는 `CLOUDY`, 강수 형태는 `MIXED`(분 단위 구간은 `null`), 기압 추세는 `STEADY`, 달 위상은 `NEW`, 특보 심각도는 `UNKNOWN`, 옮기기 이유는 `null`, 모르는 대기질 출처는 대기질 칸째 `null`이다. 서버가 보내는 값과 필수 칸은 같고 OpenAPI에는 해당 속성의 `default`만 더해진다.
+
 ## 1.15.1
 
 ### Patch Changes
