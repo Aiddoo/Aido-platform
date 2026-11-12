@@ -199,6 +199,7 @@ const form = useForm({
 - 변환은 mapper다. 폼 값 → 요청은 `to{X}Request(values)`, 모델 → 폼 값은 `to{X}FormValues(model)`다.
 - 입력은 `Controller`·`useController`로 잇고 `field.ref`를 넘겨 검증 실패 칸에 포커스한다. 하위는 `useWatch`·`useFormState({ name })`로 자기 값만 구독한다. 렌더 중 `getValues()`는 React Compiler가 캐시해 갱신되지 않으므로 핸들러에서만 쓴다.
 - 폼은 제출하는 컴포넌트가 소유하고 자식에 props `form`(읽기만 하면 `control`)으로 넘긴다. `FormProvider`·`useFormContext`는 쓰지 않는다. 공용 입력 부품은 `value`·`onChange`를 받는 제어 컴포넌트다(`todo-schedule-chips.tsx`).
+  - 예외는 할 일 댓글 세션 하나다(`TodoCommentFormProvider`·`useTodoCommentForm`). 가상 목록 깊은 곳의 댓글·답글 행 메뉴, 작성 바, 뒤로 가기 확인이 화면 하나의 작성기를 함께 읽고 바꿔, props로 내리면 목록 여러 층을 거치는 드릴링이 된다. 세션(`todo-comment-session.tsx`)이 폼을 소유하고 이 Context로만 나눈다.
 - 버튼은 `formState.isValid`·`isSubmitting`과 mutation `isPending`으로만 정한다. `safeParse`로 버튼 상태를 따로 계산하지 않는다.
   - 단계 폼의 다음 버튼은 폼 전체가 아니라 그 단계 칸만 본다. `getFieldState(name, formState)`의 `isDirty && !invalid`로 정한다(`useFormState({ name })`로 구독). 단계 버튼이 바로 따르게 `mode: 'onChange'`로 검사하고, 오류 문구는 칸을 벗어난 뒤(`isTouched`)나 그 칸에 적은 뒤(`isDirty`)에만 보인다.
 - 서버 4xx 중 칸에 속한 오류는 `form.setError`로 그 칸에 보인다. 코드와 칸의 매핑은 `domains/{feature}.error.ts`에 둔다. 실패해도 입력값을 지우지 않는다.

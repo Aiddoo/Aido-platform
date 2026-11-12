@@ -11,6 +11,7 @@
 - **Policy는 모듈 함수를 모은 객체다.** `export const XPolicy = { fnA, fnB } as const`. 인라인 함수, 별칭, 메서드, `this`, class를 쓰지 않는다. 그래서 콜백으로 넘겨도 안전하다(`notifications.filter(NotificationPolicy.isUnread)`).
 - **Policy 멤버의 첫 인자는 모델 전체다.** 값 하나만 필요해도 `notification: Notification`으로 받고 `Pick`·`Partial`·객체 리터럴로 좁히지 않는다. 목록 규칙은 `readonly X[]`를 받는다. 모델 일부(폼 값, 검색어, route id, `select` 결과)만 가진 곳의 규칙은 Policy 밖 export 함수다.
 - **한 파일, 한 엔티티, 한 Policy.** 두 엔티티가 섞이면 파일을 나눈다(`push-notification.model.ts`, `push-notification-response.model.ts`). 모델을 만드는 `create*` 함수는 Policy에 넣지 않는다. 규칙 없는 모델에는 빈 Policy를 만들지 않는다.
+  - 예외는 `social/nudge/domains/nudge-interaction.model.ts` 하나다. 콕 응답(`NudgeInteractionPolicy`)·감사 미리보기(`NudgeThanksPreviewPolicy`)·할 일 감사 가능(`TodoThanksPolicy`)은 한 감사 흐름에서 함께 바뀌어 한 파일에 둔다. `canThankTodo`는 할 일을 받지만 규칙의 주인이 콕 감사라 todo 모델로 옮기지 않는다.
 - **업무 규칙 표**는 모델 파일 안 비공개 상수이고 `satisfies Record<Union, …>`를 건다. 서버가 종류를 더하면 빌드가 깨진다.
 - **인자는 도메인 단위 이름이다.** `monthlyAmount`·`dueDateKey`처럼 무엇의 어떤 단위인지 이름에 넣는다. 모델 파일 이름에 상태 접두사(`pending-`·`current-`)를 붙이지 않는다(엔티티 이름이다).
 - **시각은 인자다.** 지금·오늘·시간대를 받고 `Date.now()`·`new Date()`·기기 시간대를 읽지 않는다. 기간 규칙은 `shouldShow*(record, now)`이고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).
