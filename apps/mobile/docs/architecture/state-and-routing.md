@@ -67,7 +67,7 @@ export default function MemoDetailRoute() {
 
 - **원시 `setParams`를 내보내지 않는다.** 연관 값을 지우는 세터를 이름 있게 내보낸다(`useTodoCommentSort`는 `comment`를 함께 지운다). 호출부가 지우기를 잊을 수 없다. `router.setParams`와 `useRouteParams`의 원시 setter는 params 훅(`hooks/use-*-params.ts`) 밖에서 쓰지 않는다(`no-restricted-properties`, `aido/route-setter-location`). 예외는 칸 크기로 이동 방식을 고르는 `useFeedSelectedTodoId` 하나다.
 - **목록 행은 route 훅을 부르지 않는다.** 부모가 한 번 읽어 `isSelected`를 넘긴다. 가상 목록이 행 수만큼 URL을 파싱하지 않게 한다. 짧은 고정 목록은 행이 읽어도 된다.
-- **레이아웃은 자식 params를 구독하지 않는다.** 레이아웃은 내비게이터와 Provider만 둔다. 루트에서 URL을 봐야 하는 훅은 `null`을 그리는 형제 컴포넌트에 둔다: `AuthGateLayout`의 `RouteWatchers`(`useScreenTracking`, `useWidgetAppEntry`, `useInviteAppEntry`, `useAppEntrySegmentSync`)와 `NotificationProvider`의 `ForegroundPushPresentation`. 스플래시 판단이 쓰는 "앱 입구인가"는 `useAppEntrySegmentSync`가 푸시 진입 슬롯에 적고 레이아웃은 슬롯만 읽는다. 내 정보·창 크기를 구독하는 루트 훅도 같은 이유로 `WindowWatchers`(`useOrientationLock`)·`SessionWatchers`(`useSyncUserIdentity`, `useClaimDeviceDataForUser`)·`AppEntryWatchers`(`useInstallReferrerCapture`, `usePushNotificationResponse`)에, 앱 화면 묶음 레이아웃의 할 일 이벤트 훅은 `TodoEventWatchers`(`useRecordTodoCreated`, `useRecordTodoCompletion`, `useOfferMarketingPushAfterCompletion`)에 둔다. `setParams`·내 정보 변경·창 크기 변경이 레이아웃을 다시 그리지 않는 것은 `auth-gate-layout.test.tsx`가 지킨다.
+- **레이아웃은 자식 params를 구독하지 않는다.** 레이아웃은 내비게이터와 Provider만 둔다. 루트에서 URL을 봐야 하는 훅은 `null`을 그리는 형제 컴포넌트에 둔다: `AuthGateLayout`의 `RouteWatchers`(`useScreenTracking`, `useWidgetAppEntry`, `useAppEntrySegmentSync`)와 `NotificationProvider`의 `ForegroundPushPresentation`. 스플래시 판단이 쓰는 "앱 입구인가"는 `useAppEntrySegmentSync`가 푸시 진입 슬롯에 적고 레이아웃은 슬롯만 읽는다. 내 정보·창 크기를 구독하는 루트 훅도 같은 이유로 `WindowWatchers`(`useOrientationLock`)·`SessionWatchers`(`useSyncUserIdentity`, `useClaimDeviceDataForUser`)·`AppEntryWatchers`(`useInstallReferrerCapture`, `usePushNotificationResponse`)에, 앱 화면 묶음 레이아웃의 할 일 이벤트 훅은 `TodoEventWatchers`(`useRecordTodoCreated`, `useRecordTodoCompletion`, `useOfferMarketingPushAfterCompletion`)에 둔다. `setParams`·내 정보 변경·창 크기 변경이 레이아웃을 다시 그리지 않는 것은 `auth-gate-layout.test.tsx`가 지킨다.
 - 화면 훅에서 `useGlobalSearchParams`를 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 그려진다. 현재 화면과 무관하게 읽어야 하는 위의 `null` 자식만 쓴다.
 
 | 스키마                     | 훅 → 반환                                                                                                                                                                                            |
@@ -91,8 +91,8 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 같은 화면의 보기 상태는 camelCase query param이다(`/feed?friendId=…&date=…`, `/memo?memoId=…`). 피드는 `/feed` 한 화면이고 친구 전환은 세터라 pane이 다시 마운트되지 않고 history가 쌓이지 않는다.
 - 이동은 호출부에서 typed routes `router.push({ pathname, params })`로 쓴다. 컴파일 때 `pathname`과 동적 세그먼트를 검사하므로 href 래퍼를 만들지 않고 경로 문자열을 잇지 않는다.
 - 저장·AI·조회를 기다린 뒤 이동하면 그 사이 떠났는지 먼저 본다. 화면은 `navigation.isFocused()`, 화면 안에서 바뀌는 조각(pane의 메모 편집기)은 마운트 여부도 본다. 떠났으면 지금 보는 화면 위로 끌고 가지 않는다. 메모 AI 정리 결과는 mutation이 초안에 남겨, 그 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다.
-- 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `WidgetNavigationPolicy`다.
-- 켜진 앱에 앱 밖에서 들어온 이동(누른 푸시)은 `openEntryHref(href)`(`shared/navigation/open-entry-href.ts`)로 OS가 같은 URL을 연 것처럼 연다. Stack에 그 화면이 있으면 그리로 돌아가고 없으면 쌓는다. `router.navigate`는 탭 위 화면(할 일 상세·시트·결제 모달)에서 탭 화면을 열면 탭 묶음을 하나 더 쌓는다.
+- 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `findWidgetEntry`(`features/device/widget/utils/widget-navigation-link.view-model.ts`, 명령 유효성은 `WidgetNavigationPolicy`)다.
+- 켜진 앱에 앱 밖에서 들어온 이동(누른 푸시, 인증 뒤 여는 위젯 목적지)은 `openEntryHref(href)`(`shared/navigation/open-entry-href.ts`)로 OS가 같은 URL을 연 것처럼 연다. Stack에 그 화면이 있으면 그리로 돌아가고 없으면 쌓는다. `router.navigate`는 탭 위 화면(할 일 상세·시트·결제 모달)에서 탭 화면을 열면 탭 묶음을 하나 더 쌓는다.
 - 탭 위 화면이 탭 화면으로 떠날 때는 `router.dismissTo(href)`다. 시트는 `close({ type: 'dismiss-to', href })`, 결제 모달은 `useCheckoutRoute().leaveTo`다. 탭 안과 탭 위에서 함께 도는 코드(오류 화면 문의하기)는 `openEntryHref`다. 탭 화면으로 `push`·`replace`하면 탭 바가 두 겹이 된다.
 - 뒤로 가기는 `useGoBack({ fallbackHref })`(돌아갈 화면이 없을 때 화면이 아닌 일을 하면 `{ onFallback }`), Android 뒤로 가기 버튼은 `useAndroidBackHandler`다([hooks](./hooks.md)). `router.canGoBack() ? router.back() : …`을 직접 쓰지 않는다(연타로 두 번 돌아간다).
 - 웹 페이지(약관·공지)는 route가 아니라 `useOpenInAppBrowser`로 연다. 앱 자체 WebView는 없고 `aido://webview/…` 링크는 `+not-found`로 간다.
@@ -147,6 +147,28 @@ app/(app)/(tabs)/
 - 제목은 화면이 `<Stack.Screen options={{ title: t('…') }} />`로 정한다. 레이아웃에 화면 목록을 두지 않는다. 제목을 정하지 않은 화면은 빈 제목이다. `Stack.Title`은 `headerTitleStyle`을 비워 앱 글꼴 단계·색을 덮으므로 쓰지 않는다.
 - 마이 탭 메뉴에서 열 항목이면 `MyPageMenuPane`에 줄을 더한다.
 - 한 탭에서만 여는 화면은 그 탭 그룹 폴더(`(todos)`·`(memos)`·`(me)`)에 둔다.
+
+### 앱 밖에서 들어오는 길
+
+푸시가 여는 자리는 [push-notifications](../push-notifications.md), 위젯 URI는 [widgets](../widgets.md), 소셜 로그인은 [auth](../auth.md)에 있다. 여기는 연 뒤 Stack에 무엇이 남는지만 적는다.
+
+| 들어온 것                                                             | 여는 곳                                                                                                                                               | 끝난 뒤                                                                                                                                                                       |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 초대 링크(`+native-intent`가 `/invite/[inviteCode]`로 바꾼다)         | 루트 Stack의 초대 카드. 로그인 전이면 가입·로그인, 로그인했으면 수락 버튼이다                                                                         | 수락 결과(환영 시트·친구 피드·내 초대)는 카드를 닫고 연다. 켜진 앱이면 있던 탭 묶음으로, 카드로 앱을 열었으면 목적지 탭 첫 화면을 깔고 연다. 뒤로 가도 카드로 돌아오지 않는다 |
+| 로그인 전에 받은 초대(가입·로그인을 누른 카드, Android 설치 referrer) | `pendingRedemptionStoredValue`에 남겼다가 로그인 뒤 Index가 피드를 깔 때 그 위에 카드를 한 번 연다(`useOpenPendingInvite`). 피드가 먼저 보이지 않는다 | 꺼낸 초대는 바로 지운다. 로그인 전에 보던 카드는 초대 route가 `dangerouslySingular`라 새 카드가 대신한다                                                                      |
+| 위젯(`aido://feed?…`·`aido://todo/{id}`)                              | 앱이 켜져 있으면 Expo Router가 연다. 로그인 전에 받은 첫 URL과 Android 명령은 `useWidgetAppEntry`가 인증 뒤 `openEntryHref`로 연다                    | 시트·상세 위에서 눌러도 탭 묶음은 하나다                                                                                                                                      |
+| Android OAuth 콜백(`/auth/[provider]`)                                | 그리지 않는다. `useCloseOAuthCallback`이 브라우저 세션을 끝내고 로그인·계정 연결을 시작한 화면으로 돌아간다. 그 화면이 없으면 `/`다                   | 로그인은 Index가 이어 받아 남은 푸시·콜드 링크·초대를 연다. 계정 연결은 같은 연결 화면에 남는다                                                                               |
+
+- 루트 Stack(초대 카드)에서 앱 화면으로 나갈 때는 `router.dismissTo(href, { withAnchor: true })`다. `replace`는 켜진 앱 위에 탭 묶음을 하나 더 쌓고, 앵커 없이 열면 시트 아래에 탭이 없다. 같은 Stack 안의 끝난 흐름(코드 입력 → 카드, 없는 코드 → 코드 입력)은 `replace`다.
+- 탭 위 시트(환영 시트)에서 탭 화면으로 떠날 때는 `{ type: 'dismiss-to' }`이고, 볼 것이 없는 링크는 `exit()`(뒤로, 없으면 피드)다.
+- Index가 첫 화면을 고르는 차례는 눌린 푸시 → 콜드 링크(`cold-start-link`) → 로그인 전 초대(피드 위) → 피드다. 로그인 화면·OAuth 콜백(`auth`)은 앱 입구라 이 차례를 건너뛰지 않는다(`useAppEntrySegmentSync`).
+
+**새 진입 더하기.** 진입 하나는 스키마 하나와 처리 한 줄이다.
+
+- 앱 화면 링크: route 파일 하나다(위 [탭과 함께 쓰는 화면](#탭과-함께-쓰는-화면) 표). 로그인 판정 전에 열린 보호 route는 `cold-start-link`가 첫 세그먼트로 받아 Index가 연다.
+- 위젯 목적지: `widgetNavigationDestinationSchema`에 항목 하나, `findWidgetEntry`의 `match`에 한 줄(href·분석 값·이미 보이는지)이다. `exhaustive()`라 빠뜨리면 타입 검사가 막는다.
+- 초대 링크 모양: `inviteLinkSourceSchema`에 값 하나(분석 `source`와 같다), `matchInviteLink`에 갈래 하나다.
+- 링크·URI·저장 값은 외부 계약이라 추가만 한다. `auth-gate-layout.invite-entry.flow.test.tsx`·`auth-gate-layout.widget-entry.flow.test.tsx`·`oauth-callback-screen.test.tsx`가 출시한 링크·위젯 URI·이어서 열 초대 원문·콜백 URL 표로 착지와 뒤로 가기를 지킨다.
 
 ### 시트
 
