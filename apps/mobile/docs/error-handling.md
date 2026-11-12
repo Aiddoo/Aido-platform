@@ -142,14 +142,8 @@ showMutationError(error, {
 
 ## 보고
 
-보고 API는 `captureError` 한 길이고 입구는 둘이다. 둘 다 `classifyError`로 이슈·breadcrumb를 정하고 같은 오류 객체는 한 번만 보낸다([관측](./observability.md#오류-분류와-한-번만-보고)).
+보고 API는 `captureError` 한 길이고 입구는 `reportUnexpectedError`·`logger.error` 둘이다. 어느 입구를 언제 쓰는지와 한 번만 보내는 규칙은 [관측](./observability.md#오류-분류와-한-번만-보고)·[AppLogger](./observability.md#applogger)가 원본이다.
 
-| 입구                                                   | 쓰는 곳                                                                                  | 예상한 오류         |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------- |
-| `reportUnexpectedError(errorReporter, error, feature)` | 전역 mutation·조회 보고, 경계, `useReportUnexpectedError`(기기 작업 등 mutation·조회 밖) | 보내지 않는다       |
-| `logger.error(KEY, toError(error), context)`           | DI 밖 코드, 로그 키로 기능을 밝히고 문맥(`speech_error` 등)을 남기는 곳                  | breadcrumb로 남긴다 |
-
-- 서비스는 삼킨 실패를 `logger.warn(KEY, { error: getErrorMessage(error) })`로만 남긴다. 예측 가능한 4xx는 이벤트가 아니다.
 - RN 브릿지·SDK는 `Error`가 아닌 값을 던지기도 한다. 보고에는 `toError`(원본은 `cause`), 로그 문맥에는 `getErrorMessage`를 쓴다. `new Error(String(error))`는 객체를 `[object Object]`로 만든다.
 - 삼키는 자리는 이유를 적는다. 확인 다이얼로그는 `onConfirm`(mutation)이 전역 피드백으로 이미 알려 실패를 삼키고 다이얼로그를 남긴다. 클립보드 실패(`ClipboardCopyError`)는 로그 키의 기능으로 보고한다.
 
@@ -180,20 +174,3 @@ showMutationError(error, {
 ## 저장소 오류: KeychainLockedError
 
 `KeyValueStorage.get()`은 값이 없으면 `null`, 기기 잠금으로 지금 못 읽으면 `KeychainLockedError`, 영구 오류(키체인 손상·entitlement 오설정)면 원본, 저장 값 파싱 실패면 `null`이다. "지금 못 읽음"을 "토큰 없음"으로 확정하면 잠긴 키체인이 로그아웃이 되고, 모든 읽기 실패를 잠김으로 뭉개면 무한 로딩에 갇힌다. 벤더 판별(OSStatus 메시지)은 `secure-storage.ts`에만 두고 `resolve-initial-auth-status.ts`는 `isKeychainLockedError()`만 안다. 경계로 보내지 않는다.
-
-## 참고 파일
-
-| 파일                                                          | 설명                                     |
-| ------------------------------------------------------------- | ---------------------------------------- |
-| `core/errors/{app-error,api-error,result}.ts`                 | 오류 바탕·ApiError·Result                |
-| `shared/errors/classify-error.ts`                             | 분류                                     |
-| `shared/errors/report-unexpected-error.ts`                    | 예상하지 못한 오류 보고·요청 태그        |
-| `shared/errors/{infra-error,business-error,storage-error}.ts` | 오류 클래스                              |
-| `shared/errors/{user-facing-message,error-diagnosis}.ts`      | 사용자 문구, 진단 값                     |
-| `shared/infra/http/{ky-client,ky-error,error-envelope}.ts`    | HTTP 결과 변환, 실패 봉투                |
-| `bootstrap/query/mutation-error-feedback*`                    | mutation 전역 피드백                     |
-| `shared/query/use-mutation-error-feedback.ts`                 | 기능이 부르는 `useMutationErrorFeedback` |
-| `bootstrap/query/query-error-report*`                         | 경계 밖 조회 보고                        |
-| `shared/query/query-retry.ts`                                 | 재시도                                   |
-| `shared/ui/query-error-boundary/`                             | 경계, fallback, 문의 초안                |
-| `features/*/domains/*.error.ts`                               | 기능 오류                                |

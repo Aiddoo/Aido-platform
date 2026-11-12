@@ -34,9 +34,8 @@
 - 이벤트는 기능의 `constants/{entity}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다. 기능에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`, `view_tab_changed`, `error_fallback_retry_tapped`)만 `shared/analytics/event-map.ts`에 직접 있다. 맨 `string` 이름·파라미터를 쓰지 않는다.
 - 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
 - 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다.
-- 새 이벤트 이름은 `{entity}_{object?}_{verb}`이고 동사는 `shown`·`tapped`·`dismissed`·`toggled`·`failed`·`created`·`updated`·`deleted`·`viewed`(화면)·`requested`·`completed`·`opened`·`submitted`·`changed`·`verified`·`resent`·`opted_in`·`opted_out`만 쓴다. 안내는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다. 기존 이름은 동결하고 바꿀 때는 별칭 기간을 둔다.
-- 파라미터는 snake_case다. 예약어의 뜻은 정해져 있다: `source`(온 UI), `method`, `reason`, `result`.
-- 이름·동사·snake_case·맨 `string` 금지와 로그 키 유일성은 `aido` oxlint 플러그인이 막는다. 앱 이벤트는 GA 예약 구매 이름(`purchase`·`in_app_purchase`·`refund`)을 쓸 수 없다(`AppReservedPurchaseEventGuard` 컴파일 검사).
+- 새 이벤트 이름은 `{entity}_{object?}_{verb}`, 파라미터는 snake_case이고 맨 `string`을 쓰지 않는다(`aido/analytics-event-catalog`). 동사 목록은 그 규칙의 `EVENT_VERBS`(`tooling/oxlint-plugin-aido/rules/observability.mjs`)이고, GA가 보는 기존 이름은 `frozenNames`로 동결해 바꿀 때 별칭 기간을 둔다. 안내는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다.
+- 파라미터 예약어의 뜻은 정해져 있다: `source`(온 UI), `method`, `reason`, `result`. 앱 이벤트는 GA 예약 구매 이름(`purchase`·`in_app_purchase`·`refund`)을 쓸 수 없다(`AppReservedPurchaseEventGuard` 컴파일 검사).
 
 ### 어디서 추적하나
 
@@ -77,13 +76,13 @@ Issue로 묶이는 신호다. `severity`와 태그를 함께 넘긴다. `capture
 ```ts
 errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
   feature: 'auth',
-  severity: sessionExpiredSeverity[reason],
+  severity: SESSION_EXPIRED_SEVERITY[reason],
   errorCode: reason,
   serverErrorCode,
 });
 ```
 
-**Sentry 보고 자리는 정해져 있다.** mutation은 `meta.errorFeedback`을 읽는 앱 `MutationCache`의 캐시 단계 `onError`, 경계가 받는 조회는 `QueryErrorBoundary`, 경계 밖 조회(인라인 `useQuery`·데이터가 있는 재조회)는 앱 `QueryCache`의 `onError`(`feature: query_cache`), 그 밖은 훅(`useReportUnexpectedError` 등)이다. `useSuspenseQuery`가 데이터 없이 실패하거나 `throwOnError`가 경계로 보내면 `QueryCache`는 건너뛰고, 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다.
+**Sentry 보고 자리는 정해져 있다.** mutation은 `meta.errorFeedback`을 읽는 앱 `MutationCache`의 캐시 단계 `onError`, 경계가 받는 조회는 `QueryErrorBoundary`, 경계 밖 조회(인라인 `useQuery`·데이터가 있는 재조회)는 앱 `QueryCache`의 `onError`(`feature: query_cache`), 그 밖은 훅(`useReportUnexpectedError` 등)이다. `useSuspenseQuery`가 데이터 없이 실패하거나 `throwOnError`가 경계로 보내면 `QueryCache`는 건너뛰고, 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다. mutation 실패의 햅틱·토스트·보고 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)가 원본이다.
 
 ### Breadcrumb: `addBreadcrumb`
 
@@ -100,7 +99,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 
 ### Severity
 
-`debug` < `info` < `warning` < `error` < `fatal`(`core/observability/severity.ts`, 어댑터가 Sentry level로 매핑). `session_expired`는 `sessionExpiredSeverity`로 정한다. 사유의 뜻은 [인증](./auth.md#세션-종료-사유의-두-축)을 본다.
+`debug` < `info` < `warning` < `error` < `fatal`(`core/observability/severity.ts`, 어댑터가 Sentry level로 매핑). `session_expired`는 `SESSION_EXPIRED_SEVERITY`(`core/observability/telemetry-event.ts`)로 정한다. 사유의 뜻은 [인증](./auth.md#세션-종료-사유의-두-축)을 본다.
 
 | reason                     | severity  |
 | -------------------------- | --------- |
@@ -132,14 +131,6 @@ Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureExcep
 
 - 같은 `Error` 객체는 어느 경로로 몇 번 보고해도 한 번만 처리한다(`WeakSet`). 먼저 닿은 쪽의 태그가 남는다(`capture-error.test.ts`).
 - 새 오류 종류를 예상한 오류로 낮추려면 `classifyError`와 그 테스트 표에 먼저 더한다.
-
-## mutation 오류 피드백
-
-mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `onError` 하나가 맡는다. 모든 mutation 옵션이 `meta.errorFeedback`을 둔다.
-
-- `{ feature, fallbackKey? }`: `shared/query/use-mutation-error-feedback.ts`의 `useMutationErrorFeedback` 본체가 `haptics.notify('error')`, `toast.error(getUserFacingMessage(error), { fallback, description: describe?.(error) })`를 한 번 하고, `reportUnexpectedError`가 예상하지 못한 오류만 `captureException(error, { feature, ...getErrorReportTags(error) })`로 보낸다. 태그는 `ServerError`가 지닌 상태·서버 코드·method·endpoint다. 예상한 오류와 연결 문제는 보고하지 않는다.
-- `isHandledByFeature(error)`가 true인 오류와 `errorFeedback: false`는 전역이 알리지도 보고하지도 않는다. 기능이 보이는 오류는 예측한 것이라 보고 대상이 아니다. `false`인 mutation이 실패를 보일 때는 `useMutationErrorFeedback()`으로 같은 보고를 함께 하고, 결제·복원처럼 도메인 신호가 따로 있으면 그 자리에서 `captureMessage`한다.
-- 캐시 단계라 기능 `onSettled`가 기다리는 재조회에 묶이지 않는다. 자세한 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)를 본다.
 
 ## AppLogger
 
@@ -189,15 +180,3 @@ mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `o
 | 렌더 오류            | 개발용 화면에서 렌더 중 throw                       | 이슈 1건, `feature=error_boundary`. 중복 없음                                            |
 | 루트 렌더 오류       | 루트 Provider 안에서 throw한 뒤 "다시 시도"         | 이슈 1건, `feature=root_error_boundary`. 로그인·피드·초안이 남는다                       |
 | 개인정보             | 메모·음성·댓글을 쓰고 위 오류를 낸 직후 이슈를 연다 | 이벤트 JSON에 본문·글자·토큰·이메일이 없고 사용자는 내부 id뿐. 로그아웃 뒤엔 사용자 없음 |
-
-## 관련 코드
-
-| 관심사              | 위치                                                                                                                                                |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 포트                | `core/ports/{error-reporter,analytics,app-logger}.ts`, `core/observability/{severity,breadcrumb,telemetry-event}.ts`                                |
-| Sentry 어댑터       | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                                      |
-| init·전송 입구·분류 | `shared/infra/observability/{error-reporting,capture-error,scrub-sentry-event}.ts`, `shared/errors/classify-error.ts`                               |
-| 카탈로그·파사드     | `core/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                                     |
-| 환경별 구현·DI      | `shared/infra/observability/observability-env.ts`, `bootstrap/providers/{create-device-ports,composition-root}.ts`                                  |
-| 계측 지점           | `shared/infra/http/api-failure-breadcrumb.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/hooks/use-auth-boot.ts`(session) |
-| 테스트 stub         | `src/testing/ports/{app-logger,error-reporter,analytics}.stub.ts`                                                                                   |
