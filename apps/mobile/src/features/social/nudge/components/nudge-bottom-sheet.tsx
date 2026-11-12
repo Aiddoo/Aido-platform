@@ -2,6 +2,7 @@ import { NUDGE_LIMITS } from '@aido/api/vocabulary';
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheetTextArea,
@@ -131,6 +132,9 @@ function NudgeMessageSheet({
     }
   };
 
+  // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 콕을 한 번 더 보낸다
+  const submitNudge = useSingleTap(() => form.handleSubmit(handleSubmitNudge)());
+
   return (
     <KeyboardBottomSheet
       {...sheetProps}
@@ -140,7 +144,7 @@ function NudgeMessageSheet({
           color="primary"
           size="large"
           display="block"
-          onPress={() => form.handleSubmit(handleSubmitNudge)()}
+          onPress={submitNudge}
           isDisabled={!isValid}
           isLoading={isSubmitting}
         >
