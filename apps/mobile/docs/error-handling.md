@@ -17,7 +17,8 @@
    2xx 봉투 아님·JSON 아님 ─────────────► throw ParseError
    4xx ─► Result.err(ApiError { code: 아는 코드|SYS_0001, message, status, details, requestId })
    5xx ─► throw ServerError { status, serverCode: 아는 코드|null, details, requestId, request }
-   시간 초과 ─► throw TimeoutError · ky NetworkError / expo `fetch failed:` ─► throw NetworkError
+   시간 초과(헤더·본문 각각 요청 timeout, ky `.json()`) ─► throw TimeoutError
+   ky NetworkError / expo `fetch failed:` ─► throw NetworkError
    그 밖(요청 경로의 TypeError 등 코드 버그) ─► 그대로 throw
             ▼
  {Entity}Api: parseApiResponse(응답 스키마 + mapper toModel) 실패 ─► throw ParseError
