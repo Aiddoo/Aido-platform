@@ -26,7 +26,7 @@
 
 - 공급자 실패는 공급자 이름·HTTP 상태·짧은 오류 코드만 남긴다. 외부 `error.message`·stack을 logger에 그대로 넘기지 않는다.
 - 로그 정리와 호출자의 오류 계약은 별개다. 로그를 가리려고 sender result·queue throw·재시도 여부를 바꾸지 않는다.
-- Sentry SDK 11은 기본으로 요청·응답 본문, DB 바인딩 값, 스택 지역 변수, 쿠키·쿼리를 모은다. [sentry-options](../src/platform/config/utils/sentry-options.ts)의 `SENTRY_DATA_COLLECTION`이 모두 끄고(헤더는 `user-agent`·`x-app-version`·`x-device-type`만), `scrubErrorEvent`가 보내기 직전 인증 헤더·IP·본문·이메일을 한 번 더 지운다. AI span 입출력도 끈다([보안](security.md#ai)).
+- Sentry SDK 11은 기본으로 요청·응답 본문, DB 바인딩 값, 스택 지역 변수, 쿠키·쿼리를 모은다. [sentry-options](../src/platform/config/utils/sentry-options.ts)의 `SENTRY_DATA_COLLECTION`이 모두 끄고(헤더는 `user-agent`·`x-app-version`·`x-device-type`만), `scrubErrorEvent`가 보내기 직전 인증 헤더·IP·본문·이메일을 한 번 더 지운다. 예외 메시지(`cause`로 이은 linked exception 포함)의 `DrizzleQueryError` 바인딩 값(`params:` 뒤)과 이메일 모양도 `[FILTERED]`로 바꾼다. AI span 입출력도 끈다([보안](security.md#ai)).
 
 ## HTTP 로그와 요청 ID
 

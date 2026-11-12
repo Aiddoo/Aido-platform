@@ -306,4 +306,36 @@ describe("beforeSendError — 업무 거부는 어느 경로에서도 오류로 
     expect(passed).toHaveLength(2);
     expect(passed).toEqual(expect.arrayContaining([outage, bug]));
   });
+
+  it("cause로 이어 보낸 DB 오류의 바인딩 값과 이메일은 예외 메시지에서 지운다", async () => {
+    // Given - userTagCollided처럼 DrizzleQueryError를 cause로 실은 장애다
+    const events: Sentry.ErrorEvent[] = [];
+    Sentry.init({
+      dsn: "https://public@o0.ingest.sentry.io/0",
+      beforeSend: (event, hint) => {
+        const scrubbed = beforeSendError(event, hint);
+        if (scrubbed != null) {
+          events.push(scrubbed);
+        }
+        return null;
+      },
+    });
+    const dbError = new Error(
+      'Failed query: insert into "users" ("email", "user_tag") values ($1, $2)\nparams: a@b.com,TAG2025',
+    );
+    const outage = new ApplicationException(ErrorCode.SYS_0001, undefined, { cause: dbError });
+
+    // When
+    Sentry.captureException(outage);
+    Sentry.captureException(new Error("user a@b.com failed"));
+    await Sentry.flush(1000);
+
+    // Then
+    const values = events.flatMap((event) => event.exception?.values ?? []).map((v) => v.value);
+    expect(values).toContain(
+      'Failed query: insert into "users" ("email", "user_tag") values ($1, $2)\nparams: [FILTERED]',
+    );
+    expect(values).toContain("user [FILTERED] failed");
+    expect(values.join("\n")).not.toContain("a@b.com");
+  });
 });
