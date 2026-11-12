@@ -247,7 +247,7 @@ describe('푸시 탭 진입', () => {
     const { route, gateway, focusLog } = await setup({
       status: 'loading',
       lastResponse: TODO_RESPONSE,
-      markRead: async () => err(new ApiError('NOTIFICATION_1001', '없어요', 404)),
+      markRead: async () => err(new ApiError('NOTIFICATION_1004', '없어요', 404)),
     });
 
     // When
@@ -436,11 +436,11 @@ describe('푸시 탭 진입', () => {
     expect(httpClient.patch).toHaveBeenCalledTimes(1);
   });
 
-  it('다른 계정 알림: 읽음이 404면 버리고 피드에 머문다', async () => {
+  it('다른 계정 알림: 읽음이 없는 알림(NOTIFICATION_1004)이면 버리고 피드에 머문다', async () => {
     // Given
     const { route, gateway } = await setup({
       status: 'authenticated',
-      markRead: async () => err(new ApiError('NOTIFICATION_1001', '없어요', 404)),
+      markRead: async () => err(new ApiError('NOTIFICATION_1004', '없어요', 404)),
     });
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
 
