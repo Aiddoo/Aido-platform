@@ -16,7 +16,6 @@ export const ERROR_REPORT_FEATURES = [
   'error_boundary',
   'event_channel',
   'feature_attribution',
-  'feature_discovery',
   'firebase_analytics',
   'friend',
   'inquiry',
@@ -42,6 +41,7 @@ export const ERROR_REPORT_FEATURES = [
   'weather',
   'weather_location',
   'web_browser',
+  'whats_new',
   'widget',
 ] as const;
 export type ErrorReportFeature = (typeof ERROR_REPORT_FEATURES)[number];
