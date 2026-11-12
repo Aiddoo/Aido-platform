@@ -763,13 +763,13 @@
             "forbid": [
               {
                 "propName": "isChecked",
-                "disallowedFor": ["TodoCheckbox"],
-                "message": "TodoCheckbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
+                "disallowedFor": ["TodoRow.Checkbox"],
+                "message": "TodoRow.Checkbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
               },
               {
                 "propName": "onCheckedChange",
-                "disallowedFor": ["TodoCheckbox"],
-                "message": "TodoCheckbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
+                "disallowedFor": ["TodoRow.Checkbox"],
+                "message": "TodoRow.Checkbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
               }
             ]
           }

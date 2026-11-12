@@ -31,7 +31,7 @@ import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
 import { formatTodoTime } from '../utils/todo-time.view-model';
 import { SubTodoIndent } from './sub-todo-indent';
-import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
+import { TodoRow } from './todo-row';
 
 interface FriendTodoListProps {
   /** 피드가 친구 목록에서 확인한 친구의 id. route 값은 더는 친구가 아닌 사람일 수 있어 그대로 읽지 않는다 */
@@ -119,8 +119,8 @@ FriendTodoList.Item = function Item({
       onOpen={openComments}
     >
       <TodoRow
-        left={<TodoCheckbox isSelected={todo.completed} />}
-        top={<TodoLabel isCompleted={todo.completed}>{todo.title}</TodoLabel>}
+        left={<TodoRow.Checkbox isSelected={todo.completed} />}
+        top={<TodoRow.Label isCompleted={todo.completed}>{todo.title}</TodoRow.Label>}
         middle={
           showDateTime && (
             <Text size="e1" shade={6}>
@@ -130,7 +130,7 @@ FriendTodoList.Item = function Item({
         }
         bottom={
           SubTodoPolicy.hasSubTodos(todo.subTodos) && (
-            <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
+            <TodoRow.Progress value={subTodoStats.completed} total={subTodoStats.total} />
           )
         }
         right={
@@ -159,8 +159,8 @@ FriendTodoList.Item = function Item({
             {todo.subTodos.map((subTodo) => (
               <TodoRow
                 key={subTodo.id}
-                left={<TodoCheckbox isSelected={subTodo.completed} />}
-                top={<TodoLabel isCompleted={subTodo.completed}>{subTodo.title}</TodoLabel>}
+                left={<TodoRow.Checkbox isSelected={subTodo.completed} />}
+                top={<TodoRow.Label isCompleted={subTodo.completed}>{subTodo.title}</TodoRow.Label>}
               />
             ))}
           </SubTodoIndent>

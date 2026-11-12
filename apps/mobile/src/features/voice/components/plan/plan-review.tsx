@@ -3,11 +3,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import {
-  TodoCheckbox,
-  TodoLabel,
-  TodoTitleLine,
-} from '@src/features/planning/todo/components/todo-row';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -399,7 +395,7 @@ PlanReview.CategoryHeader = function CategoryHeader({ categoryId }: { categoryId
   return <CategoryHeaderPill label={category.name} color={category.color} />;
 };
 
-PlanReview.TodoRow = function TodoRow({
+PlanReview.TodoRow = function PlanTodoRow({
   form,
   index,
   fallbackCategoryId,
@@ -454,7 +450,7 @@ PlanReview.TodoRow = function TodoRow({
 
   return (
     <HStack gap={SELECT_GAP} align="center">
-      <TodoCheckbox
+      <TodoRow.Checkbox
         accessibilityLabel={t('plan.select', { title: todo.title })}
         hitSlop={SELECT_HIT_SLOP}
         isSelected={todo.isSelected}
@@ -470,15 +466,15 @@ PlanReview.TodoRow = function TodoRow({
       >
         <HStack gap={12} align="center">
           <VStack flex={1} gap={2}>
-            <TodoTitleLine
+            <TodoRow.TitleLine
               label={
-                <TodoLabel
+                <TodoRow.Label
                   isCompleted={false}
                   lineBreakStrategyIOS="hangul-word"
                   className={cn('flex-1', unselectedClassName)}
                 >
                   {todo.title}
-                </TodoLabel>
+                </TodoRow.Label>
               }
               isPrivate={isPrivateVisibility(todo.visibility)}
             />
@@ -545,7 +541,7 @@ PlanReview.MemoRow = function MemoRow({
 
   return (
     <HStack gap={SELECT_GAP} align="center">
-      <TodoCheckbox
+      <TodoRow.Checkbox
         accessibilityLabel={t('plan.select', { title: label })}
         hitSlop={SELECT_HIT_SLOP}
         isSelected={memo.isSelected}
@@ -554,13 +550,13 @@ PlanReview.MemoRow = function MemoRow({
         }
       />
       <VStack flex={1} gap={2} className="px-4 py-3">
-        <TodoLabel
+        <TodoRow.Label
           isCompleted={false}
           numberOfLines={1}
           className={cn(!memo.isSelected && UNSELECTED_TITLE_CLASS_NAME)}
         >
           {label}
-        </TodoLabel>
+        </TodoRow.Label>
         <Text size="e1" shade={6}>
           {t('plan.memoCaption')}
         </Text>

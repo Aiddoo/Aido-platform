@@ -25,7 +25,7 @@ import {
   formatRepeatRuleLabel,
 } from '../utils/todo-repeat-summary.view-model';
 
-/** `TodoLabel`의 b3 한 줄 높이. 잠금 아이콘을 첫 줄 가운데에 맞춘다 */
+/** `TodoRow.Label`의 b3 한 줄 높이. 잠금 아이콘을 첫 줄 가운데에 맞춘다 */
 const TITLE_LINE_HEIGHT = 20;
 const REPEAT_ICON_SIZE = 13;
 const SPOKEN_WEEKDAY_SEPARATOR = ', ';
@@ -109,7 +109,7 @@ TodoRow.Loading = function Loading() {
 
 type TodoCheckboxProps = ComponentProps<typeof Checkbox>;
 
-export function TodoCheckbox({
+function TodoCheckbox({
   isSelected,
   onSelectedChange,
   isDisabled,
@@ -135,7 +135,7 @@ interface TodoLabelProps extends Omit<
   children: string;
 }
 
-export function TodoLabel({ isCompleted, children, ...props }: TodoLabelProps) {
+function TodoLabel({ isCompleted, children, ...props }: TodoLabelProps) {
   return (
     <Text
       size="b3"
@@ -155,7 +155,7 @@ interface TodoTitleLineProps {
   isPrivate: boolean;
 }
 
-export function TodoTitleLine({ label, isPrivate }: TodoTitleLineProps) {
+function TodoTitleLine({ label, isPrivate }: TodoTitleLineProps) {
   const fontScaledSize = useFontScaledSize();
 
   return (
@@ -178,11 +178,7 @@ interface TodoScheduleLineProps {
   isReminderOff?: boolean;
 }
 
-export function TodoScheduleLine({
-  todo,
-  timeLabel,
-  isReminderOff = false,
-}: TodoScheduleLineProps) {
+function TodoScheduleLine({ todo, timeLabel, isReminderOff = false }: TodoScheduleLineProps) {
   const { t, i18n } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
@@ -242,7 +238,7 @@ interface TodoProgressProps {
   tone?: TodoProgressTone;
 }
 
-export function TodoProgress({ value, total, tone = 'surface' }: TodoProgressProps) {
+function TodoProgress({ value, total, tone = 'surface' }: TodoProgressProps) {
   return (
     <HStack gap={6} align="center">
       <Meter
@@ -264,3 +260,9 @@ export function TodoProgress({ value, total, tone = 'surface' }: TodoProgressPro
     </HStack>
   );
 }
+
+TodoRow.Checkbox = TodoCheckbox;
+TodoRow.Label = TodoLabel;
+TodoRow.TitleLine = TodoTitleLine;
+TodoRow.ScheduleLine = TodoScheduleLine;
+TodoRow.Progress = TodoProgress;

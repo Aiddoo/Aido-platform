@@ -1,10 +1,6 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import {
-  TodoCheckbox,
-  TodoProgress,
-  TodoRow,
-} from '@src/features/planning/todo/components/todo-row';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
@@ -260,7 +256,7 @@ WeatherBriefing.Item = function Item({
       onPress={openActions}
       className={cn('min-h-[60px] justify-center rounded-none', todo.completed && 'opacity-60')}
       left={
-        <TodoCheckbox
+        <TodoRow.Checkbox
           accessibilityLabel={todo.title}
           isSelected={todo.completed}
           isDisabled={toggleTodo.isPending}
@@ -302,7 +298,7 @@ WeatherBriefing.Item = function Item({
         todo.subTodoProgress == null && !isChipStacked ? undefined : (
           <VStack gap={6} className="mt-1">
             {todo.subTodoProgress != null && (
-              <TodoProgress
+              <TodoRow.Progress
                 tone="onSky"
                 value={todo.subTodoProgress.completed}
                 total={todo.subTodoProgress.total}

@@ -8,7 +8,7 @@ import { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
 import { SubTodoIndent } from './sub-todo-indent';
-import { TODO_ROW_ACCESSIBILITY_ACTION, TodoCheckbox, TodoLabel, TodoRow } from './todo-row';
+import { TODO_ROW_ACCESSIBILITY_ACTION, TodoRow } from './todo-row';
 
 interface SubTodoListProps {
   children: ReactNode;
@@ -38,7 +38,7 @@ export function SubTodoList({ children, onAddPress, canAdd }: SubTodoListProps) 
   );
 }
 
-interface SubTodoListItemProps extends Omit<ComponentProps<typeof TodoCheckbox>, 'children'> {
+interface SubTodoListItemProps extends Omit<ComponentProps<typeof TodoRow.Checkbox>, 'children'> {
   label: string;
   isSelected: boolean;
   onSelectedChange: (checked: boolean) => void;
@@ -78,14 +78,14 @@ SubTodoList.Item = function Item({
       }
       onAccessibilityAction={handleAccessibilityAction}
       left={
-        <TodoCheckbox
+        <TodoRow.Checkbox
           {...checkboxProps}
           isSelected={isSelected}
           onSelectedChange={onSelectedChange}
           isDisabled={isDisabled}
         />
       }
-      top={<TodoLabel isCompleted={isSelected}>{label}</TodoLabel>}
+      top={<TodoRow.Label isCompleted={isSelected}>{label}</TodoRow.Label>}
       right={
         <IconButton
           accessibilityLabel={t('actions.more')}

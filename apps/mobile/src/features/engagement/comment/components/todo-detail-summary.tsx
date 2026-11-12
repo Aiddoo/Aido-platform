@@ -1,12 +1,7 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
-import {
-  TodoCheckbox,
-  TodoLabel,
-  TodoProgress,
-  TodoRow,
-} from '@src/features/planning/todo/components/todo-row';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
@@ -100,7 +95,7 @@ TodoDetailSummary.Task = function Task() {
   return (
     <HStack gap={12} align="start">
       <Box className="justify-center" style={{ height: fontScaledSize(TITLE_LINE_HEIGHT) }}>
-        <TodoCheckbox
+        <TodoRow.Checkbox
           testID="todo-detail-checkbox"
           accessibilityLabel={todo.title}
           className="size-6"
@@ -194,13 +189,13 @@ TodoDetailSummary.SubTodos = function SubTodos() {
 
   return (
     <VStack gap={4}>
-      <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
+      <TodoRow.Progress value={subTodoStats.completed} total={subTodoStats.total} />
       <VStack>
         {todo.subTodos.map((subTodo) => (
           <TodoRow
             key={subTodo.id}
             left={
-              <TodoCheckbox
+              <TodoRow.Checkbox
                 testID={`todo-detail-sub-todo-checkbox-${subTodo.id}`}
                 accessibilityLabel={subTodo.title}
                 isSelected={subTodo.completed}
@@ -218,7 +213,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
                 }
               />
             }
-            top={<TodoLabel isCompleted={subTodo.completed}>{subTodo.title}</TodoLabel>}
+            top={<TodoRow.Label isCompleted={subTodo.completed}>{subTodo.title}</TodoRow.Label>}
           />
         ))}
       </VStack>

@@ -54,15 +54,7 @@ import {
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { formatTodoTime } from '../../utils/todo-time.view-model';
 import { SubTodoList } from '../sub-todo-list';
-import {
-  TODO_ROW_ACCESSIBILITY_ACTION,
-  TodoCheckbox,
-  TodoLabel,
-  TodoProgress,
-  TodoRow,
-  TodoScheduleLine,
-  TodoTitleLine,
-} from '../todo-row';
+import { TODO_ROW_ACCESSIBILITY_ACTION, TodoRow } from '../todo-row';
 
 interface TodoListProps {
   /** 알림 권한은 위층 기능이라 화면이 한 번 읽어 넘긴다. 켜져 있으면 시간 옆 종 꺼짐을 그리지 않는다 */
@@ -307,7 +299,7 @@ TodoList.Item = function Item({
       }
       onAccessibilityAction={handleAccessibilityAction}
       left={
-        <TodoCheckbox
+        <TodoRow.Checkbox
           testID={`todo-checkbox-${todo.id}`}
           accessibilityLabel={todo.title}
           isSelected={todo.completed}
@@ -316,18 +308,18 @@ TodoList.Item = function Item({
         />
       }
       top={
-        <TodoTitleLine
+        <TodoRow.TitleLine
           label={
-            <TodoLabel isCompleted={todo.completed} className="flex-1">
+            <TodoRow.Label isCompleted={todo.completed} className="flex-1">
               {todo.title}
-            </TodoLabel>
+            </TodoRow.Label>
           }
           isPrivate={isPrivateVisibility(todo.visibility)}
         />
       }
       middle={
         formattedTime != null || TodoPolicy.isRecurringTodo(todo) ? (
-          <TodoScheduleLine
+          <TodoRow.ScheduleLine
             todo={todo}
             timeLabel={formattedTime}
             isReminderOff={isReminderOff && !todo.completed}
@@ -336,7 +328,7 @@ TodoList.Item = function Item({
       }
       bottom={
         SubTodoPolicy.hasSubTodos(todo.subTodos) ? (
-          <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
+          <TodoRow.Progress value={subTodoStats.completed} total={subTodoStats.total} />
         ) : undefined
       }
       right={
