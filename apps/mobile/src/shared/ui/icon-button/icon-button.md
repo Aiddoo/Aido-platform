@@ -29,12 +29,3 @@ import { IconButton, PinIcon } from '@src/shared/ui';
 
 - 기본 모양은 `min-h-11 min-w-11`이다. 모양을 줄여야 하면 `min-h-*`/`min-w-*`를 줄이고 `hitSlop`으로 44를 채운다. 부모 높이가 44 이상일 때만 안전하다.
 - 글자가 있는 버튼은 `Button`/`TextButton`, 아이콘 + 개수는 `IconCountButton`을 쓴다.
-
-## 파일 구조
-
-```
-icon-button/
-├── icon-button.tsx
-├── icon-button.md
-└── index.ts
-```

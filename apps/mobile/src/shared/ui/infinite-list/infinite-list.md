@@ -48,14 +48,3 @@ const [isRefreshing, handleRefresh] = useRefresh(() => refreshMemos(queryClient)
 
 FlashList는 행 컴포넌트를 재활용하므로 행 안 `useState`·`useMutation` 상태가 다른 항목으로 넘어갈 수 있다.
 항목 id를 `key`로 준 자식에 상태를 두거나 상태를 없앤다. 이미지는 `expo-image`의 `recyclingKey`를 쓴다.
-
-## 파일 구조
-
-```
-infinite-list/
-├── infinite-list.tsx
-├── use-fetch-next-page.ts
-├── use-fetch-next-page.test.ts
-├── infinite-list.md
-└── index.ts
-```

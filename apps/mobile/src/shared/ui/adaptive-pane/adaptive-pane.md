@@ -101,16 +101,3 @@ pane은 Stack 화면이 아니어서 네이티브 헤더가 없고, 꼭대기 �
 | ----------- | ----------- | -------------------------------------- |
 | `primary`   | `ReactNode` | 목록 영역                              |
 | `secondary` | `ReactNode` | 상세 영역. medium 이상에서 항상 렌더링 |
-
-## 파일 구조
-
-```
-adaptive-pane/
-├── adaptive-pane.tsx
-├── adaptive-pane.types.ts
-├── adaptive-pane.test.tsx
-├── get-pane-edge-insets.ts
-├── pane-area.tsx
-├── index.ts
-└── adaptive-pane.md
-```

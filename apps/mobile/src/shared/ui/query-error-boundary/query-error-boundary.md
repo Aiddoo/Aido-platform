@@ -89,15 +89,3 @@ feature의 판별 함수(`ErrorCode`로 판별)가 참일 때 "없음" 안내와
 경계는 `onlineManager` 연결 상태를 `resetKeys`에 더합니다. 오프라인이 되면 오류 화면을 풀어 멈춘 쿼리의 로딩(또는
 캐시)을 보이고, 다시 연결되면 한 번 더 풀어 새로 불러옵니다. 오프라인 안내는 루트의 `OfflineBanner` 한 곳에서만 합니다.
 온라인인데 5xx·타임아웃이면 지금처럼 블록마다 다시 시도 + 문의하기를 보입니다.
-
-## 파일 구조
-
-```
-query-error-boundary/
-├── query-error-boundary.tsx       # 컴포넌트
-├── query-error-fallback.tsx       # 기본 fallback(다시 시도 + 문의하기)
-├── query-error-actions.tsx        # 다시 시도 + 문의하기 버튼, 문의 href·시트 exit
-├── query-error-boundary.test.tsx  # 테스트
-├── query-error-boundary.md        # 이 문서
-└── index.ts                       # 배럴
-```

@@ -30,14 +30,3 @@
 ## 접근성
 
 Android는 바깥 표면 하나가 글 전체를 `accessibilityLabel`로 읽고, 단어 뷰는 `importantForAccessibility="no"`로 숨겨 TalkBack이 단어마다 끊어 읽지 않는다.
-
-## 파일 구조
-
-```
-word-wrap-text/
-├── word-wrap-text.tsx
-├── word-wrap-text.md
-├── split-text-words.ts
-├── split-text-words.test.ts
-└── index.ts
-```

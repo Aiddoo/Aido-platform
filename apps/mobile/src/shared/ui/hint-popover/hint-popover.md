@@ -39,16 +39,6 @@ import { Popover, PressableFeedback } from 'heroui-native';
 
 `children`은 앱 루트의 PortalHost에 그려져 DI·Query provider 바깥이다. 그 안에서 조회 훅을 쓰면 앱이 죽으므로 값은 `Popover`를 두는 컴포넌트에서 읽어 넘긴다.
 
-## 파일 구조
-
-```
-hint-popover/
-├── hint-popover.tsx
-├── hint-popover.md
-├── hint-popover.test.ts
-└── index.ts
-```
-
 ## 자리
 
 `placement` 쪽에 자리가 없어 상태바나 홈 표시줄과 겹치면 반대쪽으로 뒤집는다. 양쪽 다 모자라면 자리가 더 많은 쪽이다. 판단은 `getHintPlacement` 한 곳이다.

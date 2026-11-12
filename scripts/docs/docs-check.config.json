@@ -41,11 +41,6 @@
       "check": "path",
       "match": "i18n-guide.md",
       "reason": "phase 3에서 고친다"
-    },
-    {
-      "path": "apps/mobile/src/shared/ui/tinted-refresh-control/tinted-refresh-control.md",
-      "check": "ui-doc",
-      "reason": "phase 3에서 문서를 더한다"
     }
   ]
 }
