@@ -92,6 +92,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@aido/test-config": "workspace:*",
     "@aido/typescript-config": "workspace:*",
     "@aido/vitest-config": "workspace:*",
     "@nestjs/cli": "catalog:nest12",

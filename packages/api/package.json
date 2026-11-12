@@ -52,6 +52,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@aido/test-config": "workspace:*",
     "@aido/vitest-config": "workspace:*",
     "@vitest/coverage-v8": "catalog:",
     "typescript": "catalog:",

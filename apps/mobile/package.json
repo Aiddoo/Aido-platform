@@ -152,15 +152,14 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@aido/test-config": "workspace:*",
     "@aido/typescript-config": "workspace:*",
-    "@aido/vitest-config": "workspace:*",
     "@react-native/jest-preset": "catalog:expo58",
     "@testing-library/react-native": "14.1.0",
     "@types/d3-shape": "catalog:",
     "@types/jest": "catalog:expo58",
     "@types/node": "catalog:",
     "@types/react": "catalog:expo58",
-    "babel-plugin-module-resolver": "5.0.3",
     "babel-preset-expo": "catalog:expo58",
     "dependency-cruiser": "catalog:",
     "jest": "catalog:expo58",

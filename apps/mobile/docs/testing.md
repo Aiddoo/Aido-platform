@@ -69,8 +69,8 @@ lint 규칙마다 baseline 지시문이 0이다. `oxlint-disable`로 건너뛰�
 ## Jest 설정
 
 - 전역 옵션(`testTimeout`·`randomize`·`maxWorkers` 등)은 `module.exports`에, 프로젝트 옵션(`cacheDirectory`·`setupFilesAfterEnv` 등)은 `base`에 둔다. 반대로 두면 Jest가 조용히 무시한다(`jest --showConfig`로 확인).
-- 유지: `randomize`+`showSeed`, `workerIdleMemoryLimit`, `maxWorkers` 50%(`AIDO_TEST_WORKERS`로 조절), `clearMocks`·`restoreMocks`, 테스트에서도 React Compiler.
-- 추가한 것: 프로젝트마다 `cacheDirectory`(`node_modules/.cache/jest`), 전역 `testTimeout` 15초, CI(`CI=true`)에서 `logHeapUsage`(`--ci`는 Jest가 CI 환경에서 스스로 켠다), `test:handles`(`--runInBand --detectOpenHandles`), RNTL `asyncUtilTimeout` 3초, 테스트마다 `clearTestQueryClients`.
+- 유지: `randomize`+`showSeed`, `workerIdleMemoryLimit`, `maxWorkers` 50%(`AIDO_TEST_WORKERS`로 조절, `@aido/test-config`의 `resolveTestWorkers`), `clearMocks`·`restoreMocks`, 테스트에서도 React Compiler.
+- 추가한 것: 프로젝트마다 `cacheDirectory`(`node_modules/.cache/jest`), 전역 `testTimeout` 15초·`errorOnDeprecated`(지원 중단 Jest API를 바로 실패시킨다), CI(`CI=true`)에서 `logHeapUsage`(`--ci`는 Jest가 CI 환경에서 스스로 켠다), `test:handles`(`--runInBand --detectOpenHandles`), RNTL `asyncUtilTimeout` 3초, 테스트마다 `clearTestQueryClients`.
 - Node 내장 러너 테스트(`scripts/**/__tests__`, `plugins/**/__tests__`, 스토어 그림 `store-metadata/art`)는 `pnpm test:node`가 돌리고 turbo `test:node` 태스크로 CI에 걸린다. `store-listing.test.mjs`는 릴리스 `release.json`이 있어야 해 `test:store-listing`으로 따로 돈다.
 - `moduleNameMapper`의 `@aido/api*`는 한 줄이다. `jest.resolver.cjs`는 RN 0.88 preset의 경로 해석을 유지하고 실제 Reanimated·Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다([Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/)).
 - 기기 시간대에 기대는 테스트(피커·자정·서머타임)는 파일 docblock에 `@jest-environment <rootDir>/jest.time-zone-environment.cjs`와 `@time-zone America/New_York`을 적는다. 테스트 안의 `process.env.TZ`는 사본이라 Date·Intl이 따르지 않고, 이 환경이 그 파일 동안만 worker의 시간대를 바꾸고 되돌린다(`time-picker.test.tsx`).
