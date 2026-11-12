@@ -10,7 +10,7 @@ import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queri
 
 const LOADING_ROW_COUNT = 3;
 
-interface CategorySelectInputProps {
+interface CategoryPickFormProps {
   /** 처음 선택된 카테고리. 시트 안에서 고른 값은 제출할 때 onSubmit으로 전달한다. */
   defaultValue: number;
   onSubmit: (categoryId: number) => Promise<unknown> | void;
@@ -20,13 +20,13 @@ interface CategorySelectInputProps {
   excludedCategoryId?: number;
 }
 
-export function CategorySelectInput({
+export function CategoryPickForm({
   defaultValue,
   onSubmit,
   submitLabel,
   isLoading = false,
   excludedCategoryId,
-}: CategorySelectInputProps) {
+}: CategoryPickFormProps) {
   const { t } = useTranslation('todo');
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const [localCategoryId, setLocalCategoryId] = useState(defaultValue);
@@ -106,7 +106,7 @@ export function CategorySelectInput({
   );
 }
 
-CategorySelectInput.Loading = function Loading() {
+CategoryPickForm.Loading = function Loading() {
   return (
     <VStack gap={20}>
       <TextSkeleton size="b3" className="w-24" />

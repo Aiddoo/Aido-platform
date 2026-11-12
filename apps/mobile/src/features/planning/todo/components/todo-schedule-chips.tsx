@@ -1,6 +1,6 @@
 import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { CategoryPickForm } from '@src/features/planning/category/components/category-pick-form';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import type { DateKey } from '@src/shared/date/date-key';
@@ -266,8 +266,8 @@ function CategoryChip({ value, onChange, sheetOptions }: ChipProps<number>) {
     const categoryId = await openSheet<number>(
       (close) => (
         <QueryErrorBoundary>
-          <Suspense fallback={<CategorySelectInput.Loading />}>
-            <CategorySelectInput
+          <Suspense fallback={<CategoryPickForm.Loading />}>
+            <CategoryPickForm
               defaultValue={value.categoryId}
               onSubmit={close}
               submitLabel={t('add.submit')}

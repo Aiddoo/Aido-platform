@@ -1,4 +1,4 @@
-import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { CategoryPickForm } from '@src/features/planning/category/components/category-pick-form';
 import { useTranslation } from '@src/shared/i18n';
 import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
@@ -50,7 +50,7 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
 
   return (
     <TodoScopeStep step={scopeSelector}>
-      <CategorySelectInput
+      <CategoryPickForm
         defaultValue={todo.category.id}
         submitLabel={t('actions.changeSubmit')}
         isLoading={changeCategory.isPending}
@@ -77,4 +77,4 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
   );
 };
 
-TodoCategoryBottomSheet.Loading = CategorySelectInput.Loading;
+TodoCategoryBottomSheet.Loading = CategoryPickForm.Loading;

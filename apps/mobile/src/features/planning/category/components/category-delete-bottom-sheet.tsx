@@ -44,7 +44,7 @@ import {
   useGetTodoCategoryDeletionPreviewQueryOptions,
 } from '../queries/todo-category.queries';
 import { toTodoCountBucket } from '../utils/todo-category-analytics';
-import { CategorySelectInput } from './category-select-input';
+import { CategoryPickForm } from './category-pick-form';
 
 const AnimatedCard = Animated.createAnimatedComponent(Card);
 
@@ -487,8 +487,8 @@ function MoveTargetRow({
   const openMoveTargetPicker = async () => {
     const categoryId = await openSheet<number>((close) => (
       <QueryErrorBoundary>
-        <Suspense fallback={<CategorySelectInput.Loading />}>
-          <CategorySelectInput
+        <Suspense fallback={<CategoryPickForm.Loading />}>
+          <CategoryPickForm
             defaultValue={moveTargetCategoryId}
             excludedCategoryId={deletingCategoryId}
             submitLabel={t('common:actions.confirm')}

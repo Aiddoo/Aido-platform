@@ -6,7 +6,7 @@ import { Suspense } from 'react';
 
 import { createTodoCategoryWithCount } from '../__tests__/todo-category.fixtures';
 import { TODO_CATEGORY_QUERY_KEYS } from '../queries/todo-category-query-keys';
-import { CategorySelectInput } from './category-select-input';
+import { CategoryPickForm } from './category-pick-form';
 
 async function renderSelect(onSubmit: (categoryId: number) => void) {
   const queryClient = createTestQueryClient({
@@ -20,13 +20,13 @@ async function renderSelect(onSubmit: (categoryId: number) => void) {
   });
   await renderScreen(
     <Suspense fallback={null}>
-      <CategorySelectInput defaultValue={1} onSubmit={onSubmit} submitLabel="확인" />
+      <CategoryPickForm defaultValue={1} onSubmit={onSubmit} submitLabel="확인" />
     </Suspense>,
     { di: createTestDi({ ports: { queryClient } }) },
   );
 }
 
-describe('CategorySelectInput', () => {
+describe('CategoryPickForm', () => {
   it('카테고리를 라디오로 알리고 고른 카테고리를 제출한다', async () => {
     // Given
     const user = userEvent.setup();
