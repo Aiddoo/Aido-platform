@@ -138,6 +138,7 @@ showMutationError(error, {
 - 기능 fallback은 `fallback={X.Error}`로 잇고 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. 한 칸 안의 실패는 `QueryErrorFallback.Inline`이다.
 - 문의하기는 경계가 받은 오류의 진단 코드·오류 코드·요청 ID(`getErrorDiagnosis`, 4xx·5xx 모두)를 본문 첫 줄에 담아 문의 화면을 연다. 사용자·기기 식별자와 오류 문구는 넣지 않는다. route 시트 안에서는 `onInquiry`가 받은 `href`로 `sheet.close({ type: 'replace', href })`한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
 - **경계 밖 조회.** 인라인 `useQuery`의 `isError` 화면과 데이터가 있는 재조회 실패는 경계로 가지 않는다. 앱 `QueryCache`의 `onError`(`query-error-report-cache.ts`)가 받아 `QueryErrorReport`가 `feature: query_cache`로 보고한다. 데이터 없이 실패한 `useSuspenseQuery`와 붙은 observer의 `throwOnError`(함수면 그 결과)가 경계로 보내는 조회는 건너뛰고(TanStack `defaultThrowOnError`와 같은 조건), 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 기능이 조회 실패를 다시 보고하지 않는다.
+- **프리미엄 전용 거절.** 캐시의 한도 스냅샷이 늦어 프리미엄으로 물은 조회를 서버가 프리미엄 전용으로 거절하면, queryFn이 `*.error.ts` 판별 뒤 billing의 `invalidateEntitlements(client)`(`QueryFunctionContext.client`)를 기다린 다음 오류를 던진다. 기다리지 않으면 경계가 화면을 내리며 마지막 observer가 빠져 다시 받기가 취소되고 스냅샷이 되돌아간다(TanStack 조회 취소). 4xx는 재시도하지 않고 스냅샷 변경은 제안을 다시 묻지 않아 한 번으로 끝난다(AI 반복 제안 `suggestion.queries.ts`).
 - **조회에서 예상한 상태.** 경계로 던지지 않고 값으로 캐시에 둔다. 구독 요금제 조회는 `toOfferingsAvailability`로 `{ status: 'available' | 'unavailable' }`를 두고, 요금제 자리가 안내를 보일 때 `useReportStoreUnavailable`로 관측한다(설정 문제는 error, 일시 문제는 warning 메시지).
 
 ## 보고
