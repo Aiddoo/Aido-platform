@@ -420,7 +420,7 @@ function EditModeGuideTooltip() {
               colorClassName="text-gray-5"
             />
           }
-          className="min-h-0 min-w-0"
+          className="size-4 min-h-0 min-w-0"
           hitSlop={8}
           onPress={() => setIsOpen(true)}
         />

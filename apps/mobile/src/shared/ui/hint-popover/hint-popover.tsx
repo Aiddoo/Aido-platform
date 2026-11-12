@@ -141,7 +141,6 @@ export function HintPopoverContent({
     bottomInset,
     offset,
   });
-  const closeSize = fontScaledSize(CLOSE_BUTTON_SIZE);
   // 좁은 폰은 말풍선 폭이 좁아 Android에서도 단어 단위로 꺾는다
   const descriptionText = description != null && (
     <WordWrapText size="b4" shade={6} className={cn(title == null && 'flex-1')}>
@@ -152,7 +151,7 @@ export function HintPopoverContent({
     <Popover.Close
       variant="ghost"
       hitSlop={CLOSE_HIT_SLOP}
-      style={{ width: closeSize, height: closeSize }}
+      style={{ width: CLOSE_BUTTON_SIZE, height: CLOSE_BUTTON_SIZE }}
       accessibilityLabel={t('actions.close')}
       testID="hint-popover-close"
     >
