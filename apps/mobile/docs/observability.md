@@ -57,11 +57,12 @@
 
 ### 화면 조회
 
-- `useScreenTracking`(`AuthGateLayout`의 null 자식 `RouteWatchers`에서 호출)이 `screen_view.screen_name`에 실제 경로가 아닌 route 템플릿(`toScreenName(useSegments())`, 예 `/invite/[inviteCode]`)을 보낸다. 초대 코드·사용자 id가 남지 않는다. 그룹(`(app)`)과 `index`는 뺀다. 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)도 경로가 바뀌면 한 번 더 센다. Sentry 내비게이션 breadcrumb도 같은 이름을 쓴다.
+- `useScreenTracking`(`AuthGateLayout`의 null 자식 `RouteWatchers`에서 호출)이 `screen_view.screen_name`에 실제 경로가 아닌 route 템플릿(`toScreenName(useSegments())`, 예 `/invite/[inviteCode]`)을 보낸다. 초대 코드·사용자 id가 남지 않는다. 그룹(`(app)`)과 `index`는 뺀다. 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)도 경로가 바뀌면 한 번 더 센다. 상세·시트에서 돌아오면 아래 화면을 다시 센다(Expo Router·React Navigation의 표준 방식이고 이력도 이어진다). Sentry 내비게이션 breadcrumb도 같은 이름을 쓴다.
 - `screen_view`는 레이아웃 효과에서 보내 같은 이동에서 새 화면이 마운트하며 보내는 이벤트(`weather_opened`, `useTrackView`)보다 먼저 나간다. Firebase가 이벤트에 붙이는 화면 이름(`firebase_screen`)이 앞 화면이 되지 않는다. 순서는 `auth-gate-layout.test.tsx`가 지킨다.
 - 스플래시 뒤로 지나가는 입구 `/`·`/loading`·`/auth/[provider]`는 세지 않는다(1.15.2부터). 목록은 앱 경로를 아는 bootstrap(`RouteWatchers`의 `ENTRY_REDIRECT_SCREENS`)이 넘긴다. 건너뛴 화면은 앞 화면으로 기억하지 않아 `/feed` → `/` → `/feed` 왕복은 다시 세지 않는다. 콜드 스타트는 첫 화면 한 번, 로그인·로그아웃은 도착한 화면 한 번이다(`auth-gate-layout.test.tsx`).
 - URL로 바뀌는 탭 전환은 `ViewTabs`가 `view_tab_changed { screen_name, view }`를 보낸다(같은 탭을 다시 누르면 보내지 않는다). 조회 오류 화면의 다시 시도는 `error_fallback_retry_tapped { screen_name }`이다. `screen_name`은 모두 `useScreenName()`이다.
 - 넓은 화면(iPad·폴더블)에서 목록 옆 칸에 상세를 고르면 같은 전역 tracker가 좁은 화면의 상세 route 이름(`/todo/[todoId]`·`/memo/[memoId]`)으로 한 번 센다(1.15.2부터). 표는 bootstrap(`RouteWatchers`의 `PANE_DETAIL_SCREENS`: 목록 화면, 칸 query, 상세 템플릿)이 넘기고 query 이름은 기능 params 스키마의 키로 타입 검사한다. 다른 상세를 고르면 다시 세고, 칸을 닫거나 날짜 같은 query만 바뀌면 목록을 다시 세지 않는다. 칸에 상세를 연 채 접혀 상세 화면으로 넘기면 같은 보기라 다시 세지 않고, 거기서 뒤로 가면 목록을 센다(`auth-gate-layout.test.tsx`).
+- 경로 보기에 URL에서 나오는 맥락(진입점 등)이 더 필요하면 화면에 새 `*_opened` 마운트 이벤트를 만들지 않는다. 전역 tracker가 같은 효과에서 `trackScreenView(name, params)`로 붙이도록 bootstrap 표(`ENTRY_REDIRECT_SCREENS`·`PANE_DETAIL_SCREENS`와 같은 자리)에 화면별 params 순수 함수를 둔다. 받은 데이터에서 나오는 맥락은 경로 보기가 아니라 내용 노출이라 `useTrackView`가 맡는다. 지금 이 길로 옮긴 이벤트는 없다.
 
 ### 측정 규칙
 
