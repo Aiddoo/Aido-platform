@@ -10,7 +10,6 @@ import { ensureMe, invalidateMe } from '@src/features/identity/user/queries/user
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import type { AppEventMap } from '@src/shared/analytics/event-map';
-import { isConnectivityError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +17,7 @@ import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-
 import { toOAuthProvider, toOAuthProviderSlug } from '../apis/oauth.mapper';
 import {
   findLoginFailureReason,
+  isAccountDeletionUnanswered,
   isEmailAlreadyRegisteredError,
   isEmailNotVerifiedError,
   isLoginCancelledError,
@@ -295,11 +295,14 @@ export function useDeleteAccountMutationOptions() {
     // 세션 만료가 먼저 커밋되면 정리가 콜백을 지워 초안·안내 기록이 남으므로 콜백에 두지 않는다
     mutationFn: async (input: DeleteAccountInput) => {
       sessionCleanupService.beforeAccountDeletion(await findAccountId());
+      const wasOnline = onlineManager.isOnline();
       try {
         unwrap(await signInService.deleteAccount(input));
       } catch (error) {
-        // 응답을 받지 못했으면 서버가 지웠을 수 있어 이어지는 세션 종료를 로그아웃처럼 정리한다
-        if (!isConnectivityError(error)) {
+        // 서버에 닿았을 수 있으면 지웠는지 몰라 이어지는 세션 종료를 로그아웃처럼 정리한다. 닿지 않았으면 잊는다
+        if (isAccountDeletionUnanswered(error, { wasOnline })) {
+          sessionCleanupService.afterAccountDeletionUnanswered();
+        } else {
           sessionCleanupService.afterAccountDeletionRejected();
         }
         throw error;

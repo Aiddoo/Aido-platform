@@ -1,3 +1,4 @@
+import { subscribeSessionConfirmed } from '@src/core/events/session-confirmed';
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import { SESSION_EXPIRED_SEVERITY } from '@src/core/observability/telemetry-event';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
@@ -86,6 +87,11 @@ export function useAuthBoot(): void {
       track(analytics, 'session_expired', { reason });
     });
   }, [authSessionStore, errorReporter, analytics]);
+
+  useEffect(
+    () => subscribeSessionConfirmed(() => sessionCleanupService.afterSessionConfirmed()),
+    [sessionCleanupService],
+  );
 
   // 캐시 비우기는 커밋 이후여야 한다. 만료 리스너에서 같은 tick에 clear()하면 마운트된 인증 화면의 useSuspenseQuery가 재요청 → 401 → 다시 만료 루프를 돈다
   useEffect(() => {

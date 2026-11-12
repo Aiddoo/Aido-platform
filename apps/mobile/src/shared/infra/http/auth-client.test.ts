@@ -1,3 +1,4 @@
+import { subscribeSessionConfirmed } from '@src/core/events/session-confirmed';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
@@ -20,7 +21,7 @@ import { createTokenRefresher } from './token-refresher';
  * 인증 파이프라인 통합 테스트.
  *
  * `createAuthClient`와 **동일한 훅 배선**(beforeRequest 토큰 주입 + [recordApiFailureBreadcrumb,
- * createTokenRefreshHook] + retry:0)을 조립하되, env(expo-constants) 결합을 피하려
+ * createTokenRefreshHook] + retry:0, 오류 분류와 무관한 세션 확인 훅은 뺀다)을 조립하되, env(expo-constants) 결합을 피하려
  * prefixUrl만 테스트용으로 둔다. 네트워크 경계(`global.fetch`)만 fake하고 나머지는 실제 코드다.
  *
  * 검증하려는 핵심 계약(에러 분류는 KyHttpClient 단일 소유):
@@ -121,6 +122,48 @@ describe('createAuthClient: 동시 401', () => {
     expect(requestRefresh).toHaveBeenCalledTimes(1);
     expect(authorizations).toEqual(['Bearer access-2', 'Bearer access-2', 'Bearer access-2']);
     expect(endSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('createAuthClient: 세션 확인', () => {
+  it.each([
+    ['성공하면', () => successBody({}), 1],
+    ['서버 장애면', () => errorBody(503, 'SYS_0001'), 0],
+    ['업무 오류면', () => errorBody(400, 'USER_0602'), 0],
+  ])('인증 요청이 %s 세션 확인을 %s번 알린다', async (_name, respond, times) => {
+    // Given
+    global.fetch = jest.fn(async () => respond());
+    const tokenStore = createStatefulTokenStore({
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+    });
+    const sessionEpoch = createSessionEpoch();
+    const http = new KyHttpClient(
+      createAuthClient({
+        appVersion: null,
+        appBuild: null,
+        tokenStore,
+        refresh: createTokenRefresher({
+          tokenStore,
+          requestRefresh: jest.fn(),
+          sessionEpoch,
+          logger: createAppLoggerStub(),
+        }),
+        endSession: jest.fn(async () => undefined),
+        sessionEpoch,
+        logger: createAppLoggerStub(),
+        errorReporter: createErrorReporterStub(),
+      }),
+    );
+    const confirmed = jest.fn();
+    const unsubscribe = subscribeSessionConfirmed(confirmed);
+
+    // When
+    await http.get('v1/todos').catch(() => undefined);
+    unsubscribe();
+
+    // Then
+    expect(confirmed).toHaveBeenCalledTimes(times);
   });
 });
 

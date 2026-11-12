@@ -140,7 +140,7 @@ features/{area}/{feature}/
 | 화면 조각을 함께 보여 줌                     | **슬롯.** `app/`이 조립해 `ReactNode`나 컴포넌트를 prop으로 넘긴다(`ProfileRow`의 `tierChip`)                                                                                                                                               |
 | 위 층 값이나 동작이 필요함                   | **인자.** 호출한 쪽이 값·콜백을 인자, prop, 생성자 포트로 넘긴다(`PlanReview`의 `onMemoChanged`)                                                                                                                                            |
 | 다른 기능의 캐시를 갱신                      | **캐시 meta.** 대상이 정해졌으면 그 기능이 내보낸 cache helper를 부른다. 대상이 여럿이면 아래 층이 무효화하고 위 층 쿼리가 `meta.refreshOn*`로 신청한다(`refreshOnTodoChange`, `refreshOnPremiumChange`). 남의 `all` 키는 무효화하지 않는다 |
-| 캐시 밖에서 알리거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-expired`, `todo-created`, `todo-completion-changed`)                                                                                                                            |
+| 캐시 밖에서 알리거나 받는 쪽이 정해지지 않음 | **이벤트.** `core/events`(`notifications-changed`, `session-confirmed`, `session-expired`, `todo-created`, `todo-completion-changed`)                                                                                                       |
 
 ## DI·포트·수명
 
