@@ -137,8 +137,8 @@ Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureExcep
 
 mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `onError` 하나가 맡는다. 모든 mutation 옵션이 `meta.errorFeedback`을 둔다.
 
-- `{ feature, fallbackKey }`: `bootstrap/query/mutation-error-feedback.tsx`가 `haptics.notify('error')`, `toast.error(getUserFacingMessage(error), { fallback: t(fallbackKey) })`를 한 번 하고, `reportUnexpectedError`가 예상하지 못한 오류만 `captureException(error, { feature, ...getErrorReportTags(error) })`로 보낸다. 태그는 `ServerError`가 지닌 상태·서버 코드·method·endpoint다. 예상한 오류와 연결 문제는 보고하지 않는다.
-- `isHandledByFeature(error)`가 true인 오류와 `errorFeedback: false`는 전역이 알리지도 보고하지도 않는다. 기능이 보이는 오류는 예측한 것이라 보고 대상이 아니고, 기능이 모든 실패를 보이는 mutation(결제·복원 등)은 그 자리에서 `captureMessage`한다.
+- `{ feature, fallbackKey? }`: `bootstrap/query/mutation-error-feedback.tsx`의 `useMutationErrorFeedback` 본체가 `haptics.notify('error')`, `toast.error(getUserFacingMessage(error), { fallback, description: describe?.(error) })`를 한 번 하고, `reportUnexpectedError`가 예상하지 못한 오류만 `captureException(error, { feature, ...getErrorReportTags(error) })`로 보낸다. 태그는 `ServerError`가 지닌 상태·서버 코드·method·endpoint다. 예상한 오류와 연결 문제는 보고하지 않는다.
+- `isHandledByFeature(error)`가 true인 오류와 `errorFeedback: false`는 전역이 알리지도 보고하지도 않는다. 기능이 보이는 오류는 예측한 것이라 보고 대상이 아니다. `false`인 mutation이 실패를 보일 때는 `useMutationErrorFeedback()`으로 같은 보고를 함께 하고, 결제·복원처럼 도메인 신호가 따로 있으면 그 자리에서 `captureMessage`한다.
 - 캐시 단계라 기능 `onSettled`가 기다리는 재조회에 묶이지 않는다. 자세한 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)를 본다.
 
 ## AppLogger

@@ -69,9 +69,6 @@
   "pushChannel": {
     "default": "기본 알림"
   },
-  "toast": {
-    "defaultError": "문제가 생겼어요"
-  },
   "share": {
     "unsupported": "이 기기에서는 공유할 수 없어요",
     "prepareFailed": "공유 이미지를 준비하지 못했어요",

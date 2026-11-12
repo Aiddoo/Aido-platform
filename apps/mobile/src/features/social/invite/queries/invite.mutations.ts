@@ -36,7 +36,6 @@ export function useCheckInvitePreviewMutationOptions() {
     meta: {
       errorFeedback: {
         feature: 'invite',
-        fallbackKey: 'common:toast.defaultError',
         isHandledByFeature: isInviteCodeFieldError,
       },
     },
@@ -71,7 +70,7 @@ export function useRedeemInviteMutationOptions() {
         trackEvent('invite_redeem_failed', { reason: toRedeemFailureReason(error) });
       }
     },
-    meta: { errorFeedback: { feature: 'invite', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'invite' } },
   });
 }
 
@@ -90,7 +89,7 @@ export function useRotateInviteCodeMutationOptions() {
       haptics.notify('success');
       toast.success(t('invite:toast.rotated'));
     },
-    meta: { errorFeedback: { feature: 'invite', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'invite' } },
   });
 }
 

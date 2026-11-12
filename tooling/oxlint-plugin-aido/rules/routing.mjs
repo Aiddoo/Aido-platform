@@ -215,7 +215,7 @@ const MUTATION_OPTIONS_FACTORY = /MutationOptions$/u;
 const UNRESOLVED = Symbol('unresolved');
 
 const MISSING_MESSAGE =
-  'mutationOptions에 meta.errorFeedback을 둡니다. 전역으로 알리면 { feature, fallbackKey }, 기능이 모든 실패를 직접 보이거나 화면 뒤 작업이면 false입니다.';
+  'mutationOptions에 meta.errorFeedback을 둡니다. 전역으로 알리면 { feature, fallbackKey?, describe? }, 기능이 실패 이유마다 다르게 보이면(useMutationErrorFeedback) 또는 화면 뒤 작업이면 false입니다.';
 const DUPLICATE_FEEDBACK_MESSAGE =
   'meta.errorFeedback이 이미 햅틱·토스트로 알립니다. onError는 롤백과 isHandledByFeature로 뺀 오류만 다룹니다.';
 const UNCONDITIONAL_FALLBACK_TOAST_MESSAGE =

@@ -157,8 +157,8 @@ export function useUpdateTodoCategoryMutationOptions() {
 
 - `use{Verb}{X}MutationOptions()`가 `mutationOptions`를 돌려주고 화면은 `useMutation`을 직접 부른다. 변수 타입에 이름을 붙이면 `*Variables`다. 화면 이동은 호출부가 한다.
 - `mutationFn`은 Api 결과를 반드시 `unwrap`한다. `Result.err`를 그대로 돌려주면 React Query가 성공으로 본다.
-- 오류 피드백은 mutation마다 둔 `meta.errorFeedback` 하나다: `{ feature, fallbackKey, isHandledByFeature? } | false`(없으면 `aido/mutation-error-feedback`이 막는다. 펼친 옵션은 이어받는다).
-  - 객체면 앱 `MutationCache`의 캐시 단계 `onError`가 실패를 내보내고 `bootstrap/query/mutation-error-feedback.tsx`가 햅틱, 토스트(`getUserFacingMessage`, 없으면 `fallbackKey`), 예측 못한 오류 보고를 한 번에 한다. 캐시 단계라 `onSettled`가 기다리는 재조회에 묶이지 않는다(`MutationCache.subscribe`는 `onSettled`가 끝난 뒤에 알려 오프라인 재조회가 멈추면 토스트가 뜨지 않는다).
+- 오류 피드백은 mutation마다 둔 `meta.errorFeedback` 하나다: `{ feature, fallbackKey?, isHandledByFeature?, describe? } | false`(없으면 `aido/mutation-error-feedback`이 막는다. 펼친 옵션은 이어받는다).
+  - 객체면 앱 `MutationCache`의 캐시 단계 `onError`가 실패를 내보내고 `bootstrap/query/mutation-error-feedback.tsx`가 햅틱, 토스트(`getUserFacingMessage`, 없으면 `fallbackKey`·`errors:fallback`, 둘째 줄은 `describe`), 예측 못한 오류 보고를 한 번에 한다. 캐시 단계라 `onSettled`가 기다리는 재조회에 묶이지 않는다(`MutationCache.subscribe`는 `onSettled`가 끝난 뒤에 알려 오프라인 재조회가 멈추면 토스트가 뜨지 않는다).
   - 기능이 직접 보이는 오류(코드별 안내·이동·한도 시트, 칸 오류)는 `domains/{feature}.error.ts`의 판별 함수를 `isHandledByFeature`에 넘긴다. 칸 오류는 폼을 가진 호출부가 `form.setError`로 보인다.
   - `false`는 기능이 모든 실패를 직접 보이는 mutation(결제·복원, 음성 계획, 날씨 일괄 옮기기)과 화면 뒤 작업(로그아웃, 푸시 기기 보고)이다. 로그아웃의 `abandonPendingMutations`도 남은 mutation을 `false`로 바꾼다.
   - 기능 `onError`는 롤백과 `isHandledByFeature`로 뺀 오류만 다룬다(실패 추적은 다음 줄). 상세: [error-handling](../error-handling.md#mutation-오류-피드백).

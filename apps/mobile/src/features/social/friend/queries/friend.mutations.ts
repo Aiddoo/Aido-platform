@@ -49,7 +49,7 @@ export function useAcceptRequestMutationOptions() {
       // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
       await invalidateFriends(queryClient);
     },
-    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'friend' } },
   });
 }
 
@@ -71,7 +71,7 @@ export function useCancelRequestMutationOptions() {
       // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
       await queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
     },
-    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'friend' } },
   });
 }
 
@@ -94,7 +94,7 @@ export function useRejectRequestMutationOptions() {
       // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
       await queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
     },
-    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'friend' } },
   });
 }
 
@@ -146,7 +146,7 @@ export function useRemoveFriendMutationOptions() {
         queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.searches() });
       }
     },
-    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'friend' } },
   });
 }
 
@@ -174,7 +174,7 @@ export function useReorderFriendMutationOptions() {
     onError: () => {
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
-    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'friend' } },
   });
 }
 

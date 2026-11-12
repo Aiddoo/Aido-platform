@@ -72,9 +72,6 @@
   "pushChannel": {
     "default": "General notifications"
   },
-  "toast": {
-    "defaultError": "Something went wrong"
-  },
   "share": {
     "unsupported": "Sharing isn't available on this device",
     "prepareFailed": "Couldn't prepare the image to share",

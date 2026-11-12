@@ -74,14 +74,29 @@ class ApiError extends AppError implements CodedError {
 모든 mutation 옵션은 `meta.errorFeedback`을 하나 둔다. 타입은 `shared/constants/query-meta.ts`가 TanStack `Register`로 등록해 키가 틀리면 컴파일 오류다.
 
 ```typescript
-errorFeedback: { feature, fallbackKey, isHandledByFeature? } | false
+errorFeedback: { feature, fallbackKey?, isHandledByFeature?, describe? } | false
 ```
 
-| 값                                        | 전역이 하는 일                                                                                                                            |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `{ feature, fallbackKey }`                | 햅틱 한 번, `toast.error(getUserFacingMessage(error), { fallback: t(fallbackKey) })` 한 번, 예상하지 못한 오류만 `feature`로 보고         |
-| `isHandledByFeature(error)`가 true인 오류 | 아무것도 하지 않는다. 기능 `onError`(코드별 안내·이동·한도 시트)나 호출부의 `form.setError`가 한 곳에서 보인다                            |
-| `false`                                   | 아무것도 하지 않는다. 기능이 모든 실패를 직접 보이거나(결제·복원, 음성 계획, 날씨 일괄 옮기기) 화면 뒤 작업(로그아웃, 푸시 기기 보고)이다 |
+| 값                                        | 전역이 하는 일                                                                                                                                                         |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{ feature, fallbackKey? }`               | 햅틱 한 번, `toast.error(getUserFacingMessage(error), { fallback: t(fallbackKey ?? 'errors:fallback') })` 한 번, 예상하지 못한 오류만 `feature`로 보고                 |
+| `describe(error)`                         | 위 토스트의 둘째 줄. 미차감 안내처럼 기능만의 설명이 있으면 `false` 대신 객체 선언에 둔다                                                                              |
+| `isHandledByFeature(error)`가 true인 오류 | 아무것도 하지 않는다. 기능 `onError`(코드별 안내·이동·한도 시트)나 호출부의 `form.setError`가 한 곳에서 보인다                                                         |
+| `false`                                   | 전역은 아무것도 하지 않는다. 기능이 실패 이유마다 다른 안내를 보이거나(결제·복원, 음성 계획) 화면 뒤 작업(로그아웃, 푸시 기기 보고)이다. 보일 때는 아래 훅 하나로 한다 |
+
+`errorFeedback: false`인 mutation과 여러 요청을 묶은 일괄 작업(날씨 일괄 옮기기)은 전역과 같은 본체 `useMutationErrorFeedback()`(`bootstrap/query/mutation-error-feedback.tsx`)로 햅틱·토스트·보고를 한 번에 한다. 토스트만 직접 띄우면 예상하지 못한 실패가 Sentry에 남지 않는다.
+
+```typescript
+const showMutationError = useMutationErrorFeedback();
+// onError 안에서: 제목·설명은 기능이 정하고, 예상하지 못한 오류만 보고된다
+showMutationError(error, {
+  feature: 'voice',
+  title: t(`voicePlan:failure.${cause}.title`),
+  description: t(`voicePlan:failure.${cause}.description`),
+});
+```
+
+사용자 문구가 없을 때의 대체 문구 키는 `errors:fallback` 하나다(`fallbackKey`를 비우면 이 문구). `common:errorBoundary.title`은 같은 글이지만 경계 화면의 제목이라 따로 둔다.
 
 ```typescript
 // features/identity/auth/queries/auth.mutations.ts
@@ -125,7 +140,6 @@ mutationOptions({
 meta: {
   errorFeedback: {
     feature: 'invite',
-    fallbackKey: 'common:toast.defaultError',
     isHandledByFeature: isInviteCodeFieldError,
   },
 },
