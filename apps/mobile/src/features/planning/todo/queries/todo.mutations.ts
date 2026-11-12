@@ -33,12 +33,12 @@ import {
   getCachedTodoDateSpan,
   getTodoOverviewFilters,
   invalidateTodoDependentQueries,
-  invalidateTodos,
   removeTodoFromList,
   removeTodoPage,
   restoreTodo,
   settleTodoEdit,
   settleTodoReorder,
+  settleTodoSeriesWrite,
   settleTodoWrite,
   snapshotTodo,
   syncDailyCompletionWithList,
@@ -183,7 +183,7 @@ export function useChangeTodoCategoryMutationOptions() {
       if (scope == null) {
         settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
       } else {
-        invalidateTodos(queryClient);
+        settleTodoSeriesWrite(queryClient);
       }
     },
     meta: {
@@ -255,7 +255,7 @@ export function useDeleteTodoMutationOptions() {
     onSettled: (_data, error, { todoId, date, scope }, context) => {
       invalidateTodoDependentQueries(queryClient);
       if (error == null && scope != null) {
-        invalidateTodos(queryClient);
+        settleTodoSeriesWrite(queryClient);
       } else if (error == null && context?.snapshot == null) {
         invalidateTodoCategories(queryClient);
       }
@@ -360,7 +360,7 @@ export function useUpdateTodoScheduleMutationOptions() {
       if (scope == null) {
         settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
       } else {
-        invalidateTodos(queryClient);
+        settleTodoSeriesWrite(queryClient);
       }
     },
     meta: {

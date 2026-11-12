@@ -27,10 +27,10 @@ import {
   beginTodoWrite,
   findCachedTodo,
   getTodoDateSpan,
-  invalidateTodos,
   removeTodoFromList,
   saveCreatedTodo,
   settleTodoEdit,
+  settleTodoSeriesWrite,
   settleTodoWrite,
   syncDailyCompletionWithList,
   updateCachedTodoOverview,
@@ -176,6 +176,8 @@ export function useCreateRecurringTodoMutationOptions() {
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
+    // 회차를 낙관적으로 넣지 않지만, 넓게 다시 받을 때 진행 중인 체크의 낙관적 값을 덮지 않게 같은 키로 센다
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ values }: CreateRecurringTodoVariables) => {
       const result = await todoApi.createRepeatingTodo(values);
       return unwrap(result);
@@ -211,7 +213,7 @@ export function useCreateRecurringTodoMutationOptions() {
     // 반복 회차가 어느 날짜에 생겼는지 몰라 넓게 맞춘다
     onSettled: (_saved, error) => {
       if (error == null) {
-        invalidateTodos(queryClient);
+        settleTodoSeriesWrite(queryClient);
       }
     },
     meta: {
@@ -297,7 +299,7 @@ export function useUpdateTodoMutationOptions() {
       if (options?.scope == null && options?.repeat === undefined) {
         settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
       } else {
-        invalidateTodos(queryClient);
+        settleTodoSeriesWrite(queryClient);
       }
     },
     meta: {

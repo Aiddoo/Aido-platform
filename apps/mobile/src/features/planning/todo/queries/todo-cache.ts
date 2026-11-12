@@ -532,6 +532,19 @@ export function invalidateTodos(queryClient: QueryClient) {
   ]);
 }
 
+/** 반복 묶음을 만들거나 고쳐 바뀐 날짜를 모를 때 내 할 일을 넓게 맞춘다. 진행 중인 체크의 낙관적 값을 덮지 않게 마지막 쓰기만 다시 받는다 */
+export function settleTodoSeriesWrite(queryClient: QueryClient) {
+  return Promise.all([
+    settleTodoQueries(queryClient, [
+      { queryKey: TODO_QUERY_KEYS.lists() },
+      { queryKey: TODO_QUERY_KEYS.pages() },
+      { queryKey: TODO_QUERY_KEYS.completions() },
+    ]),
+    invalidateTodoCategories(queryClient),
+    invalidateTodoDependentQueries(queryClient),
+  ]);
+}
+
 /**
  * 지운 할 일의 상세는 다시 받아도 없어 버린다. 보고 있는 상세는 버리면 다시 받다 경계로 내려가므로
  * 화면을 떠날 때까지 두고 다시 받지도 않는다
