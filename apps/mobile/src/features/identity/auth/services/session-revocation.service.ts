@@ -1,11 +1,12 @@
-import { HttpStatus } from '@aido/api/errors';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { HOUR_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
+import { match } from 'ts-pattern';
 
 import type { AuthApi } from '../apis/auth.api';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
+import { getPendingRefreshFailure } from '../domains/auth.error';
 import type { PendingRevocationRepository } from '../repositories/pending-revocation.repository';
 import { refreshEnvelopeSchema } from '../schemas/auth-response.schema';
 import type { PendingRevocation } from '../schemas/pending-revocation-storage.schema';
@@ -14,6 +15,11 @@ import type { PendingRevocation } from '../schemas/pending-revocation-storage.sc
 export const PENDING_REVOCATION_TTL_MS = 24 * HOUR_MS;
 
 const LOGOUT_TIMEOUT_MS = 5_000;
+
+type IssuedAccessToken =
+  | { type: 'issued'; accessToken: string }
+  | { type: 'ended' }
+  | { type: 'retry'; status: number };
 
 interface SessionRevocationServicePorts {
   repository: PendingRevocationRepository;
@@ -74,34 +80,39 @@ export class SessionRevocationService {
       return;
     }
 
-    const accessToken = await this.#issueAccessToken(pending);
-    if (accessToken == null) {
-      await this.#repository.clear();
+    const issued = await this.#issueAccessToken(pending);
+    if (issued.type !== 'issued') {
+      await match(issued)
+        // 오프라인·잠금 중 시작처럼 늘 일어나는 일이라 기록을 두고 경고로 올리지 않는다
+        .with({ type: 'retry' }, ({ status }) =>
+          this.#logger.info(AUTH_LOG_EVENT.SESSION_REVOCATION_DEFERRED, { status }),
+        )
+        .with({ type: 'ended' }, () => this.#repository.clear())
+        .exhaustive();
       return;
     }
 
-    const result = await this.#authApi.revokeSession(accessToken, { timeout: LOGOUT_TIMEOUT_MS });
+    const result = await this.#authApi.revokeSession(issued.accessToken, {
+      timeout: LOGOUT_TIMEOUT_MS,
+    });
     if (!result.ok) {
       this.#logger.warn(AUTH_LOG_EVENT.SESSION_REVOCATION_REJECTED, { code: result.error.code });
     }
     await this.#repository.clear();
   };
 
-  /** 세션이 이미 끝났으면 null. 일시 실패는 던져 기록을 남긴다 */
-  #issueAccessToken = async (pending: PendingRevocation): Promise<string | null> => {
+  #issueAccessToken = async (pending: PendingRevocation): Promise<IssuedAccessToken> => {
     const response = await this.#requestRefresh(pending.refreshToken);
 
-    const isTransient =
-      response.status === HttpStatus.TOO_MANY_REQUESTS ||
-      response.status >= HttpStatus.INTERNAL_SERVER_ERROR;
-    if (isTransient) {
-      throw new Error(`refresh status ${response.status}`);
-    }
     if (!response.ok) {
+      const failure = getPendingRefreshFailure(response.status);
+      if (failure === 'retry') {
+        return { type: 'retry', status: response.status };
+      }
       this.#logger.info(AUTH_LOG_EVENT.SESSION_REVOCATION_ALREADY_ENDED, {
         status: response.status,
       });
-      return null;
+      return { type: 'ended' };
     }
 
     const parsed = refreshEnvelopeSchema.safeParse(await response.json().catch(() => null));
@@ -109,11 +120,11 @@ export class SessionRevocationService {
       this.#logger.warn(AUTH_LOG_EVENT.SESSION_REVOCATION_REJECTED, {
         code: 'invalid-refresh-response',
       });
-      return null;
+      return { type: 'ended' };
     }
 
     // 서버가 회전했다. 로그아웃이 실패해도 다음 시도가 재사용 감지에 걸리지 않게 새 토큰을 남긴다
     await this.#repository.save({ ...pending, refreshToken: parsed.data.data.refreshToken });
-    return parsed.data.data.accessToken;
+    return { type: 'issued', accessToken: parsed.data.data.accessToken };
   };
 }
