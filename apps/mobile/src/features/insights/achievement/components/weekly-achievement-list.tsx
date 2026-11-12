@@ -60,9 +60,12 @@ export function WeeklyAchievementList({ header }: WeeklyAchievementListProps) {
     <InfiniteList
       data={weeklyAchievements.items}
       keyExtractor={(item) => String(item.id)}
+      // 화면이 아래 safe area를 빼지 않아 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 행은 유리 밑으로 스크롤된다
+      contentInsetAdjustmentBehavior="automatic"
       contentContainerClassName="px-4"
+      // 빈 안내만 칸을 채운다. 행이 있을 때도 채우면 짧은 목록이 iOS 자동 inset만큼 끌려 올라간 채 머문다
       contentContainerStyle={{
-        flexGrow: 1,
+        flexGrow: weeklyAchievements.items.length === 0 ? 1 : 0,
         justifyContent: weeklyAchievements.items.length === 0 ? 'center' : 'flex-start',
         paddingBottom: LIST_BOTTOM_SPACE,
       }}

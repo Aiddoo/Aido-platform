@@ -38,7 +38,7 @@ export default function NotificationsScreen() {
   return (
     <StyledSafeAreaView
       className="flex-1 bg-white"
-      edges={['left', 'right', 'bottom']}
+      edges={['left', 'right']}
       testID="notification-inbox"
     >
       <Stack.Screen options={{ title: t('titles.notifications') }} />

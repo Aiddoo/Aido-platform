@@ -23,7 +23,7 @@ export default function AchievementsScreen() {
     <>
       <Stack.Screen options={{ title: t('titles.index') }} />
 
-      <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
+      <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
         <QueryErrorBoundary
           resetKeys={[getYearOfDateKey(todayKey)]}
           fallback={WeeklyAchievementListErrorFallback}
