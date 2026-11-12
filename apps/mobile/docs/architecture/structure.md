@@ -170,6 +170,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
   - `core/events/event-channel`의 리스너 오류 보고기: `core`는 DI를 모른다. `DIProvider`가 마운트 때 건다
   - 접근성 설정 store(`use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`): DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는 OS 설정 하나를 구독 하나로 나눠 읽는다
   - `shared/infra/storage/widget-storage.android`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다
+  - `features/billing/subscription/hooks/use-report-store-unavailable`의 보고한 진단 코드(`WeakMap<ErrorReporter, Set<string>>`): 같은 스토어 설정 문제를 앱 실행마다 한 번만 남긴다. 마운트 수명 DI store는 루트 "다시 시도"마다 새로 만들어져 다시 보낸다. 키가 프로세스 수명 `ErrorReporter`라 그 수명을 따른다
   - `shared/utils/create-optimistic-id`: React 밖 cache helper가 부르고 프로세스 안에서 겹치지 않아야 한다
   - `features/planning/todo/queries/todo-cache`의 쓰기 순번(`WeakMap<QueryClient, number>`): React 밖 cache helper가 먼저 시작해 늦게 끝난 쓰기 사이를 센다. 키가 `QueryClient`라 그 수명을 따른다
   - `shared/date/format/intl-formatter`의 포매터 캐시, `shared/utils/number-format`의 퍼센트 포매터(많아야 4개): 상태가 아닌 순수 캐시다
