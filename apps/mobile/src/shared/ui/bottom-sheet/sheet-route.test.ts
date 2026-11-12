@@ -4,7 +4,7 @@ function createNavigator(canGoBack: boolean): jest.Mocked<SheetRouteNavigator> {
   return { canGoBack: jest.fn(() => canGoBack), back: jest.fn(), replace: jest.fn() };
 }
 
-describe('시트 route 나가기', () => {
+describe('exitSheetRoute', () => {
   it('돌아갈 화면이 있으면 시트 route만 닫는다', () => {
     // Given
     const navigator = createNavigator(true);

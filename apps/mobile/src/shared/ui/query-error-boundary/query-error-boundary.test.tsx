@@ -12,8 +12,6 @@ import { OverlayProvider } from '../overlay/overlay-provider';
 import { useOverlay } from '../overlay/use-overlay';
 import { QueryErrorBoundary } from './query-error-boundary';
 
-const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => createErrorReporterStub();
-
 const Thrower = ({ error }: { error: Error }) => {
   throw error;
 };
@@ -52,13 +50,9 @@ describe('QueryErrorBoundary 관측', () => {
   let errorReporter: jest.Mocked<ErrorReporter>;
 
   beforeEach(() => {
-    errorReporter = createMockErrorReporter();
+    errorReporter = createErrorReporterStub();
     // React가 잡힌 렌더 에러를 console.error로 중복 출력하는 것 억제
     jest.spyOn(console, 'error').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
   });
 
   const renderWithBoundary = (error: Error) =>
@@ -72,7 +66,7 @@ describe('QueryErrorBoundary 관측', () => {
   it('일시 401(auth-transition)은 에러 이벤트 대신 warning 메시지로 즉시 남긴다', async () => {
     // Given
     // 콜드 스타트 컨테인먼트: 카드가 떠도 Sentry가 무음이면 원인 추적이 불가능하다
-    const error = new ApiError('AUTH_0101', '인증 정보가 올바르지 않아요', 401);
+    const error = new ApiError(ErrorCode.AUTH_0101, '인증 정보가 올바르지 않아요', 401);
 
     // When
     await renderWithBoundary(error);
@@ -88,7 +82,7 @@ describe('QueryErrorBoundary 관측', () => {
 
   it('fallback이 안내하는 404 상태(위치 미등록)는 예외 이슈 없이 breadcrumb만 남긴다', async () => {
     // Given
-    const error = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
+    const error = new ApiError(ErrorCode.WEATHER_1902, '위치 정보가 등록되지 않았어요', 404);
 
     // When
     await renderWithBoundary(error);

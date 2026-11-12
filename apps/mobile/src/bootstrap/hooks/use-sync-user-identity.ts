@@ -17,7 +17,7 @@ export function useSyncUserIdentity(): void {
   });
 
   useEffect(() => {
-    if (isAuthenticated && me) {
+    if (isAuthenticated && me != null) {
       analytics.setUserId(me.id);
       analytics.setUserProperties(toUserAnalyticsProperties(me));
       errorReporter.setUserId(me.id);

@@ -1,7 +1,13 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
-import { ControlField, ListGroup, RadioGroup, Separator, Skeleton } from 'heroui-native';
+import {
+  ControlField,
+  ListGroup,
+  RadioGroup,
+  Separator as HeroSeparator,
+  Skeleton,
+} from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import type { ScrollView } from 'react-native';
 
@@ -340,8 +346,8 @@ SettingsListGroup.Empty = function Empty(props: ComponentProps<typeof Result>) {
   );
 };
 
-SettingsListGroup.Separator = function CardSeparator() {
-  return <Separator className="mx-4 bg-gray-3 dark:bg-gray-2" />;
+SettingsListGroup.Separator = function Separator() {
+  return <HeroSeparator className="mx-4 bg-gray-3 dark:bg-gray-2" />;
 };
 
 export interface SettingsScreenLayoutProps extends ComponentProps<typeof ScrollView> {

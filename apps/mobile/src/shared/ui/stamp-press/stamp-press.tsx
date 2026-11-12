@@ -44,7 +44,7 @@ const STAMP_BURST = {
 } as const;
 
 /** 동작 줄이기면 찍힌 모습에서 시작해 움직이지 않는다 */
-export function getStampPressStartProgress(isReducedMotion: boolean): number {
+function getStampPressStartProgress(isReducedMotion: boolean): number {
   return isReducedMotion ? 1 : 0;
 }
 

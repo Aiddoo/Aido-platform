@@ -50,7 +50,7 @@ export function useWidgetAppEntry() {
   const previousUrlRef = useRef(url);
   const commandRestoredAtRef = useRef<number | null>(null);
   const [pendingInitialUrl, setPendingInitialUrl] = useState<string | null>(() =>
-    findWidgetRoute(url) ? url : null,
+    findWidgetRoute(url) == null ? null : url,
   );
   const isAuthenticatedRouteMounted = segments[0] === '(app)';
 
@@ -110,7 +110,7 @@ export function useWidgetAppEntry() {
       }
 
       const destination = findWidgetRoute(destinationUrl);
-      if (!destination) {
+      if (destination == null) {
         return;
       }
       setPendingInitialUrl(null);
@@ -158,7 +158,7 @@ export function useWidgetAppEntry() {
       setPendingInitialUrl(null);
       return;
     }
-    setPendingInitialUrl(findWidgetRoute(url) ? url : null);
+    setPendingInitialUrl(findWidgetRoute(url) == null ? null : url);
   }, [url, status, isAuthenticatedRouteMounted]);
 
   useEffect(() => {
@@ -198,7 +198,7 @@ export function useWidgetAppEntry() {
     }
 
     const destinationUrl = pendingCommand?.uri ?? pendingInitialUrl;
-    if (!destinationUrl || !findWidgetRoute(destinationUrl)) {
+    if (destinationUrl == null || findWidgetRoute(destinationUrl) == null) {
       widgetNavigationRepository.removeCorrupted();
       return;
     }

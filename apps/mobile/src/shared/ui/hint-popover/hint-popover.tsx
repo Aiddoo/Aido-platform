@@ -48,7 +48,7 @@ interface HintPlacementInput {
   offset: number;
 }
 
-export function getHintPlacement({
+function getHintPlacement({
   placement,
   trigger,
   contentHeight,
@@ -81,7 +81,7 @@ interface HintWidthInput {
 }
 
 /** 세로 레일·가로 화면에서도 좌우 안전 영역 안에 들어가는 폭 */
-export function getHintWidth({
+function getHintWidth({
   placement,
   trigger,
   windowWidth,

@@ -51,78 +51,88 @@ function AppLayout() {
   const headerOptions = useStackScreenOptions();
   const { t } = useTranslation(['notification', 'todo', 'ai']);
   const isPushOnboardingDue = usePushOnboardingGuard();
-  useRecordTodoCreated();
-  useRecordTodoCompletion();
-  useOfferMarketingPushAfterCompletion();
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-        animationTypeForReplace: 'push',
-        contentStyle: { backgroundColor },
-      }}
-    >
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="notifications/index"
-        options={{ ...headerOptions, title: t('notification:titles.notifications') }}
-      />
-      <Stack.Screen
-        name="nudges/[nudgeId]"
-        options={{ ...headerOptions, title: t('todo:interaction.detailTitle') }}
-      />
-      <Stack.Screen
-        name="suggestions/index"
-        options={{ ...headerOptions, title: t('ai:titles.suggestions') }}
-      />
-      {/* 푸시·위젯·링크로 날씨를 다시 열 때 Skia 장면이 겹겹이 쌓이지 않게 있던 날씨 화면으로 돌아간다 */}
-      <Stack.Screen name="weather" dangerouslySingular />
-      {/* 닫기가 헤더 오른쪽에 있는 흐름이라 아래에서 올린다. 기능으로 떠날 때 그 화면의 토스트·동의 시트가 가려지지 않게 시스템 모달은 쓰지 않는다 */}
-      <Stack.Screen
-        name="whats-new/index"
-        options={{
-          ...headerOptions,
-          title: '',
-          headerBackVisible: false,
-          animation: 'slide_from_bottom',
+    <>
+      <Stack
+        screenOptions={{
+          // 탭 묶음과 각 화면이 자기 헤더(useStackScreenOptions)를 정한다
+          headerShown: false,
+          animation: 'slide_from_right',
+          animationTypeForReplace: 'push',
+          contentStyle: { backgroundColor },
         }}
-      />
-      {/* 업셀 결제는 지금 맥락 위에 올리는 흐름이라 닫기만 둔다(오른쪽) */}
-      <Stack.Screen
-        name="paywall"
-        options={{
-          ...headerOptions,
-          title: '',
-          headerBackVisible: false,
-          animation: 'slide_from_bottom',
-        }}
-      />
-      <Stack.Screen name="memo" options={{ animation: 'slide_from_bottom' }} />
-      {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
-      <Stack.Screen
-        name="voice-notes"
-        options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
-      />
-      {SHEET_ROUTES.map((name) => (
-        <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
-      ))}
-      {/* 답하면 조건이 풀려 화면이 빠지고 피드로 돌아간다(답한 뒤에는 링크로도 열리지 않는다). 기본 redirect는 `/(app)/(tabs)`로 replace해 탭 묶음을 새로 만들어 `(mypage)`가 열리므로 뒤로 가기(`..`)를 쓴다 */}
-      <Stack.Protected guard={isPushOnboardingDue} redirectTo="..">
+      >
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen
-          name="onboarding/notifications"
+          name="notifications/index"
+          options={{ ...headerOptions, title: t('notification:titles.notifications') }}
+        />
+        <Stack.Screen
+          name="nudges/[nudgeId]"
+          options={{ ...headerOptions, title: t('todo:interaction.detailTitle') }}
+        />
+        <Stack.Screen
+          name="suggestions/index"
+          options={{ ...headerOptions, title: t('ai:titles.suggestions') }}
+        />
+        {/* 푸시·위젯·링크로 날씨를 다시 열 때 Skia 장면이 겹겹이 쌓이지 않게 있던 날씨 화면으로 돌아간다 */}
+        <Stack.Screen name="weather" dangerouslySingular />
+        {/* 닫기가 헤더 오른쪽에 있는 흐름이라 아래에서 올린다. 기능으로 떠날 때 그 화면의 토스트·동의 시트가 가려지지 않게 시스템 모달은 쓰지 않는다 */}
+        <Stack.Screen
+          name="whats-new/index"
           options={{
             ...headerOptions,
             title: '',
             headerBackVisible: false,
-            animation: 'fade',
-            gestureEnabled: false,
+            animation: 'slide_from_bottom',
           }}
         />
-      </Stack.Protected>
-    </Stack>
+        {/* 업셀 결제는 지금 맥락 위에 올리는 흐름이라 닫기만 둔다(오른쪽) */}
+        <Stack.Screen
+          name="paywall"
+          options={{
+            ...headerOptions,
+            title: '',
+            headerBackVisible: false,
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen name="memo" options={{ animation: 'slide_from_bottom' }} />
+        {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
+        <Stack.Screen
+          name="voice-notes"
+          options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
+        />
+        {SHEET_ROUTES.map((name) => (
+          <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
+        ))}
+        {/* 답하면 조건이 풀려 화면이 빠지고 피드로 돌아간다(답한 뒤에는 링크로도 열리지 않는다). 기본 redirect는 `/(app)/(tabs)`로 replace해 탭 묶음을 새로 만들어 `(mypage)`가 열리므로 뒤로 가기(`..`)를 쓴다 */}
+        <Stack.Protected guard={isPushOnboardingDue} redirectTo="..">
+          <Stack.Screen
+            name="onboarding/notifications"
+            options={{
+              ...headerOptions,
+              title: '',
+              headerBackVisible: false,
+              animation: 'fade',
+              gestureEnabled: false,
+            }}
+          />
+        </Stack.Protected>
+      </Stack>
+      <AppGroupWatchers />
+    </>
   );
+}
+
+/** 레이아웃은 내비게이터만 둔다. 할 일 이벤트를 듣는 훅은 null을 그리는 형제에서 부른다 */
+function AppGroupWatchers() {
+  useRecordTodoCreated();
+  useRecordTodoCompletion();
+  useOfferMarketingPushAfterCompletion();
+
+  return null;
 }
 
 export default AppLayout;

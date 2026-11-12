@@ -1,5 +1,5 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
-import { sessionExpiredSeverity } from '@src/core/observability/telemetry-event';
+import { SESSION_EXPIRED_SEVERITY } from '@src/core/observability/telemetry-event';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { AuthSessionPolicy } from '@src/features/identity/auth/domains/auth-session.model';
 import { track } from '@src/shared/analytics';
@@ -76,7 +76,7 @@ export function useAuthBoot(): void {
       // errorCode는 클라이언트의 결정 경로, serverErrorCode는 서버의 판정으로 별개 축이다
       errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
         feature: 'auth',
-        severity: sessionExpiredSeverity[reason],
+        severity: SESSION_EXPIRED_SEVERITY[reason],
         errorCode: reason,
         serverErrorCode,
       });
