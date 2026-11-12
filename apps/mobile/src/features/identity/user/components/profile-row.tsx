@@ -23,7 +23,7 @@ import {
   useMyPageMenuNavigate,
 } from '../hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/user.queries';
-import { formatUserHashtag } from '../utils/user-hashtag';
+import { formatUserHashtag } from '../utils/user-tag.view-model';
 import { UserAvatar } from './user-avatar';
 
 interface ProfileRowProps {

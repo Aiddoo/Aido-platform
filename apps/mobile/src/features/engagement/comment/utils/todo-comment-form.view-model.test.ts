@@ -4,7 +4,7 @@ import {
   getFocusedCommentFieldIndexAfterRemoval,
   getTrimmedContents,
   isComposerBlank,
-} from './todo-comment-form-fields';
+} from './todo-comment-form.view-model';
 
 describe('getFocusedCommentFieldIndexAfterRemoval', () => {
   it('focus 앞의 field를 지우면 index를 한 칸 당긴다', () => {

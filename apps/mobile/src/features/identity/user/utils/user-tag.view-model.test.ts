@@ -1,4 +1,4 @@
-import { formatUserHashtag } from './user-hashtag';
+import { formatUserHashtag } from './user-tag.view-model';
 
 describe('formatUserHashtag', () => {
   it('원본 사용자 태그에 해시 기호를 한 번만 붙인다', () => {

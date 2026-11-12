@@ -1,4 +1,4 @@
-import { parseInstallReferrerInviteCode } from './install-referrer';
+import { parseInstallReferrerInviteCode } from './install-referrer.view-model';
 
 describe('parseInstallReferrerInviteCode', () => {
   it.each([

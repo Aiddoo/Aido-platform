@@ -3,7 +3,7 @@ import { act, renderRouter } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
 import { createMyPageDetailRootStore } from '../stores/my-page-detail-root.store';
-import { getMyPageDetailOptions } from './my-page-detail-options';
+import { getMyPageDetailOptions } from './my-page-detail-options.view-model';
 
 // 실제 라우터로 화면이 처음 그려질 때 받는 옵션을 본다
 jest.unmock('expo-router');

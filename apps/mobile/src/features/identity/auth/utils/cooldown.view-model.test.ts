@@ -1,4 +1,4 @@
-import { getRemainingCooldownSeconds } from './cooldown';
+import { getRemainingCooldownSeconds } from './cooldown.view-model';
 
 const DEADLINE_MS = 1_700_000_060_000;
 

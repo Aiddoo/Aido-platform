@@ -7,7 +7,7 @@ import { ANDROID_WIDGET_DEFINITIONS } from '../constants/widget.constants';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
-import { createInitialWidgetProps } from '../utils/widget-initial-props';
+import { createInitialWidgetProps } from '../utils/widget-initial-props.view-model';
 
 interface StoredAndroidWidgetRendererPorts<Rendered> {
   snapshotRepository: {

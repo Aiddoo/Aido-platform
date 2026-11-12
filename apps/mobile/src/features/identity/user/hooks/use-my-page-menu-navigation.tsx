@@ -12,7 +12,7 @@ import {
 } from 'react';
 import { Keyboard } from 'react-native';
 
-import { isMyPageMenuItemSelected } from '../utils/my-page-menu-navigation';
+import { isMyPageMenuItemSelected } from '../utils/my-page-menu.view-model';
 
 export type MyPageMenuPathname = Extract<Href, string>;
 

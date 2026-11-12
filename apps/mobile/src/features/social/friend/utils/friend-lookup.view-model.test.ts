@@ -1,5 +1,5 @@
 import { createFriendUser } from '../__tests__/friend.fixtures';
-import { findFriendById } from './find-friend-by-id';
+import { findFriendById } from './friend-lookup.view-model';
 
 describe('무한 쿼리 페이지에서 친구 선택', () => {
   it('첫 페이지에 없는 친구도 뒤 페이지에서 찾는다', () => {

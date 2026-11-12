@@ -1,7 +1,7 @@
 import { ApiError, NetworkError, ParseError, ServerError, TimeoutError } from '@src/shared/errors';
 
 import { SubscriptionErrors } from '../domains/subscription.error';
-import { getDiagnosticCode } from './subscription-diagnostic-code';
+import { getDiagnosticCode } from './subscription-diagnostic.view-model';
 
 describe('getDiagnosticCode', () => {
   it.each<[string, unknown, string]>([

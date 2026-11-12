@@ -1,4 +1,4 @@
-import { shouldShowCoachmarks } from './should-show-coachmarks';
+import { shouldShowCoachmarks } from './whats-new-coachmarks.view-model';
 
 const settledInput = {
   isOnboardingSettled: true,

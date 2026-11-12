@@ -14,7 +14,7 @@ import { hasFreeTrial, SubscriptionPolicy } from '../domains/subscription.model'
 import { useReportStoreUnavailable } from '../hooks/use-report-store-unavailable';
 import { useSelectedPlanId, useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
-import type { StoreUnavailable } from '../utils/offerings-availability';
+import type { StoreUnavailable } from '../utils/offerings-availability.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import {
   toSubscriptionLoadFailure,

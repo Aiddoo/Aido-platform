@@ -1,4 +1,4 @@
-import { findWidgetRoute, isWidgetRouteShown } from './widget-navigation-link';
+import { findWidgetRoute, isWidgetRouteShown } from './widget-navigation-link.view-model';
 
 describe('위젯 앱 진입 경로 검증', () => {
   it.each(['aido', 'aido-dev', 'aido-preview'])('%s 위젯의 오늘 생성 요청을 유지한다', (scheme) => {

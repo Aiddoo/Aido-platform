@@ -4,7 +4,7 @@ import { fromEpochMs, toEpochMs } from '@src/shared/date/instant';
 import { useNow } from '@src/shared/hooks/use-now';
 import { useCallback, useState } from 'react';
 
-import { getRemainingCooldownSeconds } from '../utils/cooldown';
+import { getRemainingCooldownSeconds } from '../utils/cooldown.view-model';
 
 /** 1초 타이머를 이어 세면 iOS 백그라운드에서 멈춘 만큼 늦어져 마감 시각과의 차이를 틱과 앱 복귀 때 다시 계산한다 */
 export function useCooldown() {

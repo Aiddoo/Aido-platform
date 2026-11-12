@@ -5,7 +5,7 @@ import { match } from 'ts-pattern';
 import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
 import type { SubscriptionError } from '../domains/subscription.error';
 import { type SubscriptionOffering } from '../domains/subscription.model';
-import { getDiagnosticCode } from './subscription-diagnostic-code';
+import { getDiagnosticCode } from './subscription-diagnostic.view-model';
 
 export interface StoreUnavailable {
   kind: 'setup' | 'temporary';

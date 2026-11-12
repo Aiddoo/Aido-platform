@@ -2,7 +2,10 @@ import { err, ok } from '@src/core/errors/result';
 
 import { SubscriptionErrors } from '../domains/subscription.error';
 import { type SubscriptionOffering } from '../domains/subscription.model';
-import { toOfferingsAvailability, toStoreUnavailableReport } from './offerings-availability';
+import {
+  toOfferingsAvailability,
+  toStoreUnavailableReport,
+} from './offerings-availability.view-model';
 
 const offering: SubscriptionOffering = { identifier: 'default', plans: [] };
 

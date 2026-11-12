@@ -1,6 +1,6 @@
 import { createPremiumAccess } from '../__tests__/premium-access.fixtures';
 import { createUser } from '../__tests__/user.fixtures';
-import { toUserAnalyticsProperties } from './user-analytics-properties';
+import { toUserAnalyticsProperties } from './user-analytics';
 
 describe('toUserAnalyticsProperties', () => {
   it('스토어 결제 사용자만 premium_source를 store로 남긴다', () => {

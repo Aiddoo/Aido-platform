@@ -1,4 +1,4 @@
-import { maskEmail } from './mask-email';
+import { maskEmail } from './email.view-model';
 
 describe('maskEmail', () => {
   it('앞 두 글자와 도메인만 남긴다', () => {

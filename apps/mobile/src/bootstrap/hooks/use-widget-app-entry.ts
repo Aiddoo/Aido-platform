@@ -7,7 +7,7 @@ import {
   getWidgetOpenedDestination,
   isWidgetRouteShown,
   isWidgetWakeLink,
-} from '@src/features/device/widget/utils/widget-navigation-link';
+} from '@src/features/device/widget/utils/widget-navigation-link.view-model';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';

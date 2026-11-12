@@ -1,5 +1,5 @@
 import { createTodoComment } from '../__tests__/todo-comment.fixtures';
-import { getTodoCommentBackAction } from './get-todo-comment-back-action';
+import { getTodoCommentBackAction } from './todo-comment-back.view-model';
 
 describe('getTodoCommentBackAction', () => {
   it.each(['reply', 'edit'] as const)('%s 중이면 화면보다 작성기를 먼저 닫는다', (type) => {

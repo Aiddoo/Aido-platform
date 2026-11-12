@@ -8,7 +8,7 @@ import { type ComponentProps, useRef, useState } from 'react';
 import { findResendCooldown } from '../domains/auth.error';
 import { useCooldown } from '../hooks/use-cooldown';
 import { verificationCodeSchema } from '../schemas/verify-email-params.schema';
-import { maskEmail } from '../utils/mask-email';
+import { maskEmail } from '../utils/email.view-model';
 import { VerificationCodeInput } from './verification-code-input';
 
 interface EmailVerificationCodeStepProps extends Pick<

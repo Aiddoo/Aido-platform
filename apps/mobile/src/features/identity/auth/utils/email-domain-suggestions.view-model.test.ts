@@ -1,4 +1,4 @@
-import { getEmailDomainSuggestions } from './get-email-domain-suggestions';
+import { getEmailDomainSuggestions } from './email-domain-suggestions.view-model';
 
 describe('getEmailDomainSuggestions', () => {
   it('@를 입력하기 전이나 아이디가 없으면 추천을 표시하지 않는다', () => {

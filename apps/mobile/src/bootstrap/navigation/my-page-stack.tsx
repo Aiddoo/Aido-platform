@@ -1,5 +1,5 @@
 import { useMyPageDetailRootStore } from '@src/bootstrap/providers/di-context';
-import { getMyPageDetailOptions } from '@src/features/identity/user/utils/my-page-detail-options';
+import { getMyPageDetailOptions } from '@src/features/identity/user/utils/my-page-detail-options.view-model';
 import {
   Box,
   getPaneEdgeInsets,

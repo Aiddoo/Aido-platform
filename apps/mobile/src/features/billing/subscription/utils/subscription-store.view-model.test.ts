@@ -1,4 +1,4 @@
-import { findSubscriptionStore } from './subscription-store';
+import { findSubscriptionStore } from './subscription-store.view-model';
 
 describe('findSubscriptionStore', () => {
   it.each([

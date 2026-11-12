@@ -1,4 +1,4 @@
-import { createManagementUrl } from './subscription-links';
+import { createManagementUrl } from './subscription-links.view-model';
 
 describe('createManagementUrl', () => {
   it.each([

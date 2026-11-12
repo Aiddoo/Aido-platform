@@ -1,5 +1,8 @@
 import en from '../../../../shared/i18n/locales/en/widget.json';
-import { createInitialWidgetProps, createRegisteredWidgetProps } from './widget-initial-props';
+import {
+  createInitialWidgetProps,
+  createRegisteredWidgetProps,
+} from './widget-initial-props.view-model';
 
 describe('createRegisteredWidgetProps', () => {
   it('첫 동기화 전 문구는 영어 키로 넘기고 위젯 번들이 기기 언어로 바꾸게 표시한다', () => {

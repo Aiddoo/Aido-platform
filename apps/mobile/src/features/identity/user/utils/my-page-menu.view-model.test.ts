@@ -1,4 +1,4 @@
-import { isMyPageMenuItemSelected } from './my-page-menu-navigation';
+import { isMyPageMenuItemSelected } from './my-page-menu.view-model';
 
 describe('isMyPageMenuItemSelected', () => {
   it('같은 경로면 선택된 항목이다', () => {

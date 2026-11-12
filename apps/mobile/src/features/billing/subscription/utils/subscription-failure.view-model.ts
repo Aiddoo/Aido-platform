@@ -4,8 +4,8 @@ import {
   type SubscriptionFailureCause,
   SubscriptionFailurePolicy,
 } from '../domains/subscription-failure.model';
-import type { StoreUnavailable } from './offerings-availability';
-import { getDiagnosticCode } from './subscription-diagnostic-code';
+import type { StoreUnavailable } from './offerings-availability.view-model';
+import { getDiagnosticCode } from './subscription-diagnostic.view-model';
 
 export type SubscriptionLoadTarget = 'receipt' | 'plans';
 export type SubscriptionActionTarget = 'purchase' | 'restore';

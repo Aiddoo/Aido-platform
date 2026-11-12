@@ -54,13 +54,13 @@ import {
   createTodoCommentDraftKey,
   getTodoCommentDraftSourceUpdatedAt,
 } from '../../utils/todo-comment-draft';
+import { getCommentFormMaxHeight } from '../../utils/todo-comment-form.geometry';
 import {
   getFocusedCommentFieldIndexAfterRemoval,
   getTrimmedContents,
   isComposerBlank,
   findComposerTarget,
-} from '../../utils/todo-comment-form-fields';
-import { getCommentFormMaxHeight } from '../../utils/todo-comment-form-layout';
+} from '../../utils/todo-comment-form.view-model';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
 import { useExpandThread } from '../todo-comment-expansion';
 

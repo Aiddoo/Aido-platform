@@ -4,7 +4,10 @@ import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { H2, Text, VStack } from '@src/shared/ui';
 
-import { findSubscriptionStore, type RenewalNoticeStore } from '../utils/subscription-store';
+import {
+  findSubscriptionStore,
+  type RenewalNoticeStore,
+} from '../utils/subscription-store.view-model';
 import { BlockedFeature } from './blocked-feature';
 
 export function Paywall() {

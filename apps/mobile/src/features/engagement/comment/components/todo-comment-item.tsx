@@ -62,7 +62,7 @@ import {
   toEditFormValues,
   toReplyFormValues,
 } from '../schemas/todo-comment-form.schema';
-import { findComposerTarget } from '../utils/todo-comment-form-fields';
+import { findComposerTarget } from '../utils/todo-comment-form.view-model';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import {
   playTodoCommentHeartBurst,

@@ -2,7 +2,7 @@ import { rememberColdStartLink } from '@src/bootstrap/navigation/cold-start-link
 import {
   createInviteLinkOpenStamp,
   findInviteSystemPath,
-} from '@src/features/social/invite/utils/invite-link';
+} from '@src/features/social/invite/utils/invite-link.view-model';
 import { ENV } from '@src/shared/config/env';
 
 const stampInviteLinkOpen = createInviteLinkOpenStamp();

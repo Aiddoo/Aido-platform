@@ -38,7 +38,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import type { FriendUser } from '../domains/friend.model';
 import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
-import { getFriendStripRevealOffset } from '../utils/friend-strip-scroll';
+import { getFriendStripRevealOffset } from '../utils/friend-strip-scroll.geometry';
 
 /** 아바타 40 + 양쪽 선택 링 2 + 링 안쪽 여백 2. 선택 여부와 관계없이 늘 같은 크기다 */
 const AVATAR_FRAME_SIZE = 48;

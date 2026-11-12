@@ -2,7 +2,7 @@ import {
   USER_LIST_CONTENT_STYLE,
   UserList,
 } from '@src/features/identity/user/components/user-list';
-import { formatUserHashtag } from '@src/features/identity/user/utils/user-hashtag';
+import { formatUserHashtag } from '@src/features/identity/user/utils/user-tag.view-model';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {

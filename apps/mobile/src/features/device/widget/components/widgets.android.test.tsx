@@ -3,7 +3,7 @@ import { Children, isValidElement, type ReactNode } from 'react';
 import type { WidgetInfo } from 'react-native-android-widget';
 
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
-import { createInitialWidgetProps } from '../utils/widget-initial-props';
+import { createInitialWidgetProps } from '../utils/widget-initial-props.view-model';
 import { renderAndroidWidget } from './widgets.android';
 
 type NodeProps = {

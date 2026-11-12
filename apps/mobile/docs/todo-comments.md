@@ -185,7 +185,7 @@ features/engagement/comment/
               todo-comment-session.tsx  todo-comment-keyboard-gesture.tsx  todo-detail-summary.tsx
               comment-report-bottom-sheet.tsx
   utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  todo-comment-replies.view-model.ts
-         todo-comment-form-fields.ts  todo-comment-form-layout.ts  get-todo-comment-back-action.ts
+         todo-comment-form.view-model.ts  todo-comment-form.geometry.ts  todo-comment-back.view-model.ts
   schemas/ todo-comment-form.schema.ts  todo-comment-draft.schema.ts  todo-comment-params.schema.ts  todo-comment-request.schema.ts
 ```
 

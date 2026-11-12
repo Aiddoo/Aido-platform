@@ -1,4 +1,4 @@
-import type { getWidgetOpenedDestination } from '../utils/widget-navigation-link';
+import type { getWidgetOpenedDestination } from '../utils/widget-navigation-link.view-model';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
