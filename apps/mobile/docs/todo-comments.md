@@ -167,7 +167,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 
 ## 분석
 
-`constants/todo-comment.events.ts`의 `AppEventMap`만 쓴다. 이벤트와 매개변수는 [측정 계획](./analytics-measurement-plan.md#1-2-이벤트-기능별)에 있다.
+[`constants/todo-comment.events.ts`](../src/features/engagement/comment/constants/todo-comment.events.ts)의 `AppEventMap`만 쓴다. GA 측정기준·측정항목은 [GA 콘솔 설정](./analytics-ga-console.md#c-1-댓글-측정기준측정항목)에 있다.
 
 ## 파일
 

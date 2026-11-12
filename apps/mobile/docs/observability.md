@@ -1,6 +1,6 @@
 # 관측(Analytics · Sentry · 로그)
 
-무엇을 언제 어디로 남기는지의 규칙이다. 이벤트 목록과 GA 콘솔 설정은 [측정 계획](./analytics-measurement-plan.md)에 있다. 서버·앱 공통 로그 키 형식은 [서버 관측](../../api/docs/observability.md#이벤트-키와-필드-서버앱-공통)을 따른다.
+무엇을 언제 어디로 남기는지의 규칙이다. 이벤트 이름·파라미터는 `constants/*.events.ts`의 `AppEventMap`, 퍼널·지표는 [측정 계획](./analytics-measurement-plan.md), 콘솔 값은 [GA 콘솔 설정](./analytics-ga-console.md)에 있다. 서버·앱 공통 로그 키 형식은 [서버 관측](../../api/docs/observability.md#이벤트-키와-필드-서버앱-공통)을 따른다.
 
 ## 원칙
 

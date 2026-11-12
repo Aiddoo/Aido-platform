@@ -13,11 +13,6 @@
       "reason": "phase 3에서 줄인다"
     },
     {
-      "path": "apps/mobile/docs/analytics-measurement-plan.md",
-      "check": "limit",
-      "reason": "phase 3에서 줄인다"
-    },
-    {
       "path": "apps/mobile/docs/auth.md",
       "check": "limit",
       "reason": "phase 3에서 줄인다"

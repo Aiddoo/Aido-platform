@@ -1,276 +1,27 @@
 # Aido GA4(Firebase) 측정 계획
 
-**기준**: 앱 1.15.0 · Firebase 프로젝트 `aido-997b5` · 코드 대조 2026-11-06. 실제 수집은 배포 후 DebugView로 검증한다.
-
-**원칙**: 이벤트 이름과 파라미터의 단일 원본은 feature의 `constants/{feature}.events.ts`와 앱 공통 이벤트를 담은 `src/shared/analytics/event-map.ts`(`AppEventMap`)다. 이 문서는 무엇을 보고 어떤 결정을 내리는지와 GA 콘솔 설정값을 적는다. 남기는 규칙은 [observability.md](./observability.md)를 따른다.
+GA로 무엇을 보고 어떤 결정을 내리는지, 퍼널·지표 정의를 고칠 때 읽는다. Firebase 프로젝트는 `aido-997b5`이고 실제 수집은 배포 후 DebugView로 검증한다.
 
 말한 내용·전사·할 일 제목·메모 내용은 어떤 이벤트에도 싣지 않는다.
 
----
+## 1. 이벤트
 
-## 1. 이벤트 카탈로그
+이벤트 이름·파라미터는 코드의 `AppEventMap`이 원본이라 이 문서에 다시 적지 않는다. 이름 규칙과 파라미터 타입은 `aido/analytics-event-catalog`가 막고, 보내는 자리·측정 규칙(내부 트래픽, 매출 원본, 사용자 속성 `is_premium`·`subscription_status`·`premium_source`, 가입·로그인 한 번)은 [관측](./observability.md#analytics)이 원본이다.
 
-전송 경로: `track()`·`useTrack().trackEvent()` → `createFirebaseAnalytics` → `logEvent`. 자동 화면 수집은 꺼져 있고(`firebase.json`), `useScreenTracking`이 경로가 바뀔 때마다 `screen_view`를 보낸다.
+| 영역               | 이벤트 파일                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 앱 공통            | [event-map](../src/shared/analytics/event-map.ts)(`feature_action_success`·`local_day_changed`·`view_tab_changed` 등)                                                                                                                                                                                                                                                                                                                                                                              |
+| identity           | [auth](../src/features/identity/auth/constants/auth.events.ts) · [consent](../src/features/identity/consent/constants/consent.events.ts) · [preference](../src/features/identity/preference/constants/preference.events.ts) · [user](../src/features/identity/user/constants/user.events.ts)                                                                                                                                                                                                       |
+| planning           | [todo](../src/features/planning/todo/constants/todo.events.ts) · [category](../src/features/planning/category/constants/todo-category.events.ts)                                                                                                                                                                                                                                                                                                                                                   |
+| notes·voice        | [memo](../src/features/notes/memo/constants/memo.events.ts) · [voice](../src/features/voice/constants/voice.events.ts)                                                                                                                                                                                                                                                                                                                                                                             |
+| social             | [friend](../src/features/social/friend/constants/friend.events.ts) · [invite](../src/features/social/invite/constants/invite.events.ts) · [nudge](../src/features/social/nudge/constants/todo-nudge.events.ts) · [moderation](../src/features/social/moderation/constants/moderation.events.ts)                                                                                                                                                                                                    |
+| engagement·알림    | [comment](../src/features/engagement/comment/constants/todo-comment.events.ts) · [notification](../src/features/notification/constants/notification.events.ts) · [weather](../src/features/weather/constants/weather.events.ts)                                                                                                                                                                                                                                                                    |
+| insights·assistant | [achievement](../src/features/insights/achievement/constants/achievement.events.ts) · [report](../src/features/insights/report/constants/report.events.ts) · [suggestion](../src/features/assistant/suggestion/constants/suggestion.events.ts)                                                                                                                                                                                                                                                     |
+| billing·support    | [subscription](../src/features/billing/subscription/constants/subscription.events.ts) · [inquiry](../src/features/support/inquiry/constants/inquiry.events.ts)                                                                                                                                                                                                                                                                                                                                     |
+| device·app-config  | [activation](../src/features/device/activation/constants/activation.events.ts) · [coachmark](../src/features/device/coachmark/constants/coachmark.events.ts) · [store-review](../src/features/device/store-review/constants/store-review.events.ts) · [widget](../src/features/device/widget/constants/widget.events.ts) · [app-version](../src/features/app-config/app-version/constants/app-version.events.ts) · [whats-new](../src/features/app-config/whats-new/constants/whats-new.events.ts) |
 
-### 1-1. 사용자 식별·속성 (`bootstrap/hooks/use-sync-user-identity.ts`)
-
-| 항목                  | 값                                       | 비고                                                                 |
-| --------------------- | ---------------------------------------- | -------------------------------------------------------------------- |
-| `setUserId`           | 내부 계정 id(`me.id`), 비인증이면 `null` | 이메일은 넣지 않는다                                                 |
-| `is_premium`          | `"true"`·`"false"`                       | ADMIN과 보상 기간(GRANT)을 포함한다. 대시보드 연속성 때문에 유지한다 |
-| `subscription_status` | `SUBSCRIPTION_STATUS` 값                 | 유지                                                                 |
-| `premium_source`      | `store`·`grant`·`admin`·`none`           | 유료 전환은 `store`로 센다                                           |
-
-비인증이면 `Analytics.clearUser()`가 id와 속성을 모두 지운다.
-
-### 1-2. 이벤트 (기능별)
-
-`id` 표기는 숫자 엔터티 id다. 개인정보는 아니지만 고카디널리티라 커스텀 측정기준으로 등록하지 않는다.
-
-**화면**
-
-| 이벤트                        | 파라미터                                                         | 의미                                                                                                     |
-| ----------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `screen_view`                 | `screen_name` = `screen_class` = 라우트 템플릿(`/todo/[todoId]`) | 모든 화면                                                                                                |
-| `view_tab_changed`            | `screen_name`(라우트 템플릿) · `view`(그 화면 보기 스키마 값)    | URL로 바뀌는 탭(`ViewTabs`)을 다른 탭으로 바꿈. 같은 탭을 다시 누르면 보내지 않는다. 1.15.2부터          |
-| `error_fallback_retry_tapped` | `screen_name`                                                    | 조회 오류 화면(`QueryErrorFallback`·`.Inline`)의 다시 시도. 어느 화면이 자주 실패하는지 본다. 1.15.2부터 |
-
-**인증 / 세션**
-
-| 이벤트                                                            | 파라미터                                                                                                                                                    | 발생 위치                                                                   | 의미            |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------- |
-| `auth_signup`                                                     | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                                                                          | 이메일 가입, 소셜 신규 가입(`isNewUser`)                                    | 가입            |
-| `auth_login`                                                      | `method`: 위와 같다                                                                                                                                         | 이메일 로그인, 소셜 기존 계정                                               | 로그인          |
-| `auth_login_failed`                                               | `method`: 위와 같다 · `reason`: `email_not_verified`·`invalid_credentials`(이메일만)·`network`·`rejected`(서버 거부)·`unknown`(앱이 판단한 창·코드 실패 등) | 로그인·소셜 창·코드 교환 mutation `onError`. 사용자가 닫은 창은 세지 않는다 | 로그인 이탈     |
-| `auth_signup_step_viewed`                                         | `step`: `name`·`email`·`password`·`passwordConfirm`·`verification`                                                                                          | 가입 `useStepper` `onStepChange`. 뒤로 가서 다시 보면 또                    | 가입 퍼널       |
-| `auth_email_verified` / `auth_email_verification_resent`          | `source`: `sign_up`·`login`                                                                                                                                 | 인증 코드 확인·다시 보내기 mutation `onSuccess`                             | 이메일 인증     |
-| `auth_password_reset_step_viewed`                                 | `step`: `email`·`verificationCode`·`newPassword`·`newPasswordConfirm`                                                                                       | 비밀번호 찾기 `onStepChange`                                                | 재설정 퍼널     |
-| `auth_password_reset_requested` / `auth_password_reset_completed` | –                                                                                                                                                           | 코드 발송(다시 보내기 포함)·재설정 mutation `onSuccess`                     | 재설정          |
-| `auth_password_changed`                                           | –                                                                                                                                                           | 비밀번호 바꾸기 mutation `onSuccess`                                        | 비밀번호 변경   |
-| `auth_logout` / `auth_account_deleted`                            | –                                                                                                                                                           | 로그아웃 / 탈퇴                                                             | 이탈 신호       |
-| `auth_social_linked` / `auth_social_unlinked`                     | `provider`                                                                                                                                                  | 계정 연결 설정                                                              | 계정 연동       |
-| `session_expired`                                                 | `reason`: `refresh-rejected`·`invalid-refresh-response`·`tokens-missing`                                                                                    | `use-auth-boot`                                                             | 비자발 로그아웃 |
-
-**할 일 / 카테고리**
-
-| 이벤트                                       | 파라미터                                                                                                                                                                                                                 | 의미                                               |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- |
-| `todo_created`                               | `source` · `creation_entry` · `is_recurring`·`has_scheduled_time`·`is_all_day`(bool) · `visibility`: `PUBLIC`·`PRIVATE` · 반복이면 `repeat_frequency`: `DAILY`·`WEEKLY`·`MONTHLY`, `repeat_end`: `NEVER`·`UNTIL`·`COUNT` | 할 일 추가 시트에서 만들었을 때                    |
-| `todo_completed`                             | `todo_id`(id) · `is_completed`(bool)                                                                                                                                                                                     | 체크 토글(완료·해제 모두)                          |
-| `todo_edited`                                | `todo_id`(id) · `field`(키 콤마 결합)                                                                                                                                                                                    | 수정·카테고리 변경                                 |
-| `todo_deleted`                               | `todo_id`(id)                                                                                                                                                                                                            | 삭제                                               |
-| `todo_series_edited` / `todo_series_deleted` | `scope`: `THIS_ONLY`·`THIS_AND_FOLLOWING`·`ALL`                                                                                                                                                                          | 반복 할 일 범위 수정·삭제                          |
-| `todo_series_stopped`                        | –                                                                                                                                                                                                                        | 반복 끝내기                                        |
-| `todo_item_added` / `todo_item_reordered`    | `todo_id`(id)                                                                                                                                                                                                            | 하위 할 일 추가·순서 변경                          |
-| `todo_item_updated` / `todo_item_deleted`    | `todo_id`·`item_id`(id)                                                                                                                                                                                                  | 하위 할 일 수정·삭제                               |
-| `todo_item_completed`                        | `todo_id`·`item_id`(id) · `is_completed`                                                                                                                                                                                 | 하위 할 일 체크                                    |
-| `todo_reordered`                             | `source`: `feed`                                                                                                                                                                                                         | 피드 순서 변경                                     |
-| `category_created`                           | `color`: 팔레트 hex, 팔레트 밖은 `other`                                                                                                                                                                                 | 카테고리 생성                                      |
-| `category_updated`                           | `field`: `name`·`color`                                                                                                                                                                                                  | 카테고리 수정                                      |
-| `category_delete_sheet_viewed`               | `todo_count_bucket`: `0`·`1_9`·`10_49`·`50_plus` · `has_series`(bool)                                                                                                                                                    | 할 일·반복이 있는 카테고리의 삭제 시트가 보였을 때 |
-| `category_delete_cancelled`                  | `todo_count_bucket`                                                                                                                                                                                                      | 삭제 시트를 지우지 않고 닫았을 때                  |
-| `category_deleted`                           | `todo_handling`: `move`·`delete`·`empty` · `todo_count_bucket`                                                                                                                                                           | 카테고리 삭제(옛 서버로 옮긴 것도 `move`)          |
-| `category_reordered`                         | `source`: `settings`                                                                                                                                                                                                     | 카테고리 순서 변경                                 |
-
-`todo_created.source`는 `manual`, `creation_entry`는 `manual`·`recurring`이다. 계획 저장은 `todo_created`를 보내지 않고 `voice_plan_applied`를 보낸다. AI 제안 수락은 `ai_suggestion_acted`만 보낸다.
-
-**댓글**
-
-| 이벤트                          | 파라미터                                              | 시점                                               |
-| ------------------------------- | ----------------------------------------------------- | -------------------------------------------------- |
-| `todo_comment_created`          | `todo_id`(id) · `is_reply` · `chain_size`(int)        | 댓글·답글 게시 성공                                |
-| `todo_comment_updated`          | `todo_id` · `is_reply`                                | 글 고치기 성공. 1.15.2부터                         |
-| `todo_comment_deleted`          | `todo_id` · `is_reply`                                | 삭제 성공                                          |
-| `todo_comment_liked`            | `todo_id` · `is_liked` · `via`: `button`·`double_tap` | 좋아요 요청 성공(이미 좋아요면 더블탭해도 안 보냄) |
-| `todo_comment_replies_expanded` | `todo_id` · `loaded_count`(int)                       | 답글 펼침·더 보기로 받은 페이지 도착               |
-| `todo_comment_reply_started`    | `todo_id` · `target`: `comment`·`reply`               | "답글 달기"를 누를 때                              |
-| `todo_comment_hint_dismissed`   | `kind`: `double_tap` · `reason`: `close`·`used`       | 더블탭 안내를 닫거나 처음 더블탭했을 때            |
-| `todo_comment_sorted`           | `todo_id` · `sort`: `POPULAR`·`LATEST`                | 정렬 변경                                          |
-
-**친구 / 재촉 / 신고**
-
-| 이벤트                                                                                           | 파라미터                                       | 의미                    |
-| ------------------------------------------------------------------------------------------------ | ---------------------------------------------- | ----------------------- |
-| `friend_request_sent`/`_cancelled`/`_accepted`/`_rejected`, `friend_removed`, `friend_reordered` | –                                              | 친구 그래프             |
-| `friend_search_submitted`                                                                        | `query_length_bucket`: `2_3`·`4_7`·`8_plus`    | 검색어는 보내지 않음    |
-| `friend_strip_hint_dismissed`                                                                    | `hint`: `invite`·`search`                      |                         |
-| `nudge_sent` / `remind_nudge_sent`                                                               | –                                              | 재촉                    |
-| `nudge_replied`                                                                                  | `reply_kind`(`ReplyToNudgeInput['replyKind']`) |                         |
-| `nudge_thanks_sent`                                                                              | `recipient_count`(int)                         |                         |
-| `user_blocked` / `user_unblocked`                                                                | –                                              | 상대 id는 보내지 않음   |
-| `content_reported`                                                                               | `target_type` · `reason`(서버 enum)            | 신고 상세는 보내지 않음 |
-
-**친구 초대 (바이럴 루프)**
-
-사용자 id·초대 코드는 보내지 않는다.
-
-| 이벤트                 | 파라미터                                                                                                                   | 시점                                                                     |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `invite_entry_tapped`  | `entry`: `friends_empty`·`friend_strip_empty`·`friend_limit_dialog`·`mypage_card`·`activation_checklist`·`all_done_banner` | 초대 진입점 탭                                                           |
-| `invite_link_shared`   | `channel`(`InviteShareChannel`)                                                                                            | 공유 완료                                                                |
-| `invite_link_opened`   | `source`: `universal_link`·`app_scheme`·`kakao`·`install_referrer`·`code_entry`                                            | 링크가 착지한 화면에서 `source+openedAt`당 한 번, 설치 리퍼러, 코드 입력 |
-| `invite_redeemed`      | `outcome`(`RedeemOutcome`) · `friendship`(`InviteFriendship`·`NONE`)                                                       | 초대 코드 사용 성공                                                      |
-| `invite_redeem_failed` | `reason`: `invalid_code`·`not_found`·`rotated`·`self`·`already_redeemed`·`disabled`·`friend_limit`·`blocked`·`unknown`     | 사용 실패                                                                |
-
-**기능 발견 / 활성화**
-
-| 이벤트                                    | 파라미터                                                                                                                                                     | 의미                                                                                            |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `feature_hub_impression`                  | `campaign_id` · `source`: `auto`·`feed_reentry`·`mypage`                                                                                                     | 새로운 기능 흐름 열림                                                                           |
-| `feature_hub_dismissed`                   | 위와 같다                                                                                                                                                    | CTA·완료 없이 화면을 떠남                                                                       |
-| `feature_card_cta`                        | `campaign_id` · `feature`: `memo_ai`·`friend_search`·`todo_reorder`·`category_reorder`·`todo_creation`·`friend_invite`·`voice_quick`·`voice_note` · `source` | 단계 CTA                                                                                        |
-| `feature_action_success`                  | `campaign_id` · `feature`                                                                                                                                    | CTA 뒤 실제 성공(귀속)                                                                          |
-| `whats_new_step_viewed`                   | `release_id` · `step` · `index`(int) · `source`                                                                                                              | 흐름 한 번에 단계당 한 번                                                                       |
-| `whats_new_completed`                     | `release_id` · `source`                                                                                                                                      | 마지막 단계에서 완료                                                                            |
-| `whats_new_cta_pressed`                   | `release_id` · `step`                                                                                                                                        | 단계 CTA 누름                                                                                   |
-| `activation_completed`                    | `days_since_signup`(int). 가입 7일 안에만 남는다(1.15.0 이하 앱은 `campaign_id`도 보냈다)                                                                    | 활성화 체크리스트 완료                                                                          |
-| `coachmark_shown` / `coachmark_dismissed` | `kind`(`CoachmarkKind`)                                                                                                                                      | 기능 안내 말풍선 노출·닫기                                                                      |
-| `widget_opened`                           | `destination`: `todo`·`feed`·`add_todo`                                                                                                                      | 위젯을 눌러 앱이 그 목적지를 열었을 때(로그인 전·다른 계정·만료된 탭은 세지 않는다). 1.15.2부터 |
-| `store_review_requested`                  | `moment`: `all_todos_done`·`paw_print_celebration`                                                                                                           | OS 리뷰 창을 요청한 순간(OS가 띄웠는지는 모른다). 1.15.2부터                                    |
-
-**AI / 메모**
-
-| 이벤트                            | 파라미터                                            | 의미                                                                                                                                       |
-| --------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ai_parse_used`                   | `success`(bool)                                     | 메모 AI 나누기 결과. 할 일 쪽은 `voice_plan_*`로 본다                                                                                      |
-| `ai_suggestion_acted`             | `action`: `accept`·`dismiss`                        | AI 제안 처리                                                                                                                               |
-| `ai_report_viewed`                | `report_id`(id) · `report_type`: `WEEKLY`·`MONTHLY` | 저장된 리포트 상세                                                                                                                         |
-| `ai_data_sharing_consent_changed` | `agreed`(bool)                                      | AI 데이터 제공 동의 변경                                                                                                                   |
-| `ai_consent_prompt_shown`         | `is_renewal`(bool)                                  | AI 동의 안내 시트가 뜸. `is_renewal`은 이미 동의한 사람에게 바뀐 내용을 다시 알린 것. 1.15.2부터                                           |
-| `ai_consent_prompt_dismissed`     | `is_renewal`(bool)                                  | [나중에]·끌어 내림으로 답 없이 닫음. 부른 화면이 사라져 닫힌 것은 세지 않는다. 동의는 `ai_data_sharing_consent_changed`로 본다. 1.15.2부터 |
-| `memo_created`                    | –                                                   |                                                                                                                                            |
-| `memo_updated` / `memo_deleted`   | `memo_id`(id)                                       |                                                                                                                                            |
-| `memo_pin_toggled`                | `memo_id` · `is_pinned`                             |                                                                                                                                            |
-| `memo_converted_to_todo`          | `memo_id`                                           | 수동 1건 변환                                                                                                                              |
-| `memo_converted_to_todos`         | `memo_id` · `todo_count`(int) · `source`: `ai`      | 메모 AI 검토 저장 때 `voice_plan_applied`와 함께 보낸다. 대시보드를 옮길 때까지 유지                                                       |
-
-**음성**
-
-빠른 말하기(`quick`)와 말로 메모하기(`note`)가 같은 이벤트를 쓰고 `mode`로 구분한다. 받아쓰기(`dictation`)는 보내지 않는다. 길이는 구간(`lt_30s`·`30s_3m`·`3m_10m`·`10m_30m`)으로만 보낸다.
-
-| 이벤트                          | 파라미터                                                                                                                                               | 시점과 의미                                                                                                                                                                                                                                            |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `voice_capture_start_tapped`    | `mode` · `entry`: `add_todo_sheet`·`memo_tab`·`quick_voice_upgrade`                                                                                    | 시작을 누름. 한도·동의·마이크를 묻기 전이라 막혀도 보낸다. 다른 화면이 요청한 자동 시작(새 기능 소개의 `startVoiceNote=1` → `memo_tab`, 할 일 추가 시트의 `startVoice` → `add_todo_sheet`)도 그 `entry`로 센다. 말로 메모하기 시작 버튼의 연타는 한 번 |
-| `voice_permission_requested`    | `mode` · `status`: `granted`·`denied`                                                                                                                  | 시스템 마이크·음성 인식 권한 창 결과. 받아쓰기는 보내지 않는다                                                                                                                                                                                         |
-| `voice_capture_started`         | `mode` · `entry`: `add_todo_sheet`·`memo_tab`·`quick_voice_upgrade` · `locale` · `on_device`(bool)                                                     | 인식 시작. `on_device`는 아래를 본다                                                                                                                                                                                                                   |
-| `voice_capture_finished`        | `mode` · `outcome`: `completed`·`cancelled`·`empty`·`upgraded` · `duration_bucket` · `pause_count`(int)                                                | 끝내기·취소. `upgraded`는 들은 글자를 말로 메모하기로 넘긴 것                                                                                                                                                                                          |
-| `voice_capture_failed`          | `mode` · `reason`: 인식 오류 코드(`SPEECH_ERROR_CODES`)·`planning-failed`                                                                              | 복구할 수 없는 오류                                                                                                                                                                                                                                    |
-| `voice_capture_resumed`         | `mode` · `cause`: `app_background`·`interrupted`·`user`·`limit`                                                                                        | 멈춘 뒤 이어 듣기                                                                                                                                                                                                                                      |
-| `voice_capture_locale_changed`  | `mode` · `locale` · `on_device`(bool)                                                                                                                  | 듣는 중 인식 언어 변경. `voice_capture_started.locale`은 시작 값 그대로다                                                                                                                                                                              |
-| `voice_recognizer_stalled`      | `mode` · `on_device`(bool)                                                                                                                             | 글자 없이 6초가 지났고 그동안 말소리 크기로 3초 넘게 들려 인식기를 다시 열었을 때. 글자 없이 연달아 멈춰도 30초에 한 번                                                                                                                                |
-| `voice_offline_model_requested` | `locale` · `result`: `downloaded`·`scheduled`·`dialog-opened`·`unavailable`·`declined`                                                                 | Android 기기 인식 언어 모델 받기                                                                                                                                                                                                                       |
-| `voice_plan_generated`          | `source`: `quick_voice`·`quick_text`·`voice_note`·`memo` · `todo_count`·`memo_count`·`duplicate_count`(int) · `charged`(bool, 메모 나누기에는 없음)    | 계획 도착                                                                                                                                                                                                                                              |
-| `voice_plan_failed`             | `source` · `cause`: `network`·`limit`·`too-long`·`in-progress`·`rejected`·`key-conflict`·`source-memo-missing`·`memo-limit`·`ai-unavailable`·`unknown` | 계획 실패. 동의가 필요해 막힌 경우(`AI_1311`)는 보내지 않는다                                                                                                                                                                                          |
-| `voice_plan_applied`            | `source` · `todo_count`·`memo_count`·`skipped_count`(int)                                                                                              | 저장. 핵심 전환                                                                                                                                                                                                                                        |
-| `voice_note_deleted`            | `is_digested`(bool)                                                                                                                                    | 말로 메모 삭제(툴바). 요약을 받은 뒤인지                                                                                                                                                                                                               |
-| `voice_note_key_point_played`   | `position_bucket`                                                                                                                                      | 핵심 포인트를 눌러 그 지점부터 들음                                                                                                                                                                                                                    |
-
-`on_device` 값은 `expo-speech-recognizer.ts`의 `shouldRecognizeOnDevice`가 정한다.
-
-| 플랫폼·모드       | 값                                                 | 이유                                                                                                                      |
-| ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| iOS 빠른 말하기   | 항상 `false`                                       | iOS 한국어는 서버 인식이 더 정확하다(2026-11 실기기 비교)                                                                 |
-| iOS 말로 메모하기 | 설치된 언어이고 기기 기본 언어와 같으면 `true`     | 끊기지 않게 기기 인식을 우선한다. 확인 안 된 언어를 기기 인식으로 시작하면 SDK가 네트워크로 넘어가 권한 오류(1700)가 난다 |
-| Android           | 기기 인식을 지원하고 언어 모델이 설치됐으면 `true` |                                                                                                                           |
-
-**한도·결제 유도 / 구독**
-
-`feature` 값은 `ai_parse`·`cheer_limit`·`nudge_limit`·`friend_limit`·`category_limit`·`ai_report`·`ai_suggestion`·`reminder_time`·`app_icon`·`voice_note`다. 빠른 말하기와 메모 AI는 `ai_parse`, 긴 녹음은 `voice_note`로 센다. `surface`(`EntitlementGateSurface`)는 `add_todo_sheet`·`memo_detail`·`category_create`·`friend_request`·`poke_banner`·`todo_nudge`·`suggestions`·`notification_center`·`app_icon_settings`·`reminder_settings`·`voice_note`다. `presentation`(`UpsellPresentation`)은 `sheet`·`toast`다. 같은 기능을 그날 시트에서 [나중에]로 닫았으면 `toast`다.
-
-| 이벤트                           | 파라미터                                                                                  | 시점과 의미                                                             |
-| -------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `premium_gate_shown`             | `feature` · `surface` · `presentation`                                                    | 한도·프리미엄 안내 시트·토스트(`useEntitlementGate`)                    |
-| `premium_gate_cta_tapped`        | `feature` · `surface` · `presentation`                                                    | 그 시트·토스트에서 프리미엄 보기                                        |
-| `premium_upsell_dismissed`       | `feature` · `surface`                                                                     | 시트를 [나중에]·밀어 닫기로 닫음. 그날은 토스트로 바뀐다                |
-| `limit_reached_shown`            | `feature` · `surface` · `trigger`: `precheck`·`server`                                    | 횟수·개수 한도 안내                                                     |
-| `limit_reached_cta_tapped`       | `feature` · `surface`                                                                     | 한도 안내에서 프리미엄 보기                                             |
-| `paywall_viewed`                 | `view`: `status`·`plans` · `feature?`                                                     | 요금제를 받아 페이월이 보였을 때. 막혀서 들어왔으면 `feature`           |
-| `paywall_plan_selected`          | `plan_type`: `annual`·`monthly` · `is_trial`                                              | 고른 요금제를 바꿨을 때. 처음 골라 둔 연간은 세지 않는다                |
-| `trial_timeline_viewed`          | `plan_type`                                                                               | 체험 일정을 페이월에서 처음 보였을 때. 요금제를 오가도 페이월마다 한 번 |
-| `paywall_benefit_viewed`         | `feature` · `index`: 혜택 칩 번호(1부터)                                                  | 혜택 장을 보였을 때. 처음 장을 포함해 페이월마다 장별로 한 번           |
-| `plan_comparison_term_opened`    | `feature`                                                                                 | 비교표 이름을 눌러 설명(Popover)을 열었을 때                            |
-| `checkout_step_viewed`           | `step`: `status`·`welcome`                                                                | 구독 화면 단계가 보였을 때. `welcome`은 결제 직후 시작 화면             |
-| `premium_quickstart_tapped`      | `action`: `voice_note`·`ai_report`·`app_icon`                                             | 시작 화면에서 바로 해 볼 기능을 눌렀을 때                               |
-| `purchase_failed`                | `reason`: `network`·`server`·`store_unavailable`·`store_error` · `plan_type` · `is_trial` | 문의로 안내한 결제 실패. 취소·승인 대기는 세지 않는다                   |
-| `purchase_cancelled`             | `plan_type` · `is_trial`                                                                  | 스토어 결제 창에서 직접 취소                                            |
-| `subscription_started`           | `product_id` · `plan_type` · `is_trial`                                                   | 결제 UI 단계. 매출에 쓰지 않는다                                        |
-| `subscription_restored`          | –                                                                                         | 복원                                                                    |
-| `subscription_restore_failed`    | `reason`: `network`·`server`·`store_unavailable`·`store_error`                            | 복원이 문의로 안내한 실패로 끝났다. 복원할 구매가 없는 것은 세지 않는다 |
-| `subscription_management_opened` | `store`: `app_store`·`play_store`                                                         | 스토어 구독 관리 화면을 열었다                                          |
-
-`is_trial`은 스토어가 그 요금제에 무료 체험을 줄 수 있다고 했는지다(결제 전 값). 실제로 체험이 시작됐는지는 서버 `/me`의 `premiumIsTrial`과 RevenueCat `rc_trial_start`가 원천이다.
-
-**업셀 퍼널** — 한 번의 사용자 행동에 이벤트는 한 번이다. 시트 버튼을 여러 번 눌러도 답은 처음 하나로 끝나고, 페이월 조회는 요금제를 받은 뒤 한 번이다.
-
-| 단계              | 이벤트                                                            | 파라미터                                                |
-| ----------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
-| 1. 막힘           | `limit_reached_shown`(횟수·개수 한도만)                           | `feature` · `surface` · `trigger`                       |
-| 2. 안내 노출      | `premium_gate_shown`                                              | `feature` · `surface` · `presentation`(`sheet`·`toast`) |
-| 3a. 프리미엄 보기 | `premium_gate_cta_tapped`(+ 한도면 `limit_reached_cta_tapped`)    | `feature` · `surface` · `presentation`                  |
-| 3b. 나중에        | `premium_upsell_dismissed`                                        | `feature` · `surface`                                   |
-| 4. 페이월         | `paywall_viewed`                                                  | `view` · `feature?`                                     |
-| 5. 요금제 바꿈    | `paywall_plan_selected`                                           | `plan_type` · `is_trial`                                |
-| 6. 결제           | `subscription_started` / `purchase_cancelled` / `purchase_failed` | `plan_type` · `is_trial`(+ `product_id` / `reason`)     |
-| 7. 매출           | RevenueCat `purchase`·`rc_trial_start`                            | RC 정의                                                 |
-
-**알림 / 배지 / 설정 / 생명주기**
-
-| 이벤트                                       | 파라미터                                                                                                                                   | 의미                                                                                                                  |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `push_notification_opened`                   | `type`(`NOTIFICATION_TYPE` 31종) · `action` · `app_state`(`cold`·`background`·`foreground`) · `campaign_key?` · `variant_id?` · `purpose?` | 푸시 탭. 탭 하나에 한 번. `cold`는 꺼진 앱을 연 탭, `background`는 뒤에 있던 앱(앞으로 온 지 1초 안 포함)을 연 탭이다 |
-| `notification_center_opened`                 | `type` · `destination`                                                                                                                     | 알림함 항목 탭                                                                                                        |
-| `marketing_push_opted_in`                    | `source`: `completion_sheet`·`settings`                                                                                                    | 광고성 푸시 수신 동의. 서버가 기록한 뒤 동의 mutation이 센다                                                          |
-| `marketing_push_prompt_shown`                | `source`: `completion_sheet`                                                                                                               | 첫 할 일 완료 뒤 혜택·소식 시트가 보였을 때                                                                           |
-| `marketing_push_prompt_dismissed`            | `source`: `completion_sheet`                                                                                                               | 동의 안내 닫기                                                                                                        |
-| `marketing_push_opted_out`                   | `source`: `push_action`·`settings`                                                                                                         | 푸시 버튼·설정 토글로 해지                                                                                            |
-| `marketing_opted_in` / `marketing_opted_out` | `source`: `settings`                                                                                                                       | 마케팅 정보 수신 동의·철회(설정 토글). 1.15.2부터                                                                     |
-| `push_permission_prompt_shown`               | `source`: `onboarding`·`todo_time`·`feed_card`·`settings`·`paywall` · `step`                                                               | 권한 안내가 보였을 때                                                                                                 |
-| `push_permission_prompt_dismissed`           | `source` · `step`                                                                                                                          | 안내를 닫음(가입 직후 화면은 헤더 닫기·Android 뒤로 가기, 카드는 14일 숨김)                                           |
-| `push_permission_requested`                  | `source`(위 다섯 + `invite_welcome`) · `status`: 요청 뒤 `PushPermission.status`                                                           | 시스템 권한 창 결과. 권한 mutation `onSuccess`에서 입구마다 한 번                                                     |
-| `push_permission_settings_opened`            | `source`                                                                                                                                   | 권한을 되찾으려고 OS 설정을 열었을 때(허용한 뒤 설정 줄에서 연 것은 제외). mutation `onSuccess`에서 한 번             |
-| `app_update_store_opened`                    | `source`: `settings`                                                                                                                       | 버전 확인 결과 스토어를 엶                                                                                            |
-| `support_inquiry_submitted`                  | `category`: `BUG_REPORT`·`FEATURE_REQUEST`·`PAYMENT`·`OTHER`                                                                               | 문의 접수 성공(내용은 싣지 않는다). 1.15.2부터                                                                        |
-| `badge_summary_viewed`                       | `badge_type`: `perfect`·`almost`·`completed` · `completion_rate`(num) · `week_label`(string)                                               | 주간 배지                                                                                                             |
-| `badge_item_tapped`                          | `badge_type` · `completion_rate` · `year` · `week`                                                                                         |                                                                                                                       |
-| `badge_share_attempted`                      | `badge_type` · `year` · `week`                                                                                                             |                                                                                                                       |
-| `badge_empty_cta_tapped`                     | –                                                                                                                                          |                                                                                                                       |
-| `badge_opened_from_notification`             | –                                                                                                                                          | `push_notification_opened{type=WEEKLY_ACHIEVEMENT}`와 겹친다                                                          |
-| `profile_edited`                             | `field`(키 콤마 결합)                                                                                                                      |                                                                                                                       |
-| `settings_changed`                           | `setting`(예 `pushEnabled`·`font_scale`·`language`·`theme`·`voice_storage`·`app_icon`(1.15.2부터)) · `value`(문자열)                       | 설정 변경                                                                                                             |
-| `local_day_changed`                          | `trigger`: `midnight_timer`·`foreground`·`calendar_change`                                                                                 | 진단성. 제품 지표 가치는 낮다                                                                                         |
-| `device_timezone_changed`                    | `offset_bucket`: `same`·`under_3h`·`3h_to_8h`·`8h_plus` · `notice_shown`(bool)                                                             | 시간대 변경을 서버에 알린 뒤 한 번. 이름·도시는 보내지 않는다. 다음 버전 판단용: 여행 빈도, 기기 예약 전환의 가치     |
-| `offline_banner_shown`                       | –                                                                                                                                          | 오프라인 전환마다(`connectOnlineManager`)                                                                             |
-
-`push_permission_requested{source=todo_time}`은 1.15.2부터 늘 수 있다. 이전에는 시트가 OS 답보다 먼저 닫히면 호출부 콜백이 사라져 빠졌고, 지금은 mutation 옵션이 남긴다. 1.15.2 전후를 비교할 때 이 차이를 뺀다. `invite_welcome`은 카드 노출(`push_permission_prompt_shown`)을 보내지 않아 노출 분모가 없다. 전환은 `invite_redeemed` 대비로만 본다.
-
-**날씨**
-
-| 이벤트                               | 파라미터                                                                                                  | 시점                                            |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `weather_opened`                     | `entry`: `feed_badge`·`notification`·`other`                                                              | 날씨 화면 진입                                  |
-| `weather_briefing_shown`             | `kind`: `rainy`·`stormy`·`snowy`·`hot`·`rain_later`·`clear`·`tomorrow_morning`·`dry`·`no_scheduled_todos` | 브리핑이 처음 보였을 때                         |
-| `weather_location_registered`        | `result`: `located`·`denied`·`unavailable`                                                                | 화면에서 위치 확인이 처음 끝났을 때             |
-| `weather_report_failed`              | `cause`: `no_location`·`provider_unavailable`·`offline`·`other`                                           | 리포트 실패 화면(위치 등록 대기 중 로딩은 제외) |
-| `weather_location_permission_result` | `result`: `granted`·`needs_permission`·`denied`                                                           | 위치 권한 요청 결과                             |
-| `weather_alert_opened`               | `severity`(`WeatherAlertSeverity`)                                                                        | 기상 특보 열람                                  |
-| `weather_reschedule_opened`          | `todo_count`(int) · `reason`(`WeatherRescheduleReason`)                                                   | 브리핑에서 옮기기 시트                          |
-| `weather_reschedule_applied`         | `moved_count`(int) · `reason`                                                                             | 옮기기 적용                                     |
-| `weather_reschedule_undone`          | `moved_count`(int) · `reason`                                                                             | 실행 취소                                       |
-| `weather_todo_suggestion_opened`     | `reason`: `rain_later`·`clear`                                                                            | 날씨 기반 할 일 제안 열기                       |
-
-### 1-3. 점검 결과
-
-| 분류           | 내용                                                                                                                                                                                                                   |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 개인정보       | 이벤트 파라미터에 이메일·본문·좌표·검색어·초대 코드가 없다. `screen_view`는 라우트 템플릿이라 id가 없다                                                                                                                |
-| 고카디널리티   | `todo_id`·`item_id`·`memo_id`·`report_id`(측정기준 등록 금지), `todo_edited.field`·`profile_edited.field`(콤마 조합), `settings_changed.value`, `category_created.color`, `week_label`                                 |
-| GA 한도        | 이벤트 이름 40자 이하: 최장 `weather_location_permission_result`(34). 예약 접두사(`firebase_`·`google_`·`ga_`) 충돌 없음. 값 100자 이하: `field` 조합이 이론상 넘을 수 있다                                            |
-| 이름 불일치    | 대부분 `object_verb(과거형)`이다. 예외: `todo_completed{is_completed:false}`(해제도 completed), `notification_center_opened`(항목 탭), `ai_parse_used`(현재형), `remind_nudge_sent`                                    |
-| 중복 의미      | `subscription_started` ↔ RC `purchase` ↔ 자동 `in_app_purchase`, `badge_opened_from_notification` ↔ `push_notification_opened{type=WEEKLY_ACHIEVEMENT}`, `memo_converted_to_todos` ↔ `voice_plan_applied{source=memo}` |
-| 타입 느슨      | `push_notification_opened.type`·`action`, `notification_center_opened.type`가 `string`이다                                                                                                                             |
-| 보내지 않는 값 | `voice_plan_failed`의 `consent-required`                                                                                                                                                                               |
-
----
+- 보내는 곳은 `git grep -n "'<이벤트 이름>'" -- apps/mobile/src`로 찾는다. 전송은 `track()`·`useTrack().trackEvent()` → `createFirebaseAnalytics` → `logEvent`이고, 자동 화면 수집은 꺼 두고(`firebase.json`) `useScreenTracking`이 route 템플릿으로 `screen_view`를 보낸다.
+- 숫자 엔터티 id(`todo_id`·`memo_id` 등)는 개인정보는 아니지만 고카디널리티라 커스텀 측정기준으로 등록하지 않는다([GA 콘솔 설정](./analytics-ga-console.md#b-커스텀-측정기준)).
 
 ## 2. RevenueCat → GA 이벤트 (Firebase 연동)
 
@@ -295,8 +46,6 @@
 - RC 연동에는 스트림별 Firebase App ID + API secret을 넣는다. 운영 App ID만 등록돼 있으면 dev·preview 빌드의 app instance id는 매칭되지 않는다. 운영만 대상으로 둔다.
 - 매출 통화(구매 통화 vs USD)와 총액·순액은 RC에서 USD 순액(수수료·세금 제외)을 권장한다. 대시보드 수치를 결정용 매출과 맞춘다.
 
----
-
 ## 3. 서버(apps/api) 비즈니스 이벤트
 
 서버는 pino 로그 키(`*-log.events.ts`)와 DB로 남긴다. GA로 보내지 않는다.
@@ -312,8 +61,6 @@
 | 날씨 리포트 생성·프로바이더 실패       | `weather.*`, `weatherkit.*`                                                                      | 서버 지표(Sentry·로그)                                                                               |
 
 Measurement Protocol(서버 → GA)은 도입하지 않는다. 위 신호는 SQL로 더 정확히 계산되고, GA로 보내면 app_instance_id 매핑·중복·세션 왜곡만 생긴다.
-
----
 
 ## 4. 의사결정 프레임: 핵심 질문 → KPI → 소스 → 리포트
 
@@ -332,165 +79,22 @@ Measurement Protocol(서버 → GA)은 도입하지 않는다. 위 신호는 SQL
 | 수익화: 매출   | 매출·체험 전환은?                            | 일 매출 · 신규 구매 수 · 체험 시작 수 · 체험→유료 전환                                                      | `purchase`(value), `rc_trial_start`                                                                                                 | 개요 카드 + 수익 창출 기본 보고서 |
 | 이탈·결제 문제 | 왜 떠나나, 결제 실패 규모는?                 | 주간 `rc_cancellation`·`rc_expiration`·`rc_billing_issue` 사용자 수 · 해지 전 30일 활동량                   | RC 이벤트 + `subscription_status`                                                                                                   | 자유형식 + 위험 잠재고객          |
 
----
+## 5. GA 콘솔 설정
 
-## 5. GA 콘솔 설정 스펙
-
-콘솔 상태는 코드로 확인할 수 없다. 콘솔을 바꿀 때 이 값을 기준으로 삼는다.
-
-### (a) 키 이벤트 (6개)
-
-| 이벤트                 | 이유                   |
-| ---------------------- | ---------------------- |
-| `auth_signup`          | 획득                   |
-| `activation_completed` | 활성화 북극성          |
-| `invite_link_shared`   | 바이럴 행동            |
-| `invite_redeemed`      | 바이럴 성과            |
-| `rc_trial_start`       | 수익화 선행            |
-| `purchase`             | 매출 (RevenueCat 원본) |
-
-해제: `in_app_purchase`(자동 수집, 기본 키 이벤트로 잡혀 있으면 끈다), `subscription_started`(키 이벤트로 지정하지 않는다).
-
-### (b) 커스텀 측정기준
-
-**사용자 범위 (3 / 25)**
-
-| 사용자 속성           | 표시 이름     |
-| --------------------- | ------------- |
-| `is_premium`          | 프리미엄 여부 |
-| `subscription_status` | 구독 상태     |
-| `premium_source`      | 프리미엄 출처 |
-
-**이벤트 범위 (24 / 50)**
-
-| 파라미터         | 표시 이름       | 주로 쓰는 이벤트                                                                                        |
-| ---------------- | --------------- | ------------------------------------------------------------------------------------------------------- |
-| `method`         | 인증 방식       | auth_signup, auth_login                                                                                 |
-| `creation_entry` | 할 일 생성 경로 | todo_created                                                                                            |
-| `source`         | 유입 출처       | todo_created, feature_hub_*, invite_link_opened 등                                                      |
-| `is_completed`   | 완료 여부       | todo_completed                                                                                          |
-| `is_recurring`   | 반복 여부       | todo_created                                                                                            |
-| `visibility`     | 공개 범위       | todo_created                                                                                            |
-| `feature`        | 기능            | premium_gate_shown, feature_card_cta, feature_action_success                                            |
-| `campaign_id`    | 캠페인          | feature_hub_*, feature_card_cta, feature_action_success                                                 |
-| `entry`          | 초대 진입점     | invite_entry_tapped                                                                                     |
-| `channel`        | 공유 채널       | invite_link_shared                                                                                      |
-| `outcome`        | 초대 결과       | invite_redeemed                                                                                         |
-| `reason`         | 사유            | invite_redeem_failed, weather_*, session_expired                                                        |
-| `success`        | 성공 여부       | ai_parse_used                                                                                           |
-| `action`         | 동작            | ai_suggestion_acted, push_notification_opened                                                           |
-| `type`           | 알림 유형       | push_notification_opened, notification_center_opened                                                    |
-| `campaign_key`   | 푸시 캠페인     | push_notification_opened                                                                                |
-| `variant_id`     | 실험 변형       | push_notification_opened                                                                                |
-| `purpose`        | 알림 목적       | push_notification_opened                                                                                |
-| `app_state`      | 탭할 때 앱 상태 | push_notification_opened                                                                                |
-| `setting`        | 설정 항목       | settings_changed                                                                                        |
-| `result`         | 권한 결과       | weather_location_permission_result                                                                      |
-| `severity`       | 특보 등급       | weather_alert_opened                                                                                    |
-| `product_id`     | 상품 ID         | subscription_started (RC `purchase`의 상품 파라미터명은 확인 후 추가)                                   |
-| `presentation`   | 안내 모양       | premium_gate_shown, premium_gate_cta_tapped                                                             |
-| `plan_type`      | 요금제 종류     | paywall_plan_selected, trial_timeline_viewed, subscription_started, purchase_cancelled, purchase_failed |
-| `is_trial`       | 체험 제안 여부  | paywall_plan_selected, subscription_started, purchase_cancelled, purchase_failed                        |
-
-등록하지 않음: `*_id`(엔터티 id), `field`, `value`, `color`, `week_label`, `query_length_bucket`·`hint`·`trigger`·`screen_name`·`view`·`is_renewal`·`category`(필요하면 추가).
-
-### (c) 커스텀 측정항목 (3)
-
-| 파라미터            | 표시 이름          | 단위 | 용도                  |
-| ------------------- | ------------------ | ---- | --------------------- |
-| `moved_count`       | 날씨 옮긴 할 일 수 | 표준 | 날씨 옮기기 효과      |
-| `todo_count`        | 대상 할 일 수      | 표준 | 옮기기 대상·AI 변환량 |
-| `days_since_signup` | 가입 후 경과일     | 표준 | 활성화 소요일 평균    |
-
-### (c-1) 댓글 측정기준·측정항목
-
-| 파라미터       | 범위     | 표시 이름      | 값                            | 이벤트                                     |
-| -------------- | -------- | -------------- | ----------------------------- | ------------------------------------------ |
-| `is_reply`     | 측정기준 | 답글 여부      | `true`·`false`                | todo_comment_created, todo_comment_deleted |
-| `via`          | 측정기준 | 좋아요 방식    | `button`·`double_tap`         | todo_comment_liked                         |
-| `is_liked`     | 측정기준 | 좋아요 상태    | `true`·`false`                | todo_comment_liked                         |
-| `target`       | 측정기준 | 답글 대상      | `comment`·`reply`             | todo_comment_reply_started                 |
-| `kind`         | 측정기준 | 안내 종류      | `double_tap`                  | todo_comment_hint_dismissed                |
-| `reason`       | 측정기준 | 사유(기존)     | `close`·`used`                | todo_comment_hint_dismissed                |
-| `sort`         | 측정기준 | 댓글 정렬      | `LATEST`·`POPULAR`            | todo_comment_sorted                        |
-| `chain_size`   | 측정항목 | 이어 쓴 글 수  | 1~5 (표준)                    | todo_comment_created                       |
-| `loaded_count` | 측정항목 | 불러온 답글 수 | 페이지 도착 뒤 실제 수 (표준) | todo_comment_replies_expanded              |
-
-### (d) 잠재고객
-
-| 이름             | 조건                                                                              | 용도                    |
-| ---------------- | --------------------------------------------------------------------------------- | ----------------------- |
-| 프리미엄(스토어) | `premium_source = store`                                                          | 유료 사용자 행동 비교   |
-| 활성화 사용자    | `activation_completed` 1회 이상 (멤버십 540일)                                    | 활성 vs 비활성 리텐션   |
-| 미활성 신규      | 최근 7일 `first_open` AND NOT `activation_completed`                              | 온보딩 개선 타깃        |
-| 게이트 경험 무료 | `premium_gate_shown` ≥2회 (최근 14일) AND `is_premium = false`                    | 페이월 메시지 실험 대상 |
-| 이탈 위험 유료   | `rc_cancellation` 또는 `rc_billing_issue` (최근 30일) AND NOT `rc_uncancellation` | 이탈 방지               |
-| 휴면 위험        | 지난 30일 활성 AND 최근 7일 `todo_completed` 없음 (시퀀스/제외 조건)              | 윈백 효과 비교          |
-| 날씨 사용자      | `weather_opened` 또는 `weather_reschedule_applied` (최근 30일)                    | 날씨 리텐션 영향        |
-
-### (e) 유입경로 탐색
-
-| 퍼널         | 단계                                                                                                                                 | 설정                                    |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| 활성화       | 1 `auth_signup` → 2 `todo_created` 또는 `voice_plan_applied` → 3 `todo_completed` (`is_completed = true`) → 4 `activation_completed` | 닫힌 퍼널, 7일 내, 분류 `method`        |
-| 초대(공유자) | 1 `invite_entry_tapped` → 2 `invite_link_shared`                                                                                     | 닫힌 퍼널, 분류 `entry`·`channel`       |
-| 초대(수신자) | 1 `invite_link_opened` → 2 `auth_signup` 또는 `auth_login` → 3 `invite_redeemed`                                                     | 열린 퍼널, 1일 내, 분류 `source`        |
-| 페이월       | 1 `premium_gate_shown` → 2 `premium_gate_cta_tapped` → 3 `paywall_viewed` → 4 `rc_trial_start` 또는 `purchase`                       | 닫힌 퍼널, 1일 내, 분류 `feature`       |
-| 날씨 옮기기  | 1 `weather_opened` → 2 `weather_reschedule_opened` → 3 `weather_reschedule_applied`                                                  | 열린 퍼널, 분류 `reason`                |
-| 날씨 위치    | 1 `weather_opened` → 2 `weather_location_permission_result` (`result = granted`)                                                     | 닫힌 퍼널                               |
-| 기능 발견    | 1 `feature_hub_impression` → 2 `feature_card_cta` → 3 `feature_action_success`                                                       | 닫힌 퍼널, 7일 내, 분류 `feature`       |
-| 음성         | 1 `voice_capture_started` → 2 `voice_capture_finished` (`outcome = completed`) → 3 `voice_plan_generated` → 4 `voice_plan_applied`   | 닫힌 퍼널, 1일 내(제안), 분류 `mode`    |
-| 결제         | 1 `limit_reached_shown` → 2 `limit_reached_cta_tapped` → 3 `purchase`                                                                | 닫힌 퍼널, 1일 내(제안), 분류 `feature` |
-
-음성·결제 퍼널의 기간 1일은 제안값이고 페이월 퍼널과 맞췄다. 결제 3단계는 RevenueCat `purchase` 원본이다. 음성·한도의 측정기준과 `skipped_count` 측정항목은 배포 후 사용자 확인을 받아 추가한다.
-
-### (f) 보고서 컬렉션 "Aido 핵심 지표": 개요 카드
-
-라이브러리 → 새 컬렉션 → 개요 보고서 1개 + 상세 보고서 링크.
-
-| 순서 | 카드                      | 측정                                                     |
-| ---- | ------------------------- | -------------------------------------------------------- |
-| 1    | 활성 사용자 (DAU/WAU/MAU) | 기본 사용자 카드                                         |
-| 2    | 신규 가입                 | `auth_signup` 이벤트 수, 측정기준 인증 방식              |
-| 3    | 활성화 완료               | `activation_completed` 키 이벤트 수 · 신규 대비 비율     |
-| 4    | 할 일 완료                | `todo_completed` 이벤트 수(필터 완료 여부 = true)        |
-| 5    | 사용자 리텐션             | 기본 리텐션 카드(D1/D7)                                  |
-| 6    | AI로 만든 할 일           | `voice_plan_applied` 이벤트 수 · `todo_count`            |
-| 7    | 날씨 사용                 | `weather_opened` 사용자 · `weather_reschedule_applied`   |
-| 8    | 초대 공유 → 사용          | `invite_link_shared` · `invite_redeemed`                 |
-| 9    | 게이트 노출(기능별)       | `premium_gate_shown` × 기능                              |
-| 10   | 매출 · 체험 시작          | `purchase` 수익 · `rc_trial_start`                       |
-| 11   | 해지·결제 문제            | `rc_cancellation` · `rc_billing_issue` · `rc_expiration` |
-| 12   | 앱 버전별 사용자          | 측정기준 앱 버전                                         |
-
-### (g) 데이터 보관
-
-관리 → 데이터 설정 → 데이터 보관: 이벤트 데이터 14개월, "새 활동 시 사용자 데이터 재설정" 켬. 무료 속성 최대치다. 장기 비교가 필요하면 BigQuery 내보내기를 연결한다.
-
-### (h) 개발·내부 트래픽 제외
-
-같은 속성 `aido-997b5`에 운영·개발·프리뷰 스트림을 쓴다(`app.config.ts`의 `GoogleService-Info*.plist`). GA4 데이터 필터는 스트림 단위 제외를 지원하지 않는다.
-
-| 단계 | 방법                                                                                                                                           | 효과                           |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| 코드 | 운영이 아닌 빌드는 JS 이벤트를 console로만 남기고, 네이티브 자동 수집 이벤트에 `traffic_type=internal`을 건다(`markFirebaseTrafficAsInternal`) | 적용됨. 첫 `first_open`은 예외 |
-| 콘솔 | 데이터 필터 "내부 트래픽"(값 `internal`)을 테스트 → 활성. 수집 시점에 영구 제외되고 소급은 안 된다                                             | 속성 전체 정리                 |
-| 콘솔 | 데이터 필터 "개발자 트래픽" 활성(DebugView `debug_mode` 이벤트 제외)                                                                           | 디버그 세션 제외               |
-| 장기 | 개발·프리뷰를 별도 Firebase 프로젝트로 분리                                                                                                    | 가장 깨끗. RC 샌드박스도 격리  |
-
----
+키 이벤트·커스텀 측정기준·잠재고객·퍼널·개요 카드·보관·내부 트래픽 설정값은 [GA 콘솔 설정](./analytics-ga-console.md)에 있다. 콘솔 상태는 코드로 확인할 수 없어 콘솔을 바꿀 때 그 값을 기준으로 삼는다.
 
 ## 6. 열린 항목
 
-대시보드 의존을 확인한 뒤 바꾼다. 이름을 바꾸면 이력이 끊긴다.
+대시보드 의존을 확인한 뒤 바꾼다. 이름을 바꾸면 이력이 끊긴다. 이벤트 이름 40자·값 100자·예약 접두사(`firebase_`·`google_`·`ga_`) 한도는 지금 넘지 않는다(가장 긴 이름 `weather_location_permission_result` 34자).
 
-| 현재                                         | 제안                                                             |
-| -------------------------------------------- | ---------------------------------------------------------------- |
-| `todo_completed{is_completed}`               | 유지. GA에선 항상 `is_completed=true` 필터                       |
-| `notification_center_opened`                 | `notification_center_item_tapped` (새 이름 병행 뒤 옛 이름 제거) |
-| `remind_nudge_sent`                          | `nudge_remind_sent`                                              |
-| `badge_opened_from_notification`             | 제거(푸시 오픈 `type`으로 대체)                                  |
-| `memo_converted_to_todos`                    | 대시보드를 `voice_plan_applied`로 옮긴 뒤 제거                   |
-| `push_notification_opened.type`              | `NotificationType` union                                         |
-| `todo_edited.field` / `profile_edited.field` | 다중 필드면 `multiple` 버킷 또는 첫 필드만                       |
-| `local_day_changed`                          | Sentry breadcrumb로만 이동 검토                                  |
+| 현재                                                    | 제안                                                                                     |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `todo_completed{is_completed}`(해제도 completed)        | 유지. GA에선 항상 `is_completed=true` 필터                                               |
+| `notification_center_opened`(실제로는 항목 탭)          | `notification_center_item_tapped`(새 이름 병행 뒤 옛 이름 제거)                          |
+| `remind_nudge_sent`                                     | `nudge_remind_sent`                                                                      |
+| `badge_opened_from_notification`                        | 제거(`push_notification_opened{type=WEEKLY_ACHIEVEMENT}`과 같은 뜻)                      |
+| `memo_converted_to_todos`                               | 대시보드를 `voice_plan_applied{source=memo}`로 옮긴 뒤 제거                              |
+| `subscription_started`                                  | 결제 UI 단계로만 본다. 매출은 RC `purchase`, 자동 `in_app_purchase`는 키 이벤트에서 해제 |
+| `todo_edited.field`(콤마 조합, 값 100자를 넘을 수 있다) | 다중 필드면 `multiple` 버킷 또는 첫 필드만                                               |
+| `local_day_changed`                                     | Sentry breadcrumb로만 이동 검토                                                          |
+| `voice_plan_failed`의 `consent-required`                | 동의 안내로 빠져 보내지 않는다(동의 이탈은 `ai_consent_prompt_dismissed`)                |

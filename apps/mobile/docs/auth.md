@@ -195,7 +195,7 @@ SignInService.openAppleLogin()
 
 ## 분석·오류·콘솔 설정
 
-- 성공 한 번에 `auth_signup`·`auth_login` 중 하나만 보낸다. 서버 응답 `isNewUser`로 고른다([측정 규칙](./observability.md#측정-규칙)). 실패·단계·확정 결과 이벤트와 보내는 자리는 [측정 계획](./analytics-measurement-plan.md)에 있다.
+- 성공 한 번에 `auth_signup`·`auth_login` 중 하나만 보낸다. 서버 응답 `isNewUser`로 고른다([측정 규칙](./observability.md#측정-규칙)). 실패·단계·확정 결과 이벤트는 [`auth.events.ts`](../src/features/identity/auth/constants/auth.events.ts)에 있다.
 - 공통 소셜 오류는 `@aido/api/errors`의 `SOCIAL_02xx`이고 문구는 i18n `errors` 카탈로그에 있다.
 - 공급자 콘솔 설정(Apple App ID, redirect URI)은 [서버 설정](../../api/docs/configuration.md#소셜-로그인-콘솔)에 있다.
 
