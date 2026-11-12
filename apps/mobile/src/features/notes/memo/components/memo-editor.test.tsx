@@ -25,7 +25,7 @@ import {
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Suspense } from 'react';
 import { Keyboard } from 'react-native';
 
@@ -595,6 +595,45 @@ describe('MemoEditor', () => {
       });
       await waitFor(() => expect(di.draftService.restore(planDraftKey).status).toBe('restored'));
       expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it('정리를 기다리는 사이 탭을 바꿔 편집기가 마운트된 채 가려지면 끌고 가지 않고 돌아와 누르면 차감 없이 연다', async () => {
+      // Given
+      const navigation = {
+        isFocused: jest.fn(() => true),
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      };
+      jest.mocked(useNavigation).mockReturnValue(navigation);
+      const { httpClient } = await renderForAiParse({ consent: createAgreedConsent() });
+      const pendingParse = createPendingResponse(ok(createParseMemoResponseDto()));
+      httpClient.post.mockReturnValue(pendingParse.response);
+      await startAiParse();
+      await waitFor(() => expect(getParseRequestCount(httpClient)).toBe(1));
+      navigation.isFocused.mockReturnValue(false);
+
+      // When
+      await act(async () => {
+        pendingParse.settle();
+      });
+      await act(deliverQueryNotifications);
+
+      // Then
+      expect(screen.getByDisplayValue('처음 메모')).toBeOnTheScreen();
+      expect(router.push).not.toHaveBeenCalled();
+
+      // When
+      navigation.isFocused.mockReturnValue(true);
+      await startAiParse();
+
+      // Then
+      await waitFor(() =>
+        expect(router.push).toHaveBeenCalledWith({
+          pathname: '/memo/[memoId]/ai-review',
+          params: { memoId: MEMO_ID },
+        }),
+      );
+      expect(getParseRequestCount(httpClient)).toBe(1);
     });
 
     it('이번 달 한도를 다 썼으면 안내를 띄우고 정리를 요청하지 않는다', async () => {
