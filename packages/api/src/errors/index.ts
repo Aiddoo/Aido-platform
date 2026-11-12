@@ -16,3 +16,7 @@ export {
   notChargedErrorDetailsSchema,
   quotaErrorDetailsSchema,
 } from "../contracts/entitlement/v1/quota-error.details.js";
+export {
+  todoSeriesLimitErrorDetailsSchema,
+  todoSeriesRuleErrorDetailsSchema,
+} from "../contracts/todo/v1/todo-series.error-details.js";

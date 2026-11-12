@@ -1,4 +1,4 @@
-import { useHaptics, useTodoApi } from '@src/bootstrap/providers/di-context';
+import { useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
@@ -17,13 +17,9 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
-import {
-  findTodoSeriesFailure,
-  getTodoSeriesLimit,
-  isTodoSeriesFailure,
-  shouldRefreshTodos,
-} from '../domains/todo-series.error';
+import { isTodoSeriesFailure } from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
+import { useTodoSeriesFailureFeedback } from '../hooks/use-todo-series-failure-feedback';
 import type {
   ChangeTodoCategoryInput,
   ReorderTodoInput,
@@ -155,8 +151,8 @@ interface ChangeTodoCategoryVariables {
 export function useChangeTodoCategoryMutationOptions() {
   const todoApi = useTodoApi();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
-  const haptics = useHaptics();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -177,26 +173,7 @@ export function useChangeTodoCategoryMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
-      }
-    },
-    meta: {
-      errorFeedback: {
-        feature: 'todo',
-        fallbackKey: 'todo:toast.changeFailedRetry',
-        isHandledByFeature: isTodoSeriesFailure,
-      },
+      showTodoSeriesFailure(error);
     },
     onSettled: (saved, _error, { scope }, context) => {
       if (saved == null) {
@@ -208,6 +185,13 @@ export function useChangeTodoCategoryMutationOptions() {
       } else {
         invalidateTodos(queryClient);
       }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.changeFailedRetry',
+        isHandledByFeature: isTodoSeriesFailure,
+      },
     },
   });
 }
@@ -223,8 +207,8 @@ export function useDeleteTodoMutationOptions() {
   const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
@@ -266,19 +250,7 @@ export function useDeleteTodoMutationOptions() {
         syncDailyCompletionWithList(queryClient, { date: context.snapshot.date });
       }
 
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
-      }
+      showTodoSeriesFailure(error);
     },
     onSettled: (_data, error, { todoId, date, scope }, context) => {
       invalidateTodoDependentQueries(queryClient);
@@ -355,8 +327,8 @@ export interface UpdateTodoScheduleVariables {
 export function useUpdateTodoScheduleMutationOptions() {
   const todoApi = useTodoApi();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
-  const haptics = useHaptics();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -378,26 +350,7 @@ export function useUpdateTodoScheduleMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
-      }
-    },
-    meta: {
-      errorFeedback: {
-        feature: 'todo',
-        fallbackKey: 'todo:toast.updateFailedRetry',
-        isHandledByFeature: isTodoSeriesFailure,
-      },
+      showTodoSeriesFailure(error);
     },
     onSettled: (saved, _error, { scope }, context) => {
       if (saved == null) {
@@ -409,6 +362,13 @@ export function useUpdateTodoScheduleMutationOptions() {
       } else {
         invalidateTodos(queryClient);
       }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.updateFailedRetry',
+        isHandledByFeature: isTodoSeriesFailure,
+      },
     },
   });
 }

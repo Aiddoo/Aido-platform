@@ -11,18 +11,15 @@ import {
 import type { TodoEditedFields } from '@src/features/planning/todo/constants/todo.events';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
-import {
-  findTodoSeriesFailure,
-  getTodoSeriesLimit,
-  isTodoSeriesFailure,
-  shouldRefreshTodos,
-} from '@src/features/planning/todo/domains/todo-series.error';
+import { isTodoSeriesFailure } from '@src/features/planning/todo/domains/todo-series.error';
 import {
   isCategoryTodoLimitError,
   isRecurringCategoryTodoLimitError,
+  isRecurringTodoRejection,
 } from '@src/features/planning/todo/domains/todo.error';
 import { getScheduledTime } from '@src/features/planning/todo/domains/todo.model';
 import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
+import { useTodoSeriesFailureFeedback } from '@src/features/planning/todo/hooks/use-todo-series-failure-feedback';
 import {
   appendTodoToList,
   beginTodoWrite,
@@ -54,11 +51,6 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 interface CreateTodoVariables {
   values: TodoFormValues;
-}
-
-/** 반복 묶음 오류와 반복 할 일의 카테고리 한도는 onError가 따로 안내한다 */
-function isRecurringTodoRejection(error: unknown) {
-  return isTodoSeriesFailure(error) || isRecurringCategoryTodoLimitError(error);
 }
 
 export function useCreateTodoMutationOptions() {
@@ -263,6 +255,7 @@ export function useCreateRecurringTodoMutationOptions() {
   const todoApi = useTodoApi();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
 
   return mutationOptions({
@@ -291,18 +284,7 @@ export function useCreateRecurringTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
+      if (showTodoSeriesFailure(error)) {
         return;
       }
 
@@ -311,18 +293,18 @@ export function useCreateRecurringTodoMutationOptions() {
         toast.error(t('todo:toast.recurringCategoryLimit'));
       }
     },
+    // 반복 회차가 어느 날짜에 생겼는지 몰라 넓게 맞춘다
+    onSettled: (_saved, error) => {
+      if (error == null) {
+        invalidateTodos(queryClient);
+      }
+    },
     meta: {
       errorFeedback: {
         feature: 'todo',
         fallbackKey: 'todo:toast.addFailedRetry',
         isHandledByFeature: isRecurringTodoRejection,
       },
-    },
-    // 반복 회차가 어느 날짜에 생겼는지 몰라 넓게 맞춘다
-    onSettled: (_saved, error) => {
-      if (error == null) {
-        invalidateTodos(queryClient);
-      }
     },
   });
 }
@@ -426,8 +408,8 @@ export function useUpdateTodoMutationOptions() {
   const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
@@ -454,26 +436,7 @@ export function useUpdateTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
-      }
-    },
-    meta: {
-      errorFeedback: {
-        feature: 'todo',
-        fallbackKey: 'todo:toast.updateFailedRetry',
-        isHandledByFeature: isTodoSeriesFailure,
-      },
+      showTodoSeriesFailure(error);
     },
     onSettled: (saved, _error, { options }, context) => {
       if (saved == null) {
@@ -486,6 +449,13 @@ export function useUpdateTodoMutationOptions() {
       } else {
         invalidateTodos(queryClient);
       }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.updateFailedRetry',
+        isHandledByFeature: isTodoSeriesFailure,
+      },
     },
   });
 }

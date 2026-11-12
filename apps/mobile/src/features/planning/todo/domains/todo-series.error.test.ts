@@ -1,3 +1,4 @@
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
 import {
@@ -9,48 +10,38 @@ import {
 } from './todo-series.error';
 
 describe('findTodoSeriesFailure', () => {
-  it('지난 회차가 너무 많아 시작일을 거절하면 too-many-past다', () => {
+  it.each([
+    { code: 'TODO_0841', details: { seriesId: 's' }, expected: 'not-found' },
+    { code: 'TODO_0842', details: { limit: 100, activeCount: 100 }, expected: 'limit' },
+    { code: 'TODO_0843', details: { startDate: '2026-11-12' }, expected: 'no-dates' },
+    { code: 'TODO_0844', details: { todoId: 1, scope: 'ALL' }, expected: 'not-repeating' },
+    { code: 'TODO_0845', details: { field: 'startDate' }, expected: 'too-many-past' },
+    { code: 'TODO_0845', details: { field: 'endDate' }, expected: 'invalid' },
+    { code: 'TODO_0845', details: undefined, expected: 'invalid' },
+    { code: 'TODO_0811', details: undefined, expected: 'category-full' },
+    { code: 'TODO_0846', details: { seriesId: 's' }, expected: 'ended' },
+    { code: 'TODO_0801', details: undefined, expected: null },
+  ] satisfies {
+    code: ErrorCodeType;
+    details: Record<string, unknown> | undefined;
+    expected: TodoSeriesFailure | null;
+  }[])('$code $details 거절은 $expected다', ({ code, details, expected }) => {
     // Given
-    const error = new ApiError('TODO_0845', '거절', 400, { field: 'startDate' });
+    const error = new ApiError(code, '거절', 400, details);
 
     // When
     const failure = findTodoSeriesFailure(error);
 
     // Then
-    expect(failure).toBe('too-many-past');
+    expect(failure).toBe(expected);
   });
 
-  it('그 밖의 반복 설정 거절은 일반 안내다', () => {
-    // Given
-    const error = new ApiError('TODO_0845', '거절', 400, { field: 'endDate' });
-
+  it('API 오류가 아니면 반복 묶음 오류가 아니다', () => {
     // When
-    const failure = findTodoSeriesFailure(error);
+    const failure = findTodoSeriesFailure(new Error('network'));
 
     // Then
-    expect(failure).toBe('invalid');
-  });
-
-  it('대상 카테고리가 가득 차면 category-full이다', () => {
-    // Given
-    const error = new ApiError('TODO_0811', '가득 참', 403);
-
-    // When
-    const failure = findTodoSeriesFailure(error);
-
-    // Then
-    expect(failure).toBe('category-full');
-  });
-
-  it('끝난 규칙을 되살릴 때 상한에 닿으면 limit이다', () => {
-    // Given
-    const error = new ApiError('TODO_0842', '상한', 403, { limit: 100, activeCount: 100 });
-
-    // When
-    const failure = findTodoSeriesFailure(error);
-
-    // Then
-    expect(failure).toBe('limit');
+    expect(failure).toBeNull();
   });
 });
 

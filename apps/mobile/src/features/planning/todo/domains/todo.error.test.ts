@@ -8,17 +8,24 @@ import {
 } from './todo.error';
 
 describe('isTodoUnavailableError', () => {
-  it('404는 사라진 할 일이고 API 오류가 아니면 아니다', () => {
-    // Given
-    const error = createTodoApiError({ status: 404 });
-
+  it.each([
+    {
+      name: '지웠거나 볼 수 없는 할 일(TODO_0801)',
+      error: createTodoApiError({ code: ErrorCode.TODO_0801, status: 404 }),
+      expected: true,
+    },
+    {
+      name: '다른 404(TODO_0810)',
+      error: createTodoApiError({ code: ErrorCode.TODO_0810, status: 404 }),
+      expected: false,
+    },
+    { name: 'API 오류가 아닌 것', error: new Error('x'), expected: false },
+  ])('$name이면 $expected다', ({ error, expected }) => {
     // When
     const unavailable = isTodoUnavailableError(error);
-    const unknown = isTodoUnavailableError(new Error('x'));
 
     // Then
-    expect(unavailable).toBe(true);
-    expect(unknown).toBe(false);
+    expect(unavailable).toBe(expected);
   });
 });
 
