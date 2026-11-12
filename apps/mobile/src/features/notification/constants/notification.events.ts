@@ -29,8 +29,8 @@ declare module '@src/shared/analytics/event-map' {
       type: Notification['type'];
       destination: NotificationDestination['kind'];
     };
-    marketing_push_opted_out: { source: 'push_action' };
-    marketing_push_opted_in: { source: 'completion_sheet' };
+    marketing_push_opted_out: { source: 'push_action' | 'settings' };
+    marketing_push_opted_in: { source: 'completion_sheet' | 'settings' };
     marketing_push_prompt_shown: { source: 'completion_sheet' };
     marketing_push_prompt_dismissed: { source: 'completion_sheet' };
     push_permission_prompt_shown: { source: PushPermissionPromptSource; step: PushPermissionStep };
