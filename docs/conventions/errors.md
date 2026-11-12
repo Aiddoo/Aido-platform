@@ -11,7 +11,7 @@
 | 실패 | `{ success: false, error: { code, message, details? }, timestamp }` | `errorEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts))                                                     |
 
 - 실패의 의미는 `error.code`로 정한다. 앱은 `message`로 분기하지 않는다. HTTP 상태로 분기하는 곳은 아래 `ErrorCode`가 없는 경우(검증·없는 route·429)뿐이고, 상태 값은 `@aido/api/errors`의 `HttpStatus`를 쓴다. 앱·서버에 상태 상수를 따로 만들지 않는다.
-- `details`는 코드별 계약이다. 운영에는 [`PUBLIC_ERROR_DETAILS`](../../packages/api/src/errors/public-details.ts)에 등록한 코드의 검증된 필드만 실린다(`featureQuota`, `charged`, 반복 오류 상세 등). 앱은 등록된 값을 공유 스키마로 읽는다. 등록하지 않은 코드의 `details`는 개발 환경 진단용이라 운영 응답에 없다. 스키마와 맞지 않는 값은 운영에서 빠지므로 코드별 details를 바꾸면 등록 스키마도 함께 바꾼다.
+- `details`는 코드별 계약이다. 운영에는 [`PUBLIC_ERROR_DETAILS`](../../packages/api/src/errors/public-details.ts)에 등록한 코드의 검증된 필드만 실린다(`featureQuota`, `charged`, 반복 오류 상세 등). 앱은 등록된 값을 공유 스키마로 읽는다. 등록하지 않은 코드의 `details`는 개발 환경 진단용이라 운영 응답에 없다. 스키마와 맞지 않는 값은 운영에서 빠지므로 코드별 details를 바꾸면 등록 스키마도 함께 바꾼다. 앱이 details를 새로 읽으면 등록하고 앱 계약 테스트(`error-details-contract.test.ts`)의 표에 더한다(`hasPublicErrorDetails`로 확인한다).
 - `ErrorCode`는 [errors.ts](../../packages/api/src/errors/errors.ts)의 도메인 범위(`SYS 0001-0099`, `AUTH 0100-0199`, … `INVITE 2100-2199`)에서 다음 번호를 쓴다. 새 도메인은 빈 범위를 정해 같은 파일 머리 주석에 적는다. 문자열 코드를 하드코딩하지 않는다.
 - `@RawResponse` endpoint(AppConfig의 `feature-discovery`·`app-version`)만 envelope 없이 raw union을 돌려준다. 새 raw 응답은 만들지 않는다.
 

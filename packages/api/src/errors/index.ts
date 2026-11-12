@@ -8,7 +8,9 @@ export type { FriendLimitErrorDetails } from "./public-details.js";
 export {
   friendLimitErrorDetailsSchema,
   friendQuotaErrorDetailsSchema,
+  hasPublicErrorDetails,
   toPublicErrorDetails,
+  verificationResendCooldownErrorDetailsSchema,
 } from "./public-details.js";
 export {
   notChargedErrorDetailsSchema,

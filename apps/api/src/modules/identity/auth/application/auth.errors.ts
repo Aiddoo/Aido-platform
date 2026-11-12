@@ -47,6 +47,11 @@ export function oauthAccountAlreadyLinked(
     .exhaustive();
 }
 
+/** 같은 종류 코드를 방금 보냈다. 앱은 남은 초로 다시 보내기 타이머를 켠다(운영 응답에도 싣는 공개 details) */
+export function verificationResendCooldown(remainingSeconds: number): ApplicationException {
+  return new ApplicationException(ErrorCode.VERIFY_0753, { remainingSeconds });
+}
+
 function sessionNotFound(sessionId?: string): ApplicationException {
   return new ApplicationException(ErrorCode.SESSION_0701, { sessionId });
 }
