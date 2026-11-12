@@ -6,12 +6,12 @@
 
 ### 값과 도구
 
-| 값        | 앱 표현                                                                                                                                                                                     | 만드는 곳                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                            | `shared/date/instant.ts`     |
-| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `parseDateKey`(`DateKey \| null`), 폼은 `dateKeyFieldSchema`다 | `shared/date/date-key.ts`    |
-| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                                | `shared/date/time-of-day.ts` |
-| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                                     | `shared/date/zoned.ts`(계산) |
+| 값        | 앱 표현                                                                                                                                                                          | 만드는 곳                    |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                 | `shared/date/instant.ts`     |
+| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `isDateKey`(타입 가드), 폼은 `dateKeyFieldSchema`다 | `shared/date/date-key.ts`    |
+| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                     | `shared/date/time-of-day.ts` |
+| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                          | `shared/date/zoned.ts`(계산) |
 
 - 모델·캐시·전송은 문자열 brand다. 문자열은 같은 값이면 같은 참조라 재조회에도 구조 공유가 유지된다. 순간의 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다.
 - 날짜 key 계산(`addDaysToDateKey`·`getMonthStartDateKey`·`toDateKey(instant, timeZone)` 등)은 `DateKey`만 받고 돌려준다. 계산 결과는 `isDateKey`(스키마와 같은 규칙)로 좁혀 칸마다 Zod를 거치지 않고, 0000~9999년을 벗어나면 던진다. 테스트 리터럴은 `src/testing/date-key.ts`의 `createDateKey('2026-11-12')`로 만든다.
