@@ -63,10 +63,14 @@ const WORKOUT_ACTION = {
   duplicateOfTodoId: null,
 };
 
-/** 실패 상태로 그릴 때마다 입력 칸에 있던 글자 */
-const titlesRenderedAsFailed: string[] = [];
-
-function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
+function QuickVoiceProbe({
+  onExit,
+  titlesRenderedAsFailed,
+}: {
+  onExit: () => void;
+  /** 실패 상태로 그릴 때마다 입력 칸에 있던 글자 */
+  titlesRenderedAsFailed: string[];
+}) {
   const form = useForm<TodoFormValues>({
     defaultValues: { title: '', startDate: createDateKey('2026-11-05'), repeat: null },
   });
@@ -177,11 +181,11 @@ async function renderQuickVoice({
       storage: createMemoryKeyValueStorage(),
     },
   });
-  const { rerender } = await renderScreen(<QuickVoiceProbe onExit={onExit} />, {
-    di,
-    withLocalDate: true,
-    withOverlay: true,
-  });
+  const titlesRenderedAsFailed: string[] = [];
+  const { rerender } = await renderScreen(
+    <QuickVoiceProbe onExit={onExit} titlesRenderedAsFailed={titlesRenderedAsFailed} />,
+    { di, withLocalDate: true, withOverlay: true },
+  );
 
   /** 시트만 닫는다. 안내는 앱 위 오버레이에 있어 그대로 남는다 */
   const closeSheet = () => rerender(<></>);
@@ -194,6 +198,7 @@ async function renderQuickVoice({
     analytics,
     queryClient,
     closeSheet,
+    titlesRenderedAsFailed,
   };
 }
 
@@ -213,6 +218,10 @@ const getIdempotencyKey = (
 ) => httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
 
 describe('useAddTodoQuickVoice', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
   // 동의를 미룬 뒤 뜨는 토스트 타이머가 테스트 밖에 남지 않게 한다
   setupFakeTimersPerTest({ advanceTimers: true });
 
@@ -493,7 +502,6 @@ describe('useAddTodoQuickVoice', () => {
 
     // Then
     await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
-    onlineManager.setOnline(true);
   });
 
   it('오프라인이어도 멈추지 않고 실패로 넘어가 글자를 입력 칸에 남긴다', async () => {
@@ -508,13 +516,11 @@ describe('useAddTodoQuickVoice', () => {
     // Then
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
     expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
-    onlineManager.setOnline(true);
   });
 
   it('정리에 실패하면 입력 칸이 빈 채로 그려지는 순간 없이 글자를 넣는다', async () => {
     // Given
-    titlesRenderedAsFailed.length = 0;
-    const { httpClient, speechRecognizer } = await renderQuickVoice();
+    const { httpClient, speechRecognizer, titlesRenderedAsFailed } = await renderQuickVoice();
     httpClient.post.mockRejectedValue(new NetworkError());
 
     // When
