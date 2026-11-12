@@ -27,6 +27,8 @@ import { clearColdStartPath } from './cold-start-link';
 jest.unmock('expo-router');
 
 const ME = createCurrentUserDto();
+/** 초대한 친구. 초대를 받아들이면 환영 화면 경로(`/invite-welcome/[friendId]`)에 이 id가 실린다 */
+const INVITER_ID = 'clz7x5p8k0002qz0z8z8z8z8z';
 
 function createScreen(testID: string) {
   return function RouteScreen() {
@@ -81,6 +83,7 @@ async function setup({ status, url }: { status: AuthStatus; url: string }) {
     _layout: AuthGateLayout,
     index: RootIndex,
     loading: createScreen('loading'),
+    'invite/index': createScreen('invite'),
     '(auth)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
     '(auth)/login': createScreen('login'),
     '(app)/_layout': {
@@ -109,6 +112,7 @@ async function setup({ status, url }: { status: AuthStatus; url: string }) {
     '(app)/(tabs)/(me)/mypage/index': createScreen('mypage'),
     '(app)/todo/[todoId]/index': createScreen('todo'),
     '(app)/todo/[todoId]/actions': createScreen('todo-actions'),
+    '(app)/invite-welcome/[friendId]': createScreen('invite-welcome'),
   };
   const route = await renderAppRoute(
     Object.fromEntries(Object.entries(routes).sort(([a], [b]) => (a < b ? -1 : 1))),
@@ -118,6 +122,7 @@ async function setup({ status, url }: { status: AuthStatus; url: string }) {
   return {
     route,
     rootStack: () => describeRootStack(route.getRouterState()),
+    pendingWidgetCommand: () => di.widgetNavigationRepository.findPendingCommand(),
     signIn: () => act(async () => authSessionStore.setStatus('authenticated')),
     /** Android 위젯 HeadlessJS가 실제로 누른 목적지를 저장한다 */
     tapAndroidWidget: (uri: string) =>
@@ -194,6 +199,49 @@ describe('위젯으로 들어온 흐름', () => {
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
     expect(feedParams()).toEqual({ date: 'today', action: 'add-todo' });
     expect(rootStack()).toEqual(['(app)[(tabs)]']);
+  });
+
+  it('날짜가 붙은 상세 링크로 연 앱에서 오늘 피드로 돌아온 뒤 그 날짜 위젯을 누르면 그 날짜 피드를 연다', async () => {
+    // Given
+    const { route, tapAndroidWidget } = await setup({
+      status: 'authenticated',
+      url: '/todo/3?date=2026-11-13',
+    });
+    await act(() => router.back());
+    expect(route.getPathname()).toBe('/feed');
+    expect(feedParams()).toEqual({});
+
+    // When
+    await tapAndroidWidget('aido://feed?date=2026-11-13');
+
+    // Then
+    await waitFor(() => expect(feedParams()).toEqual({ date: '2026-11-13' }));
+  });
+
+  it('초대를 받아 친구 id가 상위 route에 남아도 내 피드 칸에 상세를 연 채 누른 오늘 위젯은 이미 보이는 피드라 칸을 닫지 않는다', async () => {
+    // Given
+    stubWindowDimensions(1024);
+    const { route, tapAndroidWidget, pendingWidgetCommand } = await setup({
+      status: 'authenticated',
+      url: '/feed',
+    });
+    await act(() => router.push('/invite'));
+    await act(() =>
+      router.dismissTo(
+        { pathname: '/invite-welcome/[friendId]', params: { friendId: INVITER_ID } },
+        { withAnchor: true },
+      ),
+    );
+    await act(() => router.back());
+    await act(() => router.setParams({ todoId: '8' }));
+    expect(route.getPathname()).toBe('/feed');
+
+    // When
+    await tapAndroidWidget('aido://feed?date=today');
+
+    // Then
+    await waitFor(() => expect(pendingWidgetCommand()).toBeNull());
+    expect(feedParams()).toEqual({ todoId: '8' });
   });
 
   it('켜 둔 앱에서 할 일 상세를 보던 중 Android 위젯 날짜를 누르면 피드로 돌아가 탭 묶음이 두 겹 쌓이지 않는다', async () => {

@@ -1,7 +1,7 @@
 import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
+import { useFocusedRouteParams } from '@src/shared/navigation/use-focused-route-params';
 import { type ScreenName, toScreenName } from '@src/shared/utils/to-screen-name';
-import { usePathname, useRootNavigationState, useSegments } from 'expo-router';
-import { findFocusedRoute } from 'expo-router/react-navigation';
+import { usePathname, useSegments } from 'expo-router';
 import { useLayoutEffect, useRef } from 'react';
 
 /** 넓은 화면에서 목록 화면 옆 칸에 여는 상세 */
@@ -37,8 +37,7 @@ export function useScreenTracking({
 }: ScreenTrackingOptions): void {
   const pathname = usePathname();
   const segments = useSegments();
-  // 전역 params는 focus 경로의 상위 route params까지 합쳐 앞 화면 값(콜드 스타트 링크의 `todoId`)이 남는다. 화면이 읽는 자기 params를 본다
-  const focusedParams = findFocusedRoute(useRootNavigationState())?.params;
+  const focusedParams = useFocusedRouteParams();
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
   const prevView = useRef<TrackedView | null>(null);
@@ -84,11 +83,10 @@ export function useScreenTracking({
 function findOpenPane(
   paneDetailScreens: readonly PaneDetailScreen[],
   screenName: ScreenName,
-  params: object | undefined,
+  params: Readonly<Record<string, unknown>>,
 ): { pathname: string; screenName: ScreenName } | null {
   const pane = paneDetailScreens.find(({ listScreen }) => listScreen === screenName);
-  const id: unknown =
-    pane == null ? undefined : new Map(Object.entries(params ?? {})).get(pane.param);
+  const id = pane == null ? undefined : params[pane.param];
   if (pane == null || typeof id !== 'string' || id === '') {
     return null;
   }

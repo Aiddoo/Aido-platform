@@ -16,8 +16,9 @@ import { toEpochMs } from '@src/shared/date/instant';
 import { toError } from '@src/shared/errors';
 import { useLinkingUrl } from '@src/shared/infra/linking/use-linking-url';
 import { openEntryHref } from '@src/shared/navigation/open-entry-href';
+import { useFocusedRouteParams } from '@src/shared/navigation/use-focused-route-params';
 import { useQueryClient } from '@tanstack/react-query';
-import { useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
+import { usePathname, useSegments } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from 'react';
 
 import {
@@ -39,7 +40,7 @@ export function useWidgetAppEntry() {
   const accountId = useMyAccountId({ isEnabled: status === 'authenticated' });
   const segments = useSegments();
   const pathname = usePathname();
-  const parameters = feedParamsSchema.parse(useGlobalSearchParams());
+  const parameters = feedParamsSchema.parse(useFocusedRouteParams());
   const url = useLinkingUrl();
   const pendingCommand = useSyncExternalStore(
     widgetNavigationRepository.subscribe,
