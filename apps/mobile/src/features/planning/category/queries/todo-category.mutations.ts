@@ -16,13 +16,13 @@ import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
-import { isDeletionPreviewOutdatedError } from '../domains/todo-category.error';
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type {
   TodoCategoryDeletionRequest,
   TodoCategoryDeletionResult,
-  TodoCategoryWithCount,
-} from '../domains/todo-category.model';
+} from '../domains/todo-category-deletion.model';
+import { isDeletionPreviewOutdatedError } from '../domains/todo-category.error';
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import type { TodoCategoryWithCount } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
   TodoCategoryChange,

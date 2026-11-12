@@ -3,10 +3,12 @@ import type { FetchQueryOptions, QueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
 import type {
-  TodoCategoriesResult,
-  TodoCategory,
   TodoCategoryDeletionPreview,
   TodoCategoryDeletionResult,
+} from '../domains/todo-category-deletion.model';
+import type {
+  TodoCategoriesResult,
+  TodoCategory,
   TodoCategoryWithCount,
 } from '../domains/todo-category.model';
 import { TODO_CATEGORY_MUTATION_KEYS } from './todo-category-mutation-keys';

@@ -11,6 +11,8 @@ import { ApiError } from '@src/core/errors/api-error';
 import {
   type TodoCategoryDeletionPreview,
   todoCategoryDeletionPreviewSchema,
+} from '../domains/todo-category-deletion.model';
+import {
   type TodoCategoryWithCount as TodoCategoryWithCountModel,
   todoCategoryWithCountSchema,
 } from '../domains/todo-category.model';

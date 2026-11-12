@@ -32,11 +32,10 @@ import { type ComponentProps, type ReactNode, Suspense, useEffect, useState } fr
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { TodoCategoryDeletionPolicy, TodoCategoryPolicy } from '../domains/todo-category.model';
-import type {
-  TodoCategoryDeletionPreview,
-  TodoCategoryWithCount,
-} from '../domains/todo-category.model';
+import { TodoCategoryDeletionPolicy } from '../domains/todo-category-deletion.model';
+import type { TodoCategoryDeletionPreview } from '../domains/todo-category-deletion.model';
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import type { TodoCategoryWithCount } from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
 import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {

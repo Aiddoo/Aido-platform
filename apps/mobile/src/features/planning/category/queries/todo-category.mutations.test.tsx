@@ -17,10 +17,8 @@ import { onlineManager, useMutation } from '@tanstack/react-query';
 import { screen, waitFor } from '@testing-library/react-native';
 
 import { createTodoCategoryDto } from '../__tests__/todo-category.fixtures';
-import type {
-  TodoCategoriesResult,
-  TodoCategoryDeletionRequest,
-} from '../domains/todo-category.model';
+import type { TodoCategoryDeletionRequest } from '../domains/todo-category-deletion.model';
+import type { TodoCategoriesResult } from '../domains/todo-category.model';
 import { changeCachedCategoryTodoCount } from './todo-category-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 import {
