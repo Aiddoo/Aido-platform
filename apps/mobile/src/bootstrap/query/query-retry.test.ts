@@ -1,55 +1,37 @@
-import { ApiError, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+import { ErrorCode } from '@aido/api/errors';
+import {
+  ApiError,
+  BusinessError,
+  KeychainLockedError,
+  NetworkError,
+  ParseError,
+  ServerError,
+  TimeoutError,
+} from '@src/shared/errors';
 
 import { shouldRetryQuery } from './query-retry';
 
 describe('shouldRetryQuery', () => {
-  it('401/403 ApiError는 재시도하지 않는다 (세션 종료·권한 없음 → QueryErrorBoundary가 담음)', () => {
-    // Given
-    const unauthorized = new ApiError('AUTH_0105', '다시 로그인', 401);
-    const forbidden = new ApiError('AUTH_0108', '권한 없음', 403);
-
+  it.each<[string, unknown, number]>([
+    // 콜드 스타트·서버 재시작 구간을 기다린다(재시도 창 ≈ 22초). 토큰 갱신의 일시 실패도 이 세 타입이다
+    ['네트워크 끊김', new NetworkError(), 6],
+    ['시간 초과', new TimeoutError(), 6],
+    ['500', new ServerError(500), 6],
+    ['503', new ServerError(503), 6],
+    ['응답 계약 위반', new ParseError('invalid'), 0],
+    ['401', new ApiError(ErrorCode.AUTH_0101, '다시 로그인', 401), 0],
+    ['403', new ApiError(ErrorCode.AUTH_0108, '권한 없음', 403), 0],
+    ['409', new ApiError(ErrorCode.MEMO_2001, '한도 초과', 409), 0],
+    ['앱 BusinessError', new BusinessError('FRIEND_EMPTY_TAG'), 0],
+    ['키체인 잠금', new KeychainLockedError(new Error('locked')), 3],
+    ['코드 버그', new TypeError('x is not a function'), 3],
+  ])('%s는 %i번까지 다시 받는다', (_case, error, maxRetries) => {
     // When
-    const retryUnauthorized = shouldRetryQuery(0, unauthorized);
-    const retryForbidden = shouldRetryQuery(0, forbidden);
+    const retries = [0, 1, 2, 3, 4, 5, 6].filter((failureCount) =>
+      shouldRetryQuery(failureCount, error),
+    );
 
     // Then
-    expect(retryUnauthorized).toBe(false);
-    expect(retryForbidden).toBe(false);
-  });
-
-  it('그 외 BusinessError(예측 가능한 4xx)는 재시도하지 않는다', () => {
-    // Given
-    // 호출부가 onError에서 처리한다
-    const businessError = new ApiError('MEMO_2001', '한도 초과', 409);
-
-    // When
-    const retry = shouldRetryQuery(0, businessError);
-
-    // Then
-    expect(retry).toBe(false);
-  });
-
-  it('일시 인프라 장애(네트워크·5xx·타임아웃)는 넉넉한 상한(6)까지 재시도한다', () => {
-    // Given
-    // 콜드 스타트/서버 재시작 구간에 서버 복귀를 기다린다(재시도 창 ≈ 22초)
-    // 토큰 갱신의 일시 실패도 갱신기가 이 세 타입으로 던지므로 같은 창을 탄다.
-    const cases = [
-      new NetworkError(),
-      new ServerError(500),
-      new ServerError(503),
-      new TimeoutError(),
-    ];
-
-    // When
-    const decisions = cases.map((error) => [
-      shouldRetryQuery(0, error),
-      shouldRetryQuery(5, error),
-      shouldRetryQuery(6, error),
-    ]);
-
-    // Then
-    for (const decision of decisions) {
-      expect(decision).toEqual([true, true, false]);
-    }
+    expect(retries).toHaveLength(maxRetries);
   });
 });

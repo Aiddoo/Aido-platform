@@ -108,7 +108,7 @@ mutationOptions({
 
 - **어디서 도나.** 앱 `MutationCache`(`bootstrap/query/mutation-error-feedback-cache.ts`)의 캐시 단계 `onError`가 `meta.errorFeedback`을 읽어 실패를 내보내고, DI·UI Provider 안에 한 번 둔 `bootstrap/query/mutation-error-feedback.tsx`가 받아 햅틱·토스트·보고를 한다. 토스트와 햅틱이 Provider 안의 훅이라 캐시가 직접 부르지 못한다. 언마운트하면 구독을 푼다. 테스트의 `createTestQueryClient`와 `renderScreen`도 같은 캐시와 컴포넌트를 쓴다.
 - **왜 `MutationCache.subscribe`가 아닌가.** TanStack은 `await options.onSettled`가 끝난 뒤에야 `error` 상태를 알린다. `onSettled`가 재조회 Promise를 돌려주는 mutation(카테고리 순서, 모두 읽음, 댓글 삭제)은 토스트가 재조회를 기다리고, 오프라인이면 재조회가 멈춰 끝내 뜨지 않는다. 캐시 단계 `onError`는 기능 `onError`·`onSettled`보다 먼저 돈다. 그래서 칸 오류처럼 기능이 보일 오류는 미리 `isHandledByFeature`로 알려야 한다.
-- **문구와 보고.** `getUserFacingMessage`는 사용자 문구가 있는 오류(`ApiError`, 카탈로그의 `BusinessError`, 번역된 통신 오류)만 그대로 보이고 `ParseError`·SDK 오류(문자열 `code`가 있어도)의 개발용 message는 `fallbackKey`로 바꾼다. 보고 기준은 `isUnexpectedError`다. 코드를 지닌 오류와 연결 문제는 보고하지 않는다. 그래서 SDK 오류는 어댑터가 코드 없는 포트 오류(`ClipboardCopyError`처럼 원본은 `cause`)로 바꿔야 보고된다. 보고에는 `getErrorReportTags`가 `ServerError`의 상태·method·endpoint를 태그로 붙인다([관측](./observability.md#mutation-오류-피드백)).
+- **문구와 보고.** `getUserFacingMessage`는 사용자 문구가 있는 오류(`ApiError`, 카탈로그의 `BusinessError`, 번역된 통신 오류)만 그대로 보이고 `ParseError`·SDK 오류(문자열 `code`가 있어도)의 개발용 message는 `fallbackKey`로 바꾼다. 보고 기준은 `classifyError`다. 예상한 오류(4xx·`BusinessError`)와 연결 문제는 보고하지 않고, 문자열 `code`가 있어도 감싸지 않은 SDK 오류는 보고한다. 보고에는 `getErrorReportTags`가 `ServerError`의 상태·서버 코드·method·endpoint를 태그로 붙인다([관측](./observability.md#mutation-오류-피드백)).
 - **기능 `onError`.** 낙관적 갱신을 되돌리고, 이미 지워진 대상(`TODO_0833` 등)은 캐시에서 빼 서버 상태에 맞추고, `isHandledByFeature`로 뺀 오류만 보인다. 판별 함수는 `domains/{feature}.error.ts`의 것을 그대로 넘긴다(`isLimitedFeatureError`, `isTodoSeriesFailure`, `isLoginCancelledError`). 서버가 확정한 실패의 분석 이벤트만 함께 둔다([관측](./observability.md#어디서-추적하나)). 다시 던지지 않는다.
 - **호출부.** `mutateAsync`의 실패는 이미 알렸으므로 `.catch(noop)`이나 흐름만 잇는 `catch`로 받는다. `useReportUnexpectedError`는 mutation 밖의 실패(조회 결과·기기 작업)에만 쓴다.
 - **로그아웃.** 세션이 끝날 때 `abandonPendingMutations`가 진행 중인 mutation의 콜백을 비우면서 `errorFeedback`도 `false`로 바꾼다. 끝난 세션의 실패가 다음 화면에 토스트로 뜨지 않는다.
@@ -144,7 +144,7 @@ SDK 오류 변환은 어댑터와 mapper 경계에서만 한다(`expo-social-aut
 
 ## 서버 오류를 읽는 곳
 
-- 서버 오류는 `domains/{feature}.error.ts`의 이름 있는 판별 함수(`isLocationNotRegisteredError`)로만 읽는다. `*.error.ts` 밖에서 `isApiError`, `hasCode`, `error.status`를 직접 비교하지 않는다. 파일이 없으면 만든다. 공용 분류(`shared/errors`, 재시도 규칙, 오류 경계)만 예외다.
+- 서버 오류는 `domains/{feature}.error.ts`의 이름 있는 판별 함수(`isLocationNotRegisteredError`)로만 읽는다. `*.error.ts` 밖에서 `isApiError`, `hasCode`, `error.status`를 직접 비교하지 않는다. 파일이 없으면 만든다. 공용 분류(`shared/errors`의 `classifyError`, 재시도 규칙, 오류 경계)만 예외다.
 - 연결 끊김·시간 초과 판별은 `shared/errors/infra-error.ts`의 `isConnectivityError` 하나다. feature에 같은 판별을 다시 만들지 않는다.
 - 일반 `throw new Error`는 Context 가드(`must be used within …`)와 어댑터의 환경 오류(모듈 없음)만 쓴다. 나머지는 `InfraError` 계열이나 `BusinessError`다. 전용 class는 추가 데이터가 있을 때만 이유 주석과 함께 둔다.
 - 오류 코드 문자열, 사용자 문구, Sentry severity 규칙은 바꾸지 않는다.
@@ -205,14 +205,14 @@ if (isCodedError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 | `TimeoutError` | 요청 시간 초과     | `common:infraErrors.timeout`                                                |
 | `ParseError`   | Zod 응답 검증 실패 | `parseApiResponse`가 넘긴 개발용 문자열. `getUserFacingMessage`가 걸러 낸다 |
 
-[`QueryErrorBoundary`](../src/shared/ui/query-error-boundary/query-error-boundary.tsx)는 `classifyBoundaryError`로 잡은 오류를 나눈다.
+[`QueryErrorBoundary`](../src/shared/ui/query-error-boundary/query-error-boundary.tsx)는 `classifyError(error).kind`로 잡은 오류를 나눈다.
 
-| 종류              | 대상                                                                          | 리포트                        | 화면                           |
-| ----------------- | ----------------------------------------------------------------------------- | ----------------------------- | ------------------------------ |
-| `auth-transition` | 401 ApiError                                                                  | warning 메시지                | 앱 경계가 로그인으로 보낸다    |
-| `expected-state`  | 404 ApiError, 기능 꺼짐(`INVITE_2105`), 친구가 끊긴 친구 할 일(`FOLLOW_0906`) | breadcrumb만                  | fallback이 안내를 그린다       |
-| `error`           | 네트워크·타임아웃                                                             | `network` breadcrumb(warning) | fallback(다시 시도 + 문의하기) |
-| `error`           | 그 밖(5xx·파싱 등)                                                            | `captureException`            | fallback(다시 시도 + 문의하기) |
+| kind           | 대상                                                           | 리포트                                  | 화면                                     |
+| -------------- | -------------------------------------------------------------- | --------------------------------------- | ---------------------------------------- |
+| `auth-expired` | 401 ApiError                                                   | warning 메시지                          | 앱 경계가 로그인으로 보낸다              |
+| `expected`     | 그 밖의 4xx(404 없음, 403 볼 수 없음·기능 꺼짐), BusinessError | breadcrumb만                            | 기능 fallback이 `*.error.ts` 판별로 안내 |
+| `connectivity` | 네트워크·타임아웃                                              | `network` breadcrumb(warning)           | fallback(다시 시도 + 문의하기)           |
+| `unexpected`   | 그 밖(5xx·파싱·렌더 오류 등)                                   | `reportUnexpectedError`(요청 태그 포함) | fallback(다시 시도 + 문의하기)           |
 
 - 독립된 데이터 블록마다 `QueryErrorBoundary → Suspense → 블록`을 둬 부분 실패를 허용한다. 식별자가 바뀌면 `resetKeys`로 이전 실패를 푼다.
 - 기능 fallback은 `fallback={X.Error}`로 연결하고, 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. 경계 없이 한 칸 안에서 "실패 + 다시 시도"를 보일 때는 `QueryErrorFallback.Inline`을 쓴다(직접 만든 인라인 실패 UI를 두지 않는다). route 시트 안에서는 `sheet.close(INQUIRY_SHEET_EXIT)`로 닫고 이동한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
@@ -283,18 +283,18 @@ logger.error(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, toError(error)); 
 
 ## 참고 파일
 
-| 파일                                          | 설명                             |
-| --------------------------------------------- | -------------------------------- |
-| `core/errors/result.ts`                       | Result 타입, ok/err/unwrap       |
-| `core/errors/api-error.ts`                    | ApiError (4xx)                   |
-| `shared/errors/infra-error.ts`                | InfraError (5xx, 네트워크, 파싱) |
-| `shared/errors/classify-boundary-error.ts`    | 경계 오류 분류                   |
-| `shared/errors/user-facing-message.ts`        | 사용자에게 보여도 되는 문구 판정 |
-| `shared/infra/http/ky-client.ts`              | 분류의 단일 소유                 |
-| `shared/infra/http/api-failure-breadcrumb.ts` | 실패 breadcrumb                  |
-| `shared/infra/http/ky-error.ts`               | `resolveMessage`, 오류 변환      |
-| `shared/ui/query-error-boundary/`             | QueryErrorBoundary               |
-| `shared/constants/query-meta.ts`              | `meta.errorFeedback` 타입        |
-| `bootstrap/query/mutation-error-feedback*`    | mutation 전역 오류 피드백        |
-| `shared/query/is-last-mutation.ts`            | 마지막 변경 판정                 |
-| `features/*/domains/*.error.ts`               | 기능 오류                        |
+| 파일                                          | 설명                                 |
+| --------------------------------------------- | ------------------------------------ |
+| `core/errors/result.ts`                       | Result 타입, ok/err/unwrap           |
+| `core/errors/api-error.ts`                    | ApiError (4xx)                       |
+| `shared/errors/infra-error.ts`                | InfraError (5xx, 네트워크, 파싱)     |
+| `shared/errors/classify-error.ts`             | 오류 분류(예상·세션·연결·예상 못 함) |
+| `shared/errors/user-facing-message.ts`        | 사용자에게 보여도 되는 문구 판정     |
+| `shared/infra/http/ky-client.ts`              | 분류의 단일 소유                     |
+| `shared/infra/http/api-failure-breadcrumb.ts` | 실패 breadcrumb                      |
+| `shared/infra/http/ky-error.ts`               | `resolveMessage`, 오류 변환          |
+| `shared/ui/query-error-boundary/`             | QueryErrorBoundary                   |
+| `shared/constants/query-meta.ts`              | `meta.errorFeedback` 타입            |
+| `bootstrap/query/mutation-error-feedback*`    | mutation 전역 오류 피드백            |
+| `shared/query/is-last-mutation.ts`            | 마지막 변경 판정                     |
+| `features/*/domains/*.error.ts`               | 기능 오류                            |

@@ -120,26 +120,24 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 
 ## 오류 분류와 한 번만 보고
 
-Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureException`)는 `shared/infra/observability/capture-error.ts`의 `captureError` 한 곳을 지난다. 이슈로 보낼지는 `shared/errors/classify-error-report.ts`의 `classifyErrorReport`만 판단하고 표는 `classify-error-report.test.ts`가 고정한다.
+Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureException`)는 `shared/infra/observability/capture-error.ts`의 `captureError` 한 곳을 지난다. 이슈로 보낼지는 `shared/errors/classify-error.ts`의 `classifyError`만 판단하고 표는 `classify-error.test.ts`가 고정한다. 전역 피드백·경계·`useReportUnexpectedError`도 같은 판정으로 예상하지 못한 오류만 `reportUnexpectedError`로 보낸다.
 
-| 오류                                    | Sentry                                                                                     | 비고                             |
-| --------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------- |
-| 4xx `ApiError`, `BusinessError`         | breadcrumb(`category: error`)                                                              | UI가 `Result`·토스트로 처리      |
-| `ZodError`                              | breadcrumb                                                                                 |                                  |
-| `NetworkError`, `TimeoutError`          | breadcrumb                                                                                 | 기기 상태                        |
-| `KeychainLockedError`                   | breadcrumb                                                                                 | 재시도할 상태                    |
-| `ServerError`(5xx)                      | 이슈. `request_id` 태그(`X-Request-Id`)                                                    | `ky-client`가 요청 헤더에서 채움 |
-| `ParseError`, 렌더 오류, 잡지 못한 오류 | 이슈. 호출부가 `feature` 태그(`error_boundary` 등), 루트 오류 화면은 `root_error_boundary` |                                  |
-| 5xx `ApiError`                          | 이슈                                                                                       | 방어용                           |
+| 오류(`classifyError`의 kind)                                     | Sentry                                                                                     | 비고                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------- |
+| 4xx `ApiError`, `BusinessError`, `KeychainLockedError`(expected) | breadcrumb(`category: error`)                                                              | UI가 `Result`·토스트로 처리      |
+| 401 `ApiError`(auth-expired)                                     | breadcrumb                                                                                 | 경계는 warning 메시지            |
+| `NetworkError`, `TimeoutError`(connectivity)                     | breadcrumb                                                                                 | 기기 상태                        |
+| `ServerError`(5xx)                                               | 이슈. `request_id`·`serverErrorCode`·method·endpoint 태그                                  | `ky-client`가 봉투·헤더에서 채움 |
+| `ParseError`·`ZodError`, 렌더 오류, 잡지 못한 오류, SDK 오류     | 이슈. 호출부가 `feature` 태그(`error_boundary` 등), 루트 오류 화면은 `root_error_boundary` | 문자열 `code`가 있어도 이슈      |
 
 - 같은 `Error` 객체는 어느 경로로 몇 번 보고해도 한 번만 처리한다(`WeakSet`). 먼저 닿은 쪽의 태그가 남는다(`capture-error.test.ts`).
-- 새 오류 종류를 breadcrumb로 낮추려면 `classifyErrorReport`와 그 테스트 표에 먼저 더한다.
+- 새 오류 종류를 예상한 오류로 낮추려면 `classifyError`와 그 테스트 표에 먼저 더한다.
 
 ## mutation 오류 피드백
 
 mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `onError` 하나가 맡는다. 모든 mutation 옵션이 `meta.errorFeedback`을 둔다.
 
-- `{ feature, fallbackKey }`: `bootstrap/query/mutation-error-feedback.tsx`가 `haptics.notify('error')`, `toast.error(getUserFacingMessage(error), { fallback: t(fallbackKey) })`를 한 번 하고, `isUnexpectedError`인 오류만 `captureException(error, { feature, ...getErrorReportTags(error) })`로 보낸다. 태그는 `ServerError`가 지닌 상태·method·endpoint이고, 분류(이슈·breadcrumb)는 `classifyErrorReport` 그대로다. 코드를 지닌 오류와 연결 문제는 보고하지 않는다.
+- `{ feature, fallbackKey }`: `bootstrap/query/mutation-error-feedback.tsx`가 `haptics.notify('error')`, `toast.error(getUserFacingMessage(error), { fallback: t(fallbackKey) })`를 한 번 하고, `reportUnexpectedError`가 예상하지 못한 오류만 `captureException(error, { feature, ...getErrorReportTags(error) })`로 보낸다. 태그는 `ServerError`가 지닌 상태·서버 코드·method·endpoint다. 예상한 오류와 연결 문제는 보고하지 않는다.
 - `isHandledByFeature(error)`가 true인 오류와 `errorFeedback: false`는 전역이 알리지도 보고하지도 않는다. 기능이 보이는 오류는 예측한 것이라 보고 대상이 아니고, 기능이 모든 실패를 보이는 mutation(결제·복원 등)은 그 자리에서 `captureMessage`한다.
 - 캐시 단계라 기능 `onSettled`가 기다리는 재조회에 묶이지 않는다. 자세한 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)를 본다.
 
@@ -195,7 +193,7 @@ mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `o
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 포트                | `core/ports/{error-reporter,severity,breadcrumb,analytics,logger,telemetry-event}.ts`                                                               |
 | Sentry 어댑터       | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                                      |
-| init·전송 입구·분류 | `shared/infra/observability/{error-reporting,capture-error,scrub-sentry-event}.ts`, `shared/errors/classify-error-report.ts`                        |
+| init·전송 입구·분류 | `shared/infra/observability/{error-reporting,capture-error,scrub-sentry-event}.ts`, `shared/errors/classify-error.ts`                               |
 | 카탈로그·파사드     | `core/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                                     |
 | 환경별 구현·DI      | `shared/infra/observability/observability-env.ts`, `bootstrap/providers/{create-device-ports,composition-root}.ts`                                  |
 | 계측 지점           | `shared/infra/http/api-failure-breadcrumb.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/hooks/use-auth-boot.ts`(session) |

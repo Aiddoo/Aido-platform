@@ -5,7 +5,7 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push-after-completion';
 import { usePushOnboardingGuard } from '@src/features/notification/hooks/use-push-onboarding-guard';
-import { classifyBoundaryError } from '@src/shared/errors';
+import { classifyError, getErrorReportTags } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -136,14 +136,17 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   // 세션이 끝난 뒤 도착한 401만 조용히 로그인으로 넘긴다. 세션이 살아있는데 401이 여기까지
   // 새어왔다면 컨테인먼트 구멍이므로, null 빈 화면 대신 재시도 UI를 보여주고 리포트한다.
   const isAuthTransition =
-    status !== 'authenticated' && classifyBoundaryError(error) === 'auth-transition';
+    status !== 'authenticated' && classifyError(error).kind === 'auth-expired';
 
   useEffect(() => {
     if (isAuthTransition) {
       return;
     }
 
-    errorReporter.captureException(error, { feature: 'error_boundary' });
+    errorReporter.captureException(error, {
+      feature: 'error_boundary',
+      ...getErrorReportTags(error),
+    });
   }, [error, errorReporter, isAuthTransition]);
 
   if (isAuthTransition) {

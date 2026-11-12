@@ -2,9 +2,9 @@ export { ApiError, isApiError } from '@src/core/errors/api-error';
 
 export { BusinessError } from './business-error';
 
-export { classifyBoundaryError } from './classify-boundary-error';
+export { classifyError } from './classify-error';
 
-export { getErrorReportTags, isUnexpectedError } from './classify-error-report';
+export { getErrorDiagnosis } from './error-diagnosis';
 
 export {
   isConnectivityError,
@@ -15,6 +15,8 @@ export {
   ServerError,
   TimeoutError,
 } from './infra-error';
+
+export { getErrorReportTags, reportUnexpectedError } from './report-unexpected-error';
 
 /** @public */
 export type { CodedError } from '@src/core/errors/result';

@@ -1,5 +1,6 @@
+import { ErrorCode } from '@aido/api/errors';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { ApiError, ServerError } from '@src/shared/errors';
+import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
 import { createErrorReporterStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent } from '@testing-library/react-native';
@@ -99,18 +100,55 @@ describe('QueryErrorBoundary 관측', () => {
     );
   });
 
-  it('진짜 장애(재시도 소진 후)는 기존대로 에러 이벤트로 리포트한다', async () => {
+  it.each([
+    ['기능 꺼짐 403(INVITE_2105)', new ApiError(ErrorCode.INVITE_2105, '꺼짐', 403)],
+    ['끊긴 친구의 할 일 403(FOLLOW_0906)', new ApiError(ErrorCode.FOLLOW_0906, '볼 수 없음', 403)],
+    ['권한 없음 403', new ApiError(ErrorCode.AUTH_0108, '권한 없음', 403)],
+  ])('%s는 다시 해도 같은 상태라 이슈 없이 breadcrumb만 남긴다', async (_case, error) => {
+    // When
+    await renderWithBoundary(error);
+
+    // Then
+    expect(errorReporter.captureException).not.toHaveBeenCalled();
+    expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'query_boundary_expected_state',
+        data: { code: error.code, statusCode: 403 },
+      }),
+    );
+  });
+
+  it('연결 오류는 이슈 없이 network breadcrumb만 남긴다', async () => {
+    // When
+    await renderWithBoundary(new NetworkError());
+
+    // Then
+    expect(errorReporter.captureException).not.toHaveBeenCalled();
+    expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ category: 'network', message: 'query_boundary_connectivity' }),
+    );
+  });
+
+  it('진짜 장애(재시도 소진 후)는 실패한 요청을 태그로 붙여 에러 이벤트로 리포트한다', async () => {
     // Given
-    const error = new ServerError(503);
+    const error = new ServerError(503, {
+      serverCode: ErrorCode.SYS_0005,
+      details: null,
+      requestId: 'req-1',
+      request: { method: 'GET', endpoint: '/v1/todos' },
+    });
 
     // When
     await renderWithBoundary(error);
 
     // Then
-    expect(errorReporter.captureException).toHaveBeenCalledWith(
-      error,
-      expect.objectContaining({ feature: 'error_boundary' }),
-    );
+    expect(errorReporter.captureException).toHaveBeenCalledWith(error, {
+      feature: 'error_boundary',
+      statusCode: 503,
+      serverErrorCode: ErrorCode.SYS_0005,
+      method: 'GET',
+      endpoint: '/v1/todos',
+    });
     expect(errorReporter.captureMessage).not.toHaveBeenCalled();
   });
 

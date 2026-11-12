@@ -1,10 +1,5 @@
 import { useErrorReporter, useHaptics } from '@src/bootstrap/providers/di-context';
-import {
-  getErrorReportTags,
-  getUserFacingMessage,
-  isUnexpectedError,
-  toError,
-} from '@src/shared/errors';
+import { getUserFacingMessage, reportUnexpectedError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,12 +23,7 @@ export function MutationErrorFeedback() {
   const showFeedback = useEffectEvent(({ error, feedback }: MutationErrorFeedbackEvent) => {
     haptics.notify('error');
     toast.error(getUserFacingMessage(error), { fallback: t(feedback.fallbackKey) });
-    if (isUnexpectedError(error)) {
-      errorReporter.captureException(toError(error), {
-        feature: feedback.feature,
-        ...getErrorReportTags(error),
-      });
-    }
+    reportUnexpectedError(errorReporter, error, feedback.feature);
   });
 
   useEffect(

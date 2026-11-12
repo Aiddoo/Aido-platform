@@ -59,10 +59,10 @@ route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으
 `ConfirmDialog` 같은 다이얼로그는 버튼 배치를 그대로 두고 설명 자리에 `QueryErrorActions.Inquiry`를 둡니다.
 `onPress`를 넘기지 않으면 바로 문의 화면으로 이동하고, 먼저 닫아야 하는 곳은 닫은 뒤 이동하는 `onPress`를 넘깁니다.
 
-## 예상한 상태(404)
+## 예상한 상태(404·403)
 
-기본 fallback은 예상하지 못한 오류용입니다. 대상이 없는 상태(404)는 다시 시도해도 같으므로, 그런 화면은
-`classifyBoundaryError(error) === 'expected-state'`일 때 "없음" 안내와 갈 곳(목록 등)을 직접 그리고 나머지는
+기본 fallback은 예상하지 못한 오류용입니다. 대상이 없거나 볼 수 없는 상태(404·403)는 다시 시도해도 같으므로, 그런 화면은
+feature의 판별 함수(`ErrorCode`로 판별)가 참일 때 "없음" 안내와 갈 곳(목록 등)을 직접 그리고 나머지는
 `QueryErrorFallback`에 넘깁니다.
 
 ```tsx
@@ -73,9 +73,14 @@ route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으
 
 ## 오류 보고
 
-`classifyBoundaryError` 결과에 따라 보고 강도를 나눕니다. 인증 전환 401은 warning 메시지, 예상된 404와
-기능이 꺼진 코드(`INVITE_2105`), 친구가 끊겨 볼 수 없게 된 친구 할 일(`FOLLOW_0906`)은 breadcrumb,
-연결 오류(`NetworkError`·`TimeoutError`)는 `network` breadcrumb, 그 밖(5xx·파싱 등)은 `captureException`입니다.
+`shared/errors`의 `classifyError(error).kind`에 따라 보고 강도를 나눕니다.
+
+| kind           | 대상                                                                | 보고                                                         |
+| -------------- | ------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `auth-expired` | 401 `ApiError`                                                      | warning 메시지 `query_boundary_auth_contained`               |
+| `expected`     | 그 밖의 4xx(404 없음, 403 볼 수 없음·기능 꺼짐 등), `BusinessError` | `http` breadcrumb `query_boundary_expected_state`(코드·상태) |
+| `connectivity` | `NetworkError`·`TimeoutError`                                       | `network` breadcrumb                                         |
+| `unexpected`   | 5xx·`ParseError`·렌더 오류 등                                       | `reportUnexpectedError`(요청 태그 포함) 이슈                 |
 
 ## 오프라인
 
