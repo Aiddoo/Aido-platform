@@ -5,9 +5,9 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import {
   changeCachedCategoryTodoCount,
+  getCachedTodoCategories,
   invalidateTodoCategories,
 } from '@src/features/planning/category/queries/todo-category-cache';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import type { TodoEditedFields } from '@src/features/planning/todo/constants/todo.events';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
@@ -85,7 +85,7 @@ export function useCreateTodoMutationOptions() {
       });
 
       const category = TodoCategoryPolicy.findCategory(
-        queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
+        getCachedTodoCategories(queryClient)?.categories ?? [],
         values.categoryId,
       );
 

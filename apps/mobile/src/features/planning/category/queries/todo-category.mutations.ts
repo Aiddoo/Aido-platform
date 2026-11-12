@@ -35,17 +35,20 @@ import {
   toTodoCountBucket,
 } from '../utils/todo-category-analytics';
 import {
+  cancelTodoCategories,
+  getCachedTodoCategories,
   invalidateDeletionPreview,
   invalidateTodoCategories,
   type OptimisticTodoCategoryWithCount,
   removeDeletedCategory,
+  settleTodoCategoryChange,
+  updateCachedTodoCategories,
   withCategoryAdded,
   withCategoryChanged,
   withCategoryRemoved,
   withCategorySaved,
 } from './todo-category-cache';
 import { TODO_CATEGORY_MUTATION_KEYS } from './todo-category-mutation-keys';
-import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 
 export function useCreateTodoCategoryMutationOptions() {
   const todoCategoryApi = useTodoCategoryApi();
@@ -60,11 +63,9 @@ export function useCreateTodoCategoryMutationOptions() {
     mutationFn: async (input: TodoCategoryFormValues) =>
       unwrap(await todoCategoryApi.createCategory(input)),
     onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
+      await cancelTodoCategories(queryClient);
 
-      const lastSortOrder =
-        queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories.at(-1)?.sortOrder ??
-        0;
+      const lastSortOrder = getCachedTodoCategories(queryClient)?.categories.at(-1)?.sortOrder ?? 0;
 
       const optimisticCategory: OptimisticTodoCategoryWithCount = {
         id: createOptimisticId(),
@@ -75,17 +76,15 @@ export function useCreateTodoCategoryMutationOptions() {
         optimistic: true,
       };
 
-      queryClient.setQueryData(
-        TODO_CATEGORY_QUERY_KEYS.list(),
-        (old) => old && withCategoryAdded(old, optimisticCategory),
+      updateCachedTodoCategories(queryClient, (result) =>
+        withCategoryAdded(result, optimisticCategory),
       );
 
       return { optimisticCategoryId: optimisticCategory.id };
     },
     onSuccess: (savedCategory, variables, { optimisticCategoryId }) => {
-      queryClient.setQueryData(
-        TODO_CATEGORY_QUERY_KEYS.list(),
-        (old) => old && withCategorySaved(old, optimisticCategoryId, savedCategory),
+      updateCachedTodoCategories(queryClient, (result) =>
+        withCategorySaved(result, optimisticCategoryId, savedCategory),
       );
       // 카테고리 수가 한도(TODO_CATEGORY)를 쓰므로 남은 개수를 다시 받는다
       invalidateEntitlements(queryClient);
@@ -94,9 +93,8 @@ export function useCreateTodoCategoryMutationOptions() {
     },
     onError: (_error, _variables, context) => {
       if (context != null) {
-        queryClient.setQueryData(
-          TODO_CATEGORY_QUERY_KEYS.list(),
-          (old) => old && withCategoryRemoved(old, context.optimisticCategoryId),
+        updateCachedTodoCategories(queryClient, (result) =>
+          withCategoryRemoved(result, context.optimisticCategoryId),
         );
       }
     },
@@ -134,28 +132,20 @@ export function useUpdateTodoCategoryMutationOptions() {
     mutationFn: async ({ id, input }: UpdateTodoCategoryVariables) =>
       unwrap(await todoCategoryApi.updateCategory(id, input)),
     onMutate: async ({ id, input }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list(), exact: true });
+      const startedWithOthers = !isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes());
+      await cancelTodoCategories(queryClient);
 
       const previous = TodoCategoryPolicy.findCategory(
-        queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
+        getCachedTodoCategories(queryClient)?.categories ?? [],
         id,
       );
 
-      queryClient.setQueryData(
-        TODO_CATEGORY_QUERY_KEYS.list(),
-        (old) => old && withCategoryChanged(old, id, input),
-      );
+      updateCachedTodoCategories(queryClient, (result) => withCategoryChanged(result, id, input));
 
-      return { previous };
+      return { previous, startedWithOthers };
     },
-    onSuccess: (savedCategory, variables, { previous }) => {
-      if (isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
-        queryClient.setQueryData(
-          TODO_CATEGORY_QUERY_KEYS.list(),
-          (old) =>
-            old && withCategoryChanged(old, variables.id, pick(savedCategory, ['name', 'color'])),
-        );
-      }
+    onSuccess: (savedCategory, variables, { previous, startedWithOthers }) => {
+      settleTodoCategoryChange(queryClient, { saved: savedCategory, startedWithOthers });
       toast.success(t('todo:toast.categoryUpdated'));
       trackEvent('category_updated', {
         field: getCategoryUpdatedField(previous, variables.input),
@@ -165,9 +155,8 @@ export function useUpdateTodoCategoryMutationOptions() {
     onError: (_error, { id }, context) => {
       const previous = context?.previous;
       if (previous != null) {
-        queryClient.setQueryData(
-          TODO_CATEGORY_QUERY_KEYS.list(),
-          (old) => old && withCategoryChanged(old, id, pick(previous, ['name', 'color'])),
+        updateCachedTodoCategories(queryClient, (result) =>
+          withCategoryChanged(result, id, pick(previous, ['name', 'color'])),
         );
       }
     },
@@ -235,9 +224,7 @@ export function useDeleteTodoCategoryMutationOptions() {
     mutationFn: async ({ id, deletion }: DeleteTodoCategoryVariables) =>
       unwrap(await todoCategoryApi.deleteCategory(id, deletion)),
     // 되돌릴 수 없는 삭제라 목록에서 미리 빼지 않고, 결과 안내에 쓸 이름만 지우기 전 목록에서 잡아 둔다
-    onMutate: () => ({
-      categories: queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
-    }),
+    onMutate: () => ({ categories: getCachedTodoCategories(queryClient)?.categories ?? [] }),
     onSuccess: (deletionResult, { id, deletion }, context) => {
       trackEvent('category_deleted', {
         todo_handling: getCategoryDeletedTodoHandling(deletion),

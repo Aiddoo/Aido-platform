@@ -256,6 +256,38 @@ describe('카테고리 지우기', () => {
 });
 
 describe('카테고리 고치기와 동시에 바뀐 값', () => {
+  it.each([
+    { order: '앞 응답이 먼저', isFirstSettledFirst: true },
+    { order: '뒤 응답이 먼저', isFirstSettledFirst: false },
+  ])(
+    '이름을 연달아 고치면 $order 와도 마지막에 고친 이름이 남는다',
+    async ({ isFirstSettledFirst }) => {
+      // Given
+      const { httpClient, cached, update } = await renderMutations();
+      const first = createPendingResponse(
+        ok({ message: 'ok', category: createTodoCategoryDto({ id: 1, name: '첫 이름' }) }),
+      );
+      const second = createPendingResponse(
+        ok({ message: 'ok', category: createTodoCategoryDto({ id: 1, name: '둘째 이름' }) }),
+      );
+      httpClient.patch.mockReturnValueOnce(first.response).mockReturnValueOnce(second.response);
+      const firstResult = update(1, { name: '첫 이름' });
+      await waitFor(() => expect(cached()?.categories[0]?.name).toBe('첫 이름'));
+      const secondResult = update(1, { name: '둘째 이름' });
+      await waitFor(() => expect(cached()?.categories[0]?.name).toBe('둘째 이름'));
+
+      // When
+      const [settledFirst, settledLast] = isFirstSettledFirst ? [first, second] : [second, first];
+      settledFirst.settle();
+      await (isFirstSettledFirst ? firstResult : secondResult);
+      settledLast.settle();
+      await Promise.all([firstResult, secondResult]);
+
+      // Then
+      expect(cached()?.categories[0]?.name).toBe('둘째 이름');
+    },
+  );
+
   it('이름 고치기가 실패하면 그 이름만 되돌리고 그사이 늘어난 할 일 수는 지킨다', async () => {
     // Given
     const { httpClient, queryClient, cached, update } = await renderMutations();
