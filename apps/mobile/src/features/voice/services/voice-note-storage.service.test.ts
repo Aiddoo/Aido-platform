@@ -66,10 +66,10 @@ describe('VoiceNoteStorageService', () => {
     // Given
     const { files, service, drafts } = createService();
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav', {
-      modifiedAt: new Date('2026-11-01T00:00:00.000Z'),
+      modifiedAtMs: Date.parse('2026-11-01T00:00:00.000Z'),
     });
     files.addFile(OWNER_DIRECTORY, 'draft-2-0.wav', {
-      modifiedAt: new Date('2026-12-01T00:00:00.000Z'),
+      modifiedAtMs: Date.parse('2026-12-01T00:00:00.000Z'),
     });
     drafts.save('user-1', createSpokenVoiceNote());
     drafts.save(
