@@ -53,9 +53,8 @@ interface ThanksSummaryRowProps {
 }
 
 /**
- * 쓸 수 있는지, 보낼 대상이 있는지 두 번 조회해야 보일지 아는 줄이라 로딩 때 자리를 잡지 않는다.
- * 자리를 잡으면 대상이 없을 때 나타났다 사라져 아래가 두 번 움직인다.
- * 완료를 저장하는 동안은 서버가 아직 완료 전이라 묻지 않고, 저장이 끝나면 할 일 변경 무효화로 새로 받는다.
+ * 두 번 조회해야 보일지 알아 로딩 자리를 잡지 않는다(잡으면 대상이 없을 때 아래가 두 번 움직인다).
+ * 완료 저장 중에는 서버가 아직 완료 전이라 묻지 않고 저장 뒤 할 일 무효화로 받는다
  */
 export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
   const availability = useQuery(useGetNudgeInteractionAvailabilityQueryOptions());

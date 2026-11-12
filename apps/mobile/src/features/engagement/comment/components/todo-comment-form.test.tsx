@@ -60,29 +60,31 @@ async function renderEditingForm() {
   return httpClient;
 }
 
-describe('댓글 수정', () => {
-  it('글자를 바꾸지 않고 저장하면 요청 없이 작성기를 닫는다', async () => {
-    // Given
-    const httpClient = await renderEditingForm();
+describe('TodoCommentForm', () => {
+  describe('댓글 수정', () => {
+    it('글자를 바꾸지 않고 저장하면 요청 없이 작성기를 닫는다', async () => {
+      // Given
+      const httpClient = await renderEditingForm();
 
-    // When
-    await fireEvent.press(screen.getByTestId('todo-comment-submit'));
+      // When
+      await fireEvent.press(screen.getByTestId('todo-comment-submit'));
 
-    // Then
-    await waitFor(() => expect(screen.queryByTestId('todo-comment-composer-target')).toBeNull());
-    expect(httpClient.patch).not.toHaveBeenCalled();
-  });
+      // Then
+      await waitFor(() => expect(screen.queryByTestId('todo-comment-composer-target')).toBeNull());
+      expect(httpClient.patch).not.toHaveBeenCalled();
+    });
 
-  it('앞뒤 공백만 더한 글도 바뀐 것이 아니다', async () => {
-    // Given
-    const httpClient = await renderEditingForm();
+    it('앞뒤 공백만 더한 글도 바뀐 것이 아니다', async () => {
+      // Given
+      const httpClient = await renderEditingForm();
 
-    // When
-    await fireEvent.changeText(screen.getByTestId('todo-comment-input-0'), '  원래 글  ');
-    await fireEvent.press(screen.getByTestId('todo-comment-submit'));
+      // When
+      await fireEvent.changeText(screen.getByTestId('todo-comment-input-0'), '  원래 글  ');
+      await fireEvent.press(screen.getByTestId('todo-comment-submit'));
 
-    // Then
-    await waitFor(() => expect(screen.queryByTestId('todo-comment-composer-target')).toBeNull());
-    expect(httpClient.patch).not.toHaveBeenCalled();
+      // Then
+      await waitFor(() => expect(screen.queryByTestId('todo-comment-composer-target')).toBeNull());
+      expect(httpClient.patch).not.toHaveBeenCalled();
+    });
   });
 });

@@ -47,40 +47,42 @@ async function renderButton(routeParams: Record<string, string>) {
   return { speechRecognizer };
 }
 
-describe('VoiceNoteStartButton 시작 요청', () => {
-  setupFakeTimersPerTest({ advanceTimers: true });
+describe('VoiceNoteStartButton', () => {
+  describe('시작 요청', () => {
+    setupFakeTimersPerTest({ advanceTimers: true });
 
-  it('다른 화면이 시작을 요청하고 들어오면 이 화면에서 AI 동의 시트를 바로 띄우고 요청을 지운다', async () => {
-    // When
-    const { speechRecognizer } = await renderButton({ startVoiceNote: '1' });
+    it('다른 화면이 시작을 요청하고 들어오면 이 화면에서 AI 동의 시트를 바로 띄우고 요청을 지운다', async () => {
+      // When
+      const { speechRecognizer } = await renderButton({ startVoiceNote: '1' });
 
-    // Then
-    expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
-    expect(router.setParams).toHaveBeenCalledWith({ startVoiceNote: undefined });
-    expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
-  });
+      // Then
+      expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
+      expect(router.setParams).toHaveBeenCalledWith({ startVoiceNote: undefined });
+      expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
+    });
 
-  it('요청 없이 들어오면 누르기 전까지 아무것도 묻지 않는다', async () => {
-    // When
-    await renderButton({});
+    it('요청 없이 들어오면 누르기 전까지 아무것도 묻지 않는다', async () => {
+      // When
+      await renderButton({});
 
-    // Then
-    expect(screen.getByTestId('voice-note-start')).toBeTruthy();
-    expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
-    expect(router.setParams).not.toHaveBeenCalled();
-  });
+      // Then
+      expect(screen.getByTestId('voice-note-start')).toBeTruthy();
+      expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
+      expect(router.setParams).not.toHaveBeenCalled();
+    });
 
-  it('같은 화면에 머문 채 시작 요청이 다시 오면 또 시작한다', async () => {
-    // Given
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    await renderButton({ startVoiceNote: '1' });
-    await user.press(await screen.findByTestId('ai-consent-later'));
-    await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+    it('같은 화면에 머문 채 시작 요청이 다시 오면 또 시작한다', async () => {
+      // Given
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await renderButton({ startVoiceNote: '1' });
+      await user.press(await screen.findByTestId('ai-consent-later'));
+      await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
 
-    // When
-    await act(async () => router.setParams({ startVoiceNote: '1' }));
+      // When
+      await act(async () => router.setParams({ startVoiceNote: '1' }));
 
-    // Then
-    expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
+      // Then
+      expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
+    });
   });
 });
