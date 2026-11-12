@@ -36,6 +36,7 @@ iPadOS 26+에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바는 �
 - 목록 밖(푸시·알림함 행)에서 여는 항목도 같은 기준을 따른다. 할 일은 `toTodoDetailRoute(windowSizeClass, …)`가 접힌 화면이면 `/todo/[todoId]`, 펼친 화면이면 `/feed?todoId=`(피드 상세 pane)를 고른다. 알림이 할 일 주인·날짜(`routing.todoOwnerId`·`todoDate`)를 실으면 목록 pane도 그 사람(친구면 `friendId`)의 그 `date` 피드로 연다. 없는 예전 알림은 내 피드 기본 날짜다.
 - 하단 탭 바 높이를 가정한 여백을 두지 않는다.
 - 목록 pane은 size class와 무관하게 같은 트리 슬롯에 둔다. 접기/펼치기에서 다시 마운트되지 않아 스크롤·입력 상태가 유지된다.
+- 창을 끌거나 사이드바를 여닫는 동안 폭이 프레임마다 바뀐다. 폭마다 다시 만들어야 하는 무거운 부품(달력 쪽 목록)은 `useDeferredValue`로 늦춰 다른 그리기를 막지 않는다. inset 패딩은 네이티브가 바로 적용하고 JS가 정하는 칸 폭은 다음 그리기에 따라온다(React Native는 UIKit 사이드바 애니메이션 안에서 배치하지 않는다).
 
 ## 내 정보 메뉴 (전체 폭 헤더 + 화면마다 메뉴 칸)
 
