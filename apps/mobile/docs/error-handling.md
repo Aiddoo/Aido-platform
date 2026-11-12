@@ -174,6 +174,7 @@ showMutationError(error, {
 
 - 키를 읽지 못한 실행은 `query-cache.encrypted-storage.unavailable` warn만 남기고 저장하지 않는다. 복원한 값은 영속 스키마 표(`persisted-query-schemas.ts`)의 모델 스키마로 검증해 깨진 조회만 버리고(`query-cache.restored-queries.dropped`) 복원 직후 전체를 invalidate한다.
 - 로그인한 사용자 키에만 쓰고(`useClaimDeviceDataForUser`), 미인증 전환 때 `SessionCleanupService`가 인스턴스를 통째로 비운다(`clearAll` + `trim`). 앱 버전·OTA가 바뀌면 버린다. 저장소를 열지 못한 실행의 세션 종료는 정리 표시(`aido_session_pending_storage_cleanup_v1`)를 남겨 다음에 열 때 지운다.
+- 키를 읽지 못한 실행(재부팅 뒤 잠금 해제 전에 깨어남)의 초안은 버리지 않고 그 실행 동안 메모리에 둔다. 로그아웃하면 함께 버리고, 앱이 꺼지면 사라진다. 디스크의 초안을 읽지 못하므로 녹음 고아 정리와 "녹음 모두 지우기"의 폴더 비우기를 하지 않는다. 같은 실행에서 저장소를 다시 열지 않는다. 이미 만든 Service·화면이 든 저장소, 조회 캐시 복원, 로그아웃 정리 분기를 실행 중에 바꿔야 해서다.
 - 로그아웃·탈퇴 뒤 늦게 온 초안 저장·녹음 파일은 `SignOutEpoch`와 비교해 버린다. 세션 만료는 같은 사람이 이어 쓰므로 남긴다.
 
 ## 저장소 오류: KeychainLockedError

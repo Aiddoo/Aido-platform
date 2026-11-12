@@ -44,6 +44,7 @@ export class MemoApi {
 - Repository(`repositories/{name}.repository.ts`)는 저장 값 정의로 안 되는 것만 남는다. SecureStore 비동기(pending-revocation, push-registration), 파일(voice-recording), 접두사 열거·옛 키 정리와 이주(whats-new, coachmark, activation, voice-note-draft, draft), 옛 기기 기록 이주(marketing-push-prompt), 옛 저장 모양 읽기(store-review), Android 헤드리스 위젯(widget-navigation, android-widget-snapshot)이다.
 - `create{Name}Repository(storage)`가 화살표 속성 객체를 돌려준다. 메서드는 `find*`(→ `T | null`), `save`, `remove`, `update(scope, transition)`, `subscribe`(→ 해제 함수)다.
 - 저장 포트, storage 스키마, `AppLogger`만 쓴다. 판정은 Policy가 하고 시각은 인자(`at`)로 받는다. 키 문자열과 파서를 밖으로 내보내지 않는다.
+- 읽지 못함은 비어 있음이 아니다 — 정리 작업은 저장소를 읽은 경우에만 지운다. 암호화 저장소를 열지 못한 실행은 어느 초안도 가리키지 않는 녹음을 지우지 않고(`VoiceNoteStorageService`), 오프라인이라 보내지 못한 탈퇴는 결과 모르는 탈퇴로 남기지 않으며 결과를 모르던 탈퇴도 계정이 살아 있다는 증거가 오면 잊는다([auth](../auth.md)).
 - Store(`stores/{name}.store.ts`)는 메모리 상태 기계다. `create{Name}Store()`가 `getSnapshot`·`subscribe`·이름 있는 동작을 돌려준다(알림 진입, 인증 세션, 온보딩 가드). 포트·영속을 모르고, DI가 만들며, React는 `useSyncExternalStore`로 읽는다. 모듈 전역에 두지 않는다.
 
 ## 저장 값
