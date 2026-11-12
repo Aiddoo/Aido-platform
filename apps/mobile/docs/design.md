@@ -55,7 +55,7 @@ heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 �
 
 - 글꼴은 Wanted Sans 네 굵기(`--font-normal`·`medium`·`semibold`·`bold`)다.
 - 크기 토큰은 11단계다: `display` 96(날씨 큰 온도 전용), `h1` 30, `t1` 28, `t2` 22, `t3` 20, `b1` 17, `b2` 16, `b3` 15, `b4` 13, `e1` 12, `e2` 11. 최소는 `e2`(11pt)다.
-- **앱 글꼴 5단계만 쓴다**(`xsmall`·`small`·`medium`·`large`·`xlarge`, 기본 `medium`). DESIGN.md와 달리 OS 배율은 끈다(`allowFontScaling: false`). 글자·아이콘·스켈레톤·입력이 앱 설정 하나로 같이 커진다. 사용자 결정이다.
+- **앱 글꼴 5단계만 쓴다**(`xsmall`·`small`·`medium`·`large`·`xlarge`, 기본 `medium`). DESIGN.md와 달리 OS 배율은 끈다(`allowFontScaling: false`). 글자·아이콘·스켈레톤·입력이 앱 설정 하나로 같이 커진다. 사용자 결정이다. 아이콘만 있는 버튼의 누름 칸 규칙은 [ui](./architecture/ui.md#글꼴과-기기)에 있다.
 - Android는 자간을 0으로 둔다. 음수 자간이면 줄바꿈 폭이 커져 마지막 글자가 다음 줄로 밀려 사라진다(QA #27).
 - 바뀌는 숫자(카운터·가격·시간)는 `tabular-nums`다.
 
