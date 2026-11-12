@@ -65,7 +65,6 @@
 | `plan-review-form.schema.ts` `restoreDraftDateKey`                      | 저장 시간대 없이 ISO 시각으로 남긴 말로 메모 계획 카드의 날짜(voice-note-draft.repository의 `getTimeZone`)                                                                                                                       | 1.16.0 이후(초안 보관 기간 `VOICE_NOTE_RETENTION_DAYS` 30일이 지난 뒤)   |
 | `voice-note-draft.schema.ts`의 새 칸 `.default`                         | 칸이 생기기 전에 저장한 말로 메모 초안                                                                                                                                                                                           | 1.16.0 이후(초안 보관 기간 `VOICE_NOTE_RETENTION_DAYS` 30일이 지난 뒤)   |
 | `activation-progress.repository.ts` `removeRetiredKeys`                 | 1.15.0 이하가 남긴 `aido_activation_v1:{account}:{campaign}`·`aido_feature_discovery_seen_v1:*` 키. 읽지 않고 지운다                                                                                                             | 1.16.0 이후(지우지 않으면 키만 남는다)                                   |
-| `premium-access.model.ts` `planType` `.default(null)`                   | `planType` 칸이 생기기 전 영속 쿼리 캐시의 내 정보                                                                                                                                                                               | 1.16.0 이후(영속 캐시는 스키마 버전을 올리면 비워진다)                   |
 
 호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/docs/http-contracts.md#출시-앱-호환-절차))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
 

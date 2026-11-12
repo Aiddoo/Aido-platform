@@ -163,23 +163,6 @@ describe('영속 캐시 복원 검증', () => {
     expect(restored.getQueryData(ME_KEY)).toBeDefined();
   });
 
-  it('요금제 종류(planType)가 없던 같은 버전의 /me는 스키마 기본값(null)을 채워 복원한다', async () => {
-    // Given
-    const user = toUser(createCurrentUserDto());
-    const { planType: _omitted, ...premiumAccessWithoutPlanType } = user.premiumAccess;
-    const cache = replaceData(createValidCache(), ME_KEY, {
-      ...user,
-      premiumAccess: premiumAccessWithoutPlanType,
-    });
-
-    // When
-    const { restored } = await saveThenRestore(cache);
-
-    // Then
-    expect(restored.getQueryData(ME_KEY)).toEqual(user);
-    expect(restored.getQueryData<typeof user>(ME_KEY)?.premiumAccess.planType).toBeNull();
-  });
-
   it('한 항목만 깨진 목록은 목록 조회 전체를 버린다', async () => {
     // Given
     const broken = { ...createParentTodo(), scheduledAt: '어제' };
