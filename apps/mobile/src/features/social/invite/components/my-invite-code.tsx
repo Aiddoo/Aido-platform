@@ -25,7 +25,7 @@ import {
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 
 /** 내 초대 코드와 링크. 코드는 길게 눌러 고를 수 있고 복사 버튼으로 링크를 복사한다 */
-export function MyInviteCode({ className, ...props }: ComponentProps<typeof VStack>) {
+export function MyInviteCode() {
   const { t } = useTranslation(['invite', 'common']);
   const createInviteShareContent = useCreateInviteShareContent();
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
@@ -49,7 +49,7 @@ export function MyInviteCode({ className, ...props }: ComponentProps<typeof VSta
   };
 
   return (
-    <MyInviteCodeSurface className={className} {...props}>
+    <MyInviteCodeSurface>
       <Text size="b4" weight="semibold" shade={6}>
         {t('myInvite.codeLabel')}
       </Text>

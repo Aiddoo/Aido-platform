@@ -27,6 +27,7 @@ import {
   WordWrapText,
   Mascot,
 } from '@src/shared/ui';
+import { tv } from '@src/shared/utils/tv';
 import { useQueryClient } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
 import { Suspense, type ReactNode } from 'react';
@@ -71,7 +72,7 @@ export default function MyInviteScreen() {
               </Box>
 
               {/* 친구와 내가 각각 무엇을 언제 받는지 이름표와 함께 한 줄씩 나눠 보여 준다 */}
-              <VStack className="gap-3.5 rounded-3xl border border-gray-2 bg-gray-1 px-4.5 py-4">
+              <InviteCard>
                 <RewardLine
                   label={t('myInvite.rewardInviteeLabel')}
                   value={t('myInvite.rewardInvitee', { days: INVITEE_PREMIUM_DAYS })}
@@ -83,7 +84,7 @@ export default function MyInviteScreen() {
                     days: FIRST_INVITER_PREMIUM_DAYS,
                   })}
                 />
-              </VStack>
+              </InviteCard>
 
               {/* 세 블록이 같은 초대 조회를 읽으므로 실패는 한 곳에서 한 번만 알린다. 불러오는 동안은 블록마다 자리를 지킨다 */}
               <QueryErrorBoundary fallback={MyInviteScreen.Error}>
@@ -95,11 +96,11 @@ export default function MyInviteScreen() {
                   <InviteShareActions />
                 </Suspense>
 
-                <PawPrintBoardCard>
+                <InviteCard title={t('pawPrintBoard.title')}>
                   <Suspense fallback={<InvitePawPrintBoard.Loading />}>
                     <InvitePawPrintBoard />
                   </Suspense>
-                </PawPrintBoardCard>
+                </InviteCard>
               </QueryErrorBoundary>
 
               {/* 초대한 친구 요약은 다른 조회라 실패해도 위 블록을 지우지 않는다 */}
@@ -148,9 +149,9 @@ MyInviteScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallba
       <>
         <MyInviteCode.Unavailable />
         <InviteShareActions.Unavailable />
-        <PawPrintBoardCard>
+        <InviteCard title={t('pawPrintBoard.title')}>
           <InvitePawPrintBoard.Unavailable />
-        </PawPrintBoardCard>
+        </InviteCard>
       </>
     );
   }
@@ -179,12 +180,16 @@ function RewardLine({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PawPrintBoardCard({ children }: { children: ReactNode }) {
-  const { t } = useTranslation('invite');
+const inviteCard = tv({
+  base: 'rounded-3xl border border-gray-2 bg-gray-1 px-4.5',
+  variants: { hasTitle: { true: 'py-5', false: 'py-4' } },
+});
 
+/** 이 화면의 회색 카드 틀. 제목이 있으면 위아래를 조금 더 띄운다 */
+function InviteCard({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-gray-1 px-4.5 py-5">
-      <H4>{t('pawPrintBoard.title')}</H4>
+    <VStack gap={14} className={inviteCard({ hasTitle: title != null })}>
+      {title != null && <H4>{title}</H4>}
       {children}
     </VStack>
   );

@@ -23,7 +23,7 @@ import { useShareInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import type { InviteShareChannel } from '../services/invite-share.service';
 
-export function InviteShareActions(props: ComponentProps<typeof VStack>) {
+export function InviteShareActions() {
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
     queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
   });
@@ -44,12 +44,7 @@ export function InviteShareActions(props: ComponentProps<typeof VStack>) {
     );
 
   return (
-    <InviteShareButtons
-      isDisabled={share.isPending}
-      isCopied={isCopied}
-      onShare={handleShare}
-      {...props}
-    />
+    <InviteShareButtons isDisabled={share.isPending} isCopied={isCopied} onShare={handleShare} />
   );
 }
 
@@ -63,23 +58,17 @@ InviteShareActions.Unavailable = function Unavailable() {
   return <InviteShareButtons isDisabled isCopied={false} onShare={noop} />;
 };
 
-interface InviteShareButtonsProps extends ComponentProps<typeof VStack> {
+interface InviteShareButtonsProps {
   isDisabled: boolean;
   isCopied: boolean;
   onShare: (channel: InviteShareChannel) => void;
 }
 
-function InviteShareButtons({
-  isDisabled,
-  isCopied,
-  onShare,
-  className,
-  ...props
-}: InviteShareButtonsProps) {
+function InviteShareButtons({ isDisabled, isCopied, onShare }: InviteShareButtonsProps) {
   const { t } = useTranslation('invite');
 
   return (
-    <VStack gap={10} className={className} {...props}>
+    <VStack gap={10}>
       <Button
         testID="invite-share-kakao"
         className="h-[54px] bg-kakao"
