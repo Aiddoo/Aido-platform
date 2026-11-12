@@ -45,20 +45,25 @@ interface WeeklyAchievementListProps {
 export function WeeklyAchievementList({ header }: WeeklyAchievementListProps) {
   const year = getIsoWeekYear(useTodayKey());
   const queryClient = useQueryClient();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
-    useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions({ year }));
+  const {
+    data: weeklyAchievements,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions({ year }));
   const [isRefreshing, handleRefresh] = useRefresh(() =>
     refreshWeeklyAchievements(queryClient, { year }),
   );
 
   return (
     <InfiniteList
-      data={data.items}
+      data={weeklyAchievements.items}
       keyExtractor={(item) => String(item.id)}
       contentContainerClassName="px-4"
       contentContainerStyle={{
         flexGrow: 1,
-        justifyContent: data.items.length === 0 ? 'center' : 'flex-start',
+        justifyContent: weeklyAchievements.items.length === 0 ? 'center' : 'flex-start',
         paddingBottom: LIST_BOTTOM_SPACE,
       }}
       ListHeaderComponent={header}

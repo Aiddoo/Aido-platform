@@ -31,19 +31,25 @@ const BLOCKED_USER_LIST_CONTENT_STYLE = { flexGrow: 1, paddingTop: 20, paddingBo
 /** 내가 차단한 사용자. 최근에 차단한 순서로 서버가 준 그대로 보여 준다 */
 export function BlockedUserList() {
   const { t } = useTranslation('moderation');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
-    useSuspenseInfiniteQuery(useGetBlockedUsersInfiniteQueryOptions());
+  const {
+    data: blockedUserList,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
+  } = useSuspenseInfiniteQuery(useGetBlockedUsersInfiniteQueryOptions());
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   return (
     <InfiniteList
-      data={data.blockedUsers}
+      data={blockedUserList.blockedUsers}
       keyExtractor={(blockedUser) => blockedUser.id}
       renderItem={({ item, index }) => (
         <SettingsListGroup.Segment
-          label={t('blockedUsers.totalCount', { count: data.totalCount })}
+          label={t('blockedUsers.totalCount', { count: blockedUserList.totalCount })}
           isFirst={index === 0}
-          isLast={index === data.blockedUsers.length - 1}
+          isLast={index === blockedUserList.blockedUsers.length - 1}
         >
           <BlockedUserList.Item blockedUser={item} />
         </SettingsListGroup.Segment>

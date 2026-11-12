@@ -67,7 +67,7 @@ interface FriendListProps {
 export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
   const { t } = useTranslation('friend');
   const {
-    data,
+    data: friendList,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -85,7 +85,7 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => refreshFriends(queryClient));
 
-  const { items: friends, totalCount } = data;
+  const { items: friends, totalCount } = friendList;
 
   const reorderableList = useReorderableList({
     items: friends,

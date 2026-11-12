@@ -73,10 +73,10 @@ export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
 ThanksSummaryRow.Preview = function Preview({ todoId, onOpenThanks }: ThanksSummaryRowProps) {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
-  const { data } = useSuspenseInfiniteQuery(
+  const { data: thanksPreviewPages } = useSuspenseInfiniteQuery(
     useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),
   );
-  const preview = data.pages[0];
+  const preview = thanksPreviewPages.pages[0];
   const heartStyle = useThanksCelebration(preview?.thankedRecipientCount ?? 0);
 
   if (preview == null) {
