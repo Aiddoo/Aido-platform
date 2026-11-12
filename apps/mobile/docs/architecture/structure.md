@@ -127,7 +127,7 @@ features/{area}/{feature}/
 - 표에 없는 기능은 층이 정해질 때까지 import하지 않는다. 새 기능은 층 표와 dependency-cruiser 설정에 함께 더한다.
 - `di-context`의 `use{X}` 훅은 돌려주는 값의 주인 기능을 import한 것으로 센다.
 - `device/*`는 묶음일 뿐 한 층이 아니다. 실제로 보는 대상에 맞춰 둔다(`activation`은 할 일·알림·초대를 읽어 4층, `app-icon`은 1층).
-- 다른 기능의 `apis/`는 가져오지 않는다. 순수 변환인 `planning/todo/apis/todo-repeat.mapper.ts`와 `billing/subscription/apis/entitlement.mapper.ts`만 예외다.
+- 다른 기능의 `apis/`는 가져오지 않는다. 순수 변환인 `planning/todo/apis/todo-repeat.mapper.ts`, `planning/todo/apis/todo.mapper.ts`(메모 옮기기의 `toCreateTodoRequest`, 할 일 고치기 시트의 `toTodoFormValues`), `billing/subscription/apis/entitlement.mapper.ts`만 예외다.
 - `app/` 파일은 모두 route라 공용 파일을 옆에 둘 수 없다. 두 route가 같은 조립을 쓰면 route에서 export하지 않고 컴포넌트로 둔다. 한 기능의 조각만 조립하면 그 기능의 `components/`(`notification/components/settings/weather-notification-settings.tsx`), 여러 기능을 조립하면 `bootstrap/navigation/`(`my-page-stack.tsx`, `subscription-checkout.tsx`)이다.
 - 테스트 도구(`src/testing/`)는 조립을 위해 위층을 볼 수 있다. 층 규칙은 운영 코드에만 걸린다.
 

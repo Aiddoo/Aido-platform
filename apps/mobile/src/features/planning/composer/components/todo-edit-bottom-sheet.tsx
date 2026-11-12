@@ -32,11 +32,10 @@ import { Suspense } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
-import { TodoChangePolicy } from '../domains/todo-change.model';
+import { getTodoUpdateChanges, TodoChangePolicy } from '../domains/todo-change.model';
 import { useFocusTodoTitle } from '../hooks/use-focus-todo-title';
 import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
 import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
-import { toTodoUpdateChanges } from '../utils/to-todo-update-changes';
 import { TodoComposerChips } from './todo-composer-chips';
 import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
@@ -148,7 +147,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
 
   const submitTodo = form.handleSubmit(async (values) => {
     try {
-      const changes = toTodoUpdateChanges(values, savedValues);
+      const changes = getTodoUpdateChanges(values, savedValues);
       if (!TodoChangePolicy.hasTodoUpdateChanges(changes)) {
         onClose();
 
@@ -175,7 +174,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
       await updateTodo.mutateAsync(
         {
           todoId: todo.id,
-          input: changes.input,
+          fields: changes.fields,
           options: {
             ...(choice.kind === 'scoped' && { scope: choice.scope }),
             // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 보낸다

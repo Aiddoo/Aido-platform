@@ -1,6 +1,6 @@
 import {
   type CreateTodoInput,
-  type DailyCompletionSummary as DailyCompletionSummaryDTO,
+  type DailyCompletionSummary as DailyCompletionSummaryDto,
   type DailyCompletionsRangeResponse,
   type FriendTodoListResponse,
   type Todo as TodoDto,
@@ -8,6 +8,7 @@ import {
   type TodoListResponse,
   type TodoOverviewResponse,
   type TodoSummaryResponse,
+  type UpdateTodoInput,
 } from '@aido/api';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toNullableInstant } from '@src/shared/date/instant';
@@ -23,10 +24,12 @@ import {
   type TodoDetails,
   type TodoOverview,
   TodoPolicy,
+  type TodoFieldChanges,
   type TodoSummary,
   type TodoListResult,
 } from '../domains/todo.model';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
+import type { TodoSeriesEditOptions } from '../schemas/todo-series-request.schema';
 import { toSubTodo } from './sub-todo.mapper';
 import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
 
@@ -50,7 +53,7 @@ export function toTodo(dto: TodoDto): Todo {
   };
 }
 
-function toDailyCompletionSummary(dto: DailyCompletionSummaryDTO): DailyCompletionSummary {
+function toDailyCompletionSummary(dto: DailyCompletionSummaryDto): DailyCompletionSummary {
   return {
     date: dateKeySchema.parse(dto.date),
     totalTodos: dto.totalTodos,
@@ -155,5 +158,19 @@ export function toTodoFormValues(todo: Todo, timeZone: string): TodoFormValues {
     isAllDay: todo.isAllDay,
     visibility: todo.visibility,
     repeat: todo.repeat,
+  };
+}
+
+/** 할 일 고치기 요청. 고친 칸에 반복 범위·규칙·체크리스트를 붙인다 */
+export function toUpdateTodoRequest(
+  fields: TodoFieldChanges,
+  { scope, repeat, checklist }: TodoSeriesEditOptions,
+): UpdateTodoInput {
+  return {
+    ...fields,
+    ...(scope != null && { scope }),
+    // oxlint-disable-next-line aido/no-strict-nullish -- 생략은 규칙 유지, null은 이 회차 뒤로 끝내기다
+    ...(repeat !== undefined && { repeat: repeat == null ? null : toRepeatDto(repeat) }),
+    ...(checklist != null && { checklist: checklist.map(({ title }) => ({ title })) }),
   };
 }

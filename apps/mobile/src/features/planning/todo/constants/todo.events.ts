@@ -1,8 +1,9 @@
-import type { UpdateTodoInput } from '../schemas/todo-request.schema';
+import type { TodoFieldChanges } from '../domains/todo.model';
 
 type TodoCreationEntry = 'manual' | 'recurring';
 type SeriesScope = 'THIS_ONLY' | 'THIS_AND_FOLLOWING' | 'ALL';
-type TodoEditedField = keyof UpdateTodoInput;
+/** 반복만 바꾼 수정(단일 → 반복 포함)은 repeat 한 칸으로 남긴다 */
+type TodoEditedField = keyof TodoFieldChanges | 'repeat';
 /** 고친 칸 이름을 고친 순서대로 쉼표로 이은 값(`title,startDate`). 다중 칸 버킷은 대시보드를 확인한 뒤 정한다 */
 export type TodoEditedFields = TodoEditedField | `${TodoEditedField},${string}`;
 

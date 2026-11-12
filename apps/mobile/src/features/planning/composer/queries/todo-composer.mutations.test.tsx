@@ -46,7 +46,7 @@ async function updateFollowing(error: ApiError) {
     await update
       .mutateAsync({
         todoId: 1,
-        input: { title: '고친 제목', categoryId: 2 },
+        fields: { title: '고친 제목', categoryId: 2 },
         options: { scope: 'THIS_AND_FOLLOWING' },
       })
       .catch(jest.fn());

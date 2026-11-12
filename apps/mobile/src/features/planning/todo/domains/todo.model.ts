@@ -160,6 +160,13 @@ const todoScheduleSchema = z.object({
 });
 export type TodoSchedule = z.infer<typeof todoScheduleSchema>;
 
+/** 할 일 고치기에서 바꿀 수 있는 칸. 작성·수정 폼 값과 같은 모양이다 */
+export type TodoEditableFields = Omit<TodoSchedule, 'repeat'> &
+  Pick<Todo, 'title' | 'visibility'> & { categoryId: number };
+
+/** 고친 칸만 담는다. 없는 칸은 서버가 그대로 두고 null은 비운다 */
+export type TodoFieldChanges = Partial<TodoEditableFields>;
+
 // 종일이면 남아 있는 시각을 버린다. 시각과 종일을 따로 가진 폼·시트가 보낼 시각이다
 export function getScheduledTime(
   schedule: Pick<TodoSchedule, 'isAllDay' | 'scheduledTime'>,

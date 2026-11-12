@@ -3,6 +3,7 @@ import {
   todoDetailsResponseSchema,
   todoListResponseSchema,
   todoSummaryResponseSchema,
+  updateTodoSchema,
 } from '@aido/api';
 import { toInstant } from '@src/shared/date/instant';
 import { createTestQueryClient } from '@src/testing/core';
@@ -19,6 +20,7 @@ import {
 } from '../__tests__/todo.fixtures';
 import { dailyCompletionsResultSchema } from '../domains/daily-completion.model';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
+import type { TodoRepeat } from '../domains/todo-repeat.model';
 import {
   todoDetailsSchema,
   todoListResultSchema,
@@ -27,6 +29,7 @@ import {
   todoSummarySchema,
 } from '../domains/todo.model';
 import {
+  toUpdateTodoRequest,
   toCreateTodoRequest,
   toDailyCompletionsResult,
   toTodo,
@@ -372,5 +375,57 @@ describe('toTodoFormValues', () => {
     expect(legacyInSeoul.scheduledTime).toBe('10:00');
     expect(legacyInNewYork.scheduledTime).toBe('20:00');
     expect(floatingInNewYork.scheduledTime).toBe('10:00');
+  });
+});
+
+const BIWEEKLY_COUNT_REPEAT: TodoRepeat = {
+  frequency: 'WEEKLY',
+  interval: 2,
+  weekdays: ['TUE'],
+  end: { type: 'COUNT', count: 10 },
+};
+
+describe('toUpdateTodoRequest', () => {
+  it('생략은 유지라 옵션이 없으면 범위·규칙 키를 보내지 않는다', () => {
+    // When
+    const request = toUpdateTodoRequest({ title: '새 제목' }, {});
+
+    // Then
+    expect(request).toEqual({ title: '새 제목' });
+  });
+
+  it('null은 반복 끝내기라 repeat 키를 null로 보낸다', () => {
+    // When
+    const request = toUpdateTodoRequest({}, { repeat: null });
+
+    // Then
+    expect(request).toEqual({ repeat: null });
+  });
+
+  it('규칙 변경은 범위와 함께 계약 모양으로 보낸다', () => {
+    // When
+    const request = updateTodoSchema.parse(
+      toUpdateTodoRequest(
+        { title: '새 제목' },
+        {
+          scope: 'THIS_AND_FOLLOWING',
+          repeat: BIWEEKLY_COUNT_REPEAT,
+          checklist: [{ title: '준비물' }],
+        },
+      ),
+    );
+
+    // Then
+    expect(request).toEqual({
+      title: '새 제목',
+      scope: 'THIS_AND_FOLLOWING',
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 2,
+        weekdays: ['TUE'],
+        end: { type: 'COUNT', count: 10 },
+      },
+      checklist: [{ title: '준비물' }],
+    });
   });
 });

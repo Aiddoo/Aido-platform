@@ -18,7 +18,10 @@ import {
   isRecurringTodoRejection,
 } from '@src/features/planning/todo/domains/todo.error';
 import { getScheduledTime } from '@src/features/planning/todo/domains/todo.model';
-import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
+import type {
+  OptimisticTodo,
+  TodoFieldChanges,
+} from '@src/features/planning/todo/domains/todo.model';
 import { useTodoSeriesFailureFeedback } from '@src/features/planning/todo/hooks/use-todo-series-failure-feedback';
 import {
   appendTodoToList,
@@ -39,7 +42,6 @@ import {
 } from '@src/features/planning/todo/queries/todo-cache';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/queries/todo-mutation-keys';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
-import type { UpdateTodoInput } from '@src/features/planning/todo/schemas/todo-request.schema';
 import type { TodoSeriesEditOptions } from '@src/features/planning/todo/schemas/todo-series-request.schema';
 import { useTrack } from '@src/shared/analytics';
 import type { DateKey } from '@src/shared/date/date-key';
@@ -383,24 +385,24 @@ const TODO_EDITED_FIELD_ORDER = [
   'scheduledTime',
   'isAllDay',
   'visibility',
-] as const satisfies readonly (keyof UpdateTodoInput)[];
+] as const satisfies readonly (keyof TodoFieldChanges)[];
 
 // 칸을 고치지 않고 반복만 바꾼 수정(단일 → 반복 포함)은 repeat 한 칸으로 남긴다
 function toEditedFields(
-  input: UpdateTodoInput,
+  fields: TodoFieldChanges,
   options: TodoSeriesEditOptions = {},
-): TodoEditedFields | null {
-  const [first, ...rest] = TODO_EDITED_FIELD_ORDER.filter((field) => field in input);
+): TodoEditedFields | undefined {
+  const [first, ...rest] = TODO_EDITED_FIELD_ORDER.filter((field) => field in fields);
   if (first == null) {
     // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 바꾼 것이다
-    return options.repeat === undefined ? null : 'repeat';
+    return options.repeat === undefined ? undefined : 'repeat';
   }
   return rest.length === 0 ? first : `${first},${rest.join(',')}`;
 }
 
 interface UpdateTodoVariables {
   todoId: number;
-  input: UpdateTodoInput;
+  fields: TodoFieldChanges;
   options?: TodoSeriesEditOptions;
 }
 
@@ -416,8 +418,8 @@ export function useUpdateTodoMutationOptions() {
     networkMode: 'always',
     // 저장을 기다리는 시트라 낙관적으로 쓰지 않는다. 다른 체크의 낙관적 값을 재조회로 덮지 않게 같은 키로 센다
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ todoId, input, options }: UpdateTodoVariables) => {
-      const result = await todoApi.updateTodo(todoId, input, options);
+    mutationFn: async ({ todoId, fields, options }: UpdateTodoVariables) => {
+      const result = await todoApi.updateTodo(todoId, fields, options);
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
@@ -425,7 +427,7 @@ export function useUpdateTodoMutationOptions() {
       toast.success(t('todo:toast.todoUpdated'));
       trackEvent('todo_edited', {
         todo_id: variables.todoId,
-        field: toEditedFields(variables.input, variables.options) ?? undefined,
+        field: toEditedFields(variables.fields, variables.options),
       });
       if (variables.options?.scope != null) {
         trackEvent('todo_series_edited', { scope: variables.options.scope });

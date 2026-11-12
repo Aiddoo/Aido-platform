@@ -459,13 +459,13 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
     },
     {
       path: '제목 고치기',
-      start: (w) => w.updateTodo.mutateAsync({ todoId: 1, input: { title: '새 제목' } }),
+      start: (w) => w.updateTodo.mutateAsync({ todoId: 1, fields: { title: '새 제목' } }),
       expected: ['list:day', 'widget:day'],
     },
     {
       path: '날짜 옮기기',
       start: (w) =>
-        w.updateTodo.mutateAsync({ todoId: 1, input: { startDate: MOVED_DAY, endDate: null } }),
+        w.updateTodo.mutateAsync({ todoId: 1, fields: { startDate: MOVED_DAY, endDate: null } }),
       expected: ['calendar:month', 'calendar:next-month', 'list:day', 'widget:day'],
     },
     {
@@ -660,7 +660,7 @@ describe('할 일 쓰기의 되돌리기와 겹친 쓰기', () => {
     // Given
     const { tap, settleWrite, listTodo, refetched } = await renderFeed();
     await tap((w) => w.toggleTodo.mutateAsync({ todoId: 2, body: { completed: true }, date: DAY }));
-    await tap((w) => w.updateTodo.mutateAsync({ todoId: 1, input: { title: '새 제목' } }));
+    await tap((w) => w.updateTodo.mutateAsync({ todoId: 1, fields: { title: '새 제목' } }));
 
     // When
     await settleWrite(1);

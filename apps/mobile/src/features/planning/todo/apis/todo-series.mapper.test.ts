@@ -1,4 +1,4 @@
-import { todoRepeatSchema, todoSeriesResponseSchema, updateTodoSchema } from '@aido/api';
+import { todoRepeatSchema, todoSeriesResponseSchema } from '@aido/api';
 import { createDateKey } from '@src/testing/date-key';
 
 import type { TodoRepeat } from '../domains/todo-repeat.model';
@@ -8,7 +8,6 @@ import {
   toFollowingCategoryRequest,
   toFollowingScheduleRequest,
   toTodoSeries,
-  toUpdateTodoRequest,
 } from './todo-series.mapper';
 
 const DAILY: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
@@ -41,47 +40,6 @@ describe('반복 규칙 변환', () => {
 
     // Then
     expect(result).toEqual(repeat);
-  });
-});
-
-describe('toUpdateTodoRequest', () => {
-  it('생략은 유지라 옵션이 없으면 범위·규칙 키를 보내지 않는다', () => {
-    // When
-    const request = toUpdateTodoRequest({ title: '새 제목' }, {});
-
-    // Then
-    expect(request).toEqual({ title: '새 제목' });
-  });
-
-  it('null은 반복 끝내기라 repeat 키를 null로 보낸다', () => {
-    // When
-    const request = toUpdateTodoRequest({}, { repeat: null });
-
-    // Then
-    expect(request).toEqual({ repeat: null });
-  });
-
-  it('규칙 변경은 범위와 함께 계약 모양으로 보낸다', () => {
-    // When
-    const request = updateTodoSchema.parse(
-      toUpdateTodoRequest(
-        { title: '새 제목' },
-        { scope: 'THIS_AND_FOLLOWING', repeat: BIWEEKLY_COUNT, checklist: [{ title: '준비물' }] },
-      ),
-    );
-
-    // Then
-    expect(request).toEqual({
-      title: '새 제목',
-      scope: 'THIS_AND_FOLLOWING',
-      repeat: {
-        frequency: 'WEEKLY',
-        interval: 2,
-        weekdays: ['TUE'],
-        end: { type: 'COUNT', count: 10 },
-      },
-      checklist: [{ title: '준비물' }],
-    });
   });
 });
 

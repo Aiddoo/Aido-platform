@@ -21,10 +21,10 @@ import { isTodoSeriesFailure } from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
 import { useTodoSeriesFailureFeedback } from '../hooks/use-todo-series-failure-feedback';
 import type {
-  ChangeTodoCategoryInput,
-  ReorderTodoInput,
-  ToggleTodoCompleteInput,
-  UpdateTodoScheduleInput,
+  TodoCategoryMove,
+  TodoCompletionChange,
+  TodoReorder,
+  TodoScheduleChange,
 } from '../schemas/todo-request.schema';
 import {
   beginTodoWrite,
@@ -51,7 +51,7 @@ import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 interface ToggleTodoVariables {
   todoId: number;
-  body: ToggleTodoCompleteInput;
+  body: TodoCompletionChange;
   /** 체크한 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: DateKey;
 }
@@ -144,7 +144,7 @@ export function useToggleTodoMutationOptions() {
 
 interface ChangeTodoCategoryVariables {
   todoId: number;
-  input: ChangeTodoCategoryInput;
+  input: TodoCategoryMove;
   scope?: TodoUpdateScope;
 }
 
@@ -286,7 +286,7 @@ export function useDeleteTodoMutationOptions() {
 
 interface ReorderTodoVariables {
   id: number;
-  input: ReorderTodoInput;
+  input: TodoReorder;
 }
 
 export function useReorderTodoMutationOptions() {
@@ -318,7 +318,7 @@ export function useReorderTodoMutationOptions() {
 
 export interface UpdateTodoScheduleVariables {
   todoId: number;
-  input: UpdateTodoScheduleInput;
+  input: TodoScheduleChange;
   /** 사용자가 고친 칸. 저장 안내 문구를 고른다. 안내를 따로 띄우는 곳(날씨 일괄 옮기기)은 넘기지 않는다 */
   changedField?: 'date' | 'time';
   scope?: TodoUpdateScope;
