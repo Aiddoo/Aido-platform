@@ -326,6 +326,31 @@ describe('대기 중인 초대', () => {
     expect(readStoredValue(session.syncStorage, pendingRedemptionStoredValue)).toBeNull();
   });
 
+  it('탈퇴하면 지워 다음 계정이 앞사람의 초대를 받지 않는다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account' ? ok(createDeleteAccountDto()) : ok({}),
+    );
+    writeStoredValue(session.syncStorage, pendingRedemptionStoredValue, PENDING_INVITE);
+    const { result } = await session.renderSession(
+      () => ({
+        status: useAuthStatus(),
+        deleteAccount: useMutation(useDeleteAccountMutationOptions()),
+      }),
+      'authenticated',
+    );
+
+    // When
+    await act(async () => {
+      await result.current.deleteAccount.mutateAsync({ password: 'password-1' });
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(readStoredValue(session.syncStorage, pendingRedemptionStoredValue)).toBeNull();
+  });
+
   it('세션이 만료되면 남겨 다시 로그인한 뒤 이어서 받는다', async () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
