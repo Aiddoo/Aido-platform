@@ -96,7 +96,7 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 
 ### 내비게이터
 
-- 탭은 `NativeTabs`(`expo-router/native-tabs`)이고 탭마다 `Stack`을 둔다. 헤더는 네이티브 헤더만 쓰고 버튼은 `Stack.Toolbar`로 단다.
+- 탭은 `NativeTabs`(`expo-router/native-tabs`)이고 탭마다 `Stack`을 둔다. 헤더는 네이티브 헤더만 쓰고 버튼은 `Stack.Toolbar`로 단다. 피드·메모 탭은 화면과 무관한 왼쪽 날씨 배지를 레이아웃의 `Stack.Screen`에, 화면이 그리는 오른쪽 알림 종(`NotificationBellToolbar`)은 화면에 둔다. 한쪽으로 모으면 레이아웃이 화면 params를 구독하거나 화면이 바뀔 때 배지가 다시 그려진다.
 - 조건이 있는 화면은 `Stack.Protected guard`로 막는다(인증 게이트, 푸시 온보딩, 관리자 화면).
 - 메모와 말로 메모(`voice-notes`) 스택은 `slide_from_bottom`이다. `voice-notes`는 녹음을 실수로 잃지 않게 `gestureEnabled: false`다. 시스템 모달은 토스트·한도 안내를 가려 쓰지 않는다.
 - `@react-navigation/*`를 직접 import하지 않는다. 테마와 `useHeaderHeight`도 `expo-router`·`expo-router/react-navigation`에서 가져온다.
