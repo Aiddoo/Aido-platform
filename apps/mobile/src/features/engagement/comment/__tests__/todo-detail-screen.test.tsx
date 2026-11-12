@@ -14,17 +14,20 @@ import {
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { updateCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
 import { invalidateAfterBlockChange } from '@src/features/social/moderation/queries/moderation-cache';
+import { DRAFT_SAVE_DELAY_MS } from '@src/shared/draft/use-form-draft-autosave';
 import { NetworkError, ServerError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
   createClipboardGatewayStub,
   createHttpClientStub,
+  createMemorySyncStorage,
   createPendingResponse,
   createTestDi,
   deliverQueryNotifications,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -125,6 +128,8 @@ interface RenderTodoDetailOptions {
   analytics?: ReturnType<typeof createAnalyticsStub>;
   /** 고마움 현황 응답. 넘기면 콕 답장·감사를 켠 서버다 */
   thanksPreview?: () => ReturnType<HttpClient['get']>;
+  /** 기기 초안 저장소. 같은 저장소로 다시 그리면 앱을 다시 연 것과 같다 */
+  draftStorage?: ReturnType<typeof createMemorySyncStorage>;
 }
 
 async function renderTodoDetail({
@@ -133,6 +138,7 @@ async function renderTodoDetail({
   listItems = [],
   analytics = createAnalyticsStub(),
   thanksPreview,
+  draftStorage,
 }: RenderTodoDetailOptions = {}) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async (path: string) => {
@@ -169,7 +175,9 @@ async function renderTodoDetail({
   jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
 
   const view = await renderScreen(<TodoDetailRoute />, {
-    di: createTestDi({ ports: { httpClient, analytics, clipboard: createClipboardGatewayStub() } }),
+    di: createTestDi({
+      ports: { httpClient, analytics, clipboard: createClipboardGatewayStub(), draftStorage },
+    }),
     withLocalDate: true,
     withOverlay: true,
   });
@@ -322,6 +330,28 @@ describe('TodoDetailRoute', () => {
       } finally {
         onlineManager.setOnline(true);
       }
+    });
+  });
+
+  describe('댓글 초안', () => {
+    setupFakeTimersPerTest({ advanceTimers: true });
+
+    it('새 댓글을 쓰다 화면을 떠난 뒤 앱을 다시 열어 같은 할 일을 열면 쓰던 글이 입력창에 돌아온다', async () => {
+      // Given
+      const draftStorage = createMemorySyncStorage();
+      const { unmount } = await renderTodoDetail({ draftStorage });
+      await fireEvent.changeText(screen.getByTestId('todo-comment-input-0'), '쓰다 만 댓글');
+      await act(() => jest.advanceTimersByTimeAsync(DRAFT_SAVE_DELAY_MS));
+      await unmount();
+
+      // When
+      await renderTodoDetail({ draftStorage });
+
+      // Then
+      await waitFor(() =>
+        expect(screen.getByTestId('todo-comment-input-0').props.value).toBe('쓰다 만 댓글'),
+      );
+      await waitFor(() => expect(screen.getByTestId('todo-comment-submit')).toBeEnabled());
     });
   });
 

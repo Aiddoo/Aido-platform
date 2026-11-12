@@ -183,7 +183,7 @@ const form = useForm({
 - 서버 4xx 중 칸에 속한 오류는 `form.setError`로 그 칸에 보인다. 코드와 칸의 매핑은 `domains/{feature}.error.ts`에 둔다. 실패해도 입력값을 지우지 않는다.
 - 생성과 수정은 스키마와 입력 부품만 공유하고 제출은 각자 소유한다. 공통 부품에 `mode`·`onSubmit` 분기를 넘기지 않는다.
 - 확인할 동작: 성공하면 닫힘·갱신·초안 삭제·이벤트 한 번, 4xx·연결 끊김이면 입력값·초안 유지와 안내 한 번, 두 번 눌러도 요청 한 번, 검증 실패나 바뀐 값 없음이면 요청 없음.
-- **초안.** `useDraftStorage(draftKey)`가 첫 렌더에 동기로 읽어 생성 폼은 `defaultValues`에 넣고, 수정 폼은 그리기 전(`useLayoutEffect`) 고친 글자로 넣는다(`setValue(…, { shouldDirty: true })`, 메모 편집). `useFormDraftAutosave(form.subscribe, …)`가 렌더 없이 디바운스 저장하고, 언마운트 때 대기 저장을 flush하며, 제출 성공·취소 때 대기 저장까지 취소한 뒤 지운다.
+- **초안.** `useDraftStorage(draftKey)`가 첫 렌더에 동기로 읽어 생성 폼은 `defaultValues`에 넣고, 수정 폼은 그리기 전(`useLayoutEffect`) 고친 글자로 넣는다(`setValue(…, { shouldDirty: true })`, 메모 편집). 칸 목록(`useFieldArray`)은 그 훅의 `replace`로 넣는다. RN의 RHF는 칸 구독을 `useEffect`로 걸어 먼저 도는 effect의 `setValue`를 첫 마운트에 놓친다(댓글 작성기). `useFormDraftAutosave(form.subscribe, …)`가 렌더 없이 디바운스 저장하고, 언마운트 때 대기 저장을 flush하며, 제출 성공·취소 때 대기 저장까지 취소한 뒤 지운다.
 - 초안 키는 `utils/{feature}-draft.ts`의 순수 함수가 `createDraftKey`로 만들고 사용자 id가 들어간다. 저장소는 암호화 MMKV이고 `DRAFT_TTL_MS`가 지난 초안과 원본보다 오래된 편집 초안은 버린다. 비밀번호·인증 코드는 초안으로 저장하지 않고, 긴 본문을 URL·Query 캐시에 넣지 않는다.
 
 ## 메모리와 수명

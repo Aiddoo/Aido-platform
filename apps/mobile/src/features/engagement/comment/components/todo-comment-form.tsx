@@ -85,7 +85,7 @@ export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormPr
   const { height: viewportHeight } = useWindowDimensions();
   const { control, setFocus, getValues, reset } = useTodoCommentForm();
   const mode = useWatch({ control, name: 'mode' });
-  const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+  const { fields, append, remove, replace } = useFieldArray({ control, name: 'items' });
   const isSubmitting = useIsTodoCommentSubmitting();
   const [focusedFieldIndex, setFocusedFieldIndex] = useState(0);
   const pendingFocusFrameRef = useRef<number | null>(null);
@@ -144,6 +144,7 @@ export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormPr
       <TodoCommentDraftAutosave
         userId={user.id}
         mode={mode}
+        restoreItems={replace}
         key={createTodoCommentDraftKey({ userId: user.id, todoId, mode }).id}
       />
       <VStack gap={6}>
@@ -267,14 +268,17 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
 function TodoCommentDraftAutosave({
   userId,
   mode,
+  restoreItems,
 }: {
   userId: string;
   mode: TodoCommentComposerMode;
+  /** 입력칸 목록을 가진 `useFieldArray`의 `replace` */
+  restoreItems: (items: TodoCommentFormValues['items']) => void;
 }) {
   const [todoId] = useTodoId();
   const { t } = useTranslation('todoComment');
   const toast = useAppToast();
-  const { subscribe, setValue } = useTodoCommentForm();
+  const { subscribe } = useTodoCommentForm();
   const draftKey = createTodoCommentDraftKey({ userId, todoId, mode });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(draftKey, {
     sourceUpdatedAt: getTodoCommentDraftSourceUpdatedAt(mode),
@@ -288,11 +292,12 @@ function TodoCommentDraftAutosave({
       .exhaustive(),
   );
 
+  // RN의 RHF는 칸 구독을 이 effect보다 늦게 걸어 첫 마운트의 setValue를 놓친다. replace는 칸 목록을 직접 바꾼다
   useEffect(() => {
     if (restoredDraft != null) {
-      setValue('items', restoredDraft.items);
+      restoreItems(restoredDraft.items);
     }
-  }, [restoredDraft, setValue]);
+  }, [restoredDraft, restoreItems]);
 
   useFormDraftAutosave(subscribe, {
     initialValues,
