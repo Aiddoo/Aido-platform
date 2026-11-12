@@ -3,7 +3,9 @@ import { useEffect, useMemo } from 'react';
 import { type SharedValue, useAnimatedReaction, useSharedValue } from 'react-native-reanimated';
 import { scheduleOnUI } from 'react-native-worklets';
 
-// Skia usePathValue는 콜백 안 shared value를 입력으로 찾지 못하고 앞 경로를 놓지 않는다. 입력은 read가 읽은 값뿐이다
+// Skia usePathValue는 콜백 안 shared value를 입력으로 찾지 못하고 앞 경로를 놓지 않는다. 입력은 read가 읽은 값뿐이다.
+// 정리 effect가 마운트마다 한 번만 돈다고 본다. StrictMode·expo-router activityEnabled(React Activity)처럼 effect만
+// 다시 돌면 놓은 빌더·경로를 다시 쓰므로, 둘 중 하나를 켜기 전에 빌더·경로를 effect 안에서 만들도록 바꾼다(ui.md)
 export function useRebuiltPath<T>(
   read: () => T,
   draw: (builder: SkPathBuilder, input: T) => void,
