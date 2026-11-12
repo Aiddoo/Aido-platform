@@ -197,6 +197,8 @@ export const ErrorCode = {
   NUDGE_1108: "NUDGE_1108",
   NUDGE_1109: "NUDGE_1109",
   NUDGE_1110: "NUDGE_1110",
+  /** 서버 설정으로 콕 답장·감사가 꺼졌다. 1.15.1 이하 앱은 같은 경우에 NUDGE_1105를 받는다 */
+  NUDGE_1111: "NUDGE_1111",
 
   // 응원 (CHEER_1200-1299)
   CHEER_1201: "CHEER_1201",
@@ -1112,6 +1114,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "할 일을 완료한 뒤 감사를 전해주세요.",
     description: "아직 완료하지 않은 할 일에는 감사를 전할 수 없습니다.",
     httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.NUDGE_1111]: {
+    code: "NUDGE_1111",
+    message: "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+    description:
+      "서버 설정으로 콕 답장·감사 기능이 꺼져 있습니다. 앱은 답장·감사 진입점과 보낸 콕 목록을 숨깁니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
   },
 
   // 응원 (CHEER_1200-1299)

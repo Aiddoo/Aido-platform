@@ -12,9 +12,9 @@ export function isNudgeUnavailableError(error: unknown): error is ApiError {
   return isApiError(error) && error.status === HttpStatus.NOT_FOUND;
 }
 
-/** 서버 플래그로 보낸 콕 목록이 꺼져 있다(NUDGE_1105) */
+/** 서버 플래그로 콕 답장·감사가 꺼져 보낸 콕 목록도 꺼져 있다(NUDGE_1111) */
 export function isSentNudgeListDisabledError(error: unknown): error is ApiError {
-  return isApiError(error) && error.hasCode(ErrorCode.NUDGE_1105);
+  return isApiError(error) && error.hasCode(ErrorCode.NUDGE_1111);
 }
 
 /** 서버에서 그 할 일이 아직 완료 전이다(NUDGE_1110). 다른 기기에서 완료를 풀었거나 완료 저장보다 먼저 닿은 요청이다 */

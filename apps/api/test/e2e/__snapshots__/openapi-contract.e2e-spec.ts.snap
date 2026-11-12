@@ -49753,7 +49753,7 @@ SYS_0002: 잘못된 파라미터입니다.",
   },
   "/v1/nudges/interactions": {
     "get": {
-      "description": "받은 콕(received) 또는 보낸 콕(sent)을 커서로 조회합니다. 각 항목의 isAvailable은 지금 답장·감사를 할 수 있는지입니다. 기능이 꺼져 있으면 NUDGE_1105입니다.",
+      "description": "받은 콕(received) 또는 보낸 콕(sent)을 커서로 조회합니다. 각 항목의 isAvailable은 지금 답장·감사를 할 수 있는지입니다. 기능이 꺼져 있으면 NUDGE_1111입니다(1.15.2 미만 앱은 NUDGE_1105).",
       "operationId": "getNudgeInteractions",
       "parameters": [
         {
@@ -49932,11 +49932,41 @@ SYS_0002: 잘못된 파라미터입니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "NUDGE_1105": {
+                  "summary": "Nudge를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1105",
+                      "details": null,
+                      "message": "Nudge를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NUDGE_1111": {
+                  "summary": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1111",
+                      "details": null,
+                      "message": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "NUDGE_1105",
+                          "NUDGE_1111",
+                        ],
                         "example": "NUDGE_1105",
                         "type": "string",
                       },
@@ -49974,7 +50004,9 @@ SYS_0002: 잘못된 파라미터입니다.",
               },
             },
           },
-          "description": "Nudge를 찾을 수 없습니다.",
+          "description": "NUDGE_1105: Nudge를 찾을 수 없습니다.
+
+NUDGE_1111: 지금은 콕 답장과 감사를 사용할 수 없습니다.",
         },
         "500": {
           "content": {
@@ -50000,7 +50032,7 @@ SYS_0002: 잘못된 파라미터입니다.",
   },
   "/v1/nudges/interactions/availability": {
     "get": {
-      "description": "콕 답장·감사 기능이 켜져 있는지 반환합니다. 꺼져 있으면 앱은 답장·감사 진입점을 숨기고, 아래 콕 답장·감사 API는 NUDGE_1105로 응답합니다.",
+      "description": "콕 답장·감사 기능이 켜져 있는지 반환합니다. 꺼져 있으면 앱은 답장·감사 진입점을 숨기고, 아래 콕 답장·감사 API는 NUDGE_1111로 응답합니다(X-App-Version이 1.15.2보다 낮거나 없으면 NUDGE_1105).",
       "operationId": "getNudgeInteractionAvailability",
       "parameters": [],
       "responses": {
@@ -51102,7 +51134,7 @@ SYS_0002: 잘못된 파라미터입니다.",
   },
   "/v1/nudges/todos/{todoId}/thanks": {
     "get": {
-      "description": "완료한 내 할 일에 콕을 보낸 현재 친구를 미리 봅니다. 아직 완료하지 않은 할 일이면(완료 저장보다 먼저 도착한 조회 포함) 친구 없이 0명인 빈 미리보기를 반환합니다. 기능이 꺼져 있거나 throughNudgeId가 이 할 일에서 받은 콕이 아니면 NUDGE_1105입니다.",
+      "description": "완료한 내 할 일에 콕을 보낸 현재 친구를 미리 봅니다. 아직 완료하지 않은 할 일이면(완료 저장보다 먼저 도착한 조회 포함) 친구 없이 0명인 빈 미리보기를 반환합니다. throughNudgeId가 이 할 일에서 받은 콕이 아니면 NUDGE_1105, 기능이 꺼져 있으면 NUDGE_1111입니다(1.15.2 미만 앱은 NUDGE_1105).",
       "operationId": "getNudgeThanksPreview",
       "parameters": [
         {
@@ -51305,6 +51337,18 @@ SYS_0002: 잘못된 파라미터입니다.",
                     "timestamp": 1700000000000,
                   },
                 },
+                "NUDGE_1111": {
+                  "summary": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1111",
+                      "details": null,
+                      "message": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
                 "TODO_0801": {
                   "summary": "Todo를 찾을 수 없습니다.",
                   "value": {
@@ -51325,6 +51369,7 @@ SYS_0002: 잘못된 파라미터입니다.",
                       "code": {
                         "enum": [
                           "NUDGE_1105",
+                          "NUDGE_1111",
                           "TODO_0801",
                         ],
                         "example": "NUDGE_1105",
@@ -51365,6 +51410,8 @@ SYS_0002: 잘못된 파라미터입니다.",
             },
           },
           "description": "NUDGE_1105: Nudge를 찾을 수 없습니다.
+
+NUDGE_1111: 지금은 콕 답장과 감사를 사용할 수 없습니다.
 
 TODO_0801: Todo를 찾을 수 없습니다.",
         },
@@ -51556,6 +51603,18 @@ TODO_0801: Todo를 찾을 수 없습니다.",
                     "timestamp": 1700000000000,
                   },
                 },
+                "NUDGE_1111": {
+                  "summary": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1111",
+                      "details": null,
+                      "message": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
                 "TODO_0801": {
                   "summary": "Todo를 찾을 수 없습니다.",
                   "value": {
@@ -51576,6 +51635,7 @@ TODO_0801: Todo를 찾을 수 없습니다.",
                       "code": {
                         "enum": [
                           "NUDGE_1105",
+                          "NUDGE_1111",
                           "TODO_0801",
                         ],
                         "example": "NUDGE_1105",
@@ -51616,6 +51676,8 @@ TODO_0801: Todo를 찾을 수 없습니다.",
             },
           },
           "description": "NUDGE_1105: Nudge를 찾을 수 없습니다.
+
+NUDGE_1111: 지금은 콕 답장과 감사를 사용할 수 없습니다.
 
 TODO_0801: Todo를 찾을 수 없습니다.",
         },
@@ -51769,7 +51831,7 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
   },
   "/v1/nudges/{id}/interaction": {
     "get": {
-      "description": "콕 하나의 답장·감사 상태를 조회합니다. 내가 보내거나 받은 콕이 아니거나 기능이 꺼져 있으면 NUDGE_1105입니다.",
+      "description": "콕 하나의 답장·감사 상태를 조회합니다. 내가 보내거나 받은 콕이 아니면 NUDGE_1105, 기능이 꺼져 있으면 NUDGE_1111입니다(1.15.2 미만 앱은 NUDGE_1105).",
       "operationId": "getNudgeInteraction",
       "parameters": [
         {
@@ -51921,11 +51983,41 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "NUDGE_1105": {
+                  "summary": "Nudge를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1105",
+                      "details": null,
+                      "message": "Nudge를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NUDGE_1111": {
+                  "summary": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1111",
+                      "details": null,
+                      "message": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "NUDGE_1105",
+                          "NUDGE_1111",
+                        ],
                         "example": "NUDGE_1105",
                         "type": "string",
                       },
@@ -51963,7 +52055,9 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
               },
             },
           },
-          "description": "Nudge를 찾을 수 없습니다.",
+          "description": "NUDGE_1105: Nudge를 찾을 수 없습니다.
+
+NUDGE_1111: 지금은 콕 답장과 감사를 사용할 수 없습니다.",
         },
         "500": {
           "content": {
@@ -52362,11 +52456,41 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "NUDGE_1105": {
+                  "summary": "Nudge를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1105",
+                      "details": null,
+                      "message": "Nudge를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NUDGE_1111": {
+                  "summary": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1111",
+                      "details": null,
+                      "message": "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "NUDGE_1105",
+                          "NUDGE_1111",
+                        ],
                         "example": "NUDGE_1105",
                         "type": "string",
                       },
@@ -52404,7 +52528,9 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
               },
             },
           },
-          "description": "Nudge를 찾을 수 없습니다.",
+          "description": "NUDGE_1105: Nudge를 찾을 수 없습니다.
+
+NUDGE_1111: 지금은 콕 답장과 감사를 사용할 수 없습니다.",
         },
         "409": {
           "content": {
