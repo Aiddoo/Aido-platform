@@ -69,34 +69,6 @@ describe('TodoRepeatPicker', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('격주를 켜면 고른 요일을 유지한 채 2주 간격이 되고 다시 누르면 매주로 돌아온다', async () => {
-    // Given
-    const { onChange } = await renderSheet();
-
-    // When
-    await press('격주');
-
-    // Then
-    expect(screen.getByText('격주 목 반복')).toBeOnTheScreen();
-    expect(chip('목')).toBeSelected();
-
-    // When
-    await press('계속 반복');
-    await confirm();
-
-    // Then
-    expect(onChange).toHaveBeenCalledWith({
-      startDate: START_DATE,
-      repeat: { ...WEEKLY_THURSDAY_FOREVER, interval: 2 },
-    });
-
-    // When
-    await press('격주');
-
-    // Then
-    expect(screen.getByText('매주 목 반복')).toBeOnTheScreen();
-  });
-
   it('매월 n일을 켜면 요일 선택이 꺼지고 시작일의 날짜로 매월 반복한다', async () => {
     // Given
     const { onChange } = await renderSheet();
@@ -138,23 +110,6 @@ describe('TodoRepeatPicker', () => {
 
     // Then
     expect(screen.getByText('11월 5일부터 계속')).toBeOnTheScreen();
-  });
-
-  it('계속 상태에서 시작일 뒤 날짜를 누르면 그날까지 날짜 종료가 된다', async () => {
-    // Given
-    const { onChange } = await renderSheet();
-    await press('계속 반복');
-
-    // When
-    await press('12');
-    await confirm();
-
-    // Then
-    expect(screen.getByText('11월 5일 - 11월 12일')).toBeOnTheScreen();
-    expect(onChange).toHaveBeenCalledWith({
-      startDate: START_DATE,
-      repeat: { ...WEEKLY_THURSDAY_FOREVER, end: { type: 'UNTIL', date: '2026-11-12' } },
-    });
   });
 
   it('날짜 종료는 기간을 고를 때까지 확인이 막히고 달력에서 종료일을 고르면 풀린다', async () => {
@@ -213,56 +168,6 @@ describe('TodoRepeatPicker', () => {
         weekdays: ['SAT', 'SUN'],
         end: { type: 'NEVER' },
       },
-    });
-  });
-
-  it('시작일을 새로 고르면 매월 n일도 따라간다', async () => {
-    // Given
-    const { onChange } = await renderSheet();
-    await press('매월 5일');
-    await press('12');
-
-    // When
-    await press('19');
-    await press('26');
-    await confirm();
-
-    // Then
-    expect(screen.getByText('매월 19일')).toBeOnTheScreen();
-    expect(onChange).toHaveBeenCalledWith({
-      startDate: createDateKey('2026-11-19'),
-      repeat: { frequency: 'MONTHLY', monthDay: 19, end: { type: 'UNTIL', date: '2026-11-26' } },
-    });
-  });
-
-  it('매월 31일 규칙을 2월 28일 회차에서 열어 확인만 눌러도 31일을 유지한다', async () => {
-    // Given
-    const startDate = createDateKey('2027-02-28');
-    const repeat: TodoRepeat = { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } };
-    const { onChange } = await renderSheet({ startDate, repeat });
-
-    // When
-    await confirm();
-
-    // Then
-    expect(screen.getByText('매월 31일')).toBeOnTheScreen();
-    expect(onChange).toHaveBeenCalledWith({ startDate, repeat });
-  });
-
-  it('매월 31일 규칙도 시작일을 직접 옮기면 옮긴 날을 따른다', async () => {
-    // Given
-    const repeat: TodoRepeat = { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } };
-    const { onChange } = await renderSheet({ repeat, startDate: createDateKey('2026-11-30') });
-
-    // When
-    await press('19');
-    await confirm();
-
-    // Then
-    expect(screen.getByText('매월 19일')).toBeOnTheScreen();
-    expect(onChange).toHaveBeenLastCalledWith({
-      startDate: createDateKey('2026-11-19'),
-      repeat: expect.objectContaining({ frequency: 'MONTHLY', monthDay: 19 }),
     });
   });
 

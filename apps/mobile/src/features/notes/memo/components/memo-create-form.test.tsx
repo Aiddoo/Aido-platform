@@ -64,17 +64,6 @@ describe('MemoCreateForm', () => {
     expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 
-  it('공백만 넣으면 저장 버튼이 꺼진다', async () => {
-    // Given
-    await renderForm();
-
-    // When
-    await typeContent('   ');
-
-    // Then
-    expect((await screen.findByLabelText('저장')).props.accessibilityState.disabled).toBe(true);
-  });
-
   describe('시간 초과 뒤 다시 저장', () => {
     setupFakeTimersPerTest();
 

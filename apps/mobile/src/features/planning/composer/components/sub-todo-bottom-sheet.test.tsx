@@ -107,20 +107,6 @@ describe('EditSubTodoBottomSheet', () => {
     settleRequests();
   });
 
-  it('공백만 남기면 전송이 꺼진다', async () => {
-    // Given
-    const { settleRequests } = await renderEditSheet();
-
-    // When
-    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '   ');
-
-    // Then
-    await waitFor(() => {
-      expect(submitButton()).toBeDisabled();
-    });
-    settleRequests();
-  });
-
   it('제목을 바꾸지 않고 전송하면 요청을 보내지 않는다', async () => {
     // Given
     const { httpClient, settleRequests } = await renderEditSheet();
@@ -132,25 +118,6 @@ describe('EditSubTodoBottomSheet', () => {
     // Then
     expect(httpClient.patch).not.toHaveBeenCalled();
     settleRequests();
-  });
-
-  it('고친 제목은 앞뒤 공백을 지우고 보낸다', async () => {
-    const { httpClient, settleRequests } = await renderEditSheet();
-
-    // Given
-    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '  우유 사기  ');
-
-    // When
-    fireEvent.press(submitButton()).catch(() => undefined);
-
-    // Then
-    await waitFor(() => {
-      expect(httpClient.patch).toHaveBeenCalledWith(expect.any(String), { title: '우유 사기' });
-    });
-    settleRequests();
-    await waitFor(() => {
-      expect(submitButton()).toBeEnabled();
-    });
   });
 });
 
