@@ -5,8 +5,7 @@
 ## 명령
 
 - `pnpm lint`: Oxlint. `aido/*` 규칙은 `tooling/oxlint-plugin-aido`(RuleTester는 `pnpm --filter @aido/oxlint-plugin test`)이고, 어느 파일에 거는지는 `apps/mobile/.oxlintrc.json`의 overrides가 정한다.
-- `pnpm --filter @aido/mobile lint:deps`: dependency-cruiser(`apps/mobile/.dependency-cruiser.cjs`)와 기능 그래프 리포터(`apps/mobile/scripts/feature-graph.cjs`). `.dependency-cruiser-known-violations.json`의 위반은 건너뛴다(지금 `[]`).
-- `pnpm --filter @aido/mobile lint:deps:baseline`: 고쳐서 사라진 위반을 known-violations에서 지운다(`shrink-only`라 새 위반은 더하지 않는다).
+- `pnpm --filter @aido/mobile lint:deps`: dependency-cruiser(`apps/mobile/.dependency-cruiser.cjs`)와 기능 그래프 리포터(`apps/mobile/scripts/feature-graph.cjs`). 건너뛰는 기존 위반 목록은 없어 위반 하나도 실패다.
 - `pnpm lint:names`: ls-lint(루트 `.ls-lint.yml`).
 - `pnpm check`가 위 셋과 oxfmt·docs-check·knip·typecheck를 함께 돈다(순서는 [루트 AGENTS](../../../../AGENTS.md#명령)).
 

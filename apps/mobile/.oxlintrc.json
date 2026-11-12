@@ -400,7 +400,7 @@
       }
     },
     {
-      "files": ["src/shared/ui/**/*.{spec,test}.{ts,tsx}", "src/shared/ui/**/__tests__/**"],
+      "files": ["src/shared/ui/**/*.{spec,test}.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -683,7 +683,7 @@
       }
     },
     {
-      "files": ["**/hooks/use-*-param.{ts,tsx}", "**/hooks/use-*-params.{ts,tsx}"],
+      "files": ["**/hooks/use-*-params.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -739,10 +739,7 @@
       }
     },
     {
-      "files": [
-        "src/features/**/hooks/use-*-param.{ts,tsx}",
-        "src/features/**/hooks/use-*-params.{ts,tsx}"
-      ],
+      "files": ["src/features/**/hooks/use-*-params.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -817,7 +814,7 @@
       }
     },
     {
-      "files": ["src/**/*.d.ts", "src/**/generated/**", "app/**/*.d.ts"],
+      "files": ["src/**/*.d.ts"],
       "rules": {
         "aido/no-strict-nullish": "off"
       }
@@ -916,13 +913,13 @@
       }
     },
     {
-      "files": ["src/**/*.d.ts", "app/**/*.d.ts"],
+      "files": ["src/**/*.d.ts"],
       "rules": {
         "aido/function-declaration": "off"
       }
     },
     {
-      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "files": ["src/**/domains/**"],
       "rules": {
         "aido/no-role-comparison": "off"
       }
@@ -1011,7 +1008,7 @@
       }
     },
     {
-      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "files": ["src/**/domains/**"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -1033,7 +1030,7 @@
       }
     },
     {
-      "files": ["src/**/queries/*.mutations.ts", "app/**/queries/*.mutations.ts"],
+      "files": ["src/**/queries/*.mutations.ts"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -1049,7 +1046,7 @@
       }
     },
     {
-      "files": ["src/**/queries/*.mutations.{ts,tsx}", "app/**/queries/*.mutations.{ts,tsx}"],
+      "files": ["src/**/queries/*.mutations.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -1103,16 +1100,14 @@
       "files": [
         "src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "src/**/__tests__/**",
-        "src/testing/**",
-        "app/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
-        "app/**/__tests__/**"
+        "src/testing/**"
       ],
       "rules": {
         "aido/no-jest-module-mock": "error"
       }
     },
     {
-      "files": ["src/shared/infra/**/*.{spec,test}.{ts,tsx}", "src/shared/infra/**/__tests__/**"],
+      "files": ["src/shared/infra/**/*.{spec,test}.{ts,tsx}"],
       "rules": {
         "aido/no-jest-module-mock": [
           "error",
