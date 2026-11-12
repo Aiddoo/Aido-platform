@@ -163,10 +163,13 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
     }
   };
 
-  const row = (
+  // 행 모양을 편집과 상관없이 고정해 편집을 켜고 끌 때 손잡이·내용·삭제 버튼이 미끄러지고 사라지게 둔다.
+  // 끌기는 바깥 행이, 평소 누름은 안쪽 Link가 받는다. 편집 중이 아니면 바깥은 Link를 스크린리더에서 가리지 않는다
+  return (
     <PressableFeedback
       onLongPress={isEditing ? drag : undefined}
       isDisabled={isActive}
+      accessible={isEditing}
       className={cn(isActive && 'bg-gray-1 rounded-xl')}
     >
       <HStack align="center">
@@ -187,68 +190,66 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
           className="flex-1"
           layout={LinearTransition.duration(ANIMATION.durationMs.normal)}
         >
-          <ListRow
-            left={
-              <UserAvatar
-                alt={displayName}
-                className="size-10"
-                profileImage={friend.profileImage}
-              />
-            }
-            contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
-            right={match({ isEditing, isActive })
-              .with({ isEditing: false }, () => (
-                <FriendModerationMenu userId={friend.id} displayName={displayName} />
-              ))
-              .with({ isEditing: true, isActive: false }, () => (
-                <Animated.View
-                  entering={FadeInRight.duration(ANIMATION.durationMs.normal)}
-                  exiting={FadeOutRight.duration(ANIMATION.durationMs.fast)}
-                >
-                  <Button
-                    testID="friend-delete"
-                    variant="weak"
-                    color="danger"
-                    size="small"
-                    display="inline"
-                    onPress={openDeleteConfirmDialog}
-                    isDisabled={removeMutation.isPending}
+          <FriendList.Link friendId={friend.id} displayName={displayName} isEditing={isEditing}>
+            <ListRow
+              left={
+                <UserAvatar
+                  alt={displayName}
+                  className="size-10"
+                  profileImage={friend.profileImage}
+                />
+              }
+              contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
+              right={match({ isEditing, isActive })
+                .with({ isEditing: false }, () => (
+                  <FriendModerationMenu userId={friend.id} displayName={displayName} />
+                ))
+                .with({ isEditing: true, isActive: false }, () => (
+                  <Animated.View
+                    entering={FadeInRight.duration(ANIMATION.durationMs.normal)}
+                    exiting={FadeOutRight.duration(ANIMATION.durationMs.fast)}
                   >
-                    {t('actions.delete')}
-                  </Button>
-                </Animated.View>
-              ))
-              .with({ isEditing: true, isActive: true }, () => null)
-              .exhaustive()}
-          />
+                    <Button
+                      testID="friend-delete"
+                      variant="weak"
+                      color="danger"
+                      size="small"
+                      display="inline"
+                      onPress={openDeleteConfirmDialog}
+                      isDisabled={removeMutation.isPending}
+                    >
+                      {t('actions.delete')}
+                    </Button>
+                  </Animated.View>
+                ))
+                .with({ isEditing: true, isActive: true }, () => null)
+                .exhaustive()}
+            />
+          </FriendList.Link>
         </Animated.View>
       </HStack>
     </PressableFeedback>
-  );
-
-  // 편집 중에는 길게 눌러 끌어 순서를 바꾸므로 Link·메뉴를 붙이지 않는다
-  if (isEditing) {
-    return row;
-  }
-
-  return (
-    <FriendList.Link friendId={friend.id} displayName={displayName}>
-      {row}
-    </FriendList.Link>
   );
 };
 
 interface FriendListLinkProps {
   friendId: string;
   displayName: string;
+  isEditing: boolean;
   children: ReactNode;
 }
 
 /**
  * 누르면 그 친구의 피드로 간다. 피드는 다른 탭이라 미리보기는 붙이지 않고(state-and-routing Link 규칙)
- * 길게 누르면 메뉴만 연다(iOS). 다른 플랫폼은 행의 ⋯ 메뉴가 같은 동작을 맡는다
+ * 길게 누르면 메뉴만 연다(iOS). 다른 플랫폼은 행의 ⋯ 메뉴가 같은 동작을 맡는다.
+ * 편집 중에는 누름을 받지 않아 바깥 행이 길게 눌러 끌기를 받고, 끌기와 겹치는 메뉴도 붙이지 않는다
  */
-FriendList.Link = function FriendLink({ friendId, displayName, children }: FriendListLinkProps) {
+FriendList.Link = function FriendLink({
+  friendId,
+  displayName,
+  isEditing,
+  children,
+}: FriendListLinkProps) {
   const { t } = useTranslation(['friend', 'todo', 'moderation']);
   // Link가 navigate로 열어 같은 화면은 한 번만 쌓인다. 메뉴도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
@@ -257,47 +258,51 @@ FriendList.Link = function FriendLink({ friendId, displayName, children }: Frien
 
   return (
     <Link href={href} asChild>
-      <Link.Trigger>{children}</Link.Trigger>
-      <Link.Menu>
-        <Link.MenuAction icon="person.2" onPress={() => navigate(href)}>
-          {t('friend:list.openFeed')}
-        </Link.MenuAction>
-        <Link.MenuAction
-          icon="hand.point.up.left"
-          onPress={() =>
-            push({
-              pathname: '/users/[userId]/nudge',
-              params: { userId: friendId, name: displayName },
-            })
-          }
-        >
-          {t('todo:friendTodo.nudge')}
-        </Link.MenuAction>
-        <Link.MenuAction
-          icon="flag"
-          onPress={() => {
-            const target = createProfileReportTarget({ userId: friendId });
-            push({
-              pathname: '/users/[userId]/report',
-              params: { userId: friendId, name: displayName, targetType: target.targetType },
-            });
-          }}
-        >
-          {t('moderation:menu.report')}
-        </Link.MenuAction>
-        <Link.MenuAction
-          icon="nosign"
-          destructive
-          onPress={() =>
-            push({
-              pathname: '/users/[userId]/block',
-              params: { userId: friendId, name: displayName },
-            })
-          }
-        >
-          {t('moderation:block.action')}
-        </Link.MenuAction>
-      </Link.Menu>
+      <Link.Trigger>
+        <PressableFeedback isDisabled={isEditing}>{children}</PressableFeedback>
+      </Link.Trigger>
+      {!isEditing && (
+        <Link.Menu>
+          <Link.MenuAction icon="person.2" onPress={() => navigate(href)}>
+            {t('friend:list.openFeed')}
+          </Link.MenuAction>
+          <Link.MenuAction
+            icon="hand.point.up.left"
+            onPress={() =>
+              push({
+                pathname: '/users/[userId]/nudge',
+                params: { userId: friendId, name: displayName },
+              })
+            }
+          >
+            {t('todo:friendTodo.nudge')}
+          </Link.MenuAction>
+          <Link.MenuAction
+            icon="flag"
+            onPress={() => {
+              const target = createProfileReportTarget({ userId: friendId });
+              push({
+                pathname: '/users/[userId]/report',
+                params: { userId: friendId, name: displayName, targetType: target.targetType },
+              });
+            }}
+          >
+            {t('moderation:menu.report')}
+          </Link.MenuAction>
+          <Link.MenuAction
+            icon="nosign"
+            destructive
+            onPress={() =>
+              push({
+                pathname: '/users/[userId]/block',
+                params: { userId: friendId, name: displayName },
+              })
+            }
+          >
+            {t('moderation:block.action')}
+          </Link.MenuAction>
+        </Link.Menu>
+      )}
     </Link>
   );
 };

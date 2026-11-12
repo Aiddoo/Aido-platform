@@ -114,7 +114,7 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 제안 행과 댓글 행은 상세 route가 없어 Link를 붙이지 않는다. 제안은 수락·거절 버튼, 댓글은 길게 누르기 메뉴를 그대로 둔다.
 - Link로 여는 것은 좁은 화면(compact)뿐이다. 넓은 화면의 pane 선택은 기존 `onPress`로 한다.
 - 미리보기는 행과 같은 Stack의 화면만 붙인다. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은 미리보기가 그 navigator에 화면을 미리 넣어 params가 남을 수 있어 탭으로만 연다. 알림함(루트 Stack)은 `/todo/[todoId]`·`/nudges/[nudgeId]`만 미리본다(`findRootStackDetailHref`).
-- 끌기(재정렬) 모드의 행에는 Menu를 붙이지 않는다. 친구 목록은 편집 모드에서 Link를 빼고 끌기만 남기며, 평소에는 친구 피드(다른 탭)로 가는 Link + Menu(피드 보기·콕 찌르기·신고·차단)다.
+- 끌기(재정렬) 모드의 행에는 Menu를 붙이지 않는다. 친구 목록은 평소에는 친구 피드(다른 탭)로 가는 Link + Menu(피드 보기·콕 찌르기·신고·차단)이고, 편집 모드에서는 Menu를 빼고 Link 안 누름을 꺼 바깥 행이 끌기를 받는다. 행 모양(바깥 누름·손잡이·내용 `LinearTransition`)은 두 모드에서 같게 둬 편집 전환 때 다시 그리지 않는다. iOS는 Menu가 있는 Link만 네이티브 감싸개를 써 Link 안쪽(`ListRow`)만 다시 그린다.
 - 내 할 일 행은 상세로 가는 행이 아니라 Link를 붙이지 않는다. 길게 누르기는 끌어서 순서 바꾸기, 탭은 하위 할 일 펼치기이고 상세는 댓글 버튼으로 연다.
 - 탭은 행의 `onPress`(`useSingleTap`으로 연타 막기, 읽음·추적)가 열고 Link의 `onPress`는 `event.preventDefault()`다. Link는 미리보기를 눌러 가는 이동만 맡는다(`NotificationListRow.Link`). expo-router 58은 미리보기 탭 콜백을 공개하지 않아 이 길은 행 `onPress`를 거치지 않는다.
 - 그래서 알림 행은 읽은 알림이고 게이트(프리미엄 안내 등)가 없을 때만 Link다. 안 읽은 알림을 미리보기로 열면 읽음이 빠지고, 게이트가 있으면 미리보기로 건너뛴다. 남는 빈틈은 미리보기로 연 읽은 알림의 `notification_center_opened` 추적뿐이다.
