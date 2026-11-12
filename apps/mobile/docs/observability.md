@@ -144,7 +144,7 @@ mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `o
 ## AppLogger
 
 - message는 자유 문자열 대신 기능별 `*_LOG_EVENT` 상수다. 상수는 기능 `constants/{entity}-log-events.ts`, 공용 코드는 쓰는 파일 옆에 둔다. 예: `NOTIFICATION_LOG_EVENT`.
-- 로그 키는 `{feature}.{subject}.{outcome}` 세 마디 kebab-case이고 기능마다 유일하다. 값은 Sentry 대시보드에서 쓰므로 바꾸지 않는다. breadcrumb도 같은 키를 쓴다. `core/observability/log-event-keys.test.ts`와 lint가 형식, 유일성, 문자열 직접 사용 금지를 검사한다.
+- 로그 키는 `{feature}.{subject}.{outcome}` 세 마디 kebab-case이고 기능마다 유일하다. 값은 Sentry 대시보드에서 쓰므로 바꾸지 않는다. breadcrumb도 같은 키를 쓴다. lint(`aido/log-event-key`·`logger-event-constant`)가 형식, 유일성, 파일당 `*_LOG_EVENT` 하나, 문자열 직접 사용 금지를 검사한다.
 - 레벨은 호출부가 정한다. 가변 정보는 message가 아니라 context로 넘긴다. context의 오류는 `{ error: getErrorMessage(error) }` 한 모양이다. 원본 `error` 객체·`instanceof` 분기를 넣지 않는다.
 - 어댑터(`console-*`, `composite-logger`)와 테스트 밖에서 `console.*`을 쓰지 않는다(`eslint/no-console`).
 

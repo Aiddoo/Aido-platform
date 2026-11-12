@@ -154,12 +154,35 @@ function collectOtherFileKeys(filename) {
 
 // 로그·breadcrumb 키는 {feature}.{subject}.{outcome} 세 마디 kebab-case이고 앱 전체에서 하나의 뜻만 갖는다.
 // 다른 파일과 겹치는지는 같은 패키지 src/의 *log-events.ts를 읽어 본다
+const LOG_EVENT_CONSTANT = /_LOG_EVENT$/u;
+
+function collectExportedConstNames(program) {
+  return program.body.flatMap((statement) =>
+    statement.type === 'ExportNamedDeclaration' &&
+    statement.declaration?.type === 'VariableDeclaration' &&
+    statement.declaration.kind === 'const'
+      ? statement.declaration.declarations
+          .filter((declarator) => declarator.id.type === 'Identifier')
+          .map((declarator) => declarator.id.name)
+      : [],
+  );
+}
+
 const logEventKey = {
   meta: { type: 'suggestion' },
   create(context) {
     const seen = new Set();
     let otherFileKeys = null;
     return {
+      Program(program) {
+        const exported = collectExportedConstNames(program);
+        if (exported.length !== 1 || !LOG_EVENT_CONSTANT.test(exported[0])) {
+          context.report({
+            node: program,
+            message: `로그 키 파일은 *_LOG_EVENT 상수 하나만 내보냅니다(지금: ${exported.join(', ') || '없음'}).`,
+          });
+        }
+      },
       Property(node) {
         const { value } = node;
         if (value.type !== 'Literal' || typeof value.value !== 'string') {
@@ -189,7 +212,51 @@ const logEventKey = {
   },
 };
 
+const LOGGER_METHODS = new Set(['debug', 'info', 'warn', 'error']);
+
+function getTerminalName(node) {
+  if (node.type === 'Identifier') {
+    return node.name;
+  }
+  if (node.type === 'MemberExpression' && !node.computed) {
+    return node.property.name ?? null;
+  }
+  return null;
+}
+
+// logger 호출은 *_LOG_EVENT 상수로 키를 넘긴다. 문자열을 바로 쓰면 log-event-key의 형식·유일성 검사를 건너뛴다
+const loggerEventConstant = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      CallExpression(node) {
+        const { callee } = node;
+        if (
+          callee.type !== 'MemberExpression' ||
+          callee.computed ||
+          !LOGGER_METHODS.has(callee.property.name) ||
+          getTerminalName(callee.object) !== 'logger'
+        ) {
+          return;
+        }
+        const [key] = node.arguments;
+        if (
+          (key?.type === 'Literal' && typeof key.value === 'string') ||
+          key?.type === 'TemplateLiteral'
+        ) {
+          context.report({
+            node: key,
+            message:
+              'logger에는 문자열 대신 {feature}-log-events.ts의 *_LOG_EVENT 상수로 키를 넘깁니다(observability.md).',
+          });
+        }
+      },
+    };
+  },
+};
+
 export default {
   'analytics-event-catalog': analyticsEventCatalog,
   'log-event-key': logEventKey,
+  'logger-event-constant': loggerEventConstant,
 };

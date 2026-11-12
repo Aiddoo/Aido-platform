@@ -900,6 +900,7 @@
         "aido/time-constant-unit": "error",
         "aido/no-return-type-of-hook": "error",
         "aido/query-data-alias": "error",
+        "aido/logger-event-constant": "error",
         "react/forbid-elements": [
           "error",
           {
