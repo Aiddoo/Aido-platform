@@ -27,6 +27,7 @@
     "startNow": "지금 시작하기",
     "emptyRecordTitle": "배지를 모으면 기록이 쌓여요",
     "emptyRecordDescription": "매주 완료한 할 일이 여기에 기록돼요",
-    "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} 완료"
+    "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} 완료",
+    "openCertificate": "인증서 보기"
   }
 }
