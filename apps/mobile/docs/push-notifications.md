@@ -74,7 +74,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 - 권한 안내·화면·토글·설정 줄·초대 환영 시트는 모두 `usePushPermissionAction({ source }).runStep(step)` 하나로 단계를 실행한다. 단계는 `PushPermissionPolicy.getNextStep`이 정한다.
 - 설정에서 앱 푸시를 켜면 설정 저장이 끝난 뒤 `useRequestPushPermissionMutationOptions`로 OS 권한을 묻고 `source: 'settings'`로 남긴다. 권한 단계 `ENABLE_IN_APP`(기기는 이미 허용)은 같은 mutation을 `source` 없이 불러 기기 등록만 맞추고 권한 이벤트를 남기지 않는다.
 - 할 일 목록 시간 옆 종 꺼짐 표시는 OS 권한과 앱 푸시 설정(`PushPermissionPolicy.canReceivePush`)으로 정한다. 피드가 한 번 읽어 목록에 넘긴다.
-- 혜택·소식(광고성) 제안은 첫 할 일 완료 뒤 시트 한 번이다(`useOfferMarketingPushAfterCompletion`). 기기 알림과 앱 푸시가 켜져 있을 때만 띄우고, 거절하면 계정마다 90일 뒤 다시 제안한다. 대상을 읽는 사이 로그아웃하거나 화면 묶음이 내려가면 띄우지 않고 답도 남기지 않는다.
+- 혜택·소식(광고성) 제안은 첫 할 일 완료 뒤 `useOpenSheet` 시트 한 번이다(`useOfferMarketingPushAfterCompletion`, 내용 `MarketingPushOptIn`·버튼 `.Actions`). 끌어 내리거나 [나중에]면 거절(`dismissValue`)이고, [동의]는 서버 기록이 성공한 뒤에만 닫는다. 기기 알림과 앱 푸시가 켜져 있을 때만 띄우고, 거절하면 계정마다 90일 뒤 다시 제안한다. 대상을 읽는 사이 로그아웃하거나 화면 묶음이 내려가면 띄우지 않고 답도 남기지 않는다.
 - 분석 이벤트는 [observability.md](./observability.md#푸시-권한-퍼널)를 본다. 권한 mutation은 `source`를 변수로 받아 `onSuccess`에서 한 번 추적하고 실패는 전역 오류 피드백(`meta.errorFeedback`)이 처리한다.
 
 ## 앱이 앞에 있을 때 받은 알림
