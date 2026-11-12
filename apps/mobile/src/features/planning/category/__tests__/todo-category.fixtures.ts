@@ -133,5 +133,3 @@ export function createTodoCategoryApiError(
     overrides?.status ?? 400,
   );
 }
-
-export const INVALID_DTO = { invalid: 'data' };

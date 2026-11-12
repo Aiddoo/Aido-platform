@@ -118,8 +118,6 @@ export function createTodoApiError(
   );
 }
 
-export const INVALID_DTO = { invalid: 'data' };
-
 export function createTodoDetails(overrides?: Partial<TodoDetails>): TodoDetails {
   return todoDetailsSchema.parse({
     todo: createParentTodo(),

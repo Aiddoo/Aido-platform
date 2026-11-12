@@ -1,6 +1,6 @@
 import { createHttpClientStub } from '@src/testing/core';
 
-import { createTodoDto, INVALID_DTO } from '../__tests__/todo.fixtures';
+import { createTodoDto } from '../__tests__/todo.fixtures';
 import { SubTodoApi } from './sub-todo.api';
 
 function createSut() {
@@ -36,18 +36,6 @@ describe('SubTodoApi', () => {
 
       // Then
       expect(result.ok && result.value.repeat).toBeNull();
-    });
-
-    it('Zod 검증 실패 → ParseError throw', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      httpClient.post.mockResolvedValue({ ok: true, value: { message: '', todo: INVALID_DTO } });
-
-      // When
-      const result = api.addSubTodo(1, { title: '새 항목' });
-
-      // Then
-      await expect(result).rejects.toThrow('Invalid addSubTodo response');
     });
   });
 

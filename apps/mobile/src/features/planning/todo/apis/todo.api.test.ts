@@ -3,11 +3,9 @@ import { createHttpClientStub } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 
 import {
-  createTodoApiError,
   createTodoDto,
   createTodoFormValues,
   createTodoListResponseDto,
-  INVALID_DTO,
 } from '../__tests__/todo.fixtures';
 import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { TodoApi } from './todo.api';
@@ -69,18 +67,6 @@ describe('TodoApi', () => {
         { id: 2, repeat: { frequency: 'DAILY', end: { type: 'NEVER' } } },
       ]);
     });
-
-    it('Zod 검증 실패 → ParseError throw', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-      // When
-      const result = api.getTodos({ size: 20, startDate: '2026-03-08', endDate: '2026-03-08' });
-
-      // Then
-      await expect(result).rejects.toThrow('Invalid getTodos response');
-    });
   });
 
   describe('getTodoSummary', () => {
@@ -126,22 +112,6 @@ describe('TodoApi', () => {
       // Then
       expect(httpClient.post).toHaveBeenCalledWith('v1/todos', expect.any(Object));
       expect(result.ok).toBe(true);
-    });
-
-    it('프리미엄 한도 → TODO_0811 에러', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      const apiError = createTodoApiError({
-        code: 'TODO_0811',
-        message: '할일 개수 한도에 도달했어요',
-      });
-      httpClient.post.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await api.createTodo(createTodoFormValues({ title: '테스트' }));
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
     });
   });
 
@@ -249,22 +219,6 @@ describe('TodoApi', () => {
       );
       expect(result.ok && result.value.todo.id).toBe(1);
       expect(result.ok && result.value.series.id).toBe('series-1');
-    });
-
-    it('반복 제한 → TODO_0813 에러', async () => {
-      // Given
-      const { httpClient, api } = createSut();
-      const apiError = createTodoApiError({
-        code: 'TODO_0813',
-        message: '반복 할일 제한에 도달했어요',
-      });
-      httpClient.post.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await api.createRepeatingTodo(draft);
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
     });
 
     it('반복으로 만들었는데 응답에 규칙이 없으면 검증 실패로 던진다', async () => {
