@@ -51,6 +51,8 @@ export interface PushNotificationGateway {
   clearLastResponse(): void;
   setCategory(category: PushNotificationCategory): Promise<void>;
   setBadgeCount(count: number): Promise<void>;
+  /** OS 알림 센터에 도착해 남은 알림을 모두 지운다. 배지는 안 읽은 수를 따르므로 건드리지 않는다 */
+  dismissDelivered(): Promise<void>;
   /** 앱이 앞에 있을 때 받은 알림을 어떻게 보일지 정한다. 반환 함수로 기본(배너)으로 되돌린다 */
   setForegroundPresentation(
     decide: (notification: ReceivedPushNotification) => ForegroundPushPresentation,

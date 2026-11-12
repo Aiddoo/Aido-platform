@@ -318,6 +318,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
         clear: () => removeStoredValue(syncStorage, pendingRedemptionStoredValue),
       },
       pushDevice: pushRegistrationService,
+      pushNotification,
       signOutEpoch,
       userDeviceData: new UserDeviceDataService({
         repositories: {

@@ -1,4 +1,5 @@
-import { createAppLoggerStub } from '@src/testing/core';
+import { createAppLoggerStub, createPushNotificationGatewayStub } from '@src/testing/core';
+import { waitFor } from '@testing-library/react-native';
 
 import { SessionCleanupService } from './session-cleanup.service';
 
@@ -24,6 +25,7 @@ function createPorts() {
         clearForUser: (accountId: string) => calls.push(`device-data:${accountId}`),
       },
       pushDevice: { requestRelease: record('pushDeviceRelease') },
+      pushNotification: createPushNotificationGatewayStub(),
       signOutEpoch: { advance: record('signOutEpoch') },
       logger: createAppLoggerStub(),
     },
@@ -87,6 +89,39 @@ describe('SessionCleanupService', () => {
 
     // Then
     expect(calls).toEqual(['abandonPendingMutations', 'queryCache', 'persistedQueryCache']);
+  });
+
+  it.each([
+    ['로그아웃·탈퇴', 'afterSignedOut', 1],
+    ['세션 만료(다음에 다른 계정이 로그인할 수 있다)', 'afterSessionExpired', 1],
+    ['로그인한 적 없는 시작·판정 실패', 'afterSessionEnded', 0],
+  ] as const)('%s 정리(%s)는 기기 알림 센터에 도착한 알림을 %s번 지운다', (_, cleanup, times) => {
+    // Given
+    const { ports } = createPorts();
+
+    // When
+    new SessionCleanupService(ports)[cleanup]();
+
+    // Then
+    expect(ports.pushNotification.dismissDelivered).toHaveBeenCalledTimes(times);
+  });
+
+  it('알림 센터를 지우지 못해도 나머지를 지우고 실패를 남긴다', async () => {
+    // Given
+    const { calls, ports } = createPorts();
+    ports.pushNotification.dismissDelivered.mockRejectedValue(new Error('알림 센터 실패'));
+
+    // When
+    new SessionCleanupService(ports).afterSignedOut();
+
+    // Then
+    expect(calls).toContain('pendingRedemption');
+    await waitFor(() =>
+      expect(ports.logger.warn).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ step: 'delivered-notifications' }),
+      ),
+    );
   });
 
   it('로그인 직전 정리는 조회 캐시만 비운다', () => {

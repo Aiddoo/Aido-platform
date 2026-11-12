@@ -1,4 +1,5 @@
 import type { AppLogger } from '@src/core/ports/app-logger';
+import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SignOutEpoch } from '@src/core/session/sign-out-epoch';
 import type { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage } from '@src/shared/errors';
@@ -30,6 +31,8 @@ interface SessionCleanupServicePorts {
   userDeviceData: Pick<UserDeviceDataService, 'clearForUser'>;
   /** 위층 기능이라 조립하는 곳이 넘긴다 */
   pushDevice: { requestRelease(): void };
+  /** 알림 payload에 받는 사람이 없어 지우지 않으면 다음 계정이 공용 기기에서 앞사람의 알림 문구를 본다 */
+  pushNotification: Pick<PushNotificationGateway, 'dismissDelivered'>;
   /** 로그아웃·탈퇴만 올린다. 만료는 같은 사람이 돌아와 이어 쓰므로 늦은 저장을 막지 않는다 */
   signOutEpoch: Pick<SignOutEpoch, 'advance'>;
   logger: Pick<AppLogger, 'warn'>;
@@ -45,6 +48,7 @@ export class SessionCleanupService {
   readonly #pendingRedemption: SessionCleanupServicePorts['pendingRedemption'];
   readonly #userDeviceData: SessionCleanupServicePorts['userDeviceData'];
   readonly #pushDevice: SessionCleanupServicePorts['pushDevice'];
+  readonly #pushNotification: SessionCleanupServicePorts['pushNotification'];
   readonly #signOutEpoch: SessionCleanupServicePorts['signOutEpoch'];
   readonly #logger: SessionCleanupServicePorts['logger'];
 
@@ -57,6 +61,7 @@ export class SessionCleanupService {
     pendingRedemption,
     userDeviceData,
     pushDevice,
+    pushNotification,
     signOutEpoch,
     logger,
   }: SessionCleanupServicePorts) {
@@ -68,6 +73,7 @@ export class SessionCleanupService {
     this.#pendingRedemption = pendingRedemption;
     this.#userDeviceData = userDeviceData;
     this.#pushDevice = pushDevice;
+    this.#pushNotification = pushNotification;
     this.#signOutEpoch = signOutEpoch;
     this.#logger = logger;
   }
@@ -81,6 +87,7 @@ export class SessionCleanupService {
     this.#run('voice-notes', () => this.#voiceNotes.removeAll());
     this.#run('device-timezone', () => this.#deviceTimezone.clear());
     this.#run('pending-redemption', () => this.#pendingRedemption.clear());
+    this.#dismissDeliveredNotifications();
   };
 
   /** 탈퇴: 그 계정의 안내 기록을 지운다. 로그아웃은 같은 사람이 돌아오므로 남긴다 */
@@ -92,6 +99,8 @@ export class SessionCleanupService {
   afterSessionExpired = (): void => {
     this.afterSessionEnded();
     this.#run('push-device-release', () => this.#pushDevice.requestRelease());
+    // 만료 뒤에는 다른 계정이 로그인할 수 있다
+    this.#dismissDeliveredNotifications();
   };
 
   /** 세션 만료·미인증 부팅: 캐시만 지운다. 같은 사람이 돌아오면 초안을 이어 쓴다 */
@@ -106,14 +115,27 @@ export class SessionCleanupService {
     this.#run('sign-in-queries', () => this.#queryCache.clearQueries());
   };
 
+  #dismissDeliveredNotifications = (): void => {
+    const step = 'delivered-notifications';
+    this.#run(step, () => {
+      this.#pushNotification
+        .dismissDelivered()
+        .catch((error: unknown) => this.#warnStepFailed(step, error));
+    });
+  };
+
   #run = (step: string, cleanup: () => void): void => {
     try {
       cleanup();
     } catch (error) {
-      this.#logger.warn(AUTH_LOG_EVENT.SESSION_CLEANUP_STEP_FAILED, {
-        step,
-        error: getErrorMessage(error),
-      });
+      this.#warnStepFailed(step, error);
     }
+  };
+
+  #warnStepFailed = (step: string, error: unknown): void => {
+    this.#logger.warn(AUTH_LOG_EVENT.SESSION_CLEANUP_STEP_FAILED, {
+      step,
+      error: getErrorMessage(error),
+    });
   };
 }
