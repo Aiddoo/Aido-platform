@@ -45,6 +45,7 @@ import { upsellDismissalStoredValue } from '@src/features/billing/subscription/s
 import { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';
 import { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/repositories/activation-progress.repository';
+import { activationProgressStoredValue } from '@src/features/device/activation/schemas/activation-progress-storage.schema';
 import { ActivationService } from '@src/features/device/activation/services/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/services/app-icon.service';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
@@ -87,6 +88,8 @@ import { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { FriendApi } from '@src/features/social/friend/apis/friend.api';
 import { InviteApi } from '@src/features/social/invite/apis/invite.api';
+import { allDoneBannerStoredValue } from '@src/features/social/invite/schemas/all-done-banner-storage.schema';
+import { pawPrintCelebrationStoredValue } from '@src/features/social/invite/schemas/paw-print-celebration-storage.schema';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { InviteShareService } from '@src/features/social/invite/services/invite-share.service';
 import { InviteService } from '@src/features/social/invite/services/invite.service';
@@ -101,7 +104,10 @@ import { createVoiceRecordingRepository } from '@src/features/voice/repositories
 import { VoiceNoteStorageService } from '@src/features/voice/services/voice-note-storage.service';
 import { WeatherApi } from '@src/features/weather/apis/weather.api';
 import { WeatherLocationService } from '@src/features/weather/services/weather-location.service';
-import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
+import {
+  clearFeatureAttributions,
+  createFeatureAttributionStore,
+} from '@src/shared/analytics/feature-attribution';
 import { getNowInstant } from '@src/shared/date/clock';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
@@ -335,6 +341,21 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
           'marketing-push-prompt': marketingPushPromptRepository,
           'upsell-dismissal': {
             clear: (userId) => removeStoredValue(syncStorage, upsellDismissalStoredValue, userId),
+          },
+          'store-review': createStoreReviewRepository(syncStorage),
+          activation: {
+            clear: (userId) =>
+              removeStoredValue(syncStorage, activationProgressStoredValue, userId),
+          },
+          'invite-all-done-banner': {
+            clear: (userId) => removeStoredValue(syncStorage, allDoneBannerStoredValue, userId),
+          },
+          'invite-paw-print-celebration': {
+            clear: (userId) =>
+              removeStoredValue(syncStorage, pawPrintCelebrationStoredValue, userId),
+          },
+          'feature-attribution': {
+            clear: (userId) => clearFeatureAttributions(syncStorage, userId),
           },
         },
         logger,

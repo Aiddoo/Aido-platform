@@ -21,6 +21,7 @@ export interface StoreReviewRepository {
   find(accountId: string): StoreReviewState | null;
   /** 바뀌었을 때만 `{ version: 2, … }`로 쓴다. 옛 모양은 여기서 새 모양으로 옮겨진다 */
   update(accountId: string, transition: StateTransition): StoreReviewState;
+  clear(accountId: string): void;
 }
 
 function createStoreReviewKey(accountId: string): string {
@@ -70,5 +71,6 @@ export function createStoreReviewRepository(storage: SyncStorage): StoreReviewRe
       storage.set(createStoreReviewKey(accountId), JSON.stringify({ version: 2, ...next }));
       return next;
     },
+    clear: (accountId) => storage.remove(createStoreReviewKey(accountId)),
   };
 }
