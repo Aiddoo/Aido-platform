@@ -17,7 +17,7 @@ import { PremiumUpsellBottomSheet } from '../components/premium-upsell-bottom-sh
 import type { EntitlementGateSurface, LimitReachedTrigger } from '../constants/subscription.events';
 import { type EntitlementFeature } from '../domains/entitlement.model';
 import { EntitlementPolicy, LimitedFeaturePolicy } from '../domains/entitlement.model';
-import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
+import { getCachedEntitlements, reflectFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { upsellDismissalStoredValue } from '../schemas/upsell-dismissal-storage.schema';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
@@ -189,8 +189,9 @@ export function useEntitlementGate(
         if (limited == null) {
           return false;
         }
+        // 한도를 싣지 않은 거절에 스냅샷을 다시 받으면 열리는 시트의 사용량이 잠깐 비어 보여 그대로 둔다
         if (limited.featureQuota != null) {
-          setFeatureQuota(queryClient, limited.featureQuota);
+          reflectFeatureQuota(queryClient, limited.featureQuota);
         }
         open(limited.feature, LimitedFeaturePolicy.getBlockedDecision(limited), 'server', options);
         return true;
