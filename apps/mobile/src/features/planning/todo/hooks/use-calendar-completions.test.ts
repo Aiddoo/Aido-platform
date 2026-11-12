@@ -1,5 +1,4 @@
-import { ErrorCode } from '@aido/api/errors';
-import { err, ok } from '@src/core/errors/result';
+import { ok } from '@src/core/errors/result';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, getMonthStartDateKey, type DateKey } from '@src/shared/date/date-key';
 import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
@@ -7,92 +6,8 @@ import { createDateKey } from '@src/testing/date-key';
 import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
 
-import { createDailyCompletionsDto, createTodoApiError } from '../__tests__/todo.fixtures';
-import {
-  getTodoSummaryRefetchInterval,
-  shouldPersistTodosByDate,
-  useCalendarCompletions,
-  useFriendCalendarCompletions,
-} from './todo.queries';
-
-describe('shouldPersistTodosByDate', () => {
-  const todayKey = createDateKey('2026-11-03');
-
-  it.each(['2026-11-02', '2026-11-03', '2026-11-04'])('%s 목록은 기기에 남긴다', (date) => {
-    // When
-    const result = shouldPersistTodosByDate({ date: createDateKey(date), todayKey: todayKey });
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it.each(['2026-11-01', '2026-11-05', '2026-10-03'])('%s 목록은 남기지 않는다', (date) => {
-    // When
-    const result = shouldPersistTodosByDate({ date: createDateKey(date), todayKey: todayKey });
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('달이 바뀌는 날에도 앞뒤 하루를 남긴다', () => {
-    // When
-    const monthEnd = shouldPersistTodosByDate({
-      date: createDateKey('2026-10-31'),
-      todayKey: createDateKey('2026-11-01'),
-    });
-    const yearEnd = shouldPersistTodosByDate({
-      date: createDateKey('2027-01-01'),
-      todayKey: createDateKey('2026-12-31'),
-    });
-
-    // Then
-    expect(monthEnd).toBe(true);
-    expect(yearEnd).toBe(true);
-  });
-});
-
-describe('getTodoSummaryRefetchInterval', () => {
-  const success = (responseDate: string, dataUpdateCount = 1) =>
-    ({
-      data: { date: createDateKey(responseDate) },
-      status: 'success',
-      dataUpdateCount,
-      errorUpdateCount: 0,
-    }) as const;
-
-  it('오늘 요청에 전날 요약이 오면 서버가 날짜를 따라잡을 때까지 짧게 다시 묻는다', () => {
-    // Given
-    const state = success('2026-07-12');
-
-    // When
-    const interval = getTodoSummaryRefetchInterval(state, createDateKey('2026-07-13'));
-
-    // Then
-    expect(interval).toBe(5_000);
-  });
-
-  it('요청한 날짜의 요약이 오면 다시 묻지 않는다', () => {
-    // Given
-    const state = success('2026-07-13');
-
-    // When
-    const interval = getTodoSummaryRefetchInterval(state, createDateKey('2026-07-13'));
-
-    // Then
-    expect(interval).toBe(false);
-  });
-
-  it('따라잡지 못한 채 네 번 물었으면 더 묻지 않는다', () => {
-    // Given
-    const state = success('2026-07-12', 5);
-
-    // When
-    const interval = getTodoSummaryRefetchInterval(state, createDateKey('2026-07-13'));
-
-    // Then
-    expect(interval).toBe(false);
-  });
-});
+import { createDailyCompletionsDto } from '../__tests__/todo.fixtures';
+import { useCalendarCompletions } from './use-calendar-completions';
 
 const MARCH_DOT = createDateKey('2026-03-15');
 const APRIL_DOT = createDateKey('2026-04-15');
@@ -178,29 +93,5 @@ describe('useCalendarCompletions', () => {
     expect(aprilFrames.every(({ dots }) => dots.includes(APRIL_DOT))).toBe(true);
     expect(aprilFrames.every(({ dots }) => dots.includes(MARCH_DOT))).toBe(true);
     expect(httpClient.get.mock.calls.length - requestsBeforeMove).toBe(1);
-  });
-});
-
-describe('useFriendCalendarCompletions', () => {
-  it('볼 수 없는 친구면 고른 달 하나만 실패하고 앞뒤 달은 묻지 않는다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    httpClient.get.mockResolvedValue(
-      err(createTodoApiError({ code: ErrorCode.FOLLOW_0906, status: 403 })),
-    );
-
-    // When
-    const { result } = await renderScreenHook(
-      () =>
-        useFriendCalendarCompletions({
-          friendUserId: 'friend-1',
-          dateKey: createDateKey('2026-03-10'),
-        }),
-      { di: createTestDi({ ports: { httpClient, queryClient: createAppLikeQueryClient() } }) },
-    );
-    await waitFor(() => expect(result.current.isError).toBe(true));
-
-    // Then
-    expect(httpClient.get).toHaveBeenCalledTimes(1);
   });
 });

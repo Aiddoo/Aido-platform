@@ -5,8 +5,8 @@ import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
+import { useCalendarCompletions } from '../../hooks/use-calendar-completions';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import { useCalendarCompletions } from '../../queries/todo.queries';
 import { calendarViewModeStoredValue } from '../../schemas/calendar-view-mode-storage.schema';
 import { Calendar } from './calendar';
 import { RepeatHorizonHint } from './repeat-horizon-hint';

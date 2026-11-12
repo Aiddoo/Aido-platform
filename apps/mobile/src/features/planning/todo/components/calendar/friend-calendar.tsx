@@ -1,6 +1,6 @@
 import { isFriendFeedUnavailableError } from '../../domains/todo.error';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import { useFriendCalendarCompletions } from '../../queries/todo.queries';
+import { useFriendCalendarCompletions } from '../../hooks/use-friend-calendar-completions';
 import { Calendar } from './calendar';
 
 interface FriendCalendarProps {

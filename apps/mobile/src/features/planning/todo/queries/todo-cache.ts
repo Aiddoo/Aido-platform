@@ -1,5 +1,5 @@
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
-import type { DateKey } from '@src/shared/date/date-key';
+import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import type {
   InvalidateQueryFilters,
@@ -7,6 +7,7 @@ import type {
   Query,
   QueryClient,
   QueryKey,
+  QueryState,
 } from '@tanstack/react-query';
 import { last } from 'es-toolkit';
 
@@ -21,6 +22,33 @@ import {
 import { todoDateQueryKeySchema, todoRangeQueryKeySchema } from '../schemas/todo-query-key.schema';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
+
+/** 다시 열 때 먼저 보일 어제·오늘·내일 목록만 기기에 남긴다. 둘러본 다른 날짜는 콜드 스타트 복원 크기만 키운다 */
+export function shouldPersistTodosByDate({ date, todayKey }: { date: DateKey; todayKey: DateKey }) {
+  return addDaysToDateKey(todayKey, -1) <= date && date <= addDaysToDateKey(todayKey, 1);
+}
+
+const DATE_CATCH_UP_BASE_DELAY_MS = 5_000;
+const DATE_CATCH_UP_MAX_ATTEMPTS = 4;
+
+type SummaryRefetchState = Pick<
+  QueryState<{ date: DateKey }>,
+  'data' | 'status' | 'dataUpdateCount' | 'errorUpdateCount'
+>;
+
+/** 서버 요약이 요청한 날짜에 닿을 때까지 몇 ms 뒤에 다시 물을지. 따라잡았거나 시도를 다 썼으면 false */
+export function getTodoSummaryRefetchInterval(
+  { data, status, dataUpdateCount, errorUpdateCount }: SummaryRefetchState,
+  date: DateKey,
+) {
+  const isCaughtUp = status !== 'error' && (data == null || data.date === date);
+  if (isCaughtUp) {
+    return false;
+  }
+  const attempt = dataUpdateCount + errorUpdateCount - 1;
+
+  return attempt < DATE_CATCH_UP_MAX_ATTEMPTS ? DATE_CATCH_UP_BASE_DELAY_MS * 2 ** attempt : false;
+}
 
 export interface TodoSnapshot {
   date: DateKey;

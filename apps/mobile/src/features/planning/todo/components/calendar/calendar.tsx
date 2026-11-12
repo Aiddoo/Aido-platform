@@ -26,10 +26,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import type { CompletionsByDate } from '../../queries/todo.queries';
 import { calendarViewModeStoredValue } from '../../schemas/calendar-view-mode-storage.schema';
 import { getMonthViewDayState } from '../../utils/calendar-day.view-model';
-import { diffCalendarWeeks, getWeekStartKey } from '../../utils/calendar-grid.view-model';
+import {
+  type CompletionsByDate,
+  diffCalendarWeeks,
+  getWeekStartKey,
+} from '../../utils/calendar-grid.view-model';
 import {
   type CalendarDayCell,
   FEED_MONTH_WEEK_COUNT,

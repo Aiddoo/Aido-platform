@@ -60,10 +60,8 @@ describe('getCalendarMonthRanges', () => {
     // Then
     expect(ranges).toEqual({
       selected: { startDate: '2026-09-27', endDate: '2026-10-31' },
-      neighbors: [
-        { startDate: '2026-08-30', endDate: '2026-10-03' },
-        { startDate: '2026-11-01', endDate: '2026-12-05' },
-      ],
+      previous: { startDate: '2026-08-30', endDate: '2026-10-03' },
+      next: { startDate: '2026-11-01', endDate: '2026-12-05' },
     });
   });
 
