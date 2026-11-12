@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, EditIcon, VStack, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -11,6 +12,7 @@ type ProfileAvatarButtonProps = Pick<ComponentProps<typeof PressableFeedback>, '
 
 export function ProfileAvatarButton({ onPress }: ProfileAvatarButtonProps) {
   const { t } = useTranslation('user');
+  const fontScaledSize = useFontScaledSize();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
 
   return (
@@ -28,7 +30,11 @@ export function ProfileAvatarButton({ onPress }: ProfileAvatarButtonProps) {
           />
 
           <Box className="absolute bottom-0 right-0 size-7 rounded-full bg-white dark:bg-gray-8 border border-gray-3 dark:border-gray-6 items-center justify-center z-10">
-            <EditIcon width={14} height={14} colorClassName="text-gray-6 dark:text-gray-4" />
+            <EditIcon
+              width={fontScaledSize(14)}
+              height={fontScaledSize(14)}
+              colorClassName="text-gray-6 dark:text-gray-4"
+            />
           </Box>
         </Box>
       </PressableFeedback>

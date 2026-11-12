@@ -5,6 +5,7 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -71,6 +72,7 @@ export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
 
 ThanksSummaryRow.Preview = function Preview({ todoId, onOpenThanks }: ThanksSummaryRowProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const { data } = useSuspenseInfiniteQuery(
     useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),
   );
@@ -106,8 +108,8 @@ ThanksSummaryRow.Preview = function Preview({ todoId, onOpenThanks }: ThanksSumm
           >
             <HStack align="center" gap={6}>
               <HeartFilledIcon
-                width={16}
-                height={16}
+                width={fontScaledSize(16)}
+                height={fontScaledSize(16)}
                 colorClassName="text-white dark:text-gray-9"
               />
               <Text size="b4" weight="semibold" className="text-white dark:text-gray-9">
@@ -307,6 +309,8 @@ function RecipientAvatars({ recipients }: { recipients: NudgeThanksRecipient[] }
 }
 
 function SentHeart({ style }: { style: AnimatedStyle<ViewStyle> }) {
+  const fontScaledSize = useFontScaledSize();
+
   return (
     <Box
       className="size-8 items-center justify-center rounded-full bg-white"
@@ -314,7 +318,11 @@ function SentHeart({ style }: { style: AnimatedStyle<ViewStyle> }) {
       importantForAccessibility="no-hide-descendants"
     >
       <Animated.View style={style}>
-        <HeartFilledIcon width={18} height={18} colorClassName="text-main" />
+        <HeartFilledIcon
+          width={fontScaledSize(18)}
+          height={fontScaledSize(18)}
+          colorClassName="text-main"
+        />
       </Animated.View>
     </Box>
   );

@@ -4,6 +4,7 @@ import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { useCopyToClipboard } from '@src/shared/hooks/use-copy-to-clipboard';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -424,6 +425,7 @@ interface ActionMenuProps {
 /** ⋯와 길게 누르기가 같은 메뉴를 연다. 내 글은 수정·복사·삭제, 남의 글은 복사·신고·차단이다 */
 function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) {
   const { t } = useTranslation(['todoComment', 'moderation']);
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
   const { copy } = useCopyToClipboard();
   const confirmDialog = useConfirmDialog();
@@ -495,8 +497,8 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           accessibilityState={{ expanded: isOpen, busy: deleteComment.isPending }}
         >
           <MoreIcon
-            width={MENU_TRIGGER_ICON_SIZE}
-            height={MENU_TRIGGER_ICON_SIZE}
+            width={fontScaledSize(MENU_TRIGGER_ICON_SIZE)}
+            height={fontScaledSize(MENU_TRIGGER_ICON_SIZE)}
             colorClassName="text-gray-6"
           />
         </PressableFeedback>

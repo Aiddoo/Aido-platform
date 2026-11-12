@@ -225,6 +225,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
 
 TodoDetailSummary.Metrics = function Metrics() {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const todayKey = useTodayKey();
@@ -233,7 +234,13 @@ TodoDetailSummary.Metrics = function Metrics() {
   return (
     <HStack gap={16} align="center" wrap="wrap">
       <Metric
-        icon={<EyeIcon width={16} height={16} colorClassName="text-gray-5" />}
+        icon={
+          <EyeIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-5"
+          />
+        }
         count={detail.metrics.viewCount}
       />
       {canNudge && (

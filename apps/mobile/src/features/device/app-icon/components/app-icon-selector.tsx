@@ -108,7 +108,10 @@ function AppIconThumbnail({ source, isLocked }: AppIconThumbnailProps) {
       />
       {isLocked && (
         <Box className="absolute -right-1 -top-1 size-[18px] items-center justify-center rounded-full border border-gray-1 bg-gray-8 dark:bg-gray-2">
-          <CrownFilledIcon width={LOCK_BADGE_ICON_SIZE} height={LOCK_BADGE_ICON_SIZE} />
+          <CrownFilledIcon
+            width={fontScaledSize(LOCK_BADGE_ICON_SIZE)}
+            height={fontScaledSize(LOCK_BADGE_ICON_SIZE)}
+          />
         </Box>
       )}
     </Box>

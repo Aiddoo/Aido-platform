@@ -3,6 +3,7 @@ import { PUSH_PERMISSION_STEP } from '@src/features/notification/constants/notif
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
 import { usePushPermissionAction } from '@src/features/notification/hooks/use-push-permission-action';
 import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/push-permission.queries';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -249,6 +250,7 @@ InviteWelcomeBottomSheet.Actions = function Actions({
 /** 친구 소식을 받으려면 알림이 필요하다는 맥락을 이 순간에 한 번 알린다. 이미 켰으면 보여 주지 않는다 */
 function WelcomeNotificationPrompt({ className }: { className?: string }) {
   const { t } = useTranslation('invite');
+  const fontScaledSize = useFontScaledSize();
   const { data: permission } = useQuery({
     ...useGetPushPermissionQueryOptions(),
     throwOnError: false,
@@ -270,7 +272,11 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
 
   return (
     <SurfaceCard surface="sheet" className={cn('flex-row items-center gap-2 px-4 py-3', className)}>
-      <BellFilledIcon width={18} height={18} colorClassName="text-gray-7" />
+      <BellFilledIcon
+        width={fontScaledSize(18)}
+        height={fontScaledSize(18)}
+        colorClassName="text-gray-7"
+      />
       <Text
         size="b4"
         shade={7}

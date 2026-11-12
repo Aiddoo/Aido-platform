@@ -4,6 +4,7 @@ import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { getErrorMessage } from '@src/shared/errors';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -316,6 +317,7 @@ function TargetBanner({
   isSubmitting: boolean;
 }) {
   const { t } = useTranslation('todoComment');
+  const fontScaledSize = useFontScaledSize();
   const logger = useLogger();
   const { reset } = useTodoCommentForm();
 
@@ -356,7 +358,11 @@ function TargetBanner({
           );
         }}
       >
-        <CloseIcon width={CLOSE_ICON_SIZE} height={CLOSE_ICON_SIZE} colorClassName="text-gray-6" />
+        <CloseIcon
+          width={fontScaledSize(CLOSE_ICON_SIZE)}
+          height={fontScaledSize(CLOSE_ICON_SIZE)}
+          colorClassName="text-gray-6"
+        />
       </CloseButton>
     </HStack>
   );
@@ -478,6 +484,7 @@ function SubmitButton({
   onSubmit: () => Promise<void>;
 }) {
   const { t } = useTranslation('todoComment');
+  const fontScaledSize = useFontScaledSize();
   const { control } = useTodoCommentForm();
   const hasContent = useWatch({
     control,
@@ -501,8 +508,8 @@ function SubmitButton({
       accessibilityLabel={mode.type === 'edit' ? t('actions.save') : t('form.post')}
     >
       <SendIcon
-        width={SEND_ICON_SIZE}
-        height={SEND_ICON_SIZE}
+        width={fontScaledSize(SEND_ICON_SIZE)}
+        height={fontScaledSize(SEND_ICON_SIZE)}
         colorClassName="text-white dark:text-gray-9"
       />
     </Button>

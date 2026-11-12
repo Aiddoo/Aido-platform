@@ -1,4 +1,5 @@
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -33,6 +34,7 @@ interface AiConsentPromptProps {
 /** AI 데이터 제공 안내 시트의 내용. 버튼은 시트 아래에 고정되는 `AiConsentPrompt.Actions`다 */
 export function AiConsentPrompt({ isRenewal = false }: AiConsentPromptProps) {
   const { t } = useTranslation('ai');
+  const fontScaledSize = useFontScaledSize();
   const openUrl = useOpenInAppBrowser();
   const { resolvedLanguage } = useLanguage();
 
@@ -53,14 +55,22 @@ export function AiConsentPrompt({ isRenewal = false }: AiConsentPromptProps) {
       <VStack gap={14}>
         <ConsentItem
           icon={
-            <SendIcon width={ITEM_ICON_SIZE} height={ITEM_ICON_SIZE} colorClassName="text-main" />
+            <SendIcon
+              width={fontScaledSize(ITEM_ICON_SIZE)}
+              height={fontScaledSize(ITEM_ICON_SIZE)}
+              colorClassName="text-main"
+            />
           }
           title={t('consent.items.sentData.title')}
           description={t('consent.items.sentData.description')}
         />
         <ConsentItem
           icon={
-            <RobotIcon width={ITEM_ICON_SIZE} height={ITEM_ICON_SIZE} colorClassName="text-main" />
+            <RobotIcon
+              width={fontScaledSize(ITEM_ICON_SIZE)}
+              height={fontScaledSize(ITEM_ICON_SIZE)}
+              colorClassName="text-main"
+            />
           }
           title={t('consent.items.processor.title')}
           description={t('consent.items.processor.description')}
@@ -68,8 +78,8 @@ export function AiConsentPrompt({ isRenewal = false }: AiConsentPromptProps) {
         <ConsentItem
           icon={
             <CheckmarkIcon
-              width={ITEM_ICON_SIZE}
-              height={ITEM_ICON_SIZE}
+              width={fontScaledSize(ITEM_ICON_SIZE)}
+              height={fontScaledSize(ITEM_ICON_SIZE)}
               colorClassName="text-main"
             />
           }

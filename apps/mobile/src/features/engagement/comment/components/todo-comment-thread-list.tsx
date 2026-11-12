@@ -4,6 +4,7 @@ import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
@@ -228,6 +229,7 @@ TodoCommentThreadList.SortBar = function SortBar({
   isLoading = false,
 }: TodoCommentThreadListSortBarProps) {
   const { t } = useTranslation('todoComment');
+  const fontScaledSize = useFontScaledSize();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const currentLabel = match(value)
     .with(TODO_COMMENT_SORT.POPULAR, () => t('sort.popular'))
@@ -251,7 +253,11 @@ TodoCommentThreadList.SortBar = function SortBar({
             <Spinner size="sm" />
           ) : (
             <HStack className="rotate-90">
-              <ArrowRightIcon width={13} height={13} colorClassName="text-gray-6" />
+              <ArrowRightIcon
+                width={fontScaledSize(13)}
+                height={fontScaledSize(13)}
+                colorClassName="text-gray-6"
+              />
             </HStack>
           )}
         </PressableFeedback>
@@ -433,6 +439,7 @@ function DoubleTapHint({ className }: { className?: string }) {
 }
 
 function PulsingHeart() {
+  const fontScaledSize = useFontScaledSize();
   const isAnimating = useIsAnimationActive();
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
@@ -458,8 +465,8 @@ function PulsingHeart() {
   return (
     <Animated.View style={style}>
       <HeartFilledIcon
-        width={HINT_HEART_SIZE}
-        height={HINT_HEART_SIZE}
+        width={fontScaledSize(HINT_HEART_SIZE)}
+        height={fontScaledSize(HINT_HEART_SIZE)}
         colorClassName="text-error"
       />
     </Animated.View>

@@ -1,4 +1,5 @@
 import { PASSWORD_RULES } from '@aido/api/vocabulary';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { CheckmarkIcon, HStack, Text } from '@src/shared/ui';
 
@@ -24,11 +25,16 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
 }
 
 function RuleItem({ isSatisfied, label }: { isSatisfied: boolean; label: string }) {
+  const fontScaledSize = useFontScaledSize();
   const color = isSatisfied ? 'text-success' : 'text-gray-5';
 
   return (
     <HStack gap={4} className="items-center">
-      <CheckmarkIcon colorClassName={color} width={14} height={14} />
+      <CheckmarkIcon
+        colorClassName={color}
+        width={fontScaledSize(14)}
+        height={fontScaledSize(14)}
+      />
       <Text className={color} size="b4">
         {label}
       </Text>

@@ -350,7 +350,11 @@ function FeatureCard({
             {description}
           </WordWrapText>
         </VStack>
-        <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
+        <ArrowRightIcon
+          width={fontScaledSize(16)}
+          height={fontScaledSize(16)}
+          colorClassName="text-gray-5"
+        />
       </HStack>
     </PressableFeedback>
   );
@@ -358,6 +362,7 @@ function FeatureCard({
 
 function FinishMedia() {
   const { t } = useTranslation('whatsNew');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <Box
@@ -369,7 +374,11 @@ function FinishMedia() {
       {/* 그림 높이가 무대를 늘리지 않고 남은 자리에 맞춰 고양이가 줄어든다 */}
       <VStack align="center" justify="center" gap={8} className="absolute inset-0 p-3">
         <HStack gap={6} align="center" className="rounded-2xl bg-white px-4 py-3">
-          <MicIcon width={18} height={18} colorClassName="text-main" />
+          <MicIcon
+            width={fontScaledSize(18)}
+            height={fontScaledSize(18)}
+            colorClassName="text-main"
+          />
           <Text size="b3" weight="semibold">
             {t('v1_15_0.finish.bubble')}
           </Text>

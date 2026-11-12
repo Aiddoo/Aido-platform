@@ -1,4 +1,5 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
@@ -66,6 +67,7 @@ interface InviteShareButtonsProps {
 
 function InviteShareButtons({ isDisabled, isCopied, onShare }: InviteShareButtonsProps) {
   const { t } = useTranslation('invite');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <VStack gap={10}>
@@ -76,7 +78,7 @@ function InviteShareButtons({ isDisabled, isCopied, onShare }: InviteShareButton
         onPress={() => onShare('kakao')}
       >
         <HStack align="center" gap={8}>
-          <KakaoIcon width={20} height={20} />
+          <KakaoIcon width={fontScaledSize(20)} height={fontScaledSize(20)} />
           <Text size="b2" weight="bold" shade={9} className="dark:text-gray-1">
             {t('share.kakao')}
           </Text>
@@ -88,9 +90,17 @@ function InviteShareButtons({ isDisabled, isCopied, onShare }: InviteShareButton
           <InviteSecondaryShareButton
             icon={
               isCopied ? (
-                <CheckIcon width={18} height={18} colorClassName="text-main" />
+                <CheckIcon
+                  width={fontScaledSize(18)}
+                  height={fontScaledSize(18)}
+                  colorClassName="text-main"
+                />
               ) : (
-                <CopyIcon width={18} height={18} colorClassName="text-gray-8" />
+                <CopyIcon
+                  width={fontScaledSize(18)}
+                  height={fontScaledSize(18)}
+                  colorClassName="text-gray-8"
+                />
               )
             }
             testID="invite-share-copy-link"
@@ -101,7 +111,13 @@ function InviteShareButtons({ isDisabled, isCopied, onShare }: InviteShareButton
         }
         system={
           <InviteSecondaryShareButton
-            icon={<ShareIcon width={18} height={18} colorClassName="text-gray-8" />}
+            icon={
+              <ShareIcon
+                width={fontScaledSize(18)}
+                height={fontScaledSize(18)}
+                colorClassName="text-gray-8"
+              />
+            }
             testID="invite-share-system"
             label={t('share.system')}
             isDisabled={isDisabled}

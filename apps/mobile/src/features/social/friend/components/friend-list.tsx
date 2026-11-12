@@ -308,6 +308,7 @@ FriendList.Link = function FriendLink({
 /** 친구 행의 ⋯ 메뉴. 편집 중이 아닐 때 프로필을 신고하거나 친구를 차단한다 */
 function FriendModerationMenu({ userId, displayName }: BlockTarget) {
   const { t } = useTranslation('moderation');
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -321,7 +322,11 @@ function FriendModerationMenu({ userId, displayName }: BlockTarget) {
           accessibilityLabel={t('menu.moreFor', { name: displayName })}
           accessibilityState={{ expanded: isOpen }}
         >
-          <MoreIcon width={18} height={18} colorClassName="text-gray-6" />
+          <MoreIcon
+            width={fontScaledSize(18)}
+            height={fontScaledSize(18)}
+            colorClassName="text-gray-6"
+          />
         </PressableFeedback>
       </Menu.Trigger>
       <MenuContent width={180}>
