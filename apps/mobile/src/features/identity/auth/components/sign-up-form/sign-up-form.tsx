@@ -1,8 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { type Stepper } from '@src/shared/hooks/use-stepper';
+import { useTranslation } from '@src/shared/i18n';
+import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useMutation } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { useForm } from 'react-hook-form';
 
+import { toRegisterRequest } from '../../apis/auth.mapper';
+import { isEmailAlreadyRegisteredError } from '../../domains/auth.error';
 import {
   useRegisterMutationOptions,
   useResendVerificationMutationOptions,
@@ -54,6 +61,10 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
     mode: 'onChange',
   });
 
+  const { t } = useTranslation('auth');
+  const haptics = useHaptics();
+  const toast = useAppToast();
+  const goToLogin = useSingleTap(() => router.replace('/(auth)/email-login'));
   const register = useMutation(useRegisterMutationOptions());
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
@@ -74,7 +85,7 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
   const submitValidRegister = () =>
     new Promise<boolean>((resolve) => {
       form.handleSubmit(
-        async ({ termsAgreed, privacyAgreed, isMarketingAgreed, ...input }) => {
+        async ({ termsAgreed, privacyAgreed, ...values }) => {
           // 스키마가 이미 막았다. 요청 타입이 true만 받아 여기서 좁힌다
           if (!termsAgreed || !privacyAgreed) {
             resolve(false);
@@ -82,16 +93,18 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
           }
 
           try {
-            await register.mutateAsync({
-              ...input,
-              termsAgreed,
-              privacyAgreed,
-              marketingAgreed: isMarketingAgreed,
-              marketingPushAgreed: isMarketingAgreed,
-            });
-            stepper.history.replace('verification', { email: input.email });
+            await register.mutateAsync(
+              toRegisterRequest({ ...values, termsAgreed, privacyAgreed }),
+            );
+            stepper.history.replace('verification', { email: values.email });
             resolve(true);
-          } catch {
+          } catch (error) {
+            if (isEmailAlreadyRegisteredError(error)) {
+              haptics.notify('error');
+              toast.error(t('toasts.alreadyRegistered'), {
+                action: { label: t('toasts.goToLogin'), onPress: goToLogin },
+              });
+            }
             resolve(false);
           }
         },

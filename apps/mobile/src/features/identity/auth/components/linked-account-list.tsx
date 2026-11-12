@@ -22,13 +22,13 @@ import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { toOAuthProviderSlug } from '../apis/oauth.mapper';
-import { getOAuthProviderLabel } from '../constants/oauth-labels';
-import { type OAuthProvider } from '../domains/oauth.model';
+import { LinkedAccountsPolicy, type OAuthProvider } from '../domains/oauth.model';
 import {
   useLinkAccountMutationOptions,
   useUnlinkAccountMutationOptions,
 } from '../queries/auth.mutations';
 import { useGetLinkedAccountsQueryOptions } from '../queries/auth.queries';
+import { getOAuthProviderLabelKey } from '../utils/oauth-provider.view-model';
 
 export function LinkedAccountList() {
   return (
@@ -110,16 +110,14 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
     useUnlinkAccountMutationOptions(),
   );
   const confirmDialog = useConfirmDialog();
-  const isLinked = linkedAccounts.accounts.some(
-    (account) => account.provider === provider && account.linked,
-  );
+  const isLinked = LinkedAccountsPolicy.isProviderLinked(linkedAccounts, provider);
   const isPending = isLinking || isUnlinking;
 
   const requestUnlink = async () => {
     await confirmDialog.openAsync({
       title: t('linkedAccounts.unlinkDialogTitle'),
       description: t('linkedAccounts.unlinkDialogMessage', {
-        provider: getOAuthProviderLabel(provider),
+        provider: t(getOAuthProviderLabelKey(provider)),
       }),
       confirmLabel: t('linkedAccounts.unlink'),
       cancelLabel: t('common:actions.cancel'),
@@ -135,7 +133,7 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
       contents={
         <VStack gap={2}>
           <Text size="b3" weight="medium">
-            {getOAuthProviderLabel(provider)}
+            {t(getOAuthProviderLabelKey(provider))}
           </Text>
           <Chip
             size="sm"

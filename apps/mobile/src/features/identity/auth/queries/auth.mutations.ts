@@ -11,14 +11,11 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useTrack } from '@src/shared/analytics';
 import type { AppEventMap } from '@src/shared/analytics/event-map';
 import { isConnectivityError } from '@src/shared/errors';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
 
 import { toOAuthProvider, toOAuthProviderSlug } from '../apis/oauth.mapper';
-import { getOAuthProviderLabel } from '../constants/oauth-labels';
 import {
   findLoginFailureReason,
   isEmailAlreadyRegisteredError,
@@ -38,6 +35,7 @@ import type {
   ResetPasswordInput,
   VerifyEmailInput,
 } from '../schemas/auth-request.schema';
+import { getOAuthProviderLabelKey } from '../utils/oauth-provider.view-model';
 import { invalidateLinkedAccounts } from './auth-cache';
 
 type EmailVerificationSource = AppEventMap['auth_email_verified']['source'];
@@ -329,8 +327,6 @@ export function useDeleteAccountMutationOptions() {
 }
 
 export function useRegisterMutationOptions() {
-  const replace = useSingleTap(router.replace);
-  const haptics = useHaptics();
   const authApi = useAuthApi();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
@@ -344,19 +340,7 @@ export function useRegisterMutationOptions() {
         toast.warning(t('auth:toasts.verificationEmailNotSent'));
       }
     },
-    onError: (error) => {
-      if (isEmailAlreadyRegisteredError(error)) {
-        haptics.notify('error');
-        toast.error(t('auth:toasts.alreadyRegistered'), {
-          action: {
-            label: t('auth:toasts.goToLogin'),
-            onPress: () => {
-              replace('/(auth)/email-login');
-            },
-          },
-        });
-      }
-    },
+    // 이미 가입한 이메일은 로그인하러 가기 동작이 있는 토스트를 폼이 띄운다
     meta: {
       errorFeedback: {
         feature: 'auth',
@@ -479,7 +463,7 @@ export function useLinkAccountMutationOptions() {
     onSuccess: async (_data, provider) => {
       toast.success(
         t('auth:toasts.accountLinked', {
-          provider: getOAuthProviderLabel(toOAuthProvider(provider)),
+          provider: t(getOAuthProviderLabelKey(toOAuthProvider(provider))),
         }),
       );
       trackEvent('auth_social_linked', { provider });
@@ -513,7 +497,7 @@ export function useUnlinkAccountMutationOptions() {
     mutationFn: async (provider: OAuthProvider) => unwrap(await authApi.unlinkAccount(provider)),
     onSuccess: async (_data, provider) => {
       toast.success(
-        t('auth:toasts.accountUnlinked', { provider: getOAuthProviderLabel(provider) }),
+        t('auth:toasts.accountUnlinked', { provider: t(getOAuthProviderLabelKey(provider)) }),
       );
       trackEvent('auth_social_unlinked', {
         provider: toOAuthProviderSlug(provider),

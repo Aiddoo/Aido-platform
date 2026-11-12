@@ -2,7 +2,7 @@
 
 세션·토큰 규칙([세션](#세션-수명주기와-불변식))과 소셜 로그인·계정 연결([소셜 로그인](#소셜-로그인)), 가입·비밀번호 폼([폼과 단계](#폼과-단계))을 다룬다. 인증 상태는 `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn`·`signOut`으로 쓴다. 토큰은 `TokenStore` 포트(SecureStore)에 둔다.
 
-층은 `features/identity/auth`에 있다. 서버 호출은 `apis/auth.api.ts`(`AuthApi`), 소셜 인증 창·토큰 저장·탈퇴 뒤 토큰 삭제는 `services/sign-in.service.ts`(`SignInService`), 로그아웃은 `LogOutDeviceService`, 오프라인 로그아웃 해제는 `SessionRevocationService`, 미인증 뒤 정리는 `SessionCleanupService`, 인증 상태 기계는 `stores/auth-session.store.ts`다. 추적과 화면 이동은 mutation 옵션(`queries/auth.mutations.ts`)만 한다.
+층은 `features/identity/auth`에 있다. 서버 호출은 `apis/auth.api.ts`(`AuthApi`), 소셜 인증 창·토큰 저장·탈퇴 뒤 토큰 삭제는 `services/sign-in.service.ts`(`SignInService`), 로그아웃은 `LogOutDeviceService`, 오프라인 로그아웃 해제는 `SessionRevocationService`, 미인증 뒤 정리는 `SessionCleanupService`, 인증 상태 기계는 `stores/auth-session.store.ts`다. 추적은 mutation 옵션(`queries/auth.mutations.ts`), 화면 이동과 칸 오류·로그인하러 가기 같은 화면 안내는 `mutateAsync`를 부른 폼이 한다.
 
 # 세션 수명주기와 불변식
 
@@ -94,7 +94,7 @@
 | 진행 중 갱신(다음 세션에서) | 다음 세션이 지난 세션의 결과를 받는다          | 세대가 다르면 공유하지 않는다                                 |
 | 로그아웃 응답               | 만료 뒤 다시 로그인한 새 세션이 끝난다         | `LogOutDeviceService`가 비교, 아래 참고                       |
 
-로그아웃은 자기 `clear`로도 세대를 올리고, 만료가 먼저 와도 사용자가 나간 것으로 끝내야 한다(초안 삭제, `auth_logout`). 그래서 세대만으로 끝내지 않는다. 세대가 그대로면 토큰을 지우고 끝낸다. 세대가 올랐으면 서버 로그아웃과 토큰 삭제를 건너뛰고, 저장소에 토큰이 없을 때만 끝낸다. 토큰이 있거나 읽지 못하면 새 세션으로 보고 `auth_logout`, `setUserId(null)`, `signOut`을 하지 않는다.
+로그아웃은 자기 `clear`로도 세대를 올리고, 만료가 먼저 와도 사용자가 나간 것으로 끝내야 한다(초안 삭제, `auth_logout`). 그래서 세대만으로 끝내지 않는다. 세대가 그대로면 토큰을 지우고 끝낸다. 세대가 올랐으면 서버 로그아웃과 토큰 삭제를 건너뛰고, 저장소에 토큰이 없을 때만 끝낸다. 토큰이 있거나 읽지 못하면 새 세션으로 보고 `auth_logout`, `clearUser()`, `signOut`을 하지 않는다.
 
 `save` 도중의 `clear`는 ms 창이라 다루지 않는다. ky의 `timeout`은 요청 한 번의 응답 대기라 `afterResponse` 훅을 덮지 않는다. 로그아웃 POST 자신의 401은 갱신이 끝날 때까지 기다리고, 그 대기(최대 8초)는 `LOGOUT_REQUEST_TIMEOUT_MS`에 들어가지 않는다.
 
@@ -162,7 +162,7 @@ SignInService.openKakaoLogin()                # openGoogleLogin·openNaverLogin�
 
 - `redirectUri`는 `makeRedirectUri({ scheme: ENV.SCHEME, path: 'auth/{provider}' })`다. scheme은 환경별로 다르다(`app.config.ts`). 서버가 `start-oauth-authorization.use-case.ts`의 허용 패턴으로 검사하므로 scheme을 바꾸면 거기도 고친다.
 - Android는 `app.config.ts`의 `intentFilters`(`auth/kakao`·`auth/naver`·`auth/google`)로 콜백을 받는다. `app/auth/[provider].tsx`가 `maybeCompleteAuthSession()`을 불러 `openAuthSessionAsync`가 URL을 받게 한다.
-- 화면은 `useOpen{Kakao,Google,Naver}LoginMutationOptions`로 code를 받고 `useExchangeCodeMutationOptions`에 `{ code, provider }`를 넘긴다(`app/(auth)/login.tsx`).
+- 화면은 `useOpen{Kakao,Google,Naver}LoginMutationOptions`로 code를 받고 `useExchangeCodeMutationOptions`에 `{ code, provider }`를 넘긴다(`components/social-login-buttons.tsx`).
 - 콜백 URL에 code가 없고 `error`가 있으면 그 코드의 `BusinessError`(카탈로그에 없으면 호출부 폴백 문구), 없으면 `AUTH_NO_CODE_RECEIVED`다. 창을 닫으면 `AUTH_LOGIN_CANCELLED`다.
 
 ## Apple: 네이티브
