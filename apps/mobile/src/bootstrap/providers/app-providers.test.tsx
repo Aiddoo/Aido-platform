@@ -11,10 +11,7 @@ import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/queries/noti
 import { QUERY_CACHE_MAX_AGE_MS } from '@src/shared/constants/query-persistence';
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
-import {
-  disabledDraftStorage,
-  type EncryptedStorageBootstrap,
-} from '@src/shared/infra/storage/encrypted-draft-storage';
+import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   type AppLifecycleGatewayStub,
@@ -127,7 +124,7 @@ function createTestRoot({ tokens, encryptedStorage = 'opened' }: TestRootOptions
       encryptedStorage === 'opened'
         ? { draftStorage: createMemorySyncStorage(), queryCacheStorage: queryCacheFile }
         : {
-            draftStorage: disabledDraftStorage,
+            draftStorage: createMemorySyncStorage(),
             queryCacheStorage: null,
             failure: new Error('keychain locked'),
           },

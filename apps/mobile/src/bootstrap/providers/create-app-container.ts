@@ -201,7 +201,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     pushNotification,
   } = ports;
   const queryCacheStorage = ports.queryCacheStorage ?? disabledQueryCacheStorage;
-  // 암호화 저장소를 열지 못한 실행은 디스크에 남은 조회 캐시·초안을 지울 수 없어 다음에 열 때 지우도록 표시한다
+  // 암호화 저장소를 열지 못한 실행은 디스크에 남은 조회 캐시·초안을 읽지도 지우지도 못해 다음에 열 때 지우도록 표시한다
   const isEncryptedStorageOpen = ports.queryCacheStorage != null;
 
   const signOutEpoch = createSignOutEpoch();
@@ -261,11 +261,12 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     getTimeZone: ports.getTimeZone,
   });
   const voiceRecordingRepository = createVoiceRecordingRepository(ports.localFileSystem, logger);
-  const voiceNoteStorageService = new VoiceNoteStorageService(
-    voiceNoteDraftRepository,
-    voiceRecordingRepository,
-    getNowInstant,
-  );
+  const voiceNoteStorageService = new VoiceNoteStorageService({
+    drafts: voiceNoteDraftRepository,
+    recordings: voiceRecordingRepository,
+    now: getNowInstant,
+    isDraftStorageOpen: isEncryptedStorageOpen,
+  });
 
   const weatherApi = new WeatherApi(authHttpClient, logger);
 
@@ -317,7 +318,13 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
         : { clear: () => markPendingStorageCleanup(syncStorage, 'queryCache') },
       drafts: isEncryptedStorageOpen
         ? draftService
-        : { removeAll: () => markPendingStorageCleanup(syncStorage, 'drafts') },
+        : {
+            removeAll: () => {
+              markPendingStorageCleanup(syncStorage, 'drafts');
+              // 이번 실행이 메모리에 들고 있던 초안도 로그아웃과 함께 버린다
+              draftService.removeAll();
+            },
+          },
       voiceNotes: voiceNoteStorageService,
       deviceTimezone: { clear: () => removeStoredValue(syncStorage, deviceTimezoneStoredValue) },
       pendingRedemption: {

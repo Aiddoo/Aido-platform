@@ -2,7 +2,6 @@ import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { DEVICE_SECURE_STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
-import { noop } from 'es-toolkit';
 import { getRandomBytes } from 'expo-crypto';
 import { createMMKV, deleteMMKV, existsMMKV } from 'react-native-mmkv';
 import { z } from 'zod';
@@ -24,10 +23,11 @@ const DRAFT_ENCRYPTION_KEY_STORAGE_KEY = DEVICE_SECURE_STORAGE_KEYS.DRAFT_ENCRYP
 type EncryptedSyncStorage = EnumerableSyncStorage & ObservableSyncStorage;
 
 export interface EncryptedStorageBootstrap {
+  /** 암호화 저장소를 열지 못하면 이번 실행 동안만 메모리에 두는 저장소다. 기기의 초안은 보이지 않는다 */
   draftStorage: EncryptedSyncStorage;
   /** 조회 캐시 저장소. 암호화 저장소를 열지 못하면 `null`이고 캐시를 기기에 남기지 않는다. */
   queryCacheStorage: EnumerableSyncStorage | null;
-  /** 암호화 저장소를 열지 못해 초안·조회 캐시 저장을 끈 사유. 정상이면 없다. */
+  /** 암호화 저장소를 열지 못해 초안을 메모리에만 두고 조회 캐시 저장을 끈 사유. 정상이면 없다. */
   failure?: unknown;
 }
 
@@ -37,15 +37,38 @@ interface DiscardedSessionStorage {
   drafts: boolean;
 }
 
-/** 초안 기능을 끈 상태. 저장은 버리고 복원은 항상 비어 있어 폼은 빈 값으로 동작한다. */
-export const disabledDraftStorage: EncryptedSyncStorage = {
-  get: () => undefined,
-  set: () => undefined,
-  remove: () => undefined,
-  keys: () => [],
-  clear: () => undefined,
-  subscribe: () => noop,
-};
+/** 키를 읽지 못한 실행(재부팅 뒤 잠금 해제 전 깨어남)의 초안 저장소. 버리지 않고 이번 실행 동안 들고 있어 쓰던 글자와 말로 메모가 화면을 옮겨도 남는다 */
+function createSessionDraftStorage(): EncryptedSyncStorage {
+  const values = new Map<string, string>();
+  const listenersByKey = new Map<string, Set<() => void>>();
+  const notify = (key: string) => listenersByKey.get(key)?.forEach((listener) => listener());
+
+  return {
+    get: (key) => values.get(key),
+    set: (key, value) => {
+      values.set(key, value);
+      notify(key);
+    },
+    remove: (key) => {
+      values.delete(key);
+      notify(key);
+    },
+    keys: () => [...values.keys()],
+    clear: () => {
+      const keys = [...values.keys()];
+      values.clear();
+      keys.forEach(notify);
+    },
+    subscribe: (key, listener) => {
+      const listeners = listenersByKey.get(key) ?? new Set<() => void>();
+      listeners.add(listener);
+      listenersByKey.set(key, listeners);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+}
 
 async function resolveEncryptionKey(secureStorage: KeyValueStorage) {
   const storedKey = await secureStorage.get(DRAFT_ENCRYPTION_KEY_STORAGE_KEY, z.string());
@@ -104,7 +127,7 @@ function migrateLegacyDrafts(target: EnumerableSyncStorage) {
   }
 }
 
-/** SecureStore 조회가 비동기라 스플래시 구간에서 미리 호출해야 초안·캐시 복원이 첫 렌더에 동기로 읽힌다. 실패해도 저장만 끈다 */
+/** SecureStore 조회가 비동기라 스플래시 구간에서 미리 호출해야 초안·캐시 복원이 첫 렌더에 동기로 읽힌다. 실패해도 기기 저장만 끈다 */
 export async function openEncryptedStorage(
   secureStorage: KeyValueStorage,
   discarded: DiscardedSessionStorage | null,
@@ -124,6 +147,6 @@ export async function openEncryptedStorage(
 
     return { draftStorage, queryCacheStorage: openEncryptedMmkv(QUERY_CACHE_STORAGE_ID, key) };
   } catch (failure) {
-    return { draftStorage: disabledDraftStorage, queryCacheStorage: null, failure };
+    return { draftStorage: createSessionDraftStorage(), queryCacheStorage: null, failure };
   }
 }
