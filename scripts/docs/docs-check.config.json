@@ -7,7 +7,11 @@
   "ruleLineLimit": 40,
   "agentsBytesLimit": 24576,
   "allow": [
-    { "path": "README.md", "check": "limit", "reason": "phase 3에서 줄인다" },
+    {
+      "path": "README.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
     {
       "path": "apps/mobile/docs/analytics-measurement-plan.md",
       "check": "limit",
@@ -24,22 +28,25 @@
       "reason": "phase 3에서 줄인다"
     },
     {
-      "path": "apps/mobile/docs/architecture/structure.md",
-      "check": "limit",
-      "reason": "phase 3에서 줄인다"
-    },
-    {
       "path": "apps/mobile/docs/architecture/ui.md",
       "check": "limit",
       "reason": "phase 3에서 줄인다"
     },
-    { "path": "apps/mobile/docs/auth.md", "check": "limit", "reason": "phase 3에서 줄인다" },
+    {
+      "path": "apps/mobile/docs/auth.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
     {
       "path": "apps/mobile/docs/observability.md",
       "check": "limit",
       "reason": "phase 3에서 줄인다"
     },
-    { "path": "apps/mobile/docs/testing.md", "check": "limit", "reason": "phase 3에서 줄인다" },
+    {
+      "path": "apps/mobile/docs/testing.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
     {
       "path": "apps/mobile/src/shared/ui/bottom-sheet/bottom-sheet.md",
       "check": "limit",

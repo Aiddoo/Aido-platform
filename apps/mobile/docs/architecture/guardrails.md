@@ -1,6 +1,6 @@
 # 가드레일: 지금 도구가 막는 것
 
-목표 규칙과 도구 배치는 [structure](./structure.md#가드레일)에 있다. 이 문서는 지금 실제로 걸려 있는 검사와 규칙 이름이다. 목표와 아직 다른 행은 [migration-status](./migration-status.md)에 있고, 그 행을 고치는 PR이 이 표도 함께 고친다.
+지금 실제로 걸려 있는 검사와 규칙 이름의 원본이다. 규칙의 뜻은 각 행이 링크한 문서에 있다. 목표와 아직 다른 코드는 [migration-status](./migration-status.md)에 있고, 그 행을 고치는 PR이 이 표도 함께 고친다.
 
 ## 명령
 
@@ -8,7 +8,7 @@
 - `pnpm --filter @aido/mobile lint:deps`: dependency-cruiser(`apps/mobile/.dependency-cruiser.cjs`)와 기능 그래프 리포터(`apps/mobile/scripts/feature-graph.cjs`). `.dependency-cruiser-known-violations.json`의 위반은 건너뛴다(지금 `[]`).
 - `pnpm --filter @aido/mobile lint:deps:baseline`: 고쳐서 사라진 위반을 known-violations에서 지운다(`shrink-only`라 새 위반은 더하지 않는다).
 - `pnpm lint:names`: ls-lint(루트 `.ls-lint.yml`).
-- `pnpm check`가 위 셋과 oxfmt·knip·typecheck를 함께 돈다.
+- `pnpm check`가 위 셋과 oxfmt·docs-check·knip·typecheck를 함께 돈다(순서는 [루트 AGENTS](../../../../AGENTS.md#명령)).
 
 ## 규칙
 
@@ -102,6 +102,8 @@
 
 - `frozenNames`는 baseline이 아니라 동사 목록([observability](../observability.md#선언과-이름)) 밖인 GA 대시보드 이름의 영구 목록이다. 동사 목록을 바꾸면 규칙의 `EVENT_VERBS`와 이 목록을 함께 고친다.
 
+- 어떤 규칙이든 그 줄 위 `// oxlint-disable-next-line <규칙> -- <이유>`로만 끈다.
+
 ## 다음 버전 후보
 
 규칙은 준비했거나 측정만 했고 아직 걸지 않았다. 수는 `93494bc41`에서 규칙을 잠시 `error`로 바꿔 센 값이다(운영 코드, 테스트 제외가 기본). 켜는 PR이 위반을 같은 PR에서 고치고 행을 위 규칙 표로 옮긴다.
@@ -123,3 +125,5 @@
 ## 리뷰로 지키는 것
 
 이 검사가 막지 않는 규칙이다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, 쿼리·utils 파일 위치, feature 파일 접두사(`nudge`→`todo-nudge`처럼 feature 이름이 entity 이름을 줄인 경우), 댓글 단계별 Stack route(`todo/[todoId]` 아래 `_layout`·`comment`·`comments/[commentId]`), 다른 파일에서 받은 shared value의 `.value`, 변수로 먼저 만든 `className` 문자열, 서로 모르는 `await`의 연속과 화면 대기에 물린 백그라운드 보고(`no-await-in-loop`은 운영 대상이 백오프 재조회 하나뿐이라 켜지 않는다).
+
+도구가 못 막는 설계 경계도 리뷰로 본다: view-model과 Policy의 경계, 통과만 하는 service, 반복 UI의 개별 나열.

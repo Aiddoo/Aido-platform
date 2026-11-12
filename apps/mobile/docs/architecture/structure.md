@@ -1,6 +1,6 @@
 # 구조
 
-기능을 어디에 두고, 기능 폴더에 무엇을 두고, 무엇이 무엇을 import하는지 정한다. 모델은 [model](./model.md), Api·저장소·쿼리·폼은 [data](./data.md), 상태·route는 [state-and-routing](./state-and-routing.md)이 원본이다. 아직 이 모양이 아닌 코드는 [migration-status](./migration-status.md)에만 적는다.
+기능을 어디에 두고, 기능 폴더에 무엇을 두고, 무엇이 무엇을 import하는지 정한다. 모델은 [model](./model.md), Api·저장소·쿼리·폼은 [data](./data.md), 상태·route는 [state-and-routing](./state-and-routing.md)이 원본이다. 아직 이 모양이 아닌 코드는 [migration-status](./migration-status.md)에만 적는다. 지금 걸린 검사와 규칙 이름은 [guardrails](./guardrails.md)다.
 
 ## 앱 폴더
 
@@ -81,8 +81,7 @@ features/{area}/{feature}/
 - mapper는 `apis/`에만, 엔티티당 하나다. OS 권한과 서버 기기 DTO처럼 엔티티가 다르면 파일을 나눈다.
 - 통과만 하는 repository와 service를 만들지 않는다. 저장 값 정의와 Policy로 충분하다.
 - 쿼리 키는 `queries/`에 둔다. `constants/`는 일반 상수(시간·한도·id, 장면 팔레트 같은 고정 값)·이벤트·로그 키만 두고 `domains/`를 import하지 않는다. 업무 규칙 표는 모델에, 라벨 키는 view-model에, 저장 키는 `*-storage.schema.ts`에 둔다.
-- 파일 이름은 kebab-case이고 접두사는 다루는 엔티티 이름이다(`todo-comment.*`). 기능 이름이 엔티티를 줄인 것이면 엔티티 이름을 쓴다(`social/nudge`의 `todo-nudge-query-keys.ts`).
-- 역할 접미사는 `.model`, `.api`, `.mapper`, `.service`, `.session`, `.repository`, `.store`, `.queries`, `.mutations`, `-cache`, `.view-model`, `.geometry`, `.schema`다. `helpers`·`utils`·`common` 같은 파일 이름을 쓰지 않는다.
+- 파일 이름은 kebab-case, 접두사는 다루는 엔티티 이름, 접미사는 위 골격의 역할 이름이다(역할 폴더별 접미사는 ls-lint). 기능 이름이 엔티티를 줄인 것이면 엔티티 이름을 쓴다(`social/nudge`의 `todo-nudge-query-keys.ts`). `helpers`·`utils`·`common` 같은 파일 이름을 쓰지 않는다.
 - 캐시 모양만 다루는 순수 함수(무한 목록 페이지 고치기·cursor)는 `queries/{entity}-pages-cache.ts`에 둔다(`todo-comment-pages-cache.ts`). `queryClient`는 만지지 않고 `-cache.ts` helper가 부른다.
 - `utils/`의 예외는 `store-review/utils/wait-for-settled-screen.ts` 하나다. 앱 상태 포트·타이머·abort로 화면이 가라앉기를 기다리는 한 번짜리 함수라 Session(수명 객체)이 아니고, 훅이 화면 판정(`isScreenReady`)을 넘겨 테스트가 시트·키보드·백그라운드 갈래를 모두 돈다.
 
@@ -167,19 +166,16 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
   - `bootstrap/navigation/cold-start-link`: 앱 트리·DI보다 먼저 받은 첫 URL을 Index가 한 번 읽는다
   - `shared/ui/bottom-sheet/keyboard-bottom-sheet`의 열린 시트 수: 키보드 컨트롤러가 네이티브 전역 하나라 수도 그 수명을 따른다
   - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면, 접근성 설정 store, 위젯 진입점)이 쓰는 로거. `composition-root`가 한 번 정한다
-  - `core/events/event-channel`의 리스너 오류 보고기: `core`는 DI를 모른다. `DIProvider`가 마운트 때 건다
+  - `core/events/*`의 이벤트 채널 리스너와 `event-channel`의 리스너 오류 보고기: `core`는 DI를 모른다. 구독은 해제 함수를 돌려주고 보고기는 `DIProvider`가 마운트 때 건다
   - 접근성 설정 store(`use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`): DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는 OS 설정 하나를 구독 하나로 나눠 읽는다
-  - `shared/infra/storage/widget-storage.android`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다
+  - `shared/infra/storage/widget-storage.android`, `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다. 앱의 조립은 `create-device-ports`가 같은 값을 넘긴다
   - `features/billing/subscription/hooks/use-report-store-unavailable`의 보고한 진단 코드(`WeakMap<ErrorReporter, Set<string>>`): 같은 스토어 설정 문제를 앱 실행마다 한 번만 남긴다. 마운트 수명 DI store는 루트 "다시 시도"마다 새로 만들어져 다시 보낸다. 키가 프로세스 수명 `ErrorReporter`라 그 수명을 따른다
-  - `shared/utils/create-optimistic-id`: React 밖 cache helper가 부르고 프로세스 안에서 겹치지 않아야 한다
-  - `features/planning/todo/queries/todo-cache`의 쓰기 순번(`WeakMap<QueryClient, number>`): React 밖 cache helper가 먼저 시작해 늦게 끝난 쓰기 사이를 센다. 키가 `QueryClient`라 그 수명을 따른다
+  - React 밖 cache helper가 부르는 `shared/utils/create-optimistic-id`(프로세스 안에서 겹치지 않아야 한다)와 `features/planning/todo/queries/todo-cache`의 쓰기 순번(`WeakMap<QueryClient, number>`, 먼저 시작해 늦게 끝난 쓰기 사이를 센다. `QueryClient` 수명을 따른다)
   - `shared/date/format/intl-formatter`의 포매터 캐시, `shared/utils/number-format`의 퍼센트 포매터(많아야 4개): 상태가 아닌 순수 캐시다
   - `shared/infra/storage/device-sync-storage`의 MMKV 인스턴스: DI보다 먼저 그리는 설정 Provider(테마·언어·글꼴)와 `i18n/init`이 읽는다
-  - `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`: 앱 트리 밖 위젯 헤드리스 진입점도 같은 수명 포트를 쓴다. 조립은 `create-device-ports`가 이 값을 넘긴다
   - `shared/infra/observability/capture-error`의 보고한 오류 `WeakSet`: DI 밖(루트 경계·전역 로거)과 안의 보고가 같은 오류를 두 번 보내지 않게 하는 한 곳이고 오류 객체와 함께 사라진다
   - `bootstrap/query/{mutation-error-feedback,query-error-report}-cache`의 구독자 표: 캐시 `onError`는 DI 밖 `createAppQueryClient`에서 만들어진다. 표는 캐시를 키로 한 `WeakMap`이라 캐시마다 따로이고 캐시와 함께 사라진다
   - `app/+native-intent`의 초대 링크 도장(마지막 한 칸): 시스템 URL 변환은 앱 트리·DI보다 먼저 돈다
-  - `core/events/*`의 이벤트 채널 리스너: `core`는 DI를 모르고, 구독은 해제 함수를 돌려준다
 - 루트 "다시 시도"는 마운트 수명 컨테이너만 새로 만든다. 로그인·결제 설정·보고는 그대로 남는다.
 - 언마운트·로그아웃 뒤에 도는 일이 없어야 한다. await 뒤 상태 변경·이동은 막고, 핸들러가 건 rAF·타이머는 지우고, 리스너 세트 대신 `subscribe`가 해제 함수를 돌려주는 관찰 가능한 저장소를 쓴다. 화면 밖에서 늦게 오는 쓰기(초안 자동 저장의 마지막 저장, 늦은 녹음 파일)는 로그아웃·탈퇴 세대(`SignOutEpoch`)와 비교해 로그아웃·탈퇴 뒤에는 쓰지 않는다(`DraftService.createSessionSave`, `VoiceRecordingIntakeSession`). 세션 만료는 같은 사람이 돌아와 이어 쓰므로 막지 않는다. 결제 SDK 로그인·로그아웃은 `PurchasesSession`이 하나씩, 마지막 요청만 보내고 멈춘 호출은 `PURCHASES_SDK_CALL_TIMEOUT_MS`(15초)에서 끊는다. 결제·복원은 그때의 SDK 사용자에게 귀속되므로 `waitForSignedInUser`로 로그인·로그아웃이 끝나길 기다리고, 마지막 계정의 로그인이 실패·시간 초과였으면 스토어 연결 오류(`SUBSCRIPTION_STORE_PROBLEM`)로 막은 뒤 그 계정으로 다시 로그인해 둔다. 상세: [hooks](./hooks.md).
 
@@ -192,35 +188,12 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 
 ## 공개 면
 
-- 같은 기능 안에서 한 파일만 쓰는 훅·컴포넌트는 그 파일의 지역 함수다. 부모 없이 의미 없는 조각은 부모 파일의 `Parent.Part`다([ui](./ui.md)).
-- 여러 파일이 쓰거나 다른 기능이 쓰면 `hooks/`·`components/`에 둔다.
+- 같은 기능 안에서 한 파일만 쓰는 훅·컴포넌트는 그 파일의 지역 함수, 여러 파일이나 다른 기능이 쓰면 `hooks/`·`components/`다. 부모 없이 의미 없는 조각은 부모 파일의 `Parent.Part`다([ui](./ui.md)).
 - `app/`·`bootstrap`이 쓰는 훅·컴포넌트는 쓰는 곳이 하나여도 공개 면이라 기능 폴더에 남긴다.
 - 공개 면도 정의 파일에서 직접 import한다. 쓰지 않는 export는 knip이 막는다.
 
 ## 함수 형태
 
-| 위치                                                              | 형태                                                                                                             |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| 컴포넌트, 훅, 순수 함수, mapper, query options, `select`, fixture | 모듈 수준 `function`                                                                                             |
-| 네임스페이스 조각                                                 | `X.Item = function Item()`                                                                                       |
-| 클래스 메서드                                                     | 화살표 필드 + `#` 비공개(`KyHttpClient`, `SecureStorage`, `ApiError`도). 생성자 파라미터 프로퍼티 대신 필드 선언 |
-| 팩토리가 돌려주는 객체(어댑터, store, repository, 세션)           | 화살표 속성. 메서드 축약(`get() {}`)을 쓰지 않는다                                                               |
-| 컴포넌트 안 핸들러, 인라인 콜백, 키 객체 값                       | 화살표                                                                                                           |
-
+- 모듈 수준 함수(컴포넌트, 훅, 순수 함수, mapper, query options, `select`, fixture)는 `function` 선언이고 네임스페이스 조각은 `X.Item = function Item()`이다(`aido/function-declaration`, `aido/namespace-function-name`).
+- 클래스 메서드는 화살표 필드 + `#` 비공개(`KyHttpClient`, `SecureStorage`, `ApiError`도)이고 생성자 파라미터 프로퍼티 대신 필드를 선언한다. 팩토리가 돌려주는 객체(어댑터, store, repository, 세션)는 화살표 속성이고 메서드 축약(`get() {}`)을 쓰지 않는다. 컴포넌트 안 핸들러·인라인 콜백·키 객체 값은 화살표다.
 - 시간 상수는 이름에 단위를 넣는다(`SHEET_ANIMATION_DURATION_MS`, `ANIMATION.durationMs.fast`, `STORE_PREMIUM_SYNC_DELAYS_MS`).
-
-## 가드레일
-
-- **oxlint 기본 규칙**: `no-restricted-imports`: SDK는 `shared/infra` 밖 금지, 모델의 계약·i18n·UI·RN·React, `zod` 자리, `QueryClient`, `shared-di-context`, `useAnalytics`, RN `Image`·`ActivityIndicator`·`AppState`, RHF `FormProvider`, `es-toolkit/compat`, 폴더별 허용 목록. `no-restricted-properties`: `toSorted`, `Alert.alert`, `Platform.OS`, params 훅 밖 `router.setParams`. `react/forbid-elements`(`Chip.Label`), jest(`useFakeTimers`·`mock` 위치·스타일 단언·스냅숏)
-- **oxlint 타입 안전**: `no-explicit-any`, `no-non-null-assertion`, `consistent-type-assertions: never`, `ban-ts-comment`. 테스트에도 같게 건다
-- **oxlint JS 플러그인 `tooling/oxlint-plugin-aido`**: Policy 모양·첫 인자, 모듈 함수 형태, 금지 접미사·이름, `X.Y = function Y`, `*FormInput`·`*Params` 타입 이름, 엄격한 없음 비교, worklet 기본값, 범위 비교 순서, 아이콘 prop, `X.YSkeleton`, `Tabs.Label`·`Menu.ItemTitle` 날글자, 역할 비교, `queryKey: [`, `useForm<>`, 여백 prop + `className`, route params 검증, 재수출, DI 훅 주인, 추적·`queryClient`·저장 키 문자열의 층, 이벤트 카탈로그·로그 키 유일성
-- **dependency-cruiser(`lint:deps`)**: `core`·`shared` 층, 기능 층 1~5, 층 없는 기능, 상대·절대 경로 경계, 순환, 폴더별 의존(`apis/` ↛ `repositories/` 등), 날짜 라이브러리(`dayjs`·`temporal-polyfill`) import
-- **ls-lint(`.ls-lint.yml`)**: `schemas/` 접미사, 역할 폴더별 접미사, `hooks/use-*`, 테스트 위치, `app/` 아래 테스트
-- **knip**: 안 쓰는 파일·export·의존성(모바일 포함)
-- **TypeScript**: typed routes, `queryOptions<T>` 키, `AppEventMap`, `i18next.d.ts`, `DIContainer`, `satisfies Record<…>`, `match().exhaustive()`
-- **oxfmt**: `sortImports`, `sortTailwindcss`(3단계에서 켬), `sortPackageJson`
-
-- `pnpm check`(루트)는 `oxlint .` → `oxfmt --check` → `ls-lint` → `turbo run lint:deps` → `knip`(모바일 포함) → `turbo typecheck` 순서다. 커밋 전 한 번 돌린다. 지금 걸려 있는 규칙 이름과 예외는 [guardrails](./guardrails.md)에 있다.
-- 규칙을 끌 때는 그 줄에서만 `oxlint-disable-next-line 규칙 -- 이유`로 끈다.
-- 새 규칙은 지금 위반을 baseline으로 기록하고 켠다. 기능 PR마다 그 기능의 baseline을 0으로 줄인다. 남은 위반은 [migration-status](./migration-status.md)에 있다.
-- 도구가 못 막는 것(view-model과 Policy의 경계, 통과만 하는 service, 반복 UI의 개별 나열)은 리뷰로 지킨다.
