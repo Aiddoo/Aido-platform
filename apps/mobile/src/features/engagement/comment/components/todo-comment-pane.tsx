@@ -4,7 +4,7 @@ import { QueryErrorBoundary } from '@src/shared/ui';
 import { type ReactNode, Suspense } from 'react';
 
 import { useTodoCommentParams } from '../hooks/use-todo-comment-params';
-import { TodoCommentComposerBar } from './todo-comment-composer/todo-comment-composer-bar';
+import { TodoCommentComposerBar } from './todo-comment-composer-bar';
 import { TodoCommentKeyboardGesture } from './todo-comment-keyboard-gesture';
 import { TodoCommentSession } from './todo-comment-session';
 import { TodoCommentThreadList } from './todo-comment-thread-list';

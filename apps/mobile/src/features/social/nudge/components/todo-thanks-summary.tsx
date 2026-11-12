@@ -2,7 +2,7 @@ import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { QueryErrorBoundary, type SheetRouteExit } from '@src/shared/ui';
 import { Suspense } from 'react';
 
-import { TodoThanksPolicy } from '../../domains/nudge-interaction.model';
+import { TodoThanksPolicy } from '../domains/nudge-interaction.model';
 import { ThanksSummaryRow } from './thanks-summary-row';
 
 interface TodoThanksSummaryProps {

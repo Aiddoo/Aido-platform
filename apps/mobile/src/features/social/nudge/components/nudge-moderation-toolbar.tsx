@@ -6,9 +6,9 @@ import { STACK_MENU_ICON, STACK_MORE_ICON } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 
-import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
-import { useNudgeId } from '../../hooks/use-nudge-id';
-import { useGetNudgeInteractionQueryOptions } from '../../queries/todo-nudge.queries';
+import { NudgeInteractionPolicy } from '../domains/nudge-interaction.model';
+import { useNudgeId } from '../hooks/use-nudge-id';
+import { useGetNudgeInteractionQueryOptions } from '../queries/todo-nudge.queries';
 
 /** 받은 콕 찌르기의 ⋯ 메뉴. 보낸 사람의 메시지를 신고하거나 보낸 사람을 차단한다 */
 export function NudgeModerationToolbar() {

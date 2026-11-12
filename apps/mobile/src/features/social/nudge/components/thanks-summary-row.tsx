@@ -37,11 +37,11 @@ import { match } from 'ts-pattern';
 import {
   NudgeThanksPreviewPolicy,
   type NudgeThanksRecipient,
-} from '../../domains/nudge-interaction.model';
+} from '../domains/nudge-interaction.model';
 import {
   useGetNudgeInteractionAvailabilityQueryOptions,
   useGetNudgeThanksPreviewInfiniteQueryOptions,
-} from '../../queries/todo-nudge.queries';
+} from '../queries/todo-nudge.queries';
 
 const VISIBLE_AVATAR_COUNT = 2;
 const BUTTON_HIT_SLOP = 4;

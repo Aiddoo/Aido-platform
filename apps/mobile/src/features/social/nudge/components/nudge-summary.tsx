@@ -8,9 +8,9 @@ import { HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
-import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
-import { useNudgeId } from '../../hooks/use-nudge-id';
-import { useGetNudgeInteractionQueryOptions } from '../../queries/todo-nudge.queries';
+import { NudgeInteractionPolicy } from '../domains/nudge-interaction.model';
+import { useNudgeId } from '../hooks/use-nudge-id';
+import { useGetNudgeInteractionQueryOptions } from '../queries/todo-nudge.queries';
 
 export function NudgeSummary() {
   const [nudgeId] = useNudgeId();

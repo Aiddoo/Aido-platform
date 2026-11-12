@@ -27,42 +27,42 @@ import { ScrollView, useWindowDimensions } from 'react-native';
 import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-controller';
 import { match } from 'ts-pattern';
 
-import { TODO_COMMENT_LOG_EVENT } from '../../constants/todo-comment-log-events';
-import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment.constants';
+import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
+import { TODO_COMMENT_INPUT_NATIVE_ID } from '../constants/todo-comment.constants';
 import {
   type PreparedTodoCommentSubmission,
   TodoCommentComposerPolicy,
-} from '../../domains/todo-comment-composer.model';
+} from '../domains/todo-comment-composer.model';
 import {
   findTodoCommentErrorStatus,
   isTodoCommentRejectedError,
-} from '../../domains/todo-comment.error';
-import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
-import { useTodoCommentForm } from '../../hooks/use-todo-comment-form';
+} from '../domains/todo-comment.error';
+import { useIsTodoCommentSubmitting } from '../hooks/use-is-todo-comment-submitting';
+import { useTodoCommentForm } from '../hooks/use-todo-comment-form';
 import {
   useCreateTodoCommentChainMutationOptions,
   useUpdateTodoCommentMutationOptions,
-} from '../../queries/todo-comment.mutations';
+} from '../queries/todo-comment.mutations';
 import {
   type TodoCommentFormValues,
   type TodoCommentComposerMode,
   EMPTY_TODO_COMMENT_FORM_VALUES,
   toReplyFormValues,
   toEditFormValues,
-} from '../../schemas/todo-comment-form.schema';
+} from '../schemas/todo-comment-form.schema';
 import {
   createTodoCommentDraftKey,
   getTodoCommentDraftSourceUpdatedAt,
-} from '../../utils/todo-comment-draft';
-import { getCommentFormMaxHeight } from '../../utils/todo-comment-form.geometry';
+} from '../utils/todo-comment-draft';
+import { getCommentFormMaxHeight } from '../utils/todo-comment-form.geometry';
 import {
   getFocusedCommentFieldIndexAfterRemoval,
   getTrimmedContents,
   isComposerBlank,
   findComposerTarget,
-} from '../../utils/todo-comment-form.view-model';
-import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
-import { useExpandThread } from '../todo-comment-expansion';
+} from '../utils/todo-comment-form.view-model';
+import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
+import { useExpandThread } from './todo-comment-expansion';
 
 const SEND_ICON_SIZE = 18;
 const CLOSE_ICON_SIZE = 16;

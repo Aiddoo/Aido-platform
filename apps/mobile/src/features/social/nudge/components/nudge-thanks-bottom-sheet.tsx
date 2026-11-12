@@ -27,10 +27,10 @@ import { useWindowDimensions } from 'react-native';
 import {
   NudgeThanksPreviewPolicy,
   type NudgeThanksRecipient,
-} from '../../domains/nudge-interaction.model';
-import { isNudgeUnavailableError } from '../../domains/todo-nudge.error';
-import { useSendNudgeThanksMutationOptions } from '../../queries/todo-nudge.mutations';
-import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/todo-nudge.queries';
+} from '../domains/nudge-interaction.model';
+import { isNudgeUnavailableError } from '../domains/todo-nudge.error';
+import { useSendNudgeThanksMutationOptions } from '../queries/todo-nudge.mutations';
+import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../queries/todo-nudge.queries';
 
 const RECIPIENT_ROW_HEIGHT = 64;
 const LIST_MIN_HEIGHT = 72;

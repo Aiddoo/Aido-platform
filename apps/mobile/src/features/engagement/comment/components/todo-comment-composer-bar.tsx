@@ -18,8 +18,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTodoCommentReveal } from '../todo-comment-reveal';
 import { TodoCommentForm } from './todo-comment-form';
+import { useTodoCommentReveal } from './todo-comment-reveal';
 
 const DEFAULT_BOTTOM_INSET = 16;
 const CLOSED_EXTRA_PADDING = 4;

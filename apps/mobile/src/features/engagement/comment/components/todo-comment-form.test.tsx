@@ -8,12 +8,12 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
 
-import { createTodoComment, TODO_ID } from '../../__tests__/todo-comment.fixtures';
-import { TodoCommentFormProvider } from '../../hooks/use-todo-comment-form';
-import { todoCommentFormSchema, toEditFormValues } from '../../schemas/todo-comment-form.schema';
-import { TodoCommentExpansionProvider } from '../todo-comment-expansion';
-import { TodoCommentRevealProvider } from '../todo-comment-reveal';
+import { createTodoComment, TODO_ID } from '../__tests__/todo-comment.fixtures';
+import { TodoCommentFormProvider } from '../hooks/use-todo-comment-form';
+import { todoCommentFormSchema, toEditFormValues } from '../schemas/todo-comment-form.schema';
+import { TodoCommentExpansionProvider } from './todo-comment-expansion';
 import { TodoCommentForm } from './todo-comment-form';
+import { TodoCommentRevealProvider } from './todo-comment-reveal';
 
 /** 폼 스키마가 계약을 그대로 검사하므로 서버가 보낼 수 있는 id를 쓴다 */
 const TARGET = createTodoComment({

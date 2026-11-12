@@ -180,7 +180,7 @@ features/engagement/comment/
   hooks/ use-todo-comment-params.ts(+ useTodoCommentSort)  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts
          use-is-todo-comment-submitting.ts  use-todo-comment-form.tsx
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
-              todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer/{todo-comment-composer-bar,todo-comment-form}.tsx
+              todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer-bar.tsx  todo-comment-form.tsx
               todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx
               todo-comment-session.tsx  todo-comment-keyboard-gesture.tsx  todo-detail-summary.tsx
               comment-report-bottom-sheet.tsx
