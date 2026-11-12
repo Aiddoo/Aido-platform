@@ -29,7 +29,8 @@ import { QueryErrorBoundary } from '@src/shared/ui';
 
 기능별 `X.Error`는 자기 레이아웃(`Result` 제목 등)을 그대로 두고 버튼 자리에 `QueryErrorActions`를 둡니다.
 다시 시도(주 버튼)와 문의하기(보조 텍스트 버튼)가 함께 나오고, 문의하기는 오류 신고 분류(`BUG_REPORT`)를 고른
-문의 화면(`BUG_REPORT_INQUIRY_HREF`)을 엽니다.
+문의 화면을 엽니다. 본문 첫 줄에는 경계가 받은 오류의 진단 값(진단 코드·오류 코드·요청 ID, `error-inquiry-draft.ts`)이
+미리 들어가 서버 로그·Sentry를 바로 찾습니다. 경계 밖에서는 진단 코드만 담습니다. 사용자·기기 식별자와 오류 문구는 넣지 않습니다.
 
 ```tsx
 X.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
@@ -44,20 +45,20 @@ X.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 <QueryErrorFallback.Inline message={t('friend:list.loadFailed')} reset={reset} hasInquiry />
 ```
 
-route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으로 바꿉니다(`INQUIRY_SHEET_EXIT`, 문의에서 돌아오면
-시트 아래 화면). `RouteBottomSheet`가 이 경계를 갖고 있어 시트는 경계를 다시 두지 않습니다. 경계가 시트 밖에 있는
+route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으로 바꿉니다. `onInquiry`는 초안이 담긴 문의 `href`를 받으므로
+`sheet.close({ type: 'replace', href })`로 넘깁니다(문의에서 돌아오면 시트 아래 화면). `RouteBottomSheet`가 이 경계를 갖고 있어 시트는 경계를 다시 두지 않습니다. 경계가 시트 밖에 있는
 폼 시트만 fallback이 `sheet`를 받을 수 있게 경계에서 넘깁니다.
 
 ```tsx
 <QueryErrorBoundary
   fallback={(fallbackProps) => (
-    <X.Error {...fallbackProps} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+    <X.Error {...fallbackProps} onInquiry={(href) => sheet.close({ type: 'replace', href })} />
   )}
 >
 ```
 
 `ConfirmDialog` 같은 다이얼로그는 버튼 배치를 그대로 두고 설명 자리에 `QueryErrorActions.Inquiry`를 둡니다.
-`onPress`를 넘기지 않으면 바로 문의 화면으로 이동하고, 먼저 닫아야 하는 곳은 닫은 뒤 이동하는 `onPress`를 넘깁니다.
+`onPress`를 넘기지 않으면 바로 문의 화면으로 이동하고, 먼저 닫아야 하는 곳은 받은 `href`로 닫은 뒤 이동하는 `onPress`를 넘깁니다.
 
 ## 예상한 상태(404·403)
 

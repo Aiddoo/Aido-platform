@@ -229,7 +229,7 @@ if (isCodedError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 | `unexpected`   | 그 밖(5xx·파싱·렌더 오류 등)                                   | `reportUnexpectedError`(요청 태그 포함) | fallback(다시 시도 + 문의하기)           |
 
 - 독립된 데이터 블록마다 `QueryErrorBoundary → Suspense → 블록`을 둬 부분 실패를 허용한다. 식별자가 바뀌면 `resetKeys`로 이전 실패를 푼다.
-- 기능 fallback은 `fallback={X.Error}`로 연결하고, 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. 경계 없이 한 칸 안에서 "실패 + 다시 시도"를 보일 때는 `QueryErrorFallback.Inline`을 쓴다(직접 만든 인라인 실패 UI를 두지 않는다). route 시트 안에서는 `sheet.close(INQUIRY_SHEET_EXIT)`로 닫고 이동한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
+- 기능 fallback은 `fallback={X.Error}`로 연결하고, 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. 경계 없이 한 칸 안에서 "실패 + 다시 시도"를 보일 때는 `QueryErrorFallback.Inline`을 쓴다(직접 만든 인라인 실패 UI를 두지 않는다). 문의하기는 경계가 받은 오류의 진단 코드·오류 코드·요청 ID를 본문 첫 줄에 담아 문의 화면을 연다. route 시트 안에서는 `onInquiry`가 받은 `href`로 `sheet.close({ type: 'replace', href })`해 닫고 이동한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
 - mutation은 경계로 가지 않는다(`throwOnError` 미사용). 피드백은 위 [전역 오류 피드백](#mutation-오류-피드백)이다.
 
 ## 오프라인

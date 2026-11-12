@@ -5,7 +5,6 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
   Button,
-  INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
   QueryErrorBoundary,
   QueryErrorFallback,
@@ -75,7 +74,10 @@ CategoryEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFall
 
   return (
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorFallback reset={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+      <QueryErrorFallback
+        reset={reset}
+        onInquiry={(href) => sheet.close({ type: 'replace', href })}
+      />
     </BottomSheet>
   );
 };

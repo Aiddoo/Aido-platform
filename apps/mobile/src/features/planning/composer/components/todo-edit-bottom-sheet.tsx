@@ -17,7 +17,6 @@ import {
   BottomSheet,
   BottomSheetInput,
   HStack,
-  INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
   QueryErrorActions,
   QueryErrorBoundary,
@@ -86,7 +85,10 @@ TodoEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallback
       <Result
         title={t('errorBoundary.title')}
         button={
-          <QueryErrorActions onRetry={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+          <QueryErrorActions
+            onRetry={reset}
+            onInquiry={(href) => sheet.close({ type: 'replace', href })}
+          />
         }
       />
     </BottomSheet>

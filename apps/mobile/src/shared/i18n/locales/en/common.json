@@ -60,7 +60,13 @@
     "inquiry": "Contact us",
     "restart": "Restart app",
     "mailSubject": "[Aido] Error report ({{code}})",
-    "mailBody": "Diagnostic code: {{code}}\n\nTell us which screen you were on and what you were doing, and we'll look into it.\n"
+    "mailBody": "Diagnostic code: {{code}}\n\nTell us which screen you were on and what you were doing, and we'll look into it.\n",
+    "inquiryDraft": {
+      "body": "A screen failed to load\n({{details}})\n\n",
+      "diagnosticCode": "Diagnostic code: {{value}}",
+      "errorCode": "Error code: {{value}}",
+      "requestId": "Request ID: {{value}}"
+    }
   },
   "infiniteList": {
     "loadMoreFailed": "Try again",

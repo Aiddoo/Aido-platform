@@ -14,7 +14,6 @@ import {
   FishIcon,
   H3,
   HStack,
-  INQUIRY_SHEET_EXIT,
   QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
@@ -29,6 +28,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import type { Href } from 'expo-router';
 import { type ComponentProps, Suspense, useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
@@ -103,7 +103,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
         fallback={(fallbackProps) => (
           <InviteWelcomeBottomSheet.Error
             {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+            onInquiry={(href) => sheet.close({ type: 'replace', href })}
           />
         )}
       >
@@ -119,7 +119,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
 InviteWelcomeBottomSheet.Error = function ErrorFallback({
   reset,
   onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
+}: QueryErrorFallbackProps & { onInquiry: (href: Href) => void }) {
   const { t } = useTranslation('common');
 
   return (

@@ -152,9 +152,16 @@ describe('QueryErrorBoundary 관측', () => {
     expect(errorReporter.captureMessage).not.toHaveBeenCalled();
   });
 
-  it('기본 fallback은 다시 시도와 문의하기를 함께 주고, 문의하기는 문의 화면으로 간다', async () => {
+  it('기본 fallback의 문의하기는 진단 코드·서버 코드·요청 ID를 담은 초안으로 문의 화면을 연다', async () => {
     // Given
-    const screen = await renderWithBoundary(new ServerError(503));
+    const screen = await renderWithBoundary(
+      new ServerError(503, {
+        serverCode: ErrorCode.SYS_0005,
+        details: null,
+        requestId: 'req-1',
+        request: null,
+      }),
+    );
 
     // When
     fireEvent.press(screen.getByTestId('query-error-inquiry'));
@@ -163,7 +170,10 @@ describe('QueryErrorBoundary 관측', () => {
     expect(screen.getByText('다시 시도')).toBeTruthy();
     expect(jest.mocked(router.push)).toHaveBeenCalledWith({
       pathname: '/settings/inquiry',
-      params: { category: 'BUG_REPORT' },
+      params: {
+        category: 'BUG_REPORT',
+        content: expect.stringMatching(/진단 코드: \S+ \/ 오류 코드: SYS_0005 \/ 요청 ID: req-1/),
+      },
     });
   });
 

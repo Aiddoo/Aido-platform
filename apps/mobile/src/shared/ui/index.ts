@@ -148,12 +148,7 @@ export {
   useOverlayState,
 } from './overlay';
 export type { QueryErrorFallbackProps } from './query-error-boundary';
-export {
-  INQUIRY_SHEET_EXIT,
-  QueryErrorActions,
-  QueryErrorBoundary,
-  QueryErrorFallback,
-} from './query-error-boundary';
+export { QueryErrorActions, QueryErrorBoundary, QueryErrorFallback } from './query-error-boundary';
 export { READABLE_CONTENT_MAX_WIDTH, ReadableContent } from './readable-content';
 export { Result } from './result';
 export { RouteBottomSheet, RouteKeyboardBottomSheet } from './route-bottom-sheet';

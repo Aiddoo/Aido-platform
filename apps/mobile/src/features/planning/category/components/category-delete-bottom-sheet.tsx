@@ -13,7 +13,6 @@ import {
   ConfirmDialog,
   H4,
   HStack,
-  INQUIRY_SHEET_EXIT,
   ListRow,
   QueryErrorBoundary,
   QueryErrorFallback,
@@ -138,7 +137,10 @@ CategoryDeleteBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFa
 
   return (
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorFallback reset={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+      <QueryErrorFallback
+        reset={reset}
+        onInquiry={(href) => sheet.close({ type: 'replace', href })}
+      />
     </BottomSheet>
   );
 };

@@ -1,5 +1,5 @@
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import { INQUIRY_SHEET_EXIT, QueryErrorBoundary, type SheetRouteExit } from '@src/shared/ui';
+import { QueryErrorBoundary, type SheetRouteExit } from '@src/shared/ui';
 import { Suspense } from 'react';
 
 import { TodoThanksPolicy } from '../../domains/nudge-interaction.model';
@@ -24,7 +24,7 @@ export function TodoThanksSummary({ todo, onClose }: TodoThanksSummaryProps) {
           {...fallbackProps}
           // 시트 바탕이 다크에서 gray-1이라 안내 면을 한 단계 올려 구분한다
           className="dark:bg-gray-2"
-          onInquiry={() => onClose(INQUIRY_SHEET_EXIT)}
+          onInquiry={(href) => onClose({ type: 'replace', href })}
         />
       )}
     >

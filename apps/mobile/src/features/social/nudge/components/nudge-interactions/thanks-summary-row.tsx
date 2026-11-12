@@ -23,6 +23,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useIsMutating, useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import type { Href } from 'expo-router';
 import { type ComponentProps, type ReactNode, useEffect, useRef } from 'react';
 import Animated, {
   FadeIn,
@@ -159,7 +160,7 @@ ThanksSummaryRow.Preview = function Preview({ todoId, onOpenThanks }: ThanksSumm
 interface ThanksSummaryRowErrorProps
   extends QueryErrorFallbackProps, Pick<ComponentProps<typeof InlineAlert>, 'className'> {
   /** 시트 안에서는 시트를 닫고 문의 화면으로 가도록 바꿔 준다 */
-  onInquiry?: () => void;
+  onInquiry?: (href: Href) => void;
 }
 
 /** 고마움 보내기 입구라 숨기지 않고 같은 자리에 다시 시도·문의를 둔다. 다른 인라인 안내처럼 조용히 알린다 */
