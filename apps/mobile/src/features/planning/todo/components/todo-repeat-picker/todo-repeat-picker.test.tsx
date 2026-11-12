@@ -11,7 +11,7 @@ import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { screen, userEvent } from '@testing-library/react-native';
 
-import type { TodoRepeat } from '../domains/todo-repeat.model';
+import type { TodoRepeat } from '../../domains/todo-repeat.model';
 import { TodoRepeatPicker } from './todo-repeat-picker';
 
 const START_DATE = createDateKey('2026-11-05');

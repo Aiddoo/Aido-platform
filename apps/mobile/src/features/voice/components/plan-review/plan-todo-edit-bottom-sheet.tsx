@@ -9,12 +9,12 @@ import { useTranslation } from '@src/shared/i18n';
 import { BottomSheetInput, Button, KeyboardBottomSheet, VStack } from '@src/shared/ui';
 import { Controller, useForm, useFormState, useWatch, type UseFormReturn } from 'react-hook-form';
 
-import type { PlannedTodo } from '../domains/voice-plan.model';
+import type { PlannedTodo } from '../../domains/voice-plan.model';
 import {
   type PlanTodoEditFormValues,
   planTodoEditFormSchema,
   type PlanTodoFormValues,
-} from '../schemas/plan-review-form.schema';
+} from '../../schemas/plan-review-form.schema';
 
 interface PlanTodoEditBottomSheetProps {
   todo: PlanTodoFormValues;

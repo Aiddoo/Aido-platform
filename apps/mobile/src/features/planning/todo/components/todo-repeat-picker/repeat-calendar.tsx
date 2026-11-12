@@ -1,16 +1,16 @@
 import type { DateKey } from '@src/shared/date/date-key';
 import { Box, HStack, VStack } from '@src/shared/ui';
 
-import { PICKER_MONTH_HEIGHT } from '../constants/todo.constants';
-import type { DatePicker } from '../hooks/use-date-picker';
+import { PICKER_MONTH_HEIGHT } from '../../constants/todo.constants';
+import type { DatePicker } from '../../hooks/use-date-picker';
 import {
   getPickerDayType,
   getRepeatWeekDays,
   getWeekRangeBand,
-} from '../utils/calendar-day.view-model';
-import { WeekdayRow } from './calendar/weekday-row';
-import { PickerDateCell } from './picker-date-cell';
-import { PickerMonthBar } from './picker-month-bar';
+} from '../../utils/calendar-day.view-model';
+import { WeekdayRow } from '../calendar/weekday-row';
+import { PickerDateCell } from '../picker-date-cell';
+import { PickerMonthBar } from '../picker-month-bar';
 
 interface RepeatCalendarProps {
   picker: DatePicker;
