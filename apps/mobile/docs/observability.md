@@ -172,7 +172,7 @@ mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `o
 - 말한 내용·전사 글자·할 일 제목·알림 제목과 본문·메모 내용을 이벤트 파라미터, breadcrumb, 로그 context에 넣지 않는다. 토큰·이메일·좌표·검색어·초대 코드·상대 사용자 id·신고 상세도 넣지 않는다.
 - 음성은 길이를 구간으로만 남기고 오류는 인식기 오류 코드(`speech_error`)만 남긴다.
 - `shared/infra/observability/scrub-sentry-event.ts`가 `beforeSend`·`beforeBreadcrumb`로 한 번 더 지운다. 호출부가 실수해도 나가지 않게 하는 마지막 방어선이고 호출부에서 먼저 빼는 것이 원칙이다.
-  - **허용 키**: `extra`와 breadcrumb `data`는 `ALLOWED_CONTEXT_KEYS`(`memoId`, `status`, `code`, `durationMs`, `error`, `reason` 등)에 있는 키의 문자열·숫자·불리언만 남는다. 그 밖의 키와 객체·배열 값은 지운다. 새 context 키는 허용 목록과 테스트에 먼저 더한다.
+  - **허용 키**: `extra`와 breadcrumb `data`는 `core/observability/telemetry-keys.ts`의 `TELEMETRY_DATA_KEYS` 튜플에 있는 키의 문자열·숫자·불리언만 남는다. 그 밖의 키와 객체·배열 값은 지운다. 로그 context·`Breadcrumb.data` 타입(`TelemetryData`)이 같은 튜플이라 목록 밖 키나 배열은 타입 오류다. 목록은 `join(',')`한 문자열로 보내고, 새 키는 이메일·이름·사용자 글이 아닌지 확인한 뒤 튜플에 더한다. `logger.debug`는 Sentry로 가지 않아 키를 묶지 않는다.
   - **문자열 패턴**: 이메일, `Bearer ...`, JWT, 40자 이상 토큰 모양은 `[email]`·`[token]`으로 바뀌고 500자로 자른다. 요청 ID(UUID)는 그대로다.
   - `console` breadcrumb는 버린다. 요청은 `data`·쿠키·`Authorization`을 지우고 URL 쿼리를 자른다. 사용자는 내부 id만 남는다.
 

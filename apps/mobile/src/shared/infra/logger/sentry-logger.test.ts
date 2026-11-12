@@ -21,7 +21,7 @@ describe('createSentryLogger', () => {
 
   it('debug는 Sentry에 아무것도 남기지 않는다', () => {
     // When
-    createSentryLogger().debug('nope', { a: 1 });
+    createSentryLogger().debug('nope', { memoId: 1 });
 
     // Then
     expect(addBreadcrumb).not.toHaveBeenCalled();
@@ -33,14 +33,14 @@ describe('createSentryLogger', () => {
     const logger = createSentryLogger();
 
     // When
-    logger.info('hello', { a: 1 });
+    logger.info('hello', { memoId: 1 });
     logger.warn('careful');
 
     // Then
     expect(addBreadcrumb).toHaveBeenNthCalledWith(1, {
       level: 'info',
       message: 'hello',
-      data: { a: 1 },
+      data: { memoId: 1 },
     });
     expect(addBreadcrumb).toHaveBeenNthCalledWith(2, {
       level: 'warning',
@@ -52,13 +52,13 @@ describe('createSentryLogger', () => {
 
   it('context는 승격 없이 그대로 breadcrumb data로 전달된다', () => {
     // When
-    createSentryLogger().info('작업 완료', { jobId: 7 });
+    createSentryLogger().info('작업 완료', { memoId: 7 });
 
     // Then
     expect(addBreadcrumb).toHaveBeenCalledWith({
       level: 'info',
       message: '작업 완료',
-      data: { jobId: 7 },
+      data: { memoId: 7 },
     });
   });
 

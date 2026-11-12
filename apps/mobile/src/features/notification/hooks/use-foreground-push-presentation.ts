@@ -35,7 +35,7 @@ export function useForegroundPushPresentation() {
       if (droppedPaths.length > 0) {
         logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PAYLOAD_DROPPED, {
           source: 'foreground',
-          droppedPaths,
+          droppedPaths: droppedPaths.join(','),
           isReadable: pushNotification != null,
         });
       }

@@ -96,7 +96,7 @@ describe('usePushNotificationResponse', () => {
     expect(logger.warn).toHaveBeenCalledWith('notification.push.parse-dropped', {
       source: 'response',
       responseId: 'response-1',
-      droppedPaths: ['navigation.kind'],
+      droppedPaths: 'navigation.kind',
       isReadable: true,
     });
   });

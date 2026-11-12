@@ -82,7 +82,7 @@ export function usePushNotificationResponse(): void {
         logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PAYLOAD_DROPPED, {
           source: 'response',
           responseId: response.id,
-          droppedPaths,
+          droppedPaths: droppedPaths.join(','),
           isReadable: notification != null,
         });
       }

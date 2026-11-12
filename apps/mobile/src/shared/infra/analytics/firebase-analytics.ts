@@ -12,18 +12,14 @@ import {
   INTERNAL_TRAFFIC_EVENT_PARAMETERS,
   type UserPropertyMap,
 } from '@src/core/observability/telemetry-keys';
+import type { TelemetryData } from '@src/core/observability/telemetry-keys';
 import type { Analytics, AnalyticsEventParams } from '@src/core/ports/analytics';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import { getErrorMessage } from '@src/shared/errors';
 
 import { FIREBASE_ANALYTICS_LOG_EVENT } from './firebase-analytics-log-events';
 
-function warn(
-  logger: AppLogger,
-  logEvent: string,
-  error: unknown,
-  extra?: Record<string, unknown>,
-) {
+function warn(logger: AppLogger, logEvent: string, error: unknown, extra?: TelemetryData) {
   logger.warn(logEvent, {
     ...extra,
     error: getErrorMessage(error),
@@ -35,7 +31,7 @@ function invokeAsync(
   logger: AppLogger,
   logEvent: string,
   operation: () => Promise<unknown>,
-  extra?: Record<string, unknown>,
+  extra?: TelemetryData,
 ): void {
   try {
     operation().catch((error) => {

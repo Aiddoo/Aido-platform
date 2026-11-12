@@ -123,7 +123,7 @@ function keepValidPersistedQueries(
     logger.warn(QUERY_CACHE_LOG_EVENT.RESTORED_QUERIES_DROPPED, {
       droppedCount: droppedQueries.length,
       totalCount: queries.length,
-      droppedRoots: uniq(droppedQueries.map(({ queryKey }) => String(queryKey[0]))),
+      droppedRoots: uniq(droppedQueries.map(({ queryKey }) => String(queryKey[0]))).join(','),
     });
   }
 

@@ -254,7 +254,7 @@ describe('영속 캐시 복원 검증', () => {
     expect(logger.warn).toHaveBeenCalledWith(QUERY_CACHE_LOG_EVENT.RESTORED_QUERIES_DROPPED, {
       droppedCount: 1,
       totalCount: 9,
-      droppedRoots: ['user'],
+      droppedRoots: 'user',
     });
   });
 

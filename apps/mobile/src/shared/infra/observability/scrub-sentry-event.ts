@@ -1,50 +1,11 @@
 import type { Breadcrumb, Event } from '@sentry/react-native';
+import { TELEMETRY_DATA_KEYS } from '@src/core/observability/telemetry-keys';
 import { isNil, mapValues, omitBy, pickBy } from 'es-toolkit';
 
 const MAX_TEXT_LENGTH = 500;
 
-/** 목록에 없는 키는 지운다. 키를 더할 때는 값이 구조화된 식별자·코드·상태인지 확인한다 */
-const ALLOWED_CONTEXT_KEYS: ReadonlySet<string> = new Set([
-  'action',
-  'canAskAgain',
-  'code',
-  'durationMs',
-  'endpoint',
-  'error',
-  'errorCode',
-  'errorName',
-  'errorType',
-  'eventName',
-  'feature',
-  'from',
-  'hasActiveToken',
-  'hasToken',
-  'isPhysicalDevice',
-  'key',
-  'kind',
-  'loggerMessage',
-  'memoId',
-  'method',
-  'moment',
-  'on_device',
-  'outcome',
-  'path',
-  'platform',
-  'reason',
-  'requestId',
-  'request_id',
-  'serverErrorCode',
-  'source',
-  'speech_error',
-  'stage',
-  'status',
-  'status_code',
-  'statusCode',
-  'step',
-  'to',
-  'url',
-  'zodError',
-]);
+/** 목록(`TELEMETRY_DATA_KEYS`)에 없는 키는 지운다. 로그·breadcrumb 타입이 같은 목록이라 새 키는 타입 오류로 먼저 걸린다 */
+const ALLOWED_CONTEXT_KEYS: ReadonlySet<string> = new Set(TELEMETRY_DATA_KEYS);
 
 const TEXT_PATTERNS: readonly (readonly [RegExp, string])[] = [
   [/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, '[email]'],

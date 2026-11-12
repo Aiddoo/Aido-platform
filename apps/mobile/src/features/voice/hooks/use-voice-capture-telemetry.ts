@@ -1,4 +1,5 @@
 import { useErrorReporter, useLogger } from '@src/bootstrap/providers/di-context';
+import type { TelemetryData } from '@src/core/observability/telemetry-keys';
 import type {
   OfflineModelResult,
   SpeechErrorCode,
@@ -36,7 +37,7 @@ export function useVoiceCaptureTelemetry({ entry, mode }: UseVoiceCaptureTelemet
   const errorReporter = useErrorReporter();
   const { trackEvent } = useTrack();
 
-  const addBreadcrumb = (message: string, data?: Record<string, unknown>) => {
+  const addBreadcrumb = (message: string, data?: TelemetryData) => {
     errorReporter.addBreadcrumb({ category: 'voice', message, data });
   };
 
