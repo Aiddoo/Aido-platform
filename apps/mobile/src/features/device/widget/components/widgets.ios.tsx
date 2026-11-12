@@ -461,7 +461,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
   );
 }
 
-export const aidoTodayListWidget = createWidget<WidgetProps>(
+const aidoTodayListWidget = createWidget<WidgetProps>(
   'AidoTodayList',
   AidoTodayListLayout,
   createRegisteredWidgetProps(),

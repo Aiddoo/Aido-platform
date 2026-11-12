@@ -74,7 +74,7 @@ export function calculatePawPrintBoardWidth({
 }
 
 /** 짝수 열만 써서 iPhone Duo·폴더블 접힘선이 두 칸 사이에 오게 한다 */
-export function calculatePawPrintColumns(availableWidth: number) {
+function calculatePawPrintColumns(availableWidth: number) {
   const regularMinWidth =
     REGULAR_COLUMNS * PAW_PRINT_CELL_SIZE + (REGULAR_COLUMNS - 1) * MIN_CONNECTOR_WIDTH;
   return availableWidth >= regularMinWidth ? REGULAR_COLUMNS : COMPACT_COLUMNS;
@@ -117,7 +117,7 @@ export function calculatePawPrintGrid(availableWidth: number): PawPrintGrid {
 }
 
 /** 지금 보여 줄 판(0부터). 막 채우고 아직 축하하지 않았으면 그 판을 한 번 더 보여 주고 다음에 새 판으로 넘어간다 */
-export function calculateBoardIndex(pawPrintedCount: number, celebratedCount: number) {
+function calculateBoardIndex(pawPrintedCount: number, celebratedCount: number) {
   const isJustFilled =
     pawPrintedCount > 0 &&
     pawPrintedCount % PAW_PRINT_BOARD_SIZE === 0 &&
@@ -148,7 +148,7 @@ export function calculatePawPrintState(
 }
 
 /** 찍힌 발자국 뒤에 이어 그리는 기다리는 칸 중 판 끝(boardEndIndex)을 넘는 수 */
-export function calculateWaitingOverflow(
+function calculateWaitingOverflow(
   { pawPrintedCount, waitingCount }: Pick<PawPrintCountInput, 'pawPrintedCount' | 'waitingCount'>,
   boardEndIndex: number,
 ) {
