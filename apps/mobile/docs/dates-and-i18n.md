@@ -31,25 +31,9 @@ shared/date/
 
 ### Temporal spike
 
-1.15.2 [10/32]에서 잰 값이다. 같은 검사 1,143개를 Node 26.13.0(ICU 78.3, tzdata 2026e)의 네이티브 Temporal과 Hermes(iOS 27.1 시뮬레이터, Hermes 260318099.0.5, Metro dev 번들)의 `temporal-polyfill` 1.0.8로 돌려 비교했다. 네이티브 결과는 서버 `toZonedInstant`·`localDateIn`·`localDateOf`와 2,835건 모두 같았다.
+1.15.2 [10/32]에서 같은 검사 1,143개를 Node 26 네이티브 Temporal과 Hermes iOS의 `temporal-polyfill` 1.0.8로 돌려 비교했다(측정 표는 그 PR에 있다).
 
-| 검사                                                                     | Hermes iOS 결과                                           |
-| ------------------------------------------------------------------------ | --------------------------------------------------------- |
-| 날짜 + 벽시계 → 순간(9개 시간대 × 11개 날 × 9개 시각)                    | 891/891 서버와 같음                                       |
-| 미국·영국 2026 서머타임 틈·겹침(`compatible`·`earlier`·`later`·`reject`) | 16/16                                                     |
-| 다음 시간대 전환 찾기(9곳)                                               | 9/9                                                       |
-| 순간 → 날짜·시각(서울·뉴욕·런던 등 9곳, 전환 전후 매시)                  | 63/63 구간                                                |
-| 하루의 시작·끝·길이(23·25시간, 산티아고 자정 없음)                       | 99/99                                                     |
-| 윤일 2028-02-29, ISO 53주 해(2026·2032), 말일 + 달                       | 9 + 13 + 11 모두 같음                                     |
-| `Instant`·`PlainDate`·`PlainTime` 읽기·쓰기(오류·옛 시각 포함)           | 32/32                                                     |
-| IANA 이름 430개                                                          | 앱을 새로 띄운 뒤 15개 실패(아래)                         |
-| 지금 Intl 구현과 비교(날짜 key·HH:mm 각 15,552, 다음 자정 3,888)         | 모두 같음                                                 |
-| 지금 Intl 구현의 벽시계 → 순간(891)                                      | 10개 다름: 서머타임 틈·겹침 시각을 서버와 반대쪽으로 읽음 |
-
-- **시간대 이름.** 폴리필은 이름을 대문자로 바꿔 `Intl.DateTimeFormat`에 넘긴다. Hermes iOS는 프로세스에서 처음 보는 대문자 이름 15개(`Asia/Kolkata`, `America/Buenos_Aires`, `America/Indianapolis`, `Asia/Saigon`, `US/Eastern`, `Etc/UTC` 등)를 `RangeError`로 거부한다. 원래 표기로 한 번 만든 뒤에는 통과한다. 인도 기기 시간대(`Asia/Kolkata`)에서 날짜 계산이 던지는 경로다.
-- **속도.** 반복 할 일 달력의 최악 경로(365회차까지 하루씩 걷기, `todo-repeat.model.ts`)가 JIT 없는 Node(`--jitless`, Hermes처럼 해석 실행)에서 격주 반복 기준 폴리필 268ms, dayjs 129.8ms, 순수 계산 26ms다(JIT 50.6·36.8·4.7ms). 시간대 변환 2,000번은 Hermes iOS에서 폴리필 79.6ms, Intl 27.1ms다.
-- **크기.** 폴리필 README의 19.2kB는 gzip 크기다. `Temporal`만 묶어도 minify 56,113B, `hermesc -O` 바이트코드 159,974B다. dayjs를 쓰던 `date-key`(dayjs + utc·isoWeek 포함)는 바이트코드 27,099B, 순수 계산 `date-key`는 9,717B다.
-- **콜드 스타트.** 폴리필은 앱 시작 경로(`LocalDateProvider` 첫 상태 → `getNowInstant`)에서 평가돼 12–22ms가 든다(13번, dev 번들). 진입 → 첫 렌더는 부하(load average 40–50) 때문에 흔들려 차이를 가려낼 수 없었다(없음 1,137–1,374ms, 있음 1,081–2,121ms).
+- **버린 이유.** 폴리필은 시간대 이름을 대문자로 바꿔 넘겨, Hermes iOS가 프로세스에서 처음 보는 이름 15개(`Asia/Kolkata`, `US/Eastern`, `Etc/UTC` 등)를 `RangeError`로 거부한다. `Temporal`만 묶어도 `hermesc -O` 바이트코드가 159,974B(순수 계산 `date-key`는 9,717B)이고 앱 시작 경로에서 12–22ms가 든다.
 - **결정.** 폴리필을 쓰지 않는다. 날짜 key 산술은 순수 계산, 순간 직렬화는 `Date#toISOString`, 시간대 변환은 Intl이다. 서버와 같은지는 Node 26 Temporal을 정답으로 테스트한다(1900~2200년 날짜 key 36,646개 × 8개 연산, 서머타임 날 벽시계 320개). Intl 벽시계 변환의 서머타임 틈·겹침은 서버 규칙으로 고쳤다. 출력 글자는 49만 개 조합(7개 시간대 × ko·en)에서 바이트 단위로 같다.
 - **Android.** 개발 빌드 APK가 없어 기기에서 돌리지 못했다. 날짜 key 산술은 Intl을 쓰지 않아 플랫폼과 무관하다. 출시 전에 Android Hermes에서 아래를 확인한다.
   1. `toDateKey`·`toHHmm`·`toZonedInstant`가 Node 결과와 같다: 서울·뉴욕·런던·산티아고·`Asia/Kolkata`, 2026 서머타임 날 전후 매시와 02:30.

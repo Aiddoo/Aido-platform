@@ -169,26 +169,6 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 
 [`constants/todo-comment.events.ts`](../src/features/engagement/comment/constants/todo-comment.events.ts)의 `AppEventMap`만 쓴다. GA 측정기준·측정항목은 [GA 콘솔 설정](./analytics-ga-console.md#c-1-댓글-측정기준측정항목)에 있다.
 
-## 파일
-
-```
-features/engagement/comment/
-  domains/ todo-comment.model.ts  todo-comment-composer.model.ts  todo-comment.error.ts
-  apis/ todo-comment.api.ts  todo-comment.mapper.ts
-  constants/ todo-comment.constants.ts  todo-comment-log-events.ts  todo-comment.events.ts
-  queries/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.queries.ts  todo-comment.mutations.ts  todo-comment-cache.ts  todo-comment-pages-cache.ts
-  hooks/ use-todo-comment-params.ts(+ useTodoCommentSort)  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts
-         use-is-todo-comment-submitting.ts  use-todo-comment-form.tsx
-  components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
-              todo-comment-reveal.tsx  todo-comment-expansion.tsx  todo-comment-composer-bar.tsx  todo-comment-form.tsx
-              todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx
-              todo-comment-session.tsx  todo-comment-keyboard-gesture.tsx  todo-detail-summary.tsx
-              comment-report-bottom-sheet.tsx
-  utils/ todo-comment-draft.ts  todo-comment-replies.view-model.ts
-         todo-comment-form.view-model.ts  todo-comment-form.geometry.ts  todo-comment-back.view-model.ts
-  schemas/ todo-comment-form.schema.ts  todo-comment-draft.schema.ts  todo-comment-params.schema.ts  todo-comment-request.schema.ts
-```
-
 ## 검증
 
 - 단위: model/Policy, composer, 비자명한 mapper, `queries/*-cache`(페이지 고치기·cursor), route/back, draft(위치는 Oxlint `aido/todo-comment-test-location`이 검사).
