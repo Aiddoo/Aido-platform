@@ -98,3 +98,28 @@ tester.run('todo-comment-test-purity', rules['todo-comment-test-purity'], {
     },
   ],
 });
+
+tester.run('test-gwt-comments', rules['test-gwt-comments'], {
+  valid: [
+    "it('저장한다', () => {\n  // Given\n  const a = 1;\n\n  // When\n  const b = a + 1;\n\n  // Then\n  expect(b).toBe(2);\n});",
+    "it('준비가 없으면 Given을 생략한다', async () => {\n  // When\n  const b = await run();\n\n  // Then\n  expect(b).toBe(2);\n});",
+    "it.each([1, 2])('%s', (value) => {\n  // When\n  const b = value + 1;\n\n  // Then\n  expect(b).toBeGreaterThan(1);\n});",
+    "test.each`\n  a\n  ${1}\n`('$a', ({ a }) => {\n  // When\n  const b = a;\n  // Then\n  expect(b).toBe(1);\n});",
+    "describe('모듈', () => {\n  // 공통 준비\n  beforeEach(() => {});\n});",
+    "it.todo('나중에 쓴다');",
+    "it('설명 주석은 둔다', () => {\n  // 시계를 고정한다\n  // When\n  run();\n  // Then\n  expect(1).toBe(1);\n});",
+  ],
+  invalid: [
+    { code: "it('합본', () => {\n  // When / Then\n  expect(run()).toBe(1);\n});", errors: 1 },
+    {
+      code: "it('합본 가운뎃점', () => {\n  // When·Then\n  expect(run()).toBe(1);\n});",
+      errors: 1,
+    },
+    {
+      code: "it('꼬리 설명', () => {\n  // When\n  run();\n  // Then 저장된다\n  expect(1).toBe(1);\n});",
+      errors: 1,
+    },
+    { code: "it('주석 없음', () => {\n  expect(run()).toBe(1);\n});", errors: 1 },
+    { code: "it.each([1])('Then 빠짐', (value) => {\n  // When\n  run(value);\n});", errors: 1 },
+  ],
+});

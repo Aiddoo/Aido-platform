@@ -241,6 +241,76 @@ const noStyleAssertion = {
   },
 };
 
+const TEST_FUNCTIONS = new Set(['it', 'test']);
+const GWT_LABEL = /^(Given|When|Then)\b/u;
+const REQUIRED_LABELS = ['When', 'Then'];
+
+function isEachMember(node) {
+  return (
+    node?.type === 'MemberExpression' &&
+    !node.computed &&
+    node.object.type === 'Identifier' &&
+    node.property.type === 'Identifier' &&
+    node.property.name === 'each'
+  );
+}
+
+/** `it(…)`·`test(…)`, `it.each(table)(…)`, `it.each`…`(…)`의 it·test */
+function getTestFunctionName(callee) {
+  if (callee.type === 'Identifier') {
+    return callee.name;
+  }
+  if (callee.type === 'CallExpression' && isEachMember(callee.callee)) {
+    return callee.callee.object.name;
+  }
+  if (callee.type === 'TaggedTemplateExpression' && isEachMember(callee.tag)) {
+    return callee.tag.object.name;
+  }
+  return null;
+}
+
+// 테스트 본문은 `// Given`·`// When`·`// Then` 한 줄 주석으로 나눈다. 준비가 없으면 Given만 생략한다.
+// 합본(`// When / Then`)과 꼬리 설명(`// Then 저장된다`)은 쓰지 않는다(docs/conventions/testing.md#2-형식)
+const testGwtComments = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      CallExpression(node) {
+        if (!TEST_FUNCTIONS.has(getTestFunctionName(node.callee))) {
+          return;
+        }
+        const callback = node.arguments.slice(1).find(isFunction);
+        if (callback == null || callback.body.type !== 'BlockStatement') {
+          return;
+        }
+        const labels = new Set();
+        for (const comment of context.sourceCode.getCommentsInside(callback.body)) {
+          const text = comment.value.trim();
+          const label = comment.type === 'Line' ? GWT_LABEL.exec(text)?.[1] : null;
+          if (label == null) {
+            continue;
+          }
+          if (text !== label) {
+            context.report({
+              node: comment,
+              message: `// ${text}: Given·When·Then 주석은 한 단어만 쓴다. 합본과 꼬리 설명을 쓰지 않고 줄을 나눈다.`,
+            });
+            return;
+          }
+          labels.add(label);
+        }
+        const missing = REQUIRED_LABELS.filter((label) => !labels.has(label));
+        if (missing.length > 0) {
+          context.report({
+            node,
+            message: `테스트 본문을 // When·// Then 주석으로 나눈다(빠짐: ${missing.join(', ')}). 준비가 있으면 // Given을 앞에 둔다.`,
+          });
+        }
+      },
+    };
+  },
+};
+
 export default {
   'no-jest-module-mock': noJestModuleMock,
   'todo-comment-test-location': todoCommentTestLocation,
@@ -248,4 +318,5 @@ export default {
   'test-spy-target': testSpyTarget,
   'no-real-sleep': noRealSleep,
   'no-style-assertion': noStyleAssertion,
+  'test-gwt-comments': testGwtComments,
 };
