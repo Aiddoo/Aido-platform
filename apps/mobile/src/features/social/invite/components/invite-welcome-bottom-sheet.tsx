@@ -3,7 +3,9 @@ import { PUSH_PERMISSION_STEP } from '@src/features/notification/constants/notif
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
 import { usePushPermissionAction } from '@src/features/notification/hooks/use-push-permission-action';
 import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/push-permission.queries';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -38,7 +40,6 @@ import Animated, {
   ReduceMotion,
   type SharedValue,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
@@ -50,6 +51,8 @@ import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { InviteePremiumAccessPolicy } from '../domains/invitee-premium-access.model';
 import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
 import { inviteWelcomeParamsSchema } from '../schemas/invite-params.schema';
+
+const WELCOME_CAT_ENTER = { delayMs: ANIMATION.delayMs.long, durationMs: 900 } as const;
 
 type InviteWelcomeBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -304,19 +307,20 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
 
 /** 인사하는 고양이와 튀어 오르는 생선 뼈. 한 번만 재생하고 transform·opacity만 바꾼다 */
 function WelcomeCat() {
-  const isReducedMotion = useReducedMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const progress = useSharedValue(isReducedMotion ? 1 : 0);
 
   useEffect(() => {
     if (isReducedMotion) {
+      progress.set(1);
       return;
     }
 
     progress.set(
       withDelay(
-        200,
+        WELCOME_CAT_ENTER.delayMs,
         withTiming(1, {
-          duration: 900,
+          duration: WELCOME_CAT_ENTER.durationMs,
           easing: Easing.bezier(0.23, 1, 0.32, 1),
           reduceMotion: ReduceMotion.System,
         }),
