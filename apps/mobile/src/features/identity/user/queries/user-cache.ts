@@ -1,8 +1,22 @@
-import { hashKey, type Query, type QueryClient } from '@tanstack/react-query';
+import {
+  type DefaultError,
+  hashKey,
+  type Query,
+  type QueryClient,
+  type QueryExecuteOptions,
+} from '@tanstack/react-query';
 
 import { type User } from '../domains/user.model';
 import { USER_QUERY_KEYS } from './user-query-keys';
-import type { useGetMeQueryOptions } from './user.queries';
+
+/** 내 정보 조회 옵션. 조회 함수가 DI Api를 써서 `useGetMeQueryOptions`가 만들고 고른 값(select)은 옵션이 정한다 */
+type MeQueryOptions<TData> = QueryExecuteOptions<
+  User,
+  DefaultError,
+  TData,
+  User,
+  ReturnType<typeof USER_QUERY_KEYS.me>
+>;
 
 /** 콜백·mutation 성공 처리처럼 훅 밖에서 현재 사용자가 필요할 때 쓴다 */
 export function getCachedMe(queryClient: QueryClient): User | undefined {
@@ -10,10 +24,7 @@ export function getCachedMe(queryClient: QueryClient): User | undefined {
 }
 
 /** 받은 내 정보가 있으면 그대로, 없으면 받는다. 옵션의 select를 거친 값이다 */
-export function ensureMe(
-  queryClient: QueryClient,
-  options: ReturnType<typeof useGetMeQueryOptions>,
-) {
+export function ensureMe<TData>(queryClient: QueryClient, options: MeQueryOptions<TData>) {
   return queryClient.query({ ...options, staleTime: 'static' });
 }
 

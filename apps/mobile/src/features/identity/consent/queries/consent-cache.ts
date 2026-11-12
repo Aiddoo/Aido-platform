@@ -1,9 +1,16 @@
 import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import type { QueryClient } from '@tanstack/react-query';
+import type { DefaultError, EnsureQueryDataOptions, QueryClient } from '@tanstack/react-query';
 
 import type { Consent } from '../domains/consent.model';
 import { CONSENT_QUERY_KEYS } from './consent-query-keys';
-import type { useGetConsentQueryOptions } from './consent.queries';
+
+/** 동의 조회 옵션. 조회 함수가 DI Api를 써서 `useGetConsentQueryOptions`가 만든다 */
+type ConsentQueryOptions = EnsureQueryDataOptions<
+  Consent,
+  DefaultError,
+  Consent,
+  ReturnType<typeof CONSENT_QUERY_KEYS.detail>
+>;
 
 /** 훅 밖에서 이미 받은 동의 상태만 읽는다. 받지 않았으면 없다 */
 export function getCachedConsent(queryClient: QueryClient) {
@@ -11,10 +18,7 @@ export function getCachedConsent(queryClient: QueryClient) {
 }
 
 /** 받은 동의 상태가 있으면 그대로, 없으면 받는다 */
-export function ensureConsent(
-  queryClient: QueryClient,
-  options: ReturnType<typeof useGetConsentQueryOptions>,
-) {
+export function ensureConsent(queryClient: QueryClient, options: ConsentQueryOptions) {
   return queryClient.ensureQueryData(options);
 }
 
