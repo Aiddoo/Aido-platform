@@ -2,15 +2,16 @@ import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
+import { getCachedMe, updateMeInCache } from '@src/features/identity/user/queries/user-cache';
+import * as themeProvider from '@src/shared/providers/theme-provider';
 import { createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Dimensions, Linking, Pressable, Text, View } from 'react-native';
 
 import RootIndex from '../../../app/index';
-import * as orientationLock from '../hooks/use-orientation-lock';
 import { AuthGateLayout } from './auth-gate-layout';
 
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
@@ -79,7 +80,7 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
     },
     { url: initialUrl, di, withLocalDate: true },
   );
-  return { route, errorReporter: di.errorReporter };
+  return { route, errorReporter: di.errorReporter, queryClient: di.queryClient };
 }
 
 describe('root 인증 route 전환', () => {
@@ -219,21 +220,63 @@ describe('root 인증 route 전환', () => {
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
   });
 
-  it('화면 params가 바뀌어도 루트 레이아웃은 다시 그리지 않는다', async () => {
-    // Given
+  describe('루트 레이아웃 다시 그리기', () => {
     // 레이아웃 몸체에서만 부르는 훅의 호출 수가 레이아웃을 그린 횟수다
-    const layoutRender = jest.spyOn(orientationLock, 'useOrientationLock');
-    const { route } = await renderAuthRoutes('authenticated');
-    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
-    const rendersBefore = layoutRender.mock.calls.length;
-    expect(rendersBefore).toBeGreaterThan(0);
+    async function renderFeedAndCountLayout() {
+      const layoutRender = jest.spyOn(themeProvider, 'useAppTheme');
+      const rendered = await renderAuthRoutes('authenticated');
+      await waitFor(() => expect(rendered.route.getPathname()).toBe('/feed'));
+      const rendersBefore = layoutRender.mock.calls.length;
+      expect(rendersBefore).toBeGreaterThan(0);
+      return { ...rendered, layoutRender, rendersBefore };
+    }
 
-    // When
-    await act(() => router.setParams({ date: '2026-11-12' }));
-    await act(() => router.setParams({ date: '2026-11-13' }));
+    it('화면 params가 바뀌어도 다시 그리지 않는다', async () => {
+      // Given
+      const { route, layoutRender, rendersBefore } = await renderFeedAndCountLayout();
 
-    // Then
-    expect(route.getPathnameWithParams()).toBe('/feed?date=2026-11-13');
-    expect(layoutRender).toHaveBeenCalledTimes(rendersBefore);
+      // When
+      await act(() => router.setParams({ date: '2026-11-12' }));
+      await act(() => router.setParams({ date: '2026-11-13' }));
+
+      // Then
+      expect(route.getPathnameWithParams()).toBe('/feed?date=2026-11-13');
+      expect(layoutRender).toHaveBeenCalledTimes(rendersBefore);
+    });
+
+    it('내 정보가 바뀌어도 다시 그리지 않는다', async () => {
+      // Given
+      const { queryClient, layoutRender, rendersBefore } = await renderFeedAndCountLayout();
+
+      // When
+      await act(async () => {
+        updateMeInCache(queryClient, (me) => ({ ...me, name: '새 이름' }));
+        // renderRouter가 fake timer를 켜 TanStack의 구독자 알림(setTimeout 0)을 직접 흘린다
+        jest.advanceTimersByTime(0);
+      });
+
+      // Then
+      expect(getCachedMe(queryClient)?.name).toBe('새 이름');
+      expect(layoutRender).toHaveBeenCalledTimes(rendersBefore);
+    });
+
+    it('창 크기가 바뀌어도 다시 그리지 않는다', async () => {
+      // Given
+      const window = Dimensions.get('window');
+      const screenSize = Dimensions.get('screen');
+      const { layoutRender, rendersBefore } = await renderFeedAndCountLayout();
+
+      // When
+      try {
+        await act(() =>
+          Dimensions.set({ window: { ...window, width: window.width + 200 }, screen: screenSize }),
+        );
+      } finally {
+        Dimensions.set({ window, screen: screenSize });
+      }
+
+      // Then
+      expect(layoutRender).toHaveBeenCalledTimes(rendersBefore);
+    });
   });
 });

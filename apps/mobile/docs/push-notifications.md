@@ -11,26 +11,26 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 PushRegistrationService (features/notification/services) → PushDeviceApi (apis) → PUT /v1/notifications/push-devices/{deviceId}
 ```
 
-| 조각                                                                                                 | 역할                                                                                                        |
-| ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `domains/push-permission.model.ts`                                                                   | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)                                                |
-| `apis/push-permission.mapper.ts`                                                                     | OS 권한 → 모델                                                                                              |
-| `apis/push-device.mapper.ts`                                                                         | 권한·토큰 → 서버 보고 요청, 서버 기기 응답 → 모델                                                           |
-| `apis/push-notification.mapper.ts`                                                                   | `parsePushNotification(data: unknown)`: 푸시 data → 모델 또는 `null`                                        |
-| `apis/push-device.api.ts`                                                                            | `PushDeviceApi`: 기기 보고(PUT)·해제(DELETE)·인증 없는 해제(POST unregister) 요청                           |
-| `services/push-registration.service.ts`                                                              | `PushRegistrationService`: 권한 읽기·요청, 토큰 → 보고, 로그아웃 해제와 해제 기록                           |
-| `schemas/push-permission-deferred-at-storage.schema.ts`·`push-notice-dismissed-at-storage.schema.ts` | 알림 화면·피드 안내를 닫은 시각을 계정마다 저장하는 저장 값 정의                                            |
-| `queries/push-permission.{queries,mutations}.ts`, `push-permission-cache.ts`                         | 권한 조회와 요청·설정 열기·앱 푸시 켜기. 쿼리 키 루트는 `['device', 'push-permission']`                     |
-| `hooks/use-push-permission-action.ts`                                                                | `usePushPermissionAction({ source })` → `{ runStep(step), isPending }`. 권한 단계 실행과 추적의 유일한 입구 |
-| `hooks/use-push-device-sync.ts`                                                                      | 기기 등록을 서버와 맞춘다. 로그인한 동안 보고 시점을 모으고 로그아웃 상태면 해제를 다시 보낸다              |
-| `hooks/use-push-notification-response.ts`                                                            | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출하고, 끝난 effect의 늦은 결과는 버린다                        |
-| `hooks/use-push-notification-entry.ts`                                                               | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                       |
-| `stores/push-notification-entry.store.ts`                                                            | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다                                                     |
-| `stores/push-onboarding-guard.store.ts`                                                              | 앱 화면 묶음이 그린 알림 화면 guard 값. 피드가 열 차례를 이 값으로 읽고 DI가 소유한다                       |
-| `apis/notification.mapper.ts`                                                                        | `toNotificationTarget`: 서버 `navigation` → 앱 `NotificationTarget`. 알림함 항목도 같은 길이다              |
-| `domains/push-notification.model.ts`·`push-notification-response.model.ts`                           | 받은 푸시(`{ notificationId, type, target, … }`)와 누른 응답, 각자의 Policy                                 |
-| `utils/notification-destination.view-model.ts`                                                       | `toNotificationDestination(target, { windowSizeClass, viewerId })`: target → 앱 경로·외부 링크              |
-| `hooks/use-notification-destination.ts`                                                              | `useResolveNotificationDestination`(창 크기·보는 사람으로 정함)·`useOpenNotificationDestination`(연다)      |
+| 조각                                                                                                 | 역할                                                                                                                |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `domains/push-permission.model.ts`                                                                   | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)                                                        |
+| `apis/push-permission.mapper.ts`                                                                     | OS 권한 → 모델                                                                                                      |
+| `apis/push-device.mapper.ts`                                                                         | 권한·토큰 → 서버 보고 요청, 서버 기기 응답 → 모델                                                                   |
+| `apis/push-notification.mapper.ts`                                                                   | `parsePushNotification(data: unknown)`: 푸시 data → 모델 또는 `null`                                                |
+| `apis/push-device.api.ts`                                                                            | `PushDeviceApi`: 기기 보고(PUT)·해제(DELETE)·인증 없는 해제(POST unregister) 요청                                   |
+| `services/push-registration.service.ts`                                                              | `PushRegistrationService`: 권한 읽기·요청, 토큰 → 보고, 로그아웃 해제와 해제 기록                                   |
+| `schemas/push-permission-deferred-at-storage.schema.ts`·`push-notice-dismissed-at-storage.schema.ts` | 알림 화면·피드 안내를 닫은 시각을 계정마다 저장하는 저장 값 정의                                                    |
+| `queries/push-permission.{queries,mutations}.ts`, `push-permission-cache.ts`                         | 권한 조회와 요청·설정 열기·앱 푸시 켜기. 쿼리 키 루트는 `['device', 'push-permission']`                             |
+| `hooks/use-push-permission-action.ts`                                                                | `usePushPermissionAction({ source })` → `{ runStep(step), isPending }`. 권한 단계 실행과 추적의 유일한 입구         |
+| `hooks/use-push-device-sync.ts`                                                                      | 기기 등록을 서버와 맞춘다. 로그인한 동안 보고 시점을 모으고 로그아웃 상태면 해제를 다시 보낸다                      |
+| `hooks/use-push-notification-response.ts`                                                            | 눌린 푸시의 입구 하나. `AuthGateLayout`의 null 자식 `AppEntryWatchers`가 호출하고, 끝난 effect의 늦은 결과는 버린다 |
+| `hooks/use-push-notification-entry.ts`                                                               | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                               |
+| `stores/push-notification-entry.store.ts`                                                            | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다                                                             |
+| `stores/push-onboarding-guard.store.ts`                                                              | 앱 화면 묶음이 그린 알림 화면 guard 값. 피드가 열 차례를 이 값으로 읽고 DI가 소유한다                               |
+| `apis/notification.mapper.ts`                                                                        | `toNotificationTarget`: 서버 `navigation` → 앱 `NotificationTarget`. 알림함 항목도 같은 길이다                      |
+| `domains/push-notification.model.ts`·`push-notification-response.model.ts`                           | 받은 푸시(`{ notificationId, type, target, … }`)와 누른 응답, 각자의 Policy                                         |
+| `utils/notification-destination.view-model.ts`                                                       | `toNotificationDestination(target, { windowSizeClass, viewerId })`: target → 앱 경로·외부 링크                      |
+| `hooks/use-notification-destination.ts`                                                              | `useResolveNotificationDestination`(창 크기·보는 사람으로 정함)·`useOpenNotificationDestination`(연다)              |
 
 ## 클라이언트가 하는 일
 

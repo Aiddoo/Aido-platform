@@ -24,11 +24,6 @@ export function AuthGateLayout() {
   const status = useAuthStatus();
   const isRestoring = useIsRestoring();
   const { resolvedTheme } = useAppTheme();
-  useOrientationLock();
-  useSyncUserIdentity();
-  useClaimDeviceDataForUser();
-  useInstallReferrerCapture();
-  usePushNotificationResponse();
   const entry = usePushNotificationEntry();
   const { backgroundColor } = useResolveClassNames('bg-white');
   const isAuthenticated = status === 'authenticated';
@@ -90,6 +85,9 @@ export function AuthGateLayout() {
         </Stack.Protected>
       </Stack>
       <RouteWatchers />
+      <WindowWatchers />
+      <SessionWatchers />
+      <AppEntryWatchers />
     </>
   );
 }
@@ -103,6 +101,31 @@ function RouteWatchers() {
   useWidgetAppEntry();
   useInviteAppEntry();
   useAppEntrySegmentSync();
+
+  return null;
+}
+
+// 아래 셋도 레이아웃이 아니라 null 형제에서 부른다. 효과 순서(창 → 내 정보 → 진입)는 레이아웃 몸체에서 부를 때와 같다
+
+/** 창 크기를 구독해 Mac·iPad 창 크기를 바꾸는 동안 이것만 다시 그려진다 */
+function WindowWatchers() {
+  useOrientationLock();
+
+  return null;
+}
+
+/** 내 정보(`data`·`dataUpdatedAt`)를 구독해 내 정보를 다시 받을 때 이것만 다시 그려진다 */
+function SessionWatchers() {
+  useSyncUserIdentity();
+  useClaimDeviceDataForUser();
+
+  return null;
+}
+
+/** 푸시 응답은 목적지를 창 크기로 고르므로 창 크기도 구독한다. 레이아웃은 결과(entry)만 읽는다 */
+function AppEntryWatchers() {
+  useInstallReferrerCapture();
+  usePushNotificationResponse();
 
   return null;
 }
