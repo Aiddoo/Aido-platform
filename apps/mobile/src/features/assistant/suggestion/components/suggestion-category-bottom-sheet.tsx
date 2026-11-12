@@ -47,7 +47,7 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
   );
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesData.categories,
-    suggestion?.suggestedCategoryId,
+    suggestion?.suggestedCategoryId ?? null,
   );
   const actOnSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
 

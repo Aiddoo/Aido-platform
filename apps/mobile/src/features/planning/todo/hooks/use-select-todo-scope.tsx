@@ -3,7 +3,11 @@ import type { DateKey } from '@src/shared/date/date-key';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 
-import type { TodoEditScope, TodoUpdateScope } from '../domains/todo-repeat.model';
+import {
+  type TodoEditScope,
+  type TodoUpdateScope,
+  todoUpdateScopeSchema,
+} from '../domains/todo-repeat.model';
 
 export interface ScopeRequest {
   action: 'edit' | 'delete';
@@ -45,10 +49,8 @@ export function useSelectTodoScope() {
   };
 
   return {
-    selectEditScope: async (date: DateKey): Promise<TodoUpdateScope | null> => {
-      const scope = await selectScope('edit', date, TODO_UPDATE_SCOPES);
-      return scope === 'ALL' ? null : scope;
-    },
+    selectEditScope: async (date: DateKey): Promise<TodoUpdateScope | null> =>
+      todoUpdateScopeSchema.nullable().parse(await selectScope('edit', date, TODO_UPDATE_SCOPES)),
     selectDeleteScope: (date: DateKey, scopes: readonly TodoEditScope[]) =>
       selectScope('delete', date, scopes),
     scopeRequest: request,

@@ -2,8 +2,11 @@ import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toTodoFormValues } from '@src/features/planning/todo/apis/todo.mapper';
 import { TodoScopeSelect } from '@src/features/planning/todo/components/todo-scope-select';
-import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
-import { type TodoUpdateScope } from '@src/features/planning/todo/domains/todo-repeat.model';
+import {
+  TodoRepeatPolicy,
+  type TodoUpdateScope,
+  todoUpdateScopeSchema,
+} from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { type Todo } from '@src/features/planning/todo/domains/todo.model';
@@ -134,7 +137,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
         action="edit"
         date={date}
         scopes={isFollowingOnly ? ['THIS_AND_FOLLOWING'] : TODO_UPDATE_SCOPES}
-        onChange={(selected) => close(selected === 'ALL' ? undefined : selected)}
+        onChange={(selected) => close(todoUpdateScopeSchema.parse(selected))}
         onBack={() => close()}
       />
     ));

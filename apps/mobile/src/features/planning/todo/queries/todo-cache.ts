@@ -8,6 +8,7 @@ import type {
   QueryClient,
   QueryKey,
 } from '@tanstack/react-query';
+import { last } from 'es-toolkit';
 
 import { DailyCompletionPolicy } from '../domains/daily-completion.model';
 import { type DailyCompletionsResult } from '../domains/daily-completion.model';
@@ -17,6 +18,7 @@ import {
   type TodoOverview,
   TodoPolicy,
 } from '../domains/todo.model';
+import { todoDateQueryKeySchema, todoRangeQueryKeySchema } from '../schemas/todo-query-key.schema';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
@@ -230,25 +232,13 @@ function isDateInSpan(date: string, span: DateSpan) {
   return span.startDate <= date && date <= span.endDate;
 }
 
-/** 키 끝의 `{ date }`·`{ startDate, endDate }` 조각 */
-function getKeyParams(queryKey: QueryKey) {
-  const params = queryKey.at(-1);
-  return typeof params === 'object' && params != null ? params : {};
-}
-
+// 접두사로 고른 조회는 키 끝 조각의 모양이 섞여 있어 스키마로 읽는다
 function getKeyDate(queryKey: QueryKey) {
-  const params = getKeyParams(queryKey);
-  return 'date' in params && typeof params.date === 'string' ? params.date : undefined;
+  return todoDateQueryKeySchema.safeParse(last(queryKey)).data?.date;
 }
 
 function getKeyRange(queryKey: QueryKey): DateSpan | undefined {
-  const params = getKeyParams(queryKey);
-  return 'startDate' in params &&
-    typeof params.startDate === 'string' &&
-    'endDate' in params &&
-    typeof params.endDate === 'string'
-    ? { startDate: params.startDate, endDate: params.endDate }
-    : undefined;
+  return todoRangeQueryKeySchema.safeParse(last(queryKey)).data;
 }
 
 /** 접두사로 고르면 목록과 달력 범위가 섞여 데이터 모양을 확인하고 읽는다 */

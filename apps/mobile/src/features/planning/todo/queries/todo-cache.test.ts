@@ -179,9 +179,12 @@ describe('할 일 쓰기 정리', () => {
     client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }), toList([]));
     client.setQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK), toCompletions(WEEK));
     client.setQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK), toCompletions(NEXT_WEEK));
-    client.setQueryData(TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY }), toSummary(DAY));
     client.setQueryData(
-      TODO_QUERY_KEYS.widgetSummaryByDate({ date: NEXT_DAY }),
+      TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null }),
+      toSummary(DAY),
+    );
+    client.setQueryData(
+      TODO_QUERY_KEYS.widgetSummaryByDate({ date: NEXT_DAY, userId: null }),
       toSummary(NEXT_DAY),
     );
     return client;
@@ -222,10 +225,12 @@ describe('할 일 쓰기 정리', () => {
     expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(false);
     expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }))).toBe(false);
     expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(false);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY }))).toBe(true);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.widgetSummaryByDate({ date: NEXT_DAY }))).toBe(
-      false,
-    );
+    expect(
+      isInvalidated(client, TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null })),
+    ).toBe(true);
+    expect(
+      isInvalidated(client, TODO_QUERY_KEYS.widgetSummaryByDate({ date: NEXT_DAY, userId: null })),
+    ).toBe(false);
     await finishWrite();
   });
 

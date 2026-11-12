@@ -84,7 +84,7 @@ export function useCreateTodoMutationOptions() {
       );
 
       // 카테고리를 찾지 못하면 낙관적 삽입을 건너뛰고 서버 응답 뒤 invalidate로 맞춘다
-      if (!category) {
+      if (category == null) {
         return { startDate, span, ticket, optimisticId: undefined };
       }
 
@@ -129,7 +129,7 @@ export function useCreateTodoMutationOptions() {
         visibility: values.visibility,
       });
       const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
+      if (accountId != null) {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_creation' });
       }
     },
@@ -281,7 +281,7 @@ export function useCreateRecurringTodoMutationOptions() {
         repeat_end: values.repeat.end.type,
       });
       const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
+      if (accountId != null) {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_creation' });
       }
     },

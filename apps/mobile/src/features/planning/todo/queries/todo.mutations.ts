@@ -305,7 +305,7 @@ export function useReorderTodoMutationOptions() {
     onSuccess: () => {
       trackEvent('todo_reordered', { source: 'feed' });
       const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
+      if (accountId != null) {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_reorder' });
       }
     },

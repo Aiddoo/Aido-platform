@@ -79,7 +79,7 @@ TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSh
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const categoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesResult.categories,
-    requestedCategoryId,
+    requestedCategoryId ?? null,
   );
 
   useEffect(() => {

@@ -266,7 +266,7 @@ function createTodoServer() {
 function WatchedQueries() {
   useQuery(useGetTodosByDateQueryOptions({ date: OTHER_DAY }));
   useQuery(useGetDailyCompletionsQueryOptions(NEXT_MONTH));
-  useQuery(useGetTodoSummaryQueryOptions({ date: DAY }));
+  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
   useQuery(useGetTodoOverviewQueryOptions());
   useQuery(useGetTodoCategoriesQueryOptions());
   useQuery(useGetFriendTodosQueryOptions({ friendUserId: FRIEND_ID, date: DAY }));
@@ -750,7 +750,7 @@ function FeedListProbe() {
 
 function BackgroundProbe() {
   // 위젯 동기화·시작 체크리스트가 피드 뒤에서 붙들고 있는 조회
-  useQuery(useGetTodoSummaryQueryOptions({ date: DAY }));
+  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
   useQuery(useGetDailyCompletionsQueryOptions(WEEK));
   useQuery(useGetTodoOverviewQueryOptions());
   return null;

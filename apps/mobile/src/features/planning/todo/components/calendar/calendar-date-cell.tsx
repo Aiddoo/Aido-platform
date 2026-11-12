@@ -67,14 +67,14 @@ interface CompletionIndicatorProps {
 }
 
 function CompletionIndicator({ completion }: CompletionIndicatorProps) {
-  if (!completion) {
+  if (completion == null) {
     return null;
   }
   if (completion.isComplete) {
     return <FishIcon width={16} height={12} colorClassName="text-fish" />;
   }
   if (completion.totalTodos > 0) {
-    return <CategoryIndicator colors={completion.categoryColors ?? []} />;
+    return <CategoryIndicator colors={completion.categoryColors} />;
   }
 
   return null;

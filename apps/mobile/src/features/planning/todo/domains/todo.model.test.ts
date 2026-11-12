@@ -236,7 +236,6 @@ describe('withVisibilityToggled', () => {
 describe('getVisibility', () => {
   it.each([
     [null, 'PUBLIC'],
-    [undefined, 'PUBLIC'],
     ['PUBLIC', 'PUBLIC'],
     ['PRIVATE', 'PRIVATE'],
   ] as const)('공개 범위를 %s로 두면 %s로 본다', (visibility, expected) => {

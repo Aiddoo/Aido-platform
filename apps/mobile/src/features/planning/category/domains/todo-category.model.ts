@@ -66,7 +66,7 @@ export function findCategory<T extends TodoCategory>(
 // 요청한 카테고리가 아직 있으면 그것을, 없으면 첫 카테고리를 처음 선택값으로 쓴다
 export function getInitialCategoryId(
   categories: readonly TodoCategory[],
-  requestedCategoryId: number | null | undefined,
+  requestedCategoryId: number | null,
 ): number | null {
   if (requestedCategoryId != null && findCategory(categories, requestedCategoryId) != null) {
     return requestedCategoryId;

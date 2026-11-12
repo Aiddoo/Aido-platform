@@ -277,7 +277,7 @@ export function useReorderTodoCategoryMutationOptions() {
     onSuccess: () => {
       trackEvent('category_reordered', { source: 'settings' });
       const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
+      if (accountId != null) {
         trackAttributedFeatureSuccess({ accountId, feature: 'category_reorder' });
       }
     },

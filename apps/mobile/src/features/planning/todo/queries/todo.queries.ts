@@ -199,7 +199,7 @@ const DATE_CATCH_UP_MAX_ATTEMPTS = 4;
 
 interface TodoSummaryQueryInput {
   date: DateKey;
-  userId?: string | null;
+  userId: string | null;
   /** 상위 할 일을 이만큼만 고른다. 없으면 서버가 준 만큼이다 */
   limit?: number;
 }
