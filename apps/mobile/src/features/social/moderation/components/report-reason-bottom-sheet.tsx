@@ -1,6 +1,7 @@
 import { USER_REPORT_LIMITS, type UserReportTargetType } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheetTextArea,
@@ -89,14 +90,15 @@ export function ReportReasonBottomSheet({
     });
   };
 
+  // isSubmitting은 다음 렌더에야 켜지고 신고에는 멱등 키가 없어 같은 프레임의 두 번째 탭이 신고를 한 번 더 보낸다
+  const submitReport = useSingleTap(() => form.handleSubmit(handleReport)());
+
   return (
     <KeyboardBottomSheet
       {...sheetProps}
       isOpen={sheet.isOpen}
       onOpenChange={sheet.onOpenChange}
-      footer={
-        <SubmitButton control={form.control} onPress={() => form.handleSubmit(handleReport)()} />
-      }
+      footer={<SubmitButton control={form.control} onPress={submitReport} />}
     >
       <VStack gap={16} pb={16} testID="report-reason-sheet">
         <VStack gap={2}>
