@@ -11,6 +11,7 @@ import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorFallback, type QueryErrorFallbackProps, Result } from '@src/shared/ui';
@@ -29,7 +30,7 @@ import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 export function MemoPlanReview() {
   const { t } = useTranslation('memo');
   const { timeZone } = useDateFormatContext();
-  const goBack = useSingleTap(router.back);
+  const goBack = useGoBack({ fallbackHref: '/memo' });
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);
   const toast = useAppToast();

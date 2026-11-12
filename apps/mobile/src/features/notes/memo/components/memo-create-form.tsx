@@ -3,12 +3,13 @@ import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-su
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_BACK_ICON, StyledSafeAreaView, TextArea } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { Stack, router, useFocusEffect, useNavigation } from 'expo-router';
+import { Stack, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -19,7 +20,7 @@ import { createMemoDraftKey } from '../utils/memo-draft';
 import { MEMO_TOOLBAR_ICON } from '../utils/memo-toolbar.view-model';
 
 export function MemoCreateForm() {
-  const goBack = useSingleTap(router.back);
+  const goBack = useGoBack({ fallbackHref: '/memo' });
   const { t } = useTranslation(['memo', 'common']);
   const navigation = useNavigation();
   const accountId = useSuspenseMyAccountId();

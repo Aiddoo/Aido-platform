@@ -393,6 +393,30 @@ describe('TodoDetailRoute', () => {
       // Then
       expect(router.back).toHaveBeenCalled();
     });
+
+    it('링크로 바로 열어 돌아갈 화면이 없으면 볼 수 없는 할 일의 뒤로 가기가 피드로 간다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockImplementation(async (path: string) => {
+        if (path === `v1/todos/${TODO_ID}/details`) {
+          return err(new ApiError('TODO_0801', '없음', 404));
+        }
+        return ok({ items: [], pagination: PAGINATION, anchor: null });
+      });
+      jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
+      jest.mocked(router.canGoBack).mockReturnValue(false);
+      await renderScreen(<TodoDetailRoute />, {
+        di: createTestDi({ ports: { httpClient } }),
+        withLocalDate: true,
+        withOverlay: true,
+      });
+
+      // When
+      await fireEvent.press(await screen.findByText('뒤로 가기'));
+
+      // Then
+      expect(router.replace).toHaveBeenCalledWith('/feed');
+    });
   });
 
   describe('할 일 상세 체크', () => {
