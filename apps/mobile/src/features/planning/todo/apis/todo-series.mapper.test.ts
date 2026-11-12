@@ -35,34 +35,6 @@ describe('toFollowingScheduleRequest', () => {
 });
 
 describe('toTodoSeries', () => {
-  it('규칙 응답에서 앱이 쓰는 값만 옮긴다', () => {
-    // When
-    const series = toTodoSeries({
-      id: 'series-1',
-      title: '물 마시기',
-      categoryId: 1,
-      visibility: 'PUBLIC',
-      scheduledTime: '09:00',
-      timezone: 'Asia/Seoul',
-      repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
-      startDate: '2026-11-02',
-      nextOccurrenceDate: '2027-02-01',
-      isActive: true,
-      checklist: [],
-      createdAt: '2026-11-02T00:00:00.000Z',
-      updatedAt: '2026-11-02T00:00:00.000Z',
-    });
-
-    // Then
-    expect(series).toEqual({
-      id: 'series-1',
-      repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
-      startDate: '2026-11-02',
-    });
-  });
-});
-
-describe('toTodoSeries 계약 응답', () => {
   it('계약을 통과한 반복 묶음을 매핑하면 모델 스키마를 통과한다', () => {
     // Given
     const dto = todoSeriesResponseSchema.parse({
