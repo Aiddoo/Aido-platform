@@ -1,4 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FlagIcon, HStack, Text, WordWrapText } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -129,6 +130,7 @@ SentenceCaptionList.Card = function Card({
   ...pressableProps
 }: SentenceCardProps) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const time = formatMediaTime(sentence.startMs);
 
   return (
@@ -161,8 +163,8 @@ SentenceCaptionList.Card = function Card({
         {sentence.isBookmarked && (
           <FlagIcon
             colorClassName="text-main"
-            width={14}
-            height={14}
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
             accessibilityLabel={t('captions.marked')}
           />
         )}

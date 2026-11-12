@@ -82,6 +82,7 @@ export function NextHourPrecipitation() {
     timeFormat: preference.timeFormat,
     now,
   });
+  const titleIconSize = Math.round(TITLE_ICON_SIZE * useFontScaleRatio());
 
   if (isNowcastExpired(weather, now)) {
     return <NextHourPrecipitation.Empty />;
@@ -109,8 +110,8 @@ export function NextHourPrecipitation() {
       title={t('nextHour.title')}
       icon={
         <WeatherRainIcon
-          width={TITLE_ICON_SIZE}
-          height={TITLE_ICON_SIZE}
+          width={titleIconSize}
+          height={titleIconSize}
           colorClassName="text-on-sky/[0.62]"
         />
       }

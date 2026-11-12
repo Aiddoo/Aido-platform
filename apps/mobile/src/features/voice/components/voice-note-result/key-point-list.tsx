@@ -110,6 +110,7 @@ KeyPointList.Item = function Item({
   ...pressableProps
 }: KeyPointItemProps) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const time = keyPoint.startMs == null ? null : formatMediaTime(keyPoint.startMs);
   const canPlay = isPlayable && time != null;
   const timeChip =
@@ -150,8 +151,8 @@ KeyPointList.Item = function Item({
         {keyPoint.isBookmarked && (
           <FlagIcon
             colorClassName="text-main"
-            width={16}
-            height={16}
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
             accessibilityLabel={t('keyPoints.marked')}
           />
         )}

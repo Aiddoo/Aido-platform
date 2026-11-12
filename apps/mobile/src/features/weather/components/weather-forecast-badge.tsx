@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextSkeleton } from '@src/shared/ui';
@@ -15,6 +16,7 @@ import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
 import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
 
+// 날씨 카드가 아니라 피드 머리 도구 막대에 있어 앱 기본 비율(useFontScaledSize)로 키운다
 const BADGE_ICON_SIZE = 18;
 
 function selectBadge(report: WeatherReport) {
@@ -53,6 +55,7 @@ WeatherForecastBadge.Item = function Item({
   serviceName: string;
 }) {
   const { t } = useTranslation('weather');
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
   const unit = useTemperatureUnit();
   const temperature = toDisplayTemperature(current.temperature, unit);
@@ -71,8 +74,8 @@ WeatherForecastBadge.Item = function Item({
         <WeatherIcon
           condition={current.condition}
           isDaylight={current.isDaylight}
-          width={BADGE_ICON_SIZE}
-          height={BADGE_ICON_SIZE}
+          width={fontScaledSize(BADGE_ICON_SIZE)}
+          height={fontScaledSize(BADGE_ICON_SIZE)}
           variant="mono"
           colorClassName="text-gray-6"
         />
@@ -86,6 +89,7 @@ WeatherForecastBadge.Item = function Item({
 
 WeatherForecastBadge.Entry = function Entry() {
   const { t } = useTranslation('weather');
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
   return (
@@ -102,8 +106,8 @@ WeatherForecastBadge.Entry = function Entry() {
         <WeatherIcon
           condition="PARTLY_CLOUDY"
           isDaylight
-          width={BADGE_ICON_SIZE}
-          height={BADGE_ICON_SIZE}
+          width={fontScaledSize(BADGE_ICON_SIZE)}
+          height={fontScaledSize(BADGE_ICON_SIZE)}
           variant="mono"
           colorClassName="text-gray-6"
         />

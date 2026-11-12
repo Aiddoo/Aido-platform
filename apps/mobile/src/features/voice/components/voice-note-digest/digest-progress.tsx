@@ -1,4 +1,5 @@
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -43,6 +44,7 @@ interface DigestStepProps {
 
 DigestProgress.Step = function Step({ label, status, detail }: DigestStepProps) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const stateLabel = {
     done: t('digest.state.done'),
     doing: t('digest.state.doing'),
@@ -61,7 +63,13 @@ DigestProgress.Step = function Step({ label, status, detail }: DigestStepProps) 
           status === 'done' ? 'border-main bg-main' : 'border-gray-3',
         )}
       >
-        {status === 'done' && <CheckmarkIcon colorClassName="text-white" width={14} height={14} />}
+        {status === 'done' && (
+          <CheckmarkIcon
+            colorClassName="text-white"
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+          />
+        )}
         {status === 'doing' && <Spinner size="sm" color="accent" />}
       </Box>
       <Text

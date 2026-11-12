@@ -51,6 +51,8 @@ import { WeatherIcon } from './weather-icon';
 /** 낮·밤 예보가 나누는 시각(WeatherKit daytimeForecast 07~19시) */
 const DAYTIME_HOURS = { start: 7, end: 19 } as const;
 const ICON_SIZE = 26;
+/** 카드 제목 아이콘(`WeatherIcon.Card`)과 같은 크기 */
+const TITLE_ICON_SIZE = 13;
 const COLUMN_WIDTH = { day: 58, icon: 38, low: 46, high: 40 } as const;
 const EXPAND_ENTERING = FadeInDown.duration(600)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1))
@@ -122,11 +124,16 @@ export function DailyForecast() {
 
 DailyForecast.Header = function Header({ count }: { count: number }) {
   const { t } = useTranslation('weather');
+  const titleIconSize = Math.round(TITLE_ICON_SIZE * useFontScaleRatio());
 
   return (
     <HStack align="center" justify="between" gap={8}>
       <HStack align="center" gap={6} accessibilityRole="header" className="shrink">
-        <CalendarIcon width={13} height={13} colorClassName="text-on-sky/[0.62]" />
+        <CalendarIcon
+          width={titleIconSize}
+          height={titleIconSize}
+          colorClassName="text-on-sky/[0.62]"
+        />
         <Text size="b4" weight="medium" className="text-on-sky/[0.62]" numberOfLines={1}>
           {t('daily.title', { count })}
         </Text>

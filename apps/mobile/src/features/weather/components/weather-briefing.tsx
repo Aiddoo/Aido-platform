@@ -13,6 +13,7 @@ import { type Instant } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -222,6 +223,7 @@ WeatherBriefing.Item = function Item({
   timeFormat: TimeFormat;
 }) {
   const { t } = useTranslation(['todo', 'weather']);
+  const fontScaledSize = useFontScaledSize();
   const translate = useTranslateBriefingCopy();
   const dateFormat = useDateFormatContext();
   const todayKey = useTodayKey();
@@ -318,7 +320,12 @@ WeatherBriefing.Item = function Item({
             hitSlop={12}
             className="size-6 items-center justify-center"
           >
-            <MoreIcon width={20} height={20} colorClassName="text-on-sky/60" />
+            {/* 누름 칸(size-6)이 고정이라 칸 안에 들어가는 앱 기본 비율로 키운다 */}
+            <MoreIcon
+              width={fontScaledSize(20)}
+              height={fontScaledSize(20)}
+              colorClassName="text-on-sky/60"
+            />
           </PressableFeedback>
         </HStack>
       }

@@ -4,6 +4,7 @@ import {
 } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { AiFilledIcon, LabelChip, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
@@ -93,11 +94,18 @@ interface InfoCardProps extends Omit<ComponentProps<typeof PressableFeedback>, '
 
 function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
   const { t } = useTranslation('subscription');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <PressableFeedback className="rounded-xl bg-gray-1 px-4" {...props}>
       <ListRow
-        left={<AiFilledIcon width={24} height={24} colorClassName="text-main" />}
+        left={
+          <AiFilledIcon
+            width={fontScaledSize(24)}
+            height={fontScaledSize(24)}
+            colorClassName="text-main"
+          />
+        }
         contents={
           <ListRow.Texts
             type="1RowTypeA"

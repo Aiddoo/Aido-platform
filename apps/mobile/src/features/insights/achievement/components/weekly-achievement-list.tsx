@@ -2,6 +2,7 @@ import { useTrack } from '@src/shared/analytics';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -125,6 +126,7 @@ WeeklyAchievementList.Row = function Row({
   ...rowProps
 }: WeeklyAchievementRowProps) {
   const { t } = useTranslation('achievement');
+  const fontScaledSize = useFontScaledSize();
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
 
@@ -154,7 +156,11 @@ WeeklyAchievementList.Row = function Row({
           <Text size="b3" className="text-main" weight="semibold">
             {formatPercent(achievement.completionRate, dateFormatContext.locale)}
           </Text>
-          <ArrowRightIcon width={16} height={16} colorClassName="text-gray-6" />
+          <ArrowRightIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-6"
+          />
         </HStack>
       }
       verticalPadding="medium"

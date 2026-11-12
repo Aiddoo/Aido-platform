@@ -1,5 +1,6 @@
 import { Canvas, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsAppInBackground } from '@src/shared/hooks/use-is-app-in-background';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
@@ -48,6 +49,7 @@ export function VoiceNotePlayerBar({
   isRecordingAvailable,
 }: VoiceNotePlayerBarProps) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const isPlaying = useVoiceNotePlayback(player, (playback) => playback.isPlaying);
   const isLoaded = useVoiceNotePlayback(player, (playback) => playback.isLoaded);
   const durationMs = useVoiceNotePlayback(player, (playback) => playback.durationMs);
@@ -112,9 +114,17 @@ export function VoiceNotePlayerBar({
         className="size-9 items-center justify-center rounded-full bg-main"
       >
         {isPlaying ? (
-          <PauseIcon colorClassName="text-white dark:text-gray-9" width={14} height={14} />
+          <PauseIcon
+            colorClassName="text-white dark:text-gray-9"
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+          />
         ) : (
-          <PlayIcon colorClassName="text-white dark:text-gray-9" width={14} height={14} />
+          <PlayIcon
+            colorClassName="text-white dark:text-gray-9"
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+          />
         )}
       </PressableFeedback>
       <Scrubber
