@@ -17,6 +17,15 @@ export function ensureMe(
   return queryClient.query({ ...options, staleTime: 'static' });
 }
 
+export function cancelMe(queryClient: QueryClient) {
+  return queryClient.cancelQueries({ queryKey: USER_QUERY_KEYS.me() });
+}
+
+/** 받은 내 정보가 있을 때만 바꾼다 */
+export function updateMeInCache(queryClient: QueryClient, update: (me: User) => User) {
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), (me) => (me == null ? me : update(me)));
+}
+
 export function invalidateMe(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
 }

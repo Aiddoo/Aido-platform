@@ -1,5 +1,6 @@
 import { err, ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
+import { i18n } from '@src/shared/i18n';
 import {
   createHapticsGatewayStub,
   createHttpClientStub,
@@ -61,11 +62,14 @@ describe('설정 토글 저장', () => {
     expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
   });
 
-  it('프리미엄 전용 시각을 서버가 거절하면 우리 문구로 알리고 값을 되돌린다', async () => {
+  it('프리미엄 전용 시각을 서버가 거절하면 카탈로그 문구를 전역 피드백으로 알리고 값을 되돌린다', async () => {
     // Given
+    const catalogMessage = i18n.t('errors:PREFERENCE_1701');
     const httpClient = createHttpClientStub();
     httpClient.patch.mockResolvedValue(
-      err(createPreferenceApiError({ code: 'PREFERENCE_1701', message: '서버 문구', status: 403 })),
+      err(
+        createPreferenceApiError({ code: 'PREFERENCE_1701', message: catalogMessage, status: 403 }),
+      ),
     );
     const { cached, update } = await renderUpdate(httpClient);
 
@@ -73,12 +77,11 @@ describe('설정 토글 저장', () => {
     const result = update({ morningReminderHour: 6 });
 
     // Then
-    await expect(result).rejects.toThrow('서버 문구');
+    await expect(result).rejects.toThrow(catalogMessage);
     expect(cached()?.morningReminderHour).toBe(8);
     expect(await screen.findAllByText('리마인드 시간 변경은 프리미엄 기능이에요')).not.toHaveLength(
       0,
     );
-    expect(screen.queryByText('서버 문구')).toBeNull();
   });
 });
 
