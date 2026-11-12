@@ -2,7 +2,7 @@ import { ReleaseRow } from '@src/features/app-config/whats-new/components/releas
 import {
   RELEASE_1_14_0,
   RELEASE_1_15_0,
-} from '@src/features/app-config/whats-new/constants/releases';
+} from '@src/features/app-config/whats-new/constants/releases.constants';
 import { PATCH_NOTES_URL } from '@src/features/app-config/whats-new/constants/whats-new.constants';
 import { WhatsNewPolicy } from '@src/features/app-config/whats-new/domains/whats-new.model';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';

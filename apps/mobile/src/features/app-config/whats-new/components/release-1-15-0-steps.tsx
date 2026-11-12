@@ -33,7 +33,7 @@ import {
 } from 'react-native-gesture-handler';
 
 import { DEMO_PLANNED_TODOS, RELEASE_1_15_0_STEPS } from '../constants/release-1-15-0.constants';
-import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
+import { RELEASE_1_15_0, RELEASES } from '../constants/releases.constants';
 import { getLatestRelease } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';

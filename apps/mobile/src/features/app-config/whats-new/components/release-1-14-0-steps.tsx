@@ -22,7 +22,7 @@ import { cn } from '@src/shared/utils/cn';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { RELEASE_1_14_0 } from '../constants/releases';
+import { RELEASE_1_14_0 } from '../constants/releases.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';

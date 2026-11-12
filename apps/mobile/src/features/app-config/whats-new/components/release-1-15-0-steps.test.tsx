@@ -18,7 +18,7 @@ import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { RELEASE_1_15_0 } from '../constants/releases';
+import { RELEASE_1_15_0 } from '../constants/releases.constants';
 import { Release1150Steps } from './release-1-15-0-steps';
 
 const ACCOUNT_ID = 'user-1';

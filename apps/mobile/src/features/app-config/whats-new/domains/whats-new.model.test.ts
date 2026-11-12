@@ -1,7 +1,7 @@
 import { toInstant } from '@src/shared/date/instant';
 import { createDateKey } from '@src/testing/date-key';
 
-import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
+import { RELEASE_1_15_0, RELEASES } from '../constants/releases.constants';
 import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
 import type { Release } from './whats-new.model';
 import {

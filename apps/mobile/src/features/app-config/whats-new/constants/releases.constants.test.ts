@@ -8,7 +8,7 @@ import {
   tourReleaseIdSchema,
   WhatsNewPolicy,
 } from '../domains/whats-new.model';
-import { RELEASES } from './releases';
+import { RELEASES } from './releases.constants';
 
 describe('RELEASES', () => {
   it('늦게 나온 출시일수록 버전이 높아 목록의 최신 표시와 버전이 어긋나지 않는다', () => {
