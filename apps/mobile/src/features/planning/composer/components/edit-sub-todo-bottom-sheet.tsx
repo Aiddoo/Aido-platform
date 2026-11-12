@@ -5,6 +5,7 @@ import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useSheetSubTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { useUpdateSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
@@ -13,7 +14,6 @@ import { Separator } from 'heroui-native';
 import { type ComponentProps } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
-import { useUpdateSubTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
 import { SubTodoBottomSheet, SubTodoDictation, SubTodoTitleInput } from './sub-todo-bottom-sheet';
 import { TodoComposerSubmitButton } from './todo-composer-submit-button';
