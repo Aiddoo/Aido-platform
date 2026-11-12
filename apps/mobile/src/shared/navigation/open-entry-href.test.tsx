@@ -19,42 +19,43 @@ function createScreen(testID: string) {
   };
 }
 
-// 앱과 같은 모양의 트리: 탭 위 Stack, 탭마다 Stack, 탭이 함께 쓰는 화면
+function createTabStackLayout(anchor: string) {
+  return {
+    default: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
+    unstable_settings: { anchor },
+  };
+}
+
+// 앱과 같은 모양의 트리: 탭 위 Stack, 탭마다 Stack, 세 탭이 함께 쓰는 화면(app/(app)/(tabs))
 async function renderApp(url: string) {
-  const rendered = await renderAppRoute(
-    {
-      _layout: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
-      '(app)/_layout': {
-        default: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
-        unstable_settings: { anchor: '(tabs)' },
-      },
-      // NativeTabs는 Jest에서 그려지지 않아 같은 탭 라우터를 쓰는 JS Tabs로 대신한다
-      '(app)/(tabs)/_layout': {
-        default: () => (
-          <Tabs screenOptions={{ headerShown: false, lazy: false }} backBehavior="initialRoute">
-            <Tabs.Screen name="(todos)" />
-            <Tabs.Screen name="(memos)" />
-            <Tabs.Screen name="(me)" />
-          </Tabs>
-        ),
-        unstable_settings: { anchor: '(todos)' },
-      },
-      '(app)/(tabs)/(me,memos,todos)/_layout': {
-        default: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
-        unstable_settings: {
-          todos: { anchor: 'feed/index' },
-          memos: { anchor: 'memo/index' },
-          me: { anchor: 'mypage/index' },
-        },
-      },
-      '(app)/(tabs)/(todos)/feed/index': createScreen('feed'),
-      '(app)/(tabs)/(memos)/memo/index': createScreen('memo'),
-      '(app)/(tabs)/(me)/mypage/index': createScreen('mypage'),
-      '(app)/(tabs)/(me,memos,todos)/friends/index': createScreen('friends'),
-      '(app)/(tabs)/(me,memos,todos)/settings/theme': createScreen('theme'),
-      '(app)/notifications/index': createScreen('notifications'),
-      '(app)/todo/[todoId]/index': createScreen('todo'),
+  const routes = {
+    _layout: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
+    '(app)/_layout': createTabStackLayout('(tabs)'),
+    // NativeTabs는 Jest에서 그려지지 않아 같은 탭 라우터를 쓰는 JS Tabs로 대신한다
+    '(app)/(tabs)/_layout': {
+      default: () => (
+        <Tabs screenOptions={{ headerShown: false, lazy: false }}>
+          <Tabs.Screen name="(todos)" />
+          <Tabs.Screen name="(memos)" />
+          <Tabs.Screen name="(me)" />
+        </Tabs>
+      ),
+      unstable_settings: { anchor: '(todos)' },
     },
+    '(app)/(tabs)/(todos)/_layout': createTabStackLayout('feed/index'),
+    '(app)/(tabs)/(memos)/_layout': createTabStackLayout('memo/index'),
+    '(app)/(tabs)/(me)/_layout': createTabStackLayout('mypage/index'),
+    '(app)/(tabs)/(todos)/feed/index': createScreen('feed'),
+    '(app)/(tabs)/(memos)/memo/index': createScreen('memo'),
+    '(app)/(tabs)/(me)/mypage/index': createScreen('mypage'),
+    '(app)/(tabs)/(me,memos,todos)/friends/index': createScreen('friends'),
+    '(app)/(tabs)/(me,memos,todos)/settings/theme': createScreen('theme'),
+    '(app)/notifications/index': createScreen('notifications'),
+    '(app)/todo/[todoId]/index': createScreen('todo'),
+  };
+  // Metro는 route 파일을 경로 순으로 올리고, 탭이 정해지지 않은 이동이 고르는 그룹이 이 순서를 따른다
+  const rendered = await renderAppRoute(
+    Object.fromEntries(Object.entries(routes).sort(([a], [b]) => (a < b ? -1 : 1))),
     { url },
   );
 
@@ -91,6 +92,25 @@ describe('openEntryHref', () => {
     // Then
     expect(app.getPathname()).toBe('/feed');
     expect(app.appStack()).toEqual(['(tabs)']);
+  });
+
+  it('탭 위 화면(알림함)에서 함께 쓰는 화면을 열면 탭 위 화면을 닫고 마이 탭에 연다', async () => {
+    // Given
+    const app = await renderApp('/feed');
+    await act(() => router.push('/notifications'));
+
+    // When
+    await act(() => openEntryHref('/friends?view=receiver'));
+
+    // Then
+    expect(app.getSegments()).toEqual(['(app)', '(tabs)', '(me)', 'friends']);
+    expect(app.appStack()).toEqual(['(tabs)']);
+
+    // When
+    await act(() => router.back());
+
+    // Then
+    expect(app.getPathname()).toBe('/mypage');
   });
 
   it('할 일 상세 위에서 피드를 열어도 탭 묶음이 두 겹이 되지 않는다', async () => {

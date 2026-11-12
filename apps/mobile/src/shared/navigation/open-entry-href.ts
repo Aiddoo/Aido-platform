@@ -14,7 +14,7 @@ function canLinkLikeOs(value: object): value is EntryLinkRouter {
  * Stack에 그 화면이 있으면 그리로 돌아가고 없으면 쌓아, 탭 위 화면에서 열어도 탭 묶음이 두 겹이 되지 않는다
  */
 export function openEntryHref(href: Href): void {
-  // OS 링크와 같은 NAVIGATE+pop. expo-router 58 공개 API에 없다(dismissTo는 없으면 바꿔 끼우고 dangerouslySingular는 순서만 바꾼다)
+  // OS 링크와 같은 NAVIGATE+pop. expo-router 58 공개 API에 없다: dismissTo는 없으면 바꿔 끼우고, dangerouslySingular는 순서만 바꾸고, withAnchor는 새 navigator에만 듣는다
   if (canLinkLikeOs(router)) {
     router.linkTo(href, { event: 'NAVIGATE', __internal__popToNavigator: true });
     return;
