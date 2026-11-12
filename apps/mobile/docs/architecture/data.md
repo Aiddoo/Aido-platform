@@ -193,7 +193,7 @@ const form = useForm({
 });
 ```
 
-- `useForm`은 제네릭 없이 `zodResolver(schema)`에서 타입을 추론하고 이름은 `form`이다. 생성은 `defaultValues`, 서버 값을 고치는 수정 폼은 `values` + `resetOptions: SERVER_VALUES_RESET_OPTIONS`(`shared/constants`)로 다시 받은 값과 맞춘다(고치지 않은 칸은 새 값, 고치던 칸·`isDirty`·칸 오류는 그대로). RHF 7.91은 `keepDirtyValues`만 주면 마운트와 다시 받을 때마다 `isDirty`와 칸 오류를 지우므로 이 상수를 쓴다. `form.reset`도 `resetOptions`를 합치니 저장한 값으로 다시 시작할 때는 `form.reset(values, SAVED_VALUES_RESET_OPTIONS)`다. 코드로 바꾼 칸은 `setValue(…, { shouldDirty: true })`로 고친 칸이 되게 한다. `reset`을 부르는 effect를 쓰지 않는다. 처음 값은 스키마 `.default()`가 아니라 `defaultValues`에 두고 값 없는 칸은 `null`이다.
+- `useForm`은 제네릭 없이 `zodResolver(schema)`에서 타입을 추론하고 이름은 `form`이다. 생성은 `defaultValues`, 서버 값을 고치는 수정 폼은 `values` + `resetOptions: SERVER_VALUES_RESET_OPTIONS`(`shared/constants`)로 다시 받은 값과 맞춘다(고치지 않은 칸은 새 값, 고치던 칸·`isDirty`·칸 오류는 그대로). RHF 7.91은 `keepDirtyValues`만 주면 마운트와 다시 받을 때마다 `isDirty`와 칸 오류를 지우므로 이 상수를 쓴다. `form.reset`도 `resetOptions`를 합치니 저장한 값으로 다시 시작할 때는 `form.reset(values, SAVED_VALUES_RESET_OPTIONS)`다. 코드로 바꾼 칸(칩·받아쓰기·초안)은 `setValue(…, { shouldDirty: true })`로 고친 칸이 되게 하고, 버튼·완료 키가 `isValid`를 보면 `shouldValidate: true`도 준다. `reset`을 부르는 effect를 쓰지 않는다. 처음 값은 스키마 `.default()`가 아니라 `defaultValues`에 두고 값 없는 칸은 `null`이다.
 - 스키마는 `schemas/{name}-form.schema.ts` 하나다. 계약의 요청 스키마에서 `pick`·`omit`·`extend`로 유도하고 공백 정리는 `trimmed(contract.shape.title)`, 한도는 vocabulary다. 저장 가능 여부를 함수로 또 만들지 않는다.
 - 변환은 mapper다. 폼 값 → 요청은 `to{X}Request(values)`, 모델 → 폼 값은 `to{X}FormValues(model)`다.
 - 입력은 `Controller`·`useController`로 잇고 `field.ref`를 넘겨 검증 실패 칸에 포커스한다. 하위는 `useWatch`·`useFormState({ name })`로 자기 값만 구독한다. 렌더 중 `getValues()`는 React Compiler가 캐시해 갱신되지 않으므로 핸들러에서만 쓴다.
