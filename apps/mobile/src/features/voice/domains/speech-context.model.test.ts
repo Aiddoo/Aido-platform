@@ -1,8 +1,7 @@
 import type { SpeechStartOptions } from '@src/core/ports/speech-recognizer';
 import { range } from 'es-toolkit';
 
-import { COMMON_SPEECH_HINTS } from '../constants/speech-hints.constants';
-import { getRecognizerStartOptions, getSpeechContextStrings } from './speech-context';
+import { getRecognizerStartOptions, getSpeechContextStrings } from './speech-context.model';
 
 describe('getSpeechContextStrings', () => {
   it('카테고리 이름을 먼저 두고 중복과 빈 글자를 뺀다', () => {
@@ -36,6 +35,7 @@ describe('getSpeechContextStrings', () => {
 });
 
 describe('getRecognizerStartOptions', () => {
+  const commonHints = ['분기', '결재'];
   const baseOptions: SpeechStartOptions = {
     locale: 'ko-KR',
     mode: 'quick',
@@ -49,10 +49,10 @@ describe('getRecognizerStartOptions', () => {
     const options = { ...baseOptions, isOnDevice: false };
 
     // When
-    const result = getRecognizerStartOptions(options);
+    const result = getRecognizerStartOptions(options, commonHints);
 
     // Then
-    expect(result.hintWords).toEqual(COMMON_SPEECH_HINTS['ko-KR']);
+    expect(result.hintWords).toEqual(commonHints);
     expect(result.hintWords).not.toContain('기획팀');
   });
 
@@ -61,7 +61,7 @@ describe('getRecognizerStartOptions', () => {
     const options = { ...baseOptions, isOnDevice: true, hintWords: ['기획팀', '분기'] };
 
     // When
-    const result = getRecognizerStartOptions(options);
+    const result = getRecognizerStartOptions(options, commonHints);
 
     // Then
     expect(result.hintWords.slice(0, 2)).toEqual(['기획팀', '분기']);
