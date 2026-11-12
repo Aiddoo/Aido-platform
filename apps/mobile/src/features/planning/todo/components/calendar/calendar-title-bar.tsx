@@ -282,18 +282,29 @@ interface CalendarNavigationProps extends Pick<ComponentProps<typeof HStack>, 'r
 
 function CalendarNavigation({ ref, onPrevious, onNext }: CalendarNavigationProps) {
   const { t } = useTranslation('common');
+  const [viewMode] = useStoredValue(calendarViewModeStoredValue);
+  const labels = match(viewMode)
+    .with('week', () => ({
+      previous: t('calendar.previousWeek'),
+      next: t('calendar.nextWeek'),
+    }))
+    .with('month', () => ({
+      previous: t('calendar.previousMonth'),
+      next: t('calendar.nextMonth'),
+    }))
+    .exhaustive();
 
   return (
     <HStack ref={ref} gap={4}>
       <IconButton
-        accessibilityLabel={t('calendar.previousMonth')}
+        accessibilityLabel={labels.previous}
         icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}
         className="min-h-0 min-w-0 p-1"
         hitSlop={8}
         onPress={onPrevious}
       />
       <IconButton
-        accessibilityLabel={t('calendar.nextMonth')}
+        accessibilityLabel={labels.next}
         icon={<ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />}
         className="min-h-0 min-w-0 p-1"
         hitSlop={8}

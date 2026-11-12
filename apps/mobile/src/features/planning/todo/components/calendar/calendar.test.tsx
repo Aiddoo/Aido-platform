@@ -50,4 +50,20 @@ describe('Calendar', () => {
     expect(screen.getByRole('button', { name: '2020년 3월 11일' })).not.toBeSelected();
     expect(countRouteParamsReads()).toBeLessThan(DAYS_PER_MONTH_PAGE);
   });
+
+  it.each<{ viewMode: CalendarViewMode; name: string; date: string }>([
+    { viewMode: 'week', name: '이전 주', date: '2020-03-01' },
+    { viewMode: 'week', name: '다음 주', date: '2020-03-15' },
+    { viewMode: 'month', name: '이전 달', date: '2020-02-01' },
+    { viewMode: 'month', name: '다음 달', date: '2020-04-01' },
+  ])('$viewMode 보기의 "$name" 버튼은 이름대로 옮긴다', async ({ viewMode, name, date }) => {
+    // Given
+    await renderCalendar(viewMode);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name }));
+
+    // Then
+    expect(router.setParams).toHaveBeenCalledWith({ date });
+  });
 });
