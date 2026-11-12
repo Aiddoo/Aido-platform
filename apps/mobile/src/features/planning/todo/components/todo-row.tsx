@@ -161,7 +161,11 @@ TodoRow.TitleLine = function TitleLine({ label, isPrivate }: TodoTitleLineProps)
       {label}
       {isPrivate && (
         <Box className="justify-center" style={{ height: fontScaledSize(TITLE_LINE_HEIGHT) }}>
-          <LockIcon width={14} height={14} colorClassName="text-gray-5" />
+          <LockIcon
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+            colorClassName="text-gray-5"
+          />
         </Box>
       )}
     </HStack>

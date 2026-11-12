@@ -1,6 +1,7 @@
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -79,11 +80,24 @@ interface TodoScopeSelectProps {
 
 export function TodoScopeSelect({ action, date, scopes, onChange, onBack }: TodoScopeSelectProps) {
   const { t } = useTranslation(['todo', 'common']);
+  const fontScaledSize = useFontScaledSize();
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const dateLabel = formatYearAwareDateKeyLabel(date, todayKey, dateFormatContext);
-  const calendarIcon = <CalendarIcon width={16} height={16} colorClassName="text-gray-7" />;
-  const repeatIcon = <RepeatIcon width={16} height={16} colorClassName="text-gray-7" />;
+  const calendarIcon = (
+    <CalendarIcon
+      width={fontScaledSize(16)}
+      height={fontScaledSize(16)}
+      colorClassName="text-gray-7"
+    />
+  );
+  const repeatIcon = (
+    <RepeatIcon
+      width={fontScaledSize(16)}
+      height={fontScaledSize(16)}
+      colorClassName="text-gray-7"
+    />
+  );
 
   return (
     <VStack gap={8} testID="todo-scope-select">
@@ -92,8 +106,14 @@ export function TodoScopeSelect({ action, date, scopes, onChange, onBack }: Todo
           {onBack != null && (
             <IconButton
               accessibilityLabel={t('common:actions.goBack')}
-              icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-8" />}
-              className="min-h-0 min-w-0"
+              icon={
+                <ArrowLeftIcon
+                  width={fontScaledSize(20)}
+                  height={fontScaledSize(20)}
+                  colorClassName="text-gray-8"
+                />
+              }
+              className="size-5 min-h-0 min-w-0"
               hitSlop={12}
               onPress={onBack}
             />
@@ -129,7 +149,13 @@ export function TodoScopeSelect({ action, date, scopes, onChange, onBack }: Todo
       {scopes.includes('ALL') && (
         <ScopeRow
           isDanger
-          icon={<TrashIcon width={16} height={16} colorClassName="text-error" />}
+          icon={
+            <TrashIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-error"
+            />
+          }
           label={t('scope.allRepeats')}
           description={t('scope.deleteAllHint')}
           onPress={() => onChange('ALL')}

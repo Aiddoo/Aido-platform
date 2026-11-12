@@ -5,6 +5,7 @@ import { useVoiceNotes } from '@src/features/voice/hooks/use-voice-notes';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -261,6 +262,7 @@ MemoList.Item = function Item({
   onSelect,
   onEntered,
 }: MemoListItemProps) {
+  const fontScaledSize = useFontScaledSize();
   const selectMemo = useSingleTap(onSelect);
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
@@ -321,7 +323,13 @@ MemoList.Item = function Item({
               >
                 {title}
               </Text>
-              {memo.isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
+              {memo.isPinned && (
+                <PinFilledIcon
+                  width={fontScaledSize(14)}
+                  height={fontScaledSize(14)}
+                  colorClassName="text-main"
+                />
+              )}
             </HStack>
             {body.length > 0 && (
               <Text size="b4" shade={6} numberOfLines={3} lineBreakStrategyIOS="hangul-word">

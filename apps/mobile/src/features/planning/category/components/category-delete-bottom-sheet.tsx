@@ -1,6 +1,7 @@
 import { CATEGORY_TODO_HANDLINGS, type CategoryTodoHandling } from '@aido/api/vocabulary';
 import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
@@ -472,6 +473,7 @@ function MoveTargetRow({
   ...props
 }: MoveTargetRowProps) {
   const { t } = useTranslation(['todo', 'common']);
+  const fontScaledSize = useFontScaledSize();
   const openSheet = useOpenSheet();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const moveTarget = TodoCategoryPolicy.findCategory(
@@ -518,7 +520,13 @@ function MoveTargetRow({
             {moveTarget.name}
           </Text>
         }
-        right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-6" />}
+        right={
+          <ArrowRightIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-6"
+          />
+        }
         horizontalPadding="medium"
         className="rounded-xl bg-gray-1 dark:bg-gray-3"
       />

@@ -46,7 +46,11 @@ export function MemoCreateButton() {
         canCreate ? 'bg-main' : 'bg-gray-4',
       )}
     >
-      <PlusIcon width={24} height={24} colorClassName="text-white dark:text-gray-9" />
+      <PlusIcon
+        width={fontScaledSize(24)}
+        height={fontScaledSize(24)}
+        colorClassName="text-white dark:text-gray-9"
+      />
     </PressableFeedback>
   );
 }
@@ -71,7 +75,11 @@ MemoCreateButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackPro
       style={{ width: createButtonSize, height: createButtonSize }}
       className="items-center justify-center rounded-full bg-gray-8"
     >
-      <RefreshIcon width={20} height={20} colorClassName="text-white" />
+      <RefreshIcon
+        width={fontScaledSize(20)}
+        height={fontScaledSize(20)}
+        colorClassName="text-white"
+      />
     </PressableFeedback>
   );
 };

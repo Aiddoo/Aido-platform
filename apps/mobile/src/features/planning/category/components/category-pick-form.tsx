@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, CheckIcon, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -28,6 +29,7 @@ export function CategoryPickForm({
   filters,
 }: CategoryPickFormProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const {
     data: { categories },
   } = useSuspenseQuery(useGetTodoCategoriesQueryOptions({ filters }));
@@ -76,7 +78,11 @@ export function CategoryPickForm({
                   contents={<Text size="b3">{category.name}</Text>}
                   right={
                     isSelected ? (
-                      <CheckIcon width={18} height={18} colorClassName="text-main" />
+                      <CheckIcon
+                        width={fontScaledSize(18)}
+                        height={fontScaledSize(18)}
+                        colorClassName="text-main"
+                      />
                     ) : undefined
                   }
                   horizontalPadding="medium"

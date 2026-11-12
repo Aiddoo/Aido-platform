@@ -1,4 +1,5 @@
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -64,6 +65,8 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   onClose,
 }: TodoActionListProps) {
   const { t } = useTranslation(['todo', 'common']);
+  const fontScaledSize = useFontScaledSize();
+  const actionIconSize = fontScaledSize(16);
   const todayKey = useTodayKey();
   const [date] = useTodoSheetDateKey();
   const todo = useSheetTodo({ onMissing: onClose });
@@ -140,7 +143,9 @@ TodoActionsBottomSheet.ActionList = function ActionList({
       <VStack gap={8}>
         <Summary todo={todo} onClose={onClose} />
         <TodoActionRow
-          icon={<EditIcon width={16} height={16} colorClassName="text-main" />}
+          icon={
+            <EditIcon width={actionIconSize} height={actionIconSize} colorClassName="text-main" />
+          }
           label={t('actions.edit')}
           hasArrow
           isDisabled={isBusy}
@@ -153,7 +158,13 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         />
 
         <TodoActionRow
-          icon={<CalendarIcon width={16} height={16} colorClassName="text-main" />}
+          icon={
+            <CalendarIcon
+              width={actionIconSize}
+              height={actionIconSize}
+              colorClassName="text-main"
+            />
+          }
           label={t('actions.changeDate')}
           hasArrow
           isDisabled={isBusy}
@@ -166,7 +177,9 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         />
 
         <TodoActionRow
-          icon={<ClockIcon width={16} height={16} colorClassName="text-main" />}
+          icon={
+            <ClockIcon width={actionIconSize} height={actionIconSize} colorClassName="text-main" />
+          }
           label={t('actions.changeTime')}
           hasArrow
           isDisabled={isBusy}
@@ -179,7 +192,13 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         />
 
         <TodoActionRow
-          icon={<ListFilledIcon width={16} height={16} colorClassName="text-main" />}
+          icon={
+            <ListFilledIcon
+              width={actionIconSize}
+              height={actionIconSize}
+              colorClassName="text-main"
+            />
+          }
           label={t('actions.changeCategory')}
           hasArrow
           isDisabled={isBusy}
@@ -194,9 +213,13 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         <TodoActionRow
           icon={
             isTodoToday ? (
-              <MoveRightIcon width={16} height={16} colorClassName="text-main" />
+              <MoveRightIcon
+                width={actionIconSize}
+                height={actionIconSize}
+                colorClassName="text-main"
+              />
             ) : (
-              <SunIcon width={16} height={16} colorClassName="text-main" />
+              <SunIcon width={actionIconSize} height={actionIconSize} colorClassName="text-main" />
             )
           }
           label={isTodoToday ? t('actions.doTomorrow') : t('actions.doToday')}
@@ -206,7 +229,13 @@ TodoActionsBottomSheet.ActionList = function ActionList({
 
         {TodoPolicy.hasRepeatRule(todo) && (
           <TodoActionRow
-            icon={<RepeatIcon width={16} height={16} colorClassName="text-main" />}
+            icon={
+              <RepeatIcon
+                width={actionIconSize}
+                height={actionIconSize}
+                colorClassName="text-main"
+              />
+            }
             label={t('actions.stopRepeat')}
             isDisabled={isBusy}
             onPress={handleStopRepeat}
@@ -214,7 +243,9 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         )}
 
         <TodoActionRow
-          icon={<TrashIcon width={16} height={16} colorClassName="text-error" />}
+          icon={
+            <TrashIcon width={actionIconSize} height={actionIconSize} colorClassName="text-error" />
+          }
           label={deleteMutation.isPending ? t('actions.deleting') : t('actions.delete')}
           isDanger
           isDisabled={isBusy}

@@ -218,6 +218,7 @@ TodoList.Item = function Item({
   onOpenDetail,
 }: TodoListItemProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const dateFormatContext = useDateFormatContext();
 
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -349,8 +350,14 @@ TodoList.Item = function Item({
           />
           <IconButton
             accessibilityLabel={t('actions.more')}
-            icon={<MoreIcon width={20} height={20} colorClassName="text-gray-5" />}
-            className="min-h-0 min-w-0"
+            icon={
+              <MoreIcon
+                width={fontScaledSize(20)}
+                height={fontScaledSize(20)}
+                colorClassName="text-gray-5"
+              />
+            }
+            className="size-5 min-h-0 min-w-0"
             hitSlop={8}
             onPress={isOptimistic ? undefined : handleActionsPress}
             testID={`todo-more-${todo.id}`}

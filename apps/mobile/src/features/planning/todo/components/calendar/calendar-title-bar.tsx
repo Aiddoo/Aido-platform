@@ -5,6 +5,7 @@ import {
   formatCalendarWeekLabel,
 } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -284,6 +285,7 @@ interface CalendarNavigationProps {
 
 function CalendarNavigation({ ref, onPrevious, onNext }: CalendarNavigationProps) {
   const { t } = useTranslation('common');
+  const fontScaledSize = useFontScaledSize();
   const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const labels = match(viewMode)
     .with('week', () => ({
@@ -300,15 +302,27 @@ function CalendarNavigation({ ref, onPrevious, onNext }: CalendarNavigationProps
     <HStack ref={ref} gap={4}>
       <IconButton
         accessibilityLabel={labels.previous}
-        icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}
-        className="min-h-0 min-w-0 p-1"
+        icon={
+          <ArrowLeftIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-gray-6"
+          />
+        }
+        className="size-7 min-h-0 min-w-0"
         hitSlop={8}
         onPress={onPrevious}
       />
       <IconButton
         accessibilityLabel={labels.next}
-        icon={<ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />}
-        className="min-h-0 min-w-0 p-1"
+        icon={
+          <ArrowRightIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-gray-6"
+          />
+        }
+        className="size-7 min-h-0 min-w-0"
         hitSlop={8}
         onPress={onNext}
       />

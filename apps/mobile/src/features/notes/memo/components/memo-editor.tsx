@@ -16,6 +16,7 @@ import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -429,6 +430,7 @@ interface MemoPinButtonProps extends MemoActionProps {
 
 function MemoPinButton({ isPinned, ...props }: MemoPinButtonProps) {
   const { t } = useTranslation('memo');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <IconButton
@@ -437,9 +439,17 @@ function MemoPinButton({ isPinned, ...props }: MemoPinButtonProps) {
       className="min-h-9 min-w-9"
       icon={
         isPinned ? (
-          <PinFilledIcon width={20} height={20} colorClassName="text-main" />
+          <PinFilledIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-main"
+          />
         ) : (
-          <PinIcon width={20} height={20} colorClassName="text-gray-9" />
+          <PinIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-gray-9"
+          />
         )
       }
       {...props}
@@ -453,6 +463,7 @@ interface MemoSaveButtonProps extends MemoActionProps {
 
 function MemoSaveButton({ isHighlighted, className, ...props }: MemoSaveButtonProps) {
   const { t } = useTranslation('common');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <IconButton
@@ -461,8 +472,8 @@ function MemoSaveButton({ isHighlighted, className, ...props }: MemoSaveButtonPr
       className={cn('min-h-9 min-w-9 rounded-full', isHighlighted && 'bg-main', className)}
       icon={
         <CheckmarkIcon
-          width={20}
-          height={20}
+          width={fontScaledSize(20)}
+          height={fontScaledSize(20)}
           colorClassName={cn('text-gray-5', isHighlighted && 'text-white dark:text-gray-9')}
         />
       }
@@ -478,6 +489,7 @@ function MemoMoreMenu({
   onDeleted,
 }: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDeleted'>) {
   const { t } = useTranslation(['memo', 'common']);
+  const fontScaledSize = useFontScaledSize();
 
   const [memoId] = useMemoId();
   const accountId = useSuspenseMyAccountId();
@@ -498,7 +510,13 @@ function MemoMoreMenu({
           accessibilityState={{ expanded: isOpen }}
           hitSlop={4}
           className="min-h-9 min-w-9"
-          icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
+          icon={
+            <MoreIcon
+              width={fontScaledSize(20)}
+              height={fontScaledSize(20)}
+              colorClassName="text-gray-9"
+            />
+          }
         />
       </Menu.Trigger>
       <MenuContent width={MEMO_MORE_MENU_WIDTH}>

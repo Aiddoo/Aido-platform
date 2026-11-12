@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, MoreIcon, PlusIcon, Text, IconButton } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
@@ -19,6 +20,7 @@ interface SubTodoListProps {
 
 export function SubTodoList({ children, onAddPress, canAdd }: SubTodoListProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <SubTodoIndent>
@@ -27,7 +29,11 @@ export function SubTodoList({ children, onAddPress, canAdd }: SubTodoListProps) 
       {canAdd && (
         <PressableFeedback onPress={onAddPress} hitSlop={8} className="py-1.5">
           <HStack gap={8} align="center">
-            <PlusIcon width={14} height={14} colorClassName="text-gray-4" />
+            <PlusIcon
+              width={fontScaledSize(14)}
+              height={fontScaledSize(14)}
+              colorClassName="text-gray-4"
+            />
             <Text size="e1" shade={5}>
               {t('subTodo.addItem')}
             </Text>
@@ -54,6 +60,7 @@ SubTodoList.Item = function Item({
   ...checkboxProps
 }: SubTodoListItemProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const drag = useReorderableDrag();
   const isActive = useIsActive();
 
@@ -89,8 +96,14 @@ SubTodoList.Item = function Item({
       right={
         <IconButton
           accessibilityLabel={t('actions.more')}
-          icon={<MoreIcon width={20} height={20} colorClassName="text-gray-5" />}
-          className="min-h-0 min-w-0"
+          icon={
+            <MoreIcon
+              width={fontScaledSize(20)}
+              height={fontScaledSize(20)}
+              colorClassName="text-gray-5"
+            />
+          }
+          className="size-5 min-h-0 min-w-0"
           hitSlop={8}
           onPress={isDisabled ? undefined : onMorePress}
         />
