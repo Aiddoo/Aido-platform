@@ -19,16 +19,16 @@ import { InviteService } from './invite.service';
 import { PendingRedemptionService } from './pending-redemption.service';
 
 function createService({
-  referrer = null,
+  referrer,
   readInstallationId = () => Promise.resolve('6F9619FF-8B86-D011-B42D-00C04FC964FF'),
 }: {
-  referrer?: string | null;
+  referrer?: string;
   readInstallationId?: () => Promise<string | null>;
 } = {}) {
   const publicHttpClient = createHttpClientStub();
   const authHttpClient = createHttpClientStub();
   const storage = createMemorySyncStorage();
-  const readReferrer = jest.fn().mockResolvedValue(referrer);
+  const readReferrer = jest.fn().mockResolvedValue(referrer ?? null);
   const logger = createAppLoggerStub();
   const pendingRedemptionService = new PendingRedemptionService(storage, { get: readReferrer });
   const service = new InviteService({

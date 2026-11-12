@@ -123,7 +123,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 - 묘비(`deleted`)·차단(`blockedAuthor`): 흐린 아바타 + 안내 문구. 좋아요·답글·`⋯` 없음.
 - `⋯`와 길게 누르기: 같은 heroui-native `Menu`에 `MenuActionItem`을 넣는다. 내 글은 수정·복사 / 삭제, 남의 글은 복사 / 신고·차단,
   내 할 일의 남의 글은 삭제도 보인다. 삭제는 항상 `useConfirmDialog`로 확인하고, 답글이 남는 댓글이면 묘비로 남는다고 안내한다.
-  복사는 DI `useClipboard()` 게이트웨이를 쓴다.
+  복사는 공용 `useCopyToClipboard`(성공·실패 토스트와 실패 로그 키)를 쓴다.
 
 ### 더블탭 하트
 
@@ -161,7 +161,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 - 삭제: 낙관적으로 빼고(답글이 남은 댓글은 묘비, 마지막 답글을 잃은 묘비 묶음은 제거) 실패하면 그 댓글만 지운 자리에 되돌린다(`restoreTodoCommentToCaches`). 마지막 지우기가 끝나면 할 일 댓글 수만 다시 받는다.
 - 수정: 낙관적 본문 교체 후 마지막 수정만 글 칸(`content`·`isEdited`·`editedAt`)을 서버 값으로 확정, 실패하면 글 칸만 되돌린다.
 - 캐시를 통째로 스냅샷해 되돌리지 않는다. 함께 누른 다른 하트·지운 댓글이 사라진다([낙관적 갱신](./architecture/data.md)).
-- 오류: 각 mutation의 `onError`는 롤백만 한다(`TODO_0833`·`TODO_0831` "이미 삭제된 댓글"이면 그 행을 캐시에서 빼 서버 상태에 맞춘다). 안내는 429를 포함해 모두 `meta.errorFeedback` 전역 피드백이 햅틱·토스트·Sentry를 한 번 처리한다([오류 처리](./error-handling.md#mutation-오류-피드백)).
+- 오류: 각 mutation의 `onError`는 롤백을 한다(`TODO_0833`·`TODO_0831` "이미 삭제된 댓글"이면 그 행을 캐시에서 빼 서버 상태에 맞춘다). 이미 삭제된 댓글과 연타(429)는 기능이 경고 토스트를 띄우고 `isHandledByFeature`로 전역에서 뺀다. 나머지 안내는 `meta.errorFeedback` 전역 피드백이 햅틱·토스트·Sentry를 한 번 처리한다([오류 처리](./error-handling.md#mutation-오류-피드백)). 삭제 확인 다이얼로그는 실패하면 남고, 이미 삭제된 댓글이면 닫힌다.
 - 알림으로 연 위치: `comment`가 있으면 anchor 페이지를 받아 그 묶음으로 옮기고(답글이면 펼쳐서) 1.6초 강조한다.
   `anchor: null`이면 "찾는 댓글이 삭제됐거나…" 토스트 후 목록 맨 위.
 

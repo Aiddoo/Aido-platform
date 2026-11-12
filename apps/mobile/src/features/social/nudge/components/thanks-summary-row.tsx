@@ -25,7 +25,9 @@ import { cn } from '@src/shared/utils/cn';
 import { useIsMutating, useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import type { Href } from 'expo-router';
 import { type ComponentProps, type ReactNode, useEffect, useRef } from 'react';
+import type { ViewStyle } from 'react-native';
 import Animated, {
+  type AnimatedStyle,
   FadeIn,
   useAnimatedStyle,
   useSharedValue,
@@ -304,7 +306,7 @@ function RecipientAvatars({ recipients }: { recipients: NudgeThanksRecipient[] }
   );
 }
 
-function SentHeart({ style }: { style: ReturnType<typeof useAnimatedStyle> }) {
+function SentHeart({ style }: { style: AnimatedStyle<ViewStyle> }) {
   return (
     <Box
       className="size-8 items-center justify-center rounded-full bg-white"

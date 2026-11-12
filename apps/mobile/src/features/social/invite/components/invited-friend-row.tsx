@@ -1,5 +1,6 @@
 import { INVITE_QUALIFICATION, REDEMPTION_REJECTION_REASON } from '@aido/api/vocabulary';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
+import { formatUserHashtag } from '@src/features/identity/user/utils/user-tag.view-model';
 import { useGetFriendInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
@@ -49,7 +50,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
               {displayName}
             </Text>
             <Text size="b4" shade={6} className="tabular-nums tracking-[0.3px]">
-              #{friend.userTag}
+              {formatUserHashtag(friend.userTag)}
             </Text>
           </HStack>
 

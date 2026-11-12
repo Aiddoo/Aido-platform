@@ -1,3 +1,4 @@
+import { REDEMPTION_STATUS } from '@aido/api/vocabulary';
 import { InvitedFriendFilterTabs } from '@src/features/social/invite/components/invited-friend-filter-tabs';
 import { InvitedFriendList } from '@src/features/social/invite/components/invited-friend-list';
 import { useInvitedFriendsView } from '@src/features/social/invite/hooks/use-invited-friends-view';
@@ -36,7 +37,7 @@ export default function InvitedFriendsScreen() {
               .with('all', () => <InvitedFriendList />)
               .with('waiting', () => (
                 <InvitedFriendList
-                  status="JOINED"
+                  status={REDEMPTION_STATUS.JOINED}
                   ListEmptyComponent={
                     <InvitedFriendList.Empty
                       title={t('friendList.emptyWaitingTitle')}

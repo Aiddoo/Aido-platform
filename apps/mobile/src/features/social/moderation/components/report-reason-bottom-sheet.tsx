@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   BottomSheetTextArea,
   Button,
@@ -154,7 +155,7 @@ export function ReportReasonBottomSheet({
                 value={value ?? ''}
                 onChange={onChange}
                 isInvalid={error != null}
-                errorMessage={error?.message}
+                errorMessage={resolveValidationMessage(error, { default: 'reportDetail.tooLong' })}
                 maxLength={USER_REPORT_LIMITS.MAX_DETAIL_LENGTH}
                 className="h-[88px] min-h-0"
                 testID="report-detail-input"

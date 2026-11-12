@@ -23,6 +23,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
   EyeIcon,
@@ -34,6 +35,7 @@ import {
   TodoIllustration,
   VStack,
 } from '@src/shared/ui';
+import { formatCompactCount } from '@src/shared/utils/number-format';
 import { useMutation, useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -349,11 +351,13 @@ function OwnRepeatLabel() {
 }
 
 function Metric({ icon, count }: { icon: ReactNode; count: number }) {
+  const { resolvedLanguage } = useLanguage();
+
   return (
     <HStack gap={4} align="center">
       {icon}
       <Text size="e1" shade={5}>
-        {count}
+        {formatCompactCount(count, resolvedLanguage)}
       </Text>
     </HStack>
   );
