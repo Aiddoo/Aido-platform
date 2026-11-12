@@ -3,13 +3,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toTodoFormValues } from '@src/features/planning/todo/apis/todo.mapper';
 import { TodoScopeSelect } from '@src/features/planning/todo/components/todo-scope-select';
 import {
-  TodoRepeatPolicy,
+  getTodoEditScopeDecision,
   type TodoUpdateScope,
   todoUpdateScopeSchema,
 } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { type Todo } from '@src/features/planning/todo/domains/todo.model';
+import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useSheetTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
 import type { DateKey } from '@src/shared/date/date-key';
@@ -111,10 +110,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
 
   // 다시 받은 할 일로 비교 기준을 맞춘다. 고치지 않은 칸은 새 값을 보이고 고치던 칸은 남아 고친 칸만 보낸다
   const savedValues = toTodoFormValues(todo, timeZone);
-  const canChangeRepeat = TodoRepeatPolicy.canChangeRepeat({
-    ...todo,
-    repeat: savedValues.repeat,
-  });
+  const canChangeRepeat = TodoPolicy.canChangeRepeat(todo);
 
   const form = useForm({
     resolver: zodResolver(todoFormSchema),
@@ -157,8 +153,8 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
         return;
       }
       const choice = await match(
-        TodoRepeatPolicy.getTodoEditScopeDecision({
-          isSeries: TodoRepeatPolicy.hasRepeatRule({ ...todo, repeat: savedValues.repeat }),
+        getTodoEditScopeDecision({
+          isSeries: TodoPolicy.hasRepeatRule(todo),
           repeat: changes.repeat,
           isDateOnly: TodoChangePolicy.hasOnlyDateChanges(changes),
         }),

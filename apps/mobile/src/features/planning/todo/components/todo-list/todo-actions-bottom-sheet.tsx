@@ -20,9 +20,7 @@ import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ComponentType } from 'react';
 
-import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
-import { TodoPolicy } from '../../domains/todo.model';
-import type { Todo } from '../../domains/todo.model';
+import { type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useSheetTodo } from '../../hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
@@ -127,7 +125,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
       return;
     }
 
-    const scope = await selectDeleteScope(todo.startDate, TodoRepeatPolicy.getDeleteScopes(todo));
+    const scope = await selectDeleteScope(todo.startDate, TodoPolicy.getDeleteScopes(todo));
     if (scope == null) {
       return;
     }
@@ -206,7 +204,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           onPress={handleScheduleToggle}
         />
 
-        {TodoRepeatPolicy.hasRepeatRule(todo) && (
+        {TodoPolicy.hasRepeatRule(todo) && (
           <TodoActionRow
             icon={<RepeatIcon width={16} height={16} colorClassName="text-main" />}
             label={t('actions.stopRepeat')}

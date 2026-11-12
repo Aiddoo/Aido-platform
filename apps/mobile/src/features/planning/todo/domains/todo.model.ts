@@ -1,5 +1,9 @@
 import { entityIdSchema } from '@aido/api/common';
-import { TODAY_SUMMARY_TOP_TODOS_MAX, TODO_VISIBILITIES } from '@aido/api/vocabulary';
+import {
+  TODAY_SUMMARY_TOP_TODOS_MAX,
+  TODO_EDIT_SCOPES,
+  TODO_VISIBILITIES,
+} from '@aido/api/vocabulary';
 import { todoCategorySchema } from '@src/features/planning/category/domains/todo-category.model';
 import {
   addDaysToDateKey,
@@ -13,7 +17,7 @@ import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
 import { type SubTodo, subTodoSchema } from './sub-todo.model';
-import { TodoRepeatPolicy, todoRepeatSchema } from './todo-repeat.model';
+import { type TodoEditScope, TodoRepeatPolicy, todoRepeatSchema } from './todo-repeat.model';
 
 export const todoSchema = z.object({
   id: z.int(),
@@ -132,6 +136,24 @@ export function isRecurring(recurrenceGroupId: string | null): boolean {
 
 export function isRecurringTodo(todo: Todo): boolean {
   return isRecurring(todo.recurrenceGroupId);
+}
+
+// 규칙 없는 묶음(이관에서 패턴을 잃음)은 서버가 범위 수정·끝내기를 받지 않아 "이 할 일만"으로 다룬다
+export function hasRepeatRule(todo: Todo): boolean {
+  return todo.recurrenceGroupId != null && todo.repeat != null;
+}
+
+// 규칙 없는 묶음의 회차는 서버가 반복 전환을 받지 않는다(TODO_0845)
+export function canChangeRepeat(todo: Todo): boolean {
+  return todo.recurrenceGroupId == null || hasRepeatRule(todo);
+}
+
+// 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다
+export function getDeleteScopes(todo: Todo): readonly TodoEditScope[] {
+  if (todo.recurrenceGroupId == null) {
+    return [];
+  }
+  return hasRepeatRule(todo) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
 }
 
 export function isMultiDayTodo(todo: Todo): boolean {
@@ -266,6 +288,9 @@ export const TodoPolicy = {
   getOptimisticListDate,
   isTodoOnDate,
   isRecurringTodo,
+  hasRepeatRule,
+  canChangeRepeat,
+  getDeleteScopes,
   isMultiDayTodo,
   getTodayToggleDates,
   isOptimisticTodo,

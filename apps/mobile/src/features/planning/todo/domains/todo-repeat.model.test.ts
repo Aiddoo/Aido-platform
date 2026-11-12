@@ -5,8 +5,14 @@ import { z } from 'zod';
 import repeatLastOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-last-occurrence-cases.json';
 import repeatOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-occurrence-cases.json';
 import { toRepeat } from '../apis/todo-repeat.mapper';
-import { type TodoRepeat, todoRepeatSchema } from './todo-repeat.model';
-import { TodoRepeatPolicy } from './todo-repeat.model';
+import {
+  getTodoEditScopeDecision,
+  isBeyondRepeatHorizon,
+  isMonthBeyondRepeatHorizon,
+  type TodoRepeat,
+  TodoRepeatPolicy,
+  todoRepeatSchema,
+} from './todo-repeat.model';
 
 /** 서버 RepeatRule도 같은 표를 읽는다. 두 구현이 어긋나면 어느 한쪽 테스트가 깨진다 */
 const SHARED_OCCURRENCE_CASES = z
@@ -369,7 +375,7 @@ describe('getTodoEditScopeDecision', () => {
     },
   ] as const)('$title', ({ input, expected }) => {
     // When
-    const decision = TodoRepeatPolicy.getTodoEditScopeDecision(input);
+    const decision = getTodoEditScopeDecision(input);
 
     // Then
     expect(decision).toBe(expected);
@@ -385,7 +391,7 @@ describe('isBeyondRepeatHorizon', () => {
     { title: '오늘 + 91일부터는 미리 만든 범위를 넘는다', dateKey: '2027-02-04', expected: true },
   ])('$title', ({ dateKey, expected }) => {
     // When
-    const result = TodoRepeatPolicy.isBeyondRepeatHorizon(createDateKey(dateKey), HORIZON_TODAY);
+    const result = isBeyondRepeatHorizon(createDateKey(dateKey), HORIZON_TODAY);
 
     // Then
     expect(result).toBe(expected);
@@ -403,84 +409,10 @@ describe('isMonthBeyondRepeatHorizon', () => {
     { title: '범위를 완전히 벗어난 달은 넘어간 달이다', dateKey: '2027-03-01', expected: true },
   ])('$title', ({ dateKey, expected }) => {
     // When
-    const result = TodoRepeatPolicy.isMonthBeyondRepeatHorizon(
-      createDateKey(dateKey),
-      HORIZON_TODAY,
-    );
+    const result = isMonthBeyondRepeatHorizon(createDateKey(dateKey), HORIZON_TODAY);
 
     // Then
     expect(result).toBe(expected);
-  });
-});
-
-const REPEAT_RULE = createWeekly();
-const RULE_OCCURRENCE = { recurrenceGroupId: 'series-1', repeat: REPEAT_RULE };
-const RULELESS_OCCURRENCE = { recurrenceGroupId: 'old-group', repeat: null };
-const SINGLE_OCCURRENCE = { recurrenceGroupId: null, repeat: null };
-
-describe('hasRepeatRule', () => {
-  it.each([
-    { title: '규칙 있는 회차는 반복 규칙이 있다', occurrence: RULE_OCCURRENCE, expected: true },
-    {
-      title: '규칙 없는 묶음은 반복 규칙이 없다',
-      occurrence: RULELESS_OCCURRENCE,
-      expected: false,
-    },
-    { title: '단일 할 일은 반복 규칙이 없다', occurrence: SINGLE_OCCURRENCE, expected: false },
-  ])('$title', ({ occurrence, expected }) => {
-    // When
-    const result = TodoRepeatPolicy.hasRepeatRule(occurrence);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('canChangeRepeat', () => {
-  it.each([
-    { title: '규칙 있는 회차는 반복을 바꿀 수 있다', occurrence: RULE_OCCURRENCE, expected: true },
-    {
-      title: '규칙 없는 묶음은 반복을 바꿀 수 없다',
-      occurrence: RULELESS_OCCURRENCE,
-      expected: false,
-    },
-    {
-      title: '단일 할 일은 반복을 새로 정할 수 있다',
-      occurrence: SINGLE_OCCURRENCE,
-      expected: true,
-    },
-  ])('$title', ({ occurrence, expected }) => {
-    // When
-    const result = TodoRepeatPolicy.canChangeRepeat(occurrence);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('getDeleteScopes', () => {
-  it.each([
-    {
-      title: '규칙 있는 회차는 이번만, 이후 전체, 전체를 고를 수 있다',
-      occurrence: RULE_OCCURRENCE,
-      expected: ['THIS_ONLY', 'THIS_AND_FOLLOWING', 'ALL'],
-    },
-    {
-      title: '규칙 없는 묶음은 이후 전체를 정할 수 없어 이번만과 전체만 고른다',
-      occurrence: RULELESS_OCCURRENCE,
-      expected: ['THIS_ONLY', 'ALL'],
-    },
-    {
-      title: '단일 할 일은 고를 범위가 없다',
-      occurrence: SINGLE_OCCURRENCE,
-      expected: [],
-    },
-  ])('$title', ({ occurrence, expected }) => {
-    // When
-    const scopes = TodoRepeatPolicy.getDeleteScopes(occurrence);
-
-    // Then
-    expect(scopes).toEqual(expected);
   });
 });
 
