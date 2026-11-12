@@ -805,6 +805,7 @@
         "aido/dto-alias": "error",
         "aido/time-constant-unit": "error",
         "aido/no-return-type-of-hook": "error",
+        "aido/query-data-alias": "error",
         "react/forbid-elements": [
           "error",
           {
