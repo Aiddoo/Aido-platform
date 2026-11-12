@@ -4,6 +4,7 @@ import {
   createAppStoreListingGatewayStub,
   createErrorReporterStub,
   createNativeApplicationMetadataGatewayStub,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
@@ -30,18 +31,20 @@ async function renderCheck({
   listing.openListing.mockImplementation(openListing);
   const errorReporter = createErrorReporterStub();
   await renderScreen(<AppVersionCheck />, {
+    di: createTestDi({
+      ports: {
+        jsonFetcher,
+        applicationMetadata: createNativeApplicationMetadataGatewayStub({
+          platform: 'ios',
+          currentVersion,
+          currentBuild: null,
+          applicationId: null,
+        }),
+        appStoreListing: listing,
+        errorReporter,
+      },
+    }),
     withOverlay: true,
-    di: {
-      jsonFetcher,
-      applicationMetadata: createNativeApplicationMetadataGatewayStub({
-        platform: 'ios',
-        currentVersion,
-        currentBuild: null,
-        applicationId: null,
-      }),
-      appStoreListing: listing,
-      errorReporter,
-    },
   });
 
   return { listing, errorReporter };

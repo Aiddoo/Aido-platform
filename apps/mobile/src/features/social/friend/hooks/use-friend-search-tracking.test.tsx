@@ -1,7 +1,5 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { createAnalyticsStub, createTestDi } from '@src/testing/core';
-import { renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { renderScreenHook } from '@src/testing/render';
 
 import { useFriendSearchTracking } from './use-friend-search-tracking';
 
@@ -9,12 +7,9 @@ describe('useFriendSearchTracking', () => {
   it('유효한 실제 화면 검색을 원문 없이 버킷으로 한 번씩 기록한다', async () => {
     // Given
     const analytics = createAnalyticsStub();
-    const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={createTestDi({ analytics })}>{children}</StaticDIProvider>
-    );
-    const { rerender } = await renderHook<void, { query: string }>(
+    const { rerender } = await renderScreenHook<void, { query: string }>(
       ({ query }) => useFriendSearchTracking(query),
-      { initialProps: { query: '가' }, wrapper },
+      { initialProps: { query: '가' }, di: createTestDi({ ports: { analytics } }) },
     );
 
     // When

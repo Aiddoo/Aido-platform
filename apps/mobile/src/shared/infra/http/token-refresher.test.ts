@@ -57,12 +57,10 @@ describe('createTokenRefresher', () => {
     it('동시 호출은 하나의 갱신 요청을 공유한다 (single-flight)', async () => {
       // Given
       tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
-      let resolveResponse: (response: Response) => void = () => {};
-      const requestRefresh = jest.fn<Promise<Response>, [string]>().mockReturnValue(
-        new Promise<Response>((resolve) => {
-          resolveResponse = resolve;
-        }),
-      );
+      const response = Promise.withResolvers<Response>();
+      const requestRefresh = jest
+        .fn<Promise<Response>, [string]>()
+        .mockReturnValue(response.promise);
       const refresh = createTokenRefresher({
         tokenStore,
         requestRefresh,
@@ -73,7 +71,7 @@ describe('createTokenRefresher', () => {
       // When
       const first = refresh();
       const second = refresh();
-      resolveResponse(createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }));
+      response.resolve(createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }));
 
       // Then
       await expect(first).resolves.toEqual({ kind: 'refreshed', accessToken: 'new-access' });
@@ -293,12 +291,10 @@ describe('createTokenRefresher', () => {
     it('동시 대기자들은 같은 실패를 공유한다 (single-flight)', async () => {
       // Given
       tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
-      let rejectResponse: (error: unknown) => void = () => {};
-      const requestRefresh = jest.fn<Promise<Response>, [string]>().mockReturnValue(
-        new Promise<Response>((_resolve, reject) => {
-          rejectResponse = reject;
-        }),
-      );
+      const response = Promise.withResolvers<Response>();
+      const requestRefresh = jest
+        .fn<Promise<Response>, [string]>()
+        .mockReturnValue(response.promise);
       const refresh = createTokenRefresher({
         tokenStore,
         requestRefresh,
@@ -309,7 +305,7 @@ describe('createTokenRefresher', () => {
       // When
       const first = refresh();
       const second = refresh();
-      rejectResponse(new TypeError('Network request failed'));
+      response.reject(new TypeError('Network request failed'));
 
       // Then
       await expect(first).rejects.toBeInstanceOf(NetworkError);

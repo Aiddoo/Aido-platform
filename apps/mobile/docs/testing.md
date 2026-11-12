@@ -84,16 +84,17 @@ lint 규칙마다 baseline 지시문이 0이다. `oxlint-disable`로 건너뛰�
 | `ports/{port}.stub.ts`                                                    | 포트 하나에 도구 하나. `create{Port}Stub()`(`jest.fn`으로 호출을 기록하는 빈 구현)                                                                  |
 | `fakes/{name}.fake.ts`                                                    | 동작을 흉내 내는 구현. `create{Port}Fake`, `createMemory{X}`(메모리에 저장)                                                                         |
 | `mocks/{module}.ts`                                                       | `moduleNameMapper`·`jest.setup.ts`가 가리키는 SDK 대체(expo-router, MMKV, Skia 등). 테스트 파일이 직접 import하지 않는다                            |
-| `render.tsx`                                                              | `renderScreen`, `renderScreenHook`, `TestUiProvider`                                                                                                |
-| `di.ts`                                                                   | `createTestPorts`, `createTestDi(overrides)`                                                                                                        |
-| `render-route-hook.tsx`                                                   | `renderRouteHook`(진짜 Expo Router 위에서 훅을 돌린다)                                                                                              |
+| `render.tsx`                                                              | `renderScreen`, `renderScreenHook`(`initialProps`), `createTestProviders`(두 render와 `renderAppRoute`가 함께 쓰는 Provider)                        |
+| `di.ts`                                                                   | `createTestPorts`, `createTestDi({ ports, seeds })` → `TestDi`(운영 조립 + `queryClient`)                                                           |
+| `render-route-hook.tsx`                                                   | `renderRouteHook`(진짜 Expo Router 위에서 훅을 돌린다), `renderAppRoute(routes, { url, di })`(route 파일 표를 앱 Provider 위에 올린다)              |
 | `query-client.ts`, `timers.ts`, `mock-method.ts`, `fixture.ts`, `core.ts` | `createTestQueryClient`·`deliverQueryNotifications`, `setupFakeTimersPerTest`, `mockMethod`, `defineFixture`, 가벼운 공용 export(`render.tsx` 제외) |
 
 - 도구는 `function` 선언이고 `jest.Mocked<포트>`를 돌려준다. 메서드는 `mockMethod<Port['method']>(구현)`으로 포트에서 타입을 가져와, 포트가 바뀌면 기본값도 컴파일되지 않게 한다. 같은 일을 하는 도구를 따로 만들지 않는다. feature 전용 도구는 이유가 있을 때만 그 feature의 `__tests__`에 둔다.
 - **stub 기본값**은 정상 기기와 빈 데이터다(알림 허용, 클립보드 비어 있음, 요금제·구독 없음, 로그인 창 닫음). 값이 있어야 하는 메서드(`HttpClient`, `JsonFetcher`, 좌표)는 정하지 않고 부르면 `createXStub: get 응답을 정하지 않았습니다`처럼 이름을 대며 실패한다. 어긋난 기본값은 테스트가 반환된 `jest.fn`을 바꿔 준다. 포트를 넓히면 stub도 같은 커밋에서 넓힌다.
 - 상태를 보는 stub: `createNetworkStatusGatewayStub`(`emit(isOnline)`, `getListenerCount()`), `createAppLifecycleGatewayStub(initial)`(`emit(state)`), `createPurchasesGatewayStub`(`isConfigured()`, `getListenerCount()`), `createPushNotificationGatewayStub(overrides)`(수신·응답을 `emit*`로 흘림), `createMemoryObservableSyncStorage`(남은 구독 수), `createMemorySyncStorage`(`keys`·`clear` 포함), `createMemoryTokenStore(tokens)`, `createIdGeneratorStub`(호출마다 다른 id).
 - SDK를 `jest.mock`하는 `shared/infra` 어댑터 테스트는 `core.ts` 대신 도구 파일을 직접 import한다. 앱 전체가 가로챈 SDK보다 먼저 읽히지 않게 하기 위해서다.
-- 기타: `createPendingResponse()`(끝나는 시점을 테스트가 정하는 응답, 두 번 누름·늦은 응답), `createRouteParamsFake(initial)`(공용 expo-router mock의 URL을 움직임), `stubWindowDimensions(width)`, `OverlayStateContext.Provider`(시트 활성 여부를 값으로 준다).
+- 기타: 끝나는 시점·실패를 테스트가 정하는 Promise는 내장 `Promise.withResolvers<T>()`를 쓴다(앱 코드는 lint가 막는다). 그 위의 `createPendingResponse(value)`(정한 값으로 끝나는 HTTP 응답, 두 번 누름·늦은 응답), `respondByPath({ path: 응답 })`(HTTP stub 하나가 URL마다 다른 응답), `createWidgetBridgeStub()`, `createRouteParamsFake(initial)`(공용 expo-router mock의 URL을 움직임), `stubWindowDimensions(width)`, `OverlayStateContext.Provider`(시트 활성 여부를 값으로 준다).
+- fake timer가 켜진 테스트에서 마이크로태스크를 비울 때는 `await Promise.resolve()` 대신 `await jest.advanceTimersByTimeAsync(0)`를 쓴다.
 
 |                                     | `jest.mock`                 | stub·fake                                |
 | ----------------------------------- | --------------------------- | ---------------------------------------- |
@@ -127,12 +128,15 @@ it('끝낸 날이 모자라면 기다리지도 요청하지도 않는다', async
 
 ### 화면 테스트
 
-`renderScreen` + `createTestDi` + `createHttpClientStub`이다. 서비스를 mock하지 않고 HTTP 응답만 정한다.
+`renderScreen` + `createTestDi({ ports })` + `createHttpClientStub`이다. 서비스를 mock하지 않고 HTTP 응답만 정한다.
 
 ```tsx
 const httpClient = createHttpClientStub();
 httpClient.post.mockRejectedValue(new NetworkError());
-await renderScreen(<InquiryRoute />, { withOverlay: true, di: { httpClient } });
+await renderScreen(<InquiryRoute />, {
+  withOverlay: true,
+  di: createTestDi({ ports: { httpClient } }),
+});
 await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), CONTENT);
 
 await fireEvent.press(screen.getByTestId('inquiry-submit'));
@@ -140,9 +144,11 @@ await fireEvent.press(screen.getByTestId('inquiry-submit'));
 expect(screen.getByTestId('inquiry-content-input').props.value).toBe(CONTENT);
 ```
 
-- `di`에는 이 테스트가 바꾸는 **포트만** 더한다(`di: { httpClient, analytics }`). 포트는 `createAppContainer`를 거쳐 그 포트를 쓰는 모든 Service에 들어간다. Service를 직접 조립해 넣으면 그 키만 바뀌고 다른 Service는 원래 것을 써서 운영과 다른 그래프가 된다. 값을 미리 넣을 때는 `syncStorage`에 넣는다. 새 Service는 `createAppContainer`에 더하면 테스트에도 생긴다.
+- `createTestDi`에는 이 테스트가 바꾸는 **포트**(`ports: { httpClient, analytics }`)와 포트로 만들지 않는 메모리 상태 store(`seeds: { authSessionStore }`)만 넣는다. Service·Api·저장소는 넣을 수 없고 늘 `createAppContainer`가 포트로 조립해 운영과 같은 그래프다. 새 Service는 `createAppContainer`에 더하면 테스트에도 생긴다.
+- Api마다 응답이 다르면 HTTP stub 하나에 `respondByPath`로 URL별 응답을 정한다. Api마다 stub을 따로 만들어 Service를 손으로 조립하지 않는다.
+- 값을 미리 넣거나 결과를 볼 때는 만든 DI의 저장소·Service를 쓴다(`const di = createTestDi(…); di.draftService.save(…)`, `renderScreen` 결과의 `di`). 같은 저장소 위에 저장소 객체를 하나 더 만들지 않는다(스냅숏 캐시가 갈라진다).
 - 오늘 날짜를 읽거나 시트를 띄우면 `withLocalDate`·`withOverlay` 옵션을 켠다. 시트는 Portal로 `OverlayProvider`의 PortalHost에 그려지고 `useOverlay`는 Provider 밖에서 던진다.
-- `renderRouteHook(useHook, { url })`는 진짜 라우터 위에서 훅을 돌려 URL을 본다(`jest.unmock('expo-router')`). 실제 Router가 필요한 화면 테스트는 `renderRouter`를 `TestUiProvider`로 감싼다. `render-route-hook.tsx`는 `expo-router/testing-library`를 읽어 gesture·reanimated 목보다 먼저 실제 모듈을 끌어오므로 `render.tsx`·`core.ts`에 합치지 않고 직접 import한다. `render.tsx`도 `core.ts`에 다시 내보내지 않는다.
+- `renderRouteHook(useHook, { url })`는 진짜 라우터 위에서 훅을 돌려 URL을 본다(`jest.unmock('expo-router')`). 실제 Router가 필요한 화면·레이아웃 테스트는 `renderAppRoute(routes, { url, di })`로 route 파일 표를 `renderScreen`과 같은 Provider(+ 테마) 위에 올린다. Provider를 손으로 감싸지 않는다. `render-route-hook.tsx`는 `expo-router/testing-library`를 읽어 gesture·reanimated 목보다 먼저 실제 모듈을 끌어오므로 `render.tsx`·`core.ts`에 합치지 않고 직접 import한다. `render.tsx`도 `core.ts`에 다시 내보내지 않는다.
 - 앱 Provider 트리(`AppProviders`)는 `createCompositionRoot`에 `createTestPorts`를 넘겨 올린다. 루트 "다시 시도"가 프로세스 수명 객체를 재사용하는지, 내린 뒤 구독·타이머가 남지 않는지를 여기서 본다.
 
 ### expo-router 공용 mock

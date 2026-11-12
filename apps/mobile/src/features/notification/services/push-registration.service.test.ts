@@ -414,16 +414,11 @@ describe('PushRegistrationService.unregister', () => {
   it('보고가 진행 중이면 끝난 뒤에 해제해 로그아웃한 기기가 다시 활성화되지 않게 한다', async () => {
     // Given
     const { service, httpClient } = setup();
-    let resolvePut: ((value: { ok: true; value: unknown }) => void) | undefined;
-    httpClient.put.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolvePut = resolve;
-        }),
-    );
+    const put = createPendingResponse(ok(createPushDeviceResponseDto()));
+    httpClient.put.mockReturnValueOnce(put.response);
     httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
     const reporting = service.report();
-    while (resolvePut == null) {
+    while (httpClient.put.mock.calls.length === 0) {
       await Promise.resolve();
     }
 
@@ -431,7 +426,7 @@ describe('PushRegistrationService.unregister', () => {
     const unregistering = service.unregister();
     await Promise.resolve();
     const deletedBeforeReportSettled = httpClient.delete.mock.calls.length > 0;
-    resolvePut({ ok: true, value: createPushDeviceResponseDto() });
+    put.settle();
     await Promise.all([reporting, unregistering]);
 
     // Then
@@ -442,23 +437,18 @@ describe('PushRegistrationService.unregister', () => {
   it('권한과 토큰을 읽는 중에 해제하면 늦은 보고를 보내지 않아 기기를 다시 등록하지 않는다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub();
-    let resolveToken: ((token: string) => void) | undefined;
-    gateway.getToken.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveToken = resolve;
-        }),
-    );
+    const token = Promise.withResolvers<string>();
+    gateway.getToken.mockReturnValueOnce(token.promise);
     const { service, httpClient } = setup(gateway);
     httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
     const reporting = service.report();
-    while (resolveToken == null) {
+    while (gateway.getToken.mock.calls.length === 0) {
       await Promise.resolve();
     }
 
     // When
     const unregistering = service.unregister();
-    resolveToken('token-1');
+    token.resolve('token-1');
     await Promise.all([reporting, unregistering]);
 
     // Then
@@ -485,16 +475,11 @@ describe('PushRegistrationService.unregister', () => {
   it('겹친 보고 중 먼저 시작한 보고가 남아 있으면 그 보고까지 기다린 뒤 해제한다', async () => {
     // Given
     const { service, httpClient } = setup();
-    let resolveFirstPut: ((value: { ok: true; value: unknown }) => void) | undefined;
-    httpClient.put.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveFirstPut = resolve;
-        }),
-    );
+    const firstPut = createPendingResponse(ok(createPushDeviceResponseDto()));
+    httpClient.put.mockReturnValueOnce(firstPut.response);
     httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
     const firstReport = service.report();
-    while (resolveFirstPut == null) {
+    while (httpClient.put.mock.calls.length === 0) {
       await Promise.resolve();
     }
     await service.report({ force: true });
@@ -503,7 +488,7 @@ describe('PushRegistrationService.unregister', () => {
     const unregistering = service.unregister();
     await Promise.resolve();
     const deletedBeforeFirstSettled = httpClient.delete.mock.calls.length > 0;
-    resolveFirstPut({ ok: true, value: createPushDeviceResponseDto() });
+    firstPut.settle();
     await Promise.all([firstReport, unregistering]);
 
     // Then
@@ -514,22 +499,17 @@ describe('PushRegistrationService.unregister', () => {
   it('권한과 토큰을 읽는 중에 세션이 끝나면 보고를 보내지 않는다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub();
-    let resolveToken: ((token: string) => void) | undefined;
-    gateway.getToken.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveToken = resolve;
-        }),
-    );
+    const token = Promise.withResolvers<string>();
+    gateway.getToken.mockReturnValueOnce(token.promise);
     const { service, httpClient, sessionEpoch } = setup(gateway);
     const reporting = service.report();
-    while (resolveToken == null) {
+    while (gateway.getToken.mock.calls.length === 0) {
       await Promise.resolve();
     }
 
     // When
     sessionEpoch.advance();
-    resolveToken('token-1');
+    token.resolve('token-1');
     const result = await reporting;
 
     // Then
@@ -541,16 +521,11 @@ describe('PushRegistrationService.unregister', () => {
     // Given
     // 이전 세션의 보고가 진행 중이다
     const { service, httpClient, sessionEpoch } = setup();
-    let resolvePut: ((value: { ok: true; value: unknown }) => void) | undefined;
-    httpClient.put.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolvePut = resolve;
-        }),
-    );
+    const put = createPendingResponse(ok(createPushDeviceResponseDto()));
+    httpClient.put.mockReturnValueOnce(put.response);
     httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
     const reporting = service.report();
-    while (resolvePut == null) {
+    while (httpClient.put.mock.calls.length === 0) {
       await Promise.resolve();
     }
     const unregistering = service.unregister();
@@ -559,7 +534,7 @@ describe('PushRegistrationService.unregister', () => {
 
     // 기다리는 사이 세션이 끝나고 다시 로그인해 보고가 끝난다
     sessionEpoch.advance();
-    resolvePut({ ok: true, value: createPushDeviceResponseDto() });
+    put.settle();
     const [, result] = await Promise.all([reporting, unregistering]);
 
     // Then

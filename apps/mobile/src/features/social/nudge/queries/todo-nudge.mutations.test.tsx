@@ -14,6 +14,7 @@ import {
   createHapticsGatewayStub,
   createHttpClientStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
@@ -37,8 +38,7 @@ describe('useSendTodoNudgeMutationOptions', () => {
     const { result } = await renderScreenHook(
       () => useMutation(useSendTodoNudgeMutationOptions()),
       {
-        di: { httpClient, haptics, errorReporter },
-        queryClient,
+        di: createTestDi({ ports: { httpClient, haptics, errorReporter, queryClient } }),
         withOverlay: true,
         withLocalDate: true,
       },

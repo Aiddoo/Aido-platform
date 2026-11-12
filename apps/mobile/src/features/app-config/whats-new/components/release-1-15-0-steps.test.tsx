@@ -4,15 +4,13 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import {
   createAnalyticsStub,
   createAppLifecycleGatewayStub,
-  createErrorReporterStub,
   createHttpClientStub,
   createLoggerStub,
-  createMemoryObservableSyncStorage,
   createSpeechRecognizerStub,
+  createTestDi,
   createTestQueryClient,
   setupFakeTimersPerTest,
 } from '@src/testing/core';
@@ -21,7 +19,6 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { RELEASE_1_15_0 } from '../constants/releases';
-import { createWhatsNewRepository } from '../repositories/whats-new.repository';
 import { Release1150Steps } from './release-1-15-0-steps';
 
 const ACCOUNT_ID = 'user-1';
@@ -36,8 +33,6 @@ async function renderSteps() {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const analytics = createAnalyticsStub();
-  const storage = createMemoryObservableSyncStorage();
-  const repository = createWhatsNewRepository(storage);
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   queryClient.setQueryData(
@@ -48,24 +43,24 @@ async function renderSteps() {
     }),
   );
 
-  const view = await renderScreen(<Release1150Steps />, {
-    queryClient,
-    withLocalDate: true,
-    withOverlay: true,
-    di: {
+  const di = createTestDi({
+    ports: {
+      queryClient,
       // 앞에 있는 앱은 자정 타이머를 계속 걸어 runAllTimers가 끝나지 않는다
       appLifecycle: createAppLifecycleGatewayStub('background'),
       httpClient,
       analytics,
       logger,
-      errorReporter: createErrorReporterStub(),
-      whatsNewRepository: repository,
-      featureAttribution: createFeatureAttributionStore(createMemoryObservableSyncStorage()),
       speechRecognizer: createSpeechRecognizerStub(),
     },
   });
+  const view = await renderScreen(<Release1150Steps />, {
+    di,
+    withLocalDate: true,
+    withOverlay: true,
+  });
 
-  return { ...view, analytics, storage };
+  return { ...view, analytics };
 }
 
 const STEPS_BEFORE_FINISH = 7;
@@ -95,7 +90,7 @@ describe('Release1150Steps', () => {
 
   it('처음 열면 노출을 남기고 이 계정의 캠페인을 본 것으로 기록한다', async () => {
     // When
-    const { analytics, storage } = await renderSteps();
+    const { analytics, di } = await renderSteps();
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_hub_impression', {
@@ -109,7 +104,7 @@ describe('Release1150Steps', () => {
       source: 'auto',
     });
     expect(
-      createWhatsNewRepository(storage).hasSeen({
+      di.whatsNewRepository.hasSeen({
         userId: ACCOUNT_ID,
         campaignId: RELEASE_1_15_0.campaignId,
       }),

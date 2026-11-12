@@ -1,7 +1,7 @@
 import { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
-import { createHapticsGatewayStub, createHttpClientStub } from '@src/testing/core';
+import { createHapticsGatewayStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -26,12 +26,9 @@ async function renderSheet() {
       onConverted={onConverted}
     />,
     {
+      di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
       withLocalDate: true,
       withOverlay: true,
-      di: {
-        httpClient,
-        haptics: createHapticsGatewayStub(),
-      },
     },
   );
 

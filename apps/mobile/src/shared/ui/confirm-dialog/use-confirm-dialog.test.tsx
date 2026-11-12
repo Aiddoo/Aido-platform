@@ -6,17 +6,6 @@ import { Pressable, Text } from 'react-native';
 
 import { useConfirmDialog } from './use-confirm-dialog';
 
-function createDeferred() {
-  let resolve: () => void = noop;
-  let reject: (error: Error) => void = noop;
-  const promise = new Promise<void>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-
-  return { promise, resolve, reject };
-}
-
 function Harness({
   onConfirm,
   onResult,
@@ -68,7 +57,7 @@ async function pressConfirm() {
 describe('useConfirmDialog onConfirm', () => {
   it('실행하는 동안 열려 있고 취소할 수 없으며 끝나면 닫고 true를 돌려준다', async () => {
     // Given
-    const deferred = createDeferred();
+    const deferred = Promise.withResolvers<void>();
     const onConfirm = jest.fn(() => deferred.promise);
     const onResult = await openDialog(onConfirm);
 
@@ -96,7 +85,7 @@ describe('useConfirmDialog onConfirm', () => {
 
   it('onConfirm이 던지면 닫고 false를 돌려준다', async () => {
     // Given
-    const deferred = createDeferred();
+    const deferred = Promise.withResolvers<void>();
     const onConfirm = jest.fn(() => deferred.promise);
     const onResult = await openDialog(onConfirm);
 

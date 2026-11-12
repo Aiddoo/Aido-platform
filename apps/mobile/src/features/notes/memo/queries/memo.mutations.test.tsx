@@ -3,7 +3,6 @@ import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { voicePlanSchema } from '@src/features/voice/domains/voice-plan.model';
 import { toEpochMs } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -11,15 +10,15 @@ import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
-  createLoggerStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
-import { MemoApi } from '../apis/memo.api';
+import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
 import { toMemo } from '../apis/memo.mapper';
 import type { Memo } from '../domains/memo.model';
 import { createMemoDraftKey } from '../utils/memo-draft';
@@ -57,12 +56,14 @@ async function updateMemo(client: QueryClient) {
     return null;
   }
   const { unmount } = await renderScreen(<CaptureOptions />, {
-    queryClient: client,
-    di: {
-      httpClient,
-      haptics: createHapticsGatewayStub(),
-      analytics: createAnalyticsStub(),
-    },
+    di: createTestDi({
+      ports: {
+        httpClient,
+        haptics: createHapticsGatewayStub(),
+        analytics: createAnalyticsStub(),
+        queryClient: client,
+      },
+    }),
   });
   if (options == null) {
     throw new Error('mutation 옵션을 받지 못했다');
@@ -120,22 +121,17 @@ describe('메모 수정 후 상세 cache', () => {
 
   it('저장 이전에 시작한 상세 조회가 늦게 끝나도 수정 내용을 덮어쓰지 않는다', async () => {
     // Given
-    let resolveRefresh: (memo: Memo) => void = () => {
-      throw new Error('Deferred refresh is not initialized');
-    };
-    const staleResponse = new Promise<Memo>((resolve) => {
-      resolveRefresh = resolve;
-    });
+    const staleResponse = Promise.withResolvers<Memo>();
     const refresh = client
       .query({
         queryKey: MEMO_QUERY_KEYS.detail({ memoId: 5 }),
-        queryFn: () => staleResponse,
+        queryFn: () => staleResponse.promise,
       })
       .catch(() => undefined);
 
     // When
     await updateMemo(client);
-    resolveRefresh(toMemo(originalMemo));
+    staleResponse.resolve(toMemo(originalMemo));
     await refresh;
 
     // Then
@@ -173,9 +169,15 @@ describe('메모 고정', () => {
       return null;
     }
     await renderScreen(<Capture />, {
-      queryClient: client,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          haptics: createHapticsGatewayStub(),
+          analytics: createAnalyticsStub(),
+          queryClient: client,
+        },
+      }),
       withLocalDate: true,
-      di: { httpClient, haptics: createHapticsGatewayStub(), analytics: createAnalyticsStub() },
     });
     const inputKey = createMemoDraftKey({ userId: 'account-1', memoId: 5 });
     const requestKey = createMemoPlanRequestDraftKey({ userId: 'account-1', memoId: 5 });
@@ -220,8 +222,8 @@ describe('메모 고정', () => {
       return null;
     }
     await renderScreen(<Capture />, {
+      di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
       withLocalDate: true,
-      di: { httpClient, haptics: createHapticsGatewayStub() },
     });
 
     // When
@@ -239,21 +241,14 @@ describe('AI 정리 중 메모 고정', () => {
     const client = createTestQueryClient();
     client.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
     client.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: 5 }), toMemo(originalMemo));
-    const logger = createLoggerStub();
-    const memoApi = new MemoApi(createHttpClientStub(), logger);
-    const plan = voicePlanSchema.parse({
-      planId: 'plan-1',
-      source: 'memo',
-      sourceMemoId: 5,
-      omittedTodoCount: 0,
-      actions: [],
-    });
-    jest.spyOn(memoApi, 'parseMemo').mockImplementation(async () => {
+    const httpClient = createHttpClientStub();
+    // 정리 응답이 오기 전에 다른 화면에서 메모를 고정해 수정 시각이 바뀐다
+    httpClient.post.mockImplementation(async () => {
       client.setQueryData(
         MEMO_QUERY_KEYS.detail({ memoId: 5 }),
         toMemo({ ...originalMemo, isPinned: true, updatedAt: '2026-10-02T00:05:00.000Z' }),
       );
-      return ok({ plan, featureQuota: null });
+      return ok(createParseMemoResponseDto());
     });
     let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
     let draftService: ReturnType<typeof useDraftService> | undefined;
@@ -268,10 +263,9 @@ describe('AI 정리 중 메모 고정', () => {
       return null;
     }
     await renderScreen(<Capture />, {
-      queryClient: client,
       withLocalDate: true,
       withOverlay: true,
-      di: { logger, memoApi, haptics: createHapticsGatewayStub() },
+      di: createTestDi({ ports: { httpClient, queryClient: client } }),
     });
 
     // When
@@ -310,12 +304,9 @@ describe('오프라인에서 AI 정리', () => {
       return null;
     }
     await renderScreen(<Capture />, {
+      di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
       withLocalDate: true,
       withOverlay: true,
-      di: {
-        httpClient,
-        haptics: createHapticsGatewayStub(),
-      },
     });
 
     // When
@@ -346,11 +337,8 @@ describe('오프라인에서 할 일로 바꾸기', () => {
       return null;
     }
     await renderScreen(<Capture />, {
+      di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
       withOverlay: true,
-      di: {
-        httpClient,
-        haptics: createHapticsGatewayStub(),
-      },
     });
 
     // When
@@ -393,7 +381,7 @@ describe('오프라인에서 메모 삭제', () => {
       return null;
     }
     await renderScreen(<Capture />, {
-      di: { httpClient, haptics: createHapticsGatewayStub() },
+      di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
     });
 
     // When

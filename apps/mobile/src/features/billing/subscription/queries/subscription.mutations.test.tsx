@@ -75,13 +75,13 @@ async function renderPurchase({
   });
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(serverMe));
-  const di = createTestDi({ httpClient, purchases });
-  di.purchasesSession.configure();
   // 결제 전 캐시가 화면을 여는 순간 서버 값으로 바뀌지 않게 다시 받지 않는다
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(previousMe));
+  const di = createTestDi({ ports: { httpClient, purchases, queryClient } });
+  di.purchasesSession.configure();
 
   // 결제 화면처럼 내 정보를 구독해 두어야 결제 뒤 다시 받을 수 있다
   const { result } = await renderScreenHook(
@@ -89,7 +89,7 @@ async function renderPurchase({
       useQuery(useGetMeQueryOptions());
       return useMutation(usePurchaseMutationOptions());
     },
-    { di, queryClient, withOverlay: true },
+    { di, withOverlay: true },
   );
 
   return {

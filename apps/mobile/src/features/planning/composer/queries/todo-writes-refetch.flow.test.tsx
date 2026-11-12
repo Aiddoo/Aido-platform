@@ -41,6 +41,7 @@ import {
   createPendingResponse,
   createTestQueryClient,
   deliverQueryNotifications,
+  createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -357,7 +358,7 @@ async function renderFeed() {
         }}
       />
     </>,
-    { queryClient, withLocalDate: true, di: { httpClient } },
+    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
   );
   await act(deliverQueryNotifications);
 
@@ -811,7 +812,7 @@ async function renderCreateFeed() {
         }}
       />
     </>,
-    { queryClient, withLocalDate: true, di: { httpClient } },
+    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
   );
   await act(deliverQueryNotifications);
 

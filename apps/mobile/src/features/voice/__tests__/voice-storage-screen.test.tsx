@@ -1,17 +1,13 @@
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserApi } from '@src/features/identity/user/apis/user.api';
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHapticsGatewayStub,
-  createHttpClientStub,
   createLocalFileSystemFake,
-  createVoiceNoteStorageFake,
+  createTestDi,
   createTestQueryClient,
+  createVoiceNoteStorageFake,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -27,10 +23,16 @@ async function renderVoiceStorage({
   hasOrphanFile = false,
 }: { hasRecording?: boolean; hasOrphanFile?: boolean } = {}) {
   const files = createLocalFileSystemFake();
-  const storage = createVoiceNoteStorageFake(files);
+  const queryClient = createTestQueryClient({
+    defaultOptions: { queries: { staleTime: Infinity } },
+  });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
+  const di = createTestDi({
+    ports: { queryClient, ...createVoiceNoteStorageFake(files).ports },
+  });
   if (hasRecording) {
     files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav', { sizeBytes: 2_500_000 });
-    storage.drafts.save(
+    di.voiceNoteDraftRepository.save(
       ACCOUNT_ID,
       createSpokenVoiceNote({
         digest: createVoiceNoteDigest({ title: '주간 회의' }),
@@ -41,10 +43,6 @@ async function renderVoiceStorage({
   if (hasOrphanFile) {
     files.addFile(OWNER_DIRECTORY, 'failed-0.wav', { sizeBytes: 4_096 });
   }
-  const queryClient = createTestQueryClient({
-    defaultOptions: { queries: { staleTime: Infinity } },
-  });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
 
   await renderScreen(
     <LocalDateProvider>
@@ -52,19 +50,10 @@ async function renderVoiceStorage({
         <VoiceStorageRoute />
       </OverlayProvider>
     </LocalDateProvider>,
-    {
-      queryClient,
-      di: {
-        userApi: new UserApi(createHttpClientStub()),
-        ...storage.di,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-        haptics: createHapticsGatewayStub(),
-      },
-    },
+    { di },
   );
 
-  return { storage, files };
+  return { di, files };
 }
 
 describe('녹음 저장 공간', () => {
@@ -107,7 +96,7 @@ describe('녹음 저장 공간', () => {
 
   it('확인을 누르면 녹음만 삭제하고 들은 내용과 요약은 남는다', async () => {
     // Given
-    const { storage, files } = await renderVoiceStorage();
+    const { di, files } = await renderVoiceStorage();
     fireEvent.press(await screen.findByTestId('voice-storage-remove')).catch(jest.fn());
 
     // When
@@ -117,7 +106,7 @@ describe('녹음 저장 공간', () => {
     await waitFor(() =>
       expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('0 KB'),
     );
-    const note = storage.drafts.find(ACCOUNT_ID, 'draft-1');
+    const note = di.voiceNoteDraftRepository.find(ACCOUNT_ID, 'draft-1');
     expect(note?.recordings).toEqual([]);
     expect(note?.digest?.title).toBe('주간 회의');
     expect(note?.sentences).toHaveLength(1);

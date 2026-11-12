@@ -2,6 +2,7 @@ import { createSignOutEpoch } from '@src/core/session/sign-out-epoch';
 import {
   createLocalFileSystemFake,
   createSpeechRecognizerStub,
+  createTestDi,
   createVoiceNoteStorageFake,
 } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -15,19 +16,19 @@ const DIRECTORY = ['voice-notes', ACCOUNT_ID];
 
 function createIntake() {
   const files = createLocalFileSystemFake();
-  const storage = createVoiceNoteStorageFake(files);
+  const di = createTestDi({ ports: createVoiceNoteStorageFake(files).ports });
   const onRecordingSaved = jest.fn();
   const signOutEpoch = createSignOutEpoch();
   const intake = new VoiceRecordingIntakeSession({
     accountId: ACCOUNT_ID,
     draftId: DRAFT_ID,
-    draftRepository: storage.drafts,
-    recordingRepository: storage.recordings,
-    discard: storage.service.discard,
+    draftRepository: di.voiceNoteDraftRepository,
+    recordingRepository: di.voiceRecordingRepository,
+    discard: di.voiceNoteStorageService.discard,
     signOutEpoch,
     onRecordingSaved,
   });
-  return { files, storage, intake, onRecordingSaved, signOutEpoch };
+  return { files, di, intake, onRecordingSaved, signOutEpoch };
 }
 
 describe('VoiceRecordingIntakeSession', () => {
@@ -84,10 +85,13 @@ describe('VoiceRecordingIntakeSession', () => {
 
   it('넘긴 뒤에 온 파일은 저장된 초안에 더한다', async () => {
     // Given
-    const { files, storage, intake } = createIntake();
+    const { files, di, intake } = createIntake();
     const uri = files.addFile(DIRECTORY, 'a.wav');
     intake.segmentStarted(uri, 0);
-    storage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote({ draftId: DRAFT_ID, recordings: [] }));
+    di.voiceNoteDraftRepository.save(
+      ACCOUNT_ID,
+      createSpokenVoiceNote({ draftId: DRAFT_ID, recordings: [] }),
+    );
     intake.handOff();
 
     // When
@@ -95,7 +99,7 @@ describe('VoiceRecordingIntakeSession', () => {
     await intake.waitUntilSettled();
 
     // Then
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.recordings).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.recordings).toHaveLength(1);
   });
 
   it('지운 뒤에 온 파일은 옮기지 않고 바로 지운다', () => {
@@ -114,12 +118,15 @@ describe('VoiceRecordingIntakeSession', () => {
 
   it('넘긴 뒤 툴바에서 메모를 지웠으면 늦게 온 파일도 기기에 남기지 않는다', async () => {
     // Given
-    const { files, storage, intake } = createIntake();
+    const { files, di, intake } = createIntake();
     const uri = files.addFile(DIRECTORY, 'a.wav');
     intake.segmentStarted(uri, 0);
-    storage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote({ draftId: DRAFT_ID, recordings: [] }));
+    di.voiceNoteDraftRepository.save(
+      ACCOUNT_ID,
+      createSpokenVoiceNote({ draftId: DRAFT_ID, recordings: [] }),
+    );
     intake.handOff();
-    storage.service.discard(ACCOUNT_ID, DRAFT_ID);
+    di.voiceNoteStorageService.discard(ACCOUNT_ID, DRAFT_ID);
 
     // When
     intake.receive(uri, 0);

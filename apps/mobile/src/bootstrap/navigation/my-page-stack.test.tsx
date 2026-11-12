@@ -1,9 +1,8 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDi, stubWindowDimensions } from '@src/testing/core';
-import { TestUiProvider } from '@src/testing/render';
+import { stubWindowDimensions } from '@src/testing/core';
+import { renderAppRoute } from '@src/testing/render-route-hook';
 import { router } from 'expo-router';
-import { act, renderRouter, screen } from 'expo-router/testing-library';
-import { type PropsWithChildren, useEffect, useState } from 'react';
+import { act, screen } from 'expo-router/testing-library';
+import { useEffect } from 'react';
 import { Text } from 'react-native';
 
 import { MyPageStack } from './my-page-stack';
@@ -21,18 +20,8 @@ function createScreen(testID: string) {
   };
 }
 
-/** 마이 Stack이 DI의 첫 상세 저장소를 읽는다 */
-function MyPageTestProvider({ children }: PropsWithChildren) {
-  const [container] = useState(() => createTestDi());
-  return (
-    <StaticDIProvider container={container}>
-      <TestUiProvider>{children}</TestUiProvider>
-    </StaticDIProvider>
-  );
-}
-
 async function renderMyPageStack(initialUrl: string) {
-  return renderRouter(
+  return renderAppRoute(
     {
       _layout: {
         default: () => <MyPageStack menu={<Text testID="menu">메뉴</Text>} />,
@@ -42,7 +31,7 @@ async function renderMyPageStack(initialUrl: string) {
       'settings/notifications/index': createScreen('notifications'),
       'settings/notifications/push': createScreen('push'),
     },
-    { initialUrl, wrapper: MyPageTestProvider },
+    { url: initialUrl },
   );
 }
 

@@ -1,6 +1,6 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { ApiError, ServerError } from '@src/shared/errors';
-import { createErrorReporterStub } from '@src/testing/core';
+import { createErrorReporterStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -65,7 +65,7 @@ describe('QueryErrorBoundary 관측', () => {
       <QueryErrorBoundary>
         <Thrower error={error} />
       </QueryErrorBoundary>,
-      { di: { errorReporter } },
+      { di: createTestDi({ ports: { errorReporter } }) },
     );
 
   it('일시 401(auth-transition)은 에러 이벤트 대신 warning 메시지로 즉시 남긴다', async () => {
@@ -135,7 +135,7 @@ describe('QueryErrorBoundary 관측', () => {
       <QueryErrorBoundary resetKeys={['2026-07-14']}>
         <MaybeThrower shouldThrow />
       </QueryErrorBoundary>,
-      { di: { errorReporter } },
+      { di: createTestDi({ ports: { errorReporter } }) },
     );
     expect(screen.queryByTestId('healthy-content')).toBeNull();
 
@@ -157,7 +157,7 @@ describe('QueryErrorBoundary 관측', () => {
       <QueryErrorBoundary fallback={() => <Text testID="submit-fallback">Retry</Text>}>
         <AsyncErrorScreen error={error} />
       </QueryErrorBoundary>,
-      { di: { errorReporter } },
+      { di: createTestDi({ ports: { errorReporter } }) },
     );
 
     // When
@@ -180,7 +180,7 @@ describe('QueryErrorBoundary 관측', () => {
           <OverlayErrorScreen error={error} />
         </OverlayProvider>
       </QueryErrorBoundary>,
-      { di: { errorReporter } },
+      { di: createTestDi({ ports: { errorReporter } }) },
     );
 
     await fireEvent.press(screen.getByTestId('open-error-overlay'));

@@ -1,23 +1,12 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
-import { createWidgetNavigationRepository } from '@src/features/device/widget/repositories/widget-navigation.repository';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { ThemeProvider } from '@src/shared/providers/theme-provider';
-import {
-  createHttpClientStub,
-  createTestDi,
-  createMemoryObservableSyncStorage,
-  createTestQueryClient,
-} from '@src/testing/core';
-import { TestUiProvider } from '@src/testing/render';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { createHttpClientStub, createTestDi } from '@src/testing/core';
+import { renderAppRoute } from '@src/testing/render-route-hook';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
-import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import type { PropsWithChildren } from 'react';
+import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
 import { Linking, Pressable, Text, View } from 'react-native';
 
 import RootIndex from '../../../app/index';
@@ -64,32 +53,15 @@ function LoadingScreen() {
 }
 
 async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
-  const queryClient = createTestQueryClient();
   mockAuthSessionStore = createAuthSessionStoreStub(initialStatus);
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async () => ok(createCurrentUserDto()));
-  const container = createTestDi({
-    httpClient,
-    widgetNavigationRepository: createWidgetNavigationRepository(
-      createMemoryObservableSyncStorage(),
-    ),
-    authSessionStore: mockAuthSessionStore,
+  const di = createTestDi({
+    ports: { httpClient },
+    seeds: { authSessionStore: mockAuthSessionStore },
   });
-  function AuthFixture({ children }: PropsWithChildren) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <StaticDIProvider container={container}>
-          <ThemeProvider syncStorage={createMemoryObservableSyncStorage()}>
-            <TestUiProvider>
-              <LocalDateProvider>{children}</LocalDateProvider>
-            </TestUiProvider>
-          </ThemeProvider>
-        </StaticDIProvider>
-      </QueryClientProvider>
-    );
-  }
 
-  const route = await renderRouter(
+  const route = await renderAppRoute(
     {
       _layout: AuthGateLayout,
       index: RootIndex,
@@ -105,9 +77,9 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
       '(app)/(tabs)/feed/index': FeedScreen,
       '(app)/todo/[todoId]/index': () => <Text testID="todo-detail">Todo details</Text>,
     },
-    { initialUrl, wrapper: AuthFixture },
+    { url: initialUrl, di, withLocalDate: true },
   );
-  return { route, errorReporter: container.errorReporter };
+  return { route, errorReporter: di.errorReporter };
 }
 
 describe('root 인증 route 전환', () => {

@@ -11,6 +11,7 @@ import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createPendingResponse,
+  createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -64,9 +65,7 @@ async function renderToggle() {
     <LocalDateProvider useDeviceCalendar={() => DEVICE_CALENDAR}>
       <Probe />
     </LocalDateProvider>,
-    {
-      di: { httpClient, syncStorage, appStoreReview },
-    },
+    { di: createTestDi({ ports: { httpClient, syncStorage, appStoreReview } }) },
   );
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
 
@@ -290,7 +289,7 @@ describe('useUpdateTodoScheduleMutationOptions 반복 상한', () => {
       current.value = useUpdateSchedule();
       return null;
     }
-    await renderScreen(<Probe />, { di: { httpClient } });
+    await renderScreen(<Probe />, { di: createTestDi({ ports: { httpClient } }) });
 
     // When
     await act(async () => {

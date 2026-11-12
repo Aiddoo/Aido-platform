@@ -1,6 +1,10 @@
 import '@src/shared/i18n/init';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
-import { createMemoryObservableSyncStorage, createRouteParamsFake } from '@src/testing/core';
+import {
+  createMemoryObservableSyncStorage,
+  createRouteParamsFake,
+  createTestDi,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -20,7 +24,10 @@ async function renderCalendar(viewMode: CalendarViewMode) {
   createRouteParamsFake({ date: SELECTED_DATE });
   const syncStorage = createMemoryObservableSyncStorage();
   writeStoredValue(syncStorage, calendarViewModeStoredValue, viewMode);
-  await renderScreen(<Calendar />, { di: { syncStorage }, withLocalDate: true });
+  await renderScreen(<Calendar />, {
+    di: createTestDi({ ports: { syncStorage } }),
+    withLocalDate: true,
+  });
 
   return { syncStorage };
 }

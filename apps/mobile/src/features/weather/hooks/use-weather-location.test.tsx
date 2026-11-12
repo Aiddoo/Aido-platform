@@ -12,6 +12,7 @@ import {
   createLocationGatewayStub,
   createLoggerStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useQuery } from '@tanstack/react-query';
@@ -54,18 +55,11 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
   const errorReporter = createErrorReporterStub();
   const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
-  const di = { httpClient, deviceLocation: gateway, logger, errorReporter, analytics };
-  const renderHook = <TResult,>(useHook: () => TResult) =>
-    renderScreenHook(useHook, { di, queryClient });
-  return { httpClient, queryClient, renderHook, logger, errorReporter, analytics };
-}
-
-function deferred<T>() {
-  let resolve: (value: T) => void = () => undefined;
-  const promise = new Promise<T>((settle) => {
-    resolve = settle;
+  const di = createTestDi({
+    ports: { httpClient, deviceLocation: gateway, logger, errorReporter, analytics, queryClient },
   });
-  return { promise, resolve };
+  const renderHook = <TResult,>(useHook: () => TResult) => renderScreenHook(useHook, { di });
+  return { httpClient, queryClient, renderHook, logger, errorReporter, analytics };
 }
 
 function useLocationAndRevision() {
@@ -191,7 +185,7 @@ describe('useWeatherLocation', () => {
 
   it('리포트는 위치를 읽기 전에 서버 저장 위치로 먼저 요청하고, 같은 격자면 다시 받지 않는다', async () => {
     // Given
-    const coordinates = deferred<LocationCoordinates>();
+    const coordinates = Promise.withResolvers<LocationCoordinates>();
     const gateway = createGrantedGatewayStub();
     gateway.getCoordinates.mockReturnValue(coordinates.promise);
     const { renderHook, httpClient } = setup(gateway);
@@ -243,7 +237,7 @@ describe('리포트와 위치 등록의 경쟁', () => {
     // Given
     const gateway = createGrantedGatewayStub();
     const { renderHook, httpClient } = setup(gateway);
-    const report = deferred<{
+    const report = Promise.withResolvers<{
       ok: true;
       value: ReturnType<typeof createSeoulReportDto>;
     }>();

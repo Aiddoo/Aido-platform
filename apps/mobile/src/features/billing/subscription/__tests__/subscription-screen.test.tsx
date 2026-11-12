@@ -102,12 +102,6 @@ async function renderSubscriptionScreen(
   const analytics = createAnalyticsStub();
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto({ tier: state?.tier })));
-  const di = createTestDi({
-    httpClient,
-    analytics,
-    purchases,
-  });
-  di.purchasesSession.configure();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -119,6 +113,8 @@ async function renderSubscriptionScreen(
       createEntitlementSnapshot({ tier: state.tier }),
     );
   }
+  const di = createTestDi({ ports: { httpClient, analytics, purchases, queryClient } });
+  di.purchasesSession.configure();
 
   await renderScreen(
     <LocalDateProvider>
@@ -126,7 +122,7 @@ async function renderSubscriptionScreen(
         <SubscriptionRoute />
       </OverlayProvider>
     </LocalDateProvider>,
-    { di, queryClient },
+    { di },
   );
 
   return { purchases, analytics };

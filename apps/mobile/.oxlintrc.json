@@ -470,6 +470,11 @@
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
           },
           {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
+          },
+          {
             "object": "Platform",
             "property": "OS",
             "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
@@ -505,6 +510,11 @@
             "object": "Array",
             "property": "fromAsync",
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          },
+          {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
           },
           {
             "object": "Platform",
@@ -548,6 +558,11 @@
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
           },
           {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
+          },
+          {
             "object": "Platform",
             "property": "OS",
             "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
@@ -580,6 +595,11 @@
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
           },
           {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
+          },
+          {
             "object": "Platform",
             "property": "OS",
             "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
@@ -610,6 +630,11 @@
             "object": "Array",
             "property": "fromAsync",
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          },
+          {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
           },
           {
             "object": "Platform",
@@ -650,6 +675,11 @@
             "object": "Array",
             "property": "fromAsync",
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
+          },
+          {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
           },
           {
             "object": "Platform",

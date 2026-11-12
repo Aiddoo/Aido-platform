@@ -9,6 +9,7 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
@@ -36,8 +37,9 @@ describe('SuggestionEntry', () => {
 
     // When
     await renderScreen(<SuggestionEntry />, {
-      di: { httpClient, errorReporter: createErrorReporterStub() },
-      queryClient,
+      di: createTestDi({
+        ports: { httpClient, errorReporter: createErrorReporterStub(), queryClient },
+      }),
     });
 
     // Then
@@ -53,8 +55,9 @@ describe('SuggestionEntry', () => {
 
     // When
     await renderScreen(<SuggestionEntry />, {
-      di: { httpClient, errorReporter: createErrorReporterStub() },
-      queryClient,
+      di: createTestDi({
+        ports: { httpClient, errorReporter: createErrorReporterStub(), queryClient },
+      }),
     });
 
     // Then

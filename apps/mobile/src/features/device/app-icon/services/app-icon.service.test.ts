@@ -40,19 +40,14 @@ describe('앱 아이콘 서비스', () => {
   it('빠르게 다른 아이콘을 눌러도 진행 중인 변경 결과를 공유한다', async () => {
     // Given
     const gateway = createGateway();
-    let completeChange: (name: string | null) => void = () => undefined;
-    gateway.changeIcon.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          completeChange = resolve;
-        }),
-    );
+    const change = Promise.withResolvers<string | null>();
+    gateway.changeIcon.mockReturnValue(change.promise);
     const service = new AppIconService(gateway);
 
     // When
     const firstChange = service.changeIcon('russian_blue');
     const secondChange = service.changeIcon('tuxedo_cat');
-    completeChange('russian_blue');
+    change.resolve('russian_blue');
     const results = await Promise.all([firstChange, secondChange]);
 
     // Then

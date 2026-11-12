@@ -16,7 +16,7 @@ export {
   createIncomingLinkGatewayStub,
 } from './ports/external-link-gateway.stub';
 export { createHapticsGatewayStub } from './ports/haptics-gateway.stub';
-export { createHttpClientStub } from './ports/http-client.stub';
+export { createHttpClientStub, respondByPath } from './ports/http-client.stub';
 export { createIdGeneratorStub } from './ports/id-generator.stub';
 export { createJsonFetcherStub } from './ports/json-fetcher.stub';
 export { createLocalFileSystemFake } from './fakes/local-file-system.fake';
@@ -50,8 +50,9 @@ export { createSocialAuthGatewayStub } from './ports/social-auth-gateway.stub';
 export { createSocialShareGatewayStub } from './ports/social-share-gateway.stub';
 export { createSpeechRecognizerStub } from './ports/speech-recognizer.stub';
 export { createSystemShareGatewayStub } from './ports/system-share-gateway.stub';
-export { createTestDi, createTestPorts } from './di';
+export { createTestDi, createTestPorts, type TestDi } from './di';
 export { createViewCaptureGatewayStub } from './ports/view-capture-gateway.stub';
+export { createWidgetBridgeStub } from './ports/widget-bridge.stub';
 export { createVoiceNoteStorageFake } from './fakes/voice-note-storage.fake';
 export { createTestQueryClient, deliverQueryNotifications } from './query-client';
 export { runKyAfterResponseHook } from './ky-after-response-hook';

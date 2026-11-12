@@ -6,6 +6,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -43,10 +44,7 @@ describe('SubTodoActionsBottomSheet', () => {
           <SubTodoActionsBottomSheet />
         </OverlayProvider>
       </LocalDateProvider>,
-      {
-        di: { httpClient },
-        queryClient,
-      },
+      { di: createTestDi({ ports: { httpClient, queryClient } }) },
     );
 
     // When

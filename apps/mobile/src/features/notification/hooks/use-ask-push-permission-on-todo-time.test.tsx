@@ -5,6 +5,7 @@ import {
   createLoggerStub,
   createPushNotificationGatewayStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
@@ -23,13 +24,15 @@ async function renderPrompt(permission: PushPermission) {
   httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
   const pushNotification = createPushNotificationGatewayStub();
   const { result } = await renderScreenHook(useAskPushPermissionOnTodoTime, {
-    queryClient,
-    di: {
-      httpClient,
-      pushNotification,
-      analytics: createAnalyticsStub(),
-      logger: createLoggerStub(),
-    },
+    di: createTestDi({
+      ports: {
+        httpClient,
+        pushNotification,
+        analytics: createAnalyticsStub(),
+        logger: createLoggerStub(),
+        queryClient,
+      },
+    }),
   });
   return { askPushPermission: result.current, pushNotification, queryClient };
 }

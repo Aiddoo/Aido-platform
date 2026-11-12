@@ -145,7 +145,7 @@ features/{area}/{feature}/
 ```text
 core/ports(앱의 말) ← shared/infra(어댑터, SDK import는 여기만) ← create-device-ports
 composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(순수, 마운트마다) → di-context(use{X}, 유일한 입구)
-테스트: createTestPorts → createTestDi({ ports, services }) → renderScreen / renderRouteHook
+테스트: createTestPorts → createTestDi({ ports, seeds }) → renderScreen / renderAppRoute / renderRouteHook
 ```
 
 - **포트는 앱의 말로 짓는다.** SDK·공급자 이름을 쓰지 않는다(`setString` → `copy`). 읽기는 `get*`, 구독은 `subscribe*`이고 해제 함수를 돌려준다. SDK 타입을 내보내지 않고 plain 값을 넘긴다. "없음"은 포트마다 하나로 정한다(`null` 권장). 라이브러리·DOM 전역과 겹치는 이름은 쓰지 않는다(`AppLogger`, `KeyValueStorage`, `useAppTheme`).

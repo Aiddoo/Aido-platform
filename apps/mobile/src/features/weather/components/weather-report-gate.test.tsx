@@ -5,6 +5,7 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createLocationGatewayStub,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -33,7 +34,11 @@ async function renderGate(response: Result<unknown, ApiError>) {
         </WeatherReportGate.Suspense>
       </WeatherReportGate>
     </QueryErrorBoundary>,
-    { di: { httpClient, deviceLocation: createLocationGatewayStub(), errorReporter } },
+    {
+      di: createTestDi({
+        ports: { httpClient, deviceLocation: createLocationGatewayStub(), errorReporter },
+      }),
+    },
   );
   return { errorReporter };
 }

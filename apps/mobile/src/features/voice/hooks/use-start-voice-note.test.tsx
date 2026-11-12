@@ -17,6 +17,7 @@ import {
   createLoggerStub,
   createSpeechRecognizerStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -87,15 +88,17 @@ async function renderStart({
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      queryClient,
-      di: {
-        httpClient,
-        syncStorage,
-        speechRecognizer,
-        analytics,
-        errorReporter: createErrorReporterStub(),
-        logger,
-      },
+      di: createTestDi({
+        ports: {
+          httpClient,
+          syncStorage,
+          speechRecognizer,
+          analytics,
+          errorReporter: createErrorReporterStub(),
+          logger,
+          queryClient,
+        },
+      }),
     },
   );
 

@@ -5,6 +5,8 @@ import type {
   SpeechRecognizer,
 } from '@src/core/ports/speech-recognizer';
 
+import { mockMethod } from '../mock-method';
+
 const GRANTED: PermissionSnapshot = { isGranted: true, canAskAgain: true };
 const FULL_CAPABILITIES: SpeechCapabilities = {
   isAvailable: true,
@@ -40,15 +42,17 @@ export function createSpeechRecognizerStub(): SpeechRecognizerStub {
         Parameters<SpeechRecognizer['requestOfflineModel']>
       >()
       .mockResolvedValue('unavailable'),
-    start: jest.fn(),
-    stop: jest.fn(),
-    abort: jest.fn(),
-    subscribe: jest.fn((listener: (event: SpeechEvent) => void) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    }),
+    start: mockMethod<SpeechRecognizer['start']>(),
+    stop: mockMethod<SpeechRecognizer['stop']>(),
+    abort: mockMethod<SpeechRecognizer['abort']>(),
+    subscribe: mockMethod<SpeechRecognizer['subscribe']>(
+      (listener: (event: SpeechEvent) => void) => {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    ),
     emit: (event) => {
       for (const listener of listeners) {
         listener(event);

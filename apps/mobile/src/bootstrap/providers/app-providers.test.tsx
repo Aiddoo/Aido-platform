@@ -2,7 +2,7 @@ import { ok } from '@src/core/errors/result';
 import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
 import { emitSessionExpired } from '@src/core/events/session-expired';
 import type { AuthTokenPair } from '@src/core/ports/token-store';
-import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
+import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/queries/notification-query-keys';
@@ -80,7 +80,7 @@ function createTestRoot({ tokens }: { tokens?: AuthTokenPair } = {}) {
         ...stubs,
         httpClient,
         sessionEpoch,
-        tokenStore: withSessionEpoch(createMemoryTokenStore(tokens), sessionEpoch),
+        tokenStore: createMemoryTokenStore(tokens),
       });
     },
     openEncryptedStorage: async () => ({

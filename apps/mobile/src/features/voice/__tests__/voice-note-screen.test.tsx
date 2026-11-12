@@ -16,14 +16,13 @@ import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHapticsGatewayStub,
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
-  createVoiceNoteStorageFake,
+  createPendingResponse,
+  createTestDi,
   createTestQueryClient,
+  createVoiceNoteStorageFake,
   stubWindowDimensions,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
@@ -87,8 +86,6 @@ async function renderVoiceNote(
   jest.mocked(useLocalSearchParams).mockReturnValue({ draftId: DRAFT_ID, tab });
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
-  const storage = createVoiceNoteStorageFake();
-  storage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote({ draftId: DRAFT_ID, ...note }));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -101,6 +98,20 @@ async function renderVoiceNote(
     PREFERENCE_QUERY_KEYS.current(),
     createPreference({ timeFormat: 'TWELVE_HOUR' }),
   );
+  const di = createTestDi({
+    ports: {
+      httpClient,
+      queryClient,
+      syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
+      storage: createMemoryStorage(),
+      ...createVoiceNoteStorageFake().ports,
+      logger,
+    },
+  });
+  di.voiceNoteDraftRepository.save(
+    ACCOUNT_ID,
+    createSpokenVoiceNote({ draftId: DRAFT_ID, ...note }),
+  );
 
   const { unmount } = await renderScreen(
     <LocalDateProvider>
@@ -108,22 +119,10 @@ async function renderVoiceNote(
         <VoiceNoteRoute />
       </OverlayProvider>
     </LocalDateProvider>,
-    {
-      queryClient,
-      di: {
-        httpClient,
-        syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
-        storage: createMemoryStorage(),
-        ...storage.di,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-        haptics: createHapticsGatewayStub(),
-        logger,
-      },
-    },
+    { di },
   );
 
-  return { httpClient, storage, unmount, queryClient };
+  return { httpClient, di, unmount, queryClient };
 }
 
 describe('말로 메모 화면', () => {
@@ -272,7 +271,7 @@ describe('말로 메모 화면', () => {
   it('메모로 저장에 실패하면 저장한 것으로 바뀌지 않고 같은 키로 다시 저장할 수 있다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage } = await renderVoiceNote({
+    const { httpClient, di } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
@@ -283,7 +282,7 @@ describe('말로 메모 화면', () => {
 
     // Then
     expect(await screen.findByRole('button', { name: '메모로 저장' })).toBeEnabled();
-    const kept = storage.drafts.find(ACCOUNT_ID, DRAFT_ID);
+    const kept = di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID);
     expect(kept?.memoSavedAt).toBeNull();
     expect(kept?.digest).not.toBeNull();
     expect(kept?.memoSaveRequest?.idempotencyKey).toBe(
@@ -294,7 +293,7 @@ describe('말로 메모 화면', () => {
   it('삭제를 확인하면 기기에서 지우고 화면을 닫는다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { storage } = await renderVoiceNote({
+    const { di } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
@@ -306,7 +305,7 @@ describe('말로 메모 화면', () => {
 
     // Then
     await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)).toBeNull();
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)).toBeNull();
   });
 
   it('녹음을 지운 메모는 글자와 요약이 남고 다시 들을 수 없다고 알린다', async () => {
@@ -353,34 +352,30 @@ describe('말로 메모 화면', () => {
   it('할 일 저장을 누르고 화면을 떠나도 응답이 오면 저장했다고 초안에 남긴다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage, unmount } = await renderVoiceNote(
+    const { httpClient, di, unmount } = await renderVoiceNote(
       { digest: createVoiceNoteDigest(), planDraft: planDraftWithTodo },
       'todos',
     );
-    let respond = () => {};
-    httpClient.post.mockReturnValue(
-      new Promise((resolve) => {
-        respond = () => resolve(ok({ todos: [], memo: null }));
-      }),
-    );
+    const saved = createPendingResponse(ok({ todos: [], memo: null }));
+    httpClient.post.mockReturnValue(saved.response);
     expect(await screen.findByRole('button', { name: /^할 일 \d+개 추가$/ })).toBeEnabled();
     await user.press(screen.getByRole('button', { name: /^할 일 \d+개 추가$/ }));
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
 
     // When
     await act(async () => unmount());
-    await act(async () => respond());
+    await act(async () => saved.settle());
 
     // Then
     await waitFor(() =>
-      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.appliedAt).not.toBeNull(),
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.appliedAt).not.toBeNull(),
     );
   });
 
   it('할 일 저장 응답을 놓치고 다시 열어 눌러도 같은 키로 보낸다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage, unmount } = await renderVoiceNote(
+    const { httpClient, di, unmount } = await renderVoiceNote(
       { digest: createVoiceNoteDigest(), planDraft: planDraftWithTodo },
       'todos',
     );
@@ -393,7 +388,7 @@ describe('말로 메모 화면', () => {
 
     // When
     await act(async () => unmount());
-    const reopened = storage.drafts.find(ACCOUNT_ID, DRAFT_ID);
+    const reopened = di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID);
 
     // Then
     expect(reopened?.planApplyRequest?.idempotencyKey).toBe(firstKey);
@@ -402,31 +397,27 @@ describe('말로 메모 화면', () => {
   it('메모로 저장을 누르고 화면을 떠나도 응답이 오면 저장했다고 초안에 남기고 키를 지운다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage, unmount } = await renderVoiceNote({
+    const { httpClient, di, unmount } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
-    let respond = () => {};
-    httpClient.post.mockReturnValue(
-      new Promise((resolve) => {
-        respond = () => resolve(ok({ todos: [], memo: null }));
-      }),
-    );
+    const saved = createPendingResponse(ok({ todos: [], memo: null }));
+    httpClient.post.mockReturnValue(saved.response);
     await user.press(await screen.findByRole('button', { name: '메모로 저장' }));
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest?.idempotencyKey).toBe(
-      httpClient.post.mock.calls[0]?.[2]?.headers?.['Idempotency-Key'],
-    );
+    expect(
+      di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest?.idempotencyKey,
+    ).toBe(httpClient.post.mock.calls[0]?.[2]?.headers?.['Idempotency-Key']);
 
     // When
     await act(async () => unmount());
-    await act(async () => respond());
+    await act(async () => saved.settle());
 
     // Then
     await waitFor(() =>
-      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSavedAt).not.toBeNull(),
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.memoSavedAt).not.toBeNull(),
     );
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest).toBeNull();
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest).toBeNull();
   });
 
   it('응답을 놓친 뒤 메모로 저장을 다시 누르면 같은 키로 다시 보낸다', async () => {
@@ -454,7 +445,7 @@ describe('말로 메모 화면', () => {
   it('서버가 같은 키로 다른 내용이라고 거절하면 저장해 둔 키를 지운다', async () => {
     // Given
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const { httpClient, storage } = await renderVoiceNote({
+    const { httpClient, di } = await renderVoiceNote({
       digest: createVoiceNoteDigest({ keyPoints: [] }),
       planDraft: emptyPlanDraft,
     });
@@ -466,7 +457,7 @@ describe('말로 메모 화면', () => {
     // Then
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
     await waitFor(() =>
-      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest).toBeNull(),
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest).toBeNull(),
     );
   });
 });

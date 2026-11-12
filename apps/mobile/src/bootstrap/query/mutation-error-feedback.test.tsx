@@ -7,6 +7,7 @@ import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { mutationOptions, useMutation } from '@tanstack/react-query';
@@ -35,7 +36,7 @@ async function failMutation(
           meta,
         }),
       ),
-    { di: { haptics, errorReporter } },
+    { di: createTestDi({ ports: { haptics, errorReporter } }) },
   );
 
   await act(async () => {
@@ -123,7 +124,9 @@ describe('MutationErrorFeedback', () => {
     // Given
     const queryClient = createTestQueryClient();
     const haptics = createHapticsGatewayStub();
-    const { unmount } = await renderScreenHook(() => null, { queryClient, di: { haptics } });
+    const { unmount } = await renderScreenHook(() => null, {
+      di: createTestDi({ ports: { haptics, queryClient } }),
+    });
     await act(async () => {
       unmount();
     });

@@ -8,14 +8,14 @@ export function createExternalLinkGatewayStub(): jest.Mocked<ExternalLinkGateway
   return {
     open: mockMethod<ExternalLinkGateway['open']>(async () => {}),
     openInAppBrowser: mockMethod<ExternalLinkGateway['openInAppBrowser']>(async () => {}),
-    openSettings: jest.fn(async () => {}),
+    openSettings: mockMethod<ExternalLinkGateway['openSettings']>(async () => {}),
   };
 }
 
 /** 링크 없이 켠 앱이 기본값이다. 새 링크는 들어오지 않는다 */
 export function createIncomingLinkGatewayStub(): jest.Mocked<IncomingLinkGateway> {
   return {
-    getInitialUrl: jest.fn(async () => null),
+    getInitialUrl: mockMethod<IncomingLinkGateway['getInitialUrl']>(async () => null),
     subscribe: mockMethod<IncomingLinkGateway['subscribe']>(() => () => {}),
   };
 }

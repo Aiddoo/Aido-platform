@@ -1,6 +1,10 @@
 import { i18n } from '@src/shared/i18n';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
-import { createAnalyticsStub, createMemoryObservableSyncStorage } from '@src/testing/core';
+import {
+  createAnalyticsStub,
+  createMemoryObservableSyncStorage,
+  createTestDi,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
@@ -18,7 +22,7 @@ const renderLanguageSettings = async ({
     <LanguageProvider syncStorage={storage} useDeviceLanguage={() => 'ko'}>
       <LanguageSettingsScreen />
     </LanguageProvider>,
-    { di: { analytics } },
+    { di: createTestDi({ ports: { analytics } }) },
   );
   return { storage, analytics };
 };

@@ -7,13 +7,11 @@ import { createTodoApiError } from '@src/features/planning/todo/__tests__/todo.f
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHapticsGatewayStub,
   createHttpClientStub,
   createMemoryStorage,
   createPendingResponse,
   createSpeechRecognizerStub,
+  createTestDi,
   createTestQueryClient,
   createVoiceNoteStorageFake,
 } from '@src/testing/core';
@@ -41,16 +39,15 @@ async function renderCreateSheet(routeParams: Record<string, string> = {}) {
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: {
-        httpClient,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-        ...createVoiceNoteStorageFake().di,
-        speechRecognizer,
-        haptics: createHapticsGatewayStub(),
-        storage: createMemoryStorage(),
-      },
-      queryClient,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          queryClient,
+          ...createVoiceNoteStorageFake().ports,
+          speechRecognizer,
+          storage: createMemoryStorage(),
+        },
+      }),
     },
   );
 

@@ -1,7 +1,7 @@
 import type { NotificationInboxItem } from '@aido/api';
 import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
-import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { stubWindowDimensions } from '@src/testing/window-dimensions';
 import { fireEvent, screen } from '@testing-library/react-native';
@@ -23,7 +23,9 @@ async function renderNotificationsCategory(category: string) {
   });
   queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), 1);
 
-  await renderScreen(<NotificationsScreen />, { queryClient, di: { httpClient } });
+  await renderScreen(<NotificationsScreen />, {
+    di: createTestDi({ ports: { httpClient, queryClient } }),
+  });
 }
 
 describe('알림 화면의 안 읽은 알림 줄', () => {
@@ -71,9 +73,9 @@ describe('알림함 항목을 누르면', () => {
         : new Promise(() => undefined),
     );
     await renderScreen(<NotificationsScreen />, {
+      di: createTestDi({ ports: { httpClient } }),
       withLocalDate: true,
       withOverlay: true,
-      di: { httpClient },
     });
   }
 
@@ -195,9 +197,9 @@ describe('받은 응원 알림', () => {
         : new Promise(() => undefined),
     );
     await renderScreen(<NotificationsScreen />, {
+      di: createTestDi({ ports: { httpClient } }),
       withLocalDate: true,
       withOverlay: true,
-      di: { httpClient },
     });
     return screen.findByTestId('notification-item-CHEER_RECEIVED');
   }

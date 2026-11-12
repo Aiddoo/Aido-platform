@@ -11,6 +11,7 @@ import {
   createRouteParamsFake,
   createSpeechRecognizerStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -40,7 +41,7 @@ async function renderButton(routeParams: Record<string, string>) {
         <VoiceNoteStartButton coachmarkPlacement="bottom" />
       </OverlayProvider>
     </LocalDateProvider>,
-    { queryClient, di: { httpClient, syncStorage, speechRecognizer } },
+    { di: createTestDi({ ports: { httpClient, syncStorage, speechRecognizer, queryClient } }) },
   );
 
   return { speechRecognizer };

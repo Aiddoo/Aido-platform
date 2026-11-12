@@ -18,6 +18,7 @@ import {
   createClipboardGatewayStub,
   createHttpClientStub,
   createPendingResponse,
+  createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -164,13 +165,9 @@ async function renderTodoDetail({
   jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
 
   const view = await renderScreen(<TodoDetailRoute />, {
+    di: createTestDi({ ports: { httpClient, analytics, clipboard: createClipboardGatewayStub() } }),
     withLocalDate: true,
     withOverlay: true,
-    di: {
-      httpClient,
-      analytics,
-      clipboard: createClipboardGatewayStub(),
-    },
   });
   await screen.findByTestId('todo-comment-input-0');
   await screen.findByTestId('todo-comment-count');
@@ -380,9 +377,9 @@ describe('할 일 상세 카드', () => {
 
     // When
     await renderScreen(<TodoDetailRoute />, {
+      di: createTestDi({ ports: { httpClient } }),
       withLocalDate: true,
       withOverlay: true,
-      di: { httpClient },
     });
 
     // Then

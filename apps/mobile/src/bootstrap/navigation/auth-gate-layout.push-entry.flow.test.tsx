@@ -1,4 +1,3 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { err, ok, type Result } from '@src/core/errors/result';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
@@ -7,28 +6,23 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { createMarkReadResponseDto } from '@src/features/notification/__tests__/notification.fixtures';
 import { NOTIFICATION_READ_BUDGET_MS } from '@src/features/notification/constants/notification.constants';
 import { ApiError, NetworkError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import {
   createAppLifecycleGatewayStub,
   createExternalLinkGatewayStub,
   createHttpClientStub,
-  createMemoryObservableSyncStorage,
   createPendingResponse,
   createPushNotificationGatewayStub,
   createTestDi,
   stubWindowDimensions,
-  createTestQueryClient,
 } from '@src/testing/core';
-import { TestUiProvider } from '@src/testing/render';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { renderAppRoute } from '@src/testing/render-route-hook';
 import { userEvent } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { act, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { act, screen, waitFor } from 'expo-router/testing-library';
 import * as SplashScreen from 'expo-splash-screen';
-import { type PropsWithChildren, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Linking, Pressable, Text } from 'react-native';
 
 import RootIndex from '../../../app/index';
@@ -133,39 +127,14 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
     return <Text testID="todo-detail">Todo details</Text>;
   }
 
-  const queryClient = createTestQueryClient();
   const externalLink = createExternalLinkGatewayStub();
   const appLifecycle = createAppLifecycleGatewayStub();
-  const container = createTestDi({
-    externalLink,
-    appLifecycle,
-    httpClient,
-    pushNotification: gateway,
-    widgetNavigationRepository: {
-      subscribe: () => () => {},
-      findPendingCommand: () => null,
-      clearIfCurrent: () => false,
-      removeCorrupted: () => false,
-      save: () => true,
-    },
-    authSessionStore,
+  const di = createTestDi({
+    ports: { externalLink, appLifecycle, httpClient, pushNotification: gateway },
+    seeds: { authSessionStore },
   });
 
-  function Fixture({ children }: PropsWithChildren) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <StaticDIProvider container={container}>
-          <ThemeProvider syncStorage={createMemoryObservableSyncStorage()}>
-            <TestUiProvider>
-              <LocalDateProvider>{children}</LocalDateProvider>
-            </TestUiProvider>
-          </ThemeProvider>
-        </StaticDIProvider>
-      </QueryClientProvider>
-    );
-  }
-
-  const route = await renderRouter(
+  const route = await renderAppRoute(
     {
       _layout: AuthGateLayout,
       index: RootIndex,
@@ -182,7 +151,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
       '(app)/notifications/index': () => <Text testID="notifications">Notifications</Text>,
       '(app)/todo/[todoId]/index': TodoScreen,
     },
-    { initialUrl, wrapper: Fixture },
+    { url: initialUrl, di, withLocalDate: true },
   );
 
   jest.mocked(SplashScreen.hideAsync).mockImplementation(async () => {
@@ -197,7 +166,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
     hideLog,
     externalLink,
     appLifecycle,
-    analytics: container.analytics,
+    analytics: di.analytics,
   };
 }
 

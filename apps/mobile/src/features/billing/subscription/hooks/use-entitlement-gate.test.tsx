@@ -15,6 +15,7 @@ import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -76,8 +77,15 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: { httpClient, analytics, errorReporter: createErrorReporterStub(), syncStorage },
-      queryClient,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics,
+          errorReporter: createErrorReporterStub(),
+          syncStorage,
+          queryClient,
+        },
+      }),
     },
   );
 

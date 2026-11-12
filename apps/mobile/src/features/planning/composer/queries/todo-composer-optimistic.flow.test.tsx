@@ -28,6 +28,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -89,12 +90,7 @@ async function renderMutations() {
         }}
       />
     </LocalDateProvider>,
-    {
-      queryClient,
-      di: {
-        httpClient,
-      },
-    },
+    { di: createTestDi({ ports: { httpClient, queryClient } }) },
   );
 
   const mutations = () => {

@@ -1,20 +1,17 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createLoggerStub,
+  createPendingResponse,
   createPushNotificationGatewayStub,
   createTestDi,
-  createTestQueryClient,
 } from '@src/testing/core';
-import { TestUiProvider } from '@src/testing/render';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { renderAppRoute } from '@src/testing/render-route-hook';
 import { Slot } from 'expo-router';
-import { act, renderRouter, waitFor } from 'expo-router/testing-library';
-import type { PropsWithChildren } from 'react';
+import { act, waitFor } from 'expo-router/testing-library';
 
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import { usePushNotificationResponse } from './use-push-notification-response';
@@ -33,40 +30,26 @@ async function setup({ status }: { status: AuthStatus }) {
   const authSessionStore = createAuthSessionStoreStub(status);
   const httpClient = createHttpClientStub();
   const analytics = createAnalyticsStub();
-  const container = createTestDi({
-    httpClient,
-    pushNotification: gateway,
-    logger,
-    authSessionStore,
-    analytics,
+  const di = createTestDi({
+    ports: { httpClient, pushNotification: gateway, logger, analytics },
+    seeds: { authSessionStore },
   });
-  const queryClient = createTestQueryClient();
 
   function Layout() {
     usePushNotificationResponse();
     return <Slot />;
   }
 
-  await renderRouter(
+  await renderAppRoute(
     { _layout: Layout, index: () => null },
-    {
-      wrapper: ({ children }: PropsWithChildren) => (
-        <QueryClientProvider client={queryClient}>
-          <StaticDIProvider container={container}>
-            <TestUiProvider>
-              <LocalDateProvider>{children}</LocalDateProvider>
-            </TestUiProvider>
-          </StaticDIProvider>
-        </QueryClientProvider>
-      ),
-    },
+    { url: '/', di, withLocalDate: true },
   );
   return {
     gateway,
     httpClient,
     analytics,
     logger,
-    store: container.pushNotificationEntryStore,
+    store: di.pushNotificationEntryStore,
     changeStatus: (next: AuthStatus) => act(async () => authSessionStore.setStatus(next)),
   };
 }
@@ -187,13 +170,10 @@ describe('usePushNotificationResponse', () => {
     const { gateway, httpClient, analytics, changeStatus } = await setup({
       status: 'authenticated',
     });
-    let resolveOptOut: ((value: { ok: true; value: unknown }) => void) | undefined;
-    httpClient.post.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveOptOut = resolve;
-        }),
+    const optOut = createPendingResponse(
+      ok({ optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' }),
     );
+    httpClient.post.mockReturnValueOnce(optOut.response);
     await act(async () =>
       gateway.emitResponse({
         ...RESPONSE,
@@ -206,12 +186,7 @@ describe('usePushNotificationResponse', () => {
     gateway.clearLastResponse.mockClear();
 
     // When
-    await act(async () =>
-      resolveOptOut?.({
-        ok: true,
-        value: { optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' },
-      }),
-    );
+    await act(async () => optOut.settle());
 
     // Then
     expect(analytics.trackEvent).not.toHaveBeenCalledWith(

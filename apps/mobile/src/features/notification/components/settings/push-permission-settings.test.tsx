@@ -5,6 +5,7 @@ import {
   createExternalLinkGatewayStub,
   createPushNotificationGatewayStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -22,7 +23,11 @@ async function renderSettings(permission: PushPermissionResponse) {
     <Suspense fallback={null}>
       <PushPermissionSettings />
     </Suspense>,
-    { di: { pushNotification, externalLink, analytics }, queryClient: createTestQueryClient() },
+    {
+      di: createTestDi({
+        ports: { pushNotification, externalLink, analytics, queryClient: createTestQueryClient() },
+      }),
+    },
   );
   const row = await screen.findByRole('button');
 

@@ -7,6 +7,7 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -57,7 +58,7 @@ function setup(todos: ReturnType<typeof createTodoDto>[]) {
   });
   const getTodos = httpClient.get;
   const syncStorage = createMemoryObservableSyncStorage();
-  const di = { analytics, httpClient, syncStorage };
+  const di = createTestDi({ ports: { analytics, httpClient, syncStorage } });
   const recordedTimezone = {
     find: () => readStoredValue(syncStorage, deviceTimezoneStoredValue)?.deviceTimezone,
     save: (deviceTimezone: DeviceTimezone) =>

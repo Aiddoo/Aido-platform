@@ -1,9 +1,7 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDi, stubWindowDimensions } from '@src/testing/core';
-import { TestUiProvider } from '@src/testing/render';
+import { stubWindowDimensions } from '@src/testing/core';
+import { renderAppRoute } from '@src/testing/render-route-hook';
 import { router, Stack, Tabs } from 'expo-router';
-import { act, renderRouter, screen } from 'expo-router/testing-library';
-import { type PropsWithChildren, useState } from 'react';
+import { act, screen } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
 import * as MyPageTabLayout from '../../../app/(app)/(tabs)/(mypage)/_layout';
@@ -51,22 +49,12 @@ function createScreen(testID: string) {
   };
 }
 
-/** 마이 Stack이 DI의 첫 상세 저장소를 읽는다 */
-function MyPageTestProvider({ children }: PropsWithChildren) {
-  const [container] = useState(() => createTestDi());
-  return (
-    <StaticDIProvider container={container}>
-      <TestUiProvider>{children}</TestUiProvider>
-    </StaticDIProvider>
-  );
-}
-
 async function renderApp(initialUrl: string) {
   const myPageScreens = Object.fromEntries(
     MY_PAGE_ROUTES.map((name) => [`(app)/(tabs)/(mypage)/${name}`, createScreen(name)]),
   );
 
-  return renderRouter(
+  return renderAppRoute(
     {
       _layout: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
       '(app)/_layout': {
@@ -97,7 +85,7 @@ async function renderApp(initialUrl: string) {
       '(app)/weather/index': createScreen('weather'),
       '(app)/weather/settings': createScreen('weather/settings'),
     },
-    { initialUrl, wrapper: MyPageTestProvider },
+    { url: initialUrl },
   );
 }
 

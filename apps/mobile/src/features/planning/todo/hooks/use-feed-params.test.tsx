@@ -1,11 +1,8 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { createAnalyticsStub, createErrorReporterStub, createTestDi } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
+import { renderScreenHook } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import type { PropsWithChildren } from 'react';
 
 import { useFeedAction, useFeedDateKey, useFeedFriendId } from './use-feed-params';
 
@@ -104,21 +101,12 @@ describe('useFeedDateKey', () => {
     jest.mocked(router.setParams).mockImplementation((next) => {
       date = typeof next?.date === 'string' ? next.date : undefined;
     });
-    const container = createTestDi({
-      analytics: createAnalyticsStub(),
-      errorReporter: createErrorReporterStub(),
-    });
-    const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={container}>
-        <LocalDateProvider>{children}</LocalDateProvider>
-      </StaticDIProvider>
-    );
-    const rendered = await renderHook(
+    const rendered = await renderScreenHook(
       () => {
         const [selectedDateKey, setSelectedDateKey] = useFeedDateKey();
         return { selectedDateKey, setSelectedDateKey };
       },
-      { wrapper },
+      { withLocalDate: true },
     );
     return { ...rendered, readDate: () => date };
   }
@@ -164,7 +152,7 @@ describe('useFeedDateKey', () => {
     const { result, rerender, readDate } = await setup('2026-07-13');
     // When
     await act(() => result.current.setSelectedDateKey(createDateKey('2026-07-14')));
-    await rerender({});
+    await rerender(undefined);
     await act(() => jest.advanceTimersByTimeAsync(200));
     // Then
     expect(readDate()).toBeUndefined();
@@ -177,7 +165,7 @@ describe('useFeedDateKey', () => {
     const { result, rerender, readDate } = await setup();
     // When
     await act(() => result.current.setSelectedDateKey(createDateKey('2026-07-20')));
-    await rerender({});
+    await rerender(undefined);
     // Then
     expect(readDate()).toBe('2026-07-20');
     expect(result.current.selectedDateKey).toBe('2026-07-20');

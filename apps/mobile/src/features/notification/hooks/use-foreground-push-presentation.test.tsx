@@ -1,13 +1,6 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import {
-  createPushNotificationGatewayStub,
-  createTestDi,
-  createTestQueryClient,
-} from '@src/testing/core';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { renderHook } from '@testing-library/react-native';
+import { createPushNotificationGatewayStub, createTestDi } from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { useGlobalSearchParams, usePathname } from 'expo-router';
-import type { PropsWithChildren } from 'react';
 
 import { useForegroundPushPresentation } from './use-foreground-push-presentation';
 
@@ -24,14 +17,9 @@ async function setup({ pathname, params }: { pathname: string; params: Record<st
   jest.mocked(usePathname).mockReturnValue(pathname);
   jest.mocked(useGlobalSearchParams).mockReturnValue(params);
   const gateway = createPushNotificationGatewayStub();
-  const container = createTestDi({ pushNotification: gateway });
-  const queryClient = createTestQueryClient();
-  const wrapper = ({ children }: PropsWithChildren) => (
-    <StaticDIProvider container={container}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </StaticDIProvider>
-  );
-  await renderHook(() => useForegroundPushPresentation(), { wrapper });
+  await renderScreenHook(() => useForegroundPushPresentation(), {
+    di: createTestDi({ ports: { pushNotification: gateway } }),
+  });
   return { gateway };
 }
 

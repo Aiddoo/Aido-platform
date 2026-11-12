@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
 import { createAuthApiError } from '@src/features/identity/auth/__tests__/auth.fixtures';
-import { createHttpClientStub } from '@src/testing/core';
+import { createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
@@ -16,7 +16,7 @@ async function renderSheet() {
       isOpen
       onOpenChange={onOpenChange}
     />,
-    { di: { httpClient }, withOverlay: true, withLocalDate: true },
+    { di: createTestDi({ ports: { httpClient } }), withOverlay: true, withLocalDate: true },
   );
 
   return { httpClient, onOpenChange };

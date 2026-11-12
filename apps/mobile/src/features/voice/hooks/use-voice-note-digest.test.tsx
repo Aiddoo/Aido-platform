@@ -9,14 +9,13 @@ import { NetworkError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHapticsGatewayStub,
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
-  createVoiceNoteStorageFake,
+  createPendingResponse,
+  createTestDi,
   createTestQueryClient,
+  createVoiceNoteStorageFake,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
@@ -55,12 +54,21 @@ function DigestProbe() {
 async function renderDigest() {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
-  const storage = createVoiceNoteStorageFake();
-  storage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote({ draftId: DRAFT_ID }));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), createEntitlementSnapshot());
+  const di = createTestDi({
+    ports: {
+      httpClient,
+      queryClient,
+      syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
+      storage: createMemoryStorage(),
+      ...createVoiceNoteStorageFake().ports,
+      logger,
+    },
+  });
+  di.voiceNoteDraftRepository.save(ACCOUNT_ID, createSpokenVoiceNote({ draftId: DRAFT_ID }));
 
   await renderScreen(
     <LocalDateProvider>
@@ -68,22 +76,10 @@ async function renderDigest() {
         <DigestProbe />
       </OverlayProvider>
     </LocalDateProvider>,
-    {
-      queryClient,
-      di: {
-        httpClient,
-        syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
-        storage: createMemoryStorage(),
-        ...storage.di,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-        haptics: createHapticsGatewayStub(),
-        logger,
-      },
-    },
+    { di },
   );
 
-  return { httpClient, storage };
+  return { httpClient, di };
 }
 
 const AGREED_CONSENT_DTO = {
@@ -100,7 +96,7 @@ const getIdempotencyKey = (
 describe('useVoiceNoteDigest', () => {
   it('정리에 성공하면 요약과 카드 초안을 기기 초안에 담는다', async () => {
     // Given
-    const { httpClient, storage } = await renderDigest();
+    const { httpClient, di } = await renderDigest();
     httpClient.post.mockResolvedValue(ok(createVoiceNoteDigestDto()));
 
     // When
@@ -108,14 +104,16 @@ describe('useVoiceNoteDigest', () => {
 
     // Then
     await waitFor(() =>
-      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.digest?.summary).toBe('요약이에요'),
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.digest?.summary).toBe(
+        '요약이에요',
+      ),
     );
     expect(httpClient.post.mock.calls[0]?.[0]).toBe('v1/voice-notes/digest');
   });
 
   it('동의 안내에서 나중에를 누르면 동의가 필요하다고 보이고 다시 정리하면 안내를 다시 띄워 이어 간다', async () => {
     // Given
-    const { httpClient, storage } = await renderDigest();
+    const { httpClient, di } = await renderDigest();
     httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
     // 동의를 답할 때까지 끝나지 않는 핸들러라 기다리지 않는다
     fireEvent.press(screen.getByTestId('digest')).catch(() => undefined);
@@ -134,7 +132,9 @@ describe('useVoiceNoteDigest', () => {
 
     // Then
     await waitFor(() =>
-      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.digest?.summary).toBe('요약이에요'),
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.digest?.summary).toBe(
+        '요약이에요',
+      ),
     );
     expect(screen.getByTestId('failure', { includeHiddenElements: true })).toHaveTextContent(
       'none',
@@ -143,31 +143,27 @@ describe('useVoiceNoteDigest', () => {
 
   it('기다리는 사이 초안을 지웠으면 늦은 응답이 초안을 되살리지 않는다', async () => {
     // Given
-    const { httpClient, storage } = await renderDigest();
-    let respond = () => {};
-    httpClient.post.mockReturnValue(
-      new Promise((resolve) => {
-        respond = () => resolve(ok(createVoiceNoteDigestDto()));
-      }),
-    );
+    const { httpClient, di } = await renderDigest();
+    const digest = createPendingResponse(ok(createVoiceNoteDigestDto()));
+    httpClient.post.mockReturnValue(digest.response);
     await act(async () => {
       fireEvent.press(screen.getByTestId('digest')).catch(jest.fn());
     });
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
 
     // When
-    storage.service.discard(ACCOUNT_ID, DRAFT_ID);
-    await act(async () => respond());
+    di.voiceNoteStorageService.discard(ACCOUNT_ID, DRAFT_ID);
+    await act(async () => digest.settle());
 
     // Then
     await waitFor(() => expect(screen.getByTestId('pending')).toHaveTextContent('false'));
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)).toBeNull();
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)).toBeNull();
   });
 
   it('오프라인이어도 멈추지 않고 네트워크 실패로 알리며 글자를 그대로 둔다', async () => {
     // Given
     onlineManager.setOnline(false);
-    const { httpClient, storage } = await renderDigest();
+    const { httpClient, di } = await renderDigest();
     httpClient.post.mockRejectedValue(new NetworkError());
 
     // When
@@ -176,7 +172,7 @@ describe('useVoiceNoteDigest', () => {
     // Then
     await waitFor(() => expect(screen.getByTestId('failure')).toHaveTextContent('network:false'));
     expect(screen.getByTestId('pending')).toHaveTextContent('false');
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.sentences).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.sentences).toHaveLength(1);
     onlineManager.setOnline(true);
   });
 
@@ -196,7 +192,7 @@ describe('useVoiceNoteDigest', () => {
 
   it('차감되지 않은 실패면 글자를 그대로 두고 그 사실을 알린다', async () => {
     // Given
-    const { httpClient, storage } = await renderDigest();
+    const { httpClient, di } = await renderDigest();
     httpClient.post.mockResolvedValue(
       err(new ApiError('AI_1301', '실패', 503, { charged: false })),
     );
@@ -208,8 +204,8 @@ describe('useVoiceNoteDigest', () => {
     await waitFor(() =>
       expect(screen.getByTestId('failure')).toHaveTextContent('ai-unavailable:true'),
     );
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.sentences).toHaveLength(1);
-    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.digest).toBeNull();
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.sentences).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.digest).toBeNull();
   });
 
   it('차감 여부를 서버가 말하지 않은 실패면 차감되지 않았다고 말하지 않는다', async () => {
@@ -228,7 +224,7 @@ describe('useVoiceNoteDigest', () => {
 
   it('다시 정리는 같은 키로 보내 두 번 차감되지 않고, 키는 초안에 남아 앱을 다시 켜도 같다', async () => {
     // Given
-    const { httpClient, storage } = await renderDigest();
+    const { httpClient, di } = await renderDigest();
     httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1301', '실패', 503)));
     httpClient.post.mockResolvedValueOnce(ok(createVoiceNoteDigestDto()));
     await fireEvent.press(screen.getByTestId('digest'));
@@ -236,7 +232,8 @@ describe('useVoiceNoteDigest', () => {
     await waitFor(() =>
       expect(screen.getByTestId('failure')).toHaveTextContent('ai-unavailable:false'),
     );
-    const savedKey = storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.digestRequest?.idempotencyKey;
+    const savedKey = di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.digestRequest
+      ?.idempotencyKey;
 
     // When
     await fireEvent.press(screen.getByTestId('digest'));

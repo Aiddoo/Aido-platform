@@ -3,7 +3,7 @@ import { createUser } from '@src/features/identity/user/__tests__/user.fixtures'
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { toInstant } from '@src/shared/date/instant';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
-import { createMemorySyncStorage, createTestQueryClient } from '@src/testing/core';
+import { createMemorySyncStorage, createTestQueryClient, createTestDi } from '@src/testing/core';
 // 생성된 typed routes가 없는 CI에서는 useSegments 반환이 [string]으로 좁아져 공용 mock의 jest.fn을 직접 쓴다
 import { useSegments } from '@src/testing/mocks/expo-router';
 import { renderScreenHook } from '@src/testing/render';
@@ -29,8 +29,10 @@ async function renderAppEntry(pending: PendingRedemption) {
   useSegments.mockReturnValue(['(app)', '(tabs)', 'feed']);
 
   await renderScreenHook(() => useInviteAppEntry(), {
-    di: { syncStorage, authSessionStore: createAuthSessionStoreStub('authenticated') },
-    queryClient,
+    di: createTestDi({
+      ports: { syncStorage, queryClient },
+      seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+    }),
   });
   await act(() => jest.advanceTimersByTimeAsync(FRAME_MS));
 

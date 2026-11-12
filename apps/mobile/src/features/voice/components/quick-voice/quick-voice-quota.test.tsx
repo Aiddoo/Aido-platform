@@ -45,7 +45,9 @@ describe('QuickVoiceQuota', () => {
             config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
           >
             <QueryClientProvider client={createTestQueryClient()}>
-              <StaticDIProvider container={createTestDi({ httpClient, logger: silentLogger })}>
+              <StaticDIProvider
+                container={createTestDi({ ports: { httpClient, logger: silentLogger } })}
+              >
                 <LocalDateProvider>
                   <QuickVoiceQuota />
                 </LocalDateProvider>
@@ -82,7 +84,9 @@ describe('QuickVoiceQuota', () => {
             >
               <QueryClientProvider client={createTestQueryClient()}>
                 <StaticDIProvider
-                  container={createTestDi({ httpClient, analytics, logger: silentLogger })}
+                  container={createTestDi({
+                    ports: { httpClient, analytics, logger: silentLogger },
+                  })}
                 >
                   <LocalDateProvider>
                     <OverlayProvider>

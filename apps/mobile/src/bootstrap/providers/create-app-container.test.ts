@@ -83,7 +83,7 @@ describe('createAppContainer', () => {
     it('암호화 저장소를 연 실행의 로그아웃은 바로 지워 정리 표시를 남기지 않는다', () => {
       // Given
       const syncStorage = createMemorySyncStorage();
-      const { sessionCleanupService } = createTestDi({ syncStorage });
+      const { sessionCleanupService } = createTestDi({ ports: { syncStorage } });
 
       // When
       sessionCleanupService.afterSignedOut();
@@ -95,7 +95,7 @@ describe('createAppContainer', () => {
     it('로그아웃하면 이어서 열 초대와 기기 시간대를 지워 다음 계정이 앞사람의 초대를 받지 않는다', () => {
       // Given
       const syncStorage = createMemorySyncStorage();
-      const { sessionCleanupService } = createTestDi({ syncStorage });
+      const { sessionCleanupService } = createTestDi({ ports: { syncStorage } });
       writeStoredValue(syncStorage, pendingRedemptionStoredValue, createPendingRedemption());
       writeStoredValue(syncStorage, deviceTimezoneStoredValue, {
         userId: 'account-1',
@@ -113,7 +113,7 @@ describe('createAppContainer', () => {
     it('탈퇴하면 그 계정의 안내 기록만 지우고 같은 기기의 다른 계정 기록은 남긴다', () => {
       // Given
       const syncStorage = createMemorySyncStorage();
-      const { sessionCleanupService } = createTestDi({ syncStorage });
+      const { sessionCleanupService } = createTestDi({ ports: { syncStorage } });
       rememberPrompts(syncStorage, 'account-1');
       rememberPrompts(syncStorage, 'account-2');
 
@@ -140,7 +140,7 @@ describe('createAppContainer', () => {
         throw new Error('mmkv unavailable');
       });
       const logger = createLoggerStub();
-      const { sessionCleanupService } = createTestDi({ syncStorage, logger });
+      const { sessionCleanupService } = createTestDi({ ports: { syncStorage, logger } });
 
       // When
       sessionCleanupService.afterSignedOut();

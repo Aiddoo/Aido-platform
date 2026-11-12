@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
-import { createLoggerStub, createSpeechRecognizerStub } from '@src/testing/core';
+import { createLoggerStub, createSpeechRecognizerStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
@@ -30,12 +30,7 @@ describe('useDictation', () => {
       <OverlayProvider>
         <DictationProbe />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          logger: createLoggerStub(),
-        },
-      },
+      { di: createTestDi({ ports: { speechRecognizer, logger: createLoggerStub() } }) },
     );
     await act(async () =>
       speechRecognizer.emit({
@@ -66,12 +61,7 @@ describe('useDictation', () => {
       <OverlayProvider>
         <DictationProbe />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          logger: createLoggerStub(),
-        },
-      },
+      { di: createTestDi({ ports: { speechRecognizer, logger: createLoggerStub() } }) },
     );
     await fireEvent.press(screen.getByTestId('mic'));
 
@@ -90,12 +80,7 @@ describe('useDictation', () => {
       <OverlayProvider>
         <DictationProbe onEnd={onEnd} />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          logger: createLoggerStub(),
-        },
-      },
+      { di: createTestDi({ ports: { speechRecognizer, logger: createLoggerStub() } }) },
     );
     await fireEvent.press(screen.getByTestId('mic'));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
@@ -117,12 +102,7 @@ describe('useDictation', () => {
       <OverlayProvider>
         <DictationProbe onEnd={onEnd} />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          logger: createLoggerStub(),
-        },
-      },
+      { di: createTestDi({ ports: { speechRecognizer, logger: createLoggerStub() } }) },
     );
     await fireEvent.press(screen.getByTestId('mic'));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
@@ -142,12 +122,7 @@ describe('useDictation', () => {
       <OverlayProvider>
         <DictationProbe />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          logger: createLoggerStub(),
-        },
-      },
+      { di: createTestDi({ ports: { speechRecognizer, logger: createLoggerStub() } }) },
     );
     await fireEvent.press(screen.getByTestId('mic'));
 

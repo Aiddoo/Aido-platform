@@ -6,6 +6,7 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -67,8 +68,7 @@ async function renderApply(
   const onMemoChanged = jest.fn();
 
   await renderScreen(<ApplyProbe sourceMemoId={sourceMemoId} onMemoChanged={onMemoChanged} />, {
-    di: { httpClient, analytics },
-    queryClient,
+    di: createTestDi({ ports: { httpClient, analytics, queryClient } }),
   });
   await fireEvent.press(screen.getByText('저장'));
 

@@ -2,6 +2,7 @@ import {
   createAnalyticsStub,
   createAppIconGatewayStub,
   createErrorReporterStub,
+  createTestDi,
   createTestQueryClient,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
@@ -9,7 +10,6 @@ import { useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
 import type { AppIconKey } from '../domains/app-icon.model';
-import { AppIconService } from '../services/app-icon.service';
 import { APP_ICON_QUERY_KEYS } from './app-icon-query-keys';
 import { useChangeAppIconMutationOptions } from './app-icon.mutations';
 
@@ -27,8 +27,7 @@ async function renderChange(gateway = createAppIconGatewayStub()) {
     return null;
   }
   await renderScreen(<Capture />, {
-    queryClient,
-    di: { appIconService: new AppIconService(gateway), errorReporter, analytics },
+    di: createTestDi({ ports: { appIcon: gateway, queryClient, errorReporter, analytics } }),
   });
 
   return {

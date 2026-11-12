@@ -16,14 +16,13 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
-  createErrorReporterStub,
-  createHapticsGatewayStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createMemoryStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -144,7 +143,7 @@ async function renderQuickVoice({
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
-  const voiceNoteStorage = createVoiceNoteStorageFake();
+  const voice = createVoiceNoteStorageFake();
   const onExit = jest.fn();
   const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
@@ -166,25 +165,24 @@ async function renderQuickVoice({
     );
   }
 
+  const di = createTestDi({
+    ports: {
+      queryClient,
+      httpClient,
+      ...voice.ports,
+      syncStorage,
+      speechRecognizer,
+      analytics,
+      storage: createMemoryStorage(),
+    },
+  });
   const { rerender } = await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <QuickVoiceProbe onExit={onExit} />
       </OverlayProvider>
     </LocalDateProvider>,
-    {
-      queryClient,
-      di: {
-        httpClient,
-        ...voiceNoteStorage.di,
-        syncStorage,
-        speechRecognizer,
-        analytics,
-        errorReporter: createErrorReporterStub(),
-        haptics: createHapticsGatewayStub(),
-        storage: createMemoryStorage(),
-      },
-    },
+    { di },
   );
 
   /** 시트만 닫는다. 안내는 앱 위 오버레이에 있어 그대로 남는다 */
@@ -198,7 +196,7 @@ async function renderQuickVoice({
   return {
     httpClient,
     speechRecognizer,
-    voiceNoteStorage,
+    di,
     onExit,
     analytics,
     queryClient,
@@ -345,17 +343,13 @@ describe('useAddTodoQuickVoice', () => {
       // Given
       const user = userEvent.setup();
       const { httpClient, speechRecognizer, closeSheet } = await renderQuickVoice();
-      let failConsentRead: (error: Error) => void = jest.fn();
-      httpClient.get.mockReturnValue(
-        new Promise((_resolve, reject) => {
-          failConsentRead = reject;
-        }),
-      );
+      const consentRead = Promise.withResolvers<never>();
+      httpClient.get.mockReturnValue(consentRead.promise);
       await user.press(screen.getByRole('button', { name: 'start' }));
       await act(async () => closeSheet());
 
       // When
-      await act(async () => failConsentRead(new Error('offline')));
+      await act(async () => consentRead.reject(new Error('offline')));
 
       // Then
       expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
@@ -374,18 +368,14 @@ describe('useAddTodoQuickVoice', () => {
       await act(async () => speechRecognizer.emit({ type: 'error', code: 'service-not-allowed' }));
       analytics.trackEvent.mockClear();
       speechRecognizer.start.mockClear();
-      let grant: (snapshot: { isGranted: true; canAskAgain: boolean }) => void = jest.fn();
-      speechRecognizer.getPermission.mockReturnValue(
-        new Promise((resolve) => {
-          grant = resolve;
-        }),
-      );
+      const permission = Promise.withResolvers<{ isGranted: true; canAskAgain: boolean }>();
+      speechRecognizer.getPermission.mockReturnValue(permission.promise);
       await user.press(screen.getByRole('button', { name: 'start' }));
       await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalled());
       await act(async () => closeSheet());
 
       // When
-      await act(async () => grant({ isGranted: true, canAskAgain: true }));
+      await act(async () => permission.resolve({ isGranted: true, canAskAgain: true }));
 
       // Then
       expect(speechRecognizer.start).not.toHaveBeenCalled();
@@ -642,8 +632,7 @@ describe('useAddTodoQuickVoice', () => {
     it('말로 메모하기를 고르면 들은 글자를 초안에 저장하고 시트를 닫은 뒤 이어 듣기로 간다', async () => {
       // Given
       const user = userEvent.setup();
-      const { httpClient, speechRecognizer, voiceNoteStorage, onExit, analytics } =
-        await renderQuickVoice();
+      const { httpClient, speechRecognizer, di, onExit, analytics } = await renderQuickVoice();
       await listenUntilLimit(speechRecognizer);
       // 동의 상태를 읽지 못하면 묻지 않고 넘어간다
       httpClient.get.mockRejectedValue(new Error('offline'));
@@ -653,7 +642,7 @@ describe('useAddTodoQuickVoice', () => {
 
       // Then
       await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
-      const [note] = voiceNoteStorage.drafts.findAll(ACCOUNT_ID);
+      const [note] = di.voiceNoteDraftRepository.findAll(ACCOUNT_ID);
       expect(note?.sentences.map(({ text }) => text)).toEqual(['길게 말한 내용.']);
       expect(onExit).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith({
@@ -670,7 +659,7 @@ describe('useAddTodoQuickVoice', () => {
     it('마이크 권한을 거절하면 시트에 그대로 남아 글자를 잃지 않는다', async () => {
       // Given
       const user = userEvent.setup();
-      const { httpClient, speechRecognizer, voiceNoteStorage, onExit } = await renderQuickVoice();
+      const { httpClient, speechRecognizer, di, onExit } = await renderQuickVoice();
       await listenUntilLimit(speechRecognizer);
       httpClient.get.mockRejectedValue(new Error('offline'));
       const denied = { isGranted: false, canAskAgain: true, missing: 'microphone' } as const;
@@ -684,7 +673,7 @@ describe('useAddTodoQuickVoice', () => {
       // Then
       expect(screen.getByTestId('status')).toHaveTextContent('paused');
       expect(onExit).not.toHaveBeenCalled();
-      expect(voiceNoteStorage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+      expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toEqual([]);
     });
   });
 });

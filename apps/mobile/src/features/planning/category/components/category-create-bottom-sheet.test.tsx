@@ -17,6 +17,7 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -76,13 +77,15 @@ async function renderLinkedCreateSheet() {
       </SheetRouteScreen>
     </View>,
     {
-      queryClient,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          queryClient,
+        },
+      }),
       withLocalDate: true,
-      di: {
-        httpClient,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-      },
     },
   );
   const layoutHost = findLayoutHost(screen.getByTestId('sheet-route'));

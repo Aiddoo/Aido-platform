@@ -5,6 +5,7 @@ import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
@@ -28,11 +29,9 @@ async function updateFollowing(error: ApiError) {
   }
 
   const { queryClient } = await renderScreen(<Probe />, {
-    di: {
-      httpClient,
-      analytics: createAnalyticsStub(),
-      haptics: createHapticsGatewayStub(),
-    },
+    di: createTestDi({
+      ports: { httpClient, analytics: createAnalyticsStub(), haptics: createHapticsGatewayStub() },
+    }),
     withOverlay: true,
   });
   // 보고 있던 목록. 관찰자가 없어 무효화되면 다시 받지 않고 무효 표시만 남는다

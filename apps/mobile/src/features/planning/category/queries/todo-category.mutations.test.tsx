@@ -10,6 +10,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager, useMutation } from '@tanstack/react-query';
@@ -62,8 +63,9 @@ async function renderMutations() {
     return null;
   }
   await renderScreen(<Capture />, {
-    queryClient,
-    di: { httpClient, analytics, haptics: createHapticsGatewayStub() },
+    di: createTestDi({
+      ports: { httpClient, analytics, haptics: createHapticsGatewayStub(), queryClient },
+    }),
   });
 
   return {

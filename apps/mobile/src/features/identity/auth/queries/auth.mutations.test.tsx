@@ -62,7 +62,7 @@ describe('로그인 실패 추적', () => {
   it('이메일·비밀번호가 틀리면 방법과 이유를 남긴다', async () => {
     // Given
     const analytics = createAnalyticsStub();
-    const session = createAuthSession({ di: { analytics } });
+    const session = createAuthSession({ ports: { analytics } });
     session.publicHttp.post.mockResolvedValue(err(createAuthApiError({ code: 'USER_0602' })));
     const { result } = await session.renderSession(
       () => useMutation(useEmailLoginMutationOptions()),
@@ -86,7 +86,7 @@ describe('로그인 실패 추적', () => {
   it('소셜 인증 창을 닫으면 실패로 세지 않는다', async () => {
     // Given
     const analytics = createAnalyticsStub();
-    const session = createAuthSession({ di: { analytics } });
+    const session = createAuthSession({ ports: { analytics } });
     session.socialAuthGateway.openOAuthSession.mockResolvedValue({ type: 'cancelled' });
     const { result } = await session.renderSession(
       () => useMutation(useOpenKakaoLoginMutationOptions()),
@@ -107,7 +107,7 @@ describe('이메일 인증', () => {
   it('인증하면 로그인하고 어디서 인증했는지 남긴다', async () => {
     // Given
     const analytics = createAnalyticsStub();
-    const session = createAuthSession({ di: { analytics } });
+    const session = createAuthSession({ ports: { analytics } });
     session.publicHttp.post.mockResolvedValue(ok(createAuthTokensDto()));
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), verify: useMutation(useVerifyEmailMutationOptions()) }),
@@ -141,7 +141,7 @@ describe('구글·카카오·네이버 코드 교환', () => {
     dto: ReturnType<typeof createAuthTokensDto>,
   ) {
     const analytics = createAnalyticsStub();
-    const session = createAuthSession({ di: { analytics } });
+    const session = createAuthSession({ ports: { analytics } });
     session.publicHttp.post.mockResolvedValue(ok(dto));
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), exchange: useMutation(useExchangeCodeMutationOptions()) }),
@@ -176,7 +176,7 @@ describe('구글·카카오·네이버 코드 교환', () => {
 describe('Apple 로그인', () => {
   async function loginWithApple(dto: ReturnType<typeof createAuthTokensDto>) {
     const analytics = createAnalyticsStub();
-    const session = createAuthSession({ di: { analytics } });
+    const session = createAuthSession({ ports: { analytics } });
     session.socialAuthGateway.signInWithApple.mockResolvedValue(createAppleSignInSuccess());
     session.publicHttp.post.mockResolvedValue(ok(dto));
     const { result } = await session.renderSession(
@@ -348,7 +348,7 @@ describe('소셜 로그인 실패 안내', () => {
   it('Apple 로그인 창을 닫으면 토스트 없이 햅틱만 울린다', async () => {
     // Given
     const haptics = createHapticsGatewayStub();
-    const session = createAuthSession({ di: { haptics } });
+    const session = createAuthSession({ ports: { haptics } });
     session.socialAuthGateway.signInWithApple.mockResolvedValue({ type: 'cancelled' });
 
     // When

@@ -1,18 +1,11 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { DateKey } from '@src/shared/date/date-key';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createTestDi,
-  stubWindowDimensions,
-} from '@src/testing/core';
+import { stubWindowDimensions } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
+import { createTestProviders } from '@src/testing/render';
 import { renderRouteHook } from '@src/testing/render-route-hook';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import type { PropsWithChildren } from 'react';
 
 import { useFeedAction, useFeedDateKey, useFeedFriendId } from '../hooks/use-feed-params';
 import {
@@ -26,19 +19,6 @@ const COMMENT = 'cmt92zn3n000b7voxx9quc2th';
 const FRIEND = 'cmfriend000000000000000001';
 const FOLD_WIDTH = 900;
 const PHONE_WIDTH = 390;
-
-function FeedProviders({ children }: PropsWithChildren) {
-  return (
-    <StaticDIProvider
-      container={createTestDi({
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-      })}
-    >
-      <LocalDateProvider>{children}</LocalDateProvider>
-    </StaticDIProvider>
-  );
-}
 
 function useFeedScreen() {
   const [selectedDateKey, setSelectedDateKey] = useFeedDateKey();
@@ -58,7 +38,8 @@ function useFeedScreen() {
 }
 
 function renderFeed(url: string, options: { from?: string; routes?: string[] } = {}) {
-  return renderRouteHook(useFeedScreen, { url, wrapper: FeedProviders, ...options });
+  const { TestProviders } = createTestProviders({ withLocalDate: true });
+  return renderRouteHook(useFeedScreen, { url, wrapper: TestProviders, ...options });
 }
 
 const FIXED_NOW = new Date(2026, 10, 8, 12);

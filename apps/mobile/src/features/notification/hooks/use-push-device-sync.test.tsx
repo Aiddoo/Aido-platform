@@ -1,29 +1,27 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
-import { createSessionEpoch } from '@src/core/session/session-epoch';
-import { getNowInstant } from '@src/shared/date/clock';
 import {
   createAppLifecycleGatewayStub,
   createHttpClientStub,
-  createLoggerStub,
-  createMemoryStorage,
+  createMemoryDeviceIdStore,
+  createPendingResponse,
   createPushNotificationGatewayStub,
   createTestDi,
-  createTestQueryClient,
 } from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { act, renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { act } from '@testing-library/react-native';
 
 import {
   createNotificationApiError,
   createPushDeviceResponseDto,
 } from '../__tests__/notification.fixtures';
-import { PushDeviceApi } from '../apis/push-device.api';
-import { createPushRegistrationRepository } from '../repositories/push-registration.repository';
-import { PushRegistrationService } from '../services/push-registration.service';
 import { usePushDeviceSync } from './use-push-device-sync';
+
+interface SyncProps {
+  status: AuthStatus;
+  deviceTimeZone?: string;
+}
 
 describe('usePushDeviceSync', () => {
   setupFakeTimersPerTest();
@@ -53,37 +51,21 @@ describe('usePushDeviceSync', () => {
     httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
     const timeZone = { current: 'Asia/Seoul' };
     const onReported = jest.fn();
-    const pushRegistrationService = new PushRegistrationService({
-      gateway,
-      pushDeviceApi: new PushDeviceApi({
-        authHttpClient: httpClient,
-        publicHttpClient: httpClient,
-      }),
-      deviceIdService: { get: async () => 'ios_device-123' },
-      registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
-      logger: createLoggerStub(),
-      getTimeZone: () => timeZone.current,
-      getLanguage: () => 'ko',
-      sessionEpoch: createSessionEpoch(),
-      now: getNowInstant,
+    const di = createTestDi({
+      ports: {
+        httpClient,
+        pushNotification: gateway,
+        appLifecycle,
+        deviceIdStore: createMemoryDeviceIdStore('ios_device-123'),
+        getTimeZone: () => timeZone.current,
+      },
     });
-    const container = createTestDi({
-      pushRegistrationService,
-      pushNotification: gateway,
-      appLifecycle,
-      logger: createLoggerStub(),
-    });
-    const queryClient = createTestQueryClient();
-    const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={container}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </StaticDIProvider>
-    );
 
-    const hook = await renderHook(
-      ({ status, deviceTimeZone }: { status: AuthStatus; deviceTimeZone?: string }) =>
+    const initialProps: SyncProps = { status: authStatus };
+    const hook = await renderScreenHook(
+      ({ status, deviceTimeZone }: SyncProps) =>
         usePushDeviceSync({ authStatus: status, deviceTimeZone, onReported }),
-      { wrapper, initialProps: { status: authStatus } },
+      { di, initialProps },
     );
     await act(() => jest.advanceTimersByTimeAsync(0));
 
@@ -96,7 +78,7 @@ describe('usePushDeviceSync', () => {
       emitPushTap: () => responseListener?.(),
       appLifecycle,
       removeTokenListener,
-      pushRegistrationService,
+      pushRegistrationService: di.pushRegistrationService,
       emitAppState: appLifecycle.emit,
       emitTokenChange: () => tokenListener?.(),
     };
@@ -224,14 +206,9 @@ describe('usePushDeviceSync', () => {
 
   it('보고가 가는 사이 로그아웃하면 늦게 도착한 성공을 알리지 않는다', async () => {
     // Given
-    let resolvePut: ((value: { ok: true; value: unknown }) => void) | undefined;
+    const put = createPendingResponse(ok(createPushDeviceResponseDto()));
     const { httpClient, onReported, rerender } = await setup('loading');
-    httpClient.put.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolvePut = resolve;
-        }),
-    );
+    httpClient.put.mockReturnValueOnce(put.response);
     await rerender({ status: 'authenticated' });
     await act(() => jest.advanceTimersByTimeAsync(0));
     expect(httpClient.put).toHaveBeenCalledTimes(1);
@@ -239,7 +216,7 @@ describe('usePushDeviceSync', () => {
     // When
     await rerender({ status: 'unauthenticated' });
     await act(async () => {
-      resolvePut?.({ ok: true, value: createPushDeviceResponseDto() });
+      put.settle();
       await jest.advanceTimersByTimeAsync(0);
     });
 
@@ -269,13 +246,8 @@ describe('usePushDeviceSync', () => {
   it('보고하는 동안 다시 불리면 겹쳐 보내지 않고 끝난 뒤 한 번만 더 보낸다', async () => {
     // Given
     const { gateway, httpClient, emitTokenChange } = await setup();
-    let resolvePut: ((value: { ok: true; value: unknown }) => void) | undefined;
-    httpClient.put.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolvePut = resolve;
-        }),
-    );
+    const put = createPendingResponse(ok(createPushDeviceResponseDto()));
+    httpClient.put.mockReturnValueOnce(put.response);
     gateway.getToken.mockResolvedValue('ExponentPushToken[first]');
     await act(async () => {
       emitTokenChange();
@@ -287,7 +259,7 @@ describe('usePushDeviceSync', () => {
     await act(async () => {
       emitTokenChange();
       emitTokenChange();
-      resolvePut?.({ ok: true, value: createPushDeviceResponseDto() });
+      put.settle();
       await jest.advanceTimersByTimeAsync(0);
     });
 

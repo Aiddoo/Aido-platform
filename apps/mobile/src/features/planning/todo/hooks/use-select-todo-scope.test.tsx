@@ -1,7 +1,7 @@
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import '@src/shared/i18n/init';
 import { Text } from '@src/shared/ui';
-import { createErrorReporterStub, createAnalyticsStub } from '@src/testing/core';
+import { createErrorReporterStub, createAnalyticsStub, createTestDi } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
@@ -36,7 +36,11 @@ async function renderSheet() {
     <LocalDateProvider>
       <SheetProbe onSettled={onSettled} />
     </LocalDateProvider>,
-    { di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() } },
+    {
+      di: createTestDi({
+        ports: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
+      }),
+    },
   );
   await fireEvent.changeText(screen.getByTestId('title'), '장보기');
   // 범위를 고를 때까지 끝나지 않는 핸들러라 기다리지 않는다

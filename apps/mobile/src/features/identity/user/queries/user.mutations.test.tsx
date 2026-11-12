@@ -4,6 +4,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
@@ -28,8 +29,7 @@ async function renderUpdateProfile(httpClient = createHttpClientStub()) {
     return null;
   }
   await renderScreen(<Capture />, {
-    queryClient,
-    di: { httpClient, haptics: createHapticsGatewayStub() },
+    di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub(), queryClient } }),
   });
 
   return {

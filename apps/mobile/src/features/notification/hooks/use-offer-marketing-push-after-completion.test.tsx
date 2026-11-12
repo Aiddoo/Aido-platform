@@ -13,8 +13,10 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
+  createPendingResponse,
   createTestQueryClient,
   setupFakeTimersPerTest,
+  createTestDi,
 } from '@src/testing/core';
 import { getLastGorhomSheetProps } from '@src/testing/mocks/gorhom-bottom-sheet';
 import { renderScreen } from '@src/testing/render';
@@ -56,7 +58,11 @@ async function renderOffer() {
         <OfferProbe />
       </OverlayProvider>
     </LocalDateProvider>,
-    { queryClient, di: { httpClient, analytics, syncStorage, sessionEpoch } },
+    {
+      di: createTestDi({
+        ports: { httpClient, analytics, syncStorage, sessionEpoch, queryClient },
+      }),
+    },
   );
   return {
     analytics,
@@ -106,13 +112,8 @@ describe('useOfferMarketingPushAfterCompletion', () => {
   it('알림 설정을 읽는 사이 로그아웃하면 시트를 띄우지 않는다', async () => {
     // Given
     const { analytics, httpClient, sessionEpoch } = await renderOffer();
-    let resolvePreference: ((value: { ok: true; value: unknown }) => void) | undefined;
-    httpClient.get.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolvePreference = resolve;
-        }),
-    );
+    const preference = createPendingResponse(ok(createPreferenceDto({ pushEnabled: true })));
+    httpClient.get.mockReturnValueOnce(preference.response);
     await act(async () => {
       emitTodoCompletionChanged({ isCompleted: true });
       await jest.advanceTimersByTimeAsync(OFFER_DELAY_MS);
@@ -121,7 +122,7 @@ describe('useOfferMarketingPushAfterCompletion', () => {
     // When
     sessionEpoch.advance();
     await act(async () => {
-      resolvePreference?.({ ok: true, value: createPreferenceDto({ pushEnabled: true }) });
+      preference.settle();
       await jest.runOnlyPendingTimersAsync();
     });
 

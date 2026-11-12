@@ -1,48 +1,32 @@
-import { createSessionQueryCache } from '@src/bootstrap/query/session-query-cache';
 import { ok } from '@src/core/errors/result';
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { AppLifecycleState } from '@src/core/ports/app-lifecycle-gateway';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createSignOutEpoch } from '@src/core/session/sign-out-epoch';
-import { AuthApi } from '@src/features/identity/auth/apis/auth.api';
 import { useAuthSession } from '@src/features/identity/auth/hooks/use-auth-session';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { createPendingRevocationRepository } from '@src/features/identity/auth/repositories/pending-revocation.repository';
-import { SessionCleanupService } from '@src/features/identity/auth/services/session-cleanup.service';
-import { SessionRevocationService } from '@src/features/identity/auth/services/session-revocation.service';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserApi } from '@src/features/identity/user/apis/user.api';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
-import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { createDraftKey } from '@src/shared/draft/draft.model';
-import { createDraftRepository } from '@src/shared/draft/draft.repository';
-import { DraftService } from '@src/shared/draft/draft.service';
 import { KeychainLockedError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
-  readStoredValue,
-  removeStoredValue,
-  writeStoredValue,
-} from '@src/shared/storage/define-stored-value';
-import {
+  type AppLifecycleGatewayStub,
   createAnalyticsStub,
+  createAppLifecycleGatewayStub,
   createErrorReporterStub,
   createHttpClientStub,
-  type AppLifecycleGatewayStub,
-  createAppLifecycleGatewayStub,
-  createLoggerStub,
-  createMemoryStorage,
   createMemorySyncStorage,
   createMemoryTokenStore,
   createTestDi,
-  createVoiceNoteStorageFake,
   createTestQueryClient,
+  createWidgetBridgeStub,
+  respondByPath,
+  type TestDi,
 } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
-import { QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { noop } from 'es-toolkit';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { z } from 'zod';
 
@@ -52,8 +36,8 @@ import {
   type QueryCacheStorage,
 } from '../query/query-cache-persistence';
 import { AuthBootProvider } from './auth-boot-provider';
-import { StaticDIProvider } from './di-context';
 
+const PUSH_RELEASE_PATH = 'v1/notifications/push-devices/unregister';
 const SEOUL_TIMEZONE_RECORD = {
   userId: 'user-1',
   deviceTimezone: { timeZone: 'Asia/Seoul', offsetMinutes: 540 },
@@ -79,31 +63,42 @@ describe('AuthBootProvider', () => {
   // 키체인이 잠긴 채 시작한 앱은 뒤에 있다가 잠금을 풀면 앞으로 온다
   let appLifecycle: AppLifecycleGatewayStub;
   let queryClient: QueryClient;
-  let draftService: DraftService;
   let queryCacheStorage: QueryCacheStorage;
   let deviceStorage: ReturnType<typeof createMemorySyncStorage>;
+  let httpClient: ReturnType<typeof createHttpClientStub>;
+  let widgetBridge: ReturnType<typeof createWidgetBridgeStub>;
+  let di: TestDi;
   let unsubscribes: Array<() => void>;
-  let mountedProviders: Array<Awaited<ReturnType<typeof render>>>;
-  let writeSnapshot: jest.Mock;
+  let mountedProviders: Array<Awaited<ReturnType<typeof renderScreen>>>;
   let requestRefresh: jest.Mock<Promise<Response>, [string]>;
-  let requestPushRelease: jest.Mock<void, []>;
 
   beforeEach(() => {
-    writeSnapshot = jest.fn().mockResolvedValue(undefined);
     requestRefresh = jest.fn();
-    requestPushRelease = jest.fn();
     tokenStore = createMemoryTokenStore();
     errorReporter = createErrorReporterStub();
     analytics = createAnalyticsStub();
     appLifecycle = createAppLifecycleGatewayStub('background');
     queryClient = createTestQueryClient();
-    draftService = new DraftService(
-      createDraftRepository(createMemorySyncStorage()),
-      Date.now,
-      () => 0,
-    );
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
     deviceStorage = createMemorySyncStorage();
+    widgetBridge = createWidgetBridgeStub();
+    // 부팅이 읽는 내 정보만 응답한다. 위젯 동기화의 할 일 조회 같은 다른 요청은 실패한다
+    httpClient = createHttpClientStub();
+    httpClient.get.mockImplementation(respondByPath({ 'v1/auth/me': ok(createCurrentUserDto()) }));
+    di = createTestDi({
+      ports: {
+        httpClient,
+        appLifecycle,
+        tokenStore,
+        errorReporter,
+        analytics,
+        widgetBridge,
+        requestRefresh,
+        queryClient,
+        queryCacheStorage,
+        syncStorage: deviceStorage,
+      },
+    });
     unsubscribes = [];
     mountedProviders = [];
   });
@@ -121,61 +116,20 @@ describe('AuthBootProvider', () => {
   });
 
   const renderProvider = async () => {
-    // AuthBootProvider가 마운트하는 위젯 동기화 훅의 의존성 — 네트워크/브리지는 전부 mock
-    const todoApi = new TodoApi(createHttpClientStub());
-    const userHttpClient = createHttpClientStub();
-    userHttpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-    const userApi = new UserApi(userHttpClient);
-
-    const mountedProvider = await render(
-      <StaticDIProvider
-        container={createTestDi({
-          appLifecycle,
-          tokenStore,
-          errorReporter,
-          analytics,
-          todoApi,
-          userApi,
-          widgetBridge: { writeSnapshot },
-          sessionCleanupService: new SessionCleanupService({
-            signOutEpoch: createSignOutEpoch(),
-            userDeviceData: { clearForUser: noop },
-            queryCache: createSessionQueryCache(queryClient),
-            persistedQueryCache: queryCacheStorage,
-            drafts: draftService,
-            voiceNotes: createVoiceNoteStorageFake().service,
-            deviceTimezone: {
-              clear: () => removeStoredValue(deviceStorage, deviceTimezoneStoredValue),
-            },
-            pendingRedemption: { clear: noop },
-            pushDevice: { requestRelease: requestPushRelease },
-            logger: createLoggerStub(),
-          }),
-          sessionRevocationService: new SessionRevocationService({
-            repository: createPendingRevocationRepository(createMemoryStorage()),
-            requestRefresh,
-            authApi: new AuthApi({
-              publicHttpClient: createHttpClientStub(),
-              authHttpClient: createHttpClientStub(),
-            }),
-            logger: { info: jest.fn(), warn: jest.fn() },
-            now: Date.now,
-          }),
-        })}
-      >
-        <QueryClientProvider client={queryClient}>
-          <LocalDateProvider>
-            <AuthBootProvider>
-              <StatusProbe />
-              <LogoutProbe />
-            </AuthBootProvider>
-          </LocalDateProvider>
-        </QueryClientProvider>
-      </StaticDIProvider>,
+    const mountedProvider = await renderScreen(
+      <AuthBootProvider>
+        <StatusProbe />
+        <LogoutProbe />
+      </AuthBootProvider>,
+      { di, withLocalDate: true },
     );
     mountedProviders.push(mountedProvider);
     return mountedProvider;
   };
+
+  /** 서버에 알리지 못한 푸시 등록을 토큰으로 푸는 요청 */
+  const pushReleaseRequests = () =>
+    httpClient.post.mock.calls.filter(([url]) => url === PUSH_RELEASE_PATH);
 
   const expectStatus = (status: string) =>
     waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent(status));
@@ -271,7 +225,7 @@ describe('AuthBootProvider', () => {
         target: ['create'],
         schema: z.object({ content: z.string() }),
       });
-      draftService.save(draftKey, { content: '작성 중' });
+      di.draftService.save(draftKey, { content: '작성 중' });
       const clearSpy = jest.spyOn(queryClient, 'clear');
       tokenStore.getRefreshToken.mockResolvedValue(null);
 
@@ -281,11 +235,11 @@ describe('AuthBootProvider', () => {
       // Then
       await expectStatus('unauthenticated');
       expect(clearSpy).toHaveBeenCalled();
-      expect(draftService.restore(draftKey)).toEqual({
+      expect(di.draftService.restore(draftKey)).toEqual({
         status: 'restored',
         value: { content: '작성 중' },
       });
-      expect(requestPushRelease).not.toHaveBeenCalled();
+      expect(pushReleaseRequests()).toEqual([]);
     });
 
     it('어떤 판정이든 토큰을 쓰거나 지우지 않는다', async () => {
@@ -327,7 +281,7 @@ describe('AuthBootProvider', () => {
       await act(async () => {
         await jest.runOnlyPendingTimersAsync();
       });
-      expect(writeSnapshot).not.toHaveBeenCalled();
+      expect(widgetBridge.writeSnapshot).not.toHaveBeenCalled();
     });
 
     it('판정이 끝나기 전에는 위젯을 로그아웃으로 덮어쓰지 않는다', async () => {
@@ -342,7 +296,7 @@ describe('AuthBootProvider', () => {
 
       // Then
       await expectStatus('loading');
-      expect(writeSnapshot).not.toHaveBeenCalled();
+      expect(widgetBridge.writeSnapshot).not.toHaveBeenCalled();
     });
 
     it('미인증으로 확정되면 위젯을 로그아웃 상태로 쓴다', async () => {
@@ -354,7 +308,7 @@ describe('AuthBootProvider', () => {
 
       // Then
       await expectStatus('unauthenticated');
-      await waitFor(() => expect(writeSnapshot).toHaveBeenCalled());
+      await waitFor(() => expect(widgetBridge.writeSnapshot).toHaveBeenCalled());
     });
   });
 
@@ -460,19 +414,10 @@ describe('AuthBootProvider', () => {
       '로그아웃 후 늦게 끝난 %s 판정은 세션을 변경하거나 리포팅하지 않는다',
       async (outcome) => {
         // Given
-        let resolveRead: (value: string | null) => void = () => {
-          throw new Error('Deferred read is not initialized');
-        };
-        let rejectRead: (error: Error) => void = () => {
-          throw new Error('Deferred read is not initialized');
-        };
-        const pendingRead = new Promise<string | null>((resolve, reject) => {
-          resolveRead = resolve;
-          rejectRead = reject;
-        });
+        const pendingRead = Promise.withResolvers<string | null>();
         tokenStore.getRefreshToken
           .mockRejectedValueOnce(new KeychainLockedError(new Error('locked')))
-          .mockReturnValueOnce(pendingRead);
+          .mockReturnValueOnce(pendingRead.promise);
         await renderProvider();
         await expectStatus('locked');
 
@@ -486,9 +431,9 @@ describe('AuthBootProvider', () => {
         // When
         await act(() => {
           if (outcome === 'success') {
-            resolveRead('previous-session-token');
+            pendingRead.resolve('previous-session-token');
           } else {
-            rejectRead(new Error('late keychain failure'));
+            pendingRead.reject(new Error('late keychain failure'));
           }
         });
 
@@ -596,14 +541,14 @@ describe('AuthBootProvider', () => {
       tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
-      draftService.save(draftKey, { content: '작성 중' });
+      di.draftService.save(draftKey, { content: '작성 중' });
 
       // When
       await fireEvent.press(screen.getByTestId('logout'));
 
       // Then
       await expectStatus('unauthenticated');
-      expect(draftService.restore(draftKey)).toEqual({ status: 'empty' });
+      expect(di.draftService.restore(draftKey)).toEqual({ status: 'empty' });
     });
 
     it('로그아웃하면 마지막 기기 시간대를 지운다', async () => {
@@ -634,7 +579,7 @@ describe('AuthBootProvider', () => {
 
         // Then
         await expectStatus('unauthenticated');
-        expect(requestPushRelease).toHaveBeenCalledTimes(1);
+        await waitFor(() => expect(pushReleaseRequests()).toHaveLength(1));
       },
     );
 
@@ -684,14 +629,14 @@ describe('AuthBootProvider', () => {
       tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
-      draftService.save(draftKey, { content: '작성 중' });
+      di.draftService.save(draftKey, { content: '작성 중' });
 
       // When
       await act(() => emitSessionExpired({ reason: 'refresh-rejected' }));
 
       // Then
       await expectStatus('unauthenticated');
-      expect(draftService.restore(draftKey)).toEqual({
+      expect(di.draftService.restore(draftKey)).toEqual({
         status: 'restored',
         value: { content: '작성 중' },
       });

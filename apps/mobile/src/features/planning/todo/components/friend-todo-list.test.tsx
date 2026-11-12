@@ -8,6 +8,7 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createRouteParamsFake,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
@@ -45,7 +46,7 @@ describe('FriendTodoList', () => {
           </Suspense>
         </QueryErrorBoundary>
       </>,
-      { di: { httpClient, errorReporter }, withLocalDate: true },
+      { di: createTestDi({ ports: { httpClient, errorReporter } }), withLocalDate: true },
     );
     await screen.findByTestId('friend-feed-unavailable');
     await fireEvent.press(screen.getByText('내 피드로 가기'));

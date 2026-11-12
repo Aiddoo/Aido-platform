@@ -4,6 +4,7 @@ import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createAnalyticsStub,
+  createTestDi,
 } from '@src/testing/core';
 import '@src/shared/i18n/init';
 import { createDateKey } from '@src/testing/date-key';
@@ -35,7 +36,15 @@ async function renderSheet({
     <LocalDateProvider>
       <TodoRepeatPicker value={{ startDate, repeat }} onChange={onChange} onCancel={onCancel} />
     </LocalDateProvider>,
-    { di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub(), haptics } },
+    {
+      di: createTestDi({
+        ports: {
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          haptics,
+        },
+      }),
+    },
   );
 
   return { onChange, onCancel, haptics };

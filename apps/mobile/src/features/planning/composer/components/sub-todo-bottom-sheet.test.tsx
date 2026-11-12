@@ -16,6 +16,7 @@ import {
   createPendingResponse,
   createSpeechRecognizerStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -58,13 +59,15 @@ async function renderEditSheet() {
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: {
-        httpClient,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-        speechRecognizer: createSpeechRecognizerStub(),
-      },
-      queryClient,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          speechRecognizer: createSpeechRecognizerStub(),
+          queryClient,
+        },
+      }),
     },
   );
 
@@ -184,13 +187,15 @@ describe('AddSubTodoBottomSheet', () => {
         </OverlayProvider>
       </LocalDateProvider>,
       {
-        di: {
-          httpClient,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          speechRecognizer: createSpeechRecognizerStub(),
-        },
-        queryClient,
+        di: createTestDi({
+          ports: {
+            httpClient,
+            analytics: createAnalyticsStub(),
+            errorReporter: createErrorReporterStub(),
+            speechRecognizer: createSpeechRecognizerStub(),
+            queryClient,
+          },
+        }),
       },
     );
 
@@ -231,13 +236,15 @@ describe('AddSubTodoBottomSheet', () => {
         </OverlayProvider>
       </LocalDateProvider>,
       {
-        di: {
-          httpClient,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          speechRecognizer: createSpeechRecognizerStub(),
-        },
-        queryClient,
+        di: createTestDi({
+          ports: {
+            httpClient,
+            analytics: createAnalyticsStub(),
+            errorReporter: createErrorReporterStub(),
+            speechRecognizer: createSpeechRecognizerStub(),
+            queryClient,
+          },
+        }),
       },
     );
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '첫 항목');

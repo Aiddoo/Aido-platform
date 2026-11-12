@@ -1,18 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import '@src/shared/i18n/init';
-import { PreferenceApi } from '@src/features/identity/preference/apis/preference.api';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
-import { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
-import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHttpClientStub,
-  createTestQueryClient,
-} from '@src/testing/core';
+import { createHttpClientStub, createTestDi, createTestQueryClient } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -124,16 +117,7 @@ async function renderPlan(
         </Suspense>
       </OverlayProvider>
     </LocalDateProvider>,
-    {
-      di: {
-        httpClient,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-        todoCategoryApi: new TodoCategoryApi(createHttpClientStub()),
-        preferenceApi: new PreferenceApi(createHttpClientStub()),
-      },
-      queryClient,
-    },
+    { di: createTestDi({ ports: { httpClient, queryClient } }) },
   );
 }
 

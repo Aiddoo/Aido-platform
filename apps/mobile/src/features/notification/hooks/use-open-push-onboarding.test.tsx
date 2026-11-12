@@ -1,13 +1,10 @@
 import { MyPageStack } from '@src/bootstrap/navigation/my-page-stack';
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
@@ -18,11 +15,11 @@ import {
   stubWindowDimensions,
 } from '@src/testing/core';
 import { Stack as TestStack } from '@src/testing/mocks/expo-router';
-import { TestUiProvider } from '@src/testing/render';
-import { QueryClientProvider, useSuspenseQuery } from '@tanstack/react-query';
+import { renderAppRoute } from '@src/testing/render-route-hook';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
-import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import { type PropsWithChildren, Suspense, useEffect } from 'react';
+import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
+import { Suspense, useEffect } from 'react';
 import { Text } from 'react-native';
 
 import { unstable_settings as myPageTabSettings } from '../../../../app/(app)/(tabs)/(mypage)/_layout';
@@ -129,28 +126,12 @@ async function renderAppRoutes({
       : Promise.reject(requestError),
   );
   const syncStorage = createMemoryObservableSyncStorage();
-  const container = createTestDi({
-    queryClient,
-    httpClient,
-    pushNotification,
-    authSessionStore: createAuthSessionStoreStub('authenticated'),
-    syncStorage,
+  const di = createTestDi({
+    ports: { queryClient, httpClient, pushNotification, syncStorage },
+    seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
   });
-  function AppFixture({ children }: PropsWithChildren) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <StaticDIProvider container={container}>
-          <TestUiProvider>
-            <LocalDateProvider>
-              <OverlayProvider>{children}</OverlayProvider>
-            </LocalDateProvider>
-          </TestUiProvider>
-        </StaticDIProvider>
-      </QueryClientProvider>
-    );
-  }
 
-  const route = await renderRouter(
+  const route = await renderAppRoute(
     {
       _layout: () => <Stack screenOptions={{ animation: 'none' }} />,
       '(app)/_layout': AppLayoutRoute,
@@ -168,7 +149,7 @@ async function renderAppRoutes({
       '(app)/onboarding/notifications': NotificationOnboardingScreen,
       ...Object.fromEntries(APP_STACK_SCREENS.map((name) => [`(app)/${name}`, EmptyScreen])),
     },
-    { initialUrl, wrapper: AppFixture },
+    { url: initialUrl, di, withLocalDate: true, withOverlay: true },
   );
   return { route, queryClient, syncStorage, accountId: me.userId };
 }

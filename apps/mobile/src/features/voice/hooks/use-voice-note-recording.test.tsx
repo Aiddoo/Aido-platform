@@ -4,12 +4,11 @@ import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-st
 import { OverlayProvider, Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
-  createErrorReporterStub,
-  createHapticsGatewayStub,
   createLocalFileSystemFake,
   createLoggerStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
+  createTestDi,
   createVoiceNoteStorageFake,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
@@ -106,8 +105,16 @@ async function renderRecording({
     canSaveRecording: true,
     canContinue: true,
   });
-  const storage = createVoiceNoteStorageFake(files);
   const analytics = createAnalyticsStub();
+  const di = createTestDi({
+    ports: {
+      speechRecognizer,
+      localFileSystem: files,
+      draftStorage: offlineModelDeclines.draftStorage,
+      analytics,
+      logger,
+    },
+  });
   const handlers = {
     onLimitReached: jest.fn(),
     onFinished: jest.fn(),
@@ -118,20 +125,10 @@ async function renderRecording({
     <OverlayProvider>
       <RecordingProbe maxSeconds={maxSeconds} {...handlers} />
     </OverlayProvider>,
-    {
-      di: {
-        speechRecognizer,
-        ...storage.di,
-        draftStorage: offlineModelDeclines.draftStorage,
-        analytics,
-        errorReporter: createErrorReporterStub(),
-        haptics: createHapticsGatewayStub(),
-        logger,
-      },
-    },
+    { di },
   );
 
-  return { speechRecognizer, storage, analytics, ...handlers };
+  return { speechRecognizer, di, analytics, ...handlers };
 }
 
 const start = async (speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>) => {
@@ -171,7 +168,7 @@ describe('useVoiceNoteRecording', () => {
 
   it('확정한 문장을 기기 초안에 저장해 앱이 꺼져도 글자가 남는다', async () => {
     // Given
-    const { speechRecognizer, storage } = await renderRecording();
+    const { speechRecognizer, di } = await renderRecording();
     await start(speechRecognizer);
 
     // When
@@ -180,15 +177,15 @@ describe('useVoiceNoteRecording', () => {
 
     // Then
     const draftId = screen.getByTestId('draft-id').props.children;
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences.map(({ text }) => text)).toEqual([
-      '첫 문장.',
-    ]);
+    expect(
+      di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.sentences.map(({ text }) => text),
+    ).toEqual(['첫 문장.']);
   });
 
   it('일시정지하면 인식기를 멈추고 초안을 바로 저장하며 이어 들으면 다시 시작한다', async () => {
     // Given
     const user = userEvent.setup();
-    const { speechRecognizer, storage } = await renderRecording();
+    const { speechRecognizer, di } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '멈추기 전 말', false);
 
@@ -199,7 +196,7 @@ describe('useVoiceNoteRecording', () => {
     const draftId = screen.getByTestId('draft-id').props.children;
     expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('status')).toHaveTextContent('paused');
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
 
     // When
     await act(async () => speechRecognizer.emit({ type: 'end' }));
@@ -214,7 +211,7 @@ describe('useVoiceNoteRecording', () => {
   it('끝내면 글자와 녹음 조각을 저장한 뒤 초안 id로 넘긴다', async () => {
     // Given
     const user = userEvent.setup();
-    const { speechRecognizer, storage, onFinished } = await renderRecording();
+    const { speechRecognizer, di, onFinished } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장.');
 
@@ -228,7 +225,7 @@ describe('useVoiceNoteRecording', () => {
     // Then
     const draftId = screen.getByTestId('draft-id').props.children;
     await waitFor(() => expect(onFinished).toHaveBeenCalledWith(draftId));
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
   });
 
   it('일시정지 직후 끝내도 녹음 파일이 올 때까지 기다렸다가 조각을 남긴다', async () => {
@@ -236,7 +233,7 @@ describe('useVoiceNoteRecording', () => {
     const user = userEvent.setup();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
-    const { speechRecognizer, storage, onFinished } = await renderRecording({ files });
+    const { speechRecognizer, di, onFinished } = await renderRecording({ files });
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
     await say(speechRecognizer, '첫 문장.');
@@ -254,13 +251,13 @@ describe('useVoiceNoteRecording', () => {
     // Then
     const draftId = screen.getByTestId('draft-id').props.children;
     await waitFor(() => expect(onFinished).toHaveBeenCalledWith(draftId));
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1);
   });
 
   it('끝낼 때 인식기가 final 대신 client로 답해도 듣던 글자까지 초안에 남겨 넘긴다', async () => {
     // Given
     const user = userEvent.setup();
-    const { speechRecognizer, storage, onFinished } = await renderRecording();
+    const { speechRecognizer, di, onFinished } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '첫 문장.');
     await say(speechRecognizer, '두 번째 문장', false);
@@ -274,10 +271,9 @@ describe('useVoiceNoteRecording', () => {
     // Then
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
     const draftId = screen.getByTestId('draft-id').props.children;
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences.map(({ text }) => text)).toEqual([
-      '첫 문장.',
-      '두 번째 문장',
-    ]);
+    expect(
+      di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.sentences.map(({ text }) => text),
+    ).toEqual(['첫 문장.', '두 번째 문장']);
   });
 
   it('일시정지 뒤 인식기가 client로 답해도 실패가 아니고 들은 글자를 그대로 둔다', async () => {
@@ -349,7 +345,7 @@ describe('useVoiceNoteRecording', () => {
   it('들은 글자 없이 끝내면 초안을 남기지 않고 알린다', async () => {
     // Given
     const user = userEvent.setup();
-    const { speechRecognizer, storage, onEmpty } = await renderRecording();
+    const { speechRecognizer, di, onEmpty } = await renderRecording();
     await start(speechRecognizer);
 
     // When
@@ -358,21 +354,23 @@ describe('useVoiceNoteRecording', () => {
 
     // Then
     expect(onEmpty).toHaveBeenCalledTimes(1);
-    expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+    expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
   it('빠른 말하기에서 넘어온 초안은 글자와 시간을 이어 듣고 진입 경로를 남긴다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    const storage = createVoiceNoteStorageFake();
     const analytics = createAnalyticsStub();
+    const di = createTestDi({
+      ports: { speechRecognizer, ...createVoiceNoteStorageFake().ports, analytics, logger },
+    });
     const seed = createSpokenVoiceNote({
       draftId: 'seed-1',
       durationMs: 90_000,
       recordings: [],
       sentences: [createVoiceNoteSentence({ text: '앞에서 한 말.', startMs: 0, endMs: 90_000 })],
     });
-    storage.drafts.save(ACCOUNT_ID, seed);
+    di.voiceNoteDraftRepository.save(ACCOUNT_ID, seed);
     await renderScreen(
       <OverlayProvider>
         <RecordingProbe
@@ -384,16 +382,7 @@ describe('useVoiceNoteRecording', () => {
           onEmpty={jest.fn()}
         />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          ...storage.di,
-          analytics,
-          errorReporter: createErrorReporterStub(),
-          haptics: createHapticsGatewayStub(),
-          logger,
-        },
-      },
+      { di },
     );
 
     // When
@@ -407,7 +396,7 @@ describe('useVoiceNoteRecording', () => {
       expect.objectContaining({ mode: 'note', entry: 'quick_voice_upgrade' }),
     );
     expect(screen.getByTestId('draft-id')).toHaveTextContent('seed-1');
-    const saved = storage.drafts.find(ACCOUNT_ID, 'seed-1');
+    const saved = di.voiceNoteDraftRepository.find(ACCOUNT_ID, 'seed-1');
     expect(saved?.sentences.map(({ text }) => text)).toEqual(['앞에서 한 말.', '이어서 한 말.']);
     expect(saved?.sentences[1]?.startMs).toBeGreaterThanOrEqual(90_000);
   });
@@ -569,14 +558,7 @@ describe('useVoiceNoteRecording', () => {
         />
       </OverlayProvider>,
       {
-        di: {
-          speechRecognizer,
-          ...createVoiceNoteStorageFake().di,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          haptics: createHapticsGatewayStub(),
-          logger,
-        },
+        di: createTestDi({ ports: { speechRecognizer, logger } }),
       },
     );
     await start(speechRecognizer);
@@ -611,7 +593,7 @@ describe('useVoiceNoteRecording', () => {
     const user = userEvent.setup();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
-    const { speechRecognizer, storage } = await renderRecording({ files });
+    const { speechRecognizer, di } = await renderRecording({ files });
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
     await say(speechRecognizer, '첫 문장.');
@@ -622,7 +604,7 @@ describe('useVoiceNoteRecording', () => {
     await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
     // Then
-    expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+    expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
   it('이어 듣기를 눌러도 앞 구간의 end가 올 때까지 인식기를 다시 열지 않는다', async () => {
@@ -668,7 +650,7 @@ describe('useVoiceNoteRecording', () => {
     const files = createLocalFileSystemFake();
     const first = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
     const second = files.addFile(RECORDING_DIRECTORY, 'recording_b.wav');
-    const { speechRecognizer, storage, onFinished } = await renderRecording({ files });
+    const { speechRecognizer, di, onFinished } = await renderRecording({ files });
     await user.press(screen.getByRole('button', { name: 'start' }));
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri: first }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
@@ -689,7 +671,7 @@ describe('useVoiceNoteRecording', () => {
     // Then
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
     const draftId = screen.getByTestId('draft-id').props.children;
-    const recordings = storage.drafts.find(ACCOUNT_ID, draftId)?.recordings ?? [];
+    const recordings = di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.recordings ?? [];
     expect(recordings.map(({ fileName }) => fileName)).toEqual([
       `${draftId}-1.wav`,
       `${draftId}-0.wav`,
@@ -704,7 +686,9 @@ describe('useVoiceNoteRecording', () => {
     const speechRecognizer = createSpeechRecognizerStub();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
-    const storage = createVoiceNoteStorageFake(files);
+    const di = createTestDi({
+      ports: { speechRecognizer, ...createVoiceNoteStorageFake(files).ports, logger },
+    });
     const onFinished = jest.fn();
     const { unmount } = await renderScreen(
       <OverlayProvider>
@@ -715,16 +699,7 @@ describe('useVoiceNoteRecording', () => {
           onEmpty={jest.fn()}
         />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          ...storage.di,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          haptics: createHapticsGatewayStub(),
-          logger,
-        },
-      },
+      { di },
     );
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
@@ -741,7 +716,7 @@ describe('useVoiceNoteRecording', () => {
 
     // Then
     await waitFor(() =>
-      expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1),
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1),
     );
     expect(speechRecognizer.getListenerCount()).toBe(0);
   });
@@ -755,17 +730,9 @@ describe('useVoiceNoteRecording', () => {
       canContinue: true,
     };
 
-    const createDeferredCapabilities = () => {
-      let resolve: (value: typeof NO_MODEL) => void = jest.fn();
-      const promise = new Promise<typeof NO_MODEL>((onResolve) => {
-        resolve = onResolve;
-      });
-      return { promise, resolve: (value: typeof NO_MODEL) => resolve(value) };
-    };
-
     const renderStartingProbe = async () => {
       const speechRecognizer = createSpeechRecognizerStub();
-      const capabilities = createDeferredCapabilities();
+      const capabilities = Promise.withResolvers<typeof NO_MODEL>();
       speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
       const probe = (
         <RecordingProbe
@@ -776,14 +743,7 @@ describe('useVoiceNoteRecording', () => {
         />
       );
       const { rerender } = await renderScreen(<OverlayProvider>{probe}</OverlayProvider>, {
-        di: {
-          speechRecognizer,
-          ...createVoiceNoteStorageFake().di,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          haptics: createHapticsGatewayStub(),
-          logger,
-        },
+        di: createTestDi({ ports: { speechRecognizer, logger } }),
       });
       await userEvent.press(screen.getByRole('button', { name: 'start' }));
       return {
@@ -836,7 +796,9 @@ describe('useVoiceNoteRecording', () => {
     // Given
     const user = userEvent.setup();
     const speechRecognizer = createSpeechRecognizerStub();
-    const storage = createVoiceNoteStorageFake();
+    const di = createTestDi({
+      ports: { speechRecognizer, ...createVoiceNoteStorageFake().ports, logger },
+    });
     const onFinished = jest.fn();
     const { unmount } = await renderScreen(
       <OverlayProvider>
@@ -847,16 +809,7 @@ describe('useVoiceNoteRecording', () => {
           onEmpty={jest.fn()}
         />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          ...storage.di,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          haptics: createHapticsGatewayStub(),
-          logger,
-        },
-      },
+      { di },
     );
     await start(speechRecognizer);
     await act(async () =>
@@ -873,7 +826,7 @@ describe('useVoiceNoteRecording', () => {
 
     // Then
     expect(onFinished).not.toHaveBeenCalled();
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
   });
 
   it('화면이 내려간 뒤 새 녹음의 파일이 와도 옛 초안으로 가져오지 않고 자기 파일만 받는다', async () => {
@@ -884,7 +837,9 @@ describe('useVoiceNoteRecording', () => {
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
     const newRecordingUri = files.addFile(RECORDING_DIRECTORY, 'recording_new.wav');
-    const storage = createVoiceNoteStorageFake(files);
+    const di = createTestDi({
+      ports: { speechRecognizer, ...createVoiceNoteStorageFake(files).ports, logger },
+    });
     const onFinished = jest.fn();
     const { unmount } = await renderScreen(
       <OverlayProvider>
@@ -895,16 +850,7 @@ describe('useVoiceNoteRecording', () => {
           onEmpty={jest.fn()}
         />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          ...storage.di,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          haptics: createHapticsGatewayStub(),
-          logger,
-        },
-      },
+      { di },
     );
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
@@ -921,7 +867,7 @@ describe('useVoiceNoteRecording', () => {
 
     // Then
     expect(files.hasFile(RECORDING_DIRECTORY, 'recording_new.wav')).toBe(true);
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toEqual([]);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.recordings).toEqual([]);
     expect(speechRecognizer.getListenerCount()).toBe(1);
 
     // When
@@ -929,7 +875,7 @@ describe('useVoiceNoteRecording', () => {
 
     // Then
     await waitFor(() =>
-      expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1),
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1),
     );
     expect(speechRecognizer.getListenerCount()).toBe(0);
   });
@@ -939,7 +885,9 @@ describe('useVoiceNoteRecording', () => {
       const speechRecognizer = createSpeechRecognizerStub();
       const files = createLocalFileSystemFake();
       const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
-      const storage = createVoiceNoteStorageFake(files);
+      const di = createTestDi({
+        ports: { speechRecognizer, ...createVoiceNoteStorageFake(files).ports, logger },
+      });
       const { unmount } = await renderScreen(
         <OverlayProvider>
           <RecordingProbe
@@ -949,22 +897,13 @@ describe('useVoiceNoteRecording', () => {
             onEmpty={jest.fn()}
           />
         </OverlayProvider>,
-        {
-          di: {
-            speechRecognizer,
-            ...storage.di,
-            analytics: createAnalyticsStub(),
-            errorReporter: createErrorReporterStub(),
-            haptics: createHapticsGatewayStub(),
-            logger,
-          },
-        },
+        { di },
       );
       await start(speechRecognizer);
       await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
       await say(speechRecognizer, '첫 문장.');
       const draftId = screen.getByTestId('draft-id').props.children;
-      return { speechRecognizer, files, uri, storage, unmount, draftId };
+      return { speechRecognizer, files, uri, di, unmount, draftId };
     };
 
     it('지운 초안의 파일은 받는 즉시 지운다', async () => {
@@ -983,7 +922,7 @@ describe('useVoiceNoteRecording', () => {
     it('지우고 화면까지 내려간 뒤에 온 파일도 지우고 구독을 푼다', async () => {
       // Given
       const user = userEvent.setup();
-      const { speechRecognizer, files, uri, storage, unmount } = await renderListening();
+      const { speechRecognizer, files, uri, di, unmount } = await renderListening();
       await user.press(screen.getByRole('button', { name: 'discard' }));
       await act(async () => unmount());
 
@@ -992,14 +931,14 @@ describe('useVoiceNoteRecording', () => {
 
       // Then
       expect(files.hasFile(RECORDING_DIRECTORY, 'recording_a.wav')).toBe(false);
-      expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+      expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toEqual([]);
       expect(speechRecognizer.getListenerCount()).toBe(0);
     });
 
     it('끝내지 않고 떠났어도 초안이 남아 있으면 파일을 그 초안에 더한다', async () => {
       // Given
       // 스와이프로 나가 듣던 세션이 끊겼다
-      const { speechRecognizer, uri, storage, unmount, draftId } = await renderListening();
+      const { speechRecognizer, uri, di, unmount, draftId } = await renderListening();
       await act(async () => unmount());
 
       // When
@@ -1007,7 +946,7 @@ describe('useVoiceNoteRecording', () => {
       await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
       // Then
-      expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1);
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1);
       expect(speechRecognizer.getListenerCount()).toBe(0);
     });
 
@@ -1026,7 +965,7 @@ describe('useVoiceNoteRecording', () => {
 
   it('인식기가 실패하면 듣던 글자까지 초안에 바로 저장한다', async () => {
     // Given
-    const { speechRecognizer, storage } = await renderRecording();
+    const { speechRecognizer, di } = await renderRecording();
     await start(speechRecognizer);
     await say(speechRecognizer, '실패 전에 한 말', false);
 
@@ -1036,15 +975,17 @@ describe('useVoiceNoteRecording', () => {
     // Then
     const draftId = screen.getByTestId('draft-id').props.children;
     expect(screen.getByTestId('status')).toHaveTextContent('failed');
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences.map(({ text }) => text)).toEqual([
-      '실패 전에 한 말',
-    ]);
+    expect(
+      di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.sentences.map(({ text }) => text),
+    ).toEqual(['실패 전에 한 말']);
   });
 
   it('화면이 내려간 뒤에도 기다리던 초안 쓰기가 끝나 글자가 남는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    const storage = createVoiceNoteStorageFake();
+    const di = createTestDi({
+      ports: { speechRecognizer, ...createVoiceNoteStorageFake().ports, logger },
+    });
     const { unmount } = await renderScreen(
       <OverlayProvider>
         <RecordingProbe
@@ -1054,36 +995,29 @@ describe('useVoiceNoteRecording', () => {
           onEmpty={jest.fn()}
         />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          ...storage.di,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          haptics: createHapticsGatewayStub(),
-          logger,
-        },
-      },
+      { di },
     );
     await start(speechRecognizer);
     await say(speechRecognizer, '앱을 떠나기 전 말.');
     const draftId = screen.getByTestId('draft-id').props.children;
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)).toBeNull();
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)).toBeNull();
 
     // When
     await act(async () => unmount());
     await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
     // Then
-    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
   });
 
   it('앱을 다시 열어 저장된 초안으로 들어오면 글자를 보여 주고 시간 뒤로 이어 쓴다', async () => {
     // Given
     // 앞 세션이 저장한 초안이 기기에 있다
     const speechRecognizer = createSpeechRecognizerStub();
-    const storage = createVoiceNoteStorageFake();
-    storage.drafts.save(
+    const di = createTestDi({
+      ports: { speechRecognizer, ...createVoiceNoteStorageFake().ports, logger },
+    });
+    di.voiceNoteDraftRepository.save(
       ACCOUNT_ID,
       createSpokenVoiceNote({
         draftId: 'restored-1',
@@ -1104,16 +1038,7 @@ describe('useVoiceNoteRecording', () => {
           onEmpty={jest.fn()}
         />
       </OverlayProvider>,
-      {
-        di: {
-          speechRecognizer,
-          ...storage.di,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          haptics: createHapticsGatewayStub(),
-          logger,
-        },
-      },
+      { di },
     );
 
     // Then
@@ -1125,7 +1050,7 @@ describe('useVoiceNoteRecording', () => {
     await act(async () => jest.advanceTimersByTimeAsync(2_000));
 
     // Then
-    const saved = storage.drafts.find(ACCOUNT_ID, 'restored-1');
+    const saved = di.voiceNoteDraftRepository.find(ACCOUNT_ID, 'restored-1');
     expect(saved?.sentences.map(({ text }) => text)).toEqual(['복원된 말.', '이어 한 말.']);
     expect(saved?.sentences[1]?.startMs).toBeGreaterThanOrEqual(40_000);
   });
@@ -1135,7 +1060,7 @@ describe('useVoiceNoteRecording', () => {
     const user = userEvent.setup();
     const files = createLocalFileSystemFake();
     const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
-    const { speechRecognizer, storage, onFinished } = await renderRecording({ files });
+    const { speechRecognizer, di, onFinished } = await renderRecording({ files });
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
     await say(speechRecognizer, '첫 문장.');
@@ -1149,7 +1074,7 @@ describe('useVoiceNoteRecording', () => {
     // Then
     await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
     const draftId = screen.getByTestId('draft-id').props.children;
-    const saved = storage.drafts.find(ACCOUNT_ID, draftId);
+    const saved = di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId);
     expect(saved?.sentences).toHaveLength(1);
     expect(saved?.recordings).toEqual([]);
   });

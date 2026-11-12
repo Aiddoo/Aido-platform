@@ -8,7 +8,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { NetworkError } from '@src/shared/errors';
 import { Button, Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
-import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
@@ -82,10 +82,7 @@ async function renderGate(
     <OverlayProvider>
       <ConsentGateProbe />
     </OverlayProvider>,
-    {
-      di: { httpClient },
-      queryClient,
-    },
+    { di: createTestDi({ ports: { httpClient, queryClient } }) },
   );
 
   return { httpClient };

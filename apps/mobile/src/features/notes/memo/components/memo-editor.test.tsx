@@ -16,8 +16,9 @@ import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createHttpClientStub,
   createSpeechRecognizerStub,
-  createVoiceNoteStorageFake,
+  createTestDi,
   createTestQueryClient,
+  createVoiceNoteStorageFake,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
@@ -116,14 +117,16 @@ async function renderEditor(
       />
     </Suspense>,
     {
-      queryClient,
       withLocalDate: true,
       withOverlay: true,
-      di: {
-        httpClient,
-        speechRecognizer: createSpeechRecognizerStub(),
-        ...createVoiceNoteStorageFake().di,
-      },
+      di: createTestDi({
+        ports: {
+          httpClient,
+          queryClient,
+          speechRecognizer: createSpeechRecognizerStub(),
+          ...createVoiceNoteStorageFake().ports,
+        },
+      }),
     },
   );
 

@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import { INQUIRY_CATEGORY } from '@aido/api';
 import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { createHapticsGatewayStub, createHttpClientStub } from '@src/testing/core';
+import { createHapticsGatewayStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -14,9 +14,9 @@ const CONTENT = '앱에서 할 일 추가 시 오류가 발생합니다.';
 
 async function renderInquiry(httpClient: ReturnType<typeof createHttpClientStub>) {
   await renderScreen(<InquiryRoute />, {
+    di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
     withLocalDate: true,
     withOverlay: true,
-    di: { httpClient, haptics: createHapticsGatewayStub() },
   });
 }
 

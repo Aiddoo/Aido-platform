@@ -8,6 +8,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -52,12 +53,7 @@ async function renderTodoList(todo: Todo) {
         </Suspense>
       </ScrollViewContainer>
     </LocalDateProvider>,
-    {
-      queryClient,
-      di: {
-        httpClient,
-      },
-    },
+    { di: createTestDi({ ports: { httpClient, queryClient } }) },
   );
 
   return { httpClient, queryClient };

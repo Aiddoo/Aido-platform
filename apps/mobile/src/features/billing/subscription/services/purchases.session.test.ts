@@ -133,17 +133,15 @@ describe('PurchasesSession 로그인·로그아웃 순서', () => {
     manager.configure();
     await flushPromises();
     const order: string[] = [];
-    let finishLogIn: () => void = () => undefined;
-    purchases.logIn.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          order.push('logIn:start');
-          finishLogIn = () => {
-            order.push('logIn:end');
-            resolve();
-          };
-        }),
-    );
+    const logIn = Promise.withResolvers<void>();
+    const finishLogIn = () => {
+      order.push('logIn:end');
+      logIn.resolve();
+    };
+    purchases.logIn.mockImplementation(() => {
+      order.push('logIn:start');
+      return logIn.promise;
+    });
     purchases.logOut.mockImplementation(async () => {
       order.push('logOut');
     });

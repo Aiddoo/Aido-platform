@@ -1,5 +1,5 @@
 import { Text } from '@src/shared/ui';
-import { createLoggerStub } from '@src/testing/core';
+import { createLoggerStub, createTestDi } from '@src/testing/core';
 import { getLastAudioPlaylist } from '@src/testing/mocks/expo-audio';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
@@ -51,7 +51,7 @@ function PlayerProbe() {
 }
 
 const renderPlayer = async () => {
-  await renderScreen(<PlayerProbe />, { di: { logger } });
+  await renderScreen(<PlayerProbe />, { di: createTestDi({ ports: { logger } }) });
   return getLastAudioPlaylist();
 };
 

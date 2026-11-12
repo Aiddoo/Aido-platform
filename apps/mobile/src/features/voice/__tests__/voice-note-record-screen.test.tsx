@@ -8,15 +8,13 @@ import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/querie
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import {
-  createAnalyticsStub,
-  createErrorReporterStub,
-  createHapticsGatewayStub,
   createHttpClientStub,
   createLoggerStub,
   createMemoryStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -36,7 +34,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
-  const storage = createVoiceNoteStorageFake();
+  const voice = createVoiceNoteStorageFake();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -44,31 +42,29 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
   queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), { categories: [] });
 
+  const di = createTestDi({
+    ports: {
+      queryClient,
+      httpClient,
+      syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
+      storage: createMemoryStorage(),
+      speechRecognizer,
+      ...voice.ports,
+      logger,
+    },
+  });
   await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <VoiceNoteRecordRoute />
       </OverlayProvider>
     </LocalDateProvider>,
-    {
-      queryClient,
-      di: {
-        httpClient,
-        syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
-        storage: createMemoryStorage(),
-        speechRecognizer,
-        ...storage.di,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-        haptics: createHapticsGatewayStub(),
-        logger,
-      },
-    },
+    { di },
   );
   await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());
   await act(async () => speechRecognizer.emit({ type: 'start' }));
 
-  return { speechRecognizer, storage };
+  return { speechRecognizer, di };
 }
 
 const say = (speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>, transcript: string) =>
@@ -135,7 +131,7 @@ describe('녹음 화면', () => {
 
   it('들은 내용 없이 멈춘 화면에서 닫으면 초안 없이 나간다', async () => {
     // Given
-    const { storage } = await renderRecordScreen();
+    const { di } = await renderRecordScreen();
     await fireEvent.press(screen.getByTestId('voice-note-pause'));
 
     // When
@@ -143,7 +139,7 @@ describe('녹음 화면', () => {
 
     // Then
     expect(router.back).toHaveBeenCalledTimes(1);
-    expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+    expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
   it('글자를 못 받고 인식이 실패하면 남아 있다고 말하지 않고 닫을 수 있다', async () => {
@@ -177,7 +173,7 @@ describe('녹음 화면', () => {
 
   it('들은 내용 없이 끝내기를 확인하면 남기지 않고 나간다', async () => {
     // Given
-    const { speechRecognizer, storage } = await renderRecordScreen();
+    const { speechRecognizer, di } = await renderRecordScreen();
     await act(async () => {
       fireEvent.press(screen.getByTestId('voice-note-finish')).catch(jest.fn());
     });
@@ -190,7 +186,7 @@ describe('녹음 화면', () => {
     // Then
     await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
     expect(router.replace).not.toHaveBeenCalled();
-    expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+    expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
   describe('한도를 다 쓴 녹음', () => {
@@ -213,7 +209,7 @@ describe('녹음 화면', () => {
 
   it('끝내면 초안을 저장하고 정리 화면으로 바꾼다', async () => {
     // Given
-    const { speechRecognizer, storage } = await renderRecordScreen();
+    const { speechRecognizer, di } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
 
     // When
@@ -225,7 +221,7 @@ describe('녹음 화면', () => {
 
     // Then
     await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
-    expect(storage.drafts.findAll(ACCOUNT_ID)).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toHaveLength(1);
     expect(router.back).not.toHaveBeenCalled();
   });
 
@@ -235,14 +231,14 @@ describe('녹음 화면', () => {
 
   it('글자가 없을 때 닫으면 초안 없이 바로 나간다', async () => {
     // Given
-    const { storage } = await renderRecordScreen();
+    const { di } = await renderRecordScreen();
 
     // When
     await fireEvent.press(screen.getByLabelText('닫기'));
 
     // Then
     expect(router.back).toHaveBeenCalledTimes(1);
-    expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+    expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toEqual([]);
   });
 
   it('글자가 있을 때 닫으면 바로 나가지 않고 묻는다', async () => {
@@ -262,7 +258,7 @@ describe('녹음 화면', () => {
 
   it('이어서 녹음을 누른 직후 닫아도 글자가 있으면 지우지 않고 묻는다', async () => {
     // Given
-    const { speechRecognizer, storage } = await renderRecordScreen();
+    const { speechRecognizer, di } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
     await fireEvent.press(screen.getByTestId('voice-note-pause'));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
@@ -276,7 +272,7 @@ describe('녹음 화면', () => {
     // Then
     expect(await screen.findByText('녹음을 끝낼까요?')).toBeTruthy();
     expect(router.back).not.toHaveBeenCalled();
-    expect(storage.drafts.findAll(ACCOUNT_ID)).toHaveLength(1);
+    expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toHaveLength(1);
   });
 
   it('듣기 시작 전에 끝내기를 확인해도 글자를 들고 정리 화면으로 넘어간다', async () => {

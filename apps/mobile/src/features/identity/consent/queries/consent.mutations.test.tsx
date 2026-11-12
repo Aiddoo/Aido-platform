@@ -5,6 +5,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
@@ -37,7 +38,10 @@ async function renderMarketing(httpClient = createHttpClientStub()) {
     marketingPush = useMarketingPush();
     return null;
   }
-  await renderScreen(<Capture />, { queryClient, di: { httpClient }, withLocalDate: true });
+  await renderScreen(<Capture />, {
+    di: createTestDi({ ports: { httpClient, queryClient } }),
+    withLocalDate: true,
+  });
 
   return {
     cached: () => queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail()),

@@ -3,7 +3,7 @@ import '@src/shared/i18n/init';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { TimeoutError } from '@src/shared/errors/infra-error';
-import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -32,7 +32,7 @@ async function renderForm() {
     <Suspense fallback={null}>
       <MemoCreateForm />
     </Suspense>,
-    { queryClient, withLocalDate: true, di: { httpClient } },
+    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
   );
 
   return { httpClient };

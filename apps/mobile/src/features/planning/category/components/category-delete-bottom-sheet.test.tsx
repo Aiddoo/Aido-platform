@@ -6,6 +6,7 @@ import {
   createHapticsGatewayStub,
   createHttpClientStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
@@ -81,9 +82,15 @@ async function renderDeleteSheet({
       <CategoryDeleteBottomSheet />
     </Suspense>,
     {
-      queryClient,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics: createAnalyticsStub(),
+          haptics: createHapticsGatewayStub(),
+          queryClient,
+        },
+      }),
       withOverlay: true,
-      di: { httpClient, analytics: createAnalyticsStub(), haptics: createHapticsGatewayStub() },
     },
   );
 

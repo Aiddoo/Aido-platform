@@ -2,7 +2,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { err, ok } from '@src/core/errors/result';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, getMonthStartDateKey, type DateKey } from '@src/shared/date/date-key';
-import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
@@ -140,8 +140,7 @@ describe('useCalendarCompletions', () => {
 
     // When
     await renderScreenHook(() => useCalendarCompletions({ dateKey: createDateKey('2026-03-10') }), {
-      di: { httpClient },
-      queryClient: createAppLikeQueryClient(),
+      di: createTestDi({ ports: { httpClient, queryClient: createAppLikeQueryClient() } }),
     });
     const firstRequest = httpClient.get.mock.calls.at(0);
     await waitFor(() => expect(httpClient.get).toHaveBeenCalledTimes(3));
@@ -164,14 +163,14 @@ describe('useCalendarCompletions', () => {
         frames.push({ dateKey: selection.dateKey, dots: Object.keys(calendar.completions) });
         return calendar;
       },
-      { di: { httpClient }, queryClient: createAppLikeQueryClient() },
+      { di: createTestDi({ ports: { httpClient, queryClient: createAppLikeQueryClient() } }) },
     );
     await waitFor(() => expect(frames.at(-1)?.dots).toContain(APRIL_DOT));
     const requestsBeforeMove = httpClient.get.mock.calls.length;
 
     // When
     selection.dateKey = createDateKey('2026-04-10');
-    await act(() => rerender({}));
+    await act(() => rerender(undefined));
     await waitFor(() => expect(frames.at(-1)?.dots).toContain(MAY_DOT));
 
     // Then
@@ -197,7 +196,7 @@ describe('useFriendCalendarCompletions', () => {
           friendUserId: 'friend-1',
           dateKey: createDateKey('2026-03-10'),
         }),
-      { di: { httpClient }, queryClient: createAppLikeQueryClient() },
+      { di: createTestDi({ ports: { httpClient, queryClient: createAppLikeQueryClient() } }) },
     );
     await waitFor(() => expect(result.current.isError).toBe(true));
 

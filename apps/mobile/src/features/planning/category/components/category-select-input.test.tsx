@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createTestQueryClient } from '@src/testing/core';
+import { createTestQueryClient, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { screen, userEvent } from '@testing-library/react-native';
 import { Suspense } from 'react';
@@ -22,7 +22,7 @@ async function renderSelect(onSubmit: (categoryId: number) => void) {
     <Suspense fallback={null}>
       <CategorySelectInput defaultValue={1} onSubmit={onSubmit} submitLabel="확인" />
     </Suspense>,
-    { queryClient },
+    { di: createTestDi({ ports: { queryClient } }) },
   );
 }
 

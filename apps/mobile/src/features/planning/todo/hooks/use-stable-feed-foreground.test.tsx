@@ -5,6 +5,7 @@ import {
   createAppLifecycleGatewayStub,
   createIncomingLinkGatewayStub,
   createTestDi,
+  type TestDi,
 } from '@src/testing/core';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
@@ -16,6 +17,7 @@ let mockHasActiveOverlay = false;
 let mockIsKeyboardVisible = false;
 let incomingLink: ReturnType<typeof createIncomingLinkGatewayStub>;
 let appLifecycle: AppLifecycleGatewayStub;
+let di: TestDi;
 let deepLinkListener: ((url: string) => void) | undefined;
 let idleCallbacks: Array<() => void> = [];
 
@@ -33,7 +35,7 @@ const createKeyboardState = (isVisible: boolean): IKeyboardState => ({
 
 function OverlayStateWrapper({ children }: PropsWithChildren) {
   return (
-    <StaticDIProvider container={createTestDi({ incomingLink, appLifecycle })}>
+    <StaticDIProvider container={di}>
       <OverlayStateContext.Provider value={{ hasActiveOverlay: mockHasActiveOverlay }}>
         {children}
       </OverlayStateContext.Provider>
@@ -61,6 +63,7 @@ describe('useStableFeedForeground', () => {
       deepLinkListener = listener;
       return () => {};
     });
+    di = createTestDi({ ports: { incomingLink, appLifecycle } });
     jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     Object.defineProperty(globalThis, 'requestIdleCallback', {
       configurable: true,

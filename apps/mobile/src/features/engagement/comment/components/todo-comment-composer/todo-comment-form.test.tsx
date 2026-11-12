@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createHttpClientStub } from '@src/testing/core';
+import { createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -51,9 +51,9 @@ async function renderEditingForm() {
   httpClient.get.mockImplementation(async () => ok(createCurrentUserDto()));
   jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
   await renderScreen(<EditingForm />, {
+    di: createTestDi({ ports: { httpClient } }),
     withLocalDate: true,
     withOverlay: true,
-    di: { httpClient },
   });
   await screen.findByTestId('todo-comment-composer-target');
 

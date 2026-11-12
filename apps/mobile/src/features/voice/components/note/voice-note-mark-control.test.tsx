@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createAnalyticsStub, createHttpClientStub } from '@src/testing/core';
+import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
@@ -40,7 +40,7 @@ async function renderMarkControl({
     <Suspense>
       <VoiceNoteMarkControl markCount={markCount} isListening={isListening} onPress={onPress} />
     </Suspense>,
-    { di: { httpClient, syncStorage, analytics } },
+    { di: createTestDi({ ports: { httpClient, syncStorage, analytics } }) },
   );
   await screen.findByTestId('voice-note-mark');
 
