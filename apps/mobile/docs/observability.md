@@ -83,7 +83,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 });
 ```
 
-**Sentry는 두 곳에서만 보낸다.** mutation은 `meta.errorFeedback`을 읽는 앱 `MutationCache`의 캐시 단계 `onError`, 그 밖은 훅(`useReportUnexpectedError` 등)이다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다.
+**Sentry 보고 자리는 정해져 있다.** mutation은 `meta.errorFeedback`을 읽는 앱 `MutationCache`의 캐시 단계 `onError`, 경계가 받는 조회는 `QueryErrorBoundary`, 경계 밖 조회(인라인 `useQuery`·데이터가 있는 재조회)는 앱 `QueryCache`의 `onError`(`feature: query_cache`), 그 밖은 훅(`useReportUnexpectedError` 등)이다. `useSuspenseQuery`가 데이터 없이 실패하면 경계로 가므로 `QueryCache`는 건너뛰고, 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다.
 
 ### Breadcrumb: `addBreadcrumb`
 

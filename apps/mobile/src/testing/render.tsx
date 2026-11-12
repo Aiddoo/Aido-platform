@@ -2,6 +2,7 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { MutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
+import { QueryErrorReport } from '@src/bootstrap/query/query-error-report';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
@@ -40,6 +41,7 @@ export function createTestProviders({
                 config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
               >
                 <MutationErrorFeedback />
+                <QueryErrorReport />
                 {dated}
               </HeroUIProvider>
             </FontScaleProvider>

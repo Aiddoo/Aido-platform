@@ -10,6 +10,7 @@ import { OnlineManagerProvider } from '@src/bootstrap/providers/online-manager-p
 import { PurchasesProvider } from '@src/bootstrap/providers/purchases-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
 import { MutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
+import { QueryErrorReport } from '@src/bootstrap/query/query-error-report';
 import { toError } from '@src/shared/errors';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
@@ -106,6 +107,7 @@ export function AppProviders({ children, root }: AppProvidersProps) {
                 >
                   <DIProvider ports={ports}>
                     <MutationErrorFeedback />
+                    <QueryErrorReport />
                     <OnlineManagerProvider>
                       <LocalDateProvider>
                         <AuthBootProvider>

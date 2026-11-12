@@ -125,7 +125,7 @@ mutationOptions({
 - **왜 `MutationCache.subscribe`가 아닌가.** TanStack은 `await options.onSettled`가 끝난 뒤에야 `error` 상태를 알린다. `onSettled`가 재조회 Promise를 돌려주는 mutation(카테고리 순서, 모두 읽음, 댓글 삭제)은 토스트가 재조회를 기다리고, 오프라인이면 재조회가 멈춰 끝내 뜨지 않는다. 캐시 단계 `onError`는 기능 `onError`·`onSettled`보다 먼저 돈다. 그래서 칸 오류처럼 기능이 보일 오류는 미리 `isHandledByFeature`로 알려야 한다.
 - **문구와 보고.** `getUserFacingMessage`는 사용자 문구가 있는 오류(`ApiError`, 카탈로그의 `BusinessError`, 번역된 통신 오류)만 그대로 보이고 `ParseError`·SDK 오류(문자열 `code`가 있어도)의 개발용 message는 `fallbackKey`로 바꾼다. 보고 기준은 `classifyError`다. 예상한 오류(4xx·`BusinessError`)와 연결 문제는 보고하지 않고, 문자열 `code`가 있어도 감싸지 않은 SDK 오류는 보고한다. 보고에는 `getErrorReportTags`가 `ServerError`의 상태·서버 코드·method·endpoint를 태그로 붙인다([관측](./observability.md#mutation-오류-피드백)).
 - **기능 `onError`.** 낙관적 갱신을 되돌리고, 이미 지워진 대상(`TODO_0833` 등)은 캐시에서 빼 서버 상태에 맞추고, `isHandledByFeature`로 뺀 오류만 보인다. 판별 함수는 `domains/{feature}.error.ts`의 것을 그대로 넘긴다(`isLimitedFeatureError`, `isTodoSeriesFailure`, `isLoginCancelledError`). 서버가 확정한 실패의 분석 이벤트만 함께 둔다([관측](./observability.md#어디서-추적하나)). 다시 던지지 않는다.
-- **호출부.** `mutateAsync`의 실패는 이미 알렸으므로 `.catch(noop)`이나 흐름만 잇는 `catch`로 받는다. `useReportUnexpectedError`는 mutation 밖의 실패(조회 결과·기기 작업)에만 쓴다.
+- **호출부.** `mutateAsync`의 실패는 이미 알렸으므로 `.catch(noop)`이나 흐름만 잇는 `catch`로 받는다. `useReportUnexpectedError`는 mutation·조회 밖의 실패(기기 작업, 조회 결과로 하는 일)에만 쓴다. 조회 실패는 경계나 전역 조회 캐시가 이미 보고한다.
 - **로그아웃.** 세션이 끝날 때 `abandonPendingMutations`가 진행 중인 mutation의 콜백을 비우면서 `errorFeedback`도 `false`로 바꾼다. 끝난 세션의 실패가 다음 화면에 토스트로 뜨지 않는다.
 - 저장 실패는 입력값과 화면을 그대로 둔다. 오프라인 저장도 같은 길이며 `networkMode: 'always'`로 바로 실패해 토스트가 한 번만 나온다.
 - `aido/mutation-error-feedback`이 `queries/*.mutations.ts`에서 막는다([가드레일](./architecture/guardrails.md)): `errorFeedback` 누락·`undefined`(mutation 옵션 훅이 아닌 객체를 펼쳐도 누락이다), 전역 피드백인데 `isHandledByFeature` 없이 `onError`가 조건 없이 햅틱·`toast.error`를 내거나 `getUserFacingMessage`를 쓰는 것, `isHandledByFeature`가 있어도 조건 없이 띄우는 기본 문구 토스트, `useReportUnexpectedError` import. 같은 파일의 const meta는 따라가 보고, import한 meta는 선언한 것으로 본다.
@@ -293,7 +293,7 @@ logger.error(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, toError(error)); 
 
 ## 관측
 
-예상하지 못한 오류(경계 도달, 5xx·파싱)만 보고한다. mutation은 `meta.errorFeedback`을 읽는 전역 캐시 `onError`, 그 밖은 `useReportUnexpectedError` 같은 훅이 보내고 서비스는 삼킨 실패를 `logger.warn`으로만 남긴다. 예측 가능한 4xx는 이벤트가 아니다. 무엇을 어느 레벨로 남기는지는 [observability.md](./observability.md#오류-분류와-한-번만-보고)에 있다.
+예상하지 못한 오류(5xx·파싱·코드 버그)만 보고한다. mutation은 `meta.errorFeedback`을 읽는 전역 `MutationCache` `onError`, 경계가 받는 조회는 경계, 경계 밖 조회(인라인 `useQuery`의 `isError`, 데이터가 있는 재조회)는 전역 `QueryCache` `onError`(`bootstrap/query/query-error-report.tsx`, `feature: query_cache`), 그 밖은 `useReportUnexpectedError` 같은 훅이 보내고 서비스는 삼킨 실패를 `logger.warn`으로만 남긴다. 예측 가능한 4xx는 이벤트가 아니다. 무엇을 어느 레벨로 남기는지는 [observability.md](./observability.md#오류-분류와-한-번만-보고)에 있다.
 
 ## 참고 파일
 
