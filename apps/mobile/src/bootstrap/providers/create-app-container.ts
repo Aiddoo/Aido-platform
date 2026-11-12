@@ -249,17 +249,46 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
 
   const weatherApi = new WeatherApi(authHttpClient, logger);
 
+  // 순서는 `DIContainer`·di-context 훅과 같다: shared, 포트, 기능 층 표(1 → 4)
   return {
     logger,
     analytics,
     errorReporter,
     haptics: ports.haptics,
+    featureAttribution: createFeatureAttributionStore(syncStorage),
+    draftService,
+    externalLink: ports.externalLink,
+    incomingLink: ports.incomingLink,
+    systemShare: ports.systemShare,
+    clipboard: ports.clipboard,
+    appLifecycle: ports.appLifecycle,
+    minuteClock: createAppMinuteClock(ports.appLifecycle),
+    syncStorage,
+    accountSyncStorage: draftStorage,
+
+    deviceLocation: ports.deviceLocation,
+    applicationMetadata: ports.applicationMetadata,
+    socialAuth: ports.socialAuth,
+    appStoreListing: ports.appStoreListing,
+    networkStatus: ports.networkStatus,
+    viewCapture: ports.viewCapture,
+    screenOrientation: ports.screenOrientation,
     idGenerator: ports.idGenerator,
     speechRecognizer: ports.speechRecognizer,
     pushNotification,
     tokenStore,
-    authSessionStore: createAuthSessionStore(),
     sessionEpoch,
+    queryCacheStorage,
+
+    authApi,
+    authSessionStore: createAuthSessionStore(),
+    signInService: new SignInService({
+      authApi,
+      tokenStore,
+      socialAuth: ports.socialAuth,
+      deviceType: ports.platform === 'ios' ? 'IOS' : 'ANDROID',
+      logger,
+    }),
     sessionCleanupService: new SessionCleanupService({
       queryCache: createSessionQueryCache(ports.queryClient),
       persistedQueryCache: queryCacheStorage,
@@ -292,27 +321,89 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       logger,
     }),
     sessionRevocationService,
-    featureAttribution: createFeatureAttributionStore(syncStorage),
-    draftService,
-    queryCacheStorage,
-    achievementApi: new AchievementApi(authHttpClient),
-    reportApi: new ReportApi(authHttpClient, logger),
-    suggestionApi: new SuggestionApi(authHttpClient, logger),
-    consentApi: new ConsentApi(authHttpClient),
-    authApi,
-    signInService: new SignInService({
+    logOutDeviceService: new LogOutDeviceService({
       authApi,
+      pushRegistrationService,
       tokenStore,
-      socialAuth: ports.socialAuth,
-      deviceType: ports.platform === 'ios' ? 'IOS' : 'ANDROID',
+      sessionRevocationService,
+      sessionEpoch,
       logger,
     }),
+
+    consentApi: new ConsentApi(authHttpClient),
+
     preferenceApi: new PreferenceApi(authHttpClient),
-    activationService: new ActivationService(syncStorage),
-    activationProgressRepository,
+
+    userApi: new UserApi(authHttpClient),
+
+    entitlementApi: new EntitlementApi(authHttpClient, logger),
+    purchasesSession,
+    subscriptionService: new SubscriptionService(purchasesSession, ports.purchases, logger),
+
+    inquiryApi: new InquiryApi(authHttpClient),
+
     appVersionApi: new AppVersionApi(ports.jsonFetcher),
+
     appIconService: new AppIconService(ports.appIcon),
+
+    todoApi: new TodoApi(authHttpClient),
+    subTodoApi: new SubTodoApi(authHttpClient),
+
+    todoCategoryApi: new TodoCategoryApi(authHttpClient),
+
+    coachmarkRepository,
+
+    storeReviewService: new StoreReviewService(
+      createStoreReviewRepository(syncStorage),
+      ports.appStoreReview,
+      getNowInstant,
+    ),
+
+    voiceApi: new VoiceApi(authHttpClient, logger),
+    voiceNoteStorageService,
+    voiceNoteDraftRepository,
+    voiceRecordingRepository,
+
+    todoCommentApi: new TodoCommentApi(authHttpClient),
+
     friendApi: new FriendApi(authHttpClient),
+
+    todoNudgeApi: new TodoNudgeApi(authHttpClient),
+
+    moderationApi: new ModerationApi(authHttpClient),
+
+    suggestionApi: new SuggestionApi(authHttpClient, logger),
+
+    achievementApi: new AchievementApi(authHttpClient),
+
+    reportApi: new ReportApi(authHttpClient, logger),
+
+    // 기능 소개 캠페인 설정은 API envelope 없이 원문 JSON이다
+    whatsNewCampaignApi: new WhatsNewCampaignApi(ports.jsonFetcher),
+    whatsNewRepository,
+
+    widgetSyncService: new WidgetSyncService(ports.widgetBridge, ports.widgetStorage),
+    widgetNavigationRepository: createWidgetNavigationRepository(ports.widgetStorage),
+
+    memoApi: new MemoApi(authHttpClient, logger),
+
+    weatherApi,
+    weatherLocationService: new WeatherLocationService({
+      gateway: ports.deviceLocation,
+      weatherApi,
+      logger,
+    }),
+
+    notificationApi: new NotificationApi({ authHttpClient, publicHttpClient }),
+    notificationBadgeService: new NotificationBadgeService({
+      badge: pushNotification,
+      logger,
+    }),
+    pushNotificationEntryStore: createPushNotificationEntryStore(),
+    pushOnboardingGuardStore: createPushOnboardingGuardStore(),
+    pushRegistrationService,
+    marketingPushPromptRepository,
+
     inviteService: new InviteService({
       publicHttpClient,
       authHttpClient,
@@ -327,70 +418,8 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       clipboard: ports.clipboard,
       errorReporter,
     }),
-    // 기능 소개 캠페인 설정은 API envelope 없이 원문 JSON이다
-    whatsNewCampaignApi: new WhatsNewCampaignApi(ports.jsonFetcher),
-    whatsNewRepository,
-    inquiryApi: new InquiryApi(authHttpClient),
-    memoApi: new MemoApi(authHttpClient, logger),
-    voiceApi: new VoiceApi(authHttpClient, logger),
-    moderationApi: new ModerationApi(authHttpClient),
-    subTodoApi: new SubTodoApi(authHttpClient),
-    todoApi: new TodoApi(authHttpClient),
-    todoCommentApi: new TodoCommentApi(authHttpClient),
-    todoCategoryApi: new TodoCategoryApi(authHttpClient),
-    notificationApi: new NotificationApi({ authHttpClient, publicHttpClient }),
-    notificationBadgeService: new NotificationBadgeService({
-      badge: pushNotification,
-      logger,
-    }),
-    pushNotificationEntryStore: createPushNotificationEntryStore(),
-    pushOnboardingGuardStore: createPushOnboardingGuardStore(),
-    pushRegistrationService,
-    marketingPushPromptRepository,
-    todoNudgeApi: new TodoNudgeApi(authHttpClient),
-    coachmarkRepository,
-    storeReviewService: new StoreReviewService(
-      createStoreReviewRepository(syncStorage),
-      ports.appStoreReview,
-      getNowInstant,
-    ),
-    userApi: new UserApi(authHttpClient),
-    purchasesSession,
-    subscriptionService: new SubscriptionService(purchasesSession, ports.purchases, logger),
-    entitlementApi: new EntitlementApi(authHttpClient, logger),
-    weatherApi,
-    weatherLocationService: new WeatherLocationService({
-      gateway: ports.deviceLocation,
-      weatherApi,
-      logger,
-    }),
-    deviceLocation: ports.deviceLocation,
-    clipboard: ports.clipboard,
-    applicationMetadata: ports.applicationMetadata,
-    socialAuth: ports.socialAuth,
-    appStoreListing: ports.appStoreListing,
-    externalLink: ports.externalLink,
-    systemShare: ports.systemShare,
-    incomingLink: ports.incomingLink,
-    syncStorage,
-    accountSyncStorage: draftStorage,
-    networkStatus: ports.networkStatus,
-    appLifecycle: ports.appLifecycle,
-    minuteClock: createAppMinuteClock(ports.appLifecycle),
-    viewCapture: ports.viewCapture,
-    screenOrientation: ports.screenOrientation,
-    widgetSyncService: new WidgetSyncService(ports.widgetBridge, ports.widgetStorage),
-    widgetNavigationRepository: createWidgetNavigationRepository(ports.widgetStorage),
-    logOutDeviceService: new LogOutDeviceService({
-      authApi,
-      pushRegistrationService,
-      tokenStore,
-      sessionRevocationService,
-      sessionEpoch,
-      logger,
-    }),
-    voiceNoteStorageService,
-    voiceNoteDraftRepository,
-    voiceRecordingRepository,
+
+    activationService: new ActivationService(syncStorage),
+    activationProgressRepository,
   };
 }
