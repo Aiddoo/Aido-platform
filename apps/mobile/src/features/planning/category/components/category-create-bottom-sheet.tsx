@@ -8,9 +8,11 @@ import { noop } from 'es-toolkit';
 import type { ComponentProps } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
-import { DEFAULT_CATEGORY_COLOR } from '../constants/todo-category.constants';
 import { useCreateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
-import { todoCategoryFormSchema } from '../schemas/todo-category-form.schema';
+import {
+  TODO_CATEGORY_FORM_DEFAULT_VALUES,
+  todoCategoryFormSchema,
+} from '../schemas/todo-category-form.schema';
 import { CategoryFormFields } from './category-form-fields';
 
 type CategoryCreateBottomSheetProps = Omit<
@@ -26,7 +28,8 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
 
   const form = useForm({
     resolver: zodResolver(todoCategoryFormSchema),
-    defaultValues: { name: '', color: DEFAULT_CATEGORY_COLOR },
+    defaultValues: TODO_CATEGORY_FORM_DEFAULT_VALUES,
+    mode: 'onChange',
   });
   const { isSubmitting } = useFormState({ control: form.control });
 

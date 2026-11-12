@@ -527,7 +527,7 @@ function MemoMoreMenu({
   );
 }
 
-/** 입력값·초안·편집 상태를 맡는다. 복원한 초안을 입력값으로 두고 비교 기준은 서버 원본이다 */
+/** 입력값·초안·편집 상태를 맡는다. 비교 기준은 서버 원본이고 복원한 초안은 고친 글자다 */
 function useMemoForm({ memo, accountId }: { memo: Memo; accountId: string }) {
   const { t } = useTranslation('memo');
   const toast = useAppToast();
@@ -540,9 +540,11 @@ function useMemoForm({ memo, accountId }: { memo: Memo; accountId: string }) {
       onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
     },
   );
+  // 다시 받은 서버 글로 비교 기준을 맞춘다. 고치지 않은 입력은 새 글을 보이고 고치던 글자는 남는다
   const form = useForm({
     resolver: zodResolver(memoFormSchema),
-    defaultValues: restoredDraft ?? savedValues,
+    values: savedValues,
+    resetOptions: { keepDirtyValues: true },
   });
   const { isDirty, isValid } = useFormState({ control: form.control });
   const [isEditing, setIsEditing] = useState(restoredDraft != null);
@@ -553,12 +555,12 @@ function useMemoForm({ memo, accountId }: { memo: Memo; accountId: string }) {
     clearDraft,
   });
 
-  // 복원한 초안을 입력값으로 둔 채 비교 기준만 서버 원본으로 맞춰 isDirty가 "저장 안 된 변경"을 뜻하게 한다.
+  // 복원한 초안은 그리기 전에 고친 글자로 넣어 isDirty가 "저장 안 된 변경"을 뜻하게 한다
   useLayoutEffect(() => {
     if (restoredDraft != null) {
-      form.reset({ content: memo.content }, { keepValues: true });
+      form.setValue('content', restoredDraft.content, { shouldDirty: true });
     }
-  }, [memo.content, form, restoredDraft]);
+  }, [form, restoredDraft]);
 
   return { form, canSave: isDirty && isValid, isEditing, setIsEditing, discardDraft };
 }

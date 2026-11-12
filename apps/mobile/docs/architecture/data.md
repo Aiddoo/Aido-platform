@@ -178,15 +178,22 @@ export function useUpdateTodoCategoryMutationOptions() {
 ## 폼
 
 ```tsx
+// 생성
 const form = useForm({
   resolver: zodResolver(todoCategoryFormSchema),
   defaultValues: TODO_CATEGORY_FORM_DEFAULT_VALUES,
-  values: category == null ? undefined : toTodoCategoryFormValues(category),
+  mode: 'onChange',
+});
+// 수정: 다시 받은 서버 값이 비교 기준이고 고치던 칸은 남는다
+const form = useForm({
+  resolver: zodResolver(todoCategoryFormSchema),
+  values: toTodoCategoryFormValues(category),
+  resetOptions: { keepDirtyValues: true },
   mode: 'onChange',
 });
 ```
 
-- `useForm`은 제네릭 없이 `zodResolver(schema)`에서 타입을 추론하고 이름은 `form`이다. 생성은 `defaultValues`, 수정은 `values`로 서버 값과 맞춘다. `reset`을 부르는 effect를 쓰지 않는다. 처음 값은 스키마 `.default()`가 아니라 `defaultValues`에 두고 값 없는 칸은 `null`이다.
+- `useForm`은 제네릭 없이 `zodResolver(schema)`에서 타입을 추론하고 이름은 `form`이다. 생성은 `defaultValues`, 서버 값을 고치는 수정 폼은 `values` + `resetOptions: { keepDirtyValues: true }`로 다시 받은 값과 맞춘다(고치지 않은 칸은 새 값, 고치던 칸은 그대로). 코드로 바꾼 칸은 `setValue(…, { shouldDirty: true })`로 고친 칸이 되게 한다. `reset`을 부르는 effect를 쓰지 않는다. 처음 값은 스키마 `.default()`가 아니라 `defaultValues`에 두고 값 없는 칸은 `null`이다.
 - 스키마는 `schemas/{name}-form.schema.ts` 하나다. 계약의 요청 스키마에서 `pick`·`omit`·`extend`로 유도하고 공백 정리는 `trimmed(contract.shape.title)`, 한도는 vocabulary다. 저장 가능 여부를 함수로 또 만들지 않는다.
 - 변환은 mapper다. 폼 값 → 요청은 `to{X}Request(values)`, 모델 → 폼 값은 `to{X}FormValues(model)`다.
 - 입력은 `Controller`·`useController`로 잇고 `field.ref`를 넘겨 검증 실패 칸에 포커스한다. 하위는 `useWatch`·`useFormState({ name })`로 자기 값만 구독한다. 렌더 중 `getValues()`는 React Compiler가 캐시해 갱신되지 않으므로 핸들러에서만 쓴다.
@@ -196,7 +203,7 @@ const form = useForm({
 - 서버 4xx 중 칸에 속한 오류는 `form.setError`로 그 칸에 보인다. 코드와 칸의 매핑은 `domains/{feature}.error.ts`에 둔다. 실패해도 입력값을 지우지 않는다.
 - 생성과 수정은 스키마와 입력 부품만 공유하고 제출은 각자 소유한다. 공통 부품에 `mode`·`onSubmit` 분기를 넘기지 않는다.
 - 확인할 동작: 성공하면 닫힘·갱신·초안 삭제·이벤트 한 번, 4xx·연결 끊김이면 입력값·초안 유지와 안내 한 번, 두 번 눌러도 요청 한 번, 검증 실패나 바뀐 값 없음이면 요청 없음.
-- **초안.** `useDraftStorage(draftKey)`가 첫 렌더에 동기로 읽어 `defaultValues`에 넣는다. `useFormDraftAutosave(form.subscribe, …)`가 렌더 없이 디바운스 저장하고, 언마운트 때 대기 저장을 flush하며, 제출 성공·취소 때 대기 저장까지 취소한 뒤 지운다.
+- **초안.** `useDraftStorage(draftKey)`가 첫 렌더에 동기로 읽어 생성 폼은 `defaultValues`에 넣고, 수정 폼은 그리기 전(`useLayoutEffect`) 고친 글자로 넣는다(`setValue(…, { shouldDirty: true })`, 메모 편집). `useFormDraftAutosave(form.subscribe, …)`가 렌더 없이 디바운스 저장하고, 언마운트 때 대기 저장을 flush하며, 제출 성공·취소 때 대기 저장까지 취소한 뒤 지운다.
 - 초안 키는 `utils/{feature}-draft.ts`의 순수 함수가 `createDraftKey`로 만들고 사용자 id가 들어간다. 저장소는 암호화 MMKV이고 `DRAFT_TTL_MS`가 지난 초안과 원본보다 오래된 편집 초안은 버린다. 비밀번호·인증 코드는 초안으로 저장하지 않고, 긴 본문을 URL·Query 캐시에 넣지 않는다.
 
 ## 메모리와 수명

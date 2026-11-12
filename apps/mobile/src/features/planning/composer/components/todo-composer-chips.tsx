@@ -65,15 +65,17 @@ export function TodoComposerChips({ form, ...chipsProps }: TodoComposerChipsProp
   );
 }
 
+// 고친 칸으로 표시해 수정 폼이 다시 받은 할 일로 맞출 때 덮지 않게 한다
 function setScheduleFields(
   { setValue }: Pick<ComposerForm, 'setValue'>,
   next: TodoScheduleChipsValue,
 ) {
-  setValue('startDate', next.startDate);
-  setValue('endDate', next.endDate);
-  setValue('scheduledTime', next.scheduledTime);
-  setValue('isAllDay', next.isAllDay);
-  setValue('repeat', next.repeat);
-  setValue('visibility', next.visibility);
-  setValue('categoryId', next.categoryId);
+  const options = { shouldDirty: true };
+  setValue('startDate', next.startDate, options);
+  setValue('endDate', next.endDate, options);
+  setValue('scheduledTime', next.scheduledTime, options);
+  setValue('isAllDay', next.isAllDay, options);
+  setValue('repeat', next.repeat, options);
+  setValue('visibility', next.visibility, options);
+  setValue('categoryId', next.categoryId, options);
 }

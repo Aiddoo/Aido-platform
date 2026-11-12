@@ -19,8 +19,8 @@ export function useReopenTodoRepeatPicker(
       return;
     }
     const { startDate, endDate, repeat } = withScheduleRepeat(values, next);
-    form.setValue('startDate', startDate);
-    form.setValue('endDate', endDate);
-    form.setValue('repeat', repeat);
+    form.setValue('startDate', startDate, { shouldDirty: true });
+    form.setValue('endDate', endDate, { shouldDirty: true });
+    form.setValue('repeat', repeat, { shouldDirty: true });
   };
 }

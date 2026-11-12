@@ -16,6 +16,7 @@ import { noop } from 'es-toolkit';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
+import { toTodoCategoryFormValues } from '../apis/todo-category.mapper';
 import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import type { TodoCategory } from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
@@ -94,9 +95,12 @@ function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps
   const { t } = useTranslation('common');
   const updateCategory = useMutation(useUpdateTodoCategoryMutationOptions());
 
+  // 다시 받은 카테고리로 비교 기준을 맞춘다. 고치지 않은 칸은 새 값을 보이고 고치던 칸은 남는다
   const form = useForm({
     resolver: zodResolver(todoCategoryFormSchema),
-    defaultValues: { name: category.name, color: category.color },
+    values: toTodoCategoryFormValues(category),
+    resetOptions: { keepDirtyValues: true },
+    mode: 'onChange',
   });
   const { isSubmitting } = useFormState({ control: form.control });
 

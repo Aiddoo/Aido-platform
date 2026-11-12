@@ -11,7 +11,7 @@ import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/conse
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
-import { toInstant } from '@src/shared/date/instant';
+import { toEpochMs, toInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createHttpClientStub,
@@ -29,6 +29,7 @@ import { Keyboard } from 'react-native';
 import { createMemo } from '../__tests__/memo.fixtures';
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
 import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
+import { createMemoDraftKey } from '../utils/memo-draft';
 import { MemoEditor } from './memo-editor';
 import { MemoList } from './memo-list';
 
@@ -69,7 +70,14 @@ async function renderEditor(
     withList = false,
     consent,
     entitlements,
-  }: { withList?: boolean; consent?: Consent; entitlements?: EntitlementSnapshot } = {},
+    draft,
+  }: {
+    withList?: boolean;
+    consent?: Consent;
+    entitlements?: EntitlementSnapshot;
+    /** 앱을 다시 열기 전에 남긴 고치던 글자 */
+    draft?: string;
+  } = {},
 ) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ memoId: String(MEMO_ID) });
   const queryClient = createTestQueryClient({
@@ -107,6 +115,21 @@ async function renderEditor(
     return new Promise(() => undefined);
   });
   const onLeave = jest.fn();
+  const di = createTestDi({
+    ports: {
+      httpClient,
+      queryClient,
+      speechRecognizer: createSpeechRecognizerStub(),
+      ...createVoiceNoteStorageFake().ports,
+    },
+  });
+  if (draft != null) {
+    di.draftService.save(
+      createMemoDraftKey({ userId: 'account-1', memoId: MEMO_ID }),
+      { content: draft },
+      { sourceUpdatedAt: toEpochMs(createMemo().updatedAt) },
+    );
+  }
 
   await renderScreen(
     <Suspense fallback={null}>
@@ -119,18 +142,11 @@ async function renderEditor(
     {
       withLocalDate: true,
       withOverlay: true,
-      di: createTestDi({
-        ports: {
-          httpClient,
-          queryClient,
-          speechRecognizer: createSpeechRecognizerStub(),
-          ...createVoiceNoteStorageFake().ports,
-        },
-      }),
+      di,
     },
   );
 
-  return { httpClient, onLeave };
+  return { httpClient, queryClient, onLeave };
 }
 
 async function editContent(content: string) {
@@ -193,6 +209,45 @@ describe('MemoEditor', () => {
     // Then
     await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
     expect(httpClient.patch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      scenario: '고치지 않은 입력은 다시 받은 글을 보인다',
+      draft: undefined,
+      edited: null,
+      expected: '다른 기기에서 고친 메모',
+    },
+    {
+      scenario: '고치던 입력은 덮지 않는다',
+      draft: undefined,
+      edited: '쓰던 글',
+      expected: '쓰던 글',
+    },
+    {
+      scenario: '복원한 초안은 덮지 않는다',
+      draft: '앱을 닫기 전 글',
+      edited: null,
+      expected: '앱을 닫기 전 글',
+    },
+  ])('다시 받은 메모가 바뀌면 $scenario', async ({ draft, edited, expected }) => {
+    // Given
+    const { queryClient } = await renderEditor('pane', { draft });
+    await screen.findByDisplayValue(draft ?? '처음 메모');
+    if (edited != null) {
+      await editContent(edited);
+    }
+
+    // When
+    await act(async () => {
+      queryClient.setQueryData(
+        MEMO_QUERY_KEYS.detail({ memoId: MEMO_ID }),
+        createMemo({ id: MEMO_ID, content: '다른 기기에서 고친 메모' }),
+      );
+    });
+
+    // Then
+    expect(await screen.findByDisplayValue(expected)).toBeTruthy();
   });
 
   describe('고치던 글자가 있을 때 메뉴', () => {

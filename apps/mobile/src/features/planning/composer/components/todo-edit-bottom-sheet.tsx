@@ -28,7 +28,7 @@ import {
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
@@ -107,16 +107,17 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
   const openSheet = useOpenSheet();
   const reportUnexpectedError = useReportUnexpectedError('todo');
 
-  // 서버 재조회로 할 일이 바뀌어도 고치기 시작한 값과 비교한다. 사용자가 안 고친 칸을 덮어쓰지 않는다
-  const [initialValues] = useState(() => toTodoFormValues(todo, timeZone));
+  // 다시 받은 할 일로 비교 기준을 맞춘다. 고치지 않은 칸은 새 값을 보이고 고치던 칸은 남아 고친 칸만 보낸다
+  const savedValues = toTodoFormValues(todo, timeZone);
   const canChangeRepeat = TodoRepeatPolicy.canChangeRepeat({
     ...todo,
-    repeat: initialValues.repeat,
+    repeat: savedValues.repeat,
   });
 
   const form = useForm({
     resolver: zodResolver(todoFormSchema),
-    defaultValues: initialValues,
+    values: savedValues,
+    resetOptions: { keepDirtyValues: true },
   });
   const { isSubmitting, isValid } = useFormState({ control: form.control });
   const updateTodo = useMutation(useUpdateTodoMutationOptions());
@@ -147,7 +148,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
 
   const submitTodo = form.handleSubmit(async (values) => {
     try {
-      const changes = toTodoUpdateChanges(values, initialValues);
+      const changes = toTodoUpdateChanges(values, savedValues);
       if (!TodoChangePolicy.hasTodoUpdateChanges(changes)) {
         onClose();
 
@@ -155,7 +156,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
       }
       const choice = await match(
         TodoRepeatPolicy.getTodoEditScopeDecision({
-          isSeries: TodoRepeatPolicy.hasRepeatRule({ ...todo, repeat: initialValues.repeat }),
+          isSeries: TodoRepeatPolicy.hasRepeatRule({ ...todo, repeat: savedValues.repeat }),
           repeat: changes.repeat,
           isDateOnly: TodoChangePolicy.hasOnlyDateChanges(changes),
         }),

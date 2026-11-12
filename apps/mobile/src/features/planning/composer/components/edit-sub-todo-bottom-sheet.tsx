@@ -49,9 +49,11 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
   const { t } = useTranslation('todo');
   const [date] = useTodoSheetDateKey();
   const fontScaledSize = useFontScaledSize();
+  // 다시 받은 제목으로 비교 기준을 맞춘다. 고치던 제목은 남는다
   const form = useForm({
     resolver: zodResolver(subTodoFormSchema),
-    defaultValues: { title: subTodo.title },
+    values: { title: subTodo.title },
+    resetOptions: { keepDirtyValues: true },
   });
   const { isValid } = useFormState({ control: form.control });
   const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
