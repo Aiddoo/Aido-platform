@@ -159,6 +159,9 @@ function TodoCreateForm({
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const confirmDialog = useConfirmDialog();
 
+  const [isVoiceHintPending] = useMyPendingCoachmark('voice-quick-start');
+  const { type: aiParseQuotaType } = useQuotaStatus('AI_PARSE');
+
   const form = useForm({
     resolver: zodResolver(todoFormSchema),
     defaultValues,
@@ -170,22 +173,26 @@ function TodoCreateForm({
   if (!hasExceededTitleLimit && title.length > TODO_LIMITS.TITLE_MAX_LENGTH) {
     setHasExceededTitleLimit(true);
   }
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
+  const [hasTouchedForm, setHasTouchedForm] = useState(false);
+  const hasStartedRequestedVoiceRef = useRef(false);
 
   const createTodo = useMutation(useCreateTodoMutationOptions());
   const createRecurringTodo = useMutation(useCreateRecurringTodoMutationOptions());
   const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
-
   const voice = useAddTodoQuickVoice({ form, onExit });
-  useOnScreenBlur(voice.interrupt);
-  const [isVoiceHintPending] = useMyPendingCoachmark('voice-quick-start');
-  const { type: aiParseQuotaType } = useQuotaStatus('AI_PARSE');
-  // 이번 달 AI를 다 썼으면 말로 하라고 권하지 않는다. 직접 입력은 계속 된다
-  const canSuggestVoice = aiParseQuotaType !== 'used-up';
-  const isVoiceHintShown = canSuggestVoice && isVoiceHintPending;
-  const hasStartedRequestedVoiceRef = useRef(false);
   const startRequestedVoice = useEffectEvent(() => {
     voice.start().catch(reportUnexpectedError);
   });
+
+  // 이번 달 AI를 다 썼으면 말로 하라고 권하지 않는다. 직접 입력은 계속 된다
+  const canSuggestVoice = aiParseQuotaType !== 'used-up';
+  const isVoiceHintShown = canSuggestVoice && isVoiceHintPending;
+  const isFormStep = VoiceCapturePolicy.isManualInput(voice.state);
+  const isSubmitDisabled = !isValid || isSubmitting;
+  const voiceDismissAction = VoiceCapturePolicy.getDismissAction(voice.state);
+
+  useOnScreenBlur(voice.interrupt);
   // 시트가 다 열린 뒤 한 번만 시작한다. 동의·마이크를 거절하면 시트에 남아 마이크로 다시 시도한다
   useEffect(() => {
     if (!isVoiceStartRequested || !isOpen || hasStartedRequestedVoiceRef.current) {
@@ -200,8 +207,6 @@ function TodoCreateForm({
       form.trigger('title').catch(reportUnexpectedError);
     }
   }, [form, hasExceededTitleLimit, title, reportUnexpectedError]);
-  const [isTitleFocused, setIsTitleFocused] = useState(false);
-  const [hasTouchedForm, setHasTouchedForm] = useState(false);
 
   const submitTodo = form.handleSubmit(async (values) => {
     const { repeat } = values;
@@ -221,9 +226,6 @@ function TodoCreateForm({
       }
     }
   });
-
-  const isFormStep = VoiceCapturePolicy.isManualInput(voice.state);
-  const isSubmitDisabled = !isValid || isSubmitting;
 
   // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
   const handleTitleSubmit = () => {
@@ -251,7 +253,6 @@ function TodoCreateForm({
     }
   };
 
-  const voiceDismissAction = VoiceCapturePolicy.getDismissAction(voice.state);
   const handleVoiceDismissRequest =
     voiceDismissAction == null
       ? undefined
