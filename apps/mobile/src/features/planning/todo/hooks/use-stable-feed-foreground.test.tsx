@@ -44,7 +44,7 @@ function OverlayStateWrapper({ children }: PropsWithChildren) {
 }
 
 function useStableInFeed({ hasPendingNavigation = false } = {}) {
-  return useStableFeedForeground({ isAuthenticated: true, hasPendingNavigation });
+  return useStableFeedForeground({ authStatus: 'authenticated', hasPendingNavigation });
 }
 
 describe('useStableFeedForeground', () => {

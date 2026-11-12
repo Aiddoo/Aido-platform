@@ -161,7 +161,7 @@ function MyFeed({
   // 내 피드에서만 도는 첫 화면 조율이다. 앱이 앞에 안정적으로 떠 있으면(로그인, 알림 이동 없음)
   // 알림 켜기 화면을 열고, 그 화면이 정해진 뒤 새로운 기능 안내를 연다. 닫은 안내는 다시 보기 카드로 남는다
   const isStable = useStableFeedForeground({
-    isAuthenticated: authStatus === 'authenticated',
+    authStatus,
     hasPendingNavigation,
   });
   useOpenPushOnboarding({ isStable });
