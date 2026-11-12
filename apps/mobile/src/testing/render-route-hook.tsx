@@ -93,6 +93,14 @@ type RenderAppRouteResult = Awaited<ReturnType<typeof renderRouter>> & {
   di: TestDi;
 };
 
+/**
+ * Provider 없이 route 파일 표만 진짜 Expo Router에 올린다. 루트 `_layout`이 앱 Provider 트리(`AppProviders`)를
+ * 그 자체로 그려 그 트리를 시험할 때 쓴다. 화면·레이아웃 테스트는 `renderAppRoute`다
+ */
+export function renderRoutes(routes: Parameters<typeof renderRouter>[0], { url }: { url: string }) {
+  return renderRouter(routes, { initialUrl: url });
+}
+
 interface RenderAppRouteOptions extends TestProviderOptions {
   /** 처음 여는 URL */
   url: string;

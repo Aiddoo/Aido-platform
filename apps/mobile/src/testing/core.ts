@@ -14,6 +14,7 @@ export { createErrorReporterStub } from './ports/error-reporter.stub';
 export {
   createExternalLinkGatewayStub,
   createIncomingLinkGatewayStub,
+  type IncomingLinkGatewayStub,
 } from './ports/external-link-gateway.stub';
 export { createHapticsGatewayStub } from './ports/haptics-gateway.stub';
 export { createHttpClientStub, respondByPath } from './ports/http-client.stub';
@@ -48,7 +49,10 @@ export { createRouteParamsFake } from './fakes/route-params.fake';
 export { createScreenOrientationGatewayStub } from './ports/screen-orientation-gateway.stub';
 export { createSocialAuthGatewayStub } from './ports/social-auth-gateway.stub';
 export { createSocialShareGatewayStub } from './ports/social-share-gateway.stub';
-export { createSpeechRecognizerStub } from './ports/speech-recognizer.stub';
+export {
+  createSpeechRecognizerStub,
+  type SpeechRecognizerStub,
+} from './ports/speech-recognizer.stub';
 export { createSystemShareGatewayStub } from './ports/system-share-gateway.stub';
 export { createTestDi, createTestPorts, type TestDi } from './di';
 export { createViewCaptureGatewayStub } from './ports/view-capture-gateway.stub';
