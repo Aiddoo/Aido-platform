@@ -208,7 +208,7 @@ NotificationList.Empty = function Empty() {
 function useOpenNotification() {
   const { t } = useTranslation('notification');
   const resolveInboxDestination = useResolveInboxDestination();
-  const openDestination = useOpenNotificationDestination();
+  const openDestination = useOpenNotificationDestination({ openRoute: router.navigate });
   const logger = useLogger();
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
   const { trackEvent } = useTrack();
