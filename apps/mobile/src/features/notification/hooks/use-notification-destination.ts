@@ -1,5 +1,7 @@
 import { useExternalLink } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import { getNowInstant } from '@src/shared/date/clock';
+import { toEpochMs } from '@src/shared/date/instant';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,6 +24,7 @@ export function useResolveNotificationDestination() {
     toNotificationDestination(target, {
       windowSizeClass,
       viewerId: getCachedMe(queryClient)?.id,
+      openedAt: toEpochMs(getNowInstant()),
     });
 }
 

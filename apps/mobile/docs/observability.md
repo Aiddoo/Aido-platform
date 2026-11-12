@@ -52,6 +52,7 @@
 
 - 노출 이벤트는 보기마다 한 번이다. `useTrackView`는 params 객체를 새로 만들어 다시 그려도, 포커스가 돌아와도, 숨었다 다시 보여도 같은 key를 다시 보내지 않는다. 화면이 다시 마운트되면(뒤로 갔다 다시 열기) 새 보기로 센다. `null`은 아직 보이지 않은 것이라 뒤 탭·숨은 카드는 `null`을 넘긴다.
 - key는 "무엇을 봤나"다. 같은 화면에서 다른 것을 보면 key가 바뀐다(캐러셀 장 index, 주, 단계). 마운트를 넘어 막아야 하는 것(초대 링크 열림)은 DI store가 맡는다.
+- `weather_opened`는 경로와 URL param(`entry`)만 담아 원칙상 `screen_view`의 맥락이지만, KPI·퍼널·잠재고객이 이 이름을 써서 화면 진입 이벤트로 남기는 예외다. 날씨는 앱 Stack에 하나(`dangerouslySingular`)라 Stack에 남은 날씨를 알림으로 다시 열면 다시 마운트되지 않는다. 그래서 날씨를 여는 링크는 `toWeatherHref`로 연 시각(`openedAt`)을 붙이고, 날씨 화면의 노출(`weather_opened`·`weather_location_registered`·`weather_briefing_shown`·`weather_report_failed`)은 그 열기(`useWeatherOpenKey`)마다 한 번이다. 하위 화면에서 돌아오는 것은 세지 않는다. 1.15.1(화면을 열 때마다 새로 쌓음)과 같은 수다(`weather-screen.test.tsx`).
 
 ### 화면 조회
 

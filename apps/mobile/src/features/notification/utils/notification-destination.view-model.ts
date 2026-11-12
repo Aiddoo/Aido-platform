@@ -1,4 +1,4 @@
-import type { WeatherEntry } from '@src/features/weather/schemas/weather-entry-params.schema';
+import { toWeatherHref } from '@src/features/weather/utils/weather-link.view-model';
 import { toWeatherRescheduleHref } from '@src/features/weather/utils/weather-reschedule-link.view-model';
 import type { DateKey } from '@src/shared/date/date-key';
 import type { WindowSizeClass } from '@src/shared/ui/adaptive-pane/window-layout';
@@ -24,8 +24,8 @@ export interface CurrentRoute {
   params: Partial<Record<string, string | string[]>>;
 }
 
-/** 같은 화면 안에서 날짜·진입 경로·댓글 위치만 바꾸는 값이라 다른 화면으로 보지 않는다 */
-const VIEW_POSITION_PARAMS: ReadonlySet<string> = new Set(['date', 'entry', 'comment']);
+/** 같은 화면 안에서 날짜·진입 경로·연 시각·댓글 위치만 바꾸는 값이라 다른 화면으로 보지 않는다 */
+const VIEW_POSITION_PARAMS: ReadonlySet<string> = new Set(['date', 'entry', 'openedAt', 'comment']);
 const DYNAMIC_SEGMENT = /\[(?:\.\.\.)?([^\]]+)\]/g;
 
 function toParamText(value: unknown): string | undefined {
@@ -85,12 +85,14 @@ interface NotificationDestinationContext {
   windowSizeClass: WindowSizeClass;
   /** 나. 할 일 주인이 내가 아니면 펼친 화면의 목록 pane을 그 친구 피드로 연다 */
   viewerId?: string;
+  /** 알림을 연 시각(epoch ms). Stack에 남은 날씨 화면을 다시 올려도 열 때마다 센다(`toWeatherHref`) */
+  openedAt: number;
 }
 
 /** 알림을 누르면 열 화면. 목적지는 서버가 고르고 앱은 화면 크기와 보는 사람에 맞춰 경로만 정한다 */
 export function toNotificationDestination(
   target: NotificationTarget,
-  { windowSizeClass, viewerId }: NotificationDestinationContext,
+  { windowSizeClass, viewerId, openedAt }: NotificationDestinationContext,
 ): NotificationDestination {
   return (
     match(target)
@@ -140,10 +142,7 @@ export function toNotificationDestination(
       }))
       .with({ kind: 'WEATHER' }, () => ({
         kind: 'route',
-        href: {
-          pathname: '/weather',
-          params: { entry: 'notification' satisfies WeatherEntry },
-        },
+        href: toWeatherHref({ entry: 'notification', openedAt }),
       }))
       .with({ kind: 'WEATHER_RESCHEDULE' }, ({ todoIds, reason }) => ({
         kind: 'route',
