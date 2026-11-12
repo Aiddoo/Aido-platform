@@ -4,7 +4,7 @@ import type {
   TodoItemResponse,
   TodoListResponse,
 } from '@aido/api';
-import type { ErrorCodeType } from '@aido/api/errors';
+import { ErrorCode, type ErrorCodeType, Errors } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { createDateKey } from '@src/testing/date-key';
 
@@ -108,14 +108,13 @@ export function createTodoItemResponseDto(overrides?: Partial<TodoItemResponse>)
   };
 }
 
-export function createTodoApiError(
-  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
-) {
-  return new ApiError(
-    overrides?.code ?? 'TODO_0801',
-    overrides?.message ?? '할일을 찾을 수 없어요',
-    overrides?.status ?? 400,
-  );
+/** 상태를 주지 않으면 서버 카탈로그가 그 코드에 붙이는 상태다 */
+export function createTodoApiError({
+  code = ErrorCode.TODO_0801,
+  message = '할일을 찾을 수 없어요',
+  status = Errors[code].httpStatus,
+}: Partial<{ code: ErrorCodeType; message: string; status: number }> = {}) {
+  return new ApiError(code, message, status);
 }
 
 export function createTodoDetails(overrides?: Partial<TodoDetails>): TodoDetails {

@@ -1,3 +1,4 @@
+import { ErrorCode } from '@aido/api/errors';
 import '@src/shared/i18n/init';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
@@ -144,7 +145,7 @@ describe('CategoryDeleteBottomSheet', () => {
       previews: [ok(EMPTY_PREVIEW_DTO), ok(createTodoCategoryDeletionPreviewDto())],
       deleteResponse: err(
         createTodoCategoryApiError({
-          code: 'TODO_CATEGORY_0855',
+          code: ErrorCode.TODO_CATEGORY_0855,
           message: '카테고리에 할 일이 있어요. 이동할 카테고리를 선택해주세요.',
         }),
       ),

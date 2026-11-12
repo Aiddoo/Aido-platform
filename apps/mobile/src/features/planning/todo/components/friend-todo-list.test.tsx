@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { ErrorCode } from '@aido/api/errors';
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
@@ -32,7 +32,7 @@ describe('FriendTodoList', () => {
     httpClient.get.mockImplementation(async (path: string) =>
       path === 'v1/auth/preference'
         ? ok(createPreferenceDto())
-        : err(new ApiError(ErrorCode.FOLLOW_0906, '친구가 아니에요', 403)),
+        : err(new ApiError(ErrorCode.FOLLOW_0906, '친구가 아니에요', HttpStatus.FORBIDDEN)),
     );
     const errorReporter = createErrorReporterStub();
 

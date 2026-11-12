@@ -1,3 +1,4 @@
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
@@ -50,7 +51,7 @@ const AGREED_CONSENT_DTO = {
   aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
 };
 const PARSE_MEMO_URL = 'v1/ai/parse-memo';
-const CONSENT_REQUIRED_ERROR = new ApiError('AI_1311', '동의 필요', 403);
+const CONSENT_REQUIRED_ERROR = new ApiError(ErrorCode.AI_1311, '동의 필요', HttpStatus.FORBIDDEN);
 
 function createAgreedConsent() {
   return createConsent({
@@ -280,7 +281,9 @@ describe('MemoEditor', () => {
     it('저장에 실패하면 시트를 열지 않는다', async () => {
       // Given
       const { httpClient } = await renderEditor('stack');
-      httpClient.patch.mockResolvedValue(err(new ApiError('MEMO_2001', '거절', 400)));
+      httpClient.patch.mockResolvedValue(
+        err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+      );
       await editContent('고친 메모');
       await waitFor(() =>
         expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
@@ -352,7 +355,9 @@ describe('MemoEditor', () => {
   it('서버가 거절하면 글자를 지키려고 화면에 남는다', async () => {
     // Given
     const { httpClient, onLeave } = await renderEditor('stack');
-    httpClient.patch.mockResolvedValue(err(new ApiError('MEMO_2001', '거절', 400)));
+    httpClient.patch.mockResolvedValue(
+      err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+    );
     await editContent('고친 메모');
 
     // When
@@ -432,7 +437,9 @@ describe('MemoEditor', () => {
     it('저장 버튼이 거절되면 글자와 편집 상태를 그대로 두고 키보드도 내리지 않는다', async () => {
       // Given
       const { httpClient, onLeave } = await renderEditor('pane');
-      httpClient.patch.mockResolvedValue(err(new ApiError('MEMO_2001', '거절', 400)));
+      httpClient.patch.mockResolvedValue(
+        err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+      );
       await editContent('고친 메모');
 
       // When

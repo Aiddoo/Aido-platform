@@ -1,3 +1,4 @@
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
@@ -64,17 +65,22 @@ describe('useUpdateTodoMutationOptions', () => {
   describe('이후 회차까지 고치다 거절됐을 때', () => {
     it.each([
       [
-        new ApiError('TODO_0811', '서버 문구', 403),
+        new ApiError(ErrorCode.TODO_0811, '서버 문구', HttpStatus.FORBIDDEN),
         '이 카테고리에 할 일을 더 추가할 수 없어요',
         '할 일을 완료하거나 다른 카테고리를 골라주세요. 고친 내용은 저장되지 않았어요.',
       ],
       [
-        new ApiError('TODO_0845', '서버 문구', 400, { field: 'startDate' }),
+        new ApiError(ErrorCode.TODO_0845, '서버 문구', HttpStatus.BAD_REQUEST, {
+          field: 'startDate',
+        }),
         '시작일이 너무 오래전이에요',
         '지난 날짜가 너무 많아요. 시작일을 더 가까운 날로 골라주세요.',
       ],
       [
-        new ApiError('TODO_0842', '서버 문구', 403, { limit: 100, activeCount: 100 }),
+        new ApiError(ErrorCode.TODO_0842, '서버 문구', HttpStatus.FORBIDDEN, {
+          limit: 100,
+          activeCount: 100,
+        }),
         /반복 할 일은 최대/,
         '쓰지 않는 반복을 끝내거나 삭제한 뒤 다시 추가해주세요.',
       ],

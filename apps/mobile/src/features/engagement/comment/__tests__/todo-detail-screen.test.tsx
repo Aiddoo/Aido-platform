@@ -1,4 +1,5 @@
 import { nudgeThanksPreviewResponseSchema } from '@aido/api';
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
@@ -370,7 +371,7 @@ describe('TodoDetailRoute', () => {
       const httpClient = createHttpClientStub();
       httpClient.get.mockImplementation(async (path: string) => {
         if (path === `v1/todos/${TODO_ID}/details`) {
-          return err(new ApiError('TODO_0801', '없음', 404));
+          return err(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
         }
         return ok({ items: [], pagination: PAGINATION, anchor: null });
       });
@@ -399,7 +400,7 @@ describe('TodoDetailRoute', () => {
       const httpClient = createHttpClientStub();
       httpClient.get.mockImplementation(async (path: string) => {
         if (path === `v1/todos/${TODO_ID}/details`) {
-          return err(new ApiError('TODO_0801', '없음', 404));
+          return err(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
         }
         return ok({ items: [], pagination: PAGINATION, anchor: null });
       });

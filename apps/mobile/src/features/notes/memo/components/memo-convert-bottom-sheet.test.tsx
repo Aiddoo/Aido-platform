@@ -1,3 +1,4 @@
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
 import { err, ok } from '@src/core/errors/result';
@@ -64,7 +65,9 @@ describe('MemoConvertBottomSheet', () => {
   it('서버가 거절하면 시트와 입력값을 그대로 남긴다', async () => {
     // Given
     const { httpClient, onClose, onConverted } = await renderSheet();
-    httpClient.post.mockResolvedValue(err(new ApiError('MEMO_2001', '거절', 400)));
+    httpClient.post.mockResolvedValue(
+      err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+    );
 
     // When
     await submit();

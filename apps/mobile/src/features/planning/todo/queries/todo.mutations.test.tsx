@@ -1,3 +1,4 @@
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
@@ -284,7 +285,12 @@ describe('useUpdateTodoScheduleMutationOptions', () => {
       // Given
       const httpClient = createHttpClientStub();
       httpClient.patch.mockResolvedValue(
-        err(new ApiError('TODO_0842', '서버 문구', 403, { limit: 7, activeCount: 7 })),
+        err(
+          new ApiError(ErrorCode.TODO_0842, '서버 문구', HttpStatus.FORBIDDEN, {
+            limit: 7,
+            activeCount: 7,
+          }),
+        ),
       );
       const current: { value: ReturnType<typeof useUpdateSchedule> | null } = { value: null };
       function useUpdateSchedule() {
