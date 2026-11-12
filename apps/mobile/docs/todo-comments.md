@@ -154,7 +154,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 ## Query, mutation, cache
 
 - 키(`queries/todo-comment-query-keys.ts`): `all → todo(todoId) → threadLists → threads(sort, anchorCommentId)`, `… → replyLists → threadReplies(commentId) → replies(aroundReplyId)`.
-- 무효화·갱신은 `queries/todo-comment-cache.ts`만 거친다. 페이지 변환은 `utils/todo-comment-cache-pages.ts` 순수 함수다.
+- 무효화·갱신은 `queries/todo-comment-cache.ts`만 거친다. 페이지 변환과 페이지 cursor는 `queries/todo-comment-pages-cache.ts` 순수 함수다.
 - 좋아요: `scope: todo-comment-like:<id>`로 같은 댓글 연타를 직렬화, `cancelQueries(todo)` → 묶음·답글 캐시 ±1.
   응답은 댓글마다 센 `likeComment` 키의 마지막만 서버 값으로 쓰고, 실패하면 마지막 하트만 되돌린 뒤 목록을 다시 받는다.
   앞 응답을 쓰면 뒤에 누른 하트가 깜빡인다.
@@ -176,7 +176,7 @@ features/engagement/comment/
   domains/ todo-comment.model.ts  todo-comment-composer.model.ts  todo-comment.error.ts
   apis/ todo-comment.api.ts  todo-comment.mapper.ts
   constants/ todo-comment.constants.ts  todo-comment-log-events.ts  todo-comment.events.ts
-  queries/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.queries.ts  todo-comment.mutations.ts  todo-comment-cache.ts
+  queries/ todo-comment-query-keys.ts  todo-comment-mutation-keys.ts  todo-comment.queries.ts  todo-comment.mutations.ts  todo-comment-cache.ts  todo-comment-pages-cache.ts
   hooks/ use-todo-comment-params.ts(+ useTodoCommentSort)  use-todo-comment-back.ts  use-android-todo-comment-back-handler.ts
          use-is-todo-comment-submitting.ts  use-todo-comment-form.tsx
   components/ todo-comment-thread-list.tsx  todo-comment-replies.tsx  todo-comment-item.tsx  todo-comment-thread-rail.tsx  todo-comment-heart-burst.tsx
@@ -184,13 +184,13 @@ features/engagement/comment/
               todo-comment-title-bar.tsx  todo-comment-author-avatar.tsx  todo-comment-keyboard-scroll-view.tsx
               todo-comment-session.tsx  todo-comment-keyboard-gesture.tsx  todo-detail-summary.tsx
               comment-report-bottom-sheet.tsx
-  utils/ todo-comment-cache-pages.ts  todo-comment-page-params.ts  todo-comment-draft.ts  todo-comment-replies.view-model.ts
+  utils/ todo-comment-draft.ts  todo-comment-replies.view-model.ts
          todo-comment-form.view-model.ts  todo-comment-form.geometry.ts  todo-comment-back.view-model.ts
   schemas/ todo-comment-form.schema.ts  todo-comment-draft.schema.ts  todo-comment-params.schema.ts  todo-comment-request.schema.ts
 ```
 
 ## 검증
 
-- 단위: model/Policy, composer, 비자명한 mapper, cache pages, page params, route/back, draft(위치는 Oxlint `aido/todo-comment-test-location`이 검사).
+- 단위: model/Policy, composer, 비자명한 mapper, `queries/*-cache`(페이지 고치기·cursor), route/back, draft(위치는 Oxlint `aido/todo-comment-test-location`이 검사).
 - native: iOS·Android에서 목록, 펼치기·더 보기·숨기기, 답글 달기(키보드 위 대상 행), 게시 후 위치, 수정·삭제·신고·차단,
   묘비·긴 이름·큰 숫자, 더블탭(동작 줄이기·연타·이미 좋아요), 알림 위치(`?comment=`), pane, 라이트·다크, 글자 크기 xsmall~xlarge, ko·en.

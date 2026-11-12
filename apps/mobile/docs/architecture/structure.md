@@ -83,6 +83,8 @@ features/{area}/{feature}/
 - 쿼리 키는 `queries/`에 둔다. `constants/`는 일반 상수(시간·한도·id, 장면 팔레트 같은 고정 값)·이벤트·로그 키만 두고 `domains/`를 import하지 않는다. 업무 규칙 표는 모델에, 라벨 키는 view-model에, 저장 키는 `*-storage.schema.ts`에 둔다.
 - 파일 이름은 kebab-case이고 접두사는 다루는 엔티티 이름이다(`todo-comment.*`). 기능 이름이 엔티티를 줄인 것이면 엔티티 이름을 쓴다(`social/nudge`의 `todo-nudge-query-keys.ts`).
 - 역할 접미사는 `.model`, `.api`, `.mapper`, `.service`, `.session`, `.repository`, `.store`, `.queries`, `.mutations`, `-cache`, `.view-model`, `.geometry`, `.schema`다. `helpers`·`utils`·`common` 같은 파일 이름을 쓰지 않는다.
+- 캐시 모양만 다루는 순수 함수(무한 목록 페이지 고치기·cursor)는 `queries/{entity}-pages-cache.ts`에 둔다(`todo-comment-pages-cache.ts`). `queryClient`는 만지지 않고 `-cache.ts` helper가 부른다.
+- `utils/`의 예외는 `store-review/utils/wait-for-settled-screen.ts` 하나다. 앱 상태 포트·타이머·abort로 화면이 가라앉기를 기다리는 한 번짜리 함수라 Session(수명 객체)이 아니고, 훅이 화면 판정(`isScreenReady`)을 넘겨 테스트가 시트·키보드·백그라운드 갈래를 모두 돈다.
 
 ## 층별 역할과 책임
 

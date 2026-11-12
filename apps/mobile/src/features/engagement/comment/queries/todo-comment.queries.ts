@@ -6,15 +6,13 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 import { toRepliesQuery, toThreadsQuery } from '../apis/todo-comment.mapper';
 import { TODO_COMMENT_QUERY_TIMING } from '../constants/todo-comment.constants';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
-import type {
-  TodoCommentReplyPages,
-  TodoCommentThreadPages,
-} from '../utils/todo-comment-cache-pages';
 import {
-  INITIAL_TODO_COMMENT_PAGE_PARAM,
   getNextTodoCommentPageParam,
   getPreviousTodoCommentPageParam,
-} from '../utils/todo-comment-page-params';
+  INITIAL_TODO_COMMENT_PAGE_PARAM,
+  type TodoCommentReplyPages,
+  type TodoCommentThreadPages,
+} from './todo-comment-pages-cache';
 import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
 
 interface TodoCommentThreadsQueryInput {

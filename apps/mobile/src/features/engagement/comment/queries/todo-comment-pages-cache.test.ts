@@ -6,21 +6,23 @@ import {
   createTodoCommentThread,
 } from '../__tests__/todo-comment.fixtures';
 import type { TodoComment, TodoCommentThread } from '../domains/todo-comment.model';
-import { patchTodoCommentCaches } from '../queries/todo-comment-cache';
-import { TODO_COMMENT_QUERY_KEYS } from '../queries/todo-comment-query-keys';
+import { patchTodoCommentCaches } from './todo-comment-cache';
 import {
   addRepliesToThreadPages,
   appendRepliesToReplyPages,
   findCommentInReplyPages,
   findCommentInThreadPages,
   findThreadPlacement,
+  getNextTodoCommentPageParam,
+  getPreviousTodoCommentPageParam,
   patchCommentInThreadPages,
   removeCommentFromReplyPages,
   removeCommentFromThreadPages,
   restoreCommentInThreadPages,
   type TodoCommentReplyPages,
   type TodoCommentThreadPages,
-} from './todo-comment-cache-pages';
+} from './todo-comment-pages-cache';
+import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
 
 const pagination = (hasNext: boolean) => ({
   previousCursor: null,
@@ -44,7 +46,27 @@ function replyPages(hasNext: boolean, ...pages: TodoComment[][]): TodoCommentRep
   };
 }
 
-describe('todo-comment-cache-pages', () => {
+describe('todo-comment-pages-cache', () => {
+  it('서버가 준 cursor를 방향 그대로 다음·이전 페이지 값으로 쓴다', () => {
+    // Given
+    const pagination = {
+      previousCursor: 'prev',
+      nextCursor: 'next',
+      hasPrevious: true,
+      hasNext: false,
+      size: 30,
+    };
+
+    // When
+    const params = [
+      getNextTodoCommentPageParam(pagination),
+      getPreviousTodoCommentPageParam(pagination),
+    ];
+
+    // Then
+    expect(params).toEqual([undefined, 'prev']);
+  });
+
   it('댓글 하나만 바꾸고 나머지 묶음은 그대로 둔다', () => {
     // Given
     const target = createTodoCommentThread();

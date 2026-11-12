@@ -4,6 +4,7 @@ import { compact } from 'es-toolkit';
 
 import {
   type TodoComment,
+  type TodoCommentPagination,
   TodoCommentPolicy,
   type TodoCommentReplyPage,
   type TodoCommentThread,
@@ -12,6 +13,22 @@ import {
 
 /** null은 첫 페이지(또는 anchor 페이지), 문자열은 서버가 방향을 담아 준 cursor다 */
 export type TodoCommentPageParam = string | null;
+
+export const INITIAL_TODO_COMMENT_PAGE_PARAM: TodoCommentPageParam = null;
+
+export function getNextTodoCommentPageParam({
+  hasNext,
+  nextCursor,
+}: Pick<TodoCommentPagination, 'hasNext' | 'nextCursor'>) {
+  return hasNext && nextCursor != null ? nextCursor : undefined;
+}
+
+export function getPreviousTodoCommentPageParam({
+  hasPrevious,
+  previousCursor,
+}: Pick<TodoCommentPagination, 'hasPrevious' | 'previousCursor'>) {
+  return hasPrevious && previousCursor != null ? previousCursor : undefined;
+}
 export type TodoCommentThreadPages = InfiniteData<TodoCommentThreadPage, TodoCommentPageParam>;
 export type TodoCommentReplyPages = InfiniteData<TodoCommentReplyPage, TodoCommentPageParam>;
 export type TodoCommentTransform = (comment: TodoComment) => TodoComment;

@@ -20,7 +20,7 @@ import {
   type TodoCommentThreadPlacement,
   type TodoCommentThreadPages,
   type TodoCommentTransform,
-} from '../utils/todo-comment-cache-pages';
+} from './todo-comment-pages-cache';
 import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
 import type {
   useGetTodoCommentRepliesInfiniteQueryOptions,
