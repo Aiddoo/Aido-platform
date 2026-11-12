@@ -22,6 +22,7 @@ import {
 } from '@src/testing/core';
 import { getLastGorhomSheetProps } from '@src/testing/mocks/gorhom-bottom-sheet';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
@@ -128,6 +129,8 @@ describe('TodoCreateBottomSheet', () => {
   });
 
   describe('저장 실패', () => {
+    setupFakeTimersPerTest();
+
     it('저장이 실패해도 시트와 입력한 제목이 그대로 남아 다시 보낼 수 있다', async () => {
       // Given
       // 연결이 없어 저장이 거절된다
@@ -144,6 +147,8 @@ describe('TodoCreateBottomSheet', () => {
         expect(httpClient.post).toHaveBeenCalledTimes(1);
       });
       expect(screen.getByPlaceholderText(PLACEHOLDER).props.value).toBe('우유 사기');
+      // 연타 가드(600ms)가 지난 뒤의 두 번째 저장이다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
 
       // When
       // 다시 보내면 같은 제목으로 한 번 더 요청한다
@@ -197,6 +202,55 @@ describe('TodoCreateBottomSheet', () => {
         startDate: '2026-10-27',
       });
       pending.settle();
+    });
+
+    describe('저장 버튼 연타', () => {
+      setupFakeTimersPerTest();
+
+      async function typeTitleWithSavedResponse() {
+        const { httpClient } = await renderCreateSheet();
+        httpClient.post.mockResolvedValue(
+          ok({
+            message: 'ok',
+            todo: createTodoDto({ id: 9, title: '우유 사기', startDate: '2026-10-27' }),
+          }),
+        );
+        await fireEvent.changeText(await screen.findByPlaceholderText(PLACEHOLDER), '우유 사기');
+
+        return { httpClient };
+      }
+
+      it('저장을 같은 프레임에 두 번 눌러도 할 일은 하나만 만든다', async () => {
+        // Given
+        const { httpClient } = await typeTitleWithSavedResponse();
+        const submit = screen.getByTestId('todo-add-submit');
+
+        // When
+        await act(async () => {
+          fireEvent.press(submit);
+          fireEvent.press(submit);
+        });
+        await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+        // Then
+        expect(httpClient.post).toHaveBeenCalledTimes(1);
+      });
+
+      it('저장해 시트가 내려가는 동안 저장을 다시 눌러도 할 일은 하나만 만든다', async () => {
+        // Given
+        const { httpClient } = await typeTitleWithSavedResponse();
+        await fireEvent.press(screen.getByTestId('todo-add-submit'));
+        // 연타 가드(600ms)가 지난 뒤다. 시트는 닫힘 애니메이션이 끝나야 내려가 버튼이 아직 보인다
+        await act(() => jest.advanceTimersByTimeAsync(1_000));
+        expect(httpClient.post).toHaveBeenCalledTimes(1);
+
+        // When
+        await fireEvent.press(screen.getByTestId('todo-add-submit'));
+        await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+        // Then
+        expect(httpClient.post).toHaveBeenCalledTimes(1);
+      });
     });
   });
 

@@ -64,6 +64,32 @@ describe('MemoCreateForm', () => {
     expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 
+  describe('저장 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('저장해 화면이 내려가는 동안 저장을 다시 눌러도 메모는 하나만 만든다', async () => {
+      // Given
+      const { httpClient } = await renderForm();
+      httpClient.post.mockResolvedValue(ok({ message: 'created', memo: CREATED_MEMO_DTO }));
+      await typeContent('새 메모');
+      await act(async () => {
+        fireEvent.press(await screen.findByLabelText('저장'));
+      });
+      // 연타 가드(600ms)가 지난 뒤다. 성공하면 요청 키를 지워 같은 글도 새 키로 간다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.back).toHaveBeenCalledTimes(1);
+
+      // When
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('저장'));
+      });
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('시간 초과 뒤 다시 저장', () => {
     setupFakeTimersPerTest();
 

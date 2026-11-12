@@ -1,14 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
+import { ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
+import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
+import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import { createHttpClientStub, createTestDi, createTestQueryClient } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -223,6 +226,31 @@ describe('PlanReview', () => {
       expect(httpClient.post.mock.lastCall?.[1]).toMatchObject({
         actions: [{ title: '장보기' }, { title: '운동' }, { title: '세금 신고' }],
       });
+    });
+  });
+
+  describe('추가 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('추가를 마쳐 시트가 내려가는 동안 다시 눌러도 할 일은 한 번만 추가한다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.post.mockResolvedValue(
+        ok({ todos: [createTodoDto({ id: 9, title: '장보기' })], memo: null }),
+      );
+      await renderPlan(PLAN, true, undefined, httpClient);
+      await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+      // 성공해 onApplied가 시트를 닫기 시작한 뒤다. 카드와 버튼은 닫힘 애니메이션이 끝날 때까지 남는다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
     });
   });
 

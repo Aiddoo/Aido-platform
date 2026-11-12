@@ -1,7 +1,8 @@
 import '@src/shared/i18n/init';
 import { ErrorCode } from '@aido/api/errors';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
-import { err, ok } from '@src/core/errors/result';
+import type { ApiError } from '@src/core/errors/api-error';
+import { err, ok, type Result } from '@src/core/errors/result';
 import {
   createEntitlementSnapshot,
   createEntitlementSnapshotDto,
@@ -30,7 +31,10 @@ import { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-lib
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { createTodoCategoryWithCount } from '../__tests__/todo-category.fixtures';
+import {
+  createTodoCategoryDto,
+  createTodoCategoryWithCount,
+} from '../__tests__/todo-category.fixtures';
 import { TODO_CATEGORY_QUERY_KEYS } from '../queries/todo-category-query-keys';
 import { CategoryCreateBottomSheet } from './category-create-bottom-sheet';
 
@@ -56,17 +60,33 @@ function findLayoutHost(node: HostNode): HostNode | null {
   return null;
 }
 
+const LIMIT_REACHED = err(
+  createLimitApiError(
+    ErrorCode.TODO_CATEGORY_0857,
+    {
+      charged: false,
+      featureQuota: createFeatureQuotaDto('TODO_CATEGORY', {
+        used: PLAN_CATALOG.TODO_CATEGORY.free,
+      }),
+    },
+    403,
+  ),
+);
+
 interface LinkedCreateSheetOptions {
   /** 앱이 아는 한도. 기본은 한도 전이라 서버만 막는다(다른 기기에서 만들어 스냅샷이 늦었다) */
   snapshot?: EntitlementSnapshot;
   /** 오늘 이미 [나중에]로 닫은 업셀 */
   dismissedOn?: string;
+  /** 추가 요청 응답. 기본은 서버가 한도로 막는다 */
+  createResponse?: Result<unknown, ApiError>;
 }
 
 /** 무료 한도(3개)가 찬 계정이 링크(`todo-categories/new`)로 추가 시트 route를 바로 연다 */
 async function renderLinkedCreateSheet({
   snapshot = createEntitlementSnapshot(),
   dismissedOn,
+  createResponse = LIMIT_REACHED,
 }: LinkedCreateSheetOptions = {}) {
   const syncStorage = createMemoryObservableSyncStorage();
   if (dismissedOn != null) {
@@ -79,20 +99,7 @@ async function renderLinkedCreateSheet({
   }
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto()));
-  httpClient.post.mockResolvedValue(
-    err(
-      createLimitApiError(
-        ErrorCode.TODO_CATEGORY_0857,
-        {
-          charged: false,
-          featureQuota: createFeatureQuotaDto('TODO_CATEGORY', {
-            used: PLAN_CATALOG.TODO_CATEGORY.free,
-          }),
-        },
-        403,
-      ),
-    ),
-  );
+  httpClient.post.mockResolvedValue(createResponse);
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -172,6 +179,34 @@ describe('CategoryCreateBottomSheet', () => {
       pathname: '/paywall',
       params: { feature: 'TODO_CATEGORY' },
     });
+  });
+
+  it('추가해 시트가 내려가는 동안 확인을 다시 눌러도 카테고리는 하나만 만든다', async () => {
+    // Given
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const { httpClient } = await renderLinkedCreateSheet({
+      createResponse: ok({
+        message: 'ok',
+        category: createTodoCategoryDto({ id: 2, name: '운동' }),
+      }),
+    });
+    await user.type(await screen.findByPlaceholderText(NAME_PLACEHOLDER), '운동');
+    const confirm = await screen.findByRole('button', { name: '확인' });
+    await user.press(confirm);
+    // 연타 가드(600ms)가 지난 뒤다. 시트는 닫힘 애니메이션이 끝나야 내려가 버튼이 아직 보인다
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+
+    // When
+    await user.press(confirm);
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Then
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 
   it('스냅샷이 늦어 서버가 한도로 막으면 오류 토스트 없이 업셀 시트를 띄우고, 닫아도 쓴 이름이 남는다', async () => {
