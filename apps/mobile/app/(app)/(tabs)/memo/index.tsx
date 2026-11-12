@@ -11,6 +11,7 @@ import {
 import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
 import { VoiceNoteDraftList } from '@src/features/voice/components/note/voice-note-draft-list';
 import { VoiceNoteStartButton } from '@src/features/voice/components/note/voice-note-start-button';
+import { VOICE_NOTE_PREVIEW_COUNT } from '@src/features/voice/constants/voice-note.constants';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -105,7 +106,7 @@ function VoiceNoteDrafts() {
   return (
     <QueryErrorBoundary fallback={() => null}>
       <Suspense fallback={null}>
-        <VoiceNoteDraftList />
+        <VoiceNoteDraftList limit={VOICE_NOTE_PREVIEW_COUNT} />
       </Suspense>
     </QueryErrorBoundary>
   );
