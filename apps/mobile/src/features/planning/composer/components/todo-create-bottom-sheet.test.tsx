@@ -1,4 +1,5 @@
 import '@src/shared/i18n/init';
+import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import { err, ok } from '@src/core/errors/result';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
@@ -8,6 +9,7 @@ import {
   createHttpClientStub,
   createMemoryKeyValueStorage,
   createPendingResponse,
+  createErrorReporterStub,
   createSpeechRecognizerStub,
   createTestDi,
   createTestQueryClient,
@@ -21,14 +23,26 @@ import { TodoCreateBottomSheet } from './todo-create-bottom-sheet';
 
 const PLACEHOLDER = '무엇을 하고 싶나요?';
 
-async function renderCreateSheet(routeParams: Record<string, string> = {}) {
+async function renderCreateSheet(
+  routeParams: Record<string, string> = {},
+  { hasAgreedToAi = false }: { hasAgreedToAi?: boolean } = {},
+) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createTodoCategoryListDto()));
   jest.mocked(useLocalSearchParams).mockReturnValue({ date: '2026-10-27', ...routeParams });
   const queryClient = createTestQueryClient();
-  // 아직 AI 데이터 이용에 답하지 않은 계정
-  queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent());
+  // 기본은 아직 AI 데이터 이용에 답하지 않은 계정
+  queryClient.setQueryData(
+    CONSENT_QUERY_KEYS.detail(),
+    hasAgreedToAi
+      ? createConsent({
+          aiDataSharingDecision: AI_DATA_SHARING_DECISION.AGREED,
+          aiDataSharingConsentVersion: '2026-10-26',
+        })
+      : createConsent(),
+  );
   const speechRecognizer = createSpeechRecognizerStub();
+  const errorReporter = createErrorReporterStub();
 
   await renderScreen(<TodoCreateBottomSheet onMemoChanged={jest.fn()} />, {
     withLocalDate: true,
@@ -39,12 +53,13 @@ async function renderCreateSheet(routeParams: Record<string, string> = {}) {
         queryClient,
         ...createVoiceNoteStorageFake().ports,
         speechRecognizer,
+        errorReporter,
         storage: createMemoryKeyValueStorage(),
       },
     }),
   });
 
-  return { httpClient, speechRecognizer };
+  return { httpClient, speechRecognizer, errorReporter };
 }
 
 describe('TodoCreateBottomSheet', () => {
@@ -125,6 +140,26 @@ describe('TodoCreateBottomSheet', () => {
       // Then
       expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
       expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
+    });
+
+    it('마이크 버튼으로 시작하다 기기 권한 확인이 실패하면 예상하지 못한 실패로 보고한다', async () => {
+      // Given
+      const { speechRecognizer, errorReporter } = await renderCreateSheet(
+        {},
+        { hasAgreedToAi: true },
+      );
+      speechRecognizer.getPermission.mockRejectedValue(new Error('native permission failed'));
+
+      // When
+      await fireEvent.press(await screen.findByTestId('todo-quick-voice-button'));
+
+      // Then
+      await waitFor(() => {
+        expect(errorReporter.captureException).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'native permission failed' }),
+          expect.objectContaining({ feature: 'todo' }),
+        );
+      });
     });
   });
 });

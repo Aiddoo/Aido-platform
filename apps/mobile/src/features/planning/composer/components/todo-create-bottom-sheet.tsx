@@ -287,7 +287,9 @@ function TodoCreateForm({
             onFinish={voice.finish}
             onCancel={voice.cancel}
             onResume={voice.resume}
-            onContinueAsVoiceNote={voice.continueAsVoiceNote}
+            onContinueAsVoiceNote={() => {
+              voice.continueAsVoiceNote().catch(reportUnexpectedError);
+            }}
           />
         ))
         .with({ status: 'planning' }, () => (
@@ -300,7 +302,9 @@ function TodoCreateForm({
             isCharged={isCharged}
             onMemoChanged={onMemoChanged}
             onApplied={onClose}
-            onRestart={voice.restart}
+            onRestart={() => {
+              voice.restart().catch(reportUnexpectedError);
+            }}
             onTypeInstead={voice.typeInstead}
           />
         ))
@@ -379,7 +383,12 @@ function TodoCreateForm({
                 isPassThrough
                 isDismissed={hasTouchedForm}
               >
-                <QuickVoiceButton onPress={() => voice.start()} testID="todo-quick-voice-button" />
+                <QuickVoiceButton
+                  onPress={() => {
+                    voice.start().catch(reportUnexpectedError);
+                  }}
+                  testID="todo-quick-voice-button"
+                />
               </CoachmarkPopover>
               <TodoComposerSubmitButton
                 isDisabled={isSubmitDisabled}
