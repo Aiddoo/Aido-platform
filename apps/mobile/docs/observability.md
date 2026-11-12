@@ -185,7 +185,7 @@ mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `o
 | 일부러 500           | QA 서버에서 목록 API가 500을 내게 한다              | 이슈 1건. `request_id`가 서버 `reqId`와 같다. 토스트와 재시도                            |
 | 일부러 4xx(404, 409) | 지운 할 일 열기, 중복 요청                          | 이슈 없음. 다른 이슈의 breadcrumb에만 `error`·`http`                                     |
 | 비행기 모드·타임아웃 | 네트워크를 끊고 새로 고침                           | 이슈 없음                                                                                |
-| 응답 파싱 실패       | 서버 응답 필드를 일부러 어긋나게 한다               | 이슈 1건(`ParseError`), `feature` 태그, breadcrumb에 `*.response-parse.failed`           |
+| 응답 파싱 실패       | 서버 응답 필드를 일부러 어긋나게 한다               | 이슈 1건(`ParseError`, message에 어긋난 칸), `feature` 태그. 따로 남기는 로그는 없다     |
 | 렌더 오류            | 개발용 화면에서 렌더 중 throw                       | 이슈 1건, `feature=error_boundary`. 중복 없음                                            |
 | 루트 렌더 오류       | 루트 Provider 안에서 throw한 뒤 "다시 시도"         | 이슈 1건, `feature=root_error_boundary`. 로그인·피드·초안이 남는다                       |
 | 개인정보             | 메모·음성·댓글을 쓰고 위 오류를 낸 직후 이슈를 연다 | 이벤트 JSON에 본문·글자·토큰·이메일이 없고 사용자는 내부 id뿐. 로그아웃 뒤엔 사용자 없음 |

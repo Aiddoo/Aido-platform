@@ -359,7 +359,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     myPagePaneLayoutStore: createMyPagePaneLayoutStore(),
     myPageDetailRootStore: createMyPageDetailRootStore(),
 
-    entitlementApi: new EntitlementApi(authHttpClient, logger),
+    entitlementApi: new EntitlementApi(authHttpClient),
     purchasesSession,
     subscriptionService: new SubscriptionService(purchasesSession, ports.purchases, logger),
 
@@ -382,7 +382,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       getNowInstant,
     ),
 
-    voiceApi: new VoiceApi(authHttpClient, logger),
+    voiceApi: new VoiceApi(authHttpClient),
     voiceNoteStorageService,
     voiceNoteDraftRepository,
     voiceRecordingRepository,
@@ -395,11 +395,11 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
 
     moderationApi: new ModerationApi(authHttpClient),
 
-    suggestionApi: new SuggestionApi(authHttpClient, logger),
+    suggestionApi: new SuggestionApi(authHttpClient),
 
     achievementApi: new AchievementApi(authHttpClient),
 
-    reportApi: new ReportApi(authHttpClient, logger),
+    reportApi: new ReportApi(authHttpClient),
 
     // 기능 소개 캠페인 설정은 API envelope 없이 원문 JSON이다
     whatsNewCampaignApi: new WhatsNewCampaignApi(ports.jsonFetcher),
