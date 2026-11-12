@@ -1,7 +1,5 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createHttpClientStub,
   createPendingResponse,
@@ -38,14 +36,11 @@ describe('SubTodoActionsBottomSheet', () => {
       .mocked(useLocalSearchParams)
       .mockReturnValue({ todoId: String(todo.id), subTodoId: '1', date: todo.startDate });
 
-    await renderScreen(
-      <LocalDateProvider>
-        <OverlayProvider>
-          <SubTodoActionsBottomSheet />
-        </OverlayProvider>
-      </LocalDateProvider>,
-      { di: createTestDi({ ports: { httpClient, queryClient } }) },
-    );
+    await renderScreen(<SubTodoActionsBottomSheet />, {
+      withLocalDate: true,
+      withOverlay: true,
+      di: createTestDi({ ports: { httpClient, queryClient } }),
+    });
 
     // When
     fireEvent.press(screen.getByText('삭제하기')).catch(() => undefined);

@@ -7,8 +7,6 @@ import {
 import '@src/shared/i18n/init';
 import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -52,24 +50,19 @@ async function renderEditSheet() {
     .mocked(useLocalSearchParams)
     .mockReturnValue({ todoId: String(todo.id), subTodoId: '1', date: todo.startDate });
 
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <EditSubTodoBottomSheet />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    {
-      di: createTestDi({
-        ports: {
-          httpClient,
-          analytics: createAnalyticsStub(),
-          errorReporter: createErrorReporterStub(),
-          speechRecognizer: createSpeechRecognizerStub(),
-          queryClient,
-        },
-      }),
-    },
-  );
+  await renderScreen(<EditSubTodoBottomSheet />, {
+    withLocalDate: true,
+    withOverlay: true,
+    di: createTestDi({
+      ports: {
+        httpClient,
+        analytics: createAnalyticsStub(),
+        errorReporter: createErrorReporterStub(),
+        speechRecognizer: createSpeechRecognizerStub(),
+        queryClient,
+      },
+    }),
+  });
 
   return {
     httpClient,
@@ -180,24 +173,19 @@ describe('AddSubTodoBottomSheet', () => {
     jest
       .mocked(useLocalSearchParams)
       .mockReturnValue({ todoId: String(todo.id), date: viewingDate });
-    await renderScreen(
-      <LocalDateProvider>
-        <OverlayProvider>
-          <AddSubTodoBottomSheet />
-        </OverlayProvider>
-      </LocalDateProvider>,
-      {
-        di: createTestDi({
-          ports: {
-            httpClient,
-            analytics: createAnalyticsStub(),
-            errorReporter: createErrorReporterStub(),
-            speechRecognizer: createSpeechRecognizerStub(),
-            queryClient,
-          },
-        }),
-      },
-    );
+    await renderScreen(<AddSubTodoBottomSheet />, {
+      withLocalDate: true,
+      withOverlay: true,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          speechRecognizer: createSpeechRecognizerStub(),
+          queryClient,
+        },
+      }),
+    });
 
     // When
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '첫 항목');
@@ -229,24 +217,19 @@ describe('AddSubTodoBottomSheet', () => {
     jest
       .mocked(useLocalSearchParams)
       .mockReturnValue({ todoId: String(todo.id), date: viewingDate });
-    await renderScreen(
-      <LocalDateProvider>
-        <OverlayProvider>
-          <AddSubTodoBottomSheet />
-        </OverlayProvider>
-      </LocalDateProvider>,
-      {
-        di: createTestDi({
-          ports: {
-            httpClient,
-            analytics: createAnalyticsStub(),
-            errorReporter: createErrorReporterStub(),
-            speechRecognizer: createSpeechRecognizerStub(),
-            queryClient,
-          },
-        }),
-      },
-    );
+    await renderScreen(<AddSubTodoBottomSheet />, {
+      withLocalDate: true,
+      withOverlay: true,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          speechRecognizer: createSpeechRecognizerStub(),
+          queryClient,
+        },
+      }),
+    });
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '첫 항목');
 
     // When

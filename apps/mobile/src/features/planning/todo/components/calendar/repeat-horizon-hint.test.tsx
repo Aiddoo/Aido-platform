@@ -3,7 +3,6 @@ import { ok, unwrap } from '@src/core/errors/result';
 import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -56,14 +55,11 @@ async function renderHint({
 
   const hint = (date: string) => {
     jest.mocked(useLocalSearchParams).mockReturnValue({ date });
-    return (
-      <LocalDateProvider>
-        <RepeatHorizonHint />
-      </LocalDateProvider>
-    );
+    return <RepeatHorizonHint />;
   };
   const { rerender } = await renderScreen(hint('2027-03-01'), {
     di: createTestDi({ ports: { httpClient, syncStorage, analytics, queryClient } }),
+    withLocalDate: true,
   });
 
   return {

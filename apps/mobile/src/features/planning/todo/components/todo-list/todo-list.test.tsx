@@ -3,7 +3,6 @@ import { createPreference } from '@src/features/identity/preference/__tests__/pr
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import '@src/shared/i18n/init';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createHttpClientStub,
   createPendingResponse,
@@ -46,14 +45,12 @@ async function renderTodoList(todo: Todo) {
   );
 
   await renderScreen(
-    <LocalDateProvider>
-      <ScrollViewContainer>
-        <Suspense fallback={<Text>loading</Text>}>
-          <TodoList />
-        </Suspense>
-      </ScrollViewContainer>
-    </LocalDateProvider>,
-    { di: createTestDi({ ports: { httpClient, queryClient } }) },
+    <ScrollViewContainer>
+      <Suspense fallback={<Text>loading</Text>}>
+        <TodoList />
+      </Suspense>
+    </ScrollViewContainer>,
+    { withLocalDate: true, di: createTestDi({ ports: { httpClient, queryClient } }) },
   );
 
   return { httpClient, queryClient };

@@ -1,5 +1,4 @@
 import type { DateKey } from '@src/shared/date/date-key';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createErrorReporterStub,
   createHapticsGatewayStub,
@@ -33,10 +32,9 @@ async function renderSheet({
   const haptics = createHapticsGatewayStub();
 
   await renderScreen(
-    <LocalDateProvider>
-      <TodoRepeatPicker value={{ startDate, repeat }} onChange={onChange} onCancel={onCancel} />
-    </LocalDateProvider>,
+    <TodoRepeatPicker value={{ startDate, repeat }} onChange={onChange} onCancel={onCancel} />,
     {
+      withLocalDate: true,
       di: createTestDi({
         ports: {
           analytics: createAnalyticsStub(),

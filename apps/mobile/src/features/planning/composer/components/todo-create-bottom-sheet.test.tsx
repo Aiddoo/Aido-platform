@@ -4,8 +4,6 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createTodoApiError } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createHttpClientStub,
   createMemoryKeyValueStorage,
@@ -32,24 +30,19 @@ async function renderCreateSheet(routeParams: Record<string, string> = {}) {
   queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), createConsent());
   const speechRecognizer = createSpeechRecognizerStub();
 
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <TodoCreateBottomSheet onMemoChanged={jest.fn()} />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    {
-      di: createTestDi({
-        ports: {
-          httpClient,
-          queryClient,
-          ...createVoiceNoteStorageFake().ports,
-          speechRecognizer,
-          storage: createMemoryKeyValueStorage(),
-        },
-      }),
-    },
-  );
+  await renderScreen(<TodoCreateBottomSheet onMemoChanged={jest.fn()} />, {
+    withLocalDate: true,
+    withOverlay: true,
+    di: createTestDi({
+      ports: {
+        httpClient,
+        queryClient,
+        ...createVoiceNoteStorageFake().ports,
+        speechRecognizer,
+        storage: createMemoryKeyValueStorage(),
+      },
+    }),
+  });
 
   return { httpClient, speechRecognizer };
 }

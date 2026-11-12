@@ -27,7 +27,6 @@ import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/que
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { useDeleteTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createHttpClientStub,
   createPendingResponse,
@@ -85,14 +84,12 @@ async function renderMutations() {
   }
 
   await renderScreen(
-    <LocalDateProvider>
-      <Probe
-        onRender={(mutations) => {
-          current.value = mutations;
-        }}
-      />
-    </LocalDateProvider>,
-    { di: createTestDi({ ports: { httpClient, queryClient } }) },
+    <Probe
+      onRender={(mutations) => {
+        current.value = mutations;
+      }}
+    />,
+    { withLocalDate: true, di: createTestDi({ ports: { httpClient, queryClient } }) },
   );
 
   const mutations = () => {

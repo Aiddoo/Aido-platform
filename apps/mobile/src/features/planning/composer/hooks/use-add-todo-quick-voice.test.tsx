@@ -12,8 +12,7 @@ import { createUser } from '@src/features/identity/user/__tests__/user.fixtures'
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { NetworkError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider, Text } from '@src/shared/ui';
+import { Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -178,22 +177,14 @@ async function renderQuickVoice({
       storage: createMemoryKeyValueStorage(),
     },
   });
-  const { rerender } = await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <QuickVoiceProbe onExit={onExit} />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di },
-  );
+  const { rerender } = await renderScreen(<QuickVoiceProbe onExit={onExit} />, {
+    di,
+    withLocalDate: true,
+    withOverlay: true,
+  });
 
   /** 시트만 닫는다. 안내는 앱 위 오버레이에 있어 그대로 남는다 */
-  const closeSheet = () =>
-    rerender(
-      <LocalDateProvider>
-        <OverlayProvider>{null}</OverlayProvider>
-      </LocalDateProvider>,
-    );
+  const closeSheet = () => rerender(<></>);
 
   return {
     httpClient,
