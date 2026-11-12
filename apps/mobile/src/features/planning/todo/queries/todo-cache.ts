@@ -354,7 +354,8 @@ function writesTodo(variables: unknown, todoId: number) {
   );
 }
 
-/** 쓰기를 시작한 순번. 먼저 시작해 나중에 끝난 쓰기도 그 사이 다른 쓰기가 있었는지 알 수 있다 */
+// 쓰기를 시작한 순번. 먼저 시작해 나중에 끝난 쓰기도 그 사이 다른 쓰기가 있었는지 안다.
+// QueryClient 수명을 따르는 모듈 전역 예외다(structure.md 모듈 전역 목록)
 const todoWriteSequences = new WeakMap<QueryClient, number>();
 
 export interface TodoWriteTicket {

@@ -171,6 +171,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
   - 접근성 설정 store(`use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`): DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는 OS 설정 하나를 구독 하나로 나눠 읽는다
   - `shared/infra/storage/widget-storage.android`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다
   - `shared/utils/create-optimistic-id`: React 밖 cache helper가 부르고 프로세스 안에서 겹치지 않아야 한다
+  - `features/planning/todo/queries/todo-cache`의 쓰기 순번(`WeakMap<QueryClient, number>`): React 밖 cache helper가 먼저 시작해 늦게 끝난 쓰기 사이를 센다. 키가 `QueryClient`라 그 수명을 따른다
   - `shared/date/format/intl-formatter`의 포매터 캐시: 상태가 아닌 순수 캐시다
 - 루트 "다시 시도"는 마운트 수명 컨테이너만 새로 만든다. 로그인·결제 설정·보고는 그대로 남는다.
 - 언마운트·로그아웃 뒤에 도는 일이 없어야 한다. await 뒤 상태 변경·이동은 막고, 핸들러가 건 rAF·타이머는 지우고, 리스너 세트 대신 `subscribe`가 해제 함수를 돌려주는 관찰 가능한 저장소를 쓴다. 화면 밖에서 늦게 오는 쓰기(초안 자동 저장의 마지막 저장, 늦은 녹음 파일)는 로그아웃·탈퇴 세대(`SignOutEpoch`)와 비교해 로그아웃·탈퇴 뒤에는 쓰지 않는다(`DraftService.createSessionSave`, `VoiceRecordingIntakeSession`). 세션 만료는 같은 사람이 돌아와 이어 쓰므로 막지 않는다. 결제 SDK 로그인·로그아웃은 `PurchasesSession`이 하나씩, 마지막 요청만 보내고 멈춘 호출은 `PURCHASES_SDK_CALL_TIMEOUT_MS`(15초)에서 끊는다. 상세: [hooks](./hooks.md).
