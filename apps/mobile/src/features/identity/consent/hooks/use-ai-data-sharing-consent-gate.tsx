@@ -3,9 +3,9 @@ import { ensureMe, getCachedMe } from '@src/features/identity/user/queries/user-
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
+import { readWithoutBlocking } from '@src/shared/query/read-without-blocking';
 import { useOverlay } from '@src/shared/ui';
-import { onlineManager, useQueryClient } from '@tanstack/react-query';
-import { withTimeout } from 'es-toolkit';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
 
 import { AiConsentBottomSheet } from '../components/ai-consent-bottom-sheet';
@@ -15,30 +15,9 @@ import { ConsentPolicy } from '../domains/consent.model';
 import { ensureConsent, getCachedConsent } from '../queries/consent-cache';
 import { useGetConsentQueryOptions } from '../queries/consent.queries';
 
-/** 마이크를 누른 뒤 아무 표시 없이 기다릴 수 있는 시간. 넘기면 서버 판단에 맡기고 응답은 캐시에 쌓인다 */
-export const AI_CONSENT_CHECK_TIMEOUT_MS = 3_000;
-
 export interface AiConsentCheck {
   readonly hasAgreed: boolean;
   readonly wasAsked: boolean;
-}
-
-/** 오프라인이면 멈춘 조회의 `ensureQueryData`가 끝나지 않아(`networkMode`로도 못 푼다) 캐시만 보고, 온라인이면 제한 시간까지만 기다린다 */
-export async function readWithoutBlocking<T>(
-  cached: T | undefined,
-  fetch: () => Promise<T>,
-  onFailure: (error: unknown) => void,
-) {
-  if (cached != null) {
-    return cached;
-  }
-  if (!onlineManager.isOnline()) {
-    return null;
-  }
-  return withTimeout(fetch, AI_CONSENT_CHECK_TIMEOUT_MS).catch((error: unknown) => {
-    onFailure(error);
-    return null;
-  });
 }
 
 interface UseAiDataSharingConsentGateOptions {

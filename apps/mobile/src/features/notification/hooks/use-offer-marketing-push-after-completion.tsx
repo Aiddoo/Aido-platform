@@ -4,7 +4,6 @@ import {
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import { subscribeTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
-import { readWithoutBlocking } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import {
   ensureConsent,
   getCachedConsent,
@@ -16,6 +15,7 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
+import { readWithoutBlocking } from '@src/shared/query/read-without-blocking';
 import { useOverlay } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';

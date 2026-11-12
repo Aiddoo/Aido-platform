@@ -124,7 +124,7 @@ export const NOTIFICATION_MUTATION_KEYS = {
 3. 다른 기능에 미치는 효과는 쿼리 옵션의 `meta.refreshOn*`(`refreshOnPremiumChange`)나 그 기능이 내보낸 helper로만 한다. 남의 `all`을 무효화하지 않는다. 바뀐 것만 무효화하고, 범위를 모를 때(반복 묶음, 카테고리 삭제, 언어 변경)만 넓게 쓴다.
 4. 당겨서 새로고침은 기능마다 `refresh{Feature}(queryClient)` 하나이고 활성 쿼리만 다시 받는다. 표시는 `useRefresh`가 당긴 동안만 한다.
 5. 영속 쿼리는 옵션의 `meta.persist`에 스키마까지 둔다. 영속 키 값을 바꾸면 `QUERY_CACHE_SCHEMA_VERSION`을 올린다.
-6. 마지막 변경 판정은 `shared/query/is-last-mutation.ts`의 `isLastMutation(queryClient, mutationKey)` 하나다. mutation 콜백 안에서 불러 자기 자신까지 센다.
+6. 마지막 변경 판정은 `shared/query/is-last-mutation.ts`의 `isLastMutation(queryClient, mutationKey)` 하나다. mutation 콜백 안에서 불러 자기 자신까지 센다. 누른 동작 앞에서 조회 값을 막지 않고 읽을 때(AI 동의 확인, 마케팅 푸시 제안)는 `shared/query/read-without-blocking.ts`의 `readWithoutBlocking(cached, fetch, onFailure)` 하나다: 캐시 → 오프라인이면 null → 3초 제한.
 7. 변경이 다른 기능의 값에 닿으면 그 helper로 맞춘다. 콕 보내기 → 할 일 상세 `permissions.canNudge`, 계정 연결·해제 → `me`, 카테고리 수정 → `TODO.pages()`.
 
 ## Mutation 옵션
