@@ -1,6 +1,8 @@
-import { act, renderHook } from '@testing-library/react-native';
+import { renderScreenHook } from '@src/testing/render';
+import { act } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 
+import { createMyPagePaneLayoutStore } from '../stores/my-page-pane-layout.store';
 import { useMyPagePaneLayout } from './use-my-page-pane-layout';
 
 function createScrollEvent(y: number) {
@@ -16,8 +18,17 @@ function createClampingScrollView(getMaxOffset: () => number, onScrolled: (y: nu
   };
 }
 
+/** 칸마다 따로 그려도 앱처럼 컨테이너의 저장소 하나를 함께 쓴다 */
+let paneLayoutStore = createMyPagePaneLayoutStore();
+
+beforeEach(() => {
+  paneLayoutStore = createMyPagePaneLayoutStore();
+});
+
 async function renderPane() {
-  const view = await renderHook(() => useMyPagePaneLayout());
+  const view = await renderScreenHook(() => useMyPagePaneLayout(), {
+    di: { myPagePaneLayoutStore: paneLayoutStore },
+  });
   let maxOffset = 0;
   let offset = 0;
   const scrollView = createClampingScrollView(

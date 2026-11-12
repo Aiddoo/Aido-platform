@@ -143,7 +143,6 @@ export { OverlayProvider, useOpenSheet, useOverlay, useOverlayState } from './ov
 export type { QueryErrorFallbackProps } from './query-error-boundary';
 export {
   INQUIRY_SHEET_EXIT,
-  openSupportMail,
   QueryErrorActions,
   QueryErrorBoundary,
   QueryErrorFallback,

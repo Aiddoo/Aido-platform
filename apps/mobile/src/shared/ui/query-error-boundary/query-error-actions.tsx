@@ -1,20 +1,12 @@
 import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
-import { getNowInstant } from '@src/shared/date/clock';
-import { getErrorMessage } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { t as translate, useTranslation } from '@src/shared/i18n';
-import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/application/expo-native-application-metadata-gateway';
-import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
-import { logger } from '@src/shared/infra/logger/global-logger';
-import { createDiagnosticCode } from '@src/shared/utils/create-diagnostic-code';
-import { createSupportMailUrl } from '@src/shared/utils/support-mail';
+import { useTranslation } from '@src/shared/i18n';
 import { router } from 'expo-router';
 
 import type { SheetRouteExit } from '../bottom-sheet/sheet-route';
 import { Result } from '../result/result';
 import { TextButton } from '../text-button/text-button';
 import { VStack } from '../v-stack/v-stack';
-import { QUERY_ERROR_LOG_EVENT } from './query-error-log-events';
 
 /** 예상하지 못한 조회 오류에서 여는 문의. 오류 신고 분류를 미리 고른다 */
 const BUG_REPORT_INQUIRY_HREF = {
@@ -30,24 +22,6 @@ export const INQUIRY_SHEET_EXIT: SheetRouteExit = {
 
 function openBugReportInquiry() {
   return router.push(BUG_REPORT_INQUIRY_HREF);
-}
-
-/** 내비게이터가 없을 때(루트 경계)의 문의: 진단 코드만 담은 메일을 연다 */
-export function openSupportMail() {
-  const code = createDiagnosticCode({
-    platform: process.env.EXPO_OS,
-    appVersion: expoNativeApplicationMetadataGateway.getInstallation()?.currentVersion ?? null,
-    occurredAt: getNowInstant(),
-  });
-  const url = createSupportMailUrl({
-    subject: translate('common:errorBoundary.mailSubject', { code }),
-    body: translate('common:errorBoundary.mailBody', { code }),
-  });
-  return expoExternalLinkGateway.open(url).catch((error: unknown) =>
-    logger.warn(QUERY_ERROR_LOG_EVENT.SUPPORT_MAIL_OPEN_FAILED, {
-      error: getErrorMessage(error),
-    }),
-  );
 }
 
 interface QueryErrorActionsProps {

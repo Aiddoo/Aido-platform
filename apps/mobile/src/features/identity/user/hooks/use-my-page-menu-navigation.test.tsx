@@ -1,7 +1,8 @@
-import { stubWindowDimensions } from '@src/testing/core';
+import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { createTestDi, stubWindowDimensions } from '@src/testing/core';
 import { act, render, renderHook } from '@testing-library/react-native';
 import { router, usePathname } from 'expo-router';
-import type { PropsWithChildren } from 'react';
+import { type PropsWithChildren, useState } from 'react';
 
 import {
   type MyPageMenuPathname,
@@ -13,7 +14,12 @@ import {
 const mockedUsePathname = jest.mocked(usePathname);
 
 function Wrapper({ children }: PropsWithChildren) {
-  return <MyPageMenuNavigationProvider>{children}</MyPageMenuNavigationProvider>;
+  const [container] = useState(() => createTestDi());
+  return (
+    <StaticDIProvider container={container}>
+      <MyPageMenuNavigationProvider>{children}</MyPageMenuNavigationProvider>
+    </StaticDIProvider>
+  );
 }
 
 describe('useMyPageMenuNavigate', () => {

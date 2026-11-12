@@ -1,3 +1,4 @@
+import { openSupportMail } from '@src/bootstrap/navigation/open-support-mail';
 import { AuthBootProvider } from '@src/bootstrap/providers/auth-boot-provider';
 import type { AppContainerPorts } from '@src/bootstrap/providers/create-app-container';
 import type { CompositionRoot } from '@src/bootstrap/providers/create-composition-root';
@@ -16,7 +17,6 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import {
   OfflineBanner,
-  openSupportMail,
   OverlayProvider,
   QueryErrorBoundary,
   QueryErrorFallback,

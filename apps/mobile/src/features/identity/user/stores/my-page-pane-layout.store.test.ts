@@ -1,6 +1,6 @@
-import { createMyPagePaneLayoutStore } from './my-page-pane-layout-store';
+import { createMyPagePaneLayoutStore } from './my-page-pane-layout.store';
 
-describe('마이페이지 메뉴 칸 저장소', () => {
+describe('createMyPagePaneLayoutStore', () => {
   it('칸 하나가 사라져도 남은 칸이 있으면 스크롤을 유지한다', () => {
     // Given
     const store = createMyPagePaneLayoutStore();

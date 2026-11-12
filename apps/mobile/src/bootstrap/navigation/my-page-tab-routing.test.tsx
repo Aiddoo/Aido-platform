@@ -1,7 +1,9 @@
-import { stubWindowDimensions } from '@src/testing/core';
+import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { createTestDi, stubWindowDimensions } from '@src/testing/core';
 import { TestUiProvider } from '@src/testing/render';
 import { router, Stack, Tabs } from 'expo-router';
 import { act, renderRouter, screen } from 'expo-router/testing-library';
+import { type PropsWithChildren, useState } from 'react';
 import { Text } from 'react-native';
 
 import * as MyPageTabLayout from '../../../app/(app)/(tabs)/(mypage)/_layout';
@@ -49,6 +51,16 @@ function createScreen(testID: string) {
   };
 }
 
+/** 마이 Stack이 DI의 첫 상세 저장소를 읽는다 */
+function MyPageTestProvider({ children }: PropsWithChildren) {
+  const [container] = useState(() => createTestDi());
+  return (
+    <StaticDIProvider container={container}>
+      <TestUiProvider>{children}</TestUiProvider>
+    </StaticDIProvider>
+  );
+}
+
 async function renderApp(initialUrl: string) {
   const myPageScreens = Object.fromEntries(
     MY_PAGE_ROUTES.map((name) => [`(app)/(tabs)/(mypage)/${name}`, createScreen(name)]),
@@ -85,7 +97,7 @@ async function renderApp(initialUrl: string) {
       '(app)/weather/index': createScreen('weather'),
       '(app)/weather/settings': createScreen('weather/settings'),
     },
-    { initialUrl, wrapper: TestUiProvider },
+    { initialUrl, wrapper: MyPageTestProvider },
   );
 }
 

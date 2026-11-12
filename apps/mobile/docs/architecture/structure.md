@@ -161,14 +161,22 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 | 프로세스 | `AppLogger`·`Analytics`·`ErrorReporter`, `QueryClient`, 보안·암호화 저장소, `TokenStore`·토큰 갱신기, HTTP 클라이언트, 결제 SDK 게이트웨이, 그 밖의 기기 어댑터 | `composition-root.ts`가 한 번                         |
 | 마운트   | Api, service, repository, store                                                                                                                                 | `DIProvider`가 마운트마다 `createAppContainer(ports)` |
 
-- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`에만 둔다. 그 밖의 모듈 전역 상태는 DI store로 옮긴다. 이유를 남긴 예외는 `cold-start-link`와 `keyboard-bottom-sheet`뿐이다.
+- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`에만 둔다. 그 밖의 모듈 전역 상태는 DI store(`pushOnboardingGuardStore`, `myPagePaneLayoutStore`, `myPageDetailRootStore`, `inviteLinkOpenedStore`)나 어댑터 팩토리의 클로저 변수(푸시 게이트웨이의 앞 알림 표시 판단)로 옮긴다. DI보다 먼저 있거나 DI 밖에서 읽어 옮길 수 없는 것만 남기고 늘리지 않는다.
+  - `bootstrap/navigation/cold-start-link`: 앱 트리·DI보다 먼저 받은 첫 URL을 Index가 한 번 읽는다
+  - `shared/ui/bottom-sheet/keyboard-bottom-sheet`의 열린 시트 수: 키보드 컨트롤러가 네이티브 전역 하나라 수도 그 수명을 따른다
+  - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면, 접근성 설정 store, 위젯 진입점)이 쓰는 로거. `composition-root`가 한 번 정한다
+  - `core/events/event-channel`의 리스너 오류 보고기: `core`는 DI를 모른다. `DIProvider`가 마운트 때 건다
+  - 접근성 설정 store(`use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`): DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는 OS 설정 하나를 구독 하나로 나눠 읽는다
+  - `shared/infra/storage/widget-storage.android`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다
+  - `shared/utils/create-optimistic-id`: React 밖 cache helper가 부르고 프로세스 안에서 겹치지 않아야 한다
+  - `shared/date/format/intl-formatter`의 포매터 캐시: 상태가 아닌 순수 캐시다
 - 루트 "다시 시도"는 마운트 수명 컨테이너만 새로 만든다. 로그인·결제 설정·보고는 그대로 남는다.
 - 언마운트·로그아웃 뒤에 도는 일이 없어야 한다. await 뒤 상태 변경·이동은 막고, 핸들러가 건 rAF·타이머는 지우고, 리스너 세트 대신 `subscribe`가 해제 함수를 돌려주는 관찰 가능한 저장소를 쓴다. 상세: [hooks](./hooks.md).
 
 `shared/infra`를 직접 import하거나 SDK를 포트 없이 쓰는 곳은 아래뿐이다. 늘리지 않는다.
 
 - `shared/infra` 안 경계 파일(`audio/use-audio-part-playlist.ts`, `keep-awake/use-keep-screen-awake.ts`, `localization/device-locale.ts`, `linking/use-linking-url.ts`, `view-capture/capturable-view.tsx`): 라이브러리 자체가 훅·컴포넌트라 DI 값으로 바꿀 수 없다
-- `create-device-ports`·`composition-root`, `app/_layout.tsx`의 루트 오류 보고기: 조립하는 곳이거나 Provider 밖에서 그려진다
+- `create-device-ports`·`composition-root`, `app/_layout.tsx`의 루트 오류 보고기, `bootstrap/navigation/open-support-mail.ts`(루트 경계의 문의 메일): 조립하는 곳이거나 Provider 밖에서 그려진다
 - 위젯 진입점(`device/widget/bridge/`), `shared/infra/device/device-info.ts`의 시작 상수, DI보다 위의 Provider: 앱 트리·DI가 없거나 DI보다 먼저다
 - `expo-router`(route와 route 경계 훅), `shared/config/env.ts`의 `expo-constants`, 루트 레이아웃의 `expo-splash-screen`: 포트로 숨기지 않는 라이브러리다
 

@@ -1,3 +1,4 @@
+import { useMyPageDetailRootStore } from '@src/bootstrap/providers/di-context';
 import { getMyPageDetailOptions } from '@src/features/identity/user/utils/my-page-detail-options';
 import {
   Box,
@@ -21,13 +22,14 @@ import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area
 export function MyPageStack({ menu, children }: { menu: ReactNode; children?: ReactNode }) {
   const isCompact = usePaneSizeClass() === 'compact';
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
+  const detailRootStore = useMyPageDetailRootStore();
 
   // 화면 안 칸들은 바깥 `PaneArea`가 잰 탭 안 영역 inset을 받는다
   return (
     <Stack
       screenOptions={(input) => ({
         ...screenOptions,
-        ...(!isCompact && getMyPageDetailOptions(input)),
+        ...(!isCompact && getMyPageDetailOptions(input, detailRootStore.getRequestedPathname())),
       })}
       screenLayout={({ children: screen }) => (
         <MyPageScreenLayout menu={menu}>{screen}</MyPageScreenLayout>

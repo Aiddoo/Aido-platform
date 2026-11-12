@@ -2,11 +2,8 @@ import { router, Stack } from 'expo-router';
 import { act, renderRouter } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
-import {
-  clearMyPageDetailRootRequest,
-  getMyPageDetailOptions,
-  requestMyPageDetailRoot,
-} from './my-page-detail-options';
+import { createMyPageDetailRootStore } from '../stores/my-page-detail-root.store';
+import { getMyPageDetailOptions } from './my-page-detail-options';
 
 // 실제 라우터로 화면이 처음 그려질 때 받는 옵션을 본다
 jest.unmock('expo-router');
@@ -24,7 +21,7 @@ describe('getMyPageDetailOptions', () => {
     const input = createInput('theme', ['menu', 'theme']);
 
     // When
-    const options = getMyPageDetailOptions(input);
+    const options = getMyPageDetailOptions(input, null);
 
     // Then
     expect(options).toEqual({ headerBackVisible: false, gestureEnabled: false, animation: 'none' });
@@ -35,7 +32,7 @@ describe('getMyPageDetailOptions', () => {
     const input = createInput('search', ['menu', 'friends', 'search']);
 
     // When
-    const options = getMyPageDetailOptions(input);
+    const options = getMyPageDetailOptions(input, null);
 
     // Then
     expect(options).toEqual({ animation: 'fade', animationMatchesGesture: true });
@@ -46,7 +43,7 @@ describe('getMyPageDetailOptions', () => {
     const input = createInput('menu', ['menu']);
 
     // When
-    const options = getMyPageDetailOptions(input);
+    const options = getMyPageDetailOptions(input, null);
 
     // Then
     expect(options).toEqual({});
@@ -65,6 +62,8 @@ function createScreen(testID: string) {
   };
 }
 
+let detailRootStore = createMyPageDetailRootStore();
+
 async function renderPane(initialUrl: string) {
   return renderRouter(
     {
@@ -72,7 +71,7 @@ async function renderPane(initialUrl: string) {
         default: () => (
           <Stack
             screenOptions={(input) => {
-              const options = getMyPageDetailOptions(input);
+              const options = getMyPageDetailOptions(input, detailRootStore.getRequestedPathname());
               optionsLog.push({
                 name: input.route.name,
                 headerBackVisible: options.headerBackVisible,
@@ -100,7 +99,7 @@ function firstOptionsOf(name: string) {
 describe('getMyPageDetailOptions (실제 라우터)', () => {
   beforeEach(() => {
     optionsLog.length = 0;
-    clearMyPageDetailRootRequest();
+    detailRootStore = createMyPageDetailRootStore();
   });
 
   it('비어 있는 칸에서 연 첫 상세는 처음 그릴 때부터 뒤로 가기가 없다', async () => {
@@ -137,7 +136,7 @@ describe('getMyPageDetailOptions (실제 라우터)', () => {
 
     // When
     await act(() => {
-      requestMyPageDetailRoot('/settings/theme');
+      detailRootStore.request('/settings/theme');
       router.dismissAll();
       router.push('/settings/theme');
     });

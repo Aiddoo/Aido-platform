@@ -34,6 +34,8 @@ import type { AuthSessionStore } from '@src/features/identity/auth/stores/auth-s
 import type { ConsentApi } from '@src/features/identity/consent/apis/consent.api';
 import type { PreferenceApi } from '@src/features/identity/preference/apis/preference.api';
 import type { UserApi } from '@src/features/identity/user/apis/user.api';
+import type { MyPageDetailRootStore } from '@src/features/identity/user/stores/my-page-detail-root.store';
+import type { MyPagePaneLayoutStore } from '@src/features/identity/user/stores/my-page-pane-layout.store';
 import type { AchievementApi } from '@src/features/insights/achievement/apis/achievement.api';
 import type { ReportApi } from '@src/features/insights/report/apis/report.api';
 import type { MemoApi } from '@src/features/notes/memo/apis/memo.api';
@@ -50,6 +52,7 @@ import type { FriendApi } from '@src/features/social/friend/apis/friend.api';
 import type { InviteShareService } from '@src/features/social/invite/services/invite-share.service';
 import type { InviteService } from '@src/features/social/invite/services/invite.service';
 import type { PendingRedemptionService } from '@src/features/social/invite/services/pending-redemption.service';
+import type { InviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import type { ModerationApi } from '@src/features/social/moderation/apis/moderation.api';
 import type { TodoNudgeApi } from '@src/features/social/nudge/apis/todo-nudge.api';
 import type { InquiryApi } from '@src/features/support/inquiry/apis/inquiry.api';
@@ -100,6 +103,10 @@ export interface DIContainer extends SharedDependencies {
   preferenceApi: PreferenceApi;
 
   userApi: UserApi;
+  /** 마이 메뉴 칸의 스크롤 위치(칸이 화면마다 다시 그려져도 이어진다) */
+  myPagePaneLayoutStore: MyPagePaneLayoutStore;
+  /** 넓은 화면 마이 Stack의 첫 상세 판단 */
+  myPageDetailRootStore: MyPageDetailRootStore;
 
   entitlementApi: EntitlementApi;
   purchasesSession: PurchasesSession;
@@ -163,6 +170,8 @@ export interface DIContainer extends SharedDependencies {
   inviteService: InviteService;
   pendingRedemptionService: PendingRedemptionService;
   inviteShareService: InviteShareService;
+  /** 같은 초대 링크 열림을 한 번만 센다 */
+  inviteLinkOpenedStore: InviteLinkOpenedStore;
 
   activationService: ActivationService;
   /** 시작 정리(`useStartupCleanup`)만 쓴다. 화면은 `activationService`를 써서 훅을 두지 않는다 */
@@ -275,6 +284,12 @@ export function usePreferenceApi() {
 
 export function useUserApi() {
   return useDI().userApi;
+}
+export function useMyPagePaneLayoutStore() {
+  return useDI().myPagePaneLayoutStore;
+}
+export function useMyPageDetailRootStore() {
+  return useDI().myPageDetailRootStore;
 }
 
 export function useEntitlementApi() {
@@ -407,6 +422,9 @@ export function usePendingRedemptionService() {
 }
 export function useInviteShareService() {
   return useDI().inviteShareService;
+}
+export function useInviteLinkOpenedStore() {
+  return useDI().inviteLinkOpenedStore;
 }
 
 export function useActivationService() {

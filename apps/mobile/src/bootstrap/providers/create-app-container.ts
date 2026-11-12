@@ -64,6 +64,8 @@ import { createAuthSessionStore } from '@src/features/identity/auth/stores/auth-
 import { ConsentApi } from '@src/features/identity/consent/apis/consent.api';
 import { PreferenceApi } from '@src/features/identity/preference/apis/preference.api';
 import { UserApi } from '@src/features/identity/user/apis/user.api';
+import { createMyPageDetailRootStore } from '@src/features/identity/user/stores/my-page-detail-root.store';
+import { createMyPagePaneLayoutStore } from '@src/features/identity/user/stores/my-page-pane-layout.store';
 import { AchievementApi } from '@src/features/insights/achievement/apis/achievement.api';
 import { ReportApi } from '@src/features/insights/report/apis/report.api';
 import { MemoApi } from '@src/features/notes/memo/apis/memo.api';
@@ -87,6 +89,7 @@ import { pendingRedemptionStoredValue } from '@src/features/social/invite/schema
 import { InviteShareService } from '@src/features/social/invite/services/invite-share.service';
 import { InviteService } from '@src/features/social/invite/services/invite.service';
 import { PendingRedemptionService } from '@src/features/social/invite/services/pending-redemption.service';
+import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import { ModerationApi } from '@src/features/social/moderation/apis/moderation.api';
 import { TodoNudgeApi } from '@src/features/social/nudge/apis/todo-nudge.api';
 import { InquiryApi } from '@src/features/support/inquiry/apis/inquiry.api';
@@ -335,6 +338,8 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     preferenceApi: new PreferenceApi(authHttpClient),
 
     userApi: new UserApi(authHttpClient),
+    myPagePaneLayoutStore: createMyPagePaneLayoutStore(),
+    myPageDetailRootStore: createMyPageDetailRootStore(),
 
     entitlementApi: new EntitlementApi(authHttpClient, logger),
     purchasesSession,
@@ -418,6 +423,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       clipboard: ports.clipboard,
       errorReporter,
     }),
+    inviteLinkOpenedStore: createInviteLinkOpenedStore(),
 
     activationService: new ActivationService(syncStorage),
     activationProgressRepository,

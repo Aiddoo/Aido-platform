@@ -1,4 +1,5 @@
 import { AuthGateLayout } from '@src/bootstrap/navigation/auth-gate-layout';
+import { openSupportMail } from '@src/bootstrap/navigation/open-support-mail';
 import { ROOT_ERROR_BOUNDARY_LOG_EVENT } from '@src/bootstrap/navigation/root-error-boundary-log-events';
 import { AppProviders } from '@src/bootstrap/providers/app-providers';
 import { compositionRoot } from '@src/bootstrap/providers/composition-root';
@@ -11,7 +12,7 @@ import {
   initErrorReporting,
   wrapRootComponent,
 } from '@src/shared/infra/observability/error-reporting';
-import { ErrorIllustration, openSupportMail } from '@src/shared/ui';
+import { ErrorIllustration } from '@src/shared/ui';
 
 import '../global.css';
 import '@src/shared/i18n/init';
