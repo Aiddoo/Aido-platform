@@ -1,5 +1,5 @@
 import { getNowInstant } from '@src/shared/date/clock';
-import { ToastProvider, useToast } from 'heroui-native';
+import { type ToastComponentProps, ToastProvider, useToast } from 'heroui-native';
 import {
   type ComponentProps,
   createContext,
@@ -15,10 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getToastTopInset } from './get-toast-top-inset';
 import { createToastLayers, type ToastLayers } from './toast-layers';
-
-type Toaster = ReturnType<typeof useToast>['toast'];
-type ToastComponent = Extract<Parameters<Toaster['show']>[0], { component: unknown }>['component'];
-type ToastComponentProps = Parameters<ToastComponent>[0];
 
 export type AppToastRender = (
   toastProps: ToastComponentProps,

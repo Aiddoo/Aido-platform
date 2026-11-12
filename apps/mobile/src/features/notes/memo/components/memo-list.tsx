@@ -512,11 +512,14 @@ MemoList.Empty = function Empty() {
   );
 };
 
-/** 순서가 바뀔 때(만들기·고정·삭제)만 FlashList 권장대로 재사용을 멈추고 LayoutAnimation을 걸어 카드가 미끄러진다. 탭 전환·다시 마운트·칸 수 변경·다음 쪽은 움직이지 않는다 */
-type MemoCardActions = ReturnType<typeof useMemoCardActions>;
+type MemoCardActions = {
+  isPinPending: boolean;
+  togglePin: () => void;
+  openDeleteDialog: () => void;
+};
 
 /** 카드에서 바로 하는 고정·삭제. iOS 길게 누르기 메뉴와 스크린리더 동작이 같은 것을 부른다 */
-function useMemoCardActions(memo: Memo) {
+function useMemoCardActions(memo: Memo): MemoCardActions {
   const setPinned = useMutation(useSetMemoPinnedMutationOptions({ memoId: memo.id }));
   const openDeleteDialog = useOpenMemoDeleteDialog({ memoId: memo.id });
 
@@ -531,6 +534,7 @@ function useMemoCardActions(memo: Memo) {
   };
 }
 
+/** 순서가 바뀔 때(만들기·고정·삭제)만 FlashList 권장대로 재사용을 멈추고 LayoutAnimation을 걸어 카드가 미끄러진다. 탭 전환·다시 마운트·칸 수 변경·다음 쪽은 움직이지 않는다 */
 function useDisplayedMemos(
   memos: readonly Memo[],
   listRef: RefObject<FlashListRef<Memo> | null>,
