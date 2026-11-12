@@ -193,153 +193,155 @@ function getUnhandledNavigationErrors(consoleError: jest.SpyInstance) {
     .filter((message) => message.includes('was not handled by any navigator'));
 }
 
-describe('가입 직후 알림 화면 — 실제 라우터', () => {
-  beforeEach(() => {
-    Object.defineProperty(globalThis, 'requestIdleCallback', {
-      configurable: true,
-      value: (callback: IdleRequestCallback) => {
-        callback({ didTimeout: false, timeRemaining: () => 10 });
-        return 1;
-      },
-    });
-    Object.defineProperty(globalThis, 'cancelIdleCallback', {
-      configurable: true,
-      value: () => undefined,
-    });
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  describe.each(WINDOW_WIDTHS)('%s', (_label, width) => {
+describe('useOpenPushOnboarding', () => {
+  describe('가입 직후 알림 화면 — 실제 라우터', () => {
     beforeEach(() => {
-      stubWindowDimensions(width);
+      Object.defineProperty(globalThis, 'requestIdleCallback', {
+        configurable: true,
+        value: (callback: IdleRequestCallback) => {
+          callback({ didTimeout: false, timeRemaining: () => 10 });
+          return 1;
+        },
+      });
+      Object.defineProperty(globalThis, 'cancelIdleCallback', {
+        configurable: true,
+        value: () => undefined,
+      });
     });
 
-    it.each([
-      ['[계속] 뒤 OS에서 허용', pressContinue, 'granted'],
-      ['[계속] 뒤 OS에서 거부', pressContinue, 'denied'],
-      ['헤더 닫기', pressClose, 'undetermined'],
-    ] as const)(
-      '새 가입자가 피드 위에 열린 알림 화면에서 %s하면, 마이 탭이 아니라 원래 있던 피드로 돌아온다',
-      async (_case, answer, requestedStatus) => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    describe.each(WINDOW_WIDTHS)('%s', (_label, width) => {
+      beforeEach(() => {
+        stubWindowDimensions(width);
+      });
+
+      it.each([
+        ['[계속] 뒤 OS에서 허용', pressContinue, 'granted'],
+        ['[계속] 뒤 OS에서 거부', pressContinue, 'denied'],
+        ['헤더 닫기', pressClose, 'undetermined'],
+      ] as const)(
+        '새 가입자가 피드 위에 열린 알림 화면에서 %s하면, 마이 탭이 아니라 원래 있던 피드로 돌아온다',
+        async (_case, answer, requestedStatus) => {
+          // Given
+          const consoleError = jest.spyOn(console, 'error');
+          const { route } = await renderAppRoutes({
+            permission: UNDETERMINED,
+            requestedPermission: createPushPermissionResponse({
+              status: requestedStatus,
+              canAskAgain: requestedStatus === 'undetermined',
+            }),
+          });
+          await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
+
+          // When
+          await answer();
+
+          // Then
+          await waitFor(() => expect(screen.queryByText('계속')).toBeNull());
+          expect(route.getPathname()).toBe('/feed');
+          expect(screen.getByTestId('feed')).toBeTruthy();
+          expect(feedMounted).toHaveBeenCalledTimes(1);
+          expect(router.canGoBack()).toBe(false);
+          expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
+        },
+      );
+    });
+
+    it('[계속] 뒤 권한 창을 띄우지 못하면 닫은 것으로 남겨 원래 있던 피드로 돌아온다', async () => {
+      // Given
+      const { route, syncStorage, accountId } = await renderAppRoutes({
+        permission: UNDETERMINED,
+        requestError: new Error('unavailable'),
+      });
+      await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
+
+      // When
+      await pressContinue();
+
+      // Then
+      await waitFor(() => expect(screen.queryByText('계속')).toBeNull());
+      expect(route.getPathname()).toBe('/feed');
+      expect(
+        readStoredValue(syncStorage, pushPermissionDeferredAtStoredValue, accountId),
+      ).not.toBeNull();
+    });
+
+    it('다른 탭에서 링크로 열린 알림 화면은 답한 뒤 그 탭으로 돌아온다', async () => {
+      // Given
+      const { route } = await renderAppRoutes({ permission: UNDETERMINED, initialUrl: '/memo' });
+      await act(() => router.push('/onboarding/notifications'));
+      await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
+
+      // When
+      await pressClose();
+
+      // Then
+      await waitFor(() => expect(route.getPathname()).toBe('/memo'));
+      expect(screen.getByTestId('memo')).toBeTruthy();
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe('/feed');
+      expect(router.canGoBack()).toBe(false);
+    });
+
+    it.each(['granted', 'denied'] as const)(
+      '기기 권한이 %s인 사용자는 알림 화면이 열리지 않고, 링크로도 열리지 않으며 경고를 남기지 않는다',
+      async (status) => {
         // Given
         const consoleError = jest.spyOn(console, 'error');
-        const { route } = await renderAppRoutes({
-          permission: UNDETERMINED,
-          requestedPermission: createPushPermissionResponse({
-            status: requestedStatus,
-            canAskAgain: requestedStatus === 'undetermined',
-          }),
+        const { route, queryClient } = await renderAppRoutes({
+          permission: createPushPermissionResponse({ status }),
         });
-        await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
+        await waitFor(() => {
+          expect(queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeDefined();
+          expect(queryClient.getQueryData(PUSH_PERMISSION_QUERY_KEYS.current())).toBeDefined();
+        });
 
         // When
-        await answer();
+        await act(() => router.push('/onboarding/notifications'));
 
         // Then
-        await waitFor(() => expect(screen.queryByText('계속')).toBeNull());
-        expect(route.getPathname()).toBe('/feed');
+        await waitFor(() => expect(route.getPathname()).toBe('/feed'));
         expect(screen.getByTestId('feed')).toBeTruthy();
-        expect(feedMounted).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText('계속')).toBeNull();
         expect(router.canGoBack()).toBe(false);
         expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
       },
     );
-  });
 
-  it('[계속] 뒤 권한 창을 띄우지 못하면 닫은 것으로 남겨 원래 있던 피드로 돌아온다', async () => {
-    // Given
-    const { route, syncStorage, accountId } = await renderAppRoutes({
-      permission: UNDETERMINED,
-      requestError: new Error('unavailable'),
-    });
-    await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
-
-    // When
-    await pressContinue();
-
-    // Then
-    await waitFor(() => expect(screen.queryByText('계속')).toBeNull());
-    expect(route.getPathname()).toBe('/feed');
-    expect(
-      readStoredValue(syncStorage, pushPermissionDeferredAtStoredValue, accountId),
-    ).not.toBeNull();
-  });
-
-  it('다른 탭에서 링크로 열린 알림 화면은 답한 뒤 그 탭으로 돌아온다', async () => {
-    // Given
-    const { route } = await renderAppRoutes({ permission: UNDETERMINED, initialUrl: '/memo' });
-    await act(() => router.push('/onboarding/notifications'));
-    await waitFor(() => expect(route.getPathname()).toBe('/onboarding/notifications'));
-
-    // When
-    await pressClose();
-
-    // Then
-    await waitFor(() => expect(route.getPathname()).toBe('/memo'));
-    expect(screen.getByTestId('memo')).toBeTruthy();
-
-    // When
-    await act(() => router.back());
-
-    // Then
-    expect(route.getPathname()).toBe('/feed');
-    expect(router.canGoBack()).toBe(false);
-  });
-
-  it.each(['granted', 'denied'] as const)(
-    '기기 권한이 %s인 사용자는 알림 화면이 열리지 않고, 링크로도 열리지 않으며 경고를 남기지 않는다',
-    async (status) => {
+    it('이미 답한 사용자가 앱을 새로 열며 알림 화면 링크로 들어와도 피드가 열린다', async () => {
       // Given
-      const consoleError = jest.spyOn(console, 'error');
-      const { route, queryClient } = await renderAppRoutes({
-        permission: createPushPermissionResponse({ status }),
+      const { route } = await renderAppRoutes({
+        permission: createPushPermissionResponse({ status: 'granted' }),
+        initialUrl: '/onboarding/notifications',
       });
-      await waitFor(() => {
-        expect(queryClient.getQueryData(USER_QUERY_KEYS.me())).toBeDefined();
-        expect(queryClient.getQueryData(PUSH_PERMISSION_QUERY_KEYS.current())).toBeDefined();
-      });
-
-      // When
-      await act(() => router.push('/onboarding/notifications'));
 
       // Then
       await waitFor(() => expect(route.getPathname()).toBe('/feed'));
       expect(screen.getByTestId('feed')).toBeTruthy();
       expect(screen.queryByText('계속')).toBeNull();
-      expect(router.canGoBack()).toBe(false);
-      expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
-    },
-  );
-
-  it('이미 답한 사용자가 앱을 새로 열며 알림 화면 링크로 들어와도 피드가 열린다', async () => {
-    // Given
-    const { route } = await renderAppRoutes({
-      permission: createPushPermissionResponse({ status: 'granted' }),
-      initialUrl: '/onboarding/notifications',
     });
 
-    // Then
-    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
-    expect(screen.getByTestId('feed')).toBeTruthy();
-    expect(screen.queryByText('계속')).toBeNull();
-  });
+    it('다시 연 앱에서 권한을 읽자마자 피드 본문이 그려져도 알림 화면이 열린 채 남는다', async () => {
+      // Given
+      const permissionResponse = createPendingResponse(UNDETERMINED);
+      const { route } = await renderAppRoutes({
+        permission: permissionResponse.response,
+        feedScreen: createFeedAfterPermissionScreen(permissionResponse.response),
+      });
 
-  it('다시 연 앱에서 권한을 읽자마자 피드 본문이 그려져도 알림 화면이 열린 채 남는다', async () => {
-    // Given
-    const permissionResponse = createPendingResponse(UNDETERMINED);
-    const { route } = await renderAppRoutes({
-      permission: permissionResponse.response,
-      feedScreen: createFeedAfterPermissionScreen(permissionResponse.response),
+      // When
+      await act(async () => permissionResponse.settle());
+
+      // Then
+      await waitFor(() => expect(screen.getByText('계속')).toBeTruthy());
+      expect(route.getPathname()).toBe('/onboarding/notifications');
     });
-
-    // When
-    await act(async () => permissionResponse.settle());
-
-    // Then
-    await waitFor(() => expect(screen.getByText('계속')).toBeTruthy());
-    expect(route.getPathname()).toBe('/onboarding/notifications');
   });
 });

@@ -771,47 +771,49 @@ describe('withoutRecordings', () => {
   });
 });
 
-describe('멱등 요청 기록', () => {
-  it('정리 요청 키를 남기고 null이면 지운다', () => {
-    // Given
-    const note = createSpokenVoiceNote();
-    const digestRequest = { idempotencyKey: 'digest-key' };
+describe('VoiceNotePolicy', () => {
+  describe('멱등 요청 기록', () => {
+    it('정리 요청 키를 남기고 null이면 지운다', () => {
+      // Given
+      const note = createSpokenVoiceNote();
+      const digestRequest = { idempotencyKey: 'digest-key' };
 
-    // When
-    const requested = VoiceNotePolicy.withDigestRequest(note, digestRequest);
-    const cleared = VoiceNotePolicy.withDigestRequest(requested, null);
+      // When
+      const requested = VoiceNotePolicy.withDigestRequest(note, digestRequest);
+      const cleared = VoiceNotePolicy.withDigestRequest(requested, null);
 
-    // Then
-    expect(requested.digestRequest).toEqual(digestRequest);
-    expect(cleared.digestRequest).toBeNull();
-  });
+      // Then
+      expect(requested.digestRequest).toEqual(digestRequest);
+      expect(cleared.digestRequest).toBeNull();
+    });
 
-  it('카드 저장 요청은 키와 내용 지문을 함께 남기고 null이면 지운다', () => {
-    // Given
-    const note = createSpokenVoiceNote();
-    const planApplyRequest = { idempotencyKey: 'apply-key', fingerprint: 'cards-v1' };
+    it('카드 저장 요청은 키와 내용 지문을 함께 남기고 null이면 지운다', () => {
+      // Given
+      const note = createSpokenVoiceNote();
+      const planApplyRequest = { idempotencyKey: 'apply-key', fingerprint: 'cards-v1' };
 
-    // When
-    const requested = VoiceNotePolicy.withPlanApplyRequest(note, planApplyRequest);
-    const cleared = VoiceNotePolicy.withPlanApplyRequest(requested, null);
+      // When
+      const requested = VoiceNotePolicy.withPlanApplyRequest(note, planApplyRequest);
+      const cleared = VoiceNotePolicy.withPlanApplyRequest(requested, null);
 
-    // Then
-    expect(requested.planApplyRequest).toEqual(planApplyRequest);
-    expect(cleared.planApplyRequest).toBeNull();
-  });
+      // Then
+      expect(requested.planApplyRequest).toEqual(planApplyRequest);
+      expect(cleared.planApplyRequest).toBeNull();
+    });
 
-  it('메모 저장 요청 키를 남기고 null이면 지운다', () => {
-    // Given
-    const note = createSpokenVoiceNote();
-    const memoSaveRequest = { idempotencyKey: 'memo-key' };
+    it('메모 저장 요청 키를 남기고 null이면 지운다', () => {
+      // Given
+      const note = createSpokenVoiceNote();
+      const memoSaveRequest = { idempotencyKey: 'memo-key' };
 
-    // When
-    const requested = VoiceNotePolicy.withMemoSaveRequest(note, memoSaveRequest);
-    const cleared = VoiceNotePolicy.withMemoSaveRequest(requested, null);
+      // When
+      const requested = VoiceNotePolicy.withMemoSaveRequest(note, memoSaveRequest);
+      const cleared = VoiceNotePolicy.withMemoSaveRequest(requested, null);
 
-    // Then
-    expect(requested.memoSaveRequest).toEqual(memoSaveRequest);
-    expect(cleared.memoSaveRequest).toBeNull();
+      // Then
+      expect(requested.memoSaveRequest).toEqual(memoSaveRequest);
+      expect(cleared.memoSaveRequest).toBeNull();
+    });
   });
 });
 

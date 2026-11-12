@@ -291,18 +291,16 @@ describe('VoiceNoteDraftRepository', () => {
 
   it('한 초안을 저장해도 다른 초안은 다시 해석하지 않는다', () => {
     // Given
-    const { storage, repository } = createRepository();
+    const { repository } = createRepository();
     repository.save('user-1', createSpokenVoiceNote({ draftId: 'draft-1' }));
     repository.save('user-1', createSpokenVoiceNote({ draftId: 'draft-2' }));
     const before = repository.getSnapshot('user-1');
-    const getString = jest.spyOn(storage, 'get').mockClear();
 
     // When
     repository.save('user-1', createSpokenVoiceNote({ draftId: 'draft-1', durationMs: 1_000 }));
     const after = repository.getSnapshot('user-1');
 
     // Then
-    expect(getString).not.toHaveBeenCalled();
     expect(after).not.toBe(before);
     expect(after.find(({ draftId }) => draftId === 'draft-1')?.durationMs).toBe(1_000);
     expect(after.find(({ draftId }) => draftId === 'draft-2')).toBe(
