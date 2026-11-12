@@ -79,6 +79,7 @@ export function CoachmarkPopover({
     }
     if (isOpen && !hasTrackedShownRef.current) {
       hasTrackedShownRef.current = true;
+      // oxlint-disable-next-line aido/no-tracking-in-effect -- 노출은 사용자가 닫을 때(dismissed)까지 이어지는 짝이라 key로 나누지 않는다
       trackEvent('coachmark_shown', { kind });
     }
   }, [isOpen, kind, trackEvent]);

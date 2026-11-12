@@ -29,6 +29,7 @@ export function useWhatsNewTracking({ release, source, accountId }: WhatsNewTrac
     if (campaignId == null) {
       return;
     }
+    // oxlint-disable-next-line aido/no-tracking-in-effect -- 노출과 닫힘(cleanup)이 한 수명의 짝이다
     trackEvent('feature_hub_impression', { campaign_id: campaignId, source });
 
     return () => {

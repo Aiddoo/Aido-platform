@@ -901,6 +901,7 @@
         "aido/no-return-type-of-hook": "error",
         "aido/query-data-alias": "error",
         "aido/logger-event-constant": "error",
+        "aido/no-tracking-in-effect": "error",
         "react/forbid-elements": [
           "error",
           {
@@ -1278,6 +1279,16 @@
       "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
       "rules": {
         "aido/no-clock-read": "error"
+      }
+    },
+    {
+      // 보기마다 한 번을 지키는 공용 장치 둘만 효과에서 보낸다
+      "files": [
+        "src/shared/analytics/use-track-view.ts",
+        "src/shared/hooks/use-screen-tracking.ts"
+      ],
+      "rules": {
+        "aido/no-tracking-in-effect": "off"
       }
     },
     {
