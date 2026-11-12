@@ -18,10 +18,10 @@ export const NOTIFICATION_INBOX_DESTINATION: NotificationDestination = {
   href: '/notifications',
 };
 
-/** 지금 보고 있는 화면. 경로는 그룹 없이(`usePathname`), 값은 경로 조각과 쿼리를 합친 것(`useGlobalSearchParams`)이다 */
+/** 지금 보고 있는 화면. 경로는 그룹 없이(`usePathname`), 값은 그 화면 route의 경로 조각과 쿼리(`useFocusedRouteParams`)다 */
 export interface CurrentRoute {
   pathname: string;
-  params: Partial<Record<string, string | string[]>>;
+  params: Readonly<Record<string, unknown>>;
 }
 
 /** 같은 화면 안에서 날짜·진입 경로·연 시각·댓글 위치만 바꾸는 값이라 다른 화면으로 보지 않는다 */
