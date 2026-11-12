@@ -4,16 +4,17 @@
 
 ## 고르는 법
 
-| 띄울 것                                         | 쓰는 것                        |
-| ----------------------------------------------- | ------------------------------ |
-| 값을 고르는 시트(날짜·시간·반복·카테고리 피커)  | `useOpenSheet()`               |
-| 폼이 `footer`를 가진 입력 시트(콕, 계획 고치기) | `useOpenKeyboardSheet()`       |
-| 확인 다이얼로그                                 | `useConfirmDialog().openAsync` |
-| 답을 받아 흐름을 잇는 시트(동의, 구독 안내)     | `useOverlay().openAsync`       |
+| 띄울 것                                         | 쓰는 것                                    |
+| ----------------------------------------------- | ------------------------------------------ |
+| 값을 고르는 시트(날짜·시간·반복·카테고리 피커)  | `useOpenSheet()`                           |
+| 답을 받아 흐름을 잇는 시트(AI 동의, 구독 안내)  | `useOpenSheet()` + `footer`·`dismissValue` |
+| 폼이 `footer`를 가진 입력 시트(콕, 계획 고치기) | `useOpenKeyboardSheet()`                   |
+| 확인 다이얼로그                                 | `useConfirmDialog().openAsync`             |
+| 위 모양에 맞지 않는 것                          | `useOverlay().openAsync`                   |
 
 ## 사용법
 
-값을 고르는 시트는 `useOpenSheet`로 띄우고 `await`로 값을 받습니다. 내용은 `close(value)`로 값을 돌려주고, 취소·끌어 내림·부른 화면이 사라짐은 모두 `undefined`입니다. 취소를 따로 구별하지 않습니다.
+값을 고르는 시트는 `useOpenSheet`로 띄우고 `await`로 값을 받습니다. 내용은 `close(value)`로 값을 돌려주고, `dismissValue`를 주지 않으면 취소·끌어 내림·부른 화면이 사라짐은 모두 `undefined`입니다.
 
 ```tsx
 const openSheet = useOpenSheet();
@@ -37,39 +38,37 @@ openKeyboardSheet(({ isOpen, onOpenChange }) => (
 ));
 ```
 
-답을 받아 흐름을 이어 가야 하면 `openAsync`와 `await`를 씁니다. 값을 담아 둘 `let`이나 ref를 따로 두지 않습니다.
+답을 받아 흐름을 이어 가는 안내 시트도 `useOpenSheet`입니다. 버튼은 `footer`로 시트 아래에 고정하고 `close(value)`로 답합니다. 사용자가 끌어 내리거나 바깥을 눌러 닫은 답은 `dismissValue`이고, 부른 화면이 사라져 답 없이 끝나면 `undefined`라 둘을 나눠 기록할 수 있습니다. 값을 담아 둘 `let`이나 ref를 따로 두지 않습니다.
 
 ```tsx
-const choice = await overlay.openAsync<UpsellChoice>(
-  ({ isOpen, close, unmount }) => (
-    <PremiumUpsellBottomSheet
-      isOpen={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          close('dismiss');
-        }
-      }}
-      onExit={unmount}
-      onSubscribe={() => close('subscribe')}
-    />
-  ),
-  { dismissedValue: null },
+const choice = await openSheet<UpsellChoice>(
+  () => <PremiumUpsell feature={feature} title={title} />,
+  {
+    footer: (close) => (
+      <PremiumUpsell.Actions
+        onSubscribe={() => close('subscribe')}
+        onLater={() => close('dismiss')}
+      />
+    ),
+    dismissValue: 'dismiss',
+  },
 );
+// 'dismiss'면 닫은 날을 남기고, undefined(화면이 사라짐)면 남기지 않는다
 ```
 
 ## API
 
-| 항목                                       | 설명                                                                              |
-| ------------------------------------------ | --------------------------------------------------------------------------------- |
-| `OverlayProvider`                          | 앱 루트와 시트 route에 둔다. 열린 overlay와 시트·다이얼로그의 PortalHost를 그린다 |
-| `useOpenSheet()`                           | `openSheet(render, OpenSheetOptions)` → `Promise<T \| undefined>`                 |
-| `useOpenKeyboardSheet()`                   | `openKeyboardSheet(({ isOpen, onOpenChange, close }) => …)`                       |
-| `useOverlay()`                             | `{ open, openAsync }`. Provider 밖에서는 오류를 던진다                            |
-| `open(({ isOpen, close, unmount }) => …)`  | 띄운다. 돌려주는 값이 없다(`useOpenKeyboardSheet`가 이것 위에 있다)               |
-| `openAsync<T>(render, { dismissedValue })` | 띄우고 `Promise<T>`를 돌려준다. 답 없이 사라지면 `dismissedValue`로 끝난다        |
-| `close()` / `close(value)`                 | `isOpen`을 false로 바꾼다. `openAsync`는 이때 resolve                             |
-| `unmount()`                                | 트리에서 뺀다. 닫힘 애니메이션이 끝난 뒤(`onExit`) 부른다                         |
-| `useOverlayState()`                        | 현재 열린 overlay 상태를 읽는다                                                   |
+| 항목                                       | 설명                                                                                                        |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `OverlayProvider`                          | 앱 루트와 시트 route에 둔다. 열린 overlay와 시트·다이얼로그의 PortalHost를 그린다                           |
+| `useOpenSheet()`                           | `openSheet(render, { hasFixedHeader?, onCloseStart?, footer?, dismissValue? })` → `Promise<T \| undefined>` |
+| `useOpenKeyboardSheet()`                   | `openKeyboardSheet(({ isOpen, onOpenChange, close }) => …)`                                                 |
+| `useOverlay()`                             | `{ open, openAsync }`. Provider 밖에서는 오류를 던진다                                                      |
+| `open(({ isOpen, close, unmount }) => …)`  | 띄운다. 돌려주는 값이 없다(`useOpenKeyboardSheet`가 이것 위에 있다)                                         |
+| `openAsync<T>(render, { dismissedValue })` | 띄우고 `Promise<T>`를 돌려준다. 답 없이 사라지면 `dismissedValue`로 끝난다                                  |
+| `close()` / `close(value)`                 | `isOpen`을 false로 바꾼다. `openAsync`는 이때 resolve                                                       |
+| `unmount()`                                | 트리에서 뺀다. 닫힘 애니메이션이 끝난 뒤(`onExit`) 부른다                                                   |
+| `useOverlayState()`                        | 현재 열린 overlay 상태를 읽는다                                                                             |
 
 ## overlay-kit과 다른 점
 

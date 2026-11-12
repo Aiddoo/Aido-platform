@@ -5,7 +5,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
-import { useOverlay } from '@src/shared/ui';
+import { useOpenSheet } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -13,7 +13,7 @@ import { type ComponentProps, useMemo } from 'react';
 import { match } from 'ts-pattern';
 
 import { parseLimitedFeature } from '../apis/entitlement.mapper';
-import { PremiumUpsellBottomSheet } from '../components/premium-upsell-bottom-sheet';
+import { PremiumUpsell } from '../components/premium-upsell';
 import type { EntitlementGateSurface, LimitReachedTrigger } from '../constants/subscription.events';
 import { type EntitlementFeature } from '../domains/entitlement.model';
 import { EntitlementPolicy, LimitedFeaturePolicy } from '../domains/entitlement.model';
@@ -26,14 +26,11 @@ import { useFormatRefillSentence } from './use-format-refill-sentence';
 
 type BlockedDecision = 'limit-reached' | 'locked';
 
-/** 시트에서 고른 것. null은 답 없이 사라졌을 때(부른 화면이 떠남)라 닫은 것으로 남기지 않는다 */
-type UpsellChoice = 'subscribe' | 'alternative' | 'dismiss' | null;
+type UpsellChoice = 'subscribe' | 'alternative' | 'dismiss';
 
 export type EntitlementGatePromptOptions = Partial<
-  Pick<
-    ComponentProps<typeof PremiumUpsellBottomSheet>,
-    'title' | 'description' | 'alternativeAction'
-  >
+  Pick<ComponentProps<typeof PremiumUpsell>, 'title' | 'description'> &
+    Pick<ComponentProps<typeof PremiumUpsell.Actions>, 'alternativeAction'>
 > & {
   /** 프리미엄 보기를 고르면 페이월로 가기 전에 불린다(아래 시트를 닫는 등) */
   onSubscribe?: () => void;
@@ -56,7 +53,7 @@ export function useEntitlementGate(
   feature: EntitlementFeature,
   { surface }: { surface: EntitlementGateSurface },
 ) {
-  const overlay = useOverlay();
+  const openSheet = useOpenSheet();
   const toast = useAppToast();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -118,52 +115,45 @@ export function useEntitlementGate(
         return;
       }
 
-      // 버튼을 여러 번 눌러도 답은 처음 고른 하나로 끝나 이동·기록이 한 번만 일어난다
-      overlay
-        .openAsync<UpsellChoice>(
-          ({ isOpen, close, unmount }) => (
-            <PremiumUpsellBottomSheet
-              feature={target}
-              title={promptTitle}
-              description={description}
+      // 버튼을 여러 번 눌러도 답은 처음 고른 하나로 끝나 이동·기록이 한 번만 일어난다. undefined는 답 없이
+      // 사라졌을 때(부른 화면이 떠남)라 닫은 것으로 남기지 않는다
+      openSheet<UpsellChoice>(
+        () => <PremiumUpsell feature={target} title={promptTitle} description={description} />,
+        {
+          footer: (close) => (
+            <PremiumUpsell.Actions
               alternativeAction={
                 alternativeAction == null
                   ? undefined
                   : { label: alternativeAction.label, onPress: () => close('alternative') }
               }
-              isOpen={isOpen}
-              onOpenChange={(nextOpen) => {
-                if (!nextOpen) {
-                  close('dismiss');
-                }
-              }}
-              onExit={unmount}
               onSubscribe={() => close('subscribe')}
+              onLater={() => close('dismiss')}
             />
           ),
-          { dismissedValue: null },
-        )
-        .then((choice) =>
-          match(choice)
-            .with('subscribe', () => goToPaywall('sheet'))
-            .with('alternative', () => alternativeAction?.onPress())
-            .with('dismiss', () => {
-              trackEvent('premium_upsell_dismissed', { feature: analyticsFeature, surface });
-              const dismissals = readStoredValue(
-                upsellDismissalStorage,
-                upsellDismissalStoredValue,
-                userId,
-              );
-              writeStoredValue(
-                upsellDismissalStorage,
-                upsellDismissalStoredValue,
-                { ...dismissals, [target]: todayKey },
-                userId,
-              );
-            })
-            .with(null, () => undefined)
-            .exhaustive(),
-        );
+          dismissValue: 'dismiss',
+        },
+      ).then((choice) =>
+        match(choice)
+          .with('subscribe', () => goToPaywall('sheet'))
+          .with('alternative', () => alternativeAction?.onPress())
+          .with('dismiss', () => {
+            trackEvent('premium_upsell_dismissed', { feature: analyticsFeature, surface });
+            const dismissals = readStoredValue(
+              upsellDismissalStorage,
+              upsellDismissalStoredValue,
+              userId,
+            );
+            writeStoredValue(
+              upsellDismissalStorage,
+              upsellDismissalStoredValue,
+              { ...dismissals, [target]: todayKey },
+              userId,
+            );
+          })
+          .with(undefined, () => undefined)
+          .exhaustive(),
+      );
     };
 
     return {
@@ -201,7 +191,7 @@ export function useEntitlementGate(
     feature,
     surface,
     snapshot,
-    overlay,
+    openSheet,
     toast,
     trackEvent,
     queryClient,

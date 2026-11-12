@@ -7,7 +7,6 @@ import {
   H4,
   HStack,
   Meter,
-  ModalBottomSheet,
   QueryErrorBoundary,
   Text,
   TextButton,
@@ -17,7 +16,7 @@ import {
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, Suspense } from 'react';
+import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 import { type EntitlementFeature } from '../domains/entitlement.model';
@@ -28,86 +27,83 @@ import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { getPlanComparison } from '../utils/plan-benefit.view-model';
 import { PremiumFeatureIcon } from './premium-feature-icon';
 
+interface PremiumUpsellProps {
+  feature: EntitlementFeature;
+  title: string;
+  /** 부른 쪽이 상황을 직접 설명하면 사용량·숫자 대신 이 글을 보여 준다 */
+  description?: string;
+}
+
+/** 한도·잠긴 기능 안내 시트의 내용. 버튼은 시트 아래에 고정되는 `PremiumUpsell.Actions`이고, 열 때 값이 굳는 overlay라 사용량은 내용이 직접 읽는다 */
+export function PremiumUpsell({ feature, title, description }: PremiumUpsellProps) {
+  return (
+    <VStack gap={20} testID="premium-upsell-sheet">
+      <VStack gap={12} align="center">
+        <PremiumFeatureIcon feature={feature} size="large" />
+        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          {title}
+        </H4>
+        {description != null && (
+          <Text size="b3" shade={7} align="center" lineBreakStrategyIOS="hangul-word">
+            {description}
+          </Text>
+        )}
+      </VStack>
+
+      {description == null && (
+        <QueryErrorBoundary fallback={PremiumUpsell.Error}>
+          <Suspense fallback={<PremiumUpsell.Loading />}>
+            <PremiumUpsell.Unlock feature={feature} />
+          </Suspense>
+        </QueryErrorBoundary>
+      )}
+    </VStack>
+  );
+}
+
 interface PremiumUpsellAlternativeAction {
   label: string;
   onPress: () => void;
 }
 
-type PremiumUpsellBottomSheetProps = Omit<
-  ComponentProps<typeof ModalBottomSheet>,
-  'children' | 'footer'
-> & {
-  feature: EntitlementFeature;
-  title: string;
-  /** 부른 쪽이 상황을 직접 설명하면 사용량·숫자 대신 이 글을 보여 준다 */
-  description?: string;
+interface PremiumUpsellActionsProps {
   /** 무료로 할 수 있는 다른 길. 있으면 주 버튼이 되고 프리미엄 보기는 글자 버튼으로 내려간다 */
   alternativeAction?: PremiumUpsellAlternativeAction;
   onSubscribe: () => void;
-};
+  onLater: () => void;
+}
 
-/** 열 때 값이 굳는 overlay라 사용량은 시트가 직접 읽는다 */
-export function PremiumUpsellBottomSheet({
-  feature,
-  title,
-  description,
+PremiumUpsell.Actions = function Actions({
   alternativeAction,
   onSubscribe,
-  onOpenChange,
-  ...sheetProps
-}: PremiumUpsellBottomSheetProps) {
+  onLater,
+}: PremiumUpsellActionsProps) {
   const { t } = useTranslation('subscription');
 
-  return (
-    <ModalBottomSheet
-      {...sheetProps}
-      onOpenChange={onOpenChange}
-      footer={
-        alternativeAction == null ? (
-          <VStack gap={12}>
-            <Button size="large" display="full" onPress={onSubscribe} testID="premium-upsell-cta">
-              {t('upsell.viewPremium')}
-            </Button>
-            <TextButton size="medium" onPress={() => onOpenChange(false)}>
-              {t('upsell.later')}
-            </TextButton>
-          </VStack>
-        ) : (
-          <VStack gap={12}>
-            <Button size="large" display="full" onPress={alternativeAction.onPress}>
-              {alternativeAction.label}
-            </Button>
-            <TextButton size="medium" onPress={onSubscribe} testID="premium-upsell-cta">
-              {t('upsell.viewPremium')}
-            </TextButton>
-          </VStack>
-        )
-      }
-    >
-      <VStack gap={20} testID="premium-upsell-sheet">
-        <VStack gap={12} align="center">
-          <PremiumFeatureIcon feature={feature} size="large" />
-          <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-            {title}
-          </H4>
-          {description != null && (
-            <Text size="b3" shade={7} align="center" lineBreakStrategyIOS="hangul-word">
-              {description}
-            </Text>
-          )}
-        </VStack>
-
-        {description == null && (
-          <QueryErrorBoundary fallback={PremiumUpsellBottomSheet.Error}>
-            <Suspense fallback={<PremiumUpsellBottomSheet.Loading />}>
-              <PremiumUpsellBottomSheet.Unlock feature={feature} />
-            </Suspense>
-          </QueryErrorBoundary>
-        )}
+  if (alternativeAction == null) {
+    return (
+      <VStack gap={12}>
+        <Button size="large" display="full" onPress={onSubscribe} testID="premium-upsell-cta">
+          {t('upsell.viewPremium')}
+        </Button>
+        <TextButton size="medium" onPress={onLater}>
+          {t('upsell.later')}
+        </TextButton>
       </VStack>
-    </ModalBottomSheet>
+    );
+  }
+
+  return (
+    <VStack gap={12}>
+      <Button size="large" display="full" onPress={alternativeAction.onPress}>
+        {alternativeAction.label}
+      </Button>
+      <TextButton size="medium" onPress={onSubscribe} testID="premium-upsell-cta">
+        {t('upsell.viewPremium')}
+      </TextButton>
+    </VStack>
   );
-}
+};
 
 const LOCKED_DESCRIPTION_KEYS = {
   AI_REPORT: 'gate.aiReportDescription',
@@ -117,7 +113,7 @@ const LOCKED_DESCRIPTION_KEYS = {
 } as const satisfies Record<Exclude<EntitlementFeature, PlanLimitFeatureKey>, string>;
 
 /** 잠긴 기능은 무엇을 여는지, 한도 기능은 사용량과 "무료 → 프리미엄" 숫자를 보여 준다 */
-PremiumUpsellBottomSheet.Unlock = function Unlock({ feature }: { feature: EntitlementFeature }) {
+PremiumUpsell.Unlock = function Unlock({ feature }: { feature: EntitlementFeature }) {
   const { t } = useTranslation('subscription');
 
   return match(feature)
@@ -135,7 +131,7 @@ PremiumUpsellBottomSheet.Unlock = function Unlock({ feature }: { feature: Entitl
     .exhaustive();
 };
 
-PremiumUpsellBottomSheet.Loading = function Loading() {
+PremiumUpsell.Loading = function Loading() {
   return (
     <VStack gap={16} accessibilityState={{ busy: true }}>
       <Skeleton className="h-2 rounded-full" />
@@ -145,7 +141,7 @@ PremiumUpsellBottomSheet.Loading = function Loading() {
 };
 
 /** 숫자를 못 읽어도 제목과 버튼만으로 안내는 끝나 자리를 비운다 */
-PremiumUpsellBottomSheet.Error = function ErrorFallback() {
+PremiumUpsell.Error = function ErrorFallback() {
   return null;
 };
 

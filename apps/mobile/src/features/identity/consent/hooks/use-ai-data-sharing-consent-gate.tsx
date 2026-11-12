@@ -4,11 +4,11 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { readWithoutBlocking } from '@src/shared/query/read-without-blocking';
-import { useOverlay } from '@src/shared/ui';
+import { useOpenSheet } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
 
-import { AiConsentBottomSheet } from '../components/ai-consent-bottom-sheet';
+import { AiConsentPrompt } from '../components/ai-consent-prompt';
 import { CONSENT_LOG_EVENT } from '../constants/consent-log-events';
 import { type Consent } from '../domains/consent.model';
 import { ConsentPolicy } from '../domains/consent.model';
@@ -29,7 +29,7 @@ interface UseAiDataSharingConsentGateOptions {
 export function useAiDataSharingConsentGate({
   claimRenewalPrompt,
 }: UseAiDataSharingConsentGateOptions = {}) {
-  const overlay = useOverlay();
+  const openSheet = useOpenSheet();
   const queryClient = useQueryClient();
   const logger = useLogger();
   const { trackEvent } = useTrack();
@@ -55,31 +55,19 @@ export function useAiDataSharingConsentGate({
     }
 
     trackEvent('ai_consent_prompt_shown', { is_renewal: isRenewal });
-    // null은 답 없이 사라졌을 때라 닫은 것으로 세지 않는다. 동의 뒤 닫힘 애니메이션의 알림은 처음 답이 이긴다
-    const agreement = overlay
-      .openAsync<boolean | null>(
-        ({ isOpen, close, unmount }) => (
-          <AiConsentBottomSheet
-            isOpen={isOpen}
-            isRenewal={isRenewal}
-            onOpenChange={(open) => {
-              if (!open) {
-                close(false);
-              }
-            }}
-            onExit={unmount}
-            onAgree={() => close(true)}
-          />
-        ),
-        { dismissedValue: null },
-      )
-      .then((answer) => {
-        pendingAgreementRef.current = null;
-        if (answer === false) {
-          trackEvent('ai_consent_prompt_dismissed', { is_renewal: isRenewal });
-        }
-        return answer === true;
-      });
+    // undefined는 답 없이 사라졌을 때라 닫은 것으로 세지 않는다
+    const agreement = openSheet<boolean>(() => <AiConsentPrompt isRenewal={isRenewal} />, {
+      footer: (close) => (
+        <AiConsentPrompt.Actions onAgree={() => close(true)} onLater={() => close(false)} />
+      ),
+      dismissValue: false,
+    }).then((answer) => {
+      pendingAgreementRef.current = null;
+      if (answer === false) {
+        trackEvent('ai_consent_prompt_dismissed', { is_renewal: isRenewal });
+      }
+      return answer === true;
+    });
     pendingAgreementRef.current = agreement;
 
     return agreement;

@@ -18,7 +18,7 @@ import {
   createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import {
@@ -70,7 +70,7 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
 
-  await renderScreen(
+  const { unmount } = await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <AiParseGate error={error} onAlternative={onAlternative} />
@@ -93,6 +93,7 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
     analytics,
     queryClient,
     onAlternative,
+    unmount,
     readDismissals: () => readStoredValue(syncStorage, upsellDismissalStoredValue, ACCOUNT_ID),
     countEvents: (eventName: string) =>
       analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length,
@@ -205,6 +206,25 @@ describe('useEntitlementGate', () => {
       presentation: 'toast',
     });
     expect(countEvents('premium_upsell_dismissed')).toBe(1);
+  });
+
+  it('시트를 띄운 화면이 답 없이 사라지면 닫은 것으로 남기지 않는다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { countEvents, readDismissals, unmount } = await renderGate(
+      createEntitlementSnapshot(USED_UP),
+    );
+    await user.press(screen.getByRole('button', { name: '시작' }));
+    await screen.findByRole('button', { name: '나중에' });
+
+    // When
+    await act(async () => {
+      unmount();
+    });
+
+    // Then
+    expect(readDismissals().AI_PARSE).toBeUndefined();
+    expect(countEvents('premium_upsell_dismissed')).toBe(0);
   });
 
   it('무료 대안이 있으면 오늘 닫았어도 대안을 주 버튼으로 둔 시트를 띄운다', async () => {
