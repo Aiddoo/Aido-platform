@@ -1,4 +1,4 @@
-import { OAuthPolicy } from './oauth.model';
+import { findOAuthCode, toOAuthProvider, toOAuthProviderSlug } from './oauth.mapper';
 
 describe('toOAuthProvider', () => {
   it.each([
@@ -8,7 +8,7 @@ describe('toOAuthProvider', () => {
     ['naver', 'NAVER'],
   ] as const)('경로 이름 %s는 서버 업체 %s다', (slug, expected) => {
     // When
-    const provider = OAuthPolicy.toOAuthProvider(slug);
+    const provider = toOAuthProvider(slug);
 
     // Then
     expect(provider).toBe(expected);
@@ -20,10 +20,10 @@ describe('toOAuthProviderSlug', () => {
     '서버 업체 %s를 경로 이름으로 바꾸면 다시 같은 업체로 돌아온다',
     (provider) => {
       // When
-      const slug = OAuthPolicy.toOAuthProviderSlug(provider);
+      const slug = toOAuthProviderSlug(provider);
 
       // Then
-      expect(OAuthPolicy.toOAuthProvider(slug)).toBe(provider);
+      expect(toOAuthProvider(slug)).toBe(provider);
     },
   );
 });
@@ -35,7 +35,7 @@ describe('findOAuthCode', () => {
     const queryParams = { code: 'from-query' };
 
     // When
-    const code = OAuthPolicy.findOAuthCode(url, queryParams);
+    const code = findOAuthCode(url, queryParams);
 
     // Then
     expect(code).toBe('from-query');
@@ -46,7 +46,7 @@ describe('findOAuthCode', () => {
     const url = 'aido://oauth/callback?state=s&code=from-search';
 
     // When
-    const code = OAuthPolicy.findOAuthCode(url, {});
+    const code = findOAuthCode(url, {});
 
     // Then
     expect(code).toBe('from-search');
@@ -57,7 +57,7 @@ describe('findOAuthCode', () => {
     const url = 'aido://oauth/callback#state=s&code=from-hash';
 
     // When
-    const code = OAuthPolicy.findOAuthCode(url, {});
+    const code = findOAuthCode(url, {});
 
     // Then
     expect(code).toBe('from-hash');
@@ -68,7 +68,7 @@ describe('findOAuthCode', () => {
     const url = 'aido://oauth/callback?state=s#error=access_denied';
 
     // When
-    const code = OAuthPolicy.findOAuthCode(url, {});
+    const code = findOAuthCode(url, {});
 
     // Then
     expect(code).toBeNull();
@@ -79,7 +79,7 @@ describe('findOAuthCode', () => {
     const url = 'not a url';
 
     // When
-    const code = OAuthPolicy.findOAuthCode(url, {});
+    const code = findOAuthCode(url, {});
 
     // Then
     expect(code).toBeNull();
@@ -90,7 +90,7 @@ describe('findOAuthCode', () => {
     const url = 'aido://oauth/callback?code=from-url';
 
     // When
-    const code = OAuthPolicy.findOAuthCode(url, { code: '' });
+    const code = findOAuthCode(url, { code: '' });
 
     // Then
     expect(code).toBe('from-url');

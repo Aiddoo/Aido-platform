@@ -6,7 +6,7 @@ import {
   createFeatureQuotaDto,
 } from '../__tests__/entitlement.fixtures';
 import { toFeatureQuota } from '../apis/entitlement.mapper';
-import { EntitlementPolicy, LimitedFeaturePolicy } from './entitlement.model';
+import { EntitlementPolicy, getBlockedDecision } from './entitlement.model';
 
 const SEOUL = 'Asia/Seoul';
 const LOS_ANGELES = 'America/Los_Angeles';
@@ -377,7 +377,7 @@ describe('getBlockedDecision', () => {
     const limited = { feature, featureQuota };
 
     // When
-    const decision = LimitedFeaturePolicy.getBlockedDecision(limited);
+    const decision = getBlockedDecision(limited);
 
     // Then
     expect(decision).toBe(expected);

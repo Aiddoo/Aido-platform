@@ -2,7 +2,7 @@ import { PASSWORD_RULES } from '@aido/api/vocabulary';
 import { useTranslation } from '@src/shared/i18n';
 import { CheckmarkIcon, HStack, Text } from '@src/shared/ui';
 
-import { PasswordPolicy } from '../domains/password.model';
+import { hasLetter, hasMinLength, hasNumber } from '../domains/password.model';
 
 export interface PasswordStrengthIndicatorProps {
   password: string;
@@ -13,16 +13,10 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
 
   return (
     <HStack gap={16} className="items-center">
+      <RuleItem isSatisfied={hasLetter(password)} label={t('passwordRules.hasLetter')} />
+      <RuleItem isSatisfied={hasNumber(password)} label={t('passwordRules.hasNumber')} />
       <RuleItem
-        isSatisfied={PasswordPolicy.hasLetter(password)}
-        label={t('passwordRules.hasLetter')}
-      />
-      <RuleItem
-        isSatisfied={PasswordPolicy.hasNumber(password)}
-        label={t('passwordRules.hasNumber')}
-      />
-      <RuleItem
-        isSatisfied={PasswordPolicy.hasMinLength(password)}
+        isSatisfied={hasMinLength(password)}
         label={t('passwordRules.minLength', { count: PASSWORD_RULES.MIN_LENGTH })}
       />
     </HStack>

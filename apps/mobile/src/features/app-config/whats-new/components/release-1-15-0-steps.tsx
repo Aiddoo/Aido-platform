@@ -34,7 +34,7 @@ import {
 
 import { DEMO_PLANNED_TODOS, RELEASE_1_15_0_STEPS } from '../constants/release-1-15-0.constants';
 import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
-import { WhatsNewPolicy } from '../domains/whats-new.model';
+import { getLatestRelease } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';
 import { VoiceNoteRecordDemo, VoiceNoteResultDemo } from './voice-note-demo';
@@ -113,7 +113,7 @@ export function Release1150Steps() {
   return (
     <>
       <WhatsNewStep.Header
-        isNew={WhatsNewPolicy.getLatestRelease(RELEASES).id === RELEASE_1_15_0.id}
+        isNew={getLatestRelease(RELEASES).id === RELEASE_1_15_0.id}
         version={RELEASE_1_15_0.version}
         onClose={flow.close}
       />

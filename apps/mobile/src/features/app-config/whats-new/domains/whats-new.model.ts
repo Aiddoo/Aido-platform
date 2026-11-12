@@ -41,14 +41,14 @@ interface AutoOpenContext {
 }
 
 /** 서버가 켠 캠페인을 앱이 묶어 온 출시로 찾는다. 앱이 모르는 캠페인이면 없다 */
-function findReleaseByCampaign<T extends Release>(
+export function findReleaseByCampaign<T extends Release>(
   releases: readonly T[],
   campaignId: string,
 ): T | null {
   return releases.find((release) => release.campaignId === campaignId) ?? null;
 }
 
-function getLatestRelease<T extends Release>(releases: readonly [T, ...T[]]): T {
+export function getLatestRelease<T extends Release>(releases: readonly [T, ...T[]]): T {
   return maxBy(releases, (release) => Date.parse(release.releasedOn));
 }
 
@@ -84,15 +84,12 @@ function shouldAutoOpen(
 }
 
 /** 현재 시각은 분 단위 시계라 방금 연 시각보다 앞설 수 있다. 그래도 바로 보이도록 아래 경계를 두지 않는다 */
-function shouldShowReentry(openedAt: Instant | null, now: Instant): boolean {
+export function shouldShowReentry(openedAt: Instant | null, now: Instant): boolean {
   return openedAt != null && diffMs(now, openedAt) < REENTRY_WINDOW_MS;
 }
 
 export const WhatsNewPolicy = {
   shouldAutoOpen,
   canViewRelease,
-  findReleaseByCampaign,
   findTourId,
-  getLatestRelease,
-  shouldShowReentry,
 } as const;

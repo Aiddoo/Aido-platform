@@ -3,6 +3,7 @@ import { compareSemanticVersions } from '@src/shared/utils/semantic-version';
 import { orderBy, sortBy } from 'es-toolkit';
 
 import {
+  getLatestRelease,
   getLatestTourReleaseId,
   tourReleaseIdSchema,
   WhatsNewPolicy,
@@ -35,7 +36,7 @@ describe('RELEASES', () => {
     const tourIds = RELEASES.flatMap((release) => WhatsNewPolicy.findTourId(release) ?? []);
 
     // Then
-    expect(getLatestTourReleaseId()).toBe(WhatsNewPolicy.getLatestRelease(RELEASES).id);
+    expect(getLatestTourReleaseId()).toBe(getLatestRelease(RELEASES).id);
     expect(tourIds.every((id) => latestTwoIds.includes(id))).toBe(true);
     expect(tourIds).toHaveLength(tourReleaseIdSchema.options.length);
   });

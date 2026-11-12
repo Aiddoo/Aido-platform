@@ -21,9 +21,9 @@ import { Chip, Skeleton, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
+import { toOAuthProviderSlug } from '../apis/oauth.mapper';
 import { getOAuthProviderLabel } from '../constants/oauth-labels';
 import { type OAuthProvider } from '../domains/oauth.model';
-import { OAuthPolicy } from '../domains/oauth.model';
 import {
   useLinkAccountMutationOptions,
   useUnlinkAccountMutationOptions,
@@ -174,11 +174,7 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
           </Button>
         ))
         .with({ isPending: false, isLinked: false }, () => (
-          <Button
-            size="small"
-            display="inline"
-            onPress={() => link(OAuthPolicy.toOAuthProviderSlug(provider))}
-          >
+          <Button size="small" display="inline" onPress={() => link(toOAuthProviderSlug(provider))}>
             {t('linkedAccounts.connect')}
           </Button>
         ))

@@ -9,11 +9,11 @@ import { match } from 'ts-pattern';
 
 import type { AuthApi } from '../apis/auth.api';
 import { toAppleLinkRequest, toAppleSignInRequest, toEmailLoginRequest } from '../apis/auth.mapper';
+import { findOAuthCode } from '../apis/oauth.mapper';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import { AUTH_ERROR_CODE } from '../domains/auth.error';
 import { type AuthTokens } from '../domains/auth.model';
 import {
-  OAuthPolicy,
   type OAuthProviderSlug,
   type OAuthStartMode,
   type OAuthStartProvider,
@@ -137,7 +137,7 @@ export class SignInService {
     return match(session)
       .returnType<Result<string, BusinessError>>()
       .with({ type: 'success' }, ({ url, queryParams }) => {
-        const code = OAuthPolicy.findOAuthCode(url, queryParams);
+        const code = findOAuthCode(url, queryParams);
         if (code) {
           return ok(code);
         }

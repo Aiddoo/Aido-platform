@@ -15,6 +15,7 @@ import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
+import { toOAuthProvider, toOAuthProviderSlug } from '../apis/oauth.mapper';
 import { getOAuthProviderLabel } from '../constants/oauth-labels';
 import {
   findLoginFailureReason,
@@ -24,7 +25,6 @@ import {
   isPasswordMismatchError,
 } from '../domains/auth.error';
 import { type OAuthProvider, type OAuthProviderSlug } from '../domains/oauth.model';
-import { OAuthPolicy } from '../domains/oauth.model';
 import { useAuthSession } from '../hooks/use-auth-session';
 import type {
   ChangePasswordInput,
@@ -457,7 +457,7 @@ export function useLinkAccountMutationOptions() {
     onSuccess: async (_data, provider) => {
       toast.success(
         t('auth:toasts.accountLinked', {
-          provider: getOAuthProviderLabel(OAuthPolicy.toOAuthProvider(provider)),
+          provider: getOAuthProviderLabel(toOAuthProvider(provider)),
         }),
       );
       trackEvent('auth_social_linked', { provider });
@@ -494,7 +494,7 @@ export function useUnlinkAccountMutationOptions() {
         t('auth:toasts.accountUnlinked', { provider: getOAuthProviderLabel(provider) }),
       );
       trackEvent('auth_social_unlinked', {
-        provider: OAuthPolicy.toOAuthProviderSlug(provider),
+        provider: toOAuthProviderSlug(provider),
       });
       // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
       await Promise.all([invalidateLinkedAccounts(queryClient), invalidateMe(queryClient)]);
