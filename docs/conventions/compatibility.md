@@ -66,6 +66,8 @@
 | `voice-note-draft.schema.ts`의 새 칸 `.default`                         | 칸이 생기기 전에 저장한 말로 메모 초안                                                                                                                                                                                           | 1.16.0 이후(초안 보관 기간 `VOICE_NOTE_RETENTION_DAYS` 30일이 지난 뒤)   |
 | `activation-progress.repository.ts` `removeRetiredKeys`                 | 1.15.0 이하가 남긴 `aido_activation_v1:{account}:{campaign}`·`aido_feature_discovery_seen_v1:*` 키. 읽지 않고 지운다                                                                                                             | 1.16.0 이후(지우지 않으면 키만 남는다)                                   |
 
+코드에 남기는 제거 표시는 `1.16.0에서 지운다(compatibility.md)` 한 문구로 적어 `git grep '1.16.0에서 지운다'` 한 번으로 이 표의 1.16.0 행을 모두 찾는다. 지우지 않는 행(영구·다시 묻게 됨)은 코드에도 남기는 이유를 적는다.
+
 호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/docs/http-contracts.md#출시-앱-호환-절차))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
 
 ## 3. REST 버전

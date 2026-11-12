@@ -84,7 +84,7 @@ const legacyWidgetSnapshotV1Schema = widgetDaySnapshotSchema.extend({
   updatedAtIso: z.string(),
 });
 
-/** 저장소에서 읽을 때만 사용한다. 이미 저장된 v1은 하루짜리 v2로 읽는다. v1 읽기는 1.16에서 지운다(compatibility.md) */
+/** 저장소에서 읽을 때만 사용한다. 이미 저장된 v1은 하루짜리 v2로 읽는다. v1 읽기는 위젯 snapshot 버전 해석 계약이라 남긴다(compatibility.md) */
 export const widgetSnapshotStorageSchema = z.union([
   widgetSnapshotSchema,
   legacyWidgetSnapshotV1Schema.transform((legacy): WidgetSnapshot => ({
