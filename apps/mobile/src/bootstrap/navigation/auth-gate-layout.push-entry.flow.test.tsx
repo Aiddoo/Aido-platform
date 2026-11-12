@@ -147,7 +147,7 @@ async function setup({ status, initialUrl = '/', lastResponse, markRead }: Setup
         unstable_settings: { anchor: '(tabs)' },
       },
       '(app)/(tabs)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
-      '(app)/(tabs)/feed/index': FeedScreen,
+      '(app)/(tabs)/(todos)/feed/index': FeedScreen,
       '(app)/notifications/index': () => <Text testID="notifications">Notifications</Text>,
       '(app)/todo/[todoId]/index': TodoScreen,
     },

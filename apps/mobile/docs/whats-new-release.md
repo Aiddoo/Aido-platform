@@ -40,7 +40,7 @@
 1. `domains/whats-new.model.ts`의 출시 id(`releaseIdSchema`)와 소개 출시(`TOUR_RELEASE_IDS`) 맨 앞에 넣고, `constants/whats-new.constants.ts`의 `RELEASE_ID`에 코드에서 부를 이름을 한 줄 더한다. 세 개가 되면 맨 뒤를 빼고 그 소개 파일, `app/(app)/whats-new/index.tsx`의 `match` 갈래, 소개에만 쓰던 문구(`v{x_y_z}.{단계}`)를 지운다. 목록 줄 문구(`v{x_y_z}.release`)는 남긴다.
 2. `constants/releases.constants.ts`에 `RELEASE_x_y_z`를 더하고 `RELEASES` 맨 앞에 넣는다. `version`과 `releasedOn`은 [패치 노트](https://aido.kr/ko/patch-notes)에서 그 기능이 나온 버전·날짜를 그대로 쓴다. `id`는 route·지표·stepper 키라 한 번 정하면 바꾸지 않고 버전을 읽어 내지도 않는다(지운 친구 초대 줄은 id `1.14.0`, 버전 `1.13.0`이었다). `cta`는 그 기능을 바로 쓸 화면이다. 자동으로 열 출시에만 `campaignId`(운영 `FEATURE_DISCOVERY_CAMPAIGN_ID` 값)를 둔다. 캠페인 id는 이 한 곳에만 있다. `releases.constants.test.ts`가 버전 순서, 최근 두 출시의 소개, 캠페인 출시의 소개를 확인한다.
 3. `components/release-x-y-z-steps.tsx`를 만들고 `app/(app)/whats-new/index.tsx`의 `match`에 잇는다. `TOUR_RELEASE_IDS`를 바꾸면 `exhaustive()`가 컴파일 에러로 알려 준다.
-4. `app/(app)/(tabs)/(mypage)/whats-new/releases.tsx`의 맨 위에 `<ReleaseRow />` 한 줄을 더한다.
+4. `app/(app)/(tabs)/(me,memos,todos)/whats-new/releases.tsx`의 맨 위에 `<ReleaseRow />` 한 줄을 더한다.
 5. 장면은 화면 캡처 대신 실제 기능 부품으로 그린 예시다. `WhatsNewStep.Stage`에 기능 컴포넌트를 예시 값으로 올리고, 예시 글은 `whatsNew` 카탈로그(`v{x_y_z}.demo`)에 둔다. 마이크·네트워크·저장은 쓰지 않는다. 대본은 `useDemoScript`로 장면마다 한 번 돌고, 움직임 줄이기면 마지막 장면부터 보인다. 음량을 받는 음성 부품(`VoiceVisual`·`RecognizerWaveform`)에는 `useDemoVoiceLevel`의 UI 스레드 예시 음량을 넣고, 말이 끝나면 `isActive`를 꺼 프레임 콜백을 멈춘다. 계속 도는 움직임은 지금 보이는 단계에만 두고 한 장면에 눈에 띄는 움직임은 하나다.
 6. `locales/{ko,en}/whats-new.json`에 문구를 넣는다. 제목 1줄(약 14자), 설명 1~2줄(약 40자)이다.
 7. `constants/whats-new.events.ts`와 측정 문서를 확인한다. CTA 뒤 실제 사용은 `trackAttributedFeatureSuccess`로 잇는다.

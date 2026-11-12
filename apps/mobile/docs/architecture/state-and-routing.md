@@ -99,10 +99,50 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 ### 내비게이터
 
 - 탭은 `NativeTabs`(`expo-router/native-tabs`)이고 탭마다 `Stack`을 둔다. 헤더는 네이티브 헤더만 쓰고 버튼은 `Stack.Toolbar`로 단다. 피드·메모 탭은 화면과 무관한 왼쪽 날씨 배지를 레이아웃의 `Stack.Screen`에, 화면이 그리는 오른쪽 알림 종(`NotificationBellToolbar`)은 화면에 둔다. 한쪽으로 모으면 레이아웃이 화면 params를 구독하거나 화면이 바뀔 때 배지가 다시 그려진다.
+- 탭 그룹은 `(todos)`·`(memos)`·`(me)`이고 여러 탭에서 여는 화면은 shared routes `(me,memos,todos)`에 한 번 둔다. 탭 안에서 연 화면은 누른 탭에 쌓이므로 호출부는 그룹 없는 경로로 연다. 구조, 링크·푸시가 어느 탭에 열리는지, 화면 더하는 법은 [아래](#탭과-함께-쓰는-화면)에 있다.
 - 조건이 있는 화면은 `Stack.Protected guard`로 막는다(인증 게이트, 푸시 온보딩, 관리자 화면).
 - 메모와 말로 메모(`voice-notes`) 스택은 `slide_from_bottom`이다. `voice-notes`는 녹음을 실수로 잃지 않게 `gestureEnabled: false`다. 시스템 모달은 토스트·한도 안내를 가려 쓰지 않는다.
 - `@react-navigation/*`를 직접 import하지 않는다. 테마와 `useHeaderHeight`도 `expo-router`·`expo-router/react-navigation`에서 가져온다.
 - 플랫폼 분기는 컴포넌트·스크린의 UI 모양에서만 `process.env.EXPO_OS`로 한다. `Platform.OS`는 lint가 막고, service·model·utils에는 플랫폼 분기를 두지 않는다.
+
+### 탭과 함께 쓰는 화면
+
+탭은 NativeTabs이고 탭마다 Stack 하나다. 여러 탭에서 여는 화면은 Expo Router [shared routes](https://docs.expo.dev/router/advanced/shared-routes/)(배열 그룹)에 한 번 둔다. 모양은 expo-router 스킬의 "Stacks and Tabs Structure"와 같다.
+
+```text
+app/(app)/(tabs)/
+  _layout.tsx               NativeTabs. 트리거 (todos)·(memos)·(me), anchor (todos)
+  (todos)/_layout.tsx       할 일 탭 Stack, anchor feed/index
+  (todos)/feed/index.tsx    /feed
+  (memos)/_layout.tsx       메모 탭 Stack, anchor memo/index
+  (memos)/memo/index.tsx    /memo
+  (me)/_layout.tsx          마이 탭 Stack(MyPageStack + 넓은 화면 메뉴 칸), anchor mypage/index
+  (me)/mypage/index.tsx     /mypage
+  (me,memos,todos)/…        친구·배지·리포트·설정·새 기능 목록. 세 탭 Stack에 모두 있다
+```
+
+- 그룹 이름은 URL에 들어가지 않는다. 그래서 `/friends/invite`·`/settings/…` 같은 공개 경로와 `screen_view` 이름이 1.15.1과 같다. 탭 그룹 이름은 탭의 영어 이름(To-dos·Memos·Me)이다.
+- 탭 첫 화면은 그 탭 그룹에만 둔다. 다른 탭에서 `/feed`·`/memo`·`/mypage`로 가면 그 탭으로 바뀐다(친구 목록 → 친구 피드).
+- 넓은 화면(iPad·폴더블·Duo 펼침)은 마이 탭에서만 화면마다 왼쪽 메뉴 칸을 둔다([adaptive-pane](../../src/shared/ui/adaptive-pane/adaptive-pane.md#내-정보-메뉴-전체-폭-헤더--화면마다-메뉴-칸)). 할 일·메모 탭에서 연 같은 화면은 메뉴 칸 없이 그 탭 안 전체 폭에 일반 push로 쌓인다.
+- 보고 있는 탭을 다시 누르면 iOS NativeTabs가 그 탭 Stack을 첫 화면으로 되돌린다(`disablePopToTop` 기본값, iOS 전용). 탭마다 기록은 따로라 다른 탭에 갔다 오면 쌓아 둔 화면이 그대로다.
+
+**어디에 열리나.** 함께 쓰는 화면은 세 탭에 다 있어 Expo Router가 그룹을 고른다. 앱이 켜져 있고 지금 탭이 있으면 그 탭이다. 탭이 없으면 글자 순 첫 그룹이고, 그게 마이 탭 `(me)`다. 따로 적는 목록이나 경로 바꾸기는 없다.
+
+| 여는 곳                                                        | 함께 쓰는 화면(`/friends/invite`, `/settings/…`)                    | 한 탭에만 있는 화면                                                                                           |
+| -------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 탭 안에서 누름                                                 | 누른 탭 Stack 위. 탭 바가 그대로이고 뒤로 가면 누른 화면이다        | 그 탭으로 바뀐다                                                                                              |
+| 켜진 앱에 들어온 링크·푸시(웜)                                 | 보던 탭 Stack 위. 뒤로 가면 보던 화면이다                           | 그 탭으로 바뀐다                                                                                              |
+| 꺼진 앱으로 들어온 딥링크·푸시·위젯·초대 링크(콜드)            | 마이 탭. 아래에 내 정보 메뉴가 깔려 뒤로 가면 메뉴다                | 탭 첫 화면은 그 탭. 탭 위 화면(`/todo/[todoId]`·`/notifications`·`/memo/[memoId]`)은 아래에 할 일 탭이 깔린다 |
+| 탭 위 화면(결제 모달·시트·상세)에서 `dismissTo`·`replace`·push | 마이 탭(1.15.1과 같다). 시트는 기존대로 시트를 닫고(`replace`) 연다 | 그 탭                                                                                                         |
+
+- 새 탭 그룹을 더할 때는 `(me)`보다 글자 순으로 앞서지 않는 이름을 쓴다. 앞서면 콜드 링크가 그 탭에 열린다. `src/bootstrap/navigation/tab-stack-routing.test.tsx`가 1.15.1 공개 경로와 함께 쓰는 화면 파일마다 이 표를 확인한다.
+- 앱 밖 링크를 다른 탭에 꼭 열어야 하면 보내는 쪽 href에 그룹을 적는다(`/(app)/(tabs)/(todos)/…`, Expo 문서의 "include the group name"). 지금은 그런 화면이 없다.
+
+**함께 쓰는 화면 더하기.** `app/(app)/(tabs)/(me,memos,todos)/` 아래에 route 파일 하나를 만든다. 레이아웃·링크 표·테스트는 고치지 않는다.
+
+- 제목은 화면이 `<Stack.Screen options={{ title: t('…') }} />`로 정한다. 레이아웃에 화면 목록을 두지 않는다. 제목을 정하지 않은 화면은 빈 제목이다. `Stack.Title`은 `headerTitleStyle`을 비워 앱 글꼴 단계·색을 덮으므로 쓰지 않는다.
+- 마이 탭 메뉴에서 열 항목이면 `MyPageMenuPane`에 줄을 더한다.
+- 한 탭에서만 여는 화면은 그 탭 그룹 폴더(`(todos)`·`(memos)`·`(me)`)에 둔다.
 
 ### 시트
 

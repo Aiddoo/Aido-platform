@@ -105,7 +105,7 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
         unstable_settings: { anchor: '(tabs)' },
       },
       '(app)/(tabs)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
-      '(app)/(tabs)/feed/index': FeedScreen,
+      '(app)/(tabs)/(todos)/feed/index': FeedScreen,
       '(app)/todo/[todoId]/index': TodoDetailScreen,
       '(app)/todo/[todoId]/actions': TodoActionsSheet,
     },

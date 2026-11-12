@@ -134,6 +134,7 @@ export default function NotificationsScreen() {
 - 상태별 화면은 `match(view).with(…).exhaustive()`로 스크린에서 고른다. 넘기기용 래퍼(`Content → Header → Section`), 재수출한 화면, JSX 상수(`const waveform = …`)를 만들지 않는다.
 - 한 쿼리를 두 경계에서 읽지 않는다(한 오류는 한 곳). 로딩·오류·빈·데이터 4상태를 그린다. route 파일은 params 검증과 경계만 맡는다([state-and-routing](./state-and-routing.md#params-튜플)).
 - 스스로 숨는 블록은 간격도 함께 사라진다. 조건을 스크린이 알면 `{isAvailable && (…)}` 안에 `Spacing`과 블록을 함께 두고, 조회해야 아는 카드만 `className`으로 바깥 여백을 받는다.
+- 여러 탭에서 여는 화면(친구·설정류)은 탭마다 함께 쓰는 그룹에 파일 하나로 두고 제목은 화면이 정한다. 어느 탭에 열리는지와 더하는 법은 [탭과 함께 쓰는 화면](./state-and-routing.md#탭과-함께-쓰는-화면)이다.
 
 ## 코드 배치
 

@@ -68,7 +68,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 - 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={usePushOnboardingGuard()} redirectTo=".."` 안에 있다. 판정은 이 guard 한 곳에서 하고 그린 값(`'open' | 'closed' | 'pending'`)을 `PushOnboardingGuardStore`에 남긴다. 다른 화면은 `usePushOnboardingGuardState()`로 읽는다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) guard가 `open`으로 그려진 뒤에만 열고, 다른 자동 화면은 `closed`일 때만 연다. 피드가 따로 판정하면 다시 연 앱에서 권한을 읽은 순간 피드가 guard보다 먼저 `true`를 보고 열어, 화면이 곧바로 guard에 막혀 피드로 돌아간다. 권한이 정해지거나 닫기가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다.
   - 본문 버튼은 시스템 창을 여는 [계속] 하나다. 나가는 길은 흐름형 화면처럼 네이티브 헤더 오른쪽 닫기이고, Android 뒤로 가기도 닫기다.
   - 시스템 창을 바로 여는 버튼은 알림 화면·피드 안내·설정 줄 모두 `permission.continue`([계속])다. HIG가 권한 전 버튼에 "허용" 대신 Continue·Next를 쓰라고 해서 날씨 위치 안내(`locationPrompt.continue`)와 같은 규칙을 따른다.
-  - `redirectTo`를 비우면 열린 화면의 guard가 풀릴 때 anchor 그룹 `/(app)/(tabs)`로 replace한다. 탭이 없는 그룹 경로라 탭 묶음이 새로 생기고 글자 순 첫 탭 `(mypage)`가 열린다. `..`는 뒤로 가기라 있던 탭 묶음과 탭이 그대로 남는다.
+  - `redirectTo`를 비우면 열린 화면의 guard가 풀릴 때 anchor 그룹 `/(app)/(tabs)`로 replace한다. 탭이 없는 그룹 경로라 탭 묶음이 새로 생겨 탭마다 쌓아 둔 화면이 사라진다. `..`는 뒤로 가기라 있던 탭 묶음과 탭이 그대로 남는다.
 - 알림 화면 닫기와 피드 안내 닫기는 저장 값 정의 2개(`pushPermissionDeferredAtStoredValue`·`pushNoticeDismissedAtStoredValue`, `useStoredValue`)로 계정마다 남긴다. 로그아웃은 남기고 탈퇴는 `UserDeviceDataService.clearForUser`가 지운다.
 - 설정 > 알림 > 푸시 맨 위 `PushPermissionSettings`는 기기 알림 한 줄이다. 꺼져 있으면 줄을 눌러 다음 단계(시스템 창 또는 설정 열기)를 하고 아래 토글을 흐리게 둔다. 허용했으면 `허용됨`을 보이고 누르면 기기 설정을 연다(권한을 되찾는 단계가 아니라 권한 이벤트를 남기지 않는다).
 - 권한 안내·화면·토글·설정 줄·초대 환영 시트는 모두 `usePushPermissionAction({ source }).runStep(step)` 하나로 단계를 실행한다. 단계는 `PushPermissionPolicy.getNextStep`이 정한다.

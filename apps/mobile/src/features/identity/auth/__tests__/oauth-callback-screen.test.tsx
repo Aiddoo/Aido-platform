@@ -52,7 +52,7 @@ async function renderOAuthCallback(status: AuthStatus) {
         unstable_settings: { anchor: '(tabs)' },
       },
       '(app)/(tabs)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
-      '(app)/(tabs)/feed/index': () => <Text testID="feed">Feed</Text>,
+      '(app)/(tabs)/(todos)/feed/index': () => <Text testID="feed">Feed</Text>,
     },
     { url: '/auth/kakao', di, withLocalDate: true },
   );

@@ -108,7 +108,7 @@ function AppLayout() {
         {SHEET_ROUTES.map((name) => (
           <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
         ))}
-        {/* 답하면 조건이 풀려 화면이 빠지고 피드로 돌아간다(답한 뒤에는 링크로도 열리지 않는다). 기본 redirect는 `/(app)/(tabs)`로 replace해 탭 묶음을 새로 만들어 `(mypage)`가 열리므로 뒤로 가기(`..`)를 쓴다 */}
+        {/* 답하면 조건이 풀려 화면이 빠지고 피드로 돌아간다(답한 뒤에는 링크로도 열리지 않는다). 기본 redirect는 `/(app)/(tabs)`로 replace해 탭 묶음을 새로 만들어 탭마다 쌓아 둔 화면이 사라지므로 뒤로 가기(`..`)를 쓴다 */}
         <Stack.Protected guard={isPushOnboardingDue} redirectTo="..">
           <Stack.Screen
             name="onboarding/notifications"

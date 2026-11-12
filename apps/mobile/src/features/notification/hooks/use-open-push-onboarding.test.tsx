@@ -22,7 +22,7 @@ import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
 import { Suspense, useEffect } from 'react';
 import { Text } from 'react-native';
 
-import { unstable_settings as myPageTabSettings } from '../../../../app/(app)/(tabs)/(mypage)/_layout';
+import { unstable_settings as myPageTabSettings } from '../../../../app/(app)/(tabs)/(me)/_layout';
 import * as TabsLayoutRoute from '../../../../app/(app)/(tabs)/_layout';
 import * as AppLayoutRoute from '../../../../app/(app)/_layout';
 import NotificationOnboardingScreen from '../../../../app/(app)/onboarding/notifications';
@@ -136,16 +136,16 @@ async function renderAppRoutes({
       _layout: () => <Stack screenOptions={{ animation: 'none' }} />,
       '(app)/_layout': AppLayoutRoute,
       '(app)/(tabs)/_layout': TabsLayoutRoute,
-      '(app)/(tabs)/feed/_layout': TabStackLayout,
-      '(app)/(tabs)/feed/index': feedScreen,
-      '(app)/(tabs)/memo/_layout': TabStackLayout,
-      '(app)/(tabs)/memo/index': MemoScreen,
+      '(app)/(tabs)/(todos)/_layout': TabStackLayout,
+      '(app)/(tabs)/(todos)/feed/index': feedScreen,
+      '(app)/(tabs)/(memos)/_layout': TabStackLayout,
+      '(app)/(tabs)/(memos)/memo/index': MemoScreen,
       // 메뉴 칸은 이 테스트의 관심이 아니라 글자로 대신한다. 넓은 화면의 칸 나누기는 그대로 탄다
-      '(app)/(tabs)/(mypage)/_layout': {
+      '(app)/(tabs)/(me)/_layout': {
         default: () => <MyPageStack menu={<Text>menu</Text>} />,
         unstable_settings: myPageTabSettings,
       },
-      '(app)/(tabs)/(mypage)/mypage/index': MyPageScreen,
+      '(app)/(tabs)/(me)/mypage/index': MyPageScreen,
       '(app)/onboarding/notifications': NotificationOnboardingScreen,
       ...Object.fromEntries(APP_STACK_SCREENS.map((name) => [`(app)/${name}`, EmptyScreen])),
     },
