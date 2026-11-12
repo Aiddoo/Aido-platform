@@ -57,7 +57,7 @@ describe('useFeedSelectedTodoId', () => {
     result.current[1](7);
 
     // Then
-    expect(router.push).toHaveBeenCalledWith({
+    expect(router.navigate).toHaveBeenCalledWith({
       pathname: '/todo/[todoId]',
       params: { todoId: 7 },
     });
@@ -78,7 +78,7 @@ describe('useFeedSelectedTodoId', () => {
       comment: undefined,
       sort: undefined,
     });
-    expect(router.push).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('medium 이상에서 이미 고른 할 일을 다시 누르면 정렬과 댓글 위치를 그대로 둔다', async () => {
@@ -91,7 +91,7 @@ describe('useFeedSelectedTodoId', () => {
 
     // Then
     expect(router.setParams).not.toHaveBeenCalled();
-    expect(router.push).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('medium 이상에서 undefined를 고르면 선택을 해제한다', async () => {

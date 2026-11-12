@@ -15,10 +15,12 @@ import {
   Result,
   Text,
   TodoIllustration,
+  usePaneSizeClass,
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy, range } from 'es-toolkit';
+import { Link } from 'expo-router';
 import { type ReactNode, useState } from 'react';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
@@ -44,6 +46,7 @@ export function FriendTodoList({ friendId, renderRowAction, emptyAction }: Frien
   // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
   const [dateKey] = useFeedDateKey();
   const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
+  const paneSizeClass = usePaneSizeClass();
   const [{ data: categoryGroups }] = useSuspenseQueries({
     queries: [
       {
@@ -68,6 +71,7 @@ export function FriendTodoList({ friendId, renderRowAction, emptyAction }: Frien
               <FriendTodoList.Item
                 key={todo.id}
                 todo={todo}
+                isLinked={paneSizeClass === 'compact'}
                 renderAction={renderRowAction}
                 onOpenDetail={openTodoDetail}
               />
@@ -79,15 +83,20 @@ export function FriendTodoList({ friendId, renderRowAction, emptyAction }: Frien
   );
 }
 
-FriendTodoList.Item = function Item({
-  todo,
-  renderAction,
-  onOpenDetail,
-}: {
+interface FriendTodoListItemProps {
   todo: Todo;
+  /** 접힌 화면에서만 Link다. 펼친 화면은 같은 화면의 칸을 바꿔 미리볼 상세 화면이 없다 */
+  isLinked: boolean;
   renderAction: (todo: Todo) => ReactNode;
   onOpenDetail: (todoId: number) => void;
-}) {
+}
+
+FriendTodoList.Item = function Item({
+  todo,
+  isLinked,
+  renderAction,
+  onOpenDetail,
+}: FriendTodoListItemProps) {
   const { t } = useTranslation('todo');
   const selectTodo = useSingleTap(onOpenDetail);
   // 접거나 펴기 전에는 서브투두 유무를 따른다. 처음 값으로만 두면 나중에 생긴 서브투두가 접힌 채 남는다
@@ -100,58 +109,108 @@ FriendTodoList.Item = function Item({
   const showDateTime = formattedTime != null;
 
   const openComments = () => selectTodo(todo.id);
+  const hasSubTodos = SubTodoPolicy.hasSubTodos(todo.subTodos);
 
   return (
-    <TodoRow
-      left={<TodoCheckbox isSelected={todo.completed} />}
-      top={<TodoLabel isCompleted={todo.completed}>{todo.title}</TodoLabel>}
-      middle={
-        showDateTime && (
-          <Text size="e1" shade={6}>
-            {formattedTime}
-          </Text>
-        )
-      }
-      bottom={
-        SubTodoPolicy.hasSubTodos(todo.subTodos) && (
-          <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
-        )
-      }
-      right={
-        <HStack gap={4} align="center">
-          <IconCountButton
-            className="min-h-0"
-            icon={
-              <ChatBubbleIcon
-                width={ICON_COUNT_BUTTON_ICON_SIZE}
-                height={ICON_COUNT_BUTTON_ICON_SIZE}
-                colorClassName="text-gray-6"
-              />
-            }
-            count={todo.commentCount}
-            onPress={openComments}
-            accessibilityRole="button"
-            accessibilityLabel={t('detail.open')}
-          />
-          {renderAction(todo)}
-        </HStack>
-      }
-      onPress={
-        SubTodoPolicy.hasSubTodos(todo.subTodos) ? () => setUserExpanded(!isExpanded) : undefined
-      }
+    <FriendTodoList.ItemLink
+      todo={todo}
+      isLinked={isLinked}
+      isTapOpening={!hasSubTodos}
+      onOpen={openComments}
     >
-      {isExpanded && (
-        <SubTodoIndent>
-          {todo.subTodos.map((subTodo) => (
-            <TodoRow
-              key={subTodo.id}
-              left={<TodoCheckbox isSelected={subTodo.completed} />}
-              top={<TodoLabel isCompleted={subTodo.completed}>{subTodo.title}</TodoLabel>}
+      <TodoRow
+        left={<TodoCheckbox isSelected={todo.completed} />}
+        top={<TodoLabel isCompleted={todo.completed}>{todo.title}</TodoLabel>}
+        middle={
+          showDateTime && (
+            <Text size="e1" shade={6}>
+              {formattedTime}
+            </Text>
+          )
+        }
+        bottom={
+          SubTodoPolicy.hasSubTodos(todo.subTodos) && (
+            <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
+          )
+        }
+        right={
+          <HStack gap={4} align="center">
+            <IconCountButton
+              className="min-h-0"
+              icon={
+                <ChatBubbleIcon
+                  width={ICON_COUNT_BUTTON_ICON_SIZE}
+                  height={ICON_COUNT_BUTTON_ICON_SIZE}
+                  colorClassName="text-gray-6"
+                />
+              }
+              count={todo.commentCount}
+              onPress={openComments}
+              accessibilityRole="button"
+              accessibilityLabel={t('detail.open')}
             />
-          ))}
-        </SubTodoIndent>
-      )}
-    </TodoRow>
+            {renderAction(todo)}
+          </HStack>
+        }
+        onPress={hasSubTodos ? () => setUserExpanded(!isExpanded) : undefined}
+      >
+        {isExpanded && (
+          <SubTodoIndent>
+            {todo.subTodos.map((subTodo) => (
+              <TodoRow
+                key={subTodo.id}
+                left={<TodoCheckbox isSelected={subTodo.completed} />}
+                top={<TodoLabel isCompleted={subTodo.completed}>{subTodo.title}</TodoLabel>}
+              />
+            ))}
+          </SubTodoIndent>
+        )}
+      </TodoRow>
+    </FriendTodoList.ItemLink>
+  );
+};
+
+interface FriendTodoListItemLinkProps {
+  todo: Todo;
+  isLinked: boolean;
+  /** 하위 항목이 없는 행은 탭으로 상세를 연다. 하위 항목이 있으면 탭은 펼치기다 */
+  isTapOpening: boolean;
+  onOpen: () => void;
+  children: ReactNode;
+}
+
+/** 친구 할 일 행을 길게 눌러 상세를 미리보고 메뉴로 연다(iOS). 미리보기를 눌러 가는 이동은 Link가 맡는다 */
+FriendTodoList.ItemLink = function ItemLink({
+  todo,
+  isLinked,
+  isTapOpening,
+  onOpen,
+  children,
+}: FriendTodoListItemLinkProps) {
+  const { t } = useTranslation('todo');
+
+  if (!isLinked) {
+    return children;
+  }
+
+  return (
+    <Link
+      href={{ pathname: '/todo/[todoId]', params: { todoId: todo.id } }}
+      asChild
+      onPress={(event) => {
+        if (!isTapOpening) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <Link.Trigger>{children}</Link.Trigger>
+      <Link.Preview />
+      <Link.Menu>
+        <Link.MenuAction icon="text.bubble" onPress={onOpen}>
+          {t('detail.open')}
+        </Link.MenuAction>
+      </Link.Menu>
+    </Link>
   );
 };
 

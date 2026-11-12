@@ -46,7 +46,7 @@ describe('useSelectedMemoId', () => {
     result.current[1](5);
 
     // Then
-    expect(router.push).toHaveBeenCalledWith({
+    expect(router.navigate).toHaveBeenCalledWith({
       pathname: '/memo/[memoId]',
       params: { memoId: 5 },
     });
@@ -62,7 +62,7 @@ describe('useSelectedMemoId', () => {
     result.current[1](undefined);
 
     // Then
-    expect(router.push).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
     expect(router.setParams).not.toHaveBeenCalled();
   });
 
@@ -76,7 +76,7 @@ describe('useSelectedMemoId', () => {
 
     // Then
     expect(router.setParams).toHaveBeenCalledWith({ memoId: '5' });
-    expect(router.push).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('medium 이상에서 undefined를 고르면 선택을 해제한다', async () => {
