@@ -1,7 +1,6 @@
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
-import { ParseError } from '@src/shared/errors/infra-error';
-import { createHttpClientStub, createAppLoggerStub } from '@src/testing/core';
+import { err } from '@src/core/errors/result';
+import { createHttpClientStub } from '@src/testing/core';
 
 import { MemoApi } from './memo.api';
 
@@ -10,7 +9,7 @@ describe('MemoApi.parseMemo', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(err(new ApiError('SYS_0001', '서버 오류', 500)));
-    const service = new MemoApi(httpClient, createAppLoggerStub());
+    const service = new MemoApi(httpClient);
 
     // When
     await service.parseMemo('메모', 1, 'memo-key');
@@ -21,23 +20,5 @@ describe('MemoApi.parseMemo', () => {
       { content: '메모', categoryId: 1 },
       { headers: { 'Idempotency-Key': 'memo-key' }, timeout: 30_000 },
     );
-  });
-
-  it('응답이 계약과 다르면 파싱 실패를 기록하고 던진다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    httpClient.post.mockResolvedValue(ok({ unexpected: true }));
-    const error = jest.fn();
-    const service = new MemoApi(httpClient, { ...createAppLoggerStub(), error });
-
-    // When
-    const parsing = service.parseMemo('메모', 1, 'memo-key');
-
-    // Then
-    await expect(parsing).rejects.toBeInstanceOf(ParseError);
-    expect(error).toHaveBeenCalledWith('memo.response-parse.failed', undefined, {
-      method: 'parseMemo',
-      zodError: expect.any(String),
-    });
   });
 });

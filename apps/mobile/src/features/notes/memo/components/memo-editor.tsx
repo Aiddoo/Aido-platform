@@ -1,5 +1,6 @@
+import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useDraftService } from '@src/bootstrap/providers/di-context';
+import { useDraftService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
@@ -676,6 +677,7 @@ function useMemoAiParse({
   accountId: string;
 } & Pick<MemoEditorToolbarProps, 'onSaveChanges'>) {
   const { t } = useTranslation('errors');
+  const haptics = useHaptics();
   const toast = useAppToast();
   const push = useSingleTap(router.push);
   const draftService = useDraftService();
@@ -695,6 +697,12 @@ function useMemoAiParse({
   );
 
   // 정리 중 서버가 동의 없음(AI_1311)으로 거절했는데 이번 시도에서 동의를 묻지 않았으면 'consentRevoked'다
+  // 동의 안내를 이미 본 시도에서 다시 거절되면 안내를 또 띄우지 않고 이유만 알린다
+  const showConsentRequired = () => {
+    haptics.notify('error');
+    toast.error(t(ErrorCode.AI_1311));
+  };
+
   const parseSavedMemo = async (savedMemo: Memo): Promise<'done' | 'consentRevoked'> => {
     const sourceUpdatedAt = toEpochMs(savedMemo.updatedAt);
     // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다
@@ -736,7 +744,7 @@ function useMemoAiParse({
     }
     // 이번 시도에서 이미 안내했다면 다시 띄우지 않고 이유만 알린다
     if (consent.wasAsked) {
-      toast.error(t('AI_1311'));
+      showConsentRequired();
 
       return 'done';
     }
@@ -760,7 +768,7 @@ function useMemoAiParse({
       }
       // 정리하다 동의가 사라진 것을 알았으면 동의를 물으며 한 번만 다시 시작한다. 그래도 거절되면 이유만 알린다
       if ((await parseSavedMemo(savedMemo)) === 'consentRevoked') {
-        toast.error(t('AI_1311'));
+        showConsentRequired();
       }
     } finally {
       isStartingRef.current = false;

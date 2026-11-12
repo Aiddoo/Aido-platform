@@ -407,7 +407,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     widgetSyncService: new WidgetSyncService(ports.widgetBridge, ports.widgetStorage),
     widgetNavigationRepository: createWidgetNavigationRepository(ports.widgetStorage),
 
-    memoApi: new MemoApi(authHttpClient, logger),
+    memoApi: new MemoApi(authHttpClient),
 
     weatherApi,
     weatherLocationService: new WeatherLocationService({

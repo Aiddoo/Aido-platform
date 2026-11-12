@@ -28,13 +28,14 @@ import { useTrack } from '@src/shared/analytics';
 import { toEpochMs } from '@src/shared/date/instant';
 import type { DraftKey } from '@src/shared/draft/draft.model';
 import type { DraftService } from '@src/shared/draft/draft.service';
-import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
+import { NetworkError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
+import { isMemoParseRejectionHandledByFeature } from '../domains/memo.error';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
 import {
   createMemoCreateRequestDraftKey,
@@ -254,7 +255,6 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
-  const toast = useAppToast();
   const { timeZone } = useDateFormatContext();
 
   const forgetIdempotencyKey = () => {
@@ -327,17 +327,19 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
 
       trackEvent('ai_parse_used', { success: false });
       trackEvent('voice_plan_failed', { source: 'memo', cause: getVoicePlanFailureCause(error) });
-      haptics.notify('error');
-
       if (gate.promptIfBlockedError(error)) {
-        return;
+        haptics.notify('error');
       }
-
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('ai:suggestions.toasts.retryLater'),
-        description: isFreeOfChargeError(error) ? t('subscription:gate.notCharged') : undefined,
-      });
     },
-    meta: { errorFeedback: false },
+    meta: {
+      errorFeedback: {
+        feature: 'memo',
+        fallbackKey: 'ai:suggestions.toasts.retryLater',
+        isHandledByFeature: isMemoParseRejectionHandledByFeature,
+        // 서버가 차감하지 않은 실패는 이번 시도가 한도에서 빠지지 않았다고 함께 알린다
+        describe: (error) =>
+          isFreeOfChargeError(error) ? t('subscription:gate.notCharged') : undefined,
+      },
+    },
   });
 }
