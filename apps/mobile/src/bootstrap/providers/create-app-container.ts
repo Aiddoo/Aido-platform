@@ -94,7 +94,7 @@ import { pendingRedemptionStoredValue } from '@src/features/social/invite/schema
 import { InviteShareService } from '@src/features/social/invite/services/invite-share.service';
 import { InviteService } from '@src/features/social/invite/services/invite.service';
 import { PendingRedemptionService } from '@src/features/social/invite/services/pending-redemption.service';
-import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
+import type { InviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import { ModerationApi } from '@src/features/social/moderation/apis/moderation.api';
 import { TodoNudgeApi } from '@src/features/social/nudge/apis/todo-nudge.api';
 import { InquiryApi } from '@src/features/support/inquiry/apis/inquiry.api';
@@ -184,6 +184,8 @@ export interface AppContainerPorts {
   getTimeZone: () => string;
   /** 요청 헤더(Accept-Language)와 같은 값 */
   getLanguage: () => string;
+  /** 센 초대 링크 열림. 루트 "다시 시도"로 컨테이너를 새로 만들어도 같은 링크를 다시 세지 않게 프로세스에 하나다 */
+  inviteLinkOpenedStore: InviteLinkOpenedStore;
 }
 
 /** 포트로 Service·저장소를 만들기만 한다. 구독·타이머·저장소 쓰기는 쓰는 Provider·훅의 effect가 맡는다 */
@@ -469,7 +471,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       clipboard: ports.clipboard,
       logger,
     }),
-    inviteLinkOpenedStore: createInviteLinkOpenedStore(),
+    inviteLinkOpenedStore: ports.inviteLinkOpenedStore,
 
     activationService: new ActivationService(syncStorage),
     activationProgressRepository,

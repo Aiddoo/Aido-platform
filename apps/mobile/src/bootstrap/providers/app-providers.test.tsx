@@ -8,6 +8,7 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/queries/notification-query-keys';
+import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
 import { QUERY_CACHE_MAX_AGE_MS } from '@src/shared/constants/query-persistence';
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
@@ -207,12 +208,18 @@ function EmptyScreen() {
   return null;
 }
 
+/** 초대 링크 착지 화면처럼 열림을 센다 */
+function InviteLandingScreen() {
+  useTrackInviteLinkOpened();
+  return null;
+}
+
 function GroupStack() {
   return <Stack screenOptions={{ headerShown: false, animation: 'none' }} />;
 }
 
 /** 루트 오류 화면의 "다시 시도"처럼 앱 트리를 통째로 올린다. StrictMode라 effect가 두 번 돈다 */
-async function mountApp(root: ReturnType<typeof createTestRoot>['root']) {
+async function mountApp(root: ReturnType<typeof createTestRoot>['root'], { url = '/' } = {}) {
   const probe = createProbe();
   function RootLayout() {
     return (
@@ -229,14 +236,14 @@ async function mountApp(root: ReturnType<typeof createTestRoot>['root']) {
       _layout: RootLayout,
       index: RootIndex,
       loading: EmptyScreen,
-      'invite/index': EmptyScreen,
+      'invite/index': InviteLandingScreen,
       '(auth)/_layout': GroupStack,
       '(auth)/login': probe.ProbeScreen,
       '(app)/_layout': AppLayoutRoute,
       '(app)/(tabs)/_layout': GroupStack,
       '(app)/(tabs)/feed/index': probe.ProbeScreen,
     },
-    { url: '/' },
+    { url },
   );
   await act(() => jest.advanceTimersByTimeAsync(0));
   return { view, mounted: probe.latest, getPathname: () => view.getPathname() };
@@ -359,6 +366,24 @@ describe('AppProviders', () => {
       ACCOUNT_A_TOKENS.refreshToken,
     );
     expect(device.purchases.isConfigured()).toBe(true);
+    await second.view.unmount();
+  });
+
+  it('루트 "다시 시도"로 다시 올려도 같은 초대 링크 열림을 다시 세지 않는다', async () => {
+    // Given
+    const { root, createdDevices } = createTestRoot();
+    const inviteLinkUrl = '/invite?source=universal_link&openedAt=1000';
+    const first = await mountApp(root, { url: inviteLinkUrl });
+    await first.view.unmount();
+
+    // When
+    const second = await mountApp(root, { url: inviteLinkUrl });
+
+    // Then
+    const { analytics } = getOnlyDevice(createdDevices);
+    expect(
+      analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === 'invite_link_opened'),
+    ).toEqual([['invite_link_opened', { source: 'universal_link' }]]);
     await second.view.unmount();
   });
 
