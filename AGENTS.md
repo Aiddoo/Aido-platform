@@ -58,7 +58,7 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 - 함께 바뀌는 파일은 같은 기능 폴더에 둔다. 함께 바뀌지 않으면 버그가 나는 것(계약·큐 payload·잠금 키)은 한 곳에 응집한다.
 - 책임은 하나씩(SOLID). 계산·변환은 부수효과 없는 순수 함수이고 클래스·훅은 그것을 감싼다.
 - 기능 사이 중복은 허용한다. 공용화는 함께 바뀌어야 할 때만 한다. props·인자 드릴링은 구조로 없앤다.
-- 재수출(`export … from`)은 정해진 공개 진입 파일(서버 slice `*.public.ts`·`@aido/api` exports·Drizzle schema 묶음, 앱 `shared/*` 공개 면)에서만 한다. 새 barrel `index.ts`를 만들지 않는다(`aido/no-re-export`·`aido/no-barrel-file`).
+- 재수출(`export … from`)은 정해진 공개 진입 파일(서버 slice `*.public.ts`·`@aido/api` exports·Drizzle schema 묶음, 앱 공개 면 `shared/*`·`di-context`·`src/testing/core.ts`)에서만 한다. 새 barrel `index.ts`를 만들지 않는다(`aido/no-re-export`·`aido/no-barrel-file`).
 
 **TypeScript**
 
