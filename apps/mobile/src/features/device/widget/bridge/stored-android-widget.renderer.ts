@@ -9,7 +9,7 @@ import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 import { createInitialWidgetProps } from '../utils/widget-initial-props';
 
-interface StoredAndroidWidgetRendererDependencies<Rendered> {
+interface StoredAndroidWidgetRendererPorts<Rendered> {
   snapshotRepository: {
     findSnapshot: () => WidgetSnapshot | null;
     findUserId: () => string | null;
@@ -26,7 +26,7 @@ export function createStoredAndroidWidgetRenderer<Rendered>({
   readDeviceLanguage,
   readAppScheme,
   renderWidget,
-}: StoredAndroidWidgetRendererDependencies<Rendered>) {
+}: StoredAndroidWidgetRendererPorts<Rendered>) {
   return (widgetInfo: WidgetInfo): Rendered => {
     const definition = ANDROID_WIDGET_DEFINITIONS.find(
       (widget) => widget.name === widgetInfo.widgetName,

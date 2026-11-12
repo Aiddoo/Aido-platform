@@ -34,7 +34,7 @@ interface SignInServicePorts {
     | 'deleteAccount'
   >;
   tokenStore: Pick<TokenStore, 'save' | 'clear'>;
-  socialAuthGateway: Pick<SocialAuthGateway, 'openOAuthSession' | 'signInWithApple'>;
+  socialAuth: Pick<SocialAuthGateway, 'openOAuthSession' | 'signInWithApple'>;
   /** 서버가 기기 종류별로 세션을 구분한다. 조립이 실행 플랫폼에서 정한다 */
   deviceType: 'IOS' | 'ANDROID';
   logger: Pick<AppLogger, 'warn'>;
@@ -44,14 +44,14 @@ interface SignInServicePorts {
 export class SignInService {
   readonly #authApi: SignInServicePorts['authApi'];
   readonly #tokenStore: SignInServicePorts['tokenStore'];
-  readonly #socialAuthGateway: SignInServicePorts['socialAuthGateway'];
+  readonly #socialAuth: SignInServicePorts['socialAuth'];
   readonly #deviceType: SignInServicePorts['deviceType'];
   readonly #logger: SignInServicePorts['logger'];
 
-  constructor({ authApi, tokenStore, socialAuthGateway, deviceType, logger }: SignInServicePorts) {
+  constructor({ authApi, tokenStore, socialAuth, deviceType, logger }: SignInServicePorts) {
     this.#authApi = authApi;
     this.#tokenStore = tokenStore;
-    this.#socialAuthGateway = socialAuthGateway;
+    this.#socialAuth = socialAuth;
     this.#deviceType = deviceType;
     this.#logger = logger;
   }
@@ -128,7 +128,7 @@ export class SignInService {
     provider: OAuthStartProvider,
     mode: OAuthStartMode,
   ): Promise<Result<string, BusinessError>> => {
-    const session = await this.#socialAuthGateway.openOAuthSession({
+    const session = await this.#socialAuth.openOAuthSession({
       startPath: `v1/auth/${provider}/start`,
       callbackPath: `auth/${provider}`,
       params: { mode },
@@ -153,7 +153,7 @@ export class SignInService {
   };
 
   #signInWithApple = async (): Promise<Result<AppleCredential, BusinessError>> => {
-    const result = await this.#socialAuthGateway.signInWithApple();
+    const result = await this.#socialAuth.signInWithApple();
 
     return match(result)
       .returnType<Result<AppleCredential, BusinessError>>()

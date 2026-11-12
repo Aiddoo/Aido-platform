@@ -46,7 +46,7 @@ beforeEach(() => {
 async function renderToggle() {
   const httpClient = createHttpClientStub();
   const syncStorage = createMemoryObservableSyncStorage();
-  const appStoreReviewGateway = createAppStoreReviewGatewayStub();
+  const appStoreReview = createAppStoreReviewGatewayStub();
   const storeReviewRepository = createStoreReviewRepository(syncStorage);
   storeReviewRepository.update(ACCOUNT_ID, (state) => ({ ...state, activeDays: PAST_ACTIVE_DAYS }));
   const current: { value: ReturnType<typeof useToggle> | null } = { value: null };
@@ -65,7 +65,7 @@ async function renderToggle() {
       <Probe />
     </LocalDateProvider>,
     {
-      di: { httpClient, syncStorage, appStoreReviewGateway },
+      di: { httpClient, syncStorage, appStoreReview },
     },
   );
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
@@ -99,7 +99,7 @@ async function renderToggle() {
   return {
     httpClient,
     queryClient,
-    appStoreReviewGateway,
+    appStoreReview,
     getActiveDays: () => storeReviewRepository.find(ACCOUNT_ID)?.activeDays,
     settleReviewWait: () => act(async () => jest.advanceTimersByTimeAsync(REVIEW_SETTLE_MS)),
     toggle,
@@ -116,14 +116,8 @@ const respondWithTodo = (id: number) => ok({ message: 'ok', todo: createTodoDto(
 describe('useToggleTodoMutationOptions store review wiring', () => {
   it('오늘의 마지막 할 일을 끝낸 순간 끝낸 날을 남기고 리뷰 순간을 알린다', async () => {
     // Given
-    const {
-      httpClient,
-      givenList,
-      toggle,
-      settleReviewWait,
-      getActiveDays,
-      appStoreReviewGateway,
-    } = await renderToggle();
+    const { httpClient, givenList, toggle, settleReviewWait, getActiveDays, appStoreReview } =
+      await renderToggle();
     givenList(TODAY, [
       createParentTodo({ id: 41, completed: true }),
       createParentTodo({ id: 42, completed: false }),
@@ -136,13 +130,13 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
 
     // Then
     expect(getActiveDays()).toContain(TODAY);
-    expect(appStoreReviewGateway.requestReview).toHaveBeenCalledTimes(1);
+    expect(appStoreReview.requestReview).toHaveBeenCalledTimes(1);
   });
 
   it('어제 목록에서 여러 날 할 일을 끝내 오늘 할 일이 모두 끝나면 리뷰 순간을 알린다', async () => {
     // Given
     // 낙관적 갱신은 보고 있는 어제 목록에만 반영돼 오늘 목록에는 아직 미완료다
-    const { httpClient, givenList, toggle, settleReviewWait, appStoreReviewGateway } =
+    const { httpClient, givenList, toggle, settleReviewWait, appStoreReview } =
       await renderToggle();
     const multiDay = createParentTodo({
       id: 7,
@@ -159,19 +153,13 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
     await settleReviewWait();
 
     // Then
-    expect(appStoreReviewGateway.requestReview).toHaveBeenCalledTimes(1);
+    expect(appStoreReview.requestReview).toHaveBeenCalledTimes(1);
   });
 
   it('오늘 남은 할 일이 있으면 어제 목록의 여러 날 할 일을 끝내도 리뷰 순간을 알리지 않는다', async () => {
     // Given
-    const {
-      httpClient,
-      givenList,
-      toggle,
-      settleReviewWait,
-      getActiveDays,
-      appStoreReviewGateway,
-    } = await renderToggle();
+    const { httpClient, givenList, toggle, settleReviewWait, getActiveDays, appStoreReview } =
+      await renderToggle();
     const multiDay = createParentTodo({
       id: 7,
       startDate: YESTERDAY,
@@ -188,19 +176,13 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
 
     // Then
     expect(getActiveDays()).toContain(TODAY);
-    expect(appStoreReviewGateway.requestReview).not.toHaveBeenCalled();
+    expect(appStoreReview.requestReview).not.toHaveBeenCalled();
   });
 
   it('미완료로 되돌리거나 요청이 실패하면 아무것도 남기지 않는다', async () => {
     // Given
-    const {
-      httpClient,
-      givenList,
-      toggle,
-      settleReviewWait,
-      getActiveDays,
-      appStoreReviewGateway,
-    } = await renderToggle();
+    const { httpClient, givenList, toggle, settleReviewWait, getActiveDays, appStoreReview } =
+      await renderToggle();
     givenList(TODAY, [createParentTodo({ id: 42, completed: true })]);
     httpClient.patch.mockResolvedValueOnce(respondWithTodo(42));
 
@@ -212,7 +194,7 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
 
     // Then
     expect(getActiveDays()).toEqual(PAST_ACTIVE_DAYS);
-    expect(appStoreReviewGateway.requestReview).not.toHaveBeenCalled();
+    expect(appStoreReview.requestReview).not.toHaveBeenCalled();
   });
 });
 

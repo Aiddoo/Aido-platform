@@ -4,7 +4,7 @@ import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
 
 interface DeviceIdServicePorts {
   store: DeviceIdStore;
-  vendorIdGateway: VendorIdGateway;
+  vendorId: VendorIdGateway;
   idGenerator: IdGenerator;
   /** 저장하는 기기 id의 접두사다. 이미 저장된 id와 같은 `ios`, `android` 값을 쓴다 */
   platform: string;
@@ -12,13 +12,13 @@ interface DeviceIdServicePorts {
 
 export class DeviceIdService {
   readonly #store: DeviceIdStore;
-  readonly #vendorIdGateway: VendorIdGateway;
+  readonly #vendorId: VendorIdGateway;
   readonly #idGenerator: IdGenerator;
   readonly #platform: string;
 
-  constructor({ store, vendorIdGateway, idGenerator, platform }: DeviceIdServicePorts) {
+  constructor({ store, vendorId, idGenerator, platform }: DeviceIdServicePorts) {
     this.#store = store;
-    this.#vendorIdGateway = vendorIdGateway;
+    this.#vendorId = vendorId;
     this.#idGenerator = idGenerator;
     this.#platform = platform;
   }
@@ -29,7 +29,7 @@ export class DeviceIdService {
       return storedId;
     }
 
-    const platformId = (await this.#vendorIdGateway.get()) ?? this.#idGenerator.create();
+    const platformId = (await this.#vendorId.get()) ?? this.#idGenerator.create();
     const deviceId = `${this.#platform}_${platformId}`;
     await this.#store.save(deviceId);
 

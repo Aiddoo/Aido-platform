@@ -105,7 +105,7 @@ async function renderSubscriptionScreen(
   const di = createTestDi({
     httpClient,
     analytics,
-    purchasesGateway: purchases,
+    purchases,
   });
   di.purchasesSession.configure();
   const queryClient = createTestQueryClient({

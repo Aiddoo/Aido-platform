@@ -53,7 +53,7 @@ export function markRequestEpoch(context: Record<string, unknown>, epoch: number
 /** 세션 종료 확정을 위임하는 포트. 구현은 `SessionManager.end`. */
 export type EndSession = (details: SessionExpiredDetails) => Promise<void>;
 
-export interface TokenRefreshHookDeps {
+export interface TokenRefreshHookPorts {
   tokenStore: TokenStore;
   refresh: TokenRefresher;
   endSession: EndSession;
@@ -64,7 +64,7 @@ export interface TokenRefreshHookDeps {
 
 // 재시도 응답 객체를 훅에서 직접 반환하면 안 된다. expo/fetch 응답은 globalThis.Response 인스턴스가 아니라 ky가 버리고 원본 401을 살린다
 // 요청을 보낸 뒤 세션이 끝났으면 재시도·갱신하지 않는다. 재시도하면 A의 요청이 저장된 B 토큰으로 실행된다
-export function createTokenRefreshHook(deps: TokenRefreshHookDeps): AfterResponseHook {
+export function createTokenRefreshHook(deps: TokenRefreshHookPorts): AfterResponseHook {
   const { tokenStore, refresh, endSession, sessionEpoch, logger, errorReporter } = deps;
 
   // `new Request(request, ...)`가 원 요청의 body·method·헤더를 보존하고 Authorization만 덮어쓴다

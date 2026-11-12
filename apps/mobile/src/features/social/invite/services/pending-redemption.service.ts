@@ -16,11 +16,11 @@ import { parseInstallReferrerInviteCode } from '../utils/install-referrer';
 /** 로그인 전에 받은 초대(링크·설치 referrer)를 기기에 남겼다가 이어서 여는 흐름 */
 export class PendingRedemptionService {
   readonly #storage: SyncStorage;
-  readonly #installReferrerGateway: InstallReferrerGateway;
+  readonly #installReferrer: InstallReferrerGateway;
 
-  constructor(storage: SyncStorage, installReferrerGateway: InstallReferrerGateway) {
+  constructor(storage: SyncStorage, installReferrer: InstallReferrerGateway) {
     this.#storage = storage;
-    this.#installReferrerGateway = installReferrerGateway;
+    this.#installReferrer = installReferrer;
   }
 
   /** 남겨 둔 초대가 이 코드이고 더는 쓸 수 없는 실패면 지워 다음 실행 때 다시 열지 않는다 */
@@ -41,7 +41,7 @@ export class PendingRedemptionService {
 
     // 읽기에 실패해도 다음 실행마다 다시 묻지 않는다
     writeStoredValue(this.#storage, installReferrerCheckedStoredValue, '1');
-    const referrer = await this.#installReferrerGateway.get();
+    const referrer = await this.#installReferrer.get();
     const inviteCode = referrer == null ? null : parseInstallReferrerInviteCode(referrer);
     if (inviteCode == null) {
       return null;

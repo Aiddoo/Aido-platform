@@ -55,7 +55,10 @@ describe('usePushDeviceSync', () => {
     const onReported = jest.fn();
     const pushRegistrationService = new PushRegistrationService({
       gateway,
-      pushDeviceApi: new PushDeviceApi({ httpClient, publicHttpClient: httpClient }),
+      pushDeviceApi: new PushDeviceApi({
+        authHttpClient: httpClient,
+        publicHttpClient: httpClient,
+      }),
       deviceIdService: { get: async () => 'ios_device-123' },
       registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
       logger: createLoggerStub(),

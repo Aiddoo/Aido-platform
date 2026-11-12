@@ -38,7 +38,7 @@ import {
   toResetPasswordResult,
 } from './auth.mapper';
 
-interface AuthApiClients {
+interface AuthApiPorts {
   /** 로그인 전에도 부르는 요청과 지난 계정의 토큰으로 보내는 해제 요청 */
   publicHttpClient: HttpClient;
   authHttpClient: HttpClient;
@@ -49,7 +49,7 @@ export class AuthApi {
   readonly #publicHttpClient: HttpClient;
   readonly #authHttpClient: HttpClient;
 
-  constructor({ publicHttpClient, authHttpClient }: AuthApiClients) {
+  constructor({ publicHttpClient, authHttpClient }: AuthApiPorts) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
   }

@@ -21,7 +21,7 @@ describe('NotificationApi', () => {
   beforeEach(() => {
     httpClient = createHttpClientStub();
     api = new NotificationApi({
-      httpClient,
+      authHttpClient: httpClient,
       publicHttpClient: httpClient,
     });
   });
@@ -151,7 +151,7 @@ describe('NotificationApi.markAsReadAndCheckOwnership', () => {
     return {
       httpClient,
       api: new NotificationApi({
-        httpClient,
+        authHttpClient: httpClient,
         publicHttpClient: httpClient,
       }),
     };

@@ -8,7 +8,7 @@ import { createQueryCacheStorage } from '../query/query-cache-persistence';
 import type { AppContainerPorts } from './create-app-container';
 import type { DevicePorts } from './create-device-ports';
 
-interface CompositionRootDeps {
+interface CompositionRootPorts {
   createDevicePorts: () => DevicePorts;
   /** SecureStore의 키로 초안·조회 캐시 저장소를 연다. 실패해도 reject하지 않고 `failure`를 돌려준다 */
   openEncryptedStorage: (secureStorage: KeyValueStorage) => Promise<EncryptedStorageBootstrap>;
@@ -29,7 +29,7 @@ export function createCompositionRoot({
   createDevicePorts,
   openEncryptedStorage,
   createQueryClient,
-}: CompositionRootDeps): CompositionRoot {
+}: CompositionRootPorts): CompositionRoot {
   let devicePorts: DevicePorts | null = null;
   let queryClient: QueryClient | null = null;
   let openedPorts: AppContainerPorts | null = null;

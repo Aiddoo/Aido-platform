@@ -33,7 +33,7 @@ function createService({
     publicHttpClient,
     authHttpClient,
     pendingRedemptionService,
-    installationIdGateway: { get: readInstallationId },
+    installationId: { get: readInstallationId },
     logger,
   });
 

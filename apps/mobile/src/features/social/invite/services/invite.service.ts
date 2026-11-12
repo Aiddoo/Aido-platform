@@ -39,7 +39,7 @@ interface InviteServicePorts {
   authHttpClient: HttpClient;
   /** 미리보기가 더는 쓸 수 없는 초대라고 알려 주면 남겨 둔 초대를 지운다 */
   pendingRedemptionService: Pick<PendingRedemptionService, 'clearPendingRedemptionIfTerminal'>;
-  installationIdGateway: InstallationIdGateway;
+  installationId: InstallationIdGateway;
   logger: Pick<AppLogger, 'warn'>;
 }
 
@@ -47,20 +47,20 @@ export class InviteService {
   readonly #publicHttpClient: HttpClient;
   readonly #authHttpClient: HttpClient;
   readonly #pendingRedemptionService: InviteServicePorts['pendingRedemptionService'];
-  readonly #installationIdGateway: InstallationIdGateway;
+  readonly #installationId: InstallationIdGateway;
   readonly #logger: Pick<AppLogger, 'warn'>;
 
   constructor({
     publicHttpClient,
     authHttpClient,
     pendingRedemptionService,
-    installationIdGateway,
+    installationId,
     logger,
   }: InviteServicePorts) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
     this.#pendingRedemptionService = pendingRedemptionService;
-    this.#installationIdGateway = installationIdGateway;
+    this.#installationId = installationId;
     this.#logger = logger;
   }
 
@@ -103,7 +103,7 @@ export class InviteService {
       return err(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
     }
 
-    const installationId = await this.#installationIdGateway.get().catch((error: unknown) => {
+    const installationId = await this.#installationId.get().catch((error: unknown) => {
       this.#logger.warn(INVITE_LOG_EVENT.INSTALLATION_ID_READ_FAILED, {
         error: getErrorMessage(error),
       });

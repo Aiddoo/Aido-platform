@@ -11,7 +11,7 @@ import { createAppHeaders, setPerRequestHeaders } from './request-headers';
 import { API_REQUEST_TIMEOUT_MS } from './request-timeout';
 import { createTokenRefreshHook, type EndSession, markRequestEpoch } from './token-refresh-hook';
 
-interface AuthClientDeps {
+interface AuthClientPorts {
   appVersion?: string;
   appBuild?: string;
   tokenStore: TokenStore;
@@ -33,7 +33,7 @@ export function createAuthClient({
   sessionEpoch,
   logger,
   errorReporter,
-}: AuthClientDeps): KyInstance {
+}: AuthClientPorts): KyInstance {
   return ky.create({
     prefix: ENV.API_URL,
     timeout: API_REQUEST_TIMEOUT_MS,

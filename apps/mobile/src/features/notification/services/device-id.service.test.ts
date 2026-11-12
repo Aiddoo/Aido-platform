@@ -14,7 +14,12 @@ function createService({
   const vendorIdGateway = createVendorIdGatewayStub();
   vendorIdGateway.get.mockResolvedValue(vendorId);
   const idGenerator = createIdGeneratorStub();
-  const service = new DeviceIdService({ store, vendorIdGateway, idGenerator, platform: 'ios' });
+  const service = new DeviceIdService({
+    store,
+    vendorId: vendorIdGateway,
+    idGenerator,
+    platform: 'ios',
+  });
 
   return { service, store, idGenerator };
 }

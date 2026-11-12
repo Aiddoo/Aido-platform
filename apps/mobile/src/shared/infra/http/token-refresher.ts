@@ -17,7 +17,7 @@ import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
 const refreshEnvelopeSchema = z.object({ data: refreshTokensSchema });
 
-interface TokenRefresherDeps {
+interface TokenRefresherPorts {
   tokenStore: TokenStore;
   requestRefresh: RefreshTokensRequest;
   sessionEpoch: SessionEpoch;
@@ -31,7 +31,7 @@ export function createTokenRefresher({
   requestRefresh,
   sessionEpoch,
   logger,
-}: TokenRefresherDeps): TokenRefresher {
+}: TokenRefresherPorts): TokenRefresher {
   let inFlight: { epoch: number; outcome: Promise<RefreshOutcome> } | null = null;
 
   const readRefreshToken = async (): Promise<string | null> => {

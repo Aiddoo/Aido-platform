@@ -15,7 +15,7 @@ import type { WidgetNavigationRepository } from '../repositories/widget-navigati
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import type { renderStoredAndroidWidget } from './android-widgets.bridge';
 
-type WidgetTaskDependencies = {
+type WidgetTaskPorts = {
   navigationRepository: WidgetNavigationRepository;
   openApp: (uri: string) => Promise<unknown>;
   isAppActive: () => boolean;
@@ -34,7 +34,7 @@ export function createAndroidWidgetTaskHandler({
   createCommandId,
   failureStorage,
   renderStoredWidget,
-}: WidgetTaskDependencies) {
+}: WidgetTaskPorts) {
   return async (task: WidgetTaskHandlerProps): Promise<void> => {
     if (!ANDROID_WIDGET_DEFINITIONS.some(({ name }) => name === task.widgetInfo.widgetName)) {
       return;

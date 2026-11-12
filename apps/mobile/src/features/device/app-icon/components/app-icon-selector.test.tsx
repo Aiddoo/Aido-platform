@@ -37,7 +37,7 @@ async function renderSelector(snapshot: EntitlementSnapshot, currentIcon: AppIco
       withLocalDate: true,
       withOverlay: true,
       di: {
-        appIconGateway: gateway,
+        appIcon: gateway,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
       },

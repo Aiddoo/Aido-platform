@@ -7,16 +7,16 @@ import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NotificationBadgePolicy } from '../domains/notification-badge.model';
 
 interface NotificationBadgeServicePorts {
-  badgeGateway: Pick<PushNotificationGateway, 'setBadgeCount'>;
+  badge: Pick<PushNotificationGateway, 'setBadgeCount'>;
   logger: AppLogger;
 }
 
 export class NotificationBadgeService {
-  readonly #badgeGateway: Pick<PushNotificationGateway, 'setBadgeCount'>;
+  readonly #badge: Pick<PushNotificationGateway, 'setBadgeCount'>;
   readonly #logger: AppLogger;
 
-  constructor({ badgeGateway, logger }: NotificationBadgeServicePorts) {
-    this.#badgeGateway = badgeGateway;
+  constructor({ badge, logger }: NotificationBadgeServicePorts) {
+    this.#badge = badge;
     this.#logger = logger;
   }
 
@@ -32,7 +32,7 @@ export class NotificationBadgeService {
     if (count == null) {
       return;
     }
-    await this.#badgeGateway
+    await this.#badge
       .setBadgeCount(count)
       .catch((error: unknown) =>
         this.#logger.warn(

@@ -46,7 +46,7 @@ function setup({ deviceType = 'IOS' }: { deviceType?: 'IOS' | 'ANDROID' } = {}) 
   const service = new SignInService({
     authApi: new AuthApi({ publicHttpClient: publicHttp, authHttpClient: authHttp }),
     tokenStore,
-    socialAuthGateway: gateway,
+    socialAuth: gateway,
     deviceType,
     logger,
   });

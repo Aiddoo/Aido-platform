@@ -119,7 +119,7 @@ export interface AppContainerPorts {
   idGenerator: IdGenerator;
   speechRecognizer: SpeechRecognizer;
   /** 스토어 결제 SDK. 화면은 `SubscriptionService`로만 쓴다 */
-  purchasesGateway: PurchasesGateway;
+  purchases: PurchasesGateway;
   pushNotification: PushNotificationGateway;
   /** SecureStore. 회수 대기와 푸시 등록 기록을 둔다 */
   storage: KeyValueStorage;
@@ -136,7 +136,7 @@ export interface AppContainerPorts {
   /** 오프라인 로그아웃 뒤 서버 세션을 풀 때 갱신 토큰으로 보낸다 */
   requestRefresh: RefreshTokensRequest;
   socialAuth: SocialAuthGateway;
-  socialShareGateway: SocialShareGateway;
+  socialShare: SocialShareGateway;
   systemShare: SystemShareGateway;
   clipboard: ClipboardGateway;
   externalLink: ExternalLinkGateway;
@@ -148,11 +148,11 @@ export interface AppContainerPorts {
   deviceLocation: LocationGateway;
   applicationMetadata: NativeApplicationMetadataGateway;
   appStoreListing: AppStoreListingGateway;
-  appStoreReviewGateway: AppStoreReviewGateway;
-  appIconGateway: AppIconGateway;
-  installReferrerGateway: InstallReferrerGateway;
-  installationIdGateway: InstallationIdGateway;
-  vendorIdGateway: VendorIdGateway;
+  appStoreReview: AppStoreReviewGateway;
+  appIcon: AppIconGateway;
+  installReferrer: InstallReferrerGateway;
+  installationId: InstallationIdGateway;
+  vendorId: VendorIdGateway;
   deviceIdStore: DeviceIdStore;
   /** 말로 메모 녹음 파일. 기기 밖으로 나가지 않는다 */
   localFileSystem: LocalFileSystem;
@@ -205,17 +205,14 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
   const coachmarkRepository = createCoachmarkRepository(syncStorage);
   const marketingPushPromptRepository = createMarketingPushPromptRepository(syncStorage);
 
-  const pendingRedemptionService = new PendingRedemptionService(
-    syncStorage,
-    ports.installReferrerGateway,
-  );
+  const pendingRedemptionService = new PendingRedemptionService(syncStorage, ports.installReferrer);
 
   const pushRegistrationService = new PushRegistrationService({
     gateway: pushNotification,
-    pushDeviceApi: new PushDeviceApi({ httpClient: authHttpClient, publicHttpClient }),
+    pushDeviceApi: new PushDeviceApi({ authHttpClient, publicHttpClient }),
     deviceIdService: new DeviceIdService({
       store: ports.deviceIdStore,
-      vendorIdGateway: ports.vendorIdGateway,
+      vendorId: ports.vendorId,
       idGenerator: ports.idGenerator,
       platform: ports.platform,
     }),
@@ -228,7 +225,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
   });
 
   const purchasesSession = new PurchasesSession({
-    purchases: ports.purchasesGateway,
+    purchases: ports.purchases,
     logger,
     analytics,
     subscriberAttributes: {
@@ -306,7 +303,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     signInService: new SignInService({
       authApi,
       tokenStore,
-      socialAuthGateway: ports.socialAuth,
+      socialAuth: ports.socialAuth,
       deviceType: ports.platform === 'ios' ? 'IOS' : 'ANDROID',
       logger,
     }),
@@ -314,18 +311,18 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     activationService: new ActivationService(syncStorage),
     activationProgressRepository,
     appVersionApi: new AppVersionApi(ports.jsonFetcher),
-    appIconService: new AppIconService(ports.appIconGateway),
+    appIconService: new AppIconService(ports.appIcon),
     friendApi: new FriendApi(authHttpClient),
     inviteService: new InviteService({
       publicHttpClient,
       authHttpClient,
       pendingRedemptionService,
-      installationIdGateway: ports.installationIdGateway,
+      installationId: ports.installationId,
       logger,
     }),
     pendingRedemptionService,
     inviteShareService: new InviteShareService({
-      socialShare: ports.socialShareGateway,
+      socialShare: ports.socialShare,
       systemShare: ports.systemShare,
       clipboard: ports.clipboard,
       errorReporter,
@@ -341,9 +338,9 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     todoApi: new TodoApi(authHttpClient),
     todoCommentApi: new TodoCommentApi(authHttpClient),
     todoCategoryApi: new TodoCategoryApi(authHttpClient),
-    notificationApi: new NotificationApi({ httpClient: authHttpClient, publicHttpClient }),
+    notificationApi: new NotificationApi({ authHttpClient, publicHttpClient }),
     notificationBadgeService: new NotificationBadgeService({
-      badgeGateway: pushNotification,
+      badge: pushNotification,
       logger,
     }),
     pushNotificationEntryStore: createPushNotificationEntryStore(),
@@ -354,12 +351,12 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     coachmarkRepository,
     storeReviewService: new StoreReviewService(
       createStoreReviewRepository(syncStorage),
-      ports.appStoreReviewGateway,
+      ports.appStoreReview,
       getNowInstant,
     ),
     userApi: new UserApi(authHttpClient),
     purchasesSession,
-    subscriptionService: new SubscriptionService(purchasesSession, ports.purchasesGateway, logger),
+    subscriptionService: new SubscriptionService(purchasesSession, ports.purchases, logger),
     entitlementApi: new EntitlementApi(authHttpClient, logger),
     weatherApi,
     weatherLocationService: new WeatherLocationService({

@@ -41,7 +41,7 @@ function setup(
   const logger = createLoggerStub();
   const service = new PushRegistrationService({
     gateway,
-    pushDeviceApi: new PushDeviceApi({ httpClient, publicHttpClient }),
+    pushDeviceApi: new PushDeviceApi({ authHttpClient: httpClient, publicHttpClient }),
     deviceIdService: { get: async () => DEVICE_ID },
     registrationRepository,
     logger,
@@ -260,10 +260,13 @@ describe('PushRegistrationService.report', () => {
     httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
     const service = new PushRegistrationService({
       gateway,
-      pushDeviceApi: new PushDeviceApi({ httpClient, publicHttpClient: createHttpClientStub() }),
+      pushDeviceApi: new PushDeviceApi({
+        authHttpClient: httpClient,
+        publicHttpClient: createHttpClientStub(),
+      }),
       deviceIdService: new DeviceIdService({
         store: deviceIdStore,
-        vendorIdGateway,
+        vendorId: vendorIdGateway,
         idGenerator: createIdGeneratorStub(),
         platform: 'ios',
       }),

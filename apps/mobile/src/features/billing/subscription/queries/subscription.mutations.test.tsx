@@ -75,7 +75,7 @@ async function renderPurchase({
   });
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(serverMe));
-  const di = createTestDi({ httpClient, purchasesGateway: purchases });
+  const di = createTestDi({ httpClient, purchases });
   di.purchasesSession.configure();
   // 결제 전 캐시가 화면을 여는 순간 서버 값으로 바뀌지 않게 다시 받지 않는다
   const queryClient = createTestQueryClient({

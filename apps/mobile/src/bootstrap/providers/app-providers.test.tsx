@@ -45,7 +45,7 @@ interface DeviceStubs {
   syncStorage: MemoryObservableSyncStorage;
   widgetStorage: MemoryObservableSyncStorage;
   pushNotification: PushNotificationGatewayStub;
-  purchasesGateway: PurchasesGatewayStub;
+  purchases: PurchasesGatewayStub;
   analytics: ReturnType<typeof createAnalyticsStub>;
   errorReporter: ReturnType<typeof createErrorReporterStub>;
 }
@@ -71,7 +71,7 @@ function createTestRoot({ tokens }: { tokens?: AuthTokenPair } = {}) {
         syncStorage: createMemoryObservableSyncStorage(),
         widgetStorage: createMemoryObservableSyncStorage(),
         pushNotification: createPushNotificationGatewayStub(),
-        purchasesGateway: createPurchasesGatewayStub(),
+        purchases: createPurchasesGatewayStub(),
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
       };
@@ -107,7 +107,7 @@ function getActiveSubscriptionCount(device: DeviceStubs) {
     syncStorage: device.syncStorage.getListenerCount(),
     widgetStorage: device.widgetStorage.getListenerCount(),
     pushNotification: device.pushNotification.getListenerCount(),
-    purchasesGateway: device.purchasesGateway.getListenerCount(),
+    purchases: device.purchases.getListenerCount(),
   };
 }
 
@@ -117,7 +117,7 @@ const NO_SUBSCRIPTIONS = {
   syncStorage: 0,
   widgetStorage: 0,
   pushNotification: 0,
-  purchasesGateway: 0,
+  purchases: 0,
 };
 
 /** 화면이 DI에서 꺼낸 값. 다시 시도 전후를 견준다 */
@@ -245,6 +245,6 @@ describe('AppProviders', () => {
     await expect(second.mounted.tokenStore.getRefreshToken()).resolves.toBe(
       ACCOUNT_TOKENS.refreshToken,
     );
-    expect(device.purchasesGateway.isConfigured()).toBe(true);
+    expect(device.purchases.isConfigured()).toBe(true);
   });
 });

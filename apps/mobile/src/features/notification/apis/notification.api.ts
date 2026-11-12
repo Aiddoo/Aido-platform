@@ -21,22 +21,22 @@ import {
 } from './notification.mapper';
 
 interface NotificationApiPorts {
-  httpClient: HttpClient;
+  authHttpClient: HttpClient;
   publicHttpClient: HttpClient;
 }
 
 export class NotificationApi {
-  readonly #httpClient: HttpClient;
+  readonly #authHttpClient: HttpClient;
   readonly #publicHttpClient: HttpClient;
 
-  constructor({ httpClient, publicHttpClient }: NotificationApiPorts) {
-    this.#httpClient = httpClient;
+  constructor({ authHttpClient, publicHttpClient }: NotificationApiPorts) {
+    this.#authHttpClient = authHttpClient;
     this.#publicHttpClient = publicHttpClient;
   }
 
   getNotifications = async (query?: GetNotificationsQuery, signal?: AbortSignal) =>
     parseApiResponse(
-      await this.#httpClient.get('v1/notifications/inbox', {
+      await this.#authHttpClient.get('v1/notifications/inbox', {
         signal,
         params: {
           limit: query?.limit,
@@ -52,7 +52,7 @@ export class NotificationApi {
 
   getUnreadCount = async (signal?: AbortSignal) =>
     parseApiResponse(
-      await this.#httpClient.get('v1/notifications/inbox/unread-count', { signal }),
+      await this.#authHttpClient.get('v1/notifications/inbox/unread-count', { signal }),
       unreadCountResponseSchema,
       (dto) => dto.unreadCount,
       '[NotificationApi] Invalid getUnreadCount response',
@@ -60,7 +60,7 @@ export class NotificationApi {
 
   markAsRead = async (notificationId: number) =>
     parseApiResponse(
-      await this.#httpClient.patch(`v1/notifications/${notificationId}/read`),
+      await this.#authHttpClient.patch(`v1/notifications/${notificationId}/read`),
       markReadResponseSchema,
       toReadCount,
       '[NotificationApi] Invalid markAsRead response',
@@ -68,7 +68,7 @@ export class NotificationApi {
 
   markAllAsRead = async () =>
     parseApiResponse(
-      await this.#httpClient.patch('v1/notifications/inbox/read-all'),
+      await this.#authHttpClient.patch('v1/notifications/inbox/read-all'),
       markReadResponseSchema,
       toReadCount,
       '[NotificationApi] Invalid markAllAsRead response',
@@ -76,7 +76,7 @@ export class NotificationApi {
 
   markOpened = async (notificationId: number) =>
     parseApiResponse(
-      await this.#httpClient.post(`v1/notifications/${notificationId}/opened`),
+      await this.#authHttpClient.post(`v1/notifications/${notificationId}/opened`),
       notificationOpenedResponseSchema,
       (dto) => dto.opened,
       '[NotificationApi] Invalid markOpened response',

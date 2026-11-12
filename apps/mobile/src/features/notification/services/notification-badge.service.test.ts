@@ -8,7 +8,7 @@ describe('NotificationBadgeService.syncBadge', () => {
     const badgeGateway = createPushNotificationGatewayStub();
     badgeGateway.setBadgeCount.mockRejectedValue(new Error('unsupported launcher'));
     const logger = createLoggerStub();
-    const service = new NotificationBadgeService({ badgeGateway, logger });
+    const service = new NotificationBadgeService({ badge: badgeGateway, logger });
 
     // When
     await service.syncBadge({ authStatus: 'authenticated', unreadCount: 2 });
