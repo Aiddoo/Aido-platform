@@ -17,7 +17,7 @@ export function useWhatsNewAutoOpen({ isOnboardingSettled }: WhatsNewAutoOpenInp
   const { config, isConfigLoading, release, identity, hasSeen } = useWhatsNewCampaign();
   const applicationMetadata = useApplicationMetadata();
   const appVersion = useMemo(
-    () => applicationMetadata.getInstallation()?.currentVersion,
+    () => applicationMetadata.getInstallation()?.currentVersion ?? null,
     [applicationMetadata],
   );
   const shouldAutoOpen =

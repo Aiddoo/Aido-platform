@@ -723,6 +723,8 @@ describe('로그아웃과 늦은 갱신', () => {
     );
     const http = new KyHttpClient(
       createAuthClient({
+        appVersion: null,
+        appBuild: null,
         tokenStore,
         refresh: createTokenRefresher({
           tokenStore,
@@ -974,6 +976,8 @@ describe('토큰 만료', () => {
     const tokenStore = withSessionEpoch(createMemoryTokenStore(ACCOUNT_A_TOKENS), sessionEpoch);
     const sessionManager = createSessionManager(tokenStore);
     const client = createAuthClient({
+      appVersion: null,
+      appBuild: null,
       tokenStore,
       refresh: createTokenRefresher({
         tokenStore,
@@ -1082,6 +1086,8 @@ describe('토큰 만료', () => {
     const sessionManager = createSessionManager(tokenStore);
     const http = new KyHttpClient(
       createAuthClient({
+        appVersion: null,
+        appBuild: null,
         tokenStore,
         refresh: createTokenRefresher({
           tokenStore,

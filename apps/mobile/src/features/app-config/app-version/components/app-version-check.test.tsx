@@ -36,6 +36,8 @@ async function renderCheck({
       applicationMetadata: createNativeApplicationMetadataGatewayStub({
         platform: 'ios',
         currentVersion,
+        currentBuild: null,
+        applicationId: null,
       }),
       appStoreListing: listing,
       errorReporter,

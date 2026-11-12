@@ -22,11 +22,11 @@ export const appVersionConfigSchema = z.discriminatedUnion('enabled', [
 ]);
 export type AppVersionConfig = z.infer<typeof appVersionConfigSchema>;
 
-/** 설치 정보나 서버 설정이 모자랄 수 있어 모든 칸이 선택이다 */
+/** 설치 정보를 모르면 플랫폼·버전이 null이다 */
 export interface AppVersionPolicyInput {
-  config?: AppVersionConfig;
-  platform?: string;
-  currentVersion?: string;
+  config: AppVersionConfig;
+  platform: string | null;
+  currentVersion: string | null;
 }
 
 interface ComparableInput {
@@ -35,7 +35,7 @@ interface ComparableInput {
   currentVersion: string;
 }
 
-function isValidVersion(version: string | undefined): version is string {
+function isValidVersion(version: string | null | undefined): version is string {
   return appStoreVersionSchema.safeParse(version).success;
 }
 
@@ -43,7 +43,7 @@ function isValidVersion(version: string | undefined): version is string {
 function isVersionComparable(input: AppVersionPolicyInput): input is ComparableInput {
   const { config, platform, currentVersion } = input;
   const parsedPlatform = appVersionPlatformSchema.safeParse(platform);
-  if (config?.enabled !== true || !parsedPlatform.success) {
+  if (!config.enabled || !parsedPlatform.success) {
     return false;
   }
   const latest = config.latestByPlatform[parsedPlatform.data];

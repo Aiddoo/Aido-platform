@@ -34,7 +34,7 @@ export function AppVersionCheck() {
     }
 
     const result = await query.refetch();
-    if (result.isError || !result.data || !installation) {
+    if (result.isError || result.data == null || installation == null) {
       if (result.error) {
         reportUnexpectedError(result.error);
       }

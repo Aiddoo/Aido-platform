@@ -36,7 +36,7 @@ export type Release = z.infer<typeof releaseSchema>;
 
 interface AutoOpenContext {
   config: WhatsNewCampaignConfig | undefined;
-  appVersion: string | undefined;
+  appVersion: string | null;
   hasSeen: boolean;
 }
 

@@ -12,8 +12,8 @@ import { API_REQUEST_TIMEOUT_MS } from './request-timeout';
 import { createTokenRefreshHook, type EndSession, markRequestEpoch } from './token-refresh-hook';
 
 interface AuthClientPorts {
-  appVersion?: string;
-  appBuild?: string;
+  appVersion: string | null;
+  appBuild: string | null;
   tokenStore: TokenStore;
   /** 앱 전체 단일 인스턴스. 갈라지면 single-flight mutex가 분리돼 토큰 패밀리를 소모한다. */
   refresh: TokenRefresher;

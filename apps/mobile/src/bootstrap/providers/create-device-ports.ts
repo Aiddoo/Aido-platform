@@ -70,8 +70,8 @@ export function createDevicePorts(): DevicePorts {
   const errorReporter = createEnvironmentErrorReporter();
 
   const installation = expoNativeApplicationMetadataGateway.getInstallation();
-  const appVersion = installation?.currentVersion ?? ENV.APP_VERSION;
-  const appBuild = installation?.currentBuild;
+  const appVersion = installation?.currentVersion ?? ENV.APP_VERSION ?? null;
+  const appBuild = installation?.currentBuild ?? null;
   const publicKyInstance = createPublicClient({ appVersion, appBuild, errorReporter });
 
   const sessionManager = createSessionManager(tokenStore);

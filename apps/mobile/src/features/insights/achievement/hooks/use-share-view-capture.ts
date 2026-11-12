@@ -30,7 +30,7 @@ export function useShareViewCapture(viewShotRef: RefObject<ViewCaptureHandle | n
       }
 
       const uri = await viewCapture.capture(viewShotRef.current);
-      if (!uri) {
+      if (uri == null) {
         error(t('common:share.prepareFailed'));
         return;
       }

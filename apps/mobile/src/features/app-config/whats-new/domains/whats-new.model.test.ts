@@ -40,7 +40,7 @@ describe('shouldAutoOpen', () => {
       { config: createEnabledConfig({ campaignId: 'feature-discovery-2026-08' }) },
     ],
     ['지원 버전보다 낮은 앱', { appVersion: '1.14.9' }],
-    ['알 수 없는 앱 버전', { appVersion: undefined }],
+    ['알 수 없는 앱 버전', { appVersion: null }],
     ['이미 본 캠페인', { hasSeen: true }],
     ['자동 열기 비활성', { config: createEnabledConfig({ autoOpen: false }) }],
   ])('%s이면 열지 않는다', (_label, overrides) => {

@@ -97,6 +97,8 @@ describe('createAuthClient: 동시 401', () => {
     const endSession = jest.fn(async () => undefined);
     const http = new KyHttpClient(
       createAuthClient({
+        appVersion: null,
+        appBuild: null,
         tokenStore,
         refresh: createTokenRefresher({
           tokenStore,
@@ -132,6 +134,8 @@ describe('createAuthClient: 계정 전환과 늦은 응답', () => {
     const endSession = jest.fn(async () => undefined);
     const http = new KyHttpClient(
       createAuthClient({
+        appVersion: null,
+        appBuild: null,
         tokenStore,
         refresh: createTokenRefresher({
           tokenStore,

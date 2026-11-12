@@ -314,7 +314,11 @@ describe('SessionRevocationService', () => {
       requestRefresh,
       authApi: new AuthApi({
         publicHttpClient: new KyHttpClient(
-          createPublicClient({ errorReporter: createErrorReporterStub() }),
+          createPublicClient({
+            appVersion: null,
+            appBuild: null,
+            errorReporter: createErrorReporterStub(),
+          }),
         ),
         authHttpClient: createHttpClientStub(),
       }),

@@ -5,13 +5,13 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 export const expoNativeApplicationMetadataGateway: NativeApplicationMetadataGateway = {
   getInstallation: () => {
     if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
-      return undefined;
+      return null;
     }
     return {
-      platform: process.env.EXPO_OS,
-      currentVersion: Application.nativeApplicationVersion ?? undefined,
-      currentBuild: Application.nativeBuildVersion ?? undefined,
-      applicationId: Application.applicationId ?? undefined,
+      platform: process.env.EXPO_OS ?? null,
+      currentVersion: Application.nativeApplicationVersion,
+      currentBuild: Application.nativeBuildVersion,
+      applicationId: Application.applicationId,
     };
   },
 };
