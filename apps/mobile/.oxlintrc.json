@@ -497,6 +497,20 @@
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           }
         ]
       }
@@ -541,8 +555,27 @@
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
           },
           {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
             "property": "hasCode",
             "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+          },
+          {
+            "object": "Keyboard",
+            "property": "addListener",
+            "message": "키보드 위치는 react-native-keyboard-controller로 따라갑니다. Keyboard.addListener 타이밍으로 흉내 내지 않습니다(docs/architecture/ui.md)."
           }
         ]
       }
@@ -585,6 +618,20 @@
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           }
         ]
       }
@@ -617,6 +664,20 @@
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           }
         ]
       }
@@ -654,6 +715,20 @@
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           },
           {
             "object": "z",
@@ -701,8 +776,27 @@
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
           },
           {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
             "property": "hasCode",
             "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+          },
+          {
+            "object": "Keyboard",
+            "property": "addListener",
+            "message": "키보드 위치는 react-native-keyboard-controller로 따라갑니다. Keyboard.addListener 타이밍으로 흉내 내지 않습니다(docs/architecture/ui.md)."
           },
           {
             "object": "z",
