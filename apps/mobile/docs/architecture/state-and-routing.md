@@ -92,6 +92,7 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 이동은 호출부에서 typed routes `router.push({ pathname, params })`로 쓴다. 컴파일 때 `pathname`과 동적 세그먼트를 검사하므로 href 래퍼를 만들지 않고 경로 문자열을 잇지 않는다.
 - 저장·AI·조회를 기다린 뒤 이동하면 그 사이 떠났는지 먼저 본다. 화면은 `navigation.isFocused()`, 화면 안에서 바뀌는 조각(pane의 메모 편집기)은 마운트 여부도 본다. 떠났으면 지금 보는 화면 위로 끌고 가지 않는다. 메모 AI 정리 결과는 mutation이 초안에 남겨, 그 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다.
 - 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `WidgetNavigationPolicy`다.
+- 켜진 앱에 앱 밖에서 들어온 이동(누른 푸시)은 `openEntryHref(href)`(`shared/navigation/open-entry-href.ts`)로 OS가 같은 URL을 연 것처럼 연다. Stack에 그 화면이 있으면 그리로 돌아가고 없으면 쌓는다. `router.navigate`는 탭 위 화면(알림함·할 일 상세·시트)에서 탭 화면을 열면 탭 묶음을 하나 더 쌓는다.
 - 뒤로 가기는 `useGoBack({ fallbackHref })`(돌아갈 화면이 없을 때 화면이 아닌 일을 하면 `{ onFallback }`), Android 뒤로 가기 버튼은 `useAndroidBackHandler`다([hooks](./hooks.md)). `router.canGoBack() ? router.back() : …`을 직접 쓰지 않는다(연타로 두 번 돌아간다).
 - 웹 페이지(약관·공지)는 route가 아니라 `useOpenInAppBrowser`로 연다. 앱 자체 WebView는 없고 `aido://webview/…` 링크는 `+not-found`로 간다.
 - 공개된 경로와 `aido://` URI는 외부 계약이다. 바꾸지 않고 새 경로는 추가만 한다([compatibility](../../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)).
