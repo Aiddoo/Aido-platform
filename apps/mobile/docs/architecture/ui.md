@@ -67,6 +67,7 @@ export function CategoryList({ filters, orderBy = 'position', limit }: CategoryL
 ```
 
 - 인터페이스는 실제로 쓰는 곳이 있을 때만 둔다. 거르기·정렬은 쿼리 `select`가 하고 타입은 모델의 `FilterX`·`OrderByX`다.
+- 쓰는 화면이 하나이고 거르기·정렬을 바꿀 곳이 없는 목록은 인터페이스 없이 자기 조회를 부른다: 제안(`SuggestionsList`, 서버가 정한 목록 전부)·리포트(`ReportList`, 종류는 URL 튜플 `useReportType`, 개수는 서버 기본 페이지 10). 두 번째 화면이 다른 모양을 원할 때 `filters`·`limit`를 연다.
 - 행은 route 훅을 부르지 않는다. 부모가 한 번 읽어 `isSelected` 같은 파생 값과 같은 핸들러를 넘긴다.
 - 원본을 넘기기만 하는 `X.Item = (props) => <UserList.Item {...props} />`을 만들지 않는다. 같은 fallback은 `X.Error = UserList.Error`로 잇는다.
 
