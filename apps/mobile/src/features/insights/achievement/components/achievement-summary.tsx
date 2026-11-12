@@ -147,7 +147,7 @@ export function AchievementSummary() {
               }),
               total: latest.totalTodos,
               completed: latest.completedTodos,
-              rate: latest.completionRate,
+              rate: formatPercent(latest.completionRate, dateFormatContext.locale),
             })}
           </Text>
 
