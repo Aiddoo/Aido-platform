@@ -26,7 +26,7 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { formatCompactCount } from '@src/shared/utils/number-format';
 import {
   useMutation,

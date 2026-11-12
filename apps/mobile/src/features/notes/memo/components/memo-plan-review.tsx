@@ -15,7 +15,7 @@ import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorFallback, type QueryErrorFallbackProps, Result } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect } from 'react';

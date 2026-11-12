@@ -7,10 +7,11 @@ import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
-import { HStack } from '../h-stack';
-import { CloseIcon, type StyledIcon } from '../icon';
-import { VStack } from '../v-stack';
-import { WordWrapText } from '../word-wrap-text';
+import { HStack } from '../h-stack/h-stack';
+import { type StyledIcon } from '../icon/create-styled-icon';
+import { CloseIcon } from '../icon/icons';
+import { VStack } from '../v-stack/v-stack';
+import { WordWrapText } from '../word-wrap-text/word-wrap-text';
 
 const HINT_MAX_WIDTH = 300;
 const HINT_SCREEN_INSET = 12;

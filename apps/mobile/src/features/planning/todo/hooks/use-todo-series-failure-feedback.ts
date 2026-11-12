@@ -1,6 +1,6 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {

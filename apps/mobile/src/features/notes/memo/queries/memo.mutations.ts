@@ -32,7 +32,7 @@ import { NetworkError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
 import { isMemoParseRejectionHandledByFeature } from '../domains/memo.error';

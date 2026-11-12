@@ -6,7 +6,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { useOpenSheet } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';

@@ -3,7 +3,7 @@ import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage
 import type { FontScale } from '@src/shared/preferences/font-scale.preference';
 import { fontScaleStoredValue } from '@src/shared/preferences/schemas/font-scale-storage.schema';
 import { useStoredValueIn } from '@src/shared/storage/use-stored-value';
-import type { TextSize } from '@src/shared/ui/text/text.types';
+import type { TextSize } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { createContext, type PropsWithChildren, use, useCallback, useMemo } from 'react';
 

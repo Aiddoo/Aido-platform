@@ -13,7 +13,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import { i18n } from '@src/shared/i18n';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,

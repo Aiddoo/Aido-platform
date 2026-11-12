@@ -2,7 +2,7 @@ import { type ComponentProps, createContext, type ReactNode, use } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 import { ScrollFade } from '../scroll-fade/scroll-fade';
 import { VStack } from '../v-stack/v-stack';
 import { SHARED_SHEET_STYLES, SHEET_CONTENT_PADDING } from './bottom-sheet.constants';

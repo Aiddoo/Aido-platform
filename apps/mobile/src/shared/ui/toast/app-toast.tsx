@@ -3,7 +3,7 @@ import { PressableFeedback, Toast } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { FadeIn } from 'react-native-reanimated';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 import type { StyledIcon } from '../icon/create-styled-icon';
 import { ToastErrorIcon, ToastSuccessIcon, ToastWarningIcon } from '../icon/icons';
 import { Text } from '../text/text';

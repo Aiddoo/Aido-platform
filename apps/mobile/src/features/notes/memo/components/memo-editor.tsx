@@ -52,7 +52,7 @@ import {
   VStack,
   MenuContent,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   useIsMutating,
