@@ -23,11 +23,6 @@
       "reason": "phase 3에서 줄인다"
     },
     {
-      "path": "apps/mobile/docs/testing.md",
-      "check": "limit",
-      "reason": "phase 3에서 줄인다"
-    },
-    {
       "path": "apps/mobile/src/shared/ui/bottom-sheet/bottom-sheet.md",
       "check": "limit",
       "reason": "phase 3에서 줄인다"
