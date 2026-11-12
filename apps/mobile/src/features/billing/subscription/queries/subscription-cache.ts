@@ -67,6 +67,7 @@ export async function syncMeUntilStorePremium(
     return false;
   }
 
+  // 백오프 재조회다. 앞 응답으로 멈출지 정해 한 번에 보내지 않는다
   for (const ms of delaysMs) {
     if (isStorePremiumReflected(queryClient)) {
       return true;
