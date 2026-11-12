@@ -16,6 +16,7 @@ import { PressableFeedback, Tabs } from 'heroui-native';
 import {
   type ComponentProps,
   type ComponentRef,
+  type Ref,
   useEffectEvent,
   useLayoutEffect,
   useRef,
@@ -178,7 +179,7 @@ function measureWidth(node: Pick<HostInstance, 'measure'> | null): number | null
 }
 
 /** 이 언어가 지금 보기에서 보일 수 있는 제목을 달마다 쌓아, 묶음 폭이 가장 긴 제목의 폭이다 */
-function CalendarTitleSamples({ ref }: Pick<ComponentProps<typeof Box>, 'ref'>) {
+function CalendarTitleSamples({ ref }: { ref: Ref<ComponentRef<typeof Box>> }) {
   const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
@@ -275,7 +276,8 @@ function CalendarViewModeTrigger({
   );
 }
 
-interface CalendarNavigationProps extends Pick<ComponentProps<typeof HStack>, 'ref'> {
+interface CalendarNavigationProps {
+  ref: Ref<ComponentRef<typeof HStack>>;
   onPrevious: () => void;
   onNext: () => void;
 }
