@@ -47,6 +47,36 @@ interface TodoRowProps extends Omit<ComponentProps<typeof PressableFeedback>, 'c
   children?: ReactNode;
 }
 
+interface TodoLabelProps extends Omit<
+  ComponentProps<typeof Text>,
+  'size' | 'weight' | 'strikethrough' | 'shade' | 'children'
+> {
+  isCompleted: boolean;
+  children: string;
+}
+
+interface TodoTitleLineProps {
+  label: ReactNode;
+  isPrivate: boolean;
+}
+
+interface TodoScheduleLineProps {
+  todo: Pick<Todo, 'repeat' | 'recurrenceGroupId'>;
+  /** 표시할 시간. 종일이면 null */
+  timeLabel: string | null;
+  /** 알림이 닿지 않아 시간 옆에 종 꺼짐을 그린다 */
+  isReminderOff?: boolean;
+}
+
+type TodoProgressTone = 'surface' | 'onSky';
+
+interface TodoProgressProps {
+  value: number;
+  total: number;
+  /** 날씨 하늘처럼 늘 어두운 면 위에서는 onSky로 흰 막대·글자를 쓴다. */
+  tone?: TodoProgressTone;
+}
+
 export function TodoRow({
   left,
   top,
@@ -90,32 +120,13 @@ export function TodoRow({
   );
 }
 
-TodoRow.Loading = function Loading() {
-  return (
-    <TodoRow
-      left={<Skeleton className="size-5 rounded-md" />}
-      top={<TextSkeleton size="b3" className="w-3/4" />}
-      right={
-        <Box className="px-2 py-1.5">
-          <Skeleton
-            className="rounded-full"
-            style={{ width: ICON_COUNT_BUTTON_ICON_SIZE, height: ICON_COUNT_BUTTON_ICON_SIZE }}
-          />
-        </Box>
-      }
-    />
-  );
-};
-
-type TodoCheckboxProps = ComponentProps<typeof Checkbox>;
-
-function TodoCheckbox({
+TodoRow.Checkbox = function RowCheckbox({
   isSelected,
   onSelectedChange,
   isDisabled,
   className,
   ...props
-}: TodoCheckboxProps) {
+}: ComponentProps<typeof Checkbox>) {
   return (
     <Checkbox
       {...props}
@@ -125,17 +136,9 @@ function TodoCheckbox({
       isDisabled={isDisabled || onSelectedChange == null}
     />
   );
-}
+};
 
-interface TodoLabelProps extends Omit<
-  ComponentProps<typeof Text>,
-  'size' | 'weight' | 'strikethrough' | 'shade' | 'children'
-> {
-  isCompleted: boolean;
-  children: string;
-}
-
-function TodoLabel({ isCompleted, children, ...props }: TodoLabelProps) {
+TodoRow.Label = function Label({ isCompleted, children, ...props }: TodoLabelProps) {
   return (
     <Text
       size="b3"
@@ -148,14 +151,9 @@ function TodoLabel({ isCompleted, children, ...props }: TodoLabelProps) {
       {children}
     </Text>
   );
-}
+};
 
-interface TodoTitleLineProps {
-  label: ReactNode;
-  isPrivate: boolean;
-}
-
-function TodoTitleLine({ label, isPrivate }: TodoTitleLineProps) {
+TodoRow.TitleLine = function TitleLine({ label, isPrivate }: TodoTitleLineProps) {
   const fontScaledSize = useFontScaledSize();
 
   return (
@@ -168,17 +166,13 @@ function TodoTitleLine({ label, isPrivate }: TodoTitleLineProps) {
       )}
     </HStack>
   );
-}
+};
 
-interface TodoScheduleLineProps {
-  todo: Pick<Todo, 'repeat' | 'recurrenceGroupId'>;
-  /** 표시할 시간. 종일이면 null */
-  timeLabel: string | null;
-  /** 알림이 닿지 않아 시간 옆에 종 꺼짐을 그린다 */
-  isReminderOff?: boolean;
-}
-
-function TodoScheduleLine({ todo, timeLabel, isReminderOff = false }: TodoScheduleLineProps) {
+TodoRow.ScheduleLine = function ScheduleLine({
+  todo,
+  timeLabel,
+  isReminderOff = false,
+}: TodoScheduleLineProps) {
   const { t, i18n } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
@@ -227,18 +221,9 @@ function TodoScheduleLine({ todo, timeLabel, isReminderOff = false }: TodoSchedu
       )}
     </HStack>
   );
-}
+};
 
-type TodoProgressTone = 'surface' | 'onSky';
-
-interface TodoProgressProps {
-  value: number;
-  total: number;
-  /** 날씨 하늘처럼 늘 어두운 면 위에서는 onSky로 흰 막대·글자를 쓴다. */
-  tone?: TodoProgressTone;
-}
-
-function TodoProgress({ value, total, tone = 'surface' }: TodoProgressProps) {
+TodoRow.Progress = function Progress({ value, total, tone = 'surface' }: TodoProgressProps) {
   return (
     <HStack gap={6} align="center">
       <Meter
@@ -259,10 +244,21 @@ function TodoProgress({ value, total, tone = 'surface' }: TodoProgressProps) {
       </Text>
     </HStack>
   );
-}
+};
 
-TodoRow.Checkbox = TodoCheckbox;
-TodoRow.Label = TodoLabel;
-TodoRow.TitleLine = TodoTitleLine;
-TodoRow.ScheduleLine = TodoScheduleLine;
-TodoRow.Progress = TodoProgress;
+TodoRow.Loading = function Loading() {
+  return (
+    <TodoRow
+      left={<Skeleton className="size-5 rounded-md" />}
+      top={<TextSkeleton size="b3" className="w-3/4" />}
+      right={
+        <Box className="px-2 py-1.5">
+          <Skeleton
+            className="rounded-full"
+            style={{ width: ICON_COUNT_BUTTON_ICON_SIZE, height: ICON_COUNT_BUTTON_ICON_SIZE }}
+          />
+        </Box>
+      }
+    />
+  );
+};
