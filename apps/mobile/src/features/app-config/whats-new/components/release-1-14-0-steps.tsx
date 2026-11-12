@@ -85,13 +85,13 @@ export function Release1140Steps({ isInviteAvailable }: Release1140StepsProps) {
 }
 
 /** `stampedAt` 장면부터 찍힌 도장이다. 그 전에는 초대 화면의 발자국 판처럼 기다림(점선)·빈 칸으로 둔다 */
-const INVITE_FLOW = [
-  { id: 'invite', Icon: SendIcon, stampedAt: 0, pending: 'empty', reveal: 'none' },
-  { id: 'join', Icon: PersonFilledIcon, stampedAt: 0, pending: 'empty', reveal: 'none' },
-  { id: 'pawPrint', Icon: PawIcon, stampedAt: 1, pending: 'waiting', reveal: 'stamp' },
-  { id: 'reward', Icon: CrownFilledIcon, stampedAt: 2, pending: 'empty', reveal: 'fade' },
-] as const;
-type InviteFlowStep = (typeof INVITE_FLOW)[number];
+const INVITE_FLOW = {
+  invite: { Icon: SendIcon, stampedAt: 0, pending: 'empty', reveal: 'none' },
+  join: { Icon: PersonFilledIcon, stampedAt: 0, pending: 'empty', reveal: 'none' },
+  pawPrint: { Icon: PawIcon, stampedAt: 1, pending: 'waiting', reveal: 'stamp' },
+  reward: { Icon: CrownFilledIcon, stampedAt: 2, pending: 'empty', reveal: 'fade' },
+} as const;
+type InviteFlowStep = (typeof INVITE_FLOW)[keyof typeof INVITE_FLOW];
 
 /** 발자국이 쿵 찍히는 스프링(400ms)이 가라앉은 뒤 보상이 켜진다 */
 const INVITE_FLOW_FRAME_MS = 700;
@@ -113,16 +113,34 @@ function FriendInviteMedia() {
       className="justify-center overflow-hidden rounded-3xl bg-highlight px-3"
     >
       <HStack align="start" className="rounded-2xl bg-white px-1 py-5">
-        {INVITE_FLOW.map((step, index) => (
-          <InviteFlowStamp
-            key={step.id}
-            step={step}
-            frame={frame}
-            label={t(`v1_14_0.demo.steps.${step.id}`)}
-            lineBefore={index === 0 ? 'none' : toLineState(frame, step)}
-            lineAfter={toLineState(frame, INVITE_FLOW[index + 1])}
-          />
-        ))}
+        <InviteFlowStamp
+          step={INVITE_FLOW.invite}
+          frame={frame}
+          label={t('v1_14_0.demo.steps.invite')}
+          lineBefore="none"
+          lineAfter={toLineState(frame, INVITE_FLOW.join)}
+        />
+        <InviteFlowStamp
+          step={INVITE_FLOW.join}
+          frame={frame}
+          label={t('v1_14_0.demo.steps.join')}
+          lineBefore={toLineState(frame, INVITE_FLOW.join)}
+          lineAfter={toLineState(frame, INVITE_FLOW.pawPrint)}
+        />
+        <InviteFlowStamp
+          step={INVITE_FLOW.pawPrint}
+          frame={frame}
+          label={t('v1_14_0.demo.steps.pawPrint')}
+          lineBefore={toLineState(frame, INVITE_FLOW.pawPrint)}
+          lineAfter={toLineState(frame, INVITE_FLOW.reward)}
+        />
+        <InviteFlowStamp
+          step={INVITE_FLOW.reward}
+          frame={frame}
+          label={t('v1_14_0.demo.steps.reward')}
+          lineBefore={toLineState(frame, INVITE_FLOW.reward)}
+          lineAfter="none"
+        />
       </HStack>
     </Box>
   );
@@ -130,10 +148,8 @@ function FriendInviteMedia() {
 
 type LineState = 'none' | 'filled' | 'empty';
 
-function toLineState(frame: number, nextStep: InviteFlowStep | undefined): LineState {
-  if (nextStep == null) {
-    return 'none';
-  }
+/** 다음 도장이 찍히면 그 앞 줄도 채운다 */
+function toLineState(frame: number, nextStep: InviteFlowStep): LineState {
   return frame >= nextStep.stampedAt ? 'filled' : 'empty';
 }
 
