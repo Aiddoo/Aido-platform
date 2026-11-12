@@ -10,6 +10,7 @@ import {
   HStack,
   ListRow,
   MenuIcon,
+  QueryErrorFallback,
   SettingsListGroup,
   Text,
   TextSkeleton,
@@ -200,6 +201,9 @@ CategoryList.ReorderItem = function ReorderItem({ category }: CategoryListItemPr
     </PressableFeedback>
   );
 };
+
+// 목록 카드 안에서 기본 오류 안내를 그대로 그린다. SettingsListGroup.Error는 카드를 한 번 더 감싼다
+CategoryList.Error = QueryErrorFallback;
 
 CategoryList.Loading = function Loading() {
   return (

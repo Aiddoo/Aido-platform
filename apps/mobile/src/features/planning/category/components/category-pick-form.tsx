@@ -5,7 +5,7 @@ import { range } from 'es-toolkit';
 import { PressableFeedback, RadioGroup, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import { type FilterTodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 
 const LOADING_ROW_COUNT = 3;
@@ -16,8 +16,8 @@ interface CategoryPickFormProps {
   onSubmit: (categoryId: number) => Promise<unknown> | void;
   submitLabel: string;
   isLoading?: boolean;
-  /** 고를 수 없는 카테고리(지우는 카테고리의 할 일을 옮길 곳을 고를 때 그 카테고리) */
-  excludedCategoryId?: number;
+  /** 보일 카테고리. 지우는 카테고리의 할 일을 옮길 곳을 고를 때 옮길 수 있는 곳만 남긴다 */
+  filters?: FilterTodoCategory;
 }
 
 export function CategoryPickForm({
@@ -25,19 +25,13 @@ export function CategoryPickForm({
   onSubmit,
   submitLabel,
   isLoading = false,
-  excludedCategoryId,
+  filters,
 }: CategoryPickFormProps) {
   const { t } = useTranslation('todo');
-  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const {
+    data: { categories },
+  } = useSuspenseQuery(useGetTodoCategoriesQueryOptions({ filters }));
   const [localCategoryId, setLocalCategoryId] = useState(defaultValue);
-  const excludedCategory =
-    excludedCategoryId == null
-      ? null
-      : TodoCategoryPolicy.findCategory(categoriesResult.categories, excludedCategoryId);
-  const categories =
-    excludedCategory == null
-      ? categoriesResult.categories
-      : TodoCategoryPolicy.getMoveTargets(excludedCategory, categoriesResult.categories);
 
   return (
     <VStack gap={20}>

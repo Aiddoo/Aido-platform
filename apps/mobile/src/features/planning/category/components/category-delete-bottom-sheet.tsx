@@ -34,8 +34,11 @@ import { match } from 'ts-pattern';
 
 import { TodoCategoryDeletionPolicy } from '../domains/todo-category-deletion.model';
 import type { TodoCategoryDeletionPreview } from '../domains/todo-category-deletion.model';
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import type { TodoCategoryWithCount } from '../domains/todo-category.model';
+import {
+  type TodoCategory,
+  TodoCategoryPolicy,
+  type TodoCategoryWithCount,
+} from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
 import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {
@@ -209,12 +212,9 @@ function TodoHandlingBottomSheet({
   const isDeletePending = deleteCategory.isPending;
   const [todoHandling, setTodoHandling] = useState<CategoryTodoHandling>('move');
   const [pickedMoveTargetCategoryId, setPickedMoveTargetCategoryId] = useState<number | null>(null);
-  // 서버 id가 없는 임시 행으로는 옮길 수 없다
   const moveTarget = TodoCategoryPolicy.findMoveTarget(
     category,
-    categoriesResult.categories.filter(
-      (candidate) => !TodoCategoryPolicy.isOptimisticCategory(candidate),
-    ),
+    categoriesResult.categories,
     pickedMoveTargetCategoryId,
   );
   const deletionRequest = TodoCategoryDeletionPolicy.toDeletionRequest(preview, {
@@ -321,7 +321,7 @@ function TodoHandlingBottomSheet({
             />
             {moveTarget != null && (
               <MoveTargetRow
-                deletingCategoryId={category.id}
+                deletingCategory={category}
                 moveTargetCategoryId={moveTarget.id}
                 onMoveTargetChange={handleMoveTargetChange}
                 isDisabled={isDeletePending}
@@ -458,14 +458,14 @@ interface MoveTargetRowProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
   'children' | 'onPress'
 > {
-  deletingCategoryId: number;
+  deletingCategory: TodoCategory;
   moveTargetCategoryId: number;
   onMoveTargetChange: (categoryId: number) => void;
 }
 
 /** 할 일 작성기의 카테고리 고르기처럼 시트 위 시트에서 바꾼다 */
 function MoveTargetRow({
-  deletingCategoryId,
+  deletingCategory,
   moveTargetCategoryId,
   onMoveTargetChange,
   className,
@@ -489,7 +489,7 @@ function MoveTargetRow({
         <Suspense fallback={<CategoryPickForm.Loading />}>
           <CategoryPickForm
             defaultValue={moveTargetCategoryId}
-            excludedCategoryId={deletingCategoryId}
+            filters={(candidate) => TodoCategoryPolicy.isMoveTarget(candidate, deletingCategory)}
             submitLabel={t('common:actions.confirm')}
             onSubmit={close}
           />

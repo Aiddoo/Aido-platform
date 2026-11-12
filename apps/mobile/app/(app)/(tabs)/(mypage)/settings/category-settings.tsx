@@ -70,7 +70,7 @@ export default function TodoCategorySettingsScreen() {
         </ViewTabs>
 
         <SettingsListGroup label={t('categorySettings.listLabel')} className="flex-1">
-          <QueryErrorBoundary>
+          <QueryErrorBoundary fallback={CategoryList.Error}>
             <Suspense fallback={<CategoryList.Loading />}>
               {match(view)
                 .with(CATEGORY_SETTINGS_VIEW.edit, () => <CategoryList />)
