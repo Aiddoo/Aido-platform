@@ -22,8 +22,8 @@ interface EmailVerificationCodeStepProps extends Pick<
   isResending?: boolean;
   /** 코드를 모두 입력하면 호출한다. reject하면 입력을 비우고 오류 상태로 표시한다. */
   onComplete: (code: string) => Promise<unknown>;
-  /** 코드를 다시 보낸다. 성공하면 retryAfterSeconds(없으면 기본값)만큼 재발송을 막는다. */
-  onResend: () => Promise<{ retryAfterSeconds?: number }>;
+  /** 코드를 다시 보낸다. 성공하면 retryAfterSeconds(null이면 기본값)만큼 재발송을 막는다. */
+  onResend: () => Promise<{ retryAfterSeconds: number | null }>;
 }
 
 /** 검증과 발송 mutation은 화면이 소유한다 */

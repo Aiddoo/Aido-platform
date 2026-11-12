@@ -76,7 +76,7 @@ export function toResendVerificationResult(
   return {
     message: dto.message,
     email: dto.email,
-    retryAfterSeconds: dto.retryAfterSeconds,
+    retryAfterSeconds: dto.retryAfterSeconds ?? null,
   };
 }
 

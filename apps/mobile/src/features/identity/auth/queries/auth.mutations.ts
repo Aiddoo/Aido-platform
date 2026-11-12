@@ -26,15 +26,15 @@ import {
 import { type OAuthProvider, type OAuthProviderSlug } from '../domains/oauth.model';
 import { OAuthPolicy } from '../domains/oauth.model';
 import { useAuthSession } from '../hooks/use-auth-session';
-import {
-  type ChangePasswordInput,
-  type DeleteAccountInput,
-  type ExchangeCodeInput,
-  type ForgotPasswordInput,
-  type RegisterInput,
-  type ResendVerificationInput,
-  type ResetPasswordInput,
-  type VerifyEmailInput,
+import type {
+  ChangePasswordInput,
+  DeleteAccountInput,
+  ExchangeCodeInput,
+  ForgotPasswordInput,
+  RegisterInput,
+  ResendVerificationInput,
+  ResetPasswordInput,
+  VerifyEmailInput,
 } from '../schemas/auth-request.schema';
 import { invalidateLinkedAccounts } from './auth-cache';
 

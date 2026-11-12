@@ -136,7 +136,7 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
           }}
           onResend={async () => {
             await forgotPassword.mutateAsync({ email });
-            return {};
+            return { retryAfterSeconds: null };
           }}
         />
       )}

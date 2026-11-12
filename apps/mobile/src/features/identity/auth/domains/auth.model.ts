@@ -8,8 +8,8 @@ const authTokensSchema = z.object({
   userName: z.string().nullable(),
   userProfileImage: z.string().nullable(),
   accountRestored: z.boolean(),
-  /** 소셜 로그인 응답에만 실린다. 이메일 로그인과 인증은 싣지 않아 기존 계정으로 본다 */
-  isNewUser: z.boolean().optional().default(false),
+  /** 소셜 로그인 응답에만 실린다. 이메일 로그인과 인증은 싣지 않아 mapper가 기존 계정(false)으로 읽는다 */
+  isNewUser: z.boolean(),
 });
 export type AuthTokens = z.infer<typeof authTokensSchema>;
 
@@ -24,7 +24,8 @@ export type RegisterResult = z.infer<typeof registerResultSchema>;
 const resendVerificationResultSchema = z.object({
   message: z.string(),
   email: z.string(),
-  retryAfterSeconds: z.number().optional(),
+  /** 다시 보낼 수 있을 때까지 남은 초. 서버가 싣지 않으면 null이고 화면이 기본 대기 시간을 쓴다 */
+  retryAfterSeconds: z.number().nullable(),
 });
 export type ResendVerificationResult = z.infer<typeof resendVerificationResultSchema>;
 
