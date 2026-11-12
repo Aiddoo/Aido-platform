@@ -19,9 +19,8 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
 import { Popover, PressableFeedback, Separator } from 'heroui-native';
-import { type ReactNode, useState } from 'react';
+import { type ComponentType, type ReactNode, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import type { EntitlementFeature } from '../domains/entitlement.model';
@@ -79,12 +78,20 @@ function useValueColumnWidth() {
 
 /** 무료와 프리미엄 비교표. 숫자는 서버 스냅샷(무료)과 카탈로그(프리미엄)에서 오고, 이름을 누르면 설명이 떠서 줄이 밀리지 않는다 */
 export function PlanComparisonTable() {
-  const { t } = useTranslation('subscription');
-
   return (
     <ComparisonCard>
       <ColumnHeader />
+      <ComparisonGroups Row={FeatureRow} />
+    </ComparisonCard>
+  );
+}
 
+/** 받기 전과 받은 뒤가 같은 묶음·줄·이름으로 그려져 높이가 바뀌지 않는다. 값 칸만 다르다 */
+function ComparisonGroups({ Row }: { Row: ComponentType<{ feature: ComparisonFeature }> }) {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <>
       <Group Icon={ReportDuoIcon} label={t('planComparison.groups.ai')}>
         <Row feature="AI_PARSE" />
         <Divider />
@@ -108,7 +115,7 @@ export function PlanComparisonTable() {
         <Divider />
         <Row feature="APP_ICON" />
       </Group>
-    </ComparisonCard>
+    </>
   );
 }
 
@@ -204,10 +211,40 @@ function Divider() {
   );
 }
 
-function Row({ feature }: { feature: ComparisonFeature }) {
-  const { t } = useTranslation('subscription');
+function FeatureRow({ feature }: { feature: ComparisonFeature }) {
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const { free, premium } = toPlanFeatureComparison(entitlements, feature);
+
+  return (
+    <RowLayout
+      feature={feature}
+      free={<Cell value={free} />}
+      premium={<Cell value={premium} isPremium />}
+    />
+  );
+}
+
+function FeatureSkeletonRow({ feature }: { feature: ComparisonFeature }) {
+  // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
+  const color = useResolvedColor('text-gray-3');
+
+  return (
+    <RowLayout
+      feature={feature}
+      free={<TextSkeleton size="b4" color={color} className="w-10" />}
+      premium={<TextSkeleton size="b4" color={color} className="w-10" />}
+    />
+  );
+}
+
+interface RowLayoutProps {
+  feature: ComparisonFeature;
+  free: ReactNode;
+  premium: ReactNode;
+}
+
+function RowLayout({ feature, free, premium }: RowLayoutProps) {
+  const { t } = useTranslation('subscription');
   const valueColumnWidth = useValueColumnWidth();
 
   return (
@@ -216,10 +253,10 @@ function Row({ feature }: { feature: ComparisonFeature }) {
         <Term feature={feature} label={t(ROW_TEXT_KEYS[feature].label)} />
       </Box>
       <Box className="items-center px-1 py-3" style={{ width: valueColumnWidth }}>
-        <Cell value={free} />
+        {free}
       </Box>
       <Box className="items-center px-1 py-3" style={{ width: valueColumnWidth }}>
-        <Cell value={premium} isPremium />
+        {premium}
       </Box>
     </HStack>
   );
@@ -319,34 +356,11 @@ function Cell({ value, isPremium = false }: { value: PlanValue; isPremium?: bool
     .exhaustive();
 }
 
-const LOADING_ROW_COUNT = 4;
-
 PlanComparisonTable.Loading = function Loading() {
-  // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
-  const color = useResolvedColor('text-gray-3');
-  const valueColumnWidth = useValueColumnWidth();
-
   return (
     <ComparisonCard busy>
       <ColumnHeader />
-      {range(LOADING_ROW_COUNT).map((row) => (
-        <HStack
-          key={row}
-          align="center"
-          className="min-h-12 pl-4"
-          style={{ paddingRight: PREMIUM_BAND_INSET }}
-        >
-          <Box className="flex-1 pr-3">
-            <TextSkeleton size="b4" color={color} />
-          </Box>
-          <Box className="px-3" style={{ width: valueColumnWidth }}>
-            <TextSkeleton size="b4" color={color} />
-          </Box>
-          <Box className="px-3" style={{ width: valueColumnWidth }}>
-            <TextSkeleton size="b4" color={color} />
-          </Box>
-        </HStack>
-      ))}
+      <ComparisonGroups Row={FeatureSkeletonRow} />
     </ComparisonCard>
   );
 };
