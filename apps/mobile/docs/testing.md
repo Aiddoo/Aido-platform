@@ -75,7 +75,7 @@ lint 규칙마다 baseline 지시문이 0이다. `oxlint-disable`로 건너뛰�
 - `moduleNameMapper`의 `@aido/api*`는 한 줄이다. `jest.resolver.cjs`는 RN 0.88 preset의 경로 해석을 유지하고 실제 Reanimated·Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다([Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/)).
 - 기기 시간대에 기대는 테스트(피커·자정·서머타임)는 파일 docblock에 `@jest-environment <rootDir>/jest.time-zone-environment.cjs`와 `@time-zone America/New_York`을 적는다. 테스트 안의 `process.env.TZ`는 사본이라 Date·Intl이 따르지 않고, 이 환경이 그 파일 동안만 worker의 시간대를 바꾸고 되돌린다(`time-picker.test.tsx`).
 - `jest.setup.ts`는 Hermes에 없는 `toSorted`·`Array.fromAsync`를 Node에서 지워 앱에서만 죽는 호출을 테스트에서도 드러낸다.
-- 규모와 실행 시간(1.15.2 [31/32], 2026-11-12): 테스트 파일 588 → 514개, 줄 82,957 → 76,197, `it(`·`it.each(` 호출 3,774 → 3,430(`it.each`가 펼치는 케이스까지 센 전체는 5,733개). 전체 Jest를 worker 1개(`AIDO_TEST_WORKERS=1 --maxWorkers=1`)로 돌리면 514 suite가 약 144초(`time` 기준 2분 25초, 벽시계)이고 `act` 경고와 worker 종료 경고는 0이다. worker를 늘리면 더 짧아지지만 다른 러너와 함께 돌 때는 위 값으로 줄인다.
+- 규모와 실행 시간(1.15.2 [31/32], 2026-11-12): 테스트 파일 588 → 514개, 줄 82,957 → 76,197, `it(`·`it.each(` 호출 3,774 → 3,430(`it.each`가 펼치는 케이스까지 센 전체는 5,733개). 전체 Jest를 worker 1개(`AIDO_TEST_WORKERS=1 --maxWorkers=1`)로 돌리면 514 suite가 약 144초(`time` 기준 2분 25초, 벽시계)이고 `act` 경고와 worker 종료 경고는 0이다. 2단계 공용 층 정리 뒤(2026-11-12)에는 528 suite·5,901 케이스가 worker 1개로 약 165초(벽시계 2분 45초)이고 두 경고는 그대로 0이다. worker를 늘리면 더 짧아지지만 다른 러너와 함께 돌 때는 위 값으로 줄인다.
 - jest는 앱과 달리 렌더 중 컴파일러 버그(`getValues()` 등)를 잡지 못한다. 시뮬레이터에서만 보인다.
 
 ## `src/testing/`
