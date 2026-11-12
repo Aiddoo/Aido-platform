@@ -30,7 +30,7 @@ features/{area}/{feature}/
 ├── constants/      {feature}.constants.ts, {entity}.events.ts, {entity}-log-events.ts
 ├── components/     {역할}.tsx
 ├── hooks/          use-{name}.ts
-├── utils/          {name}.view-model.ts, {name}.geometry.ts
+├── utils/          {name}.view-model.ts, {name}.geometry.ts, {feature}-draft.ts, {feature}-analytics.ts
 └── __tests__/      {entity}.fixtures.ts, {route}-screen.test.tsx, {feature}.test-utils.tsx
 ```
 

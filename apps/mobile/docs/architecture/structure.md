@@ -217,7 +217,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - **ls-lint(`.ls-lint.yml`)**: `schemas/` 접미사, 역할 폴더별 접미사, `hooks/use-*`, 테스트 위치, `app/` 아래 테스트
 - **knip**: 안 쓰는 파일·export·의존성(모바일 포함)
 - **TypeScript**: typed routes, `queryOptions<T>` 키, `AppEventMap`, `i18next.d.ts`, `DIContainer`, `satisfies Record<…>`, `match().exhaustive()`
-- **oxfmt**: `sortImports`, `sortTailwindcss`, `sortPackageJson`
+- **oxfmt**: `sortImports`, `sortTailwindcss`(3단계에서 켬), `sortPackageJson`
 
 - `pnpm check`(루트)는 `oxlint .` → `oxfmt --check` → `ls-lint` → `turbo run lint:deps` → `knip`(모바일 포함) → `turbo typecheck` 순서다. 커밋 전 한 번 돌린다. 지금 걸려 있는 규칙 이름과 예외는 [guardrails](./guardrails.md)에 있다.
 - 규칙을 끌 때는 그 줄에서만 `oxlint-disable-next-line 규칙 -- 이유`로 끈다.

@@ -138,11 +138,12 @@ await renderScreen(<InquiryRoute />, {
   withOverlay: true,
   di: createTestDi({ ports: { httpClient } }),
 });
-await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), CONTENT);
+const user = userEvent.setup();
+await user.type(screen.getByRole('textbox', { name: '문의 내용' }), CONTENT);
 
-await fireEvent.press(screen.getByTestId('inquiry-submit'));
+await user.press(screen.getByRole('button', { name: '문의 보내기' }));
 
-expect(screen.getByTestId('inquiry-content-input').props.value).toBe(CONTENT);
+expect(screen.getByRole('textbox', { name: '문의 내용' })).toHaveDisplayValue(CONTENT);
 ```
 
 - `createTestDi`에는 이 테스트가 바꾸는 **포트**(`ports: { httpClient, analytics }`)와 포트로 만들지 않는 메모리 상태 store(`seeds: { authSessionStore }`)만 넣는다. Service·Api·저장소는 넣을 수 없고 늘 `createAppContainer`가 포트로 조립해 운영과 같은 그래프다. 새 Service는 `createAppContainer`에 더하면 테스트에도 생긴다.

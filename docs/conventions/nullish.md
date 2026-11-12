@@ -115,6 +115,8 @@ endDate: todo.endDate == null ? null : formatDateOnly(todo.endDate),
 | 요청의 선택 입력                    | 생략(`undefined`)                                  | `.optional()`                        |
 | PATCH                               | 생략 = 그대로, `null` = 지우기                     | `.nullable().optional()` + 이유 주석 |
 | props·함수 옵션                     | `?:`(`undefined`). `\| null`은 쓰지 않는다         |                                      |
+| 값이 없을 수 있는 필수 입력         | `null`                                             | `T \| null`(`?:`와 겹쳐 쓰지 않는다) |
+| TanStack `data`를 받는 Policy 인자  | `undefined`(조회 전)                               | `T \| undefined`                     |
 | TanStack·RN 콜백, `getCached*`      | `undefined`(라이브러리 계약)                       |                                      |
 | 포트                                | 포트마다 하나로 정하고 문서화한다(`null` 권장)     |                                      |
 | 세 갈래 결과                        | 판별 유니온. `null` 대 `undefined`로 가르지 않는다 | `{ status: 'cancelled' } \| …`       |

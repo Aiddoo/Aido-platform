@@ -194,10 +194,10 @@ mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `o
 
 | 관심사              | 위치                                                                                                                                                |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 포트                | `core/ports/{error-reporter,severity,breadcrumb,analytics,logger,telemetry-event}.ts`                                                               |
+| 포트                | `core/ports/{error-reporter,analytics,app-logger}.ts`, `core/observability/{severity,breadcrumb,telemetry-event}.ts`                                |
 | Sentry 어댑터       | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                                      |
 | init·전송 입구·분류 | `shared/infra/observability/{error-reporting,capture-error,scrub-sentry-event}.ts`, `shared/errors/classify-error.ts`                               |
 | 카탈로그·파사드     | `core/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                                     |
 | 환경별 구현·DI      | `shared/infra/observability/observability-env.ts`, `bootstrap/providers/{create-device-ports,composition-root}.ts`                                  |
 | 계측 지점           | `shared/infra/http/api-failure-breadcrumb.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/hooks/use-auth-boot.ts`(session) |
-| 테스트 stub         | `src/testing/ports/{logger,error-reporter,analytics}.stub.ts`                                                                                       |
+| 테스트 stub         | `src/testing/ports/{app-logger,error-reporter,analytics}.stub.ts`                                                                                   |

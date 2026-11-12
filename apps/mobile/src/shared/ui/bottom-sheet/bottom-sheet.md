@@ -236,7 +236,8 @@ bottom-sheet/
 ├── sheet-route.ts                     # 시트 route Stack 옵션과 route 떠나기 규칙
 ├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + 크기 확정 대기 + Overlay)
 ├── use-sheet-route.ts                 # 시트 route의 열림 상태와 한 번만 떠나기
-├── use-android-sheet-back-handler.ts  # 열린 시트의 시스템 뒤로가기 구독과 정리
+├── sheet-chip-row.tsx                 # 시트 안쪽 여백을 넘어 끝까지 스크롤하는 칩 줄
+├── get-chip-reveal-scroll-x.ts        # 고른 칩이 보이도록 칩 줄을 옮길 위치
 ├── use-scroll-focused-input-into-view.ts # 키보드와 함께 포커스된 입력까지 시트 내용을 스크롤
 ├── get-focused-input-scroll-offset.ts # 키보드가 다 올라온 뒤의 배치와 스크롤 위치 계산
 ├── get-sheet-horizontal-margins.ts    # 주어진 영역 기준 최대 폭·가운데 정렬 여백

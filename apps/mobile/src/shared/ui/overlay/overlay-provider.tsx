@@ -42,7 +42,7 @@ export function OverlayProvider({
   );
 
   useLayoutEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- resetKey가 바뀌면(로그아웃 등) 떠 있던 오버레이를 한 번에 걷는다
+    // oxlint-disable-next-line react/set-state-in-effect -- resetKey(화면 경로)가 바뀌면 떠 있던 오버레이를 한 번에 걷는다
     setOverlays((previous) => (previous.size === 0 ? previous : new Map()));
   }, [resetKey]);
 

@@ -94,7 +94,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 
 ## 로그아웃과 배지
 
-- 로그아웃은 `PushRegistrationService.unregister()`가 `PushDeviceApi`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고를 모두 제한 시간 안에서 기다리고, 해제가 시작되면 늦은 보고는 보내지 않는다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`logOutDevice`).
+- 로그아웃은 `PushRegistrationService.unregister()`가 `PushDeviceApi`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고를 모두 제한 시간 안에서 기다리고, 해제가 시작되면 늦은 보고는 보내지 않는다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`LogOutDeviceService`).
 - 오프라인 로그아웃은 온라인이 되면 `POST v1/auth/logout`으로 서버 세션을 풀고, 서버가 `releaseSessions`로 그 세션의 기기를 함께 푼다([오프라인 로그아웃](./auth.md#오프라인-로그아웃)).
 - 온라인 로그아웃 없이 세션이 끝나면 서버는 끝난 세션의 토큰을 지우지 않아 이전 계정의 푸시가 계속 온다. 그래서 refresh 만료·거절(`reason: 'expired'`), 오프라인 로그아웃, 인증 해제(`DELETE`)가 실패한 로그아웃은 `PushRegistrationService.requestRelease()`로 기기에 해제 기록을 남기고 `POST v1/notifications/push-devices/unregister`(인증 없음, `{ deviceId, token }`, 항상 200)로 푼다. 토큰은 마지막으로 보고한 토큰과 지금 Expo 토큰이고, 보고한 뒤 바뀌었으면 둘 다 보낸다(`PushRegistrationPolicy.getReleaseTokens`).
   - 연결·서버 장애·429·토큰 발급 실패면 기록을 남겨 로그아웃 상태에서 연결될 때와 앱이 앞으로 올 때 다시 보낸다(`usePushDeviceSync`). 앱을 다시 켜도 기록(키체인 `pushRegistration`, 토큰을 담아 평문 MMKV에 두지 않는다)이 남는다. 화면을 막지 않는다.

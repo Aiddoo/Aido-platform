@@ -51,7 +51,7 @@ useWidgetSnapshotSync(authState)
 - native 쓰기와 오류 관측 실패는 앱 인증·startup을 reject하지 않는다.
 - 앱 없이 깨어난 Android 위젯 프로세스의 실패는 Sentry를 올리지 않고 저장 값(`aido_widget_headless_failure_v1`)에 남겼다가 다음 앱 시작 때 동기화 훅이 읽어 `ErrorReporter`로 보낸다. 서비스는 Sentry를 부르지 않는다([관측](./observability.md#event-captureexception-capturemessage)).
 - 공식 `requestWidgetUpdate`의 완료는 launcher가 bitmap을 표시한 시점까지 보장하지 않는다. 실제 갱신은 native QA에서 확인한다.
-- 저장 키 `aido_widget_snapshot_v1`을 그대로 쓴다. 값은 v2 JSON이고 저장된 v1 JSON은 `storedWidgetSnapshotSchema`가 하루짜리 v2로 읽는다. snapshot이 없거나 소유자를 알 수 없으면 개인 목록을 추측하지 않고 앱 열기 안내를 보이고, 앱이 현재 계정 요약을 동기화한 뒤 정상 표시한다.
+- 저장 키 `aido_widget_snapshot_v1`을 그대로 쓴다. 값은 v2 JSON이고 저장된 v1 JSON은 `widgetSnapshotStorageSchema`(`legacyWidgetSnapshotV1Schema`)가 하루짜리 v2로 읽는다. snapshot이 없거나 소유자를 알 수 없으면 개인 목록을 추측하지 않고 앱 열기 안내를 보이고, 앱이 현재 계정 요약을 동기화한 뒤 정상 표시한다.
 
 ## 위젯 목록과 identity
 
@@ -112,7 +112,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 - command는 5분 TTL, 미래 timestamp 거부, 현재 `me.id`와 소유자 일치 검사를 통과해야 한다. 로그아웃·계정 불일치·만료·손상 명령은 개인 화면 이동 없이 제거한다.
 - 정확한 목적지와 생성 action은 native wake URI에 넣지 않는다. 이전 계정의 위젯이어도 현재 계정 가드를 통과하기 전에 개인 화면으로 자동 이동하지 않는다.
 - 최신 명령만 소비한다. 이전 frame의 cleanup·조건부 삭제로 연속 탭의 최신 요청을 지우지 않는다. 현재 pathname/search가 목적지와 같으면 다시 이동하지 않는다.
-- 할 일은 `/todo/[todoId]`, 날짜는 feed, 만들기는 `/todo/new`의 `TodoCreateBottomSheet`와 categories Query를 재사용한다.
+- 할 일은 `/todo/[todoId]`, 날짜는 feed, 만들기는 피드의 `action=add-todo` params(`useFeedAction`)로 앱의 할 일 추가 입력(`/todo/new`의 `TodoCreateBottomSheet`)을 그대로 연다.
 - iOS는 공식 SwiftUI Link/widgetURL과 최초 URL 복원 경로를 유지한다. 위젯 URI(`aido://feed?…`·`aido://todo/{id}`)는 외부 계약이다([호환](../../../docs/conventions/compatibility.md)).
 
 ## 검증과 관측

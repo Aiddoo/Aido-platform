@@ -12,6 +12,7 @@
 - **Policy 멤버의 첫 인자는 모델 전체다.** 값 하나만 필요해도 `notification: Notification`으로 받고 `Pick`·`Partial`·객체 리터럴로 좁히지 않는다. 목록 규칙은 `readonly X[]`를 받는다. 모델 일부(폼 값, 검색어, route id, `select` 결과)만 가진 곳의 규칙은 Policy 밖 export 함수다.
 - **한 파일, 한 엔티티, 한 Policy.** 두 엔티티가 섞이면 파일을 나눈다(`push-notification.model.ts`, `push-notification-response.model.ts`). 모델을 만드는 `create*` 함수는 Policy에 넣지 않는다. 규칙 없는 모델에는 빈 Policy를 만들지 않는다.
 - **업무 규칙 표**는 모델 파일 안 비공개 상수이고 `satisfies Record<Union, …>`를 건다. 서버가 종류를 더하면 빌드가 깨진다.
+- **인자는 도메인 단위 이름이다.** `monthlyAmount`·`dueDateKey`처럼 무엇의 어떤 단위인지 이름에 넣는다. 모델 파일 이름에 상태 접두사(`pending-`·`current-`)를 붙이지 않는다(엔티티 이름이다).
 - **시각은 인자다.** 지금·오늘·시간대를 받고 `Date.now()`·`new Date()`·기기 시간대를 읽지 않는다. 기간 규칙은 `shouldShow*(record, now)`이고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).
 - **import는 zod, `@aido/api/vocabulary`·`common`·`errors`, 순수 `shared/date`, 다른 모델뿐이다.** 계약(`@aido/api` 루트·`contracts/*`), i18n, `shared/ui`, `react-native`, React, `constants/`를 import하지 않는다(lint).
 - **Zod는 최신 문법만 쓴다.** `z.int()`, `z.iso.*`, `z.email()`·`z.url()`, `z.enum(튜플)`, `z.discriminatedUnion`, `z.codec`, `.brand<'X'>()`. `z.nativeEnum`, `z.string().email()`, `.passthrough()`는 쓰지 않는다.
@@ -88,7 +89,7 @@ export const NotificationPolicy = { isAiFeature, isUnread } as const;
 - 이름은 `to{Model}(dto)`, `to{X}Request(values)`, `to{X}FormValues(model)`, `parse{X}(unknown): X | null`이다. 같은 요청을 만드는 곳이 여럿이면 mapper 하나로 모은다.
 - 버린 칸을 로그로 남겨야 하는 입력(푸시 data)은 `parse{X}`가 `{ x: X | null, droppedPaths }`를 돌려준다. 경로에는 값을 싣지 않고, 로그는 부르는 훅이 남긴다.
 - 계약의 열거·유니온은 `satisfies Record<ContractEnum, …>`나 `match().exhaustive()`로 빠짐없이 바꾼다. brand·enum은 `schema.parse`로 붙이고 `as`로 단정하지 않는다.
-- 결과는 plain 값이다. 날짜는 문자열 brand(`Instant`, `DateKey`, `TimeOfDay`)로 바꾸고 `Date`·class를 넣지 않는다. 그래야 Query의 structural sharing이 같은 값의 참조를 지킨다(`memo.mapper.test.ts`의 `toMemoPage` › `재조회의 구조 공유`).
+- 결과는 plain 값이다. 날짜는 문자열 brand(`Instant`, `DateKey`, `TimeOfDay`)로 바꾸고 `Date`·class를 넣지 않는다. 그래야 Query의 structural sharing이 같은 값의 참조를 지킨다(`memo.mapper.test.ts`의 `toMemoPage` › `재조회의 구조 공유`, `bootstrap/providers/query-cache-structural-sharing.test.tsx`).
 
 ```ts
 // apis/notification.mapper.ts: 서버 navigation이 바뀌면 여기만 고친다

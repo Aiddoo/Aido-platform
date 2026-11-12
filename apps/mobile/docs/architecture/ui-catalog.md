@@ -15,7 +15,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 
 ## 역할별 부품
 
-굵은 이름은 새로 만드는 공용 부품이다. 지금 상태는 [migration-status](./migration-status.md)에 있다.
+굵은 이름은 1.15.2에서 새로 만든 공용 부품이다. 아직 옮기지 않은 자리는 [migration-status](./migration-status.md)에 있다.
 
 | 역할                | 쓸 것                                                                                                                                          | 판정                                                                                          |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -32,9 +32,9 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | 오류·빈 상태        | `QueryErrorBoundary`, `Result` + `shared/ui/illustration`의 그림                                                                               | 톤은 [design](../design.md#일러스트와-캐릭터)                                                 |
 | 스켈레톤·스피너     | heroui `Skeleton`·`Spinner`, `TextSkeleton`(`Omit<ComponentProps<typeof Skeleton>, …>`)                                                        | 스피너 색은 `useResolvedColor`                                                                |
 | 탭·구분선·스크롤 끝 | `ViewTabs` + `LineTabTrigger`·`SegmentTabTrigger`, heroui `Accordion`, heroui `Separator` + `DashedDivider`, **`ScrollFade`**                  | 실선 구분선은 토큰 하나                                                                       |
-| 이미지·비율·캐릭터  | `Image`, `FeatureMedia`(+`.Loading`), `AspectRatio`, **`Mascot`**                                                                              | 비율을 직접 계산하지 않는다                                                                   |
+| 이미지·비율·캐릭터  | `Image`, `FeatureMedia`, `AspectRatio`, **`Mascot`**                                                                                           | 비율을 직접 계산하지 않는다                                                                   |
 | 시간 고르기         | **`TimeSpinner`** + `openAndroidTimePicker()`                                                                                                  | 설정·할 일 시간 피커를 하나로                                                                 |
-| 크기 재기           | `useLayoutSize()`, Skia는 `onSize`·`useCanvasSize()`                                                                                           | 재기 전은 `null`이고 첫 프레임은 어림값으로 그린다. `onLayout` → `setSize`를 직접 쓰지 않는다 |
+| 크기 재기           | `useLayoutSize()`, Skia는 감싼 View `onLayout` → shared value(프레임마다 그리는 Canvas만 `onSize`, [ui](./ui.md#모션과-skia))                  | 재기 전은 `null`이고 첫 프레임은 어림값으로 그린다. `onLayout` → `setSize`를 직접 쓰지 않는다 |
 
 ## 새 공용 부품의 인터페이스
 

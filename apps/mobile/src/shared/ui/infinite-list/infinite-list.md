@@ -9,9 +9,10 @@
 import { InfiniteList } from '@src/shared/ui';
 
 // 옵션의 select: selectPageItems(shared/domains/cursor-page.model)가 쪽을 항목 목록으로 편다
-const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
+const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
   useSuspenseInfiniteQuery(options);
-const [refreshing, onRefresh] = useRefresh(refetch);
+// 당겨서 새로고침은 기능의 cache helper(`refresh{Feature}`)가 다시 받는다
+const [isRefreshing, handleRefresh] = useRefresh(() => refreshMemos(queryClient));
 
 <InfiniteList
   data={data}
@@ -22,8 +23,8 @@ const [refreshing, onRefresh] = useRefresh(refetch);
   isFetchingNextPage={isFetchingNextPage}
   isFetchNextPageError={isFetchNextPageError}
   fetchNextPage={fetchNextPage}
-  refreshing={refreshing}
-  onRefresh={onRefresh}
+  refreshing={isRefreshing}
+  onRefresh={handleRefresh}
 />;
 ```
 
@@ -55,7 +56,6 @@ infinite-list/
 ├── infinite-list.tsx
 ├── use-fetch-next-page.ts
 ├── use-fetch-next-page.test.ts
-├── infinite-list-footer.test.tsx
 ├── infinite-list.md
 └── index.ts
 ```

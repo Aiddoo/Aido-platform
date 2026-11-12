@@ -16,7 +16,7 @@ paths:
 - 시계를 읽지 않는다. `now`는 인자로 받는다. React도 import하지 않는다.
 - "없음"은 `null`이다(`.nullable()`, `T | null`). 모델에 `.optional()`을 두지 않는다.
 - 기능 오류는 `{feature}.error.ts` 하나에 둔다: 코드 표, `isXxxError`, `ErrorCode` → 폼 칸 매핑. `isApiError`·`hasCode`·`HttpStatus` 비교는 이 파일 안에서만 한다.
-- 기간 규칙은 `shouldShow*(record, now)`로 두고 상수 이름에 단위를 넣는다(`PUSH_NOTICE_SNOOZE_DAYS`).
+- 기간 규칙은 `shouldShow*(record, now)`로 두고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).
 - 테스트는 `{entity}.model.test.ts`에 `// When`·`// Then`(준비가 있으면 `// Given`)으로 쓰고, 경계값은 `it.each`와 fixture(`__tests__/{entity}.fixtures.ts`)로 만든다.
 
 자세히: [모델](../../docs/architecture/model.md) · [오류](../../docs/error-handling.md) · [테스트](../../docs/testing.md)

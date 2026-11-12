@@ -5,7 +5,7 @@
 ## 명령
 
 - `pnpm lint`: Oxlint. `aido/*` 규칙은 `tooling/oxlint-plugin-aido`(RuleTester는 `pnpm --filter @aido/oxlint-plugin test`)이고, 어느 파일에 거는지는 `apps/mobile/.oxlintrc.json`의 overrides가 정한다.
-- `pnpm --filter @aido/mobile lint:deps`: dependency-cruiser(`apps/mobile/.dependency-cruiser.cjs`)와 기능 그래프 리포터(`apps/mobile/scripts/feature-graph.cjs`). `.dependency-cruiser-known-violations.json`의 위반은 건너뛴다([baseline](#baseline-1400)).
+- `pnpm --filter @aido/mobile lint:deps`: dependency-cruiser(`apps/mobile/.dependency-cruiser.cjs`)와 기능 그래프 리포터(`apps/mobile/scripts/feature-graph.cjs`). `.dependency-cruiser-known-violations.json`의 위반은 건너뛴다(지금 `[]`).
 - `pnpm --filter @aido/mobile lint:deps:baseline`: 고쳐서 사라진 위반을 known-violations에서 지운다(`shrink-only`라 새 위반은 더하지 않는다).
 - `pnpm lint:names`: ls-lint(루트 `.ls-lint.yml`).
 - `pnpm check`가 위 셋과 oxfmt·knip·typecheck를 함께 돈다.
@@ -89,17 +89,7 @@
 
 끊지 못한 양방향 쌍 하나(`planning/category <-> planning/todo`)만 `scripts/feature-graph.cjs`의 `ALLOWED_FEATURE_CYCLES`에 이유와 함께 남았다. 새 쌍은 막고, 쌍이 사라지면 목록에서 지우라고 실패한다. 새 항목은 이유와 함께 직접 적는다. 엄격한 없음 비교는 그 줄 위 `// oxlint-disable-next-line aido/no-strict-nullish -- <이유>`로만 끄고, 쓰지 않는 지시문은 Oxlint가 실패시킨다.
 
-## baseline (#1400)
-
-1.15.2 [13/32]에서 켠 규칙의 그때 위반은 아래 세 곳에 남았다. [32/32]에서 dependency-cruiser(`[]`)와 ls-lint(`#1400` 묶음 없음)는 비었고 Oxlint 지시문은 테스트 규칙만 남았다. 규칙 수와 남은 수는 [migration-status](./migration-status.md#가드레일-baseline)에 있다. 새 코드는 baseline에 더하지 않는다.
-
-| 도구               | 자리                                                                                                   | 기능 PR이 줄이는 방법                                                                                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Oxlint             | 위반 줄 바로 위 `// oxlint-disable-next-line <규칙> -- 1.15.2 전환 #1400`(JSX 자식 자리는 `{/* … */}`) | 고친 줄의 지시문을 지운다. 남기면 `reportUnusedDisableDirectives`가 실패시킨다. 찾기: `git grep -n '1.15.2 전환 #1400' -- apps/mobile/src/features/<feature>` |
-| dependency-cruiser | `apps/mobile/.dependency-cruiser-known-violations.json`(`lint:deps`의 `--ignore-known`)                | 고친 뒤 `pnpm --filter @aido/mobile lint:deps:baseline`을 돌려 사라진 항목을 지우고 그 파일을 커밋한다. 남은 항목은 검사가 실패시키지 않는다                  |
-| ls-lint            | 루트 `.ls-lint.yml`의 `ignore:` 끝 `#1400` 묶음(파일 경로)                                             | 파일을 옮기거나 이름을 고친 PR이 그 줄을 지운다. ls-lint는 남은 ignore를 알리지 않는다                                                                        |
-
-마지막 PR에서 세 곳이 모두 비었는지(`git grep '1.15.2 전환 #1400'` 없음, known-violations `[]`, `#1400` 묶음 없음) 확인하고 이 절을 지운다.
+- `frozenNames`는 baseline이 아니라 동사 목록([observability](../observability.md#선언과-이름)) 밖인 GA 대시보드 이름의 영구 목록이다. 동사 목록을 바꾸면 규칙의 `EVENT_VERBS`와 이 목록을 함께 고친다.
 
 ## 리뷰로 지키는 것
 

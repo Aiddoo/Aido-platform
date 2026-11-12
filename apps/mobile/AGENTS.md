@@ -42,7 +42,7 @@ features/{area}/{feature}/
 ├── stores/        메모리 상태
 ├── queries/       {feature}-query-keys.ts, {feature}-mutation-keys.ts, {entity}.queries.ts, {entity}.mutations.ts, {feature}-cache.ts
 ├── constants/     일반 상수, {entity}.events.ts, {entity}-log-events.ts
-├── components/  hooks/  utils/(view-model·geometry)  __tests__/(fixtures)
+├── components/  hooks/  utils/(view-model·geometry·-draft·-analytics)  __tests__/(fixtures)
 ```
 
 ## 꼭 지키는 규칙
@@ -78,6 +78,7 @@ APP_ENV                      # development | preview | production
 EXPO_PUBLIC_API_URL          # API 서버 URL
 EXPO_PUBLIC_SENTRY_DSN       # Sentry DSN (publishable)
 EXPO_PUBLIC_SENTRY_DEBUG     # (선택) dev에서 Sentry SDK만 켠다. 'true'일 때만
+EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY  # 카카오톡 공유 네이티브 앱 키 (publishable)
 
 # 빌드 (EAS Secrets)
 GOOGLE_SERVICES_JSON         # Firebase Android (Base64), Analytics
