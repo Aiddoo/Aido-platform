@@ -1,19 +1,74 @@
-import { noop } from 'es-toolkit';
+import { z } from 'zod';
 
 /** Skia는 네이티브 캔버스라 Jest에서 그릴 수 없다. 그리는 결과는 시뮬레이터에서 보고 테스트는 화면 흐름만 본다 */
 const NothingToDraw = () => null;
 
-const createPath = () => ({ dispose: noop });
+const mockPathSchema = z.object({ commands: z.array(z.string()), isDisposed: z.boolean() });
 
-const createPathBuilder = () => {
+/** 경로가 받은 그리기 명령(`lineTo(10,20)`)과 놓였는지를 읽는다. 경로 수명을 다루는 공용 훅 테스트가 쓴다 */
+export function readMockPath(path: unknown) {
+  return mockPathSchema.parse(path);
+}
+
+function createPath(commands: readonly string[] = []) {
+  const path = {
+    commands,
+    isDisposed: false,
+    dispose: () => {
+      path.isDisposed = true;
+    },
+  };
+  return path;
+}
+
+/** 앱이 쓰는 그리기 명령. 그 밖의 이름은 네이티브 객체처럼 undefined라 Reanimated가 애니메이션으로 읽지 않는다 */
+const PATH_BUILDER_COMMANDS = new Set<string | symbol>([
+  'moveTo',
+  'lineTo',
+  'close',
+  'addArc',
+  'addCircle',
+  'addRect',
+  'addRRect',
+  'build',
+  'detach',
+]);
+
+// 앱에서 놓은 빌더를 다시 쓰면 실패하듯 여기서도 던진다
+function createPathBuilder() {
+  let commands: string[] = [];
+  let isDisposed = false;
   const builder: Record<string, unknown> = new Proxy(
     {},
     {
-      get: (_target, name) => (name === 'build' || name === 'detach' ? createPath : () => builder),
+      get: (_target, name) => {
+        if (name === 'dispose') {
+          return () => {
+            isDisposed = true;
+          };
+        }
+        if (!PATH_BUILDER_COMMANDS.has(name)) {
+          return undefined;
+        }
+        return (...args: unknown[]) => {
+          if (isDisposed) {
+            throw new Error(`놓은 PathBuilder의 ${String(name)}를 불렀습니다`);
+          }
+          if (name === 'build' || name === 'detach') {
+            const path = createPath(commands);
+            if (name === 'detach') {
+              commands = [];
+            }
+            return path;
+          }
+          commands.push(`${String(name)}(${args.map((arg) => JSON.stringify(arg)).join(',')})`);
+          return builder;
+        };
+      },
     },
   );
   return builder;
-};
+}
 
 export const Canvas = NothingToDraw;
 export const Circle = NothingToDraw;

@@ -2,6 +2,7 @@ import { Canvas, Path, Skia, type SkPathBuilder } from '@shopify/react-native-sk
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useIsAppInBackground } from '@src/shared/hooks/use-is-app-in-background';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
+import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, PauseIcon, PlayIcon, Text } from '@src/shared/ui';
@@ -21,7 +22,6 @@ import {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
-import { useRebuiltPath } from '../../hooks/use-rebuilt-path';
 import { useVoiceNotePlayback } from '../../hooks/use-voice-note-playback';
 import type { VoiceNotePlayer } from '../../hooks/use-voice-note-player';
 import { formatMediaTime } from '../../utils/media-time.view-model';

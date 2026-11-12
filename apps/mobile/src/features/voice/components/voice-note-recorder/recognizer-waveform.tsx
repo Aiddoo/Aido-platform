@@ -1,6 +1,7 @@
 import { Canvas, Group, Path, type SkPathBuilder } from '@shopify/react-native-skia';
 import { useIsAppInBackground } from '@src/shared/hooks/use-is-app-in-background';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
@@ -17,7 +18,6 @@ import {
 } from 'react-native-reanimated';
 
 import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
-import { useRebuiltPath } from '../../hooks/use-rebuilt-path';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import {

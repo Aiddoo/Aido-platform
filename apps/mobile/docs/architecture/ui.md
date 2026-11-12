@@ -190,7 +190,7 @@ export default function NotificationsScreen() {
 - 탭 전환은 애니메이션하지 않는다. 모션 줄이기는 `reduceMotion: ReduceMotion.System`이고 반복·강조 모션은 `useIsReduceMotionEnabled()`면 생략한다. 누름은 heroui `PressableFeedback`, 햅틱은 `useHaptics()` 한 번이다.
 
 1. **만들기.** `RuntimeEffect`·고정 `Path`·`Picture`는 모듈 수준이나 입력이 같으면 다시 만들지 않는 메모로 만든다. 렌더·프레임마다 `Skia.*.Make`하지 않는다.
-2. **정리.** `SkPath`·`SkImage`·텍스처는 만든 effect의 정리 함수에서 `dispose`한다. 교체할 때는 앞의 것을 먼저 `dispose`한다. 값이 바뀔 때마다 다시 그리는 경로는 voice `useRebuiltPath(read, draw)`(빌더 하나를 되쓰고 앞 경로를 바로 `dispose`)로 만들고, 경로에 넣는 사각형은 `Skia.XYWHRect`·`RRectXY` 대신 같은 모양의 평범한 객체(`toRoundedBar`)로 넘긴다. `useRebuiltPath`는 빌더를 렌더 메모로 만들고 언마운트 정리에서 놓아, effect만 다시 도는 환경(StrictMode, expo-router `activityEnabled`의 React Activity)에서는 놓은 빌더를 다시 쓴다. 앱은 둘 다 쓰지 않는다. 켜려면 먼저 빌더·경로를 effect 안에서 만들고 기기에서 메모리 그래프를 확인한다.
+2. **정리.** `SkPath`·`SkImage`·텍스처는 만든 effect의 정리 함수에서 `dispose`한다. 교체할 때는 앞의 것을 먼저 `dispose`한다. 값이 바뀔 때마다 다시 그리는 경로는 `useRebuiltPath(read, draw)`(`shared/hooks`)로 만든다. `read`가 읽은 값(`===`)이나 `draw`가 바뀔 때만 다시 그린다. 모양이 시계의 구간마다 바뀌면 시계 대신 구간 번호를 돌려준다(번개). Skia `usePathValue`는 앞 경로를 놓지 않아 쓰지 않는다. 경로에 넣는 사각형은 `Skia.XYWHRect`·`RRectXY` 대신 같은 모양의 평범한 객체(`toRoundedBar`)로 넘긴다.
 3. **프레임 작업.** worklet의 shared·derived value로만 한다. 프레임마다 React 상태를 바꾸거나 JS로 건너가지 않는다(`scheduleOnRN`은 이벤트만). 파티클 배열은 미리 만든다.
 4. **멈춤 조건 하나.** 꾸밈 프레임 콜백·`withRepeat`는 `useIsAnimationActive()`(화면 포커스 + 앱 앞 + 모션 줄이기)로 켜고 끈다. 값을 모으는 프레임 콜백·재생 위치는 투명 시트·제어 센터(`inactive`)에도 이어져야 해서 `useIsAppInBackground()`일 때만 멈춘다.
 5. **크기.** Skia 2.14의 `Canvas onSize`는 멈출 수 없는 프레임 콜백으로 매 프레임 잰다. 감싼 View의 `onLayout`에서 shared value로 `set`한다(JS 값이 필요하면 `useLayoutSize`). `onSize`는 이미 프레임마다 그리는 Canvas에서만 쓴다.
