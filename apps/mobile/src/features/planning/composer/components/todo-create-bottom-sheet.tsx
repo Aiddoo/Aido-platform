@@ -48,15 +48,13 @@ import { Controller, useForm, type UseFormReturn, useFormState, useWatch } from 
 import { match, P } from 'ts-pattern';
 
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
+import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
 import {
   useCreateRecurringTodoMutationOptions,
   useCreateTodoMutationOptions,
 } from '../queries/todo-composer.mutations';
-import {
-  TodoComposerChips,
-  TodoComposerSubmitButton,
-  useReopenTodoRepeatPicker,
-} from './todo-composer-fields';
+import { TodoComposerChips } from './todo-composer-chips';
+import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
 interface TodoCreateBottomSheetProps {
   onMemoChanged: () => void;

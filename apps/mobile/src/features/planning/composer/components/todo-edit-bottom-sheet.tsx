@@ -33,13 +33,12 @@ import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
 import { TodoChangePolicy } from '../domains/todo-change.model';
+import { useFocusTodoTitle } from '../hooks/use-focus-todo-title';
+import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
 import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { toTodoUpdateChanges } from '../utils/to-todo-update-changes';
-import {
-  TodoComposerChips,
-  TodoComposerSubmitButton,
-  useReopenTodoRepeatPicker,
-} from './todo-composer-fields';
+import { TodoComposerChips } from './todo-composer-chips';
+import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
 /** 고칠 범위를 정한 결과. 범위 없이 고치는 할 일, 범위를 고른 반복 회차, 범위 고르기에서 뒤로 간 취소 셋이다 */
 type EditScopeChoice =
@@ -123,7 +122,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
   const updateTodo = useMutation(useUpdateTodoMutationOptions());
   const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
 
-  const focusTitle = () => requestAnimationFrame(() => form.setFocus('title'));
+  const focusTitle = useFocusTodoTitle(form);
 
   // 입력 시트 안에서 내용을 갈아 끼우면 키보드가 내려가는 동안 높이가 튀어 떠 있는 시트로 묻는다
   const selectEditScope = async (

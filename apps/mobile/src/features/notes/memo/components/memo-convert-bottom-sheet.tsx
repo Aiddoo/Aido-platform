@@ -1,10 +1,8 @@
 import { TODO_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  TodoComposerChips,
-  TodoComposerSubmitButton,
-  useReopenTodoRepeatPicker,
-} from '@src/features/planning/composer/components/todo-composer-fields';
+import { TodoComposerChips } from '@src/features/planning/composer/components/todo-composer-chips';
+import { TodoComposerSubmitButton } from '@src/features/planning/composer/components/todo-composer-submit-button';
+import { useReopenTodoRepeatPicker } from '@src/features/planning/composer/hooks/use-reopen-todo-repeat-picker';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
 import type { DateKey } from '@src/shared/date/date-key';
