@@ -22,7 +22,7 @@ export const premiumAccessSchema = z.object({
   bankedDays: z.int().nonnegative(),
   /** 프리미엄이 아닐 때 최근 PREMIUM_GRANT_ENDED_WINDOW_DAYS일 안에 끝난 마지막 보상 기간의 끝. 그 뒤로는 서버가 null로 보낸다 */
   grantEndedAt: instantSchema.nullable(),
-  /** 지금 기간을 정하는 스토어 구독의 요금제(체험이면 체험 뒤 요금제). 모르거나 저장해 둔 옛 캐시에 없으면 null이다 */
+  /** 지금 기간을 정하는 스토어 구독의 요금제(체험이면 체험 뒤 요금제). 모르면 null. `.default`는 칸이 생기기 전 영속 캐시용이라 1.16에서 지운다 */
   planType: planTypeSchema.nullable().default(null),
 });
 export type PremiumAccess = z.infer<typeof premiumAccessSchema>;
