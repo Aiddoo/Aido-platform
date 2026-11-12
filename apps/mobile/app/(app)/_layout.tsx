@@ -56,7 +56,7 @@ function AppLayout() {
     <>
       <Stack
         screenOptions={{
-          // 탭 묶음과 각 화면이 자기 헤더(useStackScreenOptions)를 정한다
+          // 탭·상세는 각자 Stack.Screen·안쪽 Stack으로 헤더를 켠다. 여기서 켜면 탭 위에 헤더가 겹친다
           headerShown: false,
           animation: 'slide_from_right',
           animationTypeForReplace: 'push',

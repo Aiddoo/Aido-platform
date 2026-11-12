@@ -89,7 +89,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
               autoCorrect={false}
               returnKeyType="next"
               submitBehavior="submit"
-              isInvalid={!!error}
+              isInvalid={error != null}
               errorMessage={resolveValidationMessage(error, {
                 default: 'email.invalid',
                 byType: { too_big: 'email.tooLong' },
@@ -116,7 +116,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
               autoComplete="password"
               returnKeyType="done"
               submitBehavior="submit"
-              isInvalid={!!error}
+              isInvalid={error != null}
               errorMessage={resolveValidationMessage(error, { default: 'password.required' })}
               onSubmitEditing={() => {
                 if (!isSubmitting) {

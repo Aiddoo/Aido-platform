@@ -32,7 +32,7 @@ import {
 import type { SignUpFormValues } from '../schemas/sign-up-form.schema';
 
 type AppleCredential = Extract<AppleSignInResult, { type: 'success' }>;
-type SessionDeviceType = NonNullable<LoginInput['deviceType']>;
+export type SessionDeviceType = NonNullable<LoginInput['deviceType']>;
 
 type AgreedSignUpFormValues = Omit<SignUpFormValues, 'termsAgreed' | 'privacyAgreed'> & {
   termsAgreed: true;

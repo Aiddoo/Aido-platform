@@ -46,8 +46,8 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
     id: 'change-password',
     initial: { step: 'currentPassword' },
   });
-  const changePassword = useMutation(useChangePasswordMutationOptions());
   const { t } = useTranslation('auth');
+  const changePassword = useMutation(useChangePasswordMutationOptions());
   const newPassword = useController({
     control: form.control,
     name: 'newPassword',
@@ -147,7 +147,7 @@ function CurrentPasswordStep({ title, form, onNext }: CurrentPasswordStepProps) 
                 autoFocus
                 submitBehavior="submit"
                 returnKeyType="next"
-                isInvalid={!!error}
+                isInvalid={error != null}
                 errorMessage={resolveValidationMessage(error, {
                   default: 'currentPassword.required',
                   byType: { [PASSWORD_MISMATCH_FIELD_ERROR.type]: 'currentPassword.mismatch' },
