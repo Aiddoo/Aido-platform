@@ -1,10 +1,14 @@
-import { ErrorCode } from "@aido/api/errors";
 import { TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import {
+  checklistItemNotFound,
+  checklistLimitReached,
+  duplicateChecklistItemIds,
+  incompleteChecklistItemIds,
+} from "./planning.errors.js";
 import { TodoCategoryChangedEvent } from "./todo-category-changed.event.js";
 import { TodoCreatedEvent } from "./todo-created.event.js";
 import { TodoDeletedEvent } from "./todo-deleted.event.js";
@@ -301,10 +305,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
   }): TodoItem {
     const { items } = this.props;
     if (items.length >= TODO_ITEM_LIMITS.MAX_PER_TODO) {
-      throw new DomainException(ErrorCode.TODO_0821, {
-        currentCount: items.length,
-        maxPerTodo: TODO_ITEM_LIMITS.MAX_PER_TODO,
-      });
+      throw checklistLimitReached(items.length);
     }
     const maxSortOrder = items.reduce((max, item) => Math.max(max, item.sortOrder), -1);
     const item = TodoItem.create({
@@ -339,22 +340,14 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     const currentIds = new Set(this.props.items.map((item) => item.id.value));
     const uniqueItemIds = new Set(itemIds);
     if (uniqueItemIds.size !== itemIds.length) {
-      throw new DomainException(
-        ErrorCode.SYS_0002,
-        { received: itemIds.length, unique: uniqueItemIds.size },
-        { message: "중복된 하위 항목 ID가 있습니다" },
-      );
+      throw duplicateChecklistItemIds(itemIds.length, uniqueItemIds.size);
     }
     if (itemIds.length !== currentIds.size) {
-      throw new DomainException(
-        ErrorCode.SYS_0002,
-        { expected: currentIds.size, received: itemIds.length },
-        { message: "모든 하위 항목 ID를 전달해야 합니다" },
-      );
+      throw incompleteChecklistItemIds(currentIds.size, itemIds.length);
     }
     for (const id of itemIds) {
       if (!currentIds.has(id)) {
-        throw new DomainException(ErrorCode.TODO_0822, { itemId: id });
+        throw checklistItemNotFound(id);
       }
     }
   }
@@ -400,7 +393,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
   #requireItem(itemId: number): TodoItem {
     const item = this.props.items.find((entry) => entry.id.value === itemId);
     if (item == null) {
-      throw new DomainException(ErrorCode.TODO_0822, { itemId });
+      throw checklistItemNotFound(itemId);
     }
     return item;
   }
