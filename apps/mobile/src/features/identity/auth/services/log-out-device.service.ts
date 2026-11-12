@@ -1,7 +1,7 @@
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RequestConfig } from '@src/core/ports/http-client';
-import type { Logger } from '@src/core/ports/logger';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage } from '@src/shared/errors';
@@ -25,7 +25,7 @@ interface LogOutDeviceServicePorts {
   tokenStore: Pick<TokenStore, 'getRefreshToken' | 'clear'>;
   sessionRevocationService: Pick<SessionRevocationService, 'record'>;
   sessionEpoch: Pick<SessionEpoch, 'current'>;
-  logger: Logger;
+  logger: AppLogger;
 }
 
 /** `superseded`면 기다리는 사이 다시 로그인했다. 지금 세션은 사용자가 나간 세션이 아니다 */

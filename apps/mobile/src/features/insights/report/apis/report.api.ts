@@ -3,8 +3,8 @@ import {
   aiReportResponseSchema,
   reportStatusResponseSchema,
 } from '@aido/api';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { HttpClient } from '@src/core/ports/http-client';
-import type { Logger } from '@src/core/ports/logger';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { REPORT_LOG_EVENT } from '../constants/report-log-events';
@@ -13,9 +13,9 @@ import { toAiReport, toReportStatus } from './report.mapper';
 
 export class ReportApi {
   readonly #httpClient: HttpClient;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
 
-  constructor(httpClient: HttpClient, logger: Logger) {
+  constructor(httpClient: HttpClient, logger: AppLogger) {
     this.#httpClient = httpClient;
     this.#logger = logger;
   }

@@ -1,6 +1,6 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 
-export function createLoggerStub(): jest.Mocked<Logger> {
+export function createLoggerStub(): jest.Mocked<AppLogger> {
   return {
     debug: jest.fn(),
     info: jest.fn(),

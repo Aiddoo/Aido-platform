@@ -1,9 +1,9 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type {
   AudioPartPlaylist,
   AudioPartPlaylistStatus,
 } from '@src/core/ports/audio-part-playlist';
-import type { Logger } from '@src/core/ports/logger';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAudioPartPlaylist } from '@src/shared/infra/audio/use-audio-part-playlist';
 import { useEffect, useState, useSyncExternalStore } from 'react';
@@ -43,7 +43,7 @@ interface PendingStart {
 
 interface CreatePlayerInput extends UseVoiceNotePlayerOptions {
   playlist: AudioPartPlaylist;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePlayerInput) {

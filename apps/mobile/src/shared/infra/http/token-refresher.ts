@@ -1,6 +1,6 @@
 import { refreshTokensSchema } from '@aido/api/contracts/auth';
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type {
   RefreshOutcome,
   RefreshTokensRequest,
@@ -21,7 +21,7 @@ interface TokenRefresherDeps {
   tokenStore: TokenStore;
   requestRefresh: RefreshTokensRequest;
   sessionEpoch: SessionEpoch;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 // 책임은 갱신뿐이다. 갱신기가 세션을 끝낼 수 있으면 "토큰 삭제는 두 경로뿐"이라는 불변식이 무너진다

@@ -1,7 +1,7 @@
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { isThemeMode } from '@src/shared/preferences/theme-mode.preference';
-import { useTheme } from '@src/shared/providers/theme-provider';
+import { useAppTheme } from '@src/shared/providers/theme-provider';
 import {
   DeviceDuoIcon,
   MoonDuoIcon,
@@ -12,7 +12,7 @@ import {
 import { RadioGroup } from 'heroui-native';
 
 function ThemeSettingsScreen() {
-  const { mode, setMode } = useTheme();
+  const { mode, setMode } = useAppTheme();
   const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
 

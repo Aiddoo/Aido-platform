@@ -1,7 +1,7 @@
 import type { DeleteAccountInput, ExchangeCodeInput, VerifyEmailInput } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { AppleSignInResult, SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { TokenStore } from '@src/core/ports/token-store';
 import { BusinessError, getErrorMessage } from '@src/shared/errors';
@@ -37,7 +37,7 @@ interface SignInServicePorts {
   socialAuthGateway: Pick<SocialAuthGateway, 'openOAuthSession' | 'signInWithApple'>;
   /** 서버가 기기 종류별로 세션을 구분한다. 조립이 실행 플랫폼에서 정한다 */
   deviceType: 'IOS' | 'ANDROID';
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 /** 소셜 인증 창과 이 기기의 토큰을 엮는다. 인증 상태 전환과 추적은 mutation이 한다 */

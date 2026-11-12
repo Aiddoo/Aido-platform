@@ -5,9 +5,9 @@ import {
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, type Result } from '@src/core/errors/result';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
-import type { Logger } from '@src/core/ports/logger';
 import { BusinessError, getErrorMessage } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
@@ -40,7 +40,7 @@ interface InviteServicePorts {
   /** 미리보기가 더는 쓸 수 없는 초대라고 알려 주면 남겨 둔 초대를 지운다 */
   pendingRedemptionService: Pick<PendingRedemptionService, 'clearPendingRedemptionIfTerminal'>;
   installationIdGateway: InstallationIdGateway;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 export class InviteService {
@@ -48,7 +48,7 @@ export class InviteService {
   readonly #authHttpClient: HttpClient;
   readonly #pendingRedemptionService: InviteServicePorts['pendingRedemptionService'];
   readonly #installationIdGateway: InstallationIdGateway;
-  readonly #logger: Pick<Logger, 'warn'>;
+  readonly #logger: Pick<AppLogger, 'warn'>;
 
   constructor({
     publicHttpClient,

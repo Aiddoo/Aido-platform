@@ -1,4 +1,4 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 // maxWait(계속 쓰는 중에도 이 시간 안에 한 번은 저장)는 메인 패키지 debounce에 없다
@@ -32,7 +32,7 @@ export interface VoiceNoteDraftRepository {
 
 interface Dependencies {
   storage: EnumerableSyncStorage;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
   /** 옛 초안의 날짜를 읽을 시간대. 시스템 설정 변경이 반영되도록 읽을 때마다 부른다 */
   getTimeZone: () => string;
 }

@@ -10,7 +10,7 @@ interface CaptureErrorOptions {
   extra?: Record<string, unknown>;
 }
 
-/** 이미 보고한 오류 객체. `Logger.error`와 `ErrorReporter`가 같은 오류를 두 번 보내지 않게 한다 */
+/** 이미 보고한 오류 객체. `AppLogger.error`와 `ErrorReporter`가 같은 오류를 두 번 보내지 않게 한다 */
 const handledErrors = new WeakSet<Error>();
 
 export function captureError(error: Error, { level, tags, extra }: CaptureErrorOptions): void {

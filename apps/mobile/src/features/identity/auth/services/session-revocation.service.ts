@@ -1,5 +1,5 @@
 import { HttpStatus } from '@aido/api/errors';
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { HOUR_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
@@ -19,7 +19,7 @@ interface SessionRevocationServicePorts {
   repository: PendingRevocationRepository;
   requestRefresh: RefreshTokensRequest;
   authApi: Pick<AuthApi, 'revokeSession'>;
-  logger: Pick<Logger, 'info' | 'warn'>;
+  logger: Pick<AppLogger, 'info' | 'warn'>;
   now: () => number;
 }
 
@@ -28,7 +28,7 @@ export class SessionRevocationService {
   readonly #repository: PendingRevocationRepository;
   readonly #requestRefresh: RefreshTokensRequest;
   readonly #authApi: Pick<AuthApi, 'revokeSession'>;
-  readonly #logger: Pick<Logger, 'info' | 'warn'>;
+  readonly #logger: Pick<AppLogger, 'info' | 'warn'>;
   readonly #now: () => number;
   #inFlight: Promise<void> | null = null;
 

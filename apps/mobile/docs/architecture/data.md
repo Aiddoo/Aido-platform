@@ -21,7 +21,7 @@ export class MemoApi {
 }
 ```
 
-- 서버 모듈 하나에 `{Entity}Api` 하나다(`apis/{entity}.api.ts`, DI 훅 `use{Entity}Api`). `HttpClient`만 받고 응답 진단이 필요할 때만 `Logger`를 더한다. 저장소·OS 포트·다른 Api는 받지 않는다.
+- 서버 모듈 하나에 `{Entity}Api` 하나다(`apis/{entity}.api.ts`, DI 훅 `use{Entity}Api`). `HttpClient`만 받고 응답 진단이 필요할 때만 `AppLogger`를 더한다. 저장소·OS 포트·다른 Api는 받지 않는다.
 - 메서드는 `Promise<Result<T, ApiError>>`다. 4xx는 `Result.err`, 5xx·네트워크·파싱은 throw다. 분류는 `KyHttpClient` 한 곳이 한다([error-handling](../error-handling.md#분류는-kyhttpclient-한-곳)).
 - 응답은 `parseApiResponse(응답, 계약 스키마, mapper, 메시지)`로 검증하고 모델로 바꾼다. `HttpClient`의 성공 값은 `unknown`이고 generic으로 단정하지 않는다. 요청 바디는 mapper `to{X}Request`가 만든다.
 - GET은 `signal`을 받아 `HttpClient`까지 넘긴다. 화면을 떠나면 요청이 멈춘다.
@@ -33,7 +33,7 @@ export class MemoApi {
 
 - Service(`services/{name}.service.ts`)는 진짜 조율이 있을 때만 만든다. 여러 포트·Api·저장 값·Policy를 엮는 기기 유스케이스다(`PushRegistrationService`, `SignInService`, 위젯 동기화, 리뷰 요청).
 - 통과 메서드를 두지 않는다. 저장소 하나를 그대로 읽고 쓰면 저장 값 정의, 판정이면 Policy다.
-- 받는 것은 포트, 쓰는 메서드만 고른 `Pick<XApi, 'method'>`, 저장 값 함수, Policy, `Logger`, 시계 `now: () => Instant`다. `HttpClient`를 직접 받지 않는다. 의존이 셋까지면 위치 인자, 넷부터 `{Class}Ports` 객체 하나다.
+- 받는 것은 포트, 쓰는 메서드만 고른 `Pick<XApi, 'method'>`, 저장 값 함수, Policy, `AppLogger`, 시계 `now: () => Instant`다. `HttpClient`를 직접 받지 않는다. 의존이 셋까지면 위치 인자, 넷부터 `{Class}Ports` 객체 하나다.
 - 결과는 판별 유니온이다. 삼킨 실패만 `logger.warn`하고 추적·`captureException`은 훅과 mutation 콜백이 한다. 결과를 캐시에 두는 동작(OS 권한 요청)은 mutation 옵션이 부르고, 캐시할 값이 없는 기기 동작은 핸들러가 `use{Name}Service()`로 바로 부른다.
 - Session(`services/{name}.session.ts`)은 타이머·구독을 가진 수명 객체다. 포트만 받고 `dispose()`를 두며, 만든 Provider·훅의 effect 정리가 `dispose()`를 부른다.
 - 생성자와 `createAppContainer`는 구독·타이머·저장소 쓰기를 하지 않는다. 연결은 쓰는 쪽 effect가 맡는다.
@@ -42,7 +42,7 @@ export class MemoApi {
 
 - Repository(`repositories/{name}.repository.ts`)는 저장 값 정의로 안 되는 것만 남는다. SecureStore 비동기(pending-revocation, push-registration), 파일(voice-recording), 접두사 열거·옛 키 정리와 이주(whats-new, coachmark, activation, voice-note-draft, draft), 옛 기기 기록 이주(marketing-push-prompt), 옛 저장 모양 읽기(store-review), Android 헤드리스 위젯(widget-navigation, android-widget-snapshot)이다.
 - `create{Name}Repository(storage)`가 화살표 속성 객체를 돌려준다. 메서드는 `find*`(→ `T | null`), `save`, `remove`, `update(scope, transition)`, `subscribe`(→ 해제 함수)다.
-- 저장 포트, storage 스키마, `Logger`만 쓴다. 판정은 Policy가 하고 시각은 인자(`at`)로 받는다. 키 문자열과 파서를 밖으로 내보내지 않는다.
+- 저장 포트, storage 스키마, `AppLogger`만 쓴다. 판정은 Policy가 하고 시각은 인자(`at`)로 받는다. 키 문자열과 파서를 밖으로 내보내지 않는다.
 - Store(`stores/{name}.store.ts`)는 메모리 상태 기계다. `create{Name}Store()`가 `getSnapshot`·`subscribe`·이름 있는 동작을 돌려준다(알림 진입, 인증 세션, 온보딩 가드). 포트·영속을 모르고, DI가 만들며, React는 `useSyncExternalStore`로 읽는다. 모듈 전역에 두지 않는다.
 
 ## 저장 값

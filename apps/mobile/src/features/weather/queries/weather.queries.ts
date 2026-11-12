@@ -4,7 +4,7 @@ import {
   useWeatherLocationService,
   useWeatherApi,
 } from '@src/bootstrap/providers/di-context';
-import { type Logger } from '@src/core/ports/logger';
+import { type AppLogger } from '@src/core/ports/app-logger';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
@@ -45,7 +45,7 @@ function refetchOnFocus(query: Query<LocationReading, Error>) {
 }
 
 /** 리포트 실패는 리포트 경계가 알리므로 여기서는 비교할 위치가 없는 것으로 보고 기록만 남긴다 */
-async function findReportLocation(client: QueryClient, logger: Logger, revision: number) {
+async function findReportLocation(client: QueryClient, logger: AppLogger, revision: number) {
   const queryKey = WEATHER_QUERY_KEYS.report({ locationRevision: revision });
   const state = client.getQueryState<WeatherReport>(queryKey);
   if (state?.data == null && state?.fetchStatus === 'fetching') {

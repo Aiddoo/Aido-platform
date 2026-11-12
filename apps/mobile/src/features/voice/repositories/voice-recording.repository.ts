@@ -1,5 +1,5 @@
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { LocalFileEntry, LocalFileSystem } from '@src/core/ports/local-file-system';
-import type { Logger } from '@src/core/ports/logger';
 import { type Instant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 
@@ -45,7 +45,7 @@ function getExtension(uri: string) {
 
 export function createVoiceRecordingRepository(
   files: LocalFileSystem,
-  logger: Pick<Logger, 'warn'>,
+  logger: Pick<AppLogger, 'warn'>,
 ): VoiceRecordingRepository {
   const logRemoveFailed = (error: unknown) => {
     logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: getErrorMessage(error) });

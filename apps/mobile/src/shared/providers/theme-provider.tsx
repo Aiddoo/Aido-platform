@@ -59,11 +59,11 @@ export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: The
   );
 }
 
-export function useTheme(): ThemeContextValue {
+export function useAppTheme(): ThemeContextValue {
   const context = use(ThemeContext);
 
   if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider');
+    throw new Error('useAppTheme must be used within ThemeProvider');
   }
 
   return context;

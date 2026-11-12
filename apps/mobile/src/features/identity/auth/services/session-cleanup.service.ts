@@ -1,4 +1,4 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage } from '@src/shared/errors';
 
@@ -29,7 +29,7 @@ interface SessionCleanupServicePorts {
   userDeviceData: Pick<UserDeviceDataService, 'clearForUser'>;
   /** 위층 기능이라 조립하는 곳이 넘긴다 */
   pushDevice: { requestRelease(): void };
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 /** 한 단계가 실패해도 계속한다. 미인증 전환 커밋 전에 비우면 마운트된 인증 화면이 다시 요청해 401 루프를 돈다 */

@@ -9,7 +9,7 @@ import { usePushNotificationResponse } from '@src/features/notification/hooks/us
 import { useInstallReferrerCapture } from '@src/features/social/invite/hooks/use-install-referrer-capture';
 import { useInviteAppEntry } from '@src/features/social/invite/hooks/use-invite-app-entry';
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
-import { useTheme } from '@src/shared/providers/theme-provider';
+import { useAppTheme } from '@src/shared/providers/theme-provider';
 import { useIsRestoring } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { Stack } from 'expo-router';
@@ -22,7 +22,7 @@ const ROOT_STACK_ANIMATION_DURATION_MS = 250;
 export function AuthGateLayout() {
   const status = useAuthStatus();
   const isRestoring = useIsRestoring();
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme } = useAppTheme();
   useOrientationLock();
   useScreenTracking();
   useSyncUserIdentity();

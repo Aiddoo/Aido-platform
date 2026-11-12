@@ -1,4 +1,4 @@
-import type { Storage } from '@src/core/ports/storage';
+import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import { getErrorMessage, KeychainLockedError } from '@src/shared/errors';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 import * as ExpoSecureStore from 'expo-secure-store';
@@ -26,7 +26,7 @@ async function readItem(key: string): Promise<string | null> {
   }
 }
 
-export class SecureStorage implements Storage {
+export class SecureStorage implements KeyValueStorage {
   async get<T>(key: string, schema: z.ZodType<T>): Promise<T | null> {
     return parseStoredJson(await readItem(key), schema);
   }

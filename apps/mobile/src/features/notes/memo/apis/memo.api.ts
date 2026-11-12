@@ -9,8 +9,8 @@ import {
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { HttpClient } from '@src/core/ports/http-client';
-import type { Logger } from '@src/core/ports/logger';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
@@ -38,9 +38,9 @@ const PARSE_MEMO_TIMEOUT_MS = 30_000;
 
 export class MemoApi {
   readonly #httpClient: HttpClient;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
 
-  constructor(httpClient: HttpClient, logger: Logger) {
+  constructor(httpClient: HttpClient, logger: AppLogger) {
     this.#httpClient = httpClient;
     this.#logger = logger;
   }

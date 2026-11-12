@@ -1,4 +1,4 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { getErrorMessage } from '@src/shared/errors';
@@ -8,12 +8,12 @@ import { NotificationBadgePolicy } from '../domains/notification-badge.model';
 
 interface NotificationBadgeServicePorts {
   badgeGateway: Pick<PushNotificationGateway, 'setBadgeCount'>;
-  logger: Logger;
+  logger: AppLogger;
 }
 
 export class NotificationBadgeService {
   readonly #badgeGateway: Pick<PushNotificationGateway, 'setBadgeCount'>;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
 
   constructor({ badgeGateway, logger }: NotificationBadgeServicePorts) {
     this.#badgeGateway = badgeGateway;

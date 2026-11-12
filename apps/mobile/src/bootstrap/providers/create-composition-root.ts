@@ -1,4 +1,4 @@
-import type { Storage } from '@src/core/ports/storage';
+import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import { getErrorMessage, isKeychainLockedError, toError } from '@src/shared/errors';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
 import type { QueryClient } from '@tanstack/react-query';
@@ -11,7 +11,7 @@ import type { DevicePorts } from './create-device-ports';
 interface CompositionRootDeps {
   createDevicePorts: () => DevicePorts;
   /** SecureStore의 키로 초안·조회 캐시 저장소를 연다. 실패해도 reject하지 않고 `failure`를 돌려준다 */
-  openEncryptedStorage: (secureStorage: Storage) => Promise<EncryptedStorageBootstrap>;
+  openEncryptedStorage: (secureStorage: KeyValueStorage) => Promise<EncryptedStorageBootstrap>;
   createQueryClient: () => QueryClient;
 }
 

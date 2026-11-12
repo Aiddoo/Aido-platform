@@ -9,7 +9,7 @@ import {
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useTheme } from '@src/shared/providers/theme-provider';
+import { useAppTheme } from '@src/shared/providers/theme-provider';
 import {
   SHEET_ROUTE_SCREEN_OPTIONS,
   useStackBackToolbar,
@@ -39,7 +39,7 @@ export default function WeatherLayout() {
   const isRefreshing = useIsFetching(getWeatherReportsFilters()) > 0;
   const skyTintColor = useResolvedColor('text-on-sky');
   const surfaceTintColor = useResolvedColor('text-gray-9');
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme } = useAppTheme();
   const { backgroundColor } = useResolveClassNames('bg-gray-10');
   const settingsHeaderOptions = useStackScreenOptions({ hasContentBackground: true });
 

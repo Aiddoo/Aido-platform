@@ -245,7 +245,7 @@ if (isCodedError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 
 `shared/errors/storage-error.ts`. `InfraError`가 **아니다**. ErrorBoundary로 보내지 않는다.
 
-| 상황                                        | `Storage.get()` 결과                           |
+| 상황                                        | `KeyValueStorage.get()` 결과                   |
 | ------------------------------------------- | ---------------------------------------------- |
 | 값이 있음                                   | 파싱된 값                                      |
 | 값이 없음 (`errSecItemNotFound`)            | `null`                                         |

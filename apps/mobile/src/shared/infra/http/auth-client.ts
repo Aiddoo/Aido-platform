@@ -1,5 +1,5 @@
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { Logger } from '@src/core/ports/logger';
 import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
@@ -19,7 +19,7 @@ interface AuthClientDeps {
   refresh: TokenRefresher;
   endSession: EndSession;
   sessionEpoch: SessionEpoch;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
   errorReporter: Pick<ErrorReporter, 'addBreadcrumb' | 'captureMessage'>;
 }
 

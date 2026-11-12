@@ -1,7 +1,7 @@
-import type { LogContext, Logger } from '@src/core/ports/logger';
+import type { LogContext, AppLogger } from '@src/core/ports/app-logger';
 
-export function createCompositeLogger(loggers: Logger[]): Logger {
-  function forEachLogger(write: (logger: Logger) => void): void {
+export function createCompositeLogger(loggers: AppLogger[]): AppLogger {
+  function forEachLogger(write: (logger: AppLogger) => void): void {
     for (const logger of loggers) {
       try {
         write(logger);

@@ -1,11 +1,11 @@
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import {
   type LocationCoordinates,
   type LocationGateway,
   LocationUnavailableError,
 } from '@src/core/ports/location-gateway';
-import type { Logger } from '@src/core/ports/logger';
 
 import type { WeatherApi } from '../apis/weather.api';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
@@ -33,13 +33,13 @@ interface WeatherLocationServicePorts {
     'getPermission' | 'recheckPermission' | 'getCoordinates' | 'getPlace'
   >;
   weatherApi: Pick<WeatherApi, 'updateLocation'>;
-  logger: Logger;
+  logger: AppLogger;
 }
 
 export class WeatherLocationService {
   readonly #gateway: WeatherLocationServicePorts['gateway'];
   readonly #weatherApi: Pick<WeatherApi, 'updateLocation'>;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
 
   constructor({ gateway, weatherApi, logger }: WeatherLocationServicePorts) {
     this.#gateway = gateway;

@@ -1,5 +1,5 @@
 import type { Analytics } from '@src/core/ports/analytics';
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
@@ -73,7 +73,7 @@ export function createFeatureAttributionStore(
 interface AttributedFeatureSuccessPorts {
   analytics: Analytics;
   attribution: FeatureAttributionStore;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 export function trackAttributedFeatureSuccess(

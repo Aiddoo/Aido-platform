@@ -13,12 +13,17 @@ import {
   type UserPropertyMap,
 } from '@src/core/observability/telemetry-keys';
 import type { Analytics, AnalyticsEventParams } from '@src/core/ports/analytics';
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import { getErrorMessage } from '@src/shared/errors';
 
 import { FIREBASE_ANALYTICS_LOG_EVENT } from './firebase-analytics-log-events';
 
-function warn(logger: Logger, logEvent: string, error: unknown, extra?: Record<string, unknown>) {
+function warn(
+  logger: AppLogger,
+  logEvent: string,
+  error: unknown,
+  extra?: Record<string, unknown>,
+) {
   logger.warn(logEvent, {
     ...extra,
     error: getErrorMessage(error),
@@ -27,7 +32,7 @@ function warn(logger: Logger, logEvent: string, error: unknown, extra?: Record<s
 
 /** fire-and-forget 호출의 동기 예외와 Promise rejection을 모두 로그로만 남긴다 */
 function invokeAsync(
-  logger: Logger,
+  logger: AppLogger,
   logEvent: string,
   operation: () => Promise<unknown>,
   extra?: Record<string, unknown>,
@@ -43,7 +48,7 @@ function invokeAsync(
 }
 
 /** RNFirebase v26 modular `logEvent`는 native Promise를 반환하지 않아 instance method로 호출해 동기 예외와 rejection을 포트 안에서 격리한다 */
-export function createFirebaseAnalytics(logger: Logger): Analytics {
+export function createFirebaseAnalytics(logger: AppLogger): Analytics {
   const firebaseAnalytics = getAnalytics();
 
   return {
@@ -103,7 +108,7 @@ export function createFirebaseAnalytics(logger: Logger): Analytics {
 }
 
 /** 네이티브 SDK는 개발·프리뷰에서도 자동 수집 이벤트를 GA로 보내므로 traffic_type=internal로 걸러낸다 (JS 전 첫 실행의 first_open은 제외) */
-export function markFirebaseTrafficAsInternal(logger: Logger): void {
+export function markFirebaseTrafficAsInternal(logger: AppLogger): void {
   invokeAsync(logger, FIREBASE_ANALYTICS_LOG_EVENT.SET_DEFAULT_EVENT_PARAMETERS_FAILED, () =>
     setDefaultEventParameters(getAnalytics(), INTERNAL_TRAFFIC_EVENT_PARAMETERS),
   );

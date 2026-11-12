@@ -302,7 +302,7 @@ const modelAndFolderRules = [
   {
     name: 'repository-folder-dependency',
     comment:
-      'repository는 저장 포트·storage 스키마·Logger만 쓴다. apis/·services/를 import하지 않는다.',
+      'repository는 저장 포트·storage 스키마·AppLogger만 쓴다. apis/·services/를 import하지 않는다.',
     severity: 'error',
     from: { path: featureFolders(['repositories']), pathNot: TEST },
     to: { path: featureFolders(['apis', 'services']) },

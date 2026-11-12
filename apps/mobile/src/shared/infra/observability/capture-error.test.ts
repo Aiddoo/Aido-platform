@@ -20,7 +20,7 @@ describe('captureError', () => {
     addBreadcrumb.mockClear();
   });
 
-  it('Logger.error와 captureException이 같은 오류를 보고해도 이슈는 한 번이다', () => {
+  it('AppLogger.error와 captureException이 같은 오류를 보고해도 이슈는 한 번이다', () => {
     // Given
     const error = new Error('boom');
 

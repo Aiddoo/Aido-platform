@@ -1,5 +1,5 @@
 import type { Analytics } from '@src/core/ports/analytics';
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
 import { getErrorMessage } from '@src/shared/errors';
 
@@ -13,14 +13,14 @@ export interface SubscriberAttributes {
 
 interface PurchasesSessionPorts {
   purchases: PurchasesGateway;
-  logger: Logger;
+  logger: AppLogger;
   analytics: Pick<Analytics, 'getAnalyticsId'>;
   subscriberAttributes: SubscriberAttributes;
 }
 
 export class PurchasesSession {
   readonly #purchases: PurchasesGateway;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
   readonly #analytics: Pick<Analytics, 'getAnalyticsId'>;
   readonly #subscriberAttributes: SubscriberAttributes;
   #configured = false;

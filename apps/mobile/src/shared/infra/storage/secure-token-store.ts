@@ -1,9 +1,9 @@
-import type { Storage } from '@src/core/ports/storage';
+import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
 import { z } from 'zod';
 
-export function createSecureTokenStore(storage: Storage): TokenStore {
+export function createSecureTokenStore(storage: KeyValueStorage): TokenStore {
   return {
     getAccessToken: () => storage.get(STORAGE_KEYS.ACCESS_TOKEN, z.string()),
 

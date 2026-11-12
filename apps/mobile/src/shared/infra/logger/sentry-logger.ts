@@ -3,7 +3,7 @@ import {
   ERROR_REPORT_FEATURES,
   type ErrorReportFeature,
 } from '@src/core/observability/telemetry-keys';
-import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
+import type { LogContext, AppLogger, LogLevel } from '@src/core/ports/app-logger';
 import { captureError } from '@src/shared/infra/observability/capture-error';
 
 import { SENTRY_TAGS } from '../error-reporter/sentry-tags';
@@ -27,7 +27,7 @@ export function logEventFeature(message: string): ErrorReportFeature | undefined
 }
 
 /** 카테고리가 있는 도메인 breadcrumb은 로거가 아니라 `ErrorReporter.addBreadcrumb`로 남긴다 */
-export function createSentryLogger(): Logger {
+export function createSentryLogger(): AppLogger {
   const breadcrumb = (level: LogLevel, message: string, context?: LogContext): void => {
     const crumb: Sentry.Breadcrumb = {
       level: toSentryLevel[level],

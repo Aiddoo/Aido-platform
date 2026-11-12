@@ -1,5 +1,5 @@
 import { err, ok, type Result } from '@src/core/errors/result';
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
 import { getErrorMessage } from '@src/shared/errors';
 import { noop } from 'es-toolkit';
@@ -26,12 +26,12 @@ const NO_MANAGEMENT_SOURCE: ManagementSource = { managementUrl: null, productId:
 export class SubscriptionService {
   readonly #session: Pick<PurchasesSession, 'isConfigured'>;
   readonly #purchases: PurchasesGateway;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
 
   constructor(
     session: Pick<PurchasesSession, 'isConfigured'>,
     purchases: PurchasesGateway,
-    logger: Logger,
+    logger: AppLogger,
   ) {
     this.#session = session;
     this.#purchases = purchases;

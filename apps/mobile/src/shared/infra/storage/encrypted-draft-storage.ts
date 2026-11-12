@@ -1,5 +1,5 @@
+import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
-import type { Storage } from '@src/core/ports/storage';
 import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
 import { DEVICE_SECURE_STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
 import { noop } from 'es-toolkit';
@@ -41,7 +41,7 @@ export const disabledDraftStorage: EncryptedSyncStorage = {
   subscribe: () => noop,
 };
 
-async function resolveEncryptionKey(secureStorage: Storage) {
+async function resolveEncryptionKey(secureStorage: KeyValueStorage) {
   const storedKey = await secureStorage.get(DRAFT_ENCRYPTION_KEY_STORAGE_KEY, z.string());
   if (isDraftEncryptionKey(storedKey)) {
     return { key: storedKey, isNew: false };
@@ -96,7 +96,7 @@ function migrateLegacyDrafts(target: EnumerableSyncStorage) {
 
 /** SecureStore 조회가 비동기라 스플래시 구간에서 미리 호출해야 초안·캐시 복원이 첫 렌더에 동기로 읽힌다. 실패해도 저장만 끈다 */
 export async function openEncryptedStorage(
-  secureStorage: Storage,
+  secureStorage: KeyValueStorage,
 ): Promise<EncryptedStorageBootstrap> {
   try {
     const { key, isNew } = await resolveEncryptionKey(secureStorage);

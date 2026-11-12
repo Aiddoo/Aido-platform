@@ -1,11 +1,11 @@
-import type { Storage } from '@src/core/ports/storage';
+import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import type { z } from 'zod';
 
 /**
  * 키체인 대신 쓰는 메모리 저장소. 실제 어댑터처럼 JSON으로 왕복하고 schema에 안 맞으면 없는 값이다.
  * 실패나 정해진 값을 재현할 때만 `storage.get.mockRejectedValue`처럼 메서드를 덮어쓴다.
  */
-export function createMemoryStorage(): jest.Mocked<Storage> {
+export function createMemoryStorage(): jest.Mocked<KeyValueStorage> {
   const values = new Map<string, string>();
 
   return {

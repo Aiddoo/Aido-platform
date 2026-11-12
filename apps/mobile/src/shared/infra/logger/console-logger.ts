@@ -1,4 +1,4 @@
-import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
+import type { LogContext, AppLogger, LogLevel } from '@src/core/ports/app-logger';
 
 const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
   debug: 0,
@@ -11,7 +11,7 @@ interface ConsoleLoggerOptions {
   minLevel: LogLevel;
 }
 
-export function createConsoleLogger({ minLevel }: ConsoleLoggerOptions): Logger {
+export function createConsoleLogger({ minLevel }: ConsoleLoggerOptions): AppLogger {
   const shouldLog = (level: LogLevel): boolean =>
     LOG_LEVEL_ORDER[level] >= LOG_LEVEL_ORDER[minLevel];
 

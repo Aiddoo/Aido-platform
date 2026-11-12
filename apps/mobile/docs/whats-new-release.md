@@ -71,7 +71,7 @@
 
 ## 키 정리
 
-키를 쓰는 feature의 repository가 지운다. `bootstrap/startup/startup-key-cleanup.ts`가 앱 시작 때 한 번 부르고, 실패해도 앱을 막지 않고 Logger에 남긴다.
+키를 쓰는 feature의 repository가 지운다. `bootstrap/startup/startup-key-cleanup.ts`가 앱 시작 때 한 번 부르고, 실패해도 앱을 막지 않고 `AppLogger`에 남긴다.
 
 | 대상                                                        | 정리                                                           |
 | ----------------------------------------------------------- | -------------------------------------------------------------- |

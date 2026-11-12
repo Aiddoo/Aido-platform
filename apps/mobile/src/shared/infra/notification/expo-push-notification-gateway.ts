@@ -1,4 +1,4 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type {
   ForegroundPushPresentation,
   IosPushAuthorizationStatus,
@@ -92,7 +92,7 @@ export function registerForegroundNotificationPresentation() {
 }
 
 /** Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 못 만들어도 권한 상태는 읽으므로 실패는 기록만 한다 */
-async function ensureChannel(logger: Logger): Promise<void> {
+async function ensureChannel(logger: AppLogger): Promise<void> {
   try {
     await Notifications.setNotificationChannelAsync(DEFAULT_CHANNEL_ID, {
       name: t('common:pushChannel.default'),
@@ -107,7 +107,7 @@ async function ensureChannel(logger: Logger): Promise<void> {
   }
 }
 
-export function createExpoPushNotificationGateway(logger: Logger): PushNotificationGateway {
+export function createExpoPushNotificationGateway(logger: AppLogger): PushNotificationGateway {
   return {
     getPermission: async () => toPushPermissionResponse(await Notifications.getPermissionsAsync()),
     requestPermission: async () => {

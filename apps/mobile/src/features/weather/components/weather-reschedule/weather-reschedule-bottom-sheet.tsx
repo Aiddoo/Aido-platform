@@ -5,7 +5,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { useTheme } from '@src/shared/providers/theme-provider';
+import { useAppTheme } from '@src/shared/providers/theme-provider';
 import {
   BottomSheet,
   INQUIRY_SHEET_EXIT,
@@ -188,7 +188,7 @@ function RescheduleFooter({
   form: UseFormReturn<WeatherRescheduleFormValues>;
   onDone: () => void;
 }) {
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme } = useAppTheme();
 
   return (
     <VStack gap={8}>

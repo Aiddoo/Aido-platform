@@ -1,5 +1,5 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import {
   createVoiceNoteDraftRepository,
@@ -30,7 +30,7 @@ export interface VoiceNoteStorageFake {
 interface VoiceNoteStorageFakeOptions {
   /** 초안을 남기는 저장소. 운영은 암호화 초안 저장소 하나를 다른 초안과 함께 쓴다 */
   storage?: EnumerableSyncStorage;
-  logger?: Logger;
+  logger?: AppLogger;
 }
 
 export function createVoiceNoteStorageFake(

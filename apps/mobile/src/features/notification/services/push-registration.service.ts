@@ -1,8 +1,8 @@
 import { HttpStatus } from '@aido/api/errors';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RequestConfig } from '@src/core/ports/http-client';
-import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import type { Instant } from '@src/shared/date/instant';
@@ -42,7 +42,7 @@ interface PushRegistrationServicePorts {
   pushDeviceApi: Pick<PushDeviceApi, 'report' | 'unregister' | 'release'>;
   deviceIdService: Pick<DeviceIdService, 'get'>;
   registrationRepository: PushRegistrationRepository;
-  logger: Logger;
+  logger: AppLogger;
   getTimeZone: () => string;
   /** 서버는 푸시 문구 언어를 요청 헤더에서 읽어 언어가 바뀌면 다시 보낸다 */
   getLanguage: () => string;
@@ -55,7 +55,7 @@ export class PushRegistrationService {
   readonly #pushDeviceApi: Pick<PushDeviceApi, 'report' | 'unregister' | 'release'>;
   readonly #deviceIdService: Pick<DeviceIdService, 'get'>;
   readonly #registrationRepository: PushRegistrationRepository;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
   readonly #getTimeZone: () => string;
   readonly #getLanguage: () => string;
   readonly #sessionEpoch: Pick<SessionEpoch, 'current'>;

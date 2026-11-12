@@ -19,7 +19,7 @@ import type { FontScale } from '@src/shared/preferences/font-scale.preference';
 import type { ThemeMode } from '@src/shared/preferences/theme-mode.preference';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { useTheme } from '@src/shared/providers/theme-provider';
+import { useAppTheme } from '@src/shared/providers/theme-provider';
 import {
   BadgeDuoIcon,
   BellDuoIcon,
@@ -216,7 +216,7 @@ const FONT_SCALE_LABEL_KEYS = {
 
 function ThemeValue() {
   const { t } = useTranslation('settings');
-  const { mode } = useTheme();
+  const { mode } = useAppTheme();
 
   return (
     <Text size="b3" shade={7}>

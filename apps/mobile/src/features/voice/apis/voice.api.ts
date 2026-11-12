@@ -2,8 +2,8 @@ import { applyActionPlanResponseSchema } from '@aido/api';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { HttpClient } from '@src/core/ports/http-client';
-import type { Logger } from '@src/core/ports/logger';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
@@ -37,9 +37,9 @@ const DIGEST_TIMEOUT_MS = MINUTE_MS;
 
 export class VoiceApi {
   readonly #httpClient: HttpClient;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
 
-  constructor(httpClient: HttpClient, logger: Logger) {
+  constructor(httpClient: HttpClient, logger: AppLogger) {
     this.#httpClient = httpClient;
     this.#logger = logger;
   }

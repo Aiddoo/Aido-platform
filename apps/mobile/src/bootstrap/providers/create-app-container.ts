@@ -2,6 +2,7 @@ import { createSessionQueryCache } from '@src/bootstrap/query/session-query-cach
 import type { Analytics } from '@src/core/ports/analytics';
 import type { AppIconGateway } from '@src/core/ports/app-icon-gateway';
 import type { AppLifecycleGateway } from '@src/core/ports/app-lifecycle-gateway';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { AppStoreListingGateway } from '@src/core/ports/app-store-listing-gateway';
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store-review-gateway';
 import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
@@ -15,9 +16,9 @@ import type { IncomingLinkGateway } from '@src/core/ports/incoming-link-gateway'
 import type { InstallReferrerGateway } from '@src/core/ports/install-referrer-gateway';
 import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
+import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import type { LocalFileSystem } from '@src/core/ports/local-file-system';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
-import type { Logger } from '@src/core/ports/logger';
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
@@ -27,7 +28,6 @@ import type { ScreenOrientationGateway } from '@src/core/ports/screen-orientatio
 import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
-import type { Storage } from '@src/core/ports/storage';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
@@ -112,7 +112,7 @@ import type { DIContainer } from './di-context';
 
 /** 조립에 넣는 것. 운영은 `composition-root`가 프로세스에 한 번 만들고, 테스트는 `createTestPorts`의 stub이다 */
 export interface AppContainerPorts {
-  logger: Logger;
+  logger: AppLogger;
   analytics: Analytics;
   errorReporter: ErrorReporter;
   haptics: HapticsGateway;
@@ -122,7 +122,7 @@ export interface AppContainerPorts {
   purchasesGateway: PurchasesGateway;
   pushNotification: PushNotificationGateway;
   /** SecureStore. 회수 대기와 푸시 등록 기록을 둔다 */
-  storage: Storage;
+  storage: KeyValueStorage;
   /** 토큰 키를 아는 유일한 곳. 지우면 `sessionEpoch`가 오른다 */
   tokenStore: TokenStore;
   /** 토큰이 지워질 때마다 올라가는 세션 세대 */

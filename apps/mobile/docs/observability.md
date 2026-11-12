@@ -12,7 +12,7 @@
 | 도구               | 답하는 질문      | 진입점                                                  |
 | ------------------ | ---------------- | ------------------------------------------------------- |
 | Firebase Analytics | 얼마나 많이 쓰나 | `Analytics` 포트 + 타입 카탈로그 `track()`·`useTrack()` |
-| Sentry             | 무엇이 왜 깨졌나 | `ErrorReporter` 포트, `Logger` 포트                     |
+| Sentry             | 무엇이 왜 깨졌나 | `ErrorReporter` 포트, `AppLogger` 포트                  |
 
 ## 환경별 구현
 
@@ -22,7 +22,7 @@
 | ------------------------- | --------------------------- | ----------------------------------------------------- |
 | `Analytics`               | Firebase                    | console. 네이티브 자동 수집은 `traffic_type=internal` |
 | `ErrorReporter`           | Sentry                      | console                                               |
-| `Logger`                  | console(warn 이상) + Sentry | console                                               |
+| `AppLogger`               | console(warn 이상) + Sentry | console                                               |
 | `Sentry.init`의 `enabled` | 항상                        | `EXPO_PUBLIC_SENTRY_DEBUG=true`일 때만                |
 
 `EXPO_PUBLIC_SENTRY_DEBUG`는 SDK만 켠다. JS 어댑터는 운영 빌드에서만 Sentry라서 이 값으로는 개발 빌드의 `captureException`·`logger.error`를 확인할 수 없다.
@@ -120,7 +120,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 
 ## 오류 분류와 한 번만 보고
 
-Sentry로 나가는 모든 오류(`Logger.error`, `ErrorReporter.captureException`)는 `shared/infra/observability/capture-error.ts`의 `captureError` 한 곳을 지난다. 이슈로 보낼지는 `shared/errors/classify-error-report.ts`의 `classifyErrorReport`만 판단하고 표는 `classify-error-report.test.ts`가 고정한다.
+Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureException`)는 `shared/infra/observability/capture-error.ts`의 `captureError` 한 곳을 지난다. 이슈로 보낼지는 `shared/errors/classify-error-report.ts`의 `classifyErrorReport`만 판단하고 표는 `classify-error-report.test.ts`가 고정한다.
 
 | 오류                                    | Sentry                                                                                     | 비고                             |
 | --------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------- |
@@ -143,7 +143,7 @@ mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `o
 - `isHandledByFeature(error)`가 true인 오류와 `errorFeedback: false`는 전역이 알리지도 보고하지도 않는다. 기능이 보이는 오류는 예측한 것이라 보고 대상이 아니고, 기능이 모든 실패를 보이는 mutation(결제·복원 등)은 그 자리에서 `captureMessage`한다.
 - 캐시 단계라 기능 `onSettled`가 기다리는 재조회에 묶이지 않는다. 자세한 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)를 본다.
 
-## Logger
+## AppLogger
 
 - message는 자유 문자열 대신 기능별 `*_LOG_EVENT` 상수다. 상수는 기능 `constants/{entity}-log-events.ts`, 공용 코드는 쓰는 파일 옆에 둔다. 예: `NOTIFICATION_LOG_EVENT`.
 - 로그 키는 `{feature}.{subject}.{outcome}` 세 마디 kebab-case이고 기능마다 유일하다. 값은 Sentry 대시보드에서 쓰므로 바꾸지 않는다. breadcrumb도 같은 키를 쓴다. `core/observability/log-event-keys.test.ts`와 lint가 형식, 유일성, 문자열 직접 사용 금지를 검사한다.
