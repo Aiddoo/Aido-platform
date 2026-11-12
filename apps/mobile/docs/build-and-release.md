@@ -88,6 +88,7 @@ pnpm update:production "메시지"
 
 - SDK 58 빌드는 EAS CLI 24.8.0 이상이다. `npm install -g eas-cli@24.8.0` 뒤 `eas --version`으로 PATH에서 실행되는 버전을 확인한다(Node 버전 관리 도구와 Homebrew의 전역 위치가 다르면 이전 CLI가 실행된다).
 - iOS 로컬 빌드 도구: `brew install fastlane cocoapods`, `xcode-select -p`·`fastlane --version`·`pod --version`으로 확인한다.
+- 로컬 빌드는 Node 24.22.2(`eas.json`의 `node`)로 돌린다. 저장소 기본 Node 26(`.nvmrc`)이 아니다. 빌드 셸에서 `nvm use 24.22.2` 뒤 `node --version`으로 확인한다.
 - 로컬 빌드는 `eas.json`의 Node/Fastlane/CocoaPods 도구 버전을 설치하지 않고 EAS Secret도 자동 제공하지 않는다. 필요한 값은 기존 `GOOGLE_SERVICES_JSON`·`GOOGLE_SERVICES_INFO_PLIST` 복원 경로로 공급한다([Expo 로컬 빌드](https://docs.expo.dev/build-reference/local-builds/)).
 - 실기기 Release 검증용 설치 파일(production API·Firebase·Sentry 설정, iOS는 등록된 기기용 Ad Hoc, Android는 APK)은 `eas build --local --platform <ios|android> --profile production-device`다. 스토어 제출 파일과 구분한다.
 
@@ -98,7 +99,7 @@ pnpm update:production "메시지"
 ```bash
 # 1. main을 독립 clone으로 받는다(작업 중인 checkout·worktree를 쓰지 않는다)
 gh repo clone Aiddoo/Aido-platform /tmp/aido-build -- --depth 1 --branch main
-cd /tmp/aido-build && pnpm install --frozen-lockfile
+cd /tmp/aido-build && nvm use 24.22.2 && pnpm install --frozen-lockfile
 # google-services.json, GoogleService-Info.plist를 apps/mobile에 둔다(git 제외 파일)
 
 # 2. 압축 단계만 먼저 확인한다(빌드 번호를 올리지 않는다)
@@ -106,17 +107,21 @@ cd apps/mobile
 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false \
   eas build:inspect -p android -e production --stage archive --output /tmp/aido-archive --force
 
-# 3. 플랫폼마다 TMPDIR을 나눠 동시에 빌드한다
+# 3. 한 플랫폼씩 차례로 빌드한다. iOS가 끝난 뒤 Android를 시작한다(동시에 돌리지 않는다)
 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPDIR=/tmp/eas-ios \
   eas build --local -p ios --profile production --non-interactive --output ~/Desktop/aido-<버전>.ipa < /dev/null
+
+# 4. iOS 빌드가 끝난 뒤
 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPDIR=/tmp/eas-android \
   eas build --local -p android --profile production --non-interactive --output ~/Desktop/aido-<버전>.aab < /dev/null
 ```
 
+두 빌드를 함께 돌리면 기기 부하가 커지고 Metro 캐시가 부딪친다. `TMPDIR`을 나누는 것은 앞 실행이 남긴 Metro 캐시와 섞이지 않게 하려는 것이다.
+
 | 증상                                                                    | 원인                                                                              | 대책                                                      |
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `Compressing project files` 뒤 오류 없이 종료(exit 0), 빌드 번호만 오름 | 전역 `core.fsmonitor=true`가 EAS 임시 복사본 `.git`에 소켓을 만들고 복사가 멈춘다 | 명령에만 `core.fsmonitor=false`를 준다(위 `GIT_CONFIG_*`) |
-| `createBundleReleaseJsAndAssets` `ENOTEMPTY …/metro-cache`              | iOS·Android가 같은 `TMPDIR`의 Metro 캐시를 동시에 쓴다                            | 플랫폼마다 `TMPDIR`을 나눈다                              |
+| `createBundleReleaseJsAndAssets` `ENOTEMPTY …/metro-cache`              | iOS·Android가 같은 `TMPDIR`의 Metro 캐시를 함께 쓴다                              | 한 플랫폼씩 차례로 빌드하고 플랫폼마다 `TMPDIR`을 나눈다  |
 
 ### SDK 58 빌드 주의
 

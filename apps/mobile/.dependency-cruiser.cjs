@@ -1,4 +1,4 @@
-// 모바일 층·경계 규칙. 근거는 .claude/architecture.md#층과-의존, #portadapterdi, #모델과-policy.
+// 모바일 층·경계 규칙. 근거는 docs/architecture/structure.md#층과-의존·#di포트수명, docs/architecture/model.md.
 // 규칙으로 쓸 수 없는 feature 그래프(di-context 훅의 주인, 양방향 쌍)는 scripts/feature-graph.cjs 리포터가 본다.
 const { FEATURE_LAYERS, FEATURE_PATTERN } = require('./scripts/feature-graph.cjs');
 
@@ -20,7 +20,7 @@ function paths(prefixes) {
   return `^(?:${prefixes.join('|')})`;
 }
 
-// 네이티브·외부 SDK는 shared/infra에서만 import한다(.claude/architecture.md#portadapterdi). 예외 목록은 두지 않는다.
+// 네이티브·외부 SDK는 shared/infra에서만 import한다(docs/architecture/structure.md#di포트수명). 예외 목록은 두지 않는다.
 // 이 목록에 넣지 않은 라이브러리와 이유:
 // - expo-router: 라우트 파일과 화면의 앱 뼈대다. 라우터 교체는 route 전체를 바꾸는 일이라 포트로 숨기지 않는다.
 // - UI 라이브러리(heroui-native, reanimated, gesture-handler, gorhom, expo-image, datetimepicker 등): 화면 그 자체다.
@@ -259,7 +259,6 @@ function featureFolders(folders) {
   return `^src/features/.+/(?:${folders.join('|')})/`;
 }
 
-// 남은 위반은 .dependency-cruiser-known-violations.json(baseline #1400)에 있고 lint:deps가 --ignore-known으로 건너뛴다
 const modelAndFolderRules = [
   {
     name: 'domain-model-constants',
@@ -361,7 +360,7 @@ module.exports = {
     {
       name: 'feature-unknown-layer',
       comment:
-        '층이 정해지지 않은 feature다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더한다.',
+        '층이 정해지지 않은 feature다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 docs/architecture/structure.md의 층 표에 더한다.',
       severity: 'error',
       from: { path: FEATURE, pathNot: [KNOWN_FEATURE, TEST] },
       to: { path: '^src/features/', pathNot: '^src/features/$1/' },
@@ -369,7 +368,7 @@ module.exports = {
     {
       name: 'feature-unknown-layer-target',
       comment:
-        '층이 정해지지 않은 feature다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더한다.',
+        '층이 정해지지 않은 feature다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 docs/architecture/structure.md의 층 표에 더한다.',
       severity: 'error',
       from: { path: FEATURE, pathNot: TEST },
       to: { path: '^src/features/', pathNot: ['^src/features/$1/', KNOWN_FEATURE] },
@@ -397,7 +396,7 @@ module.exports = {
     {
       name: 'sdk-outside-infra',
       comment:
-        'SDK는 shared/infra에서만 import한다. 포트와 어댑터를 거쳐 DI 훅으로 받는다. 라이브러리가 React 훅이면 경계 훅 파일 하나에 둔다(.claude/architecture.md#portadapterdi).',
+        'SDK는 shared/infra에서만 import한다. 포트와 어댑터를 거쳐 DI 훅으로 받는다. 라이브러리가 React 훅이면 경계 훅 파일 하나에 둔다(docs/architecture/structure.md#di포트수명).',
       severity: 'error',
       from: { path: '^(?:src|app)/', pathNot: ['^src/shared/infra/', TEST] },
       to: { path: npm(SDK_MODULES) },

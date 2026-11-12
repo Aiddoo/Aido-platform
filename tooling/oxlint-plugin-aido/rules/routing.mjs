@@ -444,7 +444,7 @@ const FORM_VARIABLE_NAMES = new Set(['methods', 'formMethods']);
 const FORM_SHAPE_MESSAGE =
   '폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요.';
 
-// 폼은 `form` 하나를 props로 넘기고 입력은 Controller로 잇는다(.claude/architecture.md#폼)
+// 폼은 `form` 하나를 props로 넘기고 입력은 Controller로 잇는다(apps/mobile/docs/architecture/data.md#폼)
 const formShape = {
   meta: { type: 'suggestion' },
   createOnce(context) {

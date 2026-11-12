@@ -109,7 +109,7 @@ const functionName = {
   },
 };
 
-// 판별 이름은 긍정으로 짓고 허용을 묻는 판별은 can*으로 쓴다(.claude/architecture.md의 이름 절).
+// 판별 이름은 긍정으로 짓고 허용을 묻는 판별은 can*으로 쓴다(apps/mobile/docs/architecture/model.md#모델과-policy).
 // 가져온 이름과 구조 분해는 라이브러리와 서버 계약이 정한 이름이라 선언만 검사한다.
 const FORBIDDEN_PREDICATE_NAME = /^(?:isNot[A-Z]|hasNo[A-Z]|is(?:[A-Z]\w*)?(?:Allowed|Eligible)$)/u;
 // OS 권한 상태의 이름 그대로다
