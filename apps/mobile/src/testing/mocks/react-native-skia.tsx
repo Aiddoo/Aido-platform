@@ -28,6 +28,7 @@ export const vec = (x: number, y: number) => ({ x, y });
 export const matchFont = () => ({
   measureText: (text: string) => ({ x: 0, y: 0, width: text.length, height: 1 }),
   getMetrics: () => ({ ascent: -1, descent: 0 }),
+  dispose: () => undefined,
 });
 export const Skia = {
   Color: () => new Float32Array([1, 1, 1, 1]),

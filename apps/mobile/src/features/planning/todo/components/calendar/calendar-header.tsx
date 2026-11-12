@@ -11,6 +11,7 @@ import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Box, Flex, HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { range } from 'es-toolkit';
 import { PressableFeedback, Tabs } from 'heroui-native';
 import {
   type ComponentProps,
@@ -184,7 +185,7 @@ function CalendarTitleSamples({ ref }: Pick<ComponentProps<typeof Box>, 'ref'>) 
   const dateFormatContext = useDateFormatContext();
   const monthStartDateKey = getMonthStartDateKey(todayDateKey);
 
-  const titles = Array.from({ length: MONTHS_PER_YEAR }, (_, index) => {
+  const titles = range(MONTHS_PER_YEAR).map((index) => {
     const monthDateKey = addMonthsToDateKey(monthStartDateKey, index);
     return match(viewMode)
       .with('week', () =>

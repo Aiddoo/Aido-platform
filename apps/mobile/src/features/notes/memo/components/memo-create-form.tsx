@@ -3,6 +3,7 @@ import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-su
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_BACK_ICON, StyledSafeAreaView, TextArea } from '@src/shared/ui';
@@ -11,12 +12,11 @@ import { Stack, router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { useResolveClassNames } from 'uniwind';
 
-import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
 import { useCreateMemoMutationOptions } from '../queries/memo.mutations';
 import { EMPTY_MEMO_FORM_VALUES, memoFormSchema } from '../schemas/memo-form.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
+import { MEMO_TOOLBAR_ICON } from '../utils/memo-toolbar.view-model';
 
 export function MemoCreateForm() {
   const goBack = useSingleTap(router.back);
@@ -38,7 +38,7 @@ export function MemoCreateForm() {
     clearDraft,
   });
   const createMemo = useMutation(useCreateMemoMutationOptions());
-  const { color: saveTint } = useResolveClassNames(isValid ? 'text-main' : 'text-gray-4');
+  const saveTint = useResolvedColor(isValid ? 'text-main' : 'text-gray-4');
 
   useFocusEffect(
     useCallback(() => {

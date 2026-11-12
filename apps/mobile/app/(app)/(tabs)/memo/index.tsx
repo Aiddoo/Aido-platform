@@ -27,6 +27,7 @@ import {
   StyledSafeAreaView,
 } from '@src/shared/ui';
 import { Suspense } from 'react';
+import { match, P } from 'ts-pattern';
 
 const HEADER_GAP = 8;
 
@@ -78,25 +79,22 @@ export default function MemoScreen() {
             </QueryErrorBoundary>
           </Box>
         }
-        secondary={
-          selectedMemoId == null ? (
+        secondary={match(selectedMemoId)
+          .with(undefined, () => (
             <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
               <MemoEditor.Empty />
             </StyledSafeAreaView>
-          ) : (
-            <StyledSafeAreaView
-              key={selectedMemoId}
-              edges={['left', 'right']}
-              className="flex-1 bg-white"
-            >
-              <QueryErrorBoundary resetKeys={[selectedMemoId]} fallback={MemoEditor.PaneError}>
+          ))
+          .with(P.number, (id) => (
+            <StyledSafeAreaView key={id} edges={['left', 'right']} className="flex-1 bg-white">
+              <QueryErrorBoundary resetKeys={[id]} fallback={MemoEditor.PaneError}>
                 <Suspense fallback={<MemoEditor.PaneLoading />}>
                   <MemoEditor toolbar={MemoEditor.PaneToolbar} onLeave={deselectMemo} />
                 </Suspense>
               </QueryErrorBoundary>
             </StyledSafeAreaView>
-          )
-        }
+          ))
+          .exhaustive()}
       />
     </>
   );

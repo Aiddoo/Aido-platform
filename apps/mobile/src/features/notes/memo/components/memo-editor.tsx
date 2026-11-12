@@ -17,6 +17,7 @@ import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave'
 import { isConnectivityError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -69,9 +70,7 @@ import { Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
-import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
 import { isMemoUnavailableError } from '../domains/memo.error';
 import { MemoPolicy } from '../domains/memo.model';
 import type { Memo } from '../domains/memo.model';
@@ -87,6 +86,7 @@ import { useGetMemoQueryOptions } from '../queries/memo.queries';
 import { memoFormSchema, type MemoFormValues } from '../schemas/memo-form.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
+import { MEMO_TOOLBAR_ICON } from '../utils/memo-toolbar.view-model';
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
 
 const MEMO_MORE_MENU_WIDTH = 220;
@@ -200,8 +200,8 @@ MemoEditor.StackToolbar = function StackToolbar({
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
   const openDeleteDialog = useOpenMemoDeleteDialog({ memoId, onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
-  const { color: pinnedTint } = useResolveClassNames('text-main');
-  const { color: saveTint } = useResolveClassNames(canSave ? 'text-main' : 'text-gray-4');
+  const pinnedTint = useResolvedColor('text-main');
+  const saveTint = useResolvedColor(canSave ? 'text-main' : 'text-gray-4');
 
   const pinLabel = t(pin.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin');
   const aiSubtitle = aiParse.isParsing ? t('memo:detail.aiParsing') : aiQuota;

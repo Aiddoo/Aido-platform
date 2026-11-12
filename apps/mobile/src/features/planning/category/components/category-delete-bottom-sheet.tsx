@@ -1,6 +1,7 @@
 import { CATEGORY_TODO_HANDLINGS, type CategoryTodoHandling } from '@aido/api/vocabulary';
 import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -30,7 +31,6 @@ import { Card, PressableFeedback, RadioGroup, Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, Suspense, useEffect, useState } from 'react';
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { TodoCategoryDeletionPolicy, TodoCategoryPolicy } from '../domains/todo-category.model';
 import type {
@@ -397,10 +397,8 @@ function TodoHandlingCard({
   className,
   ...props
 }: TodoHandlingCardProps) {
-  const { color: selectedBorderColor } = useResolveClassNames(
-    isDanger ? 'text-error' : 'text-main',
-  );
-  const { color: idleBorderColor } = useResolveClassNames('text-gray-2');
+  const selectedBorderColor = useResolvedColor(isDanger ? 'text-error' : 'text-main');
+  const idleBorderColor = useResolvedColor('text-gray-2');
 
   return (
     <AnimatedCard
