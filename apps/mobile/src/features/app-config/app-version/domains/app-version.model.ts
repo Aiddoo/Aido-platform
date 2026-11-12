@@ -1,5 +1,8 @@
-import { APP_PLATFORMS, APP_STORE_VERSION_PATTERN } from '@aido/api/vocabulary';
-import { compareSemanticVersions } from '@src/shared/utils/semantic-version';
+import {
+  APP_PLATFORMS,
+  APP_STORE_VERSION_PATTERN,
+  compareSemanticVersions,
+} from '@aido/api/vocabulary';
 import { z } from 'zod';
 
 const appStoreVersionSchema = z.string().regex(new RegExp(APP_STORE_VERSION_PATTERN));

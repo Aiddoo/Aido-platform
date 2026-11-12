@@ -18,7 +18,11 @@
     "eslint/curly": ["error", "all"],
     "eslint/no-void": "error",
     "react/rules-of-hooks": "error",
-    "react/exhaustive-deps": "error"
+    "react/exhaustive-deps": "error",
+    // 루트 AGENTS 공통 규칙(중첩 삼항 금지, `#` 비공개만, 생성자 파라미터 프로퍼티 금지)을 앱에도 건다
+    "eslint/no-nested-ternary": "error",
+    "aido/no-member-accessibility": "error",
+    "typescript/parameter-properties": ["error", { "prefer": "class-property" }]
   },
   "overrides": [
     {
@@ -972,14 +976,28 @@
       }
     },
     {
-      "files": ["src/features/engagement/comment/**", "app/?app?/todo/?todoId?/**"],
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "src/shared/ui/**/index.ts",
+        "src/shared/{i18n,errors,analytics}/index.ts",
+        "src/shared/infra/{analytics,logger}/index.ts",
+        "src/bootstrap/providers/di-context.tsx",
+        "src/testing/**",
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**"
+      ],
       "rules": {
         "aido/no-re-export": [
           "error",
           {
             "checkDefaultExport": true
           }
-        ],
+        ]
+      }
+    },
+    {
+      "files": ["src/features/engagement/comment/**", "app/?app?/todo/?todoId?/**"],
+      "rules": {
         "aido/no-inline-query-options": "error",
         "aido/no-router-push": "error"
       }

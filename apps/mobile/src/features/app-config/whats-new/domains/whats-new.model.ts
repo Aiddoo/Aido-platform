@@ -1,7 +1,7 @@
+import { isSemanticVersionAtLeast } from '@aido/api/vocabulary';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { type Instant, diffMs } from '@src/shared/date/instant';
-import { isSemanticVersionAtLeast } from '@src/shared/utils/semantic-version';
 import { maxBy } from 'es-toolkit';
 import { z } from 'zod';
 

@@ -1,5 +1,5 @@
+import { compareSemanticVersions } from '@aido/api/vocabulary';
 import { i18n } from '@src/shared/i18n';
-import { compareSemanticVersions } from '@src/shared/utils/semantic-version';
 import { orderBy, sortBy } from 'es-toolkit';
 
 import {
