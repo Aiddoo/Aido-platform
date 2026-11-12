@@ -574,7 +574,7 @@ interface MemoSaveOptions extends Pick<MemoEditorProps, 'onLeave'> {
 
 /** 고친 글자를 저장하고 andThen대로 이어 간다. 저장한 메모를 돌려주고, 저장하지 못하면 null이다 */
 function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: MemoSaveOptions) {
-  const updateMemo = useMutation(useUpdateMemoMutationOptions());
+  const updateMemo = useMutation(useUpdateMemoMutationOptions({ memoId: memo.id }));
 
   const isSavingChangesRef = useRef(false);
 
@@ -583,7 +583,7 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
     if (!MemoPolicy.hasContentChanged(memo, content)) {
       return memo;
     }
-    return updateMemo.mutateAsync({ memoId: memo.id, values: { content: content.trim() } });
+    return updateMemo.mutateAsync({ content: content.trim() });
   };
 
   // 저장 버튼과 뒤로 가기는 handleSubmit으로 보내 저장하는 동안(isSubmitting) 두 버튼을 끈다. 유효하지 않으면 null
@@ -657,12 +657,12 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
 
 /** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 고정 동작을 쓴다. */
 function useMemoPinAction(memo: Memo) {
-  const setPinned = useMutation(useSetMemoPinnedMutationOptions());
+  const setPinned = useMutation(useSetMemoPinnedMutationOptions({ memoId: memo.id }));
 
   return {
     isPinned: memo.isPinned,
     isDisabled: setPinned.isPending,
-    toggle: () => setPinned.mutate({ memoId: memo.id, isPinned: !memo.isPinned }),
+    toggle: () => setPinned.mutate({ isPinned: !memo.isPinned }),
   };
 }
 

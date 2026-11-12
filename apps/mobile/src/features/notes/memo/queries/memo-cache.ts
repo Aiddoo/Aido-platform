@@ -1,7 +1,9 @@
 import { mapInfiniteItems } from '@src/shared/domains/cursor-page.model';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { Memo } from '../domains/memo.model';
+import { MEMO_MUTATION_KEYS } from './memo-mutation-keys';
 import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 export function invalidateMemoList(queryClient: QueryClient) {
@@ -28,22 +30,41 @@ export function getCachedMemo(queryClient: QueryClient, { memoId }: { memoId: nu
   return queryClient.getQueryData(MEMO_QUERY_KEYS.detail({ memoId }));
 }
 
-/** 응답을 상세에 쓰고 쓰기 전 상세를 돌려준다. 늦게 끝난 조회가 응답을 덮지 않게 먼저 멈춘다 */
-export async function setMemoDetailInCache(queryClient: QueryClient, memo: Memo) {
-  await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId: memo.id }) });
-  const previous = getCachedMemo(queryClient, { memoId: memo.id });
-  queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: memo.id }), memo);
-  return previous;
+interface SettleMemoWriteOptions {
+  /** 쓰기를 시작할 때 같은 메모의 다른 쓰기가 진행 중이었는지 */
+  startedWithOthers: boolean;
+  /** 목록 항목도 응답으로 바꾸는지. 고정은 순서를 서버가 정해 목록을 다시 받는다 */
+  isListItemReplaced: boolean;
 }
 
-/** 저장 응답을 상세와 목록에 쓴다. 저장 전에 시작한 조회가 늦게 끝나 옛 글로 덮지 않게 먼저 멈춘다 */
-export async function setMemoInCache(queryClient: QueryClient, memo: Memo) {
+/**
+ * 같은 메모의 수정·고정 응답을 쓴다. 응답이 오는 순서는 서버가 처리한 순서와 다를 수 있어, 겹친 쓰기는 앞서 끝난
+ * 응답을 낡음으로만 표시하고 마지막 쓰기가 응답을 쓴 뒤 서버 값으로 다시 맞춘다. 쓰기 콜백 안에서 부른다
+ */
+export async function settleMemoWrite(
+  queryClient: QueryClient,
+  memo: Memo,
+  { startedWithOthers, isListItemReplaced }: SettleMemoWriteOptions,
+) {
+  const detailKey = MEMO_QUERY_KEYS.detail({ memoId: memo.id });
+  if (!isLastMutation(queryClient, MEMO_MUTATION_KEYS.writes({ memoId: memo.id }))) {
+    await queryClient.invalidateQueries({ queryKey: detailKey, refetchType: 'none' });
+    return;
+  }
+  const hasOverlapped =
+    startedWithOthers || queryClient.getQueryState(detailKey)?.isInvalidated === true;
+  // 쓰기 전에 시작한 조회가 늦게 끝나 옛 값으로 덮지 않게 먼저 멈춘다
   await Promise.all([
-    queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId: memo.id }) }),
-    queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.list() }),
+    queryClient.cancelQueries({ queryKey: detailKey }),
+    isListItemReplaced && queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.list() }),
   ]);
-  queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: memo.id }), memo);
-  replaceMemoInList(queryClient, memo);
+  queryClient.setQueryData(detailKey, memo);
+  if (isListItemReplaced) {
+    replaceMemoInList(queryClient, memo);
+  }
+  if (hasOverlapped) {
+    await invalidateMemo(queryClient, { memoId: memo.id });
+  }
 }
 
 export function replaceMemoInList(queryClient: QueryClient, memo: Memo) {

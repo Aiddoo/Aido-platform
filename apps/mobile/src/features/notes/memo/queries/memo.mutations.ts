@@ -31,6 +31,7 @@ import type { DraftService } from '@src/shared/draft/draft.service';
 import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
@@ -50,8 +51,7 @@ import {
   invalidateMemo,
   invalidateMemoList,
   invalidateMemoResourceLimit,
-  setMemoDetailInCache,
-  setMemoInCache,
+  settleMemoWrite,
 } from './memo-cache';
 import { MEMO_MUTATION_KEYS } from './memo-mutation-keys';
 
@@ -94,7 +94,7 @@ export function useCreateMemoMutationOptions() {
   });
 }
 
-export function useUpdateMemoMutationOptions() {
+export function useUpdateMemoMutationOptions({ memoId }: { memoId: number }) {
   const memoApi = useMemoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -102,15 +102,18 @@ export function useUpdateMemoMutationOptions() {
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
     networkMode: 'always',
-    mutationFn: async ({ memoId, values }: { memoId: number; values: MemoFormValues }) =>
-      unwrap(await memoApi.updateMemo(memoId, values)),
+    mutationKey: MEMO_MUTATION_KEYS.writes({ memoId }),
+    mutationFn: async (values: MemoFormValues) => unwrap(await memoApi.updateMemo(memoId, values)),
+    onMutate: () => ({
+      startedWithOthers: !isLastMutation(queryClient, MEMO_MUTATION_KEYS.writes({ memoId })),
+    }),
     // 돌아간 목록에 옛 글자가 보이지 않게 응답으로 상세와 목록을 바꾼다. 글만 바뀌어 목록 순서는 그대로다
-    onSuccess: async (memo, { memoId }) => {
-      await setMemoInCache(queryClient, memo);
+    onSuccess: async (memo, _values, { startedWithOthers }) => {
+      await settleMemoWrite(queryClient, memo, { startedWithOthers, isListItemReplaced: true });
       trackEvent('memo_updated', { memo_id: memoId });
     },
     // 응답으로 바꾼 키는 다시 받지 않는다. 기다리면 mutateAsync가 재조회까지 묶여 뒤로 가기가 늦어진다
-    onSettled: (_memo, error, { memoId }) => {
+    onSettled: (_memo, error) => {
       if (error != null) {
         invalidateMemoList(queryClient);
         invalidateMemo(queryClient, { memoId });
@@ -132,7 +135,7 @@ function rebaseDraftSource<TValue>(
   }
 }
 
-export function useSetMemoPinnedMutationOptions() {
+export function useSetMemoPinnedMutationOptions({ memoId }: { memoId: number }) {
   const memoApi = useMemoApi();
   const draftService = useDraftService();
   const haptics = useHaptics();
@@ -143,11 +146,18 @@ export function useSetMemoPinnedMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈춰 두면 버튼이 꺼진 채 남고 연결되는 순간 나도 모르게 실행된다. 바로 실패해 안내한다
     networkMode: 'always',
-    onMutate: () => haptics.impact('light'),
-    mutationFn: async ({ memoId, isPinned }: { memoId: number; isPinned: boolean }) =>
+    mutationKey: MEMO_MUTATION_KEYS.writes({ memoId }),
+    onMutate: () => {
+      haptics.impact('light');
+      return {
+        startedWithOthers: !isLastMutation(queryClient, MEMO_MUTATION_KEYS.writes({ memoId })),
+      };
+    },
+    mutationFn: async ({ isPinned }: { isPinned: boolean }) =>
       unwrap(await memoApi.setPinned(memoId, isPinned)),
-    onSuccess: async (memo, { memoId, isPinned }) => {
-      const previousMemo = await setMemoDetailInCache(queryClient, memo);
+    onSuccess: async (memo, { isPinned }, { startedWithOthers }) => {
+      const previousMemo = getCachedMemo(queryClient, { memoId });
+      await settleMemoWrite(queryClient, memo, { startedWithOthers, isListItemReplaced: false });
       const accountId = getCachedMe(queryClient)?.id;
       if (previousMemo != null && accountId != null) {
         const source = { from: toEpochMs(previousMemo.updatedAt), to: toEpochMs(memo.updatedAt) };
@@ -166,7 +176,7 @@ export function useSetMemoPinnedMutationOptions() {
       trackEvent('memo_pin_toggled', { memo_id: memoId, is_pinned: isPinned });
     },
     // 상세는 응답으로 고쳤고 고정 순서만 서버가 정한다
-    onSettled: (_memo, error, { memoId }) => {
+    onSettled: (_memo, error) => {
       invalidateMemoList(queryClient);
       if (error != null) {
         invalidateMemo(queryClient, { memoId });

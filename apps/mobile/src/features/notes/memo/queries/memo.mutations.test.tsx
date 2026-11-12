@@ -11,12 +11,14 @@ import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
+  createPendingResponse,
   createTestQueryClient,
   createTestDi,
+  respondByPath,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
-import { onlineManager, type QueryClient, useMutation } from '@tanstack/react-query';
+import { onlineManager, type QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
@@ -33,6 +35,7 @@ import {
   useSetMemoPinnedMutationOptions,
   useUpdateMemoMutationOptions,
 } from './memo.mutations';
+import { useGetMemoQueryOptions } from './memo.queries';
 
 const originalMemo: MemoDto = {
   id: 5,
@@ -54,7 +57,7 @@ async function updateMemo(client: QueryClient) {
   httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: updatedMemo }));
   let options: ReturnType<typeof useUpdateMemoMutationOptions> | undefined;
   function CaptureOptions() {
-    options = useUpdateMemoMutationOptions();
+    options = useUpdateMemoMutationOptions({ memoId: 5 });
     return null;
   }
   const { unmount } = await renderScreen(<CaptureOptions />, {
@@ -73,7 +76,7 @@ async function updateMemo(client: QueryClient) {
   const mutation = client.getMutationCache().build(client, options);
 
   await act(async () => {
-    await mutation.execute({ memoId: 5, values: { content: updatedMemo.content } });
+    await mutation.execute({ content: updatedMemo.content });
   });
   await unmount();
 }
@@ -225,6 +228,63 @@ describe('메모 수정 후 상세 cache', () => {
   });
 });
 
+describe('메모 수정과 고정이 겹칠 때', () => {
+  it('서버 처리 순서와 다르게 응답이 와도 먼저 끝난 응답이 고정을 지우지 않고 마지막에 서버 값으로 맞춘다', async () => {
+    // Given
+    const client = createTestQueryClient();
+    const serverMemo: MemoDto = {
+      ...updatedMemo,
+      isPinned: true,
+      updatedAt: '2026-10-02T00:02:00.000Z',
+    };
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockImplementation(respondByPath({ 'v1/memos/5': ok({ memo: serverMemo }) }));
+    const updateResponse = createPendingResponse(ok({ message: 'updated', memo: updatedMemo }));
+    const pinResponse = createPendingResponse(ok({ message: 'updated', memo: serverMemo }));
+    httpClient.patch.mockImplementation(async (url) =>
+      url === 'v1/memos/5/pin' ? pinResponse.response : updateResponse.response,
+    );
+    const writes: { update?: () => Promise<unknown>; pin?: () => Promise<unknown> } = {};
+    function Probe() {
+      useQuery(useGetMemoQueryOptions({ memoId: 5 }));
+      const update = useMutation(useUpdateMemoMutationOptions({ memoId: 5 }));
+      const pin = useMutation(useSetMemoPinnedMutationOptions({ memoId: 5 }));
+      writes.update = () => update.mutateAsync({ content: updatedMemo.content });
+      writes.pin = () => pin.mutateAsync({ isPinned: true });
+      return null;
+    }
+    await renderScreen(<Probe />, {
+      di: createTestDi({ ports: { httpClient, queryClient: client } }),
+      withLocalDate: true,
+    });
+    await act(async () => {
+      await client.refetchQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId: 5 }) });
+    });
+    httpClient.get.mockClear();
+    let updating: Promise<unknown> | undefined;
+    let pinning: Promise<unknown> | undefined;
+    await act(async () => {
+      updating = writes.update?.();
+      pinning = writes.pin?.();
+    });
+
+    // When
+    pinResponse.settle();
+    await act(async () => {
+      await pinning;
+    });
+    updateResponse.settle();
+    await act(async () => {
+      await updating;
+    });
+
+    // Then
+    expect(client.getQueryData<Memo>(MEMO_QUERY_KEYS.detail({ memoId: 5 }))).toEqual(
+      toMemo(serverMemo),
+    );
+  });
+});
+
 describe('메모 고정', () => {
   afterEach(() => {
     onlineManager.setOnline(true);
@@ -245,7 +305,7 @@ describe('메모 고정', () => {
     let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
     let draftService: ReturnType<typeof useDraftService> | undefined;
     function useMutationCapture() {
-      return useMutation(useSetMemoPinnedMutationOptions()).mutateAsync;
+      return useMutation(useSetMemoPinnedMutationOptions({ memoId: 5 })).mutateAsync;
     }
     function Capture() {
       mutateAsync = useMutationCapture();
@@ -279,7 +339,7 @@ describe('메모 고정', () => {
 
     // When
     await act(async () => {
-      await mutateAsync?.({ memoId: 5, isPinned: true });
+      await mutateAsync?.({ isPinned: true });
     });
 
     // Then
@@ -299,7 +359,7 @@ describe('메모 고정', () => {
     httpClient.patch.mockRejectedValue(new NetworkError());
     let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
     function useMutationCapture() {
-      return useMutation(useSetMemoPinnedMutationOptions()).mutateAsync;
+      return useMutation(useSetMemoPinnedMutationOptions({ memoId: 5 })).mutateAsync;
     }
     function Capture() {
       mutateAsync = useMutationCapture();
@@ -311,7 +371,7 @@ describe('메모 고정', () => {
     });
 
     // When
-    const result = mutateAsync?.({ memoId: 5, isPinned: true });
+    const result = mutateAsync?.({ isPinned: true });
 
     // Then
     await expect(result).rejects.toBeInstanceOf(NetworkError);
