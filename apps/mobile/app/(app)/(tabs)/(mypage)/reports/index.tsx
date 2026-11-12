@@ -4,7 +4,7 @@ import { ReportList } from '@src/features/insights/report/components/report-list
 import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
 import { REPORT_TYPE_LABEL_KEYS } from '@src/features/insights/report/constants/report-labels';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
-import { invalidateReports } from '@src/features/insights/report/queries/report-cache';
+import { refreshReports } from '@src/features/insights/report/queries/report-cache';
 import { reportListTypeSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
@@ -33,7 +33,7 @@ export default function ReportsScreen() {
   const queryClient = useQueryClient();
   const featureAccess = useFeatureAccess('AI_REPORT');
   const [reportType] = useReportType();
-  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateReports(queryClient));
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshReports(queryClient));
 
   return (
     <SafeAreaScrollView
@@ -48,20 +48,10 @@ export default function ReportsScreen() {
             <AiConsentNotice title={t('consent.notice.reports')} />
 
             <ScallopedContainer>
-              <Box className="items-center px-5 pt-4">
-                <Mascot name="catSuggestion" size={100} />
-                <Spacing size={8} />
-                <H4
-                  align="center"
-                  lineBreakStrategyIOS="hangul-word"
-                  textBreakStrategy="highQuality"
-                >
-                  {t('report.list.premiumTitle')}
-                </H4>
-                <Text size="b4" shade={6} align="center">
-                  {t('report.list.premiumDescription')}
-                </Text>
-              </Box>
+              <Intro
+                title={t('report.list.premiumTitle')}
+                description={t('report.list.premiumDescription')}
+              />
 
               <Spacing size={16} />
 
@@ -79,28 +69,24 @@ export default function ReportsScreen() {
 
               <Spacing size={8} />
 
-              <Box className="px-4 pb-4">
+              <Box className="px-4">
                 <QueryErrorBoundary fallback={ReportList.Error} resetKeys={[reportType]}>
                   <Suspense fallback={<ReportList.Loading />}>
                     <ReportList />
                   </Suspense>
                 </QueryErrorBoundary>
               </Box>
+
+              <Spacing size={16} />
             </ScallopedContainer>
           </VStack>
         ))
         .with('free', () => (
           <ScallopedContainer>
-            <Box className="items-center px-5 pt-4">
-              <Mascot name="catSuggestion" size={100} />
-              <Spacing size={8} />
-              <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-                {t('report.list.freeTitle')}
-              </H4>
-              <Text size="b4" shade={6} align="center">
-                {t('report.list.freeDescription')}
-              </Text>
-            </Box>
+            <Intro
+              title={t('report.list.freeTitle')}
+              description={t('report.list.freeDescription')}
+            />
 
             <Spacing size={28} />
 
@@ -108,20 +94,17 @@ export default function ReportsScreen() {
 
             <Spacing size={8} />
 
-            <Box className="px-4 pb-4">
+            <Box className="px-4">
               <ReportList.Free />
             </Box>
+
+            <Spacing size={16} />
           </ScallopedContainer>
         ))
         // 프리미엄 사용자가 매번 보는 화면이라 권한을 기다리는 동안에도 같은 자리를 잡는다
         .with('loading', () => (
           <ScallopedContainer>
-            <Box className="items-center px-5 pt-4">
-              <Mascot name="catSuggestion" size={100} />
-              <Spacing size={8} />
-              <TextSkeleton size="t3" className="w-40" />
-              <TextSkeleton size="b4" className="w-56" />
-            </Box>
+            <Intro.Loading />
 
             <Spacing size={16} />
 
@@ -135,17 +118,16 @@ export default function ReportsScreen() {
 
             <Spacing size={8} />
 
-            <Box className="px-4 pb-4">
+            <Box className="px-4">
               <ReportList.Loading />
             </Box>
+
+            <Spacing size={16} />
           </ScallopedContainer>
         ))
         .with('error', () => (
           <ScallopedContainer>
-            <Box className="items-center px-5 pt-4">
-              <Mascot name="catSuggestion" size={100} />
-              <Spacing size={8} />
-            </Box>
+            <Intro.Error />
 
             <Spacing size={28} />
 
@@ -153,9 +135,11 @@ export default function ReportsScreen() {
 
             <Spacing size={8} />
 
-            <Box className="px-4 pb-4">
+            <Box className="px-4">
               <ReportList.Error error={featureAccess.error} reset={() => featureAccess.refetch()} />
             </Box>
+
+            <Spacing size={16} />
           </ScallopedContainer>
         ))
         .exhaustive()}
@@ -164,6 +148,52 @@ export default function ReportsScreen() {
     </SafeAreaScrollView>
   );
 }
+
+interface IntroProps {
+  title: string;
+  description: string;
+}
+
+function Intro({ title, description }: IntroProps) {
+  return (
+    <Box className="items-center px-5 pt-4">
+      <Mascot name="catSuggestion" size={100} />
+
+      <Spacing size={8} />
+
+      <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+        {title}
+      </H4>
+      <Text size="b4" shade={6} align="center">
+        {description}
+      </Text>
+    </Box>
+  );
+}
+
+Intro.Loading = function Loading() {
+  return (
+    <Box className="items-center px-5 pt-4">
+      <Mascot name="catSuggestion" size={100} />
+
+      <Spacing size={8} />
+
+      <TextSkeleton size="t3" className="w-40" />
+      <TextSkeleton size="b4" className="w-56" />
+    </Box>
+  );
+};
+
+// 권한을 읽지 못하면 무료·프리미엄 문구 중 어느 쪽도 맞지 않아 고양이만 둔다
+Intro.Error = function ErrorFallback() {
+  return (
+    <Box className="items-center px-5 pt-4">
+      <Mascot name="catSuggestion" size={100} />
+
+      <Spacing size={8} />
+    </Box>
+  );
+};
 
 function ReportTypeTabs() {
   const { t } = useTranslation('ai');

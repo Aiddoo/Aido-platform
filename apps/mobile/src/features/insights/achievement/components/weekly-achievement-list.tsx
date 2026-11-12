@@ -1,4 +1,3 @@
-import type { FlashListProps } from '@shopify/flash-list';
 import { useTrack } from '@src/shared/analytics';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
@@ -26,25 +25,29 @@ import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
+import type { ReactElement } from 'react';
 
 import { AchievementPolicy } from '../domains/achievement.model';
 import type { WeeklyAchievement } from '../domains/achievement.model';
-import { invalidateWeeklyAchievements } from '../queries/achievement-cache';
+import { refreshWeeklyAchievements } from '../queries/achievement-cache';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/achievement.queries';
 import { BadgeIcon } from './badge-icon';
 
 const LOADING_ROW_COUNT = 5;
 const LIST_BOTTOM_SPACE = 32;
 
-type WeeklyAchievementListProps = Pick<FlashListProps<WeeklyAchievement>, 'ListHeaderComponent'>;
+interface WeeklyAchievementListProps {
+  /** 목록 위 요약. 읽는 동안·실패에도 같은 자리에 그려 목록 실패가 요약을 지우지 않는다 */
+  header: ReactElement;
+}
 
-export function WeeklyAchievementList({ ListHeaderComponent }: WeeklyAchievementListProps) {
+export function WeeklyAchievementList({ header }: WeeklyAchievementListProps) {
   const year = getIsoWeekYear(useTodayKey());
   const queryClient = useQueryClient();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions({ year }));
   const [isRefreshing, handleRefresh] = useRefresh(() =>
-    invalidateWeeklyAchievements(queryClient, { year }),
+    refreshWeeklyAchievements(queryClient, { year }),
   );
 
   return (
@@ -57,7 +60,7 @@ export function WeeklyAchievementList({ ListHeaderComponent }: WeeklyAchievement
         justifyContent: data.items.length === 0 ? 'center' : 'flex-start',
         paddingBottom: LIST_BOTTOM_SPACE,
       }}
-      ListHeaderComponent={ListHeaderComponent}
+      ListHeaderComponent={header}
       renderItem={({ item }) => <WeeklyAchievementList.Item achievement={item} />}
       ListEmptyComponent={<WeeklyAchievementList.Empty />}
       hasNextPage={hasNextPage}
@@ -125,20 +128,10 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
   );
 };
 
-WeeklyAchievementList.Empty = function Empty() {
-  const { t } = useTranslation('achievement');
-
+WeeklyAchievementList.Loading = function Loading({ header }: WeeklyAchievementListProps) {
   return (
-    <Box className="flex-1 justify-center">
-      <Spacing size={32} />
-      <Result title={t('list.emptyRecordTitle')} description={t('list.emptyRecordDescription')} />
-    </Box>
-  );
-};
-
-WeeklyAchievementList.Loading = function Loading() {
-  return (
-    <VStack>
+    <VStack className="px-4">
+      {header}
       {range(LOADING_ROW_COUNT).map((index) => (
         <ListRow
           key={index}
@@ -152,10 +145,27 @@ WeeklyAchievementList.Loading = function Loading() {
   );
 };
 
-WeeklyAchievementList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+WeeklyAchievementList.Error = function ErrorFallback({
+  reset,
+  header,
+}: QueryErrorFallbackProps & WeeklyAchievementListProps) {
   return (
-    <VStack flex={1} p={24} justify="center">
-      <QueryErrorFallback reset={reset} />
+    <VStack flex={1} className="px-4">
+      {header}
+      <VStack flex={1} p={24} justify="center">
+        <QueryErrorFallback reset={reset} />
+      </VStack>
     </VStack>
+  );
+};
+
+WeeklyAchievementList.Empty = function Empty() {
+  const { t } = useTranslation('achievement');
+
+  return (
+    <Box className="flex-1 justify-center">
+      <Spacing size={32} />
+      <Result title={t('list.emptyRecordTitle')} description={t('list.emptyRecordDescription')} />
+    </Box>
   );
 };
