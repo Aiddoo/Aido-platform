@@ -12,7 +12,7 @@ import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions } from '../queries/weather.queries';
 import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
-import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature';
+import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
 
 const BADGE_ICON_SIZE = 18;

@@ -35,7 +35,7 @@ import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { getTemperatureColor } from '../utils/get-temperature-color';
+import { getTemperatureColor } from '../utils/temperature-color.view-model';
 import {
   type TemperatureBar,
   toTemperatureBars,
@@ -46,7 +46,7 @@ import {
   formatDegrees,
   formatTemperature,
   toDisplayTemperature,
-} from '../utils/weather-temperature';
+} from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 

@@ -24,7 +24,7 @@ import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import { useRebuiltPath } from '../../hooks/use-rebuilt-path';
 import { useVoiceNotePlayback } from '../../hooks/use-voice-note-playback';
 import type { VoiceNotePlayer } from '../../hooks/use-voice-note-player';
-import { formatMediaTime } from '../../utils/format-media-time';
+import { formatMediaTime } from '../../utils/media-time.view-model';
 import { getPlayedBarCount, resampleLevels, toRoundedBar } from '../../utils/waveform.geometry';
 
 const STEP = WAVEFORM_BAR.width + WAVEFORM_BAR.gap;

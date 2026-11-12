@@ -9,7 +9,7 @@ import type { ComponentProps } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
-import { formatMediaTime } from '../../utils/format-media-time';
+import { formatMediaTime } from '../../utils/media-time.view-model';
 import { getRecordingRingLayout } from '../../utils/recording-timer.geometry';
 
 /** 원은 3시 방향에서 시작하므로 12시부터 차오르게 돌린다 */

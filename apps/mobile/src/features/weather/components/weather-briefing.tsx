@@ -60,8 +60,8 @@ import {
   type BriefingRow,
   toBriefingView,
 } from '../utils/weather-briefing.view-model';
-import { toWeatherRescheduleHref } from '../utils/weather-reschedule-link';
-import { formatTemperature } from '../utils/weather-temperature';
+import { toWeatherRescheduleHref } from '../utils/weather-reschedule-link.view-model';
+import { formatTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 import { WeatherMascot } from './weather-mascot';

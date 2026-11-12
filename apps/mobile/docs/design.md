@@ -109,12 +109,12 @@ heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 �
 
 그 밖에서는 hex·`white`·`black` 같은 날값을 쓰지 않고 토큰 클래스를 쓴다.
 
-| 곳          | 파일                                                                                     | 이유                                                            |
-| ----------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| 날씨 장면   | `src/features/weather/constants/weather-scene-palette.ts`, `weather-colors.constants.ts` | 하늘은 테마와 별개인 장면 색이고 라이트·다크 팔레트를 따로 둔다 |
-| 위젯        | `src/features/device/widget/constants/widget.constants.ts`                               | 네이티브 위젯은 CSS 변수를 읽지 못한다                          |
-| 카테고리 색 | `src/features/planning/category/constants/todo-category.constants.ts`(`CATEGORY_COLORS`) | 사용자가 고른 값이 서버에 저장되는 데이터다                     |
-| 소셜 로그인 | `global.css`의 `--color-kakao`·`--color-naver`·`--color-apple-button`                    | 공급자 브랜드 지침                                              |
+| 곳          | 파일                                                                                               | 이유                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 날씨 장면   | `src/features/weather/constants/weather-scene-palette.constants.ts`, `weather-colors.constants.ts` | 하늘은 테마와 별개인 장면 색이고 라이트·다크 팔레트를 따로 둔다 |
+| 위젯        | `src/features/device/widget/constants/widget.constants.ts`                                         | 네이티브 위젯은 CSS 변수를 읽지 못한다                          |
+| 카테고리 색 | `src/features/planning/category/constants/todo-category.constants.ts`(`CATEGORY_COLORS`)           | 사용자가 고른 값이 서버에 저장되는 데이터다                     |
+| 소셜 로그인 | `global.css`의 `--color-kakao`·`--color-naver`·`--color-apple-button`                              | 공급자 브랜드 지침                                              |
 
 ## 모션 값
 

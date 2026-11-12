@@ -13,7 +13,7 @@ import {
   hideSprite,
   PARTICLE_SEED_STRIDE,
   placeSprite,
-} from '../../utils/weather-scene-particles';
+} from '../../utils/weather-scene-particles.view-model';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const HAIL_SEED = 0x4a11;

@@ -38,7 +38,7 @@ import {
 import { useRebuiltPath } from '../../hooks/use-rebuilt-path';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
-import { addFrameTime, shouldUseLightOrb } from '../../utils/voice-frame-budget';
+import { addFrameTime, shouldUseLightOrb } from '../../utils/voice-frame-budget.view-model';
 import { followLevel } from '../../utils/waveform.geometry';
 
 /** SkSL 출력은 곱셈 알파다 */

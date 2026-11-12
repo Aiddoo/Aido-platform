@@ -1,4 +1,4 @@
-import { toVisibilityKilometers } from './to-visibility-kilometers';
+import { toVisibilityKilometers } from './weather-visibility.view-model';
 
 describe('toVisibilityKilometers', () => {
   it.each([

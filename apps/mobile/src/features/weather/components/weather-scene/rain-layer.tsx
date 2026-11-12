@@ -8,7 +8,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles';
+} from '../../utils/weather-scene-particles.view-model';
 import {
   PARTICLE_SAMPLING,
   PARTICLE_SPRITES,

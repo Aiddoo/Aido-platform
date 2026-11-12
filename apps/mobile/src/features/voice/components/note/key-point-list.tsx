@@ -8,7 +8,7 @@ import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactElement } from 'react';
 
 import type { VoiceNoteKeyPoint } from '../../domains/voice-note.model';
-import { formatMediaTime } from '../../utils/format-media-time';
+import { formatMediaTime } from '../../utils/media-time.view-model';
 
 /** 위로 뜨는 시간 칩 안내의 높이. 이만큼 비워 요약과 "핵심 포인트" 제목을 가리지 않는다 */
 const KEY_POINT_HINT_HEIGHT = 116;

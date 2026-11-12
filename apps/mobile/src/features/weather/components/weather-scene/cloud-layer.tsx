@@ -10,7 +10,7 @@ import {
 import { range } from 'es-toolkit';
 import { type SharedValue, useAnimatedReaction } from 'react-native-reanimated';
 
-import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
+import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette.constants';
 import {
   createParticleSeeds,
   getCloudCountPerLayer,
@@ -18,7 +18,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles';
+} from '../../utils/weather-scene-particles.view-model';
 import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 import {
   CLOUD_SPAN_RATIO,

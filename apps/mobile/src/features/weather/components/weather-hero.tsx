@@ -44,7 +44,7 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/weather.queries';
-import { findForeignCountryName } from '../utils/find-foreign-country-name';
+import { findForeignCountryName } from '../utils/foreign-country-name.view-model';
 import { toWeatherReportFailedCause } from '../utils/weather-analytics';
 import { getWeatherConditionLabelKey } from '../utils/weather-labels.view-model';
 import {
@@ -52,7 +52,7 @@ import {
   formatTemperature,
   toDisplayTemperature,
   toTemperatureReading,
-} from '../utils/weather-temperature';
+} from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
 import { WeatherMascot } from './weather-mascot';
 

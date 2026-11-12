@@ -1,4 +1,4 @@
-import { toRescheduleOutcome } from './weather-reschedule-form';
+import { toRescheduleOutcome } from './weather-reschedule-form.view-model';
 
 describe('toRescheduleOutcome', () => {
   const targets = [{ todo: { id: 1 } }, { todo: { id: 2 } }, { todo: { id: 3 } }];

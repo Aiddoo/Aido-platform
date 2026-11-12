@@ -23,7 +23,7 @@ import { type DependencyList, type ReactElement, useEffect, useMemo } from 'reac
 import { useAnimatedReaction } from 'react-native-reanimated';
 import { scheduleOnUI } from 'react-native-worklets';
 
-import { createSeededRandom } from '../../utils/weather-scene-particles';
+import { createSeededRandom } from '../../utils/weather-scene-particles.view-model';
 
 /** 작은 입자 텍스처는 3배 크기로 구워 두고 1/3로 줄여 그린다. */
 export const PARTICLE_TEXTURE_SCALE = 3;

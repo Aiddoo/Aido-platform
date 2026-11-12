@@ -9,7 +9,7 @@ import {
   type VoiceNoteTab,
   voiceNoteTabSchema,
 } from '@src/features/voice/schemas/voice-note-params.schema';
-import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
+import { formatMediaTime } from '@src/features/voice/utils/media-time.view-model';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';

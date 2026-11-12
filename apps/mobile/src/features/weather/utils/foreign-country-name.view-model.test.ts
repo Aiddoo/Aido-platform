@@ -1,4 +1,4 @@
-import { findForeignCountryName } from './find-foreign-country-name';
+import { findForeignCountryName } from './foreign-country-name.view-model';
 
 describe('findForeignCountryName', () => {
   it('기기 지역과 다른 나라에 있으면 앱 언어로 나라 이름을 돌려준다', () => {

@@ -1,7 +1,7 @@
 import type { SpeechStartOptions } from '@src/core/ports/speech-recognizer';
 import { uniq } from 'es-toolkit';
 
-import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
+import { COMMON_SPEECH_HINTS } from '../constants/speech-hints.constants';
 import {
   SPEECH_CONTEXT_MAX_STRINGS,
   SPEECH_CONTEXT_RECENT_TODO_LIMIT,

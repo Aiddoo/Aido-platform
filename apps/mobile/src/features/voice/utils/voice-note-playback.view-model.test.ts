@@ -1,4 +1,4 @@
-import { findPartSeek, getVoiceNotePlayback } from './voice-note-playback';
+import { findPartSeek, getVoiceNotePlayback } from './voice-note-playback.view-model';
 
 const PARTS = [{ startMs: 0 }, { startMs: 60_000 }];
 const STATUS = {

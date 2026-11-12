@@ -9,7 +9,7 @@ import type { ForecastTodo } from '../../domains/weather-briefing.model';
 import type { RescheduleOption } from '../../domains/weather-report.model';
 import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
 import { getRescheduleCopyKeys } from '../../utils/weather-labels.view-model';
-import { toSelectionKey } from '../../utils/weather-reschedule-form';
+import { toSelectionKey } from '../../utils/weather-reschedule-form.view-model';
 import { WeatherRescheduleTimeInput } from './weather-reschedule-time-input';
 
 interface WeatherRescheduleTodoProps {

@@ -1,4 +1,8 @@
-import { formatDegrees, toDisplayTemperature, toTemperatureReading } from './weather-temperature';
+import {
+  formatDegrees,
+  toDisplayTemperature,
+  toTemperatureReading,
+} from './weather-temperature.view-model';
 
 describe('toDisplayTemperature', () => {
   it.each([

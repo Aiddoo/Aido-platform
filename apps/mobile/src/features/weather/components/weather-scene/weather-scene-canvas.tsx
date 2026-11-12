@@ -20,7 +20,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 import { useUniwind } from 'uniwind';
 
-import { getCelestialCenter } from '../../utils/weather-scene-particles';
+import { getCelestialCenter } from '../../utils/weather-scene-particles.view-model';
 import type { WeatherScene } from '../../utils/weather-scene.view-model';
 import { type CloudLight, CloudLayer } from './cloud-layer';
 import { FogBandLayer } from './fog-band-layer';

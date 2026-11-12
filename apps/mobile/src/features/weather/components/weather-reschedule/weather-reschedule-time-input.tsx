@@ -8,7 +8,7 @@ import type { ComponentProps } from 'react';
 
 import type { RescheduleOption } from '../../domains/weather-report.model';
 import { useTemperatureUnit } from '../../hooks/use-temperature-unit';
-import { formatTemperature } from '../../utils/weather-temperature';
+import { formatTemperature } from '../../utils/weather-temperature.view-model';
 
 interface WeatherRescheduleTimeInputProps extends Omit<
   ComponentProps<typeof RadioGroup>,

@@ -33,7 +33,7 @@ import { type WeatherReport } from '../domains/weather-report.model';
 import { WEATHER_ERROR_CODE } from '../domains/weather.error';
 import { useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type UnexpectedLocationFailure } from '../services/weather-location.service';
-import { withDevWeatherOverride } from '../utils/weather-dev-override';
+import { withDevWeatherOverride } from '../utils/weather-dev-override.view-model';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
 import {
   findCachedReportLocation,

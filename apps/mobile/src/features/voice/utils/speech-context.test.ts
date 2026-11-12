@@ -1,7 +1,7 @@
 import type { SpeechStartOptions } from '@src/core/ports/speech-recognizer';
 import { range } from 'es-toolkit';
 
-import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
+import { COMMON_SPEECH_HINTS } from '../constants/speech-hints.constants';
 import { getRecognizerStartOptions, getSpeechContextStrings } from './speech-context';
 
 describe('getSpeechContextStrings', () => {

@@ -22,7 +22,7 @@ import {
   getShootingStarWindow,
   hashToUnit,
   placeSprite,
-} from '../../utils/weather-scene-particles';
+} from '../../utils/weather-scene-particles.view-model';
 import { getMoonIllumination } from '../../utils/weather-scene.view-model';
 import {
   PARTICLE_SAMPLING,

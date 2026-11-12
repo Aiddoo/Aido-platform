@@ -2,14 +2,14 @@ import { Atlas, Skia, useRSXformBuffer } from '@shopify/react-native-skia';
 import { range } from 'es-toolkit';
 import type { SharedValue } from 'react-native-reanimated';
 
-import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
+import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette.constants';
 import {
   createParticleSeeds,
   getSceneReferenceWidth,
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles';
+} from '../../utils/weather-scene-particles.view-model';
 import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 import { FOG_BAND_SPRITE, PARTICLE_SAMPLING, useFogBandTexture } from './weather-scene-textures';
 

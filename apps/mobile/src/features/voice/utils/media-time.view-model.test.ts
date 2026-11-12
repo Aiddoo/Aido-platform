@@ -1,4 +1,4 @@
-import { formatMediaTime } from './format-media-time';
+import { formatMediaTime } from './media-time.view-model';
 
 describe('formatMediaTime', () => {
   it('1분 미만은 초를 두 자리로 맞춘다', () => {

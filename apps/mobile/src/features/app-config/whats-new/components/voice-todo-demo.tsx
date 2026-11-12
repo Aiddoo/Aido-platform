@@ -6,7 +6,7 @@ import {
   createVoiceTranscript,
   type VoiceTranscript,
 } from '@src/features/voice/domains/voice-transcript.model';
-import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
+import { formatMediaTime } from '@src/features/voice/utils/media-time.view-model';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
