@@ -1,4 +1,4 @@
-import { useTrack } from '@src/shared/analytics';
+import { useTrackView } from '@src/shared/analytics';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
@@ -273,20 +273,17 @@ function useBenefitSlideText(feature: BenefitFeature) {
 
 /** 넘겨서 본 장마다 한 번만 센다. 처음 보인 장도 센다 */
 function useTrackBenefitViewed(index: number) {
-  const { trackEvent } = useTrack();
-  const trackedIndexesRef = useRef(new Set<number>());
+  const slide = BENEFIT_SLIDES[index];
 
-  useEffect(() => {
-    const slide = BENEFIT_SLIDES[index];
-    if (slide == null || trackedIndexesRef.current.has(index)) {
-      return;
-    }
-    trackedIndexesRef.current.add(index);
-    trackEvent('paywall_benefit_viewed', {
-      feature: getPremiumGateAnalyticsFeature(slide.feature),
-      index: index + 1,
-    });
-  }, [index, trackEvent]);
+  useTrackView(
+    'paywall_benefit_viewed',
+    slide == null
+      ? null
+      : {
+          key: String(index),
+          params: { feature: getPremiumGateAnalyticsFeature(slide.feature), index: index + 1 },
+        },
+  );
 }
 
 BenefitCarousel.Loading = function Loading() {
