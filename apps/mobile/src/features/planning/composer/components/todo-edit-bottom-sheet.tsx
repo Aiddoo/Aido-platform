@@ -41,7 +41,6 @@ import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations
 import { TodoComposerChips } from './todo-composer-chips';
 import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
-/** 고칠 범위를 정한 결과. 범위 없이 고치는 할 일, 범위를 고른 반복 회차, 범위 고르기에서 뒤로 간 취소 셋이다 */
 type EditScopeChoice =
   | { kind: 'unscoped' }
   | { kind: 'scoped'; scope: TodoUpdateScope }

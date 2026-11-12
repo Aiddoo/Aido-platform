@@ -23,7 +23,7 @@ interface UseAddTodoQuickVoiceOptions {
   onExit: () => void;
 }
 
-/** 할 일 추가 시트의 빠른 말하기. 들은 글자는 실패·취소·직접 입력 때 제목 칸으로 옮긴다 */
+// 들은 글자를 잃지 않게 실패·취소·직접 입력 때 제목 칸으로 옮긴다
 export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptions) {
   const ensureReady = useVoiceCaptureReadiness({
     feature: 'AI_PARSE',
@@ -33,9 +33,9 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
   const getSpeechContext = useReadSpeechContext();
   const planRequest = useQuickPlanRequest({ onSubscribe: onExit });
   const continueAsVoiceNote = useContinueAsVoiceNote();
-  /** 다시 말하기로 입력 칸이 잠깐 보이는 동안 키보드를 올리지 않는다 */
+  // 다시 말하기로 입력 칸이 잠깐 보이는 동안 키보드를 올리지 않는다
   const [isRestarting, setIsRestarting] = useState(false);
-  /** 실패했을 때 입력 칸에 친 글자가 있어 들은 글자를 옮기지 않았다. 고쳐 쓰는 동안 안내가 바뀌지 않게 실패한 때의 판단을 둔다 */
+  // 실패 때 친 글자가 있어 들은 글자를 옮기지 않았는지. 고쳐 쓰는 동안 안내가 바뀌지 않게 그때 판단을 둔다
   const [isTypedTextKept, setIsTypedTextKept] = useState(false);
 
   const session = useVoiceCaptureSession({
