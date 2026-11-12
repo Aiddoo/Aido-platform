@@ -29,20 +29,22 @@ function makeProps(overrides?: Partial<AiReportPrimitives>): AiReportPrimitives 
   };
 }
 
+const LOCAL_TODAY = Temporal.PlainDate.from("2026-11-12");
+
 describe("toAiReportResponse", () => {
   it("애그리게잇을 올바른 DTO 형식으로 직렬화해야 한다", () => {
     // Given - 저장된 리포트 snapshot
     const report = AiReport.reconstitute(makeProps());
 
     // When - Application read model 변환
-    const result = toAiReportResponse(report);
+    const result = toAiReportResponse(report, LOCAL_TODAY);
 
     // Then - 기존 기간·통계·본문·UTC 날짜 계약 보존
     expect(result.id).toBe(42);
     expect(result.type).toBe("WEEKLY");
     expect(result.year).toBe(2026);
     expect(result.period).toBe(10);
-    expect(result.periodLabel).toBe("2026년 10주차");
+    expect(result.periodLabel).toBe("3월 1주차");
     expect(result.dateRange.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(result.dateRange.endDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(result.stats).toEqual({
@@ -66,7 +68,7 @@ describe("toAiReportResponse", () => {
     const report = AiReport.reconstitute(makeProps({ type: "MONTHLY", year: 2026, period: 3 }));
 
     // When - Application mapper 실행
-    const result = toAiReportResponse(report);
+    const result = toAiReportResponse(report, LOCAL_TODAY);
 
     // Then - 기존 달력 라벨 유지
     expect(result.periodLabel).toBe("2026년 3월");
@@ -79,7 +81,7 @@ describe("toAiReportResponse", () => {
     );
 
     // When - Application mapper 실행
-    const result = toAiReportResponse(report);
+    const result = toAiReportResponse(report, LOCAL_TODAY);
 
     // Then - 영어 기간 라벨 유지
     expect(result.periodLabel).toBe("March 2026");

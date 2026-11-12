@@ -29563,7 +29563,7 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
 | \`type\` | string | \`WEEKLY\` 또는 \`MONTHLY\` |
 | \`year\` | number | 연도 (예: 2026) |
 | \`period\` | number | 주차(1~53) 또는 월(1~12) |
-| \`periodLabel\` | string | 사람이 읽기 쉬운 기간 (예: "2026년 10주차", "2026년 3월") |
+| \`periodLabel\` | string | 사람이 읽기 쉬운 기간 (예: "3월 1주차", 올해가 아닌 주는 "2025년 12월 1주차", "2026년 3월") |
 | \`dateRange\` | object | \`{ startDate, endDate }\` — 분석 기간 (YYYY-MM-DD) |
 | \`stats\` | object | 완료율, 이전 기간 완료율, 연속 일수 등 |
 | \`categoryBreakdown\` | array | 카테고리별 \`{ name, color, total, completed, rate }\` |
@@ -64520,7 +64520,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
 ### 응답 필드
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| \`items[].weekLabel\` | string | 주차 라벨 (예: 3월 2주차) |
+| \`items[].weekLabel\` | string | 주차 라벨 (예: 3월 2주차, 올해가 아닌 주는 2025년 12월 1주차) |
 | \`items[].dateRange\` | object | 해당 주의 월~일 날짜 범위 |
 | \`items[].completionRate\` | number | 완료율 (0-100%) |
 | \`summary.currentStreak\` | number | 현재 연속 달성 주 |
