@@ -50,6 +50,7 @@ function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const headerOptions = useStackScreenOptions();
   const { t } = useTranslation(['notification', 'todo', 'ai']);
+  // 알림 안내 화면의 Stack.Protected guard라 내비게이터를 그리는 레이아웃이 판정한다
   const isPushOnboardingDue = usePushOnboardingGuard();
 
   return (
@@ -121,13 +122,13 @@ function AppLayout() {
           />
         </Stack.Protected>
       </Stack>
-      <AppGroupWatchers />
+      <TodoEventWatchers />
     </>
   );
 }
 
 /** 레이아웃은 내비게이터만 둔다. 할 일 이벤트를 듣는 훅은 null을 그리는 형제에서 부른다 */
-function AppGroupWatchers() {
+function TodoEventWatchers() {
   useRecordTodoCreated();
   useRecordTodoCompletion();
   useOfferMarketingPushAfterCompletion();
