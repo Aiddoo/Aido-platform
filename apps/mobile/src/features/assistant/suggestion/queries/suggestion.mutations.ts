@@ -9,7 +9,6 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { isSuggestionUnavailableError } from '../domains/suggestion.error';
 import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
 import { invalidateAiSuggestions } from './suggestion-cache';
 
@@ -31,33 +30,33 @@ export function useActOnSuggestionMutationOptions() {
     networkMode: 'always',
     mutationFn: async ({ suggestionId, input }: ActOnSuggestionVariables) =>
       unwrap(await suggestionApi.actOnSuggestion(suggestionId, input)),
-    onSuccess: async (_result, { input }) => {
+    onSuccess: (_result, { input }) => {
       trackEvent('ai_suggestion_acted', { action: input.action });
       toast.success(
         input.action === 'accept'
           ? t('ai:suggestions.toasts.accepted')
           : t('ai:suggestions.toasts.rejected'),
       );
-
       if (input.action === 'accept') {
         emitTodoCreated();
-        invalidateTodos(queryClient);
-        // 수락하면 시트를 닫고 피드로 떠나므로 다시 받기를 기다리지 않는다
-        invalidateAiSuggestions(queryClient);
-        return;
       }
-
-      // 거절은 화면에 머무는 목록 행이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
-      await invalidateAiSuggestions(queryClient);
     },
     onError: (error) => {
       if (gate.promptIfBlockedError(error)) {
         haptics.notify('error');
+      }
+    },
+    onSettled: async (_result, error, { input }) => {
+      if (input.action === 'accept' && error == null) {
+        invalidateTodos(queryClient);
+      }
+      // 수락은 시트를 닫고 피드로 떠나고, 실패는 오프라인이면 다시 받기가 연결될 때까지 멈춰 기다리지 않는다
+      if (input.action === 'accept' || error != null) {
+        invalidateAiSuggestions(queryClient);
         return;
       }
-      if (isSuggestionUnavailableError(error)) {
-        invalidateAiSuggestions(queryClient);
-      }
+      // 거절은 화면에 머무는 목록 행이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
+      await invalidateAiSuggestions(queryClient);
     },
     meta: {
       errorFeedback: {

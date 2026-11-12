@@ -216,7 +216,9 @@ function MyFeed({
 
         <Box className="px-4">
           <QueryErrorBoundary fallback={SuggestionEntry.Error}>
-            <SuggestionEntry />
+            <Suspense fallback={<SuggestionEntry.Loading />}>
+              <SuggestionEntry />
+            </Suspense>
           </QueryErrorBoundary>
         </Box>
 
