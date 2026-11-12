@@ -29,9 +29,9 @@ import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Popover, PressableFeedback, Separator, Skeleton } from 'heroui-native';
-import { type ComponentProps, type ReactNode, Suspense, useRef, useState } from 'react';
+import { type ReactNode, Suspense, useRef, useState } from 'react';
 import { type UseFormReturn, useFieldArray, useFormState, useWatch } from 'react-hook-form';
-import { ScrollView } from 'react-native';
+import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { PlanRequestPolicy } from '../domains/plan-request.model';
@@ -75,7 +75,7 @@ interface PlanApplyRequestStore {
   save: (request: PlanApplyRequest | null) => void;
 }
 
-interface PlanReviewProps extends Pick<ComponentProps<typeof VStack>, 'className' | 'style'> {
+interface PlanReviewProps {
   form: UseFormReturn<PlanReviewFormValues>;
   plan: VoicePlan;
   fallbackCategoryId: number;
@@ -92,6 +92,9 @@ interface PlanReviewProps extends Pick<ComponentProps<typeof VStack>, 'className
   /** 화면이 떠 있을 때 저장이 끝났다. 초안 정리와 화면 닫기는 화면이 맡는다 */
   onApplied?: () => void;
   onSourceMissing?: () => void;
+  className?: string;
+  /** 시트 안에서 높이를 묶을 때 쓴다 */
+  style?: StyleProp<ViewStyle>;
 }
 
 export function PlanReview({

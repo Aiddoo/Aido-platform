@@ -6,7 +6,7 @@ import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { type ComponentProps, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import {
   cancelAnimation,
@@ -117,17 +117,13 @@ function addLevelBars(
   }
 }
 
-interface WaveformTimelineProps extends Omit<ComponentProps<typeof Box>, 'children' | 'onLayout'> {
+interface WaveformTimelineProps {
   waveform: LiveWaveform;
   flagIndexes: readonly number[];
+  className?: string;
 }
 
-function WaveformTimeline({
-  waveform,
-  flagIndexes,
-  className,
-  ...boxProps
-}: WaveformTimelineProps) {
+function WaveformTimeline({ waveform, flagIndexes, className }: WaveformTimelineProps) {
   const { t } = useTranslation('voiceNote');
   const mainColor = useResolvedColor('text-main');
   const quietColor = useResolvedColor('text-gray-4');
@@ -205,7 +201,6 @@ function WaveformTimeline({
       accessibilityLabel={t('waveform.a11y')}
       className={cn('h-20', className)}
       onLayout={handleLayout}
-      {...boxProps}
     >
       <Canvas style={{ flex: 1 }}>
         <Group transform={transform}>

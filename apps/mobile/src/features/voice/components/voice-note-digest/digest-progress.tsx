@@ -4,20 +4,19 @@ import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
 import { Spinner } from 'heroui-native';
-import type { ComponentProps } from 'react';
 
-interface DigestProgressProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
+interface DigestProgressProps {
   characterCount: number;
   markCount: number;
 }
 
-export function DigestProgress({ characterCount, markCount, ...stackProps }: DigestProgressProps) {
+export function DigestProgress({ characterCount, markCount }: DigestProgressProps) {
   const { t } = useTranslation('voiceNote');
   const { locale } = useDateFormatContext();
 
   // 핵심과 할 일은 서버가 한 요청으로 만들어 어느 쪽이 끝났는지 몰라 둘 다 진행 중으로 둔다
   return (
-    <VStack gap={12} {...stackProps}>
+    <VStack gap={12}>
       <DigestProgress.Step
         label={t('digest.steps.transcript')}
         status="done"

@@ -20,13 +20,14 @@ function CaptionSeparator() {
   return <Box className="h-2" />;
 }
 
-interface SentenceCaptionListProps extends Omit<ComponentProps<typeof Box>, 'children'> {
+interface SentenceCaptionListProps {
   sentences: readonly VoiceNoteSentence[];
   interimText?: string;
   isLive?: boolean;
   activeSentenceIndex?: number;
   onPressSentence?: (sentence: VoiceNoteSentence) => void;
   contentBottomInset?: number;
+  className?: string;
 }
 
 export function SentenceCaptionList({
@@ -36,7 +37,7 @@ export function SentenceCaptionList({
   activeSentenceIndex,
   onPressSentence,
   contentBottomInset = 0,
-  ...boxProps
+  className,
 }: SentenceCaptionListProps) {
   const { t } = useTranslation('voiceNote');
   const items: CaptionItem[] = [
@@ -51,7 +52,7 @@ export function SentenceCaptionList({
   );
 
   return (
-    <Box {...boxProps}>
+    <Box className={className}>
       {hasLowConfidenceWords && (
         <Text
           size="e1"

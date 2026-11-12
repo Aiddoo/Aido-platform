@@ -4,7 +4,7 @@ import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { type ComponentProps, useEffect } from 'react';
+import { useEffect } from 'react';
 import { type LayoutChangeEvent, StyleSheet } from 'react-native';
 import {
   cancelAnimation,
@@ -17,11 +17,12 @@ import {
 
 const BEAM = { height: 90, opacity: 0.45, durationMs: 2_200 } as const;
 
-interface DigestScanPreviewProps extends Omit<ComponentProps<typeof Box>, 'children' | 'onLayout'> {
+interface DigestScanPreviewProps {
   paragraphs: readonly string[];
+  className?: string;
 }
 
-export function DigestScanPreview({ paragraphs, className, ...boxProps }: DigestScanPreviewProps) {
+export function DigestScanPreview({ paragraphs, className }: DigestScanPreviewProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
   const isAnimationActive = useIsAnimationActive();
   const beamColor = useResolvedColor('text-main');
@@ -57,7 +58,6 @@ export function DigestScanPreview({ paragraphs, className, ...boxProps }: Digest
     <Box
       className={cn('overflow-hidden rounded-2xl bg-gray-1 p-4', className)}
       onLayout={handleLayout}
-      {...boxProps}
     >
       {paragraphs.map((paragraph, index) => (
         <Text
