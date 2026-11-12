@@ -1,4 +1,4 @@
-import type { QueryClient } from '@tanstack/react-query';
+import type { QueryClient, QueryExecuteOptions, QueryKey } from '@tanstack/react-query';
 import { last } from 'es-toolkit';
 
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
@@ -10,6 +10,14 @@ import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 function getReportKeyParams(queryKey: readonly unknown[]) {
   const parsed = weatherReportQueryKeySchema.safeParse(last(queryKey));
   return parsed.success ? parsed.data : null;
+}
+
+/** 개발용 덮어쓰기가 실제 리포트를 캐시에서 읽고, 없을 때만 한 번 받는다 */
+export function queryCachedWeatherReport<TError, TQueryKey extends QueryKey>(
+  queryClient: QueryClient,
+  options: QueryExecuteOptions<WeatherReport, TError, WeatherReport, WeatherReport, TQueryKey>,
+) {
+  return queryClient.query({ ...options, staleTime: 'static' });
 }
 
 /** 위치를 먼저 읽어 이전 위치의 리포트를 한 번 더 받지 않고, 연달아 불리면 진행 중인 요청을 기다린다 */

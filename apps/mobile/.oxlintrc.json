@@ -1058,13 +1058,7 @@
       }
     },
     {
-      "files": [
-        "src/**/queries/*-cache.ts",
-        "src/**/queries/*.mutations.{ts,tsx}",
-        "src/**/queries/*.queries.{ts,tsx}",
-        "src/bootstrap/**",
-        "src/shared/query/**"
-      ],
+      "files": ["src/**/queries/*-cache.ts", "src/bootstrap/**", "src/shared/query/**"],
       "rules": {
         "aido/query-client-location": "off"
       }

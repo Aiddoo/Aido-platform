@@ -39,6 +39,7 @@ import {
   findCachedReportLocation,
   getCachedWeatherLocation,
   getCachedWeatherReport,
+  queryCachedWeatherReport,
   removeOutdatedWeatherReports,
 } from './weather-cache';
 import { WEATHER_QUERY_KEYS } from './weather-query-keys';
@@ -153,7 +154,7 @@ export function useGetWeatherReportQueryOptions() {
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision, devOverride }),
     queryFn: async ({ client: queryClient }) =>
       withDevWeatherOverride(
-        await queryClient.query({ ...reportOptions, staleTime: 'static' }),
+        await queryCachedWeatherReport(queryClient, reportOptions),
         devOverride,
       ),
     initialData: cached == null ? undefined : withDevWeatherOverride(cached, devOverride),
