@@ -269,32 +269,67 @@ describe('findLastRepeatOccurrenceDateKey', () => {
 });
 
 describe('hasSameRepeat', () => {
-  it('7요일 매주와 매일, 요일 순서만 다른 매주는 같은 규칙이다', () => {
-    // Given
-    const allDays: TodoRepeat = {
-      frequency: 'WEEKLY',
-      interval: 1,
-      weekdays: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
-      end: { type: 'NEVER' },
-    };
-    const daily: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
+  const daily: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
+  const everyDay = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+  const allDays = createWeekly({ weekdays: [...everyDay] });
 
+  it.each([
+    { name: '7요일 매주와 매일', repeat: allDays, other: daily, expected: true },
+    {
+      name: '요일 순서만 다른 매주',
+      repeat: createWeekly({ weekdays: ['MON', 'THU'] }),
+      other: createWeekly({ weekdays: ['THU', 'MON'] }),
+      expected: true,
+    },
+    {
+      name: '격주와 매주',
+      repeat: createWeekly({ interval: 2 }),
+      other: createWeekly(),
+      expected: false,
+    },
+    {
+      name: '7요일 격주와 매일',
+      repeat: createWeekly({ interval: 2, weekdays: [...everyDay] }),
+      other: daily,
+      expected: false,
+    },
+    {
+      name: '끝 횟수만 다른 매일',
+      repeat: withCount(daily, 1),
+      other: withCount(daily, 2),
+      expected: false,
+    },
+    { name: '반복 없음 둘', repeat: null, other: null, expected: true },
+    { name: '없던 반복을 만들기', repeat: null, other: daily, expected: false },
+  ] satisfies {
+    name: string;
+    repeat: TodoRepeat | null;
+    other: TodoRepeat | null;
+    expected: boolean;
+  }[])('$name는 같은 규칙인지: $expected', ({ repeat, other, expected }) => {
     // When
-    const result = TodoRepeatPolicy.hasSameRepeat(allDays, daily);
+    const result = TodoRepeatPolicy.hasSameRepeat(repeat, other);
 
     // Then
-    expect(result).toBe(true);
+    expect(result).toBe(expected);
   });
+});
 
-  it('없던 반복을 만들면 다른 규칙이다', () => {
+describe('todoRepeatSchema 끝 횟수', () => {
+  it.each([
+    { count: 0, isValid: false },
+    { count: 1, isValid: true },
+    { count: 365, isValid: true },
+    { count: 366, isValid: false },
+  ])('$count번은 쓸 수 있는지: $isValid', ({ count, isValid }) => {
     // When
-    const result = TodoRepeatPolicy.hasSameRepeat(null, {
+    const result = todoRepeatSchema.safeParse({
       frequency: 'DAILY',
-      end: { type: 'NEVER' },
+      end: { type: 'COUNT', count },
     });
 
     // Then
-    expect(result).toBe(false);
+    expect(result.success).toBe(isValid);
   });
 });
 
