@@ -1,11 +1,11 @@
-import { ErrorCode } from "@aido/api/errors";
 import {
   REDEMPTION_STATUS,
   type RedemptionStatus as RedemptionStatusValue,
 } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { invalidRedemptionTransition, unknownRedemptionStatus } from "./invites.errors.js";
 
 const REDEMPTION_STATUS_VALUES: readonly RedemptionStatusValue[] = Object.values(REDEMPTION_STATUS);
 
@@ -25,10 +25,7 @@ export class RedemptionStatus extends ValueObject<RedemptionStatusValue> {
   static create(raw: string): RedemptionStatus {
     const status = REDEMPTION_STATUS_VALUES.find((candidate) => candidate === raw);
     if (status == null) {
-      throw new DomainException(ErrorCode.SYS_0001, {
-        detail: "Unknown invite redemption status",
-        value: raw,
-      });
+      throw unknownRedemptionStatus(raw);
     }
     return new RedemptionStatus(status);
   }
@@ -47,11 +44,7 @@ export class RedemptionStatus extends ValueObject<RedemptionStatusValue> {
       return null;
     }
     if (!ALLOWED_TRANSITIONS[this.value].includes(next)) {
-      throw new DomainException(ErrorCode.SYS_0001, {
-        detail: "Invalid invite redemption transition",
-        from: this.value,
-        to: next,
-      });
+      throw invalidRedemptionTransition(this.value, next);
     }
     return new RedemptionStatus(next);
   }
