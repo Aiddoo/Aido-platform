@@ -3,6 +3,7 @@ import {
   createAppContainer,
 } from '@src/bootstrap/providers/create-app-container';
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
+import { createQueryCacheStorage } from '@src/bootstrap/query/query-cache-persistence';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 
@@ -102,7 +103,7 @@ export function createTestPorts({
   widgetStorage = createMemoryObservableSyncStorage(),
   syncStorage = createMemoryObservableSyncStorage(),
   draftStorage = createMemorySyncStorage(),
-  queryCacheStorage = null,
+  queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage()),
   queryClient = createTestQueryClient(),
   platform = 'ios',
   deviceModel = null,

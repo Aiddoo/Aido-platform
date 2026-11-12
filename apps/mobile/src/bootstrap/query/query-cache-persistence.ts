@@ -1,4 +1,4 @@
-import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { QUERY_CACHE_MAX_AGE_MS } from '@src/shared/constants/query-persistence';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
@@ -35,6 +35,9 @@ export interface QueryCacheStorage {
   clear(): void;
 }
 
+/** 조회 캐시만 담는 인스턴스. 통째로 비워도 다른 값이 지워지지 않는다 */
+type QueryCacheInstance = Pick<EnumerableSyncStorage, 'get' | 'set' | 'remove' | 'clear'>;
+
 /** 암호화 저장소를 열지 못했을 때. 캐시를 기기에 남기지 않고 주인 지정·삭제도 할 일이 없다 */
 export const disabledQueryCacheStorage: QueryCacheStorage = {
   getItem: () => null,
@@ -44,15 +47,10 @@ export const disabledQueryCacheStorage: QueryCacheStorage = {
   clear: noop,
 };
 
-export function createQueryCacheStorage(storage: SyncStorage): QueryCacheStorage {
-  const ownedKey = (key: string, ownerId = storage.get(QUERY_CACHE_OWNER_KEY)) =>
-    ownerId == null ? null : `${key}:${encodeURIComponent(ownerId)}`;
-
-  const removeOwnedCache = (ownerId: string | undefined) => {
-    const key = ownedKey(QUERY_CACHE_STORAGE_KEY, ownerId);
-    if (key != null) {
-      storage.remove(key);
-    }
+export function createQueryCacheStorage(storage: QueryCacheInstance): QueryCacheStorage {
+  const ownedKey = (key: string) => {
+    const ownerId = storage.get(QUERY_CACHE_OWNER_KEY);
+    return ownerId == null ? null : `${key}:${encodeURIComponent(ownerId)}`;
   };
 
   return {
@@ -73,17 +71,14 @@ export function createQueryCacheStorage(storage: SyncStorage): QueryCacheStorage
       }
     },
     setOwner: (userId) => {
-      const previousOwnerId = storage.get(QUERY_CACHE_OWNER_KEY);
-      if (previousOwnerId === userId) {
+      if (storage.get(QUERY_CACHE_OWNER_KEY) === userId) {
         return;
       }
-      removeOwnedCache(previousOwnerId);
+      // 키 하나만 지우면 이전 주인의 다른 키가 파일에 남는다
+      storage.clear();
       storage.set(QUERY_CACHE_OWNER_KEY, userId);
     },
-    clear: () => {
-      removeOwnedCache(storage.get(QUERY_CACHE_OWNER_KEY));
-      storage.remove(QUERY_CACHE_OWNER_KEY);
-    },
+    clear: () => storage.clear(),
   };
 }
 

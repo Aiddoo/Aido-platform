@@ -1,6 +1,6 @@
 import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
-import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { DEVICE_SECURE_STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
 import { noop } from 'es-toolkit';
 import { getRandomBytes } from 'expo-crypto';
@@ -26,9 +26,15 @@ type EncryptedSyncStorage = EnumerableSyncStorage & ObservableSyncStorage;
 export interface EncryptedStorageBootstrap {
   draftStorage: EncryptedSyncStorage;
   /** 조회 캐시 저장소. 암호화 저장소를 열지 못하면 `null`이고 캐시를 기기에 남기지 않는다. */
-  queryCacheStorage: SyncStorage | null;
+  queryCacheStorage: EnumerableSyncStorage | null;
   /** 암호화 저장소를 열지 못해 초안·조회 캐시 저장을 끈 사유. 정상이면 없다. */
   failure?: unknown;
+}
+
+/** 저장소를 열지 못한 실행에서 끝난 세션의 값. 열기 전에 인스턴스째 지운다 */
+interface DiscardedSessionStorage {
+  queryCache: boolean;
+  drafts: boolean;
 }
 
 /** 초안 기능을 끈 상태. 저장은 버리고 복원은 항상 비어 있어 폼은 빈 값으로 동작한다. */
@@ -63,7 +69,11 @@ function toEncryptedSyncStorage(mmkv: ReturnType<typeof createMMKV>): EncryptedS
     set: (key, value) => mmkv.set(key, value),
     remove: (key) => mmkv.remove(key),
     keys: () => mmkv.getAllKeys(),
-    clear: () => mmkv.clearAll(),
+    clear: () => {
+      mmkv.clearAll();
+      // 지운 계정 값이 파일의 빈 공간에 남지 않게 파일을 줄인다
+      mmkv.trim();
+    },
     subscribe: (key, listener) => {
       const subscription = mmkv.addOnValueChangedListener((changedKey) => {
         if (changedKey === key) {
@@ -97,12 +107,15 @@ function migrateLegacyDrafts(target: EnumerableSyncStorage) {
 /** SecureStore 조회가 비동기라 스플래시 구간에서 미리 호출해야 초안·캐시 복원이 첫 렌더에 동기로 읽힌다. 실패해도 저장만 끈다 */
 export async function openEncryptedStorage(
   secureStorage: KeyValueStorage,
+  discarded: DiscardedSessionStorage | null,
 ): Promise<EncryptedStorageBootstrap> {
   try {
     const { key, isNew } = await resolveEncryptionKey(secureStorage);
-    if (isNew) {
-      // 새 키로는 이전 키로 암호화한 파일을 읽을 수 없다
+    // 새 키로는 이전 키로 암호화한 파일을 읽을 수 없다. 끝난 세션의 값은 복원 전에 지운다
+    if (isNew || discarded?.drafts === true) {
       deleteMMKV(DRAFT_STORAGE_ID);
+    }
+    if (isNew || discarded?.queryCache === true) {
       deleteMMKV(QUERY_CACHE_STORAGE_ID);
     }
 

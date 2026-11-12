@@ -3,13 +3,16 @@ import {
   disabledDraftStorage,
   type EncryptedStorageBootstrap,
 } from '@src/shared/infra/storage/encrypted-draft-storage';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createErrorReporterStub,
+  createMemoryObservableSyncStorage,
   createMemorySyncStorage,
   createTestPorts,
   createTestQueryClient,
 } from '@src/testing/core';
 
+import { pendingStorageCleanupStoredValue } from '../schemas/pending-storage-cleanup-storage.schema';
 import { createCompositionRoot } from './create-composition-root';
 
 function opened(): EncryptedStorageBootstrap {
@@ -23,26 +26,28 @@ function failed(failure: unknown = new Error('keychain read failed')): Encrypted
 /** 저장소 열기는 `results`를 차례로 돌려주고 마지막 것을 되풀이한다 */
 function createRoot(results: EncryptedStorageBootstrap[]) {
   const errorReporter = createErrorReporterStub();
+  const syncStorage = createMemoryObservableSyncStorage();
   const created = { devicePorts: 0, queryClients: 0, storageOpens: 0 };
+  const openEncryptedStorage = jest.fn(async () => {
+    const result = results[Math.min(created.storageOpens, results.length - 1)];
+    if (result == null) {
+      throw new Error('저장소 열기 결과를 정하지 않았습니다');
+    }
+    created.storageOpens += 1;
+    return result;
+  });
   const root = createCompositionRoot({
     createDevicePorts: () => {
       created.devicePorts += 1;
-      return createTestPorts({ errorReporter });
+      return createTestPorts({ errorReporter, syncStorage });
     },
-    openEncryptedStorage: async () => {
-      const result = results[Math.min(created.storageOpens, results.length - 1)];
-      if (result == null) {
-        throw new Error('저장소 열기 결과를 정하지 않았습니다');
-      }
-      created.storageOpens += 1;
-      return result;
-    },
+    openEncryptedStorage,
     createQueryClient: () => {
       created.queryClients += 1;
       return createTestQueryClient();
     },
   });
-  return { root, created, errorReporter };
+  return { root, created, errorReporter, syncStorage, openEncryptedStorage };
 }
 
 describe('createCompositionRoot', () => {
@@ -104,5 +109,26 @@ describe('createCompositionRoot', () => {
 
     // Then
     expect(errorReporter.captureException).not.toHaveBeenCalled();
+  });
+
+  it('저장소를 열지 못한 실행이 남긴 정리 표시를 열 때 넘기고, 연 뒤에만 지운다', async () => {
+    // Given
+    const { root, syncStorage, openEncryptedStorage } = createRoot([failed(), opened()]);
+    const pending = { queryCache: true, drafts: true };
+    writeStoredValue(syncStorage, pendingStorageCleanupStoredValue, pending);
+
+    // When
+    await root.openPorts();
+
+    // Then
+    expect(openEncryptedStorage).toHaveBeenLastCalledWith(expect.anything(), pending);
+    expect(readStoredValue(syncStorage, pendingStorageCleanupStoredValue)).toEqual(pending);
+
+    // When
+    await root.openPorts();
+
+    // Then
+    expect(openEncryptedStorage).toHaveBeenLastCalledWith(expect.anything(), pending);
+    expect(readStoredValue(syncStorage, pendingStorageCleanupStoredValue)).toBeNull();
   });
 });

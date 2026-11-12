@@ -31,6 +31,7 @@ function createFakeMmkv(entries: Record<string, string> = {}) {
     remove: (key: string) => values.delete(key),
     getAllKeys: () => [...values.keys()],
     clearAll: () => values.clear(),
+    trim: jest.fn(),
   };
 }
 
@@ -46,7 +47,7 @@ describe('openEncryptedStorage', () => {
     secureStorage.get.mockResolvedValue(null);
 
     // When
-    const result = await openEncryptedStorage(secureStorage);
+    const result = await openEncryptedStorage(secureStorage, null);
 
     // Then
     expect(result.failure).toBeUndefined();
@@ -69,7 +70,7 @@ describe('openEncryptedStorage', () => {
     secureStorage.get.mockResolvedValue('cd'.repeat(16));
 
     // When
-    await openEncryptedStorage(secureStorage);
+    await openEncryptedStorage(secureStorage, null);
 
     // Then
     expect(secureStorage.set).not.toHaveBeenCalled();
@@ -91,7 +92,7 @@ describe('openEncryptedStorage', () => {
     );
 
     // When
-    const { draftStorage } = await openEncryptedStorage(secureStorage);
+    const { draftStorage } = await openEncryptedStorage(secureStorage, null);
 
     // Then
     expect(draftStorage.get('aido_draft_v1:user-1:memo:create')).toBe('{"v":1}');
@@ -105,7 +106,7 @@ describe('openEncryptedStorage', () => {
     secureStorage.get.mockRejectedValue(failure);
 
     // When
-    const result = await openEncryptedStorage(secureStorage);
+    const result = await openEncryptedStorage(secureStorage, null);
 
     // Then
     expect(result).toEqual({
@@ -114,5 +115,52 @@ describe('openEncryptedStorage', () => {
       failure,
     });
     expect(mockCreateMMKV).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      '로그아웃',
+      { queryCache: true, drafts: true },
+      ['aido.drafts.encrypted', 'aido.query-cache.encrypted'],
+    ],
+    ['세션 만료', { queryCache: true, drafts: false }, ['aido.query-cache.encrypted']],
+  ])(
+    '저장소를 열지 못한 실행의 %s 뒤 다시 열면 그 세션 값을 열기 전에 인스턴스째 지운다',
+    async (_reason, discarded, deletedIds) => {
+      // Given
+      const secureStorage = createMemoryStorage();
+      secureStorage.get.mockResolvedValue('cd'.repeat(16));
+
+      // When
+      await openEncryptedStorage(secureStorage, discarded);
+
+      // Then
+      expect(jest.mocked(deleteMMKV).mock.calls).toEqual(deletedIds.map((id) => [id]));
+      const firstOpenOrder = mockCreateMMKV.mock.invocationCallOrder[0] ?? 0;
+      for (const order of jest.mocked(deleteMMKV).mock.invocationCallOrder) {
+        expect(order).toBeLessThan(firstOpenOrder);
+      }
+    },
+  );
+
+  it('비우면 값을 모두 지우고 파일을 줄여 지운 값이 디스크에 남지 않는다', async () => {
+    // Given
+    const secureStorage = createMemoryStorage();
+    secureStorage.get.mockResolvedValue('cd'.repeat(16));
+    const instances: FakeMmkv[] = [];
+    mockCreateMMKV.mockImplementation(() => {
+      const instance = createFakeMmkv({ 'aido.query-cache:user-1': '{}' });
+      instances.push(instance);
+      return instance;
+    });
+    const { queryCacheStorage } = await openEncryptedStorage(secureStorage, null);
+
+    // When
+    queryCacheStorage?.clear();
+
+    // Then
+    const queryCacheInstance = instances.at(-1);
+    expect(queryCacheInstance?.getAllKeys()).toEqual([]);
+    expect(queryCacheInstance?.trim).toHaveBeenCalledTimes(1);
   });
 });

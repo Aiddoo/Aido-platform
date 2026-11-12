@@ -111,6 +111,7 @@ import {
   disabledQueryCacheStorage,
   type QueryCacheStorage,
 } from '../query/query-cache-persistence';
+import { markPendingStorageCleanup } from '../startup/pending-storage-cleanup';
 import type { DIContainer } from './di-context';
 
 /** 조립에 넣는 것. 운영은 `composition-root`가 프로세스에 한 번 만들고, 테스트는 `createTestPorts`의 stub이다 */
@@ -192,6 +193,8 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     pushNotification,
   } = ports;
   const queryCacheStorage = ports.queryCacheStorage ?? disabledQueryCacheStorage;
+  // 암호화 저장소를 열지 못한 실행은 디스크에 남은 조회 캐시·초안을 지울 수 없어 다음에 열 때 지우도록 표시한다
+  const isEncryptedStorageOpen = ports.queryCacheStorage != null;
 
   const draftService = new DraftService(createDraftRepository(draftStorage), Date.now);
   const authApi = new AuthApi({ publicHttpClient, authHttpClient });
@@ -294,8 +297,12 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     }),
     sessionCleanupService: new SessionCleanupService({
       queryCache: createSessionQueryCache(ports.queryClient),
-      persistedQueryCache: queryCacheStorage,
-      drafts: draftService,
+      persistedQueryCache: isEncryptedStorageOpen
+        ? queryCacheStorage
+        : { clear: () => markPendingStorageCleanup(syncStorage, 'queryCache') },
+      drafts: isEncryptedStorageOpen
+        ? draftService
+        : { removeAll: () => markPendingStorageCleanup(syncStorage, 'drafts') },
       voiceNotes: voiceNoteStorageService,
       deviceTimezone: { clear: () => removeStoredValue(syncStorage, deviceTimezoneStoredValue) },
       pendingRedemption: {

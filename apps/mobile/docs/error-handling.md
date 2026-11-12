@@ -240,6 +240,9 @@ if (isCodedError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 - 영속 조회는 쿼리 옵션의 `meta.persist`에 모델 스키마까지 둔다([data](./architecture/data.md#무효화)). 따로 등록부를 고치지 않는다. 복원한 값을 스키마로 검증해 깨진 조회만 버리고 서버에서 다시 받으며, 표에 없는 조회도 버린다. 값은 바꾸지 않는다. 버린 수는 `query-cache.restored-queries.dropped` warn으로 남는다.
 - 복원 직후 전체를 invalidate한다. 앱이 꺼지기 전의 낙관적 반영이 서버 값처럼 남지 않게 하기 위해서다.
 - 로그인한 사용자 키에만 쓰고(`useClaimDeviceDataForUser`가 주인 지정), 미인증 전환 때 `SessionCleanupService`가 `queryClient.clear()`와 함께 지운다. 앱 버전·OTA가 바뀌면 버린다(`query-cache-persistence.ts`).
+- 비우기·주인 바꾸기는 조회 캐시 전용 인스턴스를 통째로 비운다(`clearAll` + `trim`). 키 하나만 지우면 이전 주인의 값이 파일에 남는다. 초안 인스턴스도 로그아웃 때 같은 방식으로 비운다.
+- 주인은 이 마운트 뒤에 서버에서 받은 내 정보로만 정한다. 복원한 내 정보는 지난 실행의 다른 계정일 수 있어 그 값으로 다른 계정의 초안·녹음을 지우지 않는다.
+- 저장소를 열지 못한 실행에서 세션이 끝나면 디스크의 값을 지울 수 없다. 기본 MMKV에 정리 표시(`aido_session_pending-storage-cleanup_v1`, 로그아웃은 조회 캐시+초안, 만료는 조회 캐시)를 남기고, 다음에 저장소를 열 때 복원 전에 그 인스턴스를 지운 뒤 표시를 지운다(`composition-root`). 같은 실행 안에서 앞으로 올 때 다시 열지는 않는다. 포트가 바뀌면 Provider 트리를 다시 그려 보던 화면을 잃기 때문이다.
 
 ## 저장소 에러: KeychainLockedError
 

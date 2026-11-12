@@ -8,8 +8,16 @@ import { createPendingRedemption } from '@src/features/social/invite/__tests__/i
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { toInstant } from '@src/shared/date/instant';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
-import { createLoggerStub, createMemorySyncStorage, createTestDi } from '@src/testing/core';
+import {
+  createLoggerStub,
+  createMemorySyncStorage,
+  createTestDi,
+  createTestPorts,
+} from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
+
+import { pendingStorageCleanupStoredValue } from '../schemas/pending-storage-cleanup-storage.schema';
+import { createAppContainer } from './create-app-container';
 
 const DISMISSED_AT = toInstant('2026-11-09T01:02:03.000Z');
 
@@ -34,6 +42,39 @@ function readPrompts(storage: SyncStorage, userId: string) {
 
 describe('createAppContainer', () => {
   describe('sessionCleanupService', () => {
+    it.each([
+      ['로그아웃', 'afterSignedOut', { queryCache: true, drafts: true }],
+      ['세션 만료', 'afterSessionExpired', { queryCache: true, drafts: false }],
+      ['미인증 부팅', 'afterSessionEnded', { queryCache: true, drafts: false }],
+    ] as const)(
+      '암호화 저장소를 열지 못한 실행의 %s는 디스크 정리를 다음에 열 때로 표시한다',
+      (_reason, step, expected) => {
+        // Given
+        const syncStorage = createMemorySyncStorage();
+        const { sessionCleanupService } = createAppContainer(
+          createTestPorts({ syncStorage, queryCacheStorage: null }),
+        );
+
+        // When
+        sessionCleanupService[step]();
+
+        // Then
+        expect(readStoredValue(syncStorage, pendingStorageCleanupStoredValue)).toEqual(expected);
+      },
+    );
+
+    it('암호화 저장소를 연 실행의 로그아웃은 바로 지워 정리 표시를 남기지 않는다', () => {
+      // Given
+      const syncStorage = createMemorySyncStorage();
+      const { sessionCleanupService } = createTestDi({ syncStorage });
+
+      // When
+      sessionCleanupService.afterSignedOut();
+
+      // Then
+      expect(readStoredValue(syncStorage, pendingStorageCleanupStoredValue)).toBeNull();
+    });
+
     it('로그아웃하면 이어서 열 초대와 기기 시간대를 지워 다음 계정이 앞사람의 초대를 받지 않는다', () => {
       // Given
       const syncStorage = createMemorySyncStorage();
