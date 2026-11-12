@@ -3,7 +3,7 @@ import { SocialLoginButtons } from '@src/features/identity/auth/components/socia
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTranslation } from '@src/shared/i18n';
+import { Trans, useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Avatar,
@@ -46,27 +46,30 @@ export default function LoginScreen() {
 
         {/* 소셜 가입은 약관 화면 없이 이어져 버튼 아래에서 동의 내용을 먼저 보여 준다 */}
         <Text size="e1" shade={6} align="center">
-          {t('login.legal.before')}
-          <Text
-            size="e1"
-            shade={7}
-            underline
-            accessibilityRole="link"
-            onPress={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
-          >
-            {t('login.legal.terms')}
-          </Text>
-          {t('login.legal.between')}
-          <Text
-            size="e1"
-            shade={7}
-            underline
-            accessibilityRole="link"
-            onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
-          >
-            {t('login.legal.privacy')}
-          </Text>
-          {t('login.legal.after')}
+          <Trans
+            t={t}
+            i18nKey="login.legal"
+            components={{
+              terms: (
+                <Text
+                  size="e1"
+                  shade={7}
+                  underline
+                  accessibilityRole="link"
+                  onPress={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
+                />
+              ),
+              privacy: (
+                <Text
+                  size="e1"
+                  shade={7}
+                  underline
+                  accessibilityRole="link"
+                  onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
+                />
+              ),
+            }}
+          />
         </Text>
 
         <Spacing size={24} />

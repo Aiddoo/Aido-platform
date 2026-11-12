@@ -1,6 +1,6 @@
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
-import { useTranslation } from '@src/shared/i18n';
+import { Trans, useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { H2, Text, VStack } from '@src/shared/ui';
 
@@ -55,25 +55,28 @@ Paywall.Terms = function Terms() {
 
   return (
     <Text size="e2" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
-      {t('paywall.termsPrefix')}
-      <Text
-        size="e2"
-        shade={5}
-        underline
-        onPress={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
-      >
-        {t('paywall.termsLink')}
-      </Text>
-      {t('paywall.termsAnd')}
-      <Text
-        size="e2"
-        shade={5}
-        underline
-        onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
-      >
-        {t('paywall.privacyLink')}
-      </Text>
-      {t('paywall.termsSuffix')}
+      <Trans
+        t={t}
+        i18nKey="paywall.terms"
+        components={{
+          terms: (
+            <Text
+              size="e2"
+              shade={5}
+              underline
+              onPress={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
+            />
+          ),
+          privacy: (
+            <Text
+              size="e2"
+              shade={5}
+              underline
+              onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
+            />
+          ),
+        }}
+      />
     </Text>
   );
 };

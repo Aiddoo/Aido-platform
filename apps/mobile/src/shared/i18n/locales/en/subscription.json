@@ -93,11 +93,7 @@
       "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App\u00a0Store subscription settings.",
       "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google\u00a0Play subscription settings."
     },
-    "termsPrefix": "By purchasing, you agree to the ",
-    "termsLink": "Terms\u00a0of\u00a0Service",
-    "termsAnd": " and ",
-    "privacyLink": "Privacy\u00a0Policy",
-    "termsSuffix": ".",
+    "terms": "By purchasing, you agree to the <terms>Terms\u00a0of\u00a0Service</terms> and <privacy>Privacy\u00a0Policy</privacy>.",
     "amountDueToday": "Due today",
     "benefitChip": "Benefit {{index}}",
     "benefitQuota": "Free {{free}} → Premium {{premium}}",

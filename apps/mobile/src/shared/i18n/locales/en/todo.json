@@ -182,9 +182,7 @@
   },
   "nudge": {
     "limitSpentTitle": "You've used up today's nudges",
-    "promptPrefix": "Send a friend a",
-    "promptHighlight": "nudge",
-    "promptSuffix": "to cheer them on?",
+    "prompt": "Send a friend a <highlight>nudge</highlight> to cheer them on?",
     "hintPrefix": "To share a little support, tap",
     "hintSuffix": "and cheer them on",
     "remaining_one": "{{count}} nudge left today",

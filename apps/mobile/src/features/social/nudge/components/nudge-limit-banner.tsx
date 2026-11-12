@@ -3,7 +3,7 @@ import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { useTranslation } from '@src/shared/i18n';
+import { Trans, useTranslation } from '@src/shared/i18n';
 import {
   HStack,
   PawIcon,
@@ -33,13 +33,11 @@ export function NudgeLimitBanner() {
   const refill = formatRefillSentence(entitlements, 'NUDGE');
 
   const defaultTitle = (
-    <>
-      {t('nudge.promptPrefix')}{' '}
-      <Text size="b3" weight="bold" className="text-main">
-        {t('nudge.promptHighlight')}
-      </Text>{' '}
-      {t('nudge.promptSuffix')}
-    </>
+    <Trans
+      t={t}
+      i18nKey="nudge.prompt"
+      components={{ highlight: <Text size="b3" weight="bold" className="text-main" /> }}
+    />
   );
 
   const hint = {
