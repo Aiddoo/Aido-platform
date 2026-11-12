@@ -1,20 +1,23 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatHHmmTime } from '@src/shared/date/format/date-format';
-import { getDateWithTime } from '@src/shared/date/native-date';
-import { toHHmm } from '@src/shared/date/zoned';
+import {
+  isValidHHmm,
+  type TimeOfDay,
+  timeOfDayToHHmm,
+  toTimeOfDay,
+} from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { getTimePickerLocale } from '@src/shared/i18n/app-locales';
-import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
   HStack,
   ListRow,
+  openAndroidTimePicker,
   SheetHeaderLayout,
   Spacing,
   Text,
   TextSkeleton,
+  TimeSpinner,
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -33,8 +36,6 @@ interface TodoTimeValue {
 }
 
 interface TodoTimePickerProps {
-  /** 시간 선택 휠이 기준으로 삼는 할 일 날짜 */
-  date: Date;
   value: TodoTimeValue;
   onChange: (value: TodoTimeValue) => void;
   onCancel: () => void;
@@ -43,7 +44,6 @@ interface TodoTimePickerProps {
 }
 
 export function TodoTimePicker({
-  date,
   value,
   onChange,
   onCancel,
@@ -53,13 +53,22 @@ export function TodoTimePicker({
   const { t } = useTranslation('todo');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
-  const { resolvedLanguage } = useLanguage();
   const [localIsAllDay, setLocalIsAllDay] = useState(isAllDay);
   const [localTime, setLocalTime] = useState<string>(scheduledTime ?? DEFAULT_TODO_TIME);
-  const [isAndroidPickerOpen, setIsAndroidPickerOpen] = useState(false);
+  const spinnerTime = toSpinnerTime(localTime);
 
   const handleConfirm = () => {
     onChange({ scheduledTime: localIsAllDay ? null : localTime, isAllDay: localIsAllDay });
+  };
+
+  const handleAndroidTimePress = async () => {
+    const picked = await openAndroidTimePicker({
+      value: spinnerTime,
+      timeFormat: preference.timeFormat,
+    });
+    if (picked != null) {
+      setLocalTime(timeOfDayToHHmm(picked));
+    }
   };
 
   return (
@@ -111,29 +120,14 @@ export function TodoTimePicker({
                 </Text>
               ))
               .otherwise(() => (
-                <>
-                  <PressableFeedback
-                    onPress={() => setIsAndroidPickerOpen(true)}
-                    className="h-[34px] justify-center"
-                  >
-                    <Text size="b1" tone="brand" weight="medium">
-                      {formatHHmmTime(localTime, preference.timeFormat, dateFormatContext)}
-                    </Text>
-                  </PressableFeedback>
-                  {isAndroidPickerOpen && (
-                    <DateTimePicker
-                      value={getDateWithTime(date, localTime, DEFAULT_TODO_TIME)}
-                      mode="time"
-                      display="spinner"
-                      is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
-                      onValueChange={(_event, pickedTime) => {
-                        setIsAndroidPickerOpen(false);
-                        setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
-                      }}
-                      onDismiss={() => setIsAndroidPickerOpen(false)}
-                    />
-                  )}
-                </>
+                <PressableFeedback
+                  onPress={handleAndroidTimePress}
+                  className="h-[34px] justify-center"
+                >
+                  <Text size="b1" tone="brand" weight="medium">
+                    {formatHHmmTime(localTime, preference.timeFormat, dateFormatContext)}
+                  </Text>
+                </PressableFeedback>
               ))}
             horizontalPadding="medium"
             verticalPadding="medium"
@@ -141,15 +135,10 @@ export function TodoTimePicker({
           />
           {!localIsAllDay && IS_IOS && (
             <Box className="items-center">
-              <DateTimePicker
-                value={getDateWithTime(date, localTime, DEFAULT_TODO_TIME)}
-                mode="time"
-                display="spinner"
-                locale={getTimePickerLocale(resolvedLanguage, preference.timeFormat)}
-                onValueChange={(_event, pickedTime) => {
-                  setLocalTime(toHHmm(pickedTime, dateFormatContext.timeZone));
-                }}
-                style={{ height: 216 }}
+              <TimeSpinner
+                value={spinnerTime}
+                onChange={(picked) => setLocalTime(timeOfDayToHHmm(picked))}
+                timeFormat={preference.timeFormat}
               />
             </Box>
           )}
@@ -187,3 +176,8 @@ TodoTimePicker.Loading = function Loading() {
     </SheetHeaderLayout>
   );
 };
+
+/** 저장된 시각이 형식에 맞지 않으면 기본 시각에서 휠을 연다 */
+function toSpinnerTime(time: string): TimeOfDay {
+  return toTimeOfDay(isValidHHmm(time) ? time : DEFAULT_TODO_TIME);
+}

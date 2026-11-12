@@ -191,6 +191,7 @@ export {
 } from './text';
 export { BottomSheetTextArea, TextArea } from './text-area';
 export { TextButton } from './text-button';
+export { openAndroidTimePicker, TimeSpinner } from './time-picker';
 export { VStack } from './v-stack';
 
 export { splitWords, WordWrapText } from './word-wrap-text';

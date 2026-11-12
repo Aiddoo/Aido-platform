@@ -1,101 +1,21 @@
-import DateTimePicker, {
-  type AndroidNativeProps,
-  type IOSNativeProps,
-} from '@react-native-community/datetimepicker';
 import { PickerHeader } from '@src/features/planning/todo/components/picker-header';
 import { formatTimeOfDay, type TimeFormat } from '@src/shared/date/format/date-format';
-import { toPickerDate, getPickerTimeOfDay } from '@src/shared/date/native-date';
 import { isTimeOfDayInRange, type TimeOfDay } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { getTimePickerLocale } from '@src/shared/i18n/app-locales';
 import {
-  BottomSheet,
   Box,
   HStack,
+  openAndroidTimePicker,
   SettingsListGroup,
   Text,
-  useOverlay,
+  TimeSpinner,
+  useOpenSheet,
   VStack,
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { type ComponentProps, type ReactNode, useState } from 'react';
-
-const TIME_PICKER_HEIGHT = 216;
-
-type TimePickerProps = Omit<IOSNativeProps, 'mode' | 'display' | 'minuteInterval'>;
-
-function TimePicker({ style, ...props }: TimePickerProps) {
-  return (
-    <DateTimePicker
-      {...props}
-      mode="time"
-      display="spinner"
-      minuteInterval={1}
-      style={[{ height: TIME_PICKER_HEIGHT }, style]}
-    />
-  );
-}
-
-interface ConfirmableTimePickerProps extends Omit<
-  TimePickerProps,
-  'value' | 'onChange' | 'onValueChange'
-> {
-  title: string;
-  initialValue: Date;
-  onCancel: () => void;
-  onConfirm: (date: Date) => void;
-}
-
-/** 시트 안 iOS 피커. 돌리는 값은 초안이고 확인을 눌러야 바뀐다 */
-function ConfirmableTimePicker({
-  title,
-  initialValue,
-  onCancel,
-  onConfirm,
-  ...pickerProps
-}: ConfirmableTimePickerProps) {
-  const [draft, setDraft] = useState(initialValue);
-
-  return (
-    <VStack gap={24}>
-      <PickerHeader title={title} onCancel={onCancel} onConfirm={() => onConfirm(draft)} />
-      <Box style={{ height: TIME_PICKER_HEIGHT, alignItems: 'center' }}>
-        <TimePicker
-          {...pickerProps}
-          value={draft}
-          onValueChange={(_event, date) => setDraft(date)}
-        />
-      </Box>
-    </VStack>
-  );
-}
-
-interface AndroidTimePickerProps extends Omit<
-  AndroidNativeProps,
-  'mode' | 'display' | 'minuteInterval' | 'onChange' | 'onValueChange'
-> {
-  onConfirm: (date: Date) => void;
-  onDismiss: () => void;
-}
-
-function AndroidTimePicker({ onConfirm, onDismiss, ...props }: AndroidTimePickerProps) {
-  return (
-    <DateTimePicker
-      {...props}
-      mode="time"
-      display="spinner"
-      minuteInterval={1}
-      onValueChange={(_event, date) => {
-        onDismiss();
-        onConfirm(date);
-      }}
-      onDismiss={onDismiss}
-    />
-  );
-}
 
 interface SettingsTimeInputProps extends Omit<
   ComponentProps<typeof SettingsListGroup.Item>,
@@ -123,18 +43,13 @@ export function SettingsTimeInput({
   ...itemProps
 }: SettingsTimeInputProps) {
   const { t } = useTranslation('notification');
-  const { language } = useLocaleContext();
   const dateFormatContext = useDateFormatContext();
   const toast = useAppToast();
-  const overlay = useOverlay();
-  const [isAndroidPickerOpen, setIsAndroidPickerOpen] = useState(false);
-  const minimumDate = toPickerDate(minimumTime);
-  const maximumDate = toPickerDate(maximumTime);
-  const commit = (date: Date) => onChange(getPickerTimeOfDay(date));
+  const openSheet = useOpenSheet();
 
   // Android 시각 선택기는 최소·최대 시각을 지원하지 않아 확인할 때 범위를 본다
-  const commitInRange = (date: Date) => {
-    if (!isTimeOfDayInRange(getPickerTimeOfDay(date), { minimumTime, maximumTime })) {
+  const commitInRange = (time: TimeOfDay) => {
+    if (!isTimeOfDayInRange(time, { minimumTime, maximumTime })) {
       toast.warning(
         t('settings.timeOutOfRange', {
           start: formatTimeOfDay(minimumTime, timeFormat, dateFormatContext),
@@ -143,75 +58,80 @@ export function SettingsTimeInput({
       );
       return;
     }
-    commit(date);
+    onChange(time);
   };
 
-  const handlePress = useSingleTap(() => {
+  const handlePress = useSingleTap(async () => {
     if (onBeforeOpen != null && !onBeforeOpen()) {
       return;
     }
 
     if (process.env.EXPO_OS === 'android') {
-      setIsAndroidPickerOpen(true);
+      const picked = await openAndroidTimePicker({ value, timeFormat });
+      if (picked != null) {
+        commitInRange(picked);
+      }
       return;
     }
 
-    overlay.open(({ isOpen, close, unmount }) => {
-      const dismiss = () => {
-        close();
-        unmount();
-      };
-
-      return (
-        <BottomSheet
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              dismiss();
-            }
-          }}
-        >
-          <ConfirmableTimePicker
-            title={itemProps.label}
-            initialValue={toPickerDate(value)}
-            minimumDate={minimumDate}
-            maximumDate={maximumDate}
-            locale={getTimePickerLocale(language, timeFormat)}
-            onCancel={dismiss}
-            onConfirm={(date) => {
-              commit(date);
-              dismiss();
-            }}
-          />
-        </BottomSheet>
-      );
-    });
+    const picked = await openSheet<TimeOfDay>((close) => (
+      <ConfirmableTimeSpinner
+        title={itemProps.label}
+        initialValue={value}
+        timeFormat={timeFormat}
+        minimum={minimumTime}
+        maximum={maximumTime}
+        onCancel={() => close()}
+        onConfirm={close}
+      />
+    ));
+    if (picked != null) {
+      onChange(picked);
+    }
   });
 
   return (
-    <>
-      <SettingsListGroup.Item
-        {...itemProps}
-        value={
-          <HStack align="center" gap={4}>
-            {accessory}
-            <Text size="b3" shade={7}>
-              {formatTimeOfDay(value, timeFormat, dateFormatContext)}
-            </Text>
-          </HStack>
-        }
-        onPress={handlePress}
-      />
-      {isAndroidPickerOpen && (
-        <AndroidTimePicker
-          value={toPickerDate(value)}
-          minimumDate={minimumDate}
-          maximumDate={maximumDate}
-          is24Hour={timeFormat === 'TWENTY_FOUR_HOUR'}
-          onConfirm={commitInRange}
-          onDismiss={() => setIsAndroidPickerOpen(false)}
-        />
-      )}
-    </>
+    <SettingsListGroup.Item
+      {...itemProps}
+      value={
+        <HStack align="center" gap={4}>
+          {accessory}
+          <Text size="b3" shade={7}>
+            {formatTimeOfDay(value, timeFormat, dateFormatContext)}
+          </Text>
+        </HStack>
+      }
+      onPress={handlePress}
+    />
+  );
+}
+
+interface ConfirmableTimeSpinnerProps extends Pick<
+  ComponentProps<typeof TimeSpinner>,
+  'timeFormat' | 'minimum' | 'maximum'
+> {
+  title: string;
+  initialValue: TimeOfDay;
+  onCancel: () => void;
+  onConfirm: (time: TimeOfDay) => void;
+}
+
+/** 시트 안 iOS 휠. 돌리는 값은 초안이고 확인을 눌러야 바뀐다 */
+function ConfirmableTimeSpinner({
+  title,
+  initialValue,
+  onCancel,
+  onConfirm,
+  ...spinnerProps
+}: ConfirmableTimeSpinnerProps) {
+  const [draft, setDraft] = useState(initialValue);
+
+  return (
+    <VStack gap={24}>
+      <PickerHeader title={title} onCancel={onCancel} onConfirm={() => onConfirm(draft)} />
+      <Box className="items-center">
+        <TimeSpinner {...spinnerProps} value={draft} onChange={setDraft} />
+      </Box>
+    </VStack>
   );
 }

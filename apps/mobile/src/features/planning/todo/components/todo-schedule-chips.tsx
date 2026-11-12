@@ -5,7 +5,6 @@ import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatHHmmTime } from '@src/shared/date/format/date-format';
-import { toLocalDay } from '@src/shared/date/native-date';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -157,7 +156,6 @@ function TimeChip({
         <QueryErrorBoundary>
           <Suspense fallback={<TodoTimePicker.Loading />}>
             <TodoTimePicker
-              date={toLocalDay(value.startDate)}
               value={{ scheduledTime: value.scheduledTime, isAllDay: value.isAllDay }}
               onChange={close}
               onCancel={() => close()}

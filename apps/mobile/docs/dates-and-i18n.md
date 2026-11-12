@@ -77,7 +77,7 @@ shared/date/
 
 ### 시간 피커
 
-시간 입력은 `shared/ui/time-picker`의 `<TimeSpinner value onChange timeFormat minimum maximum />` 하나다. Android 시스템 시계는 `openAndroidTimePicker()`(`DateTimePickerAndroid.open`)를 쓴다. 설정(알림 시각)과 할 일 시간이 같은 부품을 쓴다. 날씨 시간 범위는 `@aido/api/vocabulary`의 `WEATHER_HOUR_RANGE`를 쓴다(알림 시간 범위와 다르다).
+시간 입력은 `shared/ui/time-picker`의 `<TimeSpinner value onChange timeFormat minimum maximum />` 하나다. Android 시스템 시계는 `openAndroidTimePicker()`(`DateTimePickerAndroid.open`)를 쓴다. 설정(알림 시각)과 할 일 시간이 같은 부품을 쓴다. 피커와는 시와 분(`TimeOfDay`)만 주고받고 할 일 날짜나 앱 시간대를 넘기지 않는다. 피커 날짜는 서머타임 전환이 없는 고정 날짜(`toPickerDate`)라 전환일에도 02:30이 03:30으로 밀리지 않는다. 날씨 시간 범위는 `@aido/api/vocabulary`의 `WEATHER_HOUR_RANGE`를 쓴다(알림 시간 범위와 다르다).
 
 ### 숫자
 

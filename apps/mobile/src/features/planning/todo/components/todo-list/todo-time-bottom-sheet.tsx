@@ -1,4 +1,3 @@
-import { toLocalDay } from '@src/shared/date/native-date';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
@@ -56,7 +55,6 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
   return (
     <TodoScopeStep step={scopeSelector}>
       <TodoTimePicker
-        date={toLocalDay(todo.startDate)}
         value={{ scheduledTime: localTime, isAllDay: todo.isAllDay }}
         onCancel={onClose}
         isConfirmDisabled={updateSchedule.isPending}
