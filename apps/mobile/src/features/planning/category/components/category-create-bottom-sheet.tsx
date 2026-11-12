@@ -5,7 +5,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Button, KeyboardBottomSheet, useSheetRoute } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import type { ComponentProps } from 'react';
+import { type ComponentProps, useEffect, useEffectEvent, useState } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
 import { useCreateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
@@ -25,6 +25,8 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
   const { t } = useTranslation(['todo', 'common']);
   const createCategory = useMutation(useCreateTodoCategoryMutationOptions());
   const gate = useEntitlementGate('TODO_CATEGORY', { surface: 'category_create' });
+  // 링크로 바로 열어도 설정의 추가 버튼처럼 이름을 쓰기 전에 막는다. 진입 때 한 번 정해 쓰는 동안 바뀐 한도로 시트를 거두지 않는다
+  const [isBlockedOnEntry] = useState(() => gate.isBlocked());
 
   const form = useForm({
     resolver: zodResolver(todoCategoryFormSchema),
@@ -32,6 +34,19 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
     mode: 'onChange',
   });
   const { isSubmitting } = useFormState({ control: form.control });
+
+  // 이름 시트 없이 안내만 띄우고 안내가 끝나면 떠난다. 그사이 한도가 풀렸어도 빈 route가 화면을 막지 않게 떠난다
+  const promptLimitOnEntry = useEffectEvent(() => {
+    if (!gate.promptIfBlocked({ onFinish: sheet.exit })) {
+      sheet.exit();
+    }
+  });
+
+  useEffect(() => {
+    if (isBlockedOnEntry) {
+      promptLimitOnEntry();
+    }
+  }, [isBlockedOnEntry]);
 
   const submitCategory = form.handleSubmit(async (values) => {
     await createCategory
@@ -43,6 +58,10 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
       .catch(noop);
   });
   const handleSubmit = useSingleTap(() => submitCategory());
+
+  if (isBlockedOnEntry) {
+    return null;
+  }
 
   return (
     <KeyboardBottomSheet
