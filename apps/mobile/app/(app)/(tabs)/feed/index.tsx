@@ -44,7 +44,7 @@ import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-i
 import { FriendRemindNudgeAction } from '@src/features/social/nudge/components/friend-remind-nudge-action';
 import { FriendTodoNudgeAction } from '@src/features/social/nudge/components/friend-todo-nudge-action';
 import { NudgeLimitBanner } from '@src/features/social/nudge/components/nudge-limit-banner';
-import { invalidateNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
+import { refreshNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
 import { refetchWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
@@ -269,7 +269,7 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
   const queryClient = useQueryClient();
 
   const [isRefreshing, handleRefresh] = useRefresh(() =>
-    Promise.all([invalidateFriendTodos(queryClient), invalidateNudges(queryClient)]),
+    Promise.all([invalidateFriendTodos(queryClient), refreshNudges(queryClient)]),
   );
 
   return (
