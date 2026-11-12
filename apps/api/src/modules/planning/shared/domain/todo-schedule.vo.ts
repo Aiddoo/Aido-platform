@@ -60,7 +60,7 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
       throw new DomainException(
         ErrorCode.SYS_0002,
         { startDate: startDate.toString(), endDate: endDate.toString() },
-        "종료 날짜는 시작 날짜보다 빠를 수 없습니다.",
+        { message: "종료 날짜는 시작 날짜보다 빠를 수 없습니다." },
       );
     }
   }

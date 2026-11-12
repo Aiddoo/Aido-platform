@@ -342,14 +342,14 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
       throw new DomainException(
         ErrorCode.SYS_0002,
         { received: itemIds.length, unique: uniqueItemIds.size },
-        "중복된 하위 항목 ID가 있습니다",
+        { message: "중복된 하위 항목 ID가 있습니다" },
       );
     }
     if (itemIds.length !== currentIds.size) {
       throw new DomainException(
         ErrorCode.SYS_0002,
         { expected: currentIds.size, received: itemIds.length },
-        "모든 하위 항목 ID를 전달해야 합니다",
+        { message: "모든 하위 항목 ID를 전달해야 합니다" },
       );
     }
     for (const id of itemIds) {

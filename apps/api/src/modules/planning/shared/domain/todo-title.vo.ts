@@ -13,7 +13,7 @@ export class TodoTitle extends ValueObject<string> {
       throw new DomainException(
         ErrorCode.SYS_0002,
         { titleLength: title.length, max: TODO_LIMITS.TITLE_MAX_LENGTH },
-        `제목은 ${TITLE_MIN_LENGTH}~${TODO_LIMITS.TITLE_MAX_LENGTH}자여야 합니다.`,
+        { message: `제목은 ${TITLE_MIN_LENGTH}~${TODO_LIMITS.TITLE_MAX_LENGTH}자여야 합니다.` },
       );
     }
     return new TodoTitle(title);

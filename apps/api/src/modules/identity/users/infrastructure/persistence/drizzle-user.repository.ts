@@ -127,7 +127,11 @@ export class DrizzleUserRepository
       }
       // 확인 뒤 다른 가입이 같은 태그를 먼저 넣었다. 1.15.0 필터가 이 제약에 주던 500 응답을 유지한다
       if (targets?.includes("userTag")) {
-        throw new ApplicationException(ErrorCode.SYS_0001, { detail: "userTag collision" });
+        throw new ApplicationException(
+          ErrorCode.SYS_0001,
+          { detail: "userTag collision" },
+          { cause: error },
+        );
       }
       throw error;
     }

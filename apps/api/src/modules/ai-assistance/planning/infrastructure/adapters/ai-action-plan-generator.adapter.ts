@@ -159,7 +159,7 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
         }),
       );
       // 호출부가 예약을 환불하므로 차감 없음을 담는다. 환불에 실패하면 호출부가 뗀다.
-      throw new ApplicationException(failure.errorCode, { charged: false });
+      throw new ApplicationException(failure.errorCode, { charged: false }, { cause: error });
     }
   }
 }

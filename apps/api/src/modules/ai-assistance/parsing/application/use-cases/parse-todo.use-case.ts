@@ -202,7 +202,7 @@ export class ParseTodoUseCase {
         }),
       );
       // 호출부가 예약을 환불하므로 앱이 "횟수는 차감되지 않았어요"를 보여 줄 수 있다. 환불에 실패하면 호출부가 뗀다.
-      throw new ApplicationException(failure.errorCode, { charged: false });
+      throw new ApplicationException(failure.errorCode, { charged: false }, { cause: error });
     }
   }
 }

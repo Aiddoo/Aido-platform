@@ -38,7 +38,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 ## 오류와 식별자
 
-- 불변식 위반은 `DomainException(ErrorCode, details)`(`shared/domain/exceptions`), UseCase 거부는 `ApplicationException`(`shared/application`)이다. HTTP 변환은 [오류 규칙](../../../docs/conventions/errors.md)대로 `GlobalExceptionFilter`가 한다.
+- 불변식 위반은 `DomainException(ErrorCode, details)`(`shared/domain/exceptions`), UseCase 거부는 `ApplicationException`(`shared/application`)이다. 세 번째 인자 `{ message?, cause? }`로 응답 문구를 정하거나 감싼 원본 오류를 남긴다. HTTP 변환은 [오류 규칙](../../../docs/conventions/errors.md)대로 `GlobalExceptionFilter`가 한다.
 - 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수(`memoNotFound(memoId)`)로 만든다. 같은 코드·details 모양이 한 곳에서 나온다. port·use-case 파일 안에 오류 클래스를 선언하지 않는다.
 - 여러 Context가 쓰는 `UserId`는 `shared/domain/identifiers/user-id.vo.ts`, Context 고유 id(`TodoId`)는 그 Context의 `shared/domain`에 둔다.
 - 포트 시그니처의 식별자는 원시값(`number`·`string`)이 아니라 id VO다([MemoRepositoryPort](../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation 경계에서 VO로 바꾼다.
