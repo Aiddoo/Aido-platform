@@ -51,6 +51,12 @@ async function setup({ status }: { status: AuthStatus }) {
     logger,
     store: di.pushNotificationEntryStore,
     changeStatus: (next: AuthStatus) => act(async () => authSessionStore.setStatus(next)),
+    // 로그아웃은 토큰을 지워 세션 세대를 올리고 상태를 바꾼다
+    signOut: () =>
+      act(async () => {
+        await di.tokenStore.clear();
+        authSessionStore.setStatus('unauthenticated');
+      }),
   };
 }
 
@@ -167,7 +173,7 @@ describe('usePushNotificationResponse', () => {
 
   it('수신 거부를 보내는 사이 로그아웃하면 끝난 결과를 기록하거나 응답을 다시 지우지 않는다', async () => {
     // Given
-    const { gateway, httpClient, analytics, changeStatus } = await setup({
+    const { gateway, httpClient, analytics, signOut } = await setup({
       status: 'authenticated',
     });
     const optOut = createPendingResponse(
@@ -182,7 +188,7 @@ describe('usePushNotificationResponse', () => {
         data: { ...RESPONSE.data, marketingOptOutToken: 'token-1' },
       }),
     );
-    await changeStatus('unauthenticated');
+    await signOut();
     gateway.clearLastResponse.mockClear();
 
     // When

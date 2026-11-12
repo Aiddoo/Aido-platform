@@ -62,6 +62,7 @@ shared/date/
 
 - 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
 - 지금 시각은 둘이다. 분 단위로 여러 화면이 함께 보는 지금(상대 시간 "5분 전", 날짜·마감 판단)은 `useMinuteNow()`로 앱 하나의 분 시계(`minute-clock-store`, 분 경계와 앱 복귀에 갱신)를 구독한다. 화면마다 다른 간격이나 마감까지 다시 읽는 지금(쿨다운 초, 녹음 경과, 갱신 시각)은 `useNow({ tickMs?, until? })`다. 새 지금 시계 훅을 만들지 않는다.
+- 한 실행 안에서 길이만 재는 값(녹음·인식 세션 경과, 프레임·대기 시간)은 `Date.now()` ms를 그대로 쓴다. 저장하거나 모델이 비교하는 시각(푸시 응답을 받은 때, 앱이 앞에 온 때)은 `getNowInstant()`의 `Instant`이고 차이는 `diffMs`다.
 - 앱 달력·위젯의 주는 `getCalendarWeek`(일요일 시작), 주간 성취·리포트는 서버와 같은 ISO 주(`getIsoWeekOfMonth`)다. 한 화면에서 두 주 규칙을 섞지 않는다. 주차는 두 체계 모두 주의 가운데 날(수·목요일)이 속한 달의 몇째 주이고 라벨은 체계마다 하나(`formatCalendarWeekLabel`·`formatIsoWeekLabel`, 위젯 제목은 같은 `formatWeekHeaderLabel`)이고 둘 다 오늘 key를 받아 다른 해의 주에 연도를 붙인다([주차 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)). 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.
 - 지난 기록·결제일처럼 다른 해일 수 있는 날짜는 year-aware helper에 오늘 key를 넘겨 올해면 월·일(ko "11월 12일", en "Nov 12"), 아니면 연도까지(`monthDayYear`, ko "2025년 11월 12일", en "Nov 12, 2025") 보인다. 7일이 지난 상대 시간과 동의일도 같은 형식이다.
 - 언어는 글자만 바꾼다. 오늘·시간대·주 시작·날짜 key에 영향을 주지 않는다.
