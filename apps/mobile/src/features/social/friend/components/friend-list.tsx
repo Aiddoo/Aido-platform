@@ -35,9 +35,9 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { Menu, Popover, PressableFeedback, Skeleton } from 'heroui-native';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import Animated, {
   FadeInLeft,
   FadeInRight,
@@ -163,7 +163,7 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
     }
   };
 
-  return (
+  const row = (
     <PressableFeedback
       onLongPress={isEditing ? drag : undefined}
       isDisabled={isActive}
@@ -224,6 +224,81 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
         </Animated.View>
       </HStack>
     </PressableFeedback>
+  );
+
+  // 편집 중에는 길게 눌러 끌어 순서를 바꾸므로 Link·메뉴를 붙이지 않는다
+  if (isEditing) {
+    return row;
+  }
+
+  return (
+    <FriendList.Link friendId={friend.id} displayName={displayName}>
+      {row}
+    </FriendList.Link>
+  );
+};
+
+interface FriendListLinkProps {
+  friendId: string;
+  displayName: string;
+  children: ReactNode;
+}
+
+/**
+ * 누르면 그 친구의 피드로 간다. 피드는 다른 탭이라 미리보기는 붙이지 않고(state-and-routing Link 규칙)
+ * 길게 누르면 메뉴만 연다(iOS). 다른 플랫폼은 행의 ⋯ 메뉴가 같은 동작을 맡는다
+ */
+FriendList.Link = function FriendLink({ friendId, displayName, children }: FriendListLinkProps) {
+  const { t } = useTranslation(['friend', 'todo', 'moderation']);
+  // Link가 navigate로 열어 같은 화면은 한 번만 쌓인다. 메뉴도 같은 동사여야 겹쳐 쌓이지 않는다
+  const navigate = useSingleTap(router.navigate);
+  const push = useSingleTap(router.push);
+  const href = { pathname: '/feed', params: { friendId } } as const;
+
+  return (
+    <Link href={href} asChild>
+      <Link.Trigger>{children}</Link.Trigger>
+      <Link.Menu>
+        <Link.MenuAction icon="person.2" onPress={() => navigate(href)}>
+          {t('friend:list.openFeed')}
+        </Link.MenuAction>
+        <Link.MenuAction
+          icon="hand.point.up.left"
+          onPress={() =>
+            push({
+              pathname: '/users/[userId]/nudge',
+              params: { userId: friendId, name: displayName },
+            })
+          }
+        >
+          {t('todo:friendTodo.nudge')}
+        </Link.MenuAction>
+        <Link.MenuAction
+          icon="flag"
+          onPress={() => {
+            const target = createProfileReportTarget({ userId: friendId });
+            push({
+              pathname: '/users/[userId]/report',
+              params: { userId: friendId, name: displayName, targetType: target.targetType },
+            });
+          }}
+        >
+          {t('moderation:menu.report')}
+        </Link.MenuAction>
+        <Link.MenuAction
+          icon="nosign"
+          destructive
+          onPress={() =>
+            push({
+              pathname: '/users/[userId]/block',
+              params: { userId: friendId, name: displayName },
+            })
+          }
+        >
+          {t('moderation:block.action')}
+        </Link.MenuAction>
+      </Link.Menu>
+    </Link>
   );
 };
 

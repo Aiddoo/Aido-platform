@@ -113,7 +113,7 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 상세로 가는 행은 모두 `<Link>` + `Link.Preview` + `Link.Menu`다(할 일, 메모, 친구, 알림, 리포트, 제안). 길게 누르기 동작은 `Link.MenuAction`으로 둔다.
 - Link로 여는 것은 좁은 화면(compact)뿐이다. 넓은 화면의 pane 선택은 기존 `onPress`로 한다.
 - 미리보기는 행과 같은 Stack의 화면만 붙인다. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은 미리보기가 그 navigator에 화면을 미리 넣어 params가 남을 수 있어 탭으로만 연다. 알림함(루트 Stack)은 `/todo/[todoId]`·`/nudges/[nudgeId]`만 미리본다(`findRootStackDetailHref`).
-- 끌기(재정렬) 모드의 행에는 Menu를 붙이지 않는다.
+- 끌기(재정렬) 모드의 행에는 Menu를 붙이지 않는다. 친구 목록은 편집 모드에서 Link를 빼고 끌기만 남기며, 평소에는 친구 피드(다른 탭)로 가는 Link + Menu(피드 보기·콕 찌르기·신고·차단)다.
 - 탭은 행의 `onPress`(`useSingleTap`으로 연타 막기, 읽음·추적)가 열고 Link의 `onPress`는 `event.preventDefault()`다. Link는 미리보기를 눌러 가는 이동만 맡는다(`NotificationListRow.Link`). expo-router 58은 미리보기 탭 콜백을 공개하지 않아 이 길은 행 `onPress`를 거치지 않는다.
 - 그래서 알림 행은 읽은 알림이고 게이트(프리미엄 안내 등)가 없을 때만 Link다. 안 읽은 알림을 미리보기로 열면 읽음이 빠지고, 게이트가 있으면 미리보기로 건너뛴다. 남는 빈틈은 미리보기로 연 읽은 알림의 `notification_center_opened` 추적뿐이다.
 - `Link.Preview`·`Link.Menu`는 iOS에서만 그려진다. 그 밖의 플랫폼과 Link가 아닌 행은 메뉴 동작을 행의 `onLongPress`로 남기고, 스크린리더 동작(`accessibilityActions`)은 플랫폼과 상관없이 둔다.
