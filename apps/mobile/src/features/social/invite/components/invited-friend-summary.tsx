@@ -5,6 +5,8 @@ import {
   FriendIllustration,
   H4,
   HStack,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Result,
   TextButton,
   TextSkeleton,
@@ -14,6 +16,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 
+import { isInviteDisabledError } from '../domains/invite.error';
 import { useGetInvitedFriendSummaryInfiniteQueryOptions } from '../queries/invite.queries';
 import type { InvitedFriendsView } from '../schemas/invite-params.schema';
 import { InvitedFriendRow } from './invited-friend-row';
@@ -71,6 +74,19 @@ InvitedFriendSummary.Loading = function Loading() {
         <InvitedFriendRow.Loading key={index} horizontalPadding="none" />
       ))}
     </VStack>
+  );
+};
+
+/** 초대가 꺼졌으면 쓸 수 없음 안내를, 그 밖의 실패는 이 블록 안에서 다시 시도를 보인다 */
+InvitedFriendSummary.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('invite');
+
+  if (isInviteDisabledError(error)) {
+    return <InvitedFriendSummary.Unavailable />;
+  }
+
+  return (
+    <QueryErrorFallback title={t('friendList.loadFailed')} reset={reset} illustrationSize="block" />
   );
 };
 

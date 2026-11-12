@@ -21,13 +21,16 @@ export default function InvitedFriendsScreen() {
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
       <ReadableContent flex={1}>
-        <QueryErrorBoundary resetKeys={[view]} fallback={InvitedFriendList.Error}>
-          <Box px={16} pt={8} pb={8}>
+        {/* 탭의 수와 목록은 다른 조회라 수를 못 받아도 목록은 그대로 보인다 */}
+        <Box px={16} pt={8} pb={8}>
+          <QueryErrorBoundary fallback={InvitedFriendFilterTabs.Error}>
             <Suspense fallback={<InvitedFriendFilterTabs.Loading />}>
               <InvitedFriendFilterTabs />
             </Suspense>
-          </Box>
+          </QueryErrorBoundary>
+        </Box>
 
+        <QueryErrorBoundary resetKeys={[view]} fallback={InvitedFriendList.Error}>
           <Suspense fallback={<InvitedFriendList.Loading />}>
             {match(view)
               .with('all', () => <InvitedFriendList />)

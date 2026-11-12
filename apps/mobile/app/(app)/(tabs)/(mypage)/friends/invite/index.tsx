@@ -85,7 +85,7 @@ export default function MyInviteScreen() {
                 />
               </VStack>
 
-              {/* 네 블록이 같은 초대 조회를 읽으므로 실패는 한 곳에서 한 번만 알린다. 불러오는 동안은 블록마다 자리를 지킨다 */}
+              {/* 세 블록이 같은 초대 조회를 읽으므로 실패는 한 곳에서 한 번만 알린다. 불러오는 동안은 블록마다 자리를 지킨다 */}
               <QueryErrorBoundary fallback={MyInviteScreen.Error}>
                 <Suspense fallback={<MyInviteCode.Loading />}>
                   <MyInviteCode />
@@ -100,7 +100,10 @@ export default function MyInviteScreen() {
                     <InvitePawPrintBoard />
                   </Suspense>
                 </PawPrintBoardCard>
+              </QueryErrorBoundary>
 
+              {/* 초대한 친구 요약은 다른 조회라 실패해도 위 블록을 지우지 않는다 */}
+              <QueryErrorBoundary fallback={InvitedFriendSummary.Error}>
                 <Suspense fallback={<InvitedFriendSummary.Loading />}>
                   <InvitedFriendSummary />
                 </Suspense>
@@ -148,7 +151,6 @@ MyInviteScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallba
         <PawPrintBoardCard>
           <InvitePawPrintBoard.Unavailable />
         </PawPrintBoardCard>
-        <InvitedFriendSummary.Unavailable />
       </>
     );
   }
