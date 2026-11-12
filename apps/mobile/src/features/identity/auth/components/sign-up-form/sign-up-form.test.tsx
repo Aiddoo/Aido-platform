@@ -3,7 +3,7 @@ import { useStepper } from '@src/shared/hooks/use-stepper';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { BackHandler, Keyboard, Pressable } from 'react-native';
 
-import { createAuthSession } from '../__tests__/auth-session.test-utils';
+import { createAuthSession } from '../../__tests__/auth-session.test-utils';
 import { SignUpForm, type SignUpStepContexts } from './sign-up-form';
 
 function SignUpHarness() {

@@ -14,10 +14,10 @@ import { Controller, type UseFormReturn, useFormState } from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { useFocusOnStepBack } from '../hooks/use-focus-on-step-back';
-import { type SignUpFormValues } from '../schemas/sign-up-form.schema';
-import { RevealedField } from './revealed-field';
-import { SuggestedEmailDomainList } from './suggested-email-domain-list';
+import { useFocusOnStepBack } from '../../hooks/use-focus-on-step-back';
+import { type SignUpFormValues } from '../../schemas/sign-up-form.schema';
+import { RevealedField } from '../revealed-field';
+import { SuggestedEmailDomainList } from '../suggested-email-domain-list';
 
 type UserInfoStep = 'name' | 'email';
 

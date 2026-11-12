@@ -7,9 +7,9 @@ import {
   useRegisterMutationOptions,
   useResendVerificationMutationOptions,
   useVerifyEmailMutationOptions,
-} from '../queries/auth.mutations';
-import { signUpFormSchema, type SignUpFormValues } from '../schemas/sign-up-form.schema';
-import { EmailVerificationCodeStep } from './email-verification-code-step';
+} from '../../queries/auth.mutations';
+import { signUpFormSchema, type SignUpFormValues } from '../../schemas/sign-up-form.schema';
+import { EmailVerificationCodeStep } from '../email-verification-code-step';
 import { SignUpPasswordForm } from './sign-up-password-form';
 import { SignUpUserInfoForm } from './sign-up-user-info-form';
 

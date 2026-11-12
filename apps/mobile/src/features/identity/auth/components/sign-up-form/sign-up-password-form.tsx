@@ -8,12 +8,12 @@ import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { useFocusOnStepBack } from '../hooks/use-focus-on-step-back';
-import { type SignUpFormValues } from '../schemas/sign-up-form.schema';
-import { PasswordInput } from './password-input';
-import { PasswordStrengthIndicator } from './password-strength-indicator';
-import { RevealedField } from './revealed-field';
-import { TermsAgreementBottomSheet } from './terms-agreement-bottom-sheet';
+import { useFocusOnStepBack } from '../../hooks/use-focus-on-step-back';
+import { type SignUpFormValues } from '../../schemas/sign-up-form.schema';
+import { PasswordInput } from '../password-input';
+import { PasswordStrengthIndicator } from '../password-strength-indicator';
+import { RevealedField } from '../revealed-field';
+import { TermsAgreementBottomSheet } from '../terms-agreement-bottom-sheet';
 
 type PasswordStep = 'password' | 'passwordConfirm';
 
