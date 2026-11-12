@@ -4,13 +4,14 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { getCachedMe, updateMeInCache } from '@src/features/identity/user/queries/user-cache';
 import * as themeProvider from '@src/shared/providers/theme-provider';
-import { createHttpClientStub, createTestDi } from '@src/testing/core';
+import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
 import { Dimensions, Linking, Pressable, Text, View } from 'react-native';
 
+import OAuthCallbackScreen from '../../../app/auth/[provider]';
 import RootIndex from '../../../app/index';
 import { AuthGateLayout } from './auth-gate-layout';
 
@@ -57,8 +58,9 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
   mockAuthSessionStore = createAuthSessionStoreStub(initialStatus);
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async () => ok(createCurrentUserDto()));
+  const analytics = createAnalyticsStub();
   const di = createTestDi({
-    ports: { httpClient },
+    ports: { httpClient, analytics },
     seeds: { authSessionStore: mockAuthSessionStore },
   });
 
@@ -67,6 +69,7 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
       _layout: AuthGateLayout,
       index: RootIndex,
       loading: LoadingScreen,
+      'auth/[provider]': OAuthCallbackScreen,
       'invite/index': () => <Text>Invite</Text>,
       '(auth)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
       '(auth)/login': LoginScreen,
@@ -80,7 +83,8 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
     },
     { url: initialUrl, di, withLocalDate: true },
   );
-  return { route, errorReporter: di.errorReporter, queryClient: di.queryClient };
+  const screenViews = () => analytics.trackScreenView.mock.calls.map(([name]) => name);
+  return { route, errorReporter: di.errorReporter, queryClient: di.queryClient, screenViews };
 }
 
 describe('root 인증 route 전환', () => {
@@ -218,6 +222,41 @@ describe('root 인증 route 전환', () => {
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+  });
+
+  describe('화면 조회', () => {
+    it('콜드 스타트는 스플래시 뒤 입구 화면을 세지 않고 첫 화면만 센다', async () => {
+      // Given
+      const { route, screenViews } = await renderAuthRoutes('loading');
+
+      // When
+      await fireEvent.press(screen.getByTestId('boot-authenticated'));
+
+      // Then
+      expect(route.getPathname()).toBe('/feed');
+      expect(screenViews()).toEqual(['/feed']);
+    });
+
+    it('로그인과 로그아웃은 Index를 거쳐도 도착한 화면만 센다', async () => {
+      // Given
+      const { screenViews } = await renderAuthRoutes('unauthenticated');
+
+      // When
+      await fireEvent.press(screen.getByTestId('login'));
+      await fireEvent.press(screen.getByTestId('feed'));
+
+      // Then
+      expect(screenViews()).toEqual(['/login', '/feed', '/login']);
+    });
+
+    it('Android OAuth 콜백 route는 세지 않는다', async () => {
+      // Given·When
+      const { route, screenViews } = await renderAuthRoutes('authenticated', '/auth/google');
+
+      // Then
+      await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+      expect(screenViews()).toEqual(['/feed']);
+    });
   });
 
   describe('루트 레이아웃 다시 그리기', () => {

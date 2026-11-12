@@ -11,6 +11,7 @@ import { useInstallReferrerCapture } from '@src/features/social/invite/hooks/use
 import { useInviteAppEntry } from '@src/features/social/invite/hooks/use-invite-app-entry';
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
 import { useAppTheme } from '@src/shared/providers/theme-provider';
+import type { ScreenName } from '@src/shared/utils/to-screen-name';
 import { useIsRestoring } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { Stack } from 'expo-router';
@@ -19,6 +20,13 @@ import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
 const ROOT_STACK_ANIMATION_DURATION_MS = 250;
+
+/** 첫 화면을 정하는 동안 스플래시 뒤로 지나가는 입구(Index·복원 대기·Android OAuth 콜백). 사용자가 보지 못해 조회로 세지 않는다 */
+const ENTRY_REDIRECT_SCREENS: ReadonlySet<ScreenName> = new Set([
+  '/',
+  '/loading',
+  '/auth/[provider]',
+]);
 
 export function AuthGateLayout() {
   const status = useAuthStatus();
@@ -97,7 +105,7 @@ export function AuthGateLayout() {
  * `setParams`·이동마다 이것만 다시 그려지고 AuthGateLayout·Stack은 그대로다
  */
 function RouteWatchers() {
-  useScreenTracking();
+  useScreenTracking({ untrackedScreens: ENTRY_REDIRECT_SCREENS });
   useWidgetAppEntry();
   useInviteAppEntry();
   useAppEntrySegmentSync();
