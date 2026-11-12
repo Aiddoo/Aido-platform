@@ -78,7 +78,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
       moveTranscriptToTitle();
       session.cancel();
     }
-    await session.begin({ locale, hintWords: getSpeechContext() });
+    await session.begin({ locale, hintWords: getSpeechContext(), recordingDirectory: null });
   };
 
   const restart = async () => {

@@ -30,6 +30,7 @@ import {
   createVoiceCaptureState,
 } from '../domains/voice-capture.model';
 import {
+  type VoiceRecognizerLink,
   type VoiceRecognizerLinkEvent,
   VoiceRecognizerLinkPolicy,
   createVoiceRecognizerLink,
@@ -60,7 +61,8 @@ interface UseVoiceCaptureSessionOptions {
 export interface BeginOptions {
   locale: SpeechLocale;
   hintWords: readonly string[];
-  recordingDirectory?: string | null;
+  /** 녹음 파일을 남길 폴더. 남기지 않는 받아쓰기·빠른 말하기는 null이다 */
+  recordingDirectory: string | null;
   seed?: VoiceCaptureSeed;
 }
 
@@ -280,6 +282,7 @@ export function useVoiceCaptureSession({
   useTimeoutWhile({
     isActive: state.status === 'preparing',
     getDelayMs: () => VOICE_PREPARING_TIMEOUT_MS,
+    restartKey: null,
     onTimeout: () => {
       speechRecognizer.abort();
       recognizer.update({ type: 'ended' });
@@ -291,7 +294,7 @@ export function useVoiceCaptureSession({
   const begin = async ({
     locale,
     hintWords,
-    recordingDirectory = null,
+    recordingDirectory,
     seed,
   }: BeginOptions): Promise<boolean> => {
     if (isUnmountedRef.current || getStatus() !== 'idle') {
@@ -406,11 +409,15 @@ export function useVoiceCaptureSession({
 }
 
 /** 인식기 이벤트는 렌더를 기다리지 않고 다음 상태를 읽어야 한다. dispatch는 바뀌지 않았으면 같은 객체다 */
-function useVoiceCaptureState() {
+function useVoiceCaptureState(): {
+  state: VoiceCaptureState;
+  stateRef: RefObject<VoiceCaptureState>;
+  dispatch: VoiceCaptureDispatch;
+} {
   const [state, setState] = useState<VoiceCaptureState>(createVoiceCaptureState);
   const stateRef = useRef(state);
 
-  const dispatch = useCallback((event: VoiceCaptureEvent) => {
+  const dispatch = useCallback<VoiceCaptureDispatch>((event) => {
     const previous = stateRef.current;
     const next = VoiceCapturePolicy.reduceVoiceCapture(previous, event);
     if (next !== previous) {
@@ -423,10 +430,23 @@ function useVoiceCaptureState() {
   return { state, stateRef, dispatch };
 }
 
-type VoiceCaptureDispatch = ReturnType<typeof useVoiceCaptureState>['dispatch'];
+type VoiceCaptureDispatch = (event: VoiceCaptureEvent) => {
+  previous: VoiceCaptureState;
+  next: VoiceCaptureState;
+};
+
+interface RecognizerLink {
+  linkRef: RefObject<VoiceRecognizerLink>;
+  update: (event: VoiceRecognizerLinkEvent) => void;
+  start: (options: SpeechStartOptions) => void;
+  /** 사용자가 끝내지 않았는데 끝난 구간을 같은 옵션으로 다시 연다. 너무 빨리 끝나기를 되풀이하면 열지 않고 false다 */
+  restartSegment: (options: SpeechStartOptions) => boolean;
+  /** 지금 구간을 닫는다. 그 구간의 `end`가 오면 실패가 아니라 멈춤 응답으로 본다 */
+  stop: () => void;
+}
 
 /** 연결은 그리지 않는 값이라 ref에 두고 VoiceRecognizerLinkPolicy로만 바꾼다 */
-function useRecognizerLink() {
+function useRecognizerLink(): RecognizerLink {
   const speechRecognizer = useSpeechRecognizer();
   const linkRef = useRef(createVoiceRecognizerLink());
 
@@ -443,7 +463,6 @@ function useRecognizerLink() {
     linkRef,
     update,
     start,
-    /** 사용자가 끝내지 않았는데 끝난 구간을 같은 옵션으로 다시 연다. 너무 빨리 끝나기를 되풀이하면 열지 않고 false다 */
     restartSegment: (options: SpeechStartOptions) => {
       const now = Date.now();
       if (VoiceRecognizerLinkPolicy.isRestartLooping(linkRef.current, now)) {
@@ -453,15 +472,12 @@ function useRecognizerLink() {
       speechRecognizer.start(getRecognizerStartOptions(options));
       return true;
     },
-    /** 지금 구간을 닫는다. 그 구간의 `end`가 오면 실패가 아니라 멈춤 응답으로 본다 */
     stop: () => {
       update({ type: 'stop-requested' });
       speechRecognizer.stop();
     },
   };
 }
-
-type RecognizerLink = ReturnType<typeof useRecognizerLink>;
 
 interface UseRecognizerStallRecoveryOptions {
   stateRef: RefObject<VoiceCaptureState>;
@@ -665,7 +681,7 @@ function useTimeoutWhile({
   isActive: boolean;
   getDelayMs: () => number | null;
   onTimeout: () => void;
-  restartKey?: number | null;
+  restartKey: number | null;
 }) {
   const readDelayMs = useEffectEvent(getDelayMs);
   const handleTimeout = useEffectEvent(onTimeout);

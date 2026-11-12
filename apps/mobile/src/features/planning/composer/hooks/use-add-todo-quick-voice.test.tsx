@@ -83,7 +83,9 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin"
-        onPress={() => quickVoice.begin({ locale: 'ko-KR', hintWords: [] })}
+        onPress={() =>
+          quickVoice.begin({ locale: 'ko-KR', hintWords: [], recordingDirectory: null })
+        }
       />
       <Pressable
         accessibilityRole="button"

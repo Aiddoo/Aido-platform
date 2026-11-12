@@ -33,7 +33,7 @@ export interface VoiceNoteDraftRepository {
 interface Dependencies {
   storage: EnumerableSyncStorage;
   logger: Pick<AppLogger, 'warn'>;
-  /** 옛 초안의 날짜를 읽을 시간대. 시스템 설정 변경이 반영되도록 읽을 때마다 부른다 */
+  /** 옛 초안의 날짜를 읽을 시간대. 시스템 설정 변경이 반영되도록 읽을 때마다 부른다. 1.16.0에서 옛 초안 읽기와 함께 지운다 */
   getTimeZone: () => string;
 }
 
