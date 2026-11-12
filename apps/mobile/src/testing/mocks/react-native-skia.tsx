@@ -29,6 +29,9 @@ export const SweepGradient = NothingToDraw;
 export const Text = NothingToDraw;
 export const usePathValue = () => ({});
 export const vec = (x: number, y: number) => ({ x, y });
+// 날씨 장면의 입자 텍스처가 모듈을 읽을 때 샘플링 값을 정한다
+export const FilterMode = { Nearest: 0, Linear: 1 };
+export const MipmapMode = { None: 0, Nearest: 1, Linear: 2 };
 export const matchFont = () => ({
   measureText: (text: string) => ({ x: 0, y: 0, width: text.length, height: 1 }),
   getMetrics: () => ({ ascent: -1, descent: 0 }),
