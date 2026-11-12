@@ -81,7 +81,7 @@ shared/date/
 
 ### 숫자
 
-`Intl.NumberFormat` 캐시를 쓴다. `formatPercent`가 `%`까지 붙이므로 뒤에 `%`를 이어 붙이지 않는다. 개수는 `formatCount`·`formatCompactCount`다. 숫자+단위는 포매터가 줄바꿈 없는 공백을 넣는다(`formatFileSize`).
+`Intl.NumberFormat` 캐시를 쓴다. `formatPercent(value, locale, { signDisplay })`가 `%`와 부호까지 붙이므로 뒤에 `%`·`+`를 이어 붙이지 않는다. 정수로 보이는 두 곳(제안 확신도 칩, 위젯 완료율)은 글자 폭 때문에 `Math.round`를 그대로 둔다. 개수는 `formatCount`·`formatCompactCount`다. 숫자+단위는 포매터가 줄바꿈 없는 공백을 넣는다(`formatFileSize`).
 
 ## 언어
 

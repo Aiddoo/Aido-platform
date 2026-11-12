@@ -167,7 +167,10 @@ export function AchievementSummary() {
               label={t('card.statStreak')}
               value={t('card.streakWeeks', { count: summary.currentStreak })}
             />
-            <Stat label={t('card.statAverage')} value={`${formatPercent(summary.averageRate)}%`} />
+            <Stat
+              label={t('card.statAverage')}
+              value={formatPercent(summary.averageRate, dateFormatContext.locale)}
+            />
           </HStack>
         </Certificate>
       </CapturableView>

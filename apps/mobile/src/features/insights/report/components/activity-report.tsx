@@ -116,6 +116,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
 
 function TodoCompletionStats({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
+  const { locale } = useDateFormatContext();
   const { stats } = report;
   const rateDiff = ReportPolicy.getCompletionRateChange(report);
 
@@ -131,12 +132,11 @@ function TodoCompletionStats({ report }: { report: AiReport }) {
             {t('report.card.completionRate')}
           </Text>
           <Text size="t2" weight="bold" tone="brand">
-            {formatPercent(stats.completionRate)}%
+            {formatPercent(stats.completionRate, locale)}
           </Text>
           {rateDiff != null && (
             <Text size="e2" tone={rateDiff >= 0 ? 'success' : 'danger'}>
-              {rateDiff > 0 ? '+' : ''}
-              {formatPercent(rateDiff)}%
+              {formatPercent(rateDiff, locale, { signDisplay: 'exceptZero' })}
             </Text>
           )}
         </VStack>
@@ -170,6 +170,7 @@ function TodoCompletionStats({ report }: { report: AiReport }) {
 
 function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) {
   const { t } = useTranslation('ai');
+  const { locale } = useDateFormatContext();
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
@@ -185,7 +186,7 @@ function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) 
               </Text>
             </HStack>
             <Text size="b4" shade={6}>
-              {item.completed}/{item.total} ({formatPercent(item.rate)}%)
+              {item.completed}/{item.total} ({formatPercent(item.rate, locale)})
             </Text>
           </HStack>
           <Box className="h-2 bg-gray-3 rounded-full overflow-hidden">

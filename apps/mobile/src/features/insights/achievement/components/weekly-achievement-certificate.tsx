@@ -108,7 +108,7 @@ export function WeeklyAchievementCertificate() {
               ),
               total: achievement.totalTodos,
               completed: achievement.completedTodos,
-              rate: formatPercent(achievement.completionRate),
+              rate: formatPercent(achievement.completionRate, dateFormatContext.locale),
             })}
           </Text>
 

@@ -112,7 +112,7 @@ ReportList.Item = function Item({ report, isSample = false, isLast = false }: Re
               <HStack gap={20}>
                 <Stat
                   label={t('report.card.completionRate')}
-                  value={`${formatPercent(report.stats.completionRate)}%`}
+                  value={formatPercent(report.stats.completionRate, dateFormatContext.locale)}
                 />
                 <Stat
                   label={t('report.card.completed')}

@@ -135,6 +135,7 @@ SuggestionsList.Item = function Item({
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const push = useSingleTap(router.push);
+  // 확신도는 정수로 보인다. formatPercent(소수 한 자리)로 바꾸면 칩 글자 폭이 달라진다
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
   const handleOpenCategorySheet = () =>
