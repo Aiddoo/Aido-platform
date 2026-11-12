@@ -1,3 +1,5 @@
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
+
 type ToastDuration = number | 'persistent';
 
 /** heroui-native 토스트의 기본 표시 시간과 같다 */
@@ -38,7 +40,7 @@ export interface ToastLayers<TRender> {
  * iOS 시트 route는 루트 위에 따로 뜨는 모달이라 루트에 그린 토스트가 시트 배경 아래에 깔리고 VoiceOver가 읽지 못한다.
  * 그래서 열린 시트 route마다 면을 쌓아 가장 위 면에 띄우고, 시트가 닫히면 아직 보이는 토스트를 아래 면으로 옮긴다
  */
-export function createToastLayers<TRender>({ now }: { now: () => number }): ToastLayers<TRender> {
+export function createToastLayers<TRender>({ now }: { now: () => Instant }): ToastLayers<TRender> {
   const layers: ToastLayer<TRender>[] = [];
   const shown = new Map<string, ShownToast<TRender>>();
   let sequence = 0;
@@ -54,7 +56,7 @@ export function createToastLayers<TRender>({ now }: { now: () => number }): Toas
     shown.set(id, {
       layer,
       render,
-      expiresAtMs: duration === 'persistent' ? null : now() + duration,
+      expiresAtMs: duration === 'persistent' ? null : toEpochMs(now()) + duration,
     });
     layer.show({ id, render, duration, isMoved, onHide: () => shown.delete(id) });
   }
@@ -85,7 +87,8 @@ export function createToastLayers<TRender>({ now }: { now: () => number }): Toas
             continue;
           }
           shown.delete(id);
-          const remaining = toast.expiresAtMs == null ? 'persistent' : toast.expiresAtMs - now();
+          const remaining =
+            toast.expiresAtMs == null ? 'persistent' : toast.expiresAtMs - toEpochMs(now());
           if (top != null && (remaining === 'persistent' || remaining > 0)) {
             showOn(top, toast.render, remaining, true);
           }

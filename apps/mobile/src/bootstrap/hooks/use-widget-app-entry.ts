@@ -13,6 +13,8 @@ import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { useTrack } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/clock';
+import { toEpochMs } from '@src/shared/date/instant';
 import { toError } from '@src/shared/errors';
 import { useLinkingUrl } from '@src/shared/infra/linking/use-linking-url';
 import { useQueryClient } from '@tanstack/react-query';
@@ -71,7 +73,7 @@ export function useWidgetAppEntry() {
     if (
       restoredAt != null &&
       isWidgetWakeLink(uri) &&
-      Date.now() - restoredAt < WAKE_LINK_AFTER_COMMAND_MS
+      toEpochMs(getNowInstant()) - restoredAt < WAKE_LINK_AFTER_COMMAND_MS
     ) {
       commandRestoredAtRef.current = null;
       return;
@@ -95,7 +97,7 @@ export function useWidgetAppEntry() {
       if (command != null) {
         const commandState = WidgetNavigationPolicy.getCommandState(command, {
           userId: getCachedMe(queryClient)?.id ?? null,
-          now: Date.now(),
+          now: toEpochMs(getNowInstant()),
         });
         if (commandState === 'ownerUnknown') {
           return;
@@ -127,7 +129,7 @@ export function useWidgetAppEntry() {
         });
         trackWidgetOpened(destinationUrl);
         if (command != null) {
-          commandRestoredAtRef.current = Date.now();
+          commandRestoredAtRef.current = toEpochMs(getNowInstant());
         }
       } catch (error) {
         errorReporter.captureException(toError(error), {
@@ -176,7 +178,7 @@ export function useWidgetAppEntry() {
         ? null
         : WidgetNavigationPolicy.getCommandState(pendingCommand, {
             userId: accountId,
-            now: Date.now(),
+            now: toEpochMs(getNowInstant()),
           });
     if (pendingCommand != null && commandState === 'stale') {
       setPendingInitialUrl(null);

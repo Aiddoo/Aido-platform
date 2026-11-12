@@ -1,3 +1,5 @@
+import { fromEpochMs } from '@src/shared/date/instant';
+
 import { createToastLayers, type ToastLayer, type ToastLayerEntry } from './toast-layers';
 
 function createRecordingLayer() {
@@ -10,7 +12,7 @@ function createRecordingLayer() {
 describe('createToastLayers', () => {
   it('열린 시트 면이 있으면 루트가 아니라 가장 위 시트 면에 띄운다', () => {
     // Given
-    const layers = createToastLayers<string>({ now: () => 0 });
+    const layers = createToastLayers<string>({ now: () => fromEpochMs(0) });
     const root = createRecordingLayer();
     const sheet = createRecordingLayer();
     layers.add(sheet.layer);
@@ -27,7 +29,7 @@ describe('createToastLayers', () => {
   it('시트가 닫히면 아직 보이는 토스트를 남은 시간만큼 움직임 없이 아래 면으로 옮긴다', () => {
     // Given
     let nowMs = 0;
-    const layers = createToastLayers<string>({ now: () => nowMs });
+    const layers = createToastLayers<string>({ now: () => fromEpochMs(nowMs) });
     const root = createRecordingLayer();
     const sheet = createRecordingLayer();
     layers.add(root.layer, { isBase: true });
@@ -47,7 +49,7 @@ describe('createToastLayers', () => {
   it('닫았거나 시간이 다 된 토스트는 시트가 닫혀도 다시 띄우지 않는다', () => {
     // Given
     let nowMs = 0;
-    const layers = createToastLayers<string>({ now: () => nowMs });
+    const layers = createToastLayers<string>({ now: () => fromEpochMs(nowMs) });
     const root = createRecordingLayer();
     const sheet = createRecordingLayer();
     layers.add(root.layer, { isBase: true });

@@ -1,3 +1,4 @@
+import { getNowInstant } from '@src/shared/date/clock';
 import { ToastProvider, useToast } from 'heroui-native';
 import {
   type ComponentProps,
@@ -27,7 +28,7 @@ export type AppToastRender = (
 export const ToastLayersContext = createContext<ToastLayers<AppToastRender> | null>(null);
 
 export function ToastLayersProvider({ children }: { children: ReactNode }) {
-  const [layers] = useState(() => createToastLayers<AppToastRender>({ now: Date.now }));
+  const [layers] = useState(() => createToastLayers<AppToastRender>({ now: getNowInstant }));
 
   return <ToastLayersContext value={layers}>{children}</ToastLayersContext>;
 }

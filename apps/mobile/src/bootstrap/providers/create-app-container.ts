@@ -201,7 +201,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
   const signOutEpoch = createSignOutEpoch();
   const draftService = new DraftService(
     createDraftRepository(draftStorage),
-    Date.now,
+    getNowInstant,
     signOutEpoch.current,
   );
   const authApi = new AuthApi({ publicHttpClient, authHttpClient });
@@ -211,7 +211,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     requestRefresh: ports.requestRefresh,
     authApi,
     logger,
-    now: Date.now,
+    now: getNowInstant,
   });
 
   const activationProgressRepository = createActivationProgressRepository(syncStorage);
@@ -269,14 +269,14 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     analytics,
     errorReporter,
     haptics: ports.haptics,
-    featureAttribution: createFeatureAttributionStore(syncStorage),
+    featureAttribution: createFeatureAttributionStore(syncStorage, getNowInstant),
     draftService,
     externalLink: ports.externalLink,
     incomingLink: ports.incomingLink,
     systemShare: ports.systemShare,
     clipboard: ports.clipboard,
     appLifecycle: ports.appLifecycle,
-    minuteClock: createAppMinuteClock(ports.appLifecycle),
+    minuteClock: createAppMinuteClock({ appLifecycle: ports.appLifecycle, now: getNowInstant }),
     syncStorage,
     accountSyncStorage: draftStorage,
 

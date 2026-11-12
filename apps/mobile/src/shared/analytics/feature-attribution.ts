@@ -2,6 +2,7 @@ import type { Analytics } from '@src/core/ports/analytics';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { DAY_MS } from '@src/shared/constants/time-units';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import {
   readStoredValue,
@@ -39,14 +40,14 @@ export interface FeatureAttributionStore {
 
 export function createFeatureAttributionStore(
   storage: SyncStorage,
-  now: () => number = Date.now,
+  now: () => Instant,
 ): FeatureAttributionStore {
   return {
     record: ({ accountId, campaignId, feature }) => {
       writeStoredValue(
         storage,
         featureAttributionStoredValue,
-        { campaignId, feature, expiresAt: now() + FEATURE_ATTRIBUTION_TTL_MS },
+        { campaignId, feature, expiresAt: toEpochMs(now()) + FEATURE_ATTRIBUTION_TTL_MS },
         { accountId, feature },
       );
     },
@@ -58,7 +59,11 @@ export function createFeatureAttributionStore(
       // 재진입해도 한 번만 집계되도록 반환보다 삭제가 먼저다. 깨진 값도 함께 지운다
       removeStoredValue(storage, featureAttributionStoredValue, scope);
 
-      if (persisted == null || persisted.feature !== feature || persisted.expiresAt < now()) {
+      if (
+        persisted == null ||
+        persisted.feature !== feature ||
+        persisted.expiresAt < toEpochMs(now())
+      ) {
         return null;
       }
 

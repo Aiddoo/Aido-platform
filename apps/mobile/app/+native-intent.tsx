@@ -4,6 +4,8 @@ import {
   findInviteSystemPath,
 } from '@src/features/social/invite/utils/invite-link.view-model';
 import { ENV } from '@src/shared/config/env';
+import { getNowInstant } from '@src/shared/date/clock';
+import { toEpochMs } from '@src/shared/date/instant';
 
 const stampInviteLinkOpen = createInviteLinkOpenStamp();
 
@@ -13,7 +15,7 @@ export function redirectSystemPath({ path, initial }: { path: string; initial: b
     const invitePath = findInviteSystemPath(
       path,
       { appScheme: ENV.SCHEME, kakaoScheme: ENV.KAKAO_SCHEME },
-      { openedAt: stampInviteLinkOpen(path, Date.now()) },
+      { openedAt: stampInviteLinkOpen(path, toEpochMs(getNowInstant())) },
     );
     if (invitePath != null) {
       return invitePath;

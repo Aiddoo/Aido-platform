@@ -1,6 +1,7 @@
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { HOUR_MS } from '@src/shared/constants/time-units';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { match } from 'ts-pattern';
 
@@ -26,7 +27,7 @@ interface SessionRevocationServicePorts {
   requestRefresh: RefreshTokensRequest;
   authApi: Pick<AuthApi, 'revokeSession'>;
   logger: Pick<AppLogger, 'info' | 'warn'>;
-  now: () => number;
+  now: () => Instant;
 }
 
 /** 토큰을 지운 뒤엔 인증 요청을 못 보내 남겨 둔 refresh 토큰으로 로그아웃한다. 현재 세션 상태는 건드리지 않는다 */
@@ -35,7 +36,7 @@ export class SessionRevocationService {
   readonly #requestRefresh: RefreshTokensRequest;
   readonly #authApi: Pick<AuthApi, 'revokeSession'>;
   readonly #logger: Pick<AppLogger, 'info' | 'warn'>;
-  readonly #now: () => number;
+  readonly #now: () => Instant;
   #inFlight: Promise<void> | null = null;
 
   constructor({ repository, requestRefresh, authApi, logger, now }: SessionRevocationServicePorts) {
@@ -49,7 +50,7 @@ export class SessionRevocationService {
   record = (refreshToken: string): Promise<void> =>
     this.#repository.save({
       refreshToken,
-      expiresAt: this.#now() + PENDING_REVOCATION_TTL_MS,
+      expiresAt: toEpochMs(this.#now()) + PENDING_REVOCATION_TTL_MS,
     });
 
   /** 던지지 않는다. 일시 실패면 기록을 남겨 다음 복귀 때 다시 시도한다 */
@@ -74,7 +75,7 @@ export class SessionRevocationService {
     if (pending == null) {
       return;
     }
-    if (this.#now() >= pending.expiresAt) {
+    if (toEpochMs(this.#now()) >= pending.expiresAt) {
       this.#logger.info(AUTH_LOG_EVENT.SESSION_REVOCATION_EXPIRED);
       await this.#repository.clear();
       return;
