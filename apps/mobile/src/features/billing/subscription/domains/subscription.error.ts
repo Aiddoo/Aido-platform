@@ -31,27 +31,27 @@ export class SubscriptionError extends BusinessError<SubscriptionErrorCode> {
 }
 
 export const SubscriptionErrors = {
-  storeUnavailable: (storeErrorCode?: string | null) =>
+  storeUnavailable: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE, storeErrorCode),
 
-  storeProblem: (storeErrorCode?: string | null) =>
+  storeProblem: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.STORE_PROBLEM, storeErrorCode),
 
-  offeringsUnavailable: (storeErrorCode?: string | null) =>
+  offeringsUnavailable: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.OFFERINGS_UNAVAILABLE, storeErrorCode),
 
-  network: (storeErrorCode?: string | null) =>
+  network: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.NETWORK, storeErrorCode),
 
-  purchaseCancelled: (storeErrorCode?: string | null) =>
+  purchaseCancelled: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.PURCHASE_CANCELLED, storeErrorCode),
 
-  paymentPending: (storeErrorCode?: string | null) =>
+  paymentPending: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.PAYMENT_PENDING, storeErrorCode),
 
-  purchaseFailed: (storeErrorCode?: string | null) =>
+  purchaseFailed: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.PURCHASE_FAILED, storeErrorCode),
 
-  restoreFailed: (storeErrorCode?: string | null) =>
+  restoreFailed: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.RESTORE_FAILED, storeErrorCode),
 } as const;

@@ -85,7 +85,7 @@ classifyError(error): { kind: 'expected' | 'auth-expired' | 'connectivity' | 'un
 - 판별은 `ErrorCode`로 한다(`error.hasCode(ErrorCode.TODO_0801)`). 상태로 판별하는 것은 코드가 없는 경우(검증·없는 route·throttler 429)뿐이고 `HttpStatus`를 쓴다. 5xx는 `serverCode`로 판별한다.
 - `details`는 공유 스키마(`quotaErrorDetailsSchema` 등)로 `safeParse`한다. 운영에는 `PUBLIC_ERROR_DETAILS`에 등록한 코드만 실리므로 새로 읽는 코드는 계약에 먼저 등록한다.
 - lint가 `*.error.ts` 밖의 `isApiError`·`isCodedError` import, `.hasCode`, 오류 값의 `.status`·`.statusCode`·`.details`·`.serverCode`를 막는다(`aido/no-error-field-access`, [가드레일](./architecture/guardrails.md)). 공용 분류(`shared/errors`, 재시도, 경계)만 예외다.
-- 앱이 판단한 거절은 Device Service·Policy가 `err(new BusinessError(코드))`로 돌려준다. 문구는 `errors` 카탈로그의 코드 키(ko·en)로 `getUserFacingMessage`가 고른다. 하위 클래스가 필요하면 `SubscriptionError`처럼 확장한다.
+- 앱이 판단한 거절은 Device Service·Policy가 `err(new BusinessError(코드))`로 돌려준다. 문구는 `errors` 카탈로그의 코드 키(ko·en)로 `getUserFacingMessage`가 고른다. 하위 클래스가 필요하면 `SubscriptionError`처럼 확장한다. `SubscriptionError`의 `SUBSCRIPTION_*` 8코드는 예외로 `errors` 카탈로그에 없다. 결제·복원은 `errorFeedback: false`이고 화면 문구(제목·설명·문의)를 `subscription-failure.view-model`이 고르기 때문이다.
 
 ## mutation 오류 피드백
 
