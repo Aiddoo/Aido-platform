@@ -8,7 +8,6 @@ import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { NetworkError } from '@src/shared/errors';
@@ -81,7 +80,6 @@ export function useApplyActionPlanMutationOptions({
       onSaved?.({ todoCount });
       haptics.notify('success');
       emitTodoCreated();
-      invalidateTodos(queryClient);
       if (hasMemo || sourceMemoId != null) {
         onMemoChanged();
       }
@@ -120,9 +118,6 @@ export function useApplyActionPlanMutationOptions({
     },
     onError: (error) => {
       const cause = getVoicePlanFailureCause(error);
-      if (cause === 'rejected') {
-        invalidateTodoCategories(queryClient);
-      }
       if (cause === 'source-memo-missing') {
         onMemoChanged();
       }
@@ -131,6 +126,11 @@ export function useApplyActionPlanMutationOptions({
         title: t(`voicePlan:failure.${cause}.title`),
         description: t(`voicePlan:failure.${cause}.description`),
       });
+    },
+    // 응답을 놓친 실패도 서버에는 저장됐을 수 있고, 거절(내 카테고리가 아님)은 카테고리를 다시 받아야 한다.
+    // 저장 완료가 다시 받기를 기다리지 않게 돌려주지 않는다
+    onSettled: () => {
+      invalidateTodos(queryClient);
     },
     meta: { errorFeedback: false },
   });
