@@ -800,6 +800,10 @@
         "aido/query-key-location": "error",
         "aido/namespace-function-name": "error",
         "aido/no-destructured-search-params": "error",
+        "aido/no-class-method": "error",
+        "aido/no-object-method-shorthand": "error",
+        "aido/dto-alias": "error",
+        "aido/time-constant-unit": "error",
         "react/forbid-elements": [
           "error",
           {
