@@ -29,9 +29,11 @@
 
 **화면**
 
-| 이벤트        | 파라미터                                                         | 의미      |
-| ------------- | ---------------------------------------------------------------- | --------- |
-| `screen_view` | `screen_name` = `screen_class` = 라우트 템플릿(`/todo/[todoId]`) | 모든 화면 |
+| 이벤트                        | 파라미터                                                         | 의미                                                                                                     |
+| ----------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `screen_view`                 | `screen_name` = `screen_class` = 라우트 템플릿(`/todo/[todoId]`) | 모든 화면                                                                                                |
+| `view_tab_changed`            | `screen_name`(라우트 템플릿) · `view`(그 화면 보기 스키마 값)    | URL로 바뀌는 탭(`ViewTabs`)을 다른 탭으로 바꿈. 같은 탭을 다시 누르면 보내지 않는다. 1.15.2부터          |
+| `error_fallback_retry_tapped` | `screen_name`                                                    | 조회 오류 화면(`QueryErrorFallback`·`.Inline`)의 다시 시도. 어느 화면이 자주 실패하는지 본다. 1.15.2부터 |
 
 **인증 / 세션**
 
@@ -77,6 +79,7 @@
 | 이벤트                          | 파라미터                                              | 시점                                               |
 | ------------------------------- | ----------------------------------------------------- | -------------------------------------------------- |
 | `todo_comment_created`          | `todo_id`(id) · `is_reply` · `chain_size`(int)        | 댓글·답글 게시 성공                                |
+| `todo_comment_updated`          | `todo_id` · `is_reply`                                | 글 고치기 성공. 1.15.2부터                         |
 | `todo_comment_deleted`          | `todo_id` · `is_reply`                                | 삭제 성공                                          |
 | `todo_comment_liked`            | `todo_id` · `is_liked` · `via`: `button`·`double_tap` | 좋아요 요청 성공(이미 좋아요면 더블탭해도 안 보냄) |
 | `todo_comment_replies_expanded` | `todo_id` · `loaded_count`(int)                       | 답글 펼침·더 보기로 받은 페이지 도착               |
@@ -127,17 +130,19 @@
 
 **AI / 메모**
 
-| 이벤트                            | 파라미터                                            | 의미                                                                                 |
-| --------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `ai_parse_used`                   | `success`(bool)                                     | 메모 AI 나누기 결과. 할 일 쪽은 `voice_plan_*`로 본다                                |
-| `ai_suggestion_acted`             | `action`: `accept`·`dismiss`                        | AI 제안 처리                                                                         |
-| `ai_report_viewed`                | `report_id`(id) · `report_type`: `WEEKLY`·`MONTHLY` | 저장된 리포트 상세                                                                   |
-| `ai_data_sharing_consent_changed` | `agreed`(bool)                                      | AI 데이터 제공 동의 변경                                                             |
-| `memo_created`                    | –                                                   |                                                                                      |
-| `memo_updated` / `memo_deleted`   | `memo_id`(id)                                       |                                                                                      |
-| `memo_pin_toggled`                | `memo_id` · `is_pinned`                             |                                                                                      |
-| `memo_converted_to_todo`          | `memo_id`                                           | 수동 1건 변환                                                                        |
-| `memo_converted_to_todos`         | `memo_id` · `todo_count`(int) · `source`: `ai`      | 메모 AI 검토 저장 때 `voice_plan_applied`와 함께 보낸다. 대시보드를 옮길 때까지 유지 |
+| 이벤트                            | 파라미터                                            | 의미                                                                                                                                       |
+| --------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ai_parse_used`                   | `success`(bool)                                     | 메모 AI 나누기 결과. 할 일 쪽은 `voice_plan_*`로 본다                                                                                      |
+| `ai_suggestion_acted`             | `action`: `accept`·`dismiss`                        | AI 제안 처리                                                                                                                               |
+| `ai_report_viewed`                | `report_id`(id) · `report_type`: `WEEKLY`·`MONTHLY` | 저장된 리포트 상세                                                                                                                         |
+| `ai_data_sharing_consent_changed` | `agreed`(bool)                                      | AI 데이터 제공 동의 변경                                                                                                                   |
+| `ai_consent_prompt_shown`         | `is_renewal`(bool)                                  | AI 동의 안내 시트가 뜸. `is_renewal`은 이미 동의한 사람에게 바뀐 내용을 다시 알린 것. 1.15.2부터                                           |
+| `ai_consent_prompt_dismissed`     | `is_renewal`(bool)                                  | [나중에]·끌어 내림으로 답 없이 닫음. 부른 화면이 사라져 닫힌 것은 세지 않는다. 동의는 `ai_data_sharing_consent_changed`로 본다. 1.15.2부터 |
+| `memo_created`                    | –                                                   |                                                                                                                                            |
+| `memo_updated` / `memo_deleted`   | `memo_id`(id)                                       |                                                                                                                                            |
+| `memo_pin_toggled`                | `memo_id` · `is_pinned`                             |                                                                                                                                            |
+| `memo_converted_to_todo`          | `memo_id`                                           | 수동 1건 변환                                                                                                                              |
+| `memo_converted_to_todos`         | `memo_id` · `todo_count`(int) · `source`: `ai`      | 메모 AI 검토 저장 때 `voice_plan_applied`와 함께 보낸다. 대시보드를 옮길 때까지 유지                                                       |
 
 **음성**
 
@@ -223,6 +228,7 @@
 | `push_permission_requested`        | `source`(위 다섯 + `invite_welcome`) · `status`: 요청 뒤 `PushPermission.status`                                                           | 시스템 권한 창 결과. 권한 mutation `onSuccess`에서 입구마다 한 번                                                     |
 | `push_permission_settings_opened`  | `source`                                                                                                                                   | 권한을 되찾으려고 OS 설정을 열었을 때(허용한 뒤 설정 줄에서 연 것은 제외). mutation `onSuccess`에서 한 번             |
 | `app_update_store_opened`          | `source`: `settings`                                                                                                                       | 버전 확인 결과 스토어를 엶                                                                                            |
+| `support_inquiry_submitted`        | `category`: `BUG_REPORT`·`FEATURE_REQUEST`·`PAYMENT`·`OTHER`                                                                               | 문의 접수 성공(내용은 싣지 않는다). 1.15.2부터                                                                        |
 | `badge_summary_viewed`             | `badge_type`: `perfect`·`almost`·`completed` · `completion_rate`(num) · `week_label`(string)                                               | 주간 배지                                                                                                             |
 | `badge_item_tapped`                | `badge_type` · `completion_rate` · `year` · `week`                                                                                         |                                                                                                                       |
 | `badge_share_attempted`            | `badge_type` · `year` · `week`                                                                                                             |                                                                                                                       |
@@ -385,7 +391,7 @@ Measurement Protocol(서버 → GA)은 도입하지 않는다. 위 신호는 SQL
 | `plan_type`      | 요금제 종류     | paywall_plan_selected, trial_timeline_viewed, subscription_started, purchase_cancelled, purchase_failed |
 | `is_trial`       | 체험 제안 여부  | paywall_plan_selected, subscription_started, purchase_cancelled, purchase_failed                        |
 
-등록하지 않음: `*_id`(엔터티 id), `field`, `value`, `color`, `week_label`, `query_length_bucket`·`hint`·`trigger`(필요하면 추가).
+등록하지 않음: `*_id`(엔터티 id), `field`, `value`, `color`, `week_label`, `query_length_bucket`·`hint`·`trigger`·`screen_name`·`view`·`is_renewal`·`category`(필요하면 추가).
 
 ### (c) 커스텀 측정항목 (3)
 

@@ -140,6 +140,7 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
   const todoCommentApi = useTodoCommentApi();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const { trackEvent } = useTrack();
   const mutationKey = TODO_COMMENT_MUTATION_KEYS.updateComment({ todoId });
 
   return mutationOptions({
@@ -178,7 +179,11 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
       }
     },
     // 하트 수처럼 함께 바뀌는 값은 그 뮤테이션이 맞추므로 글 칸만 응답으로 쓴다
-    onSuccess: (updated) => {
+    onSuccess: (updated, { target }) => {
+      trackEvent('todo_comment_updated', {
+        todo_id: todoId,
+        is_reply: TodoCommentPolicy.isReply(target),
+      });
       if (isLastMutation(queryClient, mutationKey)) {
         patchTodoCommentCaches(queryClient, {
           todoId,

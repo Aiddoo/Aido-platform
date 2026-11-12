@@ -1,6 +1,7 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { ensureMe, getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useOverlay } from '@src/shared/ui';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
@@ -52,6 +53,7 @@ export function useAiDataSharingConsentGate({
   const overlay = useOverlay();
   const queryClient = useQueryClient();
   const logger = useLogger();
+  const { trackEvent } = useTrack();
   const consentQueryOptions = useGetConsentQueryOptions();
   const meQueryOptions = useGetMeQueryOptions();
 
@@ -73,26 +75,33 @@ export function useAiDataSharingConsentGate({
       return pendingAgreementRef.current;
     }
 
-    const agreement = overlay.openAsync<boolean>(
-      ({ isOpen, close, unmount }) => (
-        <AiConsentBottomSheet
-          isOpen={isOpen}
-          isRenewal={isRenewal}
-          onOpenChange={(open) => {
-            if (!open) {
-              close(false);
-            }
-          }}
-          onExit={unmount}
-          onAgree={() => close(true)}
-        />
-      ),
-      { dismissedValue: false },
-    );
+    trackEvent('ai_consent_prompt_shown', { is_renewal: isRenewal });
+    // null은 답 없이 사라졌을 때라 닫은 것으로 세지 않는다. 동의 뒤 닫힘 애니메이션의 알림은 처음 답이 이긴다
+    const agreement = overlay
+      .openAsync<boolean | null>(
+        ({ isOpen, close, unmount }) => (
+          <AiConsentBottomSheet
+            isOpen={isOpen}
+            isRenewal={isRenewal}
+            onOpenChange={(open) => {
+              if (!open) {
+                close(false);
+              }
+            }}
+            onExit={unmount}
+            onAgree={() => close(true)}
+          />
+        ),
+        { dismissedValue: null },
+      )
+      .then((answer) => {
+        pendingAgreementRef.current = null;
+        if (answer === false) {
+          trackEvent('ai_consent_prompt_dismissed', { is_renewal: isRenewal });
+        }
+        return answer === true;
+      });
     pendingAgreementRef.current = agreement;
-    agreement.then(() => {
-      pendingAgreementRef.current = null;
-    });
 
     return agreement;
   };

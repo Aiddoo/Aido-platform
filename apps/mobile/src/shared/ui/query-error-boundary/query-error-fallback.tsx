@@ -65,8 +65,6 @@ QueryErrorFallback.Inline = function Inline({
   onInquiry,
   ...rowProps
 }: QueryErrorFallbackInlineProps) {
-  const { t } = useTranslation('common');
-
   return (
     <HStack gap={8} align="center" {...rowProps}>
       <Text size="b4" shade={6} {...messageProps} className={cn('flex-1', messageProps?.className)}>
@@ -74,11 +72,11 @@ QueryErrorFallback.Inline = function Inline({
       </Text>
       {hasInquiry ? (
         <VStack align="center" gap={2}>
-          <Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>
+          <QueryErrorActions.Retry onPress={reset} />
           <QueryErrorActions.Inquiry onPress={onInquiry} />
         </VStack>
       ) : (
-        <Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>
+        <QueryErrorActions.Retry onPress={reset} />
       )}
     </HStack>
   );

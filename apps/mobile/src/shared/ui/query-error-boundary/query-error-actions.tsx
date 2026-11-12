@@ -1,7 +1,9 @@
 import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
+import { useTrack } from '@src/shared/analytics';
 import { ENV } from '@src/shared/config/env';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorDiagnosis } from '@src/shared/errors';
+import { useScreenName } from '@src/shared/hooks/use-screen-name';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { createDiagnosticCode } from '@src/shared/utils/create-diagnostic-code';
@@ -23,17 +25,37 @@ interface QueryErrorActionsProps {
 }
 
 export function QueryErrorActions({ onRetry, onInquiry, testID }: QueryErrorActionsProps) {
-  const { t } = useTranslation('common');
-
   return (
     <VStack align="center" gap={8}>
-      <Result.Button testID={testID} onPress={onRetry}>
-        {t('actions.retry')}
-      </Result.Button>
+      <QueryErrorActions.Retry testID={testID} onPress={onRetry} />
       <QueryErrorActions.Inquiry onPress={onInquiry} />
     </VStack>
   );
 }
+
+QueryErrorActions.Retry = function Retry({
+  onPress,
+  testID,
+}: {
+  onPress: () => void;
+  testID?: string;
+}) {
+  const { t } = useTranslation('common');
+  const { trackEvent } = useTrack();
+  const screenName = useScreenName();
+
+  return (
+    <Result.Button
+      testID={testID}
+      onPress={() => {
+        trackEvent('error_fallback_retry_tapped', { screen_name: screenName });
+        onPress();
+      }}
+    >
+      {t('actions.retry')}
+    </Result.Button>
+  );
+};
 
 QueryErrorActions.Inquiry = function Inquiry({
   onPress = openInquiry,

@@ -30,7 +30,8 @@ import { QueryErrorBoundary } from '@src/shared/ui';
 기능별 `X.Error`는 자기 레이아웃(`Result` 제목 등)을 그대로 두고 버튼 자리에 `QueryErrorActions`를 둡니다.
 다시 시도(주 버튼)와 문의하기(보조 텍스트 버튼)가 함께 나오고, 문의하기는 오류 신고 분류(`BUG_REPORT`)를 고른
 문의 화면을 엽니다. 본문 첫 줄에는 경계가 받은 오류의 진단 값(진단 코드·오류 코드·요청 ID, `error-inquiry-draft.ts`)이
-미리 들어가 서버 로그·Sentry를 바로 찾습니다. 경계 밖에서는 진단 코드만 담습니다. 사용자·기기 식별자와 오류 문구는 넣지 않습니다.
+미리 들어가 서버 로그·Sentry를 바로 찾습니다. 경계 밖에서는 진단 코드만 담습니다. 사용자·기기 식별자와 오류 문구는 넣지 않습니다. 다시 시도 버튼만 쓸 때는 `QueryErrorActions.Retry`이고, 누르면
+`error_fallback_retry_tapped { screen_name }`을 남깁니다.
 
 ```tsx
 X.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
