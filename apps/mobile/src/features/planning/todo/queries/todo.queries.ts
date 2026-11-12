@@ -17,7 +17,7 @@ import { keyBy, take } from 'es-toolkit';
 import type { TodoApi } from '../apis/todo.api';
 import { UPCOMING_TODO_WINDOW_DAYS } from '../constants/todo.constants';
 import { type DailyCompletionSummary } from '../domains/daily-completion.model';
-import { type CalendarDateRange, getCalendarMonthRanges } from '../utils/calendar-grid';
+import { type CalendarDateRange, getCalendarMonthRanges } from '../utils/calendar-grid.view-model';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 /** 다시 열 때 먼저 보일 어제·오늘·내일 목록만 기기에 남긴다. 둘러본 다른 날짜는 콜드 스타트 복원 크기만 키운다 */

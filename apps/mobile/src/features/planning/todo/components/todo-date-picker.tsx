@@ -8,7 +8,7 @@ import { PressableFeedback } from 'heroui-native';
 
 import { PICKER_MONTH_HEIGHT } from '../constants/todo.constants';
 import { useDatePicker } from '../hooks/use-date-picker';
-import { getPickerDayType } from '../utils/calendar-day';
+import { getPickerDayType } from '../utils/calendar-day.view-model';
 import type { CalendarDayCell } from '../utils/calendar-month.view-model';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerDateCell } from './picker-date-cell';

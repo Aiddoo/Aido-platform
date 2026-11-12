@@ -29,7 +29,7 @@ import type { Todo, TodoListResult } from '../domains/todo.model';
 import { useFeedDateKey, useFeedFriendId } from '../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
-import { formatTodoTime } from '../utils/format-todo-time';
+import { formatTodoTime } from '../utils/todo-time.view-model';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 

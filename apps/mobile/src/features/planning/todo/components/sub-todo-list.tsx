@@ -7,8 +7,8 @@ import type { AccessibilityActionEvent } from 'react-native';
 import { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
-import { SubTodoIndent } from '../sub-todo-indent';
-import { TODO_ROW_ACCESSIBILITY_ACTION, TodoCheckbox, TodoLabel, TodoRow } from '../todo-row';
+import { SubTodoIndent } from './sub-todo-indent';
+import { TODO_ROW_ACCESSIBILITY_ACTION, TodoCheckbox, TodoLabel, TodoRow } from './todo-row';
 
 interface SubTodoListProps {
   children: ReactNode;

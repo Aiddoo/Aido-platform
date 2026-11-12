@@ -1,4 +1,4 @@
-import { isStableFeedForeground } from './is-stable-feed-foreground';
+import { isStableFeedForeground } from './feed-foreground.view-model';
 
 const stableInput = {
   isAuthenticated: true,

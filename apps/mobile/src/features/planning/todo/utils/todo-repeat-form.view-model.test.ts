@@ -10,7 +10,7 @@ import {
   withTodoRepeatFormMonthlyToggled,
   withTodoRepeatFormPreset,
   toTodoRepeatFormValues,
-} from './todo-repeat-form-values';
+} from './todo-repeat-form.view-model';
 
 const TODAY_KEY = createDateKey('2026-11-02');
 
@@ -26,7 +26,7 @@ const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeat
   ...overrides,
 });
 
-describe('반복 요일 프리셋', () => {
+describe('isTodoRepeatFormPreset', () => {
   it('격주나 매월이면 요일이 같아도 프리셋이 켜진 것으로 보지 않는다', () => {
     // Given
     const days = [...getRepeatPresetDays('WEEKDAYS')];
@@ -88,7 +88,7 @@ describe('반복 요일 프리셋', () => {
   });
 });
 
-describe('반복 달력에서 날짜 누르기', () => {
+describe('withTodoRepeatFormCalendarDate', () => {
   it('오늘 이전은 값을 바꾸지 않는다', () => {
     // Given
     const values = createValues();
@@ -160,7 +160,7 @@ describe('반복 달력에서 날짜 누르기', () => {
   });
 });
 
-describe('반복 폼 값', () => {
+describe('toTodoRepeatFormValues', () => {
   it('시작 요일은 시작일의 요일로 정한다', () => {
     // When
     const values = toTodoRepeatFormValues(createDateKey('2026-11-07'), null);

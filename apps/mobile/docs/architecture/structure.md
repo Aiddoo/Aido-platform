@@ -72,9 +72,9 @@ features/{area}/{feature}/
 │                   {entity}.mutations.ts    use{Verb}{X}MutationOptions (캐시 효과·확정 추적)
 │                   {feature}-cache.ts       queryClient를 만지는 유일한 곳(무효화·갱신·refresh{Feature})
 ├── constants/      일반 상수만: {feature}.constants.ts(시간·한도·id), {entity}.events.ts(분석), {entity}-log-events.ts(로그 키)
-├── components/     {역할}.tsx (네임스페이스 부속은 부모 파일 안, 함께 바뀌는 큰 묶음만 {부모}-{역할} 하위 폴더)
+├── components/     {역할}.tsx (네임스페이스 부속은 부모 파일 안, 부모 이름의 큰 묶음(파일 3개 이상)만 하위 폴더)
 ├── hooks/          use-{name}.ts (여러 파일이 쓰거나 app/·bootstrap이 쓰는 공개 훅)
-├── utils/          {name}.view-model.ts(표시 값), {name}.geometry.ts(좌표), {feature}-draft.ts
+├── utils/          {name}.view-model.ts(표시 값), {name}.geometry.ts(좌표), {feature}-draft.ts, {feature}-analytics.ts만(함수 이름 파일은 맞는 층으로)
 └── __tests__/      {entity}.fixtures.ts(defineFixture), {route}-screen.test.tsx, {feature}.test-utils.tsx
 ```
 

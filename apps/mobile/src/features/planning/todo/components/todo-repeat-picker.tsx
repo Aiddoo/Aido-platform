@@ -34,7 +34,7 @@ import {
   withTodoRepeatFormDayToggled,
   withTodoRepeatFormMonthlyToggled,
   withTodoRepeatFormPreset,
-} from '../utils/todo-repeat-form-values';
+} from '../utils/todo-repeat-form.view-model';
 import { PickerHeader } from './picker-header';
 import { RepeatCalendar } from './repeat-calendar';
 import { RepeatHintLine } from './repeat-hint-line';

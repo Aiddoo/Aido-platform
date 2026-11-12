@@ -6,7 +6,7 @@ import { memo } from 'react';
 import { match } from 'ts-pattern';
 
 import { PICKER_DATE_CELL_HEIGHT } from '../constants/todo.constants';
-import { type CalendarDayType, DAY_TYPE_TONE } from '../utils/calendar-day';
+import { type CalendarDayType, DAY_TYPE_TONE } from '../utils/calendar-day.view-model';
 
 interface PickerDateCellProps {
   dateKey: DateKey;

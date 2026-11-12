@@ -6,7 +6,7 @@ import {
   getMonthWeekStartKeys,
   getWeekStartKey,
   shiftCalendarDateKey,
-} from './calendar-grid';
+} from './calendar-grid.view-model';
 
 describe('getWeekStartKey', () => {
   it.each([

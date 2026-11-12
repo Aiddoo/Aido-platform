@@ -14,7 +14,7 @@ import {
   toMemoVoicePlan,
 } from './memo.mapper';
 
-describe('메모 페이지 응답 매핑', () => {
+describe('toMemoPage', () => {
   it('날짜를 변환하고 다음 페이지 커서를 화면 모델로 분리한다', () => {
     // Given
     const dto = memoListResponseSchema.parse({
@@ -52,7 +52,7 @@ describe('메모 페이지 응답 매핑', () => {
   });
 });
 
-describe('메모 작성·수정 요청', () => {
+describe('toMemoRequest', () => {
   it.each([
     ['한 글자', 'a'],
     ['최대 길이', 'a'.repeat(5000)],

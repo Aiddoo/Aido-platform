@@ -6,7 +6,7 @@ import {
 } from '@src/shared/date/date-key';
 import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/date/format/date-format';
 
-import { getMonthWeekStartKeys, getWeekDateKeys } from './calendar-grid';
+import { getMonthWeekStartKeys, getWeekDateKeys } from './calendar-grid.view-model';
 
 /** 피드 달력 월 보기는 달마다 쪽 높이가 같도록 늘 6주를 그린다 */
 export const FEED_MONTH_WEEK_COUNT = 6;

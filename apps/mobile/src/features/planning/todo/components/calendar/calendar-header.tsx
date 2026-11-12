@@ -30,7 +30,7 @@ import {
   calendarViewModeSchema,
   calendarViewModeStoredValue,
 } from '../../schemas/calendar-view-mode-storage.schema';
-import { shiftCalendarDateKey } from '../../utils/calendar-grid';
+import { shiftCalendarDateKey } from '../../utils/calendar-grid.view-model';
 import {
   type CalendarHeaderLayout,
   getCalendarHeaderLayout,

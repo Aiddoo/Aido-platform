@@ -35,8 +35,8 @@ import {
 } from '../domains/todo.model';
 import { useOpenTodoRepeatPicker } from '../hooks/use-open-todo-repeat-picker';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
-import { formatRepeatSummary } from '../utils/format-repeat-summary';
 import { formatTodoPeriod } from '../utils/todo-period.view-model';
+import { formatRepeatSummary } from '../utils/todo-repeat-summary.view-model';
 import { TodoDatePicker } from './todo-date-picker';
 import { TodoTimePicker } from './todo-time-picker';
 

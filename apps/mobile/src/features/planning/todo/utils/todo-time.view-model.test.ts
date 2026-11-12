@@ -1,12 +1,12 @@
 import { type DateFormatContext } from '@src/shared/date/format/date-format';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import { formatTodoTime } from './format-todo-time';
+import { formatTodoTime } from './todo-time.view-model';
 
 const SEOUL: DateFormatContext = { locale: 'ko-KR', timeZone: 'Asia/Seoul' };
 const NEW_YORK: DateFormatContext = { locale: 'ko-KR', timeZone: 'America/New_York' };
 
-describe('떠 있는 시각 표시', () => {
+describe('formatTodoTime', () => {
   it.each([SEOUL, NEW_YORK])('어느 기기 시간대든 고른 시각 그대로다 (%o)', (context) => {
     // Given
     const todo = createParentTodo({ localTime: '10:00', isAllDay: false });

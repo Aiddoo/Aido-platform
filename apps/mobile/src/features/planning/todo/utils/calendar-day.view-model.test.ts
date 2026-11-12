@@ -7,7 +7,7 @@ import {
   getPickerDayType,
   getRepeatWeekDays,
   getWeekRangeBand,
-} from './calendar-day';
+} from './calendar-day.view-model';
 import type { CalendarDayCell } from './calendar-month.view-model';
 
 const MONDAY = 1;

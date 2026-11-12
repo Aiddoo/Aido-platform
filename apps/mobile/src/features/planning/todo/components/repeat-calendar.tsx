@@ -3,7 +3,11 @@ import { Box, HStack, VStack } from '@src/shared/ui';
 
 import { PICKER_MONTH_HEIGHT } from '../constants/todo.constants';
 import type { DatePicker } from '../hooks/use-date-picker';
-import { getPickerDayType, getRepeatWeekDays, getWeekRangeBand } from '../utils/calendar-day';
+import {
+  getPickerDayType,
+  getRepeatWeekDays,
+  getWeekRangeBand,
+} from '../utils/calendar-day.view-model';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerDateCell } from './picker-date-cell';
 import { PickerMonthHeader } from './picker-month-header';

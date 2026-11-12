@@ -6,7 +6,7 @@ import {
   formatRepeatCadence,
   formatRepeatRuleLabel,
   formatRepeatSummary,
-} from './format-repeat-summary';
+} from './todo-repeat-summary.view-model';
 
 const NEVER = { type: 'NEVER' } as const;
 

@@ -52,8 +52,8 @@ import {
   useToggleTodoMutationOptions,
 } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
-import { formatTodoTime } from '../../utils/format-todo-time';
-import { SubTodoList } from '../sub-todo-list/sub-todo-list';
+import { formatTodoTime } from '../../utils/todo-time.view-model';
+import { SubTodoList } from '../sub-todo-list';
 import {
   TODO_ROW_ACCESSIBILITY_ACTION,
   TodoCheckbox,

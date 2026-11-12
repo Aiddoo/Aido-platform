@@ -20,7 +20,10 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { isRecurring } from '../domains/todo.model';
 import { type Todo } from '../domains/todo.model';
-import { formatRepeatCadence, formatRepeatRuleLabel } from '../utils/format-repeat-summary';
+import {
+  formatRepeatCadence,
+  formatRepeatRuleLabel,
+} from '../utils/todo-repeat-summary.view-model';
 
 /** `TodoLabel`의 b3 한 줄 높이. 잠금 아이콘을 첫 줄 가운데에 맞춘다 */
 const TITLE_LINE_HEIGHT = 20;

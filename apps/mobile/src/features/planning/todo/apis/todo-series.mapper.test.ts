@@ -30,7 +30,7 @@ const REPEATS: TodoRepeat[] = [
   { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } },
 ];
 
-describe('반복 규칙 변환', () => {
+describe('toRepeat', () => {
   it.each(REPEATS)('계약 모양으로 보내고 되받으면 같은 규칙이다: %j', (repeat) => {
     // Given
     const dto = todoRepeatSchema.parse(toRepeatDto(repeat));
@@ -43,7 +43,7 @@ describe('반복 규칙 변환', () => {
   });
 });
 
-describe('이후 회차까지 고치는 요청', () => {
+describe('toFollowingScheduleRequest', () => {
   it('시간은 PATCH로 보내고 날짜는 보내지 않는다', () => {
     // When
     const request = toFollowingScheduleRequest({
@@ -98,7 +98,7 @@ describe('toTodoSeries', () => {
   });
 });
 
-describe('계약 응답과 반복 묶음 모델', () => {
+describe('toTodoSeries 계약 응답', () => {
   it('계약을 통과한 반복 묶음을 매핑하면 모델 스키마를 통과한다', () => {
     // Given
     const dto = todoSeriesResponseSchema.parse({

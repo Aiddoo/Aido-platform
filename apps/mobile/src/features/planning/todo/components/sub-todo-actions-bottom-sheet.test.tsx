@@ -12,8 +12,8 @@ import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
-import { createParentTodo, createSubTodo } from '../../__tests__/sub-todo.fixtures';
-import { TODO_QUERY_KEYS } from '../../queries/todo-query-keys';
+import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
+import { TODO_QUERY_KEYS } from '../queries/todo-query-keys';
 import { SubTodoActionsBottomSheet } from './sub-todo-actions-bottom-sheet';
 
 describe('SubTodoActionsBottomSheet', () => {

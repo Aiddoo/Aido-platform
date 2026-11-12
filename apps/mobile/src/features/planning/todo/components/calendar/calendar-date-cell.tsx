@@ -5,7 +5,7 @@ import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
 
 import type { DailyCompletionSummary } from '../../domains/daily-completion.model';
-import { type CalendarDayType, DAY_TYPE_TONE } from '../../utils/calendar-day';
+import { type CalendarDayType, DAY_TYPE_TONE } from '../../utils/calendar-day.view-model';
 
 export const CALENDAR_DATE_CELL_HEIGHT = 56;
 const MAX_CATEGORY_INDICATOR_COUNT = 3;

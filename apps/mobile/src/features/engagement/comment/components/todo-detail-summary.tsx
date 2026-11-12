@@ -16,9 +16,9 @@ import {
   useGetTodoDetailsQueryOptions,
   useGetTodosByDateQueryOptions,
 } from '@src/features/planning/todo/queries/todo.queries';
-import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
-import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
 import { formatTodoPeriod } from '@src/features/planning/todo/utils/todo-period.view-model';
+import { formatRepeatSummary } from '@src/features/planning/todo/utils/todo-repeat-summary.view-model';
+import { formatTodoTime } from '@src/features/planning/todo/utils/todo-time.view-model';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
 import { TodoThanksPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';

@@ -28,8 +28,8 @@ import { match } from 'ts-pattern';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import type { CompletionsByDate } from '../../queries/todo.queries';
 import { calendarViewModeStoredValue } from '../../schemas/calendar-view-mode-storage.schema';
-import { getMonthViewDayState } from '../../utils/calendar-day';
-import { diffCalendarWeeks, getWeekStartKey } from '../../utils/calendar-grid';
+import { getMonthViewDayState } from '../../utils/calendar-day.view-model';
+import { diffCalendarWeeks, getWeekStartKey } from '../../utils/calendar-grid.view-model';
 import {
   type CalendarDayCell,
   FEED_MONTH_WEEK_COUNT,
