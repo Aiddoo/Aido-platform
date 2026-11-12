@@ -1,4 +1,5 @@
 import type { Memo as MemoDto } from '@aido/api';
+import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
@@ -26,6 +27,7 @@ import { createMemoPlanDraftKey, createMemoPlanRequestDraftKey } from '../utils/
 import { MEMO_QUERY_KEYS } from './memo-query-keys';
 import {
   useConvertMemoToTodosMutationOptions,
+  useCreateMemoMutationOptions,
   useDeleteMemoMutationOptions,
   useParseMemoMutationOptions,
   useSetMemoPinnedMutationOptions,
@@ -75,6 +77,88 @@ async function updateMemo(client: QueryClient) {
   });
   await unmount();
 }
+
+describe('useCreateMemoMutationOptions', () => {
+  async function renderCreateMemo() {
+    const client = createTestQueryClient();
+    client.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
+    const httpClient = createHttpClientStub();
+    let options: ReturnType<typeof useCreateMemoMutationOptions> | undefined;
+    function CaptureOptions() {
+      options = useCreateMemoMutationOptions();
+      return null;
+    }
+    await renderScreen(<CaptureOptions />, {
+      di: createTestDi({ ports: { httpClient, queryClient: client } }),
+    });
+    const create = async (content: string, result: 'ok' | 'fail') => {
+      if (options == null) {
+        throw new Error('mutation 옵션을 받지 못했다');
+      }
+      if (result === 'ok') {
+        httpClient.post.mockResolvedValueOnce(ok({ message: 'created', memo: originalMemo }));
+      } else {
+        httpClient.post.mockRejectedValueOnce(new NetworkError());
+      }
+      const mutation = client.getMutationCache().build(client, options);
+      await act(async () => {
+        await mutation.execute({ content }).catch(() => undefined);
+      });
+    };
+    const sentKeys = () =>
+      httpClient.post.mock.calls.map(([, , config]) => config?.headers?.[IDEMPOTENCY_KEY_HEADER]);
+    const switchAccount = (accountId: string) =>
+      client.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: accountId }));
+    return { create, sentKeys, switchAccount };
+  }
+
+  it.each([
+    {
+      scenario: '응답을 못 받고 같은 글을 다시 저장',
+      first: 'fail',
+      content: '장보기',
+      account: 'account-1',
+      isSameKey: true,
+    },
+    {
+      scenario: '실패 뒤 글을 고쳐 저장',
+      first: 'fail',
+      content: '장보기 목록',
+      account: 'account-1',
+      isSameKey: false,
+    },
+    {
+      scenario: '저장에 성공한 뒤 같은 글을 다시 저장',
+      first: 'ok',
+      content: '장보기',
+      account: 'account-1',
+      isSameKey: false,
+    },
+    {
+      scenario: '다른 계정이 같은 글을 저장',
+      first: 'fail',
+      content: '장보기',
+      account: 'account-2',
+      isSameKey: false,
+    },
+  ] as const)(
+    '$scenario하면 같은 멱등 키를 보내는지: $isSameKey',
+    async ({ first, content, account, isSameKey }) => {
+      // Given
+      const { create, sentKeys, switchAccount } = await renderCreateMemo();
+      await create('장보기', first);
+      switchAccount(account);
+
+      // When
+      await create(content, 'ok');
+
+      // Then
+      const [firstKey, secondKey] = sentKeys();
+      expect(firstKey).toEqual(expect.any(String));
+      expect(secondKey === firstKey).toBe(isSameKey);
+    },
+  );
+});
 
 describe('메모 수정 후 상세 cache', () => {
   let client: QueryClient;
