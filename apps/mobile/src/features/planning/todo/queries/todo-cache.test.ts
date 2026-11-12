@@ -187,9 +187,26 @@ describe('할 일 쓰기 정리', () => {
     return client;
   }
 
+  /** 쓰기 콜백 안에서 부르는 정리라 그 쓰기 자신을 진행 중으로 센다. 돌려준 함수가 쓰기를 끝낸다 */
+  function startWrite(client: QueryClient) {
+    const response = createPendingResponse(undefined);
+    const running = client
+      .getMutationCache()
+      .build(client, {
+        mutationKey: TODO_MUTATION_KEYS.listWrites(),
+        mutationFn: () => response.response,
+      })
+      .execute(undefined);
+    return () => {
+      response.settle();
+      return running;
+    };
+  }
+
   it('하루짜리를 다 불러온 목록에서 고쳤으면 그 목록·달력은 그대로 두고 그날 위젯 요약만 낡음으로 표시한다', async () => {
     // Given
     const client = createSeededClient();
+    const finishWrite = startWrite(client);
 
     // When
     await settleTodoWrite(client, {
@@ -209,11 +226,13 @@ describe('할 일 쓰기 정리', () => {
     expect(isInvalidated(client, TODO_QUERY_KEYS.widgetSummaryByDate({ date: NEXT_DAY }))).toBe(
       false,
     );
+    await finishWrite();
   });
 
   it('여러 날 할 일은 기간 안의 다른 날짜 목록과 겹치는 달력 범위만 낡음으로 표시한다', async () => {
     // Given
     const client = createSeededClient();
+    const finishWrite = startWrite(client);
 
     // When
     await settleTodoWrite(client, {
@@ -229,6 +248,7 @@ describe('할 일 쓰기 정리', () => {
     expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }))).toBe(true);
     expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(true);
     expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK))).toBe(false);
+    await finishWrite();
   });
 
   it('실패하면 고친 목록·상세·그날 달력까지 서버 값으로 다시 맞춘다', async () => {
@@ -236,6 +256,7 @@ describe('할 일 쓰기 정리', () => {
     const client = createSeededClient();
     const detailKey = TODO_QUERY_KEYS.detail({ todoId: 1 });
     client.getQueryCache().build(client, { queryKey: detailKey });
+    const finishWrite = startWrite(client);
 
     // When
     await settleTodoWrite(client, {
@@ -251,6 +272,7 @@ describe('할 일 쓰기 정리', () => {
     expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
     expect(isInvalidated(client, detailKey)).toBe(true);
     expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(true);
+    await finishWrite();
   });
 
   it('다른 쓰기가 진행 중이면 낡음만 표시하고 화면에 붙은 조회도 다시 받지 않는다', async () => {
@@ -262,23 +284,8 @@ describe('할 일 쓰기 정리', () => {
       queryFn,
       staleTime: Infinity,
     }).subscribe(noop);
-    const otherWrite = createPendingResponse(undefined);
-    const running = client
-      .getMutationCache()
-      .build(client, {
-        mutationKey: TODO_MUTATION_KEYS.listWrites(),
-        mutationFn: () => otherWrite.response,
-      })
-      .execute(undefined);
-    // 이 쓰기 자신도 진행 중으로 센다
-    const self = createPendingResponse(undefined);
-    const selfRunning = client
-      .getMutationCache()
-      .build(client, {
-        mutationKey: TODO_MUTATION_KEYS.listWrites(),
-        mutationFn: () => self.response,
-      })
-      .execute(undefined);
+    const finishOtherWrite = startWrite(client);
+    const finishWrite = startWrite(client);
 
     // When
     await settleTodoWrite(client, {
@@ -293,9 +300,7 @@ describe('할 일 쓰기 정리', () => {
     // Then
     expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
     expect(queryFn).not.toHaveBeenCalled();
-    otherWrite.settle();
-    self.settle();
-    await Promise.all([running, selfRunning]);
+    await Promise.all([finishOtherWrite(), finishWrite()]);
     unsubscribe();
   });
 });

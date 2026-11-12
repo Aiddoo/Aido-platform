@@ -1,5 +1,6 @@
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import type { DateKey } from '@src/shared/date/date-key';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import type {
   InvalidateQueryFilters,
   MutationFilters,
@@ -325,10 +326,6 @@ interface TodoWriteTarget {
   span: DateSpan;
 }
 
-function isConcurrentTodoWrite(queryClient: QueryClient) {
-  return queryClient.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() }) > 1;
-}
-
 /** 그 할 일의 완료를 바꾸는 쓰기. 응답 전에는 화면의 완료가 낙관적 값이라 서버는 아직 모른다 */
 export function todoCompletionWritesFilter({ todoId }: { todoId: number }): MutationFilters {
   return {
@@ -360,7 +357,7 @@ function overlapsOtherWrites(queryClient: QueryClient, ticket: TodoWriteTicket |
     ticket == null ||
     ticket.startedWithOthers ||
     (todoWriteSequences.get(queryClient) ?? 0) > ticket.sequence ||
-    isConcurrentTodoWrite(queryClient)
+    !isLastMutation(queryClient, TODO_MUTATION_KEYS.listWrites())
   );
 }
 
@@ -375,7 +372,7 @@ export async function beginTodoWrite(
 ): Promise<TodoWriteTicket> {
   const sequence = (todoWriteSequences.get(queryClient) ?? 0) + 1;
   todoWriteSequences.set(queryClient, sequence);
-  const startedWithOthers = isConcurrentTodoWrite(queryClient);
+  const startedWithOthers = !isLastMutation(queryClient, TODO_MUTATION_KEYS.listWrites());
   await Promise.all([
     queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date }), exact: true }),
     todoId != null &&
@@ -392,10 +389,12 @@ async function settleTodoQueries(
   queryClient: QueryClient,
   filters: readonly InvalidateQueryFilters[],
 ) {
+  // 콜백 안에서 먼저 센다. 무효 표시를 기다리는 사이 이 쓰기가 끝나 빠지면 남은 쓰기를 마지막으로 잘못 본다
+  const isLastWrite = isLastMutation(queryClient, TODO_MUTATION_KEYS.listWrites());
   await Promise.all(
     filters.map((filter) => queryClient.invalidateQueries({ ...filter, refetchType: 'none' })),
   );
-  if (isConcurrentTodoWrite(queryClient)) {
+  if (!isLastWrite) {
     return;
   }
   await queryClient.refetchQueries({
@@ -433,7 +432,7 @@ export function settleTodoWrite(
     // 하루짜리를 다 불러온 목록에서 계산했으면 달력 값이 서버와 같다
     const list = queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date: target.date }));
     const isSingleDay = target.span.startDate === target.span.endDate;
-    if (needsReconcile || !isSingleDay || list?.hasNext !== false) {
+    if (needsReconcile || !isSingleDay || list == null || list.hasNext) {
       filters.push(completionRangesFilter(target.span));
     }
     filters.push(widgetSummariesFilter(target.span));
