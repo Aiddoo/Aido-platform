@@ -3,9 +3,7 @@ import {
   WidgetNavigationPolicy,
 } from '@src/features/device/widget/domains/widget-navigation.model';
 import {
-  findWidgetRoute,
-  getWidgetOpenedDestination,
-  isWidgetRouteShown,
+  findWidgetEntry,
   isWidgetWakeLink,
 } from '@src/features/device/widget/utils/widget-navigation-link.view-model';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
@@ -50,14 +48,14 @@ export function useWidgetAppEntry() {
   const previousUrlRef = useRef(url);
   const commandRestoredAtRef = useRef<number | null>(null);
   const [pendingInitialUrl, setPendingInitialUrl] = useState<string | null>(() =>
-    findWidgetRoute(url) == null ? null : url,
+    findWidgetEntry(url) == null ? null : url,
   );
   const isAuthenticatedRouteMounted = segments[0] === '(app)';
 
   const trackWidgetOpened = useEffectEvent((uri: string) => {
-    const destination = getWidgetOpenedDestination(uri);
-    if (destination != null) {
-      trackEvent('widget_opened', { destination });
+    const entry = findWidgetEntry(uri);
+    if (entry != null) {
+      trackEvent('widget_opened', { destination: entry.openedDestination });
     }
   });
   // 켜진 앱의 위젯 링크는 Expo Router가 직접 열어 들어온 링크마다 센다. 인증 전 링크는 복원할 때 센다
@@ -109,14 +107,14 @@ export function useWidgetAppEntry() {
         }
       }
 
-      const destination = findWidgetRoute(destinationUrl);
-      if (destination == null) {
+      const entry = findWidgetEntry(destinationUrl);
+      if (entry == null) {
         return;
       }
       setPendingInitialUrl(null);
       try {
-        if (!isWidgetRouteShown(destinationUrl, pathname, parameters)) {
-          router.navigate(destination, { withAnchor: true });
+        if (!entry.isShown({ pathname, params: parameters })) {
+          router.navigate(entry.href, { withAnchor: true });
         }
         if (command == null) {
           widgetNavigationRepository.removeCorrupted();
@@ -158,7 +156,7 @@ export function useWidgetAppEntry() {
       setPendingInitialUrl(null);
       return;
     }
-    setPendingInitialUrl(findWidgetRoute(url) == null ? null : url);
+    setPendingInitialUrl(findWidgetEntry(url) == null ? null : url);
   }, [url, status, isAuthenticatedRouteMounted]);
 
   useEffect(() => {
@@ -198,7 +196,7 @@ export function useWidgetAppEntry() {
     }
 
     const destinationUrl = pendingCommand?.uri ?? pendingInitialUrl;
-    if (destinationUrl == null || findWidgetRoute(destinationUrl) == null) {
+    if (destinationUrl == null || findWidgetEntry(destinationUrl) == null) {
       widgetNavigationRepository.removeCorrupted();
       return;
     }
