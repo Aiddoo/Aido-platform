@@ -8,6 +8,7 @@ import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -17,7 +18,6 @@ import {
   getVoicePlanFailureCause,
   isPlanKeyConflictError,
 } from '@src/features/voice/domains/voice.error';
-import { reflectFeatureQuota } from '@src/features/voice/queries/voice-plan-cache';
 import { planInProgressRetryOptions } from '@src/features/voice/queries/voice.mutations';
 import { createPlanReviewDraft } from '@src/features/voice/utils/plan-review-draft';
 import {

@@ -4,7 +4,7 @@ import { emitTodoCreated } from '@src/core/events/todo-created';
 import { parseErrorFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
+import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -24,7 +24,6 @@ import type { PlannedAction, VoicePlanSource } from '../domains/voice-plan.model
 import { getVoicePlanFailureCause, isPlanInProgressError } from '../domains/voice.error';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
 import { toAnalyticsSource, summarizePlanForAnalytics } from '../utils/voice-analytics';
-import { reflectFeatureQuota } from './voice-plan-cache';
 
 /** 응답을 놓친 뒤 다시 보냈는데 앞선 요청이 아직 처리 중이면 안내만 하고 끝내지 않고 결과가 나올 때까지 기다린다 */
 export const planInProgressRetryOptions = {
@@ -189,7 +188,7 @@ export function useCreateQuickPlanMutationOptions({
 
       const featureQuota = parseErrorFeatureQuota(error);
       if (featureQuota != null) {
-        setFeatureQuota(queryClient, featureQuota);
+        reflectFeatureQuota(queryClient, featureQuota);
       }
       // 서버가 환불까지 끝냈다고 알린 오류에만 "차감되지 않아요"를 보여 준다
       toast.error(t(`voicePlan:failure.${cause}.title`), {
@@ -256,7 +255,7 @@ export function useCreateVoiceNoteDigestMutationOptions() {
 
       const featureQuota = parseErrorFeatureQuota(error);
       if (featureQuota != null) {
-        setFeatureQuota(queryClient, featureQuota);
+        reflectFeatureQuota(queryClient, featureQuota);
       }
       // 화면이 실패를 직접 보여 주므로 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다
     },
