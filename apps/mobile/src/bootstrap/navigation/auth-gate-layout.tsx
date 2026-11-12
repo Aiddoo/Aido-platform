@@ -3,13 +3,15 @@ import { useOrientationLock } from '@src/bootstrap/hooks/use-orientation-lock';
 import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
 import { useWidgetAppEntry } from '@src/bootstrap/hooks/use-widget-app-entry';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import type { selectedMemoParamsSchema } from '@src/features/notes/memo/schemas/memo-params.schema';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '@src/features/notification/constants/notification.constants';
 import { useAppEntrySegmentSync } from '@src/features/notification/hooks/use-app-entry-segment-sync';
 import { usePushNotificationEntry } from '@src/features/notification/hooks/use-push-notification-entry';
 import { usePushNotificationResponse } from '@src/features/notification/hooks/use-push-notification-response';
+import type { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { useInstallReferrerCapture } from '@src/features/social/invite/hooks/use-install-referrer-capture';
 import { useInviteAppEntry } from '@src/features/social/invite/hooks/use-invite-app-entry';
-import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
+import { type PaneDetailScreen, useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
 import { useAppTheme } from '@src/shared/providers/theme-provider';
 import type { ScreenName } from '@src/shared/utils/to-screen-name';
 import { useIsRestoring } from '@tanstack/react-query';
@@ -18,6 +20,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
+import type { z } from 'zod';
 
 const ROOT_STACK_ANIMATION_DURATION_MS = 250;
 
@@ -27,6 +30,20 @@ const ENTRY_REDIRECT_SCREENS: ReadonlySet<ScreenName> = new Set([
   '/loading',
   '/auth/[provider]',
 ]);
+
+/** 넓은 화면(iPad·폴더블)에서 목록 옆 칸에 여는 상세. 좁은 화면의 상세 route 이름으로 세 두 화면 크기의 조회 수를 견줄 수 있다 */
+const PANE_DETAIL_SCREENS = [
+  {
+    listScreen: '/feed',
+    param: 'todoId' satisfies keyof z.output<typeof feedParamsSchema>,
+    detailScreen: '/todo/[todoId]',
+  },
+  {
+    listScreen: '/memo',
+    param: 'memoId' satisfies keyof z.output<typeof selectedMemoParamsSchema>,
+    detailScreen: '/memo/[memoId]',
+  },
+] as const satisfies readonly PaneDetailScreen[];
 
 export function AuthGateLayout() {
   const status = useAuthStatus();
@@ -105,7 +122,10 @@ export function AuthGateLayout() {
  * `setParams`·이동마다 이것만 다시 그려지고 AuthGateLayout·Stack은 그대로다
  */
 function RouteWatchers() {
-  useScreenTracking({ untrackedScreens: ENTRY_REDIRECT_SCREENS });
+  useScreenTracking({
+    untrackedScreens: ENTRY_REDIRECT_SCREENS,
+    paneDetailScreens: PANE_DETAIL_SCREENS,
+  });
   useWidgetAppEntry();
   useInviteAppEntry();
   useAppEntrySegmentSync();

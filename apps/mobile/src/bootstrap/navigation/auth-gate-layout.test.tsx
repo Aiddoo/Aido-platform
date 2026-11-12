@@ -3,6 +3,7 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { getCachedMe, updateMeInCache } from '@src/features/identity/user/queries/user-cache';
+import { useFeedTodoDetailHandoff } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
 import { useTrackView } from '@src/shared/analytics';
 import * as themeProvider from '@src/shared/providers/theme-provider';
 import type { ScreenName } from '@src/shared/utils/to-screen-name';
@@ -40,6 +41,7 @@ function LoginScreen() {
 
 function FeedScreen() {
   useMountedView('/feed');
+  useFeedTodoDetailHandoff();
 
   return (
     <Pressable testID="feed" onPress={() => mockAuthSessionStore.setStatus('unauthenticated')}>
@@ -360,6 +362,55 @@ describe('root 인증 route 전환', () => {
 
       // Then
       expect(screenViews()).toEqual(['/feed']);
+    });
+  });
+
+  describe('넓은 화면 칸의 상세', () => {
+    const window = Dimensions.get('window');
+    const screenSize = Dimensions.get('screen');
+    const setWindowWidth = (width: number) =>
+      Dimensions.set({ window: { ...window, width }, screen: screenSize });
+
+    beforeEach(() => {
+      setWindowWidth(1024);
+    });
+
+    afterEach(() => {
+      Dimensions.set({ window, screen: screenSize });
+    });
+
+    async function renderWideFeed() {
+      const rendered = await renderAuthRoutes('authenticated');
+      await waitFor(() => expect(rendered.route.getPathname()).toBe('/feed'));
+      return rendered;
+    }
+
+    it('칸에서 고른 상세를 좁은 화면의 상세 이름으로 세고, 칸을 닫거나 query만 바꾸면 세지 않는다', async () => {
+      // Given
+      const { screenViews } = await renderWideFeed();
+
+      // When
+      await act(() => router.setParams({ todoId: '8' }));
+      await act(() => router.setParams({ date: '2026-11-12' }));
+      await act(() => router.setParams({ todoId: '9' }));
+      await act(() => router.setParams({ todoId: undefined }));
+
+      // Then
+      expect(screenViews()).toEqual(['/feed', '/todo/[todoId]', '/todo/[todoId]']);
+    });
+
+    it('칸에 상세를 연 채 접으면 상세 화면으로 넘겨도 다시 세지 않고 뒤로 가면 목록을 센다', async () => {
+      // Given
+      const { route, screenViews } = await renderWideFeed();
+      await act(() => router.setParams({ todoId: '8' }));
+
+      // When
+      await act(() => setWindowWidth(390));
+      await waitFor(() => expect(route.getPathname()).toBe('/todo/8'));
+      await act(() => router.back());
+
+      // Then
+      expect(screenViews()).toEqual(['/feed', '/todo/[todoId]', '/feed']);
     });
   });
 
