@@ -229,6 +229,26 @@ describe('SignUpForm', () => {
       expect(dismiss).not.toHaveBeenCalled();
     });
 
+    it('비밀번호 확인을 다르게 적으면 칸을 벗어나기 전에도 일치하지 않는다는 이유를 보인다', async () => {
+      // Given
+      const session = createAuthSession();
+      await render(<SignUpHarness />, { wrapper: session.Wrapper });
+      const passwordInput = await goToPasswordStep();
+      await fireEvent.changeText(passwordInput, 'Password123');
+      await fireEvent.press(screen.getByText('다음'));
+      expect(screen.queryByText('비밀번호가 일치하지 않아요')).toBeNull();
+
+      // When
+      await fireEvent.changeText(
+        await screen.findByPlaceholderText('비밀번호를 다시 입력해주세요'),
+        'Mismatch99x',
+      );
+
+      // Then
+      expect(await screen.findByText('비밀번호가 일치하지 않아요')).toBeTruthy();
+      expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+    });
+
     it.each(['abcd1234.', 'abcd 1234', '비밀번호abcd1234'])(
       '비밀번호 %j처럼 쓸 수 없는 문자가 있으면 규칙 아래에 이유를 보이고 다음으로 가지 않는다',
       async (password) => {
