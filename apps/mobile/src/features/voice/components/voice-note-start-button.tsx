@@ -1,7 +1,6 @@
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -15,7 +14,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useEffect, useEffectEvent, useRef } from 'react';
 
 import { useStartVoiceNote } from '../hooks/use-start-voice-note';
-import { voiceNoteStartParamsSchema } from '../schemas/voice-note-params.schema';
+import { useStartVoiceNoteRequest } from '../hooks/use-voice-note-params';
 
 interface VoiceNoteStartButtonProps {
   coachmarkPlacement: HintPopoverContentProps['placement'];
@@ -75,17 +74,17 @@ interface UseStartRequestedVoiceNoteOptions {
 
 /** 다른 화면이 시작을 요청했으면 한 번만 버튼을 누른 것처럼 시작한다. 동의·마이크를 거절하면 메모 탭에 남아 다시 누를 수 있다 */
 function useStartRequestedVoiceNote({ start }: UseStartRequestedVoiceNoteOptions) {
-  const [{ startVoiceNote }, setParams] = useRouteParams(voiceNoteStartParamsSchema);
+  const [isStartRequested, clearStartVoiceNote] = useStartVoiceNoteRequest();
   const hasStartedRef = useRef(false);
   const reportUnexpectedError = useReportUnexpectedError('voice');
   const startRequested = useEffectEvent(() => {
-    setParams({ startVoiceNote: undefined });
+    clearStartVoiceNote();
     start().catch(reportUnexpectedError);
   });
 
   // 요청을 지우면 다시 받을 수 있게 되돌린다. 같은 탭에 머문 채 다시 요청이 와도 또 시작한다
   useEffect(() => {
-    if (startVoiceNote == null) {
+    if (!isStartRequested) {
       hasStartedRef.current = false;
       return;
     }
@@ -94,5 +93,5 @@ function useStartRequestedVoiceNote({ start }: UseStartRequestedVoiceNoteOptions
     }
     hasStartedRef.current = true;
     startRequested();
-  }, [startVoiceNote]);
+  }, [isStartRequested]);
 }

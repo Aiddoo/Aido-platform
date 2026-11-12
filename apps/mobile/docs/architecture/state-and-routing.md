@@ -64,18 +64,18 @@ export default function MemoDetailRoute() {
 }
 ```
 
-- **원시 `setParams`를 내보내지 않는다.** 연관 값을 지우는 세터를 이름 있게 내보낸다(`useTodoCommentSort`는 `comment`를 함께 지운다). 호출부가 지우기를 잊을 수 없다. `router.setParams`는 params 훅 밖에서 쓰지 않는다(lint).
+- **원시 `setParams`를 내보내지 않는다.** 연관 값을 지우는 세터를 이름 있게 내보낸다(`useTodoCommentSort`는 `comment`를 함께 지운다). 호출부가 지우기를 잊을 수 없다. `router.setParams`와 `useRouteParams`의 원시 setter는 params 훅(`hooks/use-*-params.ts`) 밖에서 쓰지 않는다(`no-restricted-properties`, `aido/route-setter-location`). 예외는 칸 크기로 이동 방식을 고르는 `useFeedSelectedTodoId` 하나다.
 - **목록 행은 route 훅을 부르지 않는다.** 부모가 한 번 읽어 `isSelected`를 넘긴다. 가상 목록이 행 수만큼 URL을 파싱하지 않게 한다. 짧은 고정 목록은 행이 읽어도 된다.
 - **레이아웃은 자식 params를 구독하지 않는다.** 레이아웃은 내비게이터와 Provider만 둔다. 루트에서 URL을 봐야 하는 훅은 `null`을 그리는 형제 컴포넌트에 둔다: `AuthGateLayout`의 `RouteWatchers`(`useScreenTracking`, `useWidgetAppEntry`, `useInviteAppEntry`, `useAppEntrySegmentSync`)와 `NotificationProvider`의 `ForegroundPushPresentation`. 스플래시 판단이 쓰는 "앱 입구인가"는 `useAppEntrySegmentSync`가 푸시 진입 슬롯에 적고 레이아웃은 슬롯만 읽는다. 내 정보·창 크기를 구독하는 루트 훅도 같은 이유로 `WindowWatchers`(`useOrientationLock`)·`SessionWatchers`(`useSyncUserIdentity`, `useClaimDeviceDataForUser`)·`AppEntryWatchers`(`useInstallReferrerCapture`, `usePushNotificationResponse`)에, 앱 화면 묶음 레이아웃의 할 일 이벤트 훅은 `TodoEventWatchers`(`useRecordTodoCreated`, `useRecordTodoCompletion`, `useOfferMarketingPushAfterCompletion`)에 둔다. `setParams`·내 정보 변경·창 크기 변경이 레이아웃을 다시 그리지 않는 것은 `auth-gate-layout.test.tsx`가 지킨다.
 - 화면 훅에서 `useGlobalSearchParams`를 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 그려진다. 현재 화면과 무관하게 읽어야 하는 위의 `null` 자식만 쓴다.
 
-| 스키마                     | 훅 → 반환                                                                                                                           |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `feedParamsSchema`         | `useFeedDateKey` → `[dateKey, setDateKey]`, `useFeedFriendId` → `[friendId, setFriendId]`, `useFeedAction`, `useFeedSelectedTodoId` |
-| `friendListParamsSchema`   | `useFriendListView` → `[view, setView]`, `useFriendListIsEditing` → `[isEditing, setIsEditing]`(파일 하나)                          |
-| `friendParamsSchema`       | 친구 피드의 `useRouteFriend()`가 안의 `useRouteFriendId` → `[friendId]`로 찾음·읽는 중·실패·친구 아님 유니온을 준다                 |
-| `invitedFriendsViewSchema` | `useInvitedFriendsView` → `[view, setView]`                                                                                         |
-| 그 밖                      | `useTodoSheetDateKey`·`useTodoCategoryId`·`useNudgeId`·`useVoiceNoteDraftId` → `[id]`, `useCheckoutRoute` → `[pathname, leaveTo]`   |
+| 스키마                     | 훅 → 반환                                                                                                                                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `feedParamsSchema`         | `useFeedDateKey` → `[dateKey, setDateKey]`, `useFeedFriendId` → `[friendId, setFriendId]`, `useFeedAction`, `useFeedSelectedTodoId`                                                                  |
+| `friendListParamsSchema`   | `useFriendListView` → `[view, setView]`, `useFriendListIsEditing` → `[isEditing, setIsEditing]`(파일 하나)                                                                                           |
+| `friendParamsSchema`       | 친구 피드의 `useRouteFriend()`가 안의 `useRouteFriendId` → `[friendId]`로 찾음·읽는 중·실패·친구 아님 유니온을 준다                                                                                  |
+| `invitedFriendsViewSchema` | `useInvitedFriendsView` → `[view, setView]`                                                                                                                                                          |
+| 그 밖                      | `useTodoSheetDateKey`·`useTodoCategoryId`·`useNudgeId`·`useVoiceNoteDraftId` → `[id]`, `useCheckoutRoute` → `[pathname, leaveTo]`, `useStartVoiceNoteRequest` → `[isRequested, clearStartVoiceNote]` |
 
 - 계산 값은 튜플이 아니다(`useDateFormatContext`는 값을 돌려준다). 저장소가 없는 구독 값(`useIsOnline`)과 동작 묶음도 튜플이 아니다.
 
