@@ -39,7 +39,6 @@ Object.assign(Stack, { Toolbar: TestStack.Toolbar });
 
 // 앱 화면 묶음 레이아웃이 선언하는 화면이다. 없으면 레이아웃이 화면마다 경고를 남긴다
 const APP_STACK_SCREENS = [
-  'notifications/index',
   'nudges/[nudgeId]',
   'suggestions/index',
   'weather',

@@ -84,7 +84,7 @@ NudgeDetailScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFal
           title={t('todo:interaction.unavailable')}
           description={t('todo:interaction.unavailableDescription')}
           button={
-            <Result.Button onPress={() => router.replace({ pathname: '/notifications' })}>
+            <Result.Button onPress={() => router.dismissTo('/notifications')}>
               {t('common:actions.goBack')}
             </Result.Button>
           }

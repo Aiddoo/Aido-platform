@@ -49,7 +49,7 @@ export const unstable_settings = {
 function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const headerOptions = useStackScreenOptions();
-  const { t } = useTranslation(['notification', 'todo', 'ai']);
+  const { t } = useTranslation(['todo', 'ai']);
   // 알림 안내 화면의 Stack.Protected guard라 내비게이터를 그리는 레이아웃이 판정한다
   const isPushOnboardingDue = usePushOnboardingGuard();
 
@@ -65,10 +65,6 @@ function AppLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="notifications/index"
-          options={{ ...headerOptions, title: t('notification:titles.notifications') }}
-        />
         <Stack.Screen
           name="nudges/[nudgeId]"
           options={{ ...headerOptions, title: t('todo:interaction.detailTitle') }}

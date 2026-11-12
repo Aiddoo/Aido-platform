@@ -92,7 +92,8 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 이동은 호출부에서 typed routes `router.push({ pathname, params })`로 쓴다. 컴파일 때 `pathname`과 동적 세그먼트를 검사하므로 href 래퍼를 만들지 않고 경로 문자열을 잇지 않는다.
 - 저장·AI·조회를 기다린 뒤 이동하면 그 사이 떠났는지 먼저 본다. 화면은 `navigation.isFocused()`, 화면 안에서 바뀌는 조각(pane의 메모 편집기)은 마운트 여부도 본다. 떠났으면 지금 보는 화면 위로 끌고 가지 않는다. 메모 AI 정리 결과는 mutation이 초안에 남겨, 그 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다.
 - 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `WidgetNavigationPolicy`다.
-- 켜진 앱에 앱 밖에서 들어온 이동(누른 푸시)은 `openEntryHref(href)`(`shared/navigation/open-entry-href.ts`)로 OS가 같은 URL을 연 것처럼 연다. Stack에 그 화면이 있으면 그리로 돌아가고 없으면 쌓는다. `router.navigate`는 탭 위 화면(알림함·할 일 상세·시트)에서 탭 화면을 열면 탭 묶음을 하나 더 쌓는다.
+- 켜진 앱에 앱 밖에서 들어온 이동(누른 푸시)은 `openEntryHref(href)`(`shared/navigation/open-entry-href.ts`)로 OS가 같은 URL을 연 것처럼 연다. Stack에 그 화면이 있으면 그리로 돌아가고 없으면 쌓는다. `router.navigate`는 탭 위 화면(할 일 상세·시트·결제 모달)에서 탭 화면을 열면 탭 묶음을 하나 더 쌓는다.
+- 탭 위 화면이 탭 화면으로 떠날 때는 `router.dismissTo(href)`다. 시트는 `close({ type: 'dismiss-to', href })`, 결제 모달은 `useCheckoutRoute().leaveTo`다. 탭 안과 탭 위에서 함께 도는 코드(오류 화면 문의하기)는 `openEntryHref`다. 탭 화면으로 `push`·`replace`하면 탭 바가 두 겹이 된다.
 - 뒤로 가기는 `useGoBack({ fallbackHref })`(돌아갈 화면이 없을 때 화면이 아닌 일을 하면 `{ onFallback }`), Android 뒤로 가기 버튼은 `useAndroidBackHandler`다([hooks](./hooks.md)). `router.canGoBack() ? router.back() : …`을 직접 쓰지 않는다(연타로 두 번 돌아간다).
 - 웹 페이지(약관·공지)는 route가 아니라 `useOpenInAppBrowser`로 연다. 앱 자체 WebView는 없고 `aido://webview/…` 링크는 `+not-found`로 간다.
 - 공개된 경로와 `aido://` URI는 외부 계약이다. 바꾸지 않고 새 경로는 추가만 한다([compatibility](../../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)).
@@ -119,7 +120,7 @@ app/(app)/(tabs)/
   (memos)/memo/index.tsx    /memo
   (me)/_layout.tsx          마이 탭 Stack(MyPageStack + 넓은 화면 메뉴 칸), anchor mypage/index
   (me)/mypage/index.tsx     /mypage
-  (me,memos,todos)/…        친구·배지·리포트·설정·새 기능 목록. 세 탭 Stack에 모두 있다
+  (me,memos,todos)/…        알림함·친구·배지·리포트·설정·새 기능 목록. 세 탭 Stack에 모두 있다
 ```
 
 - 그룹 이름은 URL에 들어가지 않는다. 그래서 `/friends/invite`·`/settings/…` 같은 공개 경로와 `screen_view` 이름이 1.15.1과 같다. 탭 그룹 이름은 탭의 영어 이름(To-dos·Memos·Me)이다.
@@ -129,14 +130,16 @@ app/(app)/(tabs)/
 
 **어디에 열리나.** 함께 쓰는 화면은 세 탭에 다 있어 Expo Router가 그룹을 고른다. 앱이 켜져 있고 지금 탭이 있으면 그 탭이다. 탭이 없으면 글자 순 첫 그룹이고, 그게 마이 탭 `(me)`다. 따로 적는 목록이나 경로 바꾸기는 없다.
 
-| 여는 곳                                                        | 함께 쓰는 화면(`/friends/invite`, `/settings/…`)                    | 한 탭에만 있는 화면                                                                                           |
-| -------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 탭 안에서 누름                                                 | 누른 탭 Stack 위. 탭 바가 그대로이고 뒤로 가면 누른 화면이다        | 그 탭으로 바뀐다                                                                                              |
-| 켜진 앱에 들어온 링크·푸시(웜)                                 | 보던 탭 Stack 위. 뒤로 가면 보던 화면이다                           | 그 탭으로 바뀐다                                                                                              |
-| 꺼진 앱으로 들어온 딥링크·푸시·위젯·초대 링크(콜드)            | 마이 탭. 아래에 내 정보 메뉴가 깔려 뒤로 가면 메뉴다                | 탭 첫 화면은 그 탭. 탭 위 화면(`/todo/[todoId]`·`/notifications`·`/memo/[memoId]`)은 아래에 할 일 탭이 깔린다 |
-| 탭 위 화면(결제 모달·시트·상세)에서 `dismissTo`·`replace`·push | 마이 탭(1.15.1과 같다). 시트는 기존대로 시트를 닫고(`replace`) 연다 | 그 탭                                                                                                         |
+| 여는 곳                                               | 함께 쓰는 화면(`/notifications`, `/friends/invite`, `/settings/…`) | 한 탭에만 있는 화면                                                                          |
+| ----------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| 탭 안에서 누름                                        | 누른 탭 Stack 위. 탭 바가 그대로이고 뒤로 가면 누른 화면이다       | 그 탭으로 바뀐다                                                                             |
+| 켜진 앱에 들어온 링크·푸시(웜)                        | 보던 탭 Stack 위. 뒤로 가면 보던 화면이다                          | 그 탭으로 바뀐다                                                                             |
+| 꺼진 앱으로 들어온 딥링크·푸시·위젯·초대 링크(콜드)   | 마이 탭. 아래에 내 정보 메뉴가 깔려 뒤로 가면 메뉴다               | 탭 첫 화면은 그 탭. 탭 위 화면(`/todo/[todoId]`·`/memo/[memoId]`)은 아래에 할 일 탭이 깔린다 |
+| 탭 위 화면(결제 모달·시트·상세)에서 떠남(`dismissTo`) | 그 화면을 닫고 마이 탭(1.15.1과 같다). 탭 묶음은 한 겹이다         | 그 탭                                                                                        |
 
 - 새 탭 그룹을 더할 때는 `(me)`보다 글자 순으로 앞서지 않는 이름을 쓴다. 앞서면 콜드 링크가 그 탭에 열린다. `src/bootstrap/navigation/tab-stack-routing.test.tsx`가 1.15.1 공개 경로와 함께 쓰는 화면 파일마다 이 표를 확인한다.
+- 알림함은 세 탭의 종에서 열어 함께 쓰는 화면이다. 행이 여는 탭 화면은 같은 탭에 쌓이고 뒤로 가면 알림함이다. 넓은 화면의 마이 탭에서는 메뉴 칸 옆 첫 상세로 열려 뒤로 가기 없이 메뉴로 떠난다.
+- 탭 위 화면의 되돌리기 fallback(`useGoBack`·`Redirect`의 `/feed`·`/memo`)은 돌아갈 화면이 없을 때만 쓴다. (app)·탭 anchor로 탭 위 화면 아래에는 늘 탭 묶음이 있어 실제로 닿지 않아 그대로 둔다.
 - 앱 밖 링크를 다른 탭에 꼭 열어야 하면 보내는 쪽 href에 그룹을 적는다(`/(app)/(tabs)/(todos)/…`, Expo 문서의 "include the group name"). 지금은 그런 화면이 없다.
 
 **함께 쓰는 화면 더하기.** `app/(app)/(tabs)/(me,memos,todos)/` 아래에 route 파일 하나를 만든다. 레이아웃·링크 표·테스트는 고치지 않는다.
@@ -157,7 +160,7 @@ app/(app)/(tabs)/
 - 상세로 가는 행은 모두 `<Link>` + `Link.Preview` + `Link.Menu`다(친구 할 일, 메모 카드, 친구(피드), 알림·보낸 콕, 리포트, 주간 성취, 말로 남긴 메모). 길게 누르기 동작은 `Link.MenuAction`으로 둔다.
 - 제안 행과 댓글 행은 상세 route가 없어 Link를 붙이지 않는다. 제안은 수락·거절 버튼, 댓글은 길게 누르기 메뉴를 그대로 둔다.
 - Link로 여는 것은 좁은 화면(compact)뿐이다. 넓은 화면의 pane 선택은 기존 `onPress`로 한다.
-- 미리보기는 행과 같은 Stack의 화면만 붙인다. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은 미리보기가 그 navigator에 화면을 미리 넣어 params가 남을 수 있어 탭으로만 연다. 알림함(루트 Stack)은 `/todo/[todoId]`·`/nudges/[nudgeId]`만 미리본다(`findRootStackDetailHref`).
+- 미리보기는 행과 같은 Stack이나 탭 위 루트 Stack의 화면만 붙인다. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은 미리보기가 그 navigator에 화면을 미리 넣어 params가 남을 수 있어 탭으로만 연다. 알림함은 탭 위 상세(`/todo/[todoId]`·`/nudges/[nudgeId]`)만 미리본다(`findRootStackDetailHref`).
 - 끌기(재정렬) 모드의 행에는 Menu를 붙이지 않는다. 친구 목록은 평소에는 친구 피드(다른 탭)로 가는 Link + Menu(피드 보기·콕 찌르기·신고·차단)이고, 편집 모드에서는 Menu를 빼고 Link 안 누름을 꺼 바깥 행이 끌기를 받는다. 행 모양(바깥 누름·손잡이·내용 `LinearTransition`)은 두 모드에서 같게 둬 편집 전환 때 다시 그리지 않는다. iOS는 Menu가 있는 Link만 네이티브 감싸개를 써 Link 안쪽(`ListRow`)만 다시 그린다.
 - 내 할 일 행은 상세로 가는 행이 아니라 Link를 붙이지 않는다. 길게 누르기는 끌어서 순서 바꾸기, 탭은 하위 할 일 펼치기이고 상세는 댓글 버튼으로 연다.
 - 탭으로 여는 길은 두 가지다. ① 열 때 함께 할 일(읽음·추적·고르기)이 있거나 탭이 상황마다 다른 행은 행 `onPress`(`useSingleTap`)가 열고 Link의 `onPress`는 `event.preventDefault()`다(알림 `NotificationListRow.Link`, 메모 카드, 친구 할 일). ② 그 밖은 Link가 `navigate`로 연다(친구, 음성 메모, 성취, 리포트). `navigate`는 맨 위가 같은 화면이면 새로 쌓지 않아 연타에도 한 번이고, 행 안 버튼·`Link.MenuAction`도 같은 동사(`useSingleTap(router.navigate)`)로 연다. 어느 쪽이든 미리보기를 눌러 가는 이동은 Link가 맡는다. expo-router 58은 미리보기 탭 콜백을 공개하지 않아 이 길은 행 `onPress`를 거치지 않는다.

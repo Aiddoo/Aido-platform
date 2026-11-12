@@ -56,6 +56,8 @@ const PUBLIC_TAB_ROOT_PATHS = [
  * 앱 밖에서 열면 1.15.1처럼 이 화면을 가진 마이 탭에 열리고 뒤로 가면 내 정보 메뉴다
  */
 const PUBLIC_SHARED_TAB_PATHS = [
+  // 1.15.1에서는 탭 위 화면이었고 1.15.2부터 탭마다 함께 쓴다
+  ['/notifications?category=ALL', 'notifications/index'],
   ['/friends?view=receiver', 'friends/index'],
   ['/friends/search', 'friends/search'],
   ['/friends/add', 'friends/add'],
@@ -227,6 +229,7 @@ async function renderApp(initialUrl: string) {
     '(app)/(tabs)/(me)/mypage/index': createScreen('mypage/index'),
     ...sharedScreens,
     '(app)/todo/[todoId]/index': createScreen('todo'),
+    '(app)/nudges/[nudgeId]': createScreen('nudge'),
     '(app)/whats-new/index': createScreen('whats-new'),
     '(app)/paywall': PaywallScreen,
     '(app)/todo/new': InquirySheet,
@@ -488,6 +491,77 @@ describe('탭 Stack 라우팅', () => {
 
     // Then
     expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'friends', 'search']);
+  });
+
+  describe('알림함은 탭마다 함께 쓰는 화면이다', () => {
+    it('할 일 탭 종으로 연 알림함의 행은 같은 탭에 쌓이고 뒤로 가면 알림함이다', async () => {
+      // Given
+      const route = await renderApp('/feed');
+      await act(() => router.navigate('/notifications'));
+
+      // When
+      await act(() => router.navigate({ pathname: '/friends', params: { view: 'receiver' } }));
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'friends']);
+      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'notifications']);
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe('/feed');
+    });
+
+    it('메모 탭 종으로 연 알림함은 메모 탭에 쌓인다', async () => {
+      // Given
+      const route = await renderApp('/memo');
+
+      // When
+      await act(() => router.navigate('/notifications'));
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(memos)', 'notifications']);
+    });
+
+    it('알림함 행이 연 할 일 상세는 탭 위에 열리고 뒤로 가면 알림함이다', async () => {
+      // Given
+      const route = await renderApp('/feed');
+      await act(() => router.navigate('/notifications'));
+
+      // When
+      await act(() => router.navigate({ pathname: '/todo/[todoId]', params: { todoId: 42 } }));
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', 'todo', '[todoId]']);
+      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'notifications']);
+    });
+
+    it('콕 상세(탭 위)에서 알림함으로 돌아가면 콕 상세를 닫고 탭 묶음 하나 안의 알림함을 연다', async () => {
+      // Given
+      const route = await renderApp('/feed');
+      await act(() => router.push({ pathname: '/nudges/[nudgeId]', params: { nudgeId: 7 } }));
+
+      // When
+      await act(() => router.dismissTo('/notifications'));
+
+      // Then
+      expect(route.getPathname()).toBe('/notifications');
+      expect(route.getSegments()[2]).toBe('(me)');
+      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+    });
   });
 
   describe('탭 위 화면은 탭을 새로 쌓지 않고 아래 탭 묶음으로 돌아간다', () => {

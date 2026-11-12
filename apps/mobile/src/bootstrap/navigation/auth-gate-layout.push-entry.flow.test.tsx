@@ -72,6 +72,7 @@ const SHARED_TAB_SCREENS = [
   'reports/index',
   'settings/subscription',
   'settings/notifications/index',
+  'notifications/index',
 ] as const;
 
 const PAGINATION = {
@@ -150,7 +151,7 @@ const LANDINGS = {
   SUGGESTIONS: { navigation: { kind: 'SUGGESTIONS' }, ...aboveTabs('/suggestions') },
   INVITE: { navigation: { kind: 'INVITE' }, ...sharedScreen('/friends/invite') },
   SUBSCRIPTION: { navigation: { kind: 'SUBSCRIPTION' }, ...sharedScreen('/settings/subscription') },
-  NOTIFICATIONS: { navigation: { kind: 'NOTIFICATIONS' }, ...aboveTabs('/notifications') },
+  NOTIFICATIONS: { navigation: { kind: 'NOTIFICATIONS' }, ...sharedScreen('/notifications') },
   NOTIFICATION_SETTINGS: {
     navigation: { kind: 'NOTIFICATION_SETTINGS' },
     ...sharedScreen('/settings/notifications'),
@@ -334,7 +335,6 @@ async function setup({
         createScreen(name),
       ]),
     ),
-    '(app)/notifications/index': createScreen('notifications'),
     '(app)/nudges/[nudgeId]': createScreen('nudge'),
     '(app)/suggestions/index': createScreen('suggestions'),
     '(app)/todo/[todoId]/index': todoScreen ?? TodoScreen,
@@ -925,7 +925,7 @@ describe('푸시 탭 진입', () => {
       { kind: 'FRIEND_REQUESTS', expected: { pathname: '/friends', tab: '(me)', back: '/mypage' } },
       {
         kind: 'NOTIFICATIONS',
-        expected: { pathname: '/notifications', tab: null, back: '/todo/7' },
+        expected: { pathname: '/notifications', tab: '(me)', back: '/mypage' },
       },
       { kind: 'TODO', expected: { pathname: '/todo/42', tab: null, back: '/todo/7' } },
     ] as const)(

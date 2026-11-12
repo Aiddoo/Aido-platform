@@ -21,6 +21,7 @@ import {
   StyledSafeAreaView,
   ViewTabs,
 } from '@src/shared/ui';
+import { Stack } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
@@ -40,6 +41,8 @@ export default function NotificationsScreen() {
       edges={['left', 'right', 'bottom']}
       testID="notification-inbox"
     >
+      <Stack.Screen options={{ title: t('titles.notifications') }} />
+
       <ReadableContent flex={1}>
         <ViewTabs
           schema={notificationCategoryViewSchema}
