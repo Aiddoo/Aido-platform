@@ -4,7 +4,7 @@
     "monthly": "월간 구독",
     "perYear": "/년",
     "perMonth": "/월",
-    "discount": "{{percent}}% 할인",
+    "discount": "{{percent}} 할인",
     "monthlyEquivalent": "월\u00a0{{price}} 상당",
     "freeTrial": "{{period}} 무료",
     "pricePerYear": "연\u00a0{{price}}",
