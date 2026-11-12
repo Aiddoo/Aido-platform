@@ -14,7 +14,6 @@ export const FEED_MONTH_WEEK_COUNT = 6;
 /** 달력 한 칸. 쪽(주·달)과 언어가 같으면 다시 만들지 않아, 칸은 Intl·날짜 계산 없이 그린다 */
 export interface CalendarDayCell {
   dateKey: DateKey;
-  /** 칸에 보이는 일 */
   dayNumber: string;
   /** 읽어 줄 날짜 */
   label: string;

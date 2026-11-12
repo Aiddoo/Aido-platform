@@ -104,7 +104,6 @@ interface MemoEditorToolbarProps {
   onSaveChanges: () => Promise<Memo | null>;
   onBack: () => void;
   onConverted: () => void;
-  /** 삭제 확인에서 지운 뒤 */
   onDeleted: () => void;
 }
 
@@ -589,7 +588,6 @@ interface MemoSaveOptions extends Pick<MemoEditorProps, 'onLeave'> {
   form: UseFormReturn<MemoFormValues>;
   canSave: boolean;
   discardDraft: () => void;
-  /** 저장 버튼으로 저장을 마쳤을 때 */
   onFinish: () => void;
 }
 

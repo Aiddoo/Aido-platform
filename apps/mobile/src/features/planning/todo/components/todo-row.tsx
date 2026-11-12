@@ -30,7 +30,6 @@ const TITLE_LINE_HEIGHT = 20;
 const REPEAT_ICON_SIZE = 13;
 const SPOKEN_WEEKDAY_SEPARATOR = ', ';
 
-/** 행 안쪽 컨트롤을 스크린리더 동작으로 제공할 때 쓰는 이름. */
 export const TODO_ROW_ACCESSIBILITY_ACTION = {
   toggleCompleted: 'toggleCompleted',
   comments: 'comments',

@@ -238,7 +238,7 @@ MemoList.Header = function Header({
   );
 };
 
-/** masonry 칸 하나. 카드 사이 간격을 칸 패딩으로 나눠 가진다 */
+// 카드 사이 간격을 칸 패딩으로 나눠 가진다
 MemoList.Cell = function Cell({ children }: PropsWithChildren) {
   return <Box className="px-1.5 pb-3">{children}</Box>;
 };

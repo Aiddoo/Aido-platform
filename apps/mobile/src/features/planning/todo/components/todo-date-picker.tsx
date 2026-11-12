@@ -16,7 +16,6 @@ import { PickerMonthBar } from './picker-month-bar';
 import { PickerTitleBar } from './picker-title-bar';
 
 interface TodoDatePickerProps {
-  /** 고른 날짜(YYYY-MM-DD) */
   value: DateKey;
   onChange: (dateKey: DateKey) => void;
   onCancel: () => void;

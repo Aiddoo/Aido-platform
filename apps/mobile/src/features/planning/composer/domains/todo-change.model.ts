@@ -9,7 +9,6 @@ import {
   type TodoFieldChanges,
 } from '@src/features/planning/todo/domains/todo.model';
 
-/** 수정 폼에서 바뀐 칸과 반복 규칙 */
 export interface TodoUpdateChanges {
   fields: TodoFieldChanges;
   /** 생략은 규칙 유지, null은 반복 끝내기 */

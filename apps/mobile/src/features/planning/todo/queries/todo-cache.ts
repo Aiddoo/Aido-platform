@@ -332,7 +332,6 @@ interface TodoWriteTarget {
   date: DateKey;
   /** 고친 할 일. 만들기처럼 아직 서버 id가 없으면 비운다 */
   todoId?: number;
-  /** 할 일이 걸친 날짜 */
   span: TodoDateSpan;
 }
 

@@ -14,7 +14,6 @@ import { TODO_ROW_ACCESSIBILITY_ACTION, TodoRow } from './todo-row';
 interface SubTodoListProps {
   children: ReactNode;
   onAddPress: () => void;
-  /** false면 추가 줄을 그리지 않는다 */
   canAdd: boolean;
 }
 
