@@ -7,7 +7,7 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import { PushPermissionPolicy } from '../../domains/push-permission.model';
-import { useUpdatePushEnabledAndAskPermissionMutationOptions } from '../../queries/push-permission.mutations';
+import { useRequestPushPermissionMutationOptions } from '../../queries/push-permission.mutations';
 import { useGetPushPermissionQueryOptions } from '../../queries/push-permission.queries';
 
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
@@ -19,7 +19,22 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
     queries: [useGetPreferenceQueryOptions(), useGetPushPermissionQueryOptions()],
   });
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
-  const pushEnabledMutation = useMutation(useUpdatePushEnabledAndAskPermissionMutationOptions());
+  // 권한 창이 닫힐 때까지 pending이라 토글을 두 번 누를 수 없다
+  const requestPermissionMutation = useMutation(useRequestPushPermissionMutationOptions());
+
+  const isUpdating = updateMutation.isPending || requestPermissionMutation.isPending;
+
+  const handlePushEnabledChange = (enabled: boolean) =>
+    updateMutation.mutate(
+      { pushEnabled: enabled },
+      {
+        onSuccess: () => {
+          if (enabled) {
+            requestPermissionMutation.mutate({ source: 'settings' });
+          }
+        },
+      },
+    );
 
   return (
     <SettingsListGroup
@@ -31,8 +46,8 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
         label={t('settings.pushLabel')}
         description={t('settings.pushDescription')}
         isSelected={preference.pushEnabled}
-        onSelectedChange={(enabled) => pushEnabledMutation.mutate({ pushEnabled: enabled })}
-        isDisabled={updateMutation.isPending || pushEnabledMutation.isPending}
+        onSelectedChange={handlePushEnabledChange}
+        isDisabled={isUpdating}
       />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Toggle
@@ -45,9 +60,7 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
         }
         isSelected={preference.nightPushEnabled}
         onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}
-        isDisabled={
-          !preference.pushEnabled || updateMutation.isPending || pushEnabledMutation.isPending
-        }
+        isDisabled={!preference.pushEnabled || isUpdating}
       />
     </SettingsListGroup>
   );
