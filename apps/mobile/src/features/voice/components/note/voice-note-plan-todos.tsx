@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { getNowInstant } from '@src/shared/date/clock';
@@ -15,7 +16,8 @@ import { match } from 'ts-pattern';
 
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
 import { voicePlanIdSchema } from '../../domains/voice-plan.model';
-import { useCurrentVoiceNote, useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
+import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
+import { useVoiceNoteDraftId } from '../../hooks/use-voice-note-params';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
 import { toDraftVoicePlan } from '../../utils/plan-review-draft';
 import { PlanReview } from '../plan/plan-review';
@@ -27,8 +29,9 @@ type VoiceNotePlanTodosProps = Pick<
 
 export function VoiceNotePlanTodos({ className, onMemoChanged }: VoiceNotePlanTodosProps) {
   const { t } = useTranslation(['voiceNote', 'voicePlan']);
-  const [{ accountId, draftId }] = useVoiceNoteRoute();
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const [draftId] = useVoiceNoteDraftId();
+  const note = useCurrentVoiceNote(accountId);
   const drafts = useVoiceNoteDraftRepository();
   // 설정 쿼리는 값을 쓰지 않는다. 아래 PlanReview.TodoRow가 같은 설정을 기다리다 카드 사이에서 멈추지 않게 미리 받는다
   const [{ data: categoriesResult }] = useSuspenseQueries({

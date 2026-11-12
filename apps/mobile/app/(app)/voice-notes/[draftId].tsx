@@ -1,11 +1,12 @@
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
 import { VoiceNoteDigest } from '@src/features/voice/components/note/voice-note-digest';
 import { VoiceNoteOffline } from '@src/features/voice/components/note/voice-note-offline';
 import { VoiceNoteResult } from '@src/features/voice/components/note/voice-note-result';
-import { useCurrentVoiceNoteStage } from '@src/features/voice/hooks/use-current-voice-note';
+import { useCurrentVoiceNoteStage } from '@src/features/voice/hooks/use-current-voice-note-stage';
+import { useVoiceNoteDraftId } from '@src/features/voice/hooks/use-voice-note-params';
 import { voiceNoteParamsSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Result, StyledSafeAreaView, VStack } from '@src/shared/ui';
@@ -24,7 +25,7 @@ export default function VoiceNoteRoute() {
 }
 
 function VoiceNoteScreen() {
-  const [{ draftId }] = useRouteParams(voiceNoteParamsSchema);
+  const [draftId] = useVoiceNoteDraftId();
 
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
@@ -38,7 +39,8 @@ function VoiceNoteScreen() {
 }
 
 VoiceNoteScreen.Stage = function Stage() {
-  const stage = useCurrentVoiceNoteStage();
+  const accountId = useSuspenseMyAccountId();
+  const stage = useCurrentVoiceNoteStage(accountId);
   const refreshMemos = useRefreshMemos();
 
   return (

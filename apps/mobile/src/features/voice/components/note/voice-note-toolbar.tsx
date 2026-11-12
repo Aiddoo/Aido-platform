@@ -6,6 +6,7 @@ import {
   useVoiceNoteDraftRepository,
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
@@ -16,7 +17,8 @@ import { Stack } from 'expo-router';
 
 import { createDigestMemo, VoiceNotePolicy } from '../../domains/voice-note.model';
 import { isPlanKeyConflictError } from '../../domains/voice.error';
-import { useCurrentVoiceNote, useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
+import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
+import { useVoiceNoteDraftId } from '../../hooks/use-voice-note-params';
 import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
 
 const VOICE_NOTE_TOOLBAR_ICON = {
@@ -35,8 +37,9 @@ interface VoiceNoteToolbarProps {
 export function VoiceNoteToolbar({ onMemoChanged }: VoiceNoteToolbarProps) {
   const { t } = useTranslation('voiceNote');
   const { trackEvent } = useTrack();
-  const [{ accountId, draftId }] = useVoiceNoteRoute();
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const [draftId] = useVoiceNoteDraftId();
+  const note = useCurrentVoiceNote(accountId);
   const storage = useVoiceNoteStorageService();
   const confirmDialog = useConfirmDialog();
   const closeScreen = useGoBack({ fallbackHref: '/memo' });
@@ -89,8 +92,9 @@ interface UseVoiceNoteSaveMemoOptions {
 }
 
 function useVoiceNoteSaveMemo({ onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
-  const [{ accountId, draftId }] = useVoiceNoteRoute();
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const [draftId] = useVoiceNoteDraftId();
+  const note = useCurrentVoiceNote(accountId);
   const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();
   const mutation = useMutation(

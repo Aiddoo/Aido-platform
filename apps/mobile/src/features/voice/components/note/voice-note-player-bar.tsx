@@ -22,7 +22,8 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import { useRebuiltPath } from '../../hooks/use-rebuilt-path';
-import { useVoiceNotePlayback, type VoiceNotePlayer } from '../../hooks/use-voice-note-player';
+import { useVoiceNotePlayback } from '../../hooks/use-voice-note-playback';
+import type { VoiceNotePlayer } from '../../hooks/use-voice-note-player';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { getPlayedBarCount, resampleLevels, toRoundedBar } from '../../utils/waveform.geometry';
 

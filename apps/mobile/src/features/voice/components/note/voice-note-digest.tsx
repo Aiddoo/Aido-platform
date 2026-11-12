@@ -1,4 +1,5 @@
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -15,8 +16,9 @@ import { match } from 'ts-pattern';
 
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
 import { canRetryPlanFailure } from '../../domains/voice.error';
-import { useCurrentVoiceNote, useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
+import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
 import { useVoiceNoteDigest, type VoiceNoteDigestFailure } from '../../hooks/use-voice-note-digest';
+import { useVoiceNoteDraftId } from '../../hooks/use-voice-note-params';
 import { DigestProgress } from './digest-progress';
 import { DigestScanPreview } from './digest-scan-preview';
 import { SentenceCaptionList } from './sentence-caption-list';
@@ -30,8 +32,9 @@ interface VoiceNoteDigestProps {
 
 export function VoiceNoteDigest({ onMemoChanged }: VoiceNoteDigestProps) {
   const { t } = useTranslation('voiceNote');
-  const [{ accountId, draftId }] = useVoiceNoteRoute();
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const [draftId] = useVoiceNoteDraftId();
+  const note = useCurrentVoiceNote(accountId);
   const { digest, isPending, failure } = useVoiceNoteDigest({ accountId, draftId });
 
   if (isPending) {
@@ -57,7 +60,8 @@ export function VoiceNoteDigest({ onMemoChanged }: VoiceNoteDigestProps) {
 
 VoiceNoteDigest.Progress = function Progress() {
   const { t } = useTranslation('voiceNote');
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const note = useCurrentVoiceNote(accountId);
 
   return (
     <VStack flex={1} gap={16} className="pb-3" testID="voice-note-digesting">

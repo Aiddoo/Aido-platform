@@ -6,7 +6,7 @@ import type {
 } from '@src/core/ports/audio-part-playlist';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAudioPartPlaylist } from '@src/shared/infra/audio/use-audio-part-playlist';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { VOICE_NOTE_POSITION_INTERVAL_MS } from '../constants/voice-note.constants';
@@ -178,11 +178,4 @@ export function useVoiceNotePlayer({
   }, [logger, playlist]);
 
   return player;
-}
-
-export function useVoiceNotePlayback<TSelected>(
-  player: VoiceNotePlayer,
-  select: (playback: VoiceNotePlayback) => TSelected,
-): TSelected {
-  return useSyncExternalStore(player.subscribe, () => select(player.getPlayback()));
 }

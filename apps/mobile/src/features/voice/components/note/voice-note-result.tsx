@@ -1,4 +1,5 @@
 import { useVoiceRecordingRepository } from '@src/bootstrap/providers/di-context';
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useTrack } from '@src/shared/analytics';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -31,12 +32,9 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
-import { useCurrentVoiceNote, useVoiceNoteRoute } from '../../hooks/use-current-voice-note';
-import {
-  useVoiceNotePlayback,
-  useVoiceNotePlayer,
-  type VoiceNotePlayer,
-} from '../../hooks/use-voice-note-player';
+import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
+import { useVoiceNotePlayback } from '../../hooks/use-voice-note-playback';
+import { useVoiceNotePlayer, type VoiceNotePlayer } from '../../hooks/use-voice-note-player';
 import { type VoiceNoteTab, voiceNoteTabSchema } from '../../schemas/voice-note-params.schema';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { getDurationBucket } from '../../utils/voice-analytics';
@@ -57,7 +55,8 @@ interface VoiceNoteResultProps {
 
 export function VoiceNoteResult({ onMemoChanged }: VoiceNoteResultProps) {
   const [tab, setTab] = useView('tab', voiceNoteTabSchema);
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const note = useCurrentVoiceNote(accountId);
   const isCompact = useWindowSizeClass() === 'compact';
   const { player, canPlay } = useVoiceNoteResultPlayer();
   // 결과 화면에서는 문장이 바뀌지 않아 한 번만 만든다. 자동 저장으로 노트가 바뀔 때마다 다시 계산하지 않는다
@@ -120,7 +119,8 @@ export function VoiceNoteResult({ onMemoChanged }: VoiceNoteResultProps) {
 
 VoiceNoteResult.Title = function Title() {
   const { t } = useTranslation('voiceNote');
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const note = useCurrentVoiceNote(accountId);
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const markCount = VoiceNotePolicy.getMarkCount(note);
@@ -155,7 +155,8 @@ VoiceNoteResult.TabList = function TabList({
   ...tabsProps
 }: VoiceNoteResultTabListProps) {
   const { t } = useTranslation('voiceNote');
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const note = useCurrentVoiceNote(accountId);
   const isCompact = useWindowSizeClass() === 'compact';
   const todoCount = VoiceNotePolicy.findTodoCount(note);
 
@@ -208,7 +209,8 @@ interface VoiceNoteResultPlaybackProps {
 
 VoiceNoteResult.Summary = function Summary({ children }: PropsWithChildren) {
   const { t } = useTranslation('voiceNote');
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const note = useCurrentVoiceNote(accountId);
   const isCompact = useWindowSizeClass() === 'compact';
 
   return (
@@ -234,7 +236,8 @@ VoiceNoteResult.Summary = function Summary({ children }: PropsWithChildren) {
 
 VoiceNoteResult.KeyPoints = function KeyPoints({ player, canPlay }: VoiceNoteResultPlaybackProps) {
   const { trackEvent } = useTrack();
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const note = useCurrentVoiceNote(accountId);
   const activeKeyPointId = useVoiceNotePlayback(player, ({ isPlaying, positionMs }) =>
     isPlaying ? VoiceNotePolicy.findKeyPointAt(note, positionMs)?.id : undefined,
   );
@@ -265,7 +268,8 @@ VoiceNoteResult.Transcript = function Transcript({
   player,
   canPlay,
 }: VoiceNoteResultPlaybackProps) {
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const note = useCurrentVoiceNote(accountId);
   const activeSentenceIndex = useVoiceNotePlayback(player, ({ isPlaying, positionMs }) =>
     isPlaying ? VoiceNotePolicy.findSentenceIndexAt(note, positionMs) : undefined,
   );
@@ -332,8 +336,8 @@ VoiceNoteResult.Error = function ErrorFallback({ reset }: QueryErrorFallbackProp
 };
 
 function useVoiceNoteResultPlayer() {
-  const [{ accountId }] = useVoiceNoteRoute();
-  const note = useCurrentVoiceNote();
+  const accountId = useSuspenseMyAccountId();
+  const note = useCurrentVoiceNote(accountId);
   const recordingRepository = useVoiceRecordingRepository();
   const [parts] = useState(() =>
     note.recordings.flatMap(({ fileName, startMs }) => {
