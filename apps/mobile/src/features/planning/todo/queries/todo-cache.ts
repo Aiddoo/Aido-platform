@@ -533,12 +533,13 @@ export async function invalidateTodoSummaries(
   ]);
 }
 
-export function invalidateFriendTodos(queryClient: QueryClient) {
+/** 친구 피드 당겨서 새로고침. 보이는 친구 할 일·완료 기록은 바로, 이미 받은 다른 날짜는 다시 볼 때 받는다 */
+export function refreshFriendTodos(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() });
 }
 
 /** 피드의 할 일 목록과 완료 통계를 다시 불러온다. 보이는 날짜는 바로, 이미 받은 다른 날짜는 다시 볼 때 받는다. 당겨서 새로고침과 사용자 차단 뒤에 쓴다 */
-export function invalidateFeedTodos(queryClient: QueryClient) {
+export function refreshFeedTodos(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
     queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() }),
@@ -547,7 +548,7 @@ export function invalidateFeedTodos(queryClient: QueryClient) {
 
 /** 카테고리 이름·색을 함께 보여 주는 할 일 행·달력 점·상세를 다시 불러온다 */
 export function invalidateCategorizedTodos(queryClient: QueryClient) {
-  return Promise.all([invalidateFeedTodos(queryClient), invalidateTodoPages(queryClient)]);
+  return Promise.all([refreshFeedTodos(queryClient), invalidateTodoPages(queryClient)]);
 }
 
 /** 카테고리 이름·색처럼 할 일 상세 화면에 함께 보이는 값이 바뀐 뒤 열린 상세를 다시 불러온다 */

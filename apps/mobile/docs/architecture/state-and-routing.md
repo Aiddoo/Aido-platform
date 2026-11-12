@@ -73,7 +73,7 @@ export default function MemoDetailRoute() {
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `feedParamsSchema`         | `useFeedDateKey` → `[dateKey, setDateKey]`, `useFeedFriendId` → `[friendId, setFriendId]`, `useFeedAction`, `useFeedSelectedTodoId` |
 | `friendListParamsSchema`   | `useFriendListView` → `[view, setView]`, `useFriendListIsEditing` → `[isEditing, setIsEditing]`(파일 하나)                          |
-| `friendParamsSchema`       | `useRouteFriendId` → `[friendId]`(쿼리는 컴포넌트에서)                                                                              |
+| `friendParamsSchema`       | `useRouteFriendId` → `[friendId]`(쿼리는 컴포넌트에서). 친구 피드는 `useRouteFriend()`가 찾음·읽는 중·실패·친구 아님 유니온을 준다  |
 | `invitedFriendsViewSchema` | `useInvitedFriendsView` → `[view, setView]`                                                                                         |
 | 그 밖                      | `useTodoSheetDateKey`·`useTodoCategoryId`·`useNudgeId`·`useVoiceNoteDraftId` → `[id]`, `useCheckoutRoute` → `[pathname, leaveTo]`   |
 

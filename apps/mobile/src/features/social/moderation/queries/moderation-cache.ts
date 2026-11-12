@@ -1,6 +1,6 @@
 import {
-  invalidateFeedTodos,
-  invalidateFriendTodos,
+  refreshFeedTodos,
+  refreshFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
 import type { Query, QueryClient } from '@tanstack/react-query';
 
@@ -19,8 +19,8 @@ function isBlockDependentQuery(query: Pick<Query, 'meta'>) {
 export function invalidateAfterBlockChange(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: MODERATION_QUERY_KEYS.blockedUsers() }),
-    invalidateFriendTodos(queryClient),
-    invalidateFeedTodos(queryClient),
+    refreshFriendTodos(queryClient),
+    refreshFeedTodos(queryClient),
     queryClient.invalidateQueries({ predicate: isBlockDependentQuery }),
   ]);
 }

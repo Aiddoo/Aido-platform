@@ -60,35 +60,35 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 ## 화면 조립
 
 ```tsx
-// app/(app)/todo/[todoId]/index.tsx. 펼친 피드 칸은 `(tabs)/feed/index.tsx`가 같은 조각을 나열한다
-<StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']} testID="todo-detail">
-  <TodoCommentSession>
-    <TodoCommentTitleBar.StackHeader />
+// components/todo-comment-pane.tsx. 상세 화면은 네이티브 헤더, 펼친 피드 칸은 직접 그린 제목 줄을 titleBar로 넘긴다
+<TodoCommentSession onExit={onExit}>
+  {titleBar}
 
-    <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={router.back} />}>
-      <TodoCommentKeyboardGesture>
-        <QueryErrorBoundary
-          resetKeys={[todoId, sort, comment]}
-          fallback={TodoCommentThreadList.Error}
-        >
-          <Suspense fallback={<TodoCommentThreadList.Loading />}>
-            <TodoCommentThreadList />
-          </Suspense>
-        </QueryErrorBoundary>
+  <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={onClose} />}>
+    <TodoCommentKeyboardGesture>
+      <QueryErrorBoundary
+        resetKeys={[todoId, sort, comment]}
+        fallback={TodoCommentThreadList.Error}
+      >
+        <Suspense fallback={<TodoCommentThreadList.Loading />}>
+          <TodoCommentThreadList />
+        </Suspense>
+      </QueryErrorBoundary>
 
-        <QueryErrorBoundary resetKeys={[todoId]}>
+      <QueryErrorBoundary resetKeys={[todoId]}>
+        <Suspense fallback={<TodoCommentComposerBar.Loading />}>
           <TodoCommentComposerBar />
-        </QueryErrorBoundary>
-      </TodoCommentKeyboardGesture>
-    </TodoAvailabilityGuard>
-  </TodoCommentSession>
-</StyledSafeAreaView>
+        </Suspense>
+      </QueryErrorBoundary>
+    </TodoCommentKeyboardGesture>
+  </TodoAvailabilityGuard>
+</TodoCommentSession>
 ```
 
 - 화면은 `todoId`를 props로 넘기지 않는다. 블록 컴포넌트가 `const [todoId] = useTodoId()`로 읽고, 가상 목록의 댓글·답글 행은 route 훅을 부르지 않고 댓글 모델의 `todoId`를 읽는다(Oxlint `aido/no-route-id-props`가 검사).
 - 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`를 쓰고,
   할 일 본문·정렬(`TodoCommentThreadList.Header`·`.SortBar`)·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
-- 할 일을 볼 수 없으면(`TodoAvailabilityGuard`, 404) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
+- 할 일을 볼 수 없으면(`TodoAvailabilityGuard`, `TODO_0801`) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
 - `TodoDetailSummary`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → `Schedule`(시간·반복·카테고리·날짜) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
 - 체크는 내 할 일(`permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getOptimisticListDate`로 고칠 목록을 고른다.
 - 상세 응답에는 반복 규칙이 없다. 내 반복 할 일은 시작일 목록에서 규칙을 읽어 요약하고, 친구 할 일과 받기 전에는 "반복"만 보인다.

@@ -3,13 +3,9 @@ import { useWhatsNewAutoOpen } from '@src/features/app-config/whats-new/hooks/us
 import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
 import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
-import { TodoCommentComposerBar } from '@src/features/engagement/comment/components/todo-comment-composer/todo-comment-composer-bar';
-import { TodoCommentKeyboardGesture } from '@src/features/engagement/comment/components/todo-comment-keyboard-gesture';
-import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
-import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
+import { TodoCommentPane } from '@src/features/engagement/comment/components/todo-comment-pane';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
 import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
-import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
 import { PushPermissionNotice } from '@src/features/notification/components/push-permission-notice';
@@ -22,7 +18,6 @@ import { Calendar } from '@src/features/planning/todo/components/calendar/calend
 import { FriendCalendar } from '@src/features/planning/todo/components/calendar/friend-calendar';
 import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-calendar';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
-import { TodoAvailabilityGuard } from '@src/features/planning/todo/components/todo-availability-guard';
 import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
 import { useFeedDateKey, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import {
@@ -31,13 +26,15 @@ import {
 } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
 import { useStableFeedForeground } from '@src/features/planning/todo/hooks/use-stable-feed-foreground';
 import {
-  invalidateFeedTodos,
-  invalidateFriendTodos,
+  refreshFeedTodos,
+  refreshFriendTodos,
 } from '@src/features/planning/todo/queries/todo-cache';
+import { useGetFriendTodosQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { FriendStrip } from '@src/features/social/friend/components/friend-strip';
-import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
-import { useFriendQuery } from '@src/features/social/friend/hooks/use-friend-query';
-import { useRouteFriendId } from '@src/features/social/friend/hooks/use-route-friend-id';
+import {
+  type RouteFriend,
+  useRouteFriend,
+} from '@src/features/social/friend/hooks/use-route-friend';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
@@ -52,28 +49,23 @@ import {
   AdaptivePane,
   Box,
   QueryErrorBoundary,
-  type QueryErrorFallbackProps,
   SafeAreaScrollView,
   Spacing,
   StyledSafeAreaView,
   TintedRefreshControl,
 } from '@src/shared/ui';
-import { useQueryClient } from '@tanstack/react-query';
+import { usePrefetchQuery, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { type ComponentProps, Suspense, useEffect, useState } from 'react';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
-/** 친구 피드가 친구를 읽는 단계. 세 단계 모두 같은 뼈대에 그린다 */
-type FriendFeedView =
-  | { status: 'loading' }
-  | ({ status: 'error' } & QueryErrorFallbackProps)
-  | { status: 'ready'; friend: FriendUser };
+/** 친구 피드가 친구를 읽는 단계. 세 단계 모두 같은 뼈대에 그린다. 더는 친구가 아니면 내 피드로 돌아간다 */
+type FriendFeedView = Exclude<RouteFriend, { status: 'missing' }>;
 
 export default function FeedScreen() {
   const [friendId] = useFeedFriendId();
   const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
-  const [{ sort, comment }] = useTodoCommentParams();
 
   const isInviteAvailable = useIsInviteAvailable();
 
@@ -113,16 +105,7 @@ export default function FeedScreen() {
             </QueryErrorBoundary>
 
             {match(friendId)
-              .with(P.string, (id) => (
-                <QueryErrorBoundary
-                  key={id}
-                  fallback={(props) => <FriendFeed view={{ status: 'error', ...props }} />}
-                >
-                  <Suspense fallback={<FriendFeed view={{ status: 'loading' }} />}>
-                    <FriendFeed.RouteFriend />
-                  </Suspense>
-                </QueryErrorBoundary>
-              ))
+              .with(P.string, (id) => <FriendFeed.Route key={id} friendId={id} />)
               .with(undefined, () => (
                 <MyFeed
                   onScrollBeginDrag={() => setHasScrolledFeed(true)}
@@ -146,30 +129,11 @@ export default function FeedScreen() {
                 testID="todo-detail"
               >
                 {/* 펼친 피드의 오른쪽 칸이라 네이티브 헤더가 없어 제목 줄을 직접 두고, 뒤로가기는 선택만 푼다 */}
-                <TodoCommentSession onExit={closeDetail}>
-                  <TodoCommentTitleBar />
-
-                  <TodoAvailabilityGuard
-                    fallback={<TodoDetailSummary.Unavailable onClose={closeDetail} />}
-                  >
-                    <TodoCommentKeyboardGesture>
-                      <QueryErrorBoundary
-                        resetKeys={[id, sort, comment]}
-                        fallback={TodoCommentThreadList.Error}
-                      >
-                        <Suspense fallback={<TodoCommentThreadList.Loading />}>
-                          <TodoCommentThreadList />
-                        </Suspense>
-                      </QueryErrorBoundary>
-
-                      <QueryErrorBoundary resetKeys={[id]}>
-                        <Suspense fallback={<TodoCommentComposerBar.Loading />}>
-                          <TodoCommentComposerBar />
-                        </Suspense>
-                      </QueryErrorBoundary>
-                    </TodoCommentKeyboardGesture>
-                  </TodoAvailabilityGuard>
-                </TodoCommentSession>
+                <TodoCommentPane
+                  titleBar={<TodoCommentTitleBar />}
+                  onClose={closeDetail}
+                  onExit={closeDetail}
+                />
               </StyledSafeAreaView>
             </KeyboardBottomGapProvider>
           ))
@@ -204,7 +168,7 @@ function MyFeed({
   const [isRefreshing, handleRefresh] = useRefresh(() => {
     // 날씨는 위치부터 다시 읽어 늦을 수 있다. 당김 표시는 할 일만 기다리고 날씨 실패는 날씨 칸이 보인다
     refetchWeather(queryClient).catch(noop);
-    return invalidateFeedTodos(queryClient);
+    return refreshFeedTodos(queryClient);
   });
 
   return (
@@ -269,7 +233,7 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
   const queryClient = useQueryClient();
 
   const [isRefreshing, handleRefresh] = useRefresh(() =>
-    Promise.all([invalidateFriendTodos(queryClient), refreshNudges(queryClient)]),
+    Promise.all([refreshFriendTodos(queryClient), refreshNudges(queryClient)]),
   );
 
   return (
@@ -334,32 +298,32 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
   );
 }
 
-/** route의 friendId를 친구 목록에서 확인한다. 더는 친구가 아니면 내 피드로 돌아간다 */
-FriendFeed.RouteFriend = function RouteFriend() {
-  const [friendId] = useRouteFriendId();
-  const {
-    data: friend,
-    hasNextPage,
-    isFetchNextPageError,
-    error,
-    fetchNextPage,
-  } = useFriendQuery(friendId);
+/**
+ * 링크로 처음 연 친구 피드. 친구인지 확인하는 동안 그날 할 일을 함께 받아 확인 → 할 일 순서로 기다리지 않는다
+ */
+FriendFeed.Route = function Route({ friendId }: { friendId: string }) {
+  const [selectedDateKey] = useFeedDateKey();
 
-  return match({ friend, isFetchNextPageError, hasNextPage })
-    .with({ friend: P.nonNullable }, ({ friend }) => (
-      <FriendFeed view={{ status: 'ready', friend }} />
-    ))
-    .with({ isFetchNextPageError: true }, () => (
-      <FriendFeed
-        view={{
-          status: 'error',
-          error,
-          reset: () => fetchNextPage({ cancelRefetch: false }).catch(noop),
-        }}
-      />
-    ))
-    .with({ hasNextPage: true }, () => <FriendFeed view={{ status: 'loading' }} />)
-    .otherwise(() => <ReturnToMyFeed />);
+  usePrefetchQuery(
+    useGetFriendTodosQueryOptions({ friendUserId: friendId, date: selectedDateKey }),
+  );
+
+  return (
+    <QueryErrorBoundary fallback={(props) => <FriendFeed view={{ status: 'error', ...props }} />}>
+      <Suspense fallback={<FriendFeed view={{ status: 'loading' }} />}>
+        <FriendFeed.RouteFriend />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
+};
+
+FriendFeed.RouteFriend = function RouteFriend() {
+  const routeFriend = useRouteFriend();
+
+  return match(routeFriend)
+    .with({ status: 'missing' }, () => <ReturnToMyFeed />)
+    .with({ status: P.union('loading', 'error', 'ready') }, (view) => <FriendFeed view={view} />)
+    .exhaustive();
 };
 
 // <Redirect>는 피드 탭 첫 화면을 replace해 화면이 다시 마운트된다. 같은 화면에서 친구 선택만 지운다
