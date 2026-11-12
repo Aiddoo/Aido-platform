@@ -17,11 +17,10 @@ import { Barcode, DashedDivider, ScallopedContainer } from '@src/shared/ui';
 
 ## Props
 
-| Prop      | 타입                                              | 기본값 | 설명                           |
-| --------- | ------------------------------------------------- | ------ | ------------------------------ |
-| height    | `number`                                          | `32`   | 막대 높이(pt). 레이아웃 고정용 |
-| className | `string`                                          | -      | 여백 등 배치만 조정한다        |
-| ...props  | `Omit<ComponentProps<typeof HStack>, 'children'>` | -      | 정렬·간격을 바꿀 때 원본 props |
+| Prop      | 타입     | 기본값 | 설명                           |
+| --------- | -------- | ------ | ------------------------------ |
+| height    | `number` | `32`   | 막대 높이(pt). 레이아웃 고정용 |
+| className | `string` | -      | 여백 등 배치만 조정한다        |
 
 ## 파일 구조
 

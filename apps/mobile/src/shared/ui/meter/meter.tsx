@@ -1,6 +1,6 @@
 import { tv } from '@src/shared/utils/tv';
 import { clamp } from 'es-toolkit';
-import type { ComponentProps } from 'react';
+import type { ViewProps } from 'react-native';
 import type { VariantProps } from 'tailwind-variants';
 
 import { Box } from '../box';
@@ -20,14 +20,23 @@ const meter = tv({
   defaultVariants: { size: 'small', tone: 'surface' },
 });
 
-type MeterProps = Omit<ComponentProps<typeof Box>, 'children'> &
-  VariantProps<typeof meter> & {
+type MeterProps = VariantProps<typeof meter> &
+  Pick<ViewProps, 'accessibilityElementsHidden' | 'importantForAccessibility'> & {
     value: number;
     max: number;
+    className?: string;
   };
 
 /** 넘친 값은 가득, 최댓값이 0이면 빈 막대다. 폭은 부모가 정한다 */
-export function Meter({ value, max, size, tone, className, ...props }: MeterProps) {
+export function Meter({
+  value,
+  max,
+  size,
+  tone,
+  className,
+  accessibilityElementsHidden,
+  importantForAccessibility,
+}: MeterProps) {
   const ratio = max > 0 ? clamp(value / max, 0, 1) : 0;
   const styles = meter({ size, tone });
 
@@ -37,7 +46,8 @@ export function Meter({ value, max, size, tone, className, ...props }: MeterProp
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max, now: clamp(value, 0, max) }}
       className={styles.track({ className })}
-      {...props}
+      accessibilityElementsHidden={accessibilityElementsHidden}
+      importantForAccessibility={importantForAccessibility}
     >
       <Box className={styles.indicator()} style={{ width: `${ratio * 100}%` }} />
     </Box>

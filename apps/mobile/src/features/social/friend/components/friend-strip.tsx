@@ -257,9 +257,11 @@ FriendStrip.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
       messageProps={{ numberOfLines: 2 }}
       reset={reset}
       hasInquiry
-      pl={STRIP_PADDING + edgeInsets.start}
-      pr={STRIP_PADDING + edgeInsets.end}
-      style={{ height }}
+      style={{
+        height,
+        paddingLeft: STRIP_PADDING + edgeInsets.start,
+        paddingRight: STRIP_PADDING + edgeInsets.end,
+      }}
     />
   );
 };

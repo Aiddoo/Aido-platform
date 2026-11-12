@@ -10,6 +10,7 @@
 
 - 래퍼는 자기 일(단위·포맷·도메인 문구·저장)이 있을 때만 만든다. 없으면 원본을 쓴다.
 - `interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'>`처럼 직접 구현하는 prop만 `Omit`한다. `className`·`style`·`testID`·접근성 prop·`hitSlop`은 남긴다.
+- 레이아웃 원시(`Box`·`HStack`·`VStack`·`Flex`)를 감쌀 때는 `ComponentProps<typeof Box>`를 펼치지 않고 쓰는 prop(`children`, `className`, 필요한 접근성 prop)만 적는다. 여백·배경은 부르는 쪽이 정한다.
 - 제어 prop은 원본 이름이다: shared `Input`·`TextArea`는 `value`/`onChange`, `Checkbox`·`Switch`·`ControlField`는 `isSelected`/`onSelectedChange`, `RadioGroup`·`Tabs`는 `value`/`onValueChange`, 시트·다이얼로그는 `isOpen`/`onOpenChange`, 비활성은 `isDisabled`다. `disabled`·`selected`·`onToggle`을 새로 만들지 않는다.
 - Props는 인터페이스로 적는다. `ReturnType<typeof useX>`로 만들지 않는다.
 

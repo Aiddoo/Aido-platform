@@ -150,7 +150,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### SettingsListGroup.Segment
 
-`Box` props와 같아요. 가상 목록의 행 하나를 카드 조각으로 그려요.
+가상 목록의 행 하나를 카드 조각으로 그려요. 받는 prop은 아래 셋과 `children`이에요.
 
 | Prop      | Type      | Default | Description                     |
 | --------- | --------- | ------- | ------------------------------- |
@@ -175,7 +175,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### SettingsListGroup.Custom
 
-행 모양이 아닌 내용을 직접 그리는 칸이에요. 행과 같은 여백으로 담아요. `VStack` props와 같아요.
+행 모양이 아닌 내용을 직접 그리는 칸이에요. 행과 같은 여백으로 담아요. `children`, 줄 사이 `gap`(기본 12), `className`만 받아요.
 
 ### SettingsListGroup.Error
 

@@ -260,11 +260,12 @@ SettingsListGroupRadio.Loading = function Loading({ icon }: { icon?: ReactNode }
   );
 };
 
-interface SettingsListGroupSegmentProps extends ComponentProps<typeof Box> {
+interface SettingsListGroupSegmentProps {
   isFirst: boolean;
   isLast: boolean;
   /** 첫 조각에만 그리는 카드 제목 */
   label?: string;
+  children: ReactNode;
 }
 
 /** 가상 목록의 행 하나를 카드 조각으로 그린다. 행마다 그려도 이어 붙이면 `SettingsListGroup` 한 장처럼 보인다 */
@@ -272,15 +273,10 @@ SettingsListGroup.Segment = function Segment({
   isFirst,
   isLast,
   label,
-  className,
   children,
-  ...props
 }: SettingsListGroupSegmentProps) {
   return (
-    <Box
-      className={cn('bg-gray-1', isFirst && 'rounded-t-2xl', isLast && 'rounded-b-2xl', className)}
-      {...props}
-    >
+    <Box className={cn('bg-gray-1', isFirst && 'rounded-t-2xl', isLast && 'rounded-b-2xl')}>
       {isFirst && label != null && <SettingsListGroupLabel label={label} />}
       {!isFirst && <SettingsListGroup.Separator />}
       {children}
@@ -298,8 +294,23 @@ SettingsListGroup.Value = function Value(props: Omit<TextProps, 'size' | 'shade'
   return <Text size="b3" shade={7} {...props} />;
 };
 
-SettingsListGroup.Custom = function Custom(props: ComponentProps<typeof VStack>) {
-  return <VStack px={16} py={12} gap={12} {...props} />;
+interface SettingsListGroupCustomProps {
+  children: ReactNode;
+  /** 안쪽 줄 사이 간격(기본 12) */
+  gap?: number;
+  className?: string;
+}
+
+SettingsListGroup.Custom = function Custom({
+  children,
+  gap = 12,
+  className,
+}: SettingsListGroupCustomProps) {
+  return (
+    <VStack gap={gap} className={cn('px-4 py-3', className)}>
+      {children}
+    </VStack>
+  );
 };
 
 SettingsListGroup.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
