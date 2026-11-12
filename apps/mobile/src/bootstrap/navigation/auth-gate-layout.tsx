@@ -10,7 +10,6 @@ import { usePushNotificationEntry } from '@src/features/notification/hooks/use-p
 import { usePushNotificationResponse } from '@src/features/notification/hooks/use-push-notification-response';
 import type { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { useInstallReferrerCapture } from '@src/features/social/invite/hooks/use-install-referrer-capture';
-import { useInviteAppEntry } from '@src/features/social/invite/hooks/use-invite-app-entry';
 import { type PaneDetailScreen, useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
 import { useAppTheme } from '@src/shared/providers/theme-provider';
 import type { ScreenName } from '@src/shared/utils/to-screen-name';
@@ -94,8 +93,8 @@ export function AuthGateLayout() {
         }}
       >
         <Stack.Screen name="index" />
-        {/* 초대 카드·코드 입력은 로그인 전에도 열린다 */}
-        <Stack.Screen name="invite" />
+        {/* 초대 카드·코드 입력은 로그인 전에도 열린다. 로그인 뒤 다시 연 카드가 로그인 전 카드를 대신해 끝난 카드가 아래에 남지 않는다 */}
+        <Stack.Screen name="invite" dangerouslySingular />
 
         <Stack.Protected guard={isLoading} redirectTo="/">
           <Stack.Screen name="loading" options={{ animation: 'none' }} />
@@ -127,7 +126,6 @@ function RouteWatchers() {
     paneDetailScreens: PANE_DETAIL_SCREENS,
   });
   useWidgetAppEntry();
-  useInviteAppEntry();
   useAppEntrySegmentSync();
 
   return null;
