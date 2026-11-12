@@ -1,0 +1,100 @@
+{
+  "lineLimit": 200,
+  "lineLimits": {
+    "AGENTS.md": 100,
+    "apps/mobile/AGENTS.md": 150
+  },
+  "ruleLineLimit": 40,
+  "agentsBytesLimit": 24576,
+  "allow": [
+    {
+      "path": ".claude/commands/api-module/SKILL.md",
+      "check": "agent-files",
+      "reason": "phase 3에서 .claude/skills로 옮긴다"
+    },
+    { "path": "README.md", "check": "limit", "reason": "phase 3에서 줄인다" },
+    {
+      "path": "apps/mobile/docs/analytics-measurement-plan.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
+    {
+      "path": "apps/mobile/docs/architecture/data.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
+    {
+      "path": "apps/mobile/docs/architecture/model.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
+    {
+      "path": "apps/mobile/docs/architecture/structure.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
+    {
+      "path": "apps/mobile/docs/architecture/ui.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
+    { "path": "apps/mobile/docs/auth.md", "check": "limit", "reason": "phase 3에서 줄인다" },
+    {
+      "path": "apps/mobile/docs/observability.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
+    { "path": "apps/mobile/docs/testing.md", "check": "limit", "reason": "phase 3에서 줄인다" },
+    {
+      "path": "apps/mobile/src/shared/ui/bottom-sheet/bottom-sheet.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
+    {
+      "path": "apps/mobile/src/shared/ui/list-row/list-row.md",
+      "check": "limit",
+      "reason": "phase 3에서 줄인다"
+    },
+    {
+      "path": "apps/mobile/assets/premium-app-icons/README.md",
+      "check": "path",
+      "match": "src/features/app-icon/constants/app-icons.ts",
+      "reason": "phase 3에서 고친다"
+    },
+    {
+      "path": "apps/mobile/src/shared/ui/adaptive-pane/adaptive-pane.md",
+      "check": "path",
+      "match": "features/identity/user/utils/my-page-detail-options.ts",
+      "reason": "phase 3에서 고친다"
+    },
+    {
+      "path": "apps/mobile/src/shared/ui/steps/steps.md",
+      "check": "path",
+      "match": "src/animations/steps",
+      "reason": "phase 3에서 고친다"
+    },
+    {
+      "path": "apps/mobile/src/shared/ui/steps/steps.md",
+      "check": "path",
+      "match": "LICENSE.md",
+      "reason": "phase 3에서 고친다"
+    },
+    {
+      "path": "apps/mobile/src/shared/ui/word-wrap-text/word-wrap-text.md",
+      "check": "path",
+      "match": "i18n-guide.md",
+      "reason": "phase 3에서 고친다"
+    },
+    {
+      "path": "docs/conventions/compatibility.md",
+      "check": "path",
+      "match": "app/(app)/todo/[todoId]/comments/[commentId].tsx",
+      "reason": "phase 3에서 고친다"
+    },
+    {
+      "path": "apps/mobile/src/shared/ui/tinted-refresh-control/tinted-refresh-control.md",
+      "check": "ui-doc",
+      "reason": "phase 3에서 문서를 더한다"
+    }
+  ]
+}
