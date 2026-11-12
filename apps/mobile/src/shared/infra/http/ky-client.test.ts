@@ -60,7 +60,7 @@ describe('KyHttpClient', () => {
       async () => new Response('Not Found', { status: 404 }),
       { code: ErrorCode.SYS_0001, message: i18n.t('errors:fallback') },
     ],
-  ])('4xx — %s로 ApiError를 돌려준다', async (_case, respond, expected) => {
+  ])('4xx — %s로 요청 ID를 실은 ApiError를 돌려준다', async (_case, respond, expected) => {
     // Given
     const client = createClient(respond);
 
@@ -69,7 +69,7 @@ describe('KyHttpClient', () => {
 
     // Then
     expect(result.ok).toBe(false);
-    expect(result.ok ? null : result.error).toMatchObject(expected);
+    expect(result.ok ? null : result.error).toMatchObject({ ...expected, requestId: 'req-1' });
   });
 
   it('4xx의 details는 공유 스키마로 읽을 객체로 넘긴다', async () => {
