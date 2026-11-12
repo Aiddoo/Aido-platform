@@ -161,7 +161,7 @@ SignInService.openKakaoLogin()                # openGoogleLogin·openNaverLogin�
 ```
 
 - `redirectUri`는 `makeRedirectUri({ scheme: ENV.SCHEME, path: 'auth/{provider}' })`다. scheme은 환경별로 다르다(`app.config.ts`). 서버가 `start-oauth-authorization.use-case.ts`의 허용 패턴으로 검사하므로 scheme을 바꾸면 거기도 고친다.
-- Android는 `app.config.ts`의 `intentFilters`(`auth/kakao`·`auth/naver`·`auth/google`)로 콜백을 받는다. `app/auth/[provider].tsx`가 `maybeCompleteAuthSession()`을 불러 `openAuthSessionAsync`가 URL을 받게 한다.
+- Android는 `app.config.ts`의 `intentFilters`(`auth/kakao`·`auth/naver`·`auth/google`)로 콜백을 받는다. `app/auth/[provider].tsx`가 `maybeCompleteAuthSession()`을 불러 `openAuthSessionAsync`가 URL을 받게 한다. 인증 판정 전(`loading`)·잠긴 키체인(`locked`)에서 열리면 첫 화면처럼 `/loading`에서 판정을 기다린다(미인증으로 보지 않는다).
 - 화면은 `useOpen{Kakao,Google,Naver}LoginMutationOptions`로 code를 받고 `useExchangeCodeMutationOptions`에 `{ code, provider }`를 넘긴다(`components/social-login-buttons.tsx`).
 - 콜백 URL에 code가 없고 `error`가 있으면 그 코드의 `BusinessError`(카탈로그에 없으면 호출부 폴백 문구), 없으면 `AUTH_NO_CODE_RECEIVED`다. 창을 닫으면 `AUTH_LOGIN_CANCELLED`다.
 
