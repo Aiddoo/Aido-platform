@@ -1,7 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { invalidDateRange } from "./daily-completions.errors.js";
 
 interface DateRangeValue {
   readonly start: Temporal.PlainDate;
@@ -12,11 +11,7 @@ interface DateRangeValue {
 export class DateRange extends ValueObject<DateRangeValue> {
   static create(start: Temporal.PlainDate, end: Temporal.PlainDate): DateRange {
     if (Temporal.PlainDate.compare(start, end) > 0) {
-      throw new DomainException(ErrorCode.SYS_0002, {
-        field: "dateRange",
-        startDate: start.toString(),
-        endDate: end.toString(),
-      });
+      throw invalidDateRange(start, end);
     }
     return new DateRange({ start, end });
   }
