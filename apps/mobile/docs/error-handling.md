@@ -37,14 +37,17 @@ export type Result<T, E extends CodedError = CodedError> =
 
 ```text
 2xx  → successEnvelopeSchema 검증 실패면 throw ParseError, 아니면 ok(data)
-4xx  → errorEnvelopeSchema로 code를 읽어 err(new ApiError(code, resolveMessage(code, message), status, details))
-       (알 수 없는 code는 SYS_0001)
-5xx  → throw ServerError
-타임아웃 → throw TimeoutError, 네트워크 → throw NetworkError
+4xx  → readErrorEnvelope → err(ApiError { code: 아는 코드 | SYS_0001, message, status, details })
+5xx  → readErrorEnvelope → throw ServerError { status, serverCode: 아는 코드 | null, details, requestId, request }
+타임아웃 → throw TimeoutError, ky NetworkError·expo `fetch failed:` → throw NetworkError
+그 밖(요청 경로의 TypeError 등 코드 버그) → 그대로 throw
 ```
 
+- 실패 봉투는 [`error-envelope.ts`](../src/shared/infra/http/error-envelope.ts)의 `readErrorEnvelope` 하나가 `@aido/api/common`의 `errorEnvelopeSchema`에서 `error`만 골라 읽는다(게이트웨이 응답처럼 `success`·`timestamp`·`message`가 없어도 `code`가 있으면 읽는다). `ky-error`, 실패 breadcrumb, 토큰 갱신 판정이 모두 이 함수를 쓴다.
+- 5xx 코드는 `ServerError.serverCode`다. `code`로 두지 않는다. `code`가 있으면 `isCodedError`가 참이 되어 예상한 4xx처럼 재시도·보고에서 빠진다.
+
 - [`api-failure-breadcrumb.ts`](../src/shared/infra/http/api-failure-breadcrumb.ts)의 afterResponse 훅은 **관측만 한다**(실패 breadcrumb `category: 'http'`). 분류하거나 throw하지 않는다. 훅이 분류까지 하면 5xx가 재시도하지 않는 `ApiError`로 둔갑한다. auth-client 훅은 갱신 경로인 401을 건너뛴다.
-- `resolveMessage`는 i18n `errors` 카탈로그(키 = ErrorCode) → 서버 message → `errors:fallback` 순서로 사용자 문구를 정한다.
+- 문구: 4xx는 서버가 보낸 코드 그대로 `errors` 카탈로그(키 = ErrorCode) → 서버 message(요청 언어로 번역됨) → `errors:fallback` 순서로 정한다(`resolveMessage`). 앱이 모르는 코드도 분기용 `code`만 `SYS_0001`이고 문구는 서버 message다. 5xx는 아는 `serverCode`면 카탈로그 문구(예: SYS_0005 「요청이 많아 잠시 처리하지 못했어요…」), 아니면 `common:infraErrors.server`다.
 - `{Entity}Api`는 `ApiError`를 그대로 돌려주고, 응답 schema 검증 실패는 `parseApiResponse`가 `ParseError`로 던진다.
 - 재시도는 React Query가 소유한다(Ky `retry: 0`).
 

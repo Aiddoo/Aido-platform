@@ -20,7 +20,11 @@ describe('classifyErrorReport', () => {
     ['타임아웃', new TimeoutError(), 'breadcrumb'],
     ['키체인 잠금', new KeychainLockedError(new Error('locked')), 'breadcrumb'],
     ['5xx ServerError', new ServerError(500), 'event'],
-    ['503 ServerError', new ServerError(503, { requestId: 'req-1', request: null }), 'event'],
+    [
+      '503 ServerError',
+      new ServerError(503, { serverCode: null, details: null, requestId: 'req-1', request: null }),
+      'event',
+    ],
     ['응답 파싱 실패', new ParseError('invalid'), 'event'],
     ['5xx ApiError', new ApiError('SYS_0001', 'x', 502), 'event'],
     ['잡지 못한 일반 오류', new Error('boom'), 'event'],
@@ -38,6 +42,8 @@ describe('getErrorReportTags', () => {
   it('서버 장애는 상태와 실패한 요청을 태그로 남겨 어느 API인지 찾게 한다', () => {
     // Given
     const error = new ServerError(503, {
+      serverCode: null,
+      details: null,
       requestId: 'req-1',
       request: { method: 'POST', endpoint: '/v1/todos/1/comments' },
     });

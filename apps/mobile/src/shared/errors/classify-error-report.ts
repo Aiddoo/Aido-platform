@@ -35,12 +35,19 @@ export function isUnexpectedError(error: unknown): boolean {
   return !isCodedError(error) && !isConnectivityError(error);
 }
 
-type ErrorReportTags = Pick<ErrorReporterContext, 'statusCode' | 'method' | 'endpoint'>;
+type ErrorReportTags = Pick<
+  ErrorReporterContext,
+  'statusCode' | 'serverErrorCode' | 'method' | 'endpoint'
+>;
 
-/** 오류가 지닌 요청 정보. 어느 API의 실패인지 보고에 태그로 남긴다 */
+/** 오류가 지닌 요청 정보. 어느 API의 어떤 서버 판정인지 보고에 태그로 남긴다 */
 export function getErrorReportTags(error: unknown): ErrorReportTags {
   if (error instanceof ServerError) {
-    return { statusCode: error.status, ...error.request };
+    return {
+      statusCode: error.status,
+      ...(error.serverCode != null && { serverErrorCode: error.serverCode }),
+      ...error.request,
+    };
   }
   return {};
 }

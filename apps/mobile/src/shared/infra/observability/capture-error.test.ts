@@ -77,7 +77,12 @@ describe('captureError', () => {
 
   it('5xx는 requestId를 request_id 태그로 싣는다', () => {
     // Given
-    const error = new ServerError(503, { requestId: 'req-1', request: null });
+    const error = new ServerError(503, {
+      serverCode: null,
+      details: null,
+      requestId: 'req-1',
+      request: null,
+    });
 
     // When
     createSentryErrorReporter().captureException(error, { feature: 'todo' });

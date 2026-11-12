@@ -1,5 +1,8 @@
+import type { ErrorCodeType } from '@aido/api/errors';
 import { AppError, type AppErrorOptions } from '@src/core/errors/app-error';
 import { t } from '@src/shared/i18n';
+
+import { findErrorCodeMessage } from './error-code-message';
 
 /** 5xx·네트워크·타임아웃·응답 파싱 실패. 화면이 따로 분기하지 않고 조회는 경계, mutation은 전역 피드백이 받는다 */
 export abstract class InfraError extends AppError {}
@@ -28,25 +31,47 @@ interface FailedRequest {
 }
 
 interface ServerErrorSource {
+  serverCode: ErrorCodeType | null;
+  details: Record<string, unknown> | null;
   /** 같은 요청의 서버 로그·Sentry 이벤트를 찾는 `X-Request-Id` */
   requestId: string | null;
   /** 실패한 요청. 보고에 어느 API인지 태그로 남긴다 */
   request: FailedRequest | null;
 }
 
+const UNKNOWN_SOURCE: ServerErrorSource = {
+  serverCode: null,
+  details: null,
+  requestId: null,
+  request: null,
+};
+
 export class ServerError extends InfraError {
   override readonly name = 'ServerError';
   readonly status: number;
+  /**
+   * 5xx 봉투의 코드(SYS_0005 DB 과부하, WEATHER_1901 날씨 업체 장애 등). 본문을 읽지 못했거나 모르는 코드면 null.
+   * `code`로 두지 않는다: `isCodedError`가 참이 되면 예상한 4xx처럼 재시도·보고에서 빠진다
+   */
+  readonly serverCode: ErrorCodeType | null;
+  /** 운영에는 `PUBLIC_ERROR_DETAILS`에 등록한 코드만 실린다(AI 미차감 `charged` 등) */
+  readonly details: Record<string, unknown> | null;
   readonly requestId: string | null;
   readonly request: FailedRequest | null;
 
   constructor(
     status: number,
-    { requestId, request }: ServerErrorSource = { requestId: null, request: null },
+    { serverCode, details, requestId, request }: ServerErrorSource = UNKNOWN_SOURCE,
     options?: AppErrorOptions,
   ) {
-    super(t('common:infraErrors.server'), options);
+    super(
+      (serverCode == null ? null : findErrorCodeMessage(serverCode)) ??
+        t('common:infraErrors.server'),
+      options,
+    );
     this.status = status;
+    this.serverCode = serverCode;
+    this.details = details;
     this.requestId = requestId;
     this.request = request;
   }
