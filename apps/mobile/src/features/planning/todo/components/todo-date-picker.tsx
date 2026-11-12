@@ -10,10 +10,10 @@ import { PICKER_MONTH_HEIGHT } from '../constants/todo.constants';
 import { useDatePicker } from '../hooks/use-date-picker';
 import { getPickerDayType } from '../utils/calendar-day.view-model';
 import type { CalendarDayCell } from '../utils/calendar-month.view-model';
-import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
+import { WeekdayRow } from './calendar/weekday-row';
 import { PickerDateCell } from './picker-date-cell';
-import { PickerHeader } from './picker-header';
-import { PickerMonthHeader } from './picker-month-header';
+import { PickerMonthBar } from './picker-month-bar';
+import { PickerTitleBar } from './picker-title-bar';
 
 interface TodoDatePickerProps {
   /** 고른 날짜(YYYY-MM-DD) */
@@ -41,7 +41,7 @@ export function TodoDatePicker({
     <SheetHeaderLayout
       gap={20}
       header={
-        <PickerHeader
+        <PickerTitleBar
           title={t('picker.dateTitle')}
           onCancel={onCancel}
           onConfirm={handleConfirm}
@@ -157,13 +157,13 @@ function DatePickerCalendar({
 
   return (
     <VStack gap={16}>
-      <PickerMonthHeader
+      <PickerMonthBar
         displayMonthKey={displayMonthKey}
         onPreviousMonth={onPreviousMonth}
         onNextMonth={onNextMonth}
       />
 
-      <CalendarWeekdayHeader />
+      <WeekdayRow />
 
       <VStack style={{ height: PICKER_MONTH_HEIGHT }}>
         {weeks.map((week, weekIndex) => (

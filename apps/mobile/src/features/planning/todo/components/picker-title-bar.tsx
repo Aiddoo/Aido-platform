@@ -3,19 +3,19 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, CloseIcon, HStack, Text } from '@src/shared/ui';
 import { CloseButton, PressableFeedback } from 'heroui-native';
 
-interface PickerHeaderProps {
+interface PickerTitleBarProps {
   title: string;
   onCancel: () => void;
   onConfirm: () => void;
   isConfirmDisabled?: boolean;
 }
 
-export function PickerHeader({
+export function PickerTitleBar({
   title,
   onCancel,
   onConfirm,
   isConfirmDisabled = false,
-}: PickerHeaderProps) {
+}: PickerTitleBarProps) {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('common');
 

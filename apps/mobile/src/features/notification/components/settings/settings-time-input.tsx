@@ -1,4 +1,4 @@
-import { PickerHeader } from '@src/features/planning/todo/components/picker-header';
+import { PickerTitleBar } from '@src/features/planning/todo/components/picker-title-bar';
 import { formatTimeOfDay, type TimeFormat } from '@src/shared/date/format/date-format';
 import { isTimeOfDayInRange, type TimeOfDay } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -127,7 +127,7 @@ function ConfirmableTimeSpinner({
 
   return (
     <VStack gap={24}>
-      <PickerHeader title={title} onCancel={onCancel} onConfirm={() => onConfirm(draft)} />
+      <PickerTitleBar title={title} onCancel={onCancel} onConfirm={() => onConfirm(draft)} />
       <Box className="items-center">
         <TimeSpinner {...spinnerProps} value={draft} onChange={setDraft} />
       </Box>

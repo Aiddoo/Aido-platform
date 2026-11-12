@@ -92,7 +92,7 @@ export function TodoList({ isReminderOff = false }: TodoListProps) {
     <Box gap={16}>
       {categoryGroups.map((group) => (
         <Box key={group.category.id} gap={8}>
-          <CategoryHeader category={group.category} date={date} />
+          <CategoryAddPill category={group.category} date={date} />
 
           <TodoReorderableList
             items={group.todos}
@@ -137,7 +137,7 @@ interface CategoryHeaderProps {
   date: DateKey;
 }
 
-function CategoryHeader({ category, date }: CategoryHeaderProps) {
+function CategoryAddPill({ category, date }: CategoryHeaderProps) {
   const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 

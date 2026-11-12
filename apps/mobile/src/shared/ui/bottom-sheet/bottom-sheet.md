@@ -143,7 +143,7 @@ import { ModalBottomSheet } from '@src/shared/ui';
   onOpenChange={handleOpenChange}
   onExit={handleExit}
 >
-  <SheetHeaderLayout gap={20} header={<PickerHeader {...headerProps} />}>
+  <SheetHeaderLayout gap={20} header={<PickerTitleBar {...headerProps} />}>
     {/* 달력 등 스크롤될 본문 */}
   </SheetHeaderLayout>
 </ModalBottomSheet>

@@ -4,18 +4,18 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, HStack, IconButton, Text } from '@src/shared/ui';
 
-interface PickerMonthHeaderProps {
+interface PickerMonthBarProps {
   /** 보이는 달의 아무 날(YYYY-MM-DD) */
   displayMonthKey: DateKey;
   onPreviousMonth: () => void;
   onNextMonth: () => void;
 }
 
-export function PickerMonthHeader({
+export function PickerMonthBar({
   displayMonthKey,
   onPreviousMonth,
   onNextMonth,
-}: PickerMonthHeaderProps) {
+}: PickerMonthBarProps) {
   const { t } = useTranslation('common');
   const dateFormatContext = useDateFormatContext();
 

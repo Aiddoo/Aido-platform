@@ -35,7 +35,7 @@ import {
   withTodoRepeatFormMonthlyToggled,
   withTodoRepeatFormPreset,
 } from '../utils/todo-repeat-form.view-model';
-import { PickerHeader } from './picker-header';
+import { PickerTitleBar } from './picker-title-bar';
 import { RepeatCalendar } from './repeat-calendar';
 import { RepeatHintLine } from './repeat-hint-line';
 
@@ -63,10 +63,8 @@ export function TodoRepeatPicker({ value, onChange, onCancel }: TodoRepeatPicker
   return (
     <SheetHeaderLayout
       gap={20}
-      header={
-        <TodoRepeatPicker.RepeatPickerHeader form={form} onChange={onChange} onCancel={onCancel} />
-      }
-      footer={<TodoRepeatPicker.RepeatPeriodFooter form={form} value={value} onChange={onChange} />}
+      header={<TodoRepeatPicker.Header form={form} onChange={onChange} onCancel={onCancel} />}
+      footer={<TodoRepeatPicker.PeriodFooter form={form} value={value} onChange={onChange} />}
     >
       <VStack gap={20}>
         <TodoRepeatPicker.DayOfWeekSelector form={form} />
@@ -283,17 +281,13 @@ TodoRepeatPicker.RepeatSummary = function RepeatSummary({ form }: { form: Repeat
   );
 };
 
-interface RepeatPickerHeaderProps {
+interface RepeatPickerTitleBarProps {
   form: RepeatForm;
   onChange: (value: RepeatPickerValue) => void;
   onCancel: () => void;
 }
 
-TodoRepeatPicker.RepeatPickerHeader = function RepeatPickerHeader({
-  form,
-  onChange,
-  onCancel,
-}: RepeatPickerHeaderProps) {
+TodoRepeatPicker.Header = function Header({ form, onChange, onCancel }: RepeatPickerTitleBarProps) {
   const { t } = useTranslation('todo');
   const { isValid } = useFormState({ control: form.control });
 
@@ -302,7 +296,7 @@ TodoRepeatPicker.RepeatPickerHeader = function RepeatPickerHeader({
   });
 
   return (
-    <PickerHeader
+    <PickerTitleBar
       title={t('picker.repeatTitle')}
       onCancel={onCancel}
       onConfirm={() => handleConfirm()}
@@ -387,7 +381,7 @@ interface RepeatPeriodFooterProps {
   onChange: (value: RepeatPickerValue) => void;
 }
 
-TodoRepeatPicker.RepeatPeriodFooter = function RepeatPeriodFooter({
+TodoRepeatPicker.PeriodFooter = function PeriodFooter({
   form,
   value,
   onChange,

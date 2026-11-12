@@ -9,7 +9,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
-import { Box, Flex, HStack, Text } from '@src/shared/ui';
+import { ArrowLeftIcon, ArrowRightIcon, Box, Flex, HStack, IconButton, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Tabs } from 'heroui-native';
@@ -32,10 +32,9 @@ import {
 } from '../../schemas/calendar-view-mode-storage.schema';
 import { shiftCalendarDateKey } from '../../utils/calendar-grid.view-model';
 import {
-  type CalendarHeaderLayout,
-  getCalendarHeaderLayout,
-} from '../../utils/calendar-header.geometry';
-import { CalendarNavigation } from './calendar-navigation';
+  type CalendarTitleBarLayout,
+  getCalendarTitleBarLayout,
+} from '../../utils/calendar-title-bar.geometry';
 
 const HEADER_GAP = 8;
 const MONTHS_PER_YEAR = 12;
@@ -44,7 +43,7 @@ const LAST_WEEK_OF_MONTH = 5;
 // 견본과 보이는 제목이 같은 글자 모양이어야 잰 폭이 맞는다
 const TITLE_TEXT_STYLE = { size: 'b1', weight: 'semibold' } as const;
 
-export function CalendarHeader() {
+export function CalendarTitleBar() {
   const { t } = useTranslation('common');
   const [selectedDateKey, setSelectedDateKey] = useFeedDateKey();
   const todayKey = useTodayKey();
@@ -57,7 +56,7 @@ export function CalendarHeader() {
     viewModeTabsRef,
     navigationRef,
     handleRowLayout,
-  } = useCalendarHeaderLayout();
+  } = useCalendarTitleBarLayout();
   const isInline = layout === 'inline';
 
   const handlePrevious = () =>
@@ -77,7 +76,7 @@ export function CalendarHeader() {
         gap={HEADER_GAP}
       >
         <HStack gap={HEADER_GAP} align="center" className="min-w-0 shrink">
-          <CalendarHeaderText />
+          <CalendarTitleText />
           <PressableFeedback
             ref={todayRef}
             onPress={() => setSelectedDateKey(todayKey)}
@@ -104,11 +103,11 @@ export function CalendarHeader() {
  * 보이는 제목이 아니라 이 언어·보기에서 가장 긴 제목으로 정해, 주·달을 넘겨도 한 줄·두 줄이 바뀌지 않는다.
  * 재기 전에는 마지막으로 정한 배치를 그린다
  */
-function useCalendarHeaderLayout() {
+function useCalendarTitleBarLayout() {
   const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const { i18n } = useTranslation();
   const { fontScale } = useFontScale();
-  const [layout, setLayout] = useState<CalendarHeaderLayout>('inline');
+  const [layout, setLayout] = useState<CalendarTitleBarLayout>('inline');
   const rowRef = useRef<ComponentRef<typeof Box>>(null);
   const titleSamplesRef = useRef<ComponentRef<typeof Box>>(null);
   const todayRef = useRef<ComponentRef<typeof PressableFeedback>>(null);
@@ -133,7 +132,7 @@ function useCalendarHeaderLayout() {
     }
     decidedWidthRef.current = availableWidth;
     setLayout(
-      getCalendarHeaderLayout({
+      getCalendarTitleBarLayout({
         availableWidth,
         gap: HEADER_GAP,
         widestTitleWidth,
@@ -218,7 +217,7 @@ function CalendarTitleSamples({ ref }: Pick<ComponentProps<typeof Box>, 'ref'>) 
   );
 }
 
-function CalendarHeaderText() {
+function CalendarTitleText() {
   const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const [selectedDateKey] = useFeedDateKey();
   const todayDateKey = useTodayKey();
@@ -273,5 +272,33 @@ function CalendarViewModeTrigger({
         </Box>
       )}
     </Tabs.Trigger>
+  );
+}
+
+interface CalendarNavigationProps extends Pick<ComponentProps<typeof HStack>, 'ref'> {
+  onPrevious: () => void;
+  onNext: () => void;
+}
+
+function CalendarNavigation({ ref, onPrevious, onNext }: CalendarNavigationProps) {
+  const { t } = useTranslation('common');
+
+  return (
+    <HStack ref={ref} gap={4}>
+      <IconButton
+        accessibilityLabel={t('calendar.previousMonth')}
+        icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}
+        className="min-h-0 min-w-0 p-1"
+        hitSlop={8}
+        onPress={onPrevious}
+      />
+      <IconButton
+        accessibilityLabel={t('calendar.nextMonth')}
+        icon={<ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />}
+        className="min-h-0 min-w-0 p-1"
+        hitSlop={8}
+        onPress={onNext}
+      />
+    </HStack>
   );
 }

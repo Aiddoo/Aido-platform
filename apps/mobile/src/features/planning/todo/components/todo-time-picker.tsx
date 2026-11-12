@@ -26,7 +26,7 @@ import { useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { DEFAULT_TODO_TIME } from '../constants/todo-default-time.constants';
-import { PickerHeader } from './picker-header';
+import { PickerTitleBar } from './picker-title-bar';
 
 const IS_IOS = process.env.EXPO_OS === 'ios';
 
@@ -75,7 +75,7 @@ export function TodoTimePicker({
     <SheetHeaderLayout
       gap={24}
       header={
-        <PickerHeader
+        <PickerTitleBar
           title={t('picker.timeTitle')}
           onCancel={onCancel}
           onConfirm={handleConfirm}

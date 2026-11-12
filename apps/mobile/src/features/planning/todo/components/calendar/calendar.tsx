@@ -38,9 +38,9 @@ import {
 } from '../../utils/calendar-month.view-model';
 import { clampCalendarPage } from '../../utils/calendar-pager.geometry';
 import { CALENDAR_DATE_CELL_HEIGHT, CalendarDateCell } from './calendar-date-cell';
-import { CalendarHeader } from './calendar-header';
 import { CALENDAR_CENTER_PAGE, CALENDAR_TOTAL_PAGES, CalendarPager } from './calendar-pager';
-import { CalendarWeekdayHeader } from './calendar-weekday-header';
+import { CalendarTitleBar } from './calendar-title-bar';
+import { WeekdayRow } from './weekday-row';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 const PAGER_HEIGHT_TIMING = {
@@ -65,9 +65,9 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
 
   return (
     <VStack className="bg-white" gap={8}>
-      <CalendarHeader />
+      <CalendarTitleBar />
 
-      <CalendarWeekdayHeader />
+      <WeekdayRow />
 
       <CalendarHeightTransition height={pagerHeight}>
         {/* 높이가 바뀌는 바깥이 아니라 내용에서 재어 애니메이션 동안 layout 이벤트가 이어지지 않는다 */}

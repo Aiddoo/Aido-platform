@@ -15,7 +15,7 @@ function getWeekdayStyle(dayIndex: number): WeekdayStyle {
     .otherwise(() => ({ tone: 'neutral', shade: 6 }));
 }
 
-export function CalendarWeekdayHeader() {
+export function WeekdayRow() {
   const { i18n } = useTranslation();
 
   return (

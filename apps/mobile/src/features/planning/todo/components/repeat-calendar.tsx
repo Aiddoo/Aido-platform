@@ -8,9 +8,9 @@ import {
   getRepeatWeekDays,
   getWeekRangeBand,
 } from '../utils/calendar-day.view-model';
-import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
+import { WeekdayRow } from './calendar/weekday-row';
 import { PickerDateCell } from './picker-date-cell';
-import { PickerMonthHeader } from './picker-month-header';
+import { PickerMonthBar } from './picker-month-bar';
 
 interface RepeatCalendarProps {
   picker: DatePicker;
@@ -36,13 +36,13 @@ export function RepeatCalendar({
 
   return (
     <VStack gap={16}>
-      <PickerMonthHeader
+      <PickerMonthBar
         displayMonthKey={displayMonthKey}
         onPreviousMonth={goToPrevMonth}
         onNextMonth={goToNextMonth}
       />
 
-      <CalendarWeekdayHeader />
+      <WeekdayRow />
 
       <VStack style={{ height: PICKER_MONTH_HEIGHT }}>
         {weeks.map((week, weekIndex) => {
