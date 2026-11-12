@@ -1,4 +1,4 @@
-import { entityIdSchema } from '@aido/api/common';
+import { entityIdSchema, timeOfDaySchema } from '@aido/api/common';
 import {
   TODAY_SUMMARY_TOP_TODOS_MAX,
   TODO_EDIT_SCOPES,
@@ -31,7 +31,7 @@ export const todoSchema = z.object({
   endDate: dateKeySchema.nullable(),
   category: todoCategorySchema.pick({ id: true, name: true, color: true }),
   /** 사용자가 고른 벽시계(HH:mm). 어디서든 이 시각이라 표시와 수정 기본값은 이 값만 쓴다. 종일은 null */
-  localTime: z.iso.time({ precision: -1 }).nullable(),
+  localTime: timeOfDaySchema.nullable(),
   /** 서버가 벽시계 칸을 비워 둔 시간 행의 시각을 표시 때 시간대로 계산하려고 순간을 함께 둔다. 시간 없는 할 일은 null */
   scheduledAt: instantSchema.nullable(),
   /** 단일 할 일이나 규칙이 없는 옛 묶음, 친구 할 일은 null */
@@ -174,7 +174,7 @@ export function getShiftedEndDate(
 const todoScheduleSchema = z.object({
   startDate: dateKeySchema,
   endDate: dateKeySchema.nullable(),
-  scheduledTime: z.iso.time({ precision: -1 }).nullable(),
+  scheduledTime: timeOfDaySchema.nullable(),
   isAllDay: z.boolean(),
   repeat: todoRepeatSchema.nullable(),
 });
@@ -228,8 +228,20 @@ export function isLastOpenTodo(todos: readonly Todo[], completedTodoId: number):
   );
 }
 
+/** 할 일이 걸친 날짜. 여러 날 할 일만 시작일과 끝날이 다르다 */
+export interface TodoDateSpan {
+  startDate: DateKey;
+  endDate: DateKey;
+}
+
+// 하루짜리는 끝날이 비어 있다. 작성 폼 값처럼 날짜만 가진 곳도 같은 규칙으로 읽는다
+export function getTodoDateSpan(todo: Pick<Todo, 'startDate' | 'endDate'>): TodoDateSpan {
+  return { startDate: todo.startDate, endDate: todo.endDate ?? todo.startDate };
+}
+
 export function isTodoOnDate(todo: Todo, date: DateKey): boolean {
-  return todo.startDate <= date && date <= (todo.endDate ?? todo.startDate);
+  const { startDate, endDate } = getTodoDateSpan(todo);
+  return startDate <= date && date <= endDate;
 }
 
 // 서버가 준 벽시계는 어디서든 그 시각이고 칸을 비워 둔 시간 행만 순간을 시간대로 읽는다. 종일·시간 없음은 null

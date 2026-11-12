@@ -16,7 +16,7 @@ import {
   isRecurringCategoryTodoLimitError,
   isRecurringTodoRejection,
 } from '@src/features/planning/todo/domains/todo.error';
-import { getScheduledTime } from '@src/features/planning/todo/domains/todo.model';
+import { getScheduledTime, getTodoDateSpan } from '@src/features/planning/todo/domains/todo.model';
 import type {
   OptimisticTodo,
   TodoFieldChanges,
@@ -26,7 +26,6 @@ import {
   appendTodoToList,
   beginTodoWrite,
   findCachedTodo,
-  getTodoDateSpan,
   removeTodoFromList,
   saveCreatedTodo,
   settleTodoEdit,

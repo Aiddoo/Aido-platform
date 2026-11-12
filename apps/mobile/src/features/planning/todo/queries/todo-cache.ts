@@ -14,7 +14,9 @@ import { last } from 'es-toolkit';
 import { DailyCompletionPolicy } from '../domains/daily-completion.model';
 import { type DailyCompletionsResult } from '../domains/daily-completion.model';
 import {
+  getTodoDateSpan,
   type Todo,
+  type TodoDateSpan,
   type TodoListResult,
   type TodoOverview,
   TodoPolicy,
@@ -56,21 +58,11 @@ export interface TodoSnapshot {
   index: number;
 }
 
-/** 할 일이 걸친 날짜. 여러 날 할 일만 시작일과 끝날이 다르다 */
-export interface DateSpan {
-  startDate: string;
-  endDate: string;
-}
-
-export function getTodoDateSpan(todo: Pick<Todo, 'startDate' | 'endDate'>): DateSpan {
-  return { startDate: todo.startDate, endDate: todo.endDate ?? todo.startDate };
-}
-
 /** 할 일의 기간. 그날 목록도 상세도 불러오지 않았으면 보고 있는 하루로 본다 */
 export function getCachedTodoDateSpan(
   queryClient: QueryClient,
   { date, todoId }: { date: DateKey; todoId: number },
-): DateSpan {
+): TodoDateSpan {
   const todo = findCachedTodo(queryClient, { date, todoId });
   return todo == null ? { startDate: date, endDate: date } : getTodoDateSpan(todo);
 }
@@ -256,7 +248,7 @@ export function syncDailyCompletionWithList(queryClient: QueryClient, { date }: 
   );
 }
 
-function isDateInSpan(date: string, span: DateSpan) {
+function isDateInSpan(date: string, span: TodoDateSpan) {
   return span.startDate <= date && date <= span.endDate;
 }
 
@@ -265,7 +257,7 @@ function getKeyDate(queryKey: QueryKey) {
   return todoDateQueryKeySchema.safeParse(last(queryKey)).data?.date;
 }
 
-function getKeyRange(queryKey: QueryKey): DateSpan | undefined {
+function getKeyRange(queryKey: QueryKey) {
   return todoRangeQueryKeySchema.safeParse(last(queryKey)).data;
 }
 
@@ -282,7 +274,7 @@ function showsTodo(query: Pick<Query, 'state'>, todoId: number) {
 }
 
 /** 그 기간과 하루라도 겹치는 달력·위젯 완료 범위 */
-function completionRangesFilter(span: DateSpan) {
+function completionRangesFilter(span: TodoDateSpan) {
   return {
     queryKey: TODO_QUERY_KEYS.completionRanges(),
     predicate: (query: Pick<Query, 'queryKey'>) => {
@@ -292,7 +284,7 @@ function completionRangesFilter(span: DateSpan) {
   };
 }
 
-function widgetSummariesFilter(span: DateSpan): InvalidateQueryFilters {
+function widgetSummariesFilter(span: TodoDateSpan): InvalidateQueryFilters {
   return {
     queryKey: TODO_QUERY_KEYS.widgetSummary(),
     predicate: (query) => {
@@ -317,7 +309,7 @@ function otherTodoListsFilter({ date, todoId, span }: TodoWriteTarget): Invalida
 }
 
 /** 그 할 일을 보여 주거나 기간들 중 하나에 드는 날짜 목록. 날짜를 옮기면 옛 날짜와 새 날짜가 모두 바뀐다 */
-function todoListsFilter(todoId: number, spans: readonly DateSpan[]): InvalidateQueryFilters {
+function todoListsFilter(todoId: number, spans: readonly TodoDateSpan[]): InvalidateQueryFilters {
   return {
     queryKey: TODO_QUERY_KEYS.lists(),
     predicate: (query) => {
@@ -341,7 +333,7 @@ interface TodoWriteTarget {
   /** 고친 할 일. 만들기처럼 아직 서버 id가 없으면 비운다 */
   todoId?: number;
   /** 할 일이 걸친 날짜 */
-  span: DateSpan;
+  span: TodoDateSpan;
 }
 
 /** 그 할 일의 완료를 바꾸는 쓰기. 응답 전에는 화면의 완료가 낙관적 값이라 서버는 아직 모른다 */
@@ -467,7 +459,7 @@ export function settleTodoReorder(queryClient: QueryClient, { todoId }: { todoId
   ]);
 }
 
-function isSameSpan(a: DateSpan, b: DateSpan) {
+function isSameSpan(a: TodoDateSpan, b: TodoDateSpan) {
   return a.startDate === b.startDate && a.endDate === b.endDate;
 }
 
