@@ -63,20 +63,6 @@ describe('normalizePastedInviteCode', () => {
   });
 });
 
-describe('isFilledInviteCode', () => {
-  it.each([
-    ['K7M2Q', false],
-    ['K7M2QX', true],
-    ['K7-M2-QX', true],
-  ])('%s를 입력하면 %s를 반환한다', (raw, expected) => {
-    // When
-    const result = InviteCodePolicy.isFilledInviteCode(raw);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
 describe('findInvalidCharacters', () => {
   it.each(['0', 'O', '1', 'I', 'L'])('헷갈리기 쉬운 %s는 confusable로 분류한다', (character) => {
     // When

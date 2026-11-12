@@ -132,4 +132,33 @@ describe('초대 코드 입력 화면', () => {
     // Then
     expect(input).toHaveDisplayValue(CODE);
   });
+
+  it('헷갈리는 글자를 넣으면 제출 전에 바로 알리고 고칠 때까지 확인을 끈다', async () => {
+    // Given
+    const user = userEvent.setup();
+    await renderScreen(<InviteCodeEntryRoute />, {
+      di: createTestDi({
+        ports: {
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          queryClient: createTestQueryClient(),
+        },
+      }),
+    });
+    const input = await screen.findByLabelText('초대 코드');
+
+    // When
+    await user.paste(input, 'K7M2Q0');
+
+    // Then
+    expect(await screen.findByText(/‘0’ 글자는 초대 코드에 없어요/u)).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: '확인' })).toBeDisabled();
+
+    // When
+    await fireEvent.changeText(input, 'K7M2QX');
+
+    // Then
+    await waitFor(() => expect(screen.getByRole('button', { name: '확인' })).toBeEnabled());
+    expect(screen.queryByText(/글자는 초대 코드에 없어요/u)).toBeNull();
+  });
 });
