@@ -1,4 +1,5 @@
 import { useTrack } from '@src/shared/analytics';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -89,7 +90,7 @@ const DEGREE = {
   scale: 0.42,
   top: process.env.EXPO_OS === 'ios' ? 0.1 : 0.18,
 } as const;
-const HERO_ENTERING = FadeInDown.duration(600)
+const HERO_ENTERING = FadeInDown.duration(ANIMATION.durationMs.emphasis)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1).factory())
   .withInitialValues({ opacity: 0, translateY: 10 })
   .reduceMotion(ReduceMotion.System);
