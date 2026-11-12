@@ -26,6 +26,7 @@ import { match } from 'ts-pattern';
 
 import { isReportUnavailableError } from '../domains/report.error';
 import { type AiReport, ReportPolicy } from '../domains/report.model';
+import { getDayPatternLevel } from '../utils/day-pattern.view-model';
 import { formatReportPeriodLabel } from '../utils/report-period.view-model';
 import { ReportTypeChip } from './report-type-chip';
 
@@ -210,7 +211,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
       </Text>
       <HStack justify="around">
         {items.map((item) => {
-          const level = ReportPolicy.getCompletionLevel(item);
+          const level = getDayPatternLevel(item);
 
           return (
             <VStack key={item.day} align="center" gap={4}>

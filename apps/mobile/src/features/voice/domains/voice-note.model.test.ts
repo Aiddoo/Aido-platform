@@ -9,12 +9,10 @@ import {
   createVoiceNoteKeyPoint,
   createVoiceNoteSentence,
 } from '../__tests__/voice-note.fixtures';
-import { createLocalFileEntry } from '../__tests__/voice.fixtures';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import {
   findRecordingIndexAt,
   VoiceNotePolicy,
-  VoiceRecordingFilePolicy,
   createVoiceNote,
   createDigestInput,
   createDigestMemo,
@@ -226,49 +224,6 @@ describe('isExpired', () => {
 
     // When
     const result = VoiceNotePolicy.isExpired(note, now);
-
-    // Then
-    expect(result).toBe(true);
-  });
-});
-
-describe('isRecordingFileExpired', () => {
-  const now = toInstant('2026-11-05T01:00:00.000Z');
-
-  it('수정 시각을 모르는 파일은 기한이 지난 것으로 본다', () => {
-    // When
-    const result = VoiceRecordingFilePolicy.isRecordingFileExpired(
-      createLocalFileEntry({ modifiedAt: null }),
-      now,
-    );
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('수정한 지 1시간이 되기 직전까지는 만료되지 않는다', () => {
-    // Given
-    const modifiedAt = new Date('2026-11-05T00:00:00.001Z');
-
-    // When
-    const result = VoiceRecordingFilePolicy.isRecordingFileExpired(
-      createLocalFileEntry({ modifiedAt }),
-      now,
-    );
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('수정한 지 1시간이 되는 순간 만료된다', () => {
-    // Given
-    const modifiedAt = new Date('2026-11-05T00:00:00.000Z');
-
-    // When
-    const result = VoiceRecordingFilePolicy.isRecordingFileExpired(
-      createLocalFileEntry({ modifiedAt }),
-      now,
-    );
 
     // Then
     expect(result).toBe(true);
@@ -533,14 +488,14 @@ describe('getMarkCount', () => {
   });
 });
 
-describe('findSentenceIndexAt', () => {
+describe('getSentenceIndexAt', () => {
   it('재생 위치의 문장을 찾고 첫 문장 앞이면 -1이다', () => {
     // Given
     const note = createSpokenVoiceNote({ sentences: spokenSentences });
 
     // When
-    const before = VoiceNotePolicy.findSentenceIndexAt(note, 500);
-    const atSecond = VoiceNotePolicy.findSentenceIndexAt(note, 5_000);
+    const before = VoiceNotePolicy.getSentenceIndexAt(note, 500);
+    const atSecond = VoiceNotePolicy.getSentenceIndexAt(note, 5_000);
 
     // Then
     expect(before).toBe(-1);

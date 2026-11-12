@@ -271,7 +271,7 @@ VoiceNoteResult.Transcript = function Transcript({
   const accountId = useSuspenseMyAccountId();
   const note = useCurrentVoiceNote(accountId);
   const activeSentenceIndex = useVoiceNotePlayback(player, ({ isPlaying, positionMs }) =>
-    isPlaying ? VoiceNotePolicy.findSentenceIndexAt(note, positionMs) : undefined,
+    isPlaying ? VoiceNotePolicy.getSentenceIndexAt(note, positionMs) : undefined,
   );
 
   return (
