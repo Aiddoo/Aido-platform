@@ -8,6 +8,7 @@ import { KeyboardController } from 'react-native-keyboard-controller';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { useAndroidTodoCommentBackHandler } from '../hooks/use-android-todo-comment-back-handler';
+import { TodoCommentDeleteProvider } from '../hooks/use-confirm-todo-comment-delete';
 import { TodoCommentFormProvider } from '../hooks/use-todo-comment-form';
 import {
   EMPTY_TODO_COMMENT_FORM_VALUES,
@@ -21,7 +22,7 @@ interface TodoCommentSessionProps extends PropsWithChildren {
   onExit?: () => void;
 }
 
-/** 한 할 일의 작성기(새 댓글·답글·수정) 폼과 펼친 묶음, 키보드 위치를 그 아래 조각들이 함께 쓴다 */
+/** 한 할 일의 작성기(새 댓글·답글·수정) 폼과 펼친 묶음, 키보드 위치, 삭제 확인을 그 아래 조각들이 함께 쓴다 */
 export function TodoCommentSession({ onExit, children }: TodoCommentSessionProps) {
   const form = useForm({
     resolver: zodResolver(todoCommentFormSchema),
@@ -33,8 +34,10 @@ export function TodoCommentSession({ onExit, children }: TodoCommentSessionProps
     <TodoCommentFormProvider form={form}>
       <TodoCommentRevealProvider>
         <TodoCommentExpansionProvider>
-          <BackAndKeyboardEffects onExit={onExit} />
-          {children}
+          <TodoCommentDeleteProvider>
+            <BackAndKeyboardEffects onExit={onExit} />
+            {children}
+          </TodoCommentDeleteProvider>
         </TodoCommentExpansionProvider>
       </TodoCommentRevealProvider>
     </TodoCommentFormProvider>

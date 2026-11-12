@@ -21,12 +21,14 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestDi,
+  deliverQueryNotifications,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { View } from 'react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
 import TodoDetailRoute from '../../../../../app/(app)/todo/[todoId]';
@@ -631,6 +633,85 @@ describe('TodoDetailRoute', () => {
 
       // Then
       expect(await screen.findByText('콕 찔러준 친구 1명')).toBeOnTheScreen();
+    });
+  });
+
+  describe('댓글 삭제', () => {
+    // ⋯ 메뉴는 누른 칸과 그려진 자리를 재야 열리고 눌린다. 테스트에는 레이아웃이 없어 자리를 준다
+    beforeEach(() => {
+      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
+        if (typeof callback === 'function') {
+          callback(0, 0, 32, 24, 300, 200);
+        }
+      });
+    });
+
+    afterEach(() => {
+      jest.mocked(View.prototype.measure).mockReset();
+    });
+
+    async function confirmDeleteWhileRequestIsOpen() {
+      const { httpClient } = await renderTodoDetail();
+      const removal = Promise.withResolvers<Awaited<ReturnType<HttpClient['delete']>>>();
+      httpClient.delete.mockReturnValueOnce(removal.promise);
+      await fireEvent.press(screen.getByTestId(`todo-comment-more-${COMMENT_ID}`));
+      const deleteItem = await screen.findByTestId('todo-comment-delete');
+      await fireEvent(deleteItem, 'layout', {
+        nativeEvent: { layout: { x: 0, y: 240, width: 200, height: 160 } },
+      });
+      await fireEvent.press(deleteItem);
+      await screen.findByText('댓글을 삭제할까요?');
+      const confirm = screen.getAllByRole('button', { name: '삭제' }).at(-1);
+      if (confirm == null) {
+        throw new Error('확인 버튼이 없습니다');
+      }
+      // 확인 누름은 요청이 끝나야 풀린다. 그리기만 마치고 약속은 쥔다
+      let confirmPress: Promise<void> = Promise.resolve();
+      await act(async () => {
+        confirmPress = fireEvent.press(confirm);
+      });
+      await act(deliverQueryNotifications);
+
+      return { httpClient, removal, confirmPress: () => confirmPress };
+    }
+
+    it('요청 중 행이 빠졌다가 실패하면 댓글을 되돌리고 확인 다이얼로그를 남긴다', async () => {
+      // Given
+      const { removal, confirmPress } = await confirmDeleteWhileRequestIsOpen();
+      // 기기처럼 응답보다 낙관적 갱신이 먼저 그려져 행이 빠져도 다이얼로그는 진행 중으로 남는다
+      expect(screen.queryByText('오늘도 화이팅!')).toBeNull();
+      expect(screen.getByText('댓글을 삭제할까요?')).toBeOnTheScreen();
+
+      // When
+      await act(async () => {
+        removal.reject(new NetworkError());
+        await confirmPress();
+      });
+      await act(deliverQueryNotifications);
+
+      // Then
+      expect(screen.getByText('오늘도 화이팅!')).toBeOnTheScreen();
+      expect(screen.getByText('댓글을 삭제할까요?')).toBeOnTheScreen();
+      expect(screen.getAllByRole('button', { name: '삭제' }).at(-1)).toBeEnabled();
+      await fireEvent.press(screen.getByRole('button', { name: '취소' }));
+    });
+
+    it('이미 지워진 댓글이면 지운 것과 같아 행을 뺀 채 다이얼로그를 닫는다', async () => {
+      // Given
+      const { removal, confirmPress } = await confirmDeleteWhileRequestIsOpen();
+
+      // When
+      await act(async () => {
+        removal.resolve(
+          err(new ApiError(ErrorCode.TODO_0833, '이미 삭제됨', HttpStatus.NOT_FOUND)),
+        );
+        await confirmPress();
+      });
+      await act(deliverQueryNotifications);
+
+      // Then
+      expect(screen.queryByText('댓글을 삭제할까요?')).toBeNull();
+      expect(screen.queryByText('오늘도 화이팅!')).toBeNull();
     });
   });
 
