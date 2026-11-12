@@ -15,8 +15,12 @@ import { useForm, type UseFormReturn, useFormState, useWatch } from 'react-hook-
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { getRepeatPresetDays, TodoRepeatPolicy } from '../domains/todo-repeat.model';
-import { type TodoRepeat } from '../domains/todo-repeat.model';
+import { toTodoRepeatFormValues } from '../apis/todo-repeat.mapper';
+import {
+  getRepeatPresetDays,
+  type TodoRepeat,
+  TodoRepeatPolicy,
+} from '../domains/todo-repeat.model';
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
 import {
   getTodoRepeatFormIssue,
@@ -28,7 +32,6 @@ import {
 import {
   getTodoRepeatFormFirstOccurrenceKey,
   isTodoRepeatFormPreset,
-  toTodoRepeatFormValues,
   withTodoRepeatFormBiweeklyToggled,
   withTodoRepeatFormCalendarDate,
   withTodoRepeatFormDayToggled,

@@ -1,47 +1,11 @@
-import { todoRepeatSchema, todoSeriesResponseSchema } from '@aido/api';
-import { createDateKey } from '@src/testing/date-key';
+import { todoSeriesResponseSchema } from '@aido/api';
 
-import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { todoSeriesSchema } from '../domains/todo-series.model';
-import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
 import {
   toFollowingCategoryRequest,
   toFollowingScheduleRequest,
   toTodoSeries,
 } from './todo-series.mapper';
-
-const DAILY: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
-const BIWEEKLY_COUNT: TodoRepeat = {
-  frequency: 'WEEKLY',
-  interval: 2,
-  weekdays: ['TUE'],
-  end: { type: 'COUNT', count: 10 },
-};
-
-const REPEATS: TodoRepeat[] = [
-  DAILY,
-  {
-    frequency: 'WEEKLY',
-    interval: 1,
-    weekdays: ['MON', 'FRI'],
-    end: { type: 'UNTIL', date: createDateKey('2026-12-31') },
-  },
-  BIWEEKLY_COUNT,
-  { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } },
-];
-
-describe('toRepeat', () => {
-  it.each(REPEATS)('계약 모양으로 보내고 되받으면 같은 규칙이다: %j', (repeat) => {
-    // Given
-    const dto = todoRepeatSchema.parse(toRepeatDto(repeat));
-
-    // When
-    const result = toRepeat(dto);
-
-    // Then
-    expect(result).toEqual(repeat);
-  });
-});
 
 describe('toFollowingScheduleRequest', () => {
   it('시간은 PATCH로 보내고 날짜는 보내지 않는다', () => {

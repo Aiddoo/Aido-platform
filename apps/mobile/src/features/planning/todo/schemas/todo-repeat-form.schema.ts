@@ -44,6 +44,7 @@ function toTodoRepeatEnd(values: TodoRepeatFormValues): TodoRepeatEnd | null {
     .exhaustive();
 }
 
+// 폼 검사(.check)가 규칙으로 바뀌는지로 판정해 스키마 옆에 둔다. mapper로 옮기면 스키마가 apis를 본다
 export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
   const end = toTodoRepeatEnd(values);
   if (end == null) {

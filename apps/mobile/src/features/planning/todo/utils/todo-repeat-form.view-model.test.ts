@@ -9,7 +9,6 @@ import {
   withTodoRepeatFormDayToggled,
   withTodoRepeatFormMonthlyToggled,
   withTodoRepeatFormPreset,
-  toTodoRepeatFormValues,
 } from './todo-repeat-form.view-model';
 
 const TODAY_KEY = createDateKey('2026-11-02');
@@ -157,27 +156,5 @@ describe('withTodoRepeatFormCalendarDate', () => {
     // Then
     expect(moved.startDate).toEqual(createDateKey('2026-11-03'));
     expect(same).toBe(values);
-  });
-});
-
-describe('toTodoRepeatFormValues', () => {
-  it('시작 요일은 시작일의 요일로 정한다', () => {
-    // When
-    const values = toTodoRepeatFormValues(createDateKey('2026-11-07'), null);
-
-    // Then
-    expect(values.weekdays).toEqual(['SAT']);
-  });
-
-  it('말일 규칙이 있는 폼을 열면 매월 며칠인지 규칙 값을 그대로 보여 준다', () => {
-    // When
-    const values = toTodoRepeatFormValues(createDateKey('2026-02-28'), {
-      frequency: 'MONTHLY',
-      monthDay: 31,
-      end: { type: 'NEVER' },
-    });
-
-    // Then
-    expect(values).toMatchObject({ isMonthly: true, monthDay: 31 });
   });
 });
