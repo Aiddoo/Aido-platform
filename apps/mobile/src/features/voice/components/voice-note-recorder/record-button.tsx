@@ -12,7 +12,7 @@ const RECORD_BUTTON_PRIMARY_SIZE = 64;
 export const RECORD_BUTTON_ICON_SIZE = 24;
 /** 큰 글자에서 라벨이 줄어드는 한계. 옆 칸 라벨과 기준선이 함께 바뀐다 */
 export const RECORD_BUTTON_LABEL_MIN_SCALE = 0.8;
-/** ui-components.md의 누름 기준 */
+/** 크기가 다른 녹음 버튼들이 같은 비율로 눌린다 */
 const RECORD_BUTTON_PRESS = {
   scale: {
     value: 0.97,
