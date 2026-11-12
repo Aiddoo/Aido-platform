@@ -194,7 +194,7 @@ export default function NotificationsScreen() {
 3. **프레임 작업.** worklet의 shared·derived value로만 한다. 프레임마다 React 상태를 바꾸거나 JS로 건너가지 않는다(`scheduleOnRN`은 이벤트만). 파티클 배열은 미리 만든다.
 4. **멈춤 조건 하나.** 꾸밈 프레임 콜백·`withRepeat`는 `useIsAnimationActive()`(화면 포커스 + 앱 앞 + 모션 줄이기)로 켜고 끈다. 값을 모으는 프레임 콜백·재생 위치는 투명 시트·제어 센터(`inactive`)에도 이어져야 해서 `useIsAppInBackground()`일 때만 멈춘다.
 5. **크기.** Skia 2.14의 `Canvas onSize`는 멈출 수 없는 프레임 콜백으로 매 프레임 잰다. 감싼 View의 `onLayout`에서 shared value로 `set`한다(JS 값이 필요하면 `useLayoutSize`). `onSize`는 이미 프레임마다 그리는 Canvas에서만 쓴다.
-6. **품질.** 기기 메모리 품질 단계를 지키고 저사양 Android는 `*_PARTICLE_COUNT_BY_TIER` 상수로 줄인다.
+6. **품질.** 기기 메모리 품질 단계를 지키고 저사양 Android는 `*_PARTICLE_COUNT_BY_TIER` 상수로 줄인다. 그린 화면을 다시 읽는 셰이더(`BackdropFilter`, 무더위 아지랑이)는 저사양(`isLowEndDevice`)에서 끈다.
 7. **값.** 애니메이션 값도 `.get()`·`.set()`이다. `.value`를 쓰지 않는다.
 
 측정: 날씨(비·눈·번개·밤하늘)와 음성 시각화를 iPhone·저사양 Android에서 30초 돌려 프레임 드롭률을 Before/After로 센다. 20번 열고 닫은 뒤 메모리가 돌아오는지, 앱을 뒤로 보내면 프레임 콜백이 0인지 본다.
