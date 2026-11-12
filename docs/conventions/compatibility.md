@@ -50,7 +50,7 @@
 2. 이미 퍼진 링크: 초대 링크, 위젯 URI, 공개 딥링크.
 3. 앞으로 서버가 더할 값: 열거의 계약 `.catch`와 `parse{X}`의 `null`.
 
-그래서 1.15.2 앱은 알림 옛 필드(type·action·context·routing)로 목적지를 계산하지 않는다. 그 길(`toLegacyFieldsDestination`)은 지웠고, 알림 목적지는 서버 `navigation`을 mapper(`toNotificationTarget`)가 바꾼 앱 target 하나다. navigation이 없거나 틀리거나 푸시 data를 읽지 못하면 알림함으로 연다. 옛 댓글 route(`app/(app)/todo/[todoId]/comments/[commentId].tsx`)도 지운다. 댓글 위치는 `/todo/[todoId]?comment=`다.
+그래서 1.15.2 앱은 알림 옛 필드(type·action·context·routing)로 목적지를 계산하지 않는다. 그 길(`toLegacyFieldsDestination`)은 지웠고, 알림 목적지는 서버 `navigation`을 mapper(`toNotificationTarget`)가 바꾼 앱 target 하나다. navigation이 없거나 틀리거나 푸시 data를 읽지 못하면 알림함으로 연다. 옛 댓글 route(`/todo/[todoId]/comments/[commentId]`)도 지운다. 댓글 위치는 `/todo/[todoId]?comment=`다.
 
 알림함 행의 `navigation`은 서버 1.15.1부터 실린다. 그래서 앱 1.15.2보다 서버 1.15.1 이상을 먼저 배포하고, 그 뒤에는 서버를 1.15.1 아래로 되돌리지 않고 수정 배포로 대응한다. 이번 릴리스는 서버 1.15.2를 앱과 함께 배포한다.
 

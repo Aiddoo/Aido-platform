@@ -18,11 +18,6 @@
       "reason": "phase 3에서 줄인다"
     },
     {
-      "path": "apps/mobile/docs/architecture/model.md",
-      "check": "limit",
-      "reason": "phase 3에서 줄인다"
-    },
-    {
       "path": "apps/mobile/docs/architecture/ui.md",
       "check": "limit",
       "reason": "phase 3에서 줄인다"
@@ -80,12 +75,6 @@
       "path": "apps/mobile/src/shared/ui/word-wrap-text/word-wrap-text.md",
       "check": "path",
       "match": "i18n-guide.md",
-      "reason": "phase 3에서 고친다"
-    },
-    {
-      "path": "docs/conventions/compatibility.md",
-      "check": "path",
-      "match": "app/(app)/todo/[todoId]/comments/[commentId].tsx",
       "reason": "phase 3에서 고친다"
     },
     {

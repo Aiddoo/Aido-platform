@@ -93,7 +93,7 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `WidgetNavigationPolicy`다.
 - 뒤로 가기는 `useGoBack({ fallbackHref })`(돌아갈 화면이 없을 때 화면이 아닌 일을 하면 `{ onFallback }`), Android 뒤로 가기 버튼은 `useAndroidBackHandler`다([hooks](./hooks.md)). `router.canGoBack() ? router.back() : …`을 직접 쓰지 않는다(연타로 두 번 돌아간다).
 - 웹 페이지(약관·공지)는 route가 아니라 `useOpenInAppBrowser`로 연다. 앱 자체 WebView는 없고 `aido://webview/…` 링크는 `+not-found`로 간다.
-- 공개된 경로와 `aido://` URI는 외부 계약이다. 바꾸지 않고 새 경로는 추가만 한다([model](./model.md#호환-1152)).
+- 공개된 경로와 `aido://` URI는 외부 계약이다. 바꾸지 않고 새 경로는 추가만 한다([compatibility](../../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)).
 
 ### 내비게이터
 
