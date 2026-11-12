@@ -357,7 +357,7 @@ export interface SettingsScreenLayoutProps extends ComponentProps<typeof ScrollV
 export function SettingsScreenLayout({ gap = 12, children, ...props }: SettingsScreenLayoutProps) {
   return (
     <SafeAreaScrollView className="flex-1 bg-white" {...props}>
-      <ReadableContent gap={gap} className="px-4 pb-4 pt-5">
+      <ReadableContent gap={gap} className="px-4 pt-5 pb-4">
         {children}
       </ReadableContent>
     </SafeAreaScrollView>

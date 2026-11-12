@@ -65,7 +65,7 @@ export function AppToast({
       {...(isMoved && { animation: MOVED_TOAST_ANIMATION })}
       className="bg-transparent p-0"
     >
-      <Box className="bg-gray-8/80 dark:bg-gray-3/80 rounded-4xl flex-row items-center gap-3 px-4 py-4">
+      <Box className="flex-row items-center gap-3 rounded-4xl bg-gray-8/80 px-4 py-4 dark:bg-gray-3/80">
         {resolvedIcon && <Box className="shrink-0">{resolvedIcon}</Box>}
 
         <Box className="flex-1">
@@ -96,7 +96,7 @@ export function AppToast({
               action.onPress?.();
               toastProps.hide();
             }}
-            className="shrink-0 rounded-4xl bg-gray-6 dark:bg-gray-4 px-3 py-1.5"
+            className="shrink-0 rounded-4xl bg-gray-6 px-3 py-1.5 dark:bg-gray-4"
           >
             <Text size="b4" weight="medium" className="text-white dark:text-gray-9">
               {action.label}

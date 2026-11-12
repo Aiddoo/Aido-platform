@@ -70,7 +70,7 @@ export default function FriendsScreen() {
         variant="secondary"
         className="flex-1"
       >
-        <Tabs.List className="border-b border-gray-2 w-full">
+        <Tabs.List className="w-full border-b border-gray-2">
           <Tabs.Indicator className="h-[2px]" />
 
           <LineTabTrigger value={FRIEND_LIST_VIEW.friends}>{t('tabs.friends')}</LineTabTrigger>

@@ -52,13 +52,13 @@ export default function MyInviteScreen() {
         <StyledSafeAreaView edges={['left', 'right']}>
           <ReadableContent px={16} pt={8} pb={32}>
             <VStack gap={20}>
-              <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pb-5 pt-5.5">
+              <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pt-5.5 pb-5">
                 {/* 고양이를 먼저 그려 글자 아래에 깔고, 제목은 고양이가 보이는 폭(98pt)만큼 비켜 선다 */}
                 <Mascot
                   name="catHi"
                   size={136}
                   contentFit="cover"
-                  className="absolute -bottom-[30px] -right-[18px]"
+                  className="absolute -right-[18px] -bottom-[30px]"
                 />
 
                 <Text

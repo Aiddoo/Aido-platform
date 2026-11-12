@@ -51,7 +51,7 @@ export default function TodoCategorySettingsScreen() {
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
 
-      <ReadableContent flex={1} gap={12} className="px-4 pb-4 pt-5">
+      <ReadableContent flex={1} gap={12} className="px-4 pt-5 pb-4">
         <ViewTabs
           schema={categorySettingsViewSchema}
           value={view}

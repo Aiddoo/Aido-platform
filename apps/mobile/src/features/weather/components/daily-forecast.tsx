@@ -258,7 +258,7 @@ DailyForecast.Item = memo(function Item({
 
       <Accordion.Content
         animation={{ entering: { value: EXPAND_ENTERING } }}
-        className="gap-2 px-0 pb-3.5 pt-0.5"
+        className="gap-2 px-0 pt-0.5 pb-3.5"
       >
         <HStack className="gap-2">
           {day.daytime != null && (

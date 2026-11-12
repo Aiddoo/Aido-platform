@@ -168,14 +168,14 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
       onLongPress={isEditing ? drag : undefined}
       isDisabled={isActive}
       accessible={isEditing}
-      className={cn(isActive && 'bg-gray-1 rounded-xl')}
+      className={cn(isActive && 'rounded-xl bg-gray-1')}
     >
       <HStack align="center">
         {isEditing && (
           <Animated.View
             entering={FadeInLeft.duration(ANIMATION.durationMs.normal)}
             exiting={FadeOutLeft.duration(ANIMATION.durationMs.fast)}
-            className="pr-3 justify-center"
+            className="justify-center pr-3"
           >
             <MenuIcon
               width={fontScaledSize(18)}

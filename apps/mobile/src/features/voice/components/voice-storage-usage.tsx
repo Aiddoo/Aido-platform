@@ -50,7 +50,7 @@ export function VoiceStorageUsage() {
         contentInsetAdjustmentBehavior="automatic"
         ListHeaderComponent={
           <StyledSafeAreaView edges={['left', 'right']}>
-            <ReadableContent className="px-4 pb-3 pt-5">
+            <ReadableContent className="px-4 pt-5 pb-3">
               <SettingsListGroup label={t('voiceStorage.totalLabel')}>
                 <SettingsListGroup.Custom gap={4}>
                   <Text
@@ -118,7 +118,7 @@ export function VoiceStorageUsage() {
         ListFooterComponent={
           usage.notes.length > 0 ? (
             <StyledSafeAreaView edges={['left', 'right']}>
-              <ReadableContent className="px-4 pb-4 pt-3">
+              <ReadableContent className="px-4 pt-3 pb-4">
                 <RemoveRecordingButton onRemoved={refreshUsage} />
               </ReadableContent>
             </StyledSafeAreaView>

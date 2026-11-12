@@ -415,7 +415,7 @@ function CommentField({
             .with({ type: 'reply' }, () => t('input.replyPlaceholder'))
             .otherwise(() => t('input.placeholder'))}
           accessibilityLabel={t('form.inputLabel', { index: index + 1, count: fieldCount })}
-          className="min-h-11 max-h-28"
+          className="max-h-28 min-h-11"
         />
       )}
     />
@@ -460,7 +460,7 @@ function AppendButton({ isSubmitting, onPress }: { isSubmitting: boolean; onPres
   return (
     <TextButton
       size="small"
-      className="min-h-11 min-w-11 max-w-full self-start"
+      className="min-h-11 max-w-full min-w-11 self-start"
       isDisabled={!isValid || isSubmitting}
       onPress={onPress}
       accessibilityLabel={t('form.addToChain')}

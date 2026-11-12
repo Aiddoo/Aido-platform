@@ -53,7 +53,7 @@ export function TodoDetailSummary() {
 
       <TodoDetailSummary.Task />
 
-      <VStack className="gap-2.5 ms-9">
+      <VStack className="ms-9 gap-2.5">
         <TodoDetailSummary.Schedule />
 
         <TodoDetailSummary.SubTodos />
@@ -294,7 +294,7 @@ TodoDetailSummary.Loading = function Loading() {
         <TextSkeleton size="t3" className="w-3/5" />
       </HStack>
 
-      <VStack className="gap-2.5 ms-9">
+      <VStack className="ms-9 gap-2.5">
         <VStack gap={6}>
           <TextSkeleton size="b4" className="w-32" />
           <HStack gap={8} align="center">

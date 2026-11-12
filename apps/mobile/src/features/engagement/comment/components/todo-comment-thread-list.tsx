@@ -151,7 +151,7 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
       ListHeaderComponent={
         <>
           <TodoCommentThreadList.Header />
-          {threads.length > 0 && <DoubleTapHint className="mx-4 mb-1 mt-3" />}
+          {threads.length > 0 && <DoubleTapHint className="mx-4 mt-3 mb-1" />}
           {threadsQuery.hasPreviousPage && (
             <LoadPrevious
               isLoading={threadsQuery.isFetchingPreviousPage}

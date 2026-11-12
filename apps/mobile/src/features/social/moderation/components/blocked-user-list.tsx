@@ -135,7 +135,7 @@ BlockedUserList.Loading = function Loading() {
   return (
     <VStack className="pt-5">
       <SettingsListGroup>
-        <TextSkeleton size="b2" className="mx-4 mb-1 mt-4 w-16" />
+        <TextSkeleton size="b2" className="mx-4 mt-4 mb-1 w-16" />
         {range(LOADING_ROW_COUNT).map((index) => (
           <Fragment key={index}>
             {index > 0 && <SettingsListGroup.Separator />}

@@ -339,7 +339,7 @@ function TodoCreateForm({
                     growsWithContent
                     textSize="b3"
                     preserveErrorSpace={false}
-                    className="min-h-12 max-h-28"
+                    className="max-h-28 min-h-12"
                     returnKeyType="done"
                     submitBehavior="submit"
                     onFocus={() => setIsTitleFocused(true)}

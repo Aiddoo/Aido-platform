@@ -93,7 +93,7 @@ export function AiConsentPrompt({ isRenewal = false }: AiConsentPromptProps) {
         variant="underline"
         accessibilityRole="link"
         style={{ minHeight: PRIVACY_LINK_MIN_HEIGHT }}
-        className="self-center justify-center"
+        className="justify-center self-center"
         onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage, 'overseas-transfer'))}
       >
         {t('consent.privacyLink')}

@@ -499,7 +499,7 @@ PlanReview.TodoRow = function PlanTodoRow({
               </HStack>
             )}
             {todo.items.length > 0 && (
-              <VStack className="gap-0.5 mt-1 border-l border-gray-3 pl-3">
+              <VStack className="mt-1 gap-0.5 border-l border-gray-3 pl-3">
                 {todo.items.map((item, itemIndex) => (
                   <Text
                     key={itemIndex}

@@ -187,7 +187,7 @@ InviteWelcomeBottomSheet.Welcome = function Welcome({ redemption }: WelcomeProps
       </Text>
 
       {premiumDays > 0 && (
-        <HStack align="center" className="gap-2.5 mt-4 w-full rounded-2xl bg-highlight px-4 py-3">
+        <HStack align="center" className="mt-4 w-full gap-2.5 rounded-2xl bg-highlight px-4 py-3">
           <FillTicketIcon width={32} height={32} />
           <VStack gap={1} className="flex-1">
             <Text size="b2" weight="bold" tone="brand">
