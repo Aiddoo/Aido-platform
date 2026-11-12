@@ -116,6 +116,8 @@ async function renderSubscriptionScreen(
   }
   const di = createTestDi({ ports: { httpClient, analytics, purchases, queryClient } });
   di.purchasesSession.configure();
+  // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
+  await di.purchasesSession.logIn('user-1');
 
   await renderScreen(
     <LocalDateProvider>

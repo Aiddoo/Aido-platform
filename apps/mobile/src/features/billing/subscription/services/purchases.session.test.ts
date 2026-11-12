@@ -196,3 +196,74 @@ describe('PurchasesSession 로그인·로그아웃 순서', () => {
     );
   });
 });
+
+describe('PurchasesSession 결제 계정', () => {
+  it('다른 계정 로그인이 끝나기 전에 물으면 끝날 때까지 기다려 그 계정을 돌려준다', async () => {
+    // Given
+    const { manager, purchases } = createManager();
+    manager.configure();
+    await manager.logIn('user-a');
+    const logIn = Promise.withResolvers<void>();
+    purchases.logIn.mockImplementation(() => logIn.promise);
+    manager.logOut();
+    manager.logIn('user-b');
+    let signedInUser: string | null | undefined;
+
+    // When
+    const waiting = manager.waitForSignedInUser().then((userId) => {
+      signedInUser = userId;
+    });
+    await flushPromises();
+
+    // Then
+    expect(signedInUser).toBeUndefined();
+
+    // When
+    logIn.resolve();
+    await waiting;
+
+    // Then
+    expect(signedInUser).toBe('user-b');
+  });
+
+  it.each([
+    ['실패하면', () => Promise.reject(new Error('network'))],
+    ['시간 초과면', () => new Promise<void>(() => undefined)],
+  ])(
+    '계정을 바꾼 로그인이 %s 앞 계정에 귀속되지 않게 null을 돌려주고 그 계정으로 다시 로그인한다',
+    async (_name, failLogIn) => {
+      // Given
+      const { manager, purchases } = createManager();
+      manager.configure();
+      await manager.logIn('user-a');
+      purchases.logIn.mockImplementationOnce(failLogIn);
+      manager.logOut();
+      const loggingIn = manager.logIn('user-b');
+      await jest.advanceTimersByTimeAsync(PURCHASES_SDK_CALL_TIMEOUT_MS);
+      await loggingIn;
+
+      // When
+      const signedInUser = await manager.waitForSignedInUser();
+      await flushPromises();
+
+      // Then
+      expect(signedInUser).toBeNull();
+      expect(purchases.logIn).toHaveBeenLastCalledWith('user-b');
+      await expect(manager.waitForSignedInUser()).resolves.toBe('user-b');
+    },
+  );
+
+  it('로그아웃했으면 결제할 계정이 없다', async () => {
+    // Given
+    const { manager } = createManager();
+    manager.configure();
+    await manager.logIn('user-a');
+    await manager.logOut();
+
+    // When
+    const signedInUser = await manager.waitForSignedInUser();
+
+    // Then
+    expect(signedInUser).toBeNull();
+  });
+});
