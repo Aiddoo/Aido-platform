@@ -1,11 +1,15 @@
+import { noop } from 'es-toolkit';
+
 /** Skia는 네이티브 캔버스라 Jest에서 그릴 수 없다. 그리는 결과는 시뮬레이터에서 보고 테스트는 화면 흐름만 본다 */
 const NothingToDraw = () => null;
+
+const createPath = () => ({ dispose: noop });
 
 const createPathBuilder = () => {
   const builder: Record<string, unknown> = new Proxy(
     {},
     {
-      get: (_target, name) => (name === 'build' ? () => ({}) : () => builder),
+      get: (_target, name) => (name === 'build' || name === 'detach' ? createPath : () => builder),
     },
   );
   return builder;
@@ -33,6 +37,7 @@ export const matchFont = () => ({
 export const Skia = {
   Color: () => new Float32Array([1, 1, 1, 1]),
   RuntimeEffect: { Make: () => ({}) },
+  Path: { Make: createPath },
   PathBuilder: { Make: createPathBuilder },
   XYWHRect: (x: number, y: number, width: number, height: number) => ({ x, y, width, height }),
   RRectXY: (rect: unknown, rx: number, ry: number) => ({ rect, rx, ry }),

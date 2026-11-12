@@ -35,6 +35,7 @@ import {
   VOICE_VISUAL,
   VOICE_VISUAL_BARS,
 } from '../../constants/voice.constants';
+import { useRebuiltPath } from '../../hooks/use-rebuilt-path';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import { addFrameTime, shouldUseLightOrb } from '../../utils/voice-frame-budget';
@@ -197,27 +198,31 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
       VOICE_VISUAL.height / 2 - lightOrbRadius.get() * VOICE_LIGHT_ORB.highlightOffsetY,
     ),
   );
-  // 프레임마다 생기는 네이티브 객체를 경로 하나로 줄이려고 막대를 도형 대신 선으로 그린다
-  const barPath = useDerivedValue(() => {
-    const target = Skia.PathBuilder.Make();
-    const values = bars.get();
-    const count = getBarCount(width.get());
-    const middleX = centerX.get();
-    const middleY = VOICE_VISUAL.height / 2;
-    const { minHeight, step, startOffset, heightMargin, falloff } = VOICE_VISUAL_BARS;
-    for (let index = 0; index < count; index += 1) {
-      const fade = 1 - (falloff * index) / count;
-      const halfHeight =
-        (minHeight + (values[index] ?? 0) * (VOICE_VISUAL.height - heightMargin) * fade) / 2;
-      const distance = startOffset + index * step;
-      target
-        .moveTo(middleX - distance, middleY - halfHeight)
-        .lineTo(middleX - distance, middleY + halfHeight)
-        .moveTo(middleX + distance, middleY - halfHeight)
-        .lineTo(middleX + distance, middleY + halfHeight);
-    }
-    return target.build();
-  });
+  // 막대를 도형 대신 선으로 그려 프레임마다 다시 만드는 네이티브 경로를 하나로 줄인다
+  const barPath = useRebuiltPath(
+    () => {
+      'worklet';
+      return { values: bars.get(), width: width.get() };
+    },
+    (builder, { values, width: canvasWidth }) => {
+      'worklet';
+      const count = getBarCount(canvasWidth);
+      const middleX = canvasWidth / 2;
+      const middleY = VOICE_VISUAL.height / 2;
+      const { minHeight, step, startOffset, heightMargin, falloff } = VOICE_VISUAL_BARS;
+      for (let index = 0; index < count; index += 1) {
+        const fade = 1 - (falloff * index) / count;
+        const halfHeight =
+          (minHeight + (values[index] ?? 0) * (VOICE_VISUAL.height - heightMargin) * fade) / 2;
+        const distance = startOffset + index * step;
+        builder
+          .moveTo(middleX - distance, middleY - halfHeight)
+          .lineTo(middleX - distance, middleY + halfHeight)
+          .moveTo(middleX + distance, middleY - halfHeight)
+          .lineTo(middleX + distance, middleY + halfHeight);
+      }
+    },
+  );
   const barsStart = useDerivedValue(() => vec(0, 0));
   const edgeColor = Skia.Color(mainColor).map((channel, index) =>
     index === 3 ? channel * VOICE_VISUAL_BARS.edgeOpacity : channel,

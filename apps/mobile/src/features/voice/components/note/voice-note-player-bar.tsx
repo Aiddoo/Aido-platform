@@ -21,12 +21,12 @@ import {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
+import { useRebuiltPath } from '../../hooks/use-rebuilt-path';
 import { useVoiceNotePlayback, type VoiceNotePlayer } from '../../hooks/use-voice-note-player';
 import { formatMediaTime } from '../../utils/format-media-time';
-import { getPlayedBarCount, resampleLevels } from '../../utils/waveform.geometry';
+import { getPlayedBarCount, resampleLevels, toRoundedBar } from '../../utils/waveform.geometry';
 
 const STEP = WAVEFORM_BAR.width + WAVEFORM_BAR.gap;
-const RADIUS = WAVEFORM_BAR.width / 2;
 const FLAG = { poleWidth: 2, width: 6, height: 6, poleHeightShare: 0.45 } as const;
 const SCRUBBER_ACCESSIBILITY_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
 /** 접근성 조작(증가·감소) 한 번에 옮기는 길이 */
@@ -165,13 +165,7 @@ function addBars(
       canvasHeight * WAVEFORM_BAR.minHeightRatio,
       (bars[index] ?? 0) * canvasHeight * WAVEFORM_BAR.verticalShare,
     );
-    target.addRRect(
-      Skia.RRectXY(
-        Skia.XYWHRect(index * STEP, (canvasHeight - height) / 2, WAVEFORM_BAR.width, height),
-        RADIUS,
-        RADIUS,
-      ),
-    );
+    target.addRRect(toRoundedBar(index * STEP, (canvasHeight - height) / 2, height));
   }
 }
 
@@ -239,31 +233,37 @@ function Scrubber({
     getPlayedBarCount(dragRatio.get() ?? positionRatio.get(), barCount),
   );
 
-  const playedPath = useDerivedValue(() => {
-    const target = Skia.PathBuilder.Make();
-    addBars(target, bars, 0, playedBarCount.get(), height);
-    return target.build();
+  const readPlayedBarCount = () => {
+    'worklet';
+    return playedBarCount.get();
+  };
+
+  const playedPath = useRebuiltPath(readPlayedBarCount, (builder, playedCount) => {
+    'worklet';
+    addBars(builder, bars, 0, playedCount, height);
   });
 
-  const restPath = useDerivedValue(() => {
-    const target = Skia.PathBuilder.Make();
-    addBars(target, bars, playedBarCount.get(), bars.length, height);
-    return target.build();
+  const restPath = useRebuiltPath(readPlayedBarCount, (builder, playedCount) => {
+    'worklet';
+    addBars(builder, bars, playedCount, bars.length, height);
   });
 
   const flagPath = useMemo(() => {
-    const target = Skia.PathBuilder.Make();
+    const builder = Skia.PathBuilder.Make();
     flagIndexes.forEach((flagIndex) => {
       const x = Math.floor((flagIndex / Math.max(levels.length, 1)) * barCount) * STEP;
-      target.addRect(Skia.XYWHRect(x, 0, FLAG.poleWidth, height * FLAG.poleHeightShare));
-      target
+      builder.addRect({ x, y: 0, width: FLAG.poleWidth, height: height * FLAG.poleHeightShare });
+      builder
         .moveTo(x + FLAG.poleWidth, 0)
         .lineTo(x + FLAG.poleWidth + FLAG.width, FLAG.height / 2)
         .lineTo(x + FLAG.poleWidth, FLAG.height)
         .close();
     });
-    return target.build();
+    const path = builder.detach();
+    builder.dispose();
+    return path;
   }, [flagIndexes, levels.length, barCount, height]);
+  useEffect(() => () => flagPath.dispose(), [flagPath]);
 
   return (
     <GestureDetector gesture={gesture}>

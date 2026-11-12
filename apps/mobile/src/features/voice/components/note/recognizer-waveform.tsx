@@ -1,4 +1,4 @@
-import { Canvas, Group, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
+import { Canvas, Group, Path, type SkPathBuilder } from '@shopify/react-native-skia';
 import { useIsAppInBackground } from '@src/shared/hooks/use-is-app-in-background';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
@@ -17,6 +17,7 @@ import {
 } from 'react-native-reanimated';
 
 import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
+import { useRebuiltPath } from '../../hooks/use-rebuilt-path';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import {
@@ -25,6 +26,7 @@ import {
   createLevelSampler,
   getTimelineLevel,
   type LevelSampler,
+  toRoundedBar,
   withFlagBars,
 } from '../../utils/waveform.geometry';
 
@@ -83,13 +85,6 @@ function useLiveWaveform({ level, isActive }: UseLiveWaveformOptions): LiveWavef
   return { bars, barCount, shift };
 }
 
-function addRoundedBar(target: SkPathBuilder, left: number, top: number, height: number) {
-  'worklet';
-  target.addRRect(
-    Skia.RRectXY(Skia.XYWHRect(left, top, WAVEFORM_BAR.width, height), RADIUS, RADIUS),
-  );
-}
-
 function getSideCount(width: number) {
   'worklet';
   return Math.ceil(width / 2 / STEP) + 1;
@@ -115,11 +110,8 @@ function addLevelBars(
         height * WAVEFORM_BAR.minHeightRatio,
         level * height * WAVEFORM_BAR.verticalShare,
       );
-      addRoundedBar(
-        target,
-        getSlotLeft(width, slot, sideCount),
-        (height - barHeight) / 2,
-        barHeight,
+      target.addRRect(
+        toRoundedBar(getSlotLeft(width, slot, sideCount), (height - barHeight) / 2, barHeight),
       );
     }
   }
@@ -150,59 +142,62 @@ function WaveformTimeline({
   const densityScale = useSkiaDensityScale();
   const transform = useDerivedValue(() => [{ scale: densityScale }, { translateX: shift.get() }]);
 
-  // Reanimated 매퍼는 넘겨받은 콜백 안의 shared value를 입력으로 찾지 않아(`usePathValue`) 값을 직접 읽는 `useDerivedValue`로 만든다
-  const speechPath = useDerivedValue(() => {
-    const target = Skia.PathBuilder.Make();
-    addLevelBars(target, layout.get(), bars.get(), { kind: 'speech' });
-    return target.build();
+  const readTimeline = () => {
+    'worklet';
+    return { size: layout.get(), levels: bars.get(), barCount: barCount.get() };
+  };
+
+  const speechPath = useRebuiltPath(readTimeline, (builder, { size, levels }) => {
+    'worklet';
+    addLevelBars(builder, size, levels, { kind: 'speech' });
   });
 
-  const quietPath = useDerivedValue(() => {
-    const target = Skia.PathBuilder.Make();
-    addLevelBars(target, layout.get(), bars.get(), { kind: 'quiet' });
-    return target.build();
+  const quietPath = useRebuiltPath(readTimeline, (builder, { size, levels }) => {
+    'worklet';
+    addLevelBars(builder, size, levels, { kind: 'quiet' });
   });
 
-  const idlePath = useDerivedValue(() => {
-    const target = Skia.PathBuilder.Make();
-    const { width, height } = layout.get();
-    const levels = bars.get();
+  const idlePath = useRebuiltPath(readTimeline, (builder, { size: { width, height }, levels }) => {
+    'worklet';
     const sideCount = getSideCount(width);
     for (let slot = 0; slot <= sideCount * 2; slot += 1) {
       if (getTimelineLevel(levels, slot, sideCount) == null) {
-        addRoundedBar(
-          target,
-          getSlotLeft(width, slot, sideCount),
-          (height - IDLE_DASH_HEIGHT) / 2,
-          IDLE_DASH_HEIGHT,
+        builder.addRRect(
+          toRoundedBar(
+            getSlotLeft(width, slot, sideCount),
+            (height - IDLE_DASH_HEIGHT) / 2,
+            IDLE_DASH_HEIGHT,
+          ),
         );
       }
     }
-    return target.build();
   });
 
-  const flagPath = useDerivedValue(() => {
-    const target = Skia.PathBuilder.Make();
-    const { width, height } = layout.get();
-    const levels = bars.get();
-    const firstBarIndex = barCount.get() - levels.length;
-    const cursorLeft = width / 2 - RADIUS;
-    for (const flagIndex of flagIndexes) {
-      const barsBehindCursor = levels.length - 1 - (flagIndex - firstBarIndex);
-      if (0 <= barsBehindCursor && barsBehindCursor < levels.length) {
-        const poleX = cursorLeft - barsBehindCursor * STEP + RADIUS - FLAG.poleWidth / 2;
-        target.addRect(
-          Skia.XYWHRect(poleX, FLAG.top, FLAG.poleWidth, height * FLAG.heightShare + FLAG.height),
-        );
-        target
-          .moveTo(poleX + FLAG.poleWidth, FLAG.top)
-          .lineTo(poleX + FLAG.poleWidth + FLAG.width, FLAG.top + FLAG.height / 2)
-          .lineTo(poleX + FLAG.poleWidth, FLAG.top + FLAG.height)
-          .close();
+  const flagPath = useRebuiltPath(
+    readTimeline,
+    (builder, { size: { width, height }, levels, barCount: count }) => {
+      'worklet';
+      const firstBarIndex = count - levels.length;
+      const cursorLeft = width / 2 - RADIUS;
+      for (const flagIndex of flagIndexes) {
+        const barsBehindCursor = levels.length - 1 - (flagIndex - firstBarIndex);
+        if (0 <= barsBehindCursor && barsBehindCursor < levels.length) {
+          const poleX = cursorLeft - barsBehindCursor * STEP + RADIUS - FLAG.poleWidth / 2;
+          builder.addRect({
+            x: poleX,
+            y: FLAG.top,
+            width: FLAG.poleWidth,
+            height: height * FLAG.heightShare + FLAG.height,
+          });
+          builder
+            .moveTo(poleX + FLAG.poleWidth, FLAG.top)
+            .lineTo(poleX + FLAG.poleWidth + FLAG.width, FLAG.top + FLAG.height / 2)
+            .lineTo(poleX + FLAG.poleWidth, FLAG.top + FLAG.height)
+            .close();
+        }
       }
-    }
-    return target.build();
-  });
+    },
+  );
 
   return (
     <Box
