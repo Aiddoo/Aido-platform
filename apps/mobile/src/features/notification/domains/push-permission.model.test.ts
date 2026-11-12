@@ -217,13 +217,13 @@ describe('canReceivePush', () => {
   );
 });
 
-describe('isNotDetermined', () => {
+describe('isUndecided', () => {
   it('아직 묻지 않은 권한이면 시스템 창을 띄울 차례다', () => {
     // Given
     const permission = createPushPermission({ status: 'NOT_DETERMINED' });
 
     // When
-    const result = PushPermissionPolicy.isNotDetermined(permission);
+    const result = PushPermissionPolicy.isUndecided(permission);
 
     // Then
     expect(result).toBe(true);
@@ -236,7 +236,7 @@ describe('isNotDetermined', () => {
       const permission = createPushPermission({ status });
 
       // When
-      const result = PushPermissionPolicy.isNotDetermined(permission);
+      const result = PushPermissionPolicy.isUndecided(permission);
 
       // Then
       expect(result).toBe(false);

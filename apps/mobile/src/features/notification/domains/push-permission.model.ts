@@ -70,7 +70,8 @@ function isPushDeliverable(permission: PushPermission): boolean {
   );
 }
 
-function isNotDetermined(permission: PushPermission): boolean {
+/** 사용자가 아직 OS 알림 권한에 답하지 않았다 */
+function isUndecided(permission: PushPermission): boolean {
   return permission.status === PUSH_PERMISSION_STATUS.NOT_DETERMINED;
 }
 
@@ -90,7 +91,7 @@ function isPromptSnoozed(dismissedAt: Instant | null, now: Instant): boolean {
 }
 
 /** 가입 직후 알림 화면을 보여 줄 수 있는 마지막 순간. 이 시각부터는 할 일 시간을 정할 때 묻는다 */
-function getOnboardingWindowEndsAt(signedUpAt: Instant): Instant {
+export function getOnboardingWindowEndsAt(signedUpAt: Instant): Instant {
   return fromEpochMs(toEpochMs(signedUpAt) + PUSH_ONBOARDING_WINDOW_DAYS * DAY_MS);
 }
 
@@ -101,7 +102,7 @@ function isRecentSignup(signedUpAt: Instant, now: Instant): boolean {
 }
 
 function isDenied(permission: PushPermission): boolean {
-  return !isPushDeliverable(permission) && !isNotDetermined(permission);
+  return !isPushDeliverable(permission) && !isUndecided(permission);
 }
 
 /**
@@ -115,12 +116,12 @@ function getAskMoment(permission: PushPermission, context: PushAskContext): Push
 
   return match(context)
     .with({ surface: 'onboarding' }, ({ signedUpAt, prompt, now }) =>
-      isNotDetermined(permission) && prompt.deferredAt == null && isRecentSignup(signedUpAt, now)
+      isUndecided(permission) && prompt.deferredAt == null && isRecentSignup(signedUpAt, now)
         ? 'ONBOARDING_SCREEN'
         : null,
     )
     .with({ surface: 'todo-time' }, () =>
-      isNotDetermined(permission) ? 'SYSTEM_DIALOG' : 'DENIED_NOTICE',
+      isUndecided(permission) ? 'SYSTEM_DIALOG' : 'DENIED_NOTICE',
     )
     .with({ surface: 'feed' }, ({ hasUpcomingTimedTodo, prompt, now }) =>
       isDenied(permission) &&
@@ -143,7 +144,7 @@ function getDeviceStep(permission: PushPermission): PushDeviceStep {
     .returnType<PushDeviceStep>()
     .when(isPushDeliverable, () => 'NONE')
     .when(isSettingsRequired, () => 'OPEN_SETTINGS')
-    .when(isNotDetermined, () => 'ASK')
+    .when(isUndecided, () => 'ASK')
     .otherwise(() => 'REQUEST_SYSTEM');
 }
 
@@ -161,11 +162,10 @@ function getNextStep(
 
 export const PushPermissionPolicy = {
   isPushDeliverable,
-  isNotDetermined,
+  isUndecided,
   canRequestSystemDialog,
   canReceivePush,
   getAskMoment,
-  getOnboardingWindowEndsAt,
   getDeviceStep,
   getNextStep,
 } as const;
