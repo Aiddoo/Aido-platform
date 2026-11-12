@@ -66,82 +66,6 @@ const noObjectMethodShorthand = {
   },
 };
 
-function pascalFromKebab(name) {
-  return name
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('');
-}
-
-function camelFromKebab(name) {
-  const pascal = pascalFromKebab(name);
-  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-}
-
-function collectExportedNames(program) {
-  const names = new Set();
-  for (const statement of program.body) {
-    if (statement.type === 'ExportDefaultDeclaration') {
-      const declaration = statement.declaration;
-      if (declaration.type === 'Identifier') {
-        names.add(declaration.name);
-      } else if (declaration.id != null) {
-        names.add(declaration.id.name);
-      }
-    }
-    if (statement.type !== 'ExportNamedDeclaration') {
-      continue;
-    }
-    const { declaration } = statement;
-    if (declaration?.type === 'VariableDeclaration') {
-      for (const declarator of declaration.declarations) {
-        if (declarator.id.type === 'Identifier') {
-          names.add(declarator.id.name);
-        }
-      }
-    } else if (declaration?.id != null) {
-      names.add(declaration.id.name);
-    }
-    for (const specifier of statement.specifiers) {
-      const { exported } = specifier;
-      names.add(exported.type === 'Identifier' ? exported.name : exported.value);
-    }
-  }
-  return names;
-}
-
-const HOOK_FILE = /\/hooks\/(use-[a-z0-9]+(?:-[a-z0-9]+)*)\.tsx?$/u;
-const COMPONENT_FILE = /\/components\/([a-z0-9]+(?:-[a-z0-9]+)*)\.tsx$/u;
-const PARAMS_BUNDLE = /-params$/u;
-
-// hooks/use-foo-bar.ts는 useFooBar를, components/foo-bar.tsx는 FooBar를 내보낸다.
-// `use-*-params.ts`는 route 튜플 훅 묶음이라 이름을 파일에서 정하지 않는다
-const fileExportName = {
-  meta: { type: 'suggestion' },
-  create(context) {
-    const filename = context.filename.replaceAll('\\', '/');
-    const hookFile = HOOK_FILE.exec(filename)?.[1];
-    const componentFile = COMPONENT_FILE.exec(filename)?.[1];
-    return {
-      Program(program) {
-        let expected = null;
-        if (hookFile != null && !PARAMS_BUNDLE.test(hookFile)) {
-          expected = camelFromKebab(hookFile);
-        } else if (componentFile != null) {
-          expected = pascalFromKebab(componentFile);
-        }
-        if (expected == null || collectExportedNames(program).has(expected)) {
-          return;
-        }
-        context.report({
-          node: program,
-          message: `파일 이름과 내보내는 이름이 맞아야 한다. 이 파일은 \`${expected}\`를 내보내거나 파일 이름을 바꾼다.`,
-        });
-      },
-    };
-  },
-};
-
 const DTO_ALIAS_SUFFIX = /(?:Dto|Schema)$/u;
 
 // @aido/api 타입을 다른 이름으로 가져오면 계약 모양인 줄 알 수 있게 Dto·Schema로 끝낸다
@@ -295,97 +219,11 @@ const noReturnTypeOfHook = {
   },
 };
 
-function hasKeyword(union, type) {
-  return union.types.some((member) => member.type === type);
-}
-
-function findOwnerName(node) {
-  let current = node.parent;
-  while (current != null) {
-    if (
-      (current.type === 'TSTypeAliasDeclaration' || current.type === 'TSInterfaceDeclaration') &&
-      current.id != null
-    ) {
-      return current.id.name;
-    }
-    if (current.type === 'VariableDeclarator' && current.id.type === 'Identifier') {
-      return current.id.name;
-    }
-    current = current.parent;
-  }
-  return null;
-}
-
-const FUNCTION_TYPES = new Set([
-  'FunctionDeclaration',
-  'FunctionExpression',
-  'ArrowFunctionExpression',
-  'TSDeclareFunction',
-]);
-
-// "없음"을 두 가지로 적지 않는다. 선택 입력은 `?: T`, 값이 없을 수 있는 필수 입력은 `T | null`이다.
-// PATCH 요청처럼 "안 보냄"과 "지움"이 달라 둘 다 필요한 스키마는 allowedNames로 이름을 적는다
-const noDoubleNullish = {
-  meta: {
-    type: 'suggestion',
-    schema: [
-      {
-        type: 'object',
-        properties: { allowedNames: { type: 'array', items: { type: 'string' } } },
-        additionalProperties: false,
-      },
-    ],
-  },
-  create(context) {
-    const allowedNames = new Set(context.options[0]?.allowedNames ?? []);
-    function report(node, text) {
-      const owner = findOwnerName(node);
-      if (owner != null && allowedNames.has(owner)) {
-        return;
-      }
-      context.report({
-        node,
-        message: `${text}: 없음을 두 가지로 적지 않는다. 선택 입력은 \`?: T\`, 값이 없을 수 있는 필수 입력은 \`T | null\`로 한쪽만 쓴다.`,
-      });
-    }
-    return {
-      TSUnionType(node) {
-        if (hasKeyword(node, 'TSNullKeyword') && hasKeyword(node, 'TSUndefinedKeyword')) {
-          report(node, 'T | null | undefined');
-        }
-      },
-      TSPropertySignature(node) {
-        const type = node.typeAnnotation?.typeAnnotation;
-        if (
-          node.optional === true &&
-          type?.type === 'TSUnionType' &&
-          hasKeyword(type, 'TSNullKeyword')
-        ) {
-          report(node, '?: T | null');
-        }
-      },
-      Identifier(node) {
-        const type = node.typeAnnotation?.typeAnnotation;
-        if (
-          FUNCTION_TYPES.has(node.parent?.type) &&
-          node.optional === true &&
-          type?.type === 'TSUnionType' &&
-          hasKeyword(type, 'TSNullKeyword')
-        ) {
-          report(node, '인자?: T | null');
-        }
-      },
-    };
-  },
-};
-
 export default {
   'no-class-method': noClassMethod,
   'no-object-method-shorthand': noObjectMethodShorthand,
-  'file-export-name': fileExportName,
   'dto-alias': dtoAlias,
   'time-constant-unit': timeConstantUnit,
   'query-data-alias': queryDataAlias,
   'no-return-type-of-hook': noReturnTypeOfHook,
-  'no-double-nullish': noDoubleNullish,
 };
