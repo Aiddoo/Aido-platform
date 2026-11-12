@@ -2,7 +2,7 @@ import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useTodoCommentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+import { isTransientError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -13,6 +13,7 @@ import { match, P } from 'ts-pattern';
 import {
   isTodoCommentRateLimitedError,
   isTodoCommentUnavailableError,
+  isWarnedTodoCommentError,
 } from '../domains/todo-comment.error';
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import type {
@@ -63,17 +64,6 @@ interface SetTodoCommentLikeVariables {
   via: TodoCommentLikeVia;
 }
 
-function isRetryableCreationError(error: unknown) {
-  return (
-    error instanceof NetworkError || error instanceof ServerError || error instanceof TimeoutError
-  );
-}
-
-/** 지워진 댓글과 연타 제한은 onError가 경고 토스트로 알린다 */
-function isWarnedTodoCommentError(error: unknown) {
-  return isTodoCommentUnavailableError(error) || isTodoCommentRateLimitedError(error);
-}
-
 /**
  * 서버가 id와 순서를 정하므로 낙관적 행은 넣지 않는다.
  * 답글은 그 묶음 끝에 붙이고, 새 댓글은 정렬 자리를 몰라 묶음 목록만 다시 받는다.
@@ -88,8 +78,7 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 연결 뒤 몰래 보내지 않는다
     networkMode: 'always',
     mutationKey: TODO_COMMENT_MUTATION_KEYS.createCommentChain({ todoId }),
-    retry: (failureCount, error) =>
-      failureCount < MAX_RETRY_COUNT && isRetryableCreationError(error),
+    retry: (failureCount, error) => failureCount < MAX_RETRY_COUNT && isTransientError(error),
     retryDelay: (attempt) => Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS),
     mutationFn: async ({ input }: CreateTodoCommentChainVariables) =>
       unwrap(await todoCommentApi.createCommentChain(todoId, input)),

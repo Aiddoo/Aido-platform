@@ -1,4 +1,4 @@
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { type ApiError, isApiError } from '@src/shared/errors';
 
 export const TODO_NUDGE_ERROR_CODE = {
@@ -7,9 +7,11 @@ export const TODO_NUDGE_ERROR_CODE = {
 
 export type TodoNudgeErrorCode = (typeof TODO_NUDGE_ERROR_CODE)[keyof typeof TODO_NUDGE_ERROR_CODE];
 
-/** 지워졌거나 볼 수 없는 콕이다. 다시 시도해도 같다 */
+/** 없거나 내 것이 아닌 콕(NUDGE_1105)과 서버 설정으로 꺼진 답장·감사(NUDGE_1111). 다시 시도해도 같다 */
+const NUDGE_UNAVAILABLE_CODES = [ErrorCode.NUDGE_1105, ErrorCode.NUDGE_1111] as const;
+
 export function isNudgeUnavailableError(error: unknown): error is ApiError {
-  return isApiError(error) && error.status === HttpStatus.NOT_FOUND;
+  return isApiError(error) && NUDGE_UNAVAILABLE_CODES.some((code) => error.hasCode(code));
 }
 
 /** 서버 플래그로 콕 답장·감사가 꺼져 보낸 콕 목록도 꺼져 있다(NUDGE_1111) */
