@@ -25,6 +25,7 @@ import {
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
 import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/subscription';
 import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
@@ -378,6 +379,29 @@ describe('구독 화면', () => {
       expect(
         await screen.findAllByText('결제가 반영되기까지 잠시 걸릴 수 있어요'),
       ).not.toHaveLength(0);
+    });
+  });
+
+  describe('결제 뒤 시작 화면의 완료', () => {
+    it('완료를 연달아 눌러도 한 번만 돌아간다', async () => {
+      // Given
+      const user = userEvent.setup();
+      const { purchases } = await renderSubscriptionScreen(FREE, () =>
+        Promise.resolve(ANNUAL_WITH_FREE_TRIAL),
+      );
+      purchases.purchase.mockResolvedValue({
+        type: 'purchased',
+        status: { activeEntitlements: [], managementUrl: null },
+      });
+      await user.press(await screen.findByRole('button', { name: '2주 무료로 시작하기' }));
+      const done = await screen.findByTestId('subscription-welcome-done');
+
+      // When
+      await fireEvent.press(done);
+      await fireEvent.press(done);
+
+      // Then
+      expect(router.back).toHaveBeenCalledTimes(1);
     });
   });
 

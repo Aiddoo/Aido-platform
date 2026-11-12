@@ -28,6 +28,7 @@ import { useTrack } from '@src/shared/analytics';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
@@ -67,6 +68,8 @@ function SubscriptionScreen() {
     initial: { step: 'status', context: {} },
     onStepChange: ({ step }) => trackEvent('checkout_step_viewed', { step }),
   });
+  // 링크로 바로 열어 돌아갈 화면이 없으면 이용 중 화면으로 바꾼다
+  const finishWelcome = useGoBack({ onFallback: () => stepper.history.replace('status', {}) });
 
   return (
     <stepper.Render
@@ -77,12 +80,7 @@ function SubscriptionScreen() {
           }
         />
       )}
-      welcome={({ context, history }) => (
-        <SubscriptionScreen.Welcome
-          {...context}
-          onDone={() => (router.canGoBack() ? router.back() : history.replace('status', {}))}
-        />
-      )}
+      welcome={({ context }) => <SubscriptionScreen.Welcome {...context} onDone={finishWelcome} />}
     />
   );
 }
