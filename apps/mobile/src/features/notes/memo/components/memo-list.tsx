@@ -37,7 +37,7 @@ import {
   useSuspenseInfiniteQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { noop, range } from 'es-toolkit';
 import { Link } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import {
@@ -64,6 +64,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { match } from 'ts-pattern';
 
 import type { Memo } from '../domains/memo.model';
 import { useSelectedMemoId } from '../hooks/use-memo-params';
@@ -262,8 +263,10 @@ MemoList.Item = function Item({
   onSelect,
   onEntered,
 }: MemoListItemProps) {
+  const { t } = useTranslation(['memo', 'common']);
   const fontScaledSize = useFontScaledSize();
   const selectMemo = useSingleTap(onSelect);
+  const cardActions = useMemoCardActions(memo);
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const isReduceMotionEnabled = useIsReduceMotionEnabled();
@@ -298,9 +301,28 @@ MemoList.Item = function Item({
 
   return (
     <Animated.View style={appearanceStyle}>
-      <MemoList.ItemLink memo={memo} isLinked={isLinked} onOpen={() => selectMemo(memo.id)}>
+      <MemoList.ItemLink
+        memo={memo}
+        isLinked={isLinked}
+        actions={cardActions}
+        onOpen={() => selectMemo(memo.id)}
+      >
         <PressableFeedback
           onPress={() => selectMemo(memo.id)}
+          // 고정·삭제는 iOS에서 길게 눌러 메뉴로, 스크린리더는 플랫폼과 상관없이 동작 메뉴로 카드에서 바로 한다
+          accessibilityActions={[
+            {
+              name: 'togglePin',
+              label: t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin'),
+            },
+            { name: 'delete', label: t('common:actions.delete') },
+          ]}
+          onAccessibilityAction={(event) =>
+            match(event.nativeEvent.actionName)
+              .with('togglePin', () => cardActions.togglePin())
+              .with('delete', () => cardActions.openDeleteDialog())
+              .otherwise(noop)
+          }
           className="rounded-2xl"
           testID={`memo-item-${memo.id}`}
         >
@@ -349,6 +371,7 @@ MemoList.Item = function Item({
 interface MemoListItemLinkProps extends PropsWithChildren {
   memo: Memo;
   isLinked: boolean;
+  actions: MemoCardActions;
   onOpen: () => void;
 }
 
@@ -356,11 +379,14 @@ interface MemoListItemLinkProps extends PropsWithChildren {
  * 카드를 길게 눌러 메모를 미리보고 열기·고정·삭제를 고른다(iOS). 탭은 카드의 고르기가 맡아 Link의 이동은 막고,
  * 미리보기를 눌러 가는 이동만 Link가 맡는다
  */
-MemoList.ItemLink = function ItemLink({ memo, isLinked, onOpen, children }: MemoListItemLinkProps) {
+MemoList.ItemLink = function ItemLink({
+  memo,
+  isLinked,
+  actions,
+  onOpen,
+  children,
+}: MemoListItemLinkProps) {
   const { t } = useTranslation(['memo', 'common']);
-
-  const setPinned = useMutation(useSetMemoPinnedMutationOptions({ memoId: memo.id }));
-  const openDeleteDialog = useOpenMemoDeleteDialog({ memoId: memo.id });
 
   if (!isLinked) {
     return children;
@@ -380,12 +406,12 @@ MemoList.ItemLink = function ItemLink({ memo, isLinked, onOpen, children }: Memo
         </Link.MenuAction>
         <Link.MenuAction
           icon={memo.isPinned ? 'pin.slash' : 'pin'}
-          disabled={setPinned.isPending}
-          onPress={() => setPinned.mutate({ isPinned: !memo.isPinned })}
+          disabled={actions.isPinPending}
+          onPress={actions.togglePin}
         >
           {t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin')}
         </Link.MenuAction>
-        <Link.MenuAction icon="trash" destructive onPress={openDeleteDialog}>
+        <Link.MenuAction icon="trash" destructive onPress={actions.openDeleteDialog}>
           {t('common:actions.delete')}
         </Link.MenuAction>
       </Link.Menu>
@@ -481,6 +507,24 @@ MemoList.Empty = function Empty() {
 };
 
 /** 순서가 바뀔 때(만들기·고정·삭제)만 FlashList 권장대로 재사용을 멈추고 LayoutAnimation을 걸어 카드가 미끄러진다. 탭 전환·다시 마운트·칸 수 변경·다음 쪽은 움직이지 않는다 */
+type MemoCardActions = ReturnType<typeof useMemoCardActions>;
+
+/** 카드에서 바로 하는 고정·삭제. iOS 길게 누르기 메뉴와 스크린리더 동작이 같은 것을 부른다 */
+function useMemoCardActions(memo: Memo) {
+  const setPinned = useMutation(useSetMemoPinnedMutationOptions({ memoId: memo.id }));
+  const openDeleteDialog = useOpenMemoDeleteDialog({ memoId: memo.id });
+
+  return {
+    isPinPending: setPinned.isPending,
+    togglePin: () => {
+      if (!setPinned.isPending) {
+        setPinned.mutate({ isPinned: !memo.isPinned });
+      }
+    },
+    openDeleteDialog: () => openDeleteDialog(),
+  };
+}
+
 function useDisplayedMemos(
   memos: readonly Memo[],
   listRef: RefObject<FlashListRef<Memo> | null>,

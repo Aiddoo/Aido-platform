@@ -109,6 +109,13 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
       <Link.Trigger>
         <PressableFeedback
           accessibilityRole="button"
+          // 삭제는 iOS에서 길게 눌러 메뉴로, 스크린리더는 플랫폼과 상관없이 동작 메뉴로 행에서 바로 한다
+          accessibilityActions={[{ name: 'delete', label: t('result.delete') }]}
+          onAccessibilityAction={(event) => {
+            if (event.nativeEvent.actionName === 'delete') {
+              deleteDraft();
+            }
+          }}
           className="rounded-2xl bg-gray-1 px-3 py-3"
           testID="voice-note-draft"
         >
