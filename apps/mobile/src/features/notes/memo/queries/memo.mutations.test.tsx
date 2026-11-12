@@ -1,6 +1,5 @@
 import type { Memo as MemoDto } from '@aido/api';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
-import { useDraftService } from '@src/bootstrap/providers/di-context';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
@@ -17,7 +16,7 @@ import {
   respondByPath,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
-import { renderScreen } from '@src/testing/render';
+import { renderScreenHook } from '@src/testing/render';
 import { onlineManager, type QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
@@ -55,28 +54,22 @@ const updatedMemo: MemoDto = {
 async function updateMemo(client: QueryClient) {
   const httpClient = createHttpClientStub();
   httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: updatedMemo }));
-  let options: ReturnType<typeof useUpdateMemoMutationOptions> | undefined;
-  function CaptureOptions() {
-    options = useUpdateMemoMutationOptions({ memoId: 5 });
-    return null;
-  }
-  const { unmount } = await renderScreen(<CaptureOptions />, {
-    di: createTestDi({
-      ports: {
-        httpClient,
-        haptics: createHapticsGatewayStub(),
-        analytics: createAnalyticsStub(),
-        queryClient: client,
-      },
-    }),
-  });
-  if (options == null) {
-    throw new Error('mutation 옵션을 받지 못했다');
-  }
-  const mutation = client.getMutationCache().build(client, options);
+  const { result, unmount } = await renderScreenHook(
+    () => useMutation(useUpdateMemoMutationOptions({ memoId: 5 })),
+    {
+      di: createTestDi({
+        ports: {
+          httpClient,
+          haptics: createHapticsGatewayStub(),
+          analytics: createAnalyticsStub(),
+          queryClient: client,
+        },
+      }),
+    },
+  );
 
   await act(async () => {
-    await mutation.execute({ content: updatedMemo.content });
+    await result.current.mutateAsync({ content: updatedMemo.content });
   });
   await unmount();
 }
@@ -86,26 +79,18 @@ describe('useCreateMemoMutationOptions', () => {
     const client = createTestQueryClient();
     client.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
     const httpClient = createHttpClientStub();
-    let options: ReturnType<typeof useCreateMemoMutationOptions> | undefined;
-    function CaptureOptions() {
-      options = useCreateMemoMutationOptions();
-      return null;
-    }
-    await renderScreen(<CaptureOptions />, {
-      di: createTestDi({ ports: { httpClient, queryClient: client } }),
-    });
+    const { result: createMemo } = await renderScreenHook(
+      () => useMutation(useCreateMemoMutationOptions()),
+      { di: createTestDi({ ports: { httpClient, queryClient: client } }) },
+    );
     const create = async (content: string, result: 'ok' | 'fail') => {
-      if (options == null) {
-        throw new Error('mutation 옵션을 받지 못했다');
-      }
       if (result === 'ok') {
         httpClient.post.mockResolvedValueOnce(ok({ message: 'created', memo: originalMemo }));
       } else {
         httpClient.post.mockRejectedValueOnce(new NetworkError());
       }
-      const mutation = client.getMutationCache().build(client, options);
       await act(async () => {
-        await mutation.execute({ content }).catch(() => undefined);
+        await createMemo.current.mutateAsync({ content }).catch(() => undefined);
       });
     };
     const sentKeys = () =>
@@ -249,19 +234,16 @@ describe('useSetMemoPinnedMutationOptions', () => {
       httpClient.patch.mockImplementation(async (url) =>
         url === 'v1/memos/5/pin' ? pinResponse.response : updateResponse.response,
       );
-      const writes: { update?: () => Promise<unknown>; pin?: () => Promise<unknown> } = {};
-      function Probe() {
-        useQuery(useGetMemoQueryOptions({ memoId: 5 }));
-        const update = useMutation(useUpdateMemoMutationOptions({ memoId: 5 }));
-        const pin = useMutation(useSetMemoPinnedMutationOptions({ memoId: 5 }));
-        writes.update = () => update.mutateAsync({ content: updatedMemo.content });
-        writes.pin = () => pin.mutateAsync({ isPinned: true });
-        return null;
-      }
-      await renderScreen(<Probe />, {
-        di: createTestDi({ ports: { httpClient, queryClient: client } }),
-        withLocalDate: true,
-      });
+      const { result: writes } = await renderScreenHook(
+        () => {
+          useQuery(useGetMemoQueryOptions({ memoId: 5 }));
+          return {
+            update: useMutation(useUpdateMemoMutationOptions({ memoId: 5 })),
+            pin: useMutation(useSetMemoPinnedMutationOptions({ memoId: 5 })),
+          };
+        },
+        { di: createTestDi({ ports: { httpClient, queryClient: client } }), withLocalDate: true },
+      );
       await act(async () => {
         await client.refetchQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId: 5 }) });
       });
@@ -269,8 +251,8 @@ describe('useSetMemoPinnedMutationOptions', () => {
       let updating: Promise<unknown> | undefined;
       let pinning: Promise<unknown> | undefined;
       await act(async () => {
-        updating = writes.update?.();
-        pinning = writes.pin?.();
+        updating = writes.current.update.mutateAsync({ content: updatedMemo.content });
+        pinning = writes.current.pin.mutateAsync({ isPinned: true });
       });
 
       // When
@@ -307,32 +289,28 @@ describe('useSetMemoPinnedMutationOptions', () => {
       };
       const httpClient = createHttpClientStub();
       httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: pinnedMemo }));
-      let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
-      let draftService: ReturnType<typeof useDraftService> | undefined;
-      function useMutationCapture() {
-        return useMutation(useSetMemoPinnedMutationOptions({ memoId: 5 })).mutateAsync;
-      }
-      function Capture() {
-        mutateAsync = useMutationCapture();
-        draftService = useDraftService();
-        return null;
-      }
-      await renderScreen(<Capture />, {
-        di: createTestDi({
-          ports: {
-            httpClient,
-            haptics: createHapticsGatewayStub(),
-            analytics: createAnalyticsStub(),
-            queryClient: client,
-          },
-        }),
-        withLocalDate: true,
-      });
+      const {
+        result: pin,
+        di: { draftService },
+      } = await renderScreenHook(
+        () => useMutation(useSetMemoPinnedMutationOptions({ memoId: 5 })),
+        {
+          di: createTestDi({
+            ports: {
+              httpClient,
+              haptics: createHapticsGatewayStub(),
+              analytics: createAnalyticsStub(),
+              queryClient: client,
+            },
+          }),
+          withLocalDate: true,
+        },
+      );
       const inputKey = createMemoDraftKey({ userId: 'account-1', memoId: 5 });
       const requestKey = createMemoPlanRequestDraftKey({ userId: 'account-1', memoId: 5 });
       const beforeEpoch = toEpochMs(toMemo(originalMemo).updatedAt);
-      draftService?.save(inputKey, { content: '쓰던 글' }, { sourceUpdatedAt: beforeEpoch });
-      draftService?.save(
+      draftService.save(inputKey, { content: '쓰던 글' }, { sourceUpdatedAt: beforeEpoch });
+      draftService.save(
         requestKey,
         {
           fingerprint: 'f',
@@ -344,15 +322,15 @@ describe('useSetMemoPinnedMutationOptions', () => {
 
       // When
       await act(async () => {
-        await mutateAsync?.({ isPinned: true });
+        await pin.current.mutateAsync({ isPinned: true });
       });
 
       // Then
       const afterEpoch = toEpochMs(toMemo(pinnedMemo).updatedAt);
-      expect(draftService?.restore(inputKey, { sourceUpdatedAt: afterEpoch }).status).toBe(
+      expect(draftService.restore(inputKey, { sourceUpdatedAt: afterEpoch }).status).toBe(
         'restored',
       );
-      expect(draftService?.restore(requestKey, { sourceUpdatedAt: afterEpoch }).status).toBe(
+      expect(draftService.restore(requestKey, { sourceUpdatedAt: afterEpoch }).status).toBe(
         'restored',
       );
     });
@@ -362,21 +340,16 @@ describe('useSetMemoPinnedMutationOptions', () => {
       onlineManager.setOnline(false);
       const httpClient = createHttpClientStub();
       httpClient.patch.mockRejectedValue(new NetworkError());
-      let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
-      function useMutationCapture() {
-        return useMutation(useSetMemoPinnedMutationOptions({ memoId: 5 })).mutateAsync;
-      }
-      function Capture() {
-        mutateAsync = useMutationCapture();
-        return null;
-      }
-      await renderScreen(<Capture />, {
-        di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
-        withLocalDate: true,
-      });
+      const { result: mutation } = await renderScreenHook(
+        () => useMutation(useSetMemoPinnedMutationOptions({ memoId: 5 })),
+        {
+          di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
+          withLocalDate: true,
+        },
+      );
 
       // When
-      const result = mutateAsync?.({ isPinned: true });
+      const result = mutation.current.mutateAsync({ isPinned: true });
 
       // Then
       await expect(result).rejects.toBeInstanceOf(NetworkError);
@@ -401,27 +374,24 @@ describe('useParseMemoMutationOptions', () => {
         );
         return ok(createParseMemoResponseDto());
       });
-      let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
-      let draftService: ReturnType<typeof useDraftService> | undefined;
-      let timeZone = '';
-      function useMutationCapture() {
-        return useMutation(useParseMemoMutationOptions({ memoId: 5 })).mutateAsync;
-      }
-      function Capture() {
-        mutateAsync = useMutationCapture();
-        draftService = useDraftService();
-        timeZone = useDateFormatContext().timeZone;
-        return null;
-      }
-      await renderScreen(<Capture />, {
-        withLocalDate: true,
-        withOverlay: true,
-        di: createTestDi({ ports: { httpClient, queryClient: client } }),
-      });
+      const {
+        result: parse,
+        di: { draftService },
+      } = await renderScreenHook(
+        () => ({
+          mutation: useMutation(useParseMemoMutationOptions({ memoId: 5 })),
+          timeZone: useDateFormatContext().timeZone,
+        }),
+        {
+          withLocalDate: true,
+          withOverlay: true,
+          di: createTestDi({ ports: { httpClient, queryClient: client } }),
+        },
+      );
 
       // When
       await act(async () => {
-        await mutateAsync?.({
+        await parse.current.mutation.mutateAsync({
           content: originalMemo.content,
           categoryId: 1,
           sourceUpdatedAt: toEpochMs(toMemo(originalMemo).updatedAt),
@@ -429,11 +399,15 @@ describe('useParseMemoMutationOptions', () => {
       });
 
       // Then
-      const draft = draftService?.restore(
-        createMemoPlanDraftKey({ userId: 'account-1', memoId: 5, timeZone }),
+      const draft = draftService.restore(
+        createMemoPlanDraftKey({
+          userId: 'account-1',
+          memoId: 5,
+          timeZone: parse.current.timeZone,
+        }),
         { sourceUpdatedAt: Date.parse('2026-10-02T00:05:00.000Z') },
       );
-      expect(draft?.status).toBe('restored');
+      expect(draft.status).toBe('restored');
     });
   });
 
@@ -446,22 +420,21 @@ describe('useParseMemoMutationOptions', () => {
       // Given
       onlineManager.setOnline(false);
       const httpClient = createHttpClientStub();
-      let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
-      function useMutationCapture() {
-        return useMutation(useParseMemoMutationOptions({ memoId: 5 })).mutateAsync;
-      }
-      function Capture() {
-        mutateAsync = useMutationCapture();
-        return null;
-      }
-      await renderScreen(<Capture />, {
-        di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
-        withLocalDate: true,
-        withOverlay: true,
-      });
+      const { result: mutation } = await renderScreenHook(
+        () => useMutation(useParseMemoMutationOptions({ memoId: 5 })),
+        {
+          di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
+          withLocalDate: true,
+          withOverlay: true,
+        },
+      );
 
       // When
-      const result = mutateAsync?.({ content: '메모', categoryId: 1, sourceUpdatedAt: 0 });
+      const result = mutation.current.mutateAsync({
+        content: '메모',
+        categoryId: 1,
+        sourceUpdatedAt: 0,
+      });
 
       // Then
       await expect(result).rejects.toBeInstanceOf(NetworkError);
@@ -481,21 +454,16 @@ describe('useConvertMemoToTodosMutationOptions', () => {
       onlineManager.setOnline(false);
       const httpClient = createHttpClientStub();
       httpClient.post.mockRejectedValue(new NetworkError());
-      let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
-      function useMutationCapture() {
-        return useMutation(useConvertMemoToTodosMutationOptions()).mutateAsync;
-      }
-      function Capture() {
-        mutateAsync = useMutationCapture();
-        return null;
-      }
-      await renderScreen(<Capture />, {
-        di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
-        withOverlay: true,
-      });
+      const { result: mutation } = await renderScreenHook(
+        () => useMutation(useConvertMemoToTodosMutationOptions()),
+        {
+          di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
+          withOverlay: true,
+        },
+      );
 
       // When
-      const result = mutateAsync?.({
+      const result = mutation.current.mutateAsync({
         memoId: 5,
         values: {
           title: '메모',
@@ -527,20 +495,15 @@ describe('useDeleteMemoMutationOptions', () => {
       onlineManager.setOnline(false);
       const httpClient = createHttpClientStub();
       httpClient.delete.mockRejectedValue(new NetworkError());
-      let mutateAsync: ReturnType<typeof useMutationCapture> | undefined;
-      function useMutationCapture() {
-        return useMutation(useDeleteMemoMutationOptions()).mutateAsync;
-      }
-      function Capture() {
-        mutateAsync = useMutationCapture();
-        return null;
-      }
-      await renderScreen(<Capture />, {
-        di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
-      });
+      const { result: mutation } = await renderScreenHook(
+        () => useMutation(useDeleteMemoMutationOptions()),
+        {
+          di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
+        },
+      );
 
       // When
-      const result = mutateAsync?.(5);
+      const result = mutation.current.mutateAsync(5);
 
       // Then
       await expect(result).rejects.toBeInstanceOf(NetworkError);

@@ -30,7 +30,7 @@ describe('EditNameForm', () => {
 
     // Then
     await waitFor(() =>
-      expect(screen.getByTestId('edit-name-input').props.value).toBe('다른 기기 이름'),
+      expect(screen.getByTestId('edit-name-input')).toHaveDisplayValue('다른 기기 이름'),
     );
   });
 
@@ -45,7 +45,7 @@ describe('EditNameForm', () => {
     });
 
     // Then
-    expect(screen.getByTestId('edit-name-input').props.value).toBe('새 이름');
+    expect(screen.getByTestId('edit-name-input')).toHaveDisplayValue('새 이름');
   });
 
   it('고치는 중에 서버 이름이 다시 받아져도 저장 버튼은 켜진 채 남는다', async () => {

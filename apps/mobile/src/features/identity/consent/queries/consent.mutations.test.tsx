@@ -8,7 +8,7 @@ import {
   createTestQueryClient,
   createTestDi,
 } from '@src/testing/core';
-import { renderScreen } from '@src/testing/render';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
@@ -27,28 +27,18 @@ async function renderMarketing(httpClient = createHttpClientStub()) {
     CONSENT_QUERY_KEYS.detail(),
     createConsent({ marketingAgreedAt: null, marketingPushAgreedAt: null }),
   );
-  let marketing: ReturnType<typeof useMarketing> | undefined;
-  let marketingPush: ReturnType<typeof useMarketingPush> | undefined;
-  function useMarketing() {
-    return useMutation(useUpdateMarketingConsentMutationOptions());
-  }
-  function useMarketingPush() {
-    return useMutation(useUpdateMarketingPushConsentMutationOptions());
-  }
-  function Capture() {
-    marketing = useMarketing();
-    marketingPush = useMarketingPush();
-    return null;
-  }
-  await renderScreen(<Capture />, {
-    di: createTestDi({ ports: { httpClient, queryClient } }),
-    withLocalDate: true,
-  });
+  const { result } = await renderScreenHook(
+    () => ({
+      marketing: useMutation(useUpdateMarketingConsentMutationOptions()),
+      marketingPush: useMutation(useUpdateMarketingPushConsentMutationOptions()),
+    }),
+    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
+  );
 
   return {
     cached: () => queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail()),
-    updateMarketing: (agreed = true) => marketing?.mutateAsync({ agreed }),
-    updateMarketingPush: () => marketingPush?.mutateAsync({ agreed: true }),
+    updateMarketing: (agreed = true) => result.current.marketing.mutateAsync({ agreed }),
+    updateMarketingPush: () => result.current.marketingPush.mutateAsync({ agreed: true }),
   };
 }
 
@@ -182,20 +172,14 @@ describe('AI 데이터 제공 동의 저장 실패', () => {
       aiDataSharingConsentVersion: null,
     });
     queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), before);
-    let updateMarketing: ((agreed: boolean) => Promise<unknown>) | undefined;
-    let updateAi: ((agreed: boolean) => Promise<unknown>) | undefined;
-    function Capture() {
-      const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
-      const aiMutation = useMutation(useUpdateAiDataSharingConsentMutationOptions());
-      updateMarketing = (agreed) => marketingMutation.mutateAsync({ agreed });
-      updateAi = (agreed) => aiMutation.mutateAsync({ agreed });
-      return null;
-    }
-    await renderScreen(<Capture />, {
-      di: createTestDi({ ports: { httpClient, queryClient } }),
-      withLocalDate: true,
-    });
-    const marketingResult = updateMarketing?.(true);
+    const { result } = await renderScreenHook(
+      () => ({
+        marketing: useMutation(useUpdateMarketingConsentMutationOptions()),
+        ai: useMutation(useUpdateAiDataSharingConsentMutationOptions()),
+      }),
+      { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
+    );
+    const marketingResult = result.current.marketing.mutateAsync({ agreed: true });
     await waitFor(() =>
       expect(
         queryClient.getQueryData(CONSENT_QUERY_KEYS.detail())?.marketingAgreedAt,
@@ -204,7 +188,7 @@ describe('AI 데이터 제공 동의 저장 실패', () => {
 
     // When
     await act(async () => {
-      await updateAi?.(true).catch(() => undefined);
+      await result.current.ai.mutateAsync({ agreed: true }).catch(() => undefined);
     });
 
     // Then

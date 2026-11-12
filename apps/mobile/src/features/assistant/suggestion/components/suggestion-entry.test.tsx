@@ -5,6 +5,7 @@ import { createEntitlementSnapshot } from '@src/features/billing/subscription/__
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { ServerError } from '@src/shared/errors';
 import { QueryErrorBoundary } from '@src/shared/ui';
 import {
   createErrorReporterStub,
@@ -21,9 +22,17 @@ import { SuggestionEntry } from './suggestion-entry';
 const RETRY_LABEL = '맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해주세요';
 const PREMIUM_ONLY_LABEL = 'AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요';
 
-function renderFeedEntry({ isPremiumCached }: { isPremiumCached: boolean }, error: ApiError) {
+// 실제 클라이언트처럼 4xx는 Result.err로 돌려주고 5xx는 ServerError로 던진다
+function renderFeedEntry(
+  { isPremiumCached }: { isPremiumCached: boolean },
+  error: ApiError | ServerError,
+) {
   const httpClient = createHttpClientStub();
-  httpClient.get.mockResolvedValue(err(error));
+  if (error instanceof ServerError) {
+    httpClient.get.mockRejectedValue(error);
+  } else {
+    httpClient.get.mockResolvedValue(err(error));
+  }
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -57,7 +66,7 @@ describe('SuggestionEntry', () => {
     '$case 조회가 실패하면 피드를 막지 않고 칸 안에서 다시 시도를 보인다',
     async ({ isPremiumCached }) => {
       // When
-      await renderFeedEntry({ isPremiumCached }, new ApiError('SYS_0001', '서버 오류', 500));
+      await renderFeedEntry({ isPremiumCached }, new ServerError(500));
 
       // Then
       expect(await screen.findByText(RETRY_LABEL)).toBeTruthy();

@@ -632,6 +632,31 @@ describe('PushRegistrationService.requestRelease', () => {
     });
   });
 
+  it('너무 자주 보내 막히면(429) 해제를 남겨 다음 시도에 다시 보낸다', async () => {
+    // Given
+    const { service, publicHttpClient, registrationRepository } = setup();
+    await service.report();
+    publicHttpClient.post.mockResolvedValueOnce({
+      ok: false,
+      error: createNotificationApiError({ code: 'SYS_0005', status: 429 }),
+    });
+    await service.requestRelease();
+    expect(await registrationRepository.find()).toEqual({
+      reportedToken: CURRENT_TOKEN,
+      releaseRequestedAt: NOW,
+    });
+
+    // When
+    await service.flushRelease();
+
+    // Then
+    expect(publicHttpClient.post).toHaveBeenCalledTimes(2);
+    expect(await registrationRepository.find()).toEqual({
+      reportedToken: null,
+      releaseRequestedAt: null,
+    });
+  });
+
   it('보고한 토큰도 지금 토큰도 없으면 해제를 남겨 토큰을 받는 다음 시도에 보낸다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub();
