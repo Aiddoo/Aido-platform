@@ -9,12 +9,12 @@ import { Card } from 'heroui-native';
 import { type ComponentProps, useEffect } from 'react';
 import { match } from 'ts-pattern';
 
+import type { StoreUnavailable } from '../domains/subscription-failure.model';
 import { type SubscriptionOffering } from '../domains/subscription.model';
 import { hasFreeTrial, SubscriptionPolicy } from '../domains/subscription.model';
 import { useReportStoreUnavailable } from '../hooks/use-report-store-unavailable';
 import { useSelectedPlanId, useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
-import type { StoreUnavailable } from '../utils/offerings-availability.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import {
   toSubscriptionLoadFailure,

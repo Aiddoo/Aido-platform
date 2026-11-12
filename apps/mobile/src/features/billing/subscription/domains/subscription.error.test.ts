@@ -1,9 +1,8 @@
 import { ApiError, NetworkError, ParseError, ServerError, TimeoutError } from '@src/shared/errors';
 
-import { SubscriptionErrors } from '../domains/subscription.error';
-import { getDiagnosticCode } from './subscription-diagnostic.view-model';
+import { getSubscriptionDiagnosticCode, SubscriptionErrors } from './subscription.error';
 
-describe('getDiagnosticCode', () => {
+describe('getSubscriptionDiagnosticCode', () => {
   it.each<[string, unknown, string]>([
     [
       '스토어 코드가 있으면 괄호로 붙인다',
@@ -23,7 +22,7 @@ describe('getDiagnosticCode', () => {
     ['모르는 값', { token: 'secret' }, 'UNKNOWN'],
   ])('%s', (_case, error, expected) => {
     // When
-    const diagnosticCode = getDiagnosticCode(error);
+    const diagnosticCode = getSubscriptionDiagnosticCode(error);
 
     // Then
     expect(diagnosticCode).toBe(expected);
