@@ -112,199 +112,205 @@ async function renderToggle() {
 const toList = (todos: Todo[]): TodoListResult => ({ todos, hasNext: false, nextCursor: null });
 const respondWithTodo = (id: number) => ok({ message: 'ok', todo: createTodoDto({ id }) });
 
-describe('useToggleTodoMutationOptions store review wiring', () => {
-  it('오늘의 마지막 할 일을 끝낸 순간 끝낸 날을 남기고 리뷰 순간을 알린다', async () => {
-    // Given
-    const { httpClient, givenList, toggle, settleReviewWait, getActiveDays, appStoreReview } =
-      await renderToggle();
-    givenList(TODAY, [
-      createParentTodo({ id: 41, completed: true }),
-      createParentTodo({ id: 42, completed: false }),
-    ]);
-    httpClient.patch.mockResolvedValue(respondWithTodo(42));
+describe('useToggleTodoMutationOptions', () => {
+  describe('스토어 리뷰 요청', () => {
+    it('오늘의 마지막 할 일을 끝낸 순간 끝낸 날을 남기고 리뷰 순간을 알린다', async () => {
+      // Given
+      const { httpClient, givenList, toggle, settleReviewWait, getActiveDays, appStoreReview } =
+        await renderToggle();
+      givenList(TODAY, [
+        createParentTodo({ id: 41, completed: true }),
+        createParentTodo({ id: 42, completed: false }),
+      ]);
+      httpClient.patch.mockResolvedValue(respondWithTodo(42));
 
-    // When
-    await toggle(42, true, TODAY);
-    await settleReviewWait();
+      // When
+      await toggle(42, true, TODAY);
+      await settleReviewWait();
 
-    // Then
-    expect(getActiveDays()).toContain(TODAY);
-    expect(appStoreReview.requestReview).toHaveBeenCalledTimes(1);
-  });
-
-  it('어제 목록에서 여러 날 할 일을 끝내 오늘 할 일이 모두 끝나면 리뷰 순간을 알린다', async () => {
-    // Given
-    // 낙관적 갱신은 보고 있는 어제 목록에만 반영돼 오늘 목록에는 아직 미완료다
-    const { httpClient, givenList, toggle, settleReviewWait, appStoreReview } =
-      await renderToggle();
-    const multiDay = createParentTodo({
-      id: 7,
-      startDate: YESTERDAY,
-      endDate: TODAY,
-      completed: false,
+      // Then
+      expect(getActiveDays()).toContain(TODAY);
+      expect(appStoreReview.requestReview).toHaveBeenCalledTimes(1);
     });
-    givenList(YESTERDAY, [multiDay]);
-    givenList(TODAY, [createParentTodo({ id: 41, completed: true }), multiDay]);
-    httpClient.patch.mockResolvedValue(respondWithTodo(7));
 
-    // When
-    await toggle(7, true, YESTERDAY);
-    await settleReviewWait();
+    it('어제 목록에서 여러 날 할 일을 끝내 오늘 할 일이 모두 끝나면 리뷰 순간을 알린다', async () => {
+      // Given
+      // 낙관적 갱신은 보고 있는 어제 목록에만 반영돼 오늘 목록에는 아직 미완료다
+      const { httpClient, givenList, toggle, settleReviewWait, appStoreReview } =
+        await renderToggle();
+      const multiDay = createParentTodo({
+        id: 7,
+        startDate: YESTERDAY,
+        endDate: TODAY,
+        completed: false,
+      });
+      givenList(YESTERDAY, [multiDay]);
+      givenList(TODAY, [createParentTodo({ id: 41, completed: true }), multiDay]);
+      httpClient.patch.mockResolvedValue(respondWithTodo(7));
 
-    // Then
-    expect(appStoreReview.requestReview).toHaveBeenCalledTimes(1);
-  });
+      // When
+      await toggle(7, true, YESTERDAY);
+      await settleReviewWait();
 
-  it('오늘 남은 할 일이 있으면 어제 목록의 여러 날 할 일을 끝내도 리뷰 순간을 알리지 않는다', async () => {
-    // Given
-    const { httpClient, givenList, toggle, settleReviewWait, getActiveDays, appStoreReview } =
-      await renderToggle();
-    const multiDay = createParentTodo({
-      id: 7,
-      startDate: YESTERDAY,
-      endDate: TODAY,
-      completed: false,
+      // Then
+      expect(appStoreReview.requestReview).toHaveBeenCalledTimes(1);
     });
-    givenList(YESTERDAY, [multiDay]);
-    givenList(TODAY, [createParentTodo({ id: 41, completed: false }), multiDay]);
-    httpClient.patch.mockResolvedValue(respondWithTodo(7));
 
-    // When
-    await toggle(7, true, YESTERDAY);
-    await settleReviewWait();
+    it('오늘 남은 할 일이 있으면 어제 목록의 여러 날 할 일을 끝내도 리뷰 순간을 알리지 않는다', async () => {
+      // Given
+      const { httpClient, givenList, toggle, settleReviewWait, getActiveDays, appStoreReview } =
+        await renderToggle();
+      const multiDay = createParentTodo({
+        id: 7,
+        startDate: YESTERDAY,
+        endDate: TODAY,
+        completed: false,
+      });
+      givenList(YESTERDAY, [multiDay]);
+      givenList(TODAY, [createParentTodo({ id: 41, completed: false }), multiDay]);
+      httpClient.patch.mockResolvedValue(respondWithTodo(7));
 
-    // Then
-    expect(getActiveDays()).toContain(TODAY);
-    expect(appStoreReview.requestReview).not.toHaveBeenCalled();
+      // When
+      await toggle(7, true, YESTERDAY);
+      await settleReviewWait();
+
+      // Then
+      expect(getActiveDays()).toContain(TODAY);
+      expect(appStoreReview.requestReview).not.toHaveBeenCalled();
+    });
+
+    it('미완료로 되돌리거나 요청이 실패하면 아무것도 남기지 않는다', async () => {
+      // Given
+      const { httpClient, givenList, toggle, settleReviewWait, getActiveDays, appStoreReview } =
+        await renderToggle();
+      givenList(TODAY, [createParentTodo({ id: 42, completed: true })]);
+      httpClient.patch.mockResolvedValueOnce(respondWithTodo(42));
+
+      // When
+      await toggle(42, false, TODAY);
+      httpClient.patch.mockResolvedValueOnce(err(createTodoApiError()));
+      await toggle(42, true, TODAY);
+      await settleReviewWait();
+
+      // Then
+      expect(getActiveDays()).toEqual(PAST_ACTIVE_DAYS);
+      expect(appStoreReview.requestReview).not.toHaveBeenCalled();
+    });
   });
 
-  it('미완료로 되돌리거나 요청이 실패하면 아무것도 남기지 않는다', async () => {
-    // Given
-    const { httpClient, givenList, toggle, settleReviewWait, getActiveDays, appStoreReview } =
-      await renderToggle();
-    givenList(TODAY, [createParentTodo({ id: 42, completed: true })]);
-    httpClient.patch.mockResolvedValueOnce(respondWithTodo(42));
+  describe('마무리', () => {
+    it('다른 체크가 아직 진행 중이면 완료 기록을 다시 부르지 않아 낙관적 값이 깜빡이지 않는다', async () => {
+      // Given
+      const { httpClient, givenList, givenCached, toggle, startToggle, isInvalidated } =
+        await renderToggle();
+      givenList(TODAY, [
+        createParentTodo({ id: 41, completed: false }),
+        createParentTodo({ id: 42, completed: false }),
+      ]);
+      givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
+      const first = createPendingResponse(respondWithTodo(42));
+      httpClient.patch
+        .mockReturnValueOnce(first.response)
+        .mockResolvedValueOnce(respondWithTodo(41));
 
-    // When
-    await toggle(42, false, TODAY);
-    httpClient.patch.mockResolvedValueOnce(err(createTodoApiError()));
-    await toggle(42, true, TODAY);
-    await settleReviewWait();
+      // When
+      await startToggle(42, true, TODAY);
+      await toggle(41, true, TODAY);
 
-    // Then
-    expect(getActiveDays()).toEqual(PAST_ACTIVE_DAYS);
-    expect(appStoreReview.requestReview).not.toHaveBeenCalled();
+      // Then
+      expect(
+        isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
+      ).toBe(false);
+      await act(async () => first.settle());
+    });
+
+    it('하루짜리 체크가 확정되면 목록·달력은 다시 받지 않고 서버만 아는 위젯 요약만 맞춘다', async () => {
+      // Given
+      const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
+      givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
+      givenCached(TODO_QUERY_KEYS.widgetSummaryByDate({ date: TODAY, userId: ACCOUNT_ID }));
+      givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
+      httpClient.patch.mockResolvedValue(respondWithTodo(42));
+
+      // When
+      await toggle(42, true, TODAY);
+
+      // Then
+      expect(
+        isInvalidated(TODO_QUERY_KEYS.widgetSummaryByDate({ date: TODAY, userId: ACCOUNT_ID })),
+      ).toBe(true);
+      expect(isInvalidated(TODO_QUERY_KEYS.listByDate({ date: TODAY }))).toBe(false);
+      expect(
+        isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
+      ).toBe(false);
+    });
+
+    it('체크가 실패하면 그 목록과 달력을 서버 값으로 다시 맞춘다', async () => {
+      // Given
+      const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
+      givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
+      givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
+      httpClient.patch.mockResolvedValue(err(createTodoApiError()));
+
+      // When
+      await toggle(42, true, TODAY);
+
+      // Then
+      expect(isInvalidated(TODO_QUERY_KEYS.listByDate({ date: TODAY }))).toBe(true);
+      expect(
+        isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
+      ).toBe(true);
+    });
+
+    it('지난 날짜를 체크하면 그 해의 주간 달성 목록을 다시 부른다', async () => {
+      // Given
+      const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
+      givenList(YESTERDAY, [createParentTodo({ id: 42, completed: false })]);
+      givenCached(['achievement', 'weekly-list', { year: 2026 }]);
+      httpClient.patch.mockResolvedValue(respondWithTodo(42));
+
+      // When
+      await toggle(42, true, YESTERDAY);
+
+      // Then
+      expect(isInvalidated(['achievement', 'weekly-list', { year: 2026 }])).toBe(true);
+    });
   });
 });
 
-describe('useToggleTodoMutationOptions settle', () => {
-  it('다른 체크가 아직 진행 중이면 완료 기록을 다시 부르지 않아 낙관적 값이 깜빡이지 않는다', async () => {
-    // Given
-    const { httpClient, givenList, givenCached, toggle, startToggle, isInvalidated } =
-      await renderToggle();
-    givenList(TODAY, [
-      createParentTodo({ id: 41, completed: false }),
-      createParentTodo({ id: 42, completed: false }),
-    ]);
-    givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
-    const first = createPendingResponse(respondWithTodo(42));
-    httpClient.patch.mockReturnValueOnce(first.response).mockResolvedValueOnce(respondWithTodo(41));
+describe('useUpdateTodoScheduleMutationOptions', () => {
+  describe('반복 상한', () => {
+    it('이후 회차까지 옮기다 반복 상한에 걸리면 서버가 보낸 한도로 안내한다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.patch.mockResolvedValue(
+        err(new ApiError('TODO_0842', '서버 문구', 403, { limit: 7, activeCount: 7 })),
+      );
+      const current: { value: ReturnType<typeof useUpdateSchedule> | null } = { value: null };
+      function useUpdateSchedule() {
+        return useMutation(useUpdateTodoScheduleMutationOptions());
+      }
+      function Probe() {
+        current.value = useUpdateSchedule();
+        return null;
+      }
+      await renderScreen(<Probe />, { di: createTestDi({ ports: { httpClient } }) });
 
-    // When
-    await startToggle(42, true, TODAY);
-    await toggle(41, true, TODAY);
+      // When
+      await act(async () => {
+        await current.value
+          ?.mutateAsync({
+            todoId: 1,
+            input: { startDate: TODAY },
+            scope: 'THIS_AND_FOLLOWING',
+          })
+          .catch(() => undefined);
+      });
 
-    // Then
-    expect(
-      isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
-    ).toBe(false);
-    await act(async () => first.settle());
-  });
-
-  it('하루짜리 체크가 확정되면 목록·달력은 다시 받지 않고 서버만 아는 위젯 요약만 맞춘다', async () => {
-    // Given
-    const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
-    givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
-    givenCached(TODO_QUERY_KEYS.widgetSummaryByDate({ date: TODAY, userId: ACCOUNT_ID }));
-    givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
-    httpClient.patch.mockResolvedValue(respondWithTodo(42));
-
-    // When
-    await toggle(42, true, TODAY);
-
-    // Then
-    expect(
-      isInvalidated(TODO_QUERY_KEYS.widgetSummaryByDate({ date: TODAY, userId: ACCOUNT_ID })),
-    ).toBe(true);
-    expect(isInvalidated(TODO_QUERY_KEYS.listByDate({ date: TODAY }))).toBe(false);
-    expect(
-      isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
-    ).toBe(false);
-  });
-
-  it('체크가 실패하면 그 목록과 달력을 서버 값으로 다시 맞춘다', async () => {
-    // Given
-    const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
-    givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
-    givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
-    httpClient.patch.mockResolvedValue(err(createTodoApiError()));
-
-    // When
-    await toggle(42, true, TODAY);
-
-    // Then
-    expect(isInvalidated(TODO_QUERY_KEYS.listByDate({ date: TODAY }))).toBe(true);
-    expect(
-      isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
-    ).toBe(true);
-  });
-
-  it('지난 날짜를 체크하면 그 해의 주간 달성 목록을 다시 부른다', async () => {
-    // Given
-    const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
-    givenList(YESTERDAY, [createParentTodo({ id: 42, completed: false })]);
-    givenCached(['achievement', 'weekly-list', { year: 2026 }]);
-    httpClient.patch.mockResolvedValue(respondWithTodo(42));
-
-    // When
-    await toggle(42, true, YESTERDAY);
-
-    // Then
-    expect(isInvalidated(['achievement', 'weekly-list', { year: 2026 }])).toBe(true);
-  });
-});
-
-describe('useUpdateTodoScheduleMutationOptions 반복 상한', () => {
-  it('이후 회차까지 옮기다 반복 상한에 걸리면 서버가 보낸 한도로 안내한다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    httpClient.patch.mockResolvedValue(
-      err(new ApiError('TODO_0842', '서버 문구', 403, { limit: 7, activeCount: 7 })),
-    );
-    const current: { value: ReturnType<typeof useUpdateSchedule> | null } = { value: null };
-    function useUpdateSchedule() {
-      return useMutation(useUpdateTodoScheduleMutationOptions());
-    }
-    function Probe() {
-      current.value = useUpdateSchedule();
-      return null;
-    }
-    await renderScreen(<Probe />, { di: createTestDi({ ports: { httpClient } }) });
-
-    // When
-    await act(async () => {
-      await current.value
-        ?.mutateAsync({
-          todoId: 1,
-          input: { startDate: TODAY },
-          scope: 'THIS_AND_FOLLOWING',
-        })
-        .catch(() => undefined);
+      // Then
+      expect(
+        await screen.findAllByText('반복 할 일은 최대 7개까지 만들 수 있어요'),
+      ).not.toHaveLength(0);
     });
-
-    // Then
-    expect(await screen.findAllByText('반복 할 일은 최대 7개까지 만들 수 있어요')).not.toHaveLength(
-      0,
-    );
   });
 });

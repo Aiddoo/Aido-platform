@@ -232,6 +232,26 @@ describe('getRepeatOccurrenceDateKeys', () => {
     // Then
     expect(dates).toEqual(['2026-11-30', '2026-12-07']);
   });
+
+  describe('서버와 같은 회차 표', () => {
+    it.each(SHARED_OCCURRENCE_CASES)('$name', ({ startDate, repeat, through, expected }) => {
+      // Given
+      const appRepeat = toRepeat(repeat);
+
+      // When
+      const occurrences = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
+        appRepeat,
+        createDateKey(startDate),
+        {
+          from: createDateKey(startDate),
+          to: createDateKey(through),
+        },
+      );
+
+      // Then
+      expect(occurrences).toEqual(expected);
+    });
+  });
 });
 
 describe('findFirstRepeatOccurrenceDateKey', () => {
@@ -271,6 +291,33 @@ describe('findLastRepeatOccurrenceDateKey', () => {
 
     // Then
     expect(results).toEqual(['2026-11-09', null]);
+  });
+
+  describe('서버와 같은 마지막 회차 표', () => {
+    it.each(SHARED_LAST_OCCURRENCE_CASES)(
+      '$name',
+      ({ startDate, repeat, expectedCount, expectedLast }) => {
+        // Given
+        const appRepeat = toRepeat(repeat);
+
+        // When
+        const last = TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(
+          appRepeat,
+          createDateKey(startDate),
+        );
+        const count = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
+          appRepeat,
+          createDateKey(startDate),
+          {
+            from: createDateKey(startDate),
+            to: createDateKey(expectedLast),
+          },
+        ).length;
+
+        // Then
+        expect({ count, last }).toEqual({ count: expectedCount, last: expectedLast });
+      },
+    );
   });
 });
 
@@ -413,52 +460,5 @@ describe('isMonthBeyondRepeatHorizon', () => {
 
     // Then
     expect(result).toBe(expected);
-  });
-});
-
-describe('서버와 같은 마지막 회차 표', () => {
-  it.each(SHARED_LAST_OCCURRENCE_CASES)(
-    '$name',
-    ({ startDate, repeat, expectedCount, expectedLast }) => {
-      // Given
-      const appRepeat = toRepeat(repeat);
-
-      // When
-      const last = TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(
-        appRepeat,
-        createDateKey(startDate),
-      );
-      const count = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
-        appRepeat,
-        createDateKey(startDate),
-        {
-          from: createDateKey(startDate),
-          to: createDateKey(expectedLast),
-        },
-      ).length;
-
-      // Then
-      expect({ count, last }).toEqual({ count: expectedCount, last: expectedLast });
-    },
-  );
-});
-
-describe('서버와 같은 회차 표', () => {
-  it.each(SHARED_OCCURRENCE_CASES)('$name', ({ startDate, repeat, through, expected }) => {
-    // Given
-    const appRepeat = toRepeat(repeat);
-
-    // When
-    const occurrences = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
-      appRepeat,
-      createDateKey(startDate),
-      {
-        from: createDateKey(startDate),
-        to: createDateKey(through),
-      },
-    );
-
-    // Then
-    expect(occurrences).toEqual(expected);
   });
 });

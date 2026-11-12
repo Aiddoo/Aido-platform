@@ -50,6 +50,35 @@ describe('toMemoPage', () => {
     // Then
     expect(result).toEqual({ items: [], nextCursor: null });
   });
+
+  describe('재조회의 구조 공유', () => {
+    it('서버 값이 같으면 재조회해도 메모 항목의 참조가 그대로라 행이 다시 그려지지 않는다', async () => {
+      // Given
+      const client = createTestQueryClient();
+      const queryKey = MEMO_QUERY_KEYS.list();
+      const fetchPage = async () => {
+        await client.query({
+          queryKey,
+          queryFn: () => ({
+            pages: [toMemoPage(createMemoListResponse())],
+            pageParams: [undefined],
+          }),
+          staleTime: 0,
+        });
+        return client.getQueryData(queryKey);
+      };
+      const first = await fetchPage();
+
+      // When
+      const second = await fetchPage();
+
+      // Then
+      const keptCount =
+        second?.pages[0]?.items.filter((item, index) => item === first?.pages[0]?.items[index])
+          .length ?? 0;
+      expect(keptCount).toBe(MEMO_COUNT);
+    });
+  });
 });
 
 describe('toMemoRequest', () => {
@@ -300,32 +329,3 @@ function createMemoListResponse(): MemoListResponse {
     pagination: { hasNext: false, nextCursor: null, size: MEMO_COUNT },
   };
 }
-
-describe('toMemoPage 재조회의 구조 공유', () => {
-  it('서버 값이 같으면 재조회해도 메모 항목의 참조가 그대로라 행이 다시 그려지지 않는다', async () => {
-    // Given
-    const client = createTestQueryClient();
-    const queryKey = MEMO_QUERY_KEYS.list();
-    const fetchPage = async () => {
-      await client.query({
-        queryKey,
-        queryFn: () => ({
-          pages: [toMemoPage(createMemoListResponse())],
-          pageParams: [undefined],
-        }),
-        staleTime: 0,
-      });
-      return client.getQueryData(queryKey);
-    };
-    const first = await fetchPage();
-
-    // When
-    const second = await fetchPage();
-
-    // Then
-    const keptCount =
-      second?.pages[0]?.items.filter((item, index) => item === first?.pages[0]?.items[index])
-        .length ?? 0;
-    expect(keptCount).toBe(MEMO_COUNT);
-  });
-});

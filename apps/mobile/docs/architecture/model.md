@@ -88,7 +88,7 @@ export const NotificationPolicy = { isAiFeature, isUnread } as const;
 - 이름은 `to{Model}(dto)`, `to{X}Request(values)`, `to{X}FormValues(model)`, `parse{X}(unknown): X | null`이다. 같은 요청을 만드는 곳이 여럿이면 mapper 하나로 모은다.
 - 버린 칸을 로그로 남겨야 하는 입력(푸시 data)은 `parse{X}`가 `{ x: X | null, droppedPaths }`를 돌려준다. 경로에는 값을 싣지 않고, 로그는 부르는 훅이 남긴다.
 - 계약의 열거·유니온은 `satisfies Record<ContractEnum, …>`나 `match().exhaustive()`로 빠짐없이 바꾼다. brand·enum은 `schema.parse`로 붙이고 `as`로 단정하지 않는다.
-- 결과는 plain 값이다. 날짜는 문자열 brand(`Instant`, `DateKey`, `TimeOfDay`)로 바꾸고 `Date`·class를 넣지 않는다. 그래야 Query의 structural sharing이 같은 값의 참조를 지킨다(`memo.mapper.test.ts`의 `toMemoPage 재조회의 구조 공유`).
+- 결과는 plain 값이다. 날짜는 문자열 brand(`Instant`, `DateKey`, `TimeOfDay`)로 바꾸고 `Date`·class를 넣지 않는다. 그래야 Query의 structural sharing이 같은 값의 참조를 지킨다(`memo.mapper.test.ts`의 `toMemoPage` › `재조회의 구조 공유`).
 
 ```ts
 // apis/notification.mapper.ts: 서버 navigation이 바뀌면 여기만 고친다
