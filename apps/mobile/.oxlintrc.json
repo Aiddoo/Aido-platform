@@ -860,9 +860,54 @@
               "Panels",
               "Area",
               "Areas",
-              "Info"
+              "Info",
+              "Inner"
             ],
             "standaloneNames": ["Header", "Footer"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/shared/**/*.{ts,tsx}"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        // allowNames는 shared/ui 카탈로그가 정한 이름(heroui와 같은 TextArea, 칸 영역 PaneArea)이다
+        "aido/component-name": [
+          "error",
+          {
+            "suffixes": [
+              "Body",
+              "Bodies",
+              "Frame",
+              "Frames",
+              "Section",
+              "Sections",
+              "Block",
+              "Blocks",
+              "Wrapper",
+              "Wrappers",
+              "Detail",
+              "Details",
+              "Content",
+              "Contents",
+              "Panel",
+              "Panels",
+              "Area",
+              "Areas",
+              "Info",
+              "Inner"
+            ],
+            "standaloneNames": ["Header", "Footer"],
+            "allowNames": [
+              "ReadableContent",
+              "MenuContent",
+              "HintPopoverContent",
+              "TextArea",
+              "BottomSheetTextArea",
+              "PaneArea",
+              "MeasuredPaneArea"
+            ]
           }
         ]
       }
