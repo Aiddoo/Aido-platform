@@ -13,17 +13,19 @@ import {
 
 const TODAY_KEY = createDateKey('2026-11-02');
 
-const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues => ({
-  startDate: createDateKey('2026-11-02'),
-  weekdays: ['MON'],
-  interval: 1,
-  isMonthly: false,
-  monthDay: null,
-  endType: 'UNTIL',
-  untilDate: null,
-  count: 10,
-  ...overrides,
-});
+function createValues(overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues {
+  return {
+    startDate: createDateKey('2026-11-02'),
+    weekdays: ['MON'],
+    interval: 1,
+    isMonthly: false,
+    monthDay: null,
+    endType: 'UNTIL',
+    untilDate: null,
+    count: 10,
+    ...overrides,
+  };
+}
 
 describe('isTodoRepeatFormPreset', () => {
   it('격주나 매월이면 요일이 같아도 프리셋이 켜진 것으로 보지 않는다', () => {
