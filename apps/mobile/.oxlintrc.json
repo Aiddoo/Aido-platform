@@ -491,7 +491,7 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
@@ -547,7 +547,7 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
@@ -612,7 +612,7 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
@@ -1120,7 +1120,7 @@
     {
       "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
       "excludeFiles": [
-        "src/shared/ui/**/index.ts",
+        "src/shared/ui/index.ts",
         "src/shared/{i18n,errors,analytics}/index.ts",
         "src/shared/infra/{analytics,logger}/index.ts",
         "src/bootstrap/providers/di-context.tsx",

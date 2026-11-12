@@ -21,7 +21,7 @@ src/
 - `shared/providers`는 어디서나 읽는 앱 설정 Context(테마, 언어, 글꼴 배율, 로컬 날짜)다. `bootstrap/providers`는 루트에 한 번 끼우는 조립과 전역 동작이고 `children`만 감싼다.
 - `shared/stores`는 React 밖에서도 구독하는 메모리 저장소다. 기기 저장 값은 `shared/storage`가 맡는다([data](./data.md)).
 - 다른 기능은 `@src/features/{area}/{feature}/…` 절대 경로로 import한다. 상대 경로는 같은 기능 안에서만 쓴다.
-- 새 barrel `index.ts`를 만들지 않는다. 재수출은 이미 공개 면인 `shared/ui`, `shared/i18n`, `shared/errors`, `shared/analytics`, `shared/infra/{analytics,logger}`, `bootstrap/providers/di-context`(shared DI 훅)와 테스트 입구 `src/testing/core.ts`에만 있다(`aido/no-re-export`).
+- 새 barrel `index.ts`를 만들지 않는다. 재수출은 이미 공개 면인 `shared/ui`, `shared/i18n`, `shared/errors`, `shared/analytics`, `shared/infra/{analytics,logger}`, `bootstrap/providers/di-context`(shared DI 훅)와 테스트 입구 `src/testing/core.ts`에만 있다(`aido/no-re-export`). `shared/ui`의 입구는 `shared/ui/index.ts` 하나이고 부품 폴더에는 `index.ts`를 두지 않는다(ls-lint, [ui-catalog](./ui-catalog.md)).
 
 ## 기능 경계
 

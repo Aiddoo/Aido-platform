@@ -1,7 +1,7 @@
 import { toWeatherHref } from '@src/features/weather/utils/weather-link.view-model';
 import { toWeatherRescheduleHref } from '@src/features/weather/utils/weather-reschedule-link.view-model';
 import type { DateKey } from '@src/shared/date/date-key';
-import type { WindowSizeClass } from '@src/shared/ui/adaptive-pane/window-layout';
+import type { WindowSizeClass } from '@src/shared/ui';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 
