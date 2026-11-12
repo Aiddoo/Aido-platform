@@ -46,8 +46,7 @@ export function DictationButton({ value, onChange, ...pressableProps }: Dictatio
       accessibilityLabel={isListening ? t('dictation.stop') : t('dictation.start')}
       {...pressableProps}
       onPress={handlePress}
-      style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-      className="items-center justify-center rounded-full bg-main/10"
+      className="size-9 items-center justify-center rounded-full bg-main/10"
     >
       {isListening ? (
         <PauseIcon
