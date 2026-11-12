@@ -1,14 +1,18 @@
 import { TodoAvailabilityGuard } from '@src/features/planning/todo/components/todo-availability-guard';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
-import { QueryErrorBoundary } from '@src/shared/ui';
-import { type ReactNode, Suspense } from 'react';
+import { Box, QueryErrorBoundary } from '@src/shared/ui';
+import { type PropsWithChildren, type ReactNode, Suspense } from 'react';
+import { StyleSheet } from 'react-native';
+import { KeyboardGestureArea } from 'react-native-keyboard-controller';
 
+import { TODO_COMMENT_INPUT_NATIVE_ID } from '../constants/todo-comment.constants';
 import { useTodoCommentParams } from '../hooks/use-todo-comment-params';
 import { TodoCommentComposerBar } from './todo-comment-composer-bar';
-import { TodoCommentKeyboardGesture } from './todo-comment-keyboard-gesture';
 import { TodoCommentSession } from './todo-comment-session';
 import { TodoCommentThreadList } from './todo-comment-thread-list';
 import { TodoDetailSummary } from './todo-detail-summary';
+
+const styles = StyleSheet.create({ gestureArea: { flex: 1 } });
 
 interface TodoCommentPaneProps {
   /** 제목 줄. 상세 화면은 네이티브 헤더, 펼친 피드의 오른쪽 칸은 직접 그린 제목 줄이다 */
@@ -47,5 +51,19 @@ export function TodoCommentPane({ titleBar, onClose, onExit }: TodoCommentPanePr
         </TodoCommentKeyboardGesture>
       </TodoAvailabilityGuard>
     </TodoCommentSession>
+  );
+}
+
+/** 목록과 작성 바를 함께 감싸 Android에서 키보드를 손가락으로 끌어 내리게 한다 */
+function TodoCommentKeyboardGesture({ children }: PropsWithChildren) {
+  return (
+    <KeyboardGestureArea
+      style={styles.gestureArea}
+      textInputNativeID={TODO_COMMENT_INPUT_NATIVE_ID}
+    >
+      <Box flex={1} testID="todo-comment-threads">
+        {children}
+      </Box>
+    </KeyboardGestureArea>
   );
 }
