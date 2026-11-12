@@ -49,6 +49,20 @@ describe('getAccessDecision', () => {
   });
 
   it.each([
+    [PLAN_CATALOG.AI_PARSE.free - 1, 'allow'],
+    [PLAN_CATALOG.AI_PARSE.free, 'limit-reached'],
+  ] as const)('무료 사용자가 AI 할 일 만들기를 %i번 썼으면 %s다', (used, expected) => {
+    // Given
+    const snapshot = createEntitlementSnapshot({ tier: 'FREE', used: { AI_PARSE: used } });
+
+    // When
+    const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE', NOW);
+
+    // Then
+    expect(decision).toBe(expected);
+  });
+
+  it.each([
     ['FREE', 'locked'],
     ['PREMIUM', 'allow'],
     ['ADMIN', 'allow'],
