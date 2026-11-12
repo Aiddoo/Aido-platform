@@ -48,13 +48,13 @@ import { useRecognitionLanguage } from '../../hooks/use-recognition-language';
 import { useVoiceNoteRecording } from '../../hooks/use-voice-note-recording';
 import { voiceNoteRecordParamsSchema } from '../../schemas/voice-note-params.schema';
 import { getRecordingRingLayout } from '../../utils/recording-timer.geometry';
-import { RecognitionLanguageTabs } from '../quick-voice/recognition-language-tabs';
+import { RecognitionLanguageTabs } from '../recognition-language-tabs';
+import { SentenceCaptionList } from '../sentence-caption-list';
+import { VoiceNoteOffline } from '../voice-note-offline';
 import { RecognizerWaveform } from './recognizer-waveform';
 import { RECORD_BUTTON_ICON_SIZE, RecordButton } from './record-button';
 import { RecordingTimer } from './recording-timer';
-import { SentenceCaptionList } from './sentence-caption-list';
 import { VoiceNoteMarkControl } from './voice-note-mark-control';
-import { VoiceNoteOffline } from './voice-note-offline';
 
 const MARK_HINT_HEIGHT = 124;
 

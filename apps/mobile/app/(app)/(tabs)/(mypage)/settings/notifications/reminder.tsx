@@ -1,4 +1,4 @@
-import { ReminderTimeInput } from '@src/features/notification/components/settings/reminder-time-input';
+import { ReminderTimeInput } from '@src/features/notification/components/reminder-time-input';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { Suspense } from 'react';

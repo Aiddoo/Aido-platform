@@ -10,7 +10,7 @@ import { CrownFilledIcon } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
-import { SETTINGS_TIME_RANGE } from '../../constants/notification.constants';
+import { SETTINGS_TIME_RANGE } from '../constants/notification.constants';
 import { SettingsTimeInput } from './settings-time-input';
 
 const CROWN_SIZE = 14;

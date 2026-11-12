@@ -14,8 +14,8 @@ import {
 import { PressableFeedback } from 'heroui-native';
 import { useEffect, useEffectEvent, useRef } from 'react';
 
-import { useStartVoiceNote } from '../../hooks/use-start-voice-note';
-import { voiceNoteStartParamsSchema } from '../../schemas/voice-note-params.schema';
+import { useStartVoiceNote } from '../hooks/use-start-voice-note';
+import { voiceNoteStartParamsSchema } from '../schemas/voice-note-params.schema';
 
 interface VoiceNoteStartButtonProps {
   coachmarkPlacement: HintPopoverContentProps['placement'];

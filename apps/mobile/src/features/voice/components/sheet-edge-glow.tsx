@@ -18,10 +18,10 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 
-import { VOICE_EDGE_GLOW, VOICE_GRADIENT_COLORS } from '../../constants/voice.constants';
-import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
-import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
-import { followLevel } from '../../utils/waveform.geometry';
+import { VOICE_EDGE_GLOW, VOICE_GRADIENT_COLORS } from '../constants/voice.constants';
+import { useSkiaDensityScale } from '../hooks/use-skia-density-scale';
+import { useToggleableFrameCallback } from '../hooks/use-toggleable-frame-callback';
+import { followLevel } from '../utils/waveform.geometry';
 
 const BLEED = VOICE_EDGE_GLOW.blur * 3;
 const FULL_TURN_RADIANS = Math.PI * 2;

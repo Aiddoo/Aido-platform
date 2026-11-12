@@ -3,12 +3,12 @@ import { SettingsListGroup, Text } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
-import { PUSH_PERMISSION_STEP } from '../../constants/notification.constants';
-import type { PushPermissionPromptSource } from '../../constants/notification.events';
-import { PushPermissionPolicy } from '../../domains/push-permission.model';
-import { usePushPermissionAction } from '../../hooks/use-push-permission-action';
-import { useOpenPushSettingsMutationOptions } from '../../queries/push-permission.mutations';
-import { useGetPushPermissionQueryOptions } from '../../queries/push-permission.queries';
+import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
+import type { PushPermissionPromptSource } from '../constants/notification.events';
+import { PushPermissionPolicy } from '../domains/push-permission.model';
+import { usePushPermissionAction } from '../hooks/use-push-permission-action';
+import { useOpenPushSettingsMutationOptions } from '../queries/push-permission.mutations';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 
 const SOURCE: PushPermissionPromptSource = 'settings';
 

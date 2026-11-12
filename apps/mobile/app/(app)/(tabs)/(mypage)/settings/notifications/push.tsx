@@ -1,7 +1,7 @@
 import { MarketingConsentSettings } from '@src/features/identity/consent/components/marketing-consent-settings';
-import { MarketingPushDescription } from '@src/features/notification/components/settings/marketing-push-description';
-import { PushDeliverySettings } from '@src/features/notification/components/settings/push-delivery-settings';
-import { PushPermissionSettings } from '@src/features/notification/components/settings/push-permission-settings';
+import { MarketingPushDescription } from '@src/features/notification/components/marketing-push-description';
+import { PushDeliverySettings } from '@src/features/notification/components/push-delivery-settings';
+import { PushPermissionSettings } from '@src/features/notification/components/push-permission-settings';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsScreenLayout } from '@src/shared/ui';
 import { Suspense } from 'react';

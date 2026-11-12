@@ -15,11 +15,11 @@ import { STACK_MORE_ICON, useConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 
-import { createDigestMemo, VoiceNotePolicy } from '../../domains/voice-note.model';
-import { isPlanKeyConflictError } from '../../domains/voice.error';
-import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
-import { useVoiceNoteDraftId } from '../../hooks/use-voice-note-params';
-import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
+import { createDigestMemo, VoiceNotePolicy } from '../domains/voice-note.model';
+import { isPlanKeyConflictError } from '../domains/voice.error';
+import { useCurrentVoiceNote } from '../hooks/use-current-voice-note';
+import { useVoiceNoteDraftId } from '../hooks/use-voice-note-params';
+import { useApplyActionPlanMutationOptions } from '../queries/voice.mutations';
 
 const VOICE_NOTE_TOOLBAR_ICON = {
   saveMemo: process.env.EXPO_OS === 'ios' ? 'note.text.badge.plus' : NoteAdd,

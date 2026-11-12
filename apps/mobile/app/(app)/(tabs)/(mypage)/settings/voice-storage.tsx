@@ -1,4 +1,4 @@
-import { VoiceStorageUsage } from '@src/features/voice/components/storage/voice-storage-usage';
+import { VoiceStorageUsage } from '@src/features/voice/components/voice-storage-usage';
 import { QueryErrorBoundary } from '@src/shared/ui';
 import { Suspense } from 'react';
 

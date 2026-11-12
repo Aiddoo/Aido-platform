@@ -38,21 +38,21 @@ import {
   AUTO_FINISH_SILENCE_MS,
   LISTENING_PANEL_HEIGHT,
   QUICK_CAPTURE_MAX_SECONDS,
-} from '../../constants/voice.constants';
+} from '../constants/voice.constants';
 import {
   VoiceCapturePolicy,
   type CapturedPlan,
   type VoiceCaptureState,
-} from '../../domains/voice-capture.model';
-import { VoiceTranscriptPolicy, type VoiceTranscript } from '../../domains/voice-transcript.model';
-import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
-import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
-import { formatMediaTime } from '../../utils/media-time.view-model';
-import { createPlanReviewFormValues } from '../../utils/plan-review-draft';
-import { PlanReview } from '../plan/plan-review';
-import { VoiceVisual } from '../visualizers/voice-visual';
+} from '../domains/voice-capture.model';
+import { VoiceTranscriptPolicy, type VoiceTranscript } from '../domains/voice-transcript.model';
+import { useCaptureElapsedMs } from '../hooks/use-capture-elapsed-ms';
+import { planReviewFormSchema } from '../schemas/plan-review-form.schema';
+import { formatMediaTime } from '../utils/media-time.view-model';
+import { createPlanReviewFormValues } from '../utils/plan-review-draft';
 import { LiveTranscript } from './live-transcript';
+import { PlanReview } from './plan-review';
 import { RecognitionLanguageTabs } from './recognition-language-tabs';
+import { VoiceVisual } from './voice-visual';
 
 interface QuickVoiceListeningProps {
   state: VoiceCaptureState;

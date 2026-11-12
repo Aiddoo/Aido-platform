@@ -9,8 +9,8 @@ import {
   useSelectedMemoId,
 } from '@src/features/notes/memo/hooks/use-memo-params';
 import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
-import { VoiceNoteDraftList } from '@src/features/voice/components/note/voice-note-draft-list';
-import { VoiceNoteStartButton } from '@src/features/voice/components/note/voice-note-start-button';
+import { VoiceNoteDraftList } from '@src/features/voice/components/voice-note-draft-list';
+import { VoiceNoteStartButton } from '@src/features/voice/components/voice-note-start-button';
 import { VOICE_NOTE_PREVIEW_COUNT } from '@src/features/voice/constants/voice-note.constants';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

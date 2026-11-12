@@ -9,7 +9,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import { SETTINGS_TIME_RANGE } from '../../constants/notification.constants';
-import { SettingsTimeInput } from './settings-time-input';
+import { SettingsTimeInput } from '../settings-time-input';
 
 const WEATHER_TIME = {
   morning: {

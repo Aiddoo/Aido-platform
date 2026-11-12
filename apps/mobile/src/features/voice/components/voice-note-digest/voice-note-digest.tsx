@@ -19,10 +19,10 @@ import { canRetryPlanFailure } from '../../domains/voice.error';
 import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
 import { useVoiceNoteDigest, type VoiceNoteDigestFailure } from '../../hooks/use-voice-note-digest';
 import { useVoiceNoteDraftId } from '../../hooks/use-voice-note-params';
+import { SentenceCaptionList } from '../sentence-caption-list';
+import { VoiceNoteToolbar } from '../voice-note-toolbar';
 import { DigestProgress } from './digest-progress';
 import { DigestScanPreview } from './digest-scan-preview';
-import { SentenceCaptionList } from './sentence-caption-list';
-import { VoiceNoteToolbar } from './voice-note-toolbar';
 
 const SCAN_PREVIEW_SENTENCES = 12;
 

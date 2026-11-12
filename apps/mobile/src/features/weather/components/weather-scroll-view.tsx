@@ -12,8 +12,8 @@ import { useUniwind } from 'uniwind';
 
 import { useWeatherScene } from '../hooks/use-weather-scene';
 import { refetchWeather } from '../queries/weather-cache';
-import { ScrimLayer } from './weather-scene/scrim-layer';
-import { SkyGradientLayer } from './weather-scene/sky-gradient-layer';
+import { ScrimLayer } from './weather-scene-canvas/scrim-layer';
+import { SkyGradientLayer } from './weather-scene-canvas/sky-gradient-layer';
 
 /** 마지막 카드 아래 여백. 안전 영역과 `bottomInset`에 더한다. */
 const SCREEN_BOTTOM_PADDING = 24;

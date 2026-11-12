@@ -15,8 +15,8 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
-import { useGetPushPermissionQueryOptions } from '../../queries/push-permission.queries';
-import { PushStatusValue } from '../push-status-value';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
+import { PushStatusValue } from './push-status-value';
 
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 

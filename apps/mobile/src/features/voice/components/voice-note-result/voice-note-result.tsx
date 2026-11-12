@@ -39,12 +39,12 @@ import { type VoiceNoteTab, voiceNoteTabSchema } from '../../schemas/voice-note-
 import { formatMediaTime } from '../../utils/media-time.view-model';
 import { getDurationBucket } from '../../utils/voice-analytics';
 import { createSpeechLevels, getFlagBarIndexes } from '../../utils/waveform.geometry';
-import { PlanReview } from '../plan/plan-review';
+import { PlanReview } from '../plan-review';
+import { SentenceCaptionList } from '../sentence-caption-list';
+import { VoiceNoteToolbar } from '../voice-note-toolbar';
 import { KeyPointList } from './key-point-list';
-import { SentenceCaptionList } from './sentence-caption-list';
 import { VoiceNotePlanTodos } from './voice-note-plan-todos';
 import { VoiceNotePlayerBar } from './voice-note-player-bar';
-import { VoiceNoteToolbar } from './voice-note-toolbar';
 
 const PLAN_TODOS_CLASS_NAME = 'flex-1 pb-3';
 const LOADING_SUMMARY_LINE_COUNT = 3;

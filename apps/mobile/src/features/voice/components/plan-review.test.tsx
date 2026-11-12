@@ -12,16 +12,12 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
-import {
-  type PlannedTodo,
-  type VoicePlan,
-  voicePlanIdSchema,
-} from '../../domains/voice-plan.model';
+import { type PlannedTodo, type VoicePlan, voicePlanIdSchema } from '../domains/voice-plan.model';
 import {
   type PlanReviewFormValues,
   planReviewFormSchema,
-} from '../../schemas/plan-review-form.schema';
-import { createPlanReviewFormValues } from '../../utils/plan-review-draft';
+} from '../schemas/plan-review-form.schema';
+import { createPlanReviewFormValues } from '../utils/plan-review-draft';
 import { PlanReview } from './plan-review';
 
 const createTodoAction = (overrides: Partial<PlannedTodo>): PlannedTodo => ({

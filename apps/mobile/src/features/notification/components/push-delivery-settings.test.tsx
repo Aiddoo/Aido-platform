@@ -17,8 +17,8 @@ import { Suspense } from 'react';
 import {
   createPushDeviceResponseDto,
   createPushPermission,
-} from '../../__tests__/notification.fixtures';
-import { PUSH_PERMISSION_QUERY_KEYS } from '../../queries/push-permission-query-keys';
+} from '../__tests__/notification.fixtures';
+import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
 import { PushDeliverySettings } from './push-delivery-settings';
 
 async function renderSettings({ pushEnabled }: { pushEnabled: boolean }) {

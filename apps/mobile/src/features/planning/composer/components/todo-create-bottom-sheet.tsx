@@ -12,15 +12,15 @@ import {
   todoFormSchema,
 } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { todoCreateParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
-import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
-import { QuickVoiceQuota } from '@src/features/voice/components/quick-voice/quick-voice-quota';
+import { QuickVoiceButton } from '@src/features/voice/components/quick-voice-button';
+import { QuickVoiceQuota } from '@src/features/voice/components/quick-voice-quota';
 import {
   QuickVoiceFailed,
   QuickVoiceListening,
   QuickVoicePlanning,
   QuickVoiceReview,
-} from '@src/features/voice/components/quick-voice/quick-voice-steps';
-import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
+} from '@src/features/voice/components/quick-voice-steps';
+import { SheetEdgeGlow } from '@src/features/voice/components/sheet-edge-glow';
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';

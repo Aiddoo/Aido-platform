@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 
-import { createCaptureState, createTranscript } from '../../__tests__/voice.fixtures';
+import { createCaptureState, createTranscript } from '../__tests__/voice.fixtures';
 import { QuickVoiceFailed } from './quick-voice-steps';
 
 describe('QuickVoiceFailed', () => {

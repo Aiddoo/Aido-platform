@@ -27,10 +27,10 @@ import { Link, router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { ScrollView, StyleSheet } from 'react-native';
 
-import { VOICE_NOTE_PREVIEW_COUNT } from '../../constants/voice-note.constants';
-import { VoiceNotePolicy, type VoiceNote } from '../../domains/voice-note.model';
-import { useVoiceNotes } from '../../hooks/use-voice-notes';
-import { formatMediaTime } from '../../utils/media-time.view-model';
+import { VOICE_NOTE_PREVIEW_COUNT } from '../constants/voice-note.constants';
+import { VoiceNotePolicy, type VoiceNote } from '../domains/voice-note.model';
+import { useVoiceNotes } from '../hooks/use-voice-notes';
+import { formatMediaTime } from '../utils/media-time.view-model';
 
 interface VoiceNoteDraftListProps {
   /** 미리 보일 개수. 넘으면 전체 보기로 전용 화면을 연다 */

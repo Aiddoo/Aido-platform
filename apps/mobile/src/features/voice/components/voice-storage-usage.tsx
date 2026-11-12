@@ -26,8 +26,8 @@ import {
 import { formatFileSize } from '@src/shared/utils/number-format';
 import { useState } from 'react';
 
-import { VoiceNotePolicy } from '../../domains/voice-note.model';
-import { formatMediaTime } from '../../utils/media-time.view-model';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
+import { formatMediaTime } from '../utils/media-time.view-model';
 
 /** 기기에 남긴 녹음 용량과 노트별 녹음. 가상 목록이라 헤더·행·꼬리마다 `SettingsScreenLayout`과 같은 안쪽 여백을 둔다 */
 export function VoiceStorageUsage() {

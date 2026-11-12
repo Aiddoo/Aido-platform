@@ -1,5 +1,5 @@
-import { NotificationSettingsLinks } from '@src/features/notification/components/settings/notification-settings-links';
-import { TimeFormatSetting } from '@src/features/notification/components/settings/time-format-setting';
+import { NotificationSettingsLinks } from '@src/features/notification/components/notification-settings-links';
+import { TimeFormatSetting } from '@src/features/notification/components/time-format-setting';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 import { Suspense } from 'react';
