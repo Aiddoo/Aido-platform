@@ -71,7 +71,7 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
       <Button
         onPress={handlePurchase}
         isLoading={purchase.isPending}
-        isDisabled={!selectedPlan || purchase.isPending || !isOnline}
+        isDisabled={selectedPlan == null || purchase.isPending || !isOnline}
         testID="subscription-purchase"
       >
         {t(getPurchaseLabelKey(selectedPlan), {

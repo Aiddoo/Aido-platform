@@ -32,9 +32,9 @@ const BLOCKED_LABEL_KEYS = {
 } as const satisfies Record<EntitlementFeature, string>;
 
 export function BlockedFeature({ className }: BlockedFeatureProps) {
-  const [{ feature }] = useSubscriptionParams();
+  const feature = useBlockedFeature();
 
-  if (feature == null || hasBenefitSlide(BENEFIT_SLIDES, feature)) {
+  if (feature == null) {
     return null;
   }
 

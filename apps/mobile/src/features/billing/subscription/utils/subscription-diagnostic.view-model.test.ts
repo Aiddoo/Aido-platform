@@ -22,6 +22,10 @@ describe('getDiagnosticCode', () => {
     ['응답 계약 불일치', new ParseError('사용자에게 보이면 안 되는 상세'), 'INVALID_RESPONSE'],
     ['모르는 값', { token: 'secret' }, 'UNKNOWN'],
   ])('%s', (_case, error, expected) => {
-    expect(getDiagnosticCode(error)).toBe(expected);
+    // When
+    const diagnosticCode = getDiagnosticCode(error);
+
+    // Then
+    expect(diagnosticCode).toBe(expected);
   });
 });

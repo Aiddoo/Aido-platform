@@ -1,4 +1,4 @@
-import { INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
+import { INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
@@ -77,24 +77,24 @@ export function InquiryForm({ title }: InquiryFormProps) {
           <SettingsListGroup>
             <RadioGroup value={value} onValueChange={onChange} className="gap-0">
               <SettingsListGroup.Radio
-                value="BUG_REPORT"
+                value={INQUIRY_CATEGORY.BUG_REPORT}
                 label={t('category.bugReport')}
-                testID="inquiry-category-BUG_REPORT"
+                testID={`inquiry-category-${INQUIRY_CATEGORY.BUG_REPORT}`}
               />
               <SettingsListGroup.Radio
-                value="FEATURE_REQUEST"
+                value={INQUIRY_CATEGORY.FEATURE_REQUEST}
                 label={t('category.featureRequest')}
-                testID="inquiry-category-FEATURE_REQUEST"
+                testID={`inquiry-category-${INQUIRY_CATEGORY.FEATURE_REQUEST}`}
               />
               <SettingsListGroup.Radio
-                value="PAYMENT"
+                value={INQUIRY_CATEGORY.PAYMENT}
                 label={t('category.payment')}
-                testID="inquiry-category-PAYMENT"
+                testID={`inquiry-category-${INQUIRY_CATEGORY.PAYMENT}`}
               />
               <SettingsListGroup.Radio
-                value="OTHER"
+                value={INQUIRY_CATEGORY.OTHER}
                 label={t('category.other')}
-                testID="inquiry-category-OTHER"
+                testID={`inquiry-category-${INQUIRY_CATEGORY.OTHER}`}
               />
             </RadioGroup>
           </SettingsListGroup>

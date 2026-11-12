@@ -80,7 +80,7 @@ function useValueColumnWidth() {
 export function PlanComparisonTable() {
   return (
     <ComparisonCard>
-      <ColumnHeader />
+      <PlanColumns />
       <ComparisonGroups Row={FeatureRow} />
     </ComparisonCard>
   );
@@ -142,7 +142,7 @@ function ComparisonCard({ children, busy = false }: { children: ReactNode; busy?
   );
 }
 
-function ColumnHeader() {
+function PlanColumns() {
   const { t } = useTranslation('subscription');
   const valueColumnWidth = useValueColumnWidth();
 
@@ -359,7 +359,7 @@ function Cell({ value, isPremium = false }: { value: PlanValue; isPremium?: bool
 PlanComparisonTable.Loading = function Loading() {
   return (
     <ComparisonCard busy>
-      <ColumnHeader />
+      <PlanColumns />
       <ComparisonGroups Row={FeatureSkeletonRow} />
     </ComparisonCard>
   );
