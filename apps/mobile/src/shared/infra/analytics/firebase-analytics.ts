@@ -52,7 +52,7 @@ export function createFirebaseAnalytics(logger: AppLogger): Analytics {
   const firebaseAnalytics = getAnalytics();
 
   return {
-    trackEvent(eventName: string, params?: AnalyticsEventParams): void {
+    trackEvent: (eventName: string, params?: AnalyticsEventParams): void => {
       invokeAsync(
         logger,
         FIREBASE_ANALYTICS_LOG_EVENT.TRACK_EVENT_FAILED,
@@ -60,7 +60,7 @@ export function createFirebaseAnalytics(logger: AppLogger): Analytics {
         { eventName },
       );
     },
-    trackScreenView(screenName: string, params?: AnalyticsEventParams): void {
+    trackScreenView: (screenName: string, params?: AnalyticsEventParams): void => {
       invokeAsync(
         logger,
         FIREBASE_ANALYTICS_LOG_EVENT.TRACK_SCREEN_VIEW_FAILED,
@@ -73,12 +73,12 @@ export function createFirebaseAnalytics(logger: AppLogger): Analytics {
         { screenName },
       );
     },
-    setUserId(userId: string | null): void {
+    setUserId: (userId: string | null): void => {
       invokeAsync(logger, FIREBASE_ANALYTICS_LOG_EVENT.SET_USER_ID_FAILED, () =>
         setUserId(firebaseAnalytics, userId),
       );
     },
-    setUserProperties(properties: UserPropertyMap): void {
+    setUserProperties: (properties: UserPropertyMap): void => {
       for (const [key, value] of Object.entries(properties)) {
         invokeAsync(
           logger,
@@ -88,7 +88,7 @@ export function createFirebaseAnalytics(logger: AppLogger): Analytics {
         );
       }
     },
-    clearUser(): void {
+    clearUser: (): void => {
       invokeAsync(logger, FIREBASE_ANALYTICS_LOG_EVENT.SET_USER_ID_FAILED, () =>
         setUserId(firebaseAnalytics, null),
       );
@@ -96,12 +96,12 @@ export function createFirebaseAnalytics(logger: AppLogger): Analytics {
         setUserProperties(firebaseAnalytics, CLEARED_USER_PROPERTIES),
       );
     },
-    resetData(): void {
+    resetData: (): void => {
       invokeAsync(logger, FIREBASE_ANALYTICS_LOG_EVENT.RESET_DATA_FAILED, () =>
         resetAnalyticsData(firebaseAnalytics),
       );
     },
-    getAnalyticsId(): Promise<string | null> {
+    getAnalyticsId: (): Promise<string | null> => {
       return getAppInstanceId(firebaseAnalytics);
     },
   };

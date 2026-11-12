@@ -21,13 +21,12 @@ export type SubscriptionErrorCode =
 export class SubscriptionError extends BusinessError<SubscriptionErrorCode> {
   // Sentry breadcrumb 메시지가 오류 이름을 쓴다
   override readonly name: string = 'SubscriptionError';
+  /** 스토어 SDK가 준 원래 오류 코드. 문의·진단에만 쓰고 화면 분기는 `code`로 한다 */
+  readonly storeErrorCode: string | null;
 
-  constructor(
-    code: SubscriptionErrorCode,
-    /** 스토어 SDK가 준 원래 오류 코드. 문의·진단에만 쓰고 화면 분기는 `code`로 한다 */
-    readonly storeErrorCode: string | null = null,
-  ) {
+  constructor(code: SubscriptionErrorCode, storeErrorCode: string | null = null) {
     super(code);
+    this.storeErrorCode = storeErrorCode;
   }
 }
 

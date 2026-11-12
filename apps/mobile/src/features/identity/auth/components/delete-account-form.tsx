@@ -68,7 +68,7 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
           </KeyboardAdaptiveButton>
         }
       >
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+        <Animated.View entering={FadeIn.duration(ANIMATION.durationMs.normal)}>
           <Controller
             control={form.control}
             name="password"

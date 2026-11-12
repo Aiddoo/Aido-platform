@@ -3,7 +3,7 @@ import * as Application from 'expo-application';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 export const expoNativeApplicationMetadataGateway: NativeApplicationMetadataGateway = {
-  getInstallation() {
+  getInstallation: () => {
     if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
       return undefined;
     }

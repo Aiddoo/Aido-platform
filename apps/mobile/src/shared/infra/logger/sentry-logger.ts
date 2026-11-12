@@ -38,16 +38,16 @@ export function createSentryLogger(): AppLogger {
   };
 
   return {
-    debug(_message: string, _context?: LogContext): void {
+    debug: (_message: string, _context?: LogContext): void => {
       // debug는 Sentry에 남기지 않음(노이즈 억제).
     },
-    info(message: string, context?: LogContext): void {
+    info: (message: string, context?: LogContext): void => {
       breadcrumb('info', message, context);
     },
-    warn(message: string, context?: LogContext): void {
+    warn: (message: string, context?: LogContext): void => {
       breadcrumb('warn', message, context);
     },
-    error(message: string, error?: Error, context?: LogContext): void {
+    error: (message: string, error?: Error, context?: LogContext): void => {
       breadcrumb('error', message, context);
       if (error) {
         const feature = logEventFeature(message);

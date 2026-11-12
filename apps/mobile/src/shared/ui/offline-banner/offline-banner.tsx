@@ -32,8 +32,8 @@ export function OfflineBanner() {
 
   return (
     <Animated.View
-      entering={FadeIn.duration(ANIMATION.duration.normal).reduceMotion(ReduceMotion.System)}
-      exiting={FadeOut.duration(ANIMATION.duration.fast).reduceMotion(ReduceMotion.System)}
+      entering={FadeIn.duration(ANIMATION.durationMs.normal).reduceMotion(ReduceMotion.System)}
+      exiting={FadeOut.duration(ANIMATION.durationMs.fast).reduceMotion(ReduceMotion.System)}
     >
       <StyledSafeAreaView edges={['top', 'left', 'right']} className="bg-gray-2">
         <HStack

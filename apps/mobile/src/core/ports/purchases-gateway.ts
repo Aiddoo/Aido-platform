@@ -63,13 +63,13 @@ export type PurchaseFailureKind =
 /** 스토어 SDK 오류를 SDK 코드 없이 넘긴다. 원래 코드는 문의·진단에만 쓴다 */
 export class PurchasesGatewayError extends Error {
   override readonly name = 'PurchasesGatewayError';
+  readonly kind: PurchaseFailureKind;
+  readonly storeErrorCode: string | null;
 
-  constructor(
-    readonly kind: PurchaseFailureKind,
-    readonly storeErrorCode: string | null,
-    message: string,
-  ) {
+  constructor(kind: PurchaseFailureKind, storeErrorCode: string | null, message: string) {
     super(message);
+    this.kind = kind;
+    this.storeErrorCode = storeErrorCode;
   }
 }
 

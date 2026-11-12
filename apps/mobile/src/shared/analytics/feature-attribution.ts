@@ -42,7 +42,7 @@ export function createFeatureAttributionStore(
   now: () => number = Date.now,
 ): FeatureAttributionStore {
   return {
-    record({ accountId, campaignId, feature }) {
+    record: ({ accountId, campaignId, feature }) => {
       writeStoredValue(
         storage,
         featureAttributionStoredValue,
@@ -51,7 +51,7 @@ export function createFeatureAttributionStore(
       );
     },
 
-    consume({ accountId, feature }) {
+    consume: ({ accountId, feature }) => {
       const scope = { accountId, feature };
       const persisted = readStoredValue(storage, featureAttributionStoredValue, scope);
 

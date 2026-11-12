@@ -44,7 +44,7 @@ import { CalendarWeekdayHeader } from './calendar-weekday-header';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 const PAGER_HEIGHT_TIMING = {
-  duration: ANIMATION.duration.normal,
+  duration: ANIMATION.durationMs.normal,
   easing: Easing.out(Easing.cubic),
   reduceMotion: ReduceMotion.System,
 };

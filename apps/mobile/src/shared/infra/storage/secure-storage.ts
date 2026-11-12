@@ -27,15 +27,14 @@ async function readItem(key: string): Promise<string | null> {
 }
 
 export class SecureStorage implements KeyValueStorage {
-  async get<T>(key: string, schema: z.ZodType<T>): Promise<T | null> {
-    return parseStoredJson(await readItem(key), schema);
-  }
+  get = async <T>(key: string, schema: z.ZodType<T>): Promise<T | null> =>
+    parseStoredJson(await readItem(key), schema);
 
-  async set<T>(key: string, value: T): Promise<void> {
+  set = async <T>(key: string, value: T): Promise<void> => {
     await ExpoSecureStore.setItemAsync(key, JSON.stringify(value), SECURE_STORE_OPTIONS);
-  }
+  };
 
-  async remove(key: string): Promise<void> {
+  remove = async (key: string): Promise<void> => {
     await ExpoSecureStore.deleteItemAsync(key, SECURE_STORE_OPTIONS);
-  }
+  };
 }

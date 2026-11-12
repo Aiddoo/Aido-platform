@@ -444,7 +444,7 @@ function TodoHandlingCard({
       style={{
         borderColor: isSelected ? selectedBorderColor : idleBorderColor,
         transitionProperty: 'borderColor',
-        transitionDuration: ANIMATION.duration.fast,
+        transitionDuration: ANIMATION.durationMs.fast,
         transitionTimingFunction: ANIMATION.easing.easeOut,
       }}
     />

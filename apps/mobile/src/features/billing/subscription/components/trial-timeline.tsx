@@ -38,10 +38,10 @@ import {
 } from '../utils/trial-schedule.view-model';
 
 /** 요금제를 바꿔 일정이 나타나고 사라질 때 아래 내용이 툭 밀리지 않게 짧게 비친다 */
-const TIMELINE_ENTERING = FadeIn.duration(ANIMATION.duration.fast).reduceMotion(
+const TIMELINE_ENTERING = FadeIn.duration(ANIMATION.durationMs.fast).reduceMotion(
   ReduceMotion.System,
 );
-const TIMELINE_EXITING = FadeOut.duration(ANIMATION.duration.fast).reduceMotion(
+const TIMELINE_EXITING = FadeOut.duration(ANIMATION.durationMs.fast).reduceMotion(
   ReduceMotion.System,
 );
 

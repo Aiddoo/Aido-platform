@@ -69,7 +69,7 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
           style={{
             borderColor: isSelected ? selectedBorderColor : idleBorderColor,
             transitionProperty: 'borderColor',
-            transitionDuration: ANIMATION.duration.fast,
+            transitionDuration: ANIMATION.durationMs.fast,
             transitionTimingFunction: ANIMATION.easing.easeOut,
           }}
         >

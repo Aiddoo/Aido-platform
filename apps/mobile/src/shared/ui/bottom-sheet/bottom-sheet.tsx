@@ -30,7 +30,7 @@ import { useResolveClassNames } from 'uniwind';
 import {
   HANDLE_HEIGHT,
   SHARED_SHEET_STYLES,
-  SHEET_ANIMATION_DURATION,
+  SHEET_ANIMATION_DURATION_MS,
   SHEET_CONTENT_PADDING,
   SHEET_DETACHED_MARGIN,
   SHEET_FOOTER_PADDING_TOP,
@@ -77,7 +77,7 @@ export function BottomSheet({
   const [footerContentHeight, setFooterContentHeight] = useState(0);
   const portalTarget = usePortalTarget();
   const insets = useSafeAreaInsets();
-  const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION });
+  const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION_MS });
   const { margins, topInset } = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN });
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');

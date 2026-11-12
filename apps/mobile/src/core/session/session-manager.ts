@@ -10,7 +10,7 @@ export interface SessionManager {
 
 export function createSessionManager(tokenStore: TokenStore): SessionManager {
   return {
-    async end(details: SessionExpiredDetails): Promise<void> {
+    end: async (details: SessionExpiredDetails): Promise<void> => {
       try {
         await tokenStore.clear();
       } finally {

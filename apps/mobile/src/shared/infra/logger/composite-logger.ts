@@ -14,16 +14,16 @@ export function createCompositeLogger(loggers: AppLogger[]): AppLogger {
   }
 
   return {
-    debug(message: string, context?: LogContext): void {
+    debug: (message: string, context?: LogContext): void => {
       forEachLogger((logger) => logger.debug(message, context));
     },
-    info(message: string, context?: LogContext): void {
+    info: (message: string, context?: LogContext): void => {
       forEachLogger((logger) => logger.info(message, context));
     },
-    warn(message: string, context?: LogContext): void {
+    warn: (message: string, context?: LogContext): void => {
       forEachLogger((logger) => logger.warn(message, context));
     },
-    error(message: string, error?: Error, context?: LogContext): void {
+    error: (message: string, error?: Error, context?: LogContext): void => {
       forEachLogger((logger) => logger.error(message, error, context));
     },
   };

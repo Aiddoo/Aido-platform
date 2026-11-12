@@ -222,7 +222,7 @@ function ThanksSummaryCard({ tone, left, title, description, action }: ThanksSum
 
   // 자리를 잡지 않고 받은 뒤에 나타나는 카드라 튀어나오지 않게 페이드로 들인다
   return (
-    <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+    <Animated.View entering={FadeIn.duration(ANIMATION.durationMs.normal)}>
       <HStack
         align="center"
         gap={12}

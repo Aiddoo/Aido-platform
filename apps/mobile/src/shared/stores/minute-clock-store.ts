@@ -44,7 +44,7 @@ export function createMinuteClockStore({ now, listenForeground }: MinuteClockSou
   };
 
   return {
-    subscribe(onStoreChange: () => void) {
+    subscribe: (onStoreChange: () => void) => {
       listeners.add(onStoreChange);
       if (stopListening == null) {
         schedule();

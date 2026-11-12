@@ -36,7 +36,7 @@ export function FormStepLayout({
       <StyledSafeAreaView edges={['left', 'right']}>
         <Animated.View
           key={title}
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
+          entering={FadeIn.duration(ANIMATION.durationMs.slow)}
           style={{ marginBottom: 24 }}
         >
           <H3>{title}</H3>

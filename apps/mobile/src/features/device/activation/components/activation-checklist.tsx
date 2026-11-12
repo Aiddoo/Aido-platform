@@ -103,14 +103,14 @@ function ActivationChecklistCollapse({
   useEffect(() => {
     if (isOpen) {
       progress.set(
-        withTiming(1, { duration: ANIMATION.duration.slow, reduceMotion: ReduceMotion.System }),
+        withTiming(1, { duration: ANIMATION.durationMs.slow, reduceMotion: ReduceMotion.System }),
       );
       return;
     }
     progress.set(
       withTiming(
         0,
-        { duration: ANIMATION.duration.slow, reduceMotion: ReduceMotion.System },
+        { duration: ANIMATION.durationMs.slow, reduceMotion: ReduceMotion.System },
         (isFinished) => {
           if (isFinished) {
             scheduleOnRN(onCollapsed);

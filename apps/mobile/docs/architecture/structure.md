@@ -187,6 +187,18 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - `app/`·`bootstrap`이 쓰는 훅·컴포넌트는 쓰는 곳이 하나여도 공개 면이라 기능 폴더에 남긴다.
 - 공개 면도 정의 파일에서 직접 import한다. 쓰지 않는 export는 knip이 막는다.
 
+## 함수 형태
+
+| 위치                                                              | 형태                                                                                                             |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 컴포넌트, 훅, 순수 함수, mapper, query options, `select`, fixture | 모듈 수준 `function`                                                                                             |
+| 네임스페이스 조각                                                 | `X.Item = function Item()`                                                                                       |
+| 클래스 메서드                                                     | 화살표 필드 + `#` 비공개(`KyHttpClient`, `SecureStorage`, `ApiError`도). 생성자 파라미터 프로퍼티 대신 필드 선언 |
+| 팩토리가 돌려주는 객체(어댑터, store, repository, 세션)           | 화살표 속성. 메서드 축약(`get() {}`)을 쓰지 않는다                                                               |
+| 컴포넌트 안 핸들러, 인라인 콜백, 키 객체 값                       | 화살표                                                                                                           |
+
+- 시간 상수는 이름에 단위를 넣는다(`SHEET_ANIMATION_DURATION_MS`, `ANIMATION.durationMs.fast`, `STORE_PREMIUM_SYNC_DELAYS_MS`).
+
 ## 가드레일
 
 - **oxlint 기본 규칙**: `no-restricted-imports`: SDK는 `shared/infra` 밖 금지, 모델의 계약·i18n·UI·RN·React, `zod` 자리, `QueryClient`, `shared-di-context`, `useAnalytics`, RN `Image`·`ActivityIndicator`·`AppState`, RHF `FormProvider`, `es-toolkit/compat`, 폴더별 허용 목록. `no-restricted-properties`: `toSorted`, `Alert.alert`, `Platform.OS`, params 훅 밖 `router.setParams`. `react/forbid-elements`(`Chip.Label`), jest(`useFakeTimers`·`mock` 위치·스타일 단언·스냅숏)

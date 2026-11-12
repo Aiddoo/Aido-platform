@@ -125,7 +125,7 @@ export function NewPasswordStep({
           </RevealedField>
         )}
 
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+        <Animated.View entering={FadeIn.duration(ANIMATION.durationMs.normal)}>
           <VStack gap={4}>
             <PasswordInput
               ref={newPasswordInputRef}

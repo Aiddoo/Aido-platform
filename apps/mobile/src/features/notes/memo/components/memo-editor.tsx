@@ -416,7 +416,7 @@ function MemoAiParsingBadge() {
 
   return (
     <Animated.View
-      entering={FadeIn.duration(ANIMATION.duration.normal)}
+      entering={FadeIn.duration(ANIMATION.durationMs.normal)}
       className="self-center pt-3"
       pointerEvents="none"
     >

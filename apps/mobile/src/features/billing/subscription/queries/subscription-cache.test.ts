@@ -158,7 +158,7 @@ describe('syncMeUntilStorePremium', () => {
       bankedPremiumDays: 0,
     }),
   );
-  const DELAYS = [500, 1_000, 1_500];
+  const DELAYS_MS = [500, 1_000, 1_500];
   let queryClient: QueryClient;
   const wait = jest.fn(async (_ms: number) => {});
 
@@ -178,7 +178,7 @@ describe('syncMeUntilStorePremium', () => {
     const fetchMe = await serveMe(FREE_ME, FREE_ME, STORE_ME);
 
     // When
-    const isReflected = await syncMeUntilStorePremium(queryClient, { delays: DELAYS, wait });
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
 
     // Then
     expect(isReflected).toBe(true);
@@ -191,11 +191,11 @@ describe('syncMeUntilStorePremium', () => {
     const fetchMe = await serveMe(FREE_ME);
 
     // When
-    const isReflected = await syncMeUntilStorePremium(queryClient, { delays: DELAYS, wait });
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
 
     // Then
     expect(isReflected).toBe(false);
-    expect(fetchMe).toHaveBeenCalledTimes(1 + DELAYS.length);
+    expect(fetchMe).toHaveBeenCalledTimes(1 + DELAYS_MS.length);
   });
 
   it('이미 STORE면 다시 불러오지 않는다', async () => {
@@ -203,7 +203,7 @@ describe('syncMeUntilStorePremium', () => {
     const fetchMe = await serveMe(STORE_ME);
 
     // When
-    const isReflected = await syncMeUntilStorePremium(queryClient, { delays: DELAYS, wait });
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
 
     // Then
     expect(isReflected).toBe(true);
@@ -220,7 +220,7 @@ describe('syncMeUntilStorePremium', () => {
 
     // When
     const isReflected = await syncMeUntilStorePremium(queryClient, {
-      delays: DELAYS,
+      delaysMs: DELAYS_MS,
       wait: clearDuringWait,
     });
 
@@ -239,7 +239,7 @@ describe('syncMeUntilStorePremium', () => {
 
     // When
     const isReflected = await syncMeUntilStorePremium(queryClient, {
-      delays: DELAYS,
+      delaysMs: DELAYS_MS,
       wait: switchAccount,
     });
 

@@ -50,7 +50,7 @@ export function FeatureMedia({
         contentFit={contentFit}
         cachePolicy="memory-disk"
         recyclingKey={recyclingKey}
-        transition={isReducedMotion || isBundled ? 0 : ANIMATION.duration.normal}
+        transition={isReducedMotion || isBundled ? 0 : ANIMATION.durationMs.normal}
         style={StyleSheet.absoluteFill}
         onLoadStart={() => {
           if (!isBundled) {

@@ -152,7 +152,7 @@ function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
           </KeyboardAdaptiveButton>
         }
       >
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+        <Animated.View entering={FadeIn.duration(ANIMATION.durationMs.normal)}>
           <VStack gap={8}>
             <Controller
               control={control}

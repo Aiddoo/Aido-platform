@@ -106,7 +106,7 @@ export function SignUpUserInfoForm({ form, step, onNextStep }: SignUpUserInfoFor
           </RevealedField>
         )}
 
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+        <Animated.View entering={FadeIn.duration(ANIMATION.durationMs.normal)}>
           <Controller
             control={control}
             name="name"

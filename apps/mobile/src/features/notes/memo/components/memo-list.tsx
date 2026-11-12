@@ -89,13 +89,13 @@ const MORE_BUTTON_TOP_GAP = 20 - CARD_GAP;
 const SCROLL_PROGRESS_BOTTOM_OFFSET = 16;
 const ENTERING_OFFSET_Y = 8;
 const ENTERING_TIMING = {
-  duration: ANIMATION.duration.normal,
+  duration: ANIMATION.durationMs.normal,
   easing: Easing.out(Easing.cubic),
   reduceMotion: ReduceMotion.System,
 };
 /** 만들기·고정·삭제로 순서가 바뀔 때만 카드가 새 자리로 미끄러진다(원래 카드마다 걸던 LinearTransition 자리) */
 const MEMO_REORDER_LAYOUT_ANIMATION = {
-  duration: ANIMATION.duration.slow,
+  duration: ANIMATION.durationMs.slow,
   update: { type: LayoutAnimation.Types.easeOut },
 } satisfies LayoutAnimationConfig;
 const TITLE_LINE_COUNT_WITH_BODY = 2;

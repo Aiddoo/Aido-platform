@@ -15,7 +15,7 @@ export function SuggestedEmailDomainList({ value = '', onChange }: SuggestedEmai
   }
 
   return (
-    <Animated.View entering={FadeInUp.duration(ANIMATION.duration.normal).springify()}>
+    <Animated.View entering={FadeInUp.duration(ANIMATION.durationMs.normal).springify()}>
       <HStack gap={8} className="flex-wrap">
         {suggestions.map((suggestion) => (
           <Chip

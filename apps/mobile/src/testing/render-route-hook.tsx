@@ -67,12 +67,12 @@ export async function renderRouteHook<T>(
   return {
     hook,
     /** 값을 지우면 라우터 안에는 `undefined`가 남으므로, 밖에서 보는 URL처럼 그 키를 뺀다 */
-    url() {
+    url: () => {
       const [path, query = ''] = rendered.getPathnameWithParams().split('?');
       const pairs = query.split('&').filter((pair) => pair !== '' && !pair.endsWith('=undefined'));
       return pairs.length === 0 ? path : `${path}?${pairs.join('&')}`;
     },
-    run(step: (current: T) => void) {
+    run: (step: (current: T) => void) => {
       return act(async () => step(hook()));
     },
   };

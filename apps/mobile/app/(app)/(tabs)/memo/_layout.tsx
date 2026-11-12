@@ -16,7 +16,7 @@ export default function MemoLayout() {
           headerShown: false,
           contentStyle: { backgroundColor },
           animation: 'fade',
-          animationDuration: ANIMATION.duration.normal,
+          animationDuration: ANIMATION.durationMs.normal,
         }}
       >
         <Stack.Screen name="index" options={{ ...indexScreenOptions, title: '' }}>

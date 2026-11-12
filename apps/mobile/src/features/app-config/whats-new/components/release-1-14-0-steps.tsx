@@ -97,7 +97,9 @@ type InviteFlowStep = (typeof INVITE_FLOW)[number];
 const INVITE_FLOW_FRAME_MS = 700;
 const STAMP_SIZE = 44;
 const STAMP_ICON_SIZE = 20;
-const REWARD_ENTERING = FadeIn.duration(ANIMATION.duration.slow).reduceMotion(ReduceMotion.System);
+const REWARD_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(
+  ReduceMotion.System,
+);
 
 function FriendInviteMedia() {
   const { t } = useTranslation('whatsNew');

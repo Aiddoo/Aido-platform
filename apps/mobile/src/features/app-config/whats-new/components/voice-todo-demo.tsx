@@ -38,8 +38,8 @@ type DemoCategory = (typeof DEMO_CATEGORIES)[number];
 const INTERIM_WORD_COUNT = 2;
 /** 말이 끝난 뒤 파형이 조용히 가라앉을 때까지 듣는 모습을 이어 가다 그리기를 멈춘다 */
 const LISTENING_SETTLE_MS = 1_500;
-const ROW_ENTERING = FadeIn.duration(ANIMATION.duration.slow).reduceMotion(ReduceMotion.System);
-const ROW_LAYOUT = LinearTransition.duration(ANIMATION.duration.slow).reduceMotion(
+const ROW_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(ReduceMotion.System);
+const ROW_LAYOUT = LinearTransition.duration(ANIMATION.durationMs.slow).reduceMotion(
   ReduceMotion.System,
 );
 

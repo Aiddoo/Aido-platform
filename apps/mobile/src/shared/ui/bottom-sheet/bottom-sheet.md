@@ -279,4 +279,4 @@ React Native `BackHandler`의 구독은 cleanup에서 제거한다.
 
 ## 열고 닫는 시간
 
-모든 시트는 `SHEET_ANIMATION_DURATION`(250ms)으로 움직인다. gorhom 기본값은 iOS만 스프링이라 닫힘 콜백이 약 680ms 뒤에 와서, 그동안 route 시트의 투명 모달이 탭을 막았다. `ModalBottomSheet`도 `BottomSheet`라 같다.
+모든 시트는 `SHEET_ANIMATION_DURATION_MS`(250ms)으로 움직인다. gorhom 기본값은 iOS만 스프링이라 닫힘 콜백이 약 680ms 뒤에 와서, 그동안 route 시트의 투명 모달이 탭을 막았다. `ModalBottomSheet`도 `BottomSheet`라 같다.

@@ -63,8 +63,10 @@ const DIGEST_STEP_COUNT = 3;
 /** 실제 정리 화면처럼 앞 문장 몇 개만 스캔하는 모습으로 보여 준다 */
 const SCAN_PREVIEW_SENTENCE_COUNT = 2;
 const DIGEST_AI_ICON_SIZE = 18;
-const CAPTION_ENTERING = FadeIn.duration(ANIMATION.duration.slow).reduceMotion(ReduceMotion.System);
-const CAPTION_LAYOUT = LinearTransition.duration(ANIMATION.duration.slow).reduceMotion(
+const CAPTION_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(
+  ReduceMotion.System,
+);
+const CAPTION_LAYOUT = LinearTransition.duration(ANIMATION.durationMs.slow).reduceMotion(
   ReduceMotion.System,
 );
 

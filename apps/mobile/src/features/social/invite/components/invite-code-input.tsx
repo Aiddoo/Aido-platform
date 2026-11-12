@@ -28,7 +28,7 @@ const CODE_TEXT_INPUT_PROPS: TextInputProps = {
 
 const SHAKE_OFFSET = 6;
 const SHAKE_TIMING = {
-  duration: ANIMATION.duration.fast / 2,
+  duration: ANIMATION.durationMs.fast / 2,
   easing: Easing.bezier(0.77, 0, 0.175, 1),
   reduceMotion: ReduceMotion.System,
 };

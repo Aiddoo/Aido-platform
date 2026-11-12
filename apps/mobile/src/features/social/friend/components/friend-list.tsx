@@ -171,8 +171,8 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
       <HStack align="center">
         {isEditing && (
           <Animated.View
-            entering={FadeInLeft.duration(ANIMATION.duration.normal)}
-            exiting={FadeOutLeft.duration(ANIMATION.duration.fast)}
+            entering={FadeInLeft.duration(ANIMATION.durationMs.normal)}
+            exiting={FadeOutLeft.duration(ANIMATION.durationMs.fast)}
             className="pr-3 justify-center"
           >
             <MenuIcon
@@ -184,7 +184,7 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
         )}
         <Animated.View
           className="flex-1"
-          layout={LinearTransition.duration(ANIMATION.duration.normal)}
+          layout={LinearTransition.duration(ANIMATION.durationMs.normal)}
         >
           <ListRow
             left={
@@ -201,8 +201,8 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
               ))
               .with({ isEditing: true, isActive: false }, () => (
                 <Animated.View
-                  entering={FadeInRight.duration(ANIMATION.duration.normal)}
-                  exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
+                  entering={FadeInRight.duration(ANIMATION.durationMs.normal)}
+                  exiting={FadeOutRight.duration(ANIMATION.durationMs.fast)}
                 >
                   <Button
                     testID="friend-delete"

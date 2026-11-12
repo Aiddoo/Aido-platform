@@ -14,7 +14,7 @@ export default function DeleteAccountRoute() {
           title={t('deleteAccount.passwordTitle')}
           footer={
             <Animated.View
-              entering={FadeIn.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
+              entering={FadeIn.duration(ANIMATION.durationMs.normal).delay(ANIMATION.delayMs.short)}
             >
               <Spacing size={16} />
               <InlineAlert

@@ -120,13 +120,13 @@ heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 �
 
 Reanimated의 `duration`·`delay`는 `ANIMATION` 상수(`shared/constants/animation.ts`)만 쓴다. 숫자를 파일마다 적지 않는다.
 
-| 상수                                        | 값               | 쓰는 곳                                   |
-| ------------------------------------------- | ---------------- | ----------------------------------------- |
-| `ANIMATION.duration.fast`                   | 150ms            | 빠른 전환                                 |
-| `ANIMATION.duration.normal`                 | 200ms            | 일반 전환                                 |
-| `ANIMATION.duration.slow`                   | 300ms            | 느린 전환                                 |
-| `ANIMATION.duration.emphasis`               | 600ms            | 한 번 눈길을 끄는 강조(새 알림 종 흔들기) |
-| `ANIMATION.delay.short` / `medium` / `long` | 50 / 100 / 200ms | 지연                                      |
+| 상수                                          | 값               | 쓰는 곳                                   |
+| --------------------------------------------- | ---------------- | ----------------------------------------- |
+| `ANIMATION.durationMs.fast`                   | 150ms            | 빠른 전환                                 |
+| `ANIMATION.durationMs.normal`                 | 200ms            | 일반 전환                                 |
+| `ANIMATION.durationMs.slow`                   | 300ms            | 느린 전환                                 |
+| `ANIMATION.durationMs.emphasis`               | 600ms            | 한 번 눈길을 끄는 강조(새 알림 종 흔들기) |
+| `ANIMATION.delayMs.short` / `medium` / `long` | 50 / 100 / 200ms | 지연                                      |
 
 ## 한도·프리미엄·AI 안내
 

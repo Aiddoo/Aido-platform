@@ -16,41 +16,31 @@ export class KyHttpClient implements HttpClient {
     this.#client = client;
   }
 
-  async get(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> {
-    return this.#request(() => this.#client.get(url, this.#buildOptions(config)));
-  }
+  get = async (url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> =>
+    this.#request(() => this.#client.get(url, this.#buildOptions(config)));
 
-  async post(
+  post = async (
     url: string,
     data?: unknown,
     config?: RequestConfig,
-  ): Promise<Result<unknown, ApiError>> {
-    return this.#request(() =>
-      this.#client.post(url, { ...this.#buildOptions(config), json: data }),
-    );
-  }
+  ): Promise<Result<unknown, ApiError>> =>
+    this.#request(() => this.#client.post(url, { ...this.#buildOptions(config), json: data }));
 
-  async put(
+  put = async (
     url: string,
     data?: unknown,
     config?: RequestConfig,
-  ): Promise<Result<unknown, ApiError>> {
-    return this.#request(() =>
-      this.#client.put(url, { ...this.#buildOptions(config), json: data }),
-    );
-  }
+  ): Promise<Result<unknown, ApiError>> =>
+    this.#request(() => this.#client.put(url, { ...this.#buildOptions(config), json: data }));
 
-  async patch(
+  patch = async (
     url: string,
     data?: unknown,
     config?: RequestConfig,
-  ): Promise<Result<unknown, ApiError>> {
-    return this.#request(() =>
-      this.#client.patch(url, { ...this.#buildOptions(config), json: data }),
-    );
-  }
+  ): Promise<Result<unknown, ApiError>> =>
+    this.#request(() => this.#client.patch(url, { ...this.#buildOptions(config), json: data }));
 
-  async delete(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> {
+  delete = async (url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> => {
     const { body, ...restConfig } = config ?? {};
     return this.#request(() =>
       this.#client.delete(url, {
@@ -59,9 +49,9 @@ export class KyHttpClient implements HttpClient {
         ...(body !== undefined ? { json: body } : {}),
       }),
     );
-  }
+  };
 
-  async #request(request: () => Promise<Response>): Promise<Result<unknown, ApiError>> {
+  #request = async (request: () => Promise<Response>): Promise<Result<unknown, ApiError>> => {
     try {
       const response = await request();
       const parsed = successEnvelopeSchema.safeParse(await readJsonBody(() => response.json()));
@@ -81,9 +71,9 @@ export class KyHttpClient implements HttpClient {
 
       throw error;
     }
-  }
+  };
 
-  #buildOptions(config?: RequestConfig): Options {
+  #buildOptions = (config?: RequestConfig): Options => {
     if (!config) {
       return {};
     }
@@ -107,5 +97,5 @@ export class KyHttpClient implements HttpClient {
     }
 
     return options;
-  }
+  };
 }

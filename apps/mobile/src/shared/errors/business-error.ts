@@ -4,8 +4,10 @@
  */
 export class BusinessError<TCode extends string = string> extends Error {
   override readonly name: string = 'BusinessError';
+  readonly code: TCode;
 
-  constructor(readonly code: TCode) {
+  constructor(code: TCode) {
     super(code);
+    this.code = code;
   }
 }

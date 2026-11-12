@@ -14,7 +14,7 @@ function AuthLayout() {
         headerShown: false,
         title: '',
         animation: process.env.EXPO_OS === 'ios' ? 'default' : 'fade_from_bottom',
-        animationDuration: ANIMATION.duration.normal,
+        animationDuration: ANIMATION.durationMs.normal,
         contentStyle: { backgroundColor },
       }}
     >

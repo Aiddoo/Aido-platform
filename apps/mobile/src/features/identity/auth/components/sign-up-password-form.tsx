@@ -111,7 +111,7 @@ export function SignUpPasswordForm({ form, step, onNextStep, onSubmit }: SignUpP
             </RevealedField>
           )}
 
-          <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+          <Animated.View entering={FadeIn.duration(ANIMATION.durationMs.normal)}>
             <Controller
               control={control}
               name="password"
