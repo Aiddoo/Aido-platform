@@ -14,7 +14,7 @@ export function isLocationNotRegisteredError(error: unknown): boolean {
 /** 공급자 장애(WEATHER_1901)는 503이라 HTTP 클라이언트가 ServerError로 던진다. */
 export function isWeatherProviderUnavailableError(error: unknown): boolean {
   return (
-    (error instanceof ServerError && error.statusCode === HttpStatus.SERVICE_UNAVAILABLE) ||
+    (error instanceof ServerError && error.status === HttpStatus.SERVICE_UNAVAILABLE) ||
     (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901))
   );
 }

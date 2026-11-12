@@ -1,3 +1,4 @@
+import { HttpStatus } from '@aido/api/errors';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import { useErrorReporter } from '@src/shared/di/shared-di-context';
 import {
@@ -55,7 +56,7 @@ export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryError
                 errorReporter.captureMessage(ERROR_REPORT_MESSAGES.QUERY_BOUNDARY_AUTH_CONTAINED, {
                   severity: 'warning',
                   feature: 'error_boundary',
-                  statusCode: 401,
+                  statusCode: HttpStatus.UNAUTHORIZED,
                 }),
               )
               .with('expected-state', () =>

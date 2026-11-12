@@ -12,7 +12,7 @@ export function getDiagnosticCode(error: unknown): string {
     .with(P.instanceOf(ApiError), ({ code }) => code)
     .with(P.instanceOf(NetworkError), () => 'NETWORK')
     .with(P.instanceOf(TimeoutError), () => 'TIMEOUT')
-    .with(P.instanceOf(ServerError), ({ statusCode }) => `SERVER_${statusCode}`)
+    .with(P.instanceOf(ServerError), ({ status }) => `SERVER_${status}`)
     .with(P.instanceOf(ParseError), () => 'INVALID_RESPONSE')
     .otherwise(() => 'UNKNOWN');
 }

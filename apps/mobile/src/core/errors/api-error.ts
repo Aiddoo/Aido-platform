@@ -1,15 +1,25 @@
 import type { ErrorCodeType } from '@aido/api/errors';
 
+import { AppError, type AppErrorOptions } from './app-error';
 import type { CodedError } from './result';
 
-export class ApiError extends Error implements CodedError {
+/** 서버가 코드로 거절한 4xx. `KyHttpClient`가 실패 봉투를 읽어 만든다 */
+export class ApiError extends AppError implements CodedError {
   override readonly name = 'ApiError';
-  readonly code: string;
+  /** 앱이 모르는 코드는 `SYS_0001`이다. 문구는 그래도 서버 message를 먼저 쓴다 */
+  readonly code: ErrorCodeType;
   readonly status: number;
-  readonly details: Record<string, unknown> | undefined;
+  /** 운영에는 `PUBLIC_ERROR_DETAILS`에 등록한 코드만 실린다. `*.error.ts`가 공유 스키마로 읽는다 */
+  readonly details: Record<string, unknown> | null;
 
-  constructor(code: string, message: string, status: number, details?: Record<string, unknown>) {
-    super(message);
+  constructor(
+    code: ErrorCodeType,
+    message: string,
+    status: number,
+    details: Record<string, unknown> | null = null,
+    options?: AppErrorOptions,
+  ) {
+    super(message, options);
     this.code = code;
     this.status = status;
     this.details = details;

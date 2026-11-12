@@ -3,7 +3,6 @@
 export interface CodedError {
   readonly code: string;
   readonly message: string;
-  readonly details?: Record<string, unknown>;
 }
 
 export type Result<T, E extends CodedError = CodedError> =

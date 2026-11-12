@@ -1,4 +1,5 @@
 import { refreshTokensSchema } from '@aido/api/contracts/auth';
+import { HttpStatus } from '@aido/api/errors';
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type {
@@ -95,7 +96,7 @@ export function createTokenRefresher({
       return { kind: 'refreshed', accessToken };
     }
 
-    if (response.status === 401) {
+    if (response.status === HttpStatus.UNAUTHORIZED) {
       // 서버가 리프레시 토큰 자체를 거부했다. 어떤 코드인지가 진단의 전부다 —
       // SESSION_0704(토큰 재사용 → 패밀리 폐기)와 SESSION_0702(단순 만료)는 전혀 다른 사건이다.
       return concludeInvalid({

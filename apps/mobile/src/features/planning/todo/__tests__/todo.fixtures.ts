@@ -4,6 +4,7 @@ import type {
   TodoItemResponse,
   TodoListResponse,
 } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { createDateKey } from '@src/testing/date-key';
 
@@ -108,7 +109,7 @@ export function createTodoItemResponseDto(overrides?: Partial<TodoItemResponse>)
 }
 
 export function createTodoApiError(
-  overrides?: Partial<{ code: string; message: string; status: number }>,
+  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
   return new ApiError(
     overrides?.code ?? 'TODO_0801',

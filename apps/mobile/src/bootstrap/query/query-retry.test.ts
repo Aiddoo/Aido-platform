@@ -20,7 +20,7 @@ describe('shouldRetryQuery', () => {
   it('그 외 BusinessError(예측 가능한 4xx)는 재시도하지 않는다', () => {
     // Given
     // 호출부가 onError에서 처리한다
-    const businessError = new ApiError('MEMO_0301', '한도 초과', 409);
+    const businessError = new ApiError('MEMO_2001', '한도 초과', 409);
 
     // When
     const retry = shouldRetryQuery(0, businessError);

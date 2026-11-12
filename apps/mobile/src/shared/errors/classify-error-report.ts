@@ -4,7 +4,7 @@ import { isCodedError } from '@src/core/errors/result';
 import type { ErrorReporterContext } from '@src/core/ports/error-reporter';
 import { ZodError } from 'zod';
 
-import { isConnectivityError, isInfraError, ParseError, ServerError } from './infra-error';
+import { isConnectivityError, ParseError, ServerError } from './infra-error';
 import { isKeychainLockedError } from './storage-error';
 
 /** event는 이슈가 되고 breadcrumb은 행적에만 남는다(4xx·BusinessError·검증 실패·네트워크·타임아웃·키체인 잠금) */
@@ -40,10 +40,7 @@ type ErrorReportTags = Pick<ErrorReporterContext, 'statusCode' | 'method' | 'end
 /** 오류가 지닌 요청 정보. 어느 API의 실패인지 보고에 태그로 남긴다 */
 export function getErrorReportTags(error: unknown): ErrorReportTags {
   if (error instanceof ServerError) {
-    return { statusCode: error.statusCode, ...error.request };
-  }
-  if (isInfraError(error) && error.statusCode != null) {
-    return { statusCode: error.statusCode };
+    return { statusCode: error.status, ...error.request };
   }
   return {};
 }

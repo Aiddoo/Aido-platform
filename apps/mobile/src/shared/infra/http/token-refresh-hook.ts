@@ -1,4 +1,4 @@
-import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
+import { ErrorCode, type ErrorCodeType, HttpStatus } from '@aido/api/errors';
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import type { AppLogger } from '@src/core/ports/app-logger';
@@ -76,7 +76,7 @@ export function createTokenRefreshHook(deps: TokenRefreshHookPorts): AfterRespon
   };
 
   return async ({ request, options, response }) => {
-    if (response.status !== 401 || !(await isAccessTokenRejected(response))) {
+    if (response.status !== HttpStatus.UNAUTHORIZED || !(await isAccessTokenRejected(response))) {
       return response;
     }
 
@@ -84,7 +84,7 @@ export function createTokenRefreshHook(deps: TokenRefreshHookPorts): AfterRespon
       errorReporter.captureMessage(ERROR_REPORT_MESSAGES.AUTH_REFRESH_RETRY_REJECTED, {
         severity: 'warning',
         feature: 'auth_cold_start',
-        statusCode: 401,
+        statusCode: HttpStatus.UNAUTHORIZED,
         endpoint: getPathname(request.url ?? ''),
       });
       return response;

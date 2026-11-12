@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/api/errors';
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { AfterResponseState } from 'ky';
 
@@ -41,7 +41,7 @@ export function createApiFailureBreadcrumbHook(
   errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>,
 ) {
   return async ({ request, response }: AfterResponseState): Promise<void> => {
-    if (!response.ok && response.status !== 401) {
+    if (!response.ok && response.status !== HttpStatus.UNAUTHORIZED) {
       await recordFailureBreadcrumb(errorReporter, request, response);
     }
   };

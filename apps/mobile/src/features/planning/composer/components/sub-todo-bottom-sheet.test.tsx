@@ -215,7 +215,7 @@ describe('AddSubTodoBottomSheet', () => {
     const viewingDate = createDateKey('2026-03-09');
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(
-      err(new ApiError('SERVER', '잠시 후 다시 시도해주세요', 500)),
+      err(new ApiError('SYS_0001', '잠시 후 다시 시도해주세요', 500)),
     );
     const todo = createParentTodo({ startDate: viewingDate, endDate: viewingDate });
     const queryClient = createTestQueryClient({

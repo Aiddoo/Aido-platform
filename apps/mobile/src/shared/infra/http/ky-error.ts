@@ -1,4 +1,4 @@
-import { ErrorCode, isErrorCode } from '@aido/api/errors';
+import { ErrorCode, HttpStatus, isErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import {
   NetworkError,
@@ -81,10 +81,10 @@ export function toTransportError(error: unknown): TimeoutError | ServerError | N
     return new TimeoutError();
   }
 
-  if (error instanceof HTTPError && error.response.status >= 500) {
-    return new ServerError(error.response.status, error.request.headers.get(REQUEST_ID_HEADER), {
-      method: error.request.method,
-      endpoint: getPathname(error.request.url),
+  if (error instanceof HTTPError && error.response.status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    return new ServerError(error.response.status, {
+      requestId: error.request.headers.get(REQUEST_ID_HEADER),
+      request: { method: error.request.method, endpoint: getPathname(error.request.url) },
     });
   }
 

@@ -9,6 +9,7 @@ export { getErrorReportTags, isUnexpectedError } from './classify-error-report';
 export {
   isConnectivityError,
   isInfraError,
+  isTransientError,
   NetworkError,
   ParseError,
   ServerError,

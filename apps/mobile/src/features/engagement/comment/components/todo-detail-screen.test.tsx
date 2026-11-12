@@ -239,7 +239,7 @@ describe('할 일 상세 입력창과 키보드', () => {
   it('서버가 거절해 댓글을 못 보내도 입력값이 그대로 남는다', async () => {
     // Given
     const { httpClient } = await renderTodoDetail();
-    httpClient.post.mockResolvedValue(err(new ApiError('TODO_9999', '거절', 400)));
+    httpClient.post.mockResolvedValue(err(new ApiError('SYS_0002', '거절', 400)));
 
     // When
     await fireEvent.changeText(screen.getByTestId('todo-comment-input-0'), '남아야 하는 글');
@@ -369,7 +369,7 @@ describe('할 일 상세 카드', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockImplementation(async (path: string) => {
       if (path === `v1/todos/${TODO_ID}/details`) {
-        return err(new ApiError('TODO_0101', '없음', 404));
+        return err(new ApiError('TODO_0801', '없음', 404));
       }
       return ok({ items: [], pagination: PAGINATION, anchor: null });
     });
@@ -438,7 +438,7 @@ describe('할 일 상세 체크', () => {
     const { httpClient } = await renderTodoDetail({
       details: { todo: createTodoDto({ id: TODO_ID, ...PRIVATE_TODO }) },
     });
-    httpClient.patch.mockResolvedValue(err(new ApiError('TODO_9999', '거절', 400)));
+    httpClient.patch.mockResolvedValue(err(new ApiError('SYS_0002', '거절', 400)));
 
     // When
     await fireEvent.press(await screen.findByTestId('todo-detail-checkbox'));

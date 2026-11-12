@@ -52,16 +52,17 @@ export type Result<T, E extends CodedError = CodedError> =
 
 ```typescript
 // core/errors/api-error.ts
-class ApiError extends Error implements CodedError {
-  constructor(
-    public readonly code: string,
-    message: string, // resolveMessage가 고른 사용자 문구
-    public readonly status: number,
-    public readonly details?: Record<string, unknown>,
-  );
+class ApiError extends AppError implements CodedError {
+  override readonly name = 'ApiError';
+  readonly code: ErrorCodeType; // 모르는 코드는 SYS_0001
+  readonly status: number;
+  readonly details: Record<string, unknown> | null;
+  constructor(code, message, status, details = null, options?: { cause });
   hasCode<C extends ErrorCodeType>(code: C): this is ApiError & { code: C };
 }
 ```
+
+모든 앱 오류 클래스는 `core/errors/app-error.ts`의 `AppError`를 잇는다. 이름은 `override readonly name = '…'` 필드 하나로 정하고 원인은 생성자 마지막 인자 `{ cause }`로 넘긴다(Hermes가 `Error`의 `cause` 옵션을 무시할 수 있어 `AppError`가 직접 대입한다). HTTP 상태는 `ApiError.status`와 `ServerError.status` 한 이름이고, 응답이 없는 `NetworkError`·`TimeoutError`에는 상태가 없다.
 
 코드 분기는 `ErrorCode` 상수로 한다. 문자열 코드를 하드코딩하지 않는다. 상태로 분기하는 것은 `ErrorCode`가 없는 경우(검증·없는 route·429)뿐이고 `HttpStatus.NOT_FOUND`처럼 `@aido/api/errors`의 값을 쓴다.
 
@@ -153,10 +154,10 @@ SDK 오류 변환은 어댑터와 mapper 경계에서만 한다(`expo-social-aut
 
 ```typescript
 // shared/errors/business-error.ts
-export class BusinessError<TCode extends string = string> extends Error {
-  constructor(readonly code: TCode) {
-    super(code);
-  }
+export class BusinessError<TCode extends string = string> extends AppError {
+  override readonly name: string = 'BusinessError';
+  readonly code: TCode;
+  constructor(code: TCode, options?: { cause });
 }
 
 // features/social/friend/domains/friend.error.ts: 코드 표만 소유한다. 값은 바꾸지 않는다
@@ -194,12 +195,12 @@ if (isCodedError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 
 ## Track 3: InfraError와 QueryErrorBoundary
 
-| 서브클래스            | 발생               | `message`                                                                   |
-| --------------------- | ------------------ | --------------------------------------------------------------------------- |
-| `ServerError(status)` | HTTP 5xx           | `common:infraErrors.server`                                                 |
-| `NetworkError`        | 네트워크 끊김      | `common:infraErrors.network`                                                |
-| `TimeoutError`        | 요청 시간 초과     | `common:infraErrors.timeout`                                                |
-| `ParseError`          | Zod 응답 검증 실패 | `parseApiResponse`가 넘긴 개발용 문자열. `getUserFacingMessage`가 걸러 낸다 |
+| 서브클래스     | 발생               | `message`                                                                   |
+| -------------- | ------------------ | --------------------------------------------------------------------------- |
+| `ServerError`  | HTTP 5xx           | `common:infraErrors.server`                                                 |
+| `NetworkError` | 네트워크 끊김      | `common:infraErrors.network`                                                |
+| `TimeoutError` | 요청 시간 초과     | `common:infraErrors.timeout`                                                |
+| `ParseError`   | Zod 응답 검증 실패 | `parseApiResponse`가 넘긴 개발용 문자열. `getUserFacingMessage`가 걸러 낸다 |
 
 [`QueryErrorBoundary`](../src/shared/ui/query-error-boundary/query-error-boundary.tsx)는 `classifyBoundaryError`로 잡은 오류를 나눈다.
 

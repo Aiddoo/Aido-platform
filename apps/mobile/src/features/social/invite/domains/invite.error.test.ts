@@ -1,11 +1,17 @@
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { BusinessError } from '@src/shared/errors';
 import { ServerError } from '@src/shared/errors/infra-error';
 
-import { INVITE_ERROR_CODE, isTerminalRedeemFailure, toRedeemFailureReason } from './invite.error';
+import {
+  INVITE_ERROR_CODE,
+  isTerminalRedeemFailure,
+  type RedeemFailureReason,
+  toRedeemFailureReason,
+} from './invite.error';
 
 describe('toRedeemFailureReason', () => {
-  it.each([
+  it.each<[ErrorCodeType, RedeemFailureReason]>([
     ['INVITE_2101', 'not_found'],
     ['INVITE_2102', 'rotated'],
     ['INVITE_2103', 'self'],
@@ -13,7 +19,7 @@ describe('toRedeemFailureReason', () => {
     ['BLOCK_2204', 'blocked'],
     ['INVITE_2105', 'disabled'],
     ['INVITE_2106', 'friend_limit'],
-    ['FOLLOW_0501', 'unknown'],
+    ['FOLLOW_0901', 'unknown'],
   ])('서버 오류 %s면 %s를 반환한다', (code, expected) => {
     // When
     const result = toRedeemFailureReason(new ApiError(code, 'message', 400));

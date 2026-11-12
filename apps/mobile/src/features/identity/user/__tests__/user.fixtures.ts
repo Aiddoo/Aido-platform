@@ -1,4 +1,5 @@
 import type { UpdateProfileResponse } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { toInstant } from '@src/shared/date/instant';
 
@@ -81,10 +82,10 @@ export function createUpdateProfileDto(
 }
 
 export function createUserApiError(
-  overrides?: Partial<{ code: string; message: string; status: number }>,
+  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
   return new ApiError(
-    overrides?.code ?? 'USER_NOT_FOUND',
+    overrides?.code ?? 'USER_0601',
     overrides?.message ?? '사용자를 찾을 수 없습니다',
     overrides?.status ?? 404,
   );

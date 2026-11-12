@@ -12,6 +12,7 @@ import {
   unreadCountResponseSchema,
   type MarkReadResponse,
 } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 import { toInstant } from '@src/shared/date/instant';
@@ -145,7 +146,7 @@ export const createNotification = defineFixture(notificationSchema, {
 });
 
 export function createNotificationApiError(
-  overrides?: Partial<{ code: string; message: string; status: number }>,
+  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
   return new ApiError(
     overrides?.code ?? 'NOTIFICATION_1001',
