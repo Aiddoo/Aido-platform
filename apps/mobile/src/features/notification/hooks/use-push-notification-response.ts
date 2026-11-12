@@ -11,6 +11,7 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useIsRestoring, useMutation } from '@tanstack/react-query';
 import {
   useCallback,
@@ -132,6 +133,7 @@ function useMarketingOptOut(
   const status = useAuthStatus();
   const appLifecycle = useAppLifecycle();
   const logger = useLogger();
+  const reportUnexpectedError = useReportUnexpectedError('notification');
   const { mutateAsync: optOut } = useMutation(useOptOutMarketingPushMutationOptions());
   // 앞에 온 순간과 응답이 같은 틱에 두 번 부를 수 있어 응답 id로 한 번만 보낸다
   const inFlightIdRef = useRef<string | null>(null);
@@ -154,7 +156,9 @@ function useMarketingOptOut(
     try {
       await optOut(token);
     } catch (error) {
+      // 응답을 남겨 앞에 오면 다시 보낸다. 연결 끊김·4xx는 다시 보내면 되고 5xx·파싱 실패만 이슈로 남긴다
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, { error: getErrorMessage(error) });
+      reportUnexpectedError(error);
       return;
     } finally {
       inFlightIdRef.current = null;

@@ -1,8 +1,10 @@
 import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
+import { NetworkError, ServerError } from '@src/shared/errors';
 import {
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
   createAppLoggerStub,
   createPendingResponse,
@@ -30,8 +32,9 @@ async function setup({ status }: { status: AuthStatus }) {
   const authSessionStore = createAuthSessionStoreStub(status);
   const httpClient = createHttpClientStub();
   const analytics = createAnalyticsStub();
+  const errorReporter = createErrorReporterStub();
   const di = createTestDi({
-    ports: { httpClient, pushNotification: gateway, logger, analytics },
+    ports: { httpClient, pushNotification: gateway, logger, analytics, errorReporter },
     seeds: { authSessionStore },
   });
 
@@ -48,6 +51,7 @@ async function setup({ status }: { status: AuthStatus }) {
     gateway,
     httpClient,
     analytics,
+    errorReporter,
     logger,
     store: di.pushNotificationEntryStore,
     changeStatus: (next: AuthStatus) => act(async () => authSessionStore.setStatus(next)),
@@ -201,6 +205,34 @@ describe('usePushNotificationResponse', () => {
     );
     expect(gateway.clearLastResponse).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { scenario: '서버 오류(5xx)', error: new ServerError(500), reportCount: 1 },
+    { scenario: '연결 끊김', error: new NetworkError(), reportCount: 0 },
+  ])(
+    '수신 거부가 $scenario로 실패하면 다음에 다시 보내고 예상하지 못한 실패만 $reportCount번 보고한다',
+    async ({ error, reportCount }) => {
+      // Given
+      const { gateway, httpClient, errorReporter } = await setup({ status: 'authenticated' });
+      httpClient.post.mockRejectedValueOnce(error);
+
+      // When
+      await act(async () =>
+        gateway.emitResponse({
+          ...RESPONSE,
+          id: 'opt-out',
+          actionIdentifier: 'MARKETING_OPT_OUT',
+          data: { ...RESPONSE.data, marketingOptOutToken: 'token-1' },
+        }),
+      );
+
+      // Then
+      await waitFor(() => expect(httpClient.post).toHaveBeenCalled());
+      await act(async () => {});
+      expect(errorReporter.captureException).toHaveBeenCalledTimes(reportCount);
+      expect(gateway.clearLastResponse).not.toHaveBeenCalled();
+    },
+  );
 
   it('언마운트 전까지 응답 리스너는 하나다', async () => {
     // Given
