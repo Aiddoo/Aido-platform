@@ -6,6 +6,7 @@ import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
 import { useOnAppForeground } from '@src/shared/hooks/use-on-app-foreground';
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { match } from 'ts-pattern';
 
 import { resolveInitialAuthStatus } from '../auth/resolve-initial-auth-status';
 // di-context에서 직접 가져온다 — di-provider를 경유하면 벤더 초기화 모듈까지 끌려온다.
@@ -88,12 +89,10 @@ export function useAuthBoot(): void {
     if (authSession.status !== 'unauthenticated') {
       return;
     }
-    if (authSession.reason === 'signed-out') {
-      sessionCleanupService.afterSignedOut();
-    } else if (authSession.reason === 'expired') {
-      sessionCleanupService.afterSessionExpired();
-    } else {
-      sessionCleanupService.afterSessionEnded();
-    }
+    match(authSession.reason)
+      .with('signed-out', () => sessionCleanupService.afterSignedOut())
+      .with('expired', () => sessionCleanupService.afterSessionExpired())
+      .with('none', 'boot-failed', () => sessionCleanupService.afterSessionEnded())
+      .exhaustive();
   }, [authSession, sessionCleanupService]);
 }
