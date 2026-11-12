@@ -35,6 +35,7 @@ import type { TokenStore } from '@src/core/ports/token-store';
 import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
 import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
+import { createSignOutEpoch } from '@src/core/session/sign-out-epoch';
 import { AppVersionApi } from '@src/features/app-config/app-version/apis/app-version.api';
 import { WhatsNewCampaignApi } from '@src/features/app-config/whats-new/apis/whats-new-campaign.api';
 import { createWhatsNewRepository } from '@src/features/app-config/whats-new/repositories/whats-new.repository';
@@ -196,7 +197,12 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
   // 암호화 저장소를 열지 못한 실행은 디스크에 남은 조회 캐시·초안을 지울 수 없어 다음에 열 때 지우도록 표시한다
   const isEncryptedStorageOpen = ports.queryCacheStorage != null;
 
-  const draftService = new DraftService(createDraftRepository(draftStorage), Date.now);
+  const signOutEpoch = createSignOutEpoch();
+  const draftService = new DraftService(
+    createDraftRepository(draftStorage),
+    Date.now,
+    signOutEpoch.current,
+  );
   const authApi = new AuthApi({ publicHttpClient, authHttpClient });
   const sessionRevocationService = new SessionRevocationService({
     repository: createPendingRevocationRepository(ports.storage),
@@ -284,6 +290,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     pushNotification,
     tokenStore,
     sessionEpoch,
+    signOutEpoch,
     queryCacheStorage,
 
     authApi,
@@ -309,6 +316,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
         clear: () => removeStoredValue(syncStorage, pendingRedemptionStoredValue),
       },
       pushDevice: pushRegistrationService,
+      signOutEpoch,
       userDeviceData: new UserDeviceDataService({
         repositories: {
           'whats-new': whatsNewRepository,

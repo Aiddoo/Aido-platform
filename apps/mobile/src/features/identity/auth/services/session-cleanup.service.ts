@@ -1,4 +1,5 @@
 import type { AppLogger } from '@src/core/ports/app-logger';
+import type { SignOutEpoch } from '@src/core/session/sign-out-epoch';
 import type { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage } from '@src/shared/errors';
 
@@ -29,6 +30,8 @@ interface SessionCleanupServicePorts {
   userDeviceData: Pick<UserDeviceDataService, 'clearForUser'>;
   /** 위층 기능이라 조립하는 곳이 넘긴다 */
   pushDevice: { requestRelease(): void };
+  /** 로그아웃·탈퇴만 올린다. 만료는 같은 사람이 돌아와 이어 쓰므로 늦은 저장을 막지 않는다 */
+  signOutEpoch: Pick<SignOutEpoch, 'advance'>;
   logger: Pick<AppLogger, 'warn'>;
 }
 
@@ -42,6 +45,7 @@ export class SessionCleanupService {
   readonly #pendingRedemption: SessionCleanupServicePorts['pendingRedemption'];
   readonly #userDeviceData: SessionCleanupServicePorts['userDeviceData'];
   readonly #pushDevice: SessionCleanupServicePorts['pushDevice'];
+  readonly #signOutEpoch: SessionCleanupServicePorts['signOutEpoch'];
   readonly #logger: SessionCleanupServicePorts['logger'];
 
   constructor({
@@ -53,6 +57,7 @@ export class SessionCleanupService {
     pendingRedemption,
     userDeviceData,
     pushDevice,
+    signOutEpoch,
     logger,
   }: SessionCleanupServicePorts) {
     this.#queryCache = queryCache;
@@ -63,11 +68,14 @@ export class SessionCleanupService {
     this.#pendingRedemption = pendingRedemption;
     this.#userDeviceData = userDeviceData;
     this.#pushDevice = pushDevice;
+    this.#signOutEpoch = signOutEpoch;
     this.#logger = logger;
   }
 
   /** 로그아웃·탈퇴: 캐시와 이 계정의 기기 데이터를 모두 지운다 */
   afterSignedOut = (): void => {
+    // 지우기 전에 올려야 그 사이 늦게 온 초안·녹음 쓰기도 버린다
+    this.#run('sign-out-epoch', () => this.#signOutEpoch.advance());
     this.afterSessionEnded();
     this.#run('drafts', () => this.#drafts.removeAll());
     this.#run('voice-notes', () => this.#voiceNotes.removeAll());

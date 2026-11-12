@@ -24,6 +24,7 @@ function createPorts() {
         clearForUser: (accountId: string) => calls.push(`device-data:${accountId}`),
       },
       pushDevice: { requestRelease: record('pushDeviceRelease') },
+      signOutEpoch: { advance: record('signOutEpoch') },
       logger: createLoggerStub(),
     },
   };
@@ -39,6 +40,7 @@ describe('SessionCleanupService', () => {
 
     // Then
     expect(calls).toEqual([
+      'signOutEpoch',
       'abandonPendingMutations',
       'queryCache',
       'persistedQueryCache',
@@ -110,6 +112,7 @@ describe('SessionCleanupService', () => {
 
     // Then
     expect(calls).toEqual([
+      'signOutEpoch',
       'abandonPendingMutations',
       'persistedQueryCache',
       'drafts',

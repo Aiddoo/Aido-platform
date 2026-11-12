@@ -244,6 +244,11 @@ if (isCodedError(error, FRIEND_ERROR_CODE.INVALID_TAG)) { … }
 - 주인은 이 마운트 뒤에 서버에서 받은 내 정보로만 정한다. 복원한 내 정보는 지난 실행의 다른 계정일 수 있어 그 값으로 다른 계정의 초안·녹음을 지우지 않는다.
 - 저장소를 열지 못한 실행에서 세션이 끝나면 디스크의 값을 지울 수 없다. 기본 MMKV에 정리 표시(`aido_session_pending-storage-cleanup_v1`, 로그아웃은 조회 캐시+초안, 만료는 조회 캐시)를 남기고, 다음에 저장소를 열 때 복원 전에 그 인스턴스를 지운 뒤 표시를 지운다(`composition-root`). 같은 실행 안에서 앞으로 올 때 다시 열지는 않는다. 포트가 바뀌면 Provider 트리를 다시 그려 보던 화면을 잃기 때문이다.
 
+### 끝난 세션의 늦은 쓰기
+
+- 로그아웃·탈퇴는 이 기기에서 그 계정의 초안·말로 메모를 지운다. 지운 뒤 화면이 내려가며 내보내는 초안 저장과 늦게 온 녹음 파일은 `SignOutEpoch`와 비교해 버린다. `SessionCleanupService.afterSignedOut`이 지우기 전에 세대를 올린다.
+- 세션 만료는 막지 않는다. 같은 사람이 다시 로그인해 이어 쓰므로 마지막 초안 저장과 진행 중이던 녹음 파일(계정 폴더)을 남긴다. 다른 계정으로 로그인하면 주인 정하기(`useClaimDeviceDataForUser`)가 지운다.
+
 ## 저장소 에러: KeychainLockedError
 
 `shared/errors/storage-error.ts`. `InfraError`가 **아니다**. ErrorBoundary로 보내지 않는다.

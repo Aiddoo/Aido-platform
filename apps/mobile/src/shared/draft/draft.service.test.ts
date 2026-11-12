@@ -1,3 +1,4 @@
+import { createSignOutEpoch } from '@src/core/session/sign-out-epoch';
 import { createMemorySyncStorage } from '@src/testing/core';
 import { z } from 'zod';
 
@@ -10,7 +11,12 @@ const NOW = Date.UTC(2026, 9, 23, 12);
 
 function createDraftService(now: () => number = () => NOW) {
   const storage = createMemorySyncStorage();
-  return { storage, service: new DraftService(createDraftRepository(storage), now) };
+  const signOutEpoch = createSignOutEpoch();
+  return {
+    storage,
+    signOutEpoch,
+    service: new DraftService(createDraftRepository(storage), now, signOutEpoch.current),
+  };
 }
 
 function createMemoDraftKey(ownerId: string, memoId: number) {
@@ -112,5 +118,40 @@ describe('DraftService', () => {
       value: { content: '내 초안' },
     });
     expect(service.restore(createMemoDraftKey('user-2', 1))).toEqual({ status: 'empty' });
+  });
+
+  describe('createSessionSave', () => {
+    it('편집을 시작한 세션이 로그아웃으로 끝난 뒤의 저장은 쓰지 않아 지운 초안을 되살리지 않는다', () => {
+      // Given
+      const { service, signOutEpoch } = createDraftService();
+      const draftKey = createMemoDraftKey('user-1', 1);
+      const saveInSession = service.createSessionSave(draftKey);
+      saveInSession({ content: '로그아웃 전' });
+      signOutEpoch.advance();
+      service.removeAll();
+
+      // When
+      // 화면이 내려가며 대기 중인 저장을 내보낸다
+      saveInSession({ content: '로그아웃 뒤 늦은 저장' });
+
+      // Then
+      expect(service.restore(draftKey)).toEqual({ status: 'empty' });
+    });
+
+    it('같은 세션 안에서는 그대로 저장한다', () => {
+      // Given
+      const { service } = createDraftService();
+      const draftKey = createMemoDraftKey('user-1', 1);
+      const saveInSession = service.createSessionSave(draftKey);
+
+      // When
+      saveInSession({ content: '쓰는 중' });
+
+      // Then
+      expect(service.restore(draftKey)).toEqual({
+        status: 'restored',
+        value: { content: '쓰는 중' },
+      });
+    });
   });
 });

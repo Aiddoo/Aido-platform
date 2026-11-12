@@ -3,6 +3,7 @@ import { ok } from '@src/core/errors/result';
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { AppLifecycleState } from '@src/core/ports/app-lifecycle-gateway';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { createSignOutEpoch } from '@src/core/session/sign-out-epoch';
 import { AuthApi } from '@src/features/identity/auth/apis/auth.api';
 import { useAuthSession } from '@src/features/identity/auth/hooks/use-auth-session';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
@@ -96,7 +97,11 @@ describe('AuthBootProvider', () => {
     analytics = createAnalyticsStub();
     appLifecycle = createAppLifecycleGatewayStub('background');
     queryClient = createTestQueryClient();
-    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
+    draftService = new DraftService(
+      createDraftRepository(createMemorySyncStorage()),
+      Date.now,
+      () => 0,
+    );
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
     deviceStorage = createMemorySyncStorage();
     unsubscribes = [];
@@ -133,6 +138,7 @@ describe('AuthBootProvider', () => {
           userApi,
           widgetBridge: { writeSnapshot },
           sessionCleanupService: new SessionCleanupService({
+            signOutEpoch: createSignOutEpoch(),
             userDeviceData: { clearForUser: noop },
             queryCache: createSessionQueryCache(queryClient),
             persistedQueryCache: queryCacheStorage,

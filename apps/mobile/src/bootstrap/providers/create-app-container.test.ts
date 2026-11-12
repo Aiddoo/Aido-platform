@@ -42,6 +42,23 @@ function readPrompts(storage: SyncStorage, userId: string) {
 
 describe('createAppContainer', () => {
   describe('sessionCleanupService', () => {
+    it('로그아웃·탈퇴만 로그아웃 세대를 올리고 세션 만료는 올리지 않아 같은 사람의 늦은 저장을 막지 않는다', () => {
+      // Given
+      const di = createAppContainer(createTestPorts());
+
+      // When
+      di.sessionCleanupService.afterSessionExpired();
+
+      // Then
+      expect(di.signOutEpoch.current()).toBe(0);
+
+      // When
+      di.sessionCleanupService.afterSignedOut();
+
+      // Then
+      expect(di.signOutEpoch.current()).toBe(1);
+    });
+
     it.each([
       ['로그아웃', 'afterSignedOut', { queryCache: true, drafts: true }],
       ['세션 만료', 'afterSessionExpired', { queryCache: true, drafts: false }],

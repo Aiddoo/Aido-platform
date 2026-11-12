@@ -1,3 +1,4 @@
+import { createSignOutEpoch } from '@src/core/session/sign-out-epoch';
 import {
   createLocalFileSystemFake,
   createSpeechRecognizerStub,
@@ -16,15 +17,17 @@ function createIntake() {
   const files = createLocalFileSystemFake();
   const storage = createVoiceNoteStorageFake(files);
   const onRecordingSaved = jest.fn();
+  const signOutEpoch = createSignOutEpoch();
   const intake = new VoiceRecordingIntakeSession({
     accountId: ACCOUNT_ID,
     draftId: DRAFT_ID,
     draftRepository: storage.drafts,
     recordingRepository: storage.recordings,
     discard: storage.service.discard,
+    signOutEpoch,
     onRecordingSaved,
   });
-  return { files, storage, intake, onRecordingSaved };
+  return { files, storage, intake, onRecordingSaved, signOutEpoch };
 }
 
 describe('VoiceRecordingIntakeSession', () => {
@@ -195,5 +198,30 @@ describe('VoiceRecordingIntakeSession', () => {
 
     // Then
     expect(speechRecognizer.getListenerCount()).toBe(0);
+  });
+
+  it('로그아웃하면 늦은 파일 듣기를 멈추고, 그 뒤 온 파일은 이전 계정 초안·녹음으로 옮기지 않고 지운다', async () => {
+    // Given
+    const { files, intake, signOutEpoch, onRecordingSaved } = createIntake();
+    const uri = files.addFile(DIRECTORY, 'a.wav');
+    const speechRecognizer = createSpeechRecognizerStub();
+    intake.segmentStarted(uri, 0);
+    intake.listenForLate((listener) => speechRecognizer.subscribe(listener));
+
+    // When
+    signOutEpoch.advance();
+
+    // Then
+    expect(speechRecognizer.getListenerCount()).toBe(0);
+    expect(intake.canWriteDraft()).toBe(false);
+
+    // When
+    intake.receive(uri, 0);
+    await intake.waitUntilSettled();
+
+    // Then
+    expect(files.hasFile(DIRECTORY, 'a.wav')).toBe(false);
+    expect(intake.getRecordings()).toEqual([]);
+    expect(onRecordingSaved).not.toHaveBeenCalled();
   });
 });

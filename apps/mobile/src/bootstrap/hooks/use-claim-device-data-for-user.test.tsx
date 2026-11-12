@@ -49,7 +49,11 @@ describe('useClaimDeviceDataForUser', () => {
   let wrapper: (props: PropsWithChildren) => React.JSX.Element;
 
   beforeEach(() => {
-    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
+    draftService = new DraftService(
+      createDraftRepository(createMemorySyncStorage()),
+      Date.now,
+      () => 0,
+    );
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
     queryClient = createTestQueryClient();
     const httpClient = createHttpClientStub();

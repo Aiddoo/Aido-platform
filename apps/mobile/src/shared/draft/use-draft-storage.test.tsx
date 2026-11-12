@@ -40,7 +40,11 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
   setupFakeTimersPerTest();
 
   beforeEach(() => {
-    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()), Date.now);
+    draftService = new DraftService(
+      createDraftRepository(createMemorySyncStorage()),
+      Date.now,
+      () => 0,
+    );
     const container = createTestDi({ draftService });
     wrapper = ({ children }) => (
       <StaticDIProvider container={container}>{children}</StaticDIProvider>
