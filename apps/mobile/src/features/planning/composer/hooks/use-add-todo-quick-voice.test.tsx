@@ -29,7 +29,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { useForm, useWatch } from 'react-hook-form';
+import { useController, useForm, useFormState, useWatch } from 'react-hook-form';
 import { Pressable, TextInput } from 'react-native';
 
 import { useAddTodoQuickVoice } from './use-add-todo-quick-voice';
@@ -74,6 +74,13 @@ function QuickVoiceProbe({
   const form = useForm<TodoFormValues>({
     defaultValues: { title: '', startDate: createDateKey('2026-11-05'), repeat: null },
   });
+  // 시트의 제목 칸처럼 공백만이면 보낼 수 없다. 입력 칸은 다시 마운트되지 않는다
+  useController({
+    control: form.control,
+    name: 'title',
+    rules: { validate: (value) => value.trim().length > 0 },
+  });
+  const { isValid } = useFormState({ control: form.control });
   const quickVoice = useAddTodoQuickVoice({ form, onExit });
   const title = useWatch({ control: form.control, name: 'title' });
   const { state } = quickVoice;
@@ -127,6 +134,7 @@ function QuickVoiceProbe({
       <Text testID="status">{state.status}</Text>
       <Text testID="consent-required">{String(quickVoice.isConsentRequired)}</Text>
       <Text testID="title">{title}</Text>
+      <Text testID="is-valid">{String(isValid)}</Text>
       <TextInput
         accessibilityLabel="title-input"
         onChangeText={(text) => form.setValue('title', text, { shouldDirty: true })}
@@ -547,6 +555,33 @@ describe('useAddTodoQuickVoice', () => {
     expect(screen.getByTestId('status')).toHaveTextContent('idle');
     expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
     expect(httpClient.post.mock.calls[0]?.[2]?.signal?.aborted).toBe(true);
+  });
+
+  it.each<{ path: string; leavePlanning: () => Promise<void> }>([
+    { path: '정리가 실패하면', leavePlanning: async () => {} },
+    {
+      path: '정리를 기다리다 그만두면',
+      leavePlanning: async () => {
+        await userEvent.press(screen.getByRole('button', { name: 'cancel-planning' }));
+      },
+    },
+  ])('$path 옮긴 글자로 폼이 바로 보낼 수 있는 상태가 된다', async ({ path, leavePlanning }) => {
+    // Given
+    const { httpClient, speechRecognizer } = await renderQuickVoice();
+    if (path === '정리가 실패하면') {
+      httpClient.post.mockRejectedValue(new NetworkError());
+    } else {
+      httpClient.post.mockReturnValue(new Promise(() => undefined));
+    }
+    await speak(speechRecognizer);
+    await waitFor(() => expect(screen.getByTestId('status')).not.toHaveTextContent('listening'));
+
+    // When
+    await leavePlanning();
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('title')).toHaveTextContent('말한 내용'));
+    expect(screen.getByTestId('is-valid')).toHaveTextContent('true');
   });
 
   it('권한 오류로 실패한 뒤 마이크를 다시 누르면 글자를 유지한 채 새로 듣는다', async () => {

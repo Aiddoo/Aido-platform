@@ -49,7 +49,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
       const heardText = VoiceTranscriptPolicy.getTranscriptText(transcript);
       setIsTypedTextKept(title.length > 0 && title !== heardText);
       if (title.length === 0) {
-        form.setValue('title', heardText, { shouldDirty: true });
+        form.setValue('title', heardText, { shouldDirty: true, shouldValidate: true });
       }
     },
   });
@@ -62,7 +62,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
         session.state.transcript,
         form.getValues('title'),
       ),
-      { shouldDirty: true },
+      { shouldDirty: true, shouldValidate: true },
     );
   };
 

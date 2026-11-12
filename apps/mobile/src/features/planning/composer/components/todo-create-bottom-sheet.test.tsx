@@ -5,6 +5,7 @@ import { createConsent } from '@src/features/identity/consent/__tests__/consent.
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { createTodoApiError } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { NetworkError } from '@src/shared/errors';
 import {
   createHttpClientStub,
   createMemoryKeyValueStorage,
@@ -16,7 +17,7 @@ import {
   createVoiceNoteStorageFake,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { TodoCreateBottomSheet } from './todo-create-bottom-sheet';
@@ -141,6 +142,64 @@ describe('TodoCreateBottomSheet', () => {
       expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
       expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
     });
+
+    it.each<{ path: string; leavePlanning: () => Promise<void> }>([
+      {
+        path: '정리가 실패해',
+        leavePlanning: async () => {},
+      },
+      {
+        path: '정리를 기다리다 그만둬',
+        leavePlanning: async () => {
+          await fireEvent.press(await screen.findByTestId('quick-voice-planning-cancel'));
+        },
+      },
+    ])(
+      '말한 뒤 $path 들은 글자가 제목 칸에 들어가면 바로 보낼 수 있다',
+      async ({ path, leavePlanning }) => {
+        // Given
+        const { httpClient, speechRecognizer } = await renderCreateSheet(
+          {},
+          { hasAgreedToAi: true },
+        );
+        if (path === '정리가 실패해') {
+          httpClient.post.mockRejectedValueOnce(new NetworkError());
+        } else {
+          httpClient.post.mockReturnValueOnce(new Promise(() => undefined));
+        }
+        await fireEvent.press(await screen.findByTestId('todo-quick-voice-button'));
+        await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
+        await act(async () => speechRecognizer.emit({ type: 'start' }));
+        await act(async () =>
+          speechRecognizer.emit({
+            type: 'result',
+            transcript: '우유 사기',
+            isFinal: true,
+            segments: [],
+          }),
+        );
+
+        // When
+        await fireEvent.press(screen.getByTestId('quick-voice-finish'));
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+        await leavePlanning();
+
+        // Then
+        expect(await screen.findByPlaceholderText(PLACEHOLDER)).toHaveDisplayValue('우유 사기');
+        expect(screen.getByTestId('todo-add-submit')).toBeEnabled();
+
+        // When
+        await fireEvent.press(screen.getByTestId('todo-add-submit'));
+
+        // Then
+        await waitFor(() => {
+          expect(httpClient.post).toHaveBeenCalledWith(
+            'v1/todos',
+            expect.objectContaining({ title: '우유 사기' }),
+          );
+        });
+      },
+    );
 
     it('마이크 버튼으로 시작하다 기기 권한 확인이 실패하면 예상하지 못한 실패로 보고한다', async () => {
       // Given
