@@ -1,7 +1,9 @@
 import {
   createAppWindow,
+  createPaneArea,
   DEVICE_WINDOW,
   IPAD_SIDEBAR_WIDTH,
+  IPHONE_DUO_RAIL_WIDTH,
 } from '@src/testing/window-layout.fixtures';
 
 import { WindowLayoutPolicy } from './window-layout.model';
@@ -41,23 +43,26 @@ describe('WindowLayoutPolicy.getPaneSizeClass', () => {
     [600, 'medium'],
     [839, 'medium'],
     [840, 'expanded'],
-  ] as const)('창이 넓어도 잰 영역 폭 %d으로 %s다', (areaWidth, expected) => {
+  ] as const)('창이 넓어도 탭 안 영역 폭 %d으로 %s다', (areaWidth, expected) => {
     // Given
     const window = createAppWindow({ os: 'ios', ...DEVICE_WINDOW.iPadLandscape });
 
     // When
-    const sizeClass = WindowLayoutPolicy.getPaneSizeClass(window, areaWidth);
+    const sizeClass = WindowLayoutPolicy.getPaneSizeClass(
+      window,
+      createPaneArea({ width: areaWidth }),
+    );
 
     // Then
     expect(sizeClass).toBe(expected);
   });
 
-  it('영역을 재기 전에는 창 폭으로 어림한다', () => {
+  it('`PaneArea` 밖이면 창 폭으로 정한다', () => {
     // Given
     const window = createAppWindow(DEVICE_WINDOW.unfoldedInner);
 
     // When
-    const sizeClass = WindowLayoutPolicy.getPaneSizeClass(window, null);
+    const sizeClass = WindowLayoutPolicy.getPaneSizeClass(window, createPaneArea({ width: null }));
 
     // Then
     expect(sizeClass).toBe('expanded');
@@ -77,22 +82,48 @@ describe('WindowLayoutPolicy.getPaneSizeClass', () => {
   ] as const)('iPad %s이면 %s다', (_state, size, sidebarWidth, expected) => {
     // Given
     const window = createAppWindow({ os: 'ios', ...size });
-    // 사이드바가 열리면 탭 안 영역은 창 폭에서 사이드바 폭만큼 좁다
-    const areaWidth = size.width - sidebarWidth;
+    // iPadOS 26+ 사이드바는 탭 폭을 줄이지 않고 왼쪽 inset으로 온다
+    const area = createPaneArea({ width: size.width, leadingInset: sidebarWidth });
 
     // When
-    const sizeClass = WindowLayoutPolicy.getPaneSizeClass(window, areaWidth);
+    const sizeClass = WindowLayoutPolicy.getPaneSizeClass(window, area);
 
     // Then
     expect(sizeClass).toBe(expected);
   });
+
+  it.each([
+    ['iPad 가로·사이드바', DEVICE_WINDOW.iPadLandscape, IPAD_SIDEBAR_WIDTH, 0, true, 'expanded'],
+    ['iPad 세로·사이드바', DEVICE_WINDOW.iPadPortrait, IPAD_SIDEBAR_WIDTH, 0, true, 'compact'],
+    ['Android 펼친 안쪽 화면·컷아웃 1', DEVICE_WINDOW.unfoldedInner, 1, 0, false, 'expanded'],
+    ['Android 펼친 안쪽 화면·좌우 1씩', DEVICE_WINDOW.unfoldedInner, 1, 1, false, 'expanded'],
+  ] as const)(
+    '%s(목록 쪽 %d·상세 쪽 %d, 칸 자리 차지 %s)이면 %s다',
+    (_state, size, leadingInset, trailingInset, insetsOccupyPane, expected) => {
+      // Given
+      const window = createAppWindow(size);
+      // Android 좌우 inset은 시스템 바·컷아웃이라 칸 자리를 차지하지 않고 창 폭 그대로 나눈다
+      const area = createPaneArea({
+        width: size.width,
+        leadingInset,
+        trailingInset,
+        insetsOccupyPane,
+      });
+
+      // When
+      const sizeClass = WindowLayoutPolicy.getPaneSizeClass(window, area);
+
+      // Then
+      expect(sizeClass).toBe(expected);
+    },
+  );
 
   it('Mac 창은 영역이 넓어도 compact다', () => {
     // Given
     const window = createAppWindow({ os: 'ios', isDesktop: true, width: 1366, height: 1024 });
 
     // When
-    const sizeClass = WindowLayoutPolicy.getPaneSizeClass(window, 1366);
+    const sizeClass = WindowLayoutPolicy.getPaneSizeClass(window, createPaneArea({ width: 1366 }));
 
     // Then
     expect(sizeClass).toBe('compact');
@@ -100,43 +131,82 @@ describe('WindowLayoutPolicy.getPaneSizeClass', () => {
 });
 
 describe('WindowLayoutPolicy.getPaneColumns', () => {
-  it('좁은 영역은 한 칸이고 목록이 영역 폭을 다 쓴다', () => {
+  it('좁은 영역은 한 칸이고 목록이 inset까지 영역 폭을 다 쓴다', () => {
     // Given
     const window = createAppWindow({ os: 'ios', ...DEVICE_WINDOW.iPadPortrait });
-    const area = { width: DEVICE_WINDOW.iPadPortrait.width - IPAD_SIDEBAR_WIDTH, foldX: null };
+    const area = createPaneArea({
+      width: DEVICE_WINDOW.iPadPortrait.width,
+      leadingInset: IPAD_SIDEBAR_WIDTH,
+    });
 
     // When
     const columns = WindowLayoutPolicy.getPaneColumns(window, area);
 
     // Then
-    expect(columns).toEqual({ isSplit: false, primaryWidth: 500 });
+    expect(columns).toEqual({ isSplit: false, primaryWidth: DEVICE_WINDOW.iPadPortrait.width });
   });
 
-  it('영역을 재기 전 한 칸이면 목록 폭을 창 폭으로 어림한다', () => {
+  it('`PaneArea` 밖에서 한 칸이면 목록 폭은 창 폭이다', () => {
     // Given
     const window = createAppWindow(DEVICE_WINDOW.foldedOuter);
 
     // When
-    const columns = WindowLayoutPolicy.getPaneColumns(window, { width: null, foldX: null });
+    const columns = WindowLayoutPolicy.getPaneColumns(window, createPaneArea({ width: null }));
 
     // Then
     expect(columns).toEqual({ isSplit: false, primaryWidth: DEVICE_WINDOW.foldedOuter.width });
   });
 
   it.each([
-    [600, 320],
-    [839, 320],
-    [840, 400],
-    [DEVICE_WINDOW.tablet.width, 400],
-  ])('영역 폭 %d이면 두 칸이고 목록은 %d다', (areaWidth, expected) => {
+    [600, 0, 320],
+    [839, 0, 320],
+    [840, 0, 400],
+    [DEVICE_WINDOW.tablet.width, 0, 400],
+    [DEVICE_WINDOW.iPadLandscape.width, IPAD_SIDEBAR_WIDTH, 400 + IPAD_SIDEBAR_WIDTH],
+    [DEVICE_WINDOW.iPadLandscape.width, IPHONE_DUO_RAIL_WIDTH, 400 + IPHONE_DUO_RAIL_WIDTH],
+  ])(
+    '영역 폭 %d·목록 쪽 inset %d이면 두 칸이고 목록 칸은 inset을 더한 %d다',
+    (areaWidth, leadingInset, expected) => {
+      // Given
+      const window = createAppWindow(DEVICE_WINDOW.tablet);
+
+      // When
+      const columns = WindowLayoutPolicy.getPaneColumns(
+        window,
+        createPaneArea({ width: areaWidth, leadingInset }),
+      );
+
+      // Then
+      expect(columns).toEqual({ isSplit: true, primaryWidth: expected });
+    },
+  );
+
+  it('칸 자리를 차지하지 않는 Android inset은 목록 칸 폭에 더하지 않는다', () => {
     // Given
     const window = createAppWindow(DEVICE_WINDOW.tablet);
+    const area = createPaneArea({
+      width: DEVICE_WINDOW.tablet.width,
+      leadingInset: 48,
+      insetsOccupyPane: false,
+    });
 
     // When
-    const columns = WindowLayoutPolicy.getPaneColumns(window, { width: areaWidth, foldX: null });
+    const columns = WindowLayoutPolicy.getPaneColumns(window, area);
 
     // Then
-    expect(columns).toEqual({ isSplit: true, primaryWidth: expected });
+    expect(columns).toEqual({ isSplit: true, primaryWidth: 400 });
+  });
+
+  it('상세 쪽 inset은 목록 칸 폭에 더하지 않는다', () => {
+    // Given
+    const window = createAppWindow(DEVICE_WINDOW.tablet);
+    const area = createPaneArea({ width: 1000, trailingInset: IPHONE_DUO_RAIL_WIDTH });
+
+    // When
+    const columns = WindowLayoutPolicy.getPaneColumns(window, area);
+
+    // Then
+    expect(columns).toEqual({ isSplit: true, primaryWidth: 400 });
   });
 
   it('반쯤 접어 세로 접힘선이 있으면 목록을 접힘선 앞면 폭에 맞춘다', () => {
@@ -146,10 +216,10 @@ describe('WindowLayoutPolicy.getPaneColumns', () => {
     const foldX = 412;
 
     // When
-    const columns = WindowLayoutPolicy.getPaneColumns(window, {
-      width: DEVICE_WINDOW.unfoldedInner.width,
-      foldX,
-    });
+    const columns = WindowLayoutPolicy.getPaneColumns(
+      window,
+      createPaneArea({ width: DEVICE_WINDOW.unfoldedInner.width, foldX }),
+    );
 
     // Then
     expect(columns).toEqual({ isSplit: true, primaryWidth: foldX });

@@ -1,7 +1,18 @@
-import type { AppWindow } from '@src/shared/domains/window-layout.model';
+import type { AppWindow, PaneAreaSize } from '@src/shared/domains/window-layout.model';
 
 export function createAppWindow(overrides: Partial<AppWindow> = {}): AppWindow {
   return { width: 412, height: 915, os: 'android', isDesktop: false, ...overrides };
+}
+
+export function createPaneArea(overrides: Partial<PaneAreaSize> = {}): PaneAreaSize {
+  return {
+    width: 1000,
+    leadingInset: 0,
+    trailingInset: 0,
+    insetsOccupyPane: true,
+    foldX: null,
+    ...overrides,
+  };
 }
 
 /** 기기 창 크기(dp/pt). 제조사 해상도 ÷ 밀도로 어림한 값이다 */
@@ -36,5 +47,8 @@ export const DEVICE_WINDOW = {
   iPhoneDuoFolded: { width: 466, height: 678 },
 } as const;
 
-/** iPadOS 탭 사이드바 폭(pt)의 어림값. 열리면 탭 안 영역이 이만큼 좁아진다 */
-export const IPAD_SIDEBAR_WIDTH = 320;
+/** iPadOS 탭 사이드바 폭(pt). iPad Pro 13인치 iPadOS 27 시뮬레이터에서 잰 왼쪽 inset이다 */
+export const IPAD_SIDEBAR_WIDTH = 280;
+
+/** iPhone Duo 세로 레일 inset(pt) */
+export const IPHONE_DUO_RAIL_WIDTH = 84;

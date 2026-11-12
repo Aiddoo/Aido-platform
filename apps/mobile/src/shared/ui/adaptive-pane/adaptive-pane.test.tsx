@@ -1,8 +1,14 @@
 import { stubWindowDimensions } from '@src/testing/core';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { IPAD_SIDEBAR_WIDTH } from '@src/testing/window-layout.fixtures';
+import { render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
 import { Text } from 'react-native';
-import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
+import type * as SafeArea from 'react-native-safe-area-context';
+import {
+  SafeAreaFrameContext,
+  SafeAreaInsetsContext,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import { AdaptivePane } from './adaptive-pane';
 import { PaneArea } from './pane-area';
@@ -47,7 +53,7 @@ describe('AdaptivePane 컴포넌트', () => {
     expect(onMount.mock.calls).toEqual([['목록'], ['상세']]);
   });
 
-  it('iPad 탭 사이드바가 열려 탭 안이 좁아지면 창이 넓어도 목록만 그리고 목록은 다시 마운트하지 않는다', async () => {
+  it('iPad 탭 사이드바가 열려 왼쪽 inset이 생기면 창이 넓어도 목록만 그리고 목록은 다시 마운트하지 않는다', async () => {
     // Given
     const onMount = jest.fn();
     function MountProbe({ label }: { label: string }) {
@@ -56,21 +62,35 @@ describe('AdaptivePane 컴포넌트', () => {
       }, [label]);
       return <Text>{label}</Text>;
     }
-    stubWindowDimensions(820, 1180);
-    await render(
+    const createPane = () => (
       <PaneArea>
         <AdaptivePane
           primary={<MountProbe label="목록" />}
           secondary={<MountProbe label="상세" />}
         />
-      </PaneArea>,
+      </PaneArea>
     );
+    stubWindowDimensions(820, 1180);
+    let sidebarWidth = 0;
+    // 탭이 잰 값을 넘긴다. iPadOS 26+ 사이드바는 탭 폭을 줄이지 않고 왼쪽 inset으로 온다
+    jest
+      .spyOn(
+        jest.requireMock<typeof SafeArea>('react-native-safe-area-context'),
+        'SafeAreaProvider',
+      )
+      .mockImplementation(({ children }) => (
+        <SafeAreaFrameContext value={{ x: 0, y: 0, width: 820, height: 1180 }}>
+          <SafeAreaInsetsContext value={{ top: 0, right: 0, bottom: 0, left: sidebarWidth }}>
+            {children}
+          </SafeAreaInsetsContext>
+        </SafeAreaFrameContext>
+      ));
+    const { rerender } = await render(createPane());
     expect(screen.getByText('상세')).toBeTruthy();
 
     // When
-    await fireEvent(screen.getByTestId('pane-area'), 'layout', {
-      nativeEvent: { layout: { x: 0, y: 0, width: 500, height: 1180 } },
-    });
+    sidebarWidth = IPAD_SIDEBAR_WIDTH;
+    await rerender(createPane());
 
     // Then
     expect(screen.queryByText('상세')).toBeNull();

@@ -13,19 +13,27 @@ const appWindowSchema = z.object({
 
 export type AppWindow = z.infer<typeof appWindowSchema>;
 
-/** 목록·상세 칸을 나눌 영역. iPad 탭 사이드바가 열리면 창보다 좁다 */
+/** 목록·상세 칸을 나눌 탭 안 영역. iPadOS 26+ 사이드바·iPhone Duo 레일은 영역 폭을 줄이지 않고 좌우 inset으로 온다 */
 const paneAreaSchema = z.object({
-  /** 영역이 잰 폭. 재기 전이면 null */
+  /** 영역 폭. `PaneArea` 밖이면 null이라 창 폭을 쓴다 */
   width: z.number().nullable(),
+  /** 목록 칸이 닿는 가장자리(LTR 왼쪽)의 inset */
+  leadingInset: z.number(),
+  /** 상세 칸이 닿는 가장자리의 inset */
+  trailingInset: z.number(),
+  /** 좌우 inset이 칸 자리를 차지하는지. iPad 사이드바·iPhone Duo 레일은 차지하고, Android 시스템 바·컷아웃은 칸 안에서 피해 창 폭 그대로 나눈다 */
+  insetsOccupyPane: z.boolean(),
   /** 반쯤 접은 자세의 세로 접힘선 x(영역 좌표). 없으면 null */
   foldX: z.number().nullable(),
 });
 
-type PaneAreaSize = z.infer<typeof paneAreaSchema>;
+export type PaneAreaSize = z.infer<typeof paneAreaSchema>;
+
+export type PaneAreaMetrics = Omit<PaneAreaSize, 'foldX'>;
 
 export interface PaneColumns {
   isSplit: boolean;
-  /** 목록 칸 폭. 한 칸이면 영역 전체다 */
+  /** 목록 칸 폭(닿는 가장자리 inset 포함). 한 칸이면 영역 전체다 */
   primaryWidth: number;
 }
 
@@ -42,19 +50,32 @@ function getSizeClass(window: AppWindow): WindowSizeClass {
   return window.isDesktop ? 'compact' : getWindowSizeClass(window.width);
 }
 
-/** 창 폭이 아니라 영역 폭으로 나눠야 사이드바가 칸을 짓누르지 않는다. 재기 전에는 창 폭으로 어림한다 */
-function getPaneSizeClass(window: AppWindow, areaWidth: number | null): WindowSizeClass {
-  return getSizeClass({ ...window, width: areaWidth ?? window.width });
+/** 칸 자리를 차지하는 inset만 칸 폭 계산에 넣는다. 시스템 바·컷아웃 inset으로 크기 등급이 바뀌지 않는다 */
+function getOccupiedInsets(area: PaneAreaMetrics): { leading: number; trailing: number } {
+  if (!area.insetsOccupyPane) {
+    return { leading: 0, trailing: 0 };
+  }
+  return { leading: area.leadingInset, trailing: area.trailingInset };
 }
 
-/** 접힘선이 있으면 목록을 접힘선 앞면에 맞춘다 */
+/** 사이드바·레일 inset을 뺀 내용 폭으로 나눠야 사이드바가 칸을 짓누르지 않는다 */
+function getPaneSizeClass(window: AppWindow, area: PaneAreaMetrics): WindowSizeClass {
+  const { leading, trailing } = getOccupiedInsets(area);
+  const contentWidth = (area.width ?? window.width) - leading - trailing;
+
+  return getSizeClass({ ...window, width: contentWidth });
+}
+
+/** 목록 칸은 닿는 가장자리의 사이드바·레일 inset을 바깥에 더해 내용 폭이 320/400이다. 접힘선이 있으면 목록을 접힘선 앞면에 맞춘다 */
 function getPaneColumns(window: AppWindow, area: PaneAreaSize): PaneColumns {
-  const sizeClass = getPaneSizeClass(window, area.width);
+  const sizeClass = getPaneSizeClass(window, area);
 
   if (sizeClass === 'compact') {
     return { isSplit: false, primaryWidth: area.width ?? window.width };
   }
-  return { isSplit: true, primaryWidth: area.foldX ?? PRIMARY_PANE_WIDTH[sizeClass] };
+  const listWidthWithInset = PRIMARY_PANE_WIDTH[sizeClass] + getOccupiedInsets(area).leading;
+
+  return { isSplit: true, primaryWidth: area.foldX ?? listWidthWithInset };
 }
 
 /** 짧은 변(Android smallest width)으로 재 가로로 든 휴대폰이 넓은 창이 되지 않게 하고, Android 16+이 600dp 이상에서 방향 고정을 무시하는 기준과 맞춘다. iOS는 Info.plist가 정해 null이다 */
