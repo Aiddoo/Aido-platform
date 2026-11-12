@@ -83,22 +83,39 @@ describe('useConfirmDialog onConfirm', () => {
     expect(screen.queryByText('삭제할까요?')).toBeNull();
   });
 
-  it('onConfirm이 던지면 닫고 false를 돌려준다', async () => {
+  it('onConfirm이 던지면 다이얼로그를 남기고 다시 눌러 끝낼 수 있다', async () => {
     // Given
-    const deferred = Promise.withResolvers<void>();
-    const onConfirm = jest.fn(() => deferred.promise);
+    const failed = Promise.withResolvers<void>();
+    const retried = Promise.withResolvers<void>();
+    const onConfirm = jest
+      .fn<Promise<void>, []>()
+      .mockReturnValueOnce(failed.promise)
+      .mockReturnValueOnce(retried.promise);
     const onResult = await openDialog(onConfirm);
+    const { confirmPress } = await pressConfirm();
 
     // When
-    const { confirmPress } = await pressConfirm();
     await act(async () => {
-      deferred.reject(new Error('삭제 실패'));
+      failed.reject(new Error('삭제 실패'));
       await confirmPress;
     });
 
     // Then
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(onResult).toHaveBeenCalledWith(false);
+    expect(screen.getByText('삭제할까요?')).toBeOnTheScreen();
+    expect(screen.getByTestId('confirm')).toBeEnabled();
+    expect(screen.getByText('취소')).toBeEnabled();
+    expect(onResult).not.toHaveBeenCalled();
+
+    // When
+    const { confirmPress: retryPress } = await pressConfirm();
+    await act(async () => {
+      retried.resolve();
+      await retryPress;
+    });
+
+    // Then
+    expect(onConfirm).toHaveBeenCalledTimes(2);
+    expect(onResult).toHaveBeenCalledWith(true);
     expect(screen.queryByText('삭제할까요?')).toBeNull();
   });
 });

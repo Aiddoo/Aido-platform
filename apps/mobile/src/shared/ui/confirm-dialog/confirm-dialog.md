@@ -1,130 +1,69 @@
 # ConfirmDialog
 
-중요 액션 실행 전 사용자 선택을 확인하는 다이얼로그. 버튼 레이아웃 자동화 내장.
-
-- `cancelButton` + `confirmButton`: 양쪽 버튼이 각각 `flex-1`로 균등 분할
-- `confirmButton`만: 버튼이 오른쪽 정렬
-- `secondaryButton`이 있으면: 확인 → 두 번째 행동 → 취소 순서로 전체 폭 세로 배치(친구 한도 안내의 초대·구독·닫기)
+중요한 동작 전에 확인을 받는 다이얼로그. 띄우기는 `useConfirmDialog().openAsync` 하나이고, 확인 뒤 일이 끝날 때까지의 진행 상태와 실패 처리를 다이얼로그가 스스로 갖는다.
 
 ## 사용법
 
-### 취소 + 확인 (기본)
-
 ```tsx
-import { ConfirmDialog } from '@src/shared/ui';
-
-<ConfirmDialog
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  title={<ConfirmDialog.Title>할 일을 삭제할까요?</ConfirmDialog.Title>}
-  description={<ConfirmDialog.Description>삭제하면 되돌릴 수 없어요</ConfirmDialog.Description>}
-  cancelButton={
-    <ConfirmDialog.CancelButton onPress={() => setIsOpen(false)}>취소</ConfirmDialog.CancelButton>
-  }
-  confirmButton={
-    <ConfirmDialog.ConfirmButton color="danger" onPress={handleDelete}>
-      삭제
-    </ConfirmDialog.ConfirmButton>
-  }
-/>;
-```
-
-### 확인만 (오른쪽 정렬)
-
-```tsx
-<ConfirmDialog
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  title={<ConfirmDialog.Title>아이콘 변경 실패</ConfirmDialog.Title>}
-  description={
-    <ConfirmDialog.Description>실기기에서 다시 시도해 주세요.</ConfirmDialog.Description>
-  }
-  confirmButton={
-    <ConfirmDialog.ConfirmButton onPress={() => setIsOpen(false)}>확인</ConfirmDialog.ConfirmButton>
-  }
-/>
-```
-
-## Props
-
-| Prop              | 타입                      | 기본값      | 설명                                                |
-| ----------------- | ------------------------- | ----------- | --------------------------------------------------- |
-| `isOpen`          | `boolean`                 | —           | 다이얼로그 열림 상태                                |
-| `onOpenChange`    | `(open: boolean) => void` | —           | 열림 상태 변경 콜백                                 |
-| `title`           | `ReactNode`               | —           | 제목 영역 (`ConfirmDialog.Title` 권장)              |
-| `description`     | `ReactNode`               | —           | 설명 영역 (`ConfirmDialog.Description` 권장)        |
-| `cancelButton`    | `ReactNode`               | `undefined` | 취소 버튼 (없으면 confirmButton 오른쪽 정렬)        |
-| `confirmButton`   | `ReactNode`               | —           | 확인 버튼 (`ConfirmDialog.ConfirmButton` 권장)      |
-| `secondaryButton` | `ReactNode`               | `undefined` | 확인 아래 두 번째 행동. 있으면 버튼을 세로로 쌓는다 |
-
-## 도메인 다이얼로그로 확장
-
-문구와 동작이 정해진 다이얼로그는 `ConfirmDialog` props를 `Omit`으로 이어받아 만든다.
-열림 계약(`isOpen`/`onOpenChange`)은 그대로 받고, 안쪽 내용만 채운다(`PushPermissionDialog`).
-
-```tsx
-interface PushPermissionDialogProps extends Omit<
-  ComponentProps<typeof ConfirmDialog>,
-  'title' | 'description' | 'cancelButton' | 'confirmButton' | 'secondaryButton'
-> {
-  source: PushPermissionPromptSource;
-}
-```
-
-## 버튼 레이아웃
-
-버튼에 `className="flex-1"`을 직접 지정하지 않습니다. ConfirmDialog 내부에서 자동으로 처리합니다.
-
-```tsx
-// ❌ 금지 - 직접 flex-1 지정
-<ConfirmDialog.CancelButton className="flex-1" ...>취소</ConfirmDialog.CancelButton>
-
-// ✅ 올바름 - 내부에서 자동 처리
-<ConfirmDialog.CancelButton ...>취소</ConfirmDialog.CancelButton>
-```
-
-## 파일 구조
-
-| 파일                      | 역할                       |
-| ------------------------- | -------------------------- |
-| `confirm-dialog.tsx`      | 컴포넌트 + 서브컴포넌트    |
-| `confirm-dialog.types.ts` | Props 인터페이스           |
-| `use-confirm-dialog.tsx`  | Overlay로 띄우고 결과 받기 |
-| `index.ts`                | Barrel export              |
-| `confirm-dialog.md`       | 이 문서                    |
-
-## useConfirmDialog — Overlay로 띄우고 결과 받기
-
-화면 상태 없이 확인 여부만 필요하면 `useConfirmDialog`를 쓴다. 닫기·취소는 `false`,
-확인은 `true`로 resolve된다. `close`·`unmount` 호출을 사용처에서 반복하지 않는다.
-
-```tsx
-import { useConfirmDialog } from '@src/shared/ui';
-
 const confirmDialog = useConfirmDialog();
 
-const handleLogoutPress = async () => {
-  const isConfirmed = await confirmDialog.openAsync({
-    title: t('logout.confirmTitle'),
-    description: t('logout.confirmDescription'),
+const handleDeletePress = async () => {
+  const isDeleted = await confirmDialog.openAsync({
+    title: t('memo:detail.deleteConfirmTitle'),
+    description: t('memo:detail.deleteConfirmDescription'),
     cancelLabel: t('common:actions.cancel'),
-    confirmLabel: t('common:actions.confirm'),
+    confirmLabel: t('common:actions.delete'),
+    confirmColor: 'danger',
+    onConfirm: () => deleteMemo.mutateAsync(memoId),
   });
-  if (isConfirmed) {
-    logout.mutate();
+  if (isDeleted) {
+    onDeleted();
   }
 };
 ```
 
-확인 뒤 일이 끝날 때까지 다이얼로그를 열어 두고 확인 버튼에 진행 표시를 보이려면 `onConfirm`을 넘긴다.
-끝나면 닫고 `true`, 던지면 닫고 `false`다. 진행 상태는 내용 컴포넌트가 스스로 갖는다.
-낙관적 갱신으로 화면이 바로 바뀌는 mutation에는 쓰지 않는다. 행이 사라지며 다이얼로그도 함께 사라져
-진행 표시가 보이지 않는다. 서버 응답을 실제로 기다려야 하는 일에 쓴다.
+`onConfirm`이 없으면 누르는 즉시 닫고 `true`다. 확인만 받고 일은 호출부가 한다(로그아웃).
+
+## 옵션
+
+| 옵션                | 타입            | 설명                                           |
+| ------------------- | --------------- | ---------------------------------------------- |
+| `title`             | `ReactNode`     | 제목                                           |
+| `description`       | `ReactNode`     | 설명. 문자열이면 단어 단위로 줄을 바꾼다       |
+| `confirmLabel`      | `string`        | 확인 버튼 글자                                 |
+| `confirmColor`      | 버튼 `color`    | 파괴 동작은 `danger`                           |
+| `cancelLabel`       | `string`        | 없으면 확인 버튼만 오른쪽에 둔다               |
+| `confirmTestID`     | `string`        | Maestro가 확인 버튼을 찾는 testID              |
+| `isConfirmDisabled` | `boolean`       | 안내만 하고 확인을 막는다(마지막 카테고리)     |
+| `onConfirm`         | `() => unknown` | 확인 뒤 기다릴 일. 보통 `mutation.mutateAsync` |
+
+`Promise<boolean>`을 돌려준다. 확인하고 일이 끝나면 `true`, 취소·바깥 탭·뒤로 가기·답 없이 사라짐은 `false`다.
+
+## 동작
+
+- `onConfirm`이 도는 동안 다이얼로그는 열려 있고 확인 버튼이 진행 중, 취소·바깥 탭·뒤로 가기는 막힌다.
+- `onConfirm`이 던지면 다이얼로그를 남기고 버튼을 되살려 다시 누르거나 취소할 수 있다. 실패 토스트는 mutation의 `meta.errorFeedback`이 한 번 띄운다.
+- 낙관적 갱신으로 화면이 바로 바뀌는 mutation에는 `onConfirm`을 쓰지 않는다. 행이 사라지며 다이얼로그도 함께 사라진다.
+- 열 때의 내용이 굳으므로 진행 상태는 다이얼로그 안의 컴포넌트가 갖는다([overlay](../overlay/overlay.md)).
+- 버튼 배치는 다이얼로그가 정한다: 취소 + 확인은 나란히 같은 폭, 가장 큰 글자에서는 확인 위·취소 아래로 쌓는다. 버튼에 `flex-1`을 주지 않는다.
+- 태블릿·펼친 폴더블에서도 읽기 폭(`READABLE_CONTENT_MAX_WIDTH`)에서 멈춘다.
+
+## route가 그리는 확인
+
+route 자체가 확인인 화면(차단 `/users/[userId]/block`, 남길 할 일이 없는 카테고리 지우기)은 `ConfirmDialog`를 직접 그린다. `openAsync`와 같은 옵션에 `isOpen`·`onFinish(isConfirmed)`를 더한 것이고, 진행 상태와 실패 시 남기는 동작도 같다. 열림은 route(`useSheetRoute`)가 갖고, 답하면 route를 떠난다. route가 그리므로 설명·확인 막기 같은 내용은 조회 값을 따라 바뀐다.
 
 ```tsx
-await confirmDialog.openAsync({
-  title,
-  confirmLabel,
-  onConfirm: () => disconnectAccount.mutateAsync(accountId),
-});
+const dialog = useSheetRoute('/feed');
+
+<ConfirmDialog
+  isOpen={dialog.isOpen}
+  title={t('block.confirmTitle', { name })}
+  cancelLabel={t('common:actions.cancel')}
+  confirmLabel={t('block.confirm')}
+  confirmColor="danger"
+  onConfirm={() => blockUser.mutateAsync({ userId, displayName: name })}
+  onFinish={() => dialog.exit()}
+/>;
 ```
+
+진행 가드(지우는 중 닫기 막기, 버튼 잠금)를 호출부가 다시 만들지 않는다.

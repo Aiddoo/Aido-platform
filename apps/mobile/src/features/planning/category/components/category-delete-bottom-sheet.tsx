@@ -86,7 +86,7 @@ export function CategoryDeleteBottomSheet() {
         category={category}
         preview={preview}
         isOpen={sheet.isOpen}
-        onOpenChange={sheet.onOpenChange}
+        onFinish={() => sheet.exit()}
       />
     );
   }
@@ -145,76 +145,40 @@ CategoryDeleteBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFa
 
 interface CategoryDeleteConfirmDialogProps extends Pick<
   ComponentProps<typeof ConfirmDialog>,
-  'isOpen' | 'onOpenChange'
+  'isOpen' | 'onFinish'
 > {
   category: TodoCategoryWithCount;
   preview: TodoCategoryDeletionPreview;
 }
 
-/** 지우는 동안 다이얼로그를 그대로 두고 삭제 버튼만 불러오는 중으로 바꾼다. 실패하면 mutation이 토스트로 한 번 알리고 다이얼로그는 남는다 */
+/** 시트 없이 확인 다이얼로그만 그린다. 지우는 동안 다이얼로그를 남기고, 실패하면 mutation이 토스트로 한 번 알린 뒤 다시 누를 수 있다 */
 function CategoryDeleteConfirmDialog({
   category,
   preview,
-  isOpen,
-  onOpenChange,
+  ...dialogProps
 }: CategoryDeleteConfirmDialogProps) {
   const { t } = useTranslation(['todo', 'common']);
   const deleteCategory = useMutation(useDeleteTodoCategoryMutationOptions());
-  const isDeletePending = deleteCategory.isPending;
   const deletionRequest = TodoCategoryDeletionPolicy.toDeletionRequest(preview, null);
-
-  // 지우는 중에 바깥 탭·뒤로 가기로 닫으면 결과가 토스트로만 남아 끝날 때까지 닫지 않는다
-  const handleOpenChange = (nextIsOpen: boolean) => {
-    if (!nextIsOpen && isDeletePending) {
-      return;
-    }
-    onOpenChange(nextIsOpen);
-  };
-
-  const handleDelete = () => {
-    if (deletionRequest == null || isDeletePending) {
-      return;
-    }
-    deleteCategory.mutate(
-      { id: category.id, deletion: deletionRequest },
-      { onSuccess: () => onOpenChange(false) },
-    );
-  };
 
   return (
     <ConfirmDialog
-      isOpen={isOpen}
-      onOpenChange={handleOpenChange}
-      title={
-        <ConfirmDialog.Title>
-          {t('categoryDelete.title', { name: category.name })}
-        </ConfirmDialog.Title>
-      }
+      {...dialogProps}
+      title={t('categoryDelete.title', { name: category.name })}
       description={
-        <ConfirmDialog.Description>
-          {TodoCategoryDeletionPolicy.canDelete(preview)
-            ? t('categoryDelete.description')
-            : t('categoryDelete.lastCategory')}
-        </ConfirmDialog.Description>
+        TodoCategoryDeletionPolicy.canDelete(preview)
+          ? t('categoryDelete.description')
+          : t('categoryDelete.lastCategory')
       }
-      cancelButton={
-        <ConfirmDialog.CancelButton
-          isDisabled={isDeletePending}
-          onPress={() => onOpenChange(false)}
-        >
-          {t('common:actions.cancel')}
-        </ConfirmDialog.CancelButton>
-      }
-      confirmButton={
-        <ConfirmDialog.ConfirmButton
-          testID="category-delete-confirm"
-          color="danger"
-          isDisabled={deletionRequest == null}
-          isLoading={isDeletePending}
-          onPress={handleDelete}
-        >
-          {t('common:actions.delete')}
-        </ConfirmDialog.ConfirmButton>
+      cancelLabel={t('common:actions.cancel')}
+      confirmLabel={t('common:actions.delete')}
+      confirmColor="danger"
+      confirmTestID="category-delete-confirm"
+      isConfirmDisabled={deletionRequest == null}
+      onConfirm={
+        deletionRequest == null
+          ? undefined
+          : () => deleteCategory.mutateAsync({ id: category.id, deletion: deletionRequest })
       }
     />
   );

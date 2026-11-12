@@ -22,7 +22,7 @@ import {
   AiFilledIcon,
   Box,
   CheckmarkIcon,
-  ConfirmDialog,
+  useConfirmDialog,
   HStack,
   IconButton,
   type IconButtonProps,
@@ -194,11 +194,10 @@ MemoEditor.StackToolbar = function StackToolbar({
   });
   const { isSubmitting, isValid } = useFormState({ control });
 
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
   const pin = useMemoPinAction(memo);
   const aiParse = useMemoAiParse({ accountId: me.id, onSaveChanges });
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
+  const openDeleteDialog = useOpenMemoDeleteDialog({ onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
   const { color: pinnedTint } = useResolveClassNames('text-main');
   const { color: saveTint } = useResolveClassNames(canSave ? 'text-main' : 'text-gray-4');
@@ -257,21 +256,12 @@ MemoEditor.StackToolbar = function StackToolbar({
           <Stack.Toolbar.MenuAction
             icon={MEMO_TOOLBAR_ICON.delete}
             destructive
-            onPress={() => setIsDeleteDialogOpen(true)}
+            onPress={openDeleteDialog}
           >
             {t('common:actions.delete')}
           </Stack.Toolbar.MenuAction>
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
-
-      <MemoDeleteDialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onDeleted={() => {
-          setIsDeleteDialogOpen(false);
-          onDeleted();
-        }}
-      />
     </>
   );
 };
@@ -491,112 +481,48 @@ function MemoMoreMenu({
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const aiParse = useMemoAiParse({ accountId: me.id, onSaveChanges });
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
+  const openDeleteDialog = useOpenMemoDeleteDialog({ onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
 
   return (
-    <>
-      <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
-        <Menu.Trigger asChild>
-          <IconButton
-            testID="memo-more"
-            accessibilityLabel={t('memo:detail.more')}
-            accessibilityState={{ expanded: isOpen }}
-            hitSlop={4}
-            className="min-h-9 min-w-9"
-            icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
-          />
-        </Menu.Trigger>
-        <MenuContent width={MEMO_MORE_MENU_WIDTH}>
-          <MenuActionItem
-            testID="memo-ai-review"
-            Icon={AiFilledIcon}
-            title={t('memo:detail.aiParse')}
-            description={aiQuota}
-            isDisabled={aiParse.isDisabled}
-            onPress={aiParse.start}
-          />
-          <MenuActionItem
-            testID="memo-convert-to-todo"
-            Icon={CheckmarkIcon}
-            title={t('memo:detail.convertToTodo')}
-            isDisabled={convertSheet.isDisabled}
-            onPress={convertSheet.open}
-          />
-          <MenuActionItem
-            Icon={TrashIcon}
-            title={t('common:actions.delete')}
-            variant="danger"
-            onPress={() => setIsDeleteDialogOpen(true)}
-          />
-        </MenuContent>
-      </Menu>
-
-      <MemoDeleteDialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onDeleted={() => {
-          setIsDeleteDialogOpen(false);
-          onDeleted();
-        }}
-      />
-    </>
-  );
-}
-
-interface MemoDeleteDialogProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  onDeleted: () => void;
-}
-
-function MemoDeleteDialog({ isOpen, onOpenChange, onDeleted }: MemoDeleteDialogProps) {
-  const { t } = useTranslation(['memo', 'common']);
-  const [memoId] = useMemoId();
-  const deleteMemo = useMutation(useDeleteMemoMutationOptions());
-
-  const handleConfirm = () => {
-    if (deleteMemo.isPending) {
-      return;
-    }
-    deleteMemo.mutate(memoId, { onSuccess: onDeleted });
-  };
-
-  return (
-    <ConfirmDialog
-      isOpen={isOpen}
-      onOpenChange={(open) => {
-        if (!deleteMemo.isPending) {
-          onOpenChange(open);
-        }
-      }}
-      title={<ConfirmDialog.Title>{t('memo:detail.deleteConfirmTitle')}</ConfirmDialog.Title>}
-      description={
-        <ConfirmDialog.Description>
-          {t('memo:detail.deleteConfirmDescription')}
-        </ConfirmDialog.Description>
-      }
-      cancelButton={
-        <ConfirmDialog.CancelButton
-          onPress={() => onOpenChange(false)}
-          isDisabled={deleteMemo.isPending}
-        >
-          {t('common:actions.cancel')}
-        </ConfirmDialog.CancelButton>
-      }
-      confirmButton={
-        <ConfirmDialog.ConfirmButton
-          color="danger"
-          onPress={handleConfirm}
-          isLoading={deleteMemo.isPending}
-        >
-          {t('common:actions.delete')}
-        </ConfirmDialog.ConfirmButton>
-      }
-    />
+    <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Menu.Trigger asChild>
+        <IconButton
+          testID="memo-more"
+          accessibilityLabel={t('memo:detail.more')}
+          accessibilityState={{ expanded: isOpen }}
+          hitSlop={4}
+          className="min-h-9 min-w-9"
+          icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
+        />
+      </Menu.Trigger>
+      <MenuContent width={MEMO_MORE_MENU_WIDTH}>
+        <MenuActionItem
+          testID="memo-ai-review"
+          Icon={AiFilledIcon}
+          title={t('memo:detail.aiParse')}
+          description={aiQuota}
+          isDisabled={aiParse.isDisabled}
+          onPress={aiParse.start}
+        />
+        <MenuActionItem
+          testID="memo-convert-to-todo"
+          Icon={CheckmarkIcon}
+          title={t('memo:detail.convertToTodo')}
+          isDisabled={convertSheet.isDisabled}
+          onPress={convertSheet.open}
+        />
+        <MenuActionItem
+          Icon={TrashIcon}
+          title={t('common:actions.delete')}
+          variant="danger"
+          onPress={openDeleteDialog}
+        />
+      </MenuContent>
+    </Menu>
   );
 }
 
@@ -842,6 +768,28 @@ function useMemoAiParse({
     start,
     isDisabled: defaultCategoryId == null || entitlementsQuery.isLoading || isParsing,
     isParsing,
+  };
+}
+
+/** 지우는 동안 다이얼로그를 남기고 버튼만 불러오는 중으로 바꾼다. 실패하면 남은 다이얼로그에서 다시 누른다 */
+function useOpenMemoDeleteDialog({ onDeleted }: Pick<MemoEditorToolbarProps, 'onDeleted'>) {
+  const { t } = useTranslation(['memo', 'common']);
+  const [memoId] = useMemoId();
+  const confirmDialog = useConfirmDialog();
+  const deleteMemo = useMutation(useDeleteMemoMutationOptions());
+
+  return async () => {
+    const isDeleted = await confirmDialog.openAsync({
+      title: t('memo:detail.deleteConfirmTitle'),
+      description: t('memo:detail.deleteConfirmDescription'),
+      cancelLabel: t('common:actions.cancel'),
+      confirmLabel: t('common:actions.delete'),
+      confirmColor: 'danger',
+      onConfirm: () => deleteMemo.mutateAsync(memoId),
+    });
+    if (isDeleted) {
+      onDeleted();
+    }
   };
 }
 
