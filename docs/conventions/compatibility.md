@@ -36,6 +36,8 @@
 - 파싱 응답의 `recurrence`(요일 + 종료일): 마지막 지원 앱 1.14.x. 새 앱은 `repeat`를 쓴다. 1.16.0에서 `/recurring`과 같이 판단한다.
 - `POST /v1/notifications/token`: 마지막 지원 앱 1.14.1. 1.14.2 앱부터 `PUT /v1/notifications/push-devices/{deviceId}`를 쓴다. 같은 UseCase로 위임한다. 같은 경로의 `DELETE /v1/notifications/token?deviceId=`는 구 앱 경로가 아니다. 1.15.x 앱이 로그인한 채 로그아웃할 때 이 기기를 푸는 현행 경로(`PushDeviceApi.unregister`)이고, 세션이 끝난 기기는 인증 없이 `POST /v1/notifications/push-devices/unregister`로 푼다.
 - `Todo.recurrenceGroupId`(DB 칸·응답): 영구. 출시 앱 응답의 필수 칸이다.
+- `User.twoFactorEnabled`·`User.twoFactorSecret`·`Subscription.dataRetentionUntil`(DB 칸): 1.15.2 스키마에서 뺐고 DB에는 남긴다. 1.15.1 이미지가 두 테이블을 읽고 쓸 때마다 이 칸을 이름으로 적어, 지우면 배포 중이거나 롤백한 1.15.1이 실패한다. 1.15.2가 롤백 바닥이 된 뒤 값이 비었는지 다시 확인하는 guard와 함께 1.16.0에서 지운다(compatibility.md). 값이 있으면 지우지 않는다.
+- `RetentionExperimentAssignment.assignedAt`(DB 칸): 영구. 코드는 읽지 않지만 DB 기본값으로 남는 배정 시각이고 다른 칸에 없다.
 - `Todo.scheduledTime`(응답): 영구. 출시 앱은 이 순간을 기기 시간대로 보여 준다. 시간대 재계산은 완료했거나 지난 할 일까지 모두 다시 쓰므로 옛 앱에서도 고른 시각으로 보인다. 재계산 전 1~2분만 옛 시간대의 시각으로 보인다.
 - Gemini 전용 AI 동의 경로: 영구. 재동의를 받지 않는 한 그 동의자는 Gemini만 쓴다.
 - 옛 관리자 알림 잡 형식(`LegacyAdminNotificationSchema`, 조립 메시지를 싣던 `{ channel, notification }`의 `LegacySendDataSchema`): 배포 순간 쌓여 있는 잡을 위해 1.15.1까지 둔다. 대기 잡 보관이 24시간이라 1.15.1 배포 뒤 남은 잡이 없으면 다음 릴리스에서 지운다.
