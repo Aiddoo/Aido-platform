@@ -73,7 +73,7 @@
 
 ### 푸시 권한 퍼널
 
-`source`는 `PushPermissionPromptSource`(`onboarding`·`todo_time`·`feed_card`·`settings`·`paywall`, 초대 환영 시트는 `invite_welcome`), `step`은 `PUSH_PERMISSION_STEP`(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다. `shown`은 안내가 보일 때 한 번이고 앱 안 다이얼로그는 `step=ASK`다. 단계 실행은 `usePushPermissionAction({ source }).runStep(step)` 하나이고, 권한 mutation이 `source`를 변수로 받아 `onSuccess`에서 한 번 추적한다(`requested`·`settings_opened`). 흐름은 [푸시 알림](./push-notifications.md)에 있다.
+`source`는 `PushPermissionPromptSource`(`onboarding`·`todo_time`·`feed_card`·`settings`·`paywall`, 초대 환영 시트는 `invite_welcome`), `step`은 `PUSH_PERMISSION_STEP`(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다. `shown`은 안내가 보일 때 마운트·단계마다 한 번이고(`useTrackView`, key는 `step`) 앱 안 다이얼로그는 `step=ASK`다. 피드 카드는 할 일 시각이 지나 숨었다 다음 할 일로 다시 보여도 같은 단계면 다시 세지 않는다(1.15.2부터, `push-permission-notice.test.tsx`). 단계 실행은 `usePushPermissionAction({ source }).runStep(step)` 하나이고, 권한 mutation이 `source`를 변수로 받아 `onSuccess`에서 한 번 추적한다(`requested`·`settings_opened`). 흐름은 [푸시 알림](./push-notifications.md)에 있다.
 
 ## Sentry
 
