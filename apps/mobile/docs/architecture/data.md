@@ -35,6 +35,7 @@ export class MemoApi {
 - 통과 메서드를 두지 않는다. 저장소 하나를 그대로 읽고 쓰면 저장 값 정의, 판정이면 Policy다.
 - 받는 것은 포트, 쓰는 메서드만 고른 `Pick<XApi, 'method'>`, 저장 값 함수, Policy, `AppLogger`, 시계 `now: () => Instant`다. `HttpClient`를 직접 받지 않는다. 의존이 셋까지면 위치 인자, 넷부터 `{Class}Ports` 객체 하나다.
 - 결과는 판별 유니온이다. 삼킨 실패만 `logger.warn`하고 추적·`captureException`은 훅과 mutation 콜백이 한다. 결과를 캐시에 두는 동작(OS 권한 요청)은 mutation 옵션이 부르고, 캐시할 값이 없는 기기 동작은 핸들러가 `use{Name}Service()`로 바로 부른다.
+- 서로 모르는 `await`는 사용자가 느끼는 대기(버튼·첫 화면·새로고침)가 실제로 줄 때 함께 시작한다. 하나 실패가 전체 실패면 `Promise.all`, 각자 기록하고 이어 가면 `Promise.allSettled`다. 차례가 뜻이거나(세션·토큰·키체인 쓰기, 대화상자, 직렬 큐, 백오프) 이득이 작으면(MMKV 동기, 캐시된 값) 차례로 두고 코드로 안 보이는 차례는 이유를 한 줄 남긴다. 화면이 기다리지 않아도 되는 서버 보고는 버튼 대기에 물리지 않는다.
 - Session(`services/{name}.session.ts`)은 타이머·구독을 가진 수명 객체다. 포트만 받고 `dispose()`를 두며, 만든 Provider·훅의 effect 정리가 `dispose()`를 부른다.
 - 생성자와 `createAppContainer`는 구독·타이머·저장소 쓰기를 하지 않는다. 연결은 쓰는 쪽 effect가 맡는다.
 

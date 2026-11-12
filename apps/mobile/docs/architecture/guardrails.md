@@ -100,4 +100,4 @@
 
 ## 리뷰로 지키는 것
 
-이 검사가 막지 않는 규칙이다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, 쿼리·utils 파일 위치, 다른 feature의 `apis/` import, feature 파일 접두사(`nudge`→`todo-nudge`처럼 feature 이름이 entity 이름을 줄인 경우), 댓글 단계별 Stack route(`todo/[todoId]` 아래 `_layout`·`comment`·`comments/[commentId]`), 다른 파일에서 받은 shared value의 `.value`, 변수로 먼저 만든 `className` 문자열.
+이 검사가 막지 않는 규칙이다: Facade 밖에서 부르지 않는 메서드, 메모 밖 feature의 계약 import, 쿼리·utils 파일 위치, 다른 feature의 `apis/` import, feature 파일 접두사(`nudge`→`todo-nudge`처럼 feature 이름이 entity 이름을 줄인 경우), 댓글 단계별 Stack route(`todo/[todoId]` 아래 `_layout`·`comment`·`comments/[commentId]`), 다른 파일에서 받은 shared value의 `.value`, 변수로 먼저 만든 `className` 문자열, 서로 모르는 `await`의 연속과 화면 대기에 물린 백그라운드 보고(`no-await-in-loop`은 운영 대상이 백오프 재조회 하나뿐이라 켜지 않는다).
