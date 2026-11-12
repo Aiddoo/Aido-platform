@@ -185,7 +185,7 @@ const inviteCard = tv({
   variants: { hasTitle: { true: 'py-5', false: 'py-4' } },
 });
 
-/** 이 화면의 회색 카드 틀. 제목이 있으면 위아래를 조금 더 띄운다 */
+/** 제목이 있으면 위아래를 조금 더 띄운다 */
 function InviteCard({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <VStack gap={14} className={inviteCard({ hasTitle: title != null })}>
