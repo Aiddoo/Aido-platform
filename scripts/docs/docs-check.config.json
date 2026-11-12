@@ -7,11 +7,6 @@
   "ruleLineLimit": 40,
   "agentsBytesLimit": 24576,
   "allow": [
-    {
-      "path": ".claude/commands/api-module/SKILL.md",
-      "check": "agent-files",
-      "reason": "phase 3에서 .claude/skills로 옮긴다"
-    },
     { "path": "README.md", "check": "limit", "reason": "phase 3에서 줄인다" },
     {
       "path": "apps/mobile/docs/analytics-measurement-plan.md",
