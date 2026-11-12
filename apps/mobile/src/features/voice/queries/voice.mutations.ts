@@ -1,4 +1,5 @@
 import { useHaptics, useVoiceApi } from '@src/bootstrap/providers/di-context';
+import { useMutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { parseErrorFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
@@ -58,6 +59,7 @@ export function useApplyActionPlanMutationOptions({
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const toast = useAppToast();
+  const showMutationError = useMutationErrorFeedback();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 고친 카드를 남긴 채 안내한다
@@ -117,7 +119,6 @@ export function useApplyActionPlanMutationOptions({
       }
     },
     onError: (error) => {
-      haptics.notify('error');
       const cause = getVoicePlanFailureCause(error);
       if (cause === 'rejected') {
         invalidateTodoCategories(queryClient);
@@ -125,7 +126,9 @@ export function useApplyActionPlanMutationOptions({
       if (cause === 'source-memo-missing') {
         onMemoChanged();
       }
-      toast.error(t(`voicePlan:failure.${cause}.title`), {
+      showMutationError(error, {
+        feature: 'voice',
+        title: t(`voicePlan:failure.${cause}.title`),
         description: t(`voicePlan:failure.${cause}.description`),
       });
     },
@@ -149,7 +152,7 @@ export function useCreateQuickPlanMutationOptions({
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const haptics = useHaptics();
-  const toast = useAppToast();
+  const showMutationError = useMutationErrorFeedback();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
 
   return mutationOptions({
@@ -181,8 +184,8 @@ export function useCreateQuickPlanMutationOptions({
         source: toAnalyticsSource(input.source),
         cause,
       });
-      haptics.notify('error');
       if (gate.promptIfBlockedError(error, { onSubscribe })) {
+        haptics.notify('error');
         return;
       }
 
@@ -191,7 +194,9 @@ export function useCreateQuickPlanMutationOptions({
         reflectFeatureQuota(queryClient, featureQuota);
       }
       // 서버가 환불까지 끝냈다고 알린 오류에만 "차감되지 않아요"를 보여 준다
-      toast.error(t(`voicePlan:failure.${cause}.title`), {
+      showMutationError(error, {
+        feature: 'voice',
+        title: t(`voicePlan:failure.${cause}.title`),
         description: isFreeOfChargeError(error)
           ? `${t(`voicePlan:failure.${cause}.description`)} ${t('subscription:gate.notCharged')}`
           : t(`voicePlan:failure.${cause}.description`),
@@ -257,7 +262,7 @@ export function useCreateVoiceNoteDigestMutationOptions() {
       if (featureQuota != null) {
         reflectFeatureQuota(queryClient, featureQuota);
       }
-      // 화면이 실패를 직접 보여 주므로 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다
+      // 화면이 실패를 직접 보여 주므로 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다(보고는 정리 훅이 한다)
     },
     meta: { errorFeedback: false },
   });

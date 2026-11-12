@@ -1,10 +1,11 @@
-import { useHaptics, useLogger } from '@src/bootstrap/providers/di-context';
+import { useLogger } from '@src/bootstrap/providers/di-context';
+import { useMutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
-import { getErrorMessage, getUserFacingMessage } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -44,7 +45,7 @@ export function WeatherRescheduleSubmitButton({
   const toast = useAppToast();
   const queryClient = useQueryClient();
   const { timeZone } = useDateFormatContext();
-  const haptics = useHaptics();
+  const showMutationError = useMutationErrorFeedback();
   const logger = useLogger();
   const { trackEvent } = useTrack();
   const [todoIds] = useWeatherRescheduleTodoIds();
@@ -71,11 +72,12 @@ export function WeatherRescheduleSubmitButton({
     invalidateTodos(queryClient);
     // 영향받는 할 일은 서버가 고르므로 옮긴 할 일이 브리핑에서 빠지려면 리포트를 다시 받는다
     invalidateWeatherReports(queryClient);
+    // 여러 할 일을 한 번에 옮겨 실패는 첫 번째 하나로 한 번만 알린다
     const [firstFailure] = failures;
-    if (failures.length > 0) {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(firstFailure), {
-        fallback: t('todo:toast.updateFailedRetry'),
+    if (firstFailure != null) {
+      showMutationError(firstFailure, {
+        feature: 'weather',
+        fallbackKey: 'todo:toast.updateFailedRetry',
       });
     }
   };

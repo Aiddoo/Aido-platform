@@ -12,6 +12,7 @@ import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handle
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -62,6 +63,7 @@ export function VoiceNoteRecorder() {
   const { t } = useTranslation('voiceNote');
   const isCompact = useWindowSizeClass() === 'compact';
   const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedError('voice');
   const accountId = useSuspenseMyAccountId();
   const { maxSeconds, limitMs, finishOrPromptLimit } = useVoiceNoteRecordLimit();
   const getSpeechContext = useReadSpeechContext();
@@ -95,7 +97,8 @@ export function VoiceNoteRecorder() {
 
   // 화면에 들어올 때 한 번만 녹음을 시작한다. 그 시점의 언어·힌트를 읽는다
   const startRecording = useEffectEvent(() => {
-    recording.start({ startLocale: locale, hintWords: getSpeechContext() }).catch(() => {
+    recording.start({ startLocale: locale, hintWords: getSpeechContext() }).catch((error) => {
+      reportUnexpectedError(error);
       toast.error(t('record.failedTitle'));
     });
   });

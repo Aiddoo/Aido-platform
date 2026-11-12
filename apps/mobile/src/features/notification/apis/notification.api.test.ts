@@ -169,10 +169,13 @@ describe('NotificationApi.markAsReadAndCheckOwnership', () => {
     expect(ownership).toBe('ok');
   });
 
-  it.each([403, 404])('읽음이 %s면 다른 계정 알림이다', async (status) => {
+  it.each([
+    { code: 'NOTIFICATION_1004', status: 404 },
+    { code: 'NOTIFICATION_1005', status: 403 },
+  ] as const)('읽음이 $code면 다른 계정 알림이다', async ({ code, status }) => {
     // Given
     const { httpClient, api } = setup();
-    httpClient.patch.mockResolvedValue(err(createNotificationApiError({ status })));
+    httpClient.patch.mockResolvedValue(err(createNotificationApiError({ code, status })));
 
     // When
     const ownership = await api.markAsReadAndCheckOwnership(7);

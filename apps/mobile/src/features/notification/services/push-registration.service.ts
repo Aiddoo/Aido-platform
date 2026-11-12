@@ -252,6 +252,13 @@ export class PushRegistrationService {
   flushRelease = (): Promise<void> => {
     const releasing = (this.#releasing ?? Promise.resolve())
       .then(() => this.#release())
+      .then((outcome) => {
+        if (outcome === 'throttled') {
+          this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_RELEASE_DEFERRED, {
+            reason: 'throttled',
+          });
+        }
+      })
       .catch((error: unknown) => {
         this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_RELEASE_DEFERRED, {
           error: getErrorMessage(error),
@@ -266,32 +273,34 @@ export class PushRegistrationService {
     return releasing;
   };
 
-  #release = async (): Promise<void> => {
+  /** 너무 자주 보내 막히면 기록을 남겨 다음 연결·복귀 때 다시 보낸다(throttled) */
+  #release = async (): Promise<'done' | 'throttled'> => {
     const cancelCount = this.#releaseCancelCount;
     const registration = await this.#registrationRepository.find();
     if (!PushRegistrationPolicy.hasPendingRelease(registration)) {
-      return;
+      return 'done';
     }
     const tokens = PushRegistrationPolicy.getReleaseTokens(registration, {
       currentToken: await this.#issueToken(),
     });
     if (tokens.length === 0) {
-      return;
+      return 'done';
     }
     const deviceId = await this.#deviceIdService.get();
     // 토큰을 받는 사이 새 세션이 보고했다면 그 등록을 지우지 않는다
     if (this.#releaseCancelCount !== cancelCount) {
-      return;
+      return 'done';
     }
     const results = await Promise.all(
       tokens.map((token) => this.#postRelease({ deviceId, token })),
     );
     if (results.includes('retry')) {
-      throw new Error('push device release throttled');
+      return 'throttled';
     }
     if (this.#releaseCancelCount === cancelCount) {
       await this.#updateRegistration(PushRegistrationPolicy.recordReleased);
     }
+    return 'done';
   };
 
   /** 연결·서버 장애는 던진다. 429면 다시 보낸다 */

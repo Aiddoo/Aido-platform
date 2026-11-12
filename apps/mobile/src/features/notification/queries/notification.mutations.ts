@@ -8,7 +8,7 @@ import { unwrap } from '@src/core/errors/result';
 import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
 import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage, isConnectivityError, ServerError } from '@src/shared/errors';
+import { getErrorMessage, isConnectivityError, ServerError, toError } from '@src/shared/errors';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
@@ -58,6 +58,7 @@ export function useMarkAllAsReadMutationOptions() {
 
 export function useMarkAsReadMutationOptions() {
   const haptics = useHaptics();
+  const logger = useLogger();
   const notificationApi = useNotificationApi();
   const queryClient = useQueryClient();
 
@@ -68,12 +69,13 @@ export function useMarkAsReadMutationOptions() {
     onMutate: async (notificationId) => ({
       change: await optimisticallyMarkNotificationsRead(queryClient, notificationId),
     }),
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       if (context?.change != null) {
         revertNotificationsRead(queryClient, context.change);
       }
-      // 읽음은 다음 탭에 다시 보내므로 이어서 이동한 화면을 토스트로 가리지 않는다
+      // 읽음은 다음 탭에 다시 보내므로 이어서 이동한 화면을 토스트로 가리지 않고, 예상하지 못한 실패만 보고한다
       haptics.notify('error');
+      logger.error(NOTIFICATION_LOG_EVENT.MARK_READ_FAILED, toError(error));
     },
     onSettled: () => invalidateAfterLastNotificationWrite(queryClient),
     meta: { errorFeedback: false },

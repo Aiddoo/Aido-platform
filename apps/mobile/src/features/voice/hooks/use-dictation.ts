@@ -1,6 +1,7 @@
 import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
 import type { SpeechErrorCode } from '@src/core/ports/speech-recognizer';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { tDynamic } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { noop } from 'es-toolkit';
@@ -27,6 +28,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
   const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedError('voice');
   const { speechLocale } = useLocaleContext();
   const [isListening, setIsListening] = useState(false);
   const isMountedRef = useRef(false);
@@ -116,9 +118,10 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
           recordingDirectory: null,
         }),
       );
-    } catch {
+    } catch (error) {
       isStartingRef.current = false;
       isSessionOwnerRef.current = false;
+      reportUnexpectedError(error);
       toast.error(getSpeechErrorMessage('unknown'));
     }
   };
