@@ -18,7 +18,6 @@ import {
   InfiniteList,
   InlineAlert,
   MenuContent,
-  QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
@@ -37,7 +36,7 @@ import {
 import { noop, range } from 'es-toolkit';
 import { useNavigation } from 'expo-router';
 import { Menu, type MenuKey, PressableFeedback, Separator, Spinner } from 'heroui-native';
-import { type ComponentProps, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useRef, useState } from 'react';
 import { type ScrollViewProps, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -173,47 +172,43 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
   );
 }
 
-/** 할 일 본문과 댓글 수·정렬. 댓글과 함께 스크롤된다 */
+/** 할 일 본문과 댓글 수·정렬. 댓글과 함께 스크롤된다. 상세를 기다리는 동안은 목록을 감싼 경계 하나(`TodoCommentPane`)가 받는다 */
 TodoCommentThreadList.Header = function Header() {
+  return (
+    <>
+      {/* oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다 */}
+      <Box px={16} py={18}>
+        <TodoDetailSummary />
+      </Box>
+
+      <Separator />
+
+      <TodoCommentThreadList.Toolbar />
+    </>
+  );
+};
+
+/** 댓글 수와 정렬. 상세를 기다리지 않아 로딩 중에도 같은 자리에 그린다 */
+TodoCommentThreadList.Toolbar = function Toolbar() {
   const [todoId] = useTodoId();
   const [sort, setSort] = useTodoCommentSort();
   const { trackEvent } = useTrack();
   const sortChange = useSortChange();
 
   return (
-    <>
-      <QueryErrorBoundary resetKeys={[todoId]}>
-        <Suspense
-          fallback={
-            // oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다
-            <Box px={16} py={18}>
-              <TodoDetailSummary.Loading />
-            </Box>
-          }
-        >
-          {/* oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다 */}
-          <Box px={16} py={18}>
-            <TodoDetailSummary />
-          </Box>
-        </Suspense>
-      </QueryErrorBoundary>
-
-      <Separator />
-
-      <HStack justify="between" align="center" gap={12} px={16} py={4}>
-        <CommentCount />
-        <TodoCommentThreadList.SortBar
-          value={sort}
-          isLoading={sortChange.isPending}
-          onChange={(next) =>
-            sortChange.prefetchThenCommit(next, () => {
-              setSort(next);
-              trackEvent('todo_comment_sorted', { todo_id: todoId, sort: next });
-            })
-          }
-        />
-      </HStack>
-    </>
+    <HStack justify="between" align="center" gap={12} px={16} py={4}>
+      <CommentCount />
+      <TodoCommentThreadList.SortBar
+        value={sort}
+        isLoading={sortChange.isPending}
+        onChange={(next) =>
+          sortChange.prefetchThenCommit(next, () => {
+            setSort(next);
+            trackEvent('todo_comment_sorted', { todo_id: todoId, sort: next });
+          })
+        }
+      />
+    </HStack>
   );
 };
 
@@ -303,7 +298,12 @@ TodoCommentThreadList.Loading = function Loading() {
       style={styles.fallbackScrollView}
       showsVerticalScrollIndicator={false}
     >
-      <TodoCommentThreadList.Header />
+      {/* oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다 */}
+      <Box px={16} py={18}>
+        <TodoDetailSummary.Loading />
+      </Box>
+      <Separator />
+      <TodoCommentThreadList.Toolbar />
       <VStack testID="todo-comment-thread-list-loading">
         {range(LOADING_ROW_COUNT).map((index) => (
           <TodoCommentRailRow key={index} kind={{ type: 'comment', hasReplies: false }}>

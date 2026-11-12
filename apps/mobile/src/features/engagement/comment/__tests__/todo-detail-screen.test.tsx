@@ -22,8 +22,10 @@ import {
   createHttpClientStub,
   createMemorySyncStorage,
   createPendingResponse,
+  createRouteParamsFake,
   createTestDi,
   deliverQueryNotifications,
+  respondByPath,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -31,6 +33,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
@@ -450,6 +453,71 @@ describe('TodoDetailRoute', () => {
 
       // Then
       expect(router.replace).toHaveBeenCalledWith('/feed');
+    });
+  });
+
+  describe('상세와 댓글을 함께 기다리는 동안', () => {
+    /** Expo Router가 전환을 마치면 route에서 지우는 내부 param(useScreens의 transitionEnd) */
+    const ROUTER_NO_ANIMATION_PARAM = '__internal_expo_router_no_animation';
+    /** 응답을 기다리는 동안 조회 결과가 다시 만들어지는 상한. 끝나는 렌더는 한 자리 수다 */
+    const PENDING_RENDER_LIMIT = 100;
+
+    /** 화면을 연 직후 route params가 한 번 바뀐다. 앞 화면과 같은 값이라 조회는 그대로다 */
+    function RouterParamsCleanup() {
+      useEffect(() => {
+        router.setParams({ [ROUTER_NO_ANIMATION_PARAM]: undefined });
+      }, []);
+      return null;
+    }
+
+    it('화면을 연 직후 route params가 바뀌어도 기다리는 동안 렌더가 끝나고, 응답이 오면 본문과 입력창을 그린다', async () => {
+      // Given
+      const details = Promise.withResolvers<Awaited<ReturnType<HttpClient['get']>>>();
+      const threads = Promise.withResolvers<Awaited<ReturnType<HttpClient['get']>>>();
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockImplementation(
+        respondByPath({
+          'v1/auth/me': ok(createCurrentUserDto({ userId: USER_ID })),
+          'v1/auth/preference': ok(createPreferenceDto()),
+          [`v1/todos/${TODO_ID}/details`]: () => details.promise,
+          [`v2/todos/${TODO_ID}/comments`]: () => threads.promise,
+        }),
+      );
+      createRouteParamsFake({ todoId: String(TODO_ID), [ROUTER_NO_ANIMATION_PARAM]: 'true' });
+      const di = createTestDi({ ports: { httpClient } });
+      let pendingRenders = 0;
+      di.queryClient.getQueryCache().subscribe((event) => {
+        if (event.type !== 'observerResultsUpdated') {
+          return;
+        }
+        pendingRenders += 1;
+        // 끝나지 않는 렌더는 act 안에서 동기로 돌아 응답이 끼어들 수 없다. 상한에서 끊어 실패로 드러낸다
+        if (pendingRenders > PENDING_RENDER_LIMIT) {
+          throw new Error('응답을 기다리는 동안 렌더가 끝나지 않습니다');
+        }
+      });
+
+      // When
+      await renderScreen(
+        <>
+          <TodoDetailRoute />
+          <RouterParamsCleanup />
+        </>,
+        { di, withLocalDate: true, withOverlay: true },
+      );
+
+      // Then
+      expect(pendingRenders).toBeLessThan(PENDING_RENDER_LIMIT);
+
+      // When
+      await act(async () => {
+        details.resolve(ok(createDetailsDto()));
+        threads.resolve(ok({ items: [], pagination: PAGINATION, anchor: null }));
+      });
+
+      // Then
+      expect(await screen.findByTestId('todo-comment-count')).toHaveTextContent('1');
+      expect(screen.getByTestId('todo-comment-composer')).toBeOnTheScreen();
     });
   });
 
