@@ -42,6 +42,9 @@ function SettingsListGroupLabel({ label }: { label: string }) {
   );
 }
 
+/** 행 끝 화살표. 아이콘 원본 크기(20)이고 글자처럼 앱 글꼴 배율을 따른다 */
+const ARROW_ICON_SIZE = 20;
+
 interface SettingsListGroupItemProps extends Omit<
   ComponentProps<typeof ListGroup.Item>,
   'children' | 'disabled'
@@ -67,6 +70,9 @@ function SettingsListGroupItem({
   className,
   ...props
 }: SettingsListGroupItemProps) {
+  const fontScaledSize = useFontScaledSize();
+  const arrowSize = fontScaledSize(ARROW_ICON_SIZE);
+
   return (
     <ListGroup.Item
       accessibilityRole="button"
@@ -96,7 +102,7 @@ function SettingsListGroupItem({
         {right ?? (
           <HStack align="center" gap={4} className="shrink">
             <Box className="shrink">{value}</Box>
-            <ArrowRightIcon colorClassName="text-gray-6" />
+            <ArrowRightIcon width={arrowSize} height={arrowSize} colorClassName="text-gray-6" />
           </HStack>
         )}
       </ListGroup.ItemSuffix>
@@ -113,6 +119,9 @@ SettingsListGroupItem.Loading = function Loading({
   descriptionLines = 0,
   hasValue = false,
 }: SettingsListGroupItemLoadingProps) {
+  const fontScaledSize = useFontScaledSize();
+  const arrowSize = fontScaledSize(ARROW_ICON_SIZE);
+
   return (
     <HStack align="center" gap={12} className="min-h-12 p-4 py-3">
       <VStack flex={1} gap={2}>
@@ -123,7 +132,7 @@ SettingsListGroupItem.Loading = function Loading({
       </VStack>
       <HStack align="center" gap={4}>
         {hasValue && <TextSkeleton size="b3" className="w-12" />}
-        <ArrowRightIcon colorClassName="text-gray-3" />
+        <ArrowRightIcon width={arrowSize} height={arrowSize} colorClassName="text-gray-3" />
       </HStack>
     </HStack>
   );

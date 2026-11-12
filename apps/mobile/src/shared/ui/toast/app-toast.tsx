@@ -1,8 +1,10 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { PressableFeedback, Toast } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { FadeIn } from 'react-native-reanimated';
 
 import { Box } from '../box';
+import type { StyledIcon } from '../icon/create-styled-icon';
 import { ToastErrorIcon, ToastSuccessIcon, ToastWarningIcon } from '../icon/icons';
 import { Text } from '../text/text';
 
@@ -35,12 +37,12 @@ const MOVED_TOAST_ANIMATION = {
   entering: { top: FadeIn.duration(0), bottom: FadeIn.duration(0) },
 } satisfies ToastRootProps['animation'];
 
-const VARIANT_ICON_MAP: Record<AppToastVariant, ReactNode> = {
+const VARIANT_ICONS = {
   default: null,
-  success: <ToastSuccessIcon width={ICON_SIZE} height={ICON_SIZE} />,
-  warning: <ToastWarningIcon width={ICON_SIZE} height={ICON_SIZE} />,
-  danger: <ToastErrorIcon width={ICON_SIZE} height={ICON_SIZE} />,
-};
+  success: ToastSuccessIcon,
+  warning: ToastWarningIcon,
+  danger: ToastErrorIcon,
+} as const satisfies Record<AppToastVariant, StyledIcon | null>;
 
 export function AppToast({
   label,
@@ -51,7 +53,11 @@ export function AppToast({
   isMoved = false,
   toastProps,
 }: AppToastProps) {
-  const resolvedIcon = icon ?? VARIANT_ICON_MAP[variant];
+  const fontScaledSize = useFontScaledSize();
+  const VariantIcon = VARIANT_ICONS[variant];
+  const iconSize = fontScaledSize(ICON_SIZE);
+  const resolvedIcon =
+    icon ?? (VariantIcon == null ? null : <VariantIcon width={iconSize} height={iconSize} />);
 
   return (
     <Toast

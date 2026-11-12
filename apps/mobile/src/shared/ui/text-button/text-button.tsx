@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
 import { LinkButton } from 'heroui-native';
 
@@ -35,6 +36,9 @@ export function TextButton({
   className,
   ...props
 }: TextButtonProps) {
+  const fontScaledSize = useFontScaledSize();
+  const arrowSize = fontScaledSize(ICON_SIZE_MAP[size]);
+
   return (
     <LinkButton
       isDisabled={isDisabled}
@@ -47,12 +51,7 @@ export function TextButton({
       </Text>
       {variant === 'arrow' && (
         <Box className="ml-1">
-          <ArrowRightIcon
-            testID="text-button-arrow"
-            width={ICON_SIZE_MAP[size]}
-            height={ICON_SIZE_MAP[size]}
-            colorClassName="text-gray-6"
-          />
+          <ArrowRightIcon width={arrowSize} height={arrowSize} colorClassName="text-gray-6" />
         </Box>
       )}
     </LinkButton>
