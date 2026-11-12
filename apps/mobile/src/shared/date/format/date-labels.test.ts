@@ -2,15 +2,32 @@ import type { DayOfWeek } from '@aido/api';
 import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { i18n } from '@src/shared/i18n';
 import { createDateKey } from '@src/testing/date-key';
+import { z } from 'zod';
 
+import weekCases from '../../../../../../packages/api/test/fixtures/week-of-month-cases.json';
 import {
+  formatCalendarWeekLabel,
   formatDaysOfWeek,
-  formatIsoWeekOfMonthLabel,
+  formatIsoWeekLabel,
   formatRelativeTimeLabel,
-  formatWeekOfMonthLabel,
   getDayOfWeekLabel,
   getWeekdayLabels,
 } from './date-labels';
+
+/** 서버 formatIsoWeekLabel도 같은 표를 읽는다. 두 구현의 글자가 어긋나면 어느 한쪽 테스트가 깨진다 */
+const SHARED_ISO_WEEK_LABEL_CASES = z
+  .object({
+    isoWeekLabel: z.array(
+      z.object({
+        name: z.string(),
+        date: z.iso.date(),
+        today: z.iso.date(),
+        ko: z.string(),
+        en: z.string(),
+      }),
+    ),
+  })
+  .parse(weekCases).isoWeekLabel;
 
 afterEach(async () => {
   await i18n.changeLanguage('ko');
@@ -126,35 +143,35 @@ describe('로케일 인지 포맷 (i18n)', () => {
     const dateKey = createDateKey('2026-07-07');
 
     // When
-    const korean = formatWeekOfMonthLabel(dateKey, TODAY_DATE_KEY, KO_SEOUL);
-    const english = formatWeekOfMonthLabel(dateKey, TODAY_DATE_KEY, EN_SEOUL);
+    const korean = formatCalendarWeekLabel(dateKey, TODAY_DATE_KEY, KO_SEOUL);
+    const english = formatCalendarWeekLabel(dateKey, TODAY_DATE_KEY, EN_SEOUL);
 
     // Then
-    expect(korean).toBe('7월 1주차');
-    expect(english).toBe('Week 1 of Jul');
+    expect(korean).toBe('7월 2주차');
+    expect(english).toBe('Week 2 of Jul');
   });
 
   it.each([
-    ['2031-10-20', '2026-10-26', '2031년 10월 3주차', 'Week 3 of Oct 2031'],
-    ['2028-02-29', '2026-10-26', '2028년 2월 4주차', 'Week 4 of Feb 2028'],
-    ['2027-01-01', '2026-10-26', '12월 4주차', 'Week 4 of Dec'],
-    ['2027-01-01', '2027-01-01', '2026년 12월 4주차', 'Week 4 of Dec 2026'],
+    ['2031-10-20', '2026-10-26', '2031년 10월 4주차', 'Week 4 of Oct 2031'],
+    ['2028-02-29', '2026-10-26', '2028년 3월 1주차', 'Week 1 of Mar 2028'],
+    ['2027-01-01', '2026-10-26', '12월 5주차', 'Week 5 of Dec'],
+    ['2027-01-01', '2027-01-01', '2026년 12월 5주차', 'Week 5 of Dec 2026'],
     ['2027-01-03', '2026-12-31', '2027년 1월 1주차', 'Week 1 of Jan 2027'],
   ])('%s 주 헤더는 오늘이 %s이면 %s / %s다', (dateKey, todayDateKey, korean, english) => {
     // When
-    const koreanLabel = formatWeekOfMonthLabel(
+    const koreanLabel = formatCalendarWeekLabel(
       createDateKey(dateKey),
       createDateKey(todayDateKey),
       KO_SEOUL,
     );
-    const englishLabel = formatWeekOfMonthLabel(
+    const englishLabel = formatCalendarWeekLabel(
       createDateKey(dateKey),
       createDateKey(todayDateKey),
       EN_SEOUL,
     );
 
     // Then
-    // 올해가 아닌 주는 연도를 보여 몇 년 뒤로 튄 날짜를 알아챌 수 있어야 한다. 주가 시작한 달의 연도로 판단한다
+    // 올해가 아닌 주는 연도를 보여 몇 년 뒤로 튄 날짜를 알아챌 수 있어야 한다. 주의 수요일이 속한 해로 판단한다
     expect(koreanLabel).toBe(korean);
     expect(englishLabel).toBe(english);
   });
@@ -182,9 +199,10 @@ describe('로케일 인지 포맷 (i18n)', () => {
   });
 });
 
-describe('formatIsoWeekOfMonthLabel', () => {
+describe('formatIsoWeekLabel', () => {
   const KO = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
   const EN = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
+  const TODAY_KEY = createDateKey('2026-11-12');
 
   it('주의 목요일이 속한 달 기준으로 앱 언어에 맞는 주차를 만든다', () => {
     // Given
@@ -192,8 +210,8 @@ describe('formatIsoWeekOfMonthLabel', () => {
     const mondayKey = createDateKey('2026-03-02');
 
     // When
-    const korean = formatIsoWeekOfMonthLabel(mondayKey, KO);
-    const english = formatIsoWeekOfMonthLabel(mondayKey, EN);
+    const korean = formatIsoWeekLabel(mondayKey, TODAY_KEY, KO);
+    const english = formatIsoWeekLabel(mondayKey, TODAY_KEY, EN);
 
     // Then
     expect(korean).toBe('3월 1주차');
@@ -206,35 +224,21 @@ describe('formatIsoWeekOfMonthLabel', () => {
     const mondayKey = createDateKey('2026-03-30');
 
     // When
-    const label = formatIsoWeekOfMonthLabel(mondayKey, KO);
+    const label = formatIsoWeekLabel(mondayKey, TODAY_KEY, KO);
 
     // Then
     expect(label).toBe('4월 1주차');
   });
-});
 
-// dayjs를 지우기 전 구현이 만든 글자다. 계산을 바꿔도 화면 글자는 바이트 단위로 같아야 한다
-describe('formatWeekOfMonthLabel', () => {
-  it.each([
-    ['ko-KR', '2027-01-01', '12월 4주차', '12월 5주차'],
-    ['ko-KR', '2026-12-31', '12월 4주차', '12월 5주차'],
-    ['ko-KR', '2026-03-01', '3월 1주차', '2월 4주차'],
-    ['en-US', '2027-01-01', 'Week 4 of Dec', 'Week 5 of Dec'],
-    ['en-US', '2026-12-31', 'Week 4 of Dec', 'Week 5 of Dec'],
-    ['en-US', '2026-03-01', 'Week 1 of Mar', 'Week 4 of Feb'],
-  ] as const)('%s %s의 주 라벨은 이전과 같은 글자다', (locale, dateKey, expected, expectedIso) => {
-    // Given
-    const context = { locale, timeZone: 'Asia/Seoul' };
+  it.each(SHARED_ISO_WEEK_LABEL_CASES)(
+    '목요일의 해가 올해가 아니면 연도를 붙인다(서버와 같은 표): $name',
+    ({ date, today, ko, en }) => {
+      // When
+      const korean = formatIsoWeekLabel(createDateKey(date), createDateKey(today), KO);
+      const english = formatIsoWeekLabel(createDateKey(date), createDateKey(today), EN);
 
-    // When
-    const week = formatWeekOfMonthLabel(
-      createDateKey(dateKey),
-      createDateKey('2026-11-11'),
-      context,
-    );
-    const isoWeek = formatIsoWeekOfMonthLabel(createDateKey(dateKey), context);
-
-    // Then
-    expect([week, isoWeek]).toEqual([expected, expectedIso]);
-  });
+      // Then
+      expect([korean, english]).toEqual([ko, en]);
+    },
+  );
 });

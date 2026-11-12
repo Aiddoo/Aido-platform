@@ -75,7 +75,7 @@ describe('toWidgetWeek', () => {
     expect(week.rangeLabel).toBe('12.27 – 01.02');
   });
 
-  it('월을 걸친 주는 일요일이 속한 달과 주차를 제목에 쓴다', () => {
+  it('월을 걸친 주는 수요일이 속한 달과 주차를 앱 달력과 같은 글자로 제목에 쓴다', () => {
     // Given
     const summary = createWidgetSummary({ date: createDateKey('2026-10-01') });
 
@@ -84,7 +84,8 @@ describe('toWidgetWeek', () => {
 
     // Then
     expect(week.days[0]?.date).toBe('2026-09-27');
-    expect(week.title).toBe('widget:calendar.weekTitle({"month":"9월","week":4})');
+    // 9월 27일~10월 3일 주의 수요일은 9월 30일이다
+    expect(week.title).toBe('9월 5주차');
   });
 });
 

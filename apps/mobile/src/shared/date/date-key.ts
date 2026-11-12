@@ -26,7 +26,8 @@ const MONTH_LENGTH_ROUNDING = 2;
 const EPOCH_SHIFT_DAYS = 719_468;
 // 1970-01-01은 목요일이다
 const EPOCH_DAY_OF_WEEK = 4;
-const ISO_WEEK_THURSDAY_OFFSET = 3;
+// 주의 첫날에서 가운데 날까지. 일요일 시작 주는 수요일, ISO 주(월요일 시작)는 목요일이다
+const WEEK_MIDDLE_DAY_OFFSET = 3;
 
 /** 시간대와 무관한 달력 날짜(계약 `YYYY-MM-DD`). 없는 날(2월 30일)은 받지 않는다 */
 export const dateKeySchema = dateSchema.brand<'DateKey'>();
@@ -221,7 +222,7 @@ export function getDayOfMonth(dateKey: DateKey): number {
 export function getIsoWeekYear(dateKey: DateKey): number {
   const epochDay = toEpochDay(dateKey);
   // ISO 주의 연도는 그 주 목요일이 속한 해다
-  return fromEpochDay(epochDay - getDaysSinceMonday(epochDay) + ISO_WEEK_THURSDAY_OFFSET).year;
+  return fromEpochDay(epochDay - getDaysSinceMonday(epochDay) + WEEK_MIDDLE_DAY_OFFSET).year;
 }
 
 export function getDaysInDateKeyMonth(dateKey: DateKey): number {
@@ -244,30 +245,33 @@ export function isSameYearDateKey(first: DateKey, second: DateKey): boolean {
   return getYearOfDateKey(first) === getYearOfDateKey(second);
 }
 
-/** 서버 주차 라벨과 같은 규칙이다. 주의 목요일이 속한 달의 몇 번째 목요일인지가 주차다 */
-export function getIsoWeekOfMonth(dateKey: DateKey): {
-  thursdayDateKey: DateKey;
+export interface WeekOfMonth {
+  /** 주의 가운데 날(일요일 시작 주는 수요일, ISO 주는 목요일). 주차의 연·월은 이 날의 것이다 */
+  middleDateKey: DateKey;
+  /** 가운데 날이 그 달의 몇째 수·목요일인지(1~5) */
   weekOfMonth: number;
-} {
-  const thursdayDateKey = addDaysToDateKey(getMondayOfDateKey(dateKey), ISO_WEEK_THURSDAY_OFFSET);
-  return {
-    thursdayDateKey,
-    weekOfMonth: Math.ceil(getDayOfMonth(thursdayDateKey) / DAYS_PER_WEEK),
-  };
 }
 
-export interface CalendarWeek {
+function toWeekOfMonth(middleDateKey: DateKey): WeekOfMonth {
+  return { middleDateKey, weekOfMonth: Math.ceil(getDayOfMonth(middleDateKey) / DAYS_PER_WEEK) };
+}
+
+/** 서버 getIsoWeekOfMonth와 같은 규칙이고 같은 표(packages/api/test/fixtures/week-of-month-cases.json)로 테스트한다 */
+export function getIsoWeekOfMonth(dateKey: DateKey): WeekOfMonth {
+  return toWeekOfMonth(addDaysToDateKey(getMondayOfDateKey(dateKey), WEEK_MIDDLE_DAY_OFFSET));
+}
+
+export interface CalendarWeek extends WeekOfMonth {
   startDateKey: DateKey;
   endDateKey: DateKey;
-  weekOfMonth: number;
 }
 
-/** 주차는 그 주가 시작한 달 기준이다 (2027-01-01 → 2026-12-27 시작, 12월 4주차) */
+/** 일요일 시작 주. 2027-01-01(금)의 주는 2026-12-27에 시작하고 수요일 12월 30일이 속한 12월 5주차다 */
 export function getCalendarWeek(dateKey: DateKey): CalendarWeek {
   const startDateKey = addDaysToDateKey(dateKey, -getDayOfWeek(dateKey));
   return {
     startDateKey,
     endDateKey: addDaysToDateKey(startDateKey, DAYS_PER_WEEK - 1),
-    weekOfMonth: Math.ceil(getDayOfMonth(startDateKey) / DAYS_PER_WEEK),
+    ...toWeekOfMonth(addDaysToDateKey(startDateKey, WEEK_MIDDLE_DAY_OFFSET)),
   };
 }

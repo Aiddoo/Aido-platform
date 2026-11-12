@@ -1,6 +1,9 @@
 import { addMonthsToDateKey, getMonthStartDateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
-import { formatWeekHeaderLabel, formatWeekOfMonthLabel } from '@src/shared/date/format/date-labels';
+import {
+  formatWeekHeaderLabel,
+  formatCalendarWeekLabel,
+} from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -221,7 +224,7 @@ function CalendarHeaderText() {
   const dateFormatContext = useDateFormatContext();
 
   const headerText = match(viewMode)
-    .with('week', () => formatWeekOfMonthLabel(selectedDateKey, todayDateKey, dateFormatContext))
+    .with('week', () => formatCalendarWeekLabel(selectedDateKey, todayDateKey, dateFormatContext))
     .with('month', () => formatDateKeyLabel(selectedDateKey, 'yearMonth', dateFormatContext))
     .exhaustive();
 

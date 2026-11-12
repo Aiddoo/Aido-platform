@@ -99,7 +99,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
       <ReportTypeChip type={report.type} className="self-center" />
 
       <Text size="b2" weight="semibold" shade={9}>
-        {formatReportPeriodLabel(report, dateFormatContext)}
+        {formatReportPeriodLabel(report, todayKey, dateFormatContext)}
       </Text>
 
       <Text size="b4" shade={5}>

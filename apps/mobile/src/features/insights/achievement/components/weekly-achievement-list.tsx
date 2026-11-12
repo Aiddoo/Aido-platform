@@ -2,7 +2,7 @@ import type { FlashListProps } from '@shopify/flash-list';
 import { useTrack } from '@src/shared/analytics';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange } from '@src/shared/date/format/date-format';
-import { formatIsoWeekOfMonthLabel } from '@src/shared/date/format/date-labels';
+import { formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -99,7 +99,7 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
       contents={
         <ListRow.Texts
           type="2RowTypeA"
-          top={formatIsoWeekOfMonthLabel(achievement.dateRange.startDate, dateFormatContext)}
+          top={formatIsoWeekLabel(achievement.dateRange.startDate, todayKey, dateFormatContext)}
           topProps={{ weight: 'semibold', shade: 8 }}
           bottom={t('list.periodWithCompletedRatio', {
             period: formatDateKeyRange(

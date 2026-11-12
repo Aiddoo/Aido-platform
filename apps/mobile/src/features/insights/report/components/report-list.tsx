@@ -96,7 +96,7 @@ ReportList.Item = function Item({ report, isSample = false, isLast = false }: Re
 
                 <VStack align="end">
                   <Text size="b4" shade={7}>
-                    {formatReportPeriodLabel(report, dateFormatContext)}
+                    {formatReportPeriodLabel(report, todayKey, dateFormatContext)}
                   </Text>
                   <Text size="e1" shade={7} className="tabular-nums">
                     {formatDateKeyRange(

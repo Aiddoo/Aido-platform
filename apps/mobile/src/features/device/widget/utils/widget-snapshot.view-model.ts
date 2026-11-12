@@ -1,5 +1,6 @@
 import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/format/date-format';
+import { formatWeekHeaderLabel } from '@src/shared/date/format/date-labels';
 import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { keyBy, range } from 'es-toolkit';
@@ -21,7 +22,6 @@ export type WidgetTranslateFn = (
     | 'widget:state.loggedOutCta'
     | 'widget:state.staleTitle'
     | 'widget:state.staleCta'
-    | 'widget:calendar.weekTitle'
     | 'widget:actions.addTodo'
     | 'widget:actions.openTodo',
   params?: Record<string, string | number>,
@@ -75,11 +75,9 @@ export function toWidgetSnapshotStrings(
 export function toWidgetWeek(
   summary: Pick<WidgetDayCounts, 'date' | 'totalTodos' | 'isComplete'>,
   {
-    t,
     locale,
     weekCompletions,
   }: {
-    t: WidgetTranslateFn;
     locale: ResolvedLanguage;
     weekCompletions?: readonly WidgetWeekCompletion[];
   },
@@ -104,10 +102,11 @@ export function toWidgetWeek(
       hasTodos: date === summary.date ? summary.totalTodos > 0 : (completion?.totalTodos ?? 0) > 0,
     };
   });
-  const title = t('widget:calendar.weekTitle', {
-    month: formatDateKeyLabel(week.startDateKey, 'month', dateFormatContext),
-    week: week.weekOfMonth,
-  });
+  // 위젯은 늘 이번 주라 연도를 붙이지 않는다
+  const title = formatWeekHeaderLabel(
+    { monthDateKey: week.middleDateKey, weekOfMonth: week.weekOfMonth, hasYear: false },
+    dateFormatContext,
+  );
   const rangeLabel = [week.startDateKey, week.endDateKey]
     .map((dateKey) => formatDateKeyLabel(dateKey, 'dottedMonthDay', dateFormatContext))
     .join(' – ');

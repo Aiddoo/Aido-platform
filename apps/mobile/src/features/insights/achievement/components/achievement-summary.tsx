@@ -3,7 +3,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useTrack } from '@src/shared/analytics';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange } from '@src/shared/date/format/date-format';
-import { formatIsoWeekOfMonthLabel } from '@src/shared/date/format/date-labels';
+import { formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -134,7 +134,11 @@ export function AchievementSummary() {
           >
             {t('card.certificate', {
               weekLabel: t('card.weekWithPeriod', {
-                weekLabel: formatIsoWeekOfMonthLabel(latest.dateRange.startDate, dateFormatContext),
+                weekLabel: formatIsoWeekLabel(
+                  latest.dateRange.startDate,
+                  todayKey,
+                  dateFormatContext,
+                ),
                 period: formatDateKeyRange(
                   latest.dateRange.startDate,
                   latest.dateRange.endDate,

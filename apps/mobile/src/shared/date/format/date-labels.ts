@@ -48,27 +48,36 @@ export function formatWeekHeaderLabel(
   });
 }
 
-export function formatWeekOfMonthLabel(
+/** 일요일 시작 주의 라벨. 가운데 날(수요일)의 해가 올해가 아니면 연도를 붙인다 */
+export function formatCalendarWeekLabel(
   dateKey: DateKey,
   todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
-  const week = getCalendarWeek(dateKey);
+  const { middleDateKey, weekOfMonth } = getCalendarWeek(dateKey);
   return formatWeekHeaderLabel(
     {
-      monthDateKey: week.startDateKey,
-      weekOfMonth: week.weekOfMonth,
-      hasYear: !isSameYearDateKey(week.startDateKey, todayDateKey),
+      monthDateKey: middleDateKey,
+      weekOfMonth,
+      hasYear: !isSameYearDateKey(middleDateKey, todayDateKey),
     },
     context,
   );
 }
 
-/** 월요일 시작 주를 "3월 2주차"로 읽는다. 어느 날짜 key를 넘겨도 같은 주면 같은 라벨이다 */
-export function formatIsoWeekOfMonthLabel(dateKey: DateKey, context: DateFormatContext): string {
-  const { thursdayDateKey, weekOfMonth } = getIsoWeekOfMonth(dateKey);
+/** ISO 주(월요일 시작)의 라벨. 가운데 날(목요일)의 해가 올해가 아니면 연도를 붙인다. 서버 formatIsoWeekLabel과 같은 글자다 */
+export function formatIsoWeekLabel(
+  dateKey: DateKey,
+  todayDateKey: DateKey,
+  context: DateFormatContext,
+): string {
+  const { middleDateKey, weekOfMonth } = getIsoWeekOfMonth(dateKey);
   return formatWeekHeaderLabel(
-    { monthDateKey: thursdayDateKey, weekOfMonth, hasYear: false },
+    {
+      monthDateKey: middleDateKey,
+      weekOfMonth,
+      hasYear: !isSameYearDateKey(middleDateKey, todayDateKey),
+    },
     context,
   );
 }

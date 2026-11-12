@@ -6,7 +6,6 @@
   "report": {
     "typeWeekly": "주간",
     "typeMonthly": "월간",
-    "weeklyPeriodLabel": "{{year}}년 {{period}}주차",
     "sampleBadge": "예시",
     "card": {
       "completionRate": "달성률",
