@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -10,7 +11,7 @@ import {
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
 import { useEmailLoginMutationOptions } from '../queries/auth.mutations';
@@ -25,7 +26,7 @@ interface EmailLoginFormProps {
 export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { t } = useTranslation('auth');
   const emailLogin = useMutation(useEmailLoginMutationOptions());
-  const [viewportHeight, setViewportHeight] = useState(0);
+  const [viewportSize, handleViewportLayout] = useLayoutSize();
   const form = useForm({
     resolver: zodResolver(emailLoginFormSchema),
     defaultValues: { email: '', password: '' },
@@ -40,7 +41,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   return (
     <FormScrollView
       contentContainerStyle={{ paddingHorizontal: 16 }}
-      onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
+      onLayout={handleViewportLayout}
       footer={
         <KeyboardAdaptiveButton
           testID="email-login-submit"
@@ -56,7 +57,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
       <StyledSafeAreaView
         edges={['left', 'right']}
         className="justify-center pb-10"
-        style={{ minHeight: viewportHeight }}
+        style={{ minHeight: viewportSize?.height ?? 0 }}
       >
         {children}
 

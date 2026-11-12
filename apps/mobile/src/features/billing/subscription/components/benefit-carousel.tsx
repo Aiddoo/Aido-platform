@@ -1,4 +1,5 @@
 import { useTrack } from '@src/shared/analytics';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -17,12 +18,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { clamp } from 'es-toolkit';
 import { Chip, Skeleton } from 'heroui-native';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import {
-  type FlatList,
-  type LayoutChangeEvent,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
+import { type FlatList, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, {
   type SharedValue,
   useAnimatedScrollHandler,
@@ -72,14 +68,10 @@ export function BenefitCarousel() {
   const [{ feature }] = useSubscriptionParams();
   const [index, setIndex] = useState(() => getInitialBenefitIndex(BENEFIT_SLIDES, feature));
   const estimatedPageWidth = useEstimatedPageWidth();
-  const [measuredPageWidth, setMeasuredPageWidth] = useState<number | null>(null);
-  const pageWidth = measuredPageWidth ?? estimatedPageWidth;
+  const [measuredSize, handleLayout] = useLayoutSize();
+  const pageWidth = measuredSize?.width ?? estimatedPageWidth;
   const progress = useSharedValue(index);
   useTrackBenefitViewed(index);
-
-  const handleLayout = (event: LayoutChangeEvent) => {
-    setMeasuredPageWidth(event.nativeEvent.layout.width);
-  };
 
   return (
     <Box onLayout={handleLayout}>

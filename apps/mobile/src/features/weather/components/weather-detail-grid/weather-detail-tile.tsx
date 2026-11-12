@@ -33,7 +33,8 @@ interface TileLayout {
 export function useTileLayout(): TileLayout {
   // 앱 글자 크기가 가장 클 때는 두 칸에 값이 잘리므로 한 칸으로 쌓는다
   const isLargeText = useFontScale().fontScale === 'xlarge';
-  const [{ width }, handleLayout] = useLayoutSize();
+  const [size, handleLayout] = useLayoutSize();
+  const width = size?.width ?? 0;
   const wideColumns = width >= FOUR_COLUMN_MIN_WIDTH ? 4 : 2;
   const columns = isLargeText ? wideColumns / 2 : wideColumns;
   const tileSide = (width - TILE_GRID_GAP * (columns - 1)) / columns;
@@ -169,7 +170,7 @@ export function WeatherDialTile({
 }: WeatherDialTileProps) {
   const { t } = useTranslation('weather');
   const [box, handleLayout] = useLayoutSize();
-  const size = Math.floor(Math.min(box.width, box.height, DIAL_MAX_SIZE));
+  const size = box == null ? 0 : Math.floor(Math.min(box.width, box.height, DIAL_MAX_SIZE));
 
   return (
     <WeatherTile

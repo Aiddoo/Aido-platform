@@ -202,7 +202,9 @@ function Scrubber({
 }: ScrubberProps) {
   const playedColor = useResolvedColor('text-main');
   const restColor = useResolvedColor('text-gray-4');
-  const [{ width, height }, handleLayout] = useLayoutSize();
+  const [size, handleLayout] = useLayoutSize();
+  const width = size?.width ?? 0;
+  const height = size?.height ?? 0;
   const barCount = Math.floor(width / STEP);
   const bars = useMemo(() => resampleLevels(levels, barCount), [levels, barCount]);
 

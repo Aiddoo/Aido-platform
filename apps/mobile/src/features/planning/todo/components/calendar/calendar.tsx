@@ -9,12 +9,12 @@ import {
   type DateKey,
 } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Box, HStack, usePaneColumns, VStack, QueryErrorFallback } from '@src/shared/ui';
 import { type ReactNode, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing,
   ReduceMotion,
@@ -91,11 +91,8 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
 function useCalendarPageWidth() {
   const { primaryWidth } = usePaneColumns();
   const insets = useSafeAreaInsets();
-  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
-
-  const handleLayout = (event: LayoutChangeEvent) => {
-    setMeasuredWidth(event.nativeEvent.layout.width);
-  };
+  const [measuredSize, handleLayout] = useLayoutSize();
+  const measuredWidth = measuredSize?.width;
 
   // 창을 끌거나 사이드바를 여닫는 동안 폭이 연달아 바뀐다. 쪽 목록은 폭마다 새로 만들어 무거워 다른 그리기를 막지 않게 미룬다
   const pageWidth = useDeferredValue(measuredWidth ?? primaryWidth - insets.left - insets.right);

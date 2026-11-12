@@ -5,6 +5,7 @@ import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
@@ -29,7 +30,7 @@ import { range } from 'es-toolkit';
 import { router, useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useId, useState } from 'react';
-import { type LayoutChangeEvent, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
   ReduceMotion,
@@ -83,13 +84,9 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
   const celebratedCount = useCelebrateNewPawPrints(me.id, myInvite);
   const estimatedWidth = useEstimatedBoardWidth();
   // 창 폭으로 어림한 폭은 첫 그림에만 쓰고, 그 뒤로는 판이 실제로 받은 폭으로 격자를 다시 만든다
-  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
-  const grid = calculatePawPrintGrid(measuredWidth ?? estimatedWidth);
+  const [boardSize, handleBoardLayout] = useLayoutSize();
+  const grid = calculatePawPrintGrid(boardSize?.width ?? estimatedWidth);
   const board = createPawPrintBoard(myInvite, { columns: grid.columns, celebratedCount });
-
-  const handleBoardLayout = (event: LayoutChangeEvent) => {
-    setMeasuredWidth(event.nativeEvent.layout.width);
-  };
 
   return (
     <VStack className={cn('gap-4', className)} {...props}>

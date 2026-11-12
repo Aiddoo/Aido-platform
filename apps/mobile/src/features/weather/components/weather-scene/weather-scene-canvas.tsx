@@ -86,7 +86,7 @@ export function WeatherSceneCanvas({
 }: WeatherSceneCanvasProps) {
   const window = useWindowDimensions();
   const [layoutSize, handleLayout] = useLayoutSize();
-  const { width, height } = layoutSize.width === 0 ? window : layoutSize;
+  const { width, height } = layoutSize ?? window;
   const { theme } = useUniwind();
   const isAnimating = useIsAnimationActive();
   const time = useSharedValue(STATIC_SCENE_SECONDS);
