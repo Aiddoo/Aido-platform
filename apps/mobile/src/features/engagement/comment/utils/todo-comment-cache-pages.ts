@@ -238,7 +238,8 @@ export function restoreCommentInThreadPages(
   return mapPages(data, (page) => ({
     ...page,
     items: page.items.map((thread) => {
-      if (thread.comment.id !== threadId) {
+      // 지우는 사이 서버 값으로 다시 받아 답글이 이미 보이면 답글 수를 또 늘리지 않는다
+      if (thread.comment.id !== threadId || thread.previewReply?.id === removed.id) {
         return thread;
       }
       return removed.id === threadId

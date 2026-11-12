@@ -179,6 +179,23 @@ describe('todo-comment-cache-pages', () => {
     expect(next?.pages[0]?.items[0]).toEqual(thread);
     expect(next?.pages[0]?.items[1]?.comment.likeCount).toBe(1);
   });
+
+  it('지우는 사이 서버 값으로 다시 받아 대표 답글이 이미 돌아와 있으면 답글 수를 두 번 늘리지 않는다', () => {
+    // Given
+    const removed = repliedThread.previewReply ?? repliedThread.comment;
+    const placement = findThreadPlacement(threadPages([repliedThread]), removed);
+    // 지우기가 실패하기 전에 다른 조회가 서버 값(답글이 그대로 있는 묶음)으로 캐시를 바꿨다
+    const refetched = threadPages([repliedThread]);
+
+    // When
+    const next =
+      placement == null ? null : restoreCommentInThreadPages(refetched, removed, placement);
+
+    // Then
+    expect(next?.pages[0]?.items[0]?.replySummary.totalCount).toBe(
+      repliedThread.replySummary.totalCount,
+    );
+  });
 });
 
 const TODO_ID = 1;

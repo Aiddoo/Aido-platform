@@ -4,7 +4,7 @@ import type {
   GetTodoCommentThreadsQuery,
   TodoCommentLikeResponse,
   TodoCommentRepliesResponse,
-  TodoCommentThread as TodoCommentThreadDTO,
+  TodoCommentThread as TodoCommentThreadDto,
   TodoCommentThreadsResponse,
   TodoCommentV2,
 } from '@aido/api';
@@ -69,7 +69,7 @@ export function toWrittenTodoComment(todoId: number, dto: WrittenTodoCommentResp
   };
 }
 
-function toTodoCommentThread(dto: TodoCommentThreadDTO): TodoCommentThread {
+function toTodoCommentThread(dto: TodoCommentThreadDto): TodoCommentThread {
   return {
     comment: toTodoComment(dto.comment),
     previewReply: dto.previewReply == null ? null : toTodoComment(dto.previewReply),
