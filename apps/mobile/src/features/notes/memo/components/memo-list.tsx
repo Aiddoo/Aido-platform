@@ -30,12 +30,14 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
+  useMutation,
   usePrefetchQuery,
   useQueryClient,
   useSuspenseInfiniteQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
+import { Link } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import {
   type ComponentProps,
@@ -64,7 +66,9 @@ import Animated, {
 
 import type { Memo } from '../domains/memo.model';
 import { useSelectedMemoId } from '../hooks/use-memo-params';
+import { useOpenMemoDeleteDialog } from '../hooks/use-open-memo-delete-dialog';
 import { refreshMemos } from '../queries/memo-cache';
+import { useSetMemoPinnedMutationOptions } from '../queries/memo.mutations';
 import { useGetMemosInfiniteQueryOptions } from '../queries/memo.queries';
 import {
   getEnteringMemoIds,
@@ -156,13 +160,14 @@ export function MemoList({ header }: MemoListProps) {
           optimizeItemArrangement={false}
           numColumns={columnCount}
           keyExtractor={(memo) => String(memo.id)}
-          extraData={{ selectedMemoId, columnCount, enteringMemoIds }}
+          extraData={{ selectedMemoId, columnCount, enteringMemoIds, paneSizeClass }}
           renderItem={({ item }) => (
             <MemoList.Cell>
               <MemoList.Item
                 memo={item}
                 isSelected={selectedMemoId === item.id}
                 isEntering={enteringMemoIds.has(item.id)}
+                isLinked={paneSizeClass === 'compact'}
                 onSelect={setSelectedMemoId}
                 onEntered={markEntered}
               />
@@ -242,6 +247,8 @@ interface MemoListItemProps {
   isSelected: boolean;
   /** 지난 그림 뒤에 새로 생긴 메모. 한 번만 짧게 나타난다 */
   isEntering: boolean;
+  /** 접힌 화면에서만 Link다. 펼친 화면은 같은 화면의 칸을 바꿔 미리볼 상세 화면이 없다 */
+  isLinked: boolean;
   onSelect: (memoId: number) => void;
   onEntered: (memoId: number) => void;
 }
@@ -250,6 +257,7 @@ MemoList.Item = function Item({
   memo,
   isSelected,
   isEntering,
+  isLinked,
   onSelect,
   onEntered,
 }: MemoListItemProps) {
@@ -288,41 +296,92 @@ MemoList.Item = function Item({
 
   return (
     <Animated.View style={appearanceStyle}>
-      <PressableFeedback
-        onPress={() => selectMemo(memo.id)}
-        className="rounded-2xl"
-        testID={`memo-item-${memo.id}`}
-      >
-        <VStack
-          gap={8}
-          className={cn(
-            'rounded-2xl border bg-gray-1 p-4',
-            isSelected ? 'border-main' : 'border-transparent',
-          )}
+      <MemoList.ItemLink memo={memo} isLinked={isLinked} onOpen={() => selectMemo(memo.id)}>
+        <PressableFeedback
+          onPress={() => selectMemo(memo.id)}
+          className="rounded-2xl"
+          testID={`memo-item-${memo.id}`}
         >
-          <HStack align="start" gap={8}>
-            <Text
-              className="flex-1"
-              size="b3"
-              weight="semibold"
-              numberOfLines={body.length > 0 ? TITLE_LINE_COUNT_WITH_BODY : TITLE_LINE_COUNT_ALONE}
-              lineBreakStrategyIOS="hangul-word"
-            >
-              {title}
+          <VStack
+            gap={8}
+            className={cn(
+              'rounded-2xl border bg-gray-1 p-4',
+              isSelected ? 'border-main' : 'border-transparent',
+            )}
+          >
+            <HStack align="start" gap={8}>
+              <Text
+                className="flex-1"
+                size="b3"
+                weight="semibold"
+                numberOfLines={
+                  body.length > 0 ? TITLE_LINE_COUNT_WITH_BODY : TITLE_LINE_COUNT_ALONE
+                }
+                lineBreakStrategyIOS="hangul-word"
+              >
+                {title}
+              </Text>
+              {memo.isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
+            </HStack>
+            {body.length > 0 && (
+              <Text size="b4" shade={6} numberOfLines={3} lineBreakStrategyIOS="hangul-word">
+                {body}
+              </Text>
+            )}
+            <Text size="e1" shade={5}>
+              {formatYearAwareDateLabel(memo.createdAt, todayKey, dateFormatContext)}
             </Text>
-            {memo.isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
-          </HStack>
-          {body.length > 0 && (
-            <Text size="b4" shade={6} numberOfLines={3} lineBreakStrategyIOS="hangul-word">
-              {body}
-            </Text>
-          )}
-          <Text size="e1" shade={5}>
-            {formatYearAwareDateLabel(memo.createdAt, todayKey, dateFormatContext)}
-          </Text>
-        </VStack>
-      </PressableFeedback>
+          </VStack>
+        </PressableFeedback>
+      </MemoList.ItemLink>
     </Animated.View>
+  );
+};
+
+interface MemoListItemLinkProps extends PropsWithChildren {
+  memo: Memo;
+  isLinked: boolean;
+  onOpen: () => void;
+}
+
+/**
+ * 카드를 길게 눌러 메모를 미리보고 열기·고정·삭제를 고른다(iOS). 탭은 카드의 고르기가 맡아 Link의 이동은 막고,
+ * 미리보기를 눌러 가는 이동만 Link가 맡는다
+ */
+MemoList.ItemLink = function ItemLink({ memo, isLinked, onOpen, children }: MemoListItemLinkProps) {
+  const { t } = useTranslation(['memo', 'common']);
+
+  const setPinned = useMutation(useSetMemoPinnedMutationOptions({ memoId: memo.id }));
+  const openDeleteDialog = useOpenMemoDeleteDialog({ memoId: memo.id });
+
+  if (!isLinked) {
+    return children;
+  }
+
+  return (
+    <Link
+      href={{ pathname: '/memo/[memoId]', params: { memoId: memo.id } }}
+      asChild
+      onPress={(event) => event.preventDefault()}
+    >
+      <Link.Trigger>{children}</Link.Trigger>
+      <Link.Preview />
+      <Link.Menu>
+        <Link.MenuAction icon="doc.text" onPress={onOpen}>
+          {t('memo:list.open')}
+        </Link.MenuAction>
+        <Link.MenuAction
+          icon={memo.isPinned ? 'pin.slash' : 'pin'}
+          disabled={setPinned.isPending}
+          onPress={() => setPinned.mutate({ isPinned: !memo.isPinned })}
+        >
+          {t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin')}
+        </Link.MenuAction>
+        <Link.MenuAction icon="trash" destructive onPress={openDeleteDialog}>
+          {t('common:actions.delete')}
+        </Link.MenuAction>
+      </Link.Menu>
+    </Link>
   );
 };
 

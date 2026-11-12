@@ -23,7 +23,6 @@ import {
   AiFilledIcon,
   Box,
   CheckmarkIcon,
-  useConfirmDialog,
   HStack,
   IconButton,
   type IconButtonProps,
@@ -76,9 +75,9 @@ import { isMemoUnavailableError } from '../domains/memo.error';
 import { MemoPolicy } from '../domains/memo.model';
 import type { Memo } from '../domains/memo.model';
 import { useMemoId, useSelectedMemoId } from '../hooks/use-memo-params';
+import { useOpenMemoDeleteDialog } from '../hooks/use-open-memo-delete-dialog';
 import { MEMO_MUTATION_KEYS } from '../queries/memo-mutation-keys';
 import {
-  useDeleteMemoMutationOptions,
   useParseMemoMutationOptions,
   useSetMemoPinnedMutationOptions,
   useUpdateMemoMutationOptions,
@@ -198,7 +197,7 @@ MemoEditor.StackToolbar = function StackToolbar({
   const pin = useMemoPinAction(memo);
   const aiParse = useMemoAiParse({ accountId: me.id, onSaveChanges });
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
-  const openDeleteDialog = useOpenMemoDeleteDialog({ onDeleted });
+  const openDeleteDialog = useOpenMemoDeleteDialog({ memoId, onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
   const { color: pinnedTint } = useResolveClassNames('text-main');
   const { color: saveTint } = useResolveClassNames(canSave ? 'text-main' : 'text-gray-4');
@@ -479,13 +478,14 @@ function MemoMoreMenu({
 }: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDeleted'>) {
   const { t } = useTranslation(['memo', 'common']);
 
+  const [memoId] = useMemoId();
   const accountId = useSuspenseMyAccountId();
 
   const [isOpen, setIsOpen] = useState(false);
 
   const aiParse = useMemoAiParse({ accountId, onSaveChanges });
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
-  const openDeleteDialog = useOpenMemoDeleteDialog({ onDeleted });
+  const openDeleteDialog = useOpenMemoDeleteDialog({ memoId, onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
 
   return (
@@ -771,28 +771,6 @@ function useMemoAiParse({
     start,
     isDisabled: defaultCategoryId == null || entitlementsQuery.isLoading || isParsing,
     isParsing,
-  };
-}
-
-/** 지우는 동안 다이얼로그를 남기고 버튼만 불러오는 중으로 바꾼다. 실패하면 남은 다이얼로그에서 다시 누른다 */
-function useOpenMemoDeleteDialog({ onDeleted }: Pick<MemoEditorToolbarProps, 'onDeleted'>) {
-  const { t } = useTranslation(['memo', 'common']);
-  const [memoId] = useMemoId();
-  const confirmDialog = useConfirmDialog();
-  const deleteMemo = useMutation(useDeleteMemoMutationOptions());
-
-  return async () => {
-    const isDeleted = await confirmDialog.openAsync({
-      title: t('memo:detail.deleteConfirmTitle'),
-      description: t('memo:detail.deleteConfirmDescription'),
-      cancelLabel: t('common:actions.cancel'),
-      confirmLabel: t('common:actions.delete'),
-      confirmColor: 'danger',
-      onConfirm: () => deleteMemo.mutateAsync(memoId),
-    });
-    if (isDeleted) {
-      onDeleted();
-    }
   };
 }
 
