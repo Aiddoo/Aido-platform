@@ -1204,7 +1204,6 @@
       }
     },
     // 규칙이 처음 나오는 블록이 켜는 자리이고 뒤따르는 같은 규칙의 off 블록은 허용 경로다.
-    // 남은 위반은 줄마다 `-- 1.15.2 전환 #1400` 지시문이다. 줄이는 방법: docs/architecture/guardrails.md#baseline-1400
     {
       "files": ["src/**", "app/**"],
       "excludeFiles": [
