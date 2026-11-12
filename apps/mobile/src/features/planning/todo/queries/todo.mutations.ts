@@ -245,7 +245,7 @@ export function useDeleteTodoMutationOptions() {
       }
     },
     onError: (error, _variables, context) => {
-      if (context?.snapshot) {
+      if (context?.snapshot != null) {
         restoreTodo(queryClient, context.snapshot);
         syncDailyCompletionWithList(queryClient, { date: context.snapshot.date });
       }

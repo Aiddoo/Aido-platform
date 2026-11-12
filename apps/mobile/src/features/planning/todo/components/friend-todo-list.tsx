@@ -301,6 +301,6 @@ FriendTodoList.Empty = function Empty({ action }: { action: ReactNode }) {
 function groupFriendTodosByCategory(todos: readonly Todo[]) {
   return Object.values(groupBy(todos, (todo) => todo.category.id)).flatMap((items) => {
     const first = items[0];
-    return first ? [{ category: first.category, todos: items }] : [];
+    return first == null ? [] : [{ category: first.category, todos: items }];
   });
 }

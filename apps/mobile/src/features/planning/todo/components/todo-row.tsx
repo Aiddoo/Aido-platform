@@ -96,7 +96,7 @@ export function TodoRow({
         {...pressableProps}
         onPress={onPress}
         onLongPress={onLongPress}
-        isDisabled={isActive || isDisabled || (!onPress && !onLongPress)}
+        isDisabled={isActive || isDisabled || (onPress == null && onLongPress == null)}
         className={cn(
           'rounded-xl py-2',
           isActive && 'bg-gray-1',

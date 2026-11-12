@@ -19,7 +19,6 @@ import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
-import { AppState } from 'react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { createTodoApiError, createTodoDto } from '../__tests__/todo.fixtures';
@@ -40,10 +39,6 @@ const PAST_ACTIVE_DAYS = [createDateKey('2026-10-24'), createDateKey('2026-10-25
 const REVIEW_SETTLE_MS = 2_000;
 
 setupFakeTimersPerTest({ now: new Date('2026-10-27T03:00:00.000Z'), doNotFake: ['nextTick'] });
-
-beforeEach(() => {
-  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
-});
 
 async function renderToggle() {
   const httpClient = createHttpClientStub();
