@@ -24,7 +24,7 @@ import {
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
-import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native';
 
 import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/subscription';
 import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
@@ -288,6 +288,25 @@ describe('구독 화면', () => {
       );
     expect(purchaseEvents).toEqual(['purchase_cancelled']);
   });
+  it('결제 버튼을 같은 프레임에 두 번 눌러도 결제 창은 한 번만 연다', async () => {
+    // Given
+    const { purchases } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+    purchases.purchase.mockReturnValue(new Promise(() => {}));
+    const button = await screen.findByRole('button', { name: '연간으로 시작하기' });
+
+    // When
+    await act(async () => {
+      fireEvent.press(button);
+      fireEvent.press(button);
+    });
+
+    // Then
+    await waitFor(() => expect(purchases.purchase).toHaveBeenCalled());
+    expect(purchases.purchase).toHaveBeenCalledTimes(1);
+  });
+
   describe('결제 뒤 시작 화면', () => {
     it('체험으로 결제하면 서버 반영이 늦어도 방금 산 요금제로 체험 일정을 보여 주고 반영이 늦는다고 알린다', async () => {
       // Given

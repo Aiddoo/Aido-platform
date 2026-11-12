@@ -2,6 +2,7 @@ import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { Box, Button, Text, TextSkeleton } from '@src/shared/ui';
@@ -45,14 +46,15 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
       ? null
       : SubscriptionPolicy.getFreeTrialEndDateKey(selectedPlan, currentLocalDateKey);
 
-  const handlePurchase = () => {
-    if (!selectedPlan || purchase.isPending) {
+  // isPending은 다음 렌더에야 바뀌어 같은 프레임의 두 번째 탭이 결제 창을 한 번 더 연다
+  const handlePurchase = useSingleTap(() => {
+    if (selectedPlan == null || purchase.isPending) {
       return;
     }
     purchase.mutate(selectedPlan, {
       onSuccess: ({ hadRewardOnly }) => onPurchased({ plan: selectedPlan, hadRewardOnly }),
     });
-  };
+  });
 
   return (
     <>
