@@ -122,7 +122,8 @@ SentNudgeList.Loading = NotificationList.Loading;
 
 SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
-  // 목록 API의 NUDGE_1105·1111은 꺼짐 뜻뿐이다. 1105도 받아 1.15.2 서버가 먼저 나가지 않았거나 되돌려져도 꺼진 상태로 보인다
+  // 목록 API의 NUDGE_1105·1111은 꺼짐 뜻뿐이다. 1105도 받아 1.15.2 서버가 먼저 나가지 않았거나 되돌려져도 꺼진 상태로 보인다.
+  // 1105 수용은 서버 롤백 바닥이 1.15.2가 된 뒤 1.16.0에서 지운다(compatibility.md)
   const isListDisabled = isNudgeUnavailableError(error);
 
   return (
