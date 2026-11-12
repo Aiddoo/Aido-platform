@@ -151,7 +151,7 @@ SentenceCaptionList.Card = function Card({
         <Text size="e1" shade={6} className="tabular-nums">
           {time}
         </Text>
-        <WordWrapText size="b3" className="shrink flex-1">
+        <WordWrapText size="b3" className="flex-1">
           {toCaptionTextParts(sentence.text, sentence.lowConfidenceWords).map(
             ({ text, isLowConfidence }) => ({
               text,

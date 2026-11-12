@@ -145,7 +145,7 @@ KeyPointList.Item = function Item({
         ) : (
           timeChip
         )}
-        <WordWrapText size="b3" className="shrink flex-1">
+        <WordWrapText size="b3" className="flex-1">
           {keyPoint.text}
         </WordWrapText>
         {keyPoint.isBookmarked && (
