@@ -12,7 +12,7 @@ import type { ComponentProps, ReactElement } from 'react';
 import { ScrollView } from 'react-native';
 
 import type { InvitedFriend } from '../domains/invited-friend.model';
-import { invalidateInvite } from '../queries/invite-cache';
+import { refreshInvite } from '../queries/invite-cache';
 import { useGetInvitedFriendsInfiniteQueryOptions } from '../queries/invite.queries';
 import { InvitedFriendRow } from './invited-friend-row';
 
@@ -31,7 +31,7 @@ export function InvitedFriendList({
   const { data, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } =
     useSuspenseInfiniteQuery(useGetInvitedFriendsInfiniteQueryOptions({ status }));
   // 발자국 요약(탭 숫자)과 목록을 함께 새로 고친다
-  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateInvite(queryClient));
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshInvite(queryClient));
 
   return (
     <InfiniteList

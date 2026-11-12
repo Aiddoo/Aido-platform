@@ -21,8 +21,12 @@ import {
   toRedeemFailureReason,
 } from '../domains/invite.error';
 import type { InviteShareChannel, InviteShareContent } from '../services/invite-share.service';
-import { invalidateAfterRedeem, storeRedemptionResult, replaceMyInvite } from './invite-cache';
-import { INVITE_QUERY_KEYS } from './invite-query-keys';
+import {
+  invalidateAfterRedeem,
+  replaceMyInvite,
+  setInvitePreviewInCache,
+  storeRedemptionResult,
+} from './invite-cache';
 
 /** 코드 입력에서 없는 코드를 바로 알리고, 받은 미리보기는 초대 카드가 다시 부르지 않게 캐시에 둔다 */
 export function useCheckInvitePreviewMutationOptions() {
@@ -35,7 +39,7 @@ export function useCheckInvitePreviewMutationOptions() {
     mutationFn: async (inviteCode: InviteCode) =>
       unwrap(await inviteService.getPreview(inviteCode)),
     onSuccess: (preview, inviteCode) => {
-      queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode }), preview);
+      setInvitePreviewInCache(queryClient, { inviteCode, preview });
     },
     meta: {
       errorFeedback: {

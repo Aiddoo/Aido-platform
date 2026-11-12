@@ -19,14 +19,20 @@ import { findFriendLimit } from '../domains/friend.error';
 import { getFriendLimit } from '../domains/friend.model';
 import type { ReorderFriendInput } from '../schemas/friend-request.schema';
 import {
+  cancelFriendList,
   findFriendPlacement,
+  getCachedFriendList,
+  invalidateFriendList,
   invalidateFriends,
+  invalidateFriendSearches,
+  invalidateReceivedFriendRequests,
+  invalidateSentFriendRequests,
   patchSearchedUser,
+  updateFriendListInCache,
   withFriendRemoved,
   withFriendRestored,
 } from './friend-cache';
 import { FRIEND_MUTATION_KEYS } from './friend-mutation-keys';
-import { FRIEND_QUERY_KEYS } from './friend-query-keys';
 
 export function useAcceptRequestMutationOptions() {
   const friendApi = useFriendApi();
@@ -41,14 +47,14 @@ export function useAcceptRequestMutationOptions() {
       const result = await friendApi.acceptRequest(userId);
       return unwrap(result);
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       toast.success(t('friend:toast.requestAccepted'));
       trackEvent('friend_request_accepted');
-      // 친구 수가 한도(FRIEND)를 쓰므로 남은 횟수를 다시 받는다
-      invalidateEntitlements(queryClient);
-      // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
-      await invalidateFriends(queryClient);
     },
+    // 친구 수가 한도(FRIEND)를 써 남은 횟수도 다시 받는다. 화면에 머무는 목록이라 행이 사라질 때까지
+    // 버튼을 꺼 둬 다시 눌러 요청이 또 가지 않게 한다
+    onSettled: () =>
+      Promise.all([invalidateEntitlements(queryClient), invalidateFriends(queryClient)]),
     meta: { errorFeedback: { feature: 'friend' } },
   });
 }
@@ -65,12 +71,12 @@ export function useCancelRequestMutationOptions() {
       const result = await friendApi.cancelRequest(userId);
       return unwrap(result);
     },
-    onSuccess: async (_data, userId) => {
+    onSuccess: (_data, userId) => {
       patchSearchedUser(queryClient, (user) => user.id === userId, { requestPending: false });
       trackEvent('friend_request_cancelled');
-      // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
-      await queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
     },
+    // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
+    onSettled: () => invalidateSentFriendRequests(queryClient),
     meta: { errorFeedback: { feature: 'friend' } },
   });
 }
@@ -88,12 +94,12 @@ export function useRejectRequestMutationOptions() {
       const result = await friendApi.rejectRequest(userId);
       return unwrap(result);
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       toast.success(t('friend:toast.requestRejected'));
       trackEvent('friend_request_rejected');
-      // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
-      await queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
     },
+    // 화면에 머무는 목록이라 행이 사라질 때까지 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
+    onSettled: () => invalidateReceivedFriendRequests(queryClient),
     meta: { errorFeedback: { feature: 'friend' } },
   });
 }
@@ -112,38 +118,29 @@ export function useRemoveFriendMutationOptions() {
       return unwrap(result);
     },
     onMutate: async (userId) => {
-      await queryClient.cancelQueries({ queryKey: FRIEND_QUERY_KEYS.friends(), exact: true });
-
-      const cachedFriends = queryClient.getQueryData(FRIEND_QUERY_KEYS.friends());
+      await cancelFriendList(queryClient);
+      const cachedFriends = getCachedFriendList(queryClient);
       const placement = cachedFriends == null ? null : findFriendPlacement(cachedFriends, userId);
-
-      queryClient.setQueryData(
-        FRIEND_QUERY_KEYS.friends(),
-        (old) => old && withFriendRemoved(old, userId),
-      );
-
+      updateFriendListInCache(queryClient, (pages) => withFriendRemoved(pages, userId));
       return { placement };
     },
     onSuccess: () => {
       trackEvent('friend_removed');
-      // 친구 수가 한도(FRIEND)를 돌려받으므로 남은 횟수를 다시 받는다
-      invalidateEntitlements(queryClient);
     },
     // 목록을 통째로 되돌리면 함께 지우는 다른 친구가 돌아온다. 이 친구만 원래 자리에 되돌린다
     onError: (_error, _userId, context) => {
       const placement = context?.placement;
       if (placement != null) {
-        queryClient.setQueryData(
-          FRIEND_QUERY_KEYS.friends(),
-          (old) => old && withFriendRestored(old, placement),
-        );
+        updateFriendListInCache(queryClient, (pages) => withFriendRestored(pages, placement));
       }
     },
-    // 앞 지우기 뒤에 다시 받으면 아직 지우는 중인 친구가 목록에 돌아온다
+    // 친구 수가 한도(FRIEND)를 돌려받아 남은 횟수를 다시 받는다. 목록은 앞 지우기 뒤에 다시 받으면
+    // 아직 지우는 중인 친구가 돌아오므로 마지막 지우기가 받는다
     onSettled: () => {
+      invalidateEntitlements(queryClient);
       if (isLastMutation(queryClient, FRIEND_MUTATION_KEYS.writes())) {
-        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends(), exact: true });
-        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.searches() });
+        invalidateFriendList(queryClient);
+        invalidateFriendSearches(queryClient);
       }
     },
     meta: { errorFeedback: { feature: 'friend' } },
@@ -169,11 +166,9 @@ export function useReorderFriendMutationOptions() {
     },
     onSuccess: () => {
       trackEvent('friend_reordered');
-      queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
-    onError: () => {
-      queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
-    },
+    // 성공하면 서버 순서로, 실패하면 끌기 전 순서로 맞춘다
+    onSettled: () => invalidateFriendList(queryClient),
     meta: { errorFeedback: { feature: 'friend' } },
   });
 }
@@ -204,16 +199,19 @@ export function useSendRequestByTagMutationOptions({
       );
       trackEvent('friend_request_sent');
       const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
+      if (accountId != null) {
         trackAttributedFeatureSuccess({ accountId, feature: 'friend_search' });
       }
-      queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
-      if (result.autoAccepted) {
-        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
-        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
+      toast.success(t('friend:toast.requestSent'));
+    },
+    // 상대가 먼저 보낸 요청이 있어 바로 친구가 되면 받은 요청·친구 목록·한도까지 바뀐다
+    onSettled: (result) => {
+      invalidateSentFriendRequests(queryClient);
+      if (result?.autoAccepted === true) {
+        invalidateReceivedFriendRequests(queryClient);
+        invalidateFriendList(queryClient);
         invalidateEntitlements(queryClient);
       }
-      toast.success(t('friend:toast.requestSent'));
     },
     onError: (error) => {
       if (isLimitedFeatureError(error)) {

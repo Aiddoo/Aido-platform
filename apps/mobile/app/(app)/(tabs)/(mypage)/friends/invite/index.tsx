@@ -9,7 +9,7 @@ import {
   FIRST_INVITER_PREMIUM_DAYS,
 } from '@src/features/social/invite/constants/invite.constants';
 import { isInviteDisabledError } from '@src/features/social/invite/domains/invite.error';
-import { invalidateInvite } from '@src/features/social/invite/queries/invite-cache';
+import { refreshInvite } from '@src/features/social/invite/queries/invite-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -36,7 +36,7 @@ export default function MyInviteScreen() {
   const { t } = useTranslation('invite');
   const queryClient = useQueryClient();
   // 발자국 판·링크·친구 요약이 모두 초대 쿼리를 읽으니 한 번에 새로 고친다
-  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateInvite(queryClient));
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshInvite(queryClient));
 
   return (
     <>

@@ -34,7 +34,7 @@ import {
   Mascot,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Menu, Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
@@ -50,6 +50,7 @@ import { match } from 'ts-pattern';
 
 import type { FriendUser } from '../domains/friend.model';
 import { useFriendListIsEditing } from '../hooks/use-friend-list-params';
+import { refreshFriends } from '../queries/friend-cache';
 import {
   useRemoveFriendMutationOptions,
   useReorderFriendMutationOptions,
@@ -71,7 +72,6 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
-    refetch,
     dataUpdatedAt,
   } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
   const { fetchOnEndReached, retry } = useFetchNextPage({
@@ -82,7 +82,8 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
   });
   const reorderMutation = useMutation(useReorderFriendMutationOptions());
   const [isEditing] = useFriendListIsEditing();
-  const [isRefreshing, handleRefresh] = useRefresh(refetch);
+  const queryClient = useQueryClient();
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshFriends(queryClient));
 
   const { items: friends, totalCount } = data;
 
