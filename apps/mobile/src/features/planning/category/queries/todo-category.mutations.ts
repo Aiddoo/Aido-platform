@@ -86,8 +86,6 @@ export function useCreateTodoCategoryMutationOptions() {
       updateCachedTodoCategories(queryClient, (result) =>
         withCategorySaved(result, optimisticCategoryId, savedCategory),
       );
-      // 카테고리 수가 한도(TODO_CATEGORY)를 쓰므로 남은 개수를 다시 받는다
-      invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.categoryAdded'));
       trackEvent('category_created', { color: toCategoryColorParam(variables.color) });
     },
@@ -100,7 +98,12 @@ export function useCreateTodoCategoryMutationOptions() {
     },
     // 응답으로 임시 행을 이미 바꿨다. 기다리면 저장한 시트가 목록을 다시 받을 때까지 닫히지 않는다
     onSettled: (_data, error) => {
-      if (error != null && isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
+      if (error == null) {
+        // 카테고리 수가 한도(TODO_CATEGORY)를 쓰므로 남은 개수를 다시 받는다
+        invalidateEntitlements(queryClient);
+        return;
+      }
+      if (isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
         invalidateTodoCategories(queryClient);
       }
     },
@@ -272,15 +275,19 @@ export function useReorderTodoCategoryMutationOptions() {
     mutationFn: async ({ id, input }: ReorderTodoCategoryVariables) =>
       unwrap(await todoCategoryApi.reorderCategory(id, input)),
     onSuccess: () => {
-      invalidateWidgetSummary(queryClient);
       trackEvent('category_reordered', { source: 'settings' });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {
         trackAttributedFeatureSuccess({ accountId, feature: 'category_reorder' });
       }
     },
-    // 성공하면 서버 순서를, 실패하면 끌기 전 순서를 받아 화면이 붙잡은 순서를 놓는다
-    onSettled: () => invalidateTodoCategories(queryClient),
+    // 성공하면 서버 순서를, 실패하면 끌기 전 순서를 받아 화면이 붙잡은 순서를 놓는다. 위젯 요약도 카테고리 순서로 그린다
+    onSettled: (_data, error) => {
+      if (error == null) {
+        invalidateWidgetSummary(queryClient);
+      }
+      invalidateTodoCategories(queryClient);
+    },
     meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.changeFailedRetry' } },
   });
 }

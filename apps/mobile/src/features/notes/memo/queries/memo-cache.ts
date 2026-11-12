@@ -14,6 +14,14 @@ export function invalidateMemoResourceLimit(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.resourceLimit() });
 }
 
+/**
+ * 지운 메모의 상세는 다시 받아도 없어 버린다. 보고 있는 상세는 버리면 다시 받다 경계로 내려가므로
+ * 화면을 떠날 때까지 두고 다시 받지도 않는다
+ */
+export function removeMemo(queryClient: QueryClient, { memoId }: { memoId: number }) {
+  queryClient.removeQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }), type: 'inactive' });
+}
+
 export function invalidateMemo(queryClient: QueryClient, { memoId }: { memoId: number }) {
   return queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
 }

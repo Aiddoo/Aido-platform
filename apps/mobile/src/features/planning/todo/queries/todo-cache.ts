@@ -514,6 +514,14 @@ export function invalidateTodos(queryClient: QueryClient) {
   ]);
 }
 
+/**
+ * 지운 할 일의 상세는 다시 받아도 없어 버린다. 보고 있는 상세는 버리면 다시 받다 경계로 내려가므로
+ * 화면을 떠날 때까지 두고 다시 받지도 않는다
+ */
+export function removeTodoPage(queryClient: QueryClient, { todoId }: { todoId: number }) {
+  queryClient.removeQueries({ queryKey: TODO_QUERY_KEYS.page({ todoId }), type: 'inactive' });
+}
+
 export function invalidateTodoDetails(queryClient: QueryClient, { todoId }: { todoId: number }) {
   return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.detail({ todoId }) });
 }

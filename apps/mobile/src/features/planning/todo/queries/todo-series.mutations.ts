@@ -30,7 +30,6 @@ export function useStopTodoSeriesMutationOptions() {
     mutationFn: async ({ todoId }: StopTodoSeriesVariables) =>
       unwrap(await todoApi.stopTodoSeries(todoId)),
     onSuccess: () => {
-      invalidateTodos(queryClient);
       toast.success(t('todo:toast.seriesStopped'));
       trackEvent('todo_series_stopped');
     },
@@ -55,6 +54,12 @@ export function useStopTodoSeriesMutationOptions() {
         fallbackKey: 'todo:toast.updateFailedRetry',
         isHandledByFeature: isTodoSeriesFailure,
       },
+    },
+    // 끝낸 반복의 남은 회차가 어느 날짜에서 빠졌는지 몰라 넓게 맞춘다
+    onSettled: (_data, error) => {
+      if (error == null) {
+        invalidateTodos(queryClient);
+      }
     },
   });
 }

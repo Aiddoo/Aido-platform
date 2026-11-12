@@ -119,9 +119,7 @@ export function useCreateTodoMutationOptions() {
     },
     onSuccess: (saved, { values }, { startDate, optimisticId }) => {
       // 응답이 만든 할 일 전체라 목록·존재 여부·카테고리 개수를 응답으로 고치고 다시 받지 않는다
-      if (optimisticId == null) {
-        invalidateTodoCategories(queryClient);
-      } else {
+      if (optimisticId != null) {
         saveCreatedTodo(queryClient, { date: startDate, optimisticId }, saved);
         changeCachedCategoryTodoCount(queryClient, { categoryId: saved.category.id, delta: 1 });
       }
@@ -153,6 +151,10 @@ export function useCreateTodoMutationOptions() {
       }
     },
     onSettled: (_saved, error, { values }, context) => {
+      // 카테고리를 몰라 낙관적으로 넣지 못했으면 개수도 서버에 묻는다
+      if (error == null && context?.optimisticId == null) {
+        invalidateTodoCategories(queryClient);
+      }
       settleTodoWrite(queryClient, {
         date: values.startDate,
         span: context?.span ?? getTodoDateSpan({ startDate: values.startDate, endDate: null }),
@@ -272,7 +274,6 @@ export function useCreateRecurringTodoMutationOptions() {
     },
     onSuccess: (_, { values }) => {
       emitTodoCreated();
-      invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));
       trackEvent('todo_created', {
         source: 'manual',
@@ -316,6 +317,12 @@ export function useCreateRecurringTodoMutationOptions() {
         fallbackKey: 'todo:toast.addFailedRetry',
         isHandledByFeature: isRecurringTodoRejection,
       },
+    },
+    // 반복 회차가 어느 날짜에 생겼는지 몰라 넓게 맞춘다
+    onSettled: (_saved, error) => {
+      if (error == null) {
+        invalidateTodos(queryClient);
+      }
     },
   });
 }
@@ -432,14 +439,7 @@ export function useUpdateTodoMutationOptions() {
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
-    onSuccess: (saved, variables, { before }) => {
-      // 반복 범위·규칙을 바꾸면 바뀐 회차의 날짜를 몰라 넓게 맞춘다.
-      // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기다
-      if (variables.options?.scope == null && variables.options?.repeat === undefined) {
-        settleTodoEdit(queryClient, { before, after: saved });
-      } else {
-        invalidateTodos(queryClient);
-      }
+    onSuccess: (_saved, variables) => {
       toast.success(t('todo:toast.todoUpdated'));
       trackEvent('todo_edited', {
         todo_id: variables.todoId,
@@ -474,6 +474,18 @@ export function useUpdateTodoMutationOptions() {
         fallbackKey: 'todo:toast.updateFailedRetry',
         isHandledByFeature: isTodoSeriesFailure,
       },
+    },
+    onSettled: (saved, _error, { options }, context) => {
+      if (saved == null) {
+        return;
+      }
+      // 반복 범위·규칙을 바꾸면 바뀐 회차의 날짜를 몰라 넓게 맞춘다.
+      // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기다
+      if (options?.scope == null && options?.repeat === undefined) {
+        settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
+      } else {
+        invalidateTodos(queryClient);
+      }
     },
   });
 }

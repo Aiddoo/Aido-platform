@@ -51,6 +51,7 @@ import {
   invalidateMemo,
   invalidateMemoList,
   invalidateMemoResourceLimit,
+  removeMemo,
   settleMemoWrite,
 } from './memo-cache';
 import { MEMO_MUTATION_KEYS } from './memo-mutation-keys';
@@ -197,14 +198,17 @@ export function useDeleteMemoMutationOptions() {
     networkMode: 'always',
     mutationFn: async (memoId: number) => unwrap(await memoApi.deleteMemo(memoId)),
     onSuccess: (_result, memoId) => {
+      removeMemo(queryClient, { memoId });
       toast.success(t('memo:toasts.deleted'));
       trackEvent('memo_deleted', { memo_id: memoId });
     },
-    // 기다리면 지운 메모의 404 재조회가 먼저 끝나 다이얼로그가 닫히기 전에 경계로 내려갈 수 있다
-    onSettled: (_result, _error, memoId) => {
+    // 기다리면 다이얼로그가 목록을 다시 받을 때까지 닫히지 않는다
+    onSettled: (_result, error, memoId) => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
-      invalidateMemo(queryClient, { memoId });
+      if (error != null) {
+        invalidateMemo(queryClient, { memoId });
+      }
     },
     meta: { errorFeedback: { feature: 'memo', fallbackKey: 'memo:toasts.deleteRetry' } },
   });

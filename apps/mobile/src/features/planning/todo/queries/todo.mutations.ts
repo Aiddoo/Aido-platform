@@ -39,6 +39,7 @@ import {
   invalidateTodoDependentQueries,
   invalidateTodos,
   removeTodoFromList,
+  removeTodoPage,
   restoreTodo,
   settleTodoEdit,
   settleTodoReorder,
@@ -168,13 +169,7 @@ export function useChangeTodoCategoryMutationOptions() {
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
-    onSuccess: (saved, variables, { before }) => {
-      // 이후 회차까지 바꾸면 바뀐 날짜를 몰라 넓게 맞춘다
-      if (variables.scope == null) {
-        settleTodoEdit(queryClient, { before, after: saved });
-      } else {
-        invalidateTodos(queryClient);
-      }
+    onSuccess: (_saved, variables) => {
       toast.success(t('todo:toast.categoryChanged'));
       trackEvent('todo_edited', { todo_id: variables.todoId, field: 'categoryId' });
       if (variables.scope != null) {
@@ -202,6 +197,17 @@ export function useChangeTodoCategoryMutationOptions() {
         fallbackKey: 'todo:toast.changeFailedRetry',
         isHandledByFeature: isTodoSeriesFailure,
       },
+    },
+    onSettled: (saved, _error, { scope }, context) => {
+      if (saved == null) {
+        return;
+      }
+      // 이후 회차까지 바꾸면 바뀐 날짜를 몰라 넓게 맞춘다
+      if (scope == null) {
+        settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
+      } else {
+        invalidateTodos(queryClient);
+      }
     },
   });
 }
@@ -242,19 +248,17 @@ export function useDeleteTodoMutationOptions() {
       return { snapshot, span, ticket };
     },
     onSuccess: (_, { todoId, scope }, context) => {
+      removeTodoPage(queryClient, { todoId });
       toast.success(t('todo:toast.todoDeleted'));
       trackEvent('todo_deleted', { todo_id: todoId });
       if (scope != null) {
         trackEvent('todo_series_deleted', { scope });
-        invalidateTodos(queryClient);
         return;
       }
       const categoryId = context.snapshot?.todo.category.id;
-      if (categoryId == null) {
-        invalidateTodoCategories(queryClient);
-        return;
+      if (categoryId != null) {
+        changeCachedCategoryTodoCount(queryClient, { categoryId, delta: -1 });
       }
-      changeCachedCategoryTodoCount(queryClient, { categoryId, delta: -1 });
     },
     onError: (error, _variables, context) => {
       if (context?.snapshot) {
@@ -276,8 +280,13 @@ export function useDeleteTodoMutationOptions() {
         );
       }
     },
-    onSettled: (_data, error, { todoId, date }, context) => {
+    onSettled: (_data, error, { todoId, date, scope }, context) => {
       invalidateTodoDependentQueries(queryClient);
+      if (error == null && scope != null) {
+        invalidateTodos(queryClient);
+      } else if (error == null && context?.snapshot == null) {
+        invalidateTodoCategories(queryClient);
+      }
       settleTodoWrite(queryClient, {
         date,
         todoId,
@@ -288,7 +297,8 @@ export function useDeleteTodoMutationOptions() {
         extra: [
           // 마지막 할 일·반복 회차를 지웠는지는 서버만 안다
           ...getTodoOverviewFilters(),
-          { queryKey: TODO_QUERY_KEYS.page({ todoId }) },
+          // 지우지 못했으면 상세도 서버 값으로 맞춘다. 지웠으면 성공 때 버렸다
+          ...(error == null ? [] : [{ queryKey: TODO_QUERY_KEYS.page({ todoId }) }]),
         ],
       });
     },
@@ -359,13 +369,7 @@ export function useUpdateTodoScheduleMutationOptions() {
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
-    onSuccess: (saved, { changedField, scope }, { before }) => {
-      // 이후 회차까지 옮기면 바뀐 날짜를 몰라 넓게 맞춘다
-      if (scope == null) {
-        settleTodoEdit(queryClient, { before, after: saved });
-      } else {
-        invalidateTodos(queryClient);
-      }
+    onSuccess: (_saved, { changedField, scope }) => {
       toast.success(
         changedField === 'time' ? t('todo:toast.timeChanged') : t('todo:toast.dateChanged'),
       );
@@ -394,6 +398,17 @@ export function useUpdateTodoScheduleMutationOptions() {
         fallbackKey: 'todo:toast.updateFailedRetry',
         isHandledByFeature: isTodoSeriesFailure,
       },
+    },
+    onSettled: (saved, _error, { scope }, context) => {
+      if (saved == null) {
+        return;
+      }
+      // 이후 회차까지 옮기면 바뀐 날짜를 몰라 넓게 맞춘다
+      if (scope == null) {
+        settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
+      } else {
+        invalidateTodos(queryClient);
+      }
     },
   });
 }

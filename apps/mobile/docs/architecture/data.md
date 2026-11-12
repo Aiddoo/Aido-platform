@@ -132,20 +132,19 @@ export const NOTIFICATION_MUTATION_KEYS = {
 ```ts
 // features/planning/category/queries/todo-category.mutations.ts
 export function useUpdateTodoCategoryMutationOptions() {
-  const todoCategoryService = useTodoCategoryService();
+  const todoCategoryApi = useTodoCategoryApi();
   const queryClient = useQueryClient();
   return mutationOptions({
     networkMode: 'always',
     mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes(),
     mutationFn: async ({ id, input }: UpdateTodoCategoryVariables) =>
-      unwrap(await todoCategoryService.updateCategory(id, input)),
+      unwrap(await todoCategoryApi.updateCategory(id, input)),
     onMutate: async ({ id, input }) => {
-      /* 이 카테고리의 이름·색만 낙관적으로 바꾸고 이전 값을 돌려준다 */
+      /* 다른 변경과 겹쳐 시작했는지 세고, 이 카테고리의 이름·색만 낙관적으로 바꾸고 이전 값을 돌려준다 */
     },
-    onSuccess: (saved, { id }) => {
-      if (isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
-        /* 응답의 이름·색을 쓴다 */
-      }
+    onSuccess: (saved, _variables, { startedWithOthers }) => {
+      // 마지막 변경이면 응답의 이름·색을 쓰고, 겹쳤으면 응답 대신 다시 받는다
+      settleTodoCategoryChange(queryClient, { saved, startedWithOthers });
     },
     onError: (_error, { id }, context) => {
       /* 이 카테고리의 이름·색만 되돌린다 */
@@ -171,8 +170,8 @@ export function useUpdateTodoCategoryMutationOptions() {
 1. `mutationKey: {FEATURE}_MUTATION_KEYS.writes()`로 같은 캐시를 쓰는 변경을 한 묶음으로 센다. `scope`는 서버에 닿는 순서가 중요한 연타(댓글 하트)에만 둔다.
 2. `onMutate`: 덮어쓸 키만 `cancelQueries`(단건은 `exact: true`) → 바꿀 엔티티·칸만 읽어 둔다 → `setQueryData(key, (old) => old && withX(old, …))`. updater는 `-cache.ts`의 순수 함수다.
 3. `onError`: 읽어 둔 값으로 같은 updater를 지금 캐시에 다시 적용한다. 스냅숏으로 통째로 덮으면 함께 진행 중인 변경이 지워진다.
-4. `onSuccess`: 응답이 확정한 칸은 `isLastMutation`일 때만 쓴다. 만들기는 임시 id를 서버 행으로 바꾼다.
-5. `onSettled`: 실패했거나 응답이 바뀐 값을 다 담지 못하면 마지막 변경일 때만 다시 받는다.
+4. `onSuccess`: 응답이 확정한 칸은 `isLastMutation`일 때만 쓴다. 응답이 오는 순서는 서버가 처리한 순서와 다를 수 있어, 앞서 끝난 변경은 낡음만 표시하고(`refetchType: 'none'`) 마지막 변경이 겹쳤으면(시작할 때 다른 변경이 있었거나 낡음 표시가 남음) 다시 받는다(`settleTodoCategoryChange`·`settleMemoWrite`). 만들기는 임시 id를 서버 행으로 바꾼다. 지운 엔티티의 상세는 `removeQueries({ type: 'inactive' })`로 버린다. 보고 있는 상세는 버리면 다시 받다 경계로 내려가므로 화면을 떠날 때까지 둔다.
+5. `onSettled`: 실패했거나 응답이 바뀐 값을 다 담지 못하면 마지막 변경일 때만 다시 받는다. 응답이 필요한 정리(`settleTodoEdit`)도 여기서 `data`로 한다.
 
 - 할 일 목록은 `features/planning/todo/queries/todo-cache.ts`의 `beginTodoWrite`·`updateCachedTodo`·`settleTodoWrite`로만 고친다. 날짜는 할 일의 시작일이 아니라 보고 있는 목록의 날짜다. 임시 id는 음수(`createOptimisticId`)이고 `isOptimistic*` Policy로 막는다. 임시 행의 버튼·끌기는 끄고 route는 양수 id만 받는다.
 
