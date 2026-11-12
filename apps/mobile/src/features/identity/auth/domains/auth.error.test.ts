@@ -2,7 +2,13 @@ import { ErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { BusinessError, NetworkError, ServerError } from '@src/shared/errors';
 
-import { AUTH_ERROR_CODE, findLoginFailureReason, findResendCooldown } from './auth.error';
+import {
+  AUTH_ERROR_CODE,
+  findLoginFailureReason,
+  findResendCooldown,
+  findVerificationCodeFieldError,
+  VERIFICATION_CODE_FIELD_ERROR,
+} from './auth.error';
 
 describe('findResendCooldown', () => {
   it('쿨다운 중(VERIFY_0753) 오류면 남은 초만큼 다시 기다리게 한다', () => {
@@ -47,6 +53,35 @@ describe('findResendCooldown', () => {
 
     // Then
     expect(result).toBeNull();
+  });
+});
+
+describe('findVerificationCodeFieldError', () => {
+  it.each([
+    [
+      '틀린 코드(VERIFY_0751)',
+      new ApiError(ErrorCode.VERIFY_0751, 'x', 400),
+      VERIFICATION_CODE_FIELD_ERROR,
+    ],
+    [
+      '만료된 코드(VERIFY_0752)',
+      new ApiError(ErrorCode.VERIFY_0752, 'x', 400),
+      VERIFICATION_CODE_FIELD_ERROR,
+    ],
+    [
+      '시도 초과(VERIFY_0754)',
+      new ApiError(ErrorCode.VERIFY_0754, 'x', 429),
+      VERIFICATION_CODE_FIELD_ERROR,
+    ],
+    ['재발송 쿨다운(VERIFY_0753)', new ApiError(ErrorCode.VERIFY_0753, 'x', 429), null],
+    ['다른 서버 오류', new ApiError(ErrorCode.USER_0602, 'x', 401), null],
+    ['연결 끊김', new NetworkError(), null],
+  ])('%s는 코드 칸으로 돌아갈 오류인지: %o', (_label, error, expected) => {
+    // When
+    const result = findVerificationCodeFieldError(error);
+
+    // Then
+    expect(result).toEqual(expected);
   });
 });
 

@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Box, FormStepLayout, KeyboardAdaptiveButton } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import {
   Controller,
   useController,
@@ -54,10 +56,12 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
   });
   const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
   const { isSubmitting } = useFormState({ control: form.control });
+  const goBack = useSingleTap(router.back);
 
   const submitNewPassword = form.handleSubmit(async (input) => {
     try {
       await changePassword.mutateAsync(input);
+      goBack();
     } catch (error) {
       // 그 밖의 실패 안내는 mutation의 meta.errorFeedback이 맡는다
       const fieldError = findPasswordFieldError(error);

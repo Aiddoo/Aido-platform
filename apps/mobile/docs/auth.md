@@ -196,4 +196,4 @@ SignInService.openAppleLogin()
 
 # 폼과 단계
 
-가입(`app/(auth)/sign-up.tsx`), 비밀번호 찾기·바꾸기는 `useStepper` 흐름이다. 단계 표와 같은 렌더러 규칙은 [hooks](./architecture/hooks.md#usestepper), 버튼 상태는 [data](./architecture/data.md#폼)에 있다. 현재 비밀번호가 틀리면(`USER_0602`) `findPasswordFieldError`로 그 칸에 보인다(바꾸기는 `currentPassword` 단계로 돌아가고 탈퇴는 `password` 칸에 포커스). 가입 중복 이메일은 로그인하러 가기 동작이 있는 토스트, 재설정 코드 오류는 코드 입력 부품이 상태를 가져 토스트다.
+가입(`app/(auth)/sign-up.tsx`), 비밀번호 찾기·바꾸기는 `useStepper` 흐름이다. 단계 표와 같은 렌더러 규칙은 [hooks](./architecture/hooks.md#usestepper), 버튼 상태는 [data](./architecture/data.md#폼)에 있다. 현재 비밀번호가 틀리면(`USER_0602`) `findPasswordFieldError`로 그 칸에 보인다(바꾸기는 `currentPassword` 단계로 돌아가고 탈퇴는 `password` 칸에 포커스). 가입 중복 이메일은 로그인하러 가기 동작이 있는 토스트다. 재설정 코드가 마지막 제출에서 거절되면(`VERIFY_0751`·`0752`·`0754`, `findVerificationCodeFieldError`) 문구는 전역 피드백이 `errors` 카탈로그로 보이고, 폼은 `code` 칸에 오류를 두고 새 비밀번호를 지킨 채 코드 단계로 돌아가 칸을 오류 상태로 연다. 화면 이동(인증 화면으로, 로그인으로, 앞 화면으로)은 mutation 옵션이 아니라 폼이 `mutateAsync` 뒤에 한다.

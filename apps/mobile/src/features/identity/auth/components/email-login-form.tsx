@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -10,10 +11,11 @@ import {
   StyledSafeAreaView,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
+import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
+import { isEmailNotVerifiedError } from '../domains/auth.error';
 import { useEmailLoginMutationOptions } from '../queries/auth.mutations';
 import { emailLoginFormSchema } from '../schemas/email-login-form.schema';
 import { PasswordInput } from './password-input';
@@ -26,6 +28,7 @@ interface EmailLoginFormProps {
 export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { t } = useTranslation('auth');
   const emailLogin = useMutation(useEmailLoginMutationOptions());
+  const push = useSingleTap(router.push);
   const [viewportSize, handleViewportLayout] = useLayoutSize();
   const form = useForm({
     resolver: zodResolver(emailLoginFormSchema),
@@ -35,7 +38,14 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { isSubmitting } = useFormState({ control: form.control });
 
   const submitEmailLogin = form.handleSubmit(async (values) => {
-    await emailLogin.mutateAsync({ email: values.email, password: values.password }).catch(noop);
+    try {
+      await emailLogin.mutateAsync({ email: values.email, password: values.password });
+    } catch (error) {
+      // 그 밖의 실패 안내는 mutation의 meta.errorFeedback이 맡는다
+      if (isEmailNotVerifiedError(error)) {
+        push({ pathname: '/(auth)/verify-email', params: { email: values.email } });
+      }
+    }
   });
 
   return (

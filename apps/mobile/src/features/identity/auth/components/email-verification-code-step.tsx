@@ -16,6 +16,8 @@ interface EmailVerificationCodeStepProps extends Pick<
   'isSeparated'
 > {
   email: string;
+  /** 서버가 이 코드를 거절해 돌아왔다. 칸을 오류로 보이고 비운 채 연다 */
+  isRejected?: boolean;
   isVerifying?: boolean;
   isResending?: boolean;
   /** 코드를 모두 입력하면 호출한다. reject하면 입력을 비우고 오류 상태로 표시한다. */
@@ -29,6 +31,7 @@ export function EmailVerificationCodeStep({
   email,
   onComplete,
   onResend,
+  isRejected = false,
   isVerifying = false,
   isResending = false,
   isSeparated,
@@ -36,7 +39,7 @@ export function EmailVerificationCodeStep({
   const { t } = useTranslation('auth');
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [code, setCode] = useState('');
-  const [isInvalid, setIsInvalid] = useState(false);
+  const [isInvalid, setIsInvalid] = useState(isRejected);
   const [cooldown, startCooldown] = useCooldown();
 
   const clearCode = () => {

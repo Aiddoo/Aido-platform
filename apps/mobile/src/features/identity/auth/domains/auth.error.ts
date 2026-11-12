@@ -40,16 +40,20 @@ export function findPasswordFieldError(error: unknown) {
   return isPasswordMismatchError(error) ? PASSWORD_MISMATCH_FIELD_ERROR : null;
 }
 
-export function isVerificationCodeInvalidError(error: unknown) {
-  return isApiError(error) && error.hasCode(ErrorCode.VERIFY_0751);
-}
+/** 코드가 틀렸거나(0751) 만료됐거나(0752) 시도를 다 써(0754) 코드 칸으로 돌아가 다시 받아야 한다. 문구는 `errors` 카탈로그다 */
+const VERIFICATION_CODE_REJECTION_CODES = [
+  ErrorCode.VERIFY_0751,
+  ErrorCode.VERIFY_0752,
+  ErrorCode.VERIFY_0754,
+] as const;
 
-export function isVerificationCodeExpiredError(error: unknown) {
-  return isApiError(error) && error.hasCode(ErrorCode.VERIFY_0752);
-}
+/** 인증 코드 칸(비밀번호 재설정 code)에 보일 서버 오류. type은 그 칸 상태를 고르는 키다 */
+export const VERIFICATION_CODE_FIELD_ERROR = { type: 'verificationCodeRejected' } as const;
 
-export function isVerificationAttemptsExceededError(error: unknown) {
-  return isApiError(error) && error.hasCode(ErrorCode.VERIFY_0754);
+export function findVerificationCodeFieldError(error: unknown) {
+  return isApiError(error) && VERIFICATION_CODE_REJECTION_CODES.some((code) => error.hasCode(code))
+    ? VERIFICATION_CODE_FIELD_ERROR
+    : null;
 }
 
 /** 재발송 실패가 쿨다운 중(VERIFY_0753)이면 서버가 알려 준 남은 초를, 아니면 null을 돌려준다. */
