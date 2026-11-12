@@ -527,6 +527,64 @@ describe("인증 E2E", () => {
       expect(response.body.data.providers).toContain("CREDENTIAL");
     });
 
+    it("프로필 이름은 공백만 있으면 400 SYS_0002, 앞뒤 공백은 지우고 저장한다", async () => {
+      // Given
+      const { accessToken } = await ctx.helpers.createVerifiedUser(
+        "profile-blank@example.com",
+        profilePassword,
+        { name: "원래 이름" },
+      );
+
+      // When
+      const blankResponse = await request(ctx.app.getHttpServer())
+        .patch("/v1/auth/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "   " })
+        .expect(400);
+      const longResponse = await request(ctx.app.getHttpServer())
+        .patch("/v1/auth/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "가".repeat(21) })
+        .expect(400);
+      const maxResponse = await request(ctx.app.getHttpServer())
+        .patch("/v1/auth/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: `  ${"가".repeat(20)}  ` })
+        .expect(200);
+      const trimmedResponse = await request(ctx.app.getHttpServer())
+        .patch("/v1/auth/profile")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "  가나  " })
+        .expect(200);
+
+      // Then
+      expect(blankResponse.body.error.code).toBe(ErrorCode.SYS_0002);
+      expect(longResponse.body.error.code).toBe(ErrorCode.SYS_0002);
+      expect(maxResponse.body.data.name).toBe("가".repeat(20));
+      expect(trimmedResponse.body.data.name).toBe("가나");
+    });
+
+    it("가입 이름이 공백만 있으면 400 SYS_0002", async () => {
+      // Given
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/register")
+        .send({
+          email: "register-blank@example.com",
+          password: profilePassword,
+          passwordConfirm: profilePassword,
+          name: "   ",
+          termsAgreed: true,
+          privacyAgreed: true,
+          marketingAgreed: false,
+        })
+        .expect(400);
+
+      // Then
+      expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
+    });
+
     it("프로필 수정 전체 플로우 (이름, 이미지, 아이콘 키)", async () => {
       // Given
       const { accessToken } = await ctx.helpers.createVerifiedUser(
