@@ -7,7 +7,6 @@ import { ok } from '@src/core/errors/result';
 import { createEntitlementSnapshotDto } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -15,6 +14,7 @@ import {
   createTestDi,
   createTestQueryClient,
 } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
@@ -29,6 +29,7 @@ beforeEach(() => {
 });
 
 describe('QuickVoiceQuota', () => {
+  // 앱의 Provider 순서(HeroUI가 DI·Query 바깥)를 재현해야 해 renderScreen 대신 손으로 조립한다
   it('앱처럼 HeroUIProvider가 DI·Query 바깥에 있어도 ⓘ를 누르면 죽지 않고 남은 횟수를 보여 준다', async () => {
     // Given
     jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
@@ -76,29 +77,11 @@ describe('QuickVoiceQuota', () => {
         ok(createEntitlementSnapshotDto({ used: { AI_PARSE: PLAN_CATALOG.AI_PARSE.free } })),
       );
       const analytics = createAnalyticsStub();
-      await render(
-        <GestureHandlerProvider>
-          <FontScaleProvider>
-            <HeroUIProvider
-              config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
-            >
-              <QueryClientProvider client={createTestQueryClient()}>
-                <StaticDIProvider
-                  container={createTestDi({
-                    ports: { httpClient, analytics, logger: silentLogger },
-                  })}
-                >
-                  <LocalDateProvider>
-                    <OverlayProvider>
-                      <QuickVoiceQuota />
-                    </OverlayProvider>
-                  </LocalDateProvider>
-                </StaticDIProvider>
-              </QueryClientProvider>
-            </HeroUIProvider>
-          </FontScaleProvider>
-        </GestureHandlerProvider>,
-      );
+      await renderScreen(<QuickVoiceQuota />, {
+        di: createTestDi({ ports: { httpClient, analytics, logger: silentLogger } }),
+        withLocalDate: true,
+        withOverlay: true,
+      });
 
       // When
       await fireEvent.press(await screen.findByRole('button', { name: /이번 달 모두 사용/ }));
