@@ -7,34 +7,11 @@ description: 새 기능·새 화면·새 엔티티를 추가할 때 폴더 골�
 
 각 단계의 상세 규칙은 `.claude/rules/*.md`가 해당 파일을 열 때 자동으로 붙는다. 쓰는 폴더만 만든다.
 
-## 1. 둘 곳 정하기
+## 1. 둘 곳과 골격
 
-1. 서버 모듈 이름 아래에 둔다(`features/{area}/{feature}/`).
-2. 기기 전용이면 `features/device/`에 둔다.
-3. 파일 몇 개뿐이고 화면·데이터가 같으면 기존 기능에 넣는다.
-4. 제품 말 없이 설명되고 2곳 이상이 쓰면 `shared/`에 둔다.
-5. 여러 영역을 조립하는 일은 `app/`이 맡는다.
+둘 곳은 [구조 §기능 경계](../../../docs/architecture/structure.md#기능-경계)의 순서로 정하고, 폴더는 [§기능 폴더 골격](../../../docs/architecture/structure.md#기능-폴더-골격)에서 쓰는 것만 만든다.
 
-## 2. 폴더 골격
-
-```text
-features/{area}/{feature}/
-├── domains/        {entity}.model.ts, {feature}.error.ts
-├── schemas/        {name}-{form|params|request|response|payload|storage|draft|query-key|entry}.schema.ts
-├── apis/           {entity}.api.ts, {entity}.mapper.ts
-├── services/       {name}.service.ts, {name}.session.ts      (진짜 조율이 있을 때만)
-├── repositories/   {name}.repository.ts                       (저장 값 정의로 안 되는 것만)
-├── stores/         {name}.store.ts
-├── queries/        {feature}-query-keys.ts, {feature}-mutation-keys.ts,
-│                   {entity}.queries.ts, {entity}.mutations.ts, {feature}-cache.ts
-├── constants/      {feature}.constants.ts, {entity}.events.ts, {entity}-log-events.ts
-├── components/     {역할}.tsx
-├── hooks/          use-{name}.ts
-├── utils/          {name}.view-model.ts, {name}.geometry.ts, {feature}-draft.ts, {feature}-analytics.ts
-└── __tests__/      {entity}.fixtures.ts, {route}-screen.test.tsx, {feature}.test-utils.tsx
-```
-
-## 3. 순서
+## 2. 순서
 
 1. **모델** `domains/{entity}.model.ts`: Zod 모델, 이름 있는 순수 함수, `{Entity}Policy`. 업무 규칙만 둔다. 계약 import, i18n 키, 시계 읽기를 넣지 않는다. 기능 오류 코드·칸 매핑은 `domains/{feature}.error.ts`다.
 2. **모델 테스트** `{entity}.model.test.ts`: 경계값을 `it.each`와 fixture로 쓴다.
@@ -56,7 +33,7 @@ features/{area}/{feature}/
 
 ```ts
 // 핸들러: 막히면 업셀을 띄우고 멈춘다
-const gate = useEntitlementGate('WEEKLY_PLAN');
+const gate = useEntitlementGate('WEEKLY_PLAN', { surface: 'weekly_plan' });
 const handlePress = () => {
   if (gate.promptIfBlocked()) {
     return;
@@ -68,7 +45,7 @@ const handlePress = () => {
 queryOptions({ queryKey: WEEKLY_PLAN_QUERY_KEYS.detail({ weekKey }), queryFn, meta: { refreshOnPremiumChange: true } });
 ```
 
-- 기능 키와 한도는 `@aido/api/vocabulary`에 먼저 더한다. `EntitlementPolicy`가 튜플에서 유도한다.
+- 기능 키와 한도는 `@aido/api/vocabulary`(`PREMIUM_FEATURE_KEYS`)에 먼저 더한다. `EntitlementPolicy`가 튜플에서 유도하고, 게이트 제목 키와 `surface`(`EntitlementGateSurface`)도 함께 더한다.
 - 결제 SDK·paywall·다른 기능의 파일은 고치지 않는다.
 
 자세히: [구조](../../../docs/architecture/structure.md) · [데이터](../../../docs/architecture/data.md) · [UI](../../../docs/architecture/ui.md)
