@@ -307,6 +307,24 @@ describe('구독 화면', () => {
     expect(purchases.purchase).toHaveBeenCalledTimes(1);
   });
 
+  it('스토어 연결이 끊겨 결제를 마치지 못하면 문의할 수 있는 다이얼로그를 띄운다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { purchases } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+    purchases.purchase.mockRejectedValue(new PurchasesGatewayError('network', null, 'offline'));
+
+    // When
+    await user.press(await screen.findByRole('button', { name: '연간으로 시작하기' }));
+
+    // Then
+    expect(await screen.findByText('결제를 마치지 못했어요')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: i18n.t('subscription:failure.contactSupport') }),
+    ).toBeTruthy();
+  });
+
   describe('결제 뒤 시작 화면', () => {
     it('체험으로 결제하면 서버 반영이 늦어도 방금 산 요금제로 체험 일정을 보여 주고 반영이 늦는다고 알린다', async () => {
       // Given
