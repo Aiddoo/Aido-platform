@@ -5,9 +5,13 @@ import {
   createAppLoggerStub,
   createMemoryTokenStore,
   createPendingResponse,
+  createStalledBodyResponse,
+  observeSettlement,
+  setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { TimeoutError as KyTimeoutError } from 'ky';
 
+import { REFRESH_TIMEOUT_MS } from './request-timeout';
 import { createTokenRefresher } from './token-refresher';
 
 // ok는 status에서 정해진다. 호출부의 ok는 읽는 사람을 위한 표시로 status와 같게 둔다.
@@ -479,6 +483,61 @@ describe('createTokenRefresher', () => {
       // Then
       await Promise.all([first, second]);
       expect(requestRefresh).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('갱신 응답 본문이 오지 않을 때', () => {
+    setupFakeTimersPerTest();
+
+    it('200 헤더만 받은 갱신을 기다리는 대기자 모두가 제한 시간에 TimeoutError로 끝난다', async () => {
+      // Given
+      tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
+      const stalled = createStalledBodyResponse(200);
+      const refresh = createTokenRefresher({
+        tokenStore,
+        requestRefresh: respondWith(stalled.response),
+        sessionEpoch: createSessionEpoch(),
+        logger: createAppLoggerStub(),
+      });
+      const first = observeSettlement(refresh());
+      const second = observeSettlement(refresh());
+
+      // When
+      await jest.advanceTimersByTimeAsync(REFRESH_TIMEOUT_MS);
+
+      // Then
+      expect(first.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      expect(second.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      stalled.finish(JSON.stringify(TOKENS_BODY));
+    });
+
+    it('제한 시간 뒤 늦게 온 본문으로 토큰을 저장하지 않고 다음 401은 새로 갱신한다', async () => {
+      // Given
+      tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
+      const stalled = createStalledBodyResponse(200);
+      const requestRefresh = jest
+        .fn<Promise<Response>, [string]>()
+        .mockResolvedValueOnce(stalled.response)
+        .mockResolvedValueOnce(createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }));
+      const refresh = createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch: createSessionEpoch(),
+        logger: createAppLoggerStub(),
+      });
+      const timedOut = observeSettlement(refresh());
+      await jest.advanceTimersByTimeAsync(REFRESH_TIMEOUT_MS);
+
+      // When
+      stalled.finish(JSON.stringify(TOKENS_BODY));
+      await jest.advanceTimersByTimeAsync(0);
+      const next = await refresh();
+
+      // Then
+      expect(timedOut.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      expect(next).toEqual({ kind: 'refreshed', accessToken: 'new-access' });
+      expect(requestRefresh).toHaveBeenCalledTimes(2);
+      expect(tokenStore.save).toHaveBeenCalledTimes(1);
     });
   });
 });
