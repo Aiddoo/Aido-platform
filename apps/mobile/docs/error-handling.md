@@ -173,7 +173,7 @@ showMutationError(error, {
 오프라인으로 앱을 다시 열어도 마지막 데이터를 보이도록 opt-in한 조회(`...PERSISTED_QUERY_OPTIONS`)만 AES-256 MMKV `aido.query-cache.encrypted`에 24시간 보관한다. 토큰·결제·배지 수·AI 제안은 보관하지 않는다.
 
 - 키를 읽지 못한 실행은 `query-cache.encrypted-storage.unavailable` warn만 남기고 저장하지 않는다. 복원한 값은 `meta.persist`의 모델 스키마로 검증해 깨진 조회만 버리고(`query-cache.restored-queries.dropped`) 복원 직후 전체를 invalidate한다.
-- 로그인한 사용자 키에만 쓰고(`useClaimDeviceDataForUser`), 미인증 전환 때 `SessionCleanupService`가 인스턴스를 통째로 비운다(`clearAll` + `trim`). 앱 버전·OTA가 바뀌면 버린다. 저장소를 열지 못한 실행의 세션 종료는 정리 표시(`aido_session_pending-storage-cleanup_v1`)를 남겨 다음에 열 때 지운다.
+- 로그인한 사용자 키에만 쓰고(`useClaimDeviceDataForUser`), 미인증 전환 때 `SessionCleanupService`가 인스턴스를 통째로 비운다(`clearAll` + `trim`). 앱 버전·OTA가 바뀌면 버린다. 저장소를 열지 못한 실행의 세션 종료는 정리 표시(`aido_session_pending_storage_cleanup_v1`)를 남겨 다음에 열 때 지운다.
 - 로그아웃·탈퇴 뒤 늦게 온 초안 저장·녹음 파일은 `SignOutEpoch`와 비교해 버린다. 세션 만료는 같은 사람이 이어 쓰므로 남긴다.
 
 ## 저장소 오류: KeychainLockedError
