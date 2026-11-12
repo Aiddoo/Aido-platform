@@ -180,7 +180,7 @@ export default function NotificationsScreen() {
 
 ## 모션과 Skia
 
-- Reanimated 4 `.get()`·`.set()`을 쓰고 transform·opacity만 움직인다(`width`·`height` 금지). ease-out, 시간은 `ANIMATION` 상수다. 탭 전환은 애니메이션하지 않는다. 모션 줄이기는 `reduceMotion: ReduceMotion.System`이고 반복·강조 모션은 `useIsReduceMotionEnabled()`면 생략한다. 누름은 heroui `PressableFeedback`, 햅틱은 `useHaptics()` 한 번이다.
+- Reanimated 4 `.get()`·`.set()`을 쓰고 transform·opacity만 움직인다(`width`·`height` 금지). 예외는 피드 달력의 주↔월 높이(`CalendarHeightTransition`) 하나다: 아래 피드가 접히는 달력을 따라 올라가야 해 transform으로는 같은 모양을 낼 수 없어 높이만 UI 스레드에서 움직이고, 내용 폭은 안쪽에서 재어 전환 중 다시 재지 않는다. ease-out, 시간은 `ANIMATION` 상수다. 탭 전환은 애니메이션하지 않는다. 모션 줄이기는 `reduceMotion: ReduceMotion.System`이고 반복·강조 모션은 `useIsReduceMotionEnabled()`면 생략한다. 누름은 heroui `PressableFeedback`, 햅틱은 `useHaptics()` 한 번이다.
 
 1. **만들기.** `RuntimeEffect`·고정 `Path`·`Picture`는 모듈 수준이나 입력이 같으면 다시 만들지 않는 메모로 만든다. 렌더·프레임마다 `Skia.*.Make`하지 않는다.
 2. **정리.** `SkPath`·`SkImage`·텍스처는 만든 effect의 정리 함수에서 `dispose`한다. 교체할 때는 앞의 것을 먼저 `dispose`한다. 값이 바뀔 때마다 다시 그리는 경로는 voice `useRebuiltPath(read, draw)`(빌더 하나를 되쓰고 앞 경로를 바로 `dispose`)로 만들고, 경로에 넣는 사각형은 `Skia.XYWHRect`·`RRectXY` 대신 같은 모양의 평범한 객체(`toRoundedBar`)로 넘긴다.

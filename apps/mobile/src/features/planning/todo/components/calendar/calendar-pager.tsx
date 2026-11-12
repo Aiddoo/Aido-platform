@@ -75,7 +75,8 @@ export function CalendarPager({ value, pageWidth, onChange, children }: Calendar
     [pageWidth],
   );
 
-  // 너비마다 새 목록으로 현재 페이지에서 시작한다. 이전 오프셋을 두면 네이티브가 +260주로 잘라 몇 년 뒤가 선택된다
+  // 너비마다 새 목록으로 지금 쪽에서 시작한다. 같은 목록이면 이전 픽셀 오프셋이 남아, 폭이 반 아래로 줄 때(Duo 분할)
+  // 새 목록 폭을 넘어 네이티브가 마지막 쪽(+260주, 5년 뒤)으로 잘라 그 주가 선택된다(792e95e2b)
   return (
     <FlatList
       key={pageWidth}
