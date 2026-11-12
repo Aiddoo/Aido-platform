@@ -172,7 +172,13 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
   - `shared/infra/storage/widget-storage.android`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다
   - `shared/utils/create-optimistic-id`: React 밖 cache helper가 부르고 프로세스 안에서 겹치지 않아야 한다
   - `features/planning/todo/queries/todo-cache`의 쓰기 순번(`WeakMap<QueryClient, number>`): React 밖 cache helper가 먼저 시작해 늦게 끝난 쓰기 사이를 센다. 키가 `QueryClient`라 그 수명을 따른다
-  - `shared/date/format/intl-formatter`의 포매터 캐시: 상태가 아닌 순수 캐시다
+  - `shared/date/format/intl-formatter`의 포매터 캐시, `shared/utils/number-format`의 퍼센트 포매터(많아야 4개): 상태가 아닌 순수 캐시다
+  - `shared/infra/storage/device-sync-storage`의 MMKV 인스턴스: DI보다 먼저 그리는 설정 Provider(테마·언어·글꼴)와 `i18n/init`이 읽는다
+  - `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`: 앱 트리 밖 위젯 헤드리스 진입점도 같은 수명 포트를 쓴다. 조립은 `create-device-ports`가 이 값을 넘긴다
+  - `shared/infra/observability/capture-error`의 보고한 오류 `WeakSet`: DI 밖(루트 경계·전역 로거)과 안의 보고가 같은 오류를 두 번 보내지 않게 하는 한 곳이고 오류 객체와 함께 사라진다
+  - `bootstrap/query/{mutation-error-feedback,query-error-report}-cache`의 구독자 표: 캐시 `onError`는 DI 밖 `createAppQueryClient`에서 만들어진다. 표는 캐시를 키로 한 `WeakMap`이라 캐시마다 따로이고 캐시와 함께 사라진다
+  - `app/+native-intent`의 초대 링크 도장(마지막 한 칸): 시스템 URL 변환은 앱 트리·DI보다 먼저 돈다
+  - `core/events/*`의 이벤트 채널 리스너: `core`는 DI를 모르고, 구독은 해제 함수를 돌려준다
 - 루트 "다시 시도"는 마운트 수명 컨테이너만 새로 만든다. 로그인·결제 설정·보고는 그대로 남는다.
 - 언마운트·로그아웃 뒤에 도는 일이 없어야 한다. await 뒤 상태 변경·이동은 막고, 핸들러가 건 rAF·타이머는 지우고, 리스너 세트 대신 `subscribe`가 해제 함수를 돌려주는 관찰 가능한 저장소를 쓴다. 화면 밖에서 늦게 오는 쓰기(초안 자동 저장의 마지막 저장, 늦은 녹음 파일)는 로그아웃·탈퇴 세대(`SignOutEpoch`)와 비교해 로그아웃·탈퇴 뒤에는 쓰지 않는다(`DraftService.createSessionSave`, `VoiceRecordingIntakeSession`). 세션 만료는 같은 사람이 돌아와 이어 쓰므로 막지 않는다. 결제 SDK 로그인·로그아웃은 `PurchasesSession`이 하나씩, 마지막 요청만 보내고 멈춘 호출은 `PURCHASES_SDK_CALL_TIMEOUT_MS`(15초)에서 끊는다. 상세: [hooks](./hooks.md).
 
