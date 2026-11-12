@@ -6,7 +6,7 @@ import {
   IPHONE_DUO_RAIL_WIDTH,
 } from '@src/testing/window-layout.fixtures';
 
-import { WindowLayoutPolicy } from './window-layout.model';
+import { WindowLayoutPolicy } from './window-layout';
 
 describe('WindowLayoutPolicy.getSizeClass', () => {
   it.each([

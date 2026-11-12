@@ -8,7 +8,7 @@ import { AdaptivePane } from '@src/shared/ui';
 
 ## 창 폭이 아니라 탭 안 내용 폭
 
-iPadOS 26+에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바는 탭 폭을 줄이지 않고 탭 안 화면의 왼쪽 safe area inset으로 온다(iPad Pro 13인치 iPadOS 27 가로에서 280pt). iPhone Duo 레일(84pt)도 inset이다. 폭만 보고 나누면 사이드바가 열린 가로 iPad에서 목록 칸 400pt 중 280pt가 inset으로 빠져 목록이 120pt로 짓눌린다. NativeTabs는 탭 바·사이드바 배치를 알려 주지 않는다(Expo 문서: "We're working on a layout function to provide more detailed layout info in the future"). 그래서 탭 Stack을 `PaneArea`로 감싸 react-native-safe-area-context의 `SafeAreaProvider`가 잰 탭의 폭(`useSafeAreaFrame`)과 좌우 inset(`useSafeAreaInsets`)을 쓴다. 규칙은 `WindowLayoutPolicy`(`shared/domains/window-layout.model.ts`)에 있다.
+iPadOS 26+에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바는 탭 폭을 줄이지 않고 탭 안 화면의 왼쪽 safe area inset으로 온다(iPad Pro 13인치 iPadOS 27 가로에서 280pt). iPhone Duo 레일(84pt)도 inset이다. 폭만 보고 나누면 사이드바가 열린 가로 iPad에서 목록 칸 400pt 중 280pt가 inset으로 빠져 목록이 120pt로 짓눌린다. NativeTabs는 탭 바·사이드바 배치를 알려 주지 않는다(Expo 문서: "We're working on a layout function to provide more detailed layout info in the future"). 그래서 탭 Stack을 `PaneArea`로 감싸 react-native-safe-area-context의 `SafeAreaProvider`가 잰 탭의 폭(`useSafeAreaFrame`)과 좌우 inset(`useSafeAreaInsets`)을 쓴다. 규칙은 `WindowLayoutPolicy`(`shared/ui/adaptive-pane/window-layout.ts`)에 있다.
 
 - `PaneArea`: 할 일·메모·마이 탭의 Stack 레이아웃이 감싼다. 탭 위에 여는 화면(날씨 등)은 사이드바가 없어 감싸지 않고 창 폭을 쓴다.
 - `usePaneSizeClass()`: 좌우 inset을 뺀 내용 폭으로 칸을 나눌지, 고른 항목을 칸에 열지 push할지(`useFeedSelectedTodoId`·`useSelectedMemoId`·`useOpenDetailWhenCompact`·마이 탭 메뉴)를 정한다. 같은 값을 봐야 칸은 하나인데 고른 항목이 칸에 열리는 어긋남이 없다.

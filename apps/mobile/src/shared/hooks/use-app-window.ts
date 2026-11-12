@@ -1,4 +1,4 @@
-import type { AppWindow } from '@src/shared/domains/window-layout.model';
+import type { AppWindow } from '@src/shared/ui/adaptive-pane/window-layout';
 import { useWindowDimensions } from 'react-native';
 
 import { IS_IOS_APP_ON_MAC } from '../infra/device/device-info';

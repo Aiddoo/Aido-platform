@@ -1,6 +1,21 @@
 import { APP_PLATFORMS } from '@aido/api/vocabulary';
-import { getWindowSizeClass, type WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import { z } from 'zod';
+
+/** Material window size class 기준 폭(dp). iOS size class는 폭 숫자로 정해지지 않아 iOS도 같은 숫자(pt)로 나눈다 */
+const MEDIUM_WINDOW_MIN_WIDTH = 600;
+const EXPANDED_WINDOW_MIN_WIDTH = 840;
+
+export type WindowSizeClass = 'compact' | 'medium' | 'expanded';
+
+function getWindowSizeClass(windowWidth: number): WindowSizeClass {
+  if (windowWidth >= EXPANDED_WINDOW_MIN_WIDTH) {
+    return 'expanded';
+  }
+  if (windowWidth >= MEDIUM_WINDOW_MIN_WIDTH) {
+    return 'medium';
+  }
+  return 'compact';
+}
 
 /** 앱 창. 크기는 `useWindowDimensions`의 dp(iOS pt)다 */
 const appWindowSchema = z.object({

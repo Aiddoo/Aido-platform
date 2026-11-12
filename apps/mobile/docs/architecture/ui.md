@@ -174,7 +174,7 @@ export default function NotificationsScreen() {
 - **글꼴.** 단계·OS 배율·크기 토큰은 [design](../design.md#글꼴)이 원본이다(앱 5단계, `allowFontScaling: false`). `HeroUIProvider`가 heroui 글자에도 배율을 끈다. 크기는 `Text size` 토큰, 아이콘·고정 크기는 `useFontScaledSize()`, 스켈레톤은 `TextSkeleton size`다.
 - 높이가 정해진 컨트롤(버튼·칩·탭)은 고정 높이와 좌우 padding이다. 짧은 라벨은 작은 iPhone 최대 단계에서 ko·en 모두 한 줄이다. 바뀌는 숫자는 `tabular-nums`다.
 - **기기.** iPhone, iPad, 폴더블(접음·펼침), iPhone Duo, Android 휴대폰·태블릿을 지원한다. 칸 수는 사이드바·레일 inset을 뺀 탭 안 내용 폭(Android는 시스템 바·컷아웃 inset을 빼지 않은 폭) `usePaneSizeClass()`(`compact`·`medium`·`expanded`), 창 전체 정책(방향·시트 배치)은 `useWindowSizeClass()`로 정한다. 기기 이름·힌지로 나누지 않는다.
-- 2열은 `AdaptivePane` 하나라 접고 펴도 다시 마운트되지 않는다. 폭마다 다시 만드는 무거운 부품은 `useDeferredValue`로 늦춘다. 배치 규칙(짧은 창, 방향 잠금, 칸 나누기, 접힘선)은 `shared/domains/window-layout.model.ts`의 `WindowLayoutPolicy`다. Mac(Designed for iPad)은 늘 `compact`다.
+- 2열은 `AdaptivePane` 하나라 접고 펴도 다시 마운트되지 않는다. 폭마다 다시 만드는 무거운 부품은 `useDeferredValue`로 늦춘다. 배치 규칙(짧은 창, 방향 잠금, 칸 나누기, 접힘선)은 `shared/ui/adaptive-pane/window-layout.ts`의 `WindowLayoutPolicy`다. Mac(Designed for iPad)은 늘 `compact`다.
 - 플랫폼 분기는 `process.env.EXPO_OS`다(번들에서 다른 플랫폼 코드가 빠진다).
 - Duo 세로 레일(84pt)은 safe area로 피한다. 탭 Stack 페이지 스크롤은 `SafeAreaScrollView`, 고정 헤더·하단 버튼·가상 목록 화면은 루트 `edges`에 `left`·`right`를 더한다. 같은 축을 두 번 감싸지 않는다. 헤더는 네이티브 Stack 헤더와 `Stack.Toolbar`만 쓴다.
 

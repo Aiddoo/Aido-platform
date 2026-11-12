@@ -3,7 +3,7 @@ import { join, relative, sep } from 'node:path';
 
 import { NOTIFICATION_NAVIGATION_KIND, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import type { DateKey } from '@src/shared/date/date-key';
-import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
+import type { WindowSizeClass } from '@src/shared/ui/adaptive-pane/window-layout';
 import { createDateKey } from '@src/testing/date-key';
 import type { Href } from 'expo-router';
 
