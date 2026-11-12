@@ -18,11 +18,6 @@
       "reason": "phase 3에서 줄인다"
     },
     {
-      "path": "apps/mobile/docs/architecture/ui.md",
-      "check": "limit",
-      "reason": "phase 3에서 줄인다"
-    },
-    {
       "path": "apps/mobile/docs/auth.md",
       "check": "limit",
       "reason": "phase 3에서 줄인다"
