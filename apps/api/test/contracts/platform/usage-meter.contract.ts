@@ -1,4 +1,4 @@
-import { USAGE_SUBJECT_ALL, type UsageMeterPort } from "../usage-meter.port.js";
+import { USAGE_SUBJECT_ALL, type UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 
 const DAY = { meter: "contract.call", periodKey: "2026-11-05", subject: USAGE_SUBJECT_ALL };
 const USER = { meter: "contract.call", periodKey: "2026-11-05", subject: "user-1" };

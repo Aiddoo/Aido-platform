@@ -1,8 +1,8 @@
 import type {
   EmailDeliveryOutcome,
   EmailSenderPort,
-} from "../../application/ports/email-sender.port.js";
-import { EmailMessage } from "../../domain/email-message.vo.js";
+} from "#api/modules/notification/email/application/ports/email-sender.port";
+import { EmailMessage } from "#api/modules/notification/email/domain/email-message.vo";
 
 const EMAIL_CONTRACT_SCENARIOS = [
   "success",
