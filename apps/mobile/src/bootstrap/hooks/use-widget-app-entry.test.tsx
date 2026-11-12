@@ -2,6 +2,8 @@ import { type WidgetNavigationCommand } from '@src/features/device/widget/domain
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { getNowInstant } from '@src/shared/date/clock';
+import { fromEpochMs, toEpochMs } from '@src/shared/date/instant';
 import {
   createAnalyticsStub,
   createIncomingLinkGatewayStub,
@@ -97,7 +99,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       id: 'first-tap',
       uri: 'aido://todo/12',
       userId: 'original-account',
-      createdAt: Date.now(),
+      createdAt: getNowInstant(),
     };
   });
 
@@ -270,7 +272,10 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       }
       di.widgetNavigationRepository.save(
         scenario === 'expired'
-          ? { ...command, createdAt: Date.now() - WIDGET_NAVIGATION_COMMAND_TTL_MS }
+          ? {
+              ...command,
+              createdAt: fromEpochMs(toEpochMs(getNowInstant()) - WIDGET_NAVIGATION_COMMAND_TTL_MS),
+            }
           : command,
       );
 

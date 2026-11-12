@@ -110,6 +110,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 
 - domain model은 허용 scheme/feed date/action/todo id만 해석한다. Router Href 변환은 presentation mapper다.
 - command는 5분 TTL, 미래 timestamp 거부, 현재 `me.id`와 소유자 일치 검사를 통과해야 한다. 로그아웃·계정 불일치·만료·손상 명령은 개인 화면 이동 없이 제거한다.
+- 저장한 command의 만든 시각은 출시한 앱과 같은 에포크 ms 숫자다. 저장 스키마(`widgetNavigationCommandStorageSchema`)의 codec이 읽을 때 `Instant`로, 쓸 때 숫자로 바꾼다(repository는 apis를 import하지 않는다). 정책과 HeadlessJS 시계(`getNowInstant`)는 `Instant`로 잰다.
 - 정확한 목적지와 생성 action은 native wake URI에 넣지 않는다. 이전 계정의 위젯이어도 현재 계정 가드를 통과하기 전에 개인 화면으로 자동 이동하지 않는다.
 - 최신 명령만 소비한다. 이전 frame의 cleanup·조건부 삭제로 연속 탭의 최신 요청을 지우지 않는다. 현재 pathname/search가 목적지와 같으면 다시 이동하지 않는다.
 - 할 일은 `/todo/[todoId]`, 날짜는 feed, 만들기는 피드의 `action=add-todo` params(`useFeedAction`)로 앱의 할 일 추가 입력(`/todo/new`의 `TodoCreateBottomSheet`)을 그대로 연다.

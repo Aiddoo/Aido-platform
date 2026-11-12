@@ -97,7 +97,7 @@ export function useWidgetAppEntry() {
       if (command != null) {
         const commandState = WidgetNavigationPolicy.getCommandState(command, {
           userId: getCachedMe(queryClient)?.id ?? null,
-          now: toEpochMs(getNowInstant()),
+          now: getNowInstant(),
         });
         if (commandState === 'ownerUnknown') {
           return;
@@ -178,7 +178,7 @@ export function useWidgetAppEntry() {
         ? null
         : WidgetNavigationPolicy.getCommandState(pendingCommand, {
             userId: accountId,
-            now: toEpochMs(getNowInstant()),
+            now: getNowInstant(),
           });
     if (pendingCommand != null && commandState === 'stale') {
       setPendingInitialUrl(null);
