@@ -24,7 +24,9 @@ export function EditNameForm({ title }: EditNameFormProps) {
 
   const form = useForm({
     resolver: zodResolver(updateNameFormSchema),
-    defaultValues: { name: user.name },
+    // 다른 기기에서 바뀐 이름이 다시 받아지면 따라가되, 고치는 중인 글자는 덮지 않는다
+    values: { name: user.name },
+    resetOptions: { keepDirtyValues: true },
     mode: 'onChange',
   });
   const { isSubmitting, isValid, isDirty } = useFormState({ control: form.control });
