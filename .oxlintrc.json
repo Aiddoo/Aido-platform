@@ -103,6 +103,13 @@
       }
     },
     {
+      "files": ["apps/api/src/**/*.ts", "packages/*/src/**/*.ts"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts", "**/*.test.ts"],
+      "rules": {
+        "aido/time-constant-unit": "error"
+      }
+    },
+    {
       "files": ["apps/api/src/platform/database/schema/*.ts"],
       "rules": {
         "aido/no-pg-enum-literal": "error"
