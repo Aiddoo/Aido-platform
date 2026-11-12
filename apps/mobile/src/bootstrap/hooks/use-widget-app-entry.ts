@@ -15,8 +15,9 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { toEpochMs } from '@src/shared/date/instant';
 import { toError } from '@src/shared/errors';
 import { useLinkingUrl } from '@src/shared/infra/linking/use-linking-url';
+import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import { useQueryClient } from '@tanstack/react-query';
-import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
+import { useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from 'react';
 
 import {
@@ -113,8 +114,9 @@ export function useWidgetAppEntry() {
       }
       setPendingInitialUrl(null);
       try {
+        // 앱이 켜진 채 시트·상세 위에서 눌러도 OS 링크처럼 열어 탭 묶음이 두 겹 쌓이지 않는다
         if (!entry.isShown({ pathname, params: parameters })) {
-          router.navigate(entry.href, { withAnchor: true });
+          openEntryHref(entry.href);
         }
         if (command == null) {
           widgetNavigationRepository.removeCorrupted();
