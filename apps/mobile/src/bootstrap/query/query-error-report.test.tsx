@@ -1,10 +1,10 @@
 import { ErrorCode } from '@aido/api/errors';
 import { ApiError, NetworkError, ParseError } from '@src/shared/errors';
 import { QueryErrorBoundary } from '@src/shared/ui/query-error-boundary';
-import { createErrorReporterStub, createTestDi } from '@src/testing/core';
+import { createErrorReporterStub, createTestDi, createTestQueryClient } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { screen } from '@testing-library/react-native';
+import { act, screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 import { Text } from 'react-native';
 
@@ -25,6 +25,11 @@ function InlineBlock({ error }: { error: unknown }) {
 function SuspenseBlock({ error }: { error: unknown }) {
   const { data } = useSuspenseQuery(failingQuery(error));
   return <Text>{data}</Text>;
+}
+
+function ThrowingInlineBlock({ error }: { error: unknown }) {
+  useQuery({ ...failingQuery(error), throwOnError: () => true });
+  return null;
 }
 
 describe('QueryErrorReport', () => {
@@ -78,5 +83,54 @@ describe('QueryErrorReport', () => {
     expect(errorReporter.captureException).toHaveBeenCalledWith(error, {
       feature: 'error_boundary',
     });
+  });
+
+  it('throwOnError 함수로 경계에 보내는 인라인 조회는 경계만 한 번 보고한다', async () => {
+    // Given
+    const errorReporter = createErrorReporterStub();
+    const error = new ParseError('invalid');
+
+    // When
+    await renderScreen(
+      <QueryErrorBoundary fallback={() => <Text>경계 실패</Text>}>
+        <ThrowingInlineBlock error={error} />
+      </QueryErrorBoundary>,
+      { di: createTestDi({ ports: { errorReporter } }) },
+    );
+    await screen.findByText('경계 실패');
+
+    // Then
+    expect(errorReporter.captureException.mock.calls).toEqual([
+      [error, { feature: 'error_boundary' }],
+    ]);
+  });
+
+  it('데이터가 있는 Suspense 조회의 재조회 실패는 경계가 아니라 조회 캐시가 보고한다', async () => {
+    // Given
+    const errorReporter = createErrorReporterStub();
+    const error = new ParseError('invalid');
+    const query = failingQuery(error);
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(query.queryKey, '받아 둔 값');
+    await renderScreen(
+      <QueryErrorBoundary fallback={() => <Text>경계 실패</Text>}>
+        <Suspense fallback={null}>
+          <SuspenseBlock error={error} />
+        </Suspense>
+      </QueryErrorBoundary>,
+      { di: createTestDi({ ports: { errorReporter, queryClient } }) },
+    );
+    await screen.findByText('받아 둔 값');
+
+    // When
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: query.queryKey });
+    });
+
+    // Then
+    expect(screen.getByText('받아 둔 값')).toBeTruthy();
+    expect(errorReporter.captureException.mock.calls).toEqual([
+      [error, { feature: 'query_cache' }],
+    ]);
   });
 });
