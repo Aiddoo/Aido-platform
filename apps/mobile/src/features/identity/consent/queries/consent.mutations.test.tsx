@@ -1,4 +1,5 @@
 import '@src/shared/i18n/init';
+import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
@@ -15,6 +16,7 @@ import { createConsent, createUpdateMarketingConsentDto } from '../__tests__/con
 import { type Consent } from '../domains/consent.model';
 import { CONSENT_QUERY_KEYS } from './consent-query-keys';
 import {
+  useUpdateAiDataSharingConsentMutationOptions,
   useUpdateMarketingConsentMutationOptions,
   useUpdateMarketingPushConsentMutationOptions,
 } from './consent.mutations';
@@ -157,5 +159,63 @@ describe('마케팅 수신 동의를 연달아 바꿈', () => {
       await turnOffResult;
     });
     expect(cached()?.marketingAgreedAt).toBeNull();
+  });
+});
+
+describe('AI 데이터 제공 동의 저장 실패', () => {
+  it('세 칸을 저장 전 값으로 되돌리고 함께 진행 중인 마케팅 토글은 지킨다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    const marketing = createPendingResponse(
+      ok(createUpdateMarketingConsentDto({ marketingAgreedAt: '2026-03-01T00:00:00.000Z' })),
+    );
+    httpClient.patch.mockImplementation(async (path) =>
+      path === 'v1/auth/consent/marketing'
+        ? marketing.response
+        : Promise.reject(new NetworkError()),
+    );
+    const queryClient = createTestQueryClient();
+    const before = createConsent({
+      marketingAgreedAt: null,
+      aiDataSharingDecision: AI_DATA_SHARING_DECISION.UNDECIDED,
+      aiDataSharingAgreedAt: null,
+      aiDataSharingConsentVersion: null,
+    });
+    queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), before);
+    let updateMarketing: ((agreed: boolean) => Promise<unknown>) | undefined;
+    let updateAi: ((agreed: boolean) => Promise<unknown>) | undefined;
+    function Capture() {
+      const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
+      const aiMutation = useMutation(useUpdateAiDataSharingConsentMutationOptions());
+      updateMarketing = (agreed) => marketingMutation.mutateAsync({ agreed });
+      updateAi = (agreed) => aiMutation.mutateAsync({ agreed });
+      return null;
+    }
+    await renderScreen(<Capture />, {
+      di: createTestDi({ ports: { httpClient, queryClient } }),
+      withLocalDate: true,
+    });
+    const marketingResult = updateMarketing?.(true);
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryData(CONSENT_QUERY_KEYS.detail())?.marketingAgreedAt,
+      ).not.toBeNull(),
+    );
+
+    // When
+    await act(async () => {
+      await updateAi?.(true).catch(() => undefined);
+    });
+
+    // Then
+    const cached = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
+    expect(cached?.aiDataSharingDecision).toBe(before.aiDataSharingDecision);
+    expect(cached?.aiDataSharingAgreedAt).toBe(before.aiDataSharingAgreedAt);
+    expect(cached?.aiDataSharingConsentVersion).toBe(before.aiDataSharingConsentVersion);
+    expect(cached?.marketingAgreedAt).not.toBeNull();
+    await act(async () => {
+      marketing.settle();
+      await marketingResult;
+    });
   });
 });

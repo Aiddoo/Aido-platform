@@ -1,6 +1,7 @@
 import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import type { QueryClient } from '@tanstack/react-query';
 
+import type { Consent } from '../domains/consent.model';
 import { CONSENT_QUERY_KEYS } from './consent-query-keys';
 import type { useGetConsentQueryOptions } from './consent.queries';
 
@@ -17,17 +18,27 @@ export function ensureConsent(
   return queryClient.ensureQueryData(options);
 }
 
+export function cancelConsent(queryClient: QueryClient) {
+  return queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
+}
+
+/** 받은 동의 상태가 있을 때만 바꾼다. 받기 전이면 그대로 둬 다음 조회가 서버 값을 쓴다 */
+export function updateConsentInCache(
+  queryClient: QueryClient,
+  update: (consent: Consent) => Consent,
+) {
+  queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
+    consent == null ? consent : update(consent),
+  );
+}
+
 /** AI_1311은 다른 기기에서 철회했거나 안내 버전이 바뀐 경우라 캐시를 서버 기준으로 맞춰 다음 AI 동작 전에 다시 묻는다 */
 export function markAiDataSharingConsentRequired(queryClient: QueryClient) {
-  queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
-    consent == null
-      ? consent
-      : {
-          ...consent,
-          aiDataSharingDecision: AI_DATA_SHARING_DECISION.UNDECIDED,
-          aiDataSharingAgreedAt: null,
-        },
-  );
+  updateConsentInCache(queryClient, (consent) => ({
+    ...consent,
+    aiDataSharingDecision: AI_DATA_SHARING_DECISION.UNDECIDED,
+    aiDataSharingAgreedAt: null,
+  }));
 }
 
 export function invalidateConsent(queryClient: QueryClient) {

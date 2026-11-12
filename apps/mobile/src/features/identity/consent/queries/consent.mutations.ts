@@ -10,9 +10,13 @@ import { pick } from 'es-toolkit';
 import { type Consent, getConsentResult } from '../domains/consent.model';
 import { useConsentResultToast } from '../hooks/use-consent-result-toast';
 import { type ConsentAgreement } from '../schemas/consent-request.schema';
-import { invalidateConsent } from './consent-cache';
+import {
+  cancelConsent,
+  getCachedConsent,
+  invalidateConsent,
+  updateConsentInCache,
+} from './consent-cache';
 import { CONSENT_MUTATION_KEYS } from './consent-mutation-keys';
-import { CONSENT_QUERY_KEYS } from './consent-query-keys';
 
 /** 실패가 섞이면 되돌린 값이 서버와 다를 수 있다. 마지막 저장이 끝날 때 서버 값으로 맞춘다 */
 function settleConsentWrite(queryClient: QueryClient, error: unknown) {
@@ -31,9 +35,7 @@ function revertConsentFields(
   if (previousData == null) {
     return;
   }
-  queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
-    consent == null ? consent : { ...consent, ...pick(previousData, fields) },
-  );
+  updateConsentInCache(queryClient, (consent) => ({ ...consent, ...pick(previousData, fields) }));
 }
 
 const AI_DATA_SHARING_FIELDS = [
@@ -61,22 +63,16 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
     },
 
     onMutate: async ({ agreed }) => {
-      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
-      const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
-
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
-        consent == null
-          ? consent
-          : {
-              ...consent,
-              aiDataSharingDecision: agreed
-                ? AI_DATA_SHARING_DECISION.AGREED
-                : AI_DATA_SHARING_DECISION.DECLINED,
-              aiDataSharingAgreedAt: agreed ? getNowInstant() : null,
-              aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
-            },
-      );
-
+      await cancelConsent(queryClient);
+      const previousData = getCachedConsent(queryClient);
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        aiDataSharingDecision: agreed
+          ? AI_DATA_SHARING_DECISION.AGREED
+          : AI_DATA_SHARING_DECISION.DECLINED,
+        aiDataSharingAgreedAt: agreed ? getNowInstant() : null,
+        aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
+      }));
       return { previousData };
     },
 
@@ -85,9 +81,7 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
       if (!isLastMutation(queryClient, CONSENT_MUTATION_KEYS.aiDataSharing())) {
         return;
       }
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
-        consent == null ? consent : { ...consent, ...result },
-      );
+      updateConsentInCache(queryClient, (consent) => ({ ...consent, ...result }));
     },
 
     onError: (_error, _input, context) => {
@@ -112,12 +106,13 @@ export function useUpdateMarketingConsentMutationOptions() {
     mutationKey: CONSENT_MUTATION_KEYS.marketing(),
     mutationFn: async (input: ConsentAgreement) =>
       unwrap(await consentApi.updateMarketingConsent(input)),
-    onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
-      const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
-        old == null ? old : { ...old, marketingAgreedAt: input.agreed ? getNowInstant() : null },
-      );
+    onMutate: async ({ agreed }) => {
+      await cancelConsent(queryClient);
+      const previousData = getCachedConsent(queryClient);
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        marketingAgreedAt: agreed ? getNowInstant() : null,
+      }));
       return { previousData };
     },
     onSuccess: (data) => {
@@ -131,9 +126,10 @@ export function useUpdateMarketingConsentMutationOptions() {
       if (!isLastMutation(queryClient, CONSENT_MUTATION_KEYS.marketing())) {
         return;
       }
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
-        old == null ? old : { ...old, marketingAgreedAt: data.marketingAgreedAt },
-      );
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        marketingAgreedAt: data.marketingAgreedAt,
+      }));
     },
 
     onError: (_error, _input, context) => {
@@ -157,17 +153,13 @@ export function useUpdateMarketingPushConsentMutationOptions() {
     mutationKey: CONSENT_MUTATION_KEYS.marketingPush(),
     mutationFn: async (input: ConsentAgreement) =>
       unwrap(await consentApi.updateMarketingPushConsent(input)),
-    onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
-      const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
-        old
-          ? {
-              ...old,
-              marketingPushAgreedAt: input.agreed ? getNowInstant() : null,
-            }
-          : old,
-      );
+    onMutate: async ({ agreed }) => {
+      await cancelConsent(queryClient);
+      const previousData = getCachedConsent(queryClient);
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        marketingPushAgreedAt: agreed ? getNowInstant() : null,
+      }));
       return { previousData };
     },
     onSuccess: (data) => {
@@ -181,9 +173,10 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       if (!isLastMutation(queryClient, CONSENT_MUTATION_KEYS.marketingPush())) {
         return;
       }
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
-        old == null ? old : { ...old, marketingPushAgreedAt: data.marketingPushAgreedAt },
-      );
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        marketingPushAgreedAt: data.marketingPushAgreedAt,
+      }));
     },
     onError: (_error, _input, context) => {
       revertConsentFields(queryClient, context?.previousData, ['marketingPushAgreedAt']);
