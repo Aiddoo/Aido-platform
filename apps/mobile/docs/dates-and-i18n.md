@@ -17,7 +17,7 @@
 - 날짜 key 계산(`addDaysToDateKey`·`getMonthStartDateKey`·`toDateKey(instant, timeZone)` 등)은 `DateKey`만 받고 돌려준다. 계산 결과는 `isDateKey`(스키마와 같은 규칙)로 좁혀 칸마다 Zod를 거치지 않고, 0000~9999년을 벗어나면 던진다. 테스트 리터럴은 `src/testing/date-key.ts`의 `createDateKey('2026-11-12')`로 만든다.
 - `Date`는 `shared/date/native-date.ts`를 지나는 네이티브 피커·달력·파일 수정 시각 경계에서만 만든다. 앱 모델에 `Date`를 두지 않는다.
 - Hermes에는 Temporal이 없고 폴리필도 쓰지 않는다([Temporal spike](#temporal-spike)). 날짜 key 산술은 `date-key.ts`의 순수 계산(Hinnant의 civil 날짜 ↔ 일수 변환), 순간 직렬화는 `Date#toISOString`, 시간대 변환(`zoned.ts`)은 캐시한 `Intl.DateTimeFormat`이다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다(`src/testing/temporal-oracle.ts`). `dayjs`·`temporal-polyfill` import는 depcruise(`date-library-dayjs`·`date-library-temporal`)가 막는다.
-- 이름과 규칙은 서버 `shared/domain/time`과 같다. 날짜 + 벽시계 → 순간은 `toZonedInstant({ date, time, timeZone })` 하나이고 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤 순간이다(Temporal `compatible`). 순간 직렬화는 `Date#toISOString`이라 서버 `toIsoString`(ms 3자리 내림)과 바이트 단위로 같다.
+- 같은 계산의 서버↔앱 이름은 [공통 기준의 표](../../../docs/conventions/dates.md#1-값의-종류)에 있다. 날짜 + 벽시계 → 순간은 `toZonedInstant({ date, time, timeZone })` 하나이고 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤 순간이다(Temporal `compatible`). 순간 직렬화는 `Date#toISOString`이라 서버 `toIsoString`(ms 3자리 내림)과 바이트 단위로 같다.
 - 표시는 캐시된 `Intl.DateTimeFormat` 하나다. 새 포매터를 만들지 않는다.
 
 ```text
@@ -61,17 +61,19 @@ shared/date/
 ### 오늘과 시계
 
 - 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
-- 지금 시각이 필요한 곳은 `useNow({ tickMs?, until? })` 하나다. 쿨다운·갱신 시각 표시·녹음 경과·분 단위 상대 시간이 모두 이것이다. 새 지금 시계 훅을 만들지 않는다.
-- 주는 `date-key.ts`의 `getCalendarWeek` 일요일 시작 규칙 하나다. 한 화면에서 두 주 규칙을 섞지 않는다. 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.
-- 지난 기록·결제일처럼 다른 해일 수 있는 날짜는 year-aware helper에 오늘 key를 넘겨 올해면 월·일, 아니면 연도까지 보인다.
+- 지금 시각은 둘이다. 분 단위로 여러 화면이 함께 보는 지금(상대 시간 "5분 전", 날짜·마감 판단)은 `useMinuteNow()`로 앱 하나의 분 시계(`minute-clock-store`, 분 경계와 앱 복귀에 갱신)를 구독한다. 화면마다 다른 간격이나 마감까지 다시 읽는 지금(쿨다운 초, 녹음 경과, 갱신 시각)은 `useNow({ tickMs?, until? })`다. 새 지금 시계 훅을 만들지 않는다.
+- 앱 달력·위젯의 주는 `getCalendarWeek`(일요일 시작), 주간 성취·리포트는 서버와 같은 ISO 주(`getIsoWeekOfMonth`)다. 한 화면에서 두 주 규칙을 섞지 않는다. 주차는 두 체계 모두 주의 가운데 날(수·목요일)이 속한 달의 몇째 주이고 라벨은 체계마다 하나(`formatCalendarWeekLabel`·`formatIsoWeekLabel`, 위젯 제목은 같은 `formatWeekHeaderLabel`)이고 둘 다 오늘 key를 받아 다른 해의 주에 연도를 붙인다([주차 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)). 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.
+- 지난 기록·결제일처럼 다른 해일 수 있는 날짜는 year-aware helper에 오늘 key를 넘겨 올해면 월·일(ko "11월 12일", en "Nov 12"), 아니면 연도까지(`monthDayYear`, ko "2025년 11월 12일", en "Nov 12, 2025") 보인다. 7일이 지난 상대 시간과 동의일도 같은 형식이다.
 - 언어는 글자만 바꾼다. 오늘·시간대·주 시작·날짜 key에 영향을 주지 않는다.
 
 ### 표시
 
 `shared/date/format/`의 helper만 쓴다. 모두 `DateFormatContext { locale, timeZone }`를 인자로 받고 컴포넌트는 `useDateFormatContext()`로 읽는다. 카탈로그에 날짜 형식을 넣거나 화면에서 포맷을 다시 만들지 않는다.
 
-- 달력 날짜 `formatDateKeyLabel`, 순간 `formatDateLabel`, 벽시계 `formatTimeOfDay`, 시각 `formatClockTime`, 시 `formatHourLabel`, 기간 `formatDateKeyRange`, year-aware 변형. 요일·주 헤더·상대 시간처럼 카탈로그 문구가 필요한 것은 label helper(`formatRelativeTimeLabel`·`formatWeekOfMonthLabel`)다.
-- 할 일 시각은 `TodoPolicy.getLocalTime(todo, timeZone)` 하나만 표시·수정 기본값에 쓴다.
+- 달력 날짜 `formatDateKeyLabel`, 순간 `formatDateLabel`, 벽시계 `formatTimeOfDay`, 시각 `formatClockTime`, 시 `formatHourLabel`, year-aware 변형(`date-format.ts`, Intl만 쓴다).
+- 카탈로그 문구가 필요한 것은 `date-labels.ts`의 label helper다. 상대 시간 `formatRelativeTimeLabel`(하루가 지나면 달력 날짜로 "어제"·"n일 전"), 오늘·내일 `formatRelativeDayLabel`(`common:relativeDay`), 주차 `formatCalendarWeekLabel`·`formatIsoWeekLabel`, 요일 목록 `formatDaysOfWeek`(구분자 `common:daysOfWeekSeparator`, ko "·", en ", "), 기간 `formatDateKeyRange`·`formatDateKeyCompactRange`와 날짜가 아닌 범위 `formatRangeLabel`(구분자 `common:dateRange.full|compact`, ko "~", en "–")이다. 범위 구분자를 코드나 기능 카탈로그에 다시 쓰지 않는다.
+- 할 일 기간 한 줄(일정 칩·상세·음성 계획 카드·삭제 확인)은 `formatTodoPeriod` 하나다. 오늘·내일은 말로, 여러 날은 짧은 범위다.
+- 할 일 시각은 `TodoPolicy.getLocalTime(todo, timeZone)` 하나만 표시·수정 기본값에 쓴다. 설정을 읽지 못한 시간 표기는 `USER_PREFERENCE_DEFAULTS.TIME_FORMAT`이다.
 
 ### 시간 피커
 
@@ -155,6 +157,7 @@ toast.error(t('friend:toast.sendFailed'));
 | 글자로 바꾼 말               | 들은 내용(정리 전), 전체 글(결과) | what we heard, Transcript               | 글자                         |
 | AI로 요약·나누기             | 정리하기 / 다시 정리              | Summarize / Try again                   |                              |
 | 그 밖의 재시도               | 다시 시도                         | Try again                               | 재시도, Retry                |
+| 앞으로의 때 / 다시 보내기    | 1분 뒤, 3일 뒤 / 다시 보내기      | in 1 minute, in 3 days / Resend         | 1분 후, 3일 후 / 재발송      |
 | 삭제 / 되돌릴 수 없음        | 삭제 / 되돌릴 수 없어요           | Delete / This can't be undone           | 지우기 / 복구할 수 없어요    |
 | 알 수 없는 실패              | 문제가 생겼어요                   | Something went wrong                    | 오류가 발생했어요            |
 | 연결 문제                    | 인터넷                            | internet                                | 네트워크                     |

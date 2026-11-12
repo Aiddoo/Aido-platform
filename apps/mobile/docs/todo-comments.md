@@ -23,7 +23,7 @@
 | URL 상태  | 정렬 `sort`, 알림·링크로 연 위치 `comment`           | `todoCommentParamsSchema` 읽기 훅 `useTodoCommentParams`와 세터 `useTodoCommentSort`(`comment`를 함께 지운다) |
 | 작성기    | 모드(`new`·`reply`·`edit`)와 대상, 이어 쓰기 입력값  | `TodoCommentSession`이 가진 `useForm` 하나. 하위는 `useWatch`·`useFormState`                                  |
 | 펼친 묶음 | 묶음별 펼침 여부                                     | `TodoCommentExpansionProvider`(게시하면 작성 바가 그 묶음을 펼친다)                                           |
-| 클라 계산 | 상대 시간, 좋아요 ±1, 더블탭 애니메이션, 키보드 위치 | `useNow`, `TodoCommentPolicy`, Reanimated shared value                                                        |
+| 클라 계산 | 상대 시간, 좋아요 ±1, 더블탭 애니메이션, 키보드 위치 | `useMinuteNow`, `TodoCommentPolicy`, Reanimated shared value                                                  |
 
 전체 화면과 펼친 피드 칸은 같은 조각을 각자 route에 나열한다. 화면 URL은 `/todo/42?sort=LATEST&comment=cm_1`,
 pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고, 원시 `setParams` 대신 이름 있는 세터를 쓴다([params 튜플](./architecture/state-and-routing.md#params-튜플)).
@@ -118,7 +118,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 ### 행 (`TodoCommentItem`)
 
 - 이름 줄 잘림 순서: 이름(4글자 이상이면 최소 4글자 폭은 남김) → `#태그`. 작성자 배지·시간·`⋯`는 줄지 않는다.
-  `xlarge`에서는 태그·시간을 둘째 줄로 내리고 `⋯`는 첫 줄 끝에 둔다. 시간은 `useNow` 기준이라 렌더 중 `new Date()`를 쓰지 않는다.
+  `xlarge`에서는 태그·시간을 둘째 줄로 내리고 `⋯`는 첫 줄 끝에 둔다. 시간은 `useMinuteNow` 기준이라 렌더 중 `new Date()`를 쓰지 않는다.
 - 본문: `@멘션`을 중첩 Text로 한 문단에 그린다. `replyTo.authorName`이 null이면(탈퇴·차단) 멘션 없이 본문만.
 - 묘비(`deleted`)·차단(`blockedAuthor`): 흐린 아바타 + 안내 문구. 좋아요·답글·`⋯` 없음.
 - `⋯`와 길게 누르기: 같은 heroui-native `Menu`에 `MenuActionItem`을 넣는다. 내 글은 수정·복사 / 삭제, 남의 글은 복사 / 신고·차단,
