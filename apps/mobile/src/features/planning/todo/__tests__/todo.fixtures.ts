@@ -1,112 +1,71 @@
-import type {
-  DailyCompletionsRangeResponse,
-  Todo as TodoDto,
-  TodoItemResponse,
-  TodoListResponse,
+import {
+  dailyCompletionsRangeResponseSchema,
+  type Todo as TodoDto,
+  todoItemResponseSchema,
+  todoListResponseSchema,
+  todoSchema as todoDtoSchema,
 } from '@aido/api';
 import { ErrorCode, type ErrorCodeType, Errors } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { createDateKey } from '@src/testing/date-key';
+import { defineFixture } from '@src/testing/fixture';
 
 import { type TodoDetails, todoDetailsSchema } from '../domains/todo.model';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
 import { createParentTodo } from './sub-todo.fixtures';
 
-function generateTodoDto(): TodoDto {
-  return {
-    id: 1,
-    userId: 'clz7x5p8k0010qz0z8z8z8z8z',
-    title: '테스트 할일',
-    sortOrder: 0,
-    startDate: '2026-03-08',
-    endDate: null,
-    category: { id: 1, name: '기본', color: '#3B82F6', sortOrder: 0 },
-    completed: false,
-    completedAt: null,
-    scheduledTime: '2026-03-08T09:00:00.000Z',
-    isAllDay: false,
-    visibility: 'PUBLIC',
-    recurrenceGroupId: null,
-    repeat: null,
-    items: [],
-    itemStats: { total: 0, completed: 0 },
-    commentCount: 0,
-    createdAt: '2026-03-08T00:00:00.000Z',
-    updatedAt: '2026-03-08T00:00:00.000Z',
-  };
-}
+const TODO_DTO: TodoDto = {
+  id: 1,
+  userId: 'clz7x5p8k0010qz0z8z8z8z8z',
+  title: '테스트 할일',
+  sortOrder: 0,
+  startDate: '2026-03-08',
+  endDate: null,
+  category: { id: 1, name: '기본', color: '#3B82F6', sortOrder: 0 },
+  completed: false,
+  completedAt: null,
+  scheduledTime: '2026-03-08T09:00:00.000Z',
+  isAllDay: false,
+  visibility: 'PUBLIC',
+  recurrenceGroupId: null,
+  repeat: null,
+  items: [],
+  itemStats: { total: 0, completed: 0 },
+  commentCount: 0,
+  createdAt: '2026-03-08T00:00:00.000Z',
+  updatedAt: '2026-03-08T00:00:00.000Z',
+};
 
-export function createTodoDto(overrides?: Partial<TodoDto>): TodoDto {
-  return {
-    ...generateTodoDto(),
-    ...overrides,
-  };
-}
+export const createTodoDto = defineFixture(todoDtoSchema, TODO_DTO);
 
-function generateTodoListResponseDto(): TodoListResponse {
-  return {
-    items: [generateTodoDto()],
-    pagination: {
-      hasNext: false,
-      nextCursor: null,
-      size: 20,
+export const createTodoListResponseDto = defineFixture(todoListResponseSchema, {
+  items: [TODO_DTO],
+  pagination: { hasNext: false, nextCursor: null, size: 20 },
+});
+
+export const createDailyCompletionsDto = defineFixture(dailyCompletionsRangeResponseSchema, {
+  completions: [
+    {
+      date: '2026-03-01',
+      totalTodos: 5,
+      completedTodos: 3,
+      isComplete: false,
+      completionRate: 60,
+      categoryColors: ['#FF6B43'],
     },
-  };
-}
+  ],
+  totalCompleteDays: 1,
+  dateRange: { startDate: '2026-03-01', endDate: '2026-03-31' },
+});
 
-export function createTodoListResponseDto(overrides?: Partial<TodoListResponse>): TodoListResponse {
-  return {
-    ...generateTodoListResponseDto(),
-    ...overrides,
-  };
-}
-
-function generateDailyCompletionsDto(): DailyCompletionsRangeResponse {
-  return {
-    completions: [
-      {
-        date: '2026-03-01',
-        totalTodos: 5,
-        completedTodos: 3,
-        isComplete: false,
-        completionRate: 60,
-        categoryColors: ['#FF6B43'],
-      },
-    ],
-    totalCompleteDays: 1,
-    dateRange: {
-      startDate: '2026-03-01',
-      endDate: '2026-03-31',
-    },
-  };
-}
-
-export function createDailyCompletionsDto(
-  overrides?: Partial<DailyCompletionsRangeResponse>,
-): DailyCompletionsRangeResponse {
-  return {
-    ...generateDailyCompletionsDto(),
-    ...overrides,
-  };
-}
-
-function generateTodoItemResponseDto(): TodoItemResponse {
-  return {
-    id: 1,
-    title: '테스트 항목',
-    completed: false,
-    sortOrder: 0,
-    createdAt: '2026-03-08T00:00:00.000Z',
-    updatedAt: '2026-03-08T00:00:00.000Z',
-  };
-}
-
-export function createTodoItemResponseDto(overrides?: Partial<TodoItemResponse>): TodoItemResponse {
-  return {
-    ...generateTodoItemResponseDto(),
-    ...overrides,
-  };
-}
+export const createTodoItemResponseDto = defineFixture(todoItemResponseSchema, {
+  id: 1,
+  title: '테스트 항목',
+  completed: false,
+  sortOrder: 0,
+  createdAt: '2026-03-08T00:00:00.000Z',
+  updatedAt: '2026-03-08T00:00:00.000Z',
+});
 
 /** 상태를 주지 않으면 서버 카탈로그가 그 코드에 붙이는 상태다 */
 export function createTodoApiError({
