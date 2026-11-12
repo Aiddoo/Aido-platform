@@ -11,36 +11,6 @@
       "path": "README.md",
       "check": "limit",
       "reason": "사람용 소개(면접관이 처음 보는 화면). 에이전트 세션에 로드되지 않고, 아키텍처 그림과 설계 판단을 한 화면에 둔다(사용자 결정)"
-    },
-    {
-      "path": "apps/mobile/assets/premium-app-icons/README.md",
-      "check": "path",
-      "match": "src/features/app-icon/constants/app-icons.ts",
-      "reason": "phase 3에서 고친다"
-    },
-    {
-      "path": "apps/mobile/src/shared/ui/adaptive-pane/adaptive-pane.md",
-      "check": "path",
-      "match": "features/identity/user/utils/my-page-detail-options.ts",
-      "reason": "phase 3에서 고친다"
-    },
-    {
-      "path": "apps/mobile/src/shared/ui/steps/steps.md",
-      "check": "path",
-      "match": "src/animations/steps",
-      "reason": "phase 3에서 고친다"
-    },
-    {
-      "path": "apps/mobile/src/shared/ui/steps/steps.md",
-      "check": "path",
-      "match": "LICENSE.md",
-      "reason": "phase 3에서 고친다"
-    },
-    {
-      "path": "apps/mobile/src/shared/ui/word-wrap-text/word-wrap-text.md",
-      "check": "path",
-      "match": "i18n-guide.md",
-      "reason": "phase 3에서 고친다"
     }
   ]
 }
