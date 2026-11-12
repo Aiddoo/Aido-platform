@@ -42,7 +42,7 @@ export function useEnsureMicrophonePermission() {
   return useCallback(
     async (mode: SpeechMode, locale: SpeechLocale) => {
       const current = await speechRecognizer.getPermission(mode, locale);
-      const shouldRequest = !current.isGranted && current.canAskAgain;
+      const shouldRequest = current.status !== 'granted' && current.canAskAgain;
       const permission = shouldRequest
         ? await speechRecognizer.requestPermission(mode, locale)
         : current;
@@ -50,11 +50,11 @@ export function useEnsureMicrophonePermission() {
       if (shouldRequest && mode !== 'dictation') {
         trackEvent('voice_permission_requested', {
           mode,
-          status: permission.isGranted ? 'granted' : 'denied',
+          status: permission.status === 'granted' ? 'granted' : 'denied',
         });
       }
 
-      if (permission.isGranted) {
+      if (permission.status === 'granted') {
         return true;
       }
       const copy = getPermissionCopy(permission.missing);

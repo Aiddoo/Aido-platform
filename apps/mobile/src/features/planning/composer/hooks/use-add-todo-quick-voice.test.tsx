@@ -383,14 +383,14 @@ describe('useAddTodoQuickVoice', () => {
       await act(async () => speechRecognizer.emit({ type: 'error', code: 'service-not-allowed' }));
       analytics.trackEvent.mockClear();
       speechRecognizer.start.mockClear();
-      const permission = Promise.withResolvers<{ isGranted: true; canAskAgain: boolean }>();
+      const permission = Promise.withResolvers<{ status: 'granted'; canAskAgain: boolean }>();
       speechRecognizer.getPermission.mockReturnValue(permission.promise);
       await user.press(screen.getByRole('button', { name: 'start' }));
       await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalled());
       await act(async () => closeSheet());
 
       // When
-      await act(async () => permission.resolve({ isGranted: true, canAskAgain: true }));
+      await act(async () => permission.resolve({ status: 'granted', canAskAgain: true }));
 
       // Then
       expect(speechRecognizer.start).not.toHaveBeenCalled();
@@ -705,7 +705,7 @@ describe('useAddTodoQuickVoice', () => {
       const { httpClient, speechRecognizer, di, onExit } = await renderQuickVoice();
       await listenUntilLimit(speechRecognizer);
       httpClient.get.mockRejectedValue(new Error('offline'));
-      const denied = { isGranted: false, canAskAgain: true, missing: 'microphone' } as const;
+      const denied = { status: 'denied', canAskAgain: true, missing: 'microphone' } as const;
       speechRecognizer.getPermission.mockResolvedValue(denied);
       speechRecognizer.requestPermission.mockResolvedValue(denied);
 
