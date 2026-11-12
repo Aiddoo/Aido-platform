@@ -89,6 +89,7 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 리소스는 폴더 route다. 세그먼트는 kebab-case, 동적 세그먼트는 `[{entity}Id]`다(`/todo/[todoId]`). `[id]`는 쓰지 않는다.
 - 같은 화면의 보기 상태는 camelCase query param이다(`/feed?friendId=…&date=…`, `/memo?memoId=…`). 피드는 `/feed` 한 화면이고 친구 전환은 세터라 pane이 다시 마운트되지 않고 history가 쌓이지 않는다.
 - 이동은 호출부에서 typed routes `router.push({ pathname, params })`로 쓴다. 컴파일 때 `pathname`과 동적 세그먼트를 검사하므로 href 래퍼를 만들지 않고 경로 문자열을 잇지 않는다.
+- 저장·AI·조회를 기다린 뒤 이동하면 그 사이 떠났는지 먼저 본다. 화면은 `navigation.isFocused()`, 화면 안에서 바뀌는 조각(pane의 메모 편집기)은 마운트 여부도 본다. 떠났으면 지금 보는 화면 위로 끌고 가지 않는다. 메모 AI 정리 결과는 mutation이 초안에 남겨, 그 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다.
 - 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `WidgetNavigationPolicy`다.
 - 뒤로 가기는 `useGoBack({ fallbackHref })`, Android 뒤로 가기 버튼은 `useAndroidBackHandler`다([hooks](./hooks.md)).
 - 웹 페이지(약관·공지)는 route가 아니라 `useOpenInAppBrowser`로 연다. 앱 자체 WebView는 없고 `aido://webview/…` 링크는 `+not-found`로 간다.

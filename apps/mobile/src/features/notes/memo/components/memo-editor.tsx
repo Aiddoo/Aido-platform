@@ -61,9 +61,9 @@ import {
   useSuspenseQueries,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useNavigation } from 'expo-router';
 import { Menu, Separator, Spinner } from 'heroui-native';
-import { type ComponentType, useLayoutEffect, useRef, useState } from 'react';
+import { type ComponentType, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   type Control,
   Controller,
@@ -700,6 +700,7 @@ function useMemoAiParse({
   const haptics = useHaptics();
   const toast = useAppToast();
   const push = useSingleTap(router.push);
+  const navigation = useNavigation();
   const draftService = useDraftService();
   const { timeZone } = useDateFormatContext();
   const [memoId] = useMemoId();
@@ -711,10 +712,26 @@ function useMemoAiParse({
   const claimRenewalPrompt = useClaimAiConsentRenewal();
   const aiConsent = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const isStartingRef = useRef(false);
+  const isMountedRef = useRef(false);
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesQuery.data?.categories ?? [],
     null,
   );
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // 저장·정리(최대 30초)를 기다리는 사이 편집기를 떠났으면 지금 보는 화면 위로 끌고 가지 않는다.
+  // 받은 결과는 mutation이 초안에 남겨 이 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다
+  const openReview = () => {
+    if (isMountedRef.current && navigation.isFocused()) {
+      push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
+    }
+  };
 
   // 정리 중 서버가 동의 없음(AI_1311)으로 거절했는데 이번 시도에서 동의를 묻지 않았으면 'consentRevoked'다
   // 동의 안내를 이미 본 시도에서 다시 거절되면 안내를 또 띄우지 않고 이유만 알린다
@@ -733,7 +750,7 @@ function useMemoAiParse({
       },
     );
     if (draft.status === 'restored') {
-      push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
+      openReview();
 
       return 'done';
     }
@@ -751,7 +768,7 @@ function useMemoAiParse({
         categoryId: defaultCategoryId,
         sourceUpdatedAt,
       });
-      push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
+      openReview();
 
       return 'done';
     } catch {

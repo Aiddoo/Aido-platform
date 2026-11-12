@@ -18,6 +18,7 @@ import {
   createHttpClientStub,
   createSpeechRecognizerStub,
   createTestDi,
+  createPendingResponse,
   createTestQueryClient,
   createVoiceNoteStorageFake,
   deliverQueryNotifications,
@@ -32,6 +33,7 @@ import { createMemo } from '../__tests__/memo.fixtures';
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
 import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
 import { createMemoDraftKey } from '../utils/memo-draft';
+import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 import { MemoEditor } from './memo-editor';
 import { MemoList } from './memo-list';
 
@@ -148,7 +150,7 @@ async function renderEditor(
     },
   );
 
-  return { httpClient, queryClient, onLeave };
+  return { httpClient, queryClient, onLeave, di };
 }
 
 async function editContent(content: string) {
@@ -570,6 +572,30 @@ describe('MemoEditor', () => {
       // 동의를 답할 때까지 끝나지 않는 핸들러라 기다리지 않는다
       fireEvent.press(await screen.findByText('AI로 할 일 나누기')).catch(() => undefined);
     }
+
+    it('정리를 기다리는 사이 편집기를 떠나면 결과 화면으로 끌고 가지 않고 결과는 초안에 남긴다', async () => {
+      // Given
+      const { httpClient, di } = await renderForAiParse({ consent: createAgreedConsent() });
+      const pendingParse = createPendingResponse(ok(createParseMemoResponseDto()));
+      httpClient.post.mockReturnValue(pendingParse.response);
+      await startAiParse();
+      await waitFor(() => expect(getParseRequestCount(httpClient)).toBe(1));
+      await screen.unmount();
+
+      // When
+      await act(async () => {
+        pendingParse.settle();
+      });
+
+      // Then
+      const planDraftKey = createMemoPlanDraftKey({
+        userId: 'account-1',
+        memoId: MEMO_ID,
+        timeZone: 'Asia/Seoul',
+      });
+      await waitFor(() => expect(di.draftService.restore(planDraftKey).status).toBe('restored'));
+      expect(router.push).not.toHaveBeenCalled();
+    });
 
     it('이번 달 한도를 다 썼으면 안내를 띄우고 정리를 요청하지 않는다', async () => {
       // Given
