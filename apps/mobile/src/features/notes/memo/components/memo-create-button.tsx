@@ -8,7 +8,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 
-import { MemoPolicy } from '../domains/memo.model';
+import { MemoResourceLimitPolicy } from '../domains/memo-resource-limit.model';
 import { useGetMemoResourceLimitQueryOptions } from '../queries/memo.queries';
 
 export const MEMO_CREATE_BUTTON_SIZE = 44;
@@ -21,7 +21,7 @@ export function MemoCreateButton() {
   const toast = useAppToast();
   const { t } = useTranslation('memo');
   const { data: resourceLimit } = useSuspenseQuery(useGetMemoResourceLimitQueryOptions());
-  const canCreate = MemoPolicy.canCreateMemo(resourceLimit);
+  const canCreate = MemoResourceLimitPolicy.canCreateMemo(resourceLimit);
 
   const handleCreate = () => {
     // 한도는 요금제와 상관없이 같아 업셀 대신 지우면 다시 쓸 수 있다고 알린다
