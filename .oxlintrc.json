@@ -92,6 +92,13 @@
       }
     },
     {
+      "files": ["apps/api/src/**/*.ts"],
+      "excludeFiles": ["**/*.errors.ts", "**/*.spec.ts", "**/*.integration-spec.ts"],
+      "rules": {
+        "aido/no-inline-coded-exception": "error"
+      }
+    },
+    {
       "files": ["apps/api/src/**/index.ts"],
       "excludeFiles": ["apps/api/src/platform/database/schema/index.ts"],
       "rules": {

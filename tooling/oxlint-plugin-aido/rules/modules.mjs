@@ -135,9 +135,29 @@ const noPgEnumLiteral = {
   },
 };
 
+const CODED_EXCEPTIONS = new Set(['ApplicationException', 'DomainException']);
+
+// 같은 코드의 details 모양이 흩어지면 공개 details 등록이 빠진다(VERIFY_0753). 만드는 곳을 *.errors.ts로 모은다
+const noInlineCodedException = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      NewExpression(node) {
+        if (node.callee.type === 'Identifier' && CODED_EXCEPTIONS.has(node.callee.name)) {
+          context.report({
+            node,
+            message: `${node.callee.name}을 바로 만들지 않는다. slice <slice>.errors.ts의 이름 있는 생성 함수로 만든다(거부는 application, 불변식은 domain).`,
+          });
+        }
+      },
+    };
+  },
+};
+
 export default {
   'no-re-export': noReExport,
   'no-barrel-file': noBarrelFile,
   'no-member-accessibility': noMemberAccessibility,
   'no-pg-enum-literal': noPgEnumLiteral,
+  'no-inline-coded-exception': noInlineCodedException,
 };

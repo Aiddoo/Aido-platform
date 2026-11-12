@@ -51,3 +51,16 @@ tester.run('no-pg-enum-literal', rules['no-pg-enum-literal'], {
     { code: "export const memoStatus = pgEnum('memo_status', ['DRAFT', 'DONE']);", errors: 1 },
   ],
 });
+
+tester.run('no-inline-coded-exception', rules['no-inline-coded-exception'], {
+  valid: [
+    'throw memoNotFound(memoId);',
+    'const error = new Error("boom");',
+    'if (error instanceof ApplicationException) { throw error; }',
+  ],
+  invalid: [
+    { code: 'throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });', errors: 1 },
+    { code: 'throw new DomainException(ErrorCode.SYS_0002, { field: "title" });', errors: 1 },
+    { code: 'const e = new ApplicationException(code, undefined, { cause });', errors: 1 },
+  ],
+});

@@ -30,7 +30,7 @@
 
 - [ ] 베이스는 `shared/domain/model`. 상태 전이는 바뀌면 `true`, `false`면 저장·발송을 건너뛴다.
 - [ ] 복원은 `*-row.mapper.ts` 한 곳. 시퀀스 id는 `nextId()`. 포트의 식별자는 id VO.
-- [ ] 업무 오류는 `<slice>.errors.ts`의 이름 있는 생성 함수. 불변식은 `DomainException`, 거부는 `ApplicationException`.
+- [ ] 업무 오류는 `<slice>.errors.ts`의 이름 있는 생성 함수. 거부는 `application/`의 `ApplicationException`, 불변식은 `domain/`의 `DomainException`. 그 밖에서 바로 만들지 않는다(Oxlint `aido/no-inline-coded-exception`).
 
 **포트·조립**
 
