@@ -12,6 +12,7 @@ import {
 import {
   type ComponentProps,
   type ReactNode,
+  use,
   useCallback,
   useEffect,
   useEffectEvent,
@@ -27,6 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
 
+import { ToastLayerClosingContext } from '../toast/toast-layer';
 import {
   HANDLE_HEIGHT,
   SHARED_SHEET_STYLES,
@@ -76,6 +78,7 @@ export function BottomSheet({
   const [hasOpenRequest, setHasOpenRequest] = useState(isOpen);
   const [footerContentHeight, setFooterContentHeight] = useState(0);
   const portalTarget = usePortalTarget();
+  const startToastLayerClosing = use(ToastLayerClosingContext);
   const insets = useSafeAreaInsets();
   const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION_MS });
   const { margins, topInset } = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN });
@@ -92,6 +95,7 @@ export function BottomSheet({
 
   const handleAnimate = (_fromIndex: number, toIndex: number) => {
     if (toIndex === SHEET_INDEX.CLOSED) {
+      startToastLayerClosing?.();
       onCloseStart?.();
     }
   };

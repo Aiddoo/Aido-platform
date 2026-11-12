@@ -4,8 +4,12 @@ import { err, ok } from '@src/core/errors/result';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
-import { createTodoApiError } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import {
+  createTodoApiError,
+  createTodoDto,
+} from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { NetworkError } from '@src/shared/errors';
+import { SheetRouteScreen } from '@src/shared/ui';
 import {
   createHttpClientStub,
   createMemoryKeyValueStorage,
@@ -16,17 +20,37 @@ import {
   createTestQueryClient,
   createVoiceNoteStorageFake,
 } from '@src/testing/core';
+import { getLastGorhomSheetProps } from '@src/testing/mocks/gorhom-bottom-sheet';
 import { renderScreen } from '@src/testing/render';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { View } from 'react-native';
 
 import { TodoCreateBottomSheet } from './todo-create-bottom-sheet';
 
 const PLACEHOLDER = '무엇을 하고 싶나요?';
 
+type HostNode = ReturnType<typeof screen.getByTestId>;
+
+function findLayoutHost(node: HostNode): HostNode | null {
+  if ('onLayout' in node.props) {
+    return node;
+  }
+  for (const child of node.children) {
+    const found = typeof child === 'string' ? null : findLayoutHost(child);
+    if (found != null) {
+      return found;
+    }
+  }
+  return null;
+}
+
 async function renderCreateSheet(
   routeParams: Record<string, string> = {},
-  { hasAgreedToAi = false }: { hasAgreedToAi?: boolean } = {},
+  {
+    hasAgreedToAi = false,
+    isSheetRoute = false,
+  }: { hasAgreedToAi?: boolean; isSheetRoute?: boolean } = {},
 ) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createTodoCategoryListDto()));
@@ -45,7 +69,17 @@ async function renderCreateSheet(
   const speechRecognizer = createSpeechRecognizerStub();
   const errorReporter = createErrorReporterStub();
 
-  await renderScreen(<TodoCreateBottomSheet onMemoChanged={jest.fn()} />, {
+  const sheet = <TodoCreateBottomSheet onMemoChanged={jest.fn()} />;
+  // `todo/new` route처럼 시트를 시트 route 모달 안에 그린다. 모달은 크기를 받은 뒤 시트를 그린다
+  const ui = isSheetRoute ? (
+    <View testID="sheet-route">
+      <SheetRouteScreen>{sheet}</SheetRouteScreen>
+    </View>
+  ) : (
+    sheet
+  );
+
+  await renderScreen(ui, {
     withLocalDate: true,
     withOverlay: true,
     di: createTestDi({
@@ -59,11 +93,40 @@ async function renderCreateSheet(
       },
     }),
   });
+  const layoutHost = isSheetRoute ? findLayoutHost(screen.getByTestId('sheet-route')) : null;
+  if (layoutHost != null) {
+    await fireEvent(layoutHost, 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 844 } },
+    });
+  }
 
   return { httpClient, speechRecognizer, errorReporter };
 }
 
 describe('TodoCreateBottomSheet', () => {
+  describe('저장 성공', () => {
+    it('저장하고 닫히는 시트 route에서 추가 토스트를 시트 안에 그리지 않고 루트에 한 번 띄운다', async () => {
+      // Given
+      const { httpClient } = await renderCreateSheet({}, { isSheetRoute: true });
+      httpClient.post.mockResolvedValue(
+        ok({
+          message: 'ok',
+          todo: createTodoDto({ id: 9, title: '우유 사기', startDate: '2026-10-27' }),
+        }),
+      );
+      await fireEvent.changeText(await screen.findByPlaceholderText(PLACEHOLDER), '우유 사기');
+
+      // When
+      await fireEvent(screen.getByPlaceholderText(PLACEHOLDER), 'submitEditing');
+
+      // Then
+      expect(await screen.findAllByText('할 일을 추가했어요!')).not.toHaveLength(0);
+      expect(
+        within(screen.getByTestId('sheet-route')).queryAllByText('할 일을 추가했어요!'),
+      ).toEqual([]);
+    });
+  });
+
   describe('저장 실패', () => {
     it('저장이 실패해도 시트와 입력한 제목이 그대로 남아 다시 보낼 수 있다', async () => {
       // Given
@@ -91,6 +154,25 @@ describe('TodoCreateBottomSheet', () => {
         expect(httpClient.post).toHaveBeenCalledTimes(2);
       });
       expect(httpClient.post.mock.calls[1]?.[1]).toMatchObject({ title: '우유 사기' });
+    });
+  });
+
+  describe('저장 실패 토스트', () => {
+    it('저장이 실패하면 오류 토스트를 열린 시트 위에 남기고, 끌어 내려 닫기 시작하면 그때 루트로 옮긴다', async () => {
+      // Given
+      const { httpClient } = await renderCreateSheet({}, { isSheetRoute: true });
+      httpClient.post.mockResolvedValue(err(createTodoApiError({ message: '저장하지 못했어요' })));
+      await fireEvent.changeText(await screen.findByPlaceholderText(PLACEHOLDER), '우유 사기');
+      await fireEvent(screen.getByPlaceholderText(PLACEHOLDER), 'submitEditing');
+      const sheetRoute = screen.getByTestId('sheet-route');
+      expect(await within(sheetRoute).findAllByText('저장하지 못했어요')).not.toHaveLength(0);
+
+      // When
+      await act(async () => getLastGorhomSheetProps().onAnimate(0, -1));
+
+      // Then
+      expect(within(sheetRoute).queryAllByText('저장하지 못했어요')).toEqual([]);
+      expect(screen.getAllByText('저장하지 못했어요')).not.toHaveLength(0);
     });
   });
 
