@@ -27,7 +27,10 @@ import {
   getRescheduleTodos,
   WeatherReschedulePolicy,
 } from '../../domains/weather-reschedule.model';
-import { useWeatherRescheduleParams } from '../../hooks/use-weather-reschedule-params';
+import {
+  useWeatherRescheduleReason,
+  useWeatherRescheduleTodoIds,
+} from '../../hooks/use-weather-reschedule-params';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
@@ -84,7 +87,8 @@ function RescheduleTodoList({
   onEmpty: () => void;
 }) {
   const { t } = useTranslation('weather');
-  const [{ todoIds, reason: linkReason }, setParams] = useWeatherRescheduleParams();
+  const [todoIds, setTodoIds] = useWeatherRescheduleTodoIds();
+  const [linkReason] = useWeatherRescheduleReason();
   const todayKey = useTodayKey();
   const { timeZone } = useDateFormatContext();
   const [{ data: report }, { data: todoList }, { data: preference }] = useSuspenseQueries({
@@ -114,7 +118,7 @@ function RescheduleTodoList({
       onEmpty();
       return;
     }
-    setParams({ todoIds: remaining });
+    setTodoIds(remaining);
   };
 
   if (affectedTodos.length === 0) {
@@ -173,7 +177,9 @@ function RescheduleFooter({
           <WeatherAttribution background={resolvedTheme} />
         </Suspense>
       </QueryErrorBoundary>
-      <WeatherRescheduleSubmitButton form={form} onDone={onDone} />
+      <Suspense fallback={<WeatherRescheduleSubmitButton.Loading />}>
+        <WeatherRescheduleSubmitButton form={form} onDone={onDone} />
+      </Suspense>
     </VStack>
   );
 }

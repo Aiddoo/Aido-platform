@@ -13,7 +13,7 @@ import {
 } from '@src/features/social/friend/hooks/use-friend-list-params';
 import { useInvitedFriendsView } from '@src/features/social/invite/hooks/use-invited-friends-view';
 import { voiceNoteTabSchema } from '@src/features/voice/schemas/voice-note-params.schema';
-import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
+import { useWeatherRescheduleTodoIds } from '@src/features/weather/hooks/use-weather-reschedule-params';
 import { useView } from '@src/shared/hooks/use-view';
 import { stubWindowDimensions } from '@src/testing/core';
 import { renderRouteHook } from '@src/testing/render-route-hook';
@@ -123,12 +123,12 @@ describe('공개 URL 계약', () => {
 
   it('날씨 옮기기: 할 일을 빼면 쉼표 목록이 줄고 reason은 남는다', async () => {
     // Given
-    const route = await renderRouteHook(() => useWeatherRescheduleParams(), {
+    const route = await renderRouteHook(() => useWeatherRescheduleTodoIds(), {
       url: '/weather/reschedule?todoIds=12,15,18&reason=heat',
     });
 
     // When
-    await route.run(([_values, setParams]) => setParams({ todoIds: [12, 18] }));
+    await route.run(([_todoIds, setTodoIds]) => setTodoIds([12, 18]));
 
     // Then
     expect(route.url()).toBe('/weather/reschedule?todoIds=12%2C18&reason=heat');

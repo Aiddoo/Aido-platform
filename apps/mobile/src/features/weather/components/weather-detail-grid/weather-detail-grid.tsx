@@ -131,25 +131,25 @@ export function WeatherDetailGrid() {
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
   const { columns, bodyMinHeight, onLayout } = useTileLayout();
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.details },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const dateFormat = useLocationDateFormat(data.location.timezone);
+  const dateFormat = useLocationDateFormat(weather.location.timezone);
+  const now = useMinuteNow();
+
   const formatHour = (date: Instant) => formatInstantHour(date, preference.timeFormat, dateFormat);
   const formatSpeed = (metersPerSecond: number) =>
     formatDecimal(metersPerSecond, dateFormat.locale);
-  const { current, hourly } = data;
-  const now = useMinuteNow();
-
+  const { current, hourly } = weather;
   const feelsLike = WeatherIndicatorPolicy.getFeelsLikeComparison(current);
   const feelsDifference = Math.abs(
     toDisplayTemperature(current.apparentTemperature, unit) -
       toDisplayTemperature(current.temperature, unit),
   );
-  const sunscreen = WeatherDetailPolicy.findSunscreenWindow(hourly, now, data.location.timezone);
+  const sunscreen = WeatherDetailPolicy.findSunscreenWindow(hourly, now, weather.location.timezone);
   const direction = WeatherIndicatorPolicy.getCompassDirection(current);
   const windSpeed = formatSpeed(current.windSpeed);
   const pressure = String(Math.round(current.pressure));

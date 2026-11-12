@@ -311,6 +311,7 @@ describe('앱을 다시 켠 직후 권한 확인이 늦는 경우', () => {
     place: { city: '서울', district: '중구' },
     countryCode: 'KR',
     revision: 0,
+    isLastKnown: false,
   };
 
   function setupWithPreviousLocation(gateway: jest.Mocked<LocationGateway>) {

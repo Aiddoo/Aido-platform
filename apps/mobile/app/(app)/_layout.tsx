@@ -77,7 +77,8 @@ function AppLayout() {
         name="suggestions/index"
         options={{ ...headerOptions, title: t('ai:titles.suggestions') }}
       />
-      <Stack.Screen name="weather" />
+      {/* 푸시·위젯·링크로 날씨를 다시 열 때 Skia 장면이 겹겹이 쌓이지 않게 있던 날씨 화면으로 돌아간다 */}
+      <Stack.Screen name="weather" dangerouslySingular />
       {/* 닫기가 헤더 오른쪽에 있는 흐름이라 아래에서 올린다. 기능으로 떠날 때 그 화면의 토스트·동의 시트가 가려지지 않게 시스템 모달은 쓰지 않는다 */}
       <Stack.Screen
         name="whats-new/index"

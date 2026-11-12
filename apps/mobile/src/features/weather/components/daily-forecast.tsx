@@ -77,7 +77,7 @@ export function DailyForecast() {
     endDate: addDaysToDateKey(todayKey, FORECAST_DAYS - 1),
   });
   usePrefetchQuery(completionsQuery);
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.daily },
       useGetPreferenceQueryOptions(),
@@ -85,11 +85,11 @@ export function DailyForecast() {
   });
   const { data: completions } = useQuery(completionsQuery);
   const fontScaleRatio = useFontScaleRatio();
-  const dateFormat = useLocationDateFormat(data.location.timezone);
+  const dateFormat = useLocationDateFormat(weather.location.timezone);
   const now = useMinuteNow();
-  const forecastTodayKey = getTodayKey(data, now);
-  const bars = toTemperatureBars(data.daily);
-  const nowPosition = toTemperaturePosition(data.daily, data.current.temperature);
+  const forecastTodayKey = getTodayKey(weather, now);
+  const bars = toTemperatureBars(weather.daily);
+  const nowPosition = toTemperaturePosition(weather.daily, weather.current.temperature);
   const format = useMemo<RowFormat>(
     () => ({
       dateFormat: { locale: dateFormat.locale, timeZone: dateFormat.timeZone },
@@ -99,15 +99,15 @@ export function DailyForecast() {
     [dateFormat.locale, dateFormat.timeZone, preference.timeFormat, fontScaleRatio],
   );
 
-  if (data.daily.length === 0) {
+  if (weather.daily.length === 0) {
     return <DailyForecast.Empty />;
   }
 
   return (
     <WeatherCard className="gap-0 pb-1.5">
-      <DailyForecast.Header count={data.daily.length} />
+      <DailyForecast.Header count={weather.daily.length} />
       <Accordion hideSeparator className="mt-2">
-        {zip(data.daily, bars).map(([day, bar]) => {
+        {zip(weather.daily, bars).map(([day, bar]) => {
           const isToday = day.date === forecastTodayKey;
           return (
             <DailyForecast.Item

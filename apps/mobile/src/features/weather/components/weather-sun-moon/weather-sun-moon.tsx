@@ -55,31 +55,31 @@ const SUN_FACT_COUNT = 3;
 /** 해·달 시각은 예보 위치 시간대로 읽고, 벽시계가 기기와 다를 때만 다음 해 시각에 '현지'를 붙인다. */
 export function WeatherSunMoon() {
   const { t } = useTranslation('weather');
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.sunMoon },
       useGetPreferenceQueryOptions(),
     ],
   });
   const now = useMinuteNow();
-  const dateFormat = useLocationDateFormat(data.location.timezone);
-  const localTime = useFormatLocalTime(data.location.timezone, now);
+  const dateFormat = useLocationDateFormat(weather.location.timezone);
+  const localTime = useFormatLocalTime(weather.location.timezone, now);
   const formatTime = (date: Instant) => formatClockTime(date, preference.timeFormat, dateFormat);
-  const today = findTodayOrFirstForecast(data, now);
+  const today = findTodayOrFirstForecast(weather, now);
   if (today == null) {
     return null;
   }
-  const todayKey = getTodayKey(data, now);
+  const todayKey = getTodayKey(weather, now);
   const sunEvents = WeatherReportPolicy.getSunEvents(today, {
-    isDaylight: data.current.isDaylight,
+    isDaylight: weather.current.isDaylight,
   });
   const nextEvent = WeatherDetailPolicy.findNextSunEvent(
     today,
-    WeatherDetailPolicy.findDayAfter(data.daily, todayKey),
+    WeatherDetailPolicy.findDayAfter(weather.daily, todayKey),
     now,
   );
   const daylight = WeatherDetailPolicy.findDaylightDuration(today);
-  const nextFullMoon = WeatherDetailPolicy.findNextFullMoon(data.daily, todayKey);
+  const nextFullMoon = WeatherDetailPolicy.findNextFullMoon(weather.daily, todayKey);
   const headline = match(sunEvents)
     .with({ kind: 'polarDay' }, () => ({ value: t('sunMoon.polarDay'), label: null }))
     .with({ kind: 'polarNight' }, () => ({ value: t('sunMoon.polarNight'), label: null }))
@@ -159,7 +159,7 @@ export function WeatherSunMoon() {
       )}
       <Separator thickness={0.5} className="mt-3.5 bg-on-sky/[0.18]" />
       <HStack align="center" className="gap-3 mt-3.5">
-        <WeatherMoonIcon phase={today.moonPhase} latitude={data.location.latitude} />
+        <WeatherMoonIcon phase={today.moonPhase} latitude={weather.location.latitude} />
         <VStack className="min-w-0 flex-1" accessible>
           <Text size="b2" weight="semibold" tone="onSky" className="leading-[22px]">
             {t(MOON_PHASE_LABEL_KEYS[today.moonPhase])}

@@ -10,12 +10,15 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Button } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
 import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import { WEATHER_LOG_EVENT } from '../../constants/weather-log-events';
 import { WeatherReschedulePolicy } from '../../domains/weather-reschedule.model';
-import { useWeatherRescheduleParams } from '../../hooks/use-weather-reschedule-params';
+import {
+  useWeatherRescheduleReason,
+  useWeatherRescheduleTodoIds,
+} from '../../hooks/use-weather-reschedule-params';
 import { invalidateWeatherReports } from '../../queries/weather-cache';
 import { useRescheduleTodoMutationOptions } from '../../queries/weather.mutations';
 import {
@@ -44,16 +47,19 @@ export function WeatherRescheduleSubmitButton({
   const haptics = useHaptics();
   const logger = useLogger();
   const { trackEvent } = useTrack();
-  const [{ todoIds, reason }] = useWeatherRescheduleParams();
+  const [todoIds] = useWeatherRescheduleTodoIds();
+  const [reason] = useWeatherRescheduleReason();
   const { isSubmitting } = useFormState({ control: form.control });
   const todayKey = useTodayKey();
-  const { data: todoList } = useQuery(useGetTodosByDateQueryOptions({ date: todayKey }));
-  const { data: report } = useQuery({
-    ...useGetWeatherReportQueryOptions(),
-    select: WeatherReportSelect.briefing,
+  // 시트 목록이 같은 조회를 먼저 받아 두어 보통은 바로 읽힌다
+  const [{ data: report }, { data: todoList }] = useSuspenseQueries({
+    queries: [
+      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.briefing },
+      useGetTodosByDateQueryOptions({ date: todayKey }),
+    ],
   });
   const updateSchedule = useMutation(useRescheduleTodoMutationOptions());
-  const todayTodos = todoList?.todos ?? [];
+  const todayTodos = todoList.todos;
   // shouldUnregister 폼은 남은 선택이 없으면 selections 자체를 지운다.
   const selections = useWatch({ control: form.control, name: 'selections' }) ?? {};
   const targetCount = WeatherReschedulePolicy.getRescheduleTargets(
@@ -104,7 +110,7 @@ export function WeatherRescheduleSubmitButton({
     if (expired.length > 0) {
       // 시트를 연 채 정시를 넘겼다. 지난 시각으로 옮기지 않고 다음 유효 후보로 바꿔 다시 확인받는다
       for (const { todo } of expired) {
-        const next = WeatherReschedulePolicy.findNextRescheduleOption(report?.briefing ?? null, {
+        const next = WeatherReschedulePolicy.findNextRescheduleOption(report.briefing, {
           todoId: todo.id,
           now,
         });
@@ -156,3 +162,13 @@ export function WeatherRescheduleSubmitButton({
     </Button>
   );
 }
+
+WeatherRescheduleSubmitButton.Loading = function Loading() {
+  const { t } = useTranslation('weather');
+
+  return (
+    <Button display="full" size="xlarge" isDisabled>
+      {t('reschedule.submit', { count: 0 })}
+    </Button>
+  );
+};

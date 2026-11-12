@@ -35,7 +35,12 @@ import { useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type UnexpectedLocationFailure } from '../services/weather-location.service';
 import { withDevWeatherOverride } from '../utils/weather-dev-override';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
-import { removeOutdatedWeatherReports } from './weather-cache';
+import {
+  findCachedReportLocation,
+  getCachedWeatherLocation,
+  getCachedWeatherReport,
+  removeOutdatedWeatherReports,
+} from './weather-cache';
 import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 
 const LOCATION_STALE_TIME_MS = 30 * MINUTE_MS;
@@ -46,19 +51,14 @@ function refetchOnFocus(query: Query<LocationReading, Error>) {
 }
 
 /** 리포트 실패는 리포트 경계가 알리므로 여기서는 비교할 위치가 없는 것으로 보고 기록만 남긴다 */
-async function findReportLocation(client: QueryClient, logger: AppLogger, revision: number) {
-  const queryKey = WEATHER_QUERY_KEYS.report({ locationRevision: revision });
-  const state = client.getQueryState<WeatherReport>(queryKey);
-  if (state?.data == null && state?.fetchStatus === 'fetching') {
-    const report = await client.query<WeatherReport>({ queryKey }).catch((error) => {
+function findReportLocation(client: QueryClient, logger: AppLogger, locationRevision: number) {
+  return findCachedReportLocation(client, {
+    locationRevision,
+    onReadFailed: (error) =>
       logger.info(WEATHER_LOG_EVENT.REPORT_LOCATION_READ_FAILED, {
         error: getErrorMessage(error),
-      });
-      return null;
-    });
-    return report?.location ?? null;
-  }
-  return state?.data?.location ?? null;
+      }),
+  });
 }
 
 /** 피드 배지·날씨 화면·안내가 같은 key를 구독하므로 위치 읽기와 PUT을 여기서 해 한 번만 일어나게 한다 */
@@ -81,10 +81,10 @@ export function useGetWeatherLocationQueryOptions() {
 
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.location(),
-    queryFn: async ({ signal, client, queryKey }): Promise<LocationReading> =>
+    queryFn: async ({ signal, client }): Promise<LocationReading> =>
       unwrap(
         await weatherLocationService.resolveLocation({
-          previous: client.getQueryData(queryKey),
+          previous: getCachedWeatherLocation(client),
           signal,
           findReportLocation: (revision) => findReportLocation(client, logger, revision),
           onUnexpectedFailure: reportUnexpectedFailure,
@@ -102,8 +102,8 @@ export function useGetWeatherLocationQueryOptions() {
 
 /** 날씨 블록이 같은 리포트 캐시를 고르도록 위치 리비전을 돌려준다. 위치를 읽는 동안에도 0으로 바로 받는다. */
 export function useWeatherLocationRevision(): number {
-  const { data } = useQuery(useGetWeatherLocationQueryOptions());
-  return WeatherLocationPolicy.getReadingRevision(data);
+  const { data: reading } = useQuery(useGetWeatherLocationQueryOptions());
+  return WeatherLocationPolicy.getReadingRevision(reading);
 }
 
 const REPORT_STALE_TIME_MS = 10 * MINUTE_MS;
@@ -128,7 +128,7 @@ export function useGetWeatherReportQueryOptions() {
     queryFn: async ({ signal, client: queryClient }) => {
       // 새 위치의 리포트를 받기 시작하면 화면은 이미 이 리비전을 보므로 이전 위치의 리포트는 기기 캐시에 남기지 않는다
       removeOutdatedWeatherReports(queryClient, { locationRevision });
-      const reading = queryClient.getQueryData(WEATHER_QUERY_KEYS.location());
+      const reading = getCachedWeatherLocation(queryClient);
       return unwrap(
         await weatherApi.getReportWithReregistration({
           lastRegistered:
@@ -148,7 +148,7 @@ export function useGetWeatherReportQueryOptions() {
     return reportOptions;
   }
 
-  const cached = client.getQueryData(reportOptions.queryKey);
+  const cached = getCachedWeatherReport(client, { locationRevision });
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision, devOverride }),
     queryFn: async ({ client: queryClient }) =>

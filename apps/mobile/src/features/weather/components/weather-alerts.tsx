@@ -24,14 +24,14 @@ const CHEVRON_SIZE = 14;
 
 /** 서버가 심각도 순으로 보내므로 가장 심각한 특보 하나만 카드로 보이고 나머지는 개수로 알린다 */
 export function WeatherAlerts() {
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.alerts },
       useGetPreferenceQueryOptions(),
     ],
   });
   const now = useMinuteNow();
-  const [mostSevere, ...rest] = WeatherReportPolicy.getActiveAlerts(data.alerts, now);
+  const [mostSevere, ...rest] = WeatherReportPolicy.getActiveAlerts(weather.alerts, now);
 
   if (mostSevere == null) {
     return <WeatherAlerts.Empty />;
@@ -41,7 +41,7 @@ export function WeatherAlerts() {
       alert={mostSevere}
       isInEffect={WeatherReportPolicy.isAlertInEffect(mostSevere, now)}
       otherCount={rest.length}
-      timeZone={data.location.timezone}
+      timeZone={weather.location.timezone}
       timeFormat={preference.timeFormat}
       now={now}
     />

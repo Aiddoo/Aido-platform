@@ -74,30 +74,19 @@ const VISIBLE_TODO_LIMIT = 3;
 type RescheduleAction = Extract<BriefingAction, { kind: 'reschedule' }>;
 type SuggestTodoAction = Extract<BriefingAction, { kind: 'suggestTodo' }>;
 
-/** 값 안에 넣은 문구까지 번역해 한 문장으로 만든다. */
-function useTranslateBriefingCopy() {
-  const { t } = useTranslation('weather');
-  const translate = (copy: BriefingCopy): string => {
-    const values = mapValues(copy.values ?? {}, (value) =>
-      typeof value === 'object' ? translate(value) : value,
-    );
-    return t(copy.key, values);
-  };
-  return translate;
-}
-
 /** 리포트 실패는 리포트 경계 한 곳에서만 보이도록 던지지 않는 useQuery로 구독하고, 이 경계는 할 일 실패만 맡는다 */
 export function WeatherBriefing() {
+  const todayKey = useTodayKey();
+  const now = useMinuteNow();
+  const { timeZone: deviceTimeZone } = useDateFormatContext();
   const { data: report } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: WeatherReportSelect.briefing,
   });
-  const todayKey = useTodayKey();
   const [{ data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [useGetTodosByDateQueryOptions({ date: todayKey }), useGetPreferenceQueryOptions()],
   });
-  const now = useMinuteNow();
-  const { timeZone: deviceTimeZone } = useDateFormatContext();
+
   const state = getBriefingState(report, { now, deviceTimeZone });
 
   if (report == null || state === 'loading') {
@@ -517,4 +506,16 @@ function useOpenReschedule(action: RescheduleAction) {
     });
     push(toWeatherRescheduleHref({ todoIds: action.todoIds, reason: action.reason }));
   };
+}
+
+/** 값 안에 넣은 문구까지 번역해 한 문장으로 만든다. */
+function useTranslateBriefingCopy() {
+  const { t } = useTranslation('weather');
+  const translate = (copy: BriefingCopy): string => {
+    const values = mapValues(copy.values ?? {}, (value) =>
+      typeof value === 'object' ? translate(value) : value,
+    );
+    return t(copy.key, values);
+  };
+  return translate;
 }

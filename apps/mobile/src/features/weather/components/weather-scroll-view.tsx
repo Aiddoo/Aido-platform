@@ -86,7 +86,6 @@ WeatherScrollView.Status = function Status({ children }: PropsWithChildren) {
 interface TopFadeProps {
   /** 끝까지 불투명하게 덮을 높이(상태 표시줄) */
   solidHeight: number;
-  /** 페이드 전체 높이 */
   height: number;
 }
 

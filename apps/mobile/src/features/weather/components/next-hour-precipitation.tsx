@@ -70,7 +70,7 @@ const GUIDE_LABEL_FONT_SIZE = 10;
 /** 분 단위 예보가 없는 지역(국내 등)은 시간 단위 카드로 알리고, 6시간 넘게 낡은 데이터로는 안내하지 않는다 */
 export function NextHourPrecipitation() {
   const { t } = useTranslation('weather');
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.precipitation },
       useGetPreferenceQueryOptions(),
@@ -78,29 +78,29 @@ export function NextHourPrecipitation() {
   });
   const now = useMinuteNow();
   const toMessage = useFormatPrecipitationMessage({
-    timeZone: data.location.timezone,
+    timeZone: weather.location.timezone,
     timeFormat: preference.timeFormat,
     now,
   });
 
-  if (isNowcastExpired(data, now)) {
+  if (isNowcastExpired(weather, now)) {
     return <NextHourPrecipitation.Empty />;
   }
-  if (data.nextHour == null) {
-    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(data.hourly, now);
+  if (weather.nextHour == null) {
+    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(weather.hourly, now);
     return outlook == null ? (
       <NextHourPrecipitation.Empty />
     ) : (
       <NextHourPrecipitation.HourlyOutlook
         outlook={outlook}
-        timeZone={data.location.timezone}
+        timeZone={weather.location.timezone}
         timeFormat={preference.timeFormat}
         now={now}
       />
     );
   }
 
-  const window = getPrecipitationWindow(data, now);
+  const window = getPrecipitationWindow(weather, now);
   const { headline, detail } = toMessage(window);
   const summary = detail == null ? headline : t('nextHour.summary', { headline, detail });
 
@@ -127,7 +127,7 @@ export function NextHourPrecipitation() {
         )}
       </VStack>
       <Separator thickness={0.5} className="mt-3 bg-on-sky/[0.18]" />
-      <NextHourPrecipitation.Chart minutes={data.nextHour.minutes} summary={summary} />
+      <NextHourPrecipitation.Chart minutes={weather.nextHour.minutes} summary={summary} />
     </WeatherCard>
   );
 }

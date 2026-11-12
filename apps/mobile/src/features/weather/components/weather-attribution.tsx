@@ -46,16 +46,16 @@ interface WeatherAttributionProps {
 export function WeatherAttribution({ background }: WeatherAttributionProps) {
   const { t } = useTranslation('weather');
   const openUrl = useOpenInAppBrowser();
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.attribution },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const dateFormat = useLocationDateFormat(data.location.timezone);
+  const dateFormat = useLocationDateFormat(weather.location.timezone);
   const now = useMinuteNow();
-  const localTime = useFormatLocalTime(data.location.timezone, now);
-  const { attribution } = data;
+  const localTime = useFormatLocalTime(weather.location.timezone, now);
+  const { attribution } = weather;
   const tone = attributionTone({ background });
 
   return (
@@ -68,7 +68,7 @@ export function WeatherAttribution({ background }: WeatherAttributionProps) {
       <Text size="e1" align="center" className={cn('tabular-nums', tone.meta())}>
         {t('attribution.updatedAt', {
           source: attribution.serviceName,
-          time: localTime(formatClockTime(data.fetchedAt, preference.timeFormat, dateFormat)),
+          time: localTime(formatClockTime(weather.fetchedAt, preference.timeFormat, dateFormat)),
         })}
       </Text>
       <PressableFeedback

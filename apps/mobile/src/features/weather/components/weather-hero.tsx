@@ -18,7 +18,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { compact } from 'es-toolkit';
+import { compact, noop } from 'es-toolkit';
 import { type ComponentProps, type ReactNode, useEffect } from 'react';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
@@ -110,19 +110,19 @@ export function WeatherHero() {
   const placeStyle = scaleType(PLACE_TYPE, scale);
   const lineStyle = scaleType(LINE_TYPE, scale);
   const unit = useTemperatureUnit();
-  const { data } = useSuspenseQuery({
+  const { data: weather } = useSuspenseQuery({
     ...useGetWeatherReportQueryOptions(),
     select: WeatherReportSelect.hero,
   });
   const now = useMinuteNow();
-  const today = findTodayOrFirstForecast(data, now);
+  const today = findTodayOrFirstForecast(weather, now);
   const readyLocation = location.status === 'ready' ? location : null;
   const place = readyLocation?.place ?? null;
   const countryCode = readyLocation?.countryCode ?? null;
   const isLastKnown = readyLocation?.isLastKnown === true;
   const title = place?.city ?? t(isLastKnown ? 'hero.lastLocation' : 'hero.currentLocation');
-  const reading = toTemperatureReading(toDisplayTemperature(data.current.temperature, unit));
-  const condition = t(getWeatherConditionLabelKey(data.current.condition));
+  const reading = toTemperatureReading(toDisplayTemperature(weather.current.temperature, unit));
+  const condition = t(getWeatherConditionLabelKey(weather.current.condition));
   const temperature = reading.isBelowZero
     ? t('hero.temperatureBelowZero', { count: reading.magnitude })
     : t('hero.temperature', { count: reading.magnitude });
@@ -179,8 +179,8 @@ export function WeatherHero() {
           )}
         </VStack>
         {today?.restOfDay != null && <WeatherHero.RestOfDay restOfDay={today.restOfDay} />}
-        {isReportStale(data, now) && (
-          <WeatherHero.StaleNotice fetchedAt={data.fetchedAt} now={now} />
+        {isReportStale(weather, now) && (
+          <WeatherHero.StaleNotice fetchedAt={weather.fetchedAt} now={now} />
         )}
       </VStack>
     </Animated.View>
@@ -418,7 +418,7 @@ WeatherHero.LocationUnavailable = function LocationUnavailable({
   const handleRetry = async () => {
     if (reading?.status === 'located') {
       const { latitude, longitude } = reading.registered;
-      await updateLocation.mutateAsync({ latitude, longitude }).catch(() => undefined);
+      await updateLocation.mutateAsync({ latitude, longitude }).catch(noop);
     } else if (location.status === 'unavailable') {
       await location.retry();
     }

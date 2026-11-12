@@ -78,6 +78,7 @@ function createValidCache(): CacheEntry[] {
         place: null,
         countryCode: 'KR',
         revision: 1,
+        isLastKnown: false,
       },
     ],
     [REPORT_KEY, createWeatherReport()],

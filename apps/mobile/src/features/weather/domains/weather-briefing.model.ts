@@ -135,7 +135,6 @@ function isFrozenHour(hour: HourlyForecastEntry): boolean {
   return WeatherReportPolicy.isFrozenPrecipitation(hour.precipitationType);
 }
 
-/** 기준 시간에서 앞뒤로 조건이 이어지는 시간을 묶는다. */
 function toHourRange(
   hourly: readonly HourlyForecastEntry[],
   anchor: number,
