@@ -6,9 +6,11 @@ import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { ApiError, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { shouldRetryQuery } from '@src/shared/query/query-retry';
+import { STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
 import {
   createErrorReporterStub,
   createAppLoggerStub,
+  createMemoryKeyValueStorage,
   createPendingResponse,
   createStalledBodyResponse,
   createTestQueryClient,
@@ -19,12 +21,18 @@ import { CancelledError, type QueryClient } from '@tanstack/react-query';
 import { waitFor } from '@testing-library/react-native';
 import { delay } from 'es-toolkit';
 import ky, { type KyInstance } from 'ky';
+import type { z } from 'zod';
 
+import { createSecureTokenStore } from '../storage/secure-token-store';
 import { createApiFailureBreadcrumbHook } from './api-failure-breadcrumb';
 import { createAuthClient } from './auth-client';
 import { KyHttpClient } from './ky-client';
 import { REFRESH_TIMEOUT_MS } from './request-timeout';
-import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
+import {
+  createTokenRefreshHook,
+  RETRY_MARKER_HEADER,
+  UNAUTHORIZED_RECOVERY_TIMEOUT_MS,
+} from './token-refresh-hook';
 import { createTokenRefresher } from './token-refresher';
 
 /**
@@ -492,6 +500,321 @@ describe('createAuthClient: 만료된 토큰으로 함께 보낸 두 조회', ()
       expect(scene.resent).toEqual(expect.arrayContaining(RESENT_ONCE_WITH_NEW_TOKEN));
       expect(refresh.requestRefresh).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('createAuthClient: 키체인이 늦거나 멈출 때', () => {
+  setupFakeTimersPerTest();
+
+  const COMMENTS_PATH = 'v2/todos/2052/comments';
+  const DETAILS_PATH = 'v1/todos/2052/details';
+  /** ky가 강제 재시도 전에 쉬는 시간(첫 재시도 0.3초)을 넘긴다 */
+  const KY_RETRY_PAUSE_MS = 1_000;
+  const rotatedTo = (generation: number) =>
+    new Response(
+      JSON.stringify({
+        data: {
+          accessToken: `access-${generation}`,
+          refreshToken: `refresh-${generation}`,
+        },
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+
+  /** 실제 SecureTokenStore를 키체인 fake 위에 둔다. 키체인 쓰기·읽기가 멈추는 것을 테스트가 정한다 */
+  async function createKeychain() {
+    const storage = createMemoryKeyValueStorage();
+    await storage.set(STORAGE_KEYS.ACCESS_TOKEN, 'access-1');
+    await storage.set(STORAGE_KEYS.REFRESH_TOKEN, 'refresh-1');
+    return { storage, tokenStore: createSecureTokenStore(storage) };
+  }
+
+  /** 서버는 마지막으로 발급한 access 토큰만 받는다 */
+  function createPipeline(tokenStore: TokenStore, requestRefresh: RefreshTokensRequest) {
+    const sessionEpoch = createSessionEpoch();
+    const epochTokenStore = withSessionEpoch(tokenStore, sessionEpoch);
+    const server = { validAccessToken: 'access-2' };
+    const resent: string[] = [];
+    global.fetch = jest.fn(async (input) => {
+      const request = toRequest(input);
+      const path = new URL(request.url).pathname.slice(1);
+      const authorization = request.headers.get('Authorization');
+      if (authorization !== `Bearer ${server.validAccessToken}`) {
+        return errorBody(401, 'AUTH_0101', 'access token expired');
+      }
+      if (request.headers.get(RETRY_MARKER_HEADER) === '1') {
+        resent.push(`${path} ${authorization}`);
+      }
+      return successBody({ path });
+    });
+    const endSession = jest.fn(async () => undefined);
+    const http = new KyHttpClient(
+      createAuthClient({
+        appVersion: null,
+        appBuild: null,
+        tokenStore: epochTokenStore,
+        refresh: createTokenRefresher({
+          tokenStore: epochTokenStore,
+          requestRefresh,
+          sessionEpoch,
+          logger: createAppLoggerStub(),
+        }),
+        endSession,
+        sessionEpoch,
+        logger: createAppLoggerStub(),
+        errorReporter: createErrorReporterStub(),
+      }),
+    );
+    return { http, server, resent, endSession };
+  }
+
+  it('갱신 200 뒤 키체인 쓰기가 끝나지 않아도 두 조회는 새 토큰으로 바로 다시 보내 받는다', async () => {
+    // Given
+    const { storage, tokenStore } = await createKeychain();
+    storage.set.mockReturnValue(Promise.withResolvers<void>().promise);
+    const requestRefresh = jest.fn<Promise<Response>, [string]>(async () => rotatedTo(2));
+    const scene = createPipeline(tokenStore, requestRefresh);
+
+    // When
+    const comments = observeSettlement(scene.http.get(COMMENTS_PATH));
+    const details = observeSettlement(scene.http.get(DETAILS_PATH));
+    await jest.advanceTimersByTimeAsync(KY_RETRY_PAUSE_MS);
+
+    // Then
+    expect(comments.current).toEqual({
+      status: 'fulfilled',
+      value: { ok: true, value: { path: COMMENTS_PATH } },
+    });
+    expect(details.current).toEqual({
+      status: 'fulfilled',
+      value: { ok: true, value: { path: DETAILS_PATH } },
+    });
+    expect(scene.resent).toEqual(
+      expect.arrayContaining([
+        `${COMMENTS_PATH} Bearer access-2`,
+        `${DETAILS_PATH} Bearer access-2`,
+      ]),
+    );
+    expect(requestRefresh).toHaveBeenCalledTimes(1);
+    expect(scene.endSession).not.toHaveBeenCalled();
+  });
+
+  it('키체인 쓰기가 실패한 채 access가 다시 만료되면 다음 갱신은 회전된 refresh 토큰으로 한다', async () => {
+    // Given
+    // 회전 전 refresh 토큰을 다시 보내면 grace(10초) 뒤 재사용으로 판정돼 세션이 끝난다(SESSION_0704)
+    const { storage, tokenStore } = await createKeychain();
+    storage.set.mockRejectedValue(new Error('keychain write failed'));
+    const requestRefresh = jest
+      .fn<Promise<Response>, [string]>()
+      .mockResolvedValueOnce(rotatedTo(2))
+      .mockResolvedValueOnce(rotatedTo(3));
+    const scene = createPipeline(tokenStore, requestRefresh);
+    const first = observeSettlement(scene.http.get(DETAILS_PATH));
+    await jest.advanceTimersByTimeAsync(KY_RETRY_PAUSE_MS);
+    scene.server.validAccessToken = 'access-3';
+
+    // When
+    const next = observeSettlement(scene.http.get(DETAILS_PATH));
+    await jest.advanceTimersByTimeAsync(KY_RETRY_PAUSE_MS);
+
+    // Then
+    expect(first.current.status).toBe('fulfilled');
+    expect(next.current).toEqual({
+      status: 'fulfilled',
+      value: { ok: true, value: { path: DETAILS_PATH } },
+    });
+    expect(requestRefresh.mock.calls).toEqual([['refresh-1'], ['refresh-2']]);
+    expect(scene.endSession).not.toHaveBeenCalled();
+  });
+
+  it('refresh 토큰 읽기가 멈추면 두 조회는 제한 시간 안에 TimeoutError로 끝나 세션을 유지하고 다음 조회는 새 갱신으로 받는다', async () => {
+    // Given
+    const { storage, tokenStore } = await createKeychain();
+    let isFirstRefreshTokenRead = true;
+    storage.get.mockImplementation(async (key: string, schema: z.ZodType) => {
+      if (key === STORAGE_KEYS.REFRESH_TOKEN && isFirstRefreshTokenRead) {
+        isFirstRefreshTokenRead = false;
+        return Promise.withResolvers<null>().promise;
+      }
+      return schema.parse(key === STORAGE_KEYS.REFRESH_TOKEN ? 'refresh-1' : 'access-1');
+    });
+    const requestRefresh = jest.fn<Promise<Response>, [string]>(async () => rotatedTo(2));
+    const scene = createPipeline(tokenStore, requestRefresh);
+    const comments = observeSettlement(scene.http.get(COMMENTS_PATH));
+    const details = observeSettlement(scene.http.get(DETAILS_PATH));
+    await jest.advanceTimersByTimeAsync(UNAUTHORIZED_RECOVERY_TIMEOUT_MS);
+
+    // When
+    const next = observeSettlement(scene.http.get(DETAILS_PATH));
+    await jest.advanceTimersByTimeAsync(KY_RETRY_PAUSE_MS);
+
+    // Then
+    expect(comments.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+    expect(details.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+    expect(next.current).toEqual({
+      status: 'fulfilled',
+      value: { ok: true, value: { path: DETAILS_PATH } },
+    });
+    expect(requestRefresh).toHaveBeenCalledTimes(1);
+    expect(scene.endSession).not.toHaveBeenCalled();
+  });
+
+  it('다시 보내는 중 취소한 조회만 AbortError로 끝나고 다른 조회는 새 토큰으로 받으며 갱신은 한 번이다', async () => {
+    // Given
+    const { tokenStore } = await createKeychain();
+    const requestRefresh = jest.fn<Promise<Response>, [string]>(async () => rotatedTo(2));
+    const scene = createPipeline(tokenStore, requestRefresh);
+    const answerResent = global.fetch;
+    // 실제 fetch처럼 응답 전에 요청의 signal이 끊기면 그 이유로 거부한다
+    global.fetch = jest.fn(async (input) => {
+      const request = toRequest(input);
+      const isCommentsResend =
+        request.url.endsWith(COMMENTS_PATH) && request.headers.get(RETRY_MARKER_HEADER) === '1';
+      if (!isCommentsResend) {
+        return answerResent(input);
+      }
+      return new Promise<Response>((_resolve, reject) => {
+        request.signal.addEventListener('abort', () => reject(request.signal.reason));
+      });
+    });
+    const cancelled = new AbortController();
+    const comments = observeSettlement(scene.http.get(COMMENTS_PATH, { signal: cancelled.signal }));
+    const details = observeSettlement(scene.http.get(DETAILS_PATH));
+    await jest.advanceTimersByTimeAsync(KY_RETRY_PAUSE_MS);
+
+    // When
+    cancelled.abort();
+    await jest.advanceTimersByTimeAsync(0);
+
+    // Then
+    expect(comments.current).toEqual({
+      status: 'rejected',
+      reason: expect.objectContaining({ name: 'AbortError' }),
+    });
+    expect(details.current).toEqual({
+      status: 'fulfilled',
+      value: { ok: true, value: { path: DETAILS_PATH } },
+    });
+    expect(requestRefresh).toHaveBeenCalledTimes(1);
+    expect(scene.endSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('createAuthClient: 갱신이 429·503·응답 없음을 거쳐 돌아올 때', () => {
+  setupFakeTimersPerTest();
+
+  const DETAILS_PATH = 'v1/todos/2055/details';
+  const ROTATED = JSON.stringify({ data: { accessToken: 'access-2', refreshToken: 'refresh-2' } });
+  const KY_RETRY_PAUSE_MS = 1_000;
+  /** React Query 재시도 대기(1·2·4·5·5초)와 응답 없는 갱신의 제한 시간을 모두 넘긴다 */
+  const QUERY_RECOVERY_WINDOW_MS = 60 * SECOND_MS;
+
+  type RefreshAnswer = () => Promise<Response>;
+  const tooManyRequests =
+    (retryAfterSeconds: number | null): RefreshAnswer =>
+    async () =>
+      new Response(JSON.stringify({ error: { code: 'SYS_0001', message: 'too many' } }), {
+        status: 429,
+        headers:
+          retryAfterSeconds == null
+            ? { 'Content-Type': 'application/json' }
+            : { 'Content-Type': 'application/json', 'Retry-After': String(retryAfterSeconds) },
+      });
+  const serviceUnavailable: RefreshAnswer = async () => errorBody(503, 'SYS_0001', 'down');
+  const noAnswer: RefreshAnswer = () => Promise.withResolvers<Response>().promise;
+  const rotated: RefreshAnswer = async () =>
+    new Response(ROTATED, { status: 200, headers: { 'Content-Type': 'application/json' } });
+
+  function createPipeline(answers: RefreshAnswer[]) {
+    const sessionEpoch = createSessionEpoch();
+    const tokenStore = withSessionEpoch(
+      createStatefulTokenStore({ accessToken: 'access-1', refreshToken: 'refresh-1' }),
+      sessionEpoch,
+    );
+    const remaining = [...answers];
+    const requestRefresh = jest.fn<Promise<Response>, [string]>(
+      () => remaining.shift()?.() ?? rotated(),
+    );
+    global.fetch = jest.fn(async (input) => {
+      const request = toRequest(input);
+      return request.headers.get('Authorization') === 'Bearer access-2'
+        ? successBody({ path: new URL(request.url).pathname.slice(1) })
+        : errorBody(401, 'AUTH_0101', 'access token expired');
+    });
+    const endSession = jest.fn(async () => undefined);
+    const http = new KyHttpClient(
+      createAuthClient({
+        appVersion: null,
+        appBuild: null,
+        tokenStore,
+        refresh: createTokenRefresher({
+          tokenStore,
+          requestRefresh,
+          sessionEpoch,
+          logger: createAppLoggerStub(),
+        }),
+        endSession,
+        sessionEpoch,
+        logger: createAppLoggerStub(),
+        errorReporter: createErrorReporterStub(),
+      }),
+    );
+    return { http, tokenStore, requestRefresh, endSession };
+  }
+
+  it.each<[string, RefreshAnswer, number, typeof ServerError | typeof TimeoutError]>([
+    ['429(Retry-After 있음)', tooManyRequests(2), 0, ServerError],
+    ['429(Retry-After 없음)', tooManyRequests(null), 0, ServerError],
+    ['503', serviceUnavailable, 0, ServerError],
+    ['응답 없음', noAnswer, REFRESH_TIMEOUT_MS, TimeoutError],
+  ])(
+    '갱신이 %s이면 그 조회는 정해진 시간 안에 다시 시도할 오류로 끝나고 세션을 유지하며, 다시 시도는 새 갱신으로 받는다',
+    async (_name, failedRefresh, failsWithinMs, expectedError) => {
+      // Given
+      const scene = createPipeline([failedRefresh]);
+      const failed = observeSettlement(scene.http.get(DETAILS_PATH));
+
+      // When
+      await jest.advanceTimersByTimeAsync(failsWithinMs);
+      const retried = observeSettlement(scene.http.get(DETAILS_PATH));
+      await jest.advanceTimersByTimeAsync(KY_RETRY_PAUSE_MS);
+
+      // Then
+      expect(failed.current).toEqual({ status: 'rejected', reason: expect.any(expectedError) });
+      expect(retried.current).toEqual({
+        status: 'fulfilled',
+        value: { ok: true, value: { path: DETAILS_PATH } },
+      });
+      expect(scene.requestRefresh).toHaveBeenCalledTimes(2);
+      expect(scene.endSession).not.toHaveBeenCalled();
+    },
+  );
+
+  it('조회가 429 두 번·503·응답 없음 뒤 서버가 돌아오면 로그아웃 없이 다시 시도해 한 번의 성공한 갱신으로 받는다', async () => {
+    // Given
+    const scene = createPipeline([
+      tooManyRequests(2),
+      tooManyRequests(null),
+      serviceUnavailable,
+      noAnswer,
+    ]);
+    const queryClient = createTestQueryClient();
+
+    // When
+    const detail = observeSettlement(
+      queryClient.fetchQuery({
+        queryKey: ['todo-detail', DETAILS_PATH],
+        queryFn: async ({ signal }) => unwrap(await scene.http.get(DETAILS_PATH, { signal })),
+        retry: shouldRetryQuery,
+      }),
+    );
+    await jest.advanceTimersByTimeAsync(QUERY_RECOVERY_WINDOW_MS);
+
+    // Then
+    expect(detail.current).toEqual({ status: 'fulfilled', value: { path: DETAILS_PATH } });
+    expect(scene.requestRefresh).toHaveBeenCalledTimes(5);
+    expect(scene.endSession).not.toHaveBeenCalled();
+    await expect(scene.tokenStore.getRefreshToken()).resolves.toBe('refresh-2');
   });
 });
 

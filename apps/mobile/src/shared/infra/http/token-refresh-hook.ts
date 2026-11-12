@@ -21,7 +21,7 @@ export const RETRY_MARKER_HEADER = 'x-retried-after-refresh';
 
 /**
  * 401 하나를 갱신·재전송으로 넘기기까지 기다리는 상한. ky timeout은 afterResponse 훅을 세지 않아 이 상한이 없으면 끝나지 않는 대기가 요청을 붙잡는다.
- * 갱신 왕복(REFRESH_TIMEOUT_MS)과 그 앞뒤 키체인 읽기·쓰기를 덮도록 두 배로 잡는다
+ * 갱신 한 번(refresh 토큰 읽기 TOKEN_READ_TIMEOUT_MS + 왕복 REFRESH_TIMEOUT_MS)과 그 앞 액세스 토큰 읽기를 덮도록 왕복의 두 배로 잡는다. 키체인 쓰기는 기다리지 않는다
  */
 export const UNAUTHORIZED_RECOVERY_TIMEOUT_MS = 2 * REFRESH_TIMEOUT_MS;
 

@@ -9,6 +9,7 @@ export interface TokenStore {
   getAccessToken(): Promise<string | null>;
   /** 세션 존재의 근거. 액세스 토큰은 만료돼도 이것으로 재발급된다. @throws 키체인 접근 실패 시 */
   getRefreshToken(): Promise<string | null>;
+  /** 부른 즉시 다음 읽기가 새 토큰을 돌려준다. 키체인 쓰기가 늦거나 실패해도 이 실행 동안은 같다(갱신은 쓰기를 기다리지 않는다). @throws 쓰기 실패 시 */
   save(tokens: AuthTokenPair): Promise<void>;
   clear(): Promise<void>;
 }

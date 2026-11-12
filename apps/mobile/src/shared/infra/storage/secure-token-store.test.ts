@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
+import { observeSettlement } from '@src/testing/core';
 import { createMemoryKeyValueStorage } from '@src/testing/fakes/memory-key-value-storage.fake';
 
 import { createSecureTokenStore } from './secure-token-store';
@@ -85,6 +86,109 @@ describe('createSecureTokenStore', () => {
     // Then
     await expect(result).rejects.toThrow('keychain write failed');
     expect(storage.set).toHaveBeenCalledWith(STORAGE_KEYS.REFRESH_TOKEN, 'r');
+  });
+
+  describe('키체인 쓰기가 늦거나 실패할 때', () => {
+    /** 키마다 쓰기를 붙잡아 두고 테스트가 끝낼 때만 저장소에 반영한다 */
+    function holdWrites() {
+      const stored = new Map<string, unknown>();
+      const held: Array<{ key: string; value: unknown; finish: () => void }> = [];
+      storage.set.mockImplementation(async (key, value) => {
+        const write = Promise.withResolvers<void>();
+        held.push({ key, value, finish: write.resolve });
+        await write.promise;
+        stored.set(key, value);
+      });
+      storage.get.mockImplementation(async (key: string) => stored.get(key) ?? null);
+      storage.remove.mockImplementation(async (key: string) => {
+        stored.delete(key);
+      });
+      const settle = async () => {
+        for (let turn = 0; turn < 3; turn += 1) {
+          await Promise.resolve();
+        }
+      };
+      const finishNext = async () => {
+        held.shift()?.finish();
+        await settle();
+      };
+      const finishLast = async () => {
+        held.pop()?.finish();
+        await settle();
+      };
+      return { stored, finishNext, finishLast };
+    }
+
+    it('쓰기가 끝나기 전에도 다음 읽기는 방금 받은 토큰을 돌려준다', async () => {
+      // Given
+      storage.get.mockResolvedValue('old');
+      storage.set.mockReturnValue(Promise.withResolvers<void>().promise);
+      const tokenStore = createSecureTokenStore(storage);
+
+      // When
+      const saving = observeSettlement(
+        tokenStore.save({ accessToken: 'access-2', refreshToken: 'refresh-2' }),
+      );
+
+      // Then
+      await expect(tokenStore.getAccessToken()).resolves.toBe('access-2');
+      await expect(tokenStore.getRefreshToken()).resolves.toBe('refresh-2');
+      expect(saving.current.status).toBe('pending');
+    });
+
+    it('쓰기가 실패해도 이 실행은 방금 받은 토큰을 읽고 save는 실패를 알린다', async () => {
+      // Given
+      // 서버는 이미 회전했다. 회전 전 refresh 토큰으로 다시 갱신하면 grace 뒤 재사용(SESSION_0704)이다
+      storage.get.mockResolvedValue('old');
+      storage.set.mockRejectedValue(new Error('keychain write failed'));
+      const tokenStore = createSecureTokenStore(storage);
+
+      // When
+      const saved = tokenStore.save({ accessToken: 'access-2', refreshToken: 'refresh-2' });
+
+      // Then
+      await expect(saved).rejects.toThrow('keychain write failed');
+      await expect(tokenStore.getRefreshToken()).resolves.toBe('refresh-2');
+    });
+
+    it('늦게 끝난 앞 쓰기가 뒤에 받은 토큰을 덮지 않는다', async () => {
+      // Given
+      const { stored, finishNext, finishLast } = holdWrites();
+      const tokenStore = createSecureTokenStore(storage);
+      const first = tokenStore.save({ accessToken: 'access-1', refreshToken: 'refresh-1' });
+      const second = tokenStore.save({ accessToken: 'access-2', refreshToken: 'refresh-2' });
+
+      // When
+      // 뒤 쓰기가 먼저 끝나고 앞 쓰기가 나중에 끝나는 키체인
+      for (let write = 0; write < 4; write += 1) {
+        await finishLast();
+      }
+      for (let write = 0; write < 4; write += 1) {
+        await finishNext();
+      }
+      await Promise.all([first, second]);
+
+      // Then
+      expect(stored.get(STORAGE_KEYS.REFRESH_TOKEN)).toBe('refresh-2');
+      expect(stored.get(STORAGE_KEYS.ACCESS_TOKEN)).toBe('access-2');
+    });
+
+    it('쓰는 도중 지우면 늦게 끝난 쓰기로 토큰을 되살리지 않는다', async () => {
+      // Given
+      const { stored, finishNext } = holdWrites();
+      const tokenStore = createSecureTokenStore(storage);
+      const saved = tokenStore.save({ accessToken: 'access-2', refreshToken: 'refresh-2' });
+
+      // When
+      await tokenStore.clear();
+      await finishNext();
+      await finishNext();
+      await saved;
+
+      // Then
+      expect(stored.size).toBe(0);
+      await expect(tokenStore.getRefreshToken()).resolves.toBeNull();
+    });
   });
 
   it('한쪽 삭제가 실패해도 다른 쪽 삭제를 시도한다', async () => {
