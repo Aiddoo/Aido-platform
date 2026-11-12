@@ -4,7 +4,7 @@
 
 ## 기준 컴포넌트
 
-참고 저장소(frontend-fundamentals-mock-exam-1)의 세 컴포넌트가 모든 기능의 모양이다.
+참고 저장소(frontend-fundamentals-mock-exam-1)의 세 컴포넌트가 모든 기능의 모양이다. 아래 예시의 `MemoSummary`·`useSelectedCategoryId`·`useGetCategoriesQueryOptions`·`MemoActionButtonProps`는 모양을 보이려고 지은 이름이라 코드에 없다. 실제 쓰임은 `CategoryPickForm`(`filters` → `useGetTodoCategoriesQueryOptions({ filters })`의 `select`), `MemoList.Item`, `NotificationList`를 본다.
 
 **`AmountInput`: 역할이 있는 래퍼만 만들고 원본 Props를 지킨다.**
 

@@ -112,7 +112,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 - command는 5분 TTL, 미래 timestamp 거부, 현재 `me.id`와 소유자 일치 검사를 통과해야 한다. 로그아웃·계정 불일치·만료·손상 명령은 개인 화면 이동 없이 제거한다.
 - 정확한 목적지와 생성 action은 native wake URI에 넣지 않는다. 이전 계정의 위젯이어도 현재 계정 가드를 통과하기 전에 개인 화면으로 자동 이동하지 않는다.
 - 최신 명령만 소비한다. 이전 frame의 cleanup·조건부 삭제로 연속 탭의 최신 요청을 지우지 않는다. 현재 pathname/search가 목적지와 같으면 다시 이동하지 않는다.
-- 할 일은 `/todo/:todoId`, 날짜는 feed, 만들기는 `AddTodoBottomSheet`와 categories Query를 재사용한다.
+- 할 일은 `/todo/[todoId]`, 날짜는 feed, 만들기는 `/todo/new`의 `TodoCreateBottomSheet`와 categories Query를 재사용한다.
 - iOS는 공식 SwiftUI Link/widgetURL과 최초 URL 복원 경로를 유지한다. 위젯 URI(`aido://feed?…`·`aido://todo/{id}`)는 외부 계약이다([호환](../../../docs/conventions/compatibility.md)).
 
 ## 검증과 관측

@@ -114,7 +114,7 @@ src/shared/i18n/
 ### 새 문자열
 
 1. 하드코딩하지 않는다. 사용자 노출 문자열은 모든 카탈로그에 함께 넣는다(`locale-parity.test.ts`가 en 복수형 접미사를 뗀 키로 비교해 키 집합·보간 변수·빈 값을 막는다). 안 쓰는 키를 찾는 검사는 없으므로 코드를 옮기며 안 쓰게 된 키를 지운다.
-2. 키는 `{screen|section}.{element}` camelCase, 최대 3단계(`todo:detail.deleteConfirm.title`).
+2. 키는 `{screen|section}.{element}` camelCase, 최대 3단계(`todo:repeat.horizonInfo.label`).
 3. 공용 문구(확인·취소·저장)는 `common:actions.*`를 재사용한다.
 
 ```tsx
