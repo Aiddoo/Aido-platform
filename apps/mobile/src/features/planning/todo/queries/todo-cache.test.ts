@@ -286,7 +286,7 @@ describe('todo-cache', () => {
       await finishWrite();
     });
 
-    it('다른 쓰기가 진행 중이면 낡음만 표시하고 화면에 붙은 조회도 다시 받지 않는다', async () => {
+    it('낡음 표시를 기다리는 사이 이 쓰기가 끝나도 다른 쓰기가 남아 있으면 다시 받지 않는다', async () => {
       // Given
       const client = createSeededClient();
       const queryFn = jest.fn(async () => toList([]));
@@ -296,22 +296,37 @@ describe('todo-cache', () => {
         staleTime: Infinity,
       }).subscribe(noop);
       const finishOtherWrite = startWrite(client);
-      const finishWrite = startWrite(client);
+      const response = createPendingResponse(undefined);
+      const settled = Promise.withResolvers<void>();
+      // 실제 쓰기처럼 onSettled가 정리를 기다리지 않아, 정리가 낡음 표시를 기다리는 사이 이 쓰기가 끝난다
+      const running = client
+        .getMutationCache()
+        .build(client, {
+          mutationKey: TODO_MUTATION_KEYS.listWrites(),
+          mutationFn: () => response.response,
+          onSettled: () => {
+            settleTodoWrite(client, {
+              date: DAY,
+              todoId: 1,
+              span: { startDate: DAY, endDate: DAY },
+              isCompletionAffected: false,
+              hasFailed: true,
+              ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+            }).then(settled.resolve, settled.reject);
+          },
+        })
+        .execute(undefined);
 
       // When
-      await settleTodoWrite(client, {
-        date: DAY,
-        todoId: 1,
-        span: { startDate: DAY, endDate: DAY },
-        isCompletionAffected: false,
-        hasFailed: true,
-        ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
-      });
+      response.settle();
+      await running;
+      await settled.promise;
 
       // Then
+      expect(client.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() })).toBe(1);
       expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
       expect(queryFn).not.toHaveBeenCalled();
-      await Promise.all([finishOtherWrite(), finishWrite()]);
+      await finishOtherWrite();
       unsubscribe();
     });
   });
