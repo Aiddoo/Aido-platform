@@ -50,7 +50,7 @@ classifyError(error): { kind: 'expected' | 'auth-expired' | 'connectivity' | 'un
 
 - 예상한 것만 이름으로 나열한다. 새 오류 종류를 예상한 쪽으로 옮기려면 이 함수와 `classify-error.test.ts` 표를 함께 고친다.
 - Sentry 어댑터(`captureError`), mutation·조회 전역 보고, 경계, `useReportUnexpectedError`가 모두 이 판정을 따른다.
-- 재시도(`bootstrap/query/query-retry.ts`)는 따로 정한다. 일시 장애(`isTransientError`: 연결·시간 초과·5xx)는 6회, 응답 계약 위반(`ParseError`)과 코드로 거절한 오류(`isCodedError`)는 0회, 그 밖은 3회다.
+- 재시도(`shared/query/query-retry.ts`)는 따로 정한다. 일시 장애(`isTransientError`: 연결·시간 초과·5xx)는 6회, 응답 계약 위반(`ParseError`)과 코드로 거절한 오류(`isCodedError`)는 0회, 그 밖은 3회다.
 
 ## 오류 클래스
 
@@ -102,7 +102,7 @@ errorFeedback: { feature, fallbackKey?, isHandledByFeature?, describe? } | false
 | `isHandledByFeature(error)`가 true인 오류 | 아무것도 하지 않는다. 기능 `onError`(코드별 안내·이동·한도 시트)나 호출부 `form.setError`가 보인다                                         |
 | `false`                                   | 전역은 아무것도 하지 않는다. 실패 이유마다 안내가 다르거나(결제·복원, 음성 계획) 화면 뒤 작업(로그아웃, 푸시 기기 보고)이다                |
 
-`false`인 mutation과 여러 요청을 묶은 일괄 작업(날씨 일괄 옮기기)은 전역과 같은 본체 `useMutationErrorFeedback()`(`bootstrap/query/mutation-error-feedback.tsx`)로 햅틱·토스트·보고를 한 번에 한다. 토스트만 직접 띄우면 예상하지 못한 실패가 Sentry에 남지 않는다.
+`false`인 mutation과 여러 요청을 묶은 일괄 작업(날씨 일괄 옮기기)은 전역과 같은 본체 `useMutationErrorFeedback()`(`shared/query/use-mutation-error-feedback.ts`)로 햅틱·토스트·보고를 한 번에 한다. 토스트만 직접 띄우면 예상하지 못한 실패가 Sentry에 남지 않는다.
 
 ```typescript
 const showMutationError = useMutationErrorFeedback();
@@ -182,16 +182,17 @@ showMutationError(error, {
 
 ## 참고 파일
 
-| 파일                                                          | 설명                                             |
-| ------------------------------------------------------------- | ------------------------------------------------ |
-| `core/errors/{app-error,api-error,result}.ts`                 | 오류 바탕·ApiError·Result                        |
-| `shared/errors/classify-error.ts`                             | 분류                                             |
-| `shared/errors/report-unexpected-error.ts`                    | 예상하지 못한 오류 보고·요청 태그                |
-| `shared/errors/{infra-error,business-error,storage-error}.ts` | 오류 클래스                                      |
-| `shared/errors/{user-facing-message,error-diagnosis}.ts`      | 사용자 문구, 진단 값                             |
-| `shared/infra/http/{ky-client,ky-error,error-envelope}.ts`    | HTTP 결과 변환, 실패 봉투                        |
-| `bootstrap/query/mutation-error-feedback*`                    | mutation 전역 피드백, `useMutationErrorFeedback` |
-| `bootstrap/query/query-error-report*`                         | 경계 밖 조회 보고                                |
-| `bootstrap/query/query-retry.ts`                              | 재시도                                           |
-| `shared/ui/query-error-boundary/`                             | 경계, fallback, 문의 초안                        |
-| `features/*/domains/*.error.ts`                               | 기능 오류                                        |
+| 파일                                                          | 설명                                     |
+| ------------------------------------------------------------- | ---------------------------------------- |
+| `core/errors/{app-error,api-error,result}.ts`                 | 오류 바탕·ApiError·Result                |
+| `shared/errors/classify-error.ts`                             | 분류                                     |
+| `shared/errors/report-unexpected-error.ts`                    | 예상하지 못한 오류 보고·요청 태그        |
+| `shared/errors/{infra-error,business-error,storage-error}.ts` | 오류 클래스                              |
+| `shared/errors/{user-facing-message,error-diagnosis}.ts`      | 사용자 문구, 진단 값                     |
+| `shared/infra/http/{ky-client,ky-error,error-envelope}.ts`    | HTTP 결과 변환, 실패 봉투                |
+| `bootstrap/query/mutation-error-feedback*`                    | mutation 전역 피드백                     |
+| `shared/query/use-mutation-error-feedback.ts`                 | 기능이 부르는 `useMutationErrorFeedback` |
+| `bootstrap/query/query-error-report*`                         | 경계 밖 조회 보고                        |
+| `shared/query/query-retry.ts`                                 | 재시도                                   |
+| `shared/ui/query-error-boundary/`                             | 경계, fallback, 문의 초안                |
+| `features/*/domains/*.error.ts`                               | 기능 오류                                |

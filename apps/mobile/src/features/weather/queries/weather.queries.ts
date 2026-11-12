@@ -4,12 +4,12 @@ import {
   useWeatherLocationService,
   useWeatherApi,
 } from '@src/bootstrap/providers/di-context';
-import { shouldRetryQuery } from '@src/bootstrap/query/query-retry';
 import { type AppLogger } from '@src/core/ports/app-logger';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage, toError, unwrap } from '@src/shared/errors';
+import { shouldRetryQuery } from '@src/shared/query/query-retry';
 import {
   type Query,
   type QueryClient,
