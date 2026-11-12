@@ -86,6 +86,7 @@ import { TodoCategoryApi } from '@src/features/planning/category/apis/todo-categ
 import { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { FriendApi } from '@src/features/social/friend/apis/friend.api';
+import { InviteApi } from '@src/features/social/invite/apis/invite.api';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { InviteShareService } from '@src/features/social/invite/services/invite-share.service';
 import { InviteService } from '@src/features/social/invite/services/invite.service';
@@ -204,6 +205,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     signOutEpoch.current,
   );
   const authApi = new AuthApi({ publicHttpClient, authHttpClient });
+  const inviteApi = new InviteApi({ publicHttpClient, authHttpClient });
   const sessionRevocationService = new SessionRevocationService({
     repository: createPendingRevocationRepository(ports.storage),
     requestRefresh: ports.requestRefresh,
@@ -424,9 +426,9 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     pushRegistrationService,
     marketingPushPromptRepository,
 
+    inviteApi,
     inviteService: new InviteService({
-      publicHttpClient,
-      authHttpClient,
+      inviteApi,
       pendingRedemptionService,
       installationId: ports.installationId,
       logger,

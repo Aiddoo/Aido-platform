@@ -50,6 +50,7 @@ import type { TodoCategoryApi } from '@src/features/planning/category/apis/todo-
 import type { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import type { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import type { FriendApi } from '@src/features/social/friend/apis/friend.api';
+import type { InviteApi } from '@src/features/social/invite/apis/invite.api';
 import type { InviteShareService } from '@src/features/social/invite/services/invite-share.service';
 import type { InviteService } from '@src/features/social/invite/services/invite.service';
 import type { PendingRedemptionService } from '@src/features/social/invite/services/pending-redemption.service';
@@ -170,6 +171,7 @@ export interface DIContainer extends SharedDependencies {
   pushRegistrationService: PushRegistrationService;
   marketingPushPromptRepository: MarketingPushPromptRepository;
 
+  inviteApi: InviteApi;
   inviteService: InviteService;
   pendingRedemptionService: PendingRedemptionService;
   inviteShareService: InviteShareService;
@@ -418,6 +420,10 @@ export function usePushRegistrationService() {
 }
 export function useMarketingPushPromptRepository() {
   return useDI().marketingPushPromptRepository;
+}
+
+export function useInviteApi() {
+  return useDI().inviteApi;
 }
 
 export function useInviteService() {

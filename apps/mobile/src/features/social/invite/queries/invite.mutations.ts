@@ -1,5 +1,6 @@
 import {
   useHaptics,
+  useInviteApi,
   useInviteService,
   useLogger,
   useInviteShareService,
@@ -84,14 +85,14 @@ export function useRedeemInviteMutationOptions() {
 
 export function useRotateInviteCodeMutationOptions() {
   const haptics = useHaptics();
-  const inviteService = useInviteService();
+  const inviteApi = useInviteApi();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
   return mutationOptions({
     // 오프라인에 멈춘 채 나중에 코드가 바뀌지 않게 바로 실패해 토스트로 알린다
     networkMode: 'always',
-    mutationFn: async () => unwrap(await inviteService.rotateInviteCode()),
+    mutationFn: async () => unwrap(await inviteApi.rotateInviteCode()),
     onSuccess: (myInvite) => {
       replaceMyInvite(queryClient, myInvite);
       haptics.notify('success');
