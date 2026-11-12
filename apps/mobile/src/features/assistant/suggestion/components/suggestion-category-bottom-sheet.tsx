@@ -67,7 +67,7 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
       onSubmit={(categoryId) =>
         actOnSuggestionMutation.mutate(
           { suggestionId: suggestion.id, input: { action: 'accept', categoryId } },
-          { onSuccess: () => onClose({ type: 'back-then-replace', href: '/feed' }) },
+          { onSuccess: () => onClose({ type: 'dismiss-to', href: '/feed' }) },
         )
       }
       submitLabel={t('suggestions.category.submit')}

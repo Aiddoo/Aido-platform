@@ -77,7 +77,7 @@ CategoryEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFall
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
       <QueryErrorFallback
         reset={reset}
-        onInquiry={(href) => sheet.close({ type: 'replace', href })}
+        onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
       />
     </BottomSheet>
   );

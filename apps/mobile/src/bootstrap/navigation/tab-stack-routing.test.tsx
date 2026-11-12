@@ -1,7 +1,10 @@
 import { readdirSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+import { useOpenSubscriptionInquiry } from '@src/features/billing/subscription/hooks/use-open-subscription-inquiry';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
+import { QueryErrorActions } from '@src/shared/ui';
+import { useSheetRoute } from '@src/shared/ui/bottom-sheet/use-sheet-route';
 import { stubWindowDimensions } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import { router, Stack, Tabs } from 'expo-router';
@@ -90,6 +93,79 @@ function createScreen(testID: string) {
   };
 }
 
+interface StateRoute {
+  name: string;
+  state?: { routes: readonly StateRoute[] };
+}
+
+/** 탭 묶음(`(tabs)`)이 Stack에 몇 겹 있는지. 탭 위 화면에서 탭 화면을 잘못 열면 두 겹이 된다 */
+function countTabBundles(routes: readonly StateRoute[]): number {
+  return routes.reduce(
+    (count, route) =>
+      count + (route.name === '(tabs)' ? 1 : 0) + countTabBundles(route.state?.routes ?? []),
+    0,
+  );
+}
+
+function MemoScreen() {
+  return (
+    <>
+      <Text testID="memo">memo</Text>
+      <QueryErrorActions.Inquiry />
+    </>
+  );
+}
+
+function PaywallScreen() {
+  const openSubscriptionInquiry = useOpenSubscriptionInquiry();
+
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() =>
+          openSubscriptionInquiry({
+            titleKey: 'subscription:failure.title.storeUnavailable',
+            diagnosticCode: 'SUB-TEST',
+          })
+        }
+      >
+        <Text>결제 문의</Text>
+      </Pressable>
+      <QueryErrorActions.Inquiry />
+    </>
+  );
+}
+
+/** 문의하기가 있는 route 시트(시트, 연 화면, 문의에서 뒤로 가면 나올 화면). 문의는 탭 화면이라 `dismiss-to`로 떠나야 탭 묶음이 한 겹이다 */
+const INQUIRY_SHEETS = [
+  ['/todo/new', '/feed', '/mypage'],
+  ['/todo/1/edit', '/feed', '/mypage'],
+  ['/todo/1/actions', '/feed', '/mypage'],
+  ['/todo/1/actions', '/todo/1', '/mypage'],
+  ['/todo/1/date', '/feed', '/mypage'],
+  ['/todo/1/time', '/feed', '/mypage'],
+  ['/todo/1/category', '/feed', '/mypage'],
+  ['/todo/1/sub-todos/2/actions', '/feed', '/mypage'],
+  ['/todo-categories/3/edit', '/settings/category-settings', '/settings/category-settings'],
+  ['/todo-categories/3/delete', '/settings/category-settings', '/settings/category-settings'],
+  ['/suggestions/4/category', '/suggestions', '/mypage'],
+  ['/weather/reschedule', '/weather', '/mypage'],
+] as const;
+
+function InquirySheet() {
+  const sheet = useSheetRoute('/feed');
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => sheet.exit({ type: 'dismiss-to', href: '/settings/inquiry' })}
+    >
+      <Text>시트 문의</Text>
+    </Pressable>
+  );
+}
+
 function FeedScreen() {
   const openMyInvite = useOpenMyInvite();
 
@@ -147,12 +223,24 @@ async function renderApp(initialUrl: string) {
     '(app)/(tabs)/(memos)/_layout': MemoTabLayout,
     '(app)/(tabs)/(me)/_layout': MyPageTabLayout,
     '(app)/(tabs)/(todos)/feed/index': FeedScreen,
-    '(app)/(tabs)/(memos)/memo/index': createScreen('memo'),
+    '(app)/(tabs)/(memos)/memo/index': MemoScreen,
     '(app)/(tabs)/(me)/mypage/index': createScreen('mypage/index'),
     ...sharedScreens,
     '(app)/todo/[todoId]/index': createScreen('todo'),
     '(app)/whats-new/index': createScreen('whats-new'),
-    '(app)/paywall': createScreen('paywall'),
+    '(app)/paywall': PaywallScreen,
+    '(app)/todo/new': InquirySheet,
+    '(app)/todo/[todoId]/edit': InquirySheet,
+    '(app)/todo/[todoId]/actions': InquirySheet,
+    '(app)/todo/[todoId]/date': InquirySheet,
+    '(app)/todo/[todoId]/time': InquirySheet,
+    '(app)/todo/[todoId]/category': InquirySheet,
+    '(app)/todo/[todoId]/sub-todos/[subTodoId]/actions': InquirySheet,
+    '(app)/todo-categories/[categoryId]/edit': InquirySheet,
+    '(app)/todo-categories/[categoryId]/delete': InquirySheet,
+    '(app)/suggestions/index': createScreen('suggestions'),
+    '(app)/suggestions/[suggestionId]/category': InquirySheet,
+    '(app)/weather/reschedule': InquirySheet,
     '(app)/weather/_layout': () => (
       <Stack screenOptions={{ headerShown: false, animation: 'none' }} />
     ),
@@ -234,6 +322,23 @@ describe('탭 Stack 라우팅', () => {
         'settings',
         'subscription',
       ]);
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe('/memo');
+    });
+
+    it('탭 안 오류 문의는 그 탭에 쌓고 뒤로 가면 보던 화면이다', async () => {
+      // Given
+      const route = await renderApp('/memo');
+
+      // When
+      await act(async () => fireEvent.press(screen.getByTestId('query-error-inquiry')));
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(memos)', 'settings', 'inquiry']);
 
       // When
       await act(() => router.back());
@@ -396,6 +501,7 @@ describe('탭 Stack 라우팅', () => {
 
       // Then
       expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(me)', 'reports']);
+      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
 
       // When
       await act(() => router.back());
@@ -403,6 +509,60 @@ describe('탭 Stack 라우팅', () => {
       // Then
       expect(route.getPathname()).toBe('/mypage');
     });
+
+    it('결제 모달에서 연 결제 문의는 모달을 닫고 탭 묶음 하나 안에서 연다', async () => {
+      // Given
+      const route = await renderApp('/memo');
+      await act(() => router.push('/paywall'));
+
+      // When
+      await act(async () => fireEvent.press(screen.getByRole('button', { name: '결제 문의' })));
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(me)', 'settings', 'inquiry']);
+      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe('/mypage');
+    });
+
+    it('결제 모달의 오류 문의도 탭 묶음을 두 겹 쌓지 않는다', async () => {
+      // Given
+      const route = await renderApp('/memo');
+      await act(() => router.push('/paywall'));
+
+      // When
+      await act(async () => fireEvent.press(screen.getByTestId('query-error-inquiry')));
+
+      // Then
+      expect(route.getPathname()).toBe('/settings/inquiry');
+      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+    });
+
+    it.each(INQUIRY_SHEETS)(
+      '%s 시트(%s 위)에서 문의로 떠나면 시트를 닫고 탭 묶음 하나 안에서 연다',
+      async (sheetUrl, underUrl, backPathname) => {
+        // Given
+        const route = await renderApp(underUrl);
+        await act(() => router.push(sheetUrl));
+
+        // When
+        await act(async () => fireEvent.press(screen.getByRole('button', { name: '시트 문의' })));
+
+        // Then
+        expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(me)', 'settings', 'inquiry']);
+        expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+
+        // When
+        await act(() => router.back());
+
+        // Then
+        expect(route.getPathname()).toBe(backPathname);
+      },
+    );
 
     it('할 일 댓글 링크는 탭 위에 열리고 뒤로 가면 할 일 탭이다', async () => {
       // Given

@@ -70,14 +70,14 @@ X.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 <QueryErrorFallback.Inline message={t('friend:list.loadFailed')} reset={reset} hasInquiry />
 ```
 
-route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으로 바꿉니다. `onInquiry`는 초안이 담긴 문의 `href`를 받으므로
-`sheet.close({ type: 'replace', href })`로 넘깁니다(문의에서 돌아오면 시트 아래 화면). `RouteBottomSheet`가 이 경계를 갖고 있어 시트는 경계를 다시 두지 않습니다. 경계가 시트 밖에 있는
+route 시트 안에서는 시트를 먼저 닫고 문의 화면을 엽니다. `onInquiry`는 초안이 담긴 문의 `href`를 받으므로
+`sheet.close({ type: 'dismiss-to', href })`로 넘깁니다. 문의는 탭 화면이라 시트와 그 아래 탭 위 화면을 닫고 탭 묶음 하나 안에서 엽니다(`router.dismissTo`). `RouteBottomSheet`가 이 경계를 갖고 있어 시트는 경계를 다시 두지 않습니다. 경계가 시트 밖에 있는
 폼 시트만 fallback이 `sheet`를 받을 수 있게 경계에서 넘깁니다.
 
 ```tsx
 <QueryErrorBoundary
   fallback={(fallbackProps) => (
-    <X.Error {...fallbackProps} onInquiry={(href) => sheet.close({ type: 'replace', href })} />
+    <X.Error {...fallbackProps} onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })} />
   )}
 >
 ```
