@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createTestDi, createTestQueryClient } from '@src/testing/core';
+import { createTestDi, createTestQueryClient, deliverQueryNotifications } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
@@ -46,5 +46,38 @@ describe('EditNameForm', () => {
 
     // Then
     expect(screen.getByTestId('edit-name-input').props.value).toBe('새 이름');
+  });
+
+  it('고치는 중에 서버 이름이 다시 받아져도 저장 버튼은 켜진 채 남는다', async () => {
+    // Given
+    const { queryClient } = await renderForm('처음 이름');
+    await fireEvent.changeText(screen.getByTestId('edit-name-input'), '새 이름');
+    await waitFor(() => expect(screen.getByTestId('edit-name-submit')).toBeEnabled());
+
+    // When
+    await act(async () => {
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ name: '다른 기기 이름' }));
+      await deliverQueryNotifications();
+    });
+
+    // Then
+    expect(screen.getByTestId('edit-name-submit')).toBeEnabled();
+  });
+
+  it('칸 오류는 서버 이름을 다시 받아도 남는다', async () => {
+    // Given
+    const { queryClient } = await renderForm('처음 이름');
+    await fireEvent.changeText(screen.getByTestId('edit-name-input'), '');
+    expect(await screen.findByText('이름을 입력해주세요')).toBeTruthy();
+
+    // When
+    await act(async () => {
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ name: '다른 기기 이름' }));
+      await deliverQueryNotifications();
+    });
+
+    // Then
+    expect(screen.getByText('이름을 입력해주세요')).toBeTruthy();
+    expect(screen.getByTestId('edit-name-submit')).toBeDisabled();
   });
 });

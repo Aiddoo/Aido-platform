@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -99,7 +100,7 @@ function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps
   const form = useForm({
     resolver: zodResolver(todoCategoryFormSchema),
     values: toTodoCategoryFormValues(category),
-    resetOptions: { keepDirtyValues: true },
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
     mode: 'onChange',
   });
   const { isSubmitting } = useFormState({ control: form.control });

@@ -11,6 +11,10 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { ANIMATION } from '@src/shared/constants/animation';
+import {
+  SAVED_VALUES_RESET_OPTIONS,
+  SERVER_VALUES_RESET_OPTIONS,
+} from '@src/shared/constants/server-values-reset-options';
 import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
@@ -562,7 +566,7 @@ function useMemoForm({ memo, accountId }: { memo: Memo; accountId: string }) {
   const form = useForm({
     resolver: zodResolver(memoFormSchema),
     values: savedValues,
-    resetOptions: { keepDirtyValues: true },
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
   const { isDirty, isValid } = useFormState({ control: form.control });
   const [isEditing, setIsEditing] = useState(restoredDraft != null);
@@ -640,7 +644,7 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
       }
       match(andThen)
         .with('finish', () => {
-          form.reset({ content: savedMemo.content });
+          form.reset({ content: savedMemo.content }, SAVED_VALUES_RESET_OPTIONS);
           discardDraft();
           onFinish();
           Keyboard.dismiss();
@@ -652,7 +656,7 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
         .with('stay', () => {
           // 응답을 기다리는 사이 더 친 글자는 지우지 않는다
           if (form.getValues('content') === content) {
-            form.reset({ content: savedMemo.content });
+            form.reset({ content: savedMemo.content }, SAVED_VALUES_RESET_OPTIONS);
             discardDraft();
           }
         })

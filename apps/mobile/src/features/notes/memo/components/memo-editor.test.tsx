@@ -20,6 +20,7 @@ import {
   createTestDi,
   createTestQueryClient,
   createVoiceNoteStorageFake,
+  deliverQueryNotifications,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
@@ -178,7 +179,8 @@ describe('MemoEditor', () => {
       }),
     );
     await waitFor(() => expect(screen.queryByLabelText('저장')).toBeNull());
-    expect(screen.getByDisplayValue('고친 메모')).toBeTruthy();
+    // 입력칸은 저장한 글로 돌아간다(공백을 그대로 비교한다)
+    expect(screen.getByDisplayValue('고친 메모', { normalizer: (text) => text })).toBeTruthy();
   });
 
   it('공백만 넣고 저장하면 요청 없이 편집을 끝낸다', async () => {
@@ -249,6 +251,62 @@ describe('MemoEditor', () => {
 
     // Then
     expect(await screen.findByDisplayValue(expected)).toBeTruthy();
+  });
+
+  it.each([
+    { scenario: '고치던 글자', draft: undefined, edited: '쓰던 글', expected: '쓰던 글' },
+    {
+      scenario: '복원한 초안',
+      draft: '앱을 닫기 전 글',
+      edited: null,
+      expected: '앱을 닫기 전 글',
+    },
+  ])(
+    '$scenario는 고치는 사이 서버 글이 바뀌어도 뒤로 갈 때 저장한다',
+    async ({ draft, edited, expected }) => {
+      // Given
+      const { httpClient, queryClient, onLeave } = await renderEditor('stack', { draft });
+      httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+      await screen.findByDisplayValue(draft ?? '처음 메모');
+      if (edited != null) {
+        await editContent(edited);
+      }
+      await act(async () => {
+        queryClient.setQueryData(
+          MEMO_QUERY_KEYS.detail({ memoId: MEMO_ID }),
+          createMemo({ id: MEMO_ID, content: '다른 기기에서 고친 메모' }),
+        );
+        await deliverQueryNotifications();
+      });
+
+      // When
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      });
+
+      // Then
+      await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+      expect(httpClient.patch).toHaveBeenCalledTimes(1);
+      expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}`, { content: expected });
+    },
+  );
+
+  it('복원한 초안은 열자마자 뒤로 가도 저장한다', async () => {
+    // Given
+    const { httpClient, onLeave } = await renderEditor('stack', { draft: '앱을 닫기 전 글' });
+    httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+    await screen.findByDisplayValue('앱을 닫기 전 글');
+
+    // When
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+    });
+
+    // Then
+    await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+    expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}`, {
+      content: '앱을 닫기 전 글',
+    });
   });
 
   describe('고치던 글자가 있을 때 메뉴', () => {

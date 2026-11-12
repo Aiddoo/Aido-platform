@@ -11,6 +11,7 @@ import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/to
 import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useSheetTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import type { DateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
@@ -115,7 +116,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
   const form = useForm({
     resolver: zodResolver(todoFormSchema),
     values: savedValues,
-    resetOptions: { keepDirtyValues: true },
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
   const { isSubmitting, isValid } = useFormState({ control: form.control });
   const updateTodo = useMutation(useUpdateTodoMutationOptions());

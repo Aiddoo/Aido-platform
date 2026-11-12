@@ -6,6 +6,7 @@ import { useSheetSubTodo } from '@src/features/planning/todo/hooks/use-sheet-tod
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { useUpdateSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
@@ -53,7 +54,7 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
   const form = useForm({
     resolver: zodResolver(subTodoFormSchema),
     values: { title: subTodo.title },
-    resetOptions: { keepDirtyValues: true },
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
   const { isValid } = useFormState({ control: form.control });
   const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
