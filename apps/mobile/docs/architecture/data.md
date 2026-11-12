@@ -109,7 +109,7 @@ export const NOTIFICATION_QUERY_KEYS = {
 
 ## 무효화
 
-1. `queryClient`는 `queries/{feature}-cache.ts`만 만진다. 컴포넌트·훅·route는 helper(`invalidate{X}`, `set{X}InCache`)를 부른다.
+1. `queryClient`는 `queries/{feature}-cache.ts`만 만진다(앱 조립 `bootstrap/**`과 공용 도구 `shared/query/**`는 예외, [guardrails](./guardrails.md)). 컴포넌트·훅·route는 helper(`invalidate{X}`, `set{X}InCache`)를 부른다.
 2. mutation 옵션이 캐시 효과를 모두 갖는다. `onSuccess`는 응답을 캐시에 쓰고 무효화는 `onSettled`에 둔다. 같은 무효화를 `onSuccess`·`onError`에 두 번 쓰지 않고, 방금 set한 키를 다시 invalidate하지 않는다.
 3. 다른 기능에 미치는 효과는 쿼리 옵션의 `meta.refreshOn*`(`refreshOnPremiumChange`)나 그 기능이 내보낸 helper로만 한다. 남의 `all`을 무효화하지 않는다. 바뀐 것만 무효화하고, 범위를 모를 때(반복 묶음, 카테고리 삭제, 언어 변경)만 넓게 쓴다.
 4. 당겨서 새로고침은 기능마다 `refresh{Feature}(queryClient)` 하나이고 활성 쿼리만 다시 받는다. 표시는 `useRefresh`가 당긴 동안만 한다.
