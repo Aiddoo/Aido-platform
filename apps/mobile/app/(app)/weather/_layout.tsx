@@ -3,8 +3,8 @@ import Refresh from '@expo/material-symbols/refresh.xml';
 import { WeatherLocationPolicy } from '@src/features/weather/domains/weather-location.model';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
 import {
-  refetchWeather,
   getWeatherReportsFilters,
+  refreshWeather,
 } from '@src/features/weather/queries/weather-cache';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -64,7 +64,7 @@ export default function WeatherLayout() {
             accessibilityLabel={t('attribution.refresh')}
             hidden={!isSkyScene}
             disabled={isRefreshing}
-            onPress={() => refetchWeather(queryClient)}
+            onPress={() => refreshWeather(queryClient)}
           >
             {t('attribution.refresh')}
           </Stack.Toolbar.Button>
