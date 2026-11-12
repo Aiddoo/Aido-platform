@@ -284,13 +284,17 @@ TodoRepeatPicker.RepeatSummary = function RepeatSummary({ form }: { form: Repeat
   );
 };
 
-interface RepeatPickerTitleBarProps {
+interface TodoRepeatPickerHeaderProps {
   form: RepeatForm;
   onChange: (value: RepeatPickerValue) => void;
   onCancel: () => void;
 }
 
-TodoRepeatPicker.Header = function Header({ form, onChange, onCancel }: RepeatPickerTitleBarProps) {
+TodoRepeatPicker.Header = function Header({
+  form,
+  onChange,
+  onCancel,
+}: TodoRepeatPickerHeaderProps) {
   const { t } = useTranslation('todo');
   const { isValid } = useFormState({ control: form.control });
 

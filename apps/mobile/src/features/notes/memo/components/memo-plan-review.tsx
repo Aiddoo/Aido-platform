@@ -36,7 +36,7 @@ export function MemoPlanReview() {
   const toast = useAppToast();
   const refreshMemos = useRefreshMemos();
   const [memoId] = useMemoId();
-  const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
+  const [{ data: memo }, { data: me }, { data: categoriesResult }] = useSuspenseQueries({
     queries: [
       useGetMemoQueryOptions({ memoId }),
       useGetMeQueryOptions(),
@@ -46,7 +46,7 @@ export function MemoPlanReview() {
     ],
   });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
-    createMemoPlanDraftKey({ userId: user.id, memoId, timeZone }),
+    createMemoPlanDraftKey({ userId: me.id, memoId, timeZone }),
     { sourceUpdatedAt: toEpochMs(memo.updatedAt) },
   );
   const fallbackCategoryId = TodoCategoryPolicy.getInitialCategoryId(

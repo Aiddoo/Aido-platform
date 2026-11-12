@@ -106,6 +106,7 @@ const MEMO_REORDER_LAYOUT_ANIMATION = {
 } satisfies LayoutAnimationConfig;
 const TITLE_LINE_COUNT_WITH_BODY = 2;
 const TITLE_LINE_COUNT_ALONE = 4;
+const BODY_LINE_COUNT = 3;
 
 interface MemoListProps {
   /** 목록 위에 함께 스크롤되는 머리말(말로 남긴 메모 초안) */
@@ -354,7 +355,12 @@ MemoList.Item = function Item({
               )}
             </HStack>
             {body.length > 0 && (
-              <Text size="b4" shade={6} numberOfLines={3} lineBreakStrategyIOS="hangul-word">
+              <Text
+                size="b4"
+                shade={6}
+                numberOfLines={BODY_LINE_COUNT}
+                lineBreakStrategyIOS="hangul-word"
+              >
                 {body}
               </Text>
             )}

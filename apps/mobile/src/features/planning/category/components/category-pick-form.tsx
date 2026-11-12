@@ -33,7 +33,7 @@ export function CategoryPickForm({
   const {
     data: { categories },
   } = useSuspenseQuery(useGetTodoCategoriesQueryOptions({ filters }));
-  const [localCategoryId, setLocalCategoryId] = useState(defaultValue);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(defaultValue);
 
   return (
     <VStack gap={20}>
@@ -43,11 +43,11 @@ export function CategoryPickForm({
 
       {/* 하나만 고르는 목록이라 스크린 리더에 라디오와 선택 상태로 알린다. 눌림 면은 그대로 둔다 */}
       <RadioGroup
-        value={String(localCategoryId)}
+        value={String(selectedCategoryId)}
         onValueChange={(value) => {
           const category = categories.find(({ id }) => String(id) === value);
           if (category != null) {
-            setLocalCategoryId(category.id);
+            setSelectedCategoryId(category.id);
           }
         }}
         className="gap-2"
@@ -97,7 +97,7 @@ export function CategoryPickForm({
       <Button
         size="large"
         testID="category-select-submit"
-        onPress={() => onSubmit(localCategoryId)}
+        onPress={() => onSubmit(selectedCategoryId)}
         isLoading={isLoading}
       >
         {submitLabel}

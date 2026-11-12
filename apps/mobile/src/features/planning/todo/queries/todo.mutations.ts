@@ -285,7 +285,7 @@ export function useDeleteTodoMutationOptions() {
 }
 
 interface ReorderTodoVariables {
-  id: number;
+  todoId: number;
   input: TodoReorder;
 }
 
@@ -298,8 +298,8 @@ export function useReorderTodoMutationOptions() {
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ id, input }: ReorderTodoVariables) => {
-      const result = await todoApi.reorderTodo(id, input);
+    mutationFn: async ({ todoId, input }: ReorderTodoVariables) => {
+      const result = await todoApi.reorderTodo(todoId, input);
       return unwrap(result);
     },
     onSuccess: () => {
@@ -309,8 +309,8 @@ export function useReorderTodoMutationOptions() {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_reorder' });
       }
     },
-    onSettled: (_data, _error, { id }) => {
-      settleTodoReorder(queryClient, { todoId: id });
+    onSettled: (_data, _error, { todoId }) => {
+      settleTodoReorder(queryClient, { todoId });
     },
     meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.changeFailedRetry' } },
   });

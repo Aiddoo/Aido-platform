@@ -33,13 +33,15 @@ import {
   useGetTodoCategoryDeletionPreviewQueryOptions,
 } from '../queries/todo-category.queries';
 
+const ROW_TRAILING_FADE_IN_MS = 250;
+
 /** 카드 안에 그리는 행만 둔다. 카드와 제목은 화면이 감싼다 */
 export function CategoryList() {
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
   return (
     <FlashList
-      data={data.categories}
+      data={categoriesResult.categories}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => <CategoryList.EditItem category={item} />}
       ItemSeparatorComponent={SettingsListGroup.Separator}
@@ -49,10 +51,12 @@ export function CategoryList() {
 
 /** 길게 눌러 옮긴다. 끌어 올린 행이 구분선을 끌고 다니지 않게 구분선 없이 그린다 */
 CategoryList.Reorder = function Reorder() {
-  const { data, dataUpdatedAt } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: categoriesResult, dataUpdatedAt } = useSuspenseQuery(
+    useGetTodoCategoriesQueryOptions(),
+  );
   const reorderCategory = useMutation(useReorderTodoCategoryMutationOptions());
   const reorderableList = useReorderableList({
-    items: data.categories,
+    items: categoriesResult.categories,
     updatedAt: dataUpdatedAt,
     isPending: reorderCategory.isPending,
     getItemId: (category) => category.id,
@@ -105,7 +109,10 @@ function CategoryRow({ category, right }: CategoryRowProps) {
         </VStack>
       }
       right={
-        <Animated.View entering={FadeIn.duration(250)} className="h-9 justify-center">
+        <Animated.View
+          entering={FadeIn.duration(ROW_TRAILING_FADE_IN_MS)}
+          className="h-9 justify-center"
+        >
           {right}
         </Animated.View>
       }

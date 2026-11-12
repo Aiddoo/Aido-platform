@@ -122,12 +122,12 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   );
 };
 
-interface CategoryHeaderProps {
+interface CategoryAddPillProps {
   category: TodoCategoryWithCount;
   date: DateKey;
 }
 
-function CategoryAddPill({ category, date }: CategoryHeaderProps) {
+function CategoryAddPill({ category, date }: CategoryAddPillProps) {
   const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
@@ -175,7 +175,7 @@ function TodoReorderableList({
     isOptimistic: TodoPolicy.isOptimisticTodo,
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderMutation.mutate({
-        id: movedId,
+        todoId: movedId,
         input: { targetTodoId: targetId, position },
       });
     },

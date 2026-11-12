@@ -338,7 +338,7 @@ FriendFeed.RouteFriend = function RouteFriend() {
 
 // <Redirect>는 피드 탭 첫 화면을 replace해 화면이 다시 마운트된다. 같은 화면에서 친구 선택만 지운다
 function ReturnToMyFeed() {
-  const [_friendId, selectFriend] = useFeedFriendId();
+  const [, selectFriend] = useFeedFriendId();
 
   useEffect(() => {
     selectFriend(undefined);
