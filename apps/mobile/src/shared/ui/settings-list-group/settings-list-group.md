@@ -162,9 +162,20 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 `Result` props와 같아요(`icon`, `title`, `description`, `testID`). 빈 목록을 점선 카드 안에 그려요.
 
-### SettingsListGroup.Content
+### SettingsListGroup.Value
 
-행 모양이 아닌 내용을 행과 같은 여백으로 담아요. `VStack` props와 같아요.
+`.Item`의 `value`에 넣는 값 글자예요(현재 설정·개수·상태). `Text` props에서 `size`·`shade`를 뺀 것과 같아요(`b3`, `shade 7` 고정). 조회해야 아는 값은 값만 그리는 컴포넌트가 자기 경계로 읽어 이것을 돌려줘요(`FriendCountValue`).
+
+```tsx
+<SettingsListGroup.Item
+  label={t('settings.weatherLabel')}
+  value={<SettingsListGroup.Value>{t('settings.on')}</SettingsListGroup.Value>}
+/>
+```
+
+### SettingsListGroup.Custom
+
+행 모양이 아닌 내용을 직접 그리는 칸이에요. 행과 같은 여백으로 담아요. `VStack` props와 같아요.
 
 ### SettingsListGroup.Error
 

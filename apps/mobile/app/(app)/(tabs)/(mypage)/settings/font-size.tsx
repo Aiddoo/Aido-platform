@@ -22,14 +22,14 @@ function FontSizeSettingsScreen() {
     <SettingsScreenLayout>
       {/* 고르는 즉시 앱 전체 글꼴이 바뀌어 미리 보기도 고른 크기로 다시 그려진다 */}
       <SettingsListGroup label={t('fontSize.previewLabel')}>
-        <SettingsListGroup.Content gap={2}>
+        <SettingsListGroup.Custom gap={2}>
           <Text size="b2" shade={8} lineBreakStrategyIOS="hangul-word">
             {t('fontSize.previewTitle')}
           </Text>
           <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
             {t('fontSize.previewDescription')}
           </Text>
-        </SettingsListGroup.Content>
+        </SettingsListGroup.Custom>
       </SettingsListGroup>
 
       <SettingsListGroup label={t('fontSize.label')}>

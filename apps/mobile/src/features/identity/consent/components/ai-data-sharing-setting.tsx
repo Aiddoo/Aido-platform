@@ -54,7 +54,7 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
         isDisabled={updateConsent.isPending}
         testID="ai-data-sharing-toggle"
       />
-      <SettingsListGroup.Content className="pt-0">
+      <SettingsListGroup.Custom className="pt-0">
         {match(consent)
           .with(
             {
@@ -92,7 +92,7 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
             </HStack>
           ))
           .exhaustive()}
-      </SettingsListGroup.Content>
+      </SettingsListGroup.Custom>
     </SettingsListGroup>
   );
 }

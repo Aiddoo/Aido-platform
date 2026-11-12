@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Text } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -21,8 +21,8 @@ function FriendCount() {
   const { data } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
 
   return (
-    <Text size="b3" shade={7} className="tabular-nums">
+    <SettingsListGroup.Value className="tabular-nums">
       {t('list.countValue', { count: data.totalCount })}
-    </Text>
+    </SettingsListGroup.Value>
   );
 }

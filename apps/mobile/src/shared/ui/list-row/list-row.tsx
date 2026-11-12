@@ -7,7 +7,6 @@ import type { ViewProps } from 'react-native';
 import type { VariantProps } from 'tailwind-variants';
 
 import { Box } from '../box';
-import { ListRowImage } from './list-row-image';
 import { ListRowTexts } from './list-row-texts';
 
 const listRowVariants = tv({
@@ -114,5 +113,5 @@ export function ListRow({
   );
 }
 
+// `.Loading`을 단 부속은 함수 선언이어야 TS가 그 속성을 안다
 ListRow.Texts = ListRowTexts;
-ListRow.Image = ListRowImage;

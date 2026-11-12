@@ -137,7 +137,7 @@ AppIconSelector.Error = function ErrorFallback({ reset }: QueryErrorFallbackProp
   const { t } = useTranslation('appIcon');
 
   return (
-    <SettingsListGroup.Content>
+    <SettingsListGroup.Custom>
       <QueryErrorFallback
         className="py-4"
         illustrationSize="block"
@@ -145,6 +145,6 @@ AppIconSelector.Error = function ErrorFallback({ reset }: QueryErrorFallbackProp
         description={t('errorDialog.description')}
         reset={reset}
       />
-    </SettingsListGroup.Content>
+    </SettingsListGroup.Custom>
   );
 };

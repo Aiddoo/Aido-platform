@@ -1,5 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Text } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -22,8 +22,8 @@ function LinkedAccountCount() {
   const linkedCount = data.accounts.filter((account) => account.linked).length;
 
   return (
-    <Text size="b3" shade={7} className="tabular-nums" testID="linked-account-count-value">
+    <SettingsListGroup.Value className="tabular-nums" testID="linked-account-count-value">
       {t('linkedAccounts.countValue', { count: linkedCount })}
-    </Text>
+    </SettingsListGroup.Value>
   );
 }

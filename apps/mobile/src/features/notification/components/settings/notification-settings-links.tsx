@@ -8,7 +8,6 @@ import {
   BellDuoIcon,
   ReminderDuoIcon,
   SettingsListGroup,
-  Text,
   TextSkeleton,
   WeatherDuoIcon,
 } from '@src/shared/ui';
@@ -51,7 +50,7 @@ export function NotificationSettingsLinks(props: SettingsSectionProps) {
       <SettingsListGroup.Item
         icon={<SettingsListGroup.Icon Icon={ReminderDuoIcon} />}
         label={t('settings.reminderLabel')}
-        value={<SummaryText>{reminderTimes}</SummaryText>}
+        value={<SettingsListGroup.Value>{reminderTimes}</SettingsListGroup.Value>}
         onPress={() => push('/settings/notifications/reminder')}
         isDisabled={!preference.pushEnabled}
       />
@@ -60,22 +59,14 @@ export function NotificationSettingsLinks(props: SettingsSectionProps) {
         icon={<SettingsListGroup.Icon Icon={WeatherDuoIcon} />}
         label={t('settings.weatherLabel')}
         value={
-          <SummaryText>
+          <SettingsListGroup.Value>
             {PreferencePolicy.isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')}
-          </SummaryText>
+          </SettingsListGroup.Value>
         }
         onPress={() => push('/settings/notifications/weather')}
         isDisabled={!preference.pushEnabled}
       />
     </SettingsListGroup>
-  );
-}
-
-function SummaryText({ children }: { children: string }) {
-  return (
-    <Text size="b3" shade={7}>
-      {children}
-    </Text>
   );
 }
 

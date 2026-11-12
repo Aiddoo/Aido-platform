@@ -13,7 +13,7 @@ import { QueryErrorFallback, type QueryErrorFallbackProps } from '../query-error
 import { ReadableContent } from '../readable-content';
 import { Result } from '../result';
 import { SafeAreaScrollView } from '../safe-area-scroll-view';
-import { Text, TextSkeleton } from '../text';
+import { Text, type TextProps, TextSkeleton } from '../text';
 import { VStack } from '../v-stack';
 
 export interface SettingsListGroupProps extends ComponentProps<typeof ListGroup> {
@@ -186,7 +186,7 @@ SettingsListGroupToggle.Loading = function Loading({
 const ITEM_ICON_TILE_SIZE = 30;
 const ITEM_ICON_SIZE = 18;
 
-function SettingsListGroupIcon({ Icon }: { Icon: StyledIcon }) {
+SettingsListGroup.Icon = function Icon({ Icon: Glyph }: { Icon: StyledIcon }) {
   const fontScaledSize = useFontScaledSize();
   const tileSize = fontScaledSize(ITEM_ICON_TILE_SIZE);
   const iconSize = fontScaledSize(ITEM_ICON_SIZE);
@@ -198,10 +198,10 @@ function SettingsListGroupIcon({ Icon }: { Icon: StyledIcon }) {
       className="items-center justify-center rounded-[9px] bg-main/10"
       style={{ width: tileSize, height: tileSize }}
     >
-      <Icon width={iconSize} height={iconSize} colorClassName="text-main" />
+      <Glyph width={iconSize} height={iconSize} colorClassName="text-main" />
     </Box>
   );
-}
+};
 
 interface SettingsListGroupRadioProps extends Omit<
   ComponentProps<typeof RadioGroup.Item>,
@@ -268,7 +268,7 @@ interface SettingsListGroupSegmentProps extends ComponentProps<typeof Box> {
 }
 
 /** 가상 목록의 행 하나를 카드 조각으로 그린다. 행마다 그려도 이어 붙이면 `SettingsListGroup` 한 장처럼 보인다 */
-function SettingsListGroupSegment({
+SettingsListGroup.Segment = function Segment({
   isFirst,
   isLast,
   label,
@@ -286,24 +286,28 @@ function SettingsListGroupSegment({
       {children}
     </Box>
   );
-}
+};
 
+// `.Loading`을 단 부속은 함수 선언이어야 TS가 그 속성을 안다
 SettingsListGroup.Item = SettingsListGroupItem;
-SettingsListGroup.Icon = SettingsListGroupIcon;
 SettingsListGroup.Toggle = SettingsListGroupToggle;
 SettingsListGroup.Radio = SettingsListGroupRadio;
-SettingsListGroup.Segment = SettingsListGroupSegment;
 
-SettingsListGroup.Content = function Content(props: ComponentProps<typeof VStack>) {
+/** 행 오른쪽 값 글자(현재 설정·개수·상태). 화살표 앞에 같은 크기·색으로 놓인다 */
+SettingsListGroup.Value = function Value(props: Omit<TextProps, 'size' | 'shade'>) {
+  return <Text size="b3" shade={7} {...props} />;
+};
+
+SettingsListGroup.Custom = function Custom(props: ComponentProps<typeof VStack>) {
   return <VStack px={16} py={12} gap={12} {...props} />;
 };
 
 SettingsListGroup.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   return (
     <SettingsListGroup>
-      <SettingsListGroup.Content>
+      <SettingsListGroup.Custom>
         <QueryErrorFallback className="py-4" illustrationSize="block" reset={reset} />
-      </SettingsListGroup.Content>
+      </SettingsListGroup.Custom>
     </SettingsListGroup>
   );
 };

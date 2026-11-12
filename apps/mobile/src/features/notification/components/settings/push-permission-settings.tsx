@@ -27,9 +27,9 @@ export function PushPermissionSettings() {
           <SettingsListGroup.Item
             label={t('permission.status.label')}
             value={
-              <Text size="b3" shade={7} testID="push-permission-status">
+              <SettingsListGroup.Value testID="push-permission-status">
                 {t('permission.status.granted')}
-              </Text>
+              </SettingsListGroup.Value>
             }
             onPress={() => openSettings.mutate({})}
             isDisabled={openSettings.isPending}

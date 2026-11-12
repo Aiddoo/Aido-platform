@@ -52,7 +52,7 @@ export function VoiceStorageUsage() {
           <StyledSafeAreaView edges={['left', 'right']}>
             <ReadableContent className="px-4 pb-3 pt-5">
               <SettingsListGroup label={t('voiceStorage.totalLabel')}>
-                <SettingsListGroup.Content gap={4}>
+                <SettingsListGroup.Custom gap={4}>
                   <Text
                     size="t2"
                     weight="bold"
@@ -64,7 +64,7 @@ export function VoiceStorageUsage() {
                   <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
                     {t('voiceStorage.description')}
                   </Text>
-                </SettingsListGroup.Content>
+                </SettingsListGroup.Custom>
               </SettingsListGroup>
             </ReadableContent>
           </StyledSafeAreaView>
@@ -135,10 +135,10 @@ VoiceStorageUsage.Loading = function Loading() {
   return (
     <SettingsScreenLayout scrollEnabled={false}>
       <SettingsListGroup label={t('voiceStorage.totalLabel')}>
-        <SettingsListGroup.Content gap={4}>
+        <SettingsListGroup.Custom gap={4}>
           <TextSkeleton size="t2" className="w-32" />
           <TextSkeleton size="b4" className="w-full" />
-        </SettingsListGroup.Content>
+        </SettingsListGroup.Custom>
       </SettingsListGroup>
     </SettingsScreenLayout>
   );

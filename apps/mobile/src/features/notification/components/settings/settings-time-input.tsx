@@ -9,7 +9,6 @@ import {
   HStack,
   openAndroidTimePicker,
   SettingsListGroup,
-  Text,
   TimeSpinner,
   useOpenSheet,
   VStack,
@@ -96,9 +95,9 @@ export function SettingsTimeInput({
       value={
         <HStack align="center" gap={4}>
           {accessory}
-          <Text size="b3" shade={7}>
+          <SettingsListGroup.Value>
             {formatTimeOfDay(value, timeFormat, dateFormatContext)}
-          </Text>
+          </SettingsListGroup.Value>
         </HStack>
       }
       onPress={handlePress}

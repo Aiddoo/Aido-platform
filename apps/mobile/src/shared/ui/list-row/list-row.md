@@ -8,7 +8,6 @@
 list-row/
 ├── list-row.tsx         # 메인 컴포넌트
 ├── list-row-texts.tsx   # 텍스트 서브 컴포넌트
-├── list-row-image.tsx   # 왼쪽 이미지 서브 컴포넌트
 ├── list-row.md          # 이 문서
 └── index.ts
 ```
@@ -365,14 +364,6 @@ const MemoizedListRow = React.memo(({ item }) => (
     contents={<ListRow.Texts type="2RowTypeA" top={item.name} bottom={item.role} />}
   />
 ));
-```
-
-## ListRow.Image
-
-목록 왼쪽의 작은 이미지다. 크기는 `small`(32), `medium`(48), `large`(64)이고 공용 `Image`로 그린다.
-
-```tsx
-<ListRow left={<ListRow.Image source={source} size="medium" rounded />} />
 ```
 
 ## 누르는 행

@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 import { Box } from '../box';
 import { VStack } from '../v-stack/v-stack';
 import { SHARED_SHEET_STYLES, SHEET_CONTENT_PADDING } from './bottom-sheet.constants';
-import { SheetScrollArea } from './sheet-scroll-area';
+import { SheetScrollView } from './sheet-scroll-view';
 
 export const SheetFixedHeaderContext = createContext(false);
 
@@ -31,7 +31,7 @@ export function SheetHeaderLayout({ header, footer, gap, children }: SheetHeader
   return (
     <Box style={styles.layout}>
       <Box style={{ paddingBottom: gap }}>{header}</Box>
-      <SheetScrollArea
+      <SheetScrollView
         style={footer == null ? styles.bleedToBottom : styles.bleed}
         contentContainerStyle={[
           styles.body,
@@ -39,7 +39,7 @@ export function SheetHeaderLayout({ header, footer, gap, children }: SheetHeader
         ]}
       >
         {children}
-      </SheetScrollArea>
+      </SheetScrollView>
       {footer}
     </Box>
   );

@@ -232,7 +232,7 @@ bottom-sheet/
 ├── portal-target.ts                   # HeroUI *.Portal에 넘길 호스트
 ├── sheet-footer-slot.tsx              # footer가 바뀌어도 다시 마운트되지 않고, 첫 높이를 그리기 전에 재는 슬롯
 ├── sheet-header-layout.tsx            # 머리글 고정 + 본문 스크롤 (hasFixedHeader 시트의 내용)
-├── sheet-scroll-area.tsx              # 넘칠 때 스크롤 막대·`ScrollShadow` 흐림을 보이는 시트 스크롤
+├── sheet-scroll-view.tsx              # 넘칠 때 스크롤 막대·`ScrollFade` 흐림을 보이는 시트 스크롤
 ├── sheet-route.ts                     # 시트 route Stack 옵션과 route 떠나기 규칙
 ├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + 크기 확정 대기 + Overlay)
 ├── use-sheet-route.ts                 # 시트 route의 열림 상태와 한 번만 떠나기
