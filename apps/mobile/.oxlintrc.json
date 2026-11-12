@@ -1005,7 +1005,8 @@
         "src/features/engagement/comment/apis/**",
         "src/features/engagement/comment/schemas/**",
         "src/features/engagement/comment/utils/**",
-        "src/features/engagement/comment/components/**"
+        "src/features/engagement/comment/components/**",
+        "src/features/engagement/comment/__tests__/**"
       ],
       "rules": {
         "aido/todo-comment-test-location": "error"
@@ -1013,7 +1014,8 @@
     },
     {
       "files": [
-        "src/features/engagement/comment/components/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"
+        "src/features/engagement/comment/components/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/features/engagement/comment/__tests__/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"
       ],
       "rules": {
         "aido/todo-comment-test-location": [
