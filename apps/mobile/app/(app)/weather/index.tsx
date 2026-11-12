@@ -15,9 +15,11 @@ import { WeatherReportGate } from '@src/features/weather/components/weather-repo
 import { WeatherScrollView } from '@src/features/weather/components/weather-scroll-view';
 import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon/weather-sun-moon';
 import type { WeatherLocationStatus } from '@src/features/weather/domains/weather-location.model';
-import { useForecastCompletionsQueryOptions } from '@src/features/weather/hooks/use-forecast-completions-query-options';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
-import { useWeatherLocationRevision } from '@src/features/weather/queries/weather.queries';
+import {
+  useGetForecastCompletionsQueryOptions,
+  useWeatherLocationRevision,
+} from '@src/features/weather/queries/weather.queries';
 import { weatherEntryParamsSchema } from '@src/features/weather/schemas/weather-entry-params.schema';
 import {
   toWeatherLocationRegisteredResult,
@@ -135,7 +137,7 @@ export default function WeatherScreen() {
 
 function ForecastCards() {
   // 리포트를 기다리는 블록 안에서 받으면 할 일 점 조회가 리포트 응답 뒤에 나간다
-  usePrefetchQuery(useForecastCompletionsQueryOptions());
+  usePrefetchQuery(useGetForecastCompletionsQueryOptions());
 
   return (
     <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>

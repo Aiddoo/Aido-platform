@@ -28,11 +28,14 @@ import {
 import { FORECAST_DAYS, VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
 import { getTodayKey } from '../domains/weather-report.model';
 import type { DailyForecastEntry } from '../domains/weather-report.model';
-import { useForecastCompletionsQueryOptions } from '../hooks/use-forecast-completions-query-options';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
-import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import {
+  useGetForecastCompletionsQueryOptions,
+  useGetWeatherReportQueryOptions,
+  WeatherReportSelect,
+} from '../queries/weather.queries';
 import { getTemperatureColor } from '../utils/temperature-color.view-model';
 import {
   type TemperatureBar,
@@ -75,7 +78,7 @@ export function DailyForecast() {
       useGetPreferenceQueryOptions(),
     ],
   });
-  const { data: completions } = useQuery(useForecastCompletionsQueryOptions());
+  const { data: completions } = useQuery(useGetForecastCompletionsQueryOptions());
   const fontScaleRatio = useFontScaleRatio();
   const dateFormat = useLocationDateFormat(weather.location.timezone);
   const now = useMinuteNow();
