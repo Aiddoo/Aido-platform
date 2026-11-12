@@ -13,6 +13,7 @@ import {
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { updateCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
+import { invalidateAfterBlockChange } from '@src/features/social/moderation/queries/moderation-cache';
 import { NetworkError, ServerError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
@@ -417,6 +418,31 @@ describe('TodoDetailRoute', () => {
 
       // Then
       expect(router.replace).toHaveBeenCalledWith('/feed');
+    });
+  });
+
+  describe('할 일 상세와 차단', () => {
+    it('보던 할 일의 주인을 차단하면 다시 받아 본문 대신 볼 수 없음 안내를 보인다', async () => {
+      // Given
+      const { httpClient, queryClient } = await renderTodoDetail({ details: FRIEND_DETAILS });
+      const respond = httpClient.get.getMockImplementation();
+      httpClient.get.mockImplementation(async (path, config) => {
+        if (path === `v1/todos/${TODO_ID}/details`) {
+          return err(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
+        }
+        if (respond == null) {
+          throw new Error('응답을 정하지 않았습니다');
+        }
+        return respond(path, config);
+      });
+
+      // When
+      await act(async () => {
+        await invalidateAfterBlockChange(queryClient);
+      });
+
+      // Then
+      expect(await screen.findByTestId('todo-unavailable')).toBeOnTheScreen();
     });
   });
 
