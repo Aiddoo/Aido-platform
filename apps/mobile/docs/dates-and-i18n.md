@@ -126,7 +126,7 @@ toast.error(t('friend:toast.sendFailed'));
 - 모듈 로드 시점에 `const MSG = t('...')`로 평가하지 않는다. 호출 시점에 `t()`한다.
 - ns 바인딩된 `useTranslation('ns')`의 t는 다른 ns 접두사 키를 거부한다. 여러 ns는 `useTranslation(['ns', 'common'])`나 싱글턴을 쓴다.
 - 보간 `t('repeat.weekly', { days })`, 복수형은 ko 단일 키·en `_one`/`_other`(`t('list.count', { count })`).
-- enum 라벨은 값 대신 키를 담는다: `INQUIRY_CATEGORY_LABEL_KEYS = { … } as const satisfies Record<InquiryCategory, string>`. 여러 파일이 쓰면 `utils/{name}.view-model.ts`의 `get{X}LabelKey`, 한 파일만 쓰면 파일 안 지역 상수다. `constants/`와 모델에 두지 않는다.
+- enum 라벨은 값 대신 키를 담는다: `WEATHER_CONDITION_LABEL_KEYS = { … } as const satisfies Record<WeatherCondition, string>`. 여러 파일이 쓰면 `utils/{name}.view-model.ts`의 `get{X}LabelKey`, 한 파일만 쓰면 파일 안 지역 상수다. `constants/`와 모델에 두지 않는다.
 - 런타임 키(오류 코드)는 `tDynamic('errors', code, fallback)`이다. 타입 검증 우회 전용이다.
 
 ### 오류 메시지

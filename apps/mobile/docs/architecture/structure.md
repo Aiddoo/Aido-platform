@@ -149,7 +149,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 ```
 
 - **포트는 앱의 말로 짓는다.** SDK·공급자 이름을 쓰지 않는다(`setString` → `copy`). 읽기는 `get*`, 구독은 `subscribe*`이고 해제 함수를 돌려준다. SDK 타입을 내보내지 않고 plain 값을 넘긴다. "없음"은 포트마다 하나로 정한다(`null` 권장). 라이브러리·DOM 전역과 겹치는 이름은 쓰지 않는다(`AppLogger`, `KeyValueStorage`, `useAppTheme`).
-- **같은 개념은 타입 하나다.** OS 권한은 `core/ports/os-permission.ts`의 `{ status: 'granted' | 'denied' | 'undetermined'; canAskAgain }`, 시계는 `now: () => Instant`, 앱 앞·뒤 전환은 `AppLifecycleGateway`다. `AppState`를 직접 쓰지 않는다.
+- **같은 개념은 타입 하나다.** 시계는 `now: () => Instant`, 앱 앞·뒤 전환은 `AppLifecycleGateway`다. `AppState`를 직접 쓰지 않는다.
 - **SDK는 `shared/infra`에서만 import한다.** 어댑터는 `shared/infra/{영역}/{공급자}-{포트 파일 이름}.ts`이고 포트 하나에 파일 하나다(`expo-clipboard-gateway.ts` → `expoClipboardGateway`). 플랫폼·OS 버전 차이는 어댑터 안에 숨긴다. 어댑터의 상태는 인스턴스 필드나 어댑터 팩토리의 클로저 변수에 두고, `logger`·`errorReporter`는 팩토리 인자로 받는다.
 - **조립은 `createAppContainer(ports)` 한 함수다.** 운영은 기기 어댑터, 테스트는 stub 포트를 넘긴다. 객체만 만들고 SDK import, 구독, 타이머, 전역 값 변경, 저장소 쓰기를 하지 않는다. 연결은 쓰는 Provider·훅의 effect가 맡는다.
 - **컨테이너에는 화면이 꺼내는 것만 둔다.** Api·service를 만드는 데만 쓰는 포트(`KeyValueStorage`, `PurchasesGateway`, HTTP 클라이언트, 토큰 갱신기)는 `AppContainerPorts`에만 있다. mapper·Policy·view-model은 순수 함수라 DI에 넣지 않고 직접 import한다.

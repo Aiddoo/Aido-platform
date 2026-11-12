@@ -156,6 +156,6 @@ Reanimated의 `duration`·`delay`는 `ANIMATION` 상수(`shared/constants/animat
 | 스토어 리뷰                                                                     | 요청함                                                                       | OS 정책 + 앱 간격   | 계정          |
 
 - 스쳐 지나간 코치마크는 본 것으로 세지 않는다.
-- 기간 규칙은 각 Policy의 `shouldShow*(record, now)`에 두고 상수 이름에 단위를 넣는다(`PUSH_NOTICE_SNOOZE_DAYS`).
+- 기간 규칙은 각 Policy의 `shouldShow*(record, now)`에 두고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).
 - 기록은 계정 범위 저장 값(`useStoredValue(def, accountId)`)이다. 키 이름과 정의는 [data](./architecture/data.md)를 본다.
 - 이벤트는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다.

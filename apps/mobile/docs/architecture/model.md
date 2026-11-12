@@ -12,7 +12,7 @@
 - **Policy 멤버의 첫 인자는 모델 전체다.** 값 하나만 필요해도 `notification: Notification`으로 받고 `Pick`·`Partial`·객체 리터럴로 좁히지 않는다. 목록 규칙은 `readonly X[]`를 받는다. 모델 일부(폼 값, 검색어, route id, `select` 결과)만 가진 곳의 규칙은 Policy 밖 export 함수다.
 - **한 파일, 한 엔티티, 한 Policy.** 두 엔티티가 섞이면 파일을 나눈다(`push-notification.model.ts`, `push-notification-response.model.ts`). 모델을 만드는 `create*` 함수는 Policy에 넣지 않는다. 규칙 없는 모델에는 빈 Policy를 만들지 않는다.
 - **업무 규칙 표**는 모델 파일 안 비공개 상수이고 `satisfies Record<Union, …>`를 건다. 서버가 종류를 더하면 빌드가 깨진다.
-- **시각은 인자다.** 지금·오늘·시간대를 받고 `Date.now()`·`new Date()`·기기 시간대를 읽지 않는다. 기간 규칙은 `shouldShow*(record, now)`이고 상수 이름에 단위를 넣는다(`PUSH_NOTICE_SNOOZE_DAYS`).
+- **시각은 인자다.** 지금·오늘·시간대를 받고 `Date.now()`·`new Date()`·기기 시간대를 읽지 않는다. 기간 규칙은 `shouldShow*(record, now)`이고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).
 - **import는 zod, `@aido/api/vocabulary`·`common`·`errors`, 순수 `shared/date`, 다른 모델뿐이다.** 계약(`@aido/api` 루트·`contracts/*`), i18n, `shared/ui`, `react-native`, React, `constants/`를 import하지 않는다(lint).
 - **Zod는 최신 문법만 쓴다.** `z.int()`, `z.iso.*`, `z.email()`·`z.url()`, `z.enum(튜플)`, `z.discriminatedUnion`, `z.codec`, `.brand<'X'>()`. `z.nativeEnum`, `z.string().email()`, `.passthrough()`는 쓰지 않는다.
 
