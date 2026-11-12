@@ -8,6 +8,7 @@
 - b19194d: 서버와 앱이 함께 지키는 한도·값 목록·알림 스키마를 `@aido/api`에 한 번만 선언한다. `notificationTypeSchema`·`notificationActionTypeSchema`·`notificationContextSchema`·`notificationActionSchema`는 `contracts/notification`에서 `common`으로, `appStoreVersionPattern`은 `contracts/app-config`에서 `vocabulary`로 옮기며(`APP_STORE_VERSION_PATTERN`) 루트 import는 그대로 쓸 수 있다.
 - 796eb98: 할 일 개요 `GET /v1/todos/overview`(`getTodoOverview`, `TodoOverviewResponseDto`)를 더한다. 할 일·완료한 할 일·진행 중인 반복이 있는지(`hasTodo`·`hasCompletedTodo`·`hasActiveRepeat`)를 서버가 계산해 한 번에 준다. `hasActiveRepeat`은 진행 중 반복 상한과 같은 기준(다음 회차가 남은 규칙)이고 휴면으로 멈춘 규칙도 센다. 기존 목록·요약 API는 그대로다.
 - c1ef3fd: 인증 코드 재발송 대기(`VERIFY_0753`, 429)의 `details.remainingSeconds`를 운영 응답에도 싣는다. 전에는 서버가 값을 만들었지만 `PUBLIC_ERROR_DETAILS`에 등록되지 않아 운영 필터가 지웠고, 값도 남은 시간이 아니라 상수 60초였다. 이제 같은 종류 코드의 마지막 발급 시각에서 남은 초(1~60, 정수)를 계산한다. `@aido/api/errors`에 `verificationResendCooldownErrorDetailsSchema`와 `hasPublicErrorDetails`를 더한다. 상태·코드·문구는 그대로이고 `details`만 새로 실린다. 출시 앱(1.15.1 이하)도 이 값을 읽어 다시 보내기 타이머를 켠다.
+- 7d2622e: `@aido/api/vocabulary`에 비밀번호에 쓸 수 있는 특수문자 `PASSWORD_ALLOWED_SYMBOLS`(`@$!%*#?&`)와 그 밖의 문자가 섞였는지 보는 `hasDisallowedPasswordCharacter`를 더한다. `PASSWORD_RULES.PATTERN`도 이 특수문자로 만들어 목록의 원본이 하나이고, 정규식 원문은 전과 바이트 단위로 같아 가입·비밀번호 재설정·변경 요청의 검사와 OpenAPI pattern은 그대로다. 앱은 이것으로 쓸 수 없는 문자가 섞인 비밀번호에 이유를 보인다.
 
 ### Patch Changes
 

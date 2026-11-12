@@ -27,6 +27,7 @@
 - Updated dependencies [796eb98]
 - Updated dependencies [c1ef3fd]
 - Updated dependencies [30b7963]
+- Updated dependencies [7d2622e]
   - @aido/api@1.15.2
 
 ## 1.15.1
