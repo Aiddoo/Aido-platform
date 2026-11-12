@@ -1,9 +1,7 @@
 import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
-import type { ScreenName } from '@src/shared/utils/to-screen-name';
-import { useGlobalSearchParams, usePathname } from 'expo-router';
+import { type ScreenName, toScreenName } from '@src/shared/utils/to-screen-name';
+import { useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
 import { useLayoutEffect, useRef } from 'react';
-
-import { useScreenName } from './use-screen-name';
 
 /** 넓은 화면에서 목록 화면 옆 칸에 여는 상세 */
 export interface PaneDetailScreen {
@@ -17,6 +15,8 @@ export interface PaneDetailScreen {
 interface ScreenTrackingOptions {
   /** 사용자가 보지 못하고 지나가는 화면. 앱 경로를 아는 bootstrap이 넘긴다 */
   untrackedScreens: ReadonlySet<ScreenName>;
+  /** 가드가 지금 막은 루트 route(`(auth)` 등). Expo Router가 그 자리에 Redirect만 그려 안의 화면은 보이지 않는다 */
+  guardedRoutes: ReadonlySet<string>;
   paneDetailScreens: readonly PaneDetailScreen[];
 }
 
@@ -31,14 +31,18 @@ interface TrackedView {
 /** 이름은 라우트 템플릿이라 id·초대 코드가 남지 않는다 */
 export function useScreenTracking({
   untrackedScreens,
+  guardedRoutes,
   paneDetailScreens,
 }: ScreenTrackingOptions): void {
   const pathname = usePathname();
-  const screenName = useScreenName();
+  const segments = useSegments();
   const params = useGlobalSearchParams();
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
   const prevView = useRef<TrackedView | null>(null);
+  const screenName = toScreenName(segments);
+  // 가드가 바뀌면 묶음 navigator가 먼저 내려가 Redirect가 옮기기 전까지 묶음 첫 화면(`/login`·`/feed`)에 focus가 머문다
+  const isGuarded = guardedRoutes.has(segments[0] ?? '');
   const pane = findOpenPane(paneDetailScreens, screenName, params);
   const viewPathname = pane?.pathname ?? pathname;
   const viewScreenName = pane?.screenName ?? screenName;
@@ -47,7 +51,7 @@ export function useScreenTracking({
   // 새 화면의 마운트 효과(진입·노출 이벤트)보다 먼저 보낸다. Firebase가 그 이벤트에 붙이는 화면 이름이 앞 화면이 되지 않는다
   useLayoutEffect(() => {
     // 건너뛴 화면은 앞 화면으로 기억하지 않아 `/feed` → `/` → `/feed` 왕복을 다시 세지 않는다
-    if (untrackedScreens.has(screenName)) {
+    if (isGuarded || untrackedScreens.has(screenName)) {
       return;
     }
     const prev = prevView.current;
@@ -64,6 +68,7 @@ export function useScreenTracking({
       data: { from: prev?.screenName ?? null, to: viewScreenName },
     });
   }, [
+    isGuarded,
     screenName,
     viewPathname,
     viewScreenName,

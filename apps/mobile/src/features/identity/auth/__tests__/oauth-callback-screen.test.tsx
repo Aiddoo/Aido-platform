@@ -228,6 +228,22 @@ describe('OAuthCallbackScreen', () => {
     expect(mountedScreens).toEqual(['login']);
   });
 
+  it('콜백을 닫고 소셜 로그인을 마치면 로그인 화면과 피드를 한 번씩만 센다', async () => {
+    // Given
+    const { route, screenViews, finishLogin } = await renderOAuthCallback(
+      'unauthenticated',
+      '/login',
+    );
+    await openCallbackLink('kakao');
+
+    // When
+    await finishLogin();
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    expect(screenViews()).toEqual(['/login', '/feed']);
+  });
+
   it('계정 연결에서 돌아오면 피드로 가지 않고 같은 계정 연결 화면으로 돌아온다', async () => {
     // Given
     const { route, socialAuth } = await renderOAuthCallback(

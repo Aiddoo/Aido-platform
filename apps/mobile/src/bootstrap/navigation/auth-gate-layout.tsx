@@ -58,6 +58,17 @@ export function AuthGateLayout() {
   // 첫 화면이 정해질 때까지 스플래시를 둬 로딩 스피너가 한 번 깜빡이지 않게 한다. 잠긴 키체인은 기다림이 길어 스피너로 넘긴다
   const isEntryPending = entry.isResolving || entry.isRedirecting;
   const isSplashDone = status !== 'loading' && !isRestoring && !isEntryPending;
+  // 화면 조회도 같은 가드를 읽어 막힌 route에 잠깐 머문 focus를 세지 않는다
+  const routeGuards = {
+    loading: isLoading,
+    '(app)': isAuthenticated,
+    '(auth)': !isAuthenticated && !isLoading,
+  };
+  const guardedRoutes = new Set(
+    Object.entries(routeGuards)
+      .filter(([, isAllowed]) => !isAllowed)
+      .map(([routeName]) => routeName),
+  );
 
   useEffect(() => {
     if (!isSplashDone) {
@@ -96,19 +107,19 @@ export function AuthGateLayout() {
         {/* 초대 카드·코드 입력은 로그인 전에도 열린다. 로그인 뒤 다시 연 카드가 로그인 전 카드를 대신해 끝난 카드가 아래에 남지 않는다 */}
         <Stack.Screen name="invite" dangerouslySingular />
 
-        <Stack.Protected guard={isLoading} redirectTo="/">
+        <Stack.Protected guard={routeGuards.loading} redirectTo="/">
           <Stack.Screen name="loading" options={{ animation: 'none' }} />
         </Stack.Protected>
 
-        <Stack.Protected guard={isAuthenticated} redirectTo="/">
+        <Stack.Protected guard={routeGuards['(app)']} redirectTo="/">
           <Stack.Screen name="(app)" />
         </Stack.Protected>
 
-        <Stack.Protected guard={!isAuthenticated && !isLoading} redirectTo="/">
+        <Stack.Protected guard={routeGuards['(auth)']} redirectTo="/">
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
       </Stack>
-      <RouteWatchers />
+      <RouteWatchers guardedRoutes={guardedRoutes} />
       <WindowWatchers />
       <SessionWatchers />
       <AppEntryWatchers />
@@ -120,9 +131,10 @@ export function AuthGateLayout() {
  * URL을 읽는 루트 훅은 레이아웃이 아니라 null을 그리는 이 형제에서 부른다.
  * `setParams`·이동마다 이것만 다시 그려지고 AuthGateLayout·Stack은 그대로다
  */
-function RouteWatchers() {
+function RouteWatchers({ guardedRoutes }: { guardedRoutes: ReadonlySet<string> }) {
   useScreenTracking({
     untrackedScreens: ENTRY_REDIRECT_SCREENS,
+    guardedRoutes,
     paneDetailScreens: PANE_DETAIL_SCREENS,
   });
   useWidgetAppEntry();
