@@ -1,5 +1,5 @@
 import { useClipboard, useLogger } from '@src/shared/di/shared-di-context';
-import { getErrorMessage } from '@src/shared/errors';
+import { toError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 
 interface CopyOptions {
@@ -9,7 +9,7 @@ interface CopyOptions {
   failureLogEvent: string;
 }
 
-/** 클립보드에 복사하고 결과를 토스트로 알린다. 실패는 진단만 남기고 던지지 않는다 */
+/** 클립보드에 복사하고 결과를 토스트로 알린다. 실패는 로그 키의 기능 이름으로 보고하고 던지지 않는다 */
 export function useCopyToClipboard() {
   const clipboard = useClipboard();
   const logger = useLogger();
@@ -23,7 +23,8 @@ export function useCopyToClipboard() {
       await clipboard.copy(text);
       toast.success(successMessage, { description: successDescription });
     } catch (error) {
-      logger.warn(failureLogEvent, { error: getErrorMessage(error) });
+      // ClipboardCopyError는 예상하지 못한 SDK 실패라 로그 키가 밝힌 기능으로 보고한다
+      logger.error(failureLogEvent, toError(error));
       toast.error(failureMessage);
     }
   };

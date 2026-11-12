@@ -38,6 +38,7 @@ export function ConfirmDialog({
       await onConfirm();
       onFinish(true);
     } catch {
+      // 실패 안내·보고는 onConfirm의 mutation 전역 피드백이 이미 했다. 다이얼로그를 남겨 다시 누르거나 취소하게 한다
       setIsConfirming(false);
     }
   };

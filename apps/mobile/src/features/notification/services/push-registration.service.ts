@@ -1,4 +1,3 @@
-import { HttpStatus } from '@aido/api/errors';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
 import type { AppLogger } from '@src/core/ports/app-logger';
@@ -12,6 +11,7 @@ import { isEqual, noop, withTimeout } from 'es-toolkit';
 import type { PushDeviceApi } from '../apis/push-device.api';
 import { toPushPermission } from '../apis/push-permission.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
+import { isPushRequestThrottledError } from '../domains/notification.error';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
 import type { PushDevice, PushPermission } from '../domains/push-permission.model';
 import {
@@ -300,7 +300,7 @@ export class PushRegistrationService {
     if (result.ok) {
       return 'done';
     }
-    if (result.error.status === HttpStatus.TOO_MANY_REQUESTS) {
+    if (isPushRequestThrottledError(result.error)) {
       return 'retry';
     }
     this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_RELEASE_REJECTED, {

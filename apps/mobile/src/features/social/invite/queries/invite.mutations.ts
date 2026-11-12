@@ -4,7 +4,7 @@ import {
   useLogger,
   useInviteShareService,
 } from '@src/bootstrap/providers/di-context';
-import { isCodedError, unwrap } from '@src/core/errors/result';
+import { unwrap } from '@src/core/errors/result';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
@@ -15,7 +15,11 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import type { InviteCode } from '../domains/invite-code.model';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import { isInviteCodeFieldError, toRedeemFailureReason } from '../domains/invite.error';
+import {
+  isInviteCodeFieldError,
+  isRedeemRejectedError,
+  toRedeemFailureReason,
+} from '../domains/invite.error';
 import type { InviteShareChannel, InviteShareContent } from '../services/invite-share.service';
 import { invalidateAfterRedeem, storeRedemptionResult, replaceMyInvite } from './invite-cache';
 import { INVITE_QUERY_KEYS } from './invite-query-keys';
@@ -66,7 +70,7 @@ export function useRedeemInviteMutationOptions() {
       haptics.notify('success');
     },
     onError: (error) => {
-      if (isCodedError(error)) {
+      if (isRedeemRejectedError(error)) {
         trackEvent('invite_redeem_failed', { reason: toRedeemFailureReason(error) });
       }
     },

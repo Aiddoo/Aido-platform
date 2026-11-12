@@ -14,6 +14,11 @@ export function isInviteCodeFieldError(error: unknown) {
   return isCodedError(error);
 }
 
+/** 서버·앱이 코드로 거절한 수락 실패. 연결·서버 장애는 빼고 이유를 분석에 남긴다 */
+export function isRedeemRejectedError(error: unknown) {
+  return isCodedError(error);
+}
+
 /** 서버 플래그로 친구 초대가 꺼져 있다(INVITE_2105). 재시도 대신 쓸 수 없음 안내를 보인다 */
 export function isInviteDisabledError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.INVITE_2105);

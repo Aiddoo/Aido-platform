@@ -258,6 +258,11 @@
                 "regex": "(?:^@src/|/)(?:core/errors/api-error|shared/errors)$",
                 "importNames": ["isApiError"],
                 "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+              },
+              {
+                "regex": "(?:^@src/|/)(?:core/errors/result|shared/errors)$",
+                "importNames": ["isCodedError"],
+                "message": "코드 판별은 domains/{feature}.error.ts의 이름 있는 판별 함수로만 하세요. 예상한 오류인지는 shared/errors의 classifyError로 봅니다."
               }
             ]
           }
@@ -901,6 +906,18 @@
       ],
       "rules": {
         "aido/mutation-error-feedback": "error"
+      }
+    },
+    {
+      // 서버 오류의 상태·details·5xx 코드는 *.error.ts의 이름 있는 판별 함수로만 읽는다
+      "files": ["src/features/**", "app/**"],
+      "excludeFiles": [
+        "src/features/**/*.error.ts",
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**"
+      ],
+      "rules": {
+        "aido/no-error-field-access": "error"
       }
     },
     {

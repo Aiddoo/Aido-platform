@@ -4,11 +4,12 @@ import {
   useWeatherLocationService,
   useWeatherApi,
 } from '@src/bootstrap/providers/di-context';
+import { shouldRetryQuery } from '@src/bootstrap/query/query-retry';
 import { type AppLogger } from '@src/core/ports/app-logger';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
-import { getErrorMessage, isCodedError, toError, unwrap } from '@src/shared/errors';
+import { getErrorMessage, toError, unwrap } from '@src/shared/errors';
 import {
   type Query,
   type QueryClient,
@@ -112,7 +113,7 @@ const REPORT_REFETCH_INTERVAL_MS = 15 * MINUTE_MS;
 const REPORT_MAX_RETRIES = 2;
 
 function shouldRetryReport(failureCount: number, error: unknown): boolean {
-  return !isCodedError(error) && failureCount < REPORT_MAX_RETRIES;
+  return failureCount < REPORT_MAX_RETRIES && shouldRetryQuery(failureCount, error);
 }
 
 /** 개발 QA 덮어쓰기는 실제 리포트 캐시로 만들어 새로 요청하지 않고, 키를 나눠 기기에 저장하지 않는다 */

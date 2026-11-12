@@ -148,11 +148,14 @@ mutation의 햅틱·토스트·Sentry는 앱 `MutationCache`의 캐시 단계 `o
 - 레벨은 호출부가 정한다. 가변 정보는 message가 아니라 context로 넘긴다. context의 오류는 `{ error: getErrorMessage(error) }` 한 모양이다. 원본 `error` 객체·`instanceof` 분기를 넣지 않는다.
 - 어댑터(`console-*`, `composite-logger`)와 테스트 밖에서 `console.*`을 쓰지 않는다(`eslint/no-console`).
 
-| 상황                               | 호출                                                   | Sentry                                     |
-| ---------------------------------- | ------------------------------------------------------ | ------------------------------------------ |
-| 운영 이벤트·격리된 실패            | `logger.info/warn(KEY, { error: getErrorMessage(e) })` | breadcrumb                                 |
-| 예측 못한 오류(경계 밖·백그라운드) | `logger.error(KEY, toError(e))`                        | 이벤트 `source=logger`·`feature=<첫 마디>` |
-| 예측 못한 오류(경계·도메인 신호)   | `errorReporter.captureException/captureMessage`        | 이벤트 `feature`                           |
+| 상황                                                  | 호출                                                                           | Sentry                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------ |
+| 운영 이벤트·격리된 실패                               | `logger.info/warn(KEY, { error: getErrorMessage(e) })`                         | breadcrumb                                 |
+| 예측 못한 오류(기능 이름을 아는 훅·전역 캐시·경계)    | `reportUnexpectedError`(`useReportUnexpectedError`·`useMutationErrorFeedback`) | 이벤트 `feature`·요청 태그                 |
+| 예측 못한 오류(로그 키가 기능을 밝히는 곳, 추가 문맥) | `logger.error(KEY, toError(e), context)`                                       | 이벤트 `source=logger`·`feature=<첫 마디>` |
+| 도메인 신호(세션 종료·결제 실패 등)                   | `errorReporter.captureMessage`                                                 | 이벤트 `feature`                           |
+
+**보고 API는 하나다.** 두 입구 모두 `captureError` 한 곳을 지나 `classifyError`로 이벤트·breadcrumb를 정하고 같은 오류 객체는 한 번만 보낸다. `reportUnexpectedError`는 예상한 오류를 아예 보내지 않고, `logger.error`는 예상한 오류를 breadcrumb로 남긴다. 기능 이름을 아는 React 코드는 `reportUnexpectedError` 쪽을, DI 밖 코드와 로그 키·문맥(`speech_error` 등)으로 남기는 코드는 `logger.error`를 쓴다.
 
 - `logger.error(KEY, undefined, context)`는 breadcrumb만 남긴다. 이벤트가 필요하면 `Error`를 넘긴다. `logger.debug`는 Sentry에 남지 않는다.
 - 같은 오류는 한 곳에서 한 방법으로만 보낸다.
