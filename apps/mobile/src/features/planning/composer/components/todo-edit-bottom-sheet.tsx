@@ -5,7 +5,6 @@ import { TodoScopeSelect } from '@src/features/planning/todo/components/todo-sco
 import {
   getTodoEditScopeDecision,
   type TodoUpdateScope,
-  todoUpdateScopeSchema,
 } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
@@ -134,7 +133,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
         action="edit"
         date={date}
         scopes={isFollowingOnly ? ['THIS_AND_FOLLOWING'] : TODO_UPDATE_SCOPES}
-        onChange={(selected) => close(todoUpdateScopeSchema.parse(selected))}
+        onChange={(selected) => close(selected)}
         onBack={() => close()}
       />
     ));
