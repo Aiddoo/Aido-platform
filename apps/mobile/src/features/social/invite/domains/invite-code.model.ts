@@ -78,11 +78,3 @@ export function findInvalidCharacters(raw: string): InvalidInviteCodeCharacter[]
         : [{ character, index, kind: classifyInvalidCharacter(character) }],
     );
 }
-
-export const InviteCodePolicy = {
-  parseInviteCode,
-  normalizeInviteCode,
-  normalizeInviteCodeInput,
-  normalizePastedInviteCode,
-  findInvalidCharacters,
-} as const;

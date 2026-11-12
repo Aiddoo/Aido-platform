@@ -460,7 +460,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       socialShare: ports.socialShare,
       systemShare: ports.systemShare,
       clipboard: ports.clipboard,
-      errorReporter,
+      logger,
     }),
     inviteLinkOpenedStore: createInviteLinkOpenedStore(),
 
