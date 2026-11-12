@@ -17,6 +17,7 @@
 
 - 원천은 하나다. 같은 값을 두 저장소에 복사하지 않고, 계산할 수 있는 값은 상태로 두지 않는다.
 - 앱이 만드는 Context는 DI와 UI 내부 구현(시트, 폼, 레이아웃 측정)에만 쓴다. 나머지는 props → 컴포넌트 prop → Query 캐시 → route 훅 → 외부 저장소 순서로 고른다.
+  - route 상태를 감싼 Context·store는 두지 않는다. 예외는 마이 메뉴 칸의 `MyPageMenuNavigationProvider` 하나다. 경로 원천은 router이고, 이 Context는 메뉴 칸의 행(`MyPageMenuItem` 15개와 프로필·새 기능·초대 줄)이 함께 쓰는 이동(연타 가드 하나, 넓은 화면의 상세 걷기)과 경로를 칸에서 한 번 받아 선택이 바뀐 행만 다시 그리게 하는 store(`createEventChannel`)를 내린다. 넓은 화면에서 상세 칸이 깊어질 때마다 메뉴 행이 모두 다시 그려지지 않게 하는 것이 이유이고 `use-my-page-menu-navigation.test.tsx`가 지킨다.
 
 라이브러리가 주는 상태를 다시 만들지 않고, 그 훅을 한 번 더 감싸지도 않는다.
 
