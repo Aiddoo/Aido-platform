@@ -5,6 +5,7 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { getCachedMe, updateMeInCache } from '@src/features/identity/user/queries/user-cache';
 import { useFeedTodoDetailHandoff } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
 import { useTrackView } from '@src/shared/analytics';
+import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import * as themeProvider from '@src/shared/providers/theme-provider';
 import type { ScreenName } from '@src/shared/utils/to-screen-name';
 import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/testing/core';
@@ -466,6 +467,28 @@ describe('root 인증 route 전환', () => {
 
       // Then
       expect(screenViews()).toEqual(['/feed', '/todo/[todoId]', '/todo/[todoId]']);
+    });
+
+    it('상세 링크로 연 앱에서 위젯으로 피드에 오면 앞 화면 param이 남아도 칸에 없는 상세를 세지 않는다', async () => {
+      // Given
+      const { route, screenViews } = await renderAuthRoutes('authenticated', '/todo/3');
+      await waitFor(() => expect(route.getPathname()).toBe('/todo/3'));
+
+      // When
+      await act(() => openEntryHref('/feed?date=today'));
+      await act(() => router.push({ pathname: '/todo/[todoId]/actions', params: { todoId: 5 } }));
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe('/feed');
+      expect(screenViews()).toEqual(['/todo/[todoId]', '/feed', '/todo/[todoId]/actions', '/feed']);
+
+      // When
+      await act(() => router.setParams({ todoId: '8' }));
+      await act(() => router.setParams({ date: '2026-11-12' }));
+
+      // Then
+      expect(screenViews().slice(4)).toEqual(['/todo/[todoId]']);
     });
 
     it('칸에 상세를 연 채 접으면 상세 화면으로 넘겨도 다시 세지 않고 뒤로 가면 목록을 센다', async () => {

@@ -1,6 +1,7 @@
 import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
 import { type ScreenName, toScreenName } from '@src/shared/utils/to-screen-name';
-import { useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
+import { usePathname, useRootNavigationState, useSegments } from 'expo-router';
+import { findFocusedRoute } from 'expo-router/react-navigation';
 import { useLayoutEffect, useRef } from 'react';
 
 /** 넓은 화면에서 목록 화면 옆 칸에 여는 상세 */
@@ -36,14 +37,15 @@ export function useScreenTracking({
 }: ScreenTrackingOptions): void {
   const pathname = usePathname();
   const segments = useSegments();
-  const params = useGlobalSearchParams();
+  // 전역 params는 focus 경로의 상위 route params까지 합쳐 앞 화면 값(콜드 스타트 링크의 `todoId`)이 남는다. 화면이 읽는 자기 params를 본다
+  const focusedParams = findFocusedRoute(useRootNavigationState())?.params;
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
   const prevView = useRef<TrackedView | null>(null);
   const screenName = toScreenName(segments);
   // 가드가 바뀌면 묶음 navigator가 먼저 내려가 Redirect가 옮기기 전까지 묶음 첫 화면(`/login`·`/feed`)에 focus가 머문다
   const isGuarded = guardedRoutes.has(segments[0] ?? '');
-  const pane = findOpenPane(paneDetailScreens, screenName, params);
+  const pane = findOpenPane(paneDetailScreens, screenName, focusedParams);
   const viewPathname = pane?.pathname ?? pathname;
   const viewScreenName = pane?.screenName ?? screenName;
   const listPathname = pane == null ? null : pathname;
@@ -82,10 +84,11 @@ export function useScreenTracking({
 function findOpenPane(
   paneDetailScreens: readonly PaneDetailScreen[],
   screenName: ScreenName,
-  params: Partial<Record<string, string | string[]>>,
+  params: object | undefined,
 ): { pathname: string; screenName: ScreenName } | null {
   const pane = paneDetailScreens.find(({ listScreen }) => listScreen === screenName);
-  const id = pane == null ? undefined : params[pane.param];
+  const id: unknown =
+    pane == null ? undefined : new Map(Object.entries(params ?? {})).get(pane.param);
   if (pane == null || typeof id !== 'string' || id === '') {
     return null;
   }
