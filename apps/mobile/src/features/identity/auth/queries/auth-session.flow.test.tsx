@@ -362,7 +362,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
     const analytics = createAnalyticsStub();
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, ports: { analytics } });
     const calls: string[] = [];
-    const statusNow = () => session.container.authSessionStore.getState().status;
+    const statusNow = () => session.container.authSessionStore.getSnapshot().status;
     analytics.trackEvent.mockImplementation((name) => calls.push(`${name}:${statusNow()}`));
     analytics.clearUser.mockImplementation(() => calls.push(`clearUser:${statusNow()}`));
     analytics.resetData.mockImplementation(() => calls.push(`resetData:${statusNow()}`));
@@ -389,7 +389,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
 
     // Then
     expect(calls).toEqual(['auth_logout:authenticated', 'clearUser:authenticated']);
-    expect(session.container.authSessionStore.getState().status).toBe('unauthenticated');
+    expect(session.container.authSessionStore.getSnapshot().status).toBe('unauthenticated');
   });
 
   it('오프라인 로그아웃도 같은 순서다', async () => {
@@ -405,7 +405,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
 
     // Then
     expect(calls).toEqual(['auth_logout:authenticated', 'clearUser:authenticated']);
-    expect(session.container.authSessionStore.getState().status).toBe('unauthenticated');
+    expect(session.container.authSessionStore.getSnapshot().status).toBe('unauthenticated');
   });
 
   it('탈퇴는 이벤트, 데이터 초기화, 로그아웃 전환 순서이고 사용자 정리를 따로 부르지 않는다', async () => {
@@ -423,7 +423,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
 
     // Then
     expect(calls).toEqual(['auth_account_deleted:authenticated', 'resetData:authenticated']);
-    expect(session.container.authSessionStore.getState().status).toBe('unauthenticated');
+    expect(session.container.authSessionStore.getSnapshot().status).toBe('unauthenticated');
   });
 
   it('탈퇴가 실패하면 Analytics를 건드리지 않는다', async () => {
@@ -444,7 +444,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
 
     // Then
     expect(calls).toEqual([]);
-    expect(session.container.authSessionStore.getState().status).toBe('authenticated');
+    expect(session.container.authSessionStore.getSnapshot().status).toBe('authenticated');
   });
 });
 

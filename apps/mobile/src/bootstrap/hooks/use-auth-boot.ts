@@ -25,22 +25,25 @@ export function useAuthBoot(): void {
   const errorReporter = useErrorReporter();
   const analytics = useAnalytics();
   const sessionCleanupService = useSessionCleanupService();
-  const authSession = useSyncExternalStore(authSessionStore.subscribe, authSessionStore.getState);
+  const authSession = useSyncExternalStore(
+    authSessionStore.subscribe,
+    authSessionStore.getSnapshot,
+  );
 
   /** `locked`는 잠금 해제를 기다리는 상태다. 잠금이 아닌 영구 오류까지 `locked`로 두면 재판정도 계속 실패해 조용히 무한 로딩에 갇힌다 */
   const resolveBoot = useCallback(
     async (isCancelled: () => boolean) => {
       const isStale = () =>
-        isCancelled() || !AuthSessionPolicy.isAuthBootPending(authSessionStore.getState());
+        isCancelled() || !AuthSessionPolicy.isAuthBootPending(authSessionStore.getSnapshot());
       try {
         const resolved = await resolveInitialAuthStatus(tokenStore);
         if (!isStale()) {
-          authSessionStore.dispatch({ type: 'bootResolved', status: resolved });
+          authSessionStore.resolveBoot(resolved);
         }
       } catch (error) {
         if (!isStale()) {
           errorReporter.captureException(toError(error), { feature: 'auth' });
-          authSessionStore.dispatch({ type: 'bootFailed' });
+          authSessionStore.failBoot();
         }
       }
     },
@@ -58,7 +61,7 @@ export function useAuthBoot(): void {
   // 잠긴 키체인으로 판정을 미뤘다면, 잠금 해제(포그라운드 복귀) 후 다시 시도한다.
   // 이 재판정이 없으면 잠금 중 콜드 스타트가 영구 로그인 화면이 된다.
   useOnAppForeground(() => {
-    const isLocked = () => authSessionStore.getState().status === 'locked';
+    const isLocked = () => authSessionStore.getSnapshot().status === 'locked';
     if (isLocked()) {
       resolveBoot(() => !isLocked());
     }
@@ -67,11 +70,11 @@ export function useAuthBoot(): void {
   useEffect(() => {
     return subscribeSessionExpired(({ reason, serverErrorCode }) => {
       // 로그아웃된 앱이 낸 401은 세션 만료가 아니다. 가드가 없으면 로그인한 적 없는 유저의 session_expired가 대량 발생해 진짜 세션 유실이 묻힌다
-      if (authSessionStore.getState().status !== 'authenticated') {
+      if (authSessionStore.getSnapshot().status !== 'authenticated') {
         return;
       }
 
-      authSessionStore.dispatch({ type: 'sessionExpired' });
+      authSessionStore.expire();
 
       // errorCode는 클라이언트의 결정 경로, serverErrorCode는 서버의 판정으로 별개 축이다
       errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
