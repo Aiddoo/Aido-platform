@@ -1,13 +1,13 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { type QueryErrorFallbackProps, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Card } from 'heroui-native';
 import { type ComponentProps, useEffect } from 'react';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { type SubscriptionOffering } from '../domains/subscription.model';
 import { hasFreeTrial, SubscriptionPolicy } from '../domains/subscription.model';
@@ -87,8 +87,7 @@ PlanPicker.Plans = function Plans({
 PlanPicker.Loading = function Loading() {
   const isOnline = useIsOnline();
   // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
-  const { backgroundColor: skeletonColor } = useResolveClassNames('bg-gray-3');
-  const color = typeof skeletonColor === 'string' ? skeletonColor : undefined;
+  const color = useResolvedColor('text-gray-3');
 
   return match(isOnline)
     .with(false, () => <SubscriptionResult.Offline target="plans" />)

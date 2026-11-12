@@ -1,5 +1,6 @@
 import { useTrack } from '@src/shared/analytics';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -26,7 +27,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaFrame, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { BENEFIT_SLIDES, type BenefitSlideTone } from '../constants/subscription.constants';
 import { useFormatPlanValue } from '../hooks/use-format-plan-value';
@@ -291,8 +291,7 @@ function useTrackBenefitViewed(index: number) {
 
 BenefitCarousel.Loading = function Loading() {
   // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
-  const { backgroundColor: skeletonColor } = useResolveClassNames('bg-gray-3');
-  const color = typeof skeletonColor === 'string' ? skeletonColor : undefined;
+  const color = useResolvedColor('text-gray-3');
 
   return (
     <VStack accessibilityState={{ busy: true }} className="overflow-hidden rounded-3xl bg-gray-2">

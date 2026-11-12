@@ -1,11 +1,9 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
-import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage } from '@src/shared/errors';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
@@ -29,7 +27,12 @@ import {
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { formatCompactCount } from '@src/shared/utils/number-format';
-import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseInfiniteQuery,
+} from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { useNavigation } from 'expo-router';
 import { Menu, type MenuKey, PressableFeedback, Separator, Spinner } from 'heroui-native';
@@ -46,7 +49,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { TODO_COMMENT_HIGHLIGHT_DURATION_MS } from '../constants/todo-comment.constants';
 import {
   TodoCommentPolicy,
@@ -54,7 +56,8 @@ import {
   type TodoCommentThreadAnchor,
 } from '../domains/todo-comment.model';
 import { useTodoCommentParams, useTodoCommentSort } from '../hooks/use-todo-comment-params';
-import { fetchTodoCommentThreads, invalidateTodoComments } from '../queries/todo-comment-cache';
+import { invalidateTodoComments } from '../queries/todo-comment-cache';
+import { usePrefetchTodoCommentThreadsMutationOptions } from '../queries/todo-comment.mutations';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import { TodoCommentItem } from './todo-comment-item';
 import { TodoCommentKeyboardScrollView } from './todo-comment-keyboard-scroll-view';
@@ -466,52 +469,22 @@ function PulsingHeart() {
 /** 새 정렬의 첫 페이지를 먼저 받아 두고 바꿔 목록이 skeleton으로 깜박이지 않게 한다 */
 function useSortChange() {
   const [todoId] = useTodoId();
-  const queryClient = useQueryClient();
-  const logger = useLogger();
   const navigation = useNavigation();
   // useIsFetching은 지금 정렬 목록의 배경 재조회에도 켜져 정렬 버튼이 꺼진다. 고른 정렬을 받는 동안만 켠다
-  const [isPending, setIsPending] = useState(false);
-  const isUnmountedRef = useRef(false);
-  useEffect(() => {
-    isUnmountedRef.current = false;
-    return () => {
-      isUnmountedRef.current = true;
-    };
-  }, []);
-  const latestOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
-    todoId,
-    sort: TODO_COMMENT_SORT.LATEST,
-    anchorCommentId: null,
-  });
-  const popularOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
-    todoId,
-    sort: TODO_COMMENT_SORT.POPULAR,
-    anchorCommentId: null,
-  });
+  const prefetch = useMutation(usePrefetchTodoCommentThreadsMutationOptions({ todoId }));
 
-  const prefetchThenCommit = (sort: TodoCommentSort, commit: () => void) => {
-    setIsPending(true);
-    fetchTodoCommentThreads(
-      queryClient,
-      sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions,
-    )
-      .catch(noop)
-      .finally(() => {
-        if (isUnmountedRef.current) {
-          return;
-        }
-        setIsPending(false);
+  // mutate의 onSettled는 화면이 내려간 뒤에는 불리지 않는다
+  const prefetchThenCommit = (sort: TodoCommentSort, commit: () => void) =>
+    prefetch.mutate(sort, {
+      onSettled: () => {
         // router.setParams는 지금 보이는 화면에 걸린다. 받는 동안 떠났으면 그 화면의 params를 바꾸지 않는다
         if (navigation.isFocused()) {
           commit();
         }
-      })
-      .catch((error) =>
-        logger.warn(TODO_COMMENT_LOG_EVENT.SORT_CHANGE_FAILED, { error: getErrorMessage(error) }),
-      );
-  };
+      },
+    });
 
-  return { isPending, prefetchThenCommit };
+  return { isPending: prefetch.isPending, prefetchThenCommit };
 }
 
 /**

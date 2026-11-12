@@ -1,3 +1,4 @@
+import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useTodoCommentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
@@ -20,6 +21,7 @@ import type {
 } from '../schemas/todo-comment-request.schema';
 import {
   addTodoCommentRepliesToCaches,
+  fetchTodoCommentThreads,
   cancelTodoCommentQueries,
   findCachedTodoComment,
   findTodoCommentPlacements,
@@ -31,6 +33,7 @@ import {
   restoreTodoCommentToCaches,
 } from './todo-comment-cache';
 import { TODO_COMMENT_MUTATION_KEYS } from './todo-comment-mutation-keys';
+import { useGetTodoCommentThreadsInfiniteQueryOptions } from './todo-comment.queries';
 
 const MAX_RETRY_COUNT = 2;
 const RETRY_BASE_DELAY_MS = 500;
@@ -330,5 +333,30 @@ export function useSetTodoCommentLikeMutationOptions({
         isHandledByFeature: isWarnedTodoCommentError,
       },
     },
+  });
+}
+
+/** 정렬을 바꾸기 전에 새 정렬의 첫 페이지를 받아 둔다. 진행 중 표시는 이 mutation의 isPending이다 */
+export function usePrefetchTodoCommentThreadsMutationOptions({ todoId }: { todoId: number }) {
+  const queryClient = useQueryClient();
+  const latestOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
+    todoId,
+    sort: TODO_COMMENT_SORT.LATEST,
+    anchorCommentId: null,
+  });
+  const popularOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
+    todoId,
+    sort: TODO_COMMENT_SORT.POPULAR,
+    anchorCommentId: null,
+  });
+
+  return mutationOptions({
+    mutationFn: (sort: TodoCommentSort) =>
+      fetchTodoCommentThreads(
+        queryClient,
+        sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions,
+      ),
+    // 미리 받지 못해도 정렬은 바꾸고 목록이 스스로 다시 받아 실패를 보인다
+    meta: { errorFeedback: false },
   });
 }

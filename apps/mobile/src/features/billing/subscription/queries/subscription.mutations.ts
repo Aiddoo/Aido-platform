@@ -11,6 +11,7 @@ import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
@@ -131,7 +132,7 @@ export function useRestoreMutationOptions() {
     },
     onError: (error) =>
       match(toSubscriptionActionFailure('restore', error))
-        .with({ type: 'cancelled' }, { type: 'paymentPending' }, () => undefined)
+        .with({ type: 'cancelled' }, { type: 'paymentPending' }, noop)
         // 복원 버튼은 화면에 그대로 남아 다시 누를 수 있으니 토스트에서 문의로만 잇는다
         .with({ type: 'contactSupport' }, (failure) => {
           haptics.notify('error');

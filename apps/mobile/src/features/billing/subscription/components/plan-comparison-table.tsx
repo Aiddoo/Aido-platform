@@ -1,5 +1,6 @@
 import { useTrack } from '@src/shared/analytics';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -22,7 +23,6 @@ import { range } from 'es-toolkit';
 import { Popover, PressableFeedback, Separator } from 'heroui-native';
 import { type ReactNode, useState } from 'react';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import type { EntitlementFeature } from '../domains/entitlement.model';
 import { useFormatPlanValue } from '../hooks/use-format-plan-value';
@@ -323,8 +323,7 @@ const LOADING_ROW_COUNT = 4;
 
 PlanComparisonTable.Loading = function Loading() {
   // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
-  const { backgroundColor: skeletonColor } = useResolveClassNames('bg-gray-3');
-  const color = typeof skeletonColor === 'string' ? skeletonColor : undefined;
+  const color = useResolvedColor('text-gray-3');
   const valueColumnWidth = useValueColumnWidth();
 
   return (

@@ -1,4 +1,5 @@
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { ChoiceRadio, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -7,7 +8,6 @@ import { Card, Chip, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
@@ -45,8 +45,8 @@ interface PlanOptionProps {
 
 function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
   const { t } = useTranslation('subscription');
-  const { color: selectedBorderColor } = useResolveClassNames('text-main');
-  const { color: idleBorderColor } = useResolveClassNames('text-gray-2');
+  const selectedBorderColor = useResolvedColor('text-main');
+  const idleBorderColor = useResolvedColor('text-gray-2');
   const { label, periodLabel, monthlyEquivalent } = match(plan.planType)
     .with('annual', () => ({
       label: t('plan.annual'),
