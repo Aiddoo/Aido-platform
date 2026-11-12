@@ -79,7 +79,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 
 ## 앱이 앞에 있을 때 받은 알림
 
-`createExpoPushNotificationGateway`가 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고 지금 판단을 게이트웨이 팩토리의 클로저 변수에 둔다. `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `utils/get-foreground-push-presentation.ts`의 `getForegroundPushPresentation` 하나다(배너·조용히는 표시 방식이라 모델에 두지 않는다).
+`createExpoPushNotificationGateway`가 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고 지금 판단을 게이트웨이 팩토리의 클로저 변수에 둔다. `NotificationProvider`의 null 자식 `ForegroundPushPresentation`(`useForegroundPushPresentation`)이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `utils/get-foreground-push-presentation.ts`의 `getForegroundPushPresentation` 하나다(배너·조용히는 표시 방식이라 모델에 두지 않는다).
 
 | 지금 화면                                                         | 보이는 방식                           | 이유                                                                     |
 | ----------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |

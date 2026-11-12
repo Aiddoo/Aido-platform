@@ -53,7 +53,7 @@ const [todoId] = useTodoId(); // 읽기 전용도 튜플
 - **검증은 route 파일이 한다.** 같은 스키마로 `safeParse`해 틀리면 `Redirect`만 하고 결과의 `.data`를 읽지 않는다(lint). 안쪽은 같은 스키마의 튜플 훅으로 좁혀진 값을 읽는다. 훅에서 되돌려야 하면 `useRouteParamsOrRedirect` 하나이고 리다이렉트를 직접 만들지 않는다.
 - **원시 `setParams`를 내보내지 않는다.** 연관 값을 지우는 세터를 이름 있게 내보낸다(`useTodoCommentSort`는 `comment`를 함께 지운다). 호출부가 지우기를 잊을 수 없다. `router.setParams`는 params 훅 밖에서 쓰지 않는다(lint).
 - **목록 행은 route 훅을 부르지 않는다.** 부모가 한 번 읽어 `isSelected`를 넘긴다. 가상 목록이 행 수만큼 URL을 파싱하지 않게 한다. 짧은 고정 목록은 행이 읽어도 된다.
-- **레이아웃은 자식 params를 구독하지 않는다.** 레이아웃은 내비게이터와 Provider만 둔다. 루트에서 URL을 봐야 하는 훅(`useWidgetAppEntry`, `useScreenTracking`, 포그라운드 푸시 표시)은 `null`을 그리는 자식 컴포넌트에 둔다.
+- **레이아웃은 자식 params를 구독하지 않는다.** 레이아웃은 내비게이터와 Provider만 둔다. 루트에서 URL을 봐야 하는 훅은 `null`을 그리는 형제 컴포넌트에 둔다: `AuthGateLayout`의 `RouteWatchers`(`useScreenTracking`, `useWidgetAppEntry`, `useInviteAppEntry`, `useAppEntrySegmentSync`)와 `NotificationProvider`의 `ForegroundPushPresentation`. 스플래시 판단이 쓰는 "앱 입구인가"는 `useAppEntrySegmentSync`가 푸시 진입 슬롯에 적고 레이아웃은 슬롯만 읽는다. `setParams`가 레이아웃을 다시 그리지 않는 것은 `auth-gate-layout.test.tsx`가 지킨다.
 - 화면 훅에서 `useGlobalSearchParams`를 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 그려진다. 현재 화면과 무관하게 읽어야 하는 위의 `null` 자식만 쓴다.
 
 | 스키마                     | 훅 → 반환                                                                                                                             |

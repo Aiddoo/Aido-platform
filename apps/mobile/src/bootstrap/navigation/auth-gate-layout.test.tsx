@@ -21,6 +21,7 @@ import type { PropsWithChildren } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
 import RootIndex from '../../../app/index';
+import * as orientationLock from '../hooks/use-orientation-lock';
 import { AuthGateLayout } from './auth-gate-layout';
 
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
@@ -244,5 +245,23 @@ describe('root 인증 route 전환', () => {
 
     // Then
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+  });
+
+  it('화면 params가 바뀌어도 루트 레이아웃은 다시 그리지 않는다', async () => {
+    // Given
+    // 레이아웃 몸체에서만 부르는 훅의 호출 수가 레이아웃을 그린 횟수다
+    const layoutRender = jest.spyOn(orientationLock, 'useOrientationLock');
+    const { route } = await renderAuthRoutes('authenticated');
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+    const rendersBefore = layoutRender.mock.calls.length;
+    expect(rendersBefore).toBeGreaterThan(0);
+
+    // When
+    await act(() => router.setParams({ date: '2026-11-12' }));
+    await act(() => router.setParams({ date: '2026-11-13' }));
+
+    // Then
+    expect(route.getPathnameWithParams()).toBe('/feed?date=2026-11-13');
+    expect(layoutRender).toHaveBeenCalledTimes(rendersBefore);
   });
 });

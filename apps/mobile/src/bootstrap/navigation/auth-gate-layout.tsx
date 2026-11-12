@@ -4,6 +4,7 @@ import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity
 import { useWidgetAppEntry } from '@src/bootstrap/hooks/use-widget-app-entry';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '@src/features/notification/constants/notification.constants';
+import { useAppEntrySegmentSync } from '@src/features/notification/hooks/use-app-entry-segment-sync';
 import { usePushNotificationEntry } from '@src/features/notification/hooks/use-push-notification-entry';
 import { usePushNotificationResponse } from '@src/features/notification/hooks/use-push-notification-response';
 import { useInstallReferrerCapture } from '@src/features/social/invite/hooks/use-install-referrer-capture';
@@ -24,12 +25,9 @@ export function AuthGateLayout() {
   const isRestoring = useIsRestoring();
   const { resolvedTheme } = useAppTheme();
   useOrientationLock();
-  useScreenTracking();
   useSyncUserIdentity();
   useClaimDeviceDataForUser();
-  useWidgetAppEntry();
   useInstallReferrerCapture();
-  useInviteAppEntry();
   usePushNotificationResponse();
   const entry = usePushNotificationEntry();
   const { backgroundColor } = useResolveClassNames('bg-white');
@@ -64,31 +62,47 @@ export function AuthGateLayout() {
 
   // Stack을 항상 렌더링해 navigationRef가 즉시 ready가 되도록 한다. cold start의 push 알림 탭에서 "Attempted to navigate before mounting the Root Layout" 크래시를 막는다
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        statusBarStyle: resolvedTheme === 'dark' ? 'light' : 'dark',
-        animation: 'fade',
-        animationDuration: ROOT_STACK_ANIMATION_DURATION_MS,
-        animationTypeForReplace: 'pop',
-        contentStyle: { backgroundColor },
-      }}
-    >
-      <Stack.Screen name="index" />
-      {/* 초대 카드·코드 입력은 로그인 전에도 열린다 */}
-      <Stack.Screen name="invite" />
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          statusBarStyle: resolvedTheme === 'dark' ? 'light' : 'dark',
+          animation: 'fade',
+          animationDuration: ROOT_STACK_ANIMATION_DURATION_MS,
+          animationTypeForReplace: 'pop',
+          contentStyle: { backgroundColor },
+        }}
+      >
+        <Stack.Screen name="index" />
+        {/* 초대 카드·코드 입력은 로그인 전에도 열린다 */}
+        <Stack.Screen name="invite" />
 
-      <Stack.Protected guard={isLoading} redirectTo="/">
-        <Stack.Screen name="loading" options={{ animation: 'none' }} />
-      </Stack.Protected>
+        <Stack.Protected guard={isLoading} redirectTo="/">
+          <Stack.Screen name="loading" options={{ animation: 'none' }} />
+        </Stack.Protected>
 
-      <Stack.Protected guard={isAuthenticated} redirectTo="/">
-        <Stack.Screen name="(app)" />
-      </Stack.Protected>
+        <Stack.Protected guard={isAuthenticated} redirectTo="/">
+          <Stack.Screen name="(app)" />
+        </Stack.Protected>
 
-      <Stack.Protected guard={!isAuthenticated && !isLoading} redirectTo="/">
-        <Stack.Screen name="(auth)" />
-      </Stack.Protected>
-    </Stack>
+        <Stack.Protected guard={!isAuthenticated && !isLoading} redirectTo="/">
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
+      </Stack>
+      <RouteWatchers />
+    </>
   );
+}
+
+/**
+ * URL을 읽는 루트 훅은 레이아웃이 아니라 null을 그리는 이 형제에서 부른다.
+ * `setParams`·이동마다 이것만 다시 그려지고 AuthGateLayout·Stack은 그대로다
+ */
+function RouteWatchers() {
+  useScreenTracking();
+  useWidgetAppEntry();
+  useInviteAppEntry();
+  useAppEntrySegmentSync();
+
+  return null;
 }

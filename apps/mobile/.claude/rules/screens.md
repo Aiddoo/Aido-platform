@@ -14,7 +14,7 @@ paths:
 - 이동은 typed `router.push({ pathname, params })`다. 문자열 href를 조립하지 않는다.
 - 상세 진입 행은 `Link`(+ `Link.Preview`·`Link.Menu`)를 쓴다. 끌기 모드에는 Menu를 붙이지 않는다.
 - 검색은 `Stack.SearchBar`다. 디바운스는 es-toolkit `debounce`다.
-- 레이아웃은 자식 route params를 구독하지 않는다. 구독이 필요하면 null을 그리는 자식 컴포넌트로 옮긴다.
+- 레이아웃은 자식 route params를 구독하지 않는다. 구독이 필요하면 null을 그리는 형제 컴포넌트로 옮긴다(`RouteWatchers`, `ForegroundPushPresentation`).
 - 네이티브 헤더(`Stack.Toolbar`)만 쓰고, 탭은 `NativeTabs` + 탭별 Stack이다.
 
 자세히: [상태와 라우팅](../../docs/architecture/state-and-routing.md) · [UI](../../docs/architecture/ui.md)
