@@ -167,7 +167,7 @@ export default function NotificationsScreen() {
 
 ## 글꼴과 기기
 
-- **글꼴.** 단계·OS 배율·크기 토큰은 [design](../design.md#글꼴)이 원본이다(앱 5단계, `allowFontScaling: false`). `HeroUIProvider`가 heroui 글자에도 배율을 끈다. 크기는 `Text size` 토큰, 아이콘·고정 크기는 `useFontScaledSize()`, 스켈레톤은 `TextSkeleton size`다.
+- **글꼴.** 단계·OS 배율·크기 토큰은 [design](../design.md#글꼴)이 원본이다(앱 5단계, `allowFontScaling: false`). `HeroUIProvider`가 heroui 글자에도 배율을 끈다. 크기는 `Text size` 토큰, 아이콘·장식 그림은 `useFontScaledSize()`(배율 변화의 절반, 날씨 카드 안은 글자와 같은 `useFontScaleRatio()`), 버튼 누름 칸은 고정(아래), 스켈레톤은 `TextSkeleton size`다.
 - **아이콘만 있는 버튼.** 누름 칸(원·배경)은 고정 크기(`size-9` 등)이고 안의 아이콘만 `useFontScaledSize()`로 글꼴 단계를 따른다. 칸까지 배율을 따르면 큰 단계에서 버튼이 상하좌우로 늘어나 옆 버튼과 크기가 어긋난다(작성 줄 보내기·말하기·지우기).
 - 높이가 정해진 컨트롤(버튼·칩·탭)은 고정 높이와 좌우 padding이다. 짧은 라벨은 작은 iPhone 최대 단계에서 ko·en 모두 한 줄이다. 바뀌는 숫자는 `tabular-nums`다.
 - **기기.** iPhone, iPad, 폴더블(접음·펼침), iPhone Duo, Android 휴대폰·태블릿을 지원한다. 칸 수는 사이드바·레일 inset을 뺀 탭 안 내용 폭(Android는 시스템 바·컷아웃 inset을 빼지 않은 폭) `usePaneSizeClass()`(`compact`·`medium`·`expanded`), 창 전체 정책(방향·시트 배치)은 `useWindowSizeClass()`로 정한다. 기기 이름·힌지로 나누지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`다(`Platform.OS`는 `no-restricted-properties`, 번들에서 다른 플랫폼 코드가 빠진다).

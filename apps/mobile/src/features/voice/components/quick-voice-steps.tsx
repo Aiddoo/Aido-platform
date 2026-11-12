@@ -412,7 +412,8 @@ CaptureLayout.Header = function Header({ center, right, onClose }: CaptureLayout
       <Box flex={isCompact ? undefined : 1} className="items-start">
         <CloseButton
           variant="ghost"
-          style={{ width: fontScaledSize(22), height: fontScaledSize(22) }}
+          className="size-[22px]"
+          hitSlop={11}
           onPress={onClose}
           accessibilityLabel={t('listening.cancel')}
           testID="quick-voice-cancel"

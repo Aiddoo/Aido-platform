@@ -12,7 +12,6 @@ import { NotificationBellToolbar } from '@src/features/notification/components/n
 import { VoiceNoteDraftList } from '@src/features/voice/components/voice-note-draft-list';
 import { VoiceNoteStartButton } from '@src/features/voice/components/voice-note-start-button';
 import { VOICE_NOTE_PREVIEW_COUNT } from '@src/features/voice/constants/voice-note.constants';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -34,7 +33,6 @@ const HEADER_GAP = 8;
 
 export default function MemoScreen() {
   const { t } = useTranslation('memo');
-  const fontScaledSize = useFontScaledSize();
   const isCompact = usePaneSizeClass() === 'compact';
   const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
   const deselectMemo = useSingleTap(() => setSelectedMemoId(undefined));
@@ -57,9 +55,7 @@ export default function MemoScreen() {
                 <VoiceNoteStartButton
                   coachmarkPlacement={isCompact ? 'left' : 'right'}
                   coachmarkOffset={
-                    isCompact
-                      ? undefined
-                      : fontScaledSize(MEMO_CREATE_BUTTON_SIZE) + HEADER_GAP + HINT_OFFSET
+                    isCompact ? undefined : MEMO_CREATE_BUTTON_SIZE + HEADER_GAP + HINT_OFFSET
                   }
                 />
                 <QueryErrorBoundary fallback={MemoCreateButton.Error}>

@@ -50,8 +50,7 @@ export function VoiceNoteStartButton({
         onPress={() => startOnce()}
         accessibilityRole="button"
         accessibilityLabel={t('start.label')}
-        style={{ height: fontScaledSize(44) }}
-        className="justify-center rounded-full bg-gray-2 px-4"
+        className="h-11 justify-center rounded-full bg-gray-2 px-4"
         testID="voice-note-start"
       >
         <HStack gap={6} align="center">

@@ -11,11 +11,11 @@ import { PressableFeedback } from 'heroui-native';
 import { MemoResourceLimitPolicy } from '../domains/memo-resource-limit.model';
 import { useGetMemoResourceLimitQueryOptions } from '../queries/memo.queries';
 
+/** 누름 칸이라 글꼴 단계와 상관없이 고정이다. 메모 탭 코치마크가 이 폭을 건너 편다 */
 export const MEMO_CREATE_BUTTON_SIZE = 44;
 
 export function MemoCreateButton() {
   const fontScaledSize = useFontScaledSize();
-  const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
   const push = useSingleTap(router.push);
 
   const toast = useAppToast();
@@ -40,7 +40,7 @@ export function MemoCreateButton() {
       accessibilityRole="button"
       accessibilityLabel={t('titles.create')}
       testID="memo-create-button"
-      style={{ width: createButtonSize, height: createButtonSize }}
+      style={{ width: MEMO_CREATE_BUTTON_SIZE, height: MEMO_CREATE_BUTTON_SIZE }}
       className={cn(
         'items-center justify-center rounded-full',
         canCreate ? 'bg-main' : 'bg-gray-4',
@@ -56,15 +56,11 @@ export function MemoCreateButton() {
 }
 
 MemoCreateButton.Loading = function Loading() {
-  const fontScaledSize = useFontScaledSize();
-  const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
-
-  return <Box style={{ width: createButtonSize, height: createButtonSize }} />;
+  return <Box style={{ width: MEMO_CREATE_BUTTON_SIZE, height: MEMO_CREATE_BUTTON_SIZE }} />;
 };
 
 MemoCreateButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const fontScaledSize = useFontScaledSize();
-  const createButtonSize = fontScaledSize(MEMO_CREATE_BUTTON_SIZE);
   const { t } = useTranslation('common');
 
   return (
@@ -72,7 +68,7 @@ MemoCreateButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackPro
       accessibilityRole="button"
       accessibilityLabel={t('actions.retry')}
       onPress={reset}
-      style={{ width: createButtonSize, height: createButtonSize }}
+      style={{ width: MEMO_CREATE_BUTTON_SIZE, height: MEMO_CREATE_BUTTON_SIZE }}
       className="items-center justify-center rounded-full bg-gray-8"
     >
       <RefreshIcon
