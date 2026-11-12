@@ -49,8 +49,8 @@ import {
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
-import { ApplicationException } from "#api/shared/application/application.exception";
 
+import { invalidRefreshToken } from "../../../application/auth.errors.js";
 import { extractMetadata } from "./auth-request.mapper.js";
 import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
@@ -415,7 +415,7 @@ IP당 분당 20회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async refresh(@Req() req: Request, @CurrentRequestClient() client: RequestClient) {
     const parsedUser = refreshTokenUserSchema.safeParse(req.user);
     if (!parsedUser.success) {
-      throw new ApplicationException(ErrorCode.AUTH_0104);
+      throw invalidRefreshToken();
     }
     const payload = parsedUser.data;
     const result = await this.#refreshTokensUseCase.execute({
