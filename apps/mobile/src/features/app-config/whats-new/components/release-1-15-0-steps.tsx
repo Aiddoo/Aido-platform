@@ -121,7 +121,8 @@ export function Release1150Steps() {
       <Spacing size={8} />
 
       <GestureDetector gesture={fling}>
-        <View style={{ flex: 1 }}>
+        {/* GestureDetector는 네이티브 View 자식 하나에 제스처를 붙인다 */}
+        <View className="flex-1">
           <stepper.Render
             intro={() => (
               <WhatsNewStep

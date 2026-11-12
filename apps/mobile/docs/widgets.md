@@ -21,10 +21,10 @@ iOS는 Expo SDK 58의 `expo-widgets`(`createWidget` + props + `updateTimeline`),
 | domains                        | day 선택 Policy(`WidgetSnapshotPolicy.getDay`), 탐색 명령 유효성(5분)  |
 | utils                          | 첫 동기화 전 props, 탐색 링크 변환(번들이 별칭을 못 풀어 상대 경로)    |
 | constants                      | Android 위젯 정의·탐색 action                                          |
-| apis                           | summary → snapshot → props·iOS timeline mapper                         |
+| apis                           | summary → snapshot → props mapper                                      |
 | services                       | `WidgetSyncService`: 쓰기 직렬화·generation·중복 제거, 결과를 돌려준다 |
 | repositories                   | Android 위젯 저장소의 snapshot·소유자, 탐색 명령                       |
-| bridge                         | iOS timeline / Android snapshot·HeadlessJS / 미지원 플랫폼 경계        |
+| bridge                         | iOS timeline(+ timeline mapper) / Android snapshot·HeadlessJS / 미지원 |
 | components/widgets.ios.tsx     | 격리된 SwiftUI renderer(`expo-widgets`)                                |
 | components/widgets.android.tsx | 격리된 FlexWidget·TextWidget·SvgWidget renderer                        |
 | hooks                          | `AuthBootProvider`가 소유하는 계정·날짜(오늘·내일)·언어 동기화와 보고  |

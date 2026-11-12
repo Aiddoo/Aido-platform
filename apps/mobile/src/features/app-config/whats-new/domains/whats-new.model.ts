@@ -2,7 +2,6 @@ import { isSemanticVersionAtLeast } from '@aido/api/vocabulary';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { type Instant, diffMs } from '@src/shared/date/instant';
-import { maxBy } from 'es-toolkit';
 import { z } from 'zod';
 
 import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
@@ -48,8 +47,11 @@ export function findReleaseByCampaign<T extends Release>(
   return releases.find((release) => release.campaignId === campaignId) ?? null;
 }
 
+/** DateKey(YYYY-MM-DD)는 사전순이 날짜순이라 Date로 바꾸지 않고 비교한다 */
 export function getLatestRelease<T extends Release>(releases: readonly [T, ...T[]]): T {
-  return maxBy(releases, (release) => Date.parse(release.releasedOn));
+  return releases.reduce((latest, release) =>
+    release.releasedOn > latest.releasedOn ? release : latest,
+  );
 }
 
 /** 목록은 지금 쓸 수 있는 기능만 보인다. 쓸 수 없는 기능은 누를 수 없게 두지 않고 숨긴다 */
