@@ -16,20 +16,21 @@ import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { readWithoutBlocking } from '@src/shared/query/read-without-blocking';
-import { useOpenSheet } from '@src/shared/ui';
+import { useOverlay } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useEffect, useEffectEvent, useRef } from 'react';
 import { match } from 'ts-pattern';
 
-import { MarketingPushOptIn } from '../components/marketing-push-opt-in';
+import { MarketingPushOptInBottomSheet } from '../components/marketing-push-opt-in-bottom-sheet';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
 import { ensurePushPermission } from '../queries/push-permission-cache';
 import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 
-type MarketingPushOfferChoice = 'agree' | 'dismiss';
+/** null은 답 없이 사라졌을 때(로그아웃 등)라 거절로 남기지 않는다 */
+type MarketingPushOfferChoice = 'agree' | 'dismiss' | null;
 
 /** 완료 체크가 끝나는 모습을 보고 난 뒤에 시트를 올린다 */
 const OFFER_DELAY_MS = 700;
@@ -134,23 +135,30 @@ function useFindMarketingPushOfferAccountId() {
   };
 }
 
-/** 시트를 띄우고 처음 고른 답 하나를 남긴다. 답 없이 사라지면(로그아웃 등) undefined라 거절로 남기지 않는다 */
+/** 시트를 띄우고 고른 답을 남긴다. 동의 뒤 닫히는 애니메이션도 닫힘을 알리므로 처음 고른 답 하나만 남긴다 */
 function useOpenMarketingPushOffer() {
-  const openSheet = useOpenSheet();
+  const overlay = useOverlay();
   const repository = useMarketingPushPromptRepository();
   const { trackEvent } = useTrack();
 
   return async (accountId: string, { isCurrent }: { isCurrent: () => boolean }) => {
     trackEvent('marketing_push_prompt_shown', { source: 'completion_sheet' });
-    const choice = await openSheet<MarketingPushOfferChoice>(() => <MarketingPushOptIn />, {
-      footer: (close) => (
-        <MarketingPushOptIn.Actions
+    // 동의 기록 중에는 끌어 내림·뒤로 가기를 막아야 해 닫힘을 막을 자리가 없는 useOpenSheet 대신 overlay로 띄운다
+    const choice = await overlay.openAsync<MarketingPushOfferChoice>(
+      ({ isOpen, close, unmount }) => (
+        <MarketingPushOptInBottomSheet
+          isOpen={isOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              close('dismiss');
+            }
+          }}
+          onExit={unmount}
           onAgree={() => close('agree')}
-          onLater={() => close('dismiss')}
         />
       ),
-      dismissValue: 'dismiss',
-    });
+      { dismissedValue: null },
+    );
     match(choice)
       .with('agree', () => trackEvent('marketing_push_opted_in', { source: 'completion_sheet' }))
       .with('dismiss', () => {
@@ -161,7 +169,7 @@ function useOpenMarketingPushOffer() {
         repository.dismiss(accountId, getNowInstant());
         trackEvent('marketing_push_prompt_dismissed', { source: 'completion_sheet' });
       })
-      .with(undefined, noop)
+      .with(null, noop)
       .exhaustive();
   };
 }

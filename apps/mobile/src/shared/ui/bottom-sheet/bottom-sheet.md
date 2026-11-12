@@ -102,12 +102,12 @@ import { KeyboardBottomSheet } from '@src/shared/ui';
 
 ### ModalBottomSheet
 
-기존 시트 위에 추가 시트를 띄우는 부품이다. 기능은 직접 그리지 않고 `useOpenSheet`·`useOpenKeyboardSheet`로 띄운다. 키보드는 열릴 때 이 시트가 내리므로 호출부에서 `Keyboard.dismiss()`를 부르지 않는다. 같은 호스트에 나중에 등록되어 아래 시트 위에 쌓인다. 아래 시트의 입력에 다시 포커스할 때는 `onExit`가 아니라 `onCloseStart`에서 해서, 위 시트가 내려가는 동안 키보드와 아래 시트가 함께 올라오게 합니다.
+기존 시트 위에 추가 시트를 띄울 때 `useOverlay`와 함께 쓴다. 키보드는 열릴 때 이 시트가 내리므로 호출부에서 `Keyboard.dismiss()`를 부르지 않는다. 같은 호스트에 나중에 등록되어 아래 시트 위에 쌓인다. 아래 시트의 입력에 다시 포커스할 때는 `onExit`가 아니라 `onCloseStart`에서 해서, 위 시트가 내려가는 동안 키보드와 아래 시트가 함께 올라오게 합니다.
 
 ```tsx
 import { ModalBottomSheet } from '@src/shared/ui';
 
-// useOpenSheet 안에서 overlay가 isOpen/onOpenChange/onExit를 관리
+// useOverlay 등으로 isOpen/onOpenChange/onExit를 관리
 <ModalBottomSheet isOpen={isOpen} onOpenChange={handleOpenChange} onExit={handleExit}>
   {/* 피커 내용 */}
 </ModalBottomSheet>;

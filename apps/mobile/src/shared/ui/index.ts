@@ -144,6 +144,7 @@ export {
   OverlayProvider,
   useOpenKeyboardSheet,
   useOpenSheet,
+  useOverlay,
   useOverlayState,
 } from './overlay';
 export type { QueryErrorFallbackProps } from './query-error-boundary';
