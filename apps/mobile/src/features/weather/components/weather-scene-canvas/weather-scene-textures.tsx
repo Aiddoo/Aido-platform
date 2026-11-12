@@ -14,6 +14,7 @@ import {
   Shader,
   Skia,
   type SkPath,
+  type SkPathBuilder,
   type SkSize,
   useTexture,
   vec,
@@ -122,6 +123,13 @@ function getCenter(sprite: ParticleSprite) {
   return vec(sprite.x + sprite.width / 2, sprite.y + sprite.height / 2);
 }
 
+/** 한 번만 쓰는 빌더는 경로를 넘긴 뒤 바로 놓는다 */
+function detachOnce(builder: SkPathBuilder): SkPath {
+  const path = builder.detach();
+  builder.dispose();
+  return path;
+}
+
 function buildCrystalPath(): SkPath {
   const { crystal } = PARTICLE_SPRITES;
   const center = getCenter(crystal);
@@ -145,16 +153,17 @@ function buildCrystalPath(): SkPath {
       .moveTo(fork.x, fork.y)
       .lineTo(right.x, right.y);
   }
-  return builder.detach();
+  return detachOnce(builder);
 }
 
 function buildLeafVeinPath(): SkPath {
   const center = getCenter(PARTICLE_SPRITES.leaf);
   const halfLength = PARTICLE_SPRITES.leaf.width * LEAF.veinHalfLength;
-  return Skia.PathBuilder.Make()
-    .moveTo(center.x - halfLength, center.y)
-    .lineTo(center.x + halfLength, center.y)
-    .detach();
+  return detachOnce(
+    Skia.PathBuilder.Make()
+      .moveTo(center.x - halfLength, center.y)
+      .lineTo(center.x + halfLength, center.y),
+  );
 }
 
 // 입력이 상수인 텍스처 경로는 앱 수명 동안 한 번만 만든다. 장면을 열 때마다 네이티브 경로를 새로 만들지 않는다
@@ -331,7 +340,7 @@ function buildWavePath(
       builder.lineTo(x, y);
     }
   }
-  return builder.detach();
+  return detachOnce(builder);
 }
 
 /** 바람 줄기는 가운데가 가장 크게 물결치고 양 끝이 사라지는 선이다. */
@@ -394,7 +403,7 @@ function buildGlassDropRimPath(): SkPath {
     GLASS_DROP.rimStartDegrees,
     GLASS_DROP.rimSweepDegrees,
   );
-  return builder.detach();
+  return detachOnce(builder);
 }
 
 const GLASS_DROP_RIM_PATH = buildGlassDropRimPath();
@@ -437,12 +446,9 @@ const SUN_RAYS = {
 type SunRay = { angle: number; length: number; alpha: number; path: SkPath };
 
 function buildSunRayPath(length: number, halfWidth: number): SkPath {
-  return Skia.PathBuilder.Make()
-    .moveTo(0, -halfWidth)
-    .lineTo(length, 0)
-    .lineTo(0, halfWidth)
-    .close()
-    .detach();
+  return detachOnce(
+    Skia.PathBuilder.Make().moveTo(0, -halfWidth).lineTo(length, 0).lineTo(0, halfWidth).close(),
+  );
 }
 
 function createSunRays(): SunRay[] {

@@ -264,6 +264,7 @@ function Scrubber({
     builder.dispose();
     return path;
   }, [flagIndexes, levels.length, barCount, height]);
+  // prop 경로는 Canvas가 커밋 때 복사해 기록하므로 정리 함수에서 바로 놓는다(shared value 경로와 다르다)
   useEffect(() => () => flagPath.dispose(), [flagPath]);
 
   return (
