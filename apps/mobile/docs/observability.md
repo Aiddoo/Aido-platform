@@ -39,17 +39,24 @@
 
 ### 어디서 추적하나
 
-| 무엇               | 어디서                                                            |
-| ------------------ | ----------------------------------------------------------------- |
-| 서버가 확정한 결과 | mutation `onSuccess`·`onError`. `source`는 mutation 변수로 넘긴다 |
-| 보여짐·누름·단계   | 컴포넌트·훅                                                       |
-| 추적하지 않는 층   | api, service, repository, store, mapper, model, cache             |
+보기 종류마다 장치는 하나다. 같은 보기를 두 장치가 세지 않는다.
 
-- 노출 이벤트는 화면·구간마다 한 번이다. 재렌더·분 단위 갱신으로 다시 보내지 않는다.
+| 무엇                                                       | 어디서                                                                                          |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 경로 보기(pathname이 바뀜. 시트 route 포함)                | 전역 `screen_view` 하나([화면 조회](#화면-조회)). 화면은 따로 보내지 않는다                     |
+| 경로가 아닌 보기(카드·말풍선·캐러셀 장·받은 내용·오버레이) | `useTrackView(event, { key, params } \| null)`(`shared/analytics`). 마운트 안에서 key마다 한 번 |
+| 같은 경로 안 단계                                          | `useStepper`의 `onStepChange`(entry마다 한 번, 뒤로 가면 다시)                                  |
+| 누름·외부 앱 열기                                          | 핸들러                                                                                          |
+| 서버가 확정한 결과                                         | mutation `onSuccess`·`onError`. `source`는 mutation 변수로 넘긴다                               |
+| 추적하지 않는 층                                           | api, service, repository, store, mapper, model, cache                                           |
+
+- 노출 이벤트는 보기마다 한 번이다. `useTrackView`는 params 객체를 새로 만들어 다시 그려도, 포커스가 돌아와도, 숨었다 다시 보여도 같은 key를 다시 보내지 않는다. 화면이 다시 마운트되면(뒤로 갔다 다시 열기) 새 보기로 센다. `null`은 아직 보이지 않은 것이라 뒤 탭·숨은 카드는 `null`을 넘긴다.
+- key는 "무엇을 봤나"다. 같은 화면에서 다른 것을 보면 key가 바뀐다(캐러셀 장 index, 주, 단계). 마운트를 넘어 막아야 하는 것(초대 링크 열림)은 DI store가 맡는다.
 
 ### 화면 조회
 
 - `useScreenTracking`(`AuthGateLayout`의 null 자식 `RouteWatchers`에서 호출)이 `screen_view.screen_name`에 실제 경로가 아닌 route 템플릿(`toScreenName(useSegments())`, 예 `/invite/[inviteCode]`)을 보낸다. 초대 코드·사용자 id가 남지 않는다. 그룹(`(app)`)과 `index`는 뺀다. 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)도 경로가 바뀌면 한 번 더 센다. Sentry 내비게이션 breadcrumb도 같은 이름을 쓴다.
+- `screen_view`는 레이아웃 효과에서 보내 같은 이동에서 새 화면이 마운트하며 보내는 이벤트(`weather_opened`, `useTrackView`)보다 먼저 나간다. Firebase가 이벤트에 붙이는 화면 이름(`firebase_screen`)이 앞 화면이 되지 않는다. 순서는 `auth-gate-layout.test.tsx`가 지킨다.
 - 스플래시 뒤로 지나가는 입구 `/`·`/loading`·`/auth/[provider]`는 세지 않는다(1.15.2부터). 목록은 앱 경로를 아는 bootstrap(`RouteWatchers`의 `ENTRY_REDIRECT_SCREENS`)이 넘긴다. 건너뛴 화면은 앞 화면으로 기억하지 않아 `/feed` → `/` → `/feed` 왕복은 다시 세지 않는다. 콜드 스타트는 첫 화면 한 번, 로그인·로그아웃은 도착한 화면 한 번이다(`auth-gate-layout.test.tsx`).
 - URL로 바뀌는 탭 전환은 `ViewTabs`가 `view_tab_changed { screen_name, view }`를 보낸다(같은 탭을 다시 누르면 보내지 않는다). 조회 오류 화면의 다시 시도는 `error_fallback_retry_tapped { screen_name }`이다. `screen_name`은 모두 `useScreenName()`이다.
 - 넓은 화면의 상세 pane은 마운트될 때 그 상세 화면 이름으로 조회를 보낸다.

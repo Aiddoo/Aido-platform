@@ -1,7 +1,7 @@
 import { useAnalytics, useErrorReporter } from '@src/shared/di/shared-di-context';
 import type { ScreenName } from '@src/shared/utils/to-screen-name';
 import { usePathname } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 import { useScreenName } from './use-screen-name';
 
@@ -19,7 +19,8 @@ export function useScreenTracking({ untrackedScreens }: ScreenTrackingOptions): 
   const prevPathname = useRef<string | null>(null);
   const prevScreen = useRef<string | null>(null);
 
-  useEffect(() => {
+  // 새 화면의 마운트 효과(진입·노출 이벤트)보다 먼저 보낸다. Firebase가 그 이벤트에 붙이는 화면 이름이 앞 화면이 되지 않는다
+  useLayoutEffect(() => {
     // 건너뛴 화면은 앞 화면으로 기억하지 않아 `/feed` → `/` → `/feed` 왕복을 다시 세지 않는다
     if (untrackedScreens.has(screenName) || pathname === prevPathname.current) {
       return;

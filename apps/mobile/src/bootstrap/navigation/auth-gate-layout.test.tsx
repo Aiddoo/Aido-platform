@@ -3,7 +3,9 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { getCachedMe, updateMeInCache } from '@src/features/identity/user/queries/user-cache';
+import { useTrackView } from '@src/shared/analytics';
 import * as themeProvider from '@src/shared/providers/theme-provider';
+import type { ScreenName } from '@src/shared/utils/to-screen-name';
 import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import * as ExpoLinking from 'expo-linking';
@@ -19,6 +21,15 @@ import { AuthGateLayout } from './auth-gate-layout';
 jest.unmock('expo-router');
 
 let mockAuthSessionStore = createAuthSessionStoreStub('loading');
+
+/** 화면이 마운트될 때 보기를 한 번 센다. 화면 진입 이벤트 자리에 이벤트 하나를 빌려 쓴다 */
+function useMountedView(screenName: ScreenName) {
+  useTrackView('view_tab_changed', {
+    key: 'mounted',
+    params: { screen_name: screenName, view: 'mounted' },
+  });
+}
+
 function LoginScreen() {
   return (
     <Pressable testID="login" onPress={() => mockAuthSessionStore.setStatus('authenticated')}>
@@ -28,6 +39,8 @@ function LoginScreen() {
 }
 
 function FeedScreen() {
+  useMountedView('/feed');
+
   return (
     <Pressable testID="feed" onPress={() => mockAuthSessionStore.setStatus('unauthenticated')}>
       <Text>Feed</Text>
@@ -52,6 +65,18 @@ function LoadingScreen() {
       </Pressable>
     </View>
   );
+}
+
+function TodoDetailScreen() {
+  useMountedView('/todo/[todoId]');
+
+  return <Text testID="todo-detail">Todo details</Text>;
+}
+
+function TodoActionsSheet() {
+  useMountedView('/todo/[todoId]/actions');
+
+  return null;
 }
 
 async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
@@ -79,12 +104,33 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
       },
       '(app)/(tabs)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
       '(app)/(tabs)/feed/index': FeedScreen,
-      '(app)/todo/[todoId]/index': () => <Text testID="todo-detail">Todo details</Text>,
+      '(app)/todo/[todoId]/index': TodoDetailScreen,
+      '(app)/todo/[todoId]/actions': TodoActionsSheet,
     },
     { url: initialUrl, di, withLocalDate: true },
   );
   const screenViews = () => analytics.trackScreenView.mock.calls.map(([name]) => name);
-  return { route, errorReporter: di.errorReporter, queryClient: di.queryClient, screenViews };
+  // 화면 조회와 마운트 보기를 보낸 순서대로 놓는다. Firebase는 이벤트에 마지막 screen_view의 화면 이름을 붙인다
+  const timeline = () =>
+    [
+      ...analytics.trackScreenView.mock.calls.map(([name], index) => ({
+        order: analytics.trackScreenView.mock.invocationCallOrder[index] ?? 0,
+        entry: `screen ${name}`,
+      })),
+      ...analytics.trackEvent.mock.calls.map(([, params], index) => ({
+        order: analytics.trackEvent.mock.invocationCallOrder[index] ?? 0,
+        entry: `view ${String(params?.screen_name)}`,
+      })),
+    ]
+      .sort((a, b) => a.order - b.order)
+      .map(({ entry }) => entry);
+  return {
+    route,
+    errorReporter: di.errorReporter,
+    queryClient: di.queryClient,
+    screenViews,
+    timeline,
+  };
 }
 
 describe('root 인증 route 전환', () => {
@@ -255,6 +301,64 @@ describe('root 인증 route 전환', () => {
 
       // Then
       await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+      expect(screenViews()).toEqual(['/feed']);
+    });
+  });
+
+  describe('보기 추적', () => {
+    async function renderFeed() {
+      const rendered = await renderAuthRoutes('authenticated');
+      await waitFor(() => expect(rendered.route.getPathname()).toBe('/feed'));
+      return rendered;
+    }
+
+    it('상세에 갔다 돌아오면 피드를 다시 세고 피드 마운트 보기는 다시 세지 않는다', async () => {
+      // Given
+      const { timeline } = await renderFeed();
+
+      // When
+      await act(() => router.push({ pathname: '/todo/[todoId]', params: { todoId: 1 } }));
+      await act(() => router.back());
+
+      // Then
+      expect(timeline()).toEqual([
+        'screen /feed',
+        'view /feed',
+        'screen /todo/[todoId]',
+        'view /todo/[todoId]',
+        'screen /feed',
+      ]);
+    });
+
+    it('시트 route는 열 때마다 시트 조회 뒤 시트 보기를 한 번 세고 닫으면 아래 화면을 센다', async () => {
+      // Given
+      const { timeline } = await renderFeed();
+      const openSheet = () =>
+        act(() => router.push({ pathname: '/todo/[todoId]/actions', params: { todoId: 1 } }));
+
+      // When
+      await openSheet();
+      await act(() => router.back());
+      await openSheet();
+
+      // Then
+      expect(timeline().slice(2)).toEqual([
+        'screen /todo/[todoId]/actions',
+        'view /todo/[todoId]/actions',
+        'screen /feed',
+        'screen /todo/[todoId]/actions',
+        'view /todo/[todoId]/actions',
+      ]);
+    });
+
+    it('query만 바뀌면 화면을 다시 세지 않는다', async () => {
+      // Given
+      const { screenViews } = await renderFeed();
+
+      // When
+      await act(() => router.setParams({ date: '2026-11-12' }));
+
+      // Then
       expect(screenViews()).toEqual(['/feed']);
     });
   });
