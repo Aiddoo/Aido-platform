@@ -1,9 +1,8 @@
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useOpenKeyboardSheet } from '@src/shared/ui';
 import type { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { NudgeBottomSheet, type NudgeReceiver, type NudgeTargetTodo } from './nudge-bottom-sheet';
+import { useOpenTodoNudge } from '../hooks/use-open-todo-nudge';
+import type { NudgeReceiver, NudgeTargetTodo } from './nudge-bottom-sheet';
 import { NudgePawButton } from './nudge-paw-button';
 
 interface TodoNudgeButtonProps extends Omit<
@@ -14,33 +13,20 @@ interface TodoNudgeButtonProps extends Omit<
   todo: NudgeTargetTodo;
 }
 
-/** 친구 할 일 목록과 상세가 공유하는 넛지 진입점. 시트와 한도 UX도 이곳에서 한 번만 조립한다. */
+/** 친구 할 일 목록과 상세가 공유하는 콕 버튼 */
 export function TodoNudgeButton({
   receiver,
   todo,
   isDisabled,
   ...pressableProps
 }: TodoNudgeButtonProps) {
-  const openKeyboardSheet = useOpenKeyboardSheet();
-  const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
+  const openTodoNudge = useOpenTodoNudge();
 
-  const openNudgeSheet = () =>
-    openKeyboardSheet(({ isOpen, onOpenChange }) => (
-      <NudgeBottomSheet
-        receiver={receiver}
-        todo={todo}
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-      />
-    ));
-
-  const handlePress = () => {
-    if (gate.promptIfBlocked()) {
-      return;
-    }
-
-    openNudgeSheet();
-  };
-
-  return <NudgePawButton {...pressableProps} onPress={handlePress} isDisabled={isDisabled} />;
+  return (
+    <NudgePawButton
+      {...pressableProps}
+      onPress={() => openTodoNudge({ receiver, todo })}
+      isDisabled={isDisabled}
+    />
+  );
 }

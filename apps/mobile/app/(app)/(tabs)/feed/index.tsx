@@ -31,6 +31,7 @@ import {
 } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetFriendTodosQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { FriendStrip } from '@src/features/social/friend/components/friend-strip';
+import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
 import {
   type RouteFriend,
   useRouteFriend,
@@ -41,6 +42,7 @@ import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-i
 import { FriendRemindNudgeAction } from '@src/features/social/nudge/components/friend-remind-nudge-action';
 import { FriendTodoNudgeAction } from '@src/features/social/nudge/components/friend-todo-nudge-action';
 import { NudgeLimitBanner } from '@src/features/social/nudge/components/nudge-limit-banner';
+import { useFriendTodoNudgeMenuAction } from '@src/features/social/nudge/hooks/use-friend-todo-nudge-menu-action';
 import { refreshNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
 import { refetchWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -279,18 +281,7 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
               fallback={FriendTodoList.Error}
             >
               <Suspense fallback={<FriendTodoList.Loading />}>
-                <FriendTodoList
-                  key={selectedDateKey}
-                  friendId={friend.id}
-                  renderRowAction={(todo) => (
-                    <FriendTodoNudgeAction
-                      todo={todo}
-                      friend={friend}
-                      selectedDateKey={selectedDateKey}
-                    />
-                  )}
-                  emptyAction={<FriendRemindNudgeAction friend={friend} />}
-                />
+                <FriendFeed.TodoList key={selectedDateKey} friend={friend} />
               </Suspense>
             </QueryErrorBoundary>
           ))
@@ -299,6 +290,23 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
     </SafeAreaScrollView>
   );
 }
+
+/** 콕 버튼·메뉴처럼 친구와 날짜가 필요한 행동을 피드가 한 번 읽어 목록에 넘긴다 */
+FriendFeed.TodoList = function TodoList({ friend }: { friend: FriendUser }) {
+  const [selectedDateKey] = useFeedDateKey();
+  const getNudgeMenuAction = useFriendTodoNudgeMenuAction({ friend, selectedDateKey });
+
+  return (
+    <FriendTodoList
+      friendId={friend.id}
+      renderRowAction={(todo) => (
+        <FriendTodoNudgeAction todo={todo} friend={friend} selectedDateKey={selectedDateKey} />
+      )}
+      getMenuAction={getNudgeMenuAction}
+      emptyAction={<FriendRemindNudgeAction friend={friend} />}
+    />
+  );
+};
 
 /**
  * 링크로 처음 연 친구 피드. 친구인지 확인하는 동안 그날 할 일을 함께 받아 확인 → 할 일 순서로 기다리지 않는다

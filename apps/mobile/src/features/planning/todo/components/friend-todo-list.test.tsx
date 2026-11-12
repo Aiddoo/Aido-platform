@@ -42,7 +42,12 @@ describe('FriendTodoList', () => {
         <FriendCalendar friendId={FRIEND_ID} />
         <QueryErrorBoundary fallback={FriendTodoList.Error}>
           <Suspense fallback={<FriendTodoList.Loading />}>
-            <FriendTodoList friendId={FRIEND_ID} renderRowAction={() => null} emptyAction={null} />
+            <FriendTodoList
+              friendId={FRIEND_ID}
+              renderRowAction={() => null}
+              getMenuAction={() => null}
+              emptyAction={null}
+            />
           </Suspense>
         </QueryErrorBoundary>
       </>,

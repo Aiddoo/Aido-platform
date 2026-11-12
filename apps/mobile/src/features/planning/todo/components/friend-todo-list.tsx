@@ -21,7 +21,7 @@ import {
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy, range } from 'es-toolkit';
 import { Link } from 'expo-router';
-import { type ReactNode, useState } from 'react';
+import { type ComponentProps, type ReactNode, useState } from 'react';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import { isFriendFeedUnavailableError } from '../domains/todo.error';
@@ -33,16 +33,30 @@ import { formatTodoTime } from '../utils/todo-time.view-model';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoRow } from './todo-row';
 
+/** Link.Menu는 감싼 컴포넌트를 버려 메뉴 동작을 요소가 아닌 값으로 받는다 */
+export interface FriendTodoMenuAction extends Required<
+  Pick<ComponentProps<typeof Link.MenuAction>, 'icon' | 'onPress'>
+> {
+  label: string;
+}
+
 interface FriendTodoListProps {
   /** 피드가 친구 목록에서 확인한 친구의 id. route 값은 더는 친구가 아닌 사람일 수 있어 그대로 읽지 않는다 */
   friendId: string;
   /** 할 일 줄 오른쪽에 붙는 행동(콕 등). 친구·날짜 같은 화면 값은 부모가 한 번 읽어 담는다 */
   renderRowAction: (todo: Todo) => ReactNode;
+  /** 길게 누른 메뉴의 열기 다음 동작(콕 등). 없으면 null */
+  getMenuAction: (todo: Todo) => FriendTodoMenuAction | null;
   /** 친구에게 할 일이 없는 오늘 빈 화면에 붙는 행동(독촉 콕 등) */
   emptyAction: ReactNode;
 }
 
-export function FriendTodoList({ friendId, renderRowAction, emptyAction }: FriendTodoListProps) {
+export function FriendTodoList({
+  friendId,
+  renderRowAction,
+  getMenuAction,
+  emptyAction,
+}: FriendTodoListProps) {
   // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
   const [dateKey] = useFeedDateKey();
   const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
@@ -73,6 +87,7 @@ export function FriendTodoList({ friendId, renderRowAction, emptyAction }: Frien
                 todo={todo}
                 isLinked={paneSizeClass === 'compact'}
                 renderAction={renderRowAction}
+                menuAction={getMenuAction(todo)}
                 onOpenDetail={openTodoDetail}
               />
             ))}
@@ -88,6 +103,7 @@ interface FriendTodoListItemProps {
   /** 접힌 화면에서만 Link다. 펼친 화면은 같은 화면의 칸을 바꿔 미리볼 상세 화면이 없다 */
   isLinked: boolean;
   renderAction: (todo: Todo) => ReactNode;
+  menuAction: FriendTodoMenuAction | null;
   onOpenDetail: (todoId: number) => void;
 }
 
@@ -95,6 +111,7 @@ FriendTodoList.Item = function Item({
   todo,
   isLinked,
   renderAction,
+  menuAction,
   onOpenDetail,
 }: FriendTodoListItemProps) {
   const { t } = useTranslation('todo');
@@ -116,6 +133,7 @@ FriendTodoList.Item = function Item({
       todo={todo}
       isLinked={isLinked}
       isTapOpening={!hasSubTodos}
+      menuAction={menuAction}
       onOpen={openComments}
     >
       <TodoRow
@@ -175,6 +193,7 @@ interface FriendTodoListItemLinkProps {
   isLinked: boolean;
   /** 하위 항목이 없는 행은 탭으로 상세를 연다. 하위 항목이 있으면 탭은 펼치기다 */
   isTapOpening: boolean;
+  menuAction: FriendTodoMenuAction | null;
   onOpen: () => void;
   children: ReactNode;
 }
@@ -184,6 +203,7 @@ FriendTodoList.ItemLink = function ItemLink({
   todo,
   isLinked,
   isTapOpening,
+  menuAction,
   onOpen,
   children,
 }: FriendTodoListItemLinkProps) {
@@ -209,6 +229,11 @@ FriendTodoList.ItemLink = function ItemLink({
         <Link.MenuAction icon="text.bubble" onPress={onOpen}>
           {t('detail.open')}
         </Link.MenuAction>
+        {menuAction != null && (
+          <Link.MenuAction icon={menuAction.icon} onPress={menuAction.onPress}>
+            {menuAction.label}
+          </Link.MenuAction>
+        )}
       </Link.Menu>
     </Link>
   );
