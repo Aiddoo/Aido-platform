@@ -110,7 +110,8 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 
 ### Link
 
-- 상세로 가는 행은 모두 `<Link>` + `Link.Preview` + `Link.Menu`다(할 일, 메모, 친구, 알림, 리포트, 제안). 길게 누르기 동작은 `Link.MenuAction`으로 둔다.
+- 상세로 가는 행은 모두 `<Link>` + `Link.Preview` + `Link.Menu`다(친구 할 일, 메모 카드, 친구, 알림·보낸 콕, 리포트, 주간 성취, 말로 남긴 메모). 길게 누르기 동작은 `Link.MenuAction`으로 둔다.
+- 제안 행과 댓글 행은 상세 route가 없어 Link를 붙이지 않는다. 제안은 수락·거절 버튼, 댓글은 길게 누르기 메뉴를 그대로 둔다.
 - Link로 여는 것은 좁은 화면(compact)뿐이다. 넓은 화면의 pane 선택은 기존 `onPress`로 한다.
 - 미리보기는 행과 같은 Stack의 화면만 붙인다. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은 미리보기가 그 navigator에 화면을 미리 넣어 params가 남을 수 있어 탭으로만 연다. 알림함(루트 Stack)은 `/todo/[todoId]`·`/nudges/[nudgeId]`만 미리본다(`findRootStackDetailHref`).
 - 끌기(재정렬) 모드의 행에는 Menu를 붙이지 않는다. 친구 목록은 편집 모드에서 Link를 빼고 끌기만 남기며, 평소에는 친구 피드(다른 탭)로 가는 Link + Menu(피드 보기·콕 찌르기·신고·차단)다.
