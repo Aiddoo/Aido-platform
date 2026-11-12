@@ -6,9 +6,11 @@ import {
   useSignInService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { getCachedMe, invalidateMe } from '@src/features/identity/user/queries/user-cache';
+import { ensureMe, invalidateMe } from '@src/features/identity/user/queries/user-cache';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import type { AppEventMap } from '@src/shared/analytics/event-map';
+import { isConnectivityError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
@@ -272,22 +274,42 @@ export function useDeleteAccountMutationOptions() {
   const toast = useAppToast();
   const { signOut } = useAuthSession();
   const queryClient = useQueryClient();
+  const meQueryOptions = useGetMeQueryOptions();
   const sessionCleanupService = useSessionCleanupService();
+
+  // 탈퇴 뒤에는 서버가 내 정보를 주지 않아 요청 전에 받는다. 오프라인에 멈추거나 재시도로 늦추지 않고, 받지 못해도 탈퇴는 이어 간다
+  const findAccountId = async () => {
+    try {
+      const me = await ensureMe(queryClient, {
+        ...meQueryOptions,
+        retry: false,
+        networkMode: 'always',
+      });
+      return me.id;
+    } catch {
+      return null;
+    }
+  };
 
   return mutationOptions({
     networkMode: 'always',
     // 푸시 기기는 서버 탈퇴가 함께 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
     // 세션 만료가 먼저 커밋되면 정리가 콜백을 지워 초안·안내 기록이 남으므로 콜백에 두지 않는다
     mutationFn: async (input: DeleteAccountInput) => {
-      const accountId = getCachedMe(queryClient)?.id;
-      unwrap(await signInService.deleteAccount(input));
+      sessionCleanupService.beforeAccountDeletion(await findAccountId());
+      try {
+        unwrap(await signInService.deleteAccount(input));
+      } catch (error) {
+        // 응답을 받지 못했으면 서버가 지웠을 수 있어 이어지는 세션 종료를 로그아웃처럼 정리한다
+        if (!isConnectivityError(error)) {
+          sessionCleanupService.afterAccountDeletionRejected();
+        }
+        throw error;
+      }
       haptics.notify('success');
       toast.success(t('auth:toasts.accountDeleted'));
       trackEvent('auth_account_deleted');
       resetData();
-      if (accountId != null) {
-        sessionCleanupService.afterAccountDeleted(accountId);
-      }
       signOut();
     },
     // 비밀번호가 틀리면 폼이 그 칸에 보인다

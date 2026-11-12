@@ -161,7 +161,8 @@ describe('createAppContainer', () => {
       rememberPrompts(syncStorage, 'account-2');
 
       // When
-      sessionCleanupService.afterAccountDeleted('account-1');
+      sessionCleanupService.beforeAccountDeletion('account-1');
+      sessionCleanupService.afterSignedOut();
 
       // Then
       expect(readPrompts(syncStorage, 'account-1')).toEqual({
@@ -186,8 +187,8 @@ describe('createAppContainer', () => {
       const { sessionCleanupService } = createTestDi({ ports: { syncStorage, logger } });
 
       // When
+      sessionCleanupService.beforeAccountDeletion('account-1');
       sessionCleanupService.afterSignedOut();
-      sessionCleanupService.afterAccountDeleted('account-1');
 
       // Then
       expect(logger.warn).toHaveBeenCalledWith(AUTH_LOG_EVENT.SESSION_CLEANUP_STEP_FAILED, {
@@ -224,7 +225,8 @@ describe('createAppContainer', () => {
         syncStorage.set(remainingKey, 'saved');
 
         // When
-        sessionCleanupService.afterAccountDeleted(DELETED_ACCOUNT_ID);
+        sessionCleanupService.beforeAccountDeletion(DELETED_ACCOUNT_ID);
+        sessionCleanupService.afterSignedOut();
 
         // Then
         expect(syncStorage.keys()).toEqual([remainingKey]);
@@ -246,7 +248,8 @@ describe('createAppContainer', () => {
       });
 
       // When
-      sessionCleanupService.afterAccountDeleted(DELETED_ACCOUNT_ID);
+      sessionCleanupService.beforeAccountDeletion(DELETED_ACCOUNT_ID);
+      sessionCleanupService.afterSignedOut();
 
       // Then
       expect(syncStorage.keys().filter((key) => key.includes(DELETED_ACCOUNT_ID))).toEqual([]);

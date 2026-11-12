@@ -49,6 +49,7 @@ import {
   createDeleteAccountDto,
 } from '../__tests__/auth.fixtures';
 import { AuthApi } from '../apis/auth.api';
+import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import { useAuthSession } from '../hooks/use-auth-session';
 import { useAuthStatus } from '../hooks/use-auth-status';
 import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from '../services/log-out-device.service';
@@ -552,6 +553,116 @@ describe('탈퇴', () => {
       expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' }),
     );
     expect(coachmarks.hasSeen({ accountId: account.userId, kind: 'todo-reorder' })).toBe(false);
+  });
+
+  it('내 정보를 받기 전에 탈퇴해도 서버의 내 정보로 그 계정의 안내 기록을 지운다', async () => {
+    // Given
+    const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    const coachmarks = createCoachmarkRecords(session.syncStorage);
+    coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
+    session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(account) }));
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account' ? ok(createDeleteAccountDto()) : ok({}),
+    );
+    const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+    session.queryClient.removeQueries({ queryKey: USER_QUERY_KEYS.me() });
+
+    // When
+    await act(async () => {
+      await result.current.deleteAccount.mutateAsync({ password: 'password-1' });
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(coachmarks.hasSeen({ accountId: account.userId, kind: 'todo-reorder' })).toBe(false);
+  });
+
+  it('내 정보를 받지 못해도 탈퇴는 이어 가고 안내 기록을 지우지 못한 것을 남긴다', async () => {
+    // Given
+    const logger = createAppLoggerStub();
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, ports: { logger } });
+    session.authHttp.get.mockRejectedValue(new ServerError(503));
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account' ? ok(createDeleteAccountDto()) : ok({}),
+    );
+    const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+    session.queryClient.removeQueries({ queryKey: USER_QUERY_KEYS.me() });
+    session.draftService.save(memoDraftKey, { content: '작성 중' });
+
+    // When
+    await act(async () => {
+      await result.current.deleteAccount.mutateAsync({ password: 'password-1' });
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' });
+    expect(logger.warn).toHaveBeenCalledWith(AUTH_LOG_EVENT.ACCOUNT_DELETION_OWNER_UNKNOWN);
+  });
+
+  it.each([
+    ['시간 초과', () => Promise.reject(new TimeoutError())],
+    ['연결 끊김', () => Promise.reject(new NetworkError())],
+  ])(
+    '탈퇴 응답을 받지 못한 채(%s) 세션이 끝나면 로그아웃처럼 초안과 안내 기록을 지운다',
+    async (_name, respond) => {
+      // Given
+      const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
+      const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+      const coachmarks = createCoachmarkRecords(session.syncStorage);
+      coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
+      session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(account) }));
+      session.authHttp.delete.mockImplementation((url) =>
+        url === 'v1/auth/account' ? respond() : Promise.resolve(ok({})),
+      );
+      const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+      session.draftService.save(memoDraftKey, { content: '작성 중' });
+      await act(async () => {
+        await result.current.deleteAccount
+          .mutateAsync({ password: 'password-1' })
+          .catch(() => undefined);
+      });
+
+      // When
+      await act(async () => {
+        emitSessionExpired({ reason: 'refresh-rejected' });
+        await jest.advanceTimersByTimeAsync(0);
+      });
+
+      // Then
+      await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+      expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' });
+      expect(coachmarks.hasSeen({ accountId: account.userId, kind: 'todo-reorder' })).toBe(false);
+    },
+  );
+
+  it('서버가 탈퇴를 거절한 뒤 세션이 만료되면 같은 사람이 이어 쓰도록 초안을 남긴다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account'
+        ? err(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
+        : ok({}),
+    );
+    const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+    session.draftService.save(memoDraftKey, { content: '작성 중' });
+    await act(async () => {
+      await result.current.deleteAccount.mutateAsync({ password: 'wrong' }).catch(() => undefined);
+    });
+
+    // When
+    await act(async () => {
+      emitSessionExpired({ reason: 'refresh-rejected' });
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(session.draftService.restore(memoDraftKey)).toEqual({
+      status: 'restored',
+      value: { content: '작성 중' },
+    });
   });
 
   it('비밀번호가 틀려 실패하면 토큰과 상태를 유지한다', async () => {

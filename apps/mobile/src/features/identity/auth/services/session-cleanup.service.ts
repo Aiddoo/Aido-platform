@@ -51,6 +51,8 @@ export class SessionCleanupService {
   readonly #pushNotification: SessionCleanupServicePorts['pushNotification'];
   readonly #signOutEpoch: SessionCleanupServicePorts['signOutEpoch'];
   readonly #logger: SessionCleanupServicePorts['logger'];
+  /** 보낸 탈퇴 요청의 결과를 모른다. 계정 id를 몰라도 남겨 세션이 끝날 때 로그아웃처럼 지운다 */
+  #pendingAccountDeletion: { accountId: string | null } | null = null;
 
   constructor({
     queryCache,
@@ -78,7 +80,7 @@ export class SessionCleanupService {
     this.#logger = logger;
   }
 
-  /** 로그아웃·탈퇴: 캐시와 이 계정의 기기 데이터를 모두 지운다 */
+  /** 로그아웃·탈퇴: 캐시와 이 계정의 기기 데이터를 모두 지운다. 탈퇴면 그 계정의 안내 기록도 지운다 */
   afterSignedOut = (): void => {
     // 지우기 전에 올려야 그 사이 늦게 온 초안·녹음 쓰기도 버린다
     this.#run('sign-out-epoch', () => this.#signOutEpoch.advance());
@@ -88,16 +90,36 @@ export class SessionCleanupService {
     this.#run('device-timezone', () => this.#deviceTimezone.clear());
     this.#run('pending-redemption', () => this.#pendingRedemption.clear());
     this.#dismissDeliveredNotifications();
+    const deletedAccountId = this.#pendingAccountDeletion?.accountId ?? null;
+    this.#pendingAccountDeletion = null;
+    if (deletedAccountId != null) {
+      this.#run('user-device-data', () => this.#userDeviceData.clearForUser(deletedAccountId));
+    }
   };
 
-  /** 탈퇴: 그 계정의 안내 기록을 지운다. 로그아웃은 같은 사람이 돌아오므로 남긴다 */
-  afterAccountDeleted = (accountId: string): void => {
-    this.#run('user-device-data', () => this.#userDeviceData.clearForUser(accountId));
+  /**
+   * 탈퇴 요청 직전. 응답을 받지 못해도 서버는 지웠을 수 있어 이어서 세션이 끝나면 로그아웃처럼 지운다.
+   * 안내 기록은 계정 id가 있어야 지울 수 있어 모르면 남긴다
+   */
+  beforeAccountDeletion = (accountId: string | null): void => {
+    if (accountId == null) {
+      this.#logger.warn(AUTH_LOG_EVENT.ACCOUNT_DELETION_OWNER_UNKNOWN);
+    }
+    this.#pendingAccountDeletion = { accountId };
+  };
+
+  /** 서버가 탈퇴를 거절했다. 계정이 남아 같은 사람이 이어 쓰므로 세션 만료는 초안을 남긴다 */
+  afterAccountDeletionRejected = (): void => {
+    this.#pendingAccountDeletion = null;
   };
 
   /** 세션 만료: 서버에 로그아웃을 알리지 못했으므로 이 기기의 푸시 등록도 푼다 */
   afterSessionExpired = (): void => {
-    this.afterSessionEnded();
+    if (this.#pendingAccountDeletion == null) {
+      this.afterSessionEnded();
+    } else {
+      this.afterSignedOut();
+    }
     this.#run('push-device-release', () => this.#pushDevice.requestRelease());
     // 만료 뒤에는 다른 계정이 로그인할 수 있다
     this.#dismissDeliveredNotifications();
