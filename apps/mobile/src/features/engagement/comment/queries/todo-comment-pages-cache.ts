@@ -251,17 +251,23 @@ export function restoreCommentInThreadPages(
   if (findPlacement(data, (thread) => thread.comment.id === threadId) == null) {
     return withItemInserted(data, placement, placement.thread);
   }
+  const optimisticReplyCount = TodoCommentPolicy.withCommentRemoved(placement.thread, removed)
+    ?.replySummary.totalCount;
 
   return mapPages(data, (page) => ({
     ...page,
     items: page.items.map((thread) => {
-      // 지우는 사이 서버 값으로 다시 받아 답글이 이미 보이면 답글 수를 또 늘리지 않는다
-      if (thread.comment.id !== threadId || thread.previewReply?.id === removed.id) {
+      if (thread.comment.id !== threadId) {
         return thread;
       }
-      return removed.id === threadId
-        ? { ...thread, comment: removed }
-        : TodoCommentPolicy.withReplyAdded(thread, [removed]);
+      if (removed.id === threadId) {
+        return { ...thread, comment: removed };
+      }
+      // 지우는 사이 서버 값으로 다시 받아 답글 수가 지운 뒤 값과 다르면 서버가 이미 센 것이라 또 늘리지 않는다
+      const isRefetched =
+        thread.previewReply?.id === removed.id ||
+        thread.replySummary.totalCount !== optimisticReplyCount;
+      return isRefetched ? thread : TodoCommentPolicy.withReplyAdded(thread, [removed]);
     }),
   }));
 }
