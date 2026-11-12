@@ -586,7 +586,7 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
     if (!MemoPolicy.hasContentChanged(memo, content)) {
       return memo;
     }
-    return updateMemo.mutateAsync({ content: content.trim() });
+    return updateMemo.mutateAsync({ content });
   };
 
   // 저장 버튼과 뒤로 가기는 handleSubmit으로 보내 저장하는 동안(isSubmitting) 두 버튼을 끈다. 유효하지 않으면 null

@@ -67,18 +67,12 @@ describe('toMemoRequest', () => {
     expect(result.success).toBe(true);
   });
 
-  it('빈 글자와 최대 길이를 넘는 글자는 폼에서 막는다', () => {
-    // Given
-    const tooLong = 'a'.repeat(5001);
-
+  it('편집기가 입력 칸 글자를 그대로 넘겨도 앞뒤 공백을 지워 보낸다', () => {
     // When
-    const results = [
-      memoFormSchema.safeParse({ content: '' }),
-      memoFormSchema.safeParse({ content: tooLong }),
-    ];
+    const request = toMemoRequest({ content: '  장보기\n' });
 
     // Then
-    expect(results.map(({ success }) => success)).toEqual([false, false]);
+    expect(request).toEqual({ content: '장보기' });
   });
 });
 

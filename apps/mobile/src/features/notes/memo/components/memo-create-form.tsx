@@ -65,7 +65,7 @@ export function MemoCreateForm() {
   // mutate 콜백은 화면이 내려가면 불리지 않는다. 저장이 끝났는데 초안이 남지 않게 기다린 뒤에 지운다
   const saveMemo = form.handleSubmit(async ({ content }) => {
     try {
-      await createMemo.mutateAsync({ content: content.trim() });
+      await createMemo.mutateAsync({ content });
       discardDraft();
       goBack();
     } catch {
@@ -75,7 +75,7 @@ export function MemoCreateForm() {
 
   const saveAndLeave = form.handleSubmit(async ({ content }) => {
     try {
-      await createMemo.mutateAsync({ content: content.trim() });
+      await createMemo.mutateAsync({ content });
       discardDraft();
       goBack();
     } catch (error) {
