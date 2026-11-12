@@ -77,8 +77,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import { isMemoUnavailableError } from '../domains/memo.error';
-import { MemoPolicy } from '../domains/memo.model';
-import type { Memo } from '../domains/memo.model';
+import { type Memo, MemoPolicy } from '../domains/memo.model';
 import { useMemoId, useSelectedMemoId } from '../hooks/use-memo-params';
 import { useOpenMemoDeleteDialog } from '../hooks/use-open-memo-delete-dialog';
 import { MEMO_MUTATION_KEYS } from '../queries/memo-mutation-keys';

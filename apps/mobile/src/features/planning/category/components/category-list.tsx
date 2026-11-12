@@ -25,8 +25,7 @@ import { Fragment, type ReactNode } from 'react';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import type { TodoCategoryWithCount } from '../domains/todo-category.model';
+import { TodoCategoryPolicy, type TodoCategoryWithCount } from '../domains/todo-category.model';
 import { prefetchDeletionPreview } from '../queries/todo-category-cache';
 import { useReorderTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {

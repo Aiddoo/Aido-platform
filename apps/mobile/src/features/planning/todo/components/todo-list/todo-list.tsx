@@ -37,10 +37,8 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
-import { SubTodoPolicy } from '../../domains/sub-todo.model';
-import { type SubTodo } from '../../domains/sub-todo.model';
-import { isPrivateVisibility, TodoPolicy } from '../../domains/todo.model';
-import { type Todo } from '../../domains/todo.model';
+import { type SubTodo, SubTodoPolicy } from '../../domains/sub-todo.model';
+import { isPrivateVisibility, type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {

@@ -11,8 +11,10 @@ import type {
 } from '@tanstack/react-query';
 import { last } from 'es-toolkit';
 
-import { DailyCompletionPolicy } from '../domains/daily-completion.model';
-import { type DailyCompletionsResult } from '../domains/daily-completion.model';
+import {
+  DailyCompletionPolicy,
+  type DailyCompletionsResult,
+} from '../domains/daily-completion.model';
 import {
   getTodoDateSpan,
   type Todo,

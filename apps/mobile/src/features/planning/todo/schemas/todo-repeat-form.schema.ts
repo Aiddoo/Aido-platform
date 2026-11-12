@@ -9,8 +9,12 @@ import { sortDaysOfWeek } from '@src/shared/date/day-of-week';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { TodoRepeatPolicy, todoRepeatCountSchema } from '../domains/todo-repeat.model';
-import { type TodoRepeat, type TodoRepeatEnd } from '../domains/todo-repeat.model';
+import {
+  type TodoRepeat,
+  todoRepeatCountSchema,
+  type TodoRepeatEnd,
+  TodoRepeatPolicy,
+} from '../domains/todo-repeat.model';
 
 const todoRepeatFormShape = z.object({
   startDate: dateKeyFieldSchema,

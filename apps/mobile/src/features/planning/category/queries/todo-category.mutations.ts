@@ -21,8 +21,7 @@ import type {
   TodoCategoryDeletionResult,
 } from '../domains/todo-category-deletion.model';
 import { isDeletionPreviewOutdatedError } from '../domains/todo-category.error';
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import type { TodoCategoryWithCount } from '../domains/todo-category.model';
+import { TodoCategoryPolicy, type TodoCategoryWithCount } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
   TodoCategoryChange,

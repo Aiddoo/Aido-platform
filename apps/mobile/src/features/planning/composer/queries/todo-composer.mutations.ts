@@ -16,10 +16,11 @@ import {
   isRecurringCategoryTodoLimitError,
   isRecurringTodoRejection,
 } from '@src/features/planning/todo/domains/todo.error';
-import { getScheduledTime, getTodoDateSpan } from '@src/features/planning/todo/domains/todo.model';
-import type {
-  OptimisticTodo,
-  TodoFieldChanges,
+import {
+  getScheduledTime,
+  getTodoDateSpan,
+  type OptimisticTodo,
+  type TodoFieldChanges,
 } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoSeriesFailureFeedback } from '@src/features/planning/todo/hooks/use-todo-series-failure-feedback';
 import {

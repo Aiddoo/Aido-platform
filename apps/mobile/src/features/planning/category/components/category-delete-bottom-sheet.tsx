@@ -33,8 +33,10 @@ import { type ComponentProps, type ReactNode, Suspense, useEffect, useState } fr
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { TodoCategoryDeletionPolicy } from '../domains/todo-category-deletion.model';
-import type { TodoCategoryDeletionPreview } from '../domains/todo-category-deletion.model';
+import {
+  TodoCategoryDeletionPolicy,
+  type TodoCategoryDeletionPreview,
+} from '../domains/todo-category-deletion.model';
 import {
   type TodoCategory,
   TodoCategoryPolicy,

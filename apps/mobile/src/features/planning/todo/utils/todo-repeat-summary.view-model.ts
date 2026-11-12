@@ -9,8 +9,11 @@ import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 import { compact } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
-import { type TodoRepeat, type TodoRepeatEnd } from '../domains/todo-repeat.model';
+import {
+  type TodoRepeat,
+  type TodoRepeatEnd,
+  TodoRepeatPolicy,
+} from '../domains/todo-repeat.model';
 
 const SUMMARY_SEPARATOR = ' · ';
 

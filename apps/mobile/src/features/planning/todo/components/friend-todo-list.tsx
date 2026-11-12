@@ -4,7 +4,6 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import type { QueryErrorFallbackProps } from '@src/shared/ui';
 import {
   Box,
   ChatBubbleIcon,
@@ -12,6 +11,7 @@ import {
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
   QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Result,
   Text,
   TodoIllustration,
