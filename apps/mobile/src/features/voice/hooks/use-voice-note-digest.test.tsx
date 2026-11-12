@@ -10,8 +10,8 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import {
   createHttpClientStub,
-  createLoggerStub,
-  createMemoryStorage,
+  createAppLoggerStub,
+  createMemoryKeyValueStorage,
   createPendingResponse,
   createTestDi,
   createTestQueryClient,
@@ -28,10 +28,10 @@ import { useVoiceNoteDigest } from './use-voice-note-digest';
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 function DigestProbe() {
@@ -63,7 +63,7 @@ async function renderDigest() {
       httpClient,
       queryClient,
       syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
-      storage: createMemoryStorage(),
+      storage: createMemoryKeyValueStorage(),
       ...createVoiceNoteStorageFake().ports,
       logger,
     },

@@ -10,7 +10,7 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createLocationGatewayStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createTestQueryClient,
   createTestDi,
 } from '@src/testing/core';
@@ -51,7 +51,7 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
     value: { ...updateWeatherLocationSchema.parse(input), timezone: 'Asia/Seoul' },
   }));
   httpClient.get.mockResolvedValue({ ok: true, value: createSeoulReportDto() });
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const errorReporter = createErrorReporterStub();
   const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();

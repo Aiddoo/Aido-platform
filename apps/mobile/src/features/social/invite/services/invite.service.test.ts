@@ -1,7 +1,11 @@
 import { toInstant } from '@src/shared/date/instant';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
-import { createHttpClientStub, createLoggerStub, createMemorySyncStorage } from '@src/testing/core';
+import {
+  createHttpClientStub,
+  createAppLoggerStub,
+  createMemorySyncStorage,
+} from '@src/testing/core';
 
 import {
   createInviteApiError,
@@ -27,7 +31,7 @@ function createService({
   const authHttpClient = createHttpClientStub();
   const storage = createMemorySyncStorage();
   const readReferrer = jest.fn().mockResolvedValue(referrer);
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const pendingRedemptionService = new PendingRedemptionService(storage, { get: readReferrer });
   const service = new InviteService({
     publicHttpClient,

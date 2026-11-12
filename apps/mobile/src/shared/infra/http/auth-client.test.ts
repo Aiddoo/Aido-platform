@@ -4,7 +4,7 @@ import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-
 import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
 import {
   createErrorReporterStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createPendingResponse,
 } from '@src/testing/core';
 import { waitFor } from '@testing-library/react-native';
@@ -104,11 +104,11 @@ describe('createAuthClient: 동시 401', () => {
           tokenStore,
           requestRefresh,
           sessionEpoch: createSessionEpoch(),
-          logger: createLoggerStub(),
+          logger: createAppLoggerStub(),
         }),
         endSession,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
         errorReporter: createErrorReporterStub(),
       }),
     );
@@ -141,11 +141,11 @@ describe('createAuthClient: 계정 전환과 늦은 응답', () => {
           tokenStore,
           requestRefresh,
           sessionEpoch,
-          logger: createLoggerStub(),
+          logger: createAppLoggerStub(),
         }),
         endSession,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
         errorReporter: createErrorReporterStub(),
       }),
     );
@@ -235,7 +235,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
 
   const buildClient = (): KyInstance => {
     const sessionEpoch = createSessionEpoch();
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     errorReporter = createErrorReporterStub();
     const refresh = createTokenRefresher({ tokenStore, requestRefresh, sessionEpoch, logger });
 

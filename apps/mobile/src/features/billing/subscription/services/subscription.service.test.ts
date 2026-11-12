@@ -1,6 +1,6 @@
 import {
   createAnalyticsStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createPurchasesGatewayStub,
 } from '@src/testing/core';
 
@@ -10,7 +10,7 @@ import { SubscriptionService } from './subscription.service';
 
 function createConfiguredService() {
   const purchases = createPurchasesGatewayStub();
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const session = new PurchasesSession({
     purchases,
     logger,

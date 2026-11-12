@@ -11,7 +11,7 @@ import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createAnalyticsStub,
   createHttpClientStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createTestDi,
   createTestQueryClient,
 } from '@src/testing/core';
@@ -22,10 +22,10 @@ import { View } from 'react-native';
 
 import { QuickVoiceQuota } from './quick-voice-quota';
 
-let silentLogger: ReturnType<typeof createLoggerStub>;
+let silentLogger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  silentLogger = createLoggerStub();
+  silentLogger = createAppLoggerStub();
 });
 
 describe('QuickVoiceQuota', () => {

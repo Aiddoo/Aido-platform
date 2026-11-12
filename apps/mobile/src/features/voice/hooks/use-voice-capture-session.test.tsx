@@ -4,7 +4,7 @@ import {
   createAnalyticsStub,
   createAppLifecycleGatewayStub,
   createErrorReporterStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createSpeechRecognizerStub,
   createTestDi,
 } from '@src/testing/core';
@@ -20,10 +20,10 @@ import { useVoiceCaptureSession } from './use-voice-capture-session';
 /** 모델이 말소리로 보는 음량 기준보다 크다 */
 const SPEAKING_LEVEL = 0.5;
 
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 function SessionProbe({

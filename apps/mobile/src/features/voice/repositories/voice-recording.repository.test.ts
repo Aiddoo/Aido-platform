@@ -1,5 +1,5 @@
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
-import { createLocalFileSystemFake, createLoggerStub } from '@src/testing/core';
+import { createLocalFileSystemFake, createAppLoggerStub } from '@src/testing/core';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { createVoiceRecordingRepository } from './voice-recording.repository';
@@ -9,7 +9,7 @@ const OWNER_DIRECTORY = ['voice-notes', 'user-1'];
 
 function createRepository() {
   const files = createLocalFileSystemFake();
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
 
   return { files, logger, repository: createVoiceRecordingRepository(files, logger) };
 }

@@ -1,4 +1,4 @@
-import { createHttpClientStub, createLoggerStub } from '@src/testing/core';
+import { createHttpClientStub, createAppLoggerStub } from '@src/testing/core';
 
 import { VoiceApi } from './voice.api';
 
@@ -10,12 +10,12 @@ const quickPlanDto = {
 
 describe('VoiceApi', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
-  let logger: ReturnType<typeof createLoggerStub>;
+  let logger: ReturnType<typeof createAppLoggerStub>;
   let api: VoiceApi;
 
   beforeEach(() => {
     httpClient = createHttpClientStub();
-    logger = createLoggerStub();
+    logger = createAppLoggerStub();
     api = new VoiceApi(httpClient, logger);
   });
 

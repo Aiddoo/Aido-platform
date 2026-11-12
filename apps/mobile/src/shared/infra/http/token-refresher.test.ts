@@ -1,7 +1,11 @@
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
-import { createLoggerStub, createMemoryTokenStore, createPendingResponse } from '@src/testing/core';
+import {
+  createAppLoggerStub,
+  createMemoryTokenStore,
+  createPendingResponse,
+} from '@src/testing/core';
 import { TimeoutError as KyTimeoutError } from 'ky';
 
 import { createTokenRefresher } from './token-refresher';
@@ -42,7 +46,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -65,7 +69,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
 
       // When
@@ -89,7 +93,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
 
       // When
@@ -119,7 +123,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -139,7 +143,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -162,7 +166,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -182,7 +186,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -203,7 +207,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -223,7 +227,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -242,7 +246,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -260,7 +264,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -281,7 +285,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -299,7 +303,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
 
       // When
@@ -331,7 +335,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh: respondWith(response),
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })().catch(() => {});
 
       // Then
@@ -347,7 +351,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh: respondWith(createFakeResponse({ ok: true, status: 200 })),
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -374,7 +378,7 @@ describe('createTokenRefresher', () => {
         tokenStore: store,
         requestRefresh: () => pending.response,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
       const outcome = refresh();
       await Promise.resolve();
@@ -397,7 +401,7 @@ describe('createTokenRefresher', () => {
         tokenStore: store,
         requestRefresh: () => pending.response,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
       const outcome = refresh();
       await Promise.resolve();
@@ -425,7 +429,7 @@ describe('createTokenRefresher', () => {
         tokenStore: store,
         requestRefresh,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
       const staleOutcome = refresh();
       await Promise.resolve();
@@ -457,7 +461,7 @@ describe('createTokenRefresher', () => {
         tokenStore: store,
         requestRefresh,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
       const staleOutcome = refresh();
       await Promise.resolve();

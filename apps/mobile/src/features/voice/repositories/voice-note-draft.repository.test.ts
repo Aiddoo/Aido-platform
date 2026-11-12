@@ -1,4 +1,4 @@
-import { createLoggerStub, createMemorySyncStorage } from '@src/testing/core';
+import { createAppLoggerStub, createMemorySyncStorage } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
@@ -46,7 +46,7 @@ const STORED_NOTE = {
 
 function createRepository(timeZone = 'Asia/Seoul') {
   const storage = createMemorySyncStorage();
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const repository = createVoiceNoteDraftRepository({
     storage,
     logger,
@@ -258,7 +258,7 @@ describe('VoiceNoteDraftRepository', () => {
     // Given
     const repository = createVoiceNoteDraftRepository({
       storage: createMemorySyncStorage(),
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
       getTimeZone: () => 'Asia/Seoul',
     });
     const listener = jest.fn();

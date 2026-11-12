@@ -4,7 +4,7 @@ import { createSessionEpoch, type SessionEpoch } from '@src/core/session/session
 import { NetworkError } from '@src/shared/errors';
 import {
   createErrorReporterStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemoryTokenStore,
   runKyAfterResponseHook,
 } from '@src/testing/core';
@@ -40,7 +40,7 @@ describe('createTokenRefreshHook', () => {
   let refresh: jest.MockedFunction<() => Promise<RefreshOutcome>>;
   let endSession: jest.MockedFunction<(details: SessionExpiredDetails) => Promise<void>>;
   let errorReporter: ReturnType<typeof createErrorReporterStub>;
-  let logger: ReturnType<typeof createLoggerStub>;
+  let logger: ReturnType<typeof createAppLoggerStub>;
   let hook: ReturnType<typeof createTokenRefreshHook>;
   let sessionEpoch: SessionEpoch;
 
@@ -50,7 +50,7 @@ describe('createTokenRefreshHook', () => {
     refresh = jest.fn();
     endSession = jest.fn().mockResolvedValue(undefined);
     errorReporter = createErrorReporterStub();
-    logger = createLoggerStub();
+    logger = createAppLoggerStub();
     hook = createTokenRefreshHook({
       tokenStore,
       refresh,

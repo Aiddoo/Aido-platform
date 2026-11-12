@@ -1,5 +1,5 @@
 import { Text } from '@src/shared/ui';
-import { createLoggerStub, createTestDi } from '@src/testing/core';
+import { createAppLoggerStub, createTestDi } from '@src/testing/core';
 import { getLastAudioPlaylist } from '@src/testing/mocks/expo-audio';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
@@ -8,10 +8,10 @@ import { Pressable } from 'react-native';
 
 import { useVoiceNotePlayback, useVoiceNotePlayer } from './use-voice-note-player';
 
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 const PARTS = [
   { uri: 'file:///part-0.wav', startMs: 0 },

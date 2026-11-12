@@ -1,4 +1,8 @@
-import { createAnalyticsStub, createLoggerStub, createMemorySyncStorage } from '@src/testing/core';
+import {
+  createAnalyticsStub,
+  createAppLoggerStub,
+  createMemorySyncStorage,
+} from '@src/testing/core';
 
 import {
   createFeatureAttributionStore,
@@ -56,7 +60,7 @@ describe('FeatureAttributionStore', () => {
     // When
     const emit = () =>
       trackAttributedFeatureSuccess(
-        { analytics, attribution, logger: createLoggerStub() },
+        { analytics, attribution, logger: createAppLoggerStub() },
         {
           accountId: 'account-1',
           feature: 'todo_creation',
@@ -86,7 +90,7 @@ describe('FeatureAttributionStore', () => {
     // When
     const emit = () =>
       trackAttributedFeatureSuccess(
-        { analytics, attribution, logger: createLoggerStub() },
+        { analytics, attribution, logger: createAppLoggerStub() },
         {
           accountId: 'account-1',
           feature: 'todo_reorder',
@@ -190,14 +194,14 @@ describe('FeatureAttributionStore', () => {
 
     // When
     trackAttributedFeatureSuccess(
-      { analytics, attribution, logger: createLoggerStub() },
+      { analytics, attribution, logger: createAppLoggerStub() },
       {
         accountId: 'raw-account-id',
         feature: 'category_reorder',
       },
     );
     trackAttributedFeatureSuccess(
-      { analytics, attribution, logger: createLoggerStub() },
+      { analytics, attribution, logger: createAppLoggerStub() },
       {
         accountId: 'raw-account-id',
         feature: 'category_reorder',

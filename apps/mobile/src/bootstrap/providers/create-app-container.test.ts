@@ -9,7 +9,7 @@ import { pendingRedemptionStoredValue } from '@src/features/social/invite/schema
 import { toInstant } from '@src/shared/date/instant';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
-  createLoggerStub,
+  createAppLoggerStub,
   createMemorySyncStorage,
   createTestDi,
   createTestPorts,
@@ -139,7 +139,7 @@ describe('createAppContainer', () => {
       syncStorage.remove.mockImplementation(() => {
         throw new Error('mmkv unavailable');
       });
-      const logger = createLoggerStub();
+      const logger = createAppLoggerStub();
       const { sessionCleanupService } = createTestDi({ ports: { syncStorage, logger } });
 
       // When

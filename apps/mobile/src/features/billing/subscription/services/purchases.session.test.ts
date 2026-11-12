@@ -1,6 +1,6 @@
 import {
   createAnalyticsStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createPurchasesGatewayStub,
 } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -15,7 +15,7 @@ const flushPromises = () => jest.advanceTimersByTimeAsync(0);
 
 function createManager({
   purchases = createPurchasesGatewayStub(),
-  logger = createLoggerStub(),
+  logger = createAppLoggerStub(),
   analytics = createAnalyticsStub(),
 } = {}) {
   const manager = new PurchasesSession({

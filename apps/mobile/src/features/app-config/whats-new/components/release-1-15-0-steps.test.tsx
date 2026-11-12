@@ -8,7 +8,7 @@ import {
   createAnalyticsStub,
   createAppLifecycleGatewayStub,
   createHttpClientStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createSpeechRecognizerStub,
   createTestDi,
   createTestQueryClient,
@@ -22,10 +22,10 @@ import { RELEASE_1_15_0 } from '../constants/releases';
 import { Release1150Steps } from './release-1-15-0-steps';
 
 const ACCOUNT_ID = 'user-1';
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 async function renderSteps() {

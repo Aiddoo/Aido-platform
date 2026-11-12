@@ -4,9 +4,9 @@ import { NetworkError, ok } from '@src/shared/errors';
 import {
   createHttpClientStub,
   createIdGeneratorStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemoryDeviceIdStore,
-  createMemoryStorage,
+  createMemoryKeyValueStorage,
   createPendingResponse,
   createPushNotificationGatewayStub,
   createVendorIdGatewayStub,
@@ -29,7 +29,7 @@ const NOW = toInstant('2026-11-12T09:00:00.000Z');
 function setup(
   gateway = createPushNotificationGatewayStub(),
   getTimeZone = () => 'Asia/Seoul',
-  storage = createMemoryStorage(),
+  storage = createMemoryKeyValueStorage(),
   getLanguage = () => 'ko',
 ) {
   const sessionEpoch = createSessionEpoch();
@@ -38,7 +38,7 @@ function setup(
   const publicHttpClient = createHttpClientStub();
   publicHttpClient.post.mockResolvedValue({ ok: true, value: { unregistered: true } });
   const registrationRepository = createPushRegistrationRepository(storage);
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const service = new PushRegistrationService({
     gateway,
     pushDeviceApi: new PushDeviceApi({ authHttpClient: httpClient, publicHttpClient }),
@@ -270,8 +270,8 @@ describe('PushRegistrationService.report', () => {
         idGenerator: createIdGeneratorStub(),
         platform: 'ios',
       }),
-      registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
-      logger: createLoggerStub(),
+      registrationRepository: createPushRegistrationRepository(createMemoryKeyValueStorage()),
+      logger: createAppLoggerStub(),
       getTimeZone: () => 'Asia/Seoul',
       getLanguage: () => 'ko',
       sessionEpoch: createSessionEpoch(),
@@ -607,7 +607,7 @@ describe('PushRegistrationService.requestRelease', () => {
 
   it('연결이 끊겨 보내지 못한 해제는 앱을 다시 켜도 남아 다음 시도에 보낸다', async () => {
     // Given
-    const storage = createMemoryStorage();
+    const storage = createMemoryKeyValueStorage();
     const before = setup(undefined, undefined, storage);
     await before.service.report();
     before.publicHttpClient.post.mockRejectedValueOnce(new NetworkError());

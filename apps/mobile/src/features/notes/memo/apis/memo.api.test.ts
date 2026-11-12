@@ -1,7 +1,7 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { createHttpClientStub, createLoggerStub } from '@src/testing/core';
+import { createHttpClientStub, createAppLoggerStub } from '@src/testing/core';
 
 import { MemoApi } from './memo.api';
 
@@ -10,7 +10,7 @@ describe('MemoApi.parseMemo', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(err(new ApiError('INTERNAL', '서버 오류', 500)));
-    const service = new MemoApi(httpClient, createLoggerStub());
+    const service = new MemoApi(httpClient, createAppLoggerStub());
 
     // When
     await service.parseMemo('메모', 1, 'memo-key');
@@ -28,7 +28,7 @@ describe('MemoApi.parseMemo', () => {
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(ok({ unexpected: true }));
     const error = jest.fn();
-    const service = new MemoApi(httpClient, { ...createLoggerStub(), error });
+    const service = new MemoApi(httpClient, { ...createAppLoggerStub(), error });
 
     // When
     const parsing = service.parseMemo('메모', 1, 'memo-key');

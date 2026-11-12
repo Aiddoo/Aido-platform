@@ -4,7 +4,7 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import {
   createAnalyticsStub,
   createHttpClientStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createPendingResponse,
   createPushNotificationGatewayStub,
   createTestDi,
@@ -26,7 +26,7 @@ const RESPONSE = {
 
 async function setup({ status }: { status: AuthStatus }) {
   const gateway = createPushNotificationGatewayStub();
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const authSessionStore = createAuthSessionStoreStub(status);
   const httpClient = createHttpClientStub();
   const analytics = createAnalyticsStub();

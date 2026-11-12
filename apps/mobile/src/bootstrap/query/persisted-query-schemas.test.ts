@@ -23,7 +23,7 @@ import { WEATHER_QUERY_KEYS } from '@src/features/weather/queries/weather-query-
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { setGlobalLogger } from '@src/shared/infra/logger/global-logger';
 import {
-  createLoggerStub,
+  createAppLoggerStub,
   createMemorySyncStorage,
   createTestQueryClient,
 } from '@src/testing/core';
@@ -112,7 +112,7 @@ async function saveThenRestore(cache: CacheEntry[]) {
 describe('영속 캐시 복원 검증', () => {
   setupFakeTimersPerTest();
 
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
 
   beforeEach(() => {
     setGlobalLogger(logger);

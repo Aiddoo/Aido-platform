@@ -8,7 +8,7 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import {
   createHttpClientStub,
-  createMemoryStorage,
+  createMemoryKeyValueStorage,
   createPendingResponse,
   createSpeechRecognizerStub,
   createTestDi,
@@ -45,7 +45,7 @@ async function renderCreateSheet(routeParams: Record<string, string> = {}) {
           queryClient,
           ...createVoiceNoteStorageFake().ports,
           speechRecognizer,
-          storage: createMemoryStorage(),
+          storage: createMemoryKeyValueStorage(),
         },
       }),
     },

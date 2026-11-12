@@ -5,7 +5,7 @@ import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import {
   createErrorReporterStub,
-  createMemoryStorage,
+  createMemoryKeyValueStorage,
   createMemoryTokenStore,
   createHttpClientStub,
 } from '@src/testing/core';
@@ -26,7 +26,7 @@ function respondWithTokens(): Response {
 }
 
 function setup() {
-  const storage = createMemoryStorage();
+  const storage = createMemoryKeyValueStorage();
   const repository = createPendingRevocationRepository(storage);
   const publicHttpClient = createHttpClientStub();
   publicHttpClient.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));

@@ -1,7 +1,7 @@
 import { toInstant } from '@src/shared/date/instant';
 import {
   createLocalFileSystemFake,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemorySyncStorage,
 } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -16,7 +16,7 @@ const NOW = toInstant('2026-12-05T00:00:00.000Z');
 const OWNER_DIRECTORY = ['voice-notes', 'user-1'];
 
 function createService() {
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const files = createLocalFileSystemFake();
   const drafts = createVoiceNoteDraftRepository({
     storage: createMemorySyncStorage(),

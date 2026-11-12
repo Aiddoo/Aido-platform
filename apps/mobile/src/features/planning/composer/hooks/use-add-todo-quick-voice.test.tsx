@@ -18,7 +18,7 @@ import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
-  createMemoryStorage,
+  createMemoryKeyValueStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
@@ -173,7 +173,7 @@ async function renderQuickVoice({
       syncStorage,
       speechRecognizer,
       analytics,
-      storage: createMemoryStorage(),
+      storage: createMemoryKeyValueStorage(),
     },
   });
   const { rerender } = await renderScreen(

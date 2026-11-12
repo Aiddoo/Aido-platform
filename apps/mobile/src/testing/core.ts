@@ -22,13 +22,13 @@ export { createIdGeneratorStub } from './ports/id-generator.stub';
 export { createJsonFetcherStub } from './ports/json-fetcher.stub';
 export { createLocalFileSystemFake } from './fakes/local-file-system.fake';
 export { createLocationGatewayStub } from './ports/location-gateway.stub';
-export { createLoggerStub } from './ports/logger.stub';
+export { createAppLoggerStub } from './ports/app-logger.stub';
 export { createMemoryDeviceIdStore } from './fakes/memory-device-id-store.fake';
 export {
   createMemoryObservableSyncStorage,
   type MemoryObservableSyncStorage,
 } from './fakes/memory-observable-sync-storage.fake';
-export { createMemoryStorage } from './fakes/memory-storage.fake';
+export { createMemoryKeyValueStorage } from './fakes/memory-key-value-storage.fake';
 export { createMemorySyncStorage } from './fakes/memory-sync-storage.fake';
 export { createMemoryTokenStore } from './fakes/memory-token-store.fake';
 export { createNativeApplicationMetadataGatewayStub } from './ports/native-application-metadata-gateway.stub';

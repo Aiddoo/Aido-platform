@@ -17,8 +17,8 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import {
   createHttpClientStub,
-  createLoggerStub,
-  createMemoryStorage,
+  createAppLoggerStub,
+  createMemoryKeyValueStorage,
   createPendingResponse,
   createTestDi,
   createTestQueryClient,
@@ -38,10 +38,10 @@ import { createVoiceNoteDigestDto } from './voice.fixtures';
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 const planDraftWithTodo = createPlanReviewDraft(
@@ -103,7 +103,7 @@ async function renderVoiceNote(
       httpClient,
       queryClient,
       syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
-      storage: createMemoryStorage(),
+      storage: createMemoryKeyValueStorage(),
       ...createVoiceNoteStorageFake().ports,
       logger,
     },

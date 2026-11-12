@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import type { MissingSpeechPermission } from '@src/core/ports/speech-recognizer';
 import { Button, OverlayProvider } from '@src/shared/ui';
-import { createLoggerStub, createSpeechRecognizerStub, createTestDi } from '@src/testing/core';
+import { createAppLoggerStub, createSpeechRecognizerStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
@@ -33,7 +33,7 @@ async function renderBlocked(missing: MissingSpeechPermission) {
     <OverlayProvider>
       <PermissionProbe onResult={onResult} />
     </OverlayProvider>,
-    { di: createTestDi({ ports: { speechRecognizer, logger: createLoggerStub() } }) },
+    { di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }) },
   );
 
   return { speechRecognizer, onResult };

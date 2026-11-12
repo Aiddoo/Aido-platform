@@ -9,8 +9,8 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import {
   createHttpClientStub,
-  createLoggerStub,
-  createMemoryStorage,
+  createAppLoggerStub,
+  createMemoryKeyValueStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
@@ -24,10 +24,10 @@ import { router, useIsFocused } from 'expo-router';
 import VoiceNoteRecordRoute from '../../../../app/(app)/voice-notes/record';
 
 const ACCOUNT_ID = 'user-1';
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
@@ -47,7 +47,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
       queryClient,
       httpClient,
       syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
-      storage: createMemoryStorage(),
+      storage: createMemoryKeyValueStorage(),
       speechRecognizer,
       ...voice.ports,
       logger,

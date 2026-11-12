@@ -29,7 +29,7 @@ import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createErrorReporterStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemoryTokenStore,
   createHttpClientStub,
   createAnalyticsStub,
@@ -729,11 +729,11 @@ describe('로그아웃과 늦은 갱신', () => {
           tokenStore,
           requestRefresh: () => lateRefresh.response,
           sessionEpoch,
-          logger: createLoggerStub(),
+          logger: createAppLoggerStub(),
         }),
         endSession: (details) => sessionManager.end(details),
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
         errorReporter: createErrorReporterStub(),
       }),
     );
@@ -748,7 +748,7 @@ describe('로그아웃과 늦은 갱신', () => {
       tokenStore,
       sessionRevocationService: { record: async () => undefined },
       sessionEpoch,
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
     }).logOut({ isOnline: true });
 
     // When
@@ -989,11 +989,11 @@ describe('토큰 만료', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       }),
       endSession: (details) => sessionManager.end(details),
       sessionEpoch,
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
       errorReporter: createErrorReporterStub(),
     });
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
@@ -1099,11 +1099,11 @@ describe('토큰 만료', () => {
           tokenStore,
           requestRefresh: async () => new Response(null, { status: 401 }),
           sessionEpoch,
-          logger: createLoggerStub(),
+          logger: createAppLoggerStub(),
         }),
         endSession: (details) => sessionManager.end(details),
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
         errorReporter: createErrorReporterStub(),
       }),
     );

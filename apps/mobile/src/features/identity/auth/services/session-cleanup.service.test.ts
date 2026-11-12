@@ -1,4 +1,4 @@
-import { createLoggerStub } from '@src/testing/core';
+import { createAppLoggerStub } from '@src/testing/core';
 
 import { SessionCleanupService } from './session-cleanup.service';
 
@@ -25,7 +25,7 @@ function createPorts() {
       },
       pushDevice: { requestRelease: record('pushDeviceRelease') },
       signOutEpoch: { advance: record('signOutEpoch') },
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
     },
   };
 }

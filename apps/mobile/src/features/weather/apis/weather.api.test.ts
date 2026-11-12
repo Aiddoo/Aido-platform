@@ -1,6 +1,6 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { createHttpClientStub, createLoggerStub } from '@src/testing/core';
+import { createHttpClientStub, createAppLoggerStub } from '@src/testing/core';
 
 import { createWeatherReportDto } from '../__tests__/weather-report.fixtures';
 import { WeatherApi } from './weather.api';
@@ -10,7 +10,7 @@ describe('WeatherApi.getReport', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue({ ok: true, value: createWeatherReportDto() });
-    const api = new WeatherApi(httpClient, createLoggerStub());
+    const api = new WeatherApi(httpClient, createAppLoggerStub());
     const signal = new AbortController().signal;
 
     // When
@@ -34,7 +34,7 @@ describe('WeatherApi.getReport', () => {
         airQuality: { pm10: 30, pm25: 15, source: 'NEW_SOURCE' },
       },
     });
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const api = new WeatherApi(httpClient, logger);
 
     // When
@@ -56,7 +56,7 @@ describe('WeatherApi.getReport', () => {
       ok: true,
       value: { ...createWeatherReportDto(), hourly: null },
     });
-    const api = new WeatherApi(httpClient, createLoggerStub());
+    const api = new WeatherApi(httpClient, createAppLoggerStub());
 
     // When
     const request = api.getReport();
@@ -70,7 +70,7 @@ describe('WeatherApi.getReport', () => {
     const httpClient = createHttpClientStub();
     const apiError = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
     httpClient.get.mockResolvedValue({ ok: false, error: apiError });
-    const api = new WeatherApi(httpClient, createLoggerStub());
+    const api = new WeatherApi(httpClient, createAppLoggerStub());
 
     // When
     const result = await api.getReport();
@@ -88,7 +88,7 @@ describe('WeatherApi.updateLocation', () => {
       ok: true,
       value: { latitude: 35.6812, longitude: 139.7671, timezone: 'Asia/Tokyo' },
     });
-    const api = new WeatherApi(httpClient, createLoggerStub());
+    const api = new WeatherApi(httpClient, createAppLoggerStub());
 
     // When
     const result = await api.updateLocation({ latitude: 35.6812, longitude: 139.7671 });
@@ -109,7 +109,7 @@ describe('WeatherApi.updateLocation', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.put.mockResolvedValue({ ok: true, value: { latitude: 1, longitude: 2 } });
-    const api = new WeatherApi(httpClient, createLoggerStub());
+    const api = new WeatherApi(httpClient, createAppLoggerStub());
 
     // When
     const request = api.updateLocation({ latitude: 1, longitude: 2 });

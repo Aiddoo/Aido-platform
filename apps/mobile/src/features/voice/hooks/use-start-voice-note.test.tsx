@@ -14,7 +14,7 @@ import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createSpeechRecognizerStub,
   createTestQueryClient,
   createTestDi,
@@ -32,10 +32,10 @@ const PREVIOUS_AGREEMENT: Partial<Consent> = {
   aiDataSharingDecision: 'AGREED',
   aiDataSharingConsentVersion: '2026-10-26',
 };
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 function StartProbe() {
