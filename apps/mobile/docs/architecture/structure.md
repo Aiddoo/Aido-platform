@@ -167,15 +167,16 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
   - `shared/ui/bottom-sheet/keyboard-bottom-sheet`의 열린 시트 수: 키보드 컨트롤러가 네이티브 전역 하나라 수도 그 수명을 따른다
   - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면, 접근성 설정 store, 위젯 진입점)이 쓰는 로거. `composition-root`가 한 번 정한다
   - `core/events/*`의 이벤트 채널 리스너와 `event-channel`의 리스너 오류 보고기: `core`는 DI를 모른다. 구독은 해제 함수를 돌려주고 보고기는 `DIProvider`가 마운트 때 건다
-  - 접근성 설정 store(`use-is-reduce-motion-enabled`, `use-is-reduce-transparency-enabled`): DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는 OS 설정 하나를 구독 하나로 나눠 읽는다
-  - `shared/infra/storage/widget-storage.android`, `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다. 앱의 조립은 `create-device-ports`가 같은 값을 넘긴다
+  - 접근성 설정 store(`shared/hooks/use-is-reduce-motion-enabled`, `features/weather/hooks/use-is-reduce-transparency-enabled`): OS 설정 하나를 구독 하나로 나눠 읽는다. 모션 줄이기는 DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는다
+  - `shared/infra/storage/widget-storage.android`, `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`, `features/device/widget/bridge/android-widgets.bridge`의 스냅숏·이동 저장소와 렌더러: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다. 앱의 조립은 `create-device-ports`가 같은 값을 넘긴다
   - `features/billing/subscription/hooks/use-report-store-unavailable`의 보고한 진단 코드(`WeakMap<ErrorReporter, Set<string>>`): 같은 스토어 설정 문제를 앱 실행마다 한 번만 남긴다. 마운트 수명 DI store는 루트 "다시 시도"마다 새로 만들어져 다시 보낸다. 키가 프로세스 수명 `ErrorReporter`라 그 수명을 따른다
   - React 밖 cache helper가 부르는 `shared/utils/create-optimistic-id`(프로세스 안에서 겹치지 않아야 한다)와 `features/planning/todo/queries/todo-cache`의 쓰기 순번(`WeakMap<QueryClient, number>`, 먼저 시작해 늦게 끝난 쓰기 사이를 센다. `QueryClient` 수명을 따른다)
   - `shared/date/format/intl-formatter`의 포매터 캐시, `shared/utils/number-format`의 퍼센트 포매터(많아야 4개): 상태가 아닌 순수 캐시다
   - `shared/infra/storage/device-sync-storage`의 MMKV 인스턴스: DI보다 먼저 그리는 설정 Provider(테마·언어·글꼴)와 `i18n/init`이 읽는다
   - `shared/infra/observability/capture-error`의 보고한 오류 `WeakSet`: DI 밖(루트 경계·전역 로거)과 안의 보고가 같은 오류를 두 번 보내지 않게 하는 한 곳이고 오류 객체와 함께 사라진다
   - `bootstrap/query/{mutation-error-feedback,query-error-report}-cache`의 구독자 표: 캐시 `onError`는 DI 밖 `createAppQueryClient`에서 만들어진다. 표는 캐시를 키로 한 `WeakMap`이라 캐시마다 따로이고 캐시와 함께 사라진다
-  - `app/+native-intent`의 초대 링크 도장(마지막 한 칸): 시스템 URL 변환은 앱 트리·DI보다 먼저 돈다
+  - `app/+native-intent`의 초대 링크 도장(마지막 한 칸)과 `app/_layout`의 `rootErrorReporter`: 시스템 URL 변환은 앱 트리·DI보다 먼저 돌고, 루트 오류 경계는 DI 밖에서 그려질 수 있다
+  - `shared/hooks/use-rebuilt-path`의 `EMPTY_PATH`: 그리기 전과 놓은 뒤 Canvas가 읽는 빈 Skia 경로 하나다. 모든 훅이 함께 쓰고 놓지 않아 프로세스 수명이다
 - 루트 "다시 시도"는 마운트 수명 컨테이너만 새로 만든다. 로그인·결제 설정·보고는 그대로 남는다.
 - 언마운트·로그아웃 뒤에 도는 일이 없어야 한다. await 뒤 상태 변경·이동은 막고, 핸들러가 건 rAF·타이머는 지우고, 리스너 세트 대신 `subscribe`가 해제 함수를 돌려주는 관찰 가능한 저장소를 쓴다. 화면 밖에서 늦게 오는 쓰기(초안 자동 저장의 마지막 저장, 늦은 녹음 파일)는 로그아웃·탈퇴 세대(`SignOutEpoch`)와 비교해 로그아웃·탈퇴 뒤에는 쓰지 않는다(`DraftService.createSessionSave`, `VoiceRecordingIntakeSession`). 세션 만료는 같은 사람이 돌아와 이어 쓰므로 막지 않는다. 결제 SDK 로그인·로그아웃은 `PurchasesSession`이 하나씩, 마지막 요청만 보내고 멈춘 호출(로그인 뒤 속성 동기화 포함)은 `PURCHASES_SDK_CALL_TIMEOUT_MS`(15초)에서 끊는다. 결제·복원은 그때의 SDK 사용자에게 귀속되므로 `waitForSignedInUser`로 로그인·로그아웃이 끝나길 기다리고, 마지막 계정의 로그인이 실패·시간 초과였으면 그 계정으로 다시 로그인해 기다린 뒤 그래도 아니면 스토어 연결 오류(`SUBSCRIPTION_STORE_PROBLEM`)로 막는다. 상세: [hooks](./hooks.md).
 
