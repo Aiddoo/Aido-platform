@@ -47,6 +47,7 @@ import type { TodoSeriesEditOptions } from '@src/features/planning/todo/schemas/
 import { useTrack } from '@src/shared/analytics';
 import type { DateKey } from '@src/shared/date/date-key';
 import { t } from '@src/shared/i18n';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -221,14 +222,18 @@ export function useAddSubTodoMutationOptions() {
       trackEvent('todo_item_added', { todo_id: todoId });
     },
     onError: (_error, { todoId, date }, context) => {
-      if (context != null) {
-        updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
-          ...SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
-          completed: context.wasCompleted,
-        }));
-        if (context.wasCompleted) {
-          syncDailyCompletionWithList(queryClient, { date });
-        }
+      if (context == null) {
+        return;
+      }
+      // 함께 진행 중인 쓰기가 있으면 그 쓰기가 남긴 완료 값을 지킨다. 뒤에 더한 항목이 남으면 완료가 아니다
+      const shouldRestoreCompletion =
+        context.wasCompleted && isLastMutation(queryClient, TODO_MUTATION_KEYS.listWrites());
+      updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
+        ...SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
+        completed: shouldRestoreCompletion || todo.completed,
+      }));
+      if (shouldRestoreCompletion) {
+        syncDailyCompletionWithList(queryClient, { date });
       }
     },
     onSettled: (_saved, error, { todoId, date }, context) => {

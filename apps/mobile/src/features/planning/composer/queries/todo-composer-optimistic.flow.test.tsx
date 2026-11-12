@@ -191,6 +191,66 @@ describe('하위 할 일 낙관적 갱신', () => {
     expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 0, completed: 0 });
   });
 
+  it.each([
+    {
+      order: 'A 실패 → B 성공',
+      a: 'fail',
+      b: 'ok',
+      isAFirst: true,
+      afterFirst: false,
+      last: false,
+    },
+    {
+      order: 'B 실패 → A 성공',
+      a: 'ok',
+      b: 'fail',
+      isAFirst: false,
+      afterFirst: false,
+      last: false,
+    },
+    {
+      order: 'B 실패 → A 실패',
+      a: 'fail',
+      b: 'fail',
+      isAFirst: false,
+      afterFirst: false,
+      last: true,
+    },
+  ] as const)(
+    '완료한 할 일에 A·B를 연달아 더하고 $order 순으로 끝나면 완료는 $afterFirst → $last다',
+    async ({ a, b, isAFirst, afterFirst, last }) => {
+      // Given
+      const { httpClient, queryClient, mutations, cachedTodo } = await renderMutations();
+      queryClient.setQueryData(
+        LIST_DAY_1,
+        toList([createParentTodo({ startDate: DAY_1, completed: true })]),
+      );
+      const respond = (result: 'ok' | 'fail') =>
+        result === 'ok' ? respondWith({ id: 1 }) : createPendingResponse(err(createTodoApiError()));
+      const addA = respond(a);
+      const addB = respond(b);
+      httpClient.post.mockReturnValueOnce(addA.response).mockReturnValueOnce(addB.response);
+      await act(async () => {
+        mutations().addSubTodo.mutate({ todoId: 1, title: 'A', date: DAY_1 });
+      });
+      await act(async () => {
+        mutations().addSubTodo.mutate({ todoId: 1, title: 'B', date: DAY_1 });
+      });
+      const [first, second] = isAFirst ? [addA, addB] : [addB, addA];
+
+      // When
+      first.settle();
+      await flush();
+      const completedAfterFirst = cachedTodo(LIST_DAY_1)?.completed;
+      second.settle();
+      await flush();
+
+      // Then
+      expect(completedAfterFirst).toBe(afterFirst);
+      expect(cachedTodo(LIST_DAY_1)?.completed).toBe(last);
+    },
+  );
+
   it('응답이 오면 임시 id를 서버 id로 바꿔 다시 받기 전에도 행을 누를 수 있다', async () => {
     // Given
     const { httpClient, queryClient, mutations, cachedTodo } = await renderMutations();
