@@ -8,7 +8,6 @@ import {
   TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
-import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
   addMonthsToDateKey,
@@ -207,7 +206,7 @@ function* walkWeeklyDateKeys({
   for (
     let monday = getMondayOfDateKey(startDate);
     monday <= upper;
-    monday = addDaysToDateKey(monday, interval * DAYS_PER_WEEK)
+    monday = addDaysToDateKey(monday, interval * DAYS_OF_WEEK.length)
   ) {
     for (const offset of offsets) {
       const date = addDaysToDateKey(monday, offset);

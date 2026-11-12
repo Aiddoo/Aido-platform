@@ -308,7 +308,7 @@ function TodoCreateForm({
             onTypeInstead={voice.typeInstead}
           />
         ))
-        .otherwise(() => (
+        .with({ status: P.union('idle', 'failed') }, () => (
           <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
             <QuickVoiceFailed
               state={voice.state}
@@ -398,7 +398,8 @@ function TodoCreateForm({
               />
             </HStack>
           </VStack>
-        ))}
+        ))
+        .exhaustive()}
     </KeyboardBottomSheet>
   );
 }
