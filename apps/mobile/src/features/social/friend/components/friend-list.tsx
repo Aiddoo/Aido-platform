@@ -148,19 +148,17 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
   const removeMutation = useMutation(useRemoveFriendMutationOptions());
   const confirmDialog = useConfirmDialog();
 
+  // 행은 낙관적 갱신으로 바로 빠지고, 실패하면 제자리로 돌아오며 다이얼로그가 남는다
   const openDeleteConfirmDialog = async () => {
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('friend:deleteDialog.title', { name: displayName }),
       description: t('friend:deleteDialog.description'),
       confirmLabel: t('common:actions.delete'),
       confirmColor: 'danger',
       confirmTestID: 'friend-delete-confirm',
       cancelLabel: t('common:actions.cancel'),
+      onConfirm: () => removeMutation.mutateAsync(friend.id),
     });
-    // 낙관적 갱신이 행을 바로 지우므로 다이얼로그를 연 채 기다리지 않는다
-    if (isConfirmed) {
-      removeMutation.mutate(friend.id);
-    }
   };
 
   // 행 모양을 편집과 상관없이 고정해 편집을 켜고 끌 때 손잡이·내용·삭제 버튼이 미끄러지고 사라지게 둔다.

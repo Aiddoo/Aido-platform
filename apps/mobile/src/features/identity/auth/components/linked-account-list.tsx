@@ -106,7 +106,9 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
   const { t } = useTranslation(['auth', 'common']);
   const { data: linkedAccounts } = useSuspenseQuery(useGetLinkedAccountsQueryOptions());
   const { mutate: link, isPending: isLinking } = useMutation(useLinkAccountMutationOptions());
-  const { mutate: unlink, isPending: isUnlinking } = useMutation(useUnlinkAccountMutationOptions());
+  const { mutateAsync: unlink, isPending: isUnlinking } = useMutation(
+    useUnlinkAccountMutationOptions(),
+  );
   const confirmDialog = useConfirmDialog();
   const isLinked = linkedAccounts.accounts.some(
     (account) => account.provider === provider && account.linked,
@@ -114,17 +116,15 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
   const isPending = isLinking || isUnlinking;
 
   const requestUnlink = async () => {
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('linkedAccounts.unlinkDialogTitle'),
       description: t('linkedAccounts.unlinkDialogMessage', {
         provider: getOAuthProviderLabel(provider),
       }),
       confirmLabel: t('linkedAccounts.unlink'),
       cancelLabel: t('common:actions.cancel'),
+      onConfirm: () => unlink(provider),
     });
-    if (isConfirmed) {
-      unlink(provider);
-    }
   };
 
   return (

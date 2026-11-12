@@ -99,17 +99,14 @@ BlockedUserList.UnblockButton = function UnblockButton({
   const unblockUser = useMutation(useUnblockUserMutationOptions());
 
   const handleUnblock = async () => {
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('moderation:unblock.confirmTitle', { name: displayName }),
       description: t('moderation:unblock.confirmDescription'),
       confirmLabel: t('moderation:unblock.confirm'),
       cancelLabel: t('common:actions.cancel'),
       confirmTestID: 'blocked-user-unblock-confirm',
+      onConfirm: () => unblockUser.mutateAsync({ userId, displayName }),
     });
-    if (!isConfirmed) {
-      return;
-    }
-    unblockUser.mutate({ userId, displayName });
   };
 
   return (

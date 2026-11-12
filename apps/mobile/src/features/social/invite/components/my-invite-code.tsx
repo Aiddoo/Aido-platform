@@ -36,16 +36,13 @@ export function MyInviteCode() {
   const confirmDialog = useConfirmDialog();
 
   const handleRotatePress = async () => {
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('myInvite.rotate.title'),
       description: t('myInvite.rotate.description'),
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('myInvite.rotate.confirm'),
+      onConfirm: () => rotate.mutateAsync(),
     });
-
-    if (isConfirmed) {
-      rotate.mutate();
-    }
   };
 
   return (

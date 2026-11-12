@@ -51,6 +51,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
+import { isTodoCommentUnavailableError } from '../domains/todo-comment.error';
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useTodoCommentForm } from '../hooks/use-todo-comment-form';
 import {
@@ -452,7 +453,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
     });
 
   const confirmDelete = async () => {
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('deleteConfirm.title'),
       description: match(comment)
         .when(TodoCommentPolicy.canDeleteOnlyAsTodoOwner, () =>
@@ -463,14 +464,22 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
       confirmLabel: t('deleteConfirm.confirm'),
       confirmColor: 'danger',
       cancelLabel: t('actions.cancel'),
+      // 행은 낙관적 갱신으로 바로 빠지고, 실패하면 제자리로 돌아오며 다이얼로그가 남는다
+      onConfirm: async () => {
+        // 답글이나 수정 대상으로 고른 글을 지우면 작성기가 지운 글에 보내지 않게 비운다
+        if (findComposerTarget(getValues('mode'))?.id === comment.id) {
+          reset(EMPTY_TODO_COMMENT_FORM_VALUES);
+        }
+        try {
+          await deleteComment.mutateAsync({ comment });
+        } catch (error) {
+          // 이미 지워졌으면 지운 것과 같아 다이얼로그를 닫는다. 안내는 mutation이 했다
+          if (!isTodoCommentUnavailableError(error)) {
+            throw error;
+          }
+        }
+      },
     });
-    if (isConfirmed) {
-      // 답글이나 수정 대상으로 고른 글을 지우면 작성기가 지운 글에 보내지 않게 비운다
-      if (findComposerTarget(getValues('mode'))?.id === comment.id) {
-        reset(EMPTY_TODO_COMMENT_FORM_VALUES);
-      }
-      deleteComment.mutate({ comment });
-    }
   };
 
   return (
