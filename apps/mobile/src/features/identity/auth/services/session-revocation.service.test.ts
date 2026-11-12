@@ -1,5 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
+import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { ApiError, err, NetworkError, ok, ServerError } from '@src/shared/errors';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
@@ -9,6 +10,8 @@ import {
   createMemoryTokenStore,
   createHttpClientStub,
 } from '@src/testing/core';
+import { mockMethod } from '@src/testing/mock-method';
+import { z } from 'zod';
 
 import { AuthApi } from '../apis/auth.api';
 import { createPendingRevocationRepository } from '../repositories/pending-revocation.repository';
@@ -30,7 +33,7 @@ function setup() {
   const repository = createPendingRevocationRepository(storage);
   const publicHttpClient = createHttpClientStub();
   publicHttpClient.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
-  const requestRefresh = jest.fn<Promise<Response>, [string]>(async () => respondWithTokens());
+  const requestRefresh = mockMethod<RefreshTokensRequest>(async () => respondWithTokens());
   const logs: unknown[] = [];
   const record = (...args: unknown[]) => {
     logs.push(args);
@@ -60,13 +63,12 @@ describe('SessionRevocationService', () => {
   it('기록은 토큰과 만료 시각을 pendingRevocation 키에 남긴다', async () => {
     // Given
     const { service, storage, repository } = setup();
-    const set = jest.spyOn(storage, 'set');
 
     // When
     await service.record(REFRESH_A);
 
     // Then
-    expect(set).toHaveBeenCalledWith('pendingRevocation', expect.anything());
+    await expect(storage.get('pendingRevocation', z.unknown())).resolves.not.toBeNull();
     await expect(repository.find()).resolves.toEqual({
       refreshToken: REFRESH_A,
       expiresAt: NOW + PENDING_REVOCATION_TTL_MS,
