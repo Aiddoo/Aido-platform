@@ -13,16 +13,6 @@
       "reason": "phase 3에서 줄인다"
     },
     {
-      "path": "apps/mobile/src/shared/ui/bottom-sheet/bottom-sheet.md",
-      "check": "limit",
-      "reason": "phase 3에서 줄인다"
-    },
-    {
-      "path": "apps/mobile/src/shared/ui/list-row/list-row.md",
-      "check": "limit",
-      "reason": "phase 3에서 줄인다"
-    },
-    {
       "path": "apps/mobile/assets/premium-app-icons/README.md",
       "check": "path",
       "match": "src/features/app-icon/constants/app-icons.ts",
