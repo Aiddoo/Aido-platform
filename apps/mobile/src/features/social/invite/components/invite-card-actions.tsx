@@ -5,6 +5,7 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { dismissToTab } from '@src/shared/navigation/open-entry-href';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import {
@@ -166,8 +167,8 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
 
 /**
  * 수락이 끝난 초대 카드를 떠난다. 카드는 루트 스택이라 replace하면 켜 둔 앱 위에 탭 묶음을 하나 더 쌓는다.
- * 켜 둔 앱이면 카드를 닫고 그 탭에서, 카드로 앱을 열었으면 목적지 탭의 첫 화면을 깔고 연다. 뒤로 가도 카드로 돌아오지 않는다
+ * 켜 둔 앱이면 카드를 닫고 보던 탭에서, 카드로 앱을 열었으면 목적지 탭의 첫 화면을 깔고 연다. 뒤로 가도 카드로 돌아오지 않는다
  */
 function leaveInviteCard(href: Href) {
-  router.dismissTo(href, { withAnchor: true });
+  dismissToTab(href, { withAnchor: true });
 }

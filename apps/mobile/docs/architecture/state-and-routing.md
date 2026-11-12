@@ -93,7 +93,7 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 저장·AI·조회를 기다린 뒤 이동하면 그 사이 떠났는지 먼저 본다. 화면은 `navigation.isFocused()`, 화면 안에서 바뀌는 조각(pane의 메모 편집기)은 마운트 여부도 본다. 떠났으면 지금 보는 화면 위로 끌고 가지 않는다. 메모 AI 정리 결과는 mutation이 초안에 남겨, 그 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다.
 - 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `findWidgetEntry`(`features/device/widget/utils/widget-navigation-link.view-model.ts`, 명령 유효성은 `WidgetNavigationPolicy`)다.
 - 켜진 앱에 앱 밖에서 들어온 이동(누른 푸시, 인증 뒤 여는 위젯 목적지)은 `openEntryHref(href)`(`shared/navigation/open-entry-href.ts`)로 OS가 같은 URL을 연 것처럼 연다. Stack에 그 화면이 있으면 그리로 돌아가고 없으면 쌓는다. `router.navigate`는 탭 위 화면(할 일 상세·시트·결제 모달)에서 탭 화면을 열면 탭 묶음을 하나 더 쌓는다.
-- 탭 위 화면이 탭 화면으로 떠날 때는 `router.dismissTo(href)`다. 시트는 `close({ type: 'dismiss-to', href })`, 결제 모달은 `useCheckoutRoute().leaveTo`다. 탭 안과 탭 위에서 함께 도는 코드(오류 화면 문의하기)는 `openEntryHref`다. 탭 화면으로 `push`·`replace`하면 탭 바가 두 겹이 된다.
+- 탭 위 화면(시트·결제 모달·새 기능 소개·콕 상세·초대 카드)이 탭 화면으로 떠날 때는 `dismissToTab(href)`(같은 파일)다. 시트는 `close({ type: 'dismiss-to', href })`, 결제 모달은 `useCheckoutRoute().leaveTo`가 이것을 부른다. 탭 안과 탭 위에서 함께 도는 코드(오류 화면 문의하기)는 `openEntryHref`다. 탭 화면으로 `push`·`replace`하면 탭 바가 두 겹이 된다. `router.dismissTo`를 바로 쓰면 함께 쓰는 화면이 마이 탭에 열린다(아래 표).
 - 뒤로 가기는 `useGoBack({ fallbackHref })`(돌아갈 화면이 없을 때 화면이 아닌 일을 하면 `{ onFallback }`), Android 뒤로 가기 버튼은 `useAndroidBackHandler`다([hooks](./hooks.md)). `router.canGoBack() ? router.back() : …`을 직접 쓰지 않는다(연타로 두 번 돌아간다).
 - 웹 페이지(약관·공지)는 route가 아니라 `useOpenInAppBrowser`로 연다. 앱 자체 WebView는 없고 `aido://webview/…` 링크는 `+not-found`로 간다.
 - 공개된 경로와 `aido://` URI는 외부 계약이다. 바꾸지 않고 새 경로는 추가만 한다([compatibility](../../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)).
@@ -128,19 +128,20 @@ app/(app)/(tabs)/
 - 넓은 화면(iPad·폴더블·Duo 펼침)은 마이 탭에서만 화면마다 왼쪽 메뉴 칸을 둔다([adaptive-pane](../../src/shared/ui/adaptive-pane/adaptive-pane.md#내-정보-메뉴-전체-폭-헤더--화면마다-메뉴-칸)). 할 일·메모 탭에서 연 같은 화면은 메뉴 칸 없이 그 탭 안 전체 폭에 일반 push로 쌓인다.
 - 보고 있는 탭을 다시 누르면 iOS NativeTabs가 그 탭 Stack을 첫 화면으로 되돌린다(`disablePopToTop` 기본값, iOS 전용). 탭마다 기록은 따로라 다른 탭에 갔다 오면 쌓아 둔 화면이 그대로다.
 
-**어디에 열리나.** 함께 쓰는 화면은 세 탭에 다 있어 Expo Router가 그룹을 고른다. 앱이 켜져 있고 지금 탭이 있으면 그 탭이다. 탭이 없으면 글자 순 첫 그룹이고, 그게 마이 탭 `(me)`다. 따로 적는 목록이나 경로 바꾸기는 없다.
+**어디에 열리나.** 함께 쓰는 화면은 세 탭에 다 있어 그룹을 골라야 한다. Expo Router는 그룹 없는 경로를 지금 focus route의 그룹으로 고르고, focus가 탭 밖 route(시트·결제 모달·탭 위 상세·초대 카드)이면 글자 순 첫 그룹인 마이 탭 `(me)`를 고른다. 그래서 켜진 앱에 들어온 이동과 탭 위 화면에서 떠나는 이동은 한 곳(`shared/navigation/selected-tab-path.ts`의 `toSelectedTabPath`)이 지금 고른 탭을 읽어 경로에 그룹을 적는다(`/friends` → `/(app)/(tabs)/(memos)/friends`, Expo 문서의 "include the group name"). 고른 탭 Stack에 그 화면이 없거나 탭 묶음이 없으면(콜드·로그인 전) 경로를 그대로 둔다. 따로 적는 화면 목록은 없고 탭 Stack의 route 이름과 견준다.
 
-| 여는 곳                                               | 함께 쓰는 화면(`/notifications`, `/friends/invite`, `/settings/…`) | 한 탭에만 있는 화면                                                                          |
-| ----------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| 탭 안에서 누름                                        | 누른 탭 Stack 위. 탭 바가 그대로이고 뒤로 가면 누른 화면이다       | 그 탭으로 바뀐다                                                                             |
-| 켜진 앱에 들어온 링크·푸시(웜)                        | 보던 탭 Stack 위. 뒤로 가면 보던 화면이다                          | 그 탭으로 바뀐다                                                                             |
-| 꺼진 앱으로 들어온 딥링크·푸시·위젯·초대 링크(콜드)   | 마이 탭. 아래에 내 정보 메뉴가 깔려 뒤로 가면 메뉴다               | 탭 첫 화면은 그 탭. 탭 위 화면(`/todo/[todoId]`·`/memo/[memoId]`)은 아래에 할 일 탭이 깔린다 |
-| 탭 위 화면(결제 모달·시트·상세)에서 떠남(`dismissTo`) | 그 화면을 닫고 마이 탭(1.15.1과 같다). 탭 묶음은 한 겹이다         | 그 탭                                                                                        |
+| 여는 곳                                                            | 함께 쓰는 화면(`/notifications`, `/friends/invite`, `/settings/…`)                       | 한 탭에만 있는 화면                                                                          |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 탭 안에서 누름                                                     | 누른 탭 Stack 위. 탭 바가 그대로이고 뒤로 가면 누른 화면이다                             | 그 탭으로 바뀐다                                                                             |
+| 켜진 앱에 들어온 링크·푸시·위젯(웜)                                | 보던 탭 Stack 위. 시트·탭 위 화면을 연 채여도 그 아래 탭이다. 뒤로 가면 보던 탭 화면이다 | 그 탭으로 바뀐다                                                                             |
+| 꺼진 앱으로 들어온 딥링크·푸시·위젯·초대 링크(콜드)                | 마이 탭. 아래에 내 정보 메뉴가 깔려 뒤로 가면 메뉴다                                     | 탭 첫 화면은 그 탭. 탭 위 화면(`/todo/[todoId]`·`/memo/[memoId]`)은 아래에 할 일 탭이 깔린다 |
+| 탭 위 화면(결제 모달·시트·상세·초대 카드)에서 떠남(`dismissToTab`) | 그 화면을 닫고 아래 보던 탭. 탭 묶음은 한 겹이다                                         | 그 탭                                                                                        |
 
 - 새 탭 그룹을 더할 때는 `(me)`보다 글자 순으로 앞서지 않는 이름을 쓴다. 앞서면 콜드 링크가 그 탭에 열린다. `src/bootstrap/navigation/tab-stack-routing.test.tsx`가 1.15.1 공개 경로와 함께 쓰는 화면 파일마다 이 표를 확인한다.
 - 알림함은 세 탭의 종에서 열어 함께 쓰는 화면이다. 행이 여는 탭 화면은 같은 탭에 쌓이고 뒤로 가면 알림함이다. 넓은 화면의 마이 탭에서는 메뉴 칸 옆 첫 상세로 열려 뒤로 가기 없이 메뉴로 떠난다.
 - 탭 위 화면의 되돌리기 fallback(`useGoBack`·`Redirect`의 `/feed`·`/memo`)은 돌아갈 화면이 없을 때만 쓴다. (app)·탭 anchor로 탭 위 화면 아래에는 늘 탭 묶음이 있어 실제로 닿지 않아 그대로 둔다.
-- 앱 밖 링크를 다른 탭에 꼭 열어야 하면 보내는 쪽 href에 그룹을 적는다(`/(app)/(tabs)/(todos)/…`, Expo 문서의 "include the group name"). 지금은 그런 화면이 없다.
+- 앱 밖 링크를 다른 탭에 꼭 열어야 하면 보내는 쪽 href에 그룹을 적는다(`/(app)/(tabs)/(todos)/…`). 그룹이 적힌 경로는 고른 탭과 견주지 않아 그대로 열린다. 지금은 그런 화면이 없다.
+- `toSelectedTabPath`는 React 밖(`+native-intent`)에서도 불려 루트 레이아웃(`AuthGateLayout`)이 `useBindSelectedTabPath()`로 내비게이션 컨테이너를 묶는다. 앱과 같은 탭 트리를 그리는 테스트도 루트 레이아웃에서 이 훅을 부른다.
 
 **함께 쓰는 화면 더하기.** `app/(app)/(tabs)/(me,memos,todos)/` 아래에 route 파일 하나를 만든다. 레이아웃·링크 표·테스트는 고치지 않는다.
 
@@ -159,7 +160,7 @@ app/(app)/(tabs)/
 | 위젯(`aido://feed?…`·`aido://todo/{id}`)                              | 앱이 켜져 있으면 Expo Router가 연다. 로그인 전에 받은 첫 URL과 Android 명령은 `useWidgetAppEntry`가 인증 뒤 `openEntryHref`로 연다                    | 시트·상세 위에서 눌러도 탭 묶음은 하나다                                                                                                                                      |
 | Android OAuth 콜백(`/auth/[provider]`)                                | 그리지 않는다. `useCloseOAuthCallback`이 브라우저 세션을 끝내고 로그인·계정 연결을 시작한 화면으로 돌아간다. 그 화면이 없으면 `/`다                   | 로그인은 Index가 이어 받아 남은 푸시·콜드 링크·초대를 연다. 계정 연결은 같은 연결 화면에 남는다                                                                               |
 
-- 루트 Stack(초대 카드)에서 앱 화면으로 나갈 때는 `router.dismissTo(href, { withAnchor: true })`다. `replace`는 켜진 앱 위에 탭 묶음을 하나 더 쌓고, 앵커 없이 열면 시트 아래에 탭이 없다. 같은 Stack 안의 끝난 흐름(코드 입력 → 카드, 없는 코드 → 코드 입력)은 `replace`다.
+- 루트 Stack(초대 카드)에서 앱 화면으로 나갈 때는 `dismissToTab(href, { withAnchor: true })`다. 켜진 앱이면 카드 아래 보던 탭에 열고(내 코드 → 보던 탭의 내 초대), 카드로 앱을 열었으면 화면을 가진 탭에 첫 화면을 깔고 연다. `replace`는 켜진 앱 위에 탭 묶음을 하나 더 쌓고, 앵커 없이 열면 시트 아래에 탭이 없다. 같은 Stack 안의 끝난 흐름(코드 입력 → 카드, 없는 코드 → 코드 입력)은 `replace`다.
 - 탭 위 시트(환영 시트)에서 탭 화면으로 떠날 때는 `{ type: 'dismiss-to' }`이고, 볼 것이 없는 링크는 `exit()`(뒤로, 없으면 피드)다.
 - Index가 첫 화면을 고르는 차례는 눌린 푸시 → 콜드 링크(`cold-start-link`) → 로그인 전 초대(피드 위) → 피드다. 로그인 화면·OAuth 콜백(`auth`)은 앱 입구라 이 차례를 건너뛰지 않는다(`useAppEntrySegmentSync`).
 

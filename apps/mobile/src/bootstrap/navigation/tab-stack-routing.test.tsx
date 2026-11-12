@@ -3,6 +3,9 @@ import { join, relative, sep } from 'node:path';
 
 import { useOpenSubscriptionInquiry } from '@src/features/billing/subscription/hooks/use-open-subscription-inquiry';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
+import { ENV } from '@src/shared/config/env';
+import { dismissToTab, openEntryHref } from '@src/shared/navigation/open-entry-href';
+import { useBindSelectedTabPath } from '@src/shared/navigation/selected-tab-path';
 import { QueryErrorActions } from '@src/shared/ui';
 import { useSheetRoute } from '@src/shared/ui/bottom-sheet/use-sheet-route';
 import { stubWindowDimensions } from '@src/testing/core';
@@ -139,21 +142,75 @@ function PaywallScreen() {
   );
 }
 
-/** 문의하기가 있는 route 시트(시트, 연 화면, 문의에서 뒤로 가면 나올 화면). 문의는 탭 화면이라 `dismiss-to`로 떠나야 탭 묶음이 한 겹이다 */
+/**
+ * 문의하기가 있는 route 시트(시트, 연 화면, 시트 아래 보던 탭, 문의에서 뒤로 가면 나올 화면). 문의는 탭마다 함께 쓰는 화면이라
+ * `dismiss-to`로 떠나야 탭 묶음이 한 겹이고 시트 아래 보던 탭에 열린다. 탭 위 화면(상세·제안·날씨)은 그 화면도 닫힌다
+ */
 const INQUIRY_SHEETS = [
-  ['/todo/new', '/feed', '/mypage'],
-  ['/todo/1/edit', '/feed', '/mypage'],
-  ['/todo/1/actions', '/feed', '/mypage'],
-  ['/todo/1/actions', '/todo/1', '/mypage'],
-  ['/todo/1/date', '/feed', '/mypage'],
-  ['/todo/1/time', '/feed', '/mypage'],
-  ['/todo/1/category', '/feed', '/mypage'],
-  ['/todo/1/sub-todos/2/actions', '/feed', '/mypage'],
-  ['/todo-categories/3/edit', '/settings/category-settings', '/settings/category-settings'],
-  ['/todo-categories/3/delete', '/settings/category-settings', '/settings/category-settings'],
-  ['/suggestions/4/category', '/suggestions', '/mypage'],
-  ['/weather/reschedule', '/weather', '/mypage'],
+  ['/todo/new', '/feed', '(todos)', '/feed'],
+  ['/todo/new', '/memo', '(memos)', '/memo'],
+  ['/todo/1/edit', '/feed', '(todos)', '/feed'],
+  ['/todo/1/actions', '/feed', '(todos)', '/feed'],
+  ['/todo/1/actions', '/todo/1', '(todos)', '/feed'],
+  ['/todo/1/date', '/feed', '(todos)', '/feed'],
+  ['/todo/1/time', '/feed', '(todos)', '/feed'],
+  ['/todo/1/category', '/feed', '(todos)', '/feed'],
+  ['/todo/1/sub-todos/2/actions', '/feed', '(todos)', '/feed'],
+  ['/todo-categories/3/edit', '/settings/category-settings', '(me)', '/settings/category-settings'],
+  [
+    '/todo-categories/3/delete',
+    '/settings/category-settings',
+    '(me)',
+    '/settings/category-settings',
+  ],
+  ['/suggestions/4/category', '/suggestions', '(todos)', '/feed'],
+  ['/weather/reschedule', '/weather', '(todos)', '/feed'],
 ] as const;
+
+/** 켜 둔 앱에서 보던 곳(탭 첫 화면, 그 탭, 위에 띄운 탭 밖 시트 route) */
+const WARM_STARTS = [
+  ['/feed', '(todos)', null],
+  ['/feed', '(todos)', '/todo/new'],
+  ['/memo', '(memos)', null],
+  ['/memo', '(memos)', '/todo/new'],
+  ['/mypage', '(me)', null],
+  ['/mypage', '(me)', '/todo/new'],
+] as const;
+
+/** 켜 둔 앱에 들어오는 이동 중 함께 쓰는 화면을 여는 것(이름, 여는 방법, 도착 경로) */
+const WARM_SHARED_ENTRIES = [
+  ['OS 링크', () => emitSystemUrl(`${ENV.SCHEME}://friends/invite`), '/friends/invite'],
+  [
+    '쿼리가 붙은 OS 링크',
+    () => emitSystemUrl(`${ENV.SCHEME}://settings/inquiry?category=PAYMENT`),
+    '/settings/inquiry',
+  ],
+  [
+    '눌린 푸시(openEntryHref)',
+    () => openEntryHref({ pathname: '/friends', params: { view: 'receiver' } }),
+    '/friends',
+  ],
+  [
+    '동적 경로 푸시(openEntryHref)',
+    () => openEntryHref({ pathname: '/reports/[reportId]', params: { reportId: 'report-1' } }),
+    '/reports/report-1',
+  ],
+] as const;
+
+const WARM_CASES = WARM_STARTS.flatMap((start) =>
+  WARM_SHARED_ENTRIES.map((entry) => [...start, ...entry] as const),
+);
+
+function emitSystemUrl(url: string) {
+  systemUrlListeners.forEach((listener) => listener({ url }));
+}
+
+/** 앱 루트 레이아웃(`AuthGateLayout`)처럼 `+native-intent`·`openEntryHref`가 지금 탭을 읽게 컨테이너를 묶는다 */
+function RootLayout() {
+  useBindSelectedTabPath();
+
+  return <Stack screenOptions={{ headerShown: false, animation: 'none' }} />;
+}
 
 function InquirySheet() {
   const sheet = useSheetRoute('/feed');
@@ -205,7 +262,7 @@ async function renderApp(initialUrl: string) {
   );
   const routes = {
     '+native-intent': NativeIntent,
-    _layout: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
+    _layout: RootLayout,
     '(app)/_layout': {
       default: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
       unstable_settings: { anchor: '(tabs)' },
@@ -472,25 +529,100 @@ describe('탭 Stack 라우팅', () => {
     );
   });
 
-  it('켜진 앱에 들어온 링크(웜)는 보던 탭 위에 열고 뒤로 가면 보던 화면이다', async () => {
-    // Given
-    const route = await renderApp('/feed');
-    await act(() => router.push('/friends/search'));
+  describe('켜진 앱에 들어온 이동(웜)은 보던 탭에 연다', () => {
+    it('탭 안 화면을 보던 중 들어온 링크는 그 탭 Stack에 쌓이고 뒤로 가면 보던 화면이다', async () => {
+      // Given
+      const route = await renderApp('/feed');
+      await act(() => router.push('/friends/search'));
 
-    // When
-    await act(async () => {
-      systemUrlListeners.forEach((listener) => listener({ url: 'aido://friends/invite' }));
+      // When
+      await act(async () => emitSystemUrl(`${ENV.SCHEME}://friends/invite`));
+
+      // Then
+      expect(route.getPathname()).toBe('/friends/invite');
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'friends', 'invite']);
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'friends', 'search']);
     });
 
-    // Then
-    expect(route.getPathname()).toBe('/friends/invite');
-    expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'friends', 'invite']);
+    it.each(WARM_CASES)(
+      '%s 탭(%s, 시트 %s)에서 %s로 연 함께 쓰는 화면은 그 탭에 열리고 뒤로 가면 탭 첫 화면이다',
+      async (startUrl, tabGroup, sheetUrl, _entryName, enter, pathname) => {
+        // Given
+        const route = await renderApp(startUrl);
+        if (sheetUrl != null) {
+          await act(() => router.push(sheetUrl));
+        }
 
-    // When
-    await act(() => router.back());
+        // When
+        await act(async () => enter());
 
-    // Then
-    expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'friends', 'search']);
+        // Then
+        expect(route.getPathname()).toBe(pathname);
+        expect(route.getSegments()[2]).toBe(tabGroup);
+        expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+
+        // When
+        await act(() => router.back());
+
+        // Then
+        expect(route.getPathname()).toBe(startUrl);
+        expect(route.getSegments()[2]).toBe(tabGroup);
+      },
+    );
+
+    it.each(SHARED_ROUTES)(
+      '함께 쓰는 화면 파일(%s)은 메모 탭 시트 위에서 링크로 열어도 메모 탭에 열린다',
+      async (routeName) => {
+        // Given
+        const route = await renderApp('/memo');
+        await act(() => router.push('/todo/new'));
+
+        // When
+        await act(async () => emitSystemUrl(`${ENV.SCHEME}:/${toSampleUrl(routeName)}`));
+
+        // Then
+        expect(route.getSegments()[2]).toBe('(memos)');
+        expect(screen.getByTestId(routeName)).toBeTruthy();
+
+        // When
+        await act(() => router.back());
+
+        // Then
+        expect(route.getPathname()).toBe('/memo');
+      },
+    );
+
+    it('한 탭에만 있는 화면(위젯의 피드)은 시트 위에서 열어도 그 화면의 탭으로 바뀐다', async () => {
+      // Given
+      const route = await renderApp('/memo');
+      await act(() => router.push('/todo/new'));
+
+      // When
+      await act(async () => emitSystemUrl(`${ENV.SCHEME}://feed?date=today`));
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'feed']);
+      expect(route.getSearchParams()).toEqual({ date: 'today' });
+      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+    });
+
+    it('탭 위 화면(새 기능 소개)은 이름이 함께 쓰는 화면과 겹쳐도 탭 위에 연다', async () => {
+      // Given
+      const route = await renderApp('/memo');
+      await act(() => router.push('/todo/new'));
+
+      // When
+      await act(async () => emitSystemUrl(`${ENV.SCHEME}://whats-new`));
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', 'whats-new']);
+      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+    });
   });
 
   describe('알림함은 탭마다 함께 쓰는 화면이다', () => {
@@ -549,42 +681,47 @@ describe('탭 Stack 라우팅', () => {
       expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'notifications']);
     });
 
-    it('콕 상세(탭 위)에서 알림함으로 돌아가면 콕 상세를 닫고 탭 묶음 하나 안의 알림함을 연다', async () => {
+    it('콕 상세(탭 위)에서 알림함으로 돌아가면 콕 상세를 닫고 아래 보던 탭의 알림함을 연다', async () => {
       // Given
-      const route = await renderApp('/feed');
+      const route = await renderApp('/memo');
       await act(() => router.push({ pathname: '/nudges/[nudgeId]', params: { nudgeId: 7 } }));
 
       // When
-      await act(() => router.dismissTo('/notifications'));
+      await act(() => dismissToTab('/notifications'));
 
       // Then
-      expect(route.getPathname()).toBe('/notifications');
-      expect(route.getSegments()[2]).toBe('(me)');
-      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
-    });
-  });
-
-  describe('탭 위 화면은 탭을 새로 쌓지 않고 아래 탭 묶음으로 돌아간다', () => {
-    it('결제 모달에서 리포트로 떠나면(dismissTo) 모달을 닫고 리포트를 가진 마이 탭에 연다', async () => {
-      // Given
-      const route = await renderApp('/memo');
-      await act(() => router.push('/paywall'));
-
-      // When
-      await act(() => router.dismissTo('/reports'));
-
-      // Then
-      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(me)', 'reports']);
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(memos)', 'notifications']);
       expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
 
       // When
       await act(() => router.back());
 
       // Then
-      expect(route.getPathname()).toBe('/mypage');
+      expect(route.getPathname()).toBe('/memo');
+    });
+  });
+
+  describe('탭 위 화면은 탭을 새로 쌓지 않고 아래 탭 묶음으로 돌아간다', () => {
+    it('결제 모달에서 리포트로 떠나면 모달을 닫고 아래 보던 탭에 연다', async () => {
+      // Given
+      const route = await renderApp('/memo');
+      await act(() => router.push('/paywall'));
+
+      // When
+      await act(() => dismissToTab('/reports'));
+
+      // Then
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(memos)', 'reports']);
+      expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe('/memo');
     });
 
-    it('결제 모달에서 연 결제 문의는 모달을 닫고 탭 묶음 하나 안에서 연다', async () => {
+    it('결제 모달에서 연 결제 문의는 모달을 닫고 아래 보던 탭에서 연다', async () => {
       // Given
       const route = await renderApp('/memo');
       await act(() => router.push('/paywall'));
@@ -593,14 +730,14 @@ describe('탭 Stack 라우팅', () => {
       await act(async () => fireEvent.press(screen.getByRole('button', { name: '결제 문의' })));
 
       // Then
-      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(me)', 'settings', 'inquiry']);
+      expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(memos)', 'settings', 'inquiry']);
       expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
 
       // When
       await act(() => router.back());
 
       // Then
-      expect(route.getPathname()).toBe('/mypage');
+      expect(route.getPathname()).toBe('/memo');
     });
 
     it('결제 모달의 오류 문의도 탭 묶음을 두 겹 쌓지 않는다', async () => {
@@ -617,8 +754,8 @@ describe('탭 Stack 라우팅', () => {
     });
 
     it.each(INQUIRY_SHEETS)(
-      '%s 시트(%s 위)에서 문의로 떠나면 시트를 닫고 탭 묶음 하나 안에서 연다',
-      async (sheetUrl, underUrl, backPathname) => {
+      '%s 시트(%s 위)에서 문의로 떠나면 시트를 닫고 아래 보던 탭 %s에서 연다',
+      async (sheetUrl, underUrl, tabGroup, backPathname) => {
         // Given
         const route = await renderApp(underUrl);
         await act(() => router.push(sheetUrl));
@@ -627,7 +764,7 @@ describe('탭 Stack 라우팅', () => {
         await act(async () => fireEvent.press(screen.getByRole('button', { name: '시트 문의' })));
 
         // Then
-        expect(route.getSegments()).toEqual(['(app)', '(tabs)', '(me)', 'settings', 'inquiry']);
+        expect(route.getSegments()).toEqual(['(app)', '(tabs)', tabGroup, 'settings', 'inquiry']);
         expect(countTabBundles(route.getRouterState()?.routes ?? [])).toBe(1);
 
         // When

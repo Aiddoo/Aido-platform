@@ -12,7 +12,7 @@ export const SHEET_ROUTE_SCREEN_OPTIONS = {
 
 /**
  * `replace`는 다음 시트 같은 탭 위 route로 바꾼다. `dismiss-to`는 시트와 그 아래 탭 위 화면을 닫고 탭 화면(피드·문의)을
- * 탭 묶음 하나 안에서 연다. 탭 화면으로 `replace`하면 (app) Stack에 탭 묶음이 두 겹 쌓인다
+ * 탭 묶음 하나 안에서 연다. 함께 쓰는 화면(문의)은 시트 아래 보던 탭이다. 탭 화면으로 `replace`하면 (app) Stack에 탭 묶음이 두 겹 쌓인다
  */
 export type SheetRouteExit =
   | { type: 'back' }

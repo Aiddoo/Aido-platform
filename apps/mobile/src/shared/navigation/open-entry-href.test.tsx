@@ -3,7 +3,8 @@ import { router, Stack, Tabs } from 'expo-router';
 import { act } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
-import { openEntryHref } from './open-entry-href';
+import { dismissToTab, openEntryHref } from './open-entry-href';
+import { useBindSelectedTabPath } from './selected-tab-path';
 
 // 실제 라우터로 Stack 기록을 보므로 jest.setup의 전역 mock을 끈다
 jest.unmock('expo-router');
@@ -26,10 +27,17 @@ function createTabStackLayout(anchor: string) {
   };
 }
 
-// 앱과 같은 모양의 트리: 탭 위 Stack, 탭마다 Stack, 세 탭이 함께 쓰는 화면(app/(app)/(tabs))
+/** 앱 루트 레이아웃처럼 지금 탭을 읽게 내비게이션 컨테이너를 묶는다 */
+function RootLayout() {
+  useBindSelectedTabPath();
+
+  return <Stack screenOptions={{ headerShown: false, animation: 'none' }} />;
+}
+
+// 앱과 같은 모양의 트리: 탭 위 Stack, 탭마다 Stack, 세 탭이 함께 쓰는 화면(app/(app)/(tabs)), 루트 Stack의 초대 카드
 async function renderApp(url: string) {
   const routes = {
-    _layout: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
+    _layout: RootLayout,
     '(app)/_layout': createTabStackLayout('(tabs)'),
     // NativeTabs는 Jest에서 그려지지 않아 같은 탭 라우터를 쓰는 JS Tabs로 대신한다
     '(app)/(tabs)/_layout': {
@@ -52,6 +60,7 @@ async function renderApp(url: string) {
     '(app)/(tabs)/(me,memos,todos)/settings/theme': createScreen('theme'),
     '(app)/notifications/index': createScreen('notifications'),
     '(app)/todo/[todoId]/index': createScreen('todo'),
+    'invite/[inviteCode]': createScreen('invite-card'),
   };
   // Metro는 route 파일을 경로 순으로 올리고, 탭이 정해지지 않은 이동이 고르는 그룹이 이 순서를 따른다
   const rendered = await renderAppRoute(
@@ -62,6 +71,9 @@ async function renderApp(url: string) {
   const findAppStack = () => findNavigator(rendered.getRouterState(), ['__root', '(app)']);
   /** 탭 위 Stack(`(app)`)에 쌓인 화면 이름 */
   const appStack = () => findAppStack()?.routes.map(({ name }) => name);
+  /** 루트 Stack에 쌓인 화면 이름 */
+  const rootStack = () =>
+    findNavigator(rendered.getRouterState(), ['__root'])?.routes.map(({ name }) => name);
   /** 지금 탭의 Stack에 쌓인 화면 이름 */
   const tabStack = () => {
     const tabs = findNavigator(findAppStack(), ['(tabs)']);
@@ -69,7 +81,7 @@ async function renderApp(url: string) {
     return tab?.state?.routes.map(({ name }) => name);
   };
 
-  return { ...rendered, appStack, tabStack };
+  return { ...rendered, appStack, rootStack, tabStack };
 }
 
 /** 이름 경로를 따라 내려간 navigator. 같은 이름이 여럿이면 맨 위의 것이다 */
@@ -94,23 +106,36 @@ describe('openEntryHref', () => {
     expect(app.appStack()).toEqual(['(tabs)']);
   });
 
-  it('탭 위 화면(알림함)에서 함께 쓰는 화면을 열면 탭 위 화면을 닫고 마이 탭에 연다', async () => {
+  it('탭 위 화면(알림함)에서 함께 쓰는 화면을 열면 탭 위 화면을 닫고 아래 보던 탭에 연다', async () => {
     // Given
-    const app = await renderApp('/feed');
+    const app = await renderApp('/memo');
     await act(() => router.push('/notifications'));
 
     // When
     await act(() => openEntryHref('/friends?view=receiver'));
 
     // Then
-    expect(app.getSegments()).toEqual(['(app)', '(tabs)', '(me)', 'friends']);
+    expect(app.getSegments()).toEqual(['(app)', '(tabs)', '(memos)', 'friends']);
     expect(app.appStack()).toEqual(['(tabs)']);
 
     // When
     await act(() => router.back());
 
     // Then
-    expect(app.getPathname()).toBe('/mypage');
+    expect(app.getPathname()).toBe('/memo');
+  });
+
+  it('보던 탭에 없는 화면(다른 탭의 첫 화면)은 그 화면의 탭으로 바꿔 연다', async () => {
+    // Given
+    const app = await renderApp('/memo');
+    await act(() => router.push('/notifications'));
+
+    // When
+    await act(() => openEntryHref('/feed?date=today'));
+
+    // Then
+    expect(app.getSegments()).toEqual(['(app)', '(tabs)', '(todos)', 'feed']);
+    expect(app.appStack()).toEqual(['(tabs)']);
   });
 
   it('할 일 상세 위에서 피드를 열어도 탭 묶음이 두 겹이 되지 않는다', async () => {
@@ -202,5 +227,44 @@ describe('openEntryHref', () => {
     // Then
     expect(app.getPathname()).toBe('/notifications');
     expect(app.appStack()).toEqual(['(tabs)', 'notifications/index']);
+  });
+});
+
+describe('dismissToTab', () => {
+  it('켜 둔 앱 위 루트 화면(초대 카드)을 닫고 함께 쓰는 화면을 아래 보던 탭에 연다', async () => {
+    // Given
+    const app = await renderApp('/memo');
+    await act(() => router.push('/invite/K7M2QX'));
+
+    // When
+    await act(() => dismissToTab('/friends', { withAnchor: true }));
+
+    // Then
+    expect(app.getSegments()).toEqual(['(app)', '(tabs)', '(memos)', 'friends']);
+    expect(app.rootStack()).toEqual(['(app)']);
+
+    // When
+    await act(() => router.back());
+
+    // Then
+    expect(app.getPathname()).toBe('/memo');
+  });
+
+  it('탭 묶음이 없으면(카드로 연 앱) 함께 쓰는 화면을 마이 탭에 열고 내 정보 메뉴를 아래에 깐다', async () => {
+    // Given
+    const app = await renderApp('/invite/K7M2QX');
+
+    // When
+    await act(() => dismissToTab('/friends', { withAnchor: true }));
+
+    // Then
+    expect(app.getSegments()).toEqual(['(app)', '(tabs)', '(me)', 'friends']);
+    expect(app.rootStack()).toEqual(['(app)']);
+
+    // When
+    await act(() => router.back());
+
+    // Then
+    expect(app.getPathname()).toBe('/mypage');
   });
 });

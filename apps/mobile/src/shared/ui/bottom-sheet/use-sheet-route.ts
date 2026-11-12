@@ -1,3 +1,4 @@
+import { dismissToTab } from '@src/shared/navigation/open-entry-href';
 import { type Href, useRouter } from 'expo-router';
 import { use, useRef, useState } from 'react';
 
@@ -20,7 +21,8 @@ export function useSheetRoute(fallbackHref: Href) {
     }
     hasExitedRef.current = true;
     startToastLayerClosing?.();
-    exitSheetRoute(router, next, fallbackHref);
+    // router.dismissTo는 시트가 focus면 함께 쓰는 화면을 마이 탭에 연다
+    exitSheetRoute({ ...router, dismissTo: dismissToTab }, next, fallbackHref);
   };
 
   // 닫힘 애니메이션을 기다리지 않고 알려, 같은 흐름이 방금 띄운 토스트가 닫히는 시트에 그려졌다 사라지지 않게 한다

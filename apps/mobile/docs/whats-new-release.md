@@ -49,19 +49,19 @@
 
 ## 동작 규칙
 
-| 규칙                      | 구현                                                                                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 계정·캠페인별 한 번       | `aido_feature_discovery_seen_v1:{userId}:{campaignId}`. 동기 claim                                                                                                                    |
-| 가입 시점과 상관없이 자동 | `WhatsNewPolicy.shouldAutoOpen(release, …)`: 서버 `enabled`·`autoOpen`, 이 출시의 캠페인, 지원 버전, 안 봄. 새 계정도 한 번 본다. 1.15.0 이하 앱은 `launchedAt` 전 가입자에게만 연다  |
-| 다른 안내와 겹치지 않음   | `useStableFeedForeground`(피드가 앞에 자리 잡은 뒤). 날씨 위치는 자동으로 묻지 않는다                                                                                                 |
-| 알림 화면 다음에 연다     | 피드가 `usePushOnboardingGuardState() === 'closed'`를 `isOnboardingSettled`로 넘긴다. 아래 순서를 따른다                                                                              |
-| 말풍선은 그 다음          | `useWhatsNewAutoOpen`의 `shouldShowCoachmarks`(`utils/whats-new-coachmarks.view-model.ts`)를 피드가 친구 줄·달력 안내에 넘긴다. 설정을 받는 중이거나 자동으로 열 차례면 기다린다      |
-| 기능으로 떠나기           | `leaveTo`(`dismissTo`)로 기능이 사는 탭에서 연다. 말로 할 일 만들기는 `/feed?action=add-voice-todo`로 오늘의 내 피드 위에 시트를 열어 만든 할 일이 뒤에 보인다                        |
-| 다시 열기                 | 피드 카드 14일(`aido_feature_discovery_reentry_v1:{userId}:{campaignId}`), 마이 메뉴 상시                                                                                             |
-| 새 기능 표시·메뉴 점      | `useUnseenCampaignReleaseId`(`useWhatsNewCampaign`의 조회를 공유): 서버 캠페인이 가리키는 출시를 아직 보지 않았을 때만 그 줄에 "새 기능", 마이 메뉴에 점. 지난 출시에는 붙이지 않는다 |
-| 캠페인 없는 소개          | 목록에서만 연다. 본 기록·`feature_hub_*`·`feature_card_cta`·기능 귀속을 남기지 않고 `whats_new_*`만 남긴다                                                                            |
-| 버전 표시                 | 목록 줄은 `v1.15.0 · 11월 10일 업데이트`, Steps 머리는 `v1.15.0`. 읽기 라벨은 "버전 1.15.0"이다                                                                                       |
-| 오프라인, 서버 실패       | 목록과 Steps는 번들이라 그대로 열린다. 설정을 못 받으면 자동으로 열지 않는다                                                                                                          |
+| 규칙                      | 구현                                                                                                                                                                                                           |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 계정·캠페인별 한 번       | `aido_feature_discovery_seen_v1:{userId}:{campaignId}`. 동기 claim                                                                                                                                             |
+| 가입 시점과 상관없이 자동 | `WhatsNewPolicy.shouldAutoOpen(release, …)`: 서버 `enabled`·`autoOpen`, 이 출시의 캠페인, 지원 버전, 안 봄. 새 계정도 한 번 본다. 1.15.0 이하 앱은 `launchedAt` 전 가입자에게만 연다                           |
+| 다른 안내와 겹치지 않음   | `useStableFeedForeground`(피드가 앞에 자리 잡은 뒤). 날씨 위치는 자동으로 묻지 않는다                                                                                                                          |
+| 알림 화면 다음에 연다     | 피드가 `usePushOnboardingGuardState() === 'closed'`를 `isOnboardingSettled`로 넘긴다. 아래 순서를 따른다                                                                                                       |
+| 말풍선은 그 다음          | `useWhatsNewAutoOpen`의 `shouldShowCoachmarks`(`utils/whats-new-coachmarks.view-model.ts`)를 피드가 친구 줄·달력 안내에 넘긴다. 설정을 받는 중이거나 자동으로 열 차례면 기다린다                               |
+| 기능으로 떠나기           | `leaveTo`(`dismissToTab`)로 연다. 함께 쓰는 화면은 아래 보던 탭, 한 탭에만 있는 화면은 그 탭이다. 말로 할 일 만들기는 `/feed?action=add-voice-todo`로 오늘의 내 피드 위에 시트를 열어 만든 할 일이 뒤에 보인다 |
+| 다시 열기                 | 피드 카드 14일(`aido_feature_discovery_reentry_v1:{userId}:{campaignId}`), 마이 메뉴 상시                                                                                                                      |
+| 새 기능 표시·메뉴 점      | `useUnseenCampaignReleaseId`(`useWhatsNewCampaign`의 조회를 공유): 서버 캠페인이 가리키는 출시를 아직 보지 않았을 때만 그 줄에 "새 기능", 마이 메뉴에 점. 지난 출시에는 붙이지 않는다                          |
+| 캠페인 없는 소개          | 목록에서만 연다. 본 기록·`feature_hub_*`·`feature_card_cta`·기능 귀속을 남기지 않고 `whats_new_*`만 남긴다                                                                                                     |
+| 버전 표시                 | 목록 줄은 `v1.15.0 · 11월 10일 업데이트`, Steps 머리는 `v1.15.0`. 읽기 라벨은 "버전 1.15.0"이다                                                                                                                |
+| 오프라인, 서버 실패       | 목록과 Steps는 번들이라 그대로 열린다. 설정을 못 받으면 자동으로 열지 않는다                                                                                                                                   |
 
 ## 첫 피드의 자동 화면 순서
 

@@ -71,7 +71,7 @@ X.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 ```
 
 route 시트 안에서는 시트를 먼저 닫고 문의 화면을 엽니다. `onInquiry`는 초안이 담긴 문의 `href`를 받으므로
-`sheet.close({ type: 'dismiss-to', href })`로 넘깁니다. 문의는 탭 화면이라 시트와 그 아래 탭 위 화면을 닫고 탭 묶음 하나 안에서 엽니다(`router.dismissTo`). `RouteBottomSheet`가 이 경계를 갖고 있어 시트는 경계를 다시 두지 않습니다. 경계가 시트 밖에 있는
+`sheet.close({ type: 'dismiss-to', href })`로 넘깁니다. 문의는 탭 화면이라 시트와 그 아래 탭 위 화면을 닫고 탭 묶음 하나 안, 시트 아래 보던 탭에서 엽니다(`dismissToTab`). `RouteBottomSheet`가 이 경계를 갖고 있어 시트는 경계를 다시 두지 않습니다. 경계가 시트 밖에 있는
 폼 시트만 fallback이 `sheet`를 받을 수 있게 경계에서 넘깁니다.
 
 ```tsx

@@ -174,6 +174,7 @@ async function setup({
     '(app)/(tabs)/(me,memos,todos)/friends/index': createScreen('friends'),
     '(app)/(tabs)/(me,memos,todos)/friends/invite/index': createScreen('my-invite'),
     '(app)/invite-welcome/[friendId]': () => <InviteWelcomeBottomSheet />,
+    '(app)/todo/new': createScreen('todo-new'),
   };
 
   const initialUrl =
@@ -405,6 +406,131 @@ describe('초대 링크로 들어온 흐름', () => {
     await waitFor(() => expect(route.getPathname()).toBe('/invite'));
     expect(rootStack()).toEqual(['invite[index]']);
   });
+});
+
+/** 켜 둔 앱에서 보던 곳(탭 첫 화면, 그 탭, 위에 띄운 탭 밖 시트 route) */
+const WARM_STARTS = [
+  ['/feed', '(todos)', null],
+  ['/feed', '(todos)', '/todo/new'],
+  ['/memo', '(memos)', null],
+  ['/memo', '(memos)', '/todo/new'],
+  ['/mypage', '(me)', null],
+  ['/mypage', '(me)', '/todo/new'],
+] as const;
+
+/** 카드 아래 띄워 둔 시트가 있으면 닫는다 */
+async function closeSheet(sheetUrl: string | null) {
+  if (sheetUrl != null) {
+    await act(() => router.back());
+  }
+}
+
+describe('켜 둔 앱에 들어온 초대 링크', () => {
+  beforeEach(() => {
+    stubWindowDimensions(390);
+    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it.each(WARM_STARTS)(
+    '%s 탭(%s, 시트 %s)에서 연 내 코드 카드를 수락하면 그 탭에 내 초대를 열고 뒤로 가면 탭 첫 화면이다',
+    async (startUrl, tab, sheetUrl) => {
+      // Given
+      const { route, rootStack } = await setup({
+        status: 'authenticated',
+        url: startUrl,
+        redeem: createInviteApiError({ code: 'INVITE_2103', status: 400 }),
+      });
+      if (sheetUrl != null) {
+        await act(() => router.push(sheetUrl));
+      }
+      await openSystemUrl(`${ENV.SCHEME}://invite/${INVITE_CODE}`);
+
+      // When
+      await act(async () => fireEvent.press(await screen.findByTestId('invite-card-redeem')));
+
+      // Then
+      await waitFor(() => expect(route.getPathname()).toBe('/friends/invite'));
+      expect(route.getSegments()[2]).toBe(tab);
+      expect(rootStack()).toHaveLength(1);
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe(startUrl);
+      expect(route.getSegments()[2]).toBe(tab);
+    },
+  );
+
+  it.each(WARM_STARTS)(
+    '%s 탭(%s, 시트 %s)에서 연 초대 카드는 그 위에 뜨고 닫으면 보던 화면이다',
+    async (startUrl, tab, sheetUrl) => {
+      // Given
+      const { route } = await setup({ status: 'authenticated', url: startUrl });
+      if (sheetUrl != null) {
+        await act(() => router.push(sheetUrl));
+      }
+
+      // When
+      await openSystemUrl(`${ENV.SCHEME}://invite/${INVITE_CODE}`);
+
+      // Then
+      expect(await screen.findByTestId('invite-card-redeem')).toBeTruthy();
+      expect(route.getPathname()).toBe(`/invite/${INVITE_CODE}`);
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe(sheetUrl ?? startUrl);
+
+      // When
+      await closeSheet(sheetUrl);
+
+      // Then
+      expect(route.getPathname()).toBe(startUrl);
+      expect(route.getSegments()[2]).toBe(tab);
+    },
+  );
+
+  it.each(WARM_STARTS)(
+    '%s 탭(%s, 시트 %s)에서 연 없는 코드 카드는 찾을 수 없다고 알리고 닫으면 보던 화면이다',
+    async (startUrl, tab, sheetUrl) => {
+      // Given
+      const { route } = await setup({
+        status: 'authenticated',
+        url: startUrl,
+        preview: 'not-found',
+      });
+      if (sheetUrl != null) {
+        await act(() => router.push(sheetUrl));
+      }
+
+      // When
+      await openSystemUrl(`${ENV.SCHEME}://invite/${INVITE_CODE}`);
+
+      // Then
+      expect(await screen.findByTestId('invite-result-not-found')).toBeTruthy();
+
+      // When
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe(sheetUrl ?? startUrl);
+
+      // When
+      await closeSheet(sheetUrl);
+
+      // Then
+      expect(route.getPathname()).toBe(startUrl);
+      expect(route.getSegments()[2]).toBe(tab);
+    },
+  );
 });
 
 type WelcomeExit = 'createFirstTodo' | 'openFriendFeed' | 'dismiss';

@@ -112,6 +112,16 @@ function sharedScreen(pathname: string): { cold: Landing; warm: Landing } {
 }
 
 const FEED_TAB_ROOT = { cold: FEED_ROOT, warm: FEED_ROOT };
+
+/** 켜 둔 앱에서 보던 곳(탭 첫 화면, 그 탭, 위에 띄운 탭 밖 시트 route) */
+const WARM_STARTS = [
+  ['/feed', '(todos)', null],
+  ['/feed', '(todos)', '/todo/new'],
+  ['/memo', '(memos)', null],
+  ['/memo', '(memos)', '/todo/new'],
+  ['/mypage', '(me)', null],
+  ['/mypage', '(me)', '/todo/new'],
+] as const;
 const FRIEND_ID = 'cmfriend00000000000000001';
 
 /**
@@ -337,6 +347,7 @@ async function setup({
     ),
     '(app)/nudges/[nudgeId]': createScreen('nudge'),
     '(app)/suggestions/index': createScreen('suggestions'),
+    '(app)/todo/new': createScreen('todo-new'),
     '(app)/todo/[todoId]/index': todoScreen ?? TodoScreen,
     '(app)/weather/_layout': () => (
       <Stack screenOptions={{ headerShown: false, animation: 'none' }} />
@@ -922,10 +933,13 @@ describe('푸시 탭 진입', () => {
   describe('할 일 상세(탭 위 화면)를 보던 중 누른 알림', () => {
     it.each([
       { kind: 'FEED', expected: FEED_ROOT },
-      { kind: 'FRIEND_REQUESTS', expected: { pathname: '/friends', tab: '(me)', back: '/mypage' } },
+      {
+        kind: 'FRIEND_REQUESTS',
+        expected: { pathname: '/friends', tab: '(todos)', back: '/feed' },
+      },
       {
         kind: 'NOTIFICATIONS',
-        expected: { pathname: '/notifications', tab: '(me)', back: '/mypage' },
+        expected: { pathname: '/notifications', tab: '(todos)', back: '/feed' },
       },
       { kind: 'TODO', expected: { pathname: '/todo/42', tab: null, back: '/todo/7' } },
     ] as const)(
@@ -955,6 +969,45 @@ describe('푸시 탭 진입', () => {
 
         // Then
         expect(back).toBe(expected.back);
+      },
+    );
+  });
+
+  describe('보던 탭에서 시트를 연 채 누른 알림', () => {
+    it.each(WARM_STARTS)(
+      '%s 탭(%s, 시트 %s)에서 누른 함께 쓰는 화면 알림은 그 탭에 열고 뒤로 가면 탭 첫 화면이다',
+      async (startUrl, tab, sheetUrl) => {
+        // Given
+        const { route, gateway, analytics } = await setup({
+          status: 'authenticated',
+          initialUrl: startUrl,
+        });
+        await waitFor(() => expect(route.getPathname()).toBe(startUrl));
+        if (sheetUrl != null) {
+          await act(() => router.push(sheetUrl));
+        }
+
+        // When
+        await act(async () =>
+          gateway.emitResponse(createResponse(LANDINGS.FRIEND_REQUESTS.navigation)),
+        );
+
+        // Then
+        await waitFor(() =>
+          expect(analytics.trackEvent).toHaveBeenCalledWith(
+            'push_notification_opened',
+            expect.anything(),
+          ),
+        );
+        await waitFor(() => expect(route.getPathname()).toBe('/friends'));
+        expect(findTab(route.getSegments())).toBe(tab);
+        expect(countTabGroups(route.getRouterState())).toBe(1);
+
+        // When
+        const back = await goBack(route);
+
+        // Then
+        expect(back).toBe(startUrl);
       },
     );
   });

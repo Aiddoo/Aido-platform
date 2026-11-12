@@ -10,7 +10,8 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { type Href, router } from 'expo-router';
+import { dismissToTab } from '@src/shared/navigation/open-entry-href';
+import type { Href } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import { WHATS_NEW_LOG_EVENT } from '../constants/whats-new-log-events';
@@ -41,10 +42,10 @@ export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
     }
   }, [accountId, campaignId, repository]);
 
-  // 탭 안 화면(메모·친구 초대)은 탭을 새로 쌓지 않고 아래 탭에서 연다. 기록에 없는 화면이면 이 화면 자리에 연다
+  // 탭 안 화면(메모·친구 초대)은 탭을 새로 쌓지 않고 아래 보던 탭에서 연다. 기록에 없는 화면이면 이 화면 자리에 연다
   const leaveTo = useSingleTap((href: Href) => {
     markFinished();
-    router.dismissTo(href);
+    dismissToTab(href);
   });
 
   const goBack = useGoBack({ fallbackHref: '/feed' });

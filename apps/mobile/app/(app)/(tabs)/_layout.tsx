@@ -5,7 +5,7 @@ import { NativeTabs } from 'expo-router/native-tabs';
 import { useResolveClassNames } from 'uniwind';
 
 // 탭을 정하지 않은 링크(예: 탭 위 할 일 화면)는 할 일 탭 위에 연다
-// 탭 그룹 이름은 탭의 영어 이름(To-dos·Memos·Me)이다. 탭이 정해지지 않은 링크(콜드 링크·탭 위 화면)는 Expo Router가 글자 순 첫 그룹에 열어, 탭마다 함께 쓰는 화면(`(me,memos,todos)`)은 마이 탭 `(me)`에 열린다
+// 탭 그룹 이름은 탭의 영어 이름(To-dos·Memos·Me)이다. 탭이 정해지지 않은 콜드 링크는 Expo Router가 글자 순 첫 그룹에 열어, 탭마다 함께 쓰는 화면(`(me,memos,todos)`)은 마이 탭 `(me)`에 열린다. 켜진 앱 링크와 탭 위 화면에서 떠나는 이동은 `toSelectedTabPath`가 보던 탭을 적는다
 export const unstable_settings = {
   anchor: '(todos)',
 };

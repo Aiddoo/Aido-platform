@@ -11,6 +11,7 @@ import { usePushNotificationResponse } from '@src/features/notification/hooks/us
 import type { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { useInstallReferrerCapture } from '@src/features/social/invite/hooks/use-install-referrer-capture';
 import { type PaneDetailScreen, useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
+import { useBindSelectedTabPath } from '@src/shared/navigation/selected-tab-path';
 import { useAppTheme } from '@src/shared/providers/theme-provider';
 import type { ScreenName } from '@src/shared/utils/to-screen-name';
 import { useIsRestoring } from '@tanstack/react-query';
@@ -69,6 +70,8 @@ export function AuthGateLayout() {
       .filter(([, isAllowed]) => !isAllowed)
       .map(([routeName]) => routeName),
   );
+
+  useBindSelectedTabPath();
 
   useEffect(() => {
     if (!isSplashDone) {
