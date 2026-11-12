@@ -1,14 +1,8 @@
-New
-- Hourly and 10-day weather, anywhere in the world.
-- Aido briefing moves to-dos away from rain or heat.
-- Morning and evening weather notifications.
-
 Improvements
-- See your last-viewed to-dos and weather offline.
-- Help and contact options if subscriptions can’t load.
-- Premium stays on if a payment is briefly delayed.
-- Easier-to-read notifications.
+- Your edits to memos and to-dos stay safe, and saving again makes just one memo.
+- Calendar, widgets, and reports now count weeks the same way.
+- Lists keep their width on big screens, and weather and voice notes run smoother.
+- Icons grow with your text size, and screen readers can pin or delete memos.
 
 Bug fixes
-- Retry or contact us instead of getting stuck.
-- The friends tip on your feed can now be dismissed.
+- Fixed purchases right after switching accounts going to the old account, and notifications staying after sign-out.
