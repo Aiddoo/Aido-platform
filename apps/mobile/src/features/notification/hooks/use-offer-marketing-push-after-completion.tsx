@@ -124,7 +124,10 @@ function useFindMarketingPushOfferAccountId() {
       preference == null ||
       consent == null ||
       !PushPermissionPolicy.canReceivePush(permission, preference) ||
-      !MarketingPushPromptPolicy.shouldPrompt(consent, repository.find(me.id), getNowInstant())
+      !MarketingPushPromptPolicy.shouldPrompt(repository.find(me.id), {
+        consent,
+        now: getNowInstant(),
+      })
     ) {
       return null;
     }

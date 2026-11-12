@@ -107,7 +107,7 @@ const facts = compact([t('daily.precipitation', …), wind == null ? null : t('d
 
 ```tsx
 export default function NotificationsScreen() {
-  const [{ direction }] = useNotificationDirection();
+  const [direction] = useNotificationDirection();
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>

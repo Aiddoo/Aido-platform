@@ -1,5 +1,5 @@
 import { createPushNotification } from '../__tests__/notification.fixtures';
-import { getForegroundPushPresentation } from './get-foreground-push-presentation';
+import { getForegroundPushPresentation } from './foreground-push-presentation.view-model';
 
 describe('getForegroundPushPresentation', () => {
   it.each([

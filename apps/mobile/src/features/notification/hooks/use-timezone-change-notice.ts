@@ -25,7 +25,7 @@ import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { DeviceTimezonePolicy } from '../domains/device-timezone.model';
 import type { DeviceTimezone, DeviceTimezoneChange } from '../domains/device-timezone.model';
 import { deviceTimezoneStoredValue } from '../schemas/device-timezone-storage.schema';
-import { getTimezoneOffsetBucket } from '../utils/notification-analytics';
+import { getTimezoneOffsetBucket } from '../utils/device-timezone-analytics';
 
 const EXAMPLE_TODO_TIME: TimeOfDay = { hour: 10, minute: 0 };
 

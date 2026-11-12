@@ -3,7 +3,7 @@ import { useTodoCommentSort } from '@src/features/engagement/comment/hooks/use-t
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
 import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-params';
-import { notificationDirectionParamSchema } from '@src/features/notification/schemas/notification-params.schema';
+import { notificationDirectionViewSchema } from '@src/features/notification/schemas/notification-params.schema';
 import { categorySettingsViewSchema } from '@src/features/planning/category/schemas/category-settings-params.schema';
 import { useFeedAction, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
@@ -175,7 +175,7 @@ describe('공개 URL 계약', () => {
   it('알림 방향', async () => {
     // Given
     const route = await renderRouteHook(
-      () => useView('direction', notificationDirectionParamSchema),
+      () => useView('direction', notificationDirectionViewSchema),
       {
         url: '/notifications',
       },
@@ -197,7 +197,7 @@ describe('공개 URL 계약', () => {
     const route = await renderRouteHook(
       () => [
         useNotificationCategory()[0],
-        useView('direction', notificationDirectionParamSchema)[0],
+        useView('direction', notificationDirectionViewSchema)[0],
       ],
       { url },
     );

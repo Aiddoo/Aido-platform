@@ -29,7 +29,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | `stores/push-onboarding-guard.store.ts`                                                              | 앱 화면 묶음이 그린 알림 화면 guard 값. 피드가 열 차례를 이 값으로 읽고 DI가 소유한다                       |
 | `apis/notification.mapper.ts`                                                                        | `toNotificationTarget`: 서버 `navigation` → 앱 `NotificationTarget`. 알림함 항목도 같은 길이다              |
 | `domains/push-notification.model.ts`·`push-notification-response.model.ts`                           | 받은 푸시(`{ notificationId, type, target, … }`)와 누른 응답, 각자의 Policy                                 |
-| `utils/notification-destination.ts`                                                                  | `toNotificationDestination(target, { windowSizeClass, viewerId })`: target → 앱 경로·외부 링크              |
+| `utils/notification-destination.view-model.ts`                                                       | `toNotificationDestination(target, { windowSizeClass, viewerId })`: target → 앱 경로·외부 링크              |
 | `hooks/use-notification-destination.ts`                                                              | `useResolveNotificationDestination`(창 크기·보는 사람으로 정함)·`useOpenNotificationDestination`(연다)      |
 
 ## 클라이언트가 하는 일
@@ -79,7 +79,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 
 ## 앱이 앞에 있을 때 받은 알림
 
-`createExpoPushNotificationGateway`가 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고 지금 판단을 게이트웨이 팩토리의 클로저 변수에 둔다. `NotificationProvider`의 null 자식 `ForegroundPushPresentation`(`useForegroundPushPresentation`)이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `utils/get-foreground-push-presentation.ts`의 `getForegroundPushPresentation` 하나다(배너·조용히는 표시 방식이라 모델에 두지 않는다).
+`createExpoPushNotificationGateway`가 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고 지금 판단을 게이트웨이 팩토리의 클로저 변수에 둔다. `NotificationProvider`의 null 자식 `ForegroundPushPresentation`(`useForegroundPushPresentation`)이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `utils/foreground-push-presentation.view-model.ts`의 `getForegroundPushPresentation` 하나다(배너·조용히는 표시 방식이라 모델에 두지 않는다).
 
 | 지금 화면                                                         | 보이는 방식                           | 이유                                                                     |
 | ----------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
@@ -134,7 +134,7 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 navigation ─(toNotificationTarget, mapper)→ NotificationTarget ─(toNotificationDestination)→ 경로·외부 링크·이동 없음
 ```
 
-`packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽는다. 앱은 navigation이 있는 줄마다 접힌 화면이 여는 곳을 적어 두고(`notification-destination.navigation.test.ts`), 서버가 줄을 더하면 앱 테스트가 먼저 깨진다. 할 일이 아닌 목적지는 medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서도 같은지, 할 일 목적지는 펼친 화면의 목록 pane(주인·날짜)을 따로 확인한다.
+`packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽는다. 앱은 navigation이 있는 줄마다 접힌 화면이 여는 곳을 적어 두고(`utils/notification-destination.view-model.test.ts`, 접는 쪽은 `apis/notification.mapper.test.ts`), 서버가 줄을 더하면 앱 테스트가 먼저 깨진다. 할 일이 아닌 목적지는 medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서도 같은지, 할 일 목적지는 펼친 화면의 목록 pane(주인·날짜)을 따로 확인한다.
 
 ### 콜드 스타트 순서
 

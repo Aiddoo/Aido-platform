@@ -11,12 +11,12 @@ import { useEffect, useEffectEvent } from 'react';
 
 import { parsePushNotification } from '../apis/push-notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { getForegroundPushPresentation } from '../utils/get-foreground-push-presentation';
+import { getForegroundPushPresentation } from '../utils/foreground-push-presentation.view-model';
 import {
   isViewingNotificationDestination,
   NOTIFICATION_INBOX_DESTINATION,
   toNotificationDestination,
-} from '../utils/notification-destination';
+} from '../utils/notification-destination.view-model';
 
 /** 앱이 앞에 있을 때 받은 알림을 지금 보고 있는 화면에 맞춰 배너로 보일지 정한다 */
 export function useForegroundPushPresentation() {

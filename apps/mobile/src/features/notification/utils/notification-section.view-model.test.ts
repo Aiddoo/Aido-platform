@@ -3,7 +3,7 @@ import { createDateKey } from '@src/testing/date-key';
 
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { toNotification } from '../apis/notification.mapper';
-import { getDateSectionKey, toDateSectionedListItems } from './date-section';
+import { getDateSectionKey, toDateSectionedListItems } from './notification-section.view-model';
 
 describe('getDateSectionKey', () => {
   it('이번 주는 달력과 같은 일요일 시작 주다', () => {
@@ -39,7 +39,7 @@ describe('getDateSectionKey', () => {
   });
 });
 
-describe('알림 목록 날짜 섹션', () => {
+describe('toDateSectionedListItems', () => {
   it('자정이 지나면 같은 캐시 데이터의 오늘 섹션이 어제로 바뀐다', () => {
     // Given
     const dto = createNotificationListResponseDto().notifications[0];

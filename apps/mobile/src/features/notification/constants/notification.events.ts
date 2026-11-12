@@ -3,7 +3,7 @@ import type { Notification } from '../domains/notification.model';
 import type { PushOpenAppState } from '../domains/push-notification-response.model';
 import type { PushNotification } from '../domains/push-notification.model';
 import type { PushPermission, PushPermissionStep } from '../domains/push-permission.model';
-import type { NotificationDestination } from '../utils/notification-destination';
+import type { NotificationDestination } from '../utils/notification-destination.view-model';
 
 export type PushPermissionPromptSource =
   | 'onboarding'
