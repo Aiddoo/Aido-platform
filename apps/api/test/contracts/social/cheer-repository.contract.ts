@@ -10,7 +10,11 @@ import {
   createCheerFixture,
 } from "#test/fixtures/social/cheer.fixture";
 
-type CheerStore = CheerRepositoryPort & CheerReaderPort;
+// 같은 저장 상태를 쓰는 저장소와 조회 포트
+export interface CheerContractSubject {
+  readonly repository: CheerRepositoryPort;
+  readonly reader: CheerReaderPort;
+}
 
 const SENDER_ID = UserId.reconstitute(CHEER_FIXTURE_SENDER_ID);
 const RECEIVER_ID = UserId.reconstitute(CHEER_FIXTURE_RECEIVER_ID);
@@ -18,7 +22,7 @@ const OTHER_USER_ID = UserId.reconstitute(CHEER_FIXTURE_OTHER_USER_ID);
 const LATER = CHEER_FIXTURE_NOW.add({ minutes: 1 });
 
 async function saveCheer(
-  repository: CheerStore,
+  repository: CheerRepositoryPort,
   overrides: Partial<CheerPrimitives> = {},
 ): Promise<Cheer> {
   const cheer = createCheerFixture({ id: (await repository.nextId()).value, ...overrides });
@@ -30,11 +34,13 @@ function idsOf(cheers: readonly { readonly id: number }[]): number[] {
   return cheers.map((cheer) => cheer.id);
 }
 
-export function describeCheerRepositoryContract(createRepository: () => Promise<CheerStore>): void {
+export function describeCheerRepositoryContract(
+  createSubject: () => Promise<CheerContractSubject>,
+): void {
   describe("응원 저장소 계약", () => {
     it("nextId는 부를 때마다 다른 id를 준다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
 
       // When
       const ids = [await repository.nextId(), await repository.nextId()];
@@ -45,7 +51,7 @@ export function describeCheerRepositoryContract(createRepository: () => Promise<
 
     it("저장한 응원을 그대로 읽고 다시 저장하면 읽음 시각을 바꾼다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const cheer = await saveCheer(repository, { message: "화이팅" });
       const read = createCheerFixture({ ...cheer.toPrimitives(), readAt: LATER });
 
@@ -63,7 +69,7 @@ export function describeCheerRepositoryContract(createRepository: () => Promise<
 
     it("같은 친구에게 보낸 응원 중 가장 늦게 만든 것을 찾고 다른 친구에게 보낸 것은 보지 않는다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const emptyBefore = await repository.findLastSent(SENDER_ID, RECEIVER_ID);
       await saveCheer(repository, { createdAt: CHEER_FIXTURE_NOW });
       const latest = await saveCheer(repository, { createdAt: LATER });
@@ -82,7 +88,7 @@ export function describeCheerRepositoryContract(createRepository: () => Promise<
 
     it("보낸 수는 시작 시각을 포함하고 끝 시각을 빼며 그 사람이 보낸 응원만 센다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const startsAt = CHEER_FIXTURE_NOW;
       const endsAt = CHEER_FIXTURE_NOW.add({ hours: 24 });
       for (const createdAt of [
@@ -104,7 +110,7 @@ export function describeCheerRepositoryContract(createRepository: () => Promise<
 
     it("여러 응원 읽음은 받은 사람의 안 읽은 응원만 한 번씩 바꾸고 바꾼 수를 준다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const unread = await saveCheer(repository);
       const alreadyRead = await saveCheer(repository, { readAt: CHEER_FIXTURE_NOW });
       const foreign = await saveCheer(repository, { receiverId: CHEER_FIXTURE_OTHER_USER_ID });
@@ -136,7 +142,7 @@ export function describeCheerRepositoryContract(createRepository: () => Promise<
 
     it("받은 응원은 생성 시각·id 내림차순이고 after 응원 뒤부터 이어 주며 남의 응원은 빼고 센다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository, reader } = await createSubject();
       const oldest = await saveCheer(repository, { createdAt: CHEER_FIXTURE_NOW });
       const tiedOlder = await saveCheer(repository, { createdAt: LATER, readAt: LATER });
       const tiedNewer = await saveCheer(repository, { createdAt: LATER });
@@ -146,19 +152,19 @@ export function describeCheerRepositoryContract(createRepository: () => Promise<
       });
 
       // When
-      const firstPage = await repository.listReceived({
+      const firstPage = await reader.listReceived({
         userId: RECEIVER_ID,
         afterCheerId: null,
         limit: 2,
       });
-      const nextPage = await repository.listReceived({
+      const nextPage = await reader.listReceived({
         userId: RECEIVER_ID,
         afterCheerId: tiedOlder.id,
         limit: 5,
       });
       const counts = {
-        received: await repository.countReceived(RECEIVER_ID),
-        unread: await repository.countUnreadReceived(RECEIVER_ID),
+        received: await reader.countReceived(RECEIVER_ID),
+        unread: await reader.countUnreadReceived(RECEIVER_ID),
       };
 
       // Then
@@ -175,7 +181,7 @@ export function describeCheerRepositoryContract(createRepository: () => Promise<
 
     it("보낸 응원은 보낸 사람 것만 나열·세고 after 응원이 없으면 빈 목록이다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository, reader } = await createSubject();
       const first = await saveCheer(repository, { createdAt: CHEER_FIXTURE_NOW });
       const second = await saveCheer(repository, {
         receiverId: CHEER_FIXTURE_OTHER_USER_ID,
@@ -187,8 +193,8 @@ export function describeCheerRepositoryContract(createRepository: () => Promise<
       });
 
       // When
-      const sent = await repository.listSent({ userId: SENDER_ID, afterCheerId: null, limit: 5 });
-      const afterMissing = await repository.listSent({
+      const sent = await reader.listSent({ userId: SENDER_ID, afterCheerId: null, limit: 5 });
+      const afterMissing = await reader.listSent({
         userId: SENDER_ID,
         afterCheerId: await repository.nextId(),
         limit: 5,
@@ -196,8 +202,8 @@ export function describeCheerRepositoryContract(createRepository: () => Promise<
 
       // Then
       expect(idsOf(sent)).toEqual([second.id.value, first.id.value]);
-      expect(await repository.countSent(SENDER_ID)).toBe(2);
-      expect(await repository.countSent(OTHER_USER_ID)).toBe(1);
+      expect(await reader.countSent(SENDER_ID)).toBe(2);
+      expect(await reader.countSent(OTHER_USER_ID)).toBe(1);
       expect(afterMissing).toEqual([]);
     });
   });

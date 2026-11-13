@@ -9,8 +9,8 @@ import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.doma
 import { evaluateCheerCooldown } from "../../domain/cheer-cooldown.domain-service.js";
 import { CheerMessage } from "../../domain/cheer-message.vo.js";
 import { Cheer } from "../../domain/cheer.aggregate.js";
+import { cannotCheerSelf } from "../../domain/cheers.errors.js";
 import {
-  cannotCheerSelf,
   cheerCooldownActive,
   cheerDailyLimitReached,
   cheerTargetNotFriend,

@@ -14,10 +14,10 @@ import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { SendCooldown } from "../../../../shared/domain/send-cooldown.domain-service.js";
 import type {
-  CheerDailyLimit,
-  CheerListItem,
-  ReceivedCheers,
-  SentCheers,
+  CheerDailyLimitReadModel,
+  CheerReadModel,
+  ReceivedCheersReadModel,
+  SentCheersReadModel,
 } from "../../../application/read-models/cheer.read-model.js";
 import type { Cheer } from "../../../domain/cheer.aggregate.js";
 
@@ -46,7 +46,7 @@ export function toCreateCheerResponse(cheer: Cheer): CreateCheerResponse {
   return { message: CHEER_RESPONSE_MESSAGES.SENT, cheer: toCheerResponse(cheer) };
 }
 
-function toCheerDetailResponse(cheer: CheerListItem, appVersion?: string): CheerDetail {
+function toCheerDetailResponse(cheer: CheerReadModel, appVersion?: string): CheerDetail {
   return {
     id: cheer.id,
     senderId: cheer.senderId,
@@ -64,7 +64,7 @@ function toCheerDetailResponse(cheer: CheerListItem, appVersion?: string): Cheer
 }
 
 export function toReceivedCheersResponse(
-  received: ReceivedCheers,
+  received: ReceivedCheersReadModel,
   appVersion?: string,
 ): ReceivedCheersResponse {
   return {
@@ -75,7 +75,10 @@ export function toReceivedCheersResponse(
   };
 }
 
-export function toSentCheersResponse(sent: SentCheers, appVersion?: string): SentCheersResponse {
+export function toSentCheersResponse(
+  sent: SentCheersReadModel,
+  appVersion?: string,
+): SentCheersResponse {
   return {
     cheers: sent.page.items.map((cheer) => toCheerDetailResponse(cheer, appVersion)),
     totalCount: sent.totalCount,
@@ -83,7 +86,7 @@ export function toSentCheersResponse(sent: SentCheers, appVersion?: string): Sen
   };
 }
 
-export function toCheerLimitInfoResponse(limit: CheerDailyLimit): CheerLimitInfo {
+export function toCheerLimitInfoResponse(limit: CheerDailyLimitReadModel): CheerLimitInfo {
   return {
     dailyLimit: limit.dailyLimit,
     usedToday: limit.used,

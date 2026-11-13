@@ -5,7 +5,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
 import type { CheerLimitReaderPort } from "../ports/cheer-limit.reader.port.js";
 import type { CheerRepositoryPort } from "../ports/cheer.repository.port.js";
-import type { CheerDailyLimit } from "../read-models/cheer.read-model.js";
+import type { CheerDailyLimitReadModel } from "../read-models/cheer.read-model.js";
 
 export interface GetCheerLimitQuery {
   readonly userId: string;
@@ -25,7 +25,7 @@ export class GetCheerLimitUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetCheerLimitQuery): Promise<CheerDailyLimit> {
+  async execute(query: GetCheerLimitQuery): Promise<CheerDailyLimitReadModel> {
     const { cheerRepository, limitReader, clock } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const window = dailySendWindowAt({ now: clock.now(), timeZone: query.timezone });

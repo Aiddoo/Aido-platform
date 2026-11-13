@@ -6,10 +6,6 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { DailySendFeatureQuota } from "../../shared/application/ports/daily-send-usage.reader.port.js";
 import type { CheerId } from "../domain/cheer-id.vo.js";
 
-export function cannotCheerSelf(): ApplicationException {
-  return new ApplicationException(ErrorCode.CHEER_1204);
-}
-
 export function cheerTargetNotFriend(targetUserId: UserId): ApplicationException {
   return new ApplicationException(ErrorCode.CHEER_1203, { targetUserId: targetUserId.value });
 }

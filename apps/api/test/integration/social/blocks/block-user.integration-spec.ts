@@ -5,7 +5,7 @@ import { omit } from "es-toolkit";
 import { BlockUserUseCase } from "#api/modules/social/blocks/application/use-cases/block-user.use-case";
 import { DrizzleUserBlockReader } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
-import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
+import { DrizzleCheerReader } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.reader";
 import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
 import type { FriendshipCachePort } from "#api/modules/social/friends/application/ports/friendship-cache.port";
 import type { FriendshipNotifierPort } from "#api/modules/social/friends/application/ports/friendship-notifier.port";
@@ -63,7 +63,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
   let friendSearchReader: DrizzleFriendSearchReader;
   let blockReader: DrizzleUserBlockReader;
   let nudgeRepository: DrizzleNudgeRepository;
-  let cheerRepository: DrizzleCheerRepository;
+  let cheerReader: DrizzleCheerReader;
 
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
@@ -107,7 +107,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     const blockRepository = new DrizzleUserBlockRepository(txHost);
     blockReader = new DrizzleUserBlockReader(txHost);
     nudgeRepository = new DrizzleNudgeRepository(txHost);
-    cheerRepository = new DrizzleCheerRepository(txHost);
+    cheerReader = new DrizzleCheerReader(txHost);
     const clock = new DateClock();
     const notifyFirstFriendMilestone = new NotifyFirstFriendMilestoneUseCase({
       friendshipRepository,
@@ -318,12 +318,12 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
           limit: 10,
         }),
         nudgeRepository.countUnreadReceived(UserId.reconstitute(meId)),
-        cheerRepository.listSent({
+        cheerReader.listSent({
           userId: UserId.reconstitute(meId),
           afterCheerId: null,
           limit: 10,
         }),
-        cheerRepository.listReceived({
+        cheerReader.listReceived({
           userId: UserId.reconstitute(otherId),
           afterCheerId: null,
           limit: 10,

@@ -1,4 +1,5 @@
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { InMemoryCheerReader } from "#test/doubles/social/in-memory-cheer.reader";
 import { InMemoryCheerRepository } from "#test/doubles/social/in-memory-cheer.repository";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
@@ -13,13 +14,15 @@ import { GetReceivedCheersUseCase } from "./get-received-cheers.use-case.js";
 describe("GetReceivedCheersUseCase — 받은 응원 목록", () => {
   it("size보다 많으면 마지막 응원 id를 다음 커서로 주고 전체·안 읽은 수를 함께 준다", async () => {
     // Given
-    const cheerReader = new InMemoryCheerRepository(
-      [0, 1, 2].map((index) =>
-        createCheerFixture({
-          id: index + 1,
-          createdAt: CHEER_FIXTURE_NOW.add({ minutes: index }),
-          readAt: index === 0 ? CHEER_FIXTURE_NOW : null,
-        }),
+    const cheerReader = new InMemoryCheerReader(
+      new InMemoryCheerRepository(
+        [0, 1, 2].map((index) =>
+          createCheerFixture({
+            id: index + 1,
+            createdAt: CHEER_FIXTURE_NOW.add({ minutes: index }),
+            readAt: index === 0 ? CHEER_FIXTURE_NOW : null,
+          }),
+        ),
       ),
     );
     const useCase = new GetReceivedCheersUseCase({
@@ -49,7 +52,9 @@ describe("GetReceivedCheersUseCase — 받은 응원 목록", () => {
 
   it("다른 사람이 받은 응원은 내 목록과 개수에 없다", async () => {
     // Given
-    const cheerReader = new InMemoryCheerRepository([createCheerFixture()]);
+    const cheerReader = new InMemoryCheerReader(
+      new InMemoryCheerRepository([createCheerFixture()]),
+    );
     const useCase = new GetReceivedCheersUseCase({
       countCache: new PassThroughCountCache(),
       cheerReader,
