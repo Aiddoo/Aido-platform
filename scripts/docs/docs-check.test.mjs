@@ -209,6 +209,21 @@ test('CLAUDE.md·rules·스킬 모양을 본다', () => {
   );
 });
 
+test('.agents/skills 정본마다 Claude용 .claude/skills 링크가 있어야 한다', () => {
+  // Given
+  const contents = {
+    '.agents/skills/linked/SKILL.md': '---\nname: linked\ndescription: 설명\n---\n',
+    '.agents/skills/alone/SKILL.md': '---\nname: alone\ndescription: 설명\n---\n',
+  };
+  // When
+  const failures = run(contents, baseConfig, ['.claude/skills/linked']);
+  // Then
+  assert.deepEqual(
+    failures.map(({ doc, check }) => [doc, check]),
+    [['.agents/skills/alone/SKILL.md', 'agent-files']],
+  );
+});
+
 test('shared/ui 부품 폴더마다 같은 이름의 문서가 있어야 한다', () => {
   // Given
   const contents = { 'apps/mobile/src/shared/ui/box/box.md': '# Box\n' };

@@ -42,9 +42,9 @@ coverage/
 .worktrees/
 myDocs/
 
-# Claude Code: 팀이 함께 쓰는 명령·설정만 올리고 개인 설정·worktree는 뺀다
+# Claude Code: 팀이 함께 쓰는 스킬 링크·설정만 올리고 개인 설정·worktree는 뺀다
 /.claude/*
-!/.claude/commands/
+!/.claude/skills/
 !/.claude/settings.json
 settings.local.json
 

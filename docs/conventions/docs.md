@@ -18,7 +18,8 @@
 - `CLAUDE.md`는 `@AGENTS.md` 한 줄이다. 지침은 Claude·Codex가 함께 읽는 `AGENTS.md`에 쓴다.
 - `AGENTS.md`는 입구다. 명령, 꼭 지키는 규칙(끝에 주인 문서 링크), "무엇을 할 때 무엇을 읽나" 표만 둔다. 루트는 100줄, `apps/mobile`은 150줄 이하다.
 - `.claude/rules/*.md`는 `paths:` frontmatter와 40줄 이하다. Codex는 rules를 읽지 않으므로 같은 규칙이 `AGENTS.md` 링크로도 닿아야 한다.
-- 스킬은 `.claude/skills/<이름>/SKILL.md`이고 frontmatter `name`은 폴더 이름, `description`이 있다. 절차만 쓰고 규칙은 문서에 링크한다.
+- 스킬 정본은 Codex가 읽는 `.agents/skills/<이름>/SKILL.md`이고 Claude용으로 `.claude/skills/<이름>` 심볼릭 링크를 둔다. frontmatter `name`은 폴더 이름, `description`이 있다. 절차만 쓰고 규칙은 문서에 링크한다.
+- 팀 규칙·운영 절차는 저장소 문서에 쓴다. 에이전트 개인 메모리(Claude auto memory, Codex memories)에는 개인 선호만 두고 저장소 규칙을 옮겨 적지 않는다.
 - `apps/mobile/src/shared/ui/<이름>/`마다 `<이름>.md`를 둔다([틀](../../apps/mobile/docs/architecture/ui-catalog.md#새-부품-추가)).
 
 ## docs-check

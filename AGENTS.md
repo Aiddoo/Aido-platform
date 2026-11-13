@@ -4,6 +4,8 @@ Turborepo + pnpm 모노레포. AI 할 일 관리 서비스의 API 서버와 모�
 
 ## 작업 진입점
 
+서버·앱 파일을 고치기 전에 그 앱의 `AGENTS.md`를 먼저 읽는다(Codex는 실행 위치 아래 `AGENTS.md`를 자동으로 읽지 않는다).
+
 - API: [`apps/api/AGENTS.md`](apps/api/AGENTS.md) → 필요한 문서만 [서버 문서 안내](apps/api/docs/README.md)에서 고른다. 새 서버 기능은 [새 기능 추가](apps/api/docs/new-feature.md) 순서를 따른다.
 - Mobile: [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md).
 - 앱·서버 공통: [오류](docs/conventions/errors.md) · [날짜·언어](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md) · [nullish](docs/conventions/nullish.md) · [테스트 파일](docs/conventions/testing.md) · [Git](docs/conventions/git.md).
@@ -11,7 +13,7 @@ Turborepo + pnpm 모노레포. AI 할 일 관리 서비스의 API 서버와 모�
 
 ## 스택
 
-Node 26.13.0 LTS(EAS 모바일 빌드는 24.22.2) · NestJS 12.4.2 ESM · Drizzle ORM 1.0.0-rc.5 · PostgreSQL 16 · pg-boss 12.38.1 · Expo SDK 58 · React Native 0.88 · React 19 · TypeScript 6.0.3 · Zod 4.6.7 · Oxlint 1.93.0 · Oxfmt 0.78.0 · Turbo 2.11 · pnpm 12.15. 정확한 버전은 `pnpm-workspace.yaml` catalog와 `.nvmrc`가 정본이다. 상세: [README](README.md).
+Node 26(EAS 모바일 빌드 24) · NestJS 12 ESM · Drizzle ORM 1.0 RC · PostgreSQL 16 · pg-boss 12 · Expo SDK 58 · React Native 0.88 · React 19 · TypeScript 6 · Zod 4 · Oxlint·Oxfmt · Turbo 2 · pnpm 12. 정확한 버전은 `pnpm-workspace.yaml` catalog와 `.nvmrc`가 정본이다. 상세: [README](README.md).
 
 ## 모노레포
 
@@ -81,7 +83,7 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 - 요청·응답 계약은 `@aido/api`, 앱 모델은 앱이 소유한다. 오류는 `@aido/api/errors`의 `ErrorCode`를 쓰고 문자열을 하드코딩하지 않는다.
 - 서버 Controller에서 `@Headers("x-…")`를 쓰지 않는다. `RequestClient`(`@CurrentRequestClient()`·`@AppVersion()`)로 읽는다.
 - 출시 앱이 보는 외부 계약(HTTP·푸시 payload·딥링크·기기 저장 key·DB·큐 이름)은 추가만 한다.
-- 커밋·PR은 한국어 Conventional Commits(`refactor(server): …`), 본문 줄 100자 이하(commitlint), `--no-verify` 금지. PR에는 실제 검증과 측정한 숫자만 쓴다. stack 라벨·tip CI·머지 순서는 [Git](docs/conventions/git.md)이다.
+- 커밋·PR은 한국어 Conventional Commits(`refactor(server): …`), 본문 줄 100자 이하(commitlint), `Co-Authored-By` 트레일러 없음, `--no-verify` 금지. PR에는 실제 검증과 측정한 숫자만 쓴다. stack 라벨·tip CI·머지 순서는 [Git](docs/conventions/git.md)이다.
 
 ## 검증
 

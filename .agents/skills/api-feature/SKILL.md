@@ -1,5 +1,5 @@
 ---
-name: api-module
+name: api-feature
 description: 서버 기능을 추가하거나 Context·slice를 분리할 때 현행 slice 구조로 구현한다.
 disable-model-invocation: true
 ---

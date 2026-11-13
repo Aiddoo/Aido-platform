@@ -1,15 +1,15 @@
 ---
-name: new-feature
-description: 새 기능·새 화면·새 엔티티를 추가할 때 폴더 골격과 순서를 따른다. 모델, 스키마, api·mapper, DI, 쿼리, 컴포넌트, 화면, 이벤트, 테스트 순서로 만든다.
+name: mobile-feature
+description: 모바일 앱(apps/mobile)에 새 기능·화면·엔티티를 추가할 때 폴더 골격과 순서를 따른다. 모델, 스키마, api·mapper, DI, 쿼리, 컴포넌트, 화면, 이벤트, 테스트 순서로 만든다.
 ---
 
-# 새 기능 추가 순서
+# 모바일 새 기능 추가 순서
 
-각 단계의 상세 규칙은 `.claude/rules/*.md`가 해당 파일을 열 때 자동으로 붙는다. 쓰는 폴더만 만든다.
+경로는 `apps/mobile` 기준이다. 각 단계의 상세 규칙은 링크한 문서와 `apps/mobile/.claude/rules/*.md`에 있다. 쓰는 폴더만 만든다.
 
 ## 1. 둘 곳과 골격
 
-둘 곳은 [구조 §기능 경계](../../../docs/architecture/structure.md#기능-경계)의 순서로 정하고, 폴더는 [§기능 폴더 골격](../../../docs/architecture/structure.md#기능-폴더-골격)에서 쓰는 것만 만든다.
+둘 곳은 [구조 §기능 경계](../../../apps/mobile/docs/architecture/structure.md#기능-경계)의 순서로 정하고, 폴더는 [§기능 폴더 골격](../../../apps/mobile/docs/architecture/structure.md#기능-폴더-골격)에서 쓰는 것만 만든다.
 
 ## 2. 순서
 
@@ -24,7 +24,7 @@ description: 새 기능·새 화면·새 엔티티를 추가할 때 폴더 골�
    - mutation은 `onSuccess`에 캐시 쓰기, `onSettled`에 무효화, `meta.errorFeedback`을 둔다.
    - `queryClient`는 `{feature}-cache.ts`에서만 만진다.
 7. **컴포넌트** `components/`: 자기 데이터를 스스로 조회한다. 부모 없이 의미 없는 조각은 `Parent.Part`, 반복 고정 UI는 지역 컴포넌트를 항목마다 한 줄씩 쓴다. 위치 이름과 바깥 여백을 쓰지 않는다.
-8. **화면** `app/.../{route}.tsx`: route 파일만 둔다. 경계·`Suspense`·`<Spacing>`·`match(view).exhaustive()`를 화면에서 정한다. params는 `useRouteParamsOrRedirect`로 검증해 틀리면 되돌리고, 안쪽 화면은 같은 스키마의 튜플 훅으로 읽는다. 이동은 typed `router.push({ pathname, params })`다. 여러 탭에서 여는 탭 안 화면(친구·설정류)은 `app/(app)/(tabs)/(me,memos,todos)/`에 파일 하나만 더하고 제목은 화면의 `<Stack.Screen options={{ title }} />`로 정한다. 레이아웃·목록은 고치지 않는다([탭과 함께 쓰는 화면](../../../docs/architecture/state-and-routing.md#탭과-함께-쓰는-화면)).
+8. **화면** `app/.../{route}.tsx`: route 파일만 둔다. 경계·`Suspense`·`<Spacing>`·`match(view).exhaustive()`를 화면에서 정한다. params는 `useRouteParamsOrRedirect`로 검증해 틀리면 되돌리고, 안쪽 화면은 같은 스키마의 튜플 훅으로 읽는다. 이동은 typed `router.push({ pathname, params })`다. 여러 탭에서 여는 탭 안 화면(친구·설정류)은 `app/(app)/(tabs)/(me,memos,todos)/`에 파일 하나만 더하고 제목은 화면의 `<Stack.Screen options={{ title }} />`로 정한다. 레이아웃·목록은 고치지 않는다([탭과 함께 쓰는 화면](../../../apps/mobile/docs/architecture/state-and-routing.md#탭과-함께-쓰는-화면)).
 9. **이벤트·로그 키**: `constants/{entity}.events.ts`(분석), `{entity}-log-events.ts`(로그). 추적은 mutation 옵션이나 UI에서만 한다.
 10. **테스트**: 모델·Policy, 비자명한 mapper, cache 갱신·롤백, 핵심 흐름만 쓴다. 화면 테스트는 `__tests__/{route}-screen.test.tsx`에 둔다.
 11. **검증**: `pnpm check`와 해당 기능 테스트(`pnpm --filter @aido/mobile test -- {feature}`)를 돌린다. 누름 동작은 기기에서도 확인한다.
@@ -42,10 +42,14 @@ const handlePress = () => {
 };
 
 // 쿼리 옵션: 구독이 바뀌면 다시 읽는다
-queryOptions({ queryKey: WEEKLY_PLAN_QUERY_KEYS.detail({ weekKey }), queryFn, meta: { refreshOnPremiumChange: true } });
+queryOptions({
+  queryKey: WEEKLY_PLAN_QUERY_KEYS.detail({ weekKey }),
+  queryFn,
+  meta: { refreshOnPremiumChange: true },
+});
 ```
 
 - 기능 키와 한도는 `@aido/api/vocabulary`(`PREMIUM_FEATURE_KEYS`)에 먼저 더한다. `EntitlementPolicy`가 튜플에서 유도하고, 게이트 제목 키와 `surface`(`EntitlementGateSurface`)도 함께 더한다.
 - 결제 SDK·paywall·다른 기능의 파일은 고치지 않는다.
 
-자세히: [구조](../../../docs/architecture/structure.md) · [데이터](../../../docs/architecture/data.md) · [UI](../../../docs/architecture/ui.md)
+자세히: [구조](../../../apps/mobile/docs/architecture/structure.md) · [데이터](../../../apps/mobile/docs/architecture/data.md) · [UI](../../../apps/mobile/docs/architecture/ui.md)

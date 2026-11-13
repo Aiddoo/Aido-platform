@@ -12,9 +12,9 @@ HeroUI Native is a component library built on **Uniwind (Tailwind CSS for React 
 
 ---
 
-## CRITICAL: Native Only - Do Not Use Web Patterns
+## Native Only - HeroUI React (web) Patterns Don't Apply
 
-**This guide is for HeroUI Native ONLY.** Do NOT use any prior knowledge of HeroUI React (web) patterns.
+This guide is for HeroUI Native. HeroUI React (web) imports, CSS files and class names don't work in React Native.
 
 ### What Changed in Native
 
@@ -45,8 +45,6 @@ import { Button } from "heroui-native";
 	Click me
 </Button>;
 ```
-
-**Always fetch Native docs before implementing.** Do not assume React web patterns work.
 
 ---
 
@@ -92,13 +90,11 @@ Examples:
 
 Getting started guides: `https://v3.heroui.com/docs/native/getting-started/{topic}.mdx`
 
-**Important:** Always fetch component docs before implementing. The MDX docs include complete examples, props, anatomy, and API references.
+Read a component's docs before implementing it. The MDX docs include complete examples, props, anatomy, and API references.
 
 ---
 
 ## Installation Essentials
-
-**CRITICAL**: HeroUI Native is currently in BETA.
 
 ### Quick Install
 

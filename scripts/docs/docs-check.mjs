@@ -283,9 +283,9 @@ function checkAgentFile(doc, text, config, report) {
     }
   }
   if (base === 'SKILL.md') {
-    const skill = /(^|\/)\.claude\/skills\/([^/]+)\/SKILL\.md$/.exec(doc);
+    const skill = /(^|\/)\.(?:agents|claude)\/skills\/([^/]+)\/SKILL\.md$/.exec(doc);
     if (skill == null) {
-      report(doc, 1, 'agent-files', 'SKILL.md는 `.claude/skills/<이름>/SKILL.md`에 둔다');
+      report(doc, 1, 'agent-files', 'SKILL.md는 `.agents/skills/<이름>/SKILL.md`에 둔다');
       return;
     }
     const fields = parseFrontmatter(text);
@@ -294,6 +294,20 @@ function checkAgentFile(doc, text, config, report) {
     }
     if (fields == null || (fields.get('description') ?? '') === '') {
       report(doc, 1, 'agent-files', '스킬 frontmatter에 `description`이 있어야 한다');
+    }
+  }
+}
+
+// Codex는 `.agents/skills`, Claude Code는 `.claude/skills`만 읽어 정본 옆에 Claude용 링크가 있어야 한다.
+function checkSkillLinks(docs, tree, report) {
+  for (const doc of docs) {
+    const skill = /^(.*\/)?\.agents\/skills\/([^/]+)\/SKILL\.md$/.exec(doc);
+    if (skill == null) {
+      continue;
+    }
+    const link = `${skill[1] ?? ''}.claude/skills/${skill[2]}`;
+    if (!tree.has(link)) {
+      report(doc, 1, 'agent-files', `Claude가 읽도록 \`${link}\` 링크를 둔다`);
     }
   }
 }
@@ -413,6 +427,7 @@ export function checkDocs({ files, read, isIgnored = () => false, config }) {
     checkAgentFile(doc, text, config, report);
   }
   checkAgentsSize(docs, read, config, report);
+  checkSkillLinks(docs, tree, report);
   checkUiDocs(tree, report);
 
   config.allow.forEach((entry, index) => {
