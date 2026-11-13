@@ -5,9 +5,9 @@ import {
   ScheduledReminderReaderPort,
 } from "#api/modules/notification/reminders/application/ports/scheduled-reminder-reader.port";
 import type {
+  EveningReminderUser,
   ReminderCountUser,
   UserIdRow,
-  UserWithTodosAndStreak,
 } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
 
 export interface ScheduledReminderQuery {
@@ -19,8 +19,8 @@ export interface ScheduledReminderQuery {
 export class StubScheduledReminderReader extends ScheduledReminderReaderPort {
   premiumMorningUsers: ReminderCountUser[] = [];
   freeMorningUsers: ReminderCountUser[] = [];
-  premiumEveningUsers: UserWithTodosAndStreak[] = [];
-  freeEveningUsers: UserWithTodosAndStreak[] = [];
+  premiumEveningUsers: EveningReminderUser[] = [];
+  freeEveningUsers: EveningReminderUser[] = [];
   lunchNudgeUsers: UserIdRow[] = [];
   weeklyReportRecipients: UserIdRow[] = [];
   monthlyReportRecipients: UserIdRow[] = [];
@@ -42,14 +42,14 @@ export class StubScheduledReminderReader extends ScheduledReminderReaderPort {
 
   async findPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
-  ): Promise<UserWithTodosAndStreak[]> {
+  ): Promise<EveningReminderUser[]> {
     this.queries.push({ method: "findPremiumEveningReminderUsers", params });
     return this.premiumEveningUsers;
   }
 
   async findFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
-  ): Promise<UserWithTodosAndStreak[]> {
+  ): Promise<EveningReminderUser[]> {
     this.queries.push({ method: "findFreeEveningReminderUsers", params });
     return this.freeEveningUsers;
   }

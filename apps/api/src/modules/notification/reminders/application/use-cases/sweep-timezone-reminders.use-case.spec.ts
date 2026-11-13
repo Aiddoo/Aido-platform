@@ -1,4 +1,7 @@
 import { InMemorySweepCursor } from "#test/doubles/notification/in-memory-sweep-cursor";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
+import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
+import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -13,6 +16,7 @@ import {
 import type { UserLocaleMap } from "../read-models/scheduler.read-model.js";
 import { ReminderAlerts } from "../reminders.alerts.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
 import {
   SweepTimezoneRemindersUseCase,
   TIMEZONE_REMINDER_SWEEP_CURSOR_KEY,
@@ -33,13 +37,20 @@ class RecordingStrategy {
   }
 }
 
+interface EveningRecipient {
+  readonly userId: string;
+  readonly timezone: string;
+}
+
 class RecordingEveningStrategy {
   readonly contexts: TimezoneContext[] = [];
-  recipientUserIds: string[] = [];
+  recipients: EveningRecipient[] = [];
 
-  async execute(context: TimezoneContext): Promise<{ sent: number; recipientUserIds: string[] }> {
+  async execute(
+    context: TimezoneContext,
+  ): Promise<{ sent: number; recipients: EveningRecipient[] }> {
     this.contexts.push(context);
-    return { sent: this.recipientUserIds.length, recipientUserIds: this.recipientUserIds };
+    return { sent: this.recipients.length, recipients: this.recipients };
   }
 }
 
@@ -129,8 +140,64 @@ function createHarness(nowIso: string) {
   };
 }
 
+// +9·+8·0·-5·-8(1월, 서머타임 없음) 시간대 10개씩
+const FIFTY_TIMEZONES_IN_FIVE_OFFSETS = [
+  "Asia/Seoul",
+  "Asia/Tokyo",
+  "Asia/Pyongyang",
+  "Asia/Jayapura",
+  "Pacific/Palau",
+  "Asia/Dili",
+  "Asia/Chita",
+  "Asia/Yakutsk",
+  "Asia/Khandyga",
+  "Etc/GMT-9",
+  "Asia/Shanghai",
+  "Asia/Hong_Kong",
+  "Asia/Taipei",
+  "Asia/Singapore",
+  "Asia/Manila",
+  "Asia/Kuala_Lumpur",
+  "Australia/Perth",
+  "Asia/Makassar",
+  "Asia/Irkutsk",
+  "Asia/Macau",
+  "Etc/UTC",
+  "Europe/London",
+  "Europe/Lisbon",
+  "Africa/Abidjan",
+  "Africa/Accra",
+  "Atlantic/Reykjavik",
+  "Africa/Dakar",
+  "Europe/Dublin",
+  "Africa/Bamako",
+  "Etc/GMT",
+  "America/New_York",
+  "America/Toronto",
+  "America/Detroit",
+  "America/Nassau",
+  "America/Panama",
+  "America/Jamaica",
+  "America/Cancun",
+  "America/Lima",
+  "America/Bogota",
+  "America/Guayaquil",
+  "America/Los_Angeles",
+  "America/Vancouver",
+  "America/Tijuana",
+  "Pacific/Pitcairn",
+  "Etc/GMT+8",
+  "US/Pacific",
+  "Canada/Pacific",
+  "PST8PDT",
+  "America/Santa_Isabel",
+  "America/Ensenada",
+];
+
 const localTimes = (contexts: readonly TimezoneContext[]) =>
-  contexts.map(({ tz, localHour, localMinute }) => `${tz} ${localHour}:${localMinute}`);
+  contexts.map(
+    ({ timezones, localHour, localMinute }) => `${timezones.join(",")} ${localHour}:${localMinute}`,
+  );
 
 describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트레이터", () => {
   describe("handleMinuteSweep", () => {
@@ -144,7 +211,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       // Then
       expect(strategies.morningReminder.contexts).toEqual([
         {
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           localHour: 8,
           localMinute: 0,
           dayOfWeek: 3,
@@ -170,6 +237,56 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         "America/New_York 18:0",
       ]);
       expect(strategies.eveningReminder.contexts).toHaveLength(2);
+    });
+
+    it("현지 날짜·시·분이 같은 시간대는 한 묶음으로 Strategy를 한 번 부른다", async () => {
+      // Given: 서울·도쿄는 KST 08:00, 뉴욕·토론토는 전날 18:00
+      const { orchestrator, strategies, preferenceReader } = createHarness("2024-01-16T23:00:00Z");
+      preferenceReader.timezones = [
+        "Asia/Seoul",
+        "America/New_York",
+        "Asia/Tokyo",
+        "America/Toronto",
+      ];
+
+      // When
+      await orchestrator.handleMinuteSweep();
+
+      // Then
+      expect(localTimes(strategies.morningReminder.contexts)).toEqual([
+        "Asia/Seoul,Asia/Tokyo 8:0",
+        "America/New_York,America/Toronto 18:0",
+      ]);
+      expect(strategies.eveningReminder.contexts).toHaveLength(2);
+    });
+
+    it("시간대 50개를 오프셋 5개에 걸쳐 돌면 아침 리마인더 조회는 50번이 아니라 5번이다", async () => {
+      // Given
+      const harness = createHarness("2024-01-16T23:00:00Z");
+      harness.preferenceReader.timezones = FIFTY_TIMEZONES_IN_FIVE_OFFSETS;
+      const reader = new StubScheduledReminderReader();
+      const orchestrator = new SweepTimezoneRemindersUseCase({
+        ...harness,
+        ...harness.strategies,
+        morningReminder: new SendMorningReminderUseCase({
+          reader,
+          notificationPublisher: new RecordingNotificationPublisher(),
+          notificationHistoryReader: new StubNotificationHistoryReader(),
+          logger: new SilentLogger(),
+        }),
+      });
+
+      // When
+      await orchestrator.handleMinuteSweep();
+
+      // Then
+      const premiumQueries = reader.queries.filter(
+        ({ method }) => method === "findPremiumMorningReminderUsers",
+      );
+      expect(premiumQueries).toHaveLength(5);
+      expect(premiumQueries.flatMap(({ params }) => params.timezones).toSorted()).toEqual(
+        FIFTY_TIMEZONES_IN_FIVE_OFFSETS.toSorted(),
+      );
     });
 
     it("조회 결과가 비어있으면 Strategy 미호출", async () => {
@@ -435,10 +552,10 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       it("저녁 리마인더 발송 성공 시 Social Digest delayed job 등록", async () => {
         // Given: KST 18:00
         const { orchestrator, strategies, enqueuer } = createHarness("2024-01-16T09:00:00Z");
-        strategies.eveningReminder.recipientUserIds = [
-          TEST_CUID.USER_1,
-          TEST_CUID.USER_2,
-          TEST_CUID.USER_3,
+        strategies.eveningReminder.recipients = [
+          { userId: TEST_CUID.USER_1, timezone: "Asia/Seoul" },
+          { userId: TEST_CUID.USER_2, timezone: "Asia/Seoul" },
+          { userId: TEST_CUID.USER_3, timezone: "Asia/Seoul" },
         ];
 
         // When
@@ -450,6 +567,28 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
             timezone: "Asia/Seoul",
             recipientUserIds: [TEST_CUID.USER_1, TEST_CUID.USER_2, TEST_CUID.USER_3],
           },
+        ]);
+      });
+
+      it("묶어서 보낸 저녁 리마인더도 Social Digest는 시간대마다 같은 payload로 등록한다", async () => {
+        // Given: 서울·도쿄 18:00이 한 묶음이다
+        const { orchestrator, strategies, enqueuer, preferenceReader } =
+          createHarness("2024-01-16T09:00:00Z");
+        preferenceReader.timezones = ["Asia/Seoul", "Asia/Tokyo"];
+        strategies.eveningReminder.recipients = [
+          { userId: TEST_CUID.USER_1, timezone: "Asia/Seoul" },
+          { userId: TEST_CUID.USER_2, timezone: "Asia/Tokyo" },
+          { userId: TEST_CUID.USER_3, timezone: "Asia/Seoul" },
+        ];
+
+        // When
+        await orchestrator.handleMinuteSweep();
+
+        // Then
+        expect(strategies.eveningReminder.contexts).toHaveLength(1);
+        expect(enqueuer.socialDigests).toEqual([
+          { timezone: "Asia/Seoul", recipientUserIds: [TEST_CUID.USER_1, TEST_CUID.USER_3] },
+          { timezone: "Asia/Tokyo", recipientUserIds: [TEST_CUID.USER_2] },
         ]);
       });
 
@@ -512,7 +651,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       // Then
       expect(strategies.morningReminder.contexts).toEqual([
         expect.objectContaining({
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           localHour: 9,
           localMinute: 30,
           userId: "user-1",
@@ -587,7 +726,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       expect(strategies.socialDigest.calls).toEqual([
         {
           context: expect.objectContaining({
-            tz: "Asia/Seoul",
+            timezones: ["Asia/Seoul"],
             today: Temporal.PlainDate.from("2024-01-16"),
           }),
           recipientUserIds: [TEST_CUID.USER_1],

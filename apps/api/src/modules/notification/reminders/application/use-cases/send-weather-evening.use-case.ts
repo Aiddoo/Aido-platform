@@ -51,7 +51,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz, localHour, localMinute, today } = ctx;
+    const { timezones, localHour, localMinute, today } = ctx;
 
     // 1단계: 위치 있는 유저 → 날씨 알림 (예보를 받지 못하면 안내 알림)
     const weather = await this.#sendWeatherNotifications(ctx, today);
@@ -63,7 +63,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
     if (total > 0) {
       this.#dependencies.logger.log({
         event: NotificationRemindersLogEvent.WEATHER_EVENING_SENT,
-        timezone: tz,
+        timezones,
         localHour,
         localMinute,
         weatherCount: weather.sent - weather.unavailable,
@@ -79,7 +79,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
     today: Temporal.PlainDate,
   ): Promise<{ sent: number; unavailable: number }> {
     const rows = await this.#dependencies.reader.findWeatherEveningUsersWithLocation({
-      tz: ctx.tz,
+      timezones: ctx.timezones,
       hour: ctx.localHour,
       minute: ctx.localMinute,
       userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
@@ -116,7 +116,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
           ? null
           : decideEveningWeatherBriefing(located.report, {
               now: at,
-              timezone: ctx.tz,
+              timezone: user.timezone,
               locationTimezone: located.timezone,
             });
       if (briefing == null) {
@@ -143,7 +143,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
     today: Temporal.PlainDate,
   ): Promise<number> {
     const users = await this.#dependencies.reader.findWeatherEveningFallbackUsers({
-      tz: ctx.tz,
+      timezones: ctx.timezones,
       hour: ctx.localHour,
       minute: ctx.localMinute,
       userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),

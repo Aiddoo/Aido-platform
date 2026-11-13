@@ -40,7 +40,7 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
   }
 
   async findOnboardingCandidates(params: {
-    tz: string;
+    timezones: readonly string[];
     createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidate[]> {
     this.queries.push({ method: "findOnboardingCandidates", params });
@@ -52,8 +52,8 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
     return this.completedTodoCounts.filter((row) => userIds.includes(row.userId));
   }
 
-  async findActiveUsersInTimezone(tz: string): Promise<UserIdRow[]> {
-    this.queries.push({ method: "findActiveUsersInTimezone", params: tz });
+  async findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdRow[]> {
+    this.queries.push({ method: "findActiveUsersInTimezones", params: [...timezones] });
     return this.activeUsers;
   }
 

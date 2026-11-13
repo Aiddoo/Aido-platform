@@ -48,7 +48,7 @@ describe("SendMonthlyReportUseCase — 월간 리포트 전략", () => {
       {
         method: "findMonthlyReportRecipients",
         params: {
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           periodStart: Temporal.PlainDate.from("2024-01-01"),
           periodEnd: ctx.today,
         },

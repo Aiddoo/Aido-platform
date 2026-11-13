@@ -46,7 +46,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
       {
         method: "findWinbackUsers",
         params: {
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           inactiveSince: Temporal.Instant.from("2023-12-17T00:00:00Z"),
           inactiveUntil: Temporal.Instant.from("2024-01-13T00:00:00Z"),
         },

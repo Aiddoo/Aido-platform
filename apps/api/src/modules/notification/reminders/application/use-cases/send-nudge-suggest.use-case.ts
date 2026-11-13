@@ -22,7 +22,7 @@ import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 interface NudgeSuggestStrategyDependencies {
   readonly reader: Pick<
     ReEngagementReaderPort,
-    "findActiveUsersInTimezone" | "findNudgeSuggestFollows"
+    "findActiveUsersInTimezones" | "findNudgeSuggestFollows"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
@@ -39,12 +39,12 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz, today } = ctx;
+    const { timezones, today } = ctx;
     const weekAgo = utcStartOf(today.subtract({ days: 7 }));
     const twoDaysAgo = utcStartOf(today.subtract({ days: 2 }));
 
     // 이 타임존의 활성 유저 목록
-    const activeUsers = await this.#dependencies.reader.findActiveUsersInTimezone(tz);
+    const activeUsers = await this.#dependencies.reader.findActiveUsersInTimezones(timezones);
 
     if (activeUsers.length === 0) {
       return { sent: 0 };
@@ -170,7 +170,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
 
       this.#dependencies.logger.log({
         event: NotificationRemindersLogEvent.NUDGE_SUGGEST_SENT,
-        timezone: tz,
+        timezones,
         count: notifications.length,
       });
     }

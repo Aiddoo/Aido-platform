@@ -1,7 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
-import { and, count, eq, inArray, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { and, count, eq, gte, inArray, lt, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -46,6 +46,7 @@ import type {
 } from "../../application/ports/weekly-achievement-stats-reader.port.js";
 import type {
   ActiveTodo,
+  EveningReminderUser,
   FollowPair,
   FriendWithTodos,
   NudgeSuggestFollow,
@@ -112,13 +113,17 @@ export class DrizzleSchedulerReader
   async findPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<ReminderCountUser[]> {
-    const { tz, hour, minute, today, tomorrow, userId } = params;
+    const { timezones, hour, minute, today, tomorrow, userId } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         ...(userId != null && { id: userId.value }),
         RAW: (target) => premiumAccessCondition(target, this.#now()),
-        preference: { timezone: tz, morningReminderHour: hour, morningReminderMinute: minute },
+        preference: {
+          timezone: { in: [...timezones] },
+          morningReminderHour: hour,
+          morningReminderMinute: minute,
+        },
       },
       with: { preference: { columns: { locale: true } } },
       extras: { todoCount: (user) => this.#todoCount(user.id, today, tomorrow) },
@@ -129,12 +134,12 @@ export class DrizzleSchedulerReader
   async findFreeMorningReminderUsers(
     params: FixedTimeReminderParams,
   ): Promise<ReminderCountUser[]> {
-    const { tz, today, tomorrow } = params;
+    const { timezones, today, tomorrow } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         RAW: (target) => freeAccessCondition(target, this.#now()),
-        preference: { timezone: tz },
+        preference: { timezone: { in: [...timezones] } },
       },
       with: { preference: { columns: { locale: true } } },
       extras: { todoCount: (user) => this.#todoCount(user.id, today, tomorrow) },
@@ -144,14 +149,18 @@ export class DrizzleSchedulerReader
 
   async findPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
-  ): Promise<UserWithTodosAndStreak[]> {
-    const { tz, hour, minute, today, tomorrow, userId } = params;
+  ): Promise<EveningReminderUser[]> {
+    const { timezones, hour, minute, today, tomorrow, userId } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         ...(userId != null && { id: userId.value }),
         RAW: (target) => premiumAccessCondition(target, this.#now()),
-        preference: { timezone: tz, eveningReminderHour: hour, eveningReminderMinute: minute },
+        preference: {
+          timezone: { in: [...timezones] },
+          eveningReminderHour: hour,
+          eveningReminderMinute: minute,
+        },
         todos: { startDate: { gte: today, lt: tomorrow } },
       },
       with: {
@@ -159,21 +168,23 @@ export class DrizzleSchedulerReader
           columns: { completed: true },
           where: { startDate: { gte: today, lt: tomorrow } },
         },
-        preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
+        preference: {
+          columns: { currentStreak: true, lastCompletedDate: true, locale: true, timezone: true },
+        },
       },
     });
-    return rows;
+    return withPreferenceTimezone(rows);
   }
 
   async findFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
-  ): Promise<UserWithTodosAndStreak[]> {
-    const { tz, today, tomorrow } = params;
+  ): Promise<EveningReminderUser[]> {
+    const { timezones, today, tomorrow } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         RAW: (target) => freeAccessCondition(target, this.#now()),
-        preference: { timezone: tz },
+        preference: { timezone: { in: [...timezones] } },
         todos: { startDate: { gte: today, lt: tomorrow } },
       },
       with: {
@@ -181,20 +192,22 @@ export class DrizzleSchedulerReader
           columns: { completed: true },
           where: { startDate: { gte: today, lt: tomorrow } },
         },
-        preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
+        preference: {
+          columns: { currentStreak: true, lastCompletedDate: true, locale: true, timezone: true },
+        },
       },
     });
-    return rows;
+    return withPreferenceTimezone(rows);
   }
 
   findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]> {
-    const { tz, today, tomorrow } = params;
+    const { timezones, today, tomorrow } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         AND: [
           ...this.#recentTreatmentExclusion(),
-          { preference: { timezone: tz } },
+          { preference: { timezone: { in: [...timezones] } } },
           {
             todos: {
               startDate: { gte: today, lt: tomorrow },
@@ -222,11 +235,11 @@ export class DrizzleSchedulerReader
   }
 
   #findPeriodReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]> {
-    const { tz, periodStart, periodEnd } = params;
+    const { timezones, periodStart, periodEnd } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        preference: { timezone: tz },
+        preference: { timezone: { in: [...timezones] } },
         RAW: (target) => premiumAccessCondition(target, this.#now()),
         todos: {
           startDate: { gte: periodStart, lt: periodEnd },
@@ -240,13 +253,13 @@ export class DrizzleSchedulerReader
   // ─────────────────────────────────────────────────────────────
 
   async findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]> {
-    const { tz, inactiveSince, inactiveUntil } = params;
+    const { timezones, inactiveSince, inactiveUntil } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true, lastActiveAt: true },
       where: {
         AND: [
           ...this.#recentTreatmentExclusion(),
-          { preference: { timezone: tz } },
+          { preference: { timezone: { in: [...timezones] } } },
           {
             lastActiveAt: {
               gte: inactiveSince,
@@ -260,17 +273,17 @@ export class DrizzleSchedulerReader
   }
 
   async findOnboardingCandidates(params: {
-    tz: string;
+    timezones: readonly string[];
     createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidate[]> {
-    const { tz, createdSince } = params;
+    const { timezones, createdSince } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true, createdAt: true },
       where: {
         AND: [
           ...this.#recentTreatmentExclusion(),
           { createdAt: { gte: createdSince } },
-          { preference: { timezone: tz } },
+          { preference: { timezone: { in: [...timezones] } } },
         ],
       },
     });
@@ -285,14 +298,14 @@ export class DrizzleSchedulerReader
       .groupBy(todo.userId);
   }
 
-  findActiveUsersInTimezone(tz: string): Promise<UserIdRow[]> {
+  findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdRow[]> {
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         AND: [
           { deletedAt: { isNull: true } },
           ...this.#recentTreatmentExclusion(),
-          { preference: { timezone: tz } },
+          { preference: { timezone: { in: [...timezones] } } },
         ],
       },
     });
@@ -332,14 +345,14 @@ export class DrizzleSchedulerReader
   findSocialDigestCandidates(
     params: SocialDigestCandidateParams,
   ): Promise<SocialDigestCandidate[]> {
-    const { tz, today, tomorrow, recipientUserIds } = params;
+    const { timezones, today, tomorrow, recipientUserIds } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         AND: [
           { id: { in: [...recipientUserIds] } },
           ...this.#recentTreatmentExclusion(),
-          { preference: { timezone: tz } },
+          { preference: { timezone: { in: [...timezones] } } },
           {
             todos: {
               startDate: { gte: today, lt: tomorrow },
@@ -392,13 +405,13 @@ export class DrizzleSchedulerReader
   }
 
   async findStreakAtRiskUsers(params: TodayRangeParams): Promise<UserWithTodosAndStreak[]> {
-    const { tz, today, tomorrow } = params;
+    const { timezones, today, tomorrow } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         AND: [
           ...this.#recentTreatmentExclusion(),
-          { preference: { timezone: tz, currentStreak: { gte: 3 } } },
+          { preference: { timezone: { in: [...timezones] }, currentStreak: { gte: 3 } } },
           {
             todos: {
               startDate: { gte: today, lt: tomorrow },
@@ -422,11 +435,11 @@ export class DrizzleSchedulerReader
   // WeatherReminderReaderPort — 아침/저녁 날씨 알림
   // ─────────────────────────────────────────────────────────────
 
-  findWeatherMorningUsersWithLocation(
+  async findWeatherMorningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUser[]> {
-    const { tz, hour, minute, userId } = params;
-    return this.#db.query.user.findMany({
+    const { timezones, hour, minute, userId } = params;
+    const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         ...(userId != null && { id: userId.value }),
@@ -434,21 +447,22 @@ export class DrizzleSchedulerReader
         deletedAt: { isNull: true },
         preference: {
           weatherMorningEnabled: true,
-          timezone: tz,
+          timezone: { in: [...timezones] },
           weatherMorningHour: hour,
           weatherMorningMinute: minute,
         },
         location: true,
       },
       with: {
-        preference: { columns: { locale: true } },
+        preference: { columns: { locale: true, timezone: true } },
         location: { columns: { latitude: true, longitude: true } },
       },
     });
+    return withPreferenceTimezone(rows);
   }
 
   findWeatherMorningFallbackUsers(params: WeatherReminderParams): Promise<WeatherFallbackUser[]> {
-    const { tz, hour, minute, userId } = params;
+    const { timezones, hour, minute, userId } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
@@ -457,7 +471,7 @@ export class DrizzleSchedulerReader
         deletedAt: { isNull: true },
         preference: {
           weatherMorningEnabled: true,
-          timezone: tz,
+          timezone: { in: [...timezones] },
           weatherMorningHour: hour,
           weatherMorningMinute: minute,
         },
@@ -467,11 +481,11 @@ export class DrizzleSchedulerReader
     });
   }
 
-  findWeatherEveningUsersWithLocation(
+  async findWeatherEveningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUser[]> {
-    const { tz, hour, minute, userId } = params;
-    return this.#db.query.user.findMany({
+    const { timezones, hour, minute, userId } = params;
+    const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
         ...(userId != null && { id: userId.value }),
@@ -479,21 +493,22 @@ export class DrizzleSchedulerReader
         deletedAt: { isNull: true },
         preference: {
           weatherEveningEnabled: true,
-          timezone: tz,
+          timezone: { in: [...timezones] },
           weatherEveningHour: hour,
           weatherEveningMinute: minute,
         },
         location: true,
       },
       with: {
-        preference: { columns: { locale: true } },
+        preference: { columns: { locale: true, timezone: true } },
         location: { columns: { latitude: true, longitude: true } },
       },
     });
+    return withPreferenceTimezone(rows);
   }
 
   findWeatherEveningFallbackUsers(params: WeatherReminderParams): Promise<WeatherFallbackUser[]> {
-    const { tz, hour, minute, userId } = params;
+    const { timezones, hour, minute, userId } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
@@ -502,7 +517,7 @@ export class DrizzleSchedulerReader
         deletedAt: { isNull: true },
         preference: {
           weatherEveningEnabled: true,
-          timezone: tz,
+          timezone: { in: [...timezones] },
           weatherEveningHour: hour,
           weatherEveningMinute: minute,
         },
@@ -526,7 +541,7 @@ export class DrizzleSchedulerReader
 
   // 여러 날 할 일은 기간 안에 걸친 날마다 하나로 센다. 끝없이 긴 할 일도 기간 안의 날만 더한다
   #countTodoDaysByUser(params: WeeklyStatsParams, extra?: SQL): Promise<UserTodoCount[]> {
-    const { tz, periodStart, periodEnd } = params;
+    const { timezones, periodStart, periodEnd } = params;
     const firstDay = sql`${sql.param(periodStart, todo.startDate)}::date`;
     const lastDay = sql`(${sql.param(periodEnd, todo.startDate)}::date - 1)`;
     const todoLastDay = sql`coalesce(${todo.endDate}, ${todo.startDate})`;
@@ -539,7 +554,7 @@ export class DrizzleSchedulerReader
           sql`${todo.startDate} <= ${lastDay}`,
           sql`${todoLastDay} >= ${firstDay}`,
           extra,
-          this.#inTimezone(tz),
+          this.#inTimezones(timezones),
         ),
       )
       .groupBy(todo.userId);
@@ -619,21 +634,19 @@ export class DrizzleSchedulerReader
   }
 
   #todoCount(userId: AnyColumn, today: Temporal.PlainDate, tomorrow: Temporal.PlainDate) {
-    return sql<number>`(
-      SELECT count(*)::int FROM ${todo}
-      WHERE ${todo.userId} = ${userId}
-        AND ${todo.startDate} >= ${sql.param(today, todo.startDate)}
-        AND ${todo.startDate} < ${sql.param(tomorrow, todo.startDate)}
-    )`;
+    return this.#db.$count(
+      todo,
+      and(eq(todo.userId, userId), gte(todo.startDate, today), lt(todo.startDate, tomorrow)),
+    );
   }
 
-  #inTimezone(tz: string) {
+  #inTimezones(timezones: readonly string[]) {
     return inArray(
       todo.userId,
       this.#db
         .select({ userId: userPreference.userId })
         .from(userPreference)
-        .where(eq(userPreference.timezone, tz)),
+        .where(inArray(userPreference.timezone, [...timezones])),
     );
   }
 
@@ -654,4 +667,13 @@ export class DrizzleSchedulerReader
       },
     ];
   }
+}
+
+// where가 설정의 시간대로 거르므로 설정 없는 행은 오지 않는다
+function withPreferenceTimezone<
+  TRow extends { readonly preference: { readonly timezone: string } | null },
+>(rows: readonly TRow[]): Array<TRow & { readonly timezone: string }> {
+  return rows.flatMap((row) =>
+    row.preference == null ? [] : [{ ...row, timezone: row.preference.timezone }],
+  );
 }

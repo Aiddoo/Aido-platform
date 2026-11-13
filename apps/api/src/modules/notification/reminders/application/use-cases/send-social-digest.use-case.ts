@@ -40,11 +40,11 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
     if (recipientUserIds.length === 0) {
       return { sent: 0 };
     }
-    const { tz, today, tomorrow } = ctx;
+    const { timezones, today, tomorrow } = ctx;
 
     // 해당 타임존 + 오늘 투두 미완료인 유저 조회
     const users = await this.#dependencies.reader.findSocialDigestCandidates({
-      tz,
+      timezones,
       today,
       tomorrow,
       recipientUserIds,
@@ -175,7 +175,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
       await this.#dependencies.notificationPublisher.publishBatch(notifications);
       this.#dependencies.logger.log({
         event: NotificationRemindersLogEvent.SOCIAL_DIGEST_SENT,
-        timezone: tz,
+        timezones,
         count: notifications.length,
       });
     }

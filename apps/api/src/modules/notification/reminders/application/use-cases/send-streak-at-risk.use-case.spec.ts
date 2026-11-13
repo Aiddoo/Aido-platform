@@ -62,7 +62,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     expect(reader.queries).toEqual([
       {
         method: "findStreakAtRiskUsers",
-        params: { tz: "Asia/Seoul", today: ctx.today, tomorrow: ctx.tomorrow },
+        params: { timezones: ["Asia/Seoul"], today: ctx.today, tomorrow: ctx.tomorrow },
       },
     ]);
     expect(sent()).toEqual([

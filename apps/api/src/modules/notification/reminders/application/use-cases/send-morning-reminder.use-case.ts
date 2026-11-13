@@ -35,11 +35,11 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz, localHour, localMinute, userId, today, tomorrow } = ctx;
+    const { timezones, localHour, localMinute, userId, today, tomorrow } = ctx;
 
     // 프리미엄 사용자: 커스텀 시간에 리마인더 발송
     const premiumUsers = await this.#dependencies.reader.findPremiumMorningReminderUsers({
-      tz,
+      timezones,
       hour: localHour,
       minute: localMinute,
       today,
@@ -55,7 +55,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
     let freeUsers: ReminderCountUser[] = [];
     if (!userId && isFreeReminderTime) {
       freeUsers = await this.#dependencies.reader.findFreeMorningReminderUsers({
-        tz,
+        timezones,
         today,
         tomorrow,
       });
@@ -114,7 +114,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
     this.#dependencies.logger.log({
       event: NotificationRemindersLogEvent.MORNING_REMINDER_SENT,
-      timezone: tz,
+      timezones,
       localHour,
       localMinute,
       count: notifications.length,

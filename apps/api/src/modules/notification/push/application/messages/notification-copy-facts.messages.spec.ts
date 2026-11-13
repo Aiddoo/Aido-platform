@@ -110,7 +110,7 @@ describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (lo
     };
     const strategy = new SendWeeklyAchievementUseCase(dependencies);
     const context: TimezoneContext = {
-      tz: "Asia/Seoul",
+      timezones: ["Asia/Seoul"],
       localHour: 7,
       localMinute: 0,
       dayOfWeek: 1,

@@ -32,13 +32,13 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz, today } = ctx;
+    const { timezones, today } = ctx;
     const cutoffStart = utcStartOf(today.subtract({ days: 30 }));
     const cutoffEnd = utcStartOf(today.subtract({ days: 3 }));
 
     // 3~30일 미접속 유저
     const users = await this.#dependencies.reader.findWinbackUsers({
-      tz,
+      timezones,
       inactiveSince: cutoffStart,
       inactiveUntil: cutoffEnd,
     });
@@ -121,7 +121,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
 
       this.#dependencies.logger.log({
         event: NotificationRemindersLogEvent.WINBACK_SENT,
-        timezone: tz,
+        timezones,
         count: notifications.length,
       });
     }

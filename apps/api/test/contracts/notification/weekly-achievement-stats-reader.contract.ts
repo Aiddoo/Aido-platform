@@ -30,8 +30,8 @@ const PERIOD = {
 // 집계 결과는 순서를 약속하지 않아(GROUP BY) 사용자 ID 순으로 맞춰 비교한다
 async function countsFor(reader: WeeklyAchievementStatsReaderPort, timezone: string) {
   const [total, completed] = await Promise.all([
-    reader.groupTotalTodosByUser({ tz: timezone, ...PERIOD }),
-    reader.groupCompletedTodosByUser({ tz: timezone, ...PERIOD }),
+    reader.groupTotalTodosByUser({ timezones: [timezone], ...PERIOD }),
+    reader.groupCompletedTodosByUser({ timezones: [timezone], ...PERIOD }),
   ]);
   const byUserId = (rows: readonly { userId: string; count: number }[]) =>
     new Map(

@@ -16,7 +16,7 @@ const NOW = new Date("2026-11-02T11:00:00.000Z");
 const TOKYO = { latitude: 35.6762, longitude: 139.6503 };
 
 const ctx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
-  tz: "Asia/Seoul",
+  timezones: ["Asia/Seoul"],
   localHour: 20,
   localMinute: 0,
   dayOfWeek: 1,
@@ -72,7 +72,9 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
 
   it("내일 비가 시작하는 때와 쌀쌀함을 알린다", async () => {
     // Given 내일 서울 10시 비, 최저 6°C
-    reader.usersWithLocation = [{ id: "u1", preference: null, location: TOKYO }];
+    reader.usersWithLocation = [
+      { id: "u1", timezone: "Asia/Seoul", preference: null, location: TOKYO },
+    ];
     weatherReports.reports.set("u1", report({ wetKstHourTomorrow: 10, temperatureMin: 6 }));
     // When
     const result = await strategy.execute(ctx());
@@ -88,7 +90,9 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
 
   it("비 소식이 없으면 내일 요약을 보낸다", async () => {
     // Given
-    reader.usersWithLocation = [{ id: "u1", preference: { locale: "en" }, location: TOKYO }];
+    reader.usersWithLocation = [
+      { id: "u1", timezone: "Asia/Seoul", preference: { locale: "en" }, location: TOKYO },
+    ];
     weatherReports.reports.set("u1", report());
     // When
     await strategy.execute(ctx());
@@ -98,7 +102,9 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
 
   it("예보를 받지 못하면 안내 알림을 보낸다", async () => {
     // Given
-    reader.usersWithLocation = [{ id: "u1", preference: null, location: TOKYO }];
+    reader.usersWithLocation = [
+      { id: "u1", timezone: "Asia/Seoul", preference: null, location: TOKYO },
+    ];
     // When
     await strategy.execute(ctx());
     // Then
@@ -107,7 +113,9 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
 
   it("오늘 이미 받은 사용자로는 날씨를 조회하지 않는다", async () => {
     // Given
-    reader.usersWithLocation = [{ id: "u1", preference: null, location: TOKYO }];
+    reader.usersWithLocation = [
+      { id: "u1", timezone: "Asia/Seoul", preference: null, location: TOKYO },
+    ];
     history.notified("WEATHER_EVENING", ["u1"]);
     // When
     const result = await strategy.execute(ctx());

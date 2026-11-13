@@ -12,7 +12,7 @@ import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.const
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ScheduledReminderReaderPort } from "../ports/scheduled-reminder-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
-import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";
+import type { EveningReminderUser } from "../read-models/scheduler.read-model.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 
 interface EveningReminderStrategyDependencies {
@@ -25,6 +25,11 @@ interface EveningReminderStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
+interface EveningReminderRecipient {
+  readonly userId: string;
+  readonly timezone: string;
+}
+
 export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: EveningReminderStrategyDependencies;
 
@@ -34,13 +39,13 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
 
   async execute(ctx: TimezoneContext): Promise<{
     sent: number;
-    recipientUserIds: string[];
+    recipients: EveningReminderRecipient[];
   }> {
-    const { tz, localHour, localMinute, userId, today, tomorrow } = ctx;
+    const { timezones, localHour, localMinute, userId, today, tomorrow } = ctx;
 
     // 프리미엄 사용자: 커스텀 시간에 리마인더 발송
     const premiumUsers = await this.#dependencies.reader.findPremiumEveningReminderUsers({
-      tz,
+      timezones,
       hour: localHour,
       minute: localMinute,
       today,
@@ -53,10 +58,10 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     const defaultMinute = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE;
     const isFreeReminderTime = localHour === defaultHour && localMinute === defaultMinute;
 
-    let freeUsers: UserWithTodosAndStreak[] = [];
+    let freeUsers: EveningReminderUser[] = [];
     if (!userId && isFreeReminderTime) {
       freeUsers = await this.#dependencies.reader.findFreeEveningReminderUsers({
-        tz,
+        timezones,
         today,
         tomorrow,
       });
@@ -65,7 +70,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     const users = [...premiumUsers, ...freeUsers];
 
     if (users.length === 0) {
-      return { sent: 0, recipientUserIds: [] };
+      return { sent: 0, recipients: [] };
     }
 
     // 중복 방지
@@ -79,7 +84,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
 
     if (filteredUsers.length === 0) {
-      return { sent: 0, recipientUserIds: [] };
+      return { sent: 0, recipients: [] };
     }
 
     const notifications = filteredUsers.map((user) => {
@@ -128,14 +133,14 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
     this.#dependencies.logger.log({
       event: NotificationRemindersLogEvent.EVENING_REMINDER_SENT,
-      timezone: tz,
+      timezones,
       localHour,
       localMinute,
       count: notifications.length,
     });
     return {
       sent: notifications.length,
-      recipientUserIds: notifications.map((notification) => notification.userId),
+      recipients: filteredUsers.map(({ id, timezone }) => ({ userId: id, timezone })),
     };
   }
 }

@@ -26,7 +26,7 @@ const SEOUL = { latitude: 37.5665, longitude: 126.978 };
 const TOKYO = { latitude: 35.6762, longitude: 139.6503 };
 
 const ctx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
-  tz: "Asia/Seoul",
+  timezones: ["Asia/Seoul"],
   localHour: 7,
   localMinute: 0,
   dayOfWeek: 1,
@@ -102,7 +102,9 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   it("해외 위치 사용자도 격자 없이 좌표로 날씨 알림을 받는다", async () => {
     // Given
-    reader.usersWithLocation = [{ id: "abroad", preference: { locale: "en" }, location: TOKYO }];
+    reader.usersWithLocation = [
+      { id: "abroad", timezone: "Asia/Seoul", preference: { locale: "en" }, location: TOKYO },
+    ];
     weatherReports.reports.set("abroad", seoulReport(undefined, "Asia/Tokyo"));
     // When
     const result = await strategy.execute(ctx());
@@ -117,9 +119,34 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     });
   });
 
+  it("묶음으로 보내도 할 일 조회와 문구 시각은 사용자 행의 시간대를 쓴다", async () => {
+    // Given 서울 묶음 안의 상하이 사용자, 서울 15시(상하이 14시) 할 일에 강수 확률 70%
+    reader.usersWithLocation = [
+      { id: "seoul", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
+      { id: "shanghai", timezone: "Asia/Shanghai", preference: { locale: "ko" }, location: SEOUL },
+    ];
+    todoReader.todos = [
+      { id: 12, userId: "shanghai", title: "한강 산책", scheduledTime: atKst(15) },
+    ];
+    weatherReports.reports.set("seoul", seoulReport());
+    weatherReports.reports.set("shanghai", seoulReport({ hour: 15, precipitationChance: 70 }));
+    // When
+    await strategy.execute(ctx());
+    // Then
+    expect(todoReader.queries.map(({ timezone, userIds }) => [timezone, userIds])).toEqual([
+      ["Asia/Seoul", [UserId.reconstitute("seoul")]],
+      ["Asia/Shanghai", [UserId.reconstitute("shanghai")]],
+    ]);
+    expect(sent().find(({ userId }) => userId === "shanghai")).toMatchObject({
+      title: "오후 2시 ‘한강 산책’ 때 비 소식이 있어요 ☔",
+    });
+  });
+
   it("오늘 할 일이 비와 겹치면 그 할 일과 옮기기 링크를 보낸다", async () => {
     // Given 15시 '한강 산책'에 강수 확률 70%
-    reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
+    reader.usersWithLocation = [
+      { id: "u1", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
+    ];
     todoReader.todos = [{ id: 12, userId: "u1", title: "한강 산책", scheduledTime: atKst(15) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 15, precipitationChance: 70 }));
     // When
@@ -141,7 +168,9 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   it("오늘 할 일이 낮 더위와 겹치면 체감 온도와 더위 옮기기 링크를 보낸다", async () => {
     // Given
-    reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
+    reader.usersWithLocation = [
+      { id: "u1", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
+    ];
     todoReader.todos = [{ id: 7, userId: "u1", title: "테니스", scheduledTime: atKst(13) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 13, apparentTemperature: 34.6 }));
     // When
@@ -155,7 +184,9 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   it("할 일이 없고 비 소식도 없으면 v2 일별 예보로 요약하고 링크 없이 날씨 화면으로 보낸다", async () => {
     // Given
-    reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
+    reader.usersWithLocation = [
+      { id: "u1", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
+    ];
     weatherReports.reports.set("u1", seoulReport());
     // When
     await strategy.execute(ctx());
@@ -170,7 +201,9 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   it("예보를 받지 못한 사용자는 틀린 날씨 대신 앱에서 확인하라는 안내를 받는다", async () => {
     // Given 리포트 없음
-    reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
+    reader.usersWithLocation = [
+      { id: "u1", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
+    ];
     // When
     const result = await strategy.execute(ctx());
     // Then
@@ -186,7 +219,9 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   it("오늘 이미 받은 사용자와 위치가 없는 사용자로는 날씨를 조회하지 않는다", async () => {
     // Given
-    reader.usersWithLocation = [{ id: "sent", preference: null, location: SEOUL }];
+    reader.usersWithLocation = [
+      { id: "sent", timezone: "Asia/Seoul", preference: null, location: SEOUL },
+    ];
     reader.fallbackUsers = [{ id: "no-location", preference: null }];
     history.notified("WEATHER_MORNING", ["sent"]);
     // When
@@ -266,6 +301,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     // Given
     reader.usersWithLocation = Array.from({ length: 30 }, (_, index) => ({
       id: `user-${index}`,
+      timezone: "Asia/Seoul",
       preference: { locale: index % 2 === 0 ? "ko" : "en" },
       location: SEOUL,
     }));
@@ -278,15 +314,17 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
 
   it("캐시가 지난 뒤 공급자가 실패하면 마지막 스냅샷으로, 그것도 없으면 안내 알림으로 보낸다", async () => {
     // Given 서울은 7시에 한 번 받아 두고, 9시에 공급자 장애
-    reader.usersWithLocation = [{ id: "seoul", preference: null, location: SEOUL }];
+    reader.usersWithLocation = [
+      { id: "seoul", timezone: "Asia/Seoul", preference: null, location: SEOUL },
+    ];
     await strategy.execute(ctx());
     const later = new Date(NOW.getTime() + 2 * HOUR_MS);
     vi.setSystemTime(later);
     clock.advanceBy({ hours: 2 });
     provider.failure = new Error("weatherkit 503");
     reader.usersWithLocation = [
-      { id: "seoul", preference: null, location: SEOUL },
-      { id: "tokyo", preference: null, location: TOKYO },
+      { id: "seoul", timezone: "Asia/Seoul", preference: null, location: SEOUL },
+      { id: "tokyo", timezone: "Asia/Seoul", preference: null, location: TOKYO },
     ];
     publisher.published.splice(0);
     // When

@@ -7,7 +7,7 @@ export function createTimezoneContextFixture(
   const { date = "2024-01-16", ...context } = overrides;
   const today = Temporal.PlainDate.from(date);
   return {
-    tz: "Asia/Seoul",
+    timezones: ["Asia/Seoul"],
     localHour: 8,
     localMinute: 0,
     // Temporal은 월=1…일=7, 문맥은 일=0

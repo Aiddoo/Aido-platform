@@ -34,7 +34,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz, today } = ctx;
+    const { timezones, today } = ctx;
 
     // 월요일 실행 → 이전 주(월~일) 집계
     const { start, end, isoYear, isoWeek } = previousIsoWeekOf(today);
@@ -42,12 +42,12 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
     // ─── A. DB 집계 (모든 유저, pushEnabled 무관) ──────────────
     const [totalByUser, completedByUser] = await Promise.all([
       this.#dependencies.reader.groupTotalTodosByUser({
-        tz,
+        timezones,
         periodStart: start,
         periodEnd: end,
       }),
       this.#dependencies.reader.groupCompletedTodosByUser({
-        tz,
+        timezones,
         periodStart: start,
         periodEnd: end,
       }),
@@ -133,7 +133,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
 
     this.#dependencies.logger.log({
       event: NotificationRemindersLogEvent.WEEKLY_ACHIEVEMENT_SENT,
-      timezone: tz,
+      timezones,
       recordCount: records.length,
       count: notifications.length,
     });
