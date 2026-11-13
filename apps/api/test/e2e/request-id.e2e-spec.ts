@@ -20,7 +20,7 @@ describe("요청 ID E2E", () => {
   it("앱이 보낸 X-Request-Id를 응답 헤더로 그대로 돌려준다", async () => {
     // Given / When
     const response = await request(ctx.app.getHttpServer())
-      .get("/v1")
+      .get("/v1/invites/availability")
       .set("X-Request-Id", APP_REQUEST_ID)
       .expect(200);
 
@@ -33,7 +33,7 @@ describe("요청 ID E2E", () => {
     ["UUID가 아닌 값", "not-a-uuid"],
   ])("%s 요청에는 새 UUID를 만들어 돌려준다", async (_name, requestId) => {
     // Given
-    const call = request(ctx.app.getHttpServer()).get("/v1");
+    const call = request(ctx.app.getHttpServer()).get("/v1/invites/availability");
 
     // When
     const response = await (requestId == null ? call : call.set("X-Request-Id", requestId)).expect(
@@ -59,13 +59,13 @@ describe("요청 ID E2E", () => {
   it("CORS가 X-Request-Id 요청 헤더를 받고 응답 헤더를 브라우저에 노출한다", async () => {
     // Given / When
     const preflight = await request(ctx.app.getHttpServer())
-      .options("/v1")
+      .options("/v1/invites/availability")
       .set("Origin", "http://localhost:3000")
       .set("Access-Control-Request-Method", "GET")
       .set("Access-Control-Request-Headers", "x-request-id")
       .expect(204);
     const response = await request(ctx.app.getHttpServer())
-      .get("/v1")
+      .get("/v1/invites/availability")
       .set("Origin", "http://localhost:3000")
       .expect(200);
 

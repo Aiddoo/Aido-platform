@@ -54,9 +54,6 @@ import {
 } from "#api/platform/throttle/user-aware-throttler.guard";
 import { TimeModule } from "#api/platform/time/time.module";
 
-import { AppController } from "./app.controller.js";
-import { AppService } from "./app.service.js";
-
 @Module({
   imports: [
     AppConfigModule,
@@ -125,10 +122,7 @@ import { AppService } from "./app.service.js";
     EngagementModule,
     WeatherModule,
   ],
-  controllers: [AppController],
-
   providers: [
-    AppService,
     // 테스트가 ThrottlerGuard 토큰으로 우회하므로 같은 토큰에 사용자 기준 tracker를 붙인 구현을 둔다
     { provide: ThrottlerGuard, useClass: UserAwareThrottlerGuard },
 

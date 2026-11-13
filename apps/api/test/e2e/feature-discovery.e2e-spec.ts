@@ -27,17 +27,14 @@ describe("기능 발견 설정 (E2E)", () => {
     const featureDiscovery = await request(ctx.app.getHttpServer())
       .get("/v1/app-config/feature-discovery")
       .expect(200);
-    const root = await request(ctx.app.getHttpServer()).get("/v1").expect(200);
+    const root = await request(ctx.app.getHttpServer()).get("/v1/invites/availability").expect(200);
 
     // Then - kill switch는 중간 캐시 없이 다음 조회부터 즉시 반영된다
     expect(featureDiscovery.headers["cache-control"]).toBe("private, no-store");
     expect(featureDiscovery.body).toEqual({ enabled: false });
 
     // Then - the global response contract remains unchanged elsewhere
-    expect(root.body).toMatchObject({
-      success: true,
-      data: "Hello World!",
-    });
+    expect(root.body).toMatchObject({ success: true, data: { enabled: expect.any(Boolean) } });
     expect(root.body.timestamp).toEqual(expect.any(Number));
   });
 
