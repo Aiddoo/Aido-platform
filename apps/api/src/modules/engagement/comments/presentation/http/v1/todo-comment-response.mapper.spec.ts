@@ -2,9 +2,7 @@ import { todoConversationItemSchema } from "@aido/api/contracts/todo-comment";
 
 import {
   createTodoCommentReadModelFixture,
-  createTodoCommentReadModelFixture as createCommentRecordFixture,
   createTodoCommentViewerFixture,
-  createTodoCommentViewerFixture as createViewerContextFixture,
 } from "#test/fixtures/engagement/todo-comment.fixture";
 
 import type { TodoCommentReadModel } from "../../../application/read-models/todo-comment.read-model.js";
@@ -21,7 +19,7 @@ const REPLY_ID = "cm1replycomment00000000001";
 describe("toTodoCommentResponse — 1.14.0 이하 앱 댓글 모양", () => {
   it("답글에 단 답글도 parentId는 묶음 머리, depth는 1이고 @대상은 replyTo에 남긴다", () => {
     // Given
-    const record = createCommentRecordFixture({
+    const readModel = createTodoCommentReadModelFixture({
       id: "cm1nestedreply00000000001",
       threadCommentId: COMMENT_ID,
       replyToCommentId: REPLY_ID,
@@ -29,7 +27,7 @@ describe("toTodoCommentResponse — 1.14.0 이하 앱 댓글 모양", () => {
     });
 
     // When
-    const response = toTodoCommentResponse(record, createViewerContextFixture());
+    const response = toTodoCommentResponse(readModel, createTodoCommentViewerFixture());
 
     // Then
     expect(response).toMatchObject({
@@ -42,13 +40,13 @@ describe("toTodoCommentResponse — 1.14.0 이하 앱 댓글 모양", () => {
 
   it("작성자 Aido ID가 없으면 v1 계약대로 userTag 키를 비운다", () => {
     // Given
-    const record = createCommentRecordFixture({ authorUserTag: null });
+    const readModel = createTodoCommentReadModelFixture({ authorUserTag: null });
 
     // When
-    const response = toTodoCommentResponse(record, createViewerContextFixture());
+    const response = toTodoCommentResponse(readModel, createTodoCommentViewerFixture());
 
     // Then
-    expect(response).toMatchObject({ threadId: record.id, parentId: null, depth: 0 });
+    expect(response).toMatchObject({ threadId: readModel.id, parentId: null, depth: 0 });
     expect(response.author?.userTag).toBeUndefined();
   });
 });
@@ -57,7 +55,7 @@ const VIEWER_ID = "cmviewer00000000000000001";
 const CONVERSATION_COMMENT_ID = "cm1todoacomment00000000001";
 const OTHER_COMMENT_ID = "cm1todoacomment00000000009";
 
-function createRecord(
+function createReadModel(
   id: string,
   placement: { threadCommentId: string; replyToCommentId: string } | null = null,
 ): TodoCommentReadModel {
@@ -90,23 +88,23 @@ function toItems(
     comments,
     nextComment,
     focusCommentId: null,
-    viewer: createViewerContextFixture({ viewerId: VIEWER_ID }),
+    viewer: createTodoCommentViewerFixture({ viewerId: VIEWER_ID }),
   });
 }
 
 describe("할 일 대화 응답 변환 (1.14.0 이하 앱)", () => {
   it("묶음 머리 lane이 마지막 답글까지 이어지고 답글마다 0→1 branch를 그린다", () => {
     // Given
-    const comment = createRecord(CONVERSATION_COMMENT_ID);
-    const firstReply = createRecord("cm1todoacomment00000000002", {
+    const comment = createReadModel(CONVERSATION_COMMENT_ID);
+    const firstReply = createReadModel("cm1todoacomment00000000002", {
       threadCommentId: CONVERSATION_COMMENT_ID,
       replyToCommentId: CONVERSATION_COMMENT_ID,
     });
-    const replyToReply = createRecord("cm1todoacomment00000000003", {
+    const replyToReply = createReadModel("cm1todoacomment00000000003", {
       threadCommentId: CONVERSATION_COMMENT_ID,
       replyToCommentId: firstReply.id,
     });
-    const nextComment = createRecord(OTHER_COMMENT_ID);
+    const nextComment = createReadModel(OTHER_COMMENT_ID);
 
     // When
     const items = toItems([comment, firstReply, replyToReply, nextComment]);
@@ -139,8 +137,8 @@ describe("할 일 대화 응답 변환 (1.14.0 이하 앱)", () => {
 
   it("페이지 마지막 행도 경계 밖 다음 행이 같은 묶음이면 lane을 잇는다", () => {
     // Given
-    const comment = createRecord(CONVERSATION_COMMENT_ID);
-    const reply = createRecord("cm1todoacomment00000000002", {
+    const comment = createReadModel(CONVERSATION_COMMENT_ID);
+    const reply = createReadModel("cm1todoacomment00000000002", {
       threadCommentId: CONVERSATION_COMMENT_ID,
       replyToCommentId: CONVERSATION_COMMENT_ID,
     });
@@ -154,12 +152,12 @@ describe("할 일 대화 응답 변환 (1.14.0 이하 앱)", () => {
 
   it("focus 앞에 따로 싣는 묶음 머리는 아래 lane만 연다", () => {
     // Given
-    const comment = createRecord(CONVERSATION_COMMENT_ID);
+    const comment = createReadModel(CONVERSATION_COMMENT_ID);
 
     // When
     const items = toTodoConversationAncestorItems({
       comments: [comment],
-      viewer: createViewerContextFixture({ viewerId: VIEWER_ID }),
+      viewer: createTodoCommentViewerFixture({ viewerId: VIEWER_ID }),
     });
 
     // Then

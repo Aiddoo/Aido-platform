@@ -40,6 +40,7 @@ import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { DeleteTodoCommentUseCase } from "../../../application/use-cases/delete-todo-comment.use-case.js";
+import { EditTodoCommentUseCase } from "../../../application/use-cases/edit-todo-comment.use-case.js";
 import { GetTodoConversationUseCase } from "../../../application/use-cases/get-todo-conversation.use-case.js";
 import { GetTodoDetailsUseCase } from "../../../application/use-cases/get-todo-details.use-case.js";
 import { LikeTodoCommentUseCase } from "../../../application/use-cases/like-todo-comment.use-case.js";
@@ -48,7 +49,6 @@ import {
   type TodoCommentThreadsPageRequest,
 } from "../../../application/use-cases/list-todo-comment-threads.use-case.js";
 import { UnlikeTodoCommentUseCase } from "../../../application/use-cases/unlike-todo-comment.use-case.js";
-import { UpdateTodoCommentUseCase } from "../../../application/use-cases/update-todo-comment.use-case.js";
 import { WriteTodoCommentChainUseCase } from "../../../application/use-cases/write-todo-comment-chain.use-case.js";
 import {
   toTodoCommentChainResponse,
@@ -91,7 +91,7 @@ export class TodoCommentController {
   readonly #getTodoCommentThreads: ListTodoCommentThreadsUseCase;
   readonly #getTodoConversation: GetTodoConversationUseCase;
   readonly #writeTodoCommentChain: WriteTodoCommentChainUseCase;
-  readonly #updateTodoComment: UpdateTodoCommentUseCase;
+  readonly #editTodoComment: EditTodoCommentUseCase;
   readonly #deleteTodoComment: DeleteTodoCommentUseCase;
   readonly #likeTodoComment: LikeTodoCommentUseCase;
   readonly #unlikeTodoComment: UnlikeTodoCommentUseCase;
@@ -101,7 +101,7 @@ export class TodoCommentController {
     getTodoCommentThreads: ListTodoCommentThreadsUseCase,
     getTodoConversation: GetTodoConversationUseCase,
     writeTodoCommentChain: WriteTodoCommentChainUseCase,
-    updateTodoComment: UpdateTodoCommentUseCase,
+    editTodoComment: EditTodoCommentUseCase,
     deleteTodoComment: DeleteTodoCommentUseCase,
     likeTodoComment: LikeTodoCommentUseCase,
     unlikeTodoComment: UnlikeTodoCommentUseCase,
@@ -110,7 +110,7 @@ export class TodoCommentController {
     this.#getTodoCommentThreads = getTodoCommentThreads;
     this.#getTodoConversation = getTodoConversation;
     this.#writeTodoCommentChain = writeTodoCommentChain;
-    this.#updateTodoComment = updateTodoComment;
+    this.#editTodoComment = editTodoComment;
     this.#deleteTodoComment = deleteTodoComment;
     this.#likeTodoComment = likeTodoComment;
     this.#unlikeTodoComment = unlikeTodoComment;
@@ -258,7 +258,7 @@ export class TodoCommentController {
 
     @AppVersion() appVersion?: string,
   ): Promise<TodoCommentMutationResponseDto> {
-    const result = await this.#updateTodoComment.execute({
+    const result = await this.#editTodoComment.execute({
       todoId: params.todoId,
       commentId: params.commentId,
       userId: user.userId,

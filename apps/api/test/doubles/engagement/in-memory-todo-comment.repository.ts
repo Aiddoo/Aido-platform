@@ -1,6 +1,6 @@
 import { TodoCommentIdempotencyRace } from "#api/modules/engagement/comments/application/comments.errors";
 import { TodoCommentRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
-import { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
+import type { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
 import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
 import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -12,7 +12,6 @@ function copyOf(comment: TodoComment): TodoComment {
 
 export class InMemoryTodoCommentRepository extends TodoCommentRepositoryPort {
   readonly #comments = new Map<string, TodoComment>();
-  #sequence = 0;
 
   constructor(comments: readonly TodoComment[] = []) {
     super();
@@ -24,11 +23,6 @@ export class InMemoryTodoCommentRepository extends TodoCommentRepositoryPort {
   /** 저장된 모든 글의 사본. 테스트 확인과 다른 대역이 읽는 데 쓴다 */
   list(): TodoComment[] {
     return [...this.#comments.values()].map(copyOf);
-  }
-
-  async nextId(): Promise<TodoCommentId> {
-    this.#sequence += 1;
-    return TodoCommentId.reconstitute(`cmmemory${String(this.#sequence).padStart(17, "0")}`);
   }
 
   async findByIdAndTodoId(commentId: TodoCommentId, todoId: TodoId): Promise<TodoComment | null> {
@@ -46,7 +40,7 @@ export class InMemoryTodoCommentRepository extends TodoCommentRepositoryPort {
     );
   }
 
-  async insertMany(comments: readonly TodoComment[]): Promise<void> {
+  async saveAll(comments: readonly TodoComment[]): Promise<void> {
     // 한 문장처럼 하나라도 겹치면 아무것도 넣지 않는다
     const staged = new InMemoryTodoCommentRepository(this.list());
     for (const comment of comments) {

@@ -67,7 +67,7 @@ interface WriteTodoCommentChainDependencies {
   >;
   readonly repository: Pick<
     TodoCommentRepositoryPort,
-    "nextId" | "findByIdAndTodoId" | "listByAuthorIdAndClientRequestIds" | "save" | "insertMany"
+    "findByIdAndTodoId" | "listByAuthorIdAndClientRequestIds" | "save" | "saveAll"
   >;
   readonly engagementCounter: Pick<TodoEngagementCounterPort, "increaseCommentCount">;
   readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentsWritten">;
@@ -247,7 +247,7 @@ export class WriteTodoCommentChainUseCase {
     let placement = firstPlacement;
     for (const [index, item] of request.items.entries()) {
       const comment = TodoComment.create({
-        id: await repository.nextId(),
+        id: TodoCommentId.generate(),
         todoId: request.todoId,
         authorId,
         placement,
@@ -262,7 +262,7 @@ export class WriteTodoCommentChainUseCase {
       created.push(comment);
       placement = CommentPlacement.create({ id: comment.id.value, placement });
     }
-    await repository.insertMany(created);
+    await repository.saveAll(created);
     return created;
   }
 

@@ -11,14 +11,14 @@ import type { TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js
 import type { TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";
 import type { TodoCommentWithViewer } from "../read-models/todo-comment.read-model.js";
 
-export interface UpdateTodoCommentCommand {
+export interface EditTodoCommentCommand {
   readonly todoId: number;
   readonly commentId: string;
   readonly userId: string;
   readonly content: string;
 }
 
-interface UpdateTodoCommentDependencies {
+interface EditTodoCommentDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly clock: ClockPort;
@@ -29,14 +29,14 @@ interface UpdateTodoCommentDependencies {
   readonly repository: Pick<TodoCommentRepositoryPort, "findByIdAndTodoId" | "save">;
 }
 
-export class UpdateTodoCommentUseCase {
-  readonly #dependencies: UpdateTodoCommentDependencies;
+export class EditTodoCommentUseCase {
+  readonly #dependencies: EditTodoCommentDependencies;
 
-  constructor(dependencies: UpdateTodoCommentDependencies) {
+  constructor(dependencies: EditTodoCommentDependencies) {
     this.#dependencies = dependencies;
   }
 
-  execute(command: UpdateTodoCommentCommand): Promise<TodoCommentWithViewer> {
+  execute(command: EditTodoCommentCommand): Promise<TodoCommentWithViewer> {
     const { unitOfWork, mutationLock, clock, reader, repository } = this.#dependencies;
     return unitOfWork.run(async () => {
       const todoId = TodoId.reconstitute(command.todoId);
@@ -53,13 +53,13 @@ export class UpdateTodoCommentUseCase {
       comment.edit(userId, command.content, clock.now());
       await repository.save(comment);
 
-      const updated = await reader.findComment(todoId, commentId);
-      if (updated == null) {
+      const edited = await reader.findComment(todoId, commentId);
+      if (edited == null) {
         throw commentNotFound(command.commentId);
       }
       const likedCommentIds = await reader.listLikedCommentIds([commentId], userId);
       return {
-        comment: updated,
+        comment: edited,
         viewer: { viewerId: command.userId, likedCommentIds, blockedAuthorIds: new Set() },
       };
     });

@@ -12,20 +12,20 @@ const ANCHOR_MARKERS = {
 
 interface MarkedTodoCommentRow<T> {
   marker: TodoCommentRowMarker;
-  record: T;
+  item: T;
 }
 
 interface TodoCommentKeysetWindow<T> {
   items: T[];
   anchorIndex: number | null;
-  previousRecord: T | null;
-  nextRecord: T | null;
+  previousItem: T | null;
+  nextItem: T | null;
   hasPrevious: boolean;
   hasNext: boolean;
 }
 
-function recordsOf<T>(rows: readonly MarkedTodoCommentRow<T>[], marker: TodoCommentRowMarker): T[] {
-  return rows.filter((row) => row.marker === marker).map((row) => row.record);
+function itemsOf<T>(rows: readonly MarkedTodoCommentRow<T>[], marker: TodoCommentRowMarker): T[] {
+  return rows.filter((row) => row.marker === marker).map((row) => row.item);
 }
 
 /** 기준 행 앞뒤를 size만큼 채운다. 한쪽이 모자라면 반대쪽에서 당겨 채운다. */
@@ -33,15 +33,15 @@ function toFocusWindow<T>(
   rows: readonly MarkedTodoCommentRow<T>[],
   size: number,
 ): TodoCommentKeysetWindow<T> {
-  const before = recordsOf(rows, "BEFORE");
-  const after = recordsOf(rows, "AFTER");
-  const focus = rows.find((row) => row.marker === "FOCUS")?.record;
+  const before = itemsOf(rows, "BEFORE");
+  const after = itemsOf(rows, "AFTER");
+  const focus = rows.find((row) => row.marker === "FOCUS")?.item;
   if (focus == null) {
     return {
       items: [],
       anchorIndex: null,
-      previousRecord: null,
-      nextRecord: null,
+      previousItem: null,
+      nextItem: null,
       hasPrevious: false,
       hasNext: false,
     };
@@ -57,8 +57,8 @@ function toFocusWindow<T>(
   return {
     items: [...selectedBefore, focus, ...after.slice(0, afterCount)],
     anchorIndex: selectedBefore.length,
-    previousRecord: before.at(-beforeCount - 1) ?? null,
-    nextRecord: after[afterCount] ?? null,
+    previousItem: before.at(-beforeCount - 1) ?? null,
+    nextItem: after[afterCount] ?? null,
     hasPrevious: before.length > beforeCount,
     hasNext: after.length > afterCount,
   };
@@ -77,15 +77,15 @@ function toKeysetWindow<T>(
     return toFocusWindow(rows, size);
   }
 
-  const pageCandidates = recordsOf(rows, "PAGE");
+  const pageCandidates = itemsOf(rows, "PAGE");
   if (mode === "BEFORE") {
     const hasPrevious = pageCandidates.length > size;
     const items = hasPrevious ? pageCandidates.slice(-size) : pageCandidates;
     return {
       items,
       anchorIndex: null,
-      previousRecord: hasPrevious ? (pageCandidates.at(-size - 1) ?? null) : null,
-      nextRecord: recordsOf(rows, "NEXT").at(0) ?? null,
+      previousItem: hasPrevious ? (pageCandidates.at(-size - 1) ?? null) : null,
+      nextItem: itemsOf(rows, "NEXT").at(0) ?? null,
       hasPrevious: items.length > 0 && hasPrevious,
       hasNext: items.length > 0,
     };
@@ -96,8 +96,8 @@ function toKeysetWindow<T>(
   return {
     items,
     anchorIndex: null,
-    previousRecord: mode === "AFTER" ? (recordsOf(rows, "PREVIOUS").at(0) ?? null) : null,
-    nextRecord: hasNext ? (pageCandidates[size] ?? null) : null,
+    previousItem: mode === "AFTER" ? (itemsOf(rows, "PREVIOUS").at(0) ?? null) : null,
+    nextItem: hasNext ? (pageCandidates[size] ?? null) : null,
     hasPrevious: items.length > 0 && mode === "AFTER",
     hasNext: items.length > 0 && hasNext,
   };
@@ -115,12 +115,12 @@ function markRows<T extends { readonly id: string }>(
   const anchorIndex = items.findIndex((item) => item.id === anchorId);
   return items.map((item, index): MarkedTodoCommentRow<T> => {
     if (index === anchorIndex) {
-      return { marker: ANCHOR_MARKERS[mode], record: item };
+      return { marker: ANCHOR_MARKERS[mode], item };
     }
     if (mode === "FOCUS") {
-      return { marker: index < anchorIndex ? "BEFORE" : "AFTER", record: item };
+      return { marker: index < anchorIndex ? "BEFORE" : "AFTER", item };
     }
-    return { marker: "PAGE", record: item };
+    return { marker: "PAGE", item };
   });
 }
 

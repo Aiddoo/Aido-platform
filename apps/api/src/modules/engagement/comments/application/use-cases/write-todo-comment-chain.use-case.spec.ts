@@ -315,7 +315,7 @@ class RacingTodoCommentRepository extends InMemoryTodoCommentRepository {
       : Promise.resolve([]);
   }
 
-  override async insertMany(): Promise<void> {
+  override async saveAll(): Promise<void> {
     this.#hasRaced = true;
     this.#onRace();
     throw new TodoCommentIdempotencyRace();

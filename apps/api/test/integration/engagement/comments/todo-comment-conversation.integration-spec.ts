@@ -901,7 +901,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   it("구버전 서버가 먼저 쓴 멱등 키의 SQLSTATE 23505를 애플리케이션 경합 오류로 번역한다", async () => {
     // Given
     const comment = TodoComment.create({
-      id: await repository.nextId(),
+      id: TodoCommentId.generate(),
       todoId,
       authorId: UserId.reconstitute("conversation-author"),
       placement: CommentPlacement.create(null),

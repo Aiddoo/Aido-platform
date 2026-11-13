@@ -12,11 +12,11 @@ import {
   type TodoCommentsFixture,
 } from "#test/fixtures/engagement/todo-comments.fixture";
 
-import { UpdateTodoCommentUseCase } from "./update-todo-comment.use-case.js";
+import { EditTodoCommentUseCase } from "./edit-todo-comment.use-case.js";
 
 const TODO_ID = TODO_COMMENT_FIXTURE_TODO_ID;
 
-describe("UpdateTodoCommentUseCase — 댓글 수정", () => {
+describe("EditTodoCommentUseCase — 댓글 수정", () => {
   let fixture: TodoCommentsFixture;
 
   beforeEach(() => {
@@ -31,7 +31,7 @@ describe("UpdateTodoCommentUseCase — 댓글 수정", () => {
     );
 
     // When
-    const result = await new UpdateTodoCommentUseCase(fixture).execute({
+    const result = await new EditTodoCommentUseCase(fixture).execute({
       todoId: TODO_ID,
       commentId: comment.id.value,
       userId: TODO_COMMENT_FIXTURE_VIEWER_ID,
@@ -52,7 +52,7 @@ describe("UpdateTodoCommentUseCase — 댓글 수정", () => {
     const comment = await fixture.addComment({ authorId: TODO_COMMENT_FIXTURE_VIEWER_ID });
 
     // When
-    const result = await new UpdateTodoCommentUseCase(fixture).execute({
+    const result = await new EditTodoCommentUseCase(fixture).execute({
       todoId: TODO_ID,
       commentId: comment.id.value,
       userId: TODO_COMMENT_FIXTURE_VIEWER_ID,
@@ -68,7 +68,7 @@ describe("UpdateTodoCommentUseCase — 댓글 수정", () => {
     const comment = await fixture.addComment({ authorId: TODO_COMMENT_FIXTURE_FRIEND_ID });
 
     // When
-    const updating = new UpdateTodoCommentUseCase(fixture).execute({
+    const updating = new EditTodoCommentUseCase(fixture).execute({
       todoId: TODO_ID,
       commentId: comment.id.value,
       userId: TODO_COMMENT_FIXTURE_VIEWER_ID,
@@ -88,7 +88,7 @@ describe("UpdateTodoCommentUseCase — 댓글 수정", () => {
     fixture.reader.revokeAccess(TODO_ID, TODO_COMMENT_FIXTURE_VIEWER_ID);
 
     // When
-    const updating = new UpdateTodoCommentUseCase(fixture).execute({
+    const updating = new EditTodoCommentUseCase(fixture).execute({
       todoId: TODO_ID,
       commentId: "cm1missingcomment00000001",
       userId: TODO_COMMENT_FIXTURE_VIEWER_ID,
