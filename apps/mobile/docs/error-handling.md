@@ -136,6 +136,7 @@ showMutationError(error, {
 | `unexpected`   | 5xx·파싱·렌더 오류 등                                          | `reportUnexpectedError`(요청 태그 포함) | fallback(다시 시도 + 문의하기)           |
 
 - 독립된 데이터 블록마다 `QueryErrorBoundary → Suspense → 블록`을 둬 부분 실패를 허용한다. 식별자가 바뀌면 `resetKeys`로 이전 실패를 푼다. mutation은 경계로 가지 않는다(`throwOnError` 미사용).
+- 안쪽 경계가 바깥 경계의 조회를 함께 그리면 `resetScope="parent"`로 다시 시도 범위를 바깥과 함께 쓴다. 범위가 갈리면 바깥 다시 시도 뒤에도 안쪽이 그 조회를 다시 받지 않는다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md#안쪽-경계가-바깥-경계의-조회를-함께-그릴-때)).
 - 기능 fallback은 `fallback={X.Error}`로 잇고 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. 한 칸 안의 실패는 `QueryErrorFallback.Inline`이다.
 - 문의하기는 경계가 받은 오류의 진단 코드·오류 코드·요청 ID(`getErrorDiagnosis`, 4xx·5xx 모두)를 본문 첫 줄에 담아 문의 화면을 연다. 사용자·기기 식별자와 오류 문구는 넣지 않는다. route 시트 안에서는 `onInquiry`가 받은 `href`로 `sheet.close({ type: 'replace', href })`한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
 - **경계 밖 조회.** 인라인 `useQuery`의 `isError` 화면과 데이터가 있는 재조회 실패는 경계로 가지 않는다. 앱 `QueryCache`의 `onError`(`query-error-report-cache.ts`)가 받아 `QueryErrorReport`가 `feature: query_cache`로 보고한다. 데이터 없이 실패한 `useSuspenseQuery`와 붙은 observer의 `throwOnError`(함수면 그 결과)가 경계로 보내는 조회는 건너뛰고(TanStack `defaultThrowOnError`와 같은 조건), 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 기능이 조회 실패를 다시 보고하지 않는다.

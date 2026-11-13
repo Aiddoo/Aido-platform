@@ -17,11 +17,35 @@ import { QueryErrorBoundary } from '@src/shared/ui';
 
 ## Props
 
-| Prop        | 타입                                            | 기본값               | 설명                                         |
-| ----------- | ----------------------------------------------- | -------------------- | -------------------------------------------- |
-| `children`  | `ReactNode`                                     | -                    | 경계 안쪽                                    |
-| `fallback`  | `(props: QueryErrorFallbackProps) => ReactNode` | `QueryErrorFallback` | 직접 그릴 fallback. 컴포넌트 안에서 렌더된다 |
-| `resetKeys` | `unknown[]`                                     | -                    | 바뀌면 이전 오류 상태를 자동으로 해제        |
+| Prop         | 타입                                            | 기본값               | 설명                                                                     |
+| ------------ | ----------------------------------------------- | -------------------- | ------------------------------------------------------------------------ |
+| `children`   | `ReactNode`                                     | -                    | 경계 안쪽                                                                |
+| `fallback`   | `(props: QueryErrorFallbackProps) => ReactNode` | `QueryErrorFallback` | 직접 그릴 fallback. 컴포넌트 안에서 렌더된다                             |
+| `resetKeys`  | `unknown[]`                                     | -                    | 바뀌면 이전 오류 상태를 자동으로 해제                                    |
+| `resetScope` | `'own' \| 'parent'`                             | `'own'`              | 다시 시도가 풀 조회 오류의 범위. 바깥 경계의 조회를 함께 그리면 `parent` |
+
+## 안쪽 경계가 바깥 경계의 조회를 함께 그릴 때
+
+경계마다 TanStack `QueryErrorResetBoundary`를 하나씩 둬, 다시 시도는 그 경계 안의 조회 오류만 풉니다. 안쪽 경계 아래에서
+바깥 경계의 조회를 함께 읽으면(할 일 상세 칸의 댓글 목록 머리가 본문을 그리는 경우) 바깥 경계의 다시 시도 뒤에도 그 조회는
+풀리지 않은 안쪽 범위에서 다시 읽혀 다시 받지 않고(`retryOnMount: false`) 남은 오류를 그대로 던집니다. 그런 안쪽 경계는
+`resetScope="parent"`로 바깥 범위를 함께 씁니다. 안쪽 fallback이 바깥 조회를 다시 그리면 그 오류는 다시 던져져 바깥 경계
+한 곳이 받습니다.
+
+```tsx
+<QueryErrorBoundary resetKeys={[todoId]}>
+  <Suspense fallback={<TodoCommentPane.Loading />}>
+    <QueryErrorBoundary
+      resetKeys={[todoId, sort, comment]}
+      resetScope="parent"
+      fallback={TodoCommentThreadList.Error}
+    >
+      <TodoCommentThreadList />
+    </QueryErrorBoundary>
+    <TodoCommentComposerBar />
+  </Suspense>
+</QueryErrorBoundary>
+```
 
 `QueryErrorFallbackProps`의 `error`는 `unknown`이므로 `shared/errors`의 판별 함수로 좁힙니다.
 

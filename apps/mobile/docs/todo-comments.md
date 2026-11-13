@@ -70,6 +70,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
         <Suspense fallback={<TodoCommentPane.Loading />}>
           <QueryErrorBoundary
             resetKeys={[todoId, sort, comment]}
+            resetScope="parent"
             fallback={TodoCommentThreadList.Error}
           >
             <TodoCommentThreadList />
@@ -83,7 +84,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 </TodoCommentSession>
 ```
 
-- 본문·댓글·작성 바는 같은 상세 조회를 읽어 기다림 경계(`Suspense`)가 하나다. 경계 여럿이 함께 기다리다 한쪽만 다시 그려지면 React 19.3이 서로의 재시도를 번갈아 그려 응답 전까지 렌더가 끝나지 않는다(개발 번들에서 토큰 만료 뒤 상세를 열 때 재현). fallback(`TodoCommentPane.Loading`)에는 경계도 Suspense 조회도 두지 않고, 댓글 목록 오류만 안쪽 `QueryErrorBoundary`가 받아 작성 바는 남긴다.
+- 본문·댓글·작성 바는 같은 상세 조회를 읽어 기다림 경계(`Suspense`)가 하나다. 경계 여럿이 함께 기다리다 한쪽만 다시 그려지면 React 19.3이 서로의 재시도를 번갈아 그려 응답 전까지 렌더가 끝나지 않는다(개발 번들에서 토큰 만료 뒤 상세를 열 때 재현). fallback(`TodoCommentPane.Loading`)에는 경계도 Suspense 조회도 두지 않고, 댓글 목록 오류만 안쪽 `QueryErrorBoundary`가 받아 작성 바는 남긴다. 목록 머리가 본문(상세)을 그려 안쪽 경계는 다시 시도 범위를 칸과 함께 쓰고(`resetScope="parent"`), 상세 오류는 안쪽 fallback의 머리가 다시 던져 칸 경계 한 곳이 받는다. 범위가 갈리면 칸 전체 오류의 다시 시도가 상세를 다시 받지 않는다.
 - 화면은 `todoId`를 props로 넘기지 않는다. 블록 컴포넌트가 `const [todoId] = useTodoId()`로 읽고, 가상 목록의 댓글·답글 행은 route 훅을 부르지 않고 댓글 모델의 `todoId`를 읽는다(Oxlint `aido/no-route-id-props`가 검사).
 - 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`를 쓰고,
   할 일 본문·댓글 수와 정렬(`TodoCommentThreadList.Header`·`.Toolbar`)·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.

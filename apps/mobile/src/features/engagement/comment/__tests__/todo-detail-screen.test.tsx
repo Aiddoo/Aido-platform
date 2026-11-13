@@ -521,6 +521,84 @@ describe('TodoDetailRoute', () => {
     });
   });
 
+  describe('불러오기 실패와 다시 시도', () => {
+    const DETAILS_PATH = `v1/todos/${TODO_ID}/details`;
+    const THREADS_PATH = `v2/todos/${TODO_ID}/comments`;
+
+    /** 정한 path만 서버 장애로 실패시킨 채 연다. `outage.isDown`을 끄면 정상 응답을 준다 */
+    async function renderScreenWithOutage(failingPath: string) {
+      const outage = { isDown: true };
+      const httpClient = createHttpClientStub();
+      const respond = respondByPath({
+        'v1/auth/me': ok(createCurrentUserDto({ userId: USER_ID })),
+        'v1/auth/preference': ok(createPreferenceDto()),
+        [DETAILS_PATH]: ok(createDetailsDto()),
+        [THREADS_PATH]: ok({
+          items: [
+            {
+              comment: COMMENT_DTO,
+              previewReply: null,
+              replySummary: { totalCount: 0, hiddenCount: 0, participantAuthors: [] },
+            },
+          ],
+          pagination: PAGINATION,
+          anchor: null,
+        }),
+      });
+      httpClient.get.mockImplementation(async (path) => {
+        if (outage.isDown && path === failingPath) {
+          throw new ServerError(503);
+        }
+        return respond(path);
+      });
+      jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
+      await renderScreen(<TodoDetailRoute />, {
+        di: createTestDi({ ports: { httpClient } }),
+        withLocalDate: true,
+        withOverlay: true,
+      });
+      const requestCount = (path: string) =>
+        httpClient.get.mock.calls.filter(([calledPath]) => calledPath === path).length;
+
+      return { outage, requestCount };
+    }
+
+    it('상세를 못 받아 칸 전체 오류가 뜬 뒤 서버가 돌아오면 다시 시도가 상세를 다시 받아 본문·댓글·입력창을 그린다', async () => {
+      // Given
+      const { outage, requestCount } = await renderScreenWithOutage(DETAILS_PATH);
+      expect(await screen.findByText('문제가 생겼어요')).toBeOnTheScreen();
+      const requestsBeforeRetry = requestCount(DETAILS_PATH);
+      outage.isDown = false;
+
+      // When
+      await fireEvent.press(screen.getByTestId('query-error-retry'));
+
+      // Then
+      expect(await screen.findByText('오늘도 화이팅!')).toBeOnTheScreen();
+      expect(screen.getByText('운동하기')).toBeOnTheScreen();
+      expect(screen.getByTestId('todo-comment-composer')).toBeOnTheScreen();
+      expect(requestCount(DETAILS_PATH)).toBeGreaterThan(requestsBeforeRetry);
+    });
+
+    it('댓글만 못 받으면 본문과 입력창은 남고, 다시 시도가 댓글을 다시 받아 목록을 그린다', async () => {
+      // Given
+      const { outage, requestCount } = await renderScreenWithOutage(THREADS_PATH);
+      expect(await screen.findByText('댓글을 불러오지 못했어요')).toBeOnTheScreen();
+      expect(screen.getByText('운동하기')).toBeOnTheScreen();
+      expect(screen.getByTestId('todo-comment-composer')).toBeOnTheScreen();
+      const requestsBeforeRetry = requestCount(THREADS_PATH);
+      outage.isDown = false;
+
+      // When
+      await fireEvent.press(screen.getByTestId('query-error-retry'));
+
+      // Then
+      expect(await screen.findByText('오늘도 화이팅!')).toBeOnTheScreen();
+      expect(screen.getByTestId('todo-comment-composer')).toBeOnTheScreen();
+      expect(requestCount(THREADS_PATH)).toBe(requestsBeforeRetry + 1);
+    });
+  });
+
   describe('할 일 상세와 차단', () => {
     it('보던 할 일의 주인을 차단하면 다시 받아 본문 대신 볼 수 없음 안내를 보인다', async () => {
       // Given
