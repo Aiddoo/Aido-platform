@@ -39,10 +39,11 @@ export function NotificationListRow({
   return (
     <PressableFeedback {...props}>
       <HStack className={cn('bg-white', isUnread && 'bg-highlight')}>
-        {isUnread && <Box className="w-[3.5px] bg-main self-stretch" />}
+        {isUnread && <Box className="w-[3.5px] self-stretch bg-main" />}
 
         <ListRow
           contents={
+            // oxlint-disable-next-line aido/spacing-scale -- 알림 제목·본문 글줄 간격이라 규격 단계 사이 3px을 쓴다
             <VStack gap={3}>
               <HStack justify="between" align="center">
                 <Text
@@ -102,6 +103,7 @@ NotificationListRow.Loading = function Loading() {
       horizontalPadding="medium"
       verticalPadding="large"
       contents={
+        // oxlint-disable-next-line aido/spacing-scale -- 알림 제목·본문 글줄 간격이라 규격 단계 사이 3px을 쓴다
         <VStack gap={3}>
           <HStack justify="between" align="center">
             <TextSkeleton size="b4" className="w-10" />

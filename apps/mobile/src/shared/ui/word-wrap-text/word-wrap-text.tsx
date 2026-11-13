@@ -1,8 +1,8 @@
 import type { ComponentProps } from 'react';
 
-import { Box } from '../box';
-import { Text } from '../text';
-import { VStack } from '../v-stack';
+import { Box } from '../box/box';
+import { Text } from '../text/text';
+import { VStack } from '../v-stack/v-stack';
 import { splitRunsIntoLines, splitRunsIntoWords, type TextRun } from './split-text-words';
 
 interface WordWrapTextProps extends Omit<

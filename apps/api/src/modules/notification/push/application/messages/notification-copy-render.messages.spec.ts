@@ -701,24 +701,35 @@ function variantContextOf(seed: number): NotificationVariantContext {
   };
 }
 
-/** seed를 바꿔 가며 고를 수 있는 variant를 모두 한 번씩 만든다. variantId 순으로 정렬한다. */
+// variant 선택은 언어와 무관해(알림함 테스트가 copyKey로 확인한다) 케이스마다 seed를 한 번만 훑는다.
+// 이 파일은 가장 무거운 unit spec이고, 동기 테스트는 부하로 벽시계 testTimeout을 넘기면 실패한다
+const variantSeedsByCase = new Map<CopyCase[1], readonly number[]>();
+
+function variantSeedsOf(create: CopyCase[1]): readonly number[] {
+  const cached = variantSeedsByCase.get(create);
+  if (cached != null) {
+    return cached;
+  }
+  const seedByVariant = new Map<string, number>();
+  for (let seed = 0; seed < SEED_COUNT; seed += 1) {
+    const { variantId } = create("ko", variantContextOf(seed));
+    if (!seedByVariant.has(variantId)) {
+      seedByVariant.set(variantId, seed);
+    }
+  }
+  const seeds = [...seedByVariant.values()];
+  variantSeedsByCase.set(create, seeds);
+  return seeds;
+}
+
+/** 고를 수 있는 variant를 모두 한 번씩 만든다. variantId 순으로 정렬한다. */
 function renderEveryVariant(
   create: CopyCase[1],
   locale: SupportedLocale,
 ): { readonly seed: number; readonly message: NotificationMessage }[] {
-  const byVariant = new Map<
-    string,
-    { readonly seed: number; readonly message: NotificationMessage }
-  >();
-  for (let seed = 0; seed < SEED_COUNT; seed += 1) {
-    const message = create(locale, variantContextOf(seed));
-    if (!byVariant.has(message.variantId)) {
-      byVariant.set(message.variantId, { seed, message });
-    }
-  }
-  return [...byVariant.values()].sort((a, b) =>
-    a.message.variantId.localeCompare(b.message.variantId),
-  );
+  return variantSeedsOf(create)
+    .map((seed) => ({ seed, message: create(locale, variantContextOf(seed)) }))
+    .sort((a, b) => a.message.variantId.localeCompare(b.message.variantId));
 }
 
 describe.each(LOCALES)("%s 푸시 문구 렌더 스냅샷", (locale) => {

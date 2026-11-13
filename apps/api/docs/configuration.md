@@ -49,6 +49,11 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 2. 값이 없으면 배포 환경 기본값(`defaultEmailProvider` 등, 위 표)을 쓴다. env에 적은 값은 기본값보다 앞선다.
 3. 고르는 곳은 선택 helper 하나(`selectEmailSender`·`selectAdminNotifier`·`selectSharedRedis`·`selectPushRateLimiter`)이고 slice `*.providers.ts`나 platform module이 부른다. UseCase는 포트만 안다.
 
+## 소셜 로그인 콘솔
+
+- Apple은 App ID에 Sign In with Apple을 켜야 한다.
+- 공급자 콘솔의 redirect URI는 서버 콜백(`*_CALLBACK_URL`, [oauth.schema.ts](../src/platform/config/schemas/oauth.schema.ts))이다. 앱의 `redirectUri`를 등록하지 않는다(앱 흐름은 [모바일 인증](../../mobile/docs/auth.md#소셜-로그인)).
+
 ## 운영 시작 검증
 
 운영에서 위험하거나 빠진 조합은 시작 검증이 부팅을 막는다. 잘못된 설정으로 뜬 서버가 조용히 메일·경보를 버리는 것보다 배포가 실패하는 편이 낫다. `validateEnv`가 운영(위 판정의 production)에서 아래 조합이면 키 이름과 규칙만 적고 값은 싣지 않은 채 시작을 거부한다([production-readiness.ts](../src/platform/config/schemas/production-readiness.ts)).
@@ -89,12 +94,13 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 | DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL                | 운영 가입/결제 채널                                                                                                                            |
 | REVENUECAT_WEBHOOK_SECRET                                               | 웹훅 Authorization 비교 값. 운영 필수                                                                                                          |
 | REVENUECAT_API_V2_SECRET_KEY / REVENUECAT_PROJECT_ID                    | 선택. 둘 다 있으면 웹훅 뒤 스토어 상태 대조를 켠다([결제](billing.md#웹훅-뒤-스토어-상태-대조)). v2 비밀 키, 권한은 읽기 둘뿐                  |
+| APP_VERSION_CHECK_*                                                     | `_ENABLED`(기본 false)·`_IOS_LATEST_VERSION`·`_ANDROID_LATEST_VERSION`. 설정의 버전 정보 탭이 스토어를 열지 판단하는 플랫폼별 최신 공개 버전   |
 | FEATURE_DISCOVERY_*                                                     | 새 기능 소개. 규칙은 아래                                                                                                                      |
 
 ## 새 기능 소개 값
 
 릴리스마다 맞춘다. `.env*.example`의 값은 옛 예시이므로 복사하지 않는다.
 
-- `FEATURE_DISCOVERY_CAMPAIGN_ID`: 그 릴리스 앱에 번들된 id다(모바일 `features/app-config/whats-new/constants/releases.ts`의 `campaignId`). 앱은 자기가 모르는 id면 소개를 띄우지 않는다.
+- `FEATURE_DISCOVERY_CAMPAIGN_ID`: 그 릴리스 앱에 번들된 id다(모바일 `features/app-config/whats-new/constants/releases.constants.ts`의 `campaignId`). 앱은 자기가 모르는 id면 소개를 띄우지 않는다.
 - `FEATURE_DISCOVERY_MIN_APP_VERSION`: 그 캠페인을 번들한 앱 버전이다.
 - `FEATURE_DISCOVERY_LAUNCHED_AT`: 끝이 `Z`인 UTC ISO로 쓴 그 릴리스의 배포 시각이다. 켜면 필수이고 응답에 그대로 나간다. 1.15.0 이하 앱만 읽어 이 시각 전 가입자에게만 소개를 자동으로 열고 이후 가입자에게 시작 체크리스트를 보인다. 1.15.1 앱은 읽지 않고 가입 시점과 상관없이 소개를 한 번 연다.

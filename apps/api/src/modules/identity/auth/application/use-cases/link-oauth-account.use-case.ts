@@ -1,11 +1,10 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { invalidCredentials } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
@@ -42,11 +41,11 @@ export class LinkOAuthAccountUseCase {
     const userId = UserId.reconstitute(input.userId);
     const strategy = this.#dependencies.registry.get(input.provider);
     if (strategy == null) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
     const token = input.idToken ?? input.accessToken;
     if (token == null || token === "") {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
     const profile = await strategy.verifyToken(token, input.nonce);
     const result = await this.#dependencies.unitOfWork.run(async () => {

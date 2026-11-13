@@ -1,3 +1,5 @@
+import { createDateKey } from '@src/testing/date-key';
+
 import { type SubscriptionOffering, type SubscriptionPlan } from './subscription.model';
 import { hasFreeTrial, SubscriptionPolicy } from './subscription.model';
 
@@ -142,7 +144,7 @@ describe('getFreeTrialEndDateKey', () => {
     const plan = createPlan({ planType: 'annual', freeTrial: { periodUnit, periodNumberOfUnits } });
 
     // When
-    const endDateKey = SubscriptionPolicy.getFreeTrialEndDateKey(plan, todayKey);
+    const endDateKey = SubscriptionPolicy.getFreeTrialEndDateKey(plan, createDateKey(todayKey));
 
     // Then
     expect(endDateKey).toBe(expected);
@@ -150,7 +152,10 @@ describe('getFreeTrialEndDateKey', () => {
 
   it('체험 자격이 없으면 끝나는 날이 없다', () => {
     // When
-    const endDateKey = SubscriptionPolicy.getFreeTrialEndDateKey(annual, '2026-11-09');
+    const endDateKey = SubscriptionPolicy.getFreeTrialEndDateKey(
+      annual,
+      createDateKey('2026-11-09'),
+    );
 
     // Then
     expect(endDateKey).toBeNull();
@@ -171,7 +176,10 @@ describe('getFreeTrialReminderDateKey', () => {
       const plan = createPlan({ freeTrial: { periodUnit, periodNumberOfUnits } });
 
       // When
-      const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(plan, todayKey);
+      const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(
+        plan,
+        createDateKey(todayKey),
+      );
 
       // Then
       expect(reminderDateKey).toBe(expected);
@@ -186,7 +194,10 @@ describe('getFreeTrialReminderDateKey', () => {
     const plan = createPlan({ freeTrial: { periodUnit: 'day', periodNumberOfUnits: days } });
 
     // When
-    const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(plan, '2026-11-09');
+    const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(
+      plan,
+      createDateKey('2026-11-09'),
+    );
 
     // Then
     expect(reminderDateKey).toBeNull();

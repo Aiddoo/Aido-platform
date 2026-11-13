@@ -3,7 +3,7 @@ import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { VoiceCaptureFailureReason } from '../domains/voice-capture.model';
 import type { VoicePlanFailureCause } from '../domains/voice.error';
 
-type VoiceCaptureMode = 'quick' | 'note';
+export type VoiceCaptureMode = 'quick' | 'note';
 export type VoiceCaptureEntry = 'add_todo_sheet' | 'memo_tab' | 'quick_voice_upgrade';
 export type VoiceCaptureOutcome = 'completed' | 'cancelled' | 'empty' | 'upgraded';
 export type VoiceDurationBucket = 'lt_30s' | '30s_3m' | '3m_10m' | '10m_30m';
@@ -14,6 +14,10 @@ export type VoicePlanAnalyticsSource = 'quick_voice' | 'quick_text' | 'voice_not
 /** 말한 내용·전사 글자는 어떤 이벤트에도 싣지 않는다. 길이는 구간으로만 남긴다 */
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
+    /** 듣기를 시작하려고 눌렀다. 한도·동의·마이크 권한을 묻기 전이라 막혀도 보낸다 */
+    voice_capture_start_tapped: { mode: VoiceCaptureMode; entry: VoiceCaptureEntry };
+    /** 시스템 마이크·음성 인식 권한 창을 띄웠다. `status`는 창을 닫은 뒤 상태다 */
+    voice_permission_requested: { mode: VoiceCaptureMode; status: 'granted' | 'denied' };
     voice_capture_started: {
       mode: VoiceCaptureMode;
       entry: VoiceCaptureEntry;
@@ -44,6 +48,8 @@ declare module '@src/shared/analytics/event-map' {
       locale: SpeechLocale;
       result: 'downloaded' | 'scheduled' | 'dialog-opened' | 'unavailable' | 'declined';
     };
+    /** 말로 메모를 지웠다. 정리(요약)를 받은 뒤인지만 남긴다 */
+    voice_note_deleted: { is_digested: boolean };
     /** 핵심 포인트를 눌러 그 지점부터 들었다. 위치는 구간으로만 남긴다 */
     voice_note_key_point_played: { position_bucket: VoiceDurationBucket };
     voice_plan_generated: {

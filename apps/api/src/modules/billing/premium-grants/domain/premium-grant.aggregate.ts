@@ -1,7 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { PremiumGrantSource, PremiumGrantStatus } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
@@ -17,6 +15,7 @@ import {
 } from "../../shared/premium-access.domain-service.js";
 import { PremiumGrantId } from "./premium-grant-id.vo.js";
 import { PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH } from "./premium-grants.constants.js";
+import { invalidGrantDuration, invalidGrantSourceKey } from "./premium-grants.errors.js";
 
 type Instant = Temporal.Instant;
 
@@ -70,19 +69,13 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantId, PremiumGrantProp
   static create(params: CreatePremiumGrantParams): PremiumGrant {
     // 0일·음수 기간은 바로 끝나는 ACTIVE 기간을 만들고, 긴 sourceKey는 DB 오류로 늦게 드러난다
     if (!Number.isInteger(params.durationDays) || params.durationDays <= 0) {
-      throw new DomainException(ErrorCode.SYS_0002, {
-        field: "durationDays",
-        durationDays: params.durationDays,
-      });
+      throw invalidGrantDuration(params.durationDays);
     }
     if (
       params.sourceKey.length === 0 ||
       params.sourceKey.length > PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH
     ) {
-      throw new DomainException(ErrorCode.SYS_0002, {
-        field: "sourceKey",
-        length: params.sourceKey.length,
-      });
+      throw invalidGrantSourceKey(params.sourceKey.length);
     }
     return new PremiumGrant(params.id, {
       userId: params.userId,

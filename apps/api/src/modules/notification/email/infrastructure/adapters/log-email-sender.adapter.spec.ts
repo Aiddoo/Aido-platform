@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
 
+import { describeEmailSenderContract } from "#test/contracts/notification/email-sender.contract";
 import {
   createEmailMessageFixture,
   EMAIL_MESSAGE_FIXTURE_CODE,
@@ -8,7 +9,6 @@ import {
 } from "#test/fixtures/notification/email-message.fixture";
 
 import { EmailLogEvent } from "./email-provider.log-events.js";
-import { describeEmailSenderContract } from "./email-sender-contract.adapter.js";
 import { LogEmailSenderAdapter } from "./log-email-sender.adapter.js";
 
 describe("LogEmailSenderAdapter", () => {

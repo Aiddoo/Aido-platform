@@ -1,6 +1,7 @@
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
 import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
+import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import { ENV } from '@src/shared/config/env';
 import { i18n } from '@src/shared/i18n';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon-gateway';
@@ -70,8 +71,8 @@ export function createDevicePorts(): DevicePorts {
   const errorReporter = createEnvironmentErrorReporter();
 
   const installation = expoNativeApplicationMetadataGateway.getInstallation();
-  const appVersion = installation?.currentVersion ?? ENV.APP_VERSION;
-  const appBuild = installation?.currentBuild;
+  const appVersion = installation?.currentVersion ?? ENV.APP_VERSION ?? null;
+  const appBuild = installation?.currentBuild ?? null;
   const publicKyInstance = createPublicClient({ appVersion, appBuild, errorReporter });
 
   const sessionManager = createSessionManager(tokenStore);
@@ -101,7 +102,7 @@ export function createDevicePorts(): DevicePorts {
     haptics: expoHapticsGateway,
     idGenerator: expoIdGenerator,
     speechRecognizer: expoSpeechRecognizer,
-    purchasesGateway: createRevenueCatPurchasesGateway({ isLogEnabled: __DEV__, logger }),
+    purchases: createRevenueCatPurchasesGateway({ isLogEnabled: __DEV__, logger }),
     pushNotification: createExpoPushNotificationGateway(logger),
     storage,
     tokenStore,
@@ -111,7 +112,7 @@ export function createDevicePorts(): DevicePorts {
     jsonFetcher: new KyJsonFetcher(publicKyInstance),
     requestRefresh,
     socialAuth: expoSocialAuthGateway,
-    socialShareGateway: createKakaoSocialShareGateway(ENV.KAKAO_NATIVE_APP_KEY),
+    socialShare: createKakaoSocialShareGateway(ENV.KAKAO_NATIVE_APP_KEY),
     systemShare: expoSystemShareGateway,
     clipboard: expoClipboardGateway,
     externalLink: expoExternalLinkGateway,
@@ -123,11 +124,11 @@ export function createDevicePorts(): DevicePorts {
     deviceLocation: expoLocationGateway,
     applicationMetadata: expoNativeApplicationMetadataGateway,
     appStoreListing: expoAppStoreListingGateway,
-    appStoreReviewGateway: expoAppStoreReviewGateway,
-    appIconGateway: expoAppIconGateway,
-    installReferrerGateway: expoInstallReferrerGateway,
-    installationIdGateway: expoInstallationIdGateway,
-    vendorIdGateway: expoVendorIdGateway,
+    appStoreReview: expoAppStoreReviewGateway,
+    appIcon: expoAppIconGateway,
+    installReferrer: expoInstallReferrerGateway,
+    installationId: expoInstallationIdGateway,
+    vendorId: expoVendorIdGateway,
     deviceIdStore: secureDeviceIdStore,
     localFileSystem: expoLocalFileSystem,
     widgetBridge: createWidgetBridge(),
@@ -138,5 +139,6 @@ export function createDevicePorts(): DevicePorts {
     getTimeZone: getDeviceTimezone,
     // 요청 헤더(Accept-Language)와 같은 값이다
     getLanguage: () => i18n.language,
+    inviteLinkOpenedStore: createInviteLinkOpenedStore(),
   };
 }

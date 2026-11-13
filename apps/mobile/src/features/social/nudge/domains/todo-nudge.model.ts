@@ -4,6 +4,7 @@ import {
   type TodoDetails,
   TodoPolicy,
 } from '@src/features/planning/todo/domains/todo.model';
+import type { DateKey } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
@@ -50,12 +51,12 @@ export function isLimitReached(limitInfo: NudgeLimitInfo): boolean {
 }
 
 // 친구 피드에서 보고 있는 날이 오늘이고 아직 끝나지 않은 할 일만 콕 찌를 수 있다
-export function canNudgeTodoOnDate(todo: Todo, targetDateKey: string, todayKey: string): boolean {
+export function canNudgeTodoOnDate(todo: Todo, targetDateKey: DateKey, todayKey: DateKey): boolean {
   return !todo.completed && targetDateKey === todayKey;
 }
 
 // 상세 화면: 서버가 허용한 친구 관계 위에 완료 여부와 오늘이 [startDate, endDate] 안인지를 함께 본다
-export function canNudgeTodoInRange(details: TodoDetails, targetDate: string): boolean {
+export function canNudgeTodoInRange(details: TodoDetails, targetDate: DateKey): boolean {
   return (
     details.permissions.canNudge &&
     !details.todo.completed &&
@@ -66,8 +67,4 @@ export function canNudgeTodoInRange(details: TodoDetails, targetDate: string): b
 export const TodoNudgePolicy = {
   canNudgeTodoOnDate,
   canNudgeTodoInRange,
-} as const;
-
-export const NudgeLimitPolicy = {
-  isLimitReached,
 } as const;
