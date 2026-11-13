@@ -8,7 +8,7 @@ RevenueCat 웹훅(`POST /v1/webhooks/revenuecat`)·스토어 상태 대조·보�
 - **SANDBOX 구매도 프리미엄을 준다.** App Review는 운영 서버에 sandbox 결제로 구매를 확인하므로 막으면 심사가 거절될 수 있다. TestFlight 테스터도 같은 경로다.
 - SANDBOX는 매출이 아니다. 시작·완료 로그(`billing.subscription.webhook.*`)와 운영 알림 payload에 `environment`를 싣고, 알림은 샌드박스임을 표시한다. 현재 서버는 매출·구독자 지표를 계산하지 않으며, 새 지표를 만들면 `environment = 'SANDBOX'` 행을 뺀다.
 - 운영 알림의 RevenueCat 고객 링크는 공개 프로젝트 ID `REVENUECAT_PROJECT_ID`가 있을 때만 붙는다.
-- 운영 알림 payload(`SubscriptionEventPayload`)는 웹훅 값(금액·통화·국가·만료·기간 유형·사유·바뀔 상품·이전 계정)을 이벤트 종류와 상관없이 같은 이름으로 싣고, 반영 뒤 프리미엄 상태(`premium`: 출처·쌓아 둔 보상 일수)를 붙인다. 알림 어댑터가 이 값을 operations가 소유한 `SubscriptionAlertInput`으로 필드마다 옮겨 `AdminEventNotifierPort`(`operations-admin-notices.public`)에 넘기며, 앱 사용자 ID는 싣지 않는다. 의존은 billing → operations 한 방향이다. 사용자 블록 조회와 표시는 operations가 맡는다([관리자 알림](admin-notifications.md#결제-알림)).
+- 운영 알림 payload(`SubscriptionEventPayload`)는 웹훅 값(금액·통화·국가·만료·기간 유형·사유·바뀔 상품·이전 계정)을 이벤트 종류와 상관없이 같은 이름으로 싣고, 반영 뒤 프리미엄 상태(`premium`: 출처·쌓아 둔 보상 일수)를 붙인다. 알림 어댑터가 이 값을 operations가 소유한 `SubscriptionNoticeInput`으로 필드마다 옮겨 `AdminEventNotifierPort`(`operations-admin-notices.public`)에 넘기며, 앱 사용자 ID는 싣지 않는다. 의존은 billing → operations 한 방향이다. 사용자 블록 조회와 표시는 operations가 맡는다([관리자 알림](admin-notifications.md#결제-알림)).
 - **운영(`APP_ENV=production`, 미설정이면 `NODE_ENV=production`)은 RevenueCat Test Store(`store: TEST_STORE`) 이벤트를 처리하지 않는다.** Test Store 구매는 실제 결제가 없고 개발 빌드의 로컬 사용자로 오므로, 번역기가 `skipped`로 거르고 200으로 받은 뒤 `billing.subscription.webhook.skipped`(`reason: TEST_STORE`) info 로그만 남긴다. 경보는 올리지 않는다. 대시보드 웹훅 연동은 하나(Environment Both·App All)이고 앱 필터는 "한 앱 또는 전체"뿐이라 Test Store만 거를 수 없으므로 서버 ACL이 유일한 방어선이다. App Store·Play SANDBOX는 위처럼 그대로 처리하고, 개발·스테이징·로컬 서버는 Test Store도 처리한다.
 
 ## 결제 실패와 결제 유예

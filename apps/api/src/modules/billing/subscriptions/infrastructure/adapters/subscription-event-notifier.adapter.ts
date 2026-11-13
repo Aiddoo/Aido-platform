@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import {
   AdminEventNotifierPort,
-  type SubscriptionAlertInput,
+  type SubscriptionNoticeInput,
 } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -46,7 +46,7 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
     this.#adminEventNotifier.notifySubscriptionEvent(
-      toSubscriptionAlertInput(payload, this.#providerCustomerUrl(payload.appUserId)),
+      toSubscriptionNoticeInput(payload, this.#providerCustomerUrl(payload.appUserId)),
     );
   }
 
@@ -82,7 +82,7 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
 }
 
 // operations가 소유한 입력 모양으로 한 필드씩 옮긴다. 앱 사용자 ID 같은 billing 내부 값은 넘기지 않는다
-function toSubscriptionAlertInput(
+function toSubscriptionNoticeInput(
   payload: SubscriptionEventPayload,
   providerCustomerUrl: string | undefined,
 ) {
@@ -116,5 +116,5 @@ function toSubscriptionAlertInput(
     lifecycle: payload.lifecycle,
     isFirstPurchase: payload.isFirstPurchase,
     premium: payload.premium,
-  } satisfies SubscriptionAlertInput;
+  } satisfies SubscriptionNoticeInput;
 }

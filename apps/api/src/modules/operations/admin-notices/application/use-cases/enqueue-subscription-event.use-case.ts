@@ -2,7 +2,7 @@ import {
   buildSubscriptionNotice,
   subscriptionNoticeUserOf,
 } from "../messages/admin-notice.messages.js";
-import type { SubscriptionAlertInput } from "../ports/admin-event-notifier.port.js";
+import type { SubscriptionNoticeInput } from "../ports/admin-event-notifier.port.js";
 import type { AdminNotificationQueuePort } from "../ports/admin-notification-queue.port.js";
 import type { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
@@ -22,7 +22,7 @@ export class EnqueueSubscriptionEventUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(payload: SubscriptionAlertInput): Promise<void> {
+  async execute(payload: SubscriptionNoticeInput): Promise<void> {
     const { queue, resolveUser } = this.#dependencies;
     const user = await resolveUser.execute(subscriptionNoticeUserOf(payload));
     await queue.enqueueSend(

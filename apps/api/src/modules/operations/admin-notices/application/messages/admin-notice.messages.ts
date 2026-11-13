@@ -6,7 +6,7 @@ import type {
   SubscriptionNoticeEvent,
 } from "../../domain/admin-notices.constants.js";
 import type {
-  SubscriptionAlertInput,
+  SubscriptionNoticeInput,
   UserRegisteredAlertInput,
 } from "../ports/admin-event-notifier.port.js";
 import type { AdminNotice, AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
@@ -41,7 +41,7 @@ const SIGNUP_METHODS_BY_PROVIDER = {
 
 /** 환불은 체험 중 해지처럼 체험 단계로 분류돼도 환불로 알린다. 그다음 체험 단계, 일회성 구매 순이다. */
 export function subscriptionNoticeEventOf(
-  payload: SubscriptionAlertInput,
+  payload: SubscriptionNoticeInput,
 ): SubscriptionNoticeEvent {
   if (payload.kind === "REFUNDED") {
     return "refunded";
@@ -56,7 +56,7 @@ export function subscriptionNoticeEventOf(
 }
 
 /** 사용자 조회가 실패하거나 사용자가 없을 때 billing이 준 값으로 채우는 사용자 블록 */
-export function subscriptionNoticeUserOf(payload: SubscriptionAlertInput): AdminNoticeUser {
+export function subscriptionNoticeUserOf(payload: SubscriptionNoticeInput): AdminNoticeUser {
   return {
     userId: payload.userId,
     email: payload.email,
@@ -76,7 +76,7 @@ export function registeredNoticeUserOf(payload: UserRegisteredAlertInput): Admin
 }
 
 export function buildSubscriptionNotice(
-  payload: SubscriptionAlertInput,
+  payload: SubscriptionNoticeInput,
   user: AdminNoticeUser,
 ): AdminNotice {
   return {

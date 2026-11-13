@@ -1,7 +1,7 @@
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import type {
-  SubscriptionAlertInput,
+  SubscriptionNoticeInput,
   UserRegisteredAlertInput,
 } from "../../application/ports/admin-event-notifier.port.js";
 import { AdminEventNotifierAdapter } from "./admin-event-notifier.adapter.js";
@@ -13,7 +13,7 @@ const userPayload: UserRegisteredAlertInput = {
   registeredAt: "2026-03-07T12:00:00.000Z",
 };
 
-const subscriptionPayload: SubscriptionAlertInput = {
+const subscriptionPayload: SubscriptionNoticeInput = {
   userId: "user-1",
   email: "test@example.com",
   kind: "STARTED",
@@ -36,7 +36,7 @@ class RecordingEnqueue<TPayload> {
 
 function setup() {
   const enqueueUserRegistered = new RecordingEnqueue<UserRegisteredAlertInput>();
-  const enqueueSubscriptionEvent = new RecordingEnqueue<SubscriptionAlertInput>();
+  const enqueueSubscriptionEvent = new RecordingEnqueue<SubscriptionNoticeInput>();
   const logger = new SilentLogger();
   const notifier = new AdminEventNotifierAdapter({
     enqueueUserRegistered,

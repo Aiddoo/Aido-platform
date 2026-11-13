@@ -3,7 +3,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { AdminNoticeLogEvent } from "../../application/admin-notices.log-events.js";
 import {
   AdminEventNotifierPort,
-  type SubscriptionAlertInput,
+  type SubscriptionNoticeInput,
   type UserRegisteredAlertInput,
 } from "../../application/ports/admin-event-notifier.port.js";
 import type { EnqueueSubscriptionEventUseCase } from "../../application/use-cases/enqueue-subscription-event.use-case.js";
@@ -35,7 +35,7 @@ export class AdminEventNotifierAdapter extends AdminEventNotifierPort {
     });
   }
 
-  notifySubscriptionEvent(payload: SubscriptionAlertInput): void {
+  notifySubscriptionEvent(payload: SubscriptionNoticeInput): void {
     const { enqueueSubscriptionEvent, logger } = this.#dependencies;
     enqueueSubscriptionEvent.execute(payload).catch(() => {
       logger.error({

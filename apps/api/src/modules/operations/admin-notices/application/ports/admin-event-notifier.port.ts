@@ -37,7 +37,7 @@ export interface UserRegisteredAlertInput {
 }
 
 /** 결제 채널 구독 알림 입력. 부가 필드는 없으면 알림에서 "—"로 표시하거나 생략한다. */
-export interface SubscriptionAlertInput {
+export interface SubscriptionNoticeInput {
   readonly userId: string;
   readonly email: string;
   readonly name?: string;
@@ -85,5 +85,5 @@ export interface SubscriptionAlertInput {
  */
 export abstract class AdminEventNotifierPort {
   abstract notifyUserRegistered(input: UserRegisteredAlertInput): void;
-  abstract notifySubscriptionEvent(input: SubscriptionAlertInput): void;
+  abstract notifySubscriptionEvent(input: SubscriptionNoticeInput): void;
 }
