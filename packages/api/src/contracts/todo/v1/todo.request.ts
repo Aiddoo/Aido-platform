@@ -185,11 +185,15 @@ export const getTodosQuerySchema = z.object({
   startDate: z.iso
     .date("유효한 날짜 형식이 아닙니다")
     .optional()
-    .describe("시작 날짜 필터 (선택, YYYY-MM-DD)"),
+    .describe(
+      "시작 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만, endDate와 함께면 범위를 조회한다",
+    ),
   endDate: z.iso
     .date("유효한 날짜 형식이 아닙니다")
     .optional()
-    .describe("종료 날짜 필터 (선택, YYYY-MM-DD)"),
+    .describe(
+      "종료 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만 조회하고 startDate보다 이르면 400이다",
+    ),
 });
 
 export type GetTodosQuery = z.infer<typeof getTodosQuerySchema>;

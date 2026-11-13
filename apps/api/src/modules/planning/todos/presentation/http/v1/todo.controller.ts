@@ -12,7 +12,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import {
   CurrentUser,
@@ -413,49 +413,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   }
 
   @Get()
-  @ApiQuery({
-    name: "cursor",
-    required: false,
-    description: "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
-    schema: { type: "number" },
-    example: 123,
-  })
-  @ApiQuery({
-    name: "size",
-    required: false,
-    description: "페이지 크기 (1-200)",
-    schema: { type: "number", minimum: 1, maximum: 200, default: 20 },
-    example: 20,
-  })
-  @ApiQuery({
-    name: "completed",
-    required: false,
-    description: "완료 상태 필터 (true: 완료만, false: 미완료만, 미지정: 전체)",
-    schema: { type: "boolean" },
-  })
-  @ApiQuery({
-    name: "categoryId",
-    required: false,
-    description: "카테고리 ID 필터 (특정 카테고리의 할 일만 조회)",
-    schema: { type: "number" },
-    example: 1,
-  })
-  @ApiQuery({
-    name: "startDate",
-    required: false,
-    description:
-      "시작일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. endDate와 함께 사용 시 범위 조회합니다.",
-    schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
-    example: "2026-01-01",
-  })
-  @ApiQuery({
-    name: "endDate",
-    required: false,
-    description:
-      "종료일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. startDate와 함께 사용 시 범위 조회합니다. startDate보다 이전 날짜를 지정하면 400 에러가 발생합니다.",
-    schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
-    example: "2026-01-31",
-  })
   @ApiDoc({
     summary: "할 일 목록 조회",
     operationId: "getTodos",

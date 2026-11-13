@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Controller, Get, Param, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import {
   CurrentUser,
@@ -43,26 +43,6 @@ export class WeeklyAchievementController {
   }
 
   @Get()
-  @ApiQuery({
-    name: "year",
-    required: true,
-    description: "조회할 연도 (2024-2100)",
-    schema: { type: "number", minimum: 2024, maximum: 2100 },
-    example: 2026,
-  })
-  @ApiQuery({
-    name: "cursor",
-    required: false,
-    description: "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
-    schema: { type: "number" },
-  })
-  @ApiQuery({
-    name: "size",
-    required: false,
-    description: "페이지 크기 (1-200)",
-    schema: { type: "number", minimum: 1, maximum: 200, default: 20 },
-    example: 20,
-  })
   @ApiHeader({
     name: "Accept-Language",
     description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
@@ -114,16 +94,6 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
   }
 
   @Get(":year/:week")
-  @ApiParam({
-    name: "year",
-    description: "ISO 연도",
-    example: 2026,
-  })
-  @ApiParam({
-    name: "week",
-    description: "ISO 주차 (1-53)",
-    example: 10,
-  })
   @ApiHeader({
     name: "Accept-Language",
     description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
