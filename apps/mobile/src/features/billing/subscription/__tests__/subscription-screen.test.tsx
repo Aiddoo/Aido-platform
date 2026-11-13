@@ -27,7 +27,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/subscription';
+import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/subscription';
 import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 

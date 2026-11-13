@@ -241,7 +241,7 @@ async function mountApp(root: ReturnType<typeof createTestRoot>['root'], { url =
       '(auth)/login': probe.ProbeScreen,
       '(app)/_layout': AppLayoutRoute,
       '(app)/(tabs)/_layout': GroupStack,
-      '(app)/(tabs)/feed/index': probe.ProbeScreen,
+      '(app)/(tabs)/(todos)/feed/index': probe.ProbeScreen,
     },
     { url },
   );

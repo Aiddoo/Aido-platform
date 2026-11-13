@@ -8,7 +8,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import InquiryRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/inquiry';
+import InquiryRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/inquiry';
 import { createInquiryResponseDto } from './inquiry.fixtures';
 
 const CONTENT = '앱에서 할 일 추가 시 오류가 발생합니다.';

@@ -3,7 +3,8 @@ import type {
   ForegroundPushPresentation,
   ReceivedPushNotification,
 } from '@src/core/ports/push-notification-gateway';
-import { useGlobalSearchParams, usePathname } from 'expo-router';
+import { useFocusedRouteParams } from '@src/shared/navigation/use-focused-route-params';
+import { usePathname } from 'expo-router';
 import { useEffect, useEffectEvent } from 'react';
 
 import { parsePushNotification } from '../apis/push-notification.mapper';
@@ -21,7 +22,7 @@ export function useForegroundPushPresentation() {
   const logger = useLogger();
   const resolveDestination = useResolveNotificationDestination();
   const pathname = usePathname();
-  const params = useGlobalSearchParams();
+  const params = useFocusedRouteParams();
 
   const decide = useEffectEvent(
     (notification: ReceivedPushNotification): ForegroundPushPresentation => {

@@ -5,6 +5,7 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { getCachedMe, updateMeInCache } from '@src/features/identity/user/queries/user-cache';
 import { useFeedTodoDetailHandoff } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
 import { useTrackView } from '@src/shared/analytics';
+import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import * as themeProvider from '@src/shared/providers/theme-provider';
 import type { ScreenName } from '@src/shared/utils/to-screen-name';
 import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/testing/core';
@@ -17,6 +18,7 @@ import { Dimensions, Linking, Pressable, Text, View } from 'react-native';
 import OAuthCallbackScreen from '../../../app/auth/[provider]';
 import RootIndex from '../../../app/index';
 import { AuthGateLayout } from './auth-gate-layout';
+import { clearColdStartPath, rememberColdStartLink } from './cold-start-link';
 
 // renderRouter는 실제 라우터로 URL·이동을 검증하므로 jest.setup의 전역 mock을 끈다
 jest.unmock('expo-router');
@@ -35,6 +37,15 @@ function LoginScreen() {
   return (
     <Pressable testID="login" onPress={() => mockAuthSessionStore.setStatus('authenticated')}>
       <Text>Login</Text>
+    </Pressable>
+  );
+}
+
+/** 로그인 첫 화면 위에 쌓인 인증 화면(가입·이메일 로그인). 누르면 그 화면에서 인증을 마친다 */
+function StackedAuthScreen({ testID }: { testID: string }) {
+  return (
+    <Pressable testID={testID} onPress={() => mockAuthSessionStore.setStatus('authenticated')}>
+      <Text>{testID}</Text>
     </Pressable>
   );
 }
@@ -100,12 +111,14 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
       'invite/index': () => <Text>Invite</Text>,
       '(auth)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
       '(auth)/login': LoginScreen,
+      '(auth)/sign-up': () => <StackedAuthScreen testID="sign-up" />,
+      '(auth)/email-login': () => <StackedAuthScreen testID="email-login" />,
       '(app)/_layout': {
         default: () => <Stack screenOptions={{ animation: 'none' }} />,
         unstable_settings: { anchor: '(tabs)' },
       },
       '(app)/(tabs)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
-      '(app)/(tabs)/feed/index': FeedScreen,
+      '(app)/(tabs)/(todos)/feed/index': FeedScreen,
       '(app)/todo/[todoId]/index': TodoDetailScreen,
       '(app)/todo/[todoId]/actions': TodoActionsSheet,
     },
@@ -143,6 +156,7 @@ describe('root 인증 route 전환', () => {
   });
 
   afterEach(() => {
+    clearColdStartPath();
     jest.restoreAllMocks();
   });
   it.each(['loading', 'locked'] as const)(
@@ -297,6 +311,62 @@ describe('root 인증 route 전환', () => {
       expect(screenViews()).toEqual(['/login', '/feed', '/login']);
     });
 
+    it.each(['sign-up', 'email-login'] as const)(
+      '로그인 화면 위 %s에서 인증을 마치면 거치지 않은 로그인 화면을 세지 않는다',
+      async (authScreen) => {
+        // Given
+        const { route, screenViews } = await renderAuthRoutes('unauthenticated');
+        await act(() => router.push(`/${authScreen}`));
+
+        // When
+        await fireEvent.press(screen.getByTestId(authScreen));
+
+        // Then
+        await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+        expect(screenViews()).toEqual(['/login', `/${authScreen}`, '/feed']);
+      },
+    );
+
+    it('피드가 아닌 화면에서 로그아웃하면 거치지 않은 피드를 세지 않는다', async () => {
+      // Given
+      const { route, screenViews } = await renderAuthRoutes('authenticated');
+      await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+      await act(() => router.push({ pathname: '/todo/[todoId]', params: { todoId: 1 } }));
+
+      // When
+      await act(() => mockAuthSessionStore.setStatus('unauthenticated'));
+
+      // Then
+      await waitFor(() => expect(route.getPathname()).toBe('/login'));
+      expect(screenViews()).toEqual(['/feed', '/todo/[todoId]', '/login']);
+    });
+
+    it('미인증 사용자의 private URL은 막힌 화면을 세지 않고 로그인만 센다', async () => {
+      // Given·When
+      const { route, screenViews } = await renderAuthRoutes('unauthenticated', '/todo/8');
+
+      // Then
+      await waitFor(() => expect(route.getPathname()).toBe('/login'));
+      expect(screenViews()).toEqual(['/login']);
+    });
+
+    it('세션 복원을 기다리는 상세 링크는 막힌 동안 세지 않고 복원 뒤 상세를 한 번 센다', async () => {
+      // Given
+      rememberColdStartLink('/todo/8', 'aido-dev');
+      const { route, screenViews } = await renderAuthRoutes('loading', '/todo/8');
+
+      // Then
+      expect(route.getPathname()).toBe('/loading');
+      expect(screenViews()).toEqual([]);
+
+      // When
+      await fireEvent.press(screen.getByTestId('boot-authenticated'));
+
+      // Then
+      await waitFor(() => expect(route.getPathname()).toBe('/todo/8'));
+      expect(screenViews()).toEqual(['/todo/[todoId]']);
+    });
+
     it('Android OAuth 콜백 route는 세지 않는다', async () => {
       // Given·When
       const { route, screenViews } = await renderAuthRoutes('authenticated', '/auth/google');
@@ -397,6 +467,28 @@ describe('root 인증 route 전환', () => {
 
       // Then
       expect(screenViews()).toEqual(['/feed', '/todo/[todoId]', '/todo/[todoId]']);
+    });
+
+    it('상세 링크로 연 앱에서 위젯으로 피드에 오면 앞 화면 param이 남아도 칸에 없는 상세를 세지 않는다', async () => {
+      // Given
+      const { route, screenViews } = await renderAuthRoutes('authenticated', '/todo/3');
+      await waitFor(() => expect(route.getPathname()).toBe('/todo/3'));
+
+      // When
+      await act(() => openEntryHref('/feed?date=today'));
+      await act(() => router.push({ pathname: '/todo/[todoId]/actions', params: { todoId: 5 } }));
+      await act(() => router.back());
+
+      // Then
+      expect(route.getPathname()).toBe('/feed');
+      expect(screenViews()).toEqual(['/todo/[todoId]', '/feed', '/todo/[todoId]/actions', '/feed']);
+
+      // When
+      await act(() => router.setParams({ todoId: '8' }));
+      await act(() => router.setParams({ date: '2026-11-12' }));
+
+      // Then
+      expect(screenViews().slice(4)).toEqual(['/todo/[todoId]']);
     });
 
     it('칸에 상세를 연 채 접으면 상세 화면으로 넘겨도 다시 세지 않고 뒤로 가면 목록을 센다', async () => {

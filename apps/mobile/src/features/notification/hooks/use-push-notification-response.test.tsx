@@ -12,9 +12,13 @@ import {
   createTestDi,
 } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
+import { noop } from 'es-toolkit';
 import { Slot } from 'expo-router';
-import { act, waitFor } from 'expo-router/testing-library';
+import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
+import { useState } from 'react';
+import { Pressable, Text } from 'react-native';
 
+import { createMarkReadResponseDto } from '../__tests__/notification.fixtures';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import { usePushNotificationResponse } from './use-push-notification-response';
 
@@ -233,6 +237,59 @@ describe('usePushNotificationResponse', () => {
       expect(gateway.clearLastResponse).not.toHaveBeenCalled();
     },
   );
+
+  it('처리한 응답은 입구 훅이 다시 마운트돼 OS가 같은 응답을 다시 줘도 다시 읽거나 열지 않는다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    // OS 마지막 응답 지우기가 실패해 다시 마운트돼도 같은 응답이 남는다
+    gateway.clearLastResponse.mockImplementation(noop);
+    const httpClient = createHttpClientStub();
+    httpClient.patch.mockResolvedValue(ok(createMarkReadResponseDto()));
+    httpClient.post.mockResolvedValue(ok({ opened: true }));
+    const analytics = createAnalyticsStub();
+    const di = createTestDi({
+      ports: { httpClient, pushNotification: gateway, analytics },
+      seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+    });
+    // 앱 화면 안이라 입구 훅이 직접 연다
+    di.pushNotificationEntryStore.markAppEntry(false);
+    function Watcher() {
+      usePushNotificationResponse();
+      return null;
+    }
+    function Layout() {
+      const [mountKey, setMountKey] = useState(0);
+      return (
+        <>
+          <Watcher key={mountKey} />
+          <Pressable accessibilityRole="button" onPress={() => setMountKey((key) => key + 1)}>
+            <Text>다시 마운트</Text>
+          </Pressable>
+          <Slot />
+        </>
+      );
+    }
+    await renderAppRoute(
+      { _layout: Layout, index: () => null },
+      { url: '/', di, withLocalDate: true },
+    );
+    const response = {
+      ...RESPONSE,
+      data: { ...RESPONSE.data, notificationId: 7, navigation: { kind: 'NONE' } },
+    };
+    gateway.setLastResponse(response);
+    await act(async () => gateway.emitResponse(response));
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
+
+    // When
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: '다시 마운트' })));
+
+    // Then
+    expect(gateway.getLastResponse()).toEqual(response);
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+  });
 
   it('언마운트 전까지 응답 리스너는 하나다', async () => {
     // Given

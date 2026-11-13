@@ -7,8 +7,9 @@ import type { ErrorDiagnosis } from '@src/shared/errors/error-diagnosis';
 import { useScreenName } from '@src/shared/hooks/use-screen-name';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t, useTranslation } from '@src/shared/i18n';
+import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import { createDiagnosticCode } from '@src/shared/utils/create-diagnostic-code';
-import { type Href, router } from 'expo-router';
+import type { Href } from 'expo-router';
 import { use } from 'react';
 import { ErrorBoundaryContext } from 'react-error-boundary';
 
@@ -102,8 +103,9 @@ function useBugReportInquiryHref(): () => Href {
   });
 }
 
+// 탭 안에서는 그 탭에 쌓고, 탭 위 화면(알림함·할 일 상세·결제)에서는 그 화면을 닫고 탭 묶음 하나 안에서 연다
 function openInquiry(href: Href) {
-  router.push(href);
+  openEntryHref(href);
 }
 
 /**

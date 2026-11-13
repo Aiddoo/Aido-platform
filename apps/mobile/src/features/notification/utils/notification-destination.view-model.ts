@@ -18,10 +18,10 @@ export const NOTIFICATION_INBOX_DESTINATION: NotificationDestination = {
   href: '/notifications',
 };
 
-/** 지금 보고 있는 화면. 경로는 그룹 없이(`usePathname`), 값은 경로 조각과 쿼리를 합친 것(`useGlobalSearchParams`)이다 */
+/** 지금 보고 있는 화면. 경로는 그룹 없이(`usePathname`), 값은 그 화면 route의 경로 조각과 쿼리(`useFocusedRouteParams`)다 */
 export interface CurrentRoute {
   pathname: string;
-  params: Partial<Record<string, string | string[]>>;
+  params: Readonly<Record<string, unknown>>;
 }
 
 /** 같은 화면 안에서 날짜·진입 경로·연 시각·댓글 위치만 바꾸는 값이라 다른 화면으로 보지 않는다 */
@@ -67,7 +67,7 @@ export function isViewingNotificationDestination(
 }
 
 /**
- * 알림함과 같은 루트 Stack에 쌓이는 상세 화면의 경로. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은
+ * 탭 위 루트 Stack에 쌓이는 상세 화면의 경로. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은
  * 미리보기가 그 navigator에 화면을 미리 넣어 탭에 params가 남을 수 있다. 없으면 null이다
  */
 export function findRootStackDetailHref(destination: NotificationDestination): Href | null {
