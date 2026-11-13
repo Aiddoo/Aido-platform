@@ -68,14 +68,15 @@ Jest + `jest-expo`(Expo 권장, Vitest로 바꾸지 않는다), React Native Tes
 
 단위 테스트가 대신할 수 없는 항목이다. 시뮬레이터 영상은 동작·레이아웃 증거일 뿐 60/120 FPS를 증명하지 않는다. 성능 수치는 Release 실기기에서 잰다.
 
-| 영역    | 확인 항목                                                                             |
-| ------- | ------------------------------------------------------------------------------------- |
-| 키보드  | 첫 focus, 닫기·재열기, 마지막 항목 가림, interactive dismiss, 첫 탭에 버튼이 눌리는가 |
-| 목록    | 첫 frame 위치, prepend 유지, 빈 frame·skeleton flash·layout shift                     |
-| 접근성  | VoiceOver/TalkBack, focus 순서, 동작 이름, Reduce Motion                              |
-| 큰 글꼴 | 긴 한글·무공백 영문, multiline 입력, 44pt touch target                                |
-| 테마    | light/dark semantic color와 대비                                                      |
-| 성능    | Release 실기기의 JS/UI frame time, keyboard animation, 긴 목록 메모리                 |
+| 영역    | 확인 항목                                                                                                                                                                                                                       |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 키보드  | 첫 focus, 닫기·재열기, 마지막 항목 가림, interactive dismiss, 첫 탭에 버튼이 눌리는가                                                                                                                                           |
+| 목록    | 첫 frame 위치, prepend 유지, 빈 frame·skeleton flash·layout shift                                                                                                                                                               |
+| 접근성  | VoiceOver/TalkBack, focus 순서, 동작 이름, Reduce Motion                                                                                                                                                                        |
+| 큰 글꼴 | 긴 한글·무공백 영문, multiline 입력, 44pt touch target                                                                                                                                                                          |
+| 테마    | light/dark semantic color와 대비                                                                                                                                                                                                |
+| 성능    | Release 실기기의 JS/UI frame time, keyboard animation, 긴 목록 메모리                                                                                                                                                           |
+| 누름    | 새 누름 동작을 실제로 누른다. heroui `Chip`처럼 그 자체가 Pressable인 요소를 다른 Pressable로 감싸면 기기에선 안 눌리는데 `fireEvent.press`는 통과한다. 표시용 칩은 `pointerEvents="none"`, 누르는 칩은 Chip의 `onPress`를 쓴다 |
 
 ## Maestro E2E
 
