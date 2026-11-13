@@ -14,7 +14,7 @@ export type PendingStorageCleanup = z.infer<typeof pendingStorageCleanupSchema>;
  * 그래서 기본 저장소에 표시해 두고 다음에 저장소를 열 때 복원 전에 인스턴스째 지운다(`composition-root`)
  */
 export const pendingStorageCleanupStoredValue = defineStoredValue({
-  key: 'aido_session_pending-storage-cleanup_v1',
+  key: 'aido_session_pending_storage_cleanup_v1',
   schema: storedJsonSchema(pendingStorageCleanupSchema),
   fallback: null,
 });

@@ -24,12 +24,3 @@ import { AspectRatio } from '@src/shared/ui/aspect-ratio';
 
 - 자식은 박스를 채운다(`absoluteFill` 또는 `flex-1`). 이미지·영상·웹뷰가 뜨는 자리에 쓴다.
 - 아바타, 아이콘처럼 크기가 고정이면 쓰지 않는다.
-
-## 파일 구조
-
-```
-aspect-ratio/
-├── aspect-ratio.tsx
-├── aspect-ratio.md
-└── index.ts
-```

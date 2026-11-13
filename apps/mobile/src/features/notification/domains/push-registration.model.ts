@@ -20,7 +20,10 @@ export function createEmptyPushRegistration(): PushRegistration {
   return { reportedToken: null, releaseRequestedAt: null };
 }
 
-/** 토큰을 못 받아도 서버가 가진 토큰으로 권한·시간대·언어를 보고해 등록을 지킨다. 토큰을 한 번도 못 받은 허용 기기는 null로 보고한다(1.15.1 서버는 허용 상태의 null에 저장된 토큰을 지킨다) */
+/**
+ * 토큰을 못 받아도 서버가 가진 토큰으로 권한·시간대·언어를 보고해 등록을 지킨다. 토큰을 한 번도 못 받은 허용 기기는 null로 보고한다
+ * (1.15.1 서버는 허용 상태의 null에 저장된 토큰을 지킨다). 1.15.1 서버를 근거로 든 이 설명은 1.16.0에서 지운다(compatibility.md)
+ */
 function getReportToken(
   registration: PushRegistration,
   { permission, issuedToken }: { permission: PushPermission; issuedToken: string | null },

@@ -7,6 +7,7 @@ import { createQueryCacheStorage } from '@src/bootstrap/query/query-cache-persis
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
+import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { createLocalFileSystemFake } from './fakes/local-file-system.fake';
@@ -134,6 +135,7 @@ export function createTestPorts({
   deviceModel = null,
   getTimeZone = () => 'Asia/Seoul',
   getLanguage = () => 'ko',
+  inviteLinkOpenedStore = createInviteLinkOpenedStore(),
 }: TestPortOverrides = {}): AppContainerPorts {
   return {
     publicHttpClient,
@@ -182,6 +184,7 @@ export function createTestPorts({
     deviceModel,
     getTimeZone,
     getLanguage,
+    inviteLinkOpenedStore,
   };
 }
 

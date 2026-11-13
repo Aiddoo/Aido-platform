@@ -1,5 +1,5 @@
 import { useMyPageDetailRootStore } from '@src/bootstrap/providers/di-context';
-import { getMyPageDetailOptions } from '@src/features/identity/user/utils/my-page-detail-options';
+import { getMyPageDetailOptions } from '@src/features/identity/user/utils/my-page-detail-options.view-model';
 import {
   Box,
   getPaneEdgeInsets,
@@ -27,8 +27,10 @@ export function MyPageStack({ menu, children }: { menu: ReactNode; children?: Re
   // 화면 안 칸들은 바깥 `PaneArea`가 잰 탭 안 영역 inset을 받는다
   return (
     <Stack
+      // 제목은 화면이 스스로 정한다(`Stack.Screen options`). 정하지 않은 화면은 route 이름 대신 빈 제목이다
       screenOptions={(input) => ({
         ...screenOptions,
+        title: '',
         ...(!isCompact && getMyPageDetailOptions(input, detailRootStore.getRequestedPathname())),
       })}
       screenLayout={({ children: screen }) => (

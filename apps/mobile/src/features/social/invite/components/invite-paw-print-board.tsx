@@ -29,7 +29,7 @@ import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -75,7 +75,7 @@ const WAITING_WIGGLE_DEGREES = [-7, 6, -3] as const;
  * 고양이 발자국 판. 친구가 사용을 시작할 때마다 발자국이 하나씩 찍힌다.
  * 지금 판(12칸)만 보여 줘서 발자국이 늘어도 높이가 바뀌지 않는다.
  */
-export function InvitePawPrintBoard({ className, ...props }: ComponentProps<typeof VStack>) {
+export function InvitePawPrintBoard() {
   const { t } = useTranslation('invite');
   const dateFormatContext = useDateFormatContext();
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
@@ -89,7 +89,7 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
   const board = createPawPrintBoard(myInvite, { columns: grid.columns, celebratedCount });
 
   return (
-    <VStack className={cn('gap-4', className)} {...props}>
+    <VStack gap={16}>
       <Text size="b4" weight="semibold" tone="brand" className="tabular-nums">
         {t('pawPrintBoard.header', {
           boardNumber: board.boardNumber,
@@ -256,13 +256,14 @@ InvitePawPrintBoard.Connector = function Connector({
   const patternId = useId();
   const { color } = useResolveClassNames(fishBoneVariants({ isFilled }));
   const isHorizontal = orientation === 'horizontal';
+  const horizontalStyle = length == null ? styles.fill : { width: length };
 
   return (
     <Box
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       className={cn(isHorizontal ? 'h-3' : 'h-[22px] w-3')}
-      style={isHorizontal ? (length == null ? styles.fill : { width: length }) : undefined}
+      style={isHorizontal ? horizontalStyle : undefined}
     >
       <Svg width="100%" height="100%">
         <Defs>

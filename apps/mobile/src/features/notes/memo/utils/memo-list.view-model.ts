@@ -1,4 +1,4 @@
-import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
+import type { WindowSizeClass } from '@src/shared/ui';
 import { clamp } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 

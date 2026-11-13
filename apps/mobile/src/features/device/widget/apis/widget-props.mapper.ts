@@ -4,7 +4,7 @@ import { WIDGET_BRAND_COLOR, WIDGET_LARGE_MAX_ROWS } from '../constants/widget.c
 import type { WidgetRenderState } from '../domains/widget-snapshot.model';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 import type { WidgetDaySnapshot } from '../schemas/widget-snapshot-storage.schema';
-import { isHexColor } from '../utils/is-hex-color';
+import { isHexColor } from '../utils/widget-color.view-model';
 
 export function toWidgetProps(
   snapshot: WidgetDaySnapshot,

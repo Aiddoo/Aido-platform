@@ -3,14 +3,13 @@ import { ok, unwrap } from '@src/core/errors/result';
 import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestDi,
+  createTestQueryClient,
 } from '@src/testing/core';
-import { createTestQueryClient } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -56,14 +55,11 @@ async function renderHint({
 
   const hint = (date: string) => {
     jest.mocked(useLocalSearchParams).mockReturnValue({ date });
-    return (
-      <LocalDateProvider>
-        <RepeatHorizonHint />
-      </LocalDateProvider>
-    );
+    return <RepeatHorizonHint />;
   };
   const { rerender } = await renderScreen(hint('2027-03-01'), {
     di: createTestDi({ ports: { httpClient, syncStorage, analytics, queryClient } }),
+    withLocalDate: true,
   });
 
   return {
@@ -83,8 +79,9 @@ describe('RepeatHorizonHint', () => {
     });
   });
 
+  // measure는 이미 jest.fn이라 restoreMocks가 되돌리지 못한다
   afterEach(() => {
-    jest.restoreAllMocks();
+    jest.mocked(View.prototype.measure).mockReset();
   });
 
   it('반복 할 일이 있으면 설명을 처음 한 번 자동으로 연다', async () => {

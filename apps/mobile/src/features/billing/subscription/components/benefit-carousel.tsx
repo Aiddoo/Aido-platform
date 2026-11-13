@@ -1,5 +1,6 @@
-import { useTrack } from '@src/shared/analytics';
+import { useTrackView } from '@src/shared/analytics';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -26,7 +27,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaFrame, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { BENEFIT_SLIDES, type BenefitSlideTone } from '../constants/subscription.constants';
 import { useFormatPlanValue } from '../hooks/use-format-plan-value';
@@ -82,7 +82,7 @@ export function BenefitCarousel() {
         onIndexChange={setIndex}
       />
       {/* 작은 화면에서도 첫 화면에 넘길 장이 더 있다는 것이 보이게 카드 안에 둔다. 그림 위는 밝은 그림에 반투명 흰 점이 묻혀 "혜택 N" 칩 줄 오른쪽 색 면에 얹는다 */}
-      <HStack pointerEvents="none" className="absolute right-5 top-4">
+      <HStack pointerEvents="none" className="absolute top-4 right-5">
         <Steps.Dots
           index={index}
           count={BENEFIT_SLIDES.length}
@@ -273,26 +273,22 @@ function useBenefitSlideText(feature: BenefitFeature) {
 
 /** 넘겨서 본 장마다 한 번만 센다. 처음 보인 장도 센다 */
 function useTrackBenefitViewed(index: number) {
-  const { trackEvent } = useTrack();
-  const trackedIndexesRef = useRef(new Set<number>());
+  const slide = BENEFIT_SLIDES[index];
 
-  useEffect(() => {
-    const slide = BENEFIT_SLIDES[index];
-    if (slide == null || trackedIndexesRef.current.has(index)) {
-      return;
-    }
-    trackedIndexesRef.current.add(index);
-    trackEvent('paywall_benefit_viewed', {
-      feature: getPremiumGateAnalyticsFeature(slide.feature),
-      index: index + 1,
-    });
-  }, [index, trackEvent]);
+  useTrackView(
+    'paywall_benefit_viewed',
+    slide == null
+      ? null
+      : {
+          key: String(index),
+          params: { feature: getPremiumGateAnalyticsFeature(slide.feature), index: index + 1 },
+        },
+  );
 }
 
 BenefitCarousel.Loading = function Loading() {
   // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
-  const { backgroundColor: skeletonColor } = useResolveClassNames('bg-gray-3');
-  const color = typeof skeletonColor === 'string' ? skeletonColor : undefined;
+  const color = useResolvedColor('text-gray-3');
 
   return (
     <VStack accessibilityState={{ busy: true }} className="overflow-hidden rounded-3xl bg-gray-2">

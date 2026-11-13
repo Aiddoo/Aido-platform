@@ -1,7 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
 import { createParamDecorator } from "@nestjs/common";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
+import { idempotencyKeyRequired } from "#api/platform/http/http-request.errors";
 
 import { readRequestClient } from "../request-client/request-client.store.js";
 
@@ -9,7 +8,7 @@ import { readRequestClient } from "../request-client/request-client.store.js";
 export const IdempotencyKey = createParamDecorator<undefined, string>(() => {
   const { idempotencyKey } = readRequestClient();
   if (idempotencyKey == null) {
-    throw new ApplicationException(ErrorCode.AI_1316);
+    throw idempotencyKeyRequired();
   }
   return idempotencyKey;
 });

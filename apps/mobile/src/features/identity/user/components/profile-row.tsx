@@ -23,7 +23,7 @@ import {
   useMyPageMenuNavigate,
 } from '../hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/user.queries';
-import { formatUserHashtag } from '../utils/user-hashtag';
+import { formatUserHashtag } from '../utils/user-tag.view-model';
 import { UserAvatar } from './user-avatar';
 
 interface ProfileRowProps {
@@ -81,7 +81,7 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
                   colorClassName="text-gray-5"
                 />
               }
-              className="min-h-0 min-w-0 p-1"
+              className="size-5 min-h-0 min-w-0"
               hitSlop={8}
               onPress={(event) => {
                 event.stopPropagation();

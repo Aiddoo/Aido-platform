@@ -1,9 +1,7 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { cannotBlockSelf } from "./blocks.errors.js";
 import { UserBlockId } from "./user-block-id.vo.js";
 
 export interface UserBlockPrimitives {
@@ -30,7 +28,7 @@ interface CreateUserBlockParams {
 export class UserBlock extends AggregateRoot<UserBlockId, UserBlockProps> {
   static create(params: CreateUserBlockParams): UserBlock {
     if (params.blockerId.equals(params.blockedId)) {
-      throw new DomainException(ErrorCode.BLOCK_2201);
+      throw cannotBlockSelf();
     }
     return new UserBlock(params.id, {
       blockerId: params.blockerId,

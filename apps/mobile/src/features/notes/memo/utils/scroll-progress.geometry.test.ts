@@ -1,9 +1,7 @@
 import {
   getPercentIndex,
-  getProgressRowStart,
   getScrollProgress,
   getScrollProgressState,
-  getTrackWidth,
   shouldReportPercent,
 } from './scroll-progress.geometry';
 
@@ -69,18 +67,6 @@ describe('getPercentIndex', () => {
 
     // Then
     expect(index).toBe(expected);
-  });
-});
-
-describe('막대 자리', () => {
-  it('펼친 면(180)에서 원래 RN 배치처럼 글자 칸 44와 트랙(막대 안쪽 152의 60%)을 가운데 둔다', () => {
-    // When
-    const trackWidth = getTrackWidth(180);
-    const rowStart = getProgressRowStart(180, 180, 44);
-
-    // Then
-    expect(trackWidth).toBeCloseTo(91.2);
-    expect(rowStart).toBeCloseTo(22.4);
   });
 });
 

@@ -5,6 +5,7 @@ import {
   quotaErrorDetailsSchema,
 } from '@aido/api/errors';
 import { isApiError } from '@src/core/errors/api-error';
+import { ServerError } from '@src/shared/errors';
 
 import { type EntitlementFeature } from './entitlement.model';
 
@@ -47,6 +48,10 @@ export function isLimitedFeatureError(error: unknown): boolean {
   return findLimitedFeatureByErrorCode(error) != null;
 }
 
+/** AI 업체 장애(AI_1301)는 503이라 ServerError로 오고, 처리 중(AI_1314) 같은 4xx는 ApiError로 온다. 둘 다 details를 본다 */
 export function isFreeOfChargeError(error: unknown): boolean {
-  return isApiError(error) && notChargedErrorDetailsSchema.safeParse(error.details).success;
+  if (isApiError(error) || error instanceof ServerError) {
+    return notChargedErrorDetailsSchema.safeParse(error.details).success;
+  }
+  return false;
 }

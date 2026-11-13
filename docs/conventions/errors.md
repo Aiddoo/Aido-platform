@@ -17,11 +17,11 @@
 
 ## 2. 서버
 
-- Domain 불변식 위반은 `DomainException`, Application 거부(권한·없음·한도)는 `ApplicationException`에 `ErrorCode`를 담아 던진다. 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수로 만들고, 예상한 DB 제약 충돌은 저장소가 업무 오류로 번역한다([도메인 모델](../../apps/api/docs/domain-modeling.md#오류와-식별자), [영속성](../../apps/api/docs/persistence.md#db-오류-번역)). HTTP 상태·envelope 변환은 [GlobalExceptionFilter](../../apps/api/src/platform/filters/global-exception.filter.ts)만 한다. Controller에서 `HttpException`을 직접 만들거나 응답을 조립하지 않는다.
+- Domain 불변식 위반은 `DomainException`, Application 거부(권한·없음·한도)는 `ApplicationException`에 `ErrorCode`를 담아 던진다. 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수로만 만들고(Oxlint `aido/no-inline-coded-exception`), 예상한 DB 제약 충돌은 저장소가 업무 오류로 번역한다([도메인 모델](../../apps/api/docs/domain-modeling.md#오류와-식별자), [영속성](../../apps/api/docs/persistence.md#db-오류-번역)). HTTP 상태·envelope 변환은 [GlobalExceptionFilter](../../apps/api/src/platform/filters/global-exception.filter.ts)만 한다. Controller에서 `HttpException`을 직접 만들거나 응답을 조립하지 않는다.
 - 코드마다 `Errors[code].message`는 Swagger와 서버 기본 문구로 쓰는 **합니다체**다(`서버 내부 오류가 발생했습니다.`). endpoint는 던질 수 있는 코드마다 `@ApiErrorResponse({ errorCode })`를 붙인다.
 - `ErrorCode`가 없는 Nest `HttpException`(검증 파이프·없는 route·405·throttler)은 `GlobalExceptionFilter`가 상태로 정한다: 4xx → `SYS_0002`, 429·5xx → `SYS_0001`. 카탈로그에 상태별 공통 코드가 없고 출시 앱은 모르는 코드를 `SYS_0001`로 바꾸므로 이 경우를 위한 새 코드를 만들지 않는다. 앱은 이 경우 HTTP 상태(404·429)로만 분기한다.
 - DB 연결 끊김·풀 대기 초과·문장/잠금/클라이언트 쿼리 시간 초과는 `GlobalExceptionFilter`가 503 `SYS_0005`(잠시 후 다시 시도)로 보낸다. 앱이 모르는 코드여도 출시 앱은 `SYS_0001`처럼 처리한다.
-- 5xx만 `ExceptionReporterPort`(Sentry)로 보낸다([관측](../../apps/api/docs/observability.md#경보와-예외-보고)). 4xx 업무 오류는 `errorCode`만 로그로 남긴다. AI·날씨 업체 실패나 DB 오류를 코드로 바꿀 때는 원본을 `cause`로 넘긴다(`new ApplicationException(code, details, { cause })`). 응답에는 싣지 않고 Sentry가 원인 오류를 이어 보인다.
+- 5xx만 `ExceptionReporterPort`(Sentry)로 보낸다([관측](../../apps/api/docs/observability.md#경보와-예외-보고)). 4xx 업무 오류는 `errorCode`만 로그로 남긴다. AI·날씨 업체 실패나 DB 오류를 코드로 바꿀 때는 생성 함수가 원본을 `cause`로 넘긴다(`generationFailed(code, cause)`, `weatherServiceUnavailable(details, cause)`가 `{ cause }`를 예외 세 번째 인자로 준다). 응답에는 싣지 않고 Sentry가 원인 오류를 이어 보인다.
 - 오류 `message`는 요청 언어(`Accept-Language`, 없으면 ko·지원하지 않는 언어는 en)로 채운다. ko는 `Errors` 합니다체와 바이트 단위로 같고 en은 카탈로그 문구다. 던진 곳이 정한 문구와 검증 파이프의 Zod 문구는 그대로다. 계약은 문자열 그대로라 앱은 계속 `ErrorCode`로 현지화한다([서버 다국어](../../apps/api/docs/i18n.md)).
 
 ## 3. 모바일

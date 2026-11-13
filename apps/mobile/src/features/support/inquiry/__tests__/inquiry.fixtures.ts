@@ -26,5 +26,3 @@ export function createInquiryApiError(
     overrides?.status ?? 500,
   );
 }
-
-export const INVALID_DTO = { invalid: 'data' };

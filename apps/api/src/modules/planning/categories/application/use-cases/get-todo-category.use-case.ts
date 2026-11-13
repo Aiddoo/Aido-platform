@@ -1,8 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
-
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
+import { todoCategoryNotFound, todoCategoryNotOwned } from "../categories.errors.js";
 import type { TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
 import type { TodoCategoryWithCountReadModel } from "../read-models/todo-category-with-count.read-model.js";
 
@@ -25,10 +22,10 @@ export class GetTodoCategoryUseCase {
       TodoCategoryId.reconstitute(input.id),
     );
     if (category == null) {
-      throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId: input.id });
+      throw todoCategoryNotFound(TodoCategoryId.reconstitute(input.id));
     }
     if (category.userId !== input.userId) {
-      throw new ApplicationException(ErrorCode.TODO_CATEGORY_0852, { categoryId: input.id });
+      throw todoCategoryNotOwned(TodoCategoryId.reconstitute(input.id));
     }
     return category;
   }

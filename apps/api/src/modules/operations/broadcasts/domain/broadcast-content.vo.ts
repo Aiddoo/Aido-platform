@@ -1,7 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { broadcastContentEmpty } from "./broadcasts.errors.js";
 
 export interface BroadcastCopy {
   readonly title: string;
@@ -13,9 +12,7 @@ export class BroadcastContent extends ValueObject<BroadcastCopy> {
     const title = input.title.trim();
     const body = input.body.trim();
     if (title.length === 0 || body.length === 0) {
-      throw new DomainException(ErrorCode.SYS_0002, {
-        reason: "브로드캐스트 제목/본문은 비어 있을 수 없습니다",
-      });
+      throw broadcastContentEmpty();
     }
     return new BroadcastContent({ title, body });
   }

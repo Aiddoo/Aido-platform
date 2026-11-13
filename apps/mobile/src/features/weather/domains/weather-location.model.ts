@@ -24,7 +24,7 @@ export const locationReadingSchema = z.discriminatedUnion('status', [
     place: placeNameSchema.nullable(),
     countryCode: z.string().nullable(),
     revision: revisionSchema,
-    isLastKnown: z.boolean().optional(),
+    isLastKnown: z.boolean(),
   }),
 ]);
 export type LocationReading = z.infer<typeof locationReadingSchema>;
@@ -80,7 +80,7 @@ function getLocationStatus(reading: LocationReading): WeatherLocationStatus {
       status: 'ready' as const,
       place,
       countryCode,
-      isLastKnown: isLastKnown === true,
+      isLastKnown,
     }))
     .exhaustive();
 }

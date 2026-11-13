@@ -3,9 +3,18 @@ import { invalidateFriends } from '@src/features/social/friend/queries/friend-ca
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { InviteCode } from '../domains/invite-code.model';
+import type { InvitePreview } from '../domains/invite-preview.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
 import type { Invite } from '../domains/invite.model';
 import { INVITE_QUERY_KEYS } from './invite-query-keys';
+
+/** 코드 확인에서 받은 미리보기를 초대 카드가 다시 부르지 않게 둔다 */
+export function setInvitePreviewInCache(
+  queryClient: QueryClient,
+  { inviteCode, preview }: { inviteCode: InviteCode; preview: InvitePreview },
+) {
+  queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode }), preview);
+}
 
 /** 링크를 새로 만들면 서버가 돌려준 요약으로 바로 바꾸고(다시 불러올 때 깜빡이지 않게), 이전 코드 미리보기는 버린다 */
 export function replaceMyInvite(queryClient: QueryClient, myInvite: Invite) {
@@ -13,11 +22,19 @@ export function replaceMyInvite(queryClient: QueryClient, myInvite: Invite) {
   queryClient.removeQueries({ queryKey: INVITE_QUERY_KEYS.previews() });
 }
 
-/** 발자국·친구 상태가 바뀌는 알림을 받거나 당겨서 새로고침할 때 */
-export function invalidateInvite(queryClient: QueryClient) {
+/** 발자국·친구 상태가 바뀌는 알림을 받았을 때 */
+function invalidateInvite(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: INVITE_QUERY_KEYS.me() }),
     queryClient.invalidateQueries({ queryKey: INVITE_QUERY_KEYS.inviteeLists() }),
+  ]);
+}
+
+/** 당겨서 새로고침. 화면에 붙은 초대 요약·초대한 친구 목록만 다시 받는다 */
+export function refreshInvite(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.refetchQueries({ queryKey: INVITE_QUERY_KEYS.me(), type: 'active' }),
+    queryClient.refetchQueries({ queryKey: INVITE_QUERY_KEYS.inviteeLists(), type: 'active' }),
   ]);
 }
 

@@ -1,6 +1,5 @@
 import { ApiError } from '@src/core/errors/api-error';
 import { err } from '@src/core/errors/result';
-import { ParseError } from '@src/shared/errors/infra-error';
 import { createHttpClientStub } from '@src/testing/core';
 
 import { TodoCommentApi } from './todo-comment.api';
@@ -100,22 +99,6 @@ describe('TodoCommentApi', () => {
       signal: undefined,
     });
     expect(result.ok && result.value.items[0]?.threadCommentId).toBe(COMMENT_ID);
-  });
-
-  it('계약과 다른 응답은 ParseError로 던져 QueryErrorBoundary가 받게 한다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    const service = new TodoCommentApi(httpClient);
-    httpClient.get.mockResolvedValue({
-      ok: true,
-      value: { items: [{}], pagination: PAGINATION, anchor: null },
-    });
-
-    // When
-    const request = service.getThreads(42, { sort: 'LATEST', size: 30 });
-
-    // Then
-    await expect(request).rejects.toBeInstanceOf(ParseError);
   });
 
   it('이미 지운 글처럼 예측한 4xx는 Result 오류로 그대로 넘긴다', async () => {

@@ -1,11 +1,10 @@
-import { ErrorCode } from "@aido/api/errors";
 import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual } from "es-toolkit";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { checklistLimitReached } from "../../shared/domain/planning.errors.js";
 import {
   addDaysToKey,
   localDateKeyAt,
@@ -14,6 +13,7 @@ import {
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
 import { RepeatRule, type RepeatRuleProps } from "./repeat-rule.vo.js";
 import { TodoSeriesId } from "./todo-series-id.vo.js";
+import { invalidRepeatRule, noRepeatDates } from "./todo-series.errors.js";
 
 /**
  * 새 규칙이 만들 수 있는 지난 회차 상한. 아주 먼 과거에서 시작하면 요청 안에서 수백 행이 지난 미완료로
@@ -105,10 +105,7 @@ export interface TodoOccurrenceDraft {
 
 function assertChecklist(items: readonly ChecklistTemplateItem[]): void {
   if (items.length > TODO_ITEM_LIMITS.MAX_PER_TODO) {
-    throw new DomainException(ErrorCode.TODO_0821, {
-      currentCount: items.length,
-      maxPerTodo: TODO_ITEM_LIMITS.MAX_PER_TODO,
-    });
+    throw checklistLimitReached(items.length);
   }
 }
 
@@ -122,10 +119,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
     assertChecklist(params.checklistTemplate);
     const first = params.rule.firstOnOrAfter(params.startDate, params.startDate);
     if (first == null) {
-      throw new DomainException(ErrorCode.TODO_0843, {
-        startDate: params.startDate,
-        repeat: params.rule.toSpec(),
-      });
+      throw noRepeatDates(params.startDate, params.rule.toSpec());
     }
     return new TodoSeries(params.id, {
       originSeriesId: params.originSeriesId ?? params.id,
@@ -230,7 +224,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
     if (
       rule.countBefore(startDate, localDateKeyAt(now, timezone)) > MAX_PAST_OCCURRENCES_ON_START
     ) {
-      throw new DomainException(ErrorCode.TODO_0845, { field: "startDate" });
+      throw invalidRepeatRule("startDate");
     }
   }
 
@@ -403,10 +397,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
     }
     const first = rule.firstOnOrAfter(this.props.startDate, this.props.startDate);
     if (first == null) {
-      throw new DomainException(ErrorCode.TODO_0843, {
-        startDate: this.props.startDate,
-        repeat: rule.toSpec(),
-      });
+      throw noRepeatDates(this.props.startDate, rule.toSpec());
     }
     this.props.rule = rule;
     this.props.nextOccurrenceDate = first;

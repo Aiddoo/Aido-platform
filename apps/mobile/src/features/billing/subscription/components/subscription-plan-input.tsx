@@ -1,13 +1,15 @@
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { ChoiceRadio, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { formatPercent } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Chip, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
@@ -25,14 +27,16 @@ export function SubscriptionPlanInput(props: SubscriptionPlanInputProps) {
   const monthlyPlan = SubscriptionPolicy.findPlanByType(plans, 'monthly');
   const annualPlan = SubscriptionPolicy.findPlanByType(plans, 'annual');
   const annualDiscountPercent =
-    monthlyPlan && annualPlan
+    monthlyPlan != null && annualPlan != null
       ? SubscriptionPolicy.getAnnualDiscountPercent(monthlyPlan, annualPlan)
       : 0;
 
   return (
     <RadioGroup className="gap-3" {...props}>
-      {annualPlan && <PlanOption plan={annualPlan} discountPercent={annualDiscountPercent} />}
-      {monthlyPlan && <PlanOption plan={monthlyPlan} />}
+      {annualPlan != null && (
+        <PlanOption plan={annualPlan} discountPercent={annualDiscountPercent} />
+      )}
+      {monthlyPlan != null && <PlanOption plan={monthlyPlan} />}
     </RadioGroup>
   );
 }
@@ -45,8 +49,9 @@ interface PlanOptionProps {
 
 function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
   const { t } = useTranslation('subscription');
-  const { color: selectedBorderColor } = useResolveClassNames('text-main');
-  const { color: idleBorderColor } = useResolveClassNames('text-gray-2');
+  const { locale } = useDateFormatContext();
+  const selectedBorderColor = useResolvedColor('text-main');
+  const idleBorderColor = useResolvedColor('text-gray-2');
   const { label, periodLabel, monthlyEquivalent } = match(plan.planType)
     .with('annual', () => ({
       label: t('plan.annual'),
@@ -80,7 +85,9 @@ function PlanOption({ plan, discountPercent = 0 }: PlanOptionProps) {
                   {label}
                 </Text>
                 {discountPercent > 0 && (
-                  <PlanChip>{t('plan.discount', { percent: discountPercent })}</PlanChip>
+                  <PlanChip>
+                    {t('plan.discount', { percent: formatPercent(discountPercent, locale) })}
+                  </PlanChip>
                 )}
                 {plan.freeTrial != null && (
                   <PlanChip testID="subscription-plan-free-trial">
