@@ -7,18 +7,17 @@ import { subscription } from "#api/platform/database/schema/billing.schema";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { SubscriptionRepositoryPort } from "../../application/ports/subscription.repository.port.js";
+import type { SubscriptionRepositoryPort } from "../../application/ports/subscription.repository.port.js";
 import type { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
 import { SubscriptionId } from "../../domain/subscription-id.vo.js";
 import type { Subscription } from "../../domain/subscription.aggregate.js";
 import { toSubscription, toSubscriptionRow } from "./subscription-row.mapper.js";
 
 @Injectable()
-export class DrizzleSubscriptionRepository extends SubscriptionRepositoryPort {
+export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 

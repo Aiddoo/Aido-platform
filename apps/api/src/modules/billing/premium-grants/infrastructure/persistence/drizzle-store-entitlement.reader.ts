@@ -6,14 +6,13 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { StoreSubscriptionEntitlement } from "../../../shared/domain/premium-access.domain-service.js";
 import { toStorePeriodType } from "../../../shared/domain/store-period-type.domain-service.js";
-import { StoreEntitlementReaderPort } from "../../application/ports/store-entitlement.reader.port.js";
+import type { StoreEntitlementReaderPort } from "../../application/ports/store-entitlement.reader.port.js";
 
 @Injectable()
-export class DrizzleStoreEntitlementReader extends StoreEntitlementReaderPort {
+export class DrizzleStoreEntitlementReader implements StoreEntitlementReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 

@@ -7,16 +7,15 @@ import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { subscription } from "#api/platform/database/schema/billing.schema";
 
 import type { ListDueBillingNoticesParams } from "../../../shared/application/ports/billing-notice.repository.port.js";
-import { TrialEndingNoticeRepositoryPort } from "../../application/ports/trial-ending-notice.repository.port.js";
+import type { TrialEndingNoticeRepositoryPort } from "../../application/ports/trial-ending-notice.repository.port.js";
 import type { TrialEndingNotice } from "../../domain/trial-ending-notice.entity.js";
 import { toTrialEndingNotice } from "./trial-ending-notice-row.mapper.js";
 
 @Injectable()
-export class DrizzleTrialEndingNoticeRepository extends TrialEndingNoticeRepositoryPort {
+export class DrizzleTrialEndingNoticeRepository implements TrialEndingNoticeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 

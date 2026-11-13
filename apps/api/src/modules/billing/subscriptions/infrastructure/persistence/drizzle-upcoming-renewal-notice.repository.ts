@@ -11,16 +11,15 @@ import type { ListDueBillingNoticesParams } from "../../../shared/application/po
 import { currentStoreChainOf } from "../../../shared/domain/premium-access.domain-service.js";
 import { toStorePeriodType } from "../../../shared/domain/store-period-type.domain-service.js";
 import { storeProductIdsOfPlan } from "../../../shared/domain/subscription-plan.domain-service.js";
-import { UpcomingRenewalNoticeRepositoryPort } from "../../application/ports/upcoming-renewal-notice.repository.port.js";
+import type { UpcomingRenewalNoticeRepositoryPort } from "../../application/ports/upcoming-renewal-notice.repository.port.js";
 import type { UpcomingRenewalNotice } from "../../domain/upcoming-renewal-notice.entity.js";
 import { toUpcomingRenewalNotice } from "./upcoming-renewal-notice-row.mapper.js";
 
 @Injectable()
-export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNoticeRepositoryPort {
+export class DrizzleUpcomingRenewalNoticeRepository implements UpcomingRenewalNoticeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 

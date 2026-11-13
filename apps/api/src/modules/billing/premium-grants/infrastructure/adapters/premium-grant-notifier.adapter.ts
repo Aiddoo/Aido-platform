@@ -8,11 +8,11 @@ import {
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import { PremiumGrantNotifierPort } from "../../application/ports/premium-grant-notifier.port.js";
+import type { PremiumGrantNotifierPort } from "../../application/ports/premium-grant-notifier.port.js";
 import type { PremiumGrantEndingNotice } from "../../domain/premium-grant-ending-notice.entity.js";
 
 @Injectable()
-export class PremiumGrantNotifierAdapter extends PremiumGrantNotifierPort {
+export class PremiumGrantNotifierAdapter implements PremiumGrantNotifierPort {
   readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
 
@@ -21,7 +21,6 @@ export class PremiumGrantNotifierAdapter extends PremiumGrantNotifierPort {
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
   ) {
-    super();
     this.#notificationPublisher = notificationPublisher;
     this.#localeReader = localeReader;
   }

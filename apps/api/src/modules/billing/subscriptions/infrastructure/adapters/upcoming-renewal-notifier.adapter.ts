@@ -12,11 +12,11 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
-import { UpcomingRenewalNotifierPort } from "../../application/ports/upcoming-renewal-notifier.port.js";
+import type { UpcomingRenewalNotifierPort } from "../../application/ports/upcoming-renewal-notifier.port.js";
 import type { UpcomingRenewalNotice } from "../../domain/upcoming-renewal-notice.entity.js";
 
 @Injectable()
-export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort {
+export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPort {
   readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
@@ -28,7 +28,6 @@ export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort 
     @Inject(NotificationRecipientTimezoneReaderPort)
     timezoneReader: NotificationRecipientTimezoneReaderPort,
   ) {
-    super();
     this.#notificationPublisher = notificationPublisher;
     this.#localeReader = localeReader;
     this.#timezoneReader = timezoneReader;

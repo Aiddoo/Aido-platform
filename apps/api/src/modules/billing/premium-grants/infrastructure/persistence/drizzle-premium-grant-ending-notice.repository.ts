@@ -8,7 +8,7 @@ import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 
 import type { ListDueBillingNoticesParams } from "../../../shared/application/ports/billing-notice.repository.port.js";
-import { PremiumGrantEndingNoticeRepositoryPort } from "../../application/ports/premium-grant-ending-notice.repository.port.js";
+import type { PremiumGrantEndingNoticeRepositoryPort } from "../../application/ports/premium-grant-ending-notice.repository.port.js";
 import type { PremiumGrantEndingNotice } from "../../domain/premium-grant-ending-notice.entity.js";
 import { toPremiumGrantEndingNotice } from "./premium-grant-ending-notice-row.mapper.js";
 
@@ -17,11 +17,10 @@ const nextOf = alias(premiumGrant, "next");
 const storeOf = alias(subscription, "store");
 
 @Injectable()
-export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndingNoticeRepositoryPort {
+export class DrizzlePremiumGrantEndingNoticeRepository implements PremiumGrantEndingNoticeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 

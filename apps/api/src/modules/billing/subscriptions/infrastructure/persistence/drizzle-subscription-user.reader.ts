@@ -3,17 +3,16 @@ import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 
-import {
-  type SubscriptionUser,
+import type {
+  SubscriptionUser,
   SubscriptionUserReaderPort,
 } from "../../application/ports/subscription-user.reader.port.js";
 
 @Injectable()
-export class DrizzleSubscriptionUserReader extends SubscriptionUserReaderPort {
+export class DrizzleSubscriptionUserReader implements SubscriptionUserReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 

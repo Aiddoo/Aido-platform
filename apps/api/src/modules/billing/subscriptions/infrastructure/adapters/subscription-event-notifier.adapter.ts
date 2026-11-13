@@ -11,8 +11,8 @@ import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.e
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { StoreCustomerConsolePort } from "../../application/ports/store-customer-console.port.js";
-import {
-  type StoreSubscriptionEventFailureContext,
+import type {
+  StoreSubscriptionEventFailureContext,
   SubscriptionEventNotifierPort,
 } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
@@ -25,7 +25,7 @@ import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
  * notification 큐에 기록해 처리 원장과 함께 커밋한다. 웹훅 처리 실패는 운영 경보로 올린다.
  */
 @Injectable()
-export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierPort {
+export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifierPort {
   readonly #adminEventNotifier: AdminEventNotifierPort;
   readonly #notificationQueueService: NotificationQueueAdapter;
   readonly #alert: OperationalAlertPort;
@@ -37,7 +37,6 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
     alert: OperationalAlertPort,
     customerConsole: StoreCustomerConsolePort,
   ) {
-    super();
     this.#adminEventNotifier = adminEventNotifier;
     this.#notificationQueueService = notificationQueueService;
     this.#alert = alert;

@@ -10,19 +10,18 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import {
-  type ListLapsedPremiumUsersParams,
-  type UserSubscriptionProjection,
+import type {
+  ListLapsedPremiumUsersParams,
+  UserSubscriptionProjection,
   UserSubscriptionProjectionRepositoryPort,
 } from "../../application/ports/user-subscription-projection.repository.port.js";
 
 @Injectable()
-export class DrizzleUserSubscriptionProjectionRepository extends UserSubscriptionProjectionRepositoryPort {
+export class DrizzleUserSubscriptionProjectionRepository implements UserSubscriptionProjectionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
-    super();
     this.#txHost = txHost;
     this.#clock = clock;
   }

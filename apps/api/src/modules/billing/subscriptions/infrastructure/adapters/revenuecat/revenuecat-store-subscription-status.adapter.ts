@@ -7,7 +7,7 @@ import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
-import { StoreSubscriptionStatusReaderPort } from "../../../application/ports/store-subscription-status.reader.port.js";
+import type { StoreSubscriptionStatusReaderPort } from "../../../application/ports/store-subscription-status.reader.port.js";
 import {
   type BillingSubscriptionsConfig,
   billingSubscriptionsConfig,
@@ -58,7 +58,7 @@ export class RevenueCatRequestError extends Error {
  * @see https://www.revenuecat.com/docs/api-v2/subscription
  */
 @Injectable()
-export class RevenueCatStoreSubscriptionStatusAdapter extends StoreSubscriptionStatusReaderPort {
+export class RevenueCatStoreSubscriptionStatusAdapter implements StoreSubscriptionStatusReaderPort {
   readonly #logger = new Logger(RevenueCatStoreSubscriptionStatusAdapter.name);
   readonly #policy: OutboundPolicy;
   // 상품은 거의 바뀌지 않아 프로세스 안에서 한 번만 읽는다(Project Configuration 한도 60/분)
@@ -71,7 +71,6 @@ export class RevenueCatStoreSubscriptionStatusAdapter extends StoreSubscriptionS
     @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
     policies: OutboundPolicyRegistry,
   ) {
-    super();
     this.#http = http;
     this.#config = config;
     this.#policy = policies.get(REVENUECAT_API_POLICY);

@@ -12,11 +12,11 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
-import { TrialEndingNotifierPort } from "../../application/ports/trial-ending-notifier.port.js";
+import type { TrialEndingNotifierPort } from "../../application/ports/trial-ending-notifier.port.js";
 import type { TrialEndingNotice } from "../../domain/trial-ending-notice.entity.js";
 
 @Injectable()
-export class TrialEndingNotifierAdapter extends TrialEndingNotifierPort {
+export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
   readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
@@ -28,7 +28,6 @@ export class TrialEndingNotifierAdapter extends TrialEndingNotifierPort {
     @Inject(NotificationRecipientTimezoneReaderPort)
     timezoneReader: NotificationRecipientTimezoneReaderPort,
   ) {
-    super();
     this.#notificationPublisher = notificationPublisher;
     this.#localeReader = localeReader;
     this.#timezoneReader = timezoneReader;

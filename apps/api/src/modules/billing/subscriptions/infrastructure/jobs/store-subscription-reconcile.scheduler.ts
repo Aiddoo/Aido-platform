@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { StoreSubscriptionReconcileSchedulerPort } from "../../application/ports/store-subscription-reconcile-scheduler.port.js";
+import type { StoreSubscriptionReconcileSchedulerPort } from "../../application/ports/store-subscription-reconcile-scheduler.port.js";
 import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
 import {
   type BillingSubscriptionsConfig,
@@ -20,8 +20,7 @@ import {
 /** RevenueCat 읽기 설정이 없으면 대조를 예약하지 않고 기존 웹훅 처리만 한다. */
 @Injectable()
 export class StoreSubscriptionReconcileScheduler
-  extends StoreSubscriptionReconcileSchedulerPort
-  implements OnModuleInit
+  implements StoreSubscriptionReconcileSchedulerPort, OnModuleInit
 {
   readonly #logger = new Logger(StoreSubscriptionReconcileScheduler.name);
   readonly #jobQueue: JobQueuePort;
@@ -31,7 +30,6 @@ export class StoreSubscriptionReconcileScheduler
     jobQueue: JobQueuePort,
     @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
   ) {
-    super();
     this.#jobQueue = jobQueue;
     this.#config = config;
   }

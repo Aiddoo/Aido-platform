@@ -10,8 +10,8 @@ import { premiumGrantStatus } from "#api/platform/database/schema/enums.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import {
-  type ListPremiumGrantUsersToReconcileParams,
+import type {
+  ListPremiumGrantUsersToReconcileParams,
   PremiumGrantRepositoryPort,
 } from "../../application/ports/premium-grant.repository.port.js";
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
@@ -22,11 +22,10 @@ const currentOf = alias(premiumGrant, "current");
 const storeOf = alias(subscription, "store");
 
 @Injectable()
-export class DrizzlePremiumGrantRepository extends PremiumGrantRepositoryPort {
+export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 
