@@ -13,6 +13,7 @@ import {
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box } from '@src/shared/ui';
 import { range } from 'es-toolkit';
@@ -35,7 +36,6 @@ import {
   VOICE_VISUAL,
   VOICE_VISUAL_BARS,
 } from '../constants/voice.constants';
-import { useRebuiltPath } from '../hooks/use-rebuilt-path';
 import { useSkiaDensityScale } from '../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../hooks/use-toggleable-frame-callback';
 import { addFrameTime, shouldUseLightOrb } from '../utils/voice-frame-budget.view-model';

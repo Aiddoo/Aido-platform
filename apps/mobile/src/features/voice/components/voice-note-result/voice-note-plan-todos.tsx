@@ -20,7 +20,7 @@ import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
 import { useVoiceNoteDraftId } from '../../hooks/use-voice-note-params';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
 import { toDraftVoicePlan } from '../../utils/plan-review-draft';
-import { PlanReview } from '../plan-review';
+import { PlanReview } from '../plan-review/plan-review';
 
 type VoiceNotePlanTodosProps = Pick<
   ComponentProps<typeof PlanReview>,

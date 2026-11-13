@@ -1,4 +1,3 @@
-import type { DeviceType } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
 import type { AppLogger } from '@src/core/ports/app-logger';
@@ -8,7 +7,12 @@ import { BusinessError, getErrorMessage } from '@src/shared/errors';
 import { match } from 'ts-pattern';
 
 import type { AuthApi } from '../apis/auth.api';
-import { toAppleLinkRequest, toAppleSignInRequest, toEmailLoginRequest } from '../apis/auth.mapper';
+import {
+  type SessionDeviceType,
+  toAppleLinkRequest,
+  toAppleSignInRequest,
+  toEmailLoginRequest,
+} from '../apis/auth.mapper';
 import { findOAuthCode } from '../apis/oauth.mapper';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import { AUTH_ERROR_CODE } from '../domains/auth.error';
@@ -40,8 +44,8 @@ interface SignInServicePorts {
   >;
   tokenStore: Pick<TokenStore, 'save' | 'clear'>;
   socialAuth: Pick<SocialAuthGateway, 'openOAuthSession' | 'signInWithApple'>;
-  /** 서버가 기기 종류별로 세션을 구분한다. 조립이 실행 플랫폼에서 정한다 */
-  deviceType: Exclude<DeviceType, 'WEB'>;
+  /** 서버가 기기 종류별로 세션을 구분한다. 조립이 실행 플랫폼에서 정해 앱에는 WEB이 없다 */
+  deviceType: Exclude<SessionDeviceType, 'WEB'>;
   logger: Pick<AppLogger, 'warn'>;
 }
 
@@ -146,7 +150,7 @@ export class SignInService {
         if (code) {
           return ok(code);
         }
-        // 서버가 실어 보낸 오류 코드면 errors 카탈로그의 문구를 쓴다
+        // 서버가 실어 보낸 오류 코드면 errors 카탈로그의 문구를 쓴다. 빈 문자열은 오류가 없는 것으로 본다
         if (queryParams.error || queryParams.error_description) {
           return err(new BusinessError(queryParams.error ?? AUTH_ERROR_CODE.PROVIDER_ERROR));
         }

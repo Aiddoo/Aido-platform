@@ -3,18 +3,25 @@ import { useTrack } from '@src/shared/analytics';
 import { ENV } from '@src/shared/config/env';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorDiagnosis } from '@src/shared/errors';
+import type { ErrorDiagnosis } from '@src/shared/errors/error-diagnosis';
 import { useScreenName } from '@src/shared/hooks/use-screen-name';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTranslation } from '@src/shared/i18n';
+import { t, useTranslation } from '@src/shared/i18n';
+import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import { createDiagnosticCode } from '@src/shared/utils/create-diagnostic-code';
-import { type Href, router } from 'expo-router';
+import type { Href } from 'expo-router';
 import { use } from 'react';
 import { ErrorBoundaryContext } from 'react-error-boundary';
 
 import { Result } from '../result/result';
 import { TextButton } from '../text-button/text-button';
 import { VStack } from '../v-stack/v-stack';
-import { toErrorInquiryDraft } from './error-inquiry-draft';
+
+interface ErrorInquiryDraftInput {
+  diagnosis: ErrorDiagnosis;
+  /** 플랫폼·앱 버전·시각을 담은 진단 코드(`createDiagnosticCode`) */
+  diagnosticCode: string;
+}
 
 interface QueryErrorActionsProps {
   onRetry: () => void;
@@ -96,6 +103,25 @@ function useBugReportInquiryHref(): () => Href {
   });
 }
 
+// 탭 안에서는 그 탭에 쌓고, 탭 위 화면(알림함·할 일 상세·결제)에서는 그 화면을 닫고 탭 묶음 하나 안에서 연다
 function openInquiry(href: Href) {
-  router.push(href);
+  openEntryHref(href);
+}
+
+/**
+ * 오류 화면의 문의 본문 첫 줄. 서버 로그·Sentry를 찾을 값(진단 코드·오류 코드·요청 ID)만 담고
+ * 사용자·기기 식별자와 오류 문구는 넣지 않는다. 구독 문의 초안과 같은 「제목 + (값)」 모양이다
+ */
+function toErrorInquiryDraft({
+  diagnosis: { code, requestId },
+  diagnosticCode,
+}: ErrorInquiryDraftInput): string {
+  const details = [
+    t('common:errorBoundary.inquiryDraft.diagnosticCode', { value: diagnosticCode }),
+    ...(code == null ? [] : [t('common:errorBoundary.inquiryDraft.errorCode', { value: code })]),
+    ...(requestId == null
+      ? []
+      : [t('common:errorBoundary.inquiryDraft.requestId', { value: requestId })]),
+  ];
+  return t('common:errorBoundary.inquiryDraft.body', { details: details.join(' / ') });
 }

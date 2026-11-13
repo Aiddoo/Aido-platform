@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage } from '@src/shared/errors';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   FormScrollView,
@@ -12,14 +13,14 @@ import {
   StyledSafeAreaView,
   Text,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import type { InputOTPRef } from 'heroui-native';
 import { type PropsWithChildren, useRef } from 'react';
 import { Controller, type FieldError, useForm, useFormState, useWatch } from 'react-hook-form';
 
-import { InviteCodePolicy } from '../domains/invite-code.model';
+import { findInvalidCharacters } from '../domains/invite-code.model';
 import { isInviteCodeFieldError } from '../domains/invite.error';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useCheckInvitePreviewMutationOptions } from '../queries/invite.mutations';
@@ -37,6 +38,7 @@ const INVITE_CODE_SERVER_ERROR = 'server';
 export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   const [{ openedAt }] = useInviteParams();
   const { t } = useTranslation('invite');
+  const fontScaledSize = useFontScaledSize();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
   const checkPreview = useMutation(useCheckInvitePreviewMutationOptions());
@@ -50,7 +52,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   const { errors, submitCount, isSubmitting, isValid } = useFormState({ control: form.control });
   const inviteCodeInputRef = useRef<InputOTPRef>(null);
   const draft = useWatch({ control: form.control, name: 'inviteCode' });
-  const invalidCharacters = InviteCodePolicy.findInvalidCharacters(draft);
+  const invalidCharacters = findInvalidCharacters(draft);
 
   const formatInvalidCharacterMessage = ({
     kind,
@@ -183,7 +185,11 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
                 testID="invite-code-error"
                 accessibilityLiveRegion="polite"
               >
-                <InfoIcon width={16} height={16} colorClassName="text-error" />
+                <InfoIcon
+                  width={fontScaledSize(16)}
+                  height={fontScaledSize(16)}
+                  colorClassName="text-error"
+                />
                 <Text
                   size="b4"
                   weight="semibold"

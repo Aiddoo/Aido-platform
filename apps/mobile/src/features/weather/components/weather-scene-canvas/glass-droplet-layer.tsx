@@ -5,10 +5,10 @@ import {
   Path,
   Rect,
   Skia,
-  usePathValue,
   useRSXformBuffer,
   vec,
 } from '@shopify/react-native-skia';
+import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { range } from 'es-toolkit';
 import type { SharedValue } from 'react-native-reanimated';
 
@@ -86,25 +86,30 @@ export function GlassDropletLayer({ width, height, isLowEndDevice, time }: Glass
     );
   });
 
-  const trails = usePathValue((builder) => {
-    'worklet';
-    const t = time.get();
-    for (let index = 0; index < count; index += 1) {
-      const drop = dropAt(index, t);
-      if (drop.slide > 0) {
-        // 프레임마다 물방울 수만큼 Rect 객체를 만들지 않도록 같은 사각형을 선으로 그린다
-        const left = drop.x - (drop.radius * TRAIL_WIDTH_RATIO) / 2;
-        const right = left + drop.radius * TRAIL_WIDTH_RATIO;
-        const bottom = drop.y + drop.slide;
-        builder
-          .moveTo(left, drop.y)
-          .lineTo(right, drop.y)
-          .lineTo(right, bottom)
-          .lineTo(left, bottom)
-          .close();
+  const trails = useRebuiltPath(
+    () => {
+      'worklet';
+      return time.get();
+    },
+    (builder, t) => {
+      'worklet';
+      for (let index = 0; index < count; index += 1) {
+        const drop = dropAt(index, t);
+        if (drop.slide > 0) {
+          // 프레임마다 물방울 수만큼 Rect 객체를 만들지 않도록 같은 사각형을 선으로 그린다
+          const left = drop.x - (drop.radius * TRAIL_WIDTH_RATIO) / 2;
+          const right = left + drop.radius * TRAIL_WIDTH_RATIO;
+          const bottom = drop.y + drop.slide;
+          builder
+            .moveTo(left, drop.y)
+            .lineTo(right, drop.y)
+            .lineTo(right, bottom)
+            .lineTo(left, bottom)
+            .close();
+        }
       }
-    }
-  });
+    },
+  );
 
   return (
     <Group>

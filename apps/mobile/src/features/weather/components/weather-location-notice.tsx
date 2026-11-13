@@ -11,24 +11,37 @@ export function WeatherLocationNotice() {
 
   return match(location)
     .with({ status: 'unavailable' }, ({ retry }) => (
-      <HStack gap={8} align="center" justify="center" className="flex-wrap px-4">
-        <Text size="b4" align="center" className="shrink text-on-sky/85">
-          {t('weather:locationPrompt.savedLocationNotice')}
-        </Text>
-        <TextButton size="small" onPress={retry}>
-          {t('common:actions.retry')}
-        </TextButton>
-      </HStack>
+      <Notice
+        message={t('weather:locationPrompt.savedLocationNotice')}
+        actionLabel={t('common:actions.retry')}
+        onAction={retry}
+      />
     ))
     .with({ status: 'ready', isLastKnown: true }, ({ request }) => (
-      <HStack gap={8} align="center" justify="center" className="flex-wrap px-4">
-        <Text size="b4" align="center" className="shrink text-on-sky/85">
-          {t('weather:locationPrompt.lastLocationNotice')}
-        </Text>
-        <TextButton size="small" onPress={request}>
-          {t('weather:locationPrompt.continue')}
-        </TextButton>
-      </HStack>
+      <Notice
+        message={t('weather:locationPrompt.lastLocationNotice')}
+        actionLabel={t('weather:locationPrompt.continue')}
+        onAction={request}
+      />
     ))
     .otherwise(() => null);
+}
+
+interface NoticeProps {
+  message: string;
+  actionLabel: string;
+  onAction: () => void;
+}
+
+function Notice({ message, actionLabel, onAction }: NoticeProps) {
+  return (
+    <HStack gap={8} align="center" justify="center" className="flex-wrap px-4">
+      <Text size="b4" align="center" className="shrink text-on-sky/85">
+        {message}
+      </Text>
+      <TextButton size="small" onPress={onAction}>
+        {actionLabel}
+      </TextButton>
+    </HStack>
+  );
 }

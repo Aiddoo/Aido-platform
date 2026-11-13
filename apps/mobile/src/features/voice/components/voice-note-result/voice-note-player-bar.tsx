@@ -1,15 +1,17 @@
 import { Canvas, Path, Skia, type SkPathBuilder } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsAppInBackground } from '@src/shared/hooks/use-is-app-in-background';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
+import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, PauseIcon, PlayIcon, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
-import { type ComponentProps, useEffect, useMemo, useState } from 'react';
-import type { AccessibilityActionEvent } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import type { AccessibilityActionEvent, AccessibilityValue } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import {
   clamp,
@@ -21,7 +23,6 @@ import {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
-import { useRebuiltPath } from '../../hooks/use-rebuilt-path';
 import { useVoiceNotePlayback } from '../../hooks/use-voice-note-playback';
 import type { VoiceNotePlayer } from '../../hooks/use-voice-note-player';
 import { formatMediaTime } from '../../utils/media-time.view-model';
@@ -33,7 +34,7 @@ const SCRUBBER_ACCESSIBILITY_ACTIONS = [{ name: 'increment' }, { name: 'decremen
 /** 접근성 조작(증가·감소) 한 번에 옮기는 길이 */
 const ACCESSIBILITY_SEEK_STEP_MS = 5 * SECOND_MS;
 
-interface VoiceNotePlayerBarProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
+interface VoiceNotePlayerBarProps {
   player: VoiceNotePlayer;
   /** 한 칸이 `WAVEFORM_BAR.intervalMs`인 노트 전체 소리 크기 */
   levels: readonly number[];
@@ -46,10 +47,9 @@ export function VoiceNotePlayerBar({
   levels,
   flagIndexes,
   isRecordingAvailable,
-  className,
-  ...stackProps
 }: VoiceNotePlayerBarProps) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const isPlaying = useVoiceNotePlayback(player, (playback) => playback.isPlaying);
   const isLoaded = useVoiceNotePlayback(player, (playback) => playback.isLoaded);
   const durationMs = useVoiceNotePlayback(player, (playback) => playback.durationMs);
@@ -93,10 +93,7 @@ export function VoiceNotePlayerBar({
 
   if (!isRecordingAvailable) {
     return (
-      <HStack
-        className={cn('self-start rounded-xl bg-gray-1 px-3 py-2', className)}
-        {...stackProps}
-      >
+      <HStack className="self-start rounded-xl bg-gray-1 px-3 py-2">
         <Text size="e1" shade={7} lineBreakStrategyIOS="hangul-word" className="shrink">
           {t('player.unavailable')}
         </Text>
@@ -105,11 +102,7 @@ export function VoiceNotePlayerBar({
   }
 
   return (
-    <HStack
-      gap={12}
-      className={cn('items-center rounded-2xl bg-gray-1 px-3 py-3', className)}
-      {...stackProps}
-    >
+    <HStack gap={12} className="items-center rounded-2xl bg-gray-1 px-3 py-3">
       <PressableFeedback
         accessibilityRole="button"
         accessibilityLabel={isPlaying ? t('player.pause') : t('player.play')}
@@ -121,9 +114,17 @@ export function VoiceNotePlayerBar({
         className="size-9 items-center justify-center rounded-full bg-main"
       >
         {isPlaying ? (
-          <PauseIcon colorClassName="text-white dark:text-gray-9" width={14} height={14} />
+          <PauseIcon
+            colorClassName="text-white dark:text-gray-9"
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+          />
         ) : (
-          <PlayIcon colorClassName="text-white dark:text-gray-9" width={14} height={14} />
+          <PlayIcon
+            colorClassName="text-white dark:text-gray-9"
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+          />
         )}
       </PressableFeedback>
       <Scrubber
@@ -170,10 +171,7 @@ function addBars(
   }
 }
 
-interface ScrubberProps extends Omit<
-  ComponentProps<typeof Box>,
-  'children' | 'onLayout' | 'accessibilityRole' | 'accessibilityActions' | 'onAccessibilityAction'
-> {
+interface ScrubberProps {
   levels: readonly number[];
   flagIndexes: readonly number[];
   /** 0..1 재생 위치 */
@@ -183,6 +181,9 @@ interface ScrubberProps extends Omit<
   /** 스크린 리더의 증가·감소 한 번이 옮기는 0..1 길이 */
   accessibilityStepRatio: number;
   onSeek: (ratio: number) => void;
+  accessibilityLabel: string;
+  accessibilityValue: AccessibilityValue;
+  className?: string;
 }
 
 function Scrubber({
@@ -192,8 +193,9 @@ function Scrubber({
   dragRatio,
   accessibilityStepRatio,
   onSeek,
+  accessibilityLabel,
+  accessibilityValue,
   className,
-  ...boxProps
 }: ScrubberProps) {
   const playedColor = useResolvedColor('text-main');
   const restColor = useResolvedColor('text-gray-4');
@@ -264,17 +266,19 @@ function Scrubber({
     builder.dispose();
     return path;
   }, [flagIndexes, levels.length, barCount, height]);
+  // prop 경로는 Canvas가 커밋 때 복사해 기록하므로 정리 함수에서 바로 놓는다(shared value 경로와 다르다)
   useEffect(() => () => flagPath.dispose(), [flagPath]);
 
   return (
     <GestureDetector gesture={gesture}>
       <Box
         accessibilityRole="adjustable"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityValue={accessibilityValue}
         accessibilityActions={SCRUBBER_ACCESSIBILITY_ACTIONS}
         onAccessibilityAction={handleAccessibilityAction}
         className={cn('h-8', className)}
         onLayout={handleLayout}
-        {...boxProps}
       >
         <Canvas style={{ flex: 1 }}>
           <Path path={restPath} color={restColor} />

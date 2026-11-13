@@ -18,8 +18,9 @@ export function useUpdateWeatherLocationMutationOptions() {
       unwrap(await weatherApi.updateLocation(coordinates)),
     onSuccess: (registered) => {
       setRegisteredWeatherLocation(queryClient, registered);
-      return invalidateWeatherReports(queryClient);
     },
+    // 응답을 놓친 실패도 서버에는 위치가 바뀌었을 수 있다
+    onSettled: () => invalidateWeatherReports(queryClient),
     meta: {
       errorFeedback: {
         feature: 'weather_location',

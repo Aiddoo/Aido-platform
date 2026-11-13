@@ -162,7 +162,7 @@ describe('QueryErrorBoundary 관측', () => {
 
     // Then
     expect(screen.getByText('다시 시도')).toBeTruthy();
-    expect(jest.mocked(router.push)).toHaveBeenCalledWith({
+    expect(jest.mocked(router.navigate)).toHaveBeenCalledWith({
       pathname: '/settings/inquiry',
       params: {
         category: 'BUG_REPORT',

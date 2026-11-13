@@ -483,7 +483,7 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
     {
       path: '할 일 순서 바꾸기',
       start: (w) =>
-        w.reorderTodo.mutateAsync({ id: 2, input: { targetTodoId: 1, position: 'before' } }),
+        w.reorderTodo.mutateAsync({ todoId: 2, input: { targetTodoId: 1, position: 'before' } }),
       expected: ['list:day', 'widget:day'],
     },
     {

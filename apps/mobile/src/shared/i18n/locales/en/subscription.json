@@ -4,7 +4,7 @@
     "monthly": "Monthly",
     "perYear": "/year",
     "perMonth": "/month",
-    "discount": "{{percent}}% off",
+    "discount": "{{percent}} off",
     "monthlyEquivalent": "About {{price}}/month",
     "freeTrial": "{{period}} free",
     "pricePerYear": "{{price}}/year",

@@ -1,4 +1,4 @@
-import type { WindowSizeClass } from '@src/shared/ui/adaptive-pane/window-layout';
+import type { WindowSizeClass } from '@src/shared/ui';
 import { clamp } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 

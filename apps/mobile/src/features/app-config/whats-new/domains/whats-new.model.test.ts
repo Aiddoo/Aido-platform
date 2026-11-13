@@ -1,7 +1,7 @@
 import { toInstant } from '@src/shared/date/instant';
 import { createDateKey } from '@src/testing/date-key';
 
-import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
+import { RELEASE_1_15_0, RELEASES } from '../constants/releases.constants';
 import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
 import type { Release } from './whats-new.model';
 import {
@@ -79,7 +79,7 @@ describe('getLatestRelease', () => {
 describe('findReleaseByCampaign', () => {
   it.each([
     ['앱이 모르는', 'feature-discovery-2026-08'],
-    ['목록에만 남긴 지난 출시(친구 초대)가 쓰던', 'feature-discovery-2026-11'],
+    ['지운 지난 출시(친구 초대)가 쓰던', 'feature-discovery-2026-11'],
   ])('%s 캠페인이면 찾지 못해 자동으로 열지 않는다', (_label, campaignId) => {
     // When
     const result = findReleaseByCampaign(RELEASES, campaignId);
@@ -87,26 +87,6 @@ describe('findReleaseByCampaign', () => {
     // Then
     expect(result).toBeNull();
   });
-});
-
-describe('canViewRelease', () => {
-  it.each([
-    [true, false, false],
-    [true, true, true],
-    [false, false, true],
-  ])(
-    '초대 필요 %s, 초대 가능 %s이면 목록에 보이는지 %s다',
-    (requiresInvite, isInviteAvailable, expected) => {
-      // When
-      const result = WhatsNewPolicy.canViewRelease(
-        { ...RELEASES[0], requiresInvite },
-        { isInviteAvailable },
-      );
-
-      // Then
-      expect(result).toBe(expected);
-    },
-  );
 });
 
 describe('shouldShowReentry', () => {

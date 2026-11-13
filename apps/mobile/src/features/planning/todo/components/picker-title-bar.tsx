@@ -24,7 +24,8 @@ export function PickerTitleBar({
       <Box className="flex-1 items-start">
         <CloseButton
           variant="ghost"
-          style={{ width: fontScaledSize(20), height: fontScaledSize(20) }}
+          className="size-5"
+          hitSlop={12}
           accessibilityLabel={t('actions.close')}
           onPress={onCancel}
         >

@@ -23,14 +23,3 @@ import { IconCircle, PawIcon } from '@src/shared/ui';
 | pointerEvents      | `ViewProps['pointerEvents']`                   | -           | 겹쳐 놓은 장식이 아래 누름을 막지 않게 할 때                                                                          |
 
 색은 초대 발자국 판의 도장(찍힘·기다림·빈 칸)과 같은 토큰이다.
-
-## 파일 구조
-
-```
-icon-circle/
-├── icon-circle.tsx
-├── icon-circle.variants.ts
-├── icon-circle.test.tsx
-├── icon-circle.md
-└── index.ts
-```

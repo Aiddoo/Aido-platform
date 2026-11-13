@@ -5,10 +5,13 @@ import {
   useWeatherApi,
 } from '@src/bootstrap/providers/di-context';
 import { type AppLogger } from '@src/core/ports/app-logger';
+import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage, toError, unwrap } from '@src/shared/errors';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { shouldRetryQuery } from '@src/shared/query/query-retry';
 import {
   type Query,
@@ -21,6 +24,7 @@ import { orderBy, pick } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
+import { FORECAST_DAYS } from '../constants/weather.constants';
 import { getHourlySummary } from '../domains/weather-hourly.model';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { type LocationReading } from '../domains/weather-location.model';
@@ -160,6 +164,15 @@ export function useGetWeatherReportQueryOptions() {
     initialData: cached == null ? undefined : withDevWeatherOverride(cached, devOverride),
     staleTime: REPORT_STALE_TIME_MS,
     retry: shouldRetryReport,
+  });
+}
+
+/** 10일 예보에 할 일 점을 찍을 완료 기록. 화면의 prefetch와 예보 카드가 같은 키를 쓰게 범위를 한 곳에서 정한다 */
+export function useGetForecastCompletionsQueryOptions() {
+  const todayKey = useTodayKey();
+  return useGetDailyCompletionsQueryOptions({
+    startDate: todayKey,
+    endDate: addDaysToDateKey(todayKey, FORECAST_DAYS - 1),
   });
 }
 

@@ -27,7 +27,7 @@ heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 �
 | `--border`    | 라이트 | #dedee0 → `--gray-4` #dedede | 1.34 → 1.35:1 | 1.27 → 1.27:1  |
 | `--border`    | 다크   | #28282c → `--gray-2` #424242 | 1.28 → 1.86:1 | 1.10 → 1.60:1  |
 
-- 구분선은 iOS 불투명 구분선(라이트 #c6c6c8, 다크 #38383a)에 가장 가까운 앱 회색이다. 화면과 `gray-1` 면(댓글 ⋯ 메뉴 등) 위에서 모두 1.5:1 이상으로 보이고 조용하다. 직접 색을 준 실선(`gray-2`·`gray-3`)은 이 토큰으로 옮긴다([migration-status](./architecture/migration-status.md)).
+- 구분선은 iOS 불투명 구분선(라이트 #c6c6c8, 다크 #38383a)에 가장 가까운 앱 회색이다. 화면과 `gray-1` 면(댓글 ⋯ 메뉴 등) 위에서 모두 1.5:1 이상으로 보이고 조용하다. 직접 색을 준 실선(`gray-2`·`gray-3`)은 디자인 톤을 지키려고 옮기지 않는다([1.15.2에서 바꾸지 않기로 한 것](../../../docs/releases/1.15.2/README.md#1152에서-바꾸지-않기로-한-것)).
 - 테두리는 heroui 기본과 같은 밝기에서 푸른 기만 뺐다. 다크는 시트·메뉴 면(`--gray-1`) 위에서 보이도록 구분선과 같은 `--gray-2`다.
 - InputOTP 가운데 줄(구분선 50%)은 라이트 #d4d4d6 → #dedede(`--gray-4`와 같다), 다크 #2d2d2f → #2a2a2a라 덮지 않는다.
 - 나머지 heroui 변수는 기본값이다. 무채색(`--snow`·`--backdrop`·그림자), 위 값을 따르는 것(`--focus`·`--field-placeholder`·대부분의 `*-foreground`), 거의 검정인 글자(라이트 `--default-foreground` #18181b), 앱에 그려지지 않는 것(`--surface-secondary`·`--surface-tertiary`·`--field-foreground`·`--field-border`)이다. 그려지기 시작하면 이 표에 먼저 더한다.
@@ -55,7 +55,7 @@ heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 �
 
 - 글꼴은 Wanted Sans 네 굵기(`--font-normal`·`medium`·`semibold`·`bold`)다.
 - 크기 토큰은 11단계다: `display` 96(날씨 큰 온도 전용), `h1` 30, `t1` 28, `t2` 22, `t3` 20, `b1` 17, `b2` 16, `b3` 15, `b4` 13, `e1` 12, `e2` 11. 최소는 `e2`(11pt)다.
-- **앱 글꼴 5단계만 쓴다**(`xsmall`·`small`·`medium`·`large`·`xlarge`, 기본 `medium`). DESIGN.md와 달리 OS 배율은 끈다(`allowFontScaling: false`). 글자·아이콘·스켈레톤·입력이 앱 설정 하나로 같이 커진다. 사용자 결정이다.
+- **앱 글꼴 5단계만 쓴다**(`xsmall`·`small`·`medium`·`large`·`xlarge`, 기본 `medium`). DESIGN.md와 달리 OS 배율은 끈다(`allowFontScaling: false`). 글자·아이콘·스켈레톤·입력이 앱 설정 하나로 같이 커진다. 사용자 결정이다. 아이콘만 있는 버튼의 누름 칸 규칙은 [ui](./architecture/ui.md#글꼴과-기기)에 있다.
 - Android는 자간을 0으로 둔다. 음수 자간이면 줄바꿈 폭이 커져 마지막 글자가 다음 줄로 밀려 사라진다(QA #27).
 - 바뀌는 숫자(카운터·가격·시간)는 `tabular-nums`다.
 
@@ -130,7 +130,8 @@ Reanimated의 `duration`·`delay`는 `ANIMATION` 상수(`shared/constants/animat
 
 ## 한도·프리미엄·AI 안내
 
-- **한도·잠금 안내는 `useEntitlementGate(feature, { surface })` 하나다.** 기능에서는 `promptIfBlocked`·`promptIfBlockedError`만 부른다.
+- **한도·잠금 안내는 `useEntitlementGate(feature, { surface })` 하나다.** 기능에서는 `promptIfBlocked`·`promptIfBlockedError`만 부르고, 진입할 때 그릴지 정하는 화면만 `isBlocked()`를 읽는다.
+  - 시작하기 전에 `promptIfBlocked`로 막는다. 링크로 바로 열리는 생성 시트 route(카테고리 추가)는 진입할 때 `isBlocked()`로 한 번 정해 막혔으면 시트를 그리지 않고, `promptIfBlocked`의 `onFinish`(시트는 답한 뒤, 토스트는 띄운 뒤)에 떠난다. 서버 한도 오류는 `promptIfBlockedError`가 같은 안내로 받고 쓴 글자를 남긴다.
   - 게이트가 `useOpenSheet`로 `PremiumUpsell`(+ `PremiumUpsell.Actions` footer)을 띄운다. 시트는 서버 스냅샷에서 사용량 막대(`Meter`), 다시 생기는 날, "무료 → 프리미엄" 숫자를 읽는다.
   - 버튼은 [프리미엄 보기]와 글자 버튼 [나중에]다. 무료 대안(친구 초대, 지금까지 정리하기)이 있으면 대안이 주 버튼이고 [프리미엄 보기]가 글자 버튼이다.
 - 같은 기능을 그날 [나중에]로 닫았으면 그다음부터는 시트 대신 "프리미엄 보기" 행동이 붙은 토스트로 알린다. 판단은 `getUpsellPresentation`(`billing/subscription/utils/upsell.view-model.ts`), 기록은 업셀 저장 값(`upsellDismissalStoredValue`)이다.

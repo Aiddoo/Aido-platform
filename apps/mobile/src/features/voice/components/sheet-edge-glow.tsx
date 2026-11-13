@@ -6,6 +6,7 @@ import {
   SweepGradient,
   vec,
 } from '@shopify/react-native-skia';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { SHEET_RADIUS } from '@src/shared/ui';
@@ -80,8 +81,8 @@ export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
 
   return (
     <Animated.View
-      entering={FadeIn.duration(200)}
-      exiting={FadeOut.duration(150)}
+      entering={FadeIn.duration(ANIMATION.durationMs.normal)}
+      exiting={FadeOut.duration(ANIMATION.durationMs.fast)}
       pointerEvents="none"
       onLayout={handleLayout}
       style={{ position: 'absolute', top: -BLEED, right: -BLEED, bottom: -BLEED, left: -BLEED }}

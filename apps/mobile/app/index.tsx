@@ -1,6 +1,7 @@
 import { clearColdStartPath, findColdStartPath } from '@src/bootstrap/navigation/cold-start-link';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { usePushNotificationEntry } from '@src/features/notification/hooks/use-push-notification-entry';
+import { useOpenPendingInvite } from '@src/features/social/invite/hooks/use-open-pending-invite';
 import { useIsRestoring } from '@tanstack/react-query';
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -14,6 +15,7 @@ function Index() {
   // 지운 뒤 다시 그려져도 같은 곳으로 보내도록 처음 값을 묶어 둔다
   const [coldStartPath] = useState(findColdStartPath);
   const href = entry.href ?? coldStartPath;
+  useOpenPendingInvite({ isEnabled: isReady && href == null });
 
   useEffect(() => {
     if (isReady) {

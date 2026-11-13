@@ -1,5 +1,13 @@
+import { VERIFICATION_CODE } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
+
+const VERIFICATION_CODE_PATTERN = new RegExp(`^\\d{${VERIFICATION_CODE.LENGTH}}$`, 'u');
+
+/** 서버 계약과 같이 숫자만 정해진 자리 수다. 아니면 보내지 않고 칸을 오류로 보인다 */
+export function isVerificationCode(code: string): boolean {
+  return VERIFICATION_CODE_PATTERN.test(code);
+}
 
 const authTokensSchema = z.object({
   userId: z.string(),

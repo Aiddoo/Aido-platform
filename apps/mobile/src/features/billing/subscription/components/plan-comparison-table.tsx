@@ -80,7 +80,7 @@ function useValueColumnWidth() {
 export function PlanComparisonTable() {
   return (
     <ComparisonCard>
-      <ColumnHeader />
+      <PlanColumns />
       <ComparisonGroups Row={FeatureRow} />
     </ComparisonCard>
   );
@@ -142,7 +142,7 @@ function ComparisonCard({ children, busy = false }: { children: ReactNode; busy?
   );
 }
 
-function ColumnHeader() {
+function PlanColumns() {
   const { t } = useTranslation('subscription');
   const valueColumnWidth = useValueColumnWidth();
 
@@ -189,7 +189,7 @@ function Group({
 
   return (
     <>
-      <HStack align="center" gap={6} className="px-4 pb-1 pt-4">
+      <HStack align="center" gap={6} className="px-4 pt-4 pb-1">
         <Icon width={fontScaledSize(16)} height={fontScaledSize(16)} colorClassName="text-gray-6" />
         <Text size="e1" weight="semibold" shade={7} accessibilityRole="header">
           {label}
@@ -359,7 +359,7 @@ function Cell({ value, isPremium = false }: { value: PlanValue; isPremium?: bool
 PlanComparisonTable.Loading = function Loading() {
   return (
     <ComparisonCard busy>
-      <ColumnHeader />
+      <PlanColumns />
       <ComparisonGroups Row={FeatureSkeletonRow} />
     </ComparisonCard>
   );

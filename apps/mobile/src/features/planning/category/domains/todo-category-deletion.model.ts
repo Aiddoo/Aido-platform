@@ -80,6 +80,6 @@ export const TodoCategoryDeletionPolicy = {
   toDeletionRequest,
 } as const;
 
-export function hasTodosToHandle(todoCount: number, activeSeriesCount: number) {
+function hasTodosToHandle(todoCount: number, activeSeriesCount: number) {
   return todoCount > 0 || activeSeriesCount > 0;
 }
