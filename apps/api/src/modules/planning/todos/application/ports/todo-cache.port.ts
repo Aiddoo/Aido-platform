@@ -1,4 +1,4 @@
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
+import type { CursorPage } from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { FriendTodoReadModel } from "../read-models/todo.read-model.js";
@@ -9,7 +9,7 @@ export interface FriendTodosFirstPageCacheRead {
    * application은 값을 해석하지 않고 저장 시 그대로 돌려준다.
    */
   readonly generation: string;
-  readonly page: CursorPaginatedResponse<FriendTodoReadModel, number> | undefined;
+  readonly page: CursorPage<FriendTodoReadModel, number> | undefined;
 }
 
 /**
@@ -45,7 +45,7 @@ export abstract class TodoCachePort {
     endDate: string,
     size: number,
     generation: string,
-    page: CursorPaginatedResponse<FriendTodoReadModel, number>,
+    page: CursorPage<FriendTodoReadModel, number>,
   ): Promise<void>;
 
   /** 소유자의 친구 공개 투두 캐시 전체 무효화 (모든 날짜 범위·size 변형 포함). */

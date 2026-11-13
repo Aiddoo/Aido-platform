@@ -43,7 +43,6 @@ import { LockModule } from "#api/platform/lock/lock.module";
 import { LoggerModule } from "#api/platform/logging/logger.module";
 import { MeteringModule } from "#api/platform/metering/metering.module";
 import { AlertingModule } from "#api/platform/observability/alerting.module";
-import { PaginationModule } from "#api/platform/pagination/pagination.module";
 import { RedisModule } from "#api/platform/redis/redis.module";
 import { ResilienceModule } from "#api/platform/resilience/resilience.module";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
@@ -95,7 +94,6 @@ import { AppService } from "./app.service.js";
     LoggerModule.forRootAsync(),
     SharedKernelModule,
     TimeModule,
-    PaginationModule,
     ThrottlerModule.forRootAsync({
       imports: [ThrottleModule.forRoot()],
       inject: [throttleConfig.KEY, { token: THROTTLER_STORAGE, optional: true }],

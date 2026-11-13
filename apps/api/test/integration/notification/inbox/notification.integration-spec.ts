@@ -54,7 +54,6 @@ import {
 } from "#api/platform/database/schema/index";
 import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
-import { paginationServiceProvider } from "#api/platform/pagination/pagination.providers";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -204,7 +203,6 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           provide: MarketingPushOptOutTokenPort,
           useValue: mockMarketingPushOptOutToken,
         },
-        paginationServiceProvider,
         DrizzleUserPreferenceRepository,
         DrizzleUserConsentRepository,
         {

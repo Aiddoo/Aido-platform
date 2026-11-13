@@ -1,5 +1,4 @@
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
-import type { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
+import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
@@ -23,7 +22,6 @@ export type GetTodosInput = GetTodosParams;
 
 interface GetTodosDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findManyByUserId">;
-  readonly paginationService: PaginationService;
   readonly seriesCatchUp: Pick<CatchUpTodoSeriesUseCase, "execute">;
 }
 
@@ -34,7 +32,7 @@ export class ListTodosUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetTodosInput): Promise<CursorPaginatedResponse<TodoReadModel, number>> {
+  async execute(input: GetTodosInput): Promise<CursorPage<TodoReadModel, number>> {
     if (
       input.startDate != null &&
       input.endDate != null &&
@@ -45,12 +43,8 @@ export class ListTodosUseCase {
 
     await this.#dependencies.seriesCatchUp.execute(input.userId);
 
-    const { cursor, size } = this.#dependencies.paginationService.normalizeCursorPagination<number>(
-      {
-        cursor: input.cursor,
-        size: input.size,
-      },
-    );
+    const cursor = input.cursor;
+    const size = clampPageSize(input.size);
 
     const repoParams: FindTodosParams = {
       userId: UserId.reconstitute(input.userId),
@@ -63,14 +57,8 @@ export class ListTodosUseCase {
       endDate: input.endDate,
     };
 
-    const items = await this.#dependencies.todoReadRepository.findManyByUserId(repoParams);
+    const rows = await this.#dependencies.todoReadRepository.findManyByUserId(repoParams);
 
-    return this.#dependencies.paginationService.createCursorPaginatedResponse<
-      TodoReadModel,
-      number
-    >({
-      items,
-      size,
-    });
+    return toCursorPage({ rows, size, toCursor: (todo) => todo.id });
   }
 }
