@@ -1,5 +1,6 @@
 import type { PlanType } from '@src/shared/domains/plan-type.model';
 
+import type { SubscriptionPlan } from '../domains/subscription.model';
 import type { SubscriptionView } from '../schemas/subscription-params.schema';
 import type {
   PremiumGateAnalyticsFeature,
@@ -33,8 +34,11 @@ declare module '@src/shared/analytics/event-map' {
      * 퍼널 단계일 뿐 매출 집계에 쓰지 않는다(원본은 RevenueCat `purchase`). 대시보드 이력 때문에 이름을 유지한다.
      * 아래 결제 이벤트의 `is_trial`은 스토어가 그 요금제에 무료 체험을 줄 수 있다고 한 것이다(실제 체험 여부는 서버 /me)
      */
-    // oxlint-disable-next-line aido/analytics-event-catalog -- 1.15.2 전환 #1400
-    subscription_started: { product_id: string; plan_type: PlanType; is_trial: boolean };
+    subscription_started: {
+      product_id: SubscriptionPlan['identifier'];
+      plan_type: PlanType;
+      is_trial: boolean;
+    };
     subscription_restored: undefined;
     /** 복원이 문의로 안내할 만한 실패로 끝났다. 복원할 구매가 없는 것은 실패가 아니다 */
     subscription_restore_failed: { reason: PurchaseFailedReason };

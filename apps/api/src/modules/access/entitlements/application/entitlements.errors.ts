@@ -28,17 +28,6 @@ export async function assertEntitled(
   }
 }
 
-/** 잠금을 잡은 UoW 안에서 최신 상태로 다시 확인한다. */
-export async function assertEntitledInTx(
-  entitlements: Pick<EntitlementReaderPort, "canInTx">,
-  userId: UserId,
-  feature: ServerFlagFeature,
-): Promise<void> {
-  if (!(await entitlements.canInTx(userId, feature))) {
-    throw premiumFeatureDenied(feature);
-  }
-}
-
 /** 사용자 행을 잠그지 못했거나 사용자가 없다. 기존 응답과 같은 USER_0601이다. */
 export function accessUserNotFound(userId: string): ApplicationException {
   return new ApplicationException(ErrorCode.USER_0601, { userId });

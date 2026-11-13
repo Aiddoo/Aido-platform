@@ -3,7 +3,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import type { IntlLocale } from '@src/shared/i18n/app-locales';
 import { match } from 'ts-pattern';
 
-import { isSameMonthDateKey, isSameYearDateKey } from '../date-key';
+import { type DateKey, diffDateKeysInDays, isSameYearDateKey } from '../date-key';
 import { diffMs, type Instant } from '../instant';
 import { instantToDate, isValidDate, toNativeDate } from '../native-date';
 import { isValidHHmm, type TimeOfDay, toTimeOfDay } from '../time-of-day';
@@ -21,8 +21,9 @@ export type TimeFormat = (typeof TIME_FORMATS)[number];
 type DateLabel =
   | 'fullDate'
   | 'monthDay'
-  | 'numericDate'
+  | 'monthDayYear'
   | 'dottedMonthDay'
+  | 'day'
   | 'dayNumber'
   | 'yearMonth'
   | 'yearShortMonth'
@@ -32,8 +33,9 @@ type DateLabel =
 const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   fullDate: { year: 'numeric', month: 'long', day: 'numeric' },
   monthDay: { month: 'short', day: 'numeric' },
-  numericDate: { year: 'numeric', month: 'numeric', day: 'numeric' },
+  monthDayYear: { year: 'numeric', month: 'short', day: 'numeric' },
   dottedMonthDay: { month: '2-digit', day: '2-digit' },
+  day: { day: 'numeric' },
   dayNumber: { day: 'numeric' },
   yearMonth: { year: 'numeric', month: 'long' },
   yearShortMonth: { year: 'numeric', month: 'short' },
@@ -54,7 +56,7 @@ function toUtcContext(context: DateFormatContext): DateFormatContext {
   return { ...context, timeZone: 'UTC' };
 }
 
-function toUtcMidnight(dateKey: string): Date {
+function toUtcMidnight(dateKey: DateKey): Date {
   return toNativeDate(Date.parse(`${dateKey}T00:00:00Z`));
 }
 
@@ -92,7 +94,7 @@ export function formatDateLabel(
 }
 
 export function formatDateKeyLabel(
-  dateKey: string,
+  dateKey: DateKey,
   kind: DateLabel,
   context: DateFormatContext,
 ): string {
@@ -100,54 +102,34 @@ export function formatDateKeyLabel(
 }
 
 /** 오늘(사용자 시간대의 날짜 key)과 같은 해의 날만 연도를 뺀다. 지난해·내년 날짜는 연도까지 보여야 헷갈리지 않는다 */
-function toYearAwareDateLabel(dateKeys: readonly string[], todayDateKey: string): DateLabel {
+export function getYearAwareDateLabel(
+  dateKeys: readonly DateKey[],
+  todayDateKey: DateKey,
+): 'monthDay' | 'monthDayYear' {
   return dateKeys.every((dateKey) => isSameYearDateKey(dateKey, todayDateKey))
     ? 'monthDay'
-    : 'fullDate';
+    : 'monthDayYear';
 }
 
-/** 올해면 "1월 5일", 올해가 아니면 "2027년 1월 5일". 순간의 해는 context 시간대로 읽는다 */
+/** 올해면 "1월 5일"·"Jan 5", 올해가 아니면 "2027년 1월 5일"·"Jan 5, 2027". 순간의 해는 context 시간대로 읽는다 */
 export function formatYearAwareDateLabel(
   value: Date | Instant,
-  todayDateKey: string,
+  todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
-  const kind = toYearAwareDateLabel([toDateKey(value, context.timeZone)], todayDateKey);
+  if (!isValidDate(toFormatDate(value))) {
+    return '';
+  }
+  const kind = getYearAwareDateLabel([toDateKey(value, context.timeZone)], todayDateKey);
   return formatDateLabel(value, kind, context);
 }
 
 export function formatYearAwareDateKeyLabel(
-  dateKey: string,
-  todayDateKey: string,
+  dateKey: DateKey,
+  todayDateKey: DateKey,
   context: DateFormatContext,
 ): string {
-  return formatDateKeyLabel(dateKey, toYearAwareDateLabel([dateKey], todayDateKey), context);
-}
-
-/** 두 끝이 모두 올해면 월·일만, 하나라도 올해가 아니면 둘 다 연도까지 쓴다 */
-export function formatDateKeyRange(
-  startDateKey: string,
-  endDateKey: string,
-  todayDateKey: string,
-  context: DateFormatContext,
-): string {
-  const kind = toYearAwareDateLabel([startDateKey, endDateKey], todayDateKey);
-  return `${formatDateKeyLabel(startDateKey, kind, context)} ~ ${formatDateKeyLabel(endDateKey, kind, context)}`;
-}
-
-export function formatDateKeyCompactRange(
-  startDateKey: string,
-  endDateKey: string,
-  todayDateKey: string,
-  context: DateFormatContext,
-): string {
-  if (toYearAwareDateLabel([startDateKey, endDateKey], todayDateKey) === 'fullDate') {
-    return formatDateKeyRange(startDateKey, endDateKey, todayDateKey, context);
-  }
-  const endLabel = isSameMonthDateKey(startDateKey, endDateKey)
-    ? getFormatter(toUtcContext(context), DATE_OPTIONS.dayNumber).format(toUtcMidnight(endDateKey))
-    : formatDateKeyLabel(endDateKey, 'monthDay', context);
-  return `${formatDateKeyLabel(startDateKey, 'monthDay', context)}~${endLabel}`;
+  return formatDateKeyLabel(dateKey, getYearAwareDateLabel([dateKey], todayDateKey), context);
 }
 
 /** 오전/오후와 시각이 줄바꿈으로 갈라지지 않게 사이를 줄바꿈 없는 공백으로 잇는다 */
@@ -213,12 +195,13 @@ export interface RelativeTimeLabels {
   justNow: string;
   minutesAgo: (count: number) => string;
   hoursAgo: (count: number) => string;
+  yesterday: string;
   daysAgo: (count: number) => string;
 }
 
 /**
- * 경과 시간을 표시한다. 1분 미만·7일 미만은 주입한 문구("방금 전", "5분 전", "3시간 전", "2일 전"),
- * 그 이후는 같은 해면 "1월 5일", 다른 해면 "2025. 1. 5." (연도는 context 시간대 기준).
+ * 경과 시간을 표시한다. 하루 안은 분·시간("방금 전", "5분 전", "3시간 전"), 그 뒤는 context 시간대의 달력 날짜로
+ * 센 일수("어제", "2일 전")이고, 7일부터는 year-aware 날짜("1월 5일", 다른 해면 "2025년 1월 5일")다.
  */
 export function formatRelativeTimeWith(
   date: Instant,
@@ -236,17 +219,19 @@ export function formatRelativeTimeWith(
   if (elapsedMs < HOUR_MS) {
     return labels.minutesAgo(Math.floor(elapsedMs / MINUTE_MS));
   }
-  if (elapsedMs < DAY_MS) {
+  const todayDateKey = toDateKey(now, context.timeZone);
+  const elapsedDays = diffDateKeysInDays(toDateKey(date, context.timeZone), todayDateKey);
+  // 25시간인 서머타임 해제일은 24시간이 지나도 같은 날일 수 있다
+  if (elapsedMs < DAY_MS || elapsedDays < 1) {
     return labels.hoursAgo(Math.floor(elapsedMs / HOUR_MS));
   }
-  if (elapsedMs < RELATIVE_DAY_LIMIT * DAY_MS) {
-    return labels.daysAgo(Math.floor(elapsedMs / DAY_MS));
+  if (elapsedDays === 1) {
+    return labels.yesterday;
   }
-  const isSameYear = isSameYearDateKey(
-    toDateKey(date, context.timeZone),
-    toDateKey(now, context.timeZone),
-  );
-  return formatDateLabel(date, isSameYear ? 'monthDay' : 'numericDate', context);
+  if (elapsedDays < RELATIVE_DAY_LIMIT) {
+    return labels.daysAgo(elapsedDays);
+  }
+  return formatYearAwareDateLabel(date, todayDateKey, context);
 }
 
 export function formatHHmmTime(

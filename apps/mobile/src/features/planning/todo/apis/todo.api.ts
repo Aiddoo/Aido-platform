@@ -1,15 +1,10 @@
 import {
-  type ChangeTodoCategoryInput,
   dailyCompletionsRangeResponseSchema,
   deleteTodoResponseSchema,
   friendTodoListResponseSchema,
   type GetTodosQuery,
-  type ReorderTodoInput,
-  type ToggleTodoCompleteInput,
   todoOverviewResponseSchema,
   todoSummaryResponseSchema,
-  type UpdateTodoInput,
-  type UpdateTodoScheduleInput,
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
@@ -23,11 +18,18 @@ import type { TodoSeries } from '../domains/todo-series.model';
 import type {
   Todo,
   TodoDetails,
+  TodoFieldChanges,
   TodoOverview,
   TodoSummary,
   TodoListResult,
 } from '../domains/todo.model';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
+import type {
+  TodoCategoryMove,
+  TodoCompletionChange,
+  TodoReorder,
+  TodoScheduleChange,
+} from '../schemas/todo-request.schema';
 import {
   createRepeatingTodoEnvelopeSchema,
   createTodoEnvelopeSchema,
@@ -41,7 +43,6 @@ import {
   toFollowingCategoryRequest,
   toFollowingScheduleRequest,
   toTodoSeries,
-  toUpdateTodoRequest,
 } from './todo-series.mapper';
 import {
   toCreateTodoRequest,
@@ -52,6 +53,7 @@ import {
   toTodoListResult,
   toTodoOverview,
   toTodoSummary,
+  toUpdateTodoRequest,
 } from './todo.mapper';
 
 export class TodoApi {
@@ -121,7 +123,7 @@ export class TodoApi {
 
   toggleTodoComplete = async (
     todoId: number,
-    body: ToggleTodoCompleteInput,
+    body: TodoCompletionChange,
   ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/complete`, body);
 
@@ -146,12 +148,12 @@ export class TodoApi {
 
   updateTodo = async (
     todoId: number,
-    input: UpdateTodoInput,
+    fields: TodoFieldChanges,
     options: TodoSeriesEditOptions = {},
   ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(
       `v1/todos/${todoId}`,
-      toUpdateTodoRequest(input, options),
+      toUpdateTodoRequest(fields, options),
     );
 
     return parseApiResponse(
@@ -164,7 +166,7 @@ export class TodoApi {
 
   updateTodoSchedule = async (
     todoId: number,
-    input: UpdateTodoScheduleInput,
+    input: TodoScheduleChange,
     scope?: TodoUpdateScope,
   ): Promise<Result<Todo, ApiError>> => {
     const result =
@@ -212,7 +214,7 @@ export class TodoApi {
     );
   };
 
-  /** 친구의 일일 완료 현황 — 공개(PUBLIC) 할 일 기준 집계 (친구 캘린더 마커용) */
+  /** 친구가 공개(PUBLIC)한 할 일만 센다 */
   getFriendDailyCompletions = async (
     friendUserId: string,
     startDate: string,
@@ -232,7 +234,7 @@ export class TodoApi {
     );
   };
 
-  /** 하루의 할 일 요약 (홈 위젯 스냅샷) — 서버는 기기 시간대 기준 오늘·내일만 허용한다 */
+  /** 서버는 사용자 시간대(X-Timezone) 기준 오늘·내일만 받는다(그 밖은 SYS_0002) */
   getTodoSummary = async (
     date: string,
     signal?: AbortSignal,
@@ -275,10 +277,7 @@ export class TodoApi {
     );
   };
 
-  reorderTodo = async (
-    todoId: number,
-    input: ReorderTodoInput,
-  ): Promise<Result<Todo, ApiError>> => {
+  reorderTodo = async (todoId: number, input: TodoReorder): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/reorder`, input);
 
     return parseApiResponse(
@@ -293,19 +292,19 @@ export class TodoApi {
     todoId: number,
     signal?: AbortSignal,
   ): Promise<Result<TodoDetails, ApiError>> => {
-    const response = await this.#httpClient.get(`v1/todos/${todoId}/details`, { signal });
+    const result = await this.#httpClient.get(`v1/todos/${todoId}/details`, { signal });
 
     return parseApiResponse(
-      response,
+      result,
       todoDetailsEnvelopeSchema,
       toTodoDetails,
-      '[TodoApi] Invalid todo details',
+      '[TodoApi] Invalid getTodoDetails response',
     );
   };
 
   changeTodoCategory = async (
     todoId: number,
-    input: ChangeTodoCategoryInput,
+    input: TodoCategoryMove,
     scope?: TodoUpdateScope,
   ): Promise<Result<Todo, ApiError>> => {
     const result =

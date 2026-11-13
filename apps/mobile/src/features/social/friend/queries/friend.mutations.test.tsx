@@ -5,6 +5,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
@@ -34,7 +35,7 @@ describe('보낸 요청 취소', () => {
         sent: useInfiniteQuery(useGetSentRequestsInfiniteQueryOptions()),
         cancel: useMutation(useCancelRequestMutationOptions()),
       }),
-      { di: { httpClient } },
+      { di: createTestDi({ ports: { httpClient } }) },
     );
     await waitFor(() => expect(result.current.sent.isSuccess).toBe(true));
     const refetch = createPendingResponse(ok({ ...sentRequests, requests: [], totalCount: 0 }));
@@ -77,8 +78,7 @@ describe('친구 끊기', () => {
       .mockReturnValueOnce(firstRemoval.response)
       .mockReturnValueOnce(secondRemoval.response);
     const { result } = await renderScreenHook(() => useMutation(useRemoveFriendMutationOptions()), {
-      queryClient,
-      di: { httpClient, haptics: createHapticsGatewayStub() },
+      di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub(), queryClient } }),
     });
     const removals = await act(async () => [
       result.current.mutateAsync(first.id).catch((error: unknown) => error),

@@ -1,5 +1,6 @@
 import { CATEGORY_COLORS } from '../constants/todo-category.constants';
-import type { TodoCategory, TodoCategoryDeletionRequest } from '../domains/todo-category.model';
+import type { TodoCategoryDeletionRequest } from '../domains/todo-category-deletion.model';
+import type { TodoCategory } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 
 export type TodoCountBucket = '0' | '1_9' | '10_49' | '50_plus';

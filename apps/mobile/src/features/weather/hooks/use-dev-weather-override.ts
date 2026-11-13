@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
 import { weatherDevParamsSchema } from '../schemas/weather-dev-params.schema';
-import type { DevWeatherOverride } from '../utils/weather-dev-override';
+import type { DevWeatherOverride } from '../utils/weather-dev-override.view-model';
 
 /** 개발 빌드 QA용: `/weather?devScene=HAIL&devNight=1`로 연 날씨 화면에서만 지금 날씨를 바꿔 보여 준다. */
 function useRouteOverride() {

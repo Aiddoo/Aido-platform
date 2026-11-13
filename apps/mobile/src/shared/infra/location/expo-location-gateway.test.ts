@@ -1,3 +1,4 @@
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import * as Location from 'expo-location';
 
 import { expoLocationGateway } from './expo-location-gateway';
@@ -16,14 +17,12 @@ const cachedLocation = jest.mocked(Location.getLastKnownPositionAsync);
 const watchLocation = jest.mocked(Location.watchPositionAsync);
 
 describe('위치 구독의 종료와 복구', () => {
+  setupFakeTimersPerTest();
+
   beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers();
     cachedLocation.mockResolvedValue(null);
   });
   afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
     jest.resetAllMocks();
   });
 
@@ -31,19 +30,14 @@ describe('위치 구독의 종료와 복구', () => {
     // Given
     const controller = new AbortController();
     const remove = jest.fn();
-    let resolveWatch: ((value: Location.LocationSubscription) => void) | undefined;
-    watchLocation.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveWatch = resolve;
-        }),
-    );
+    const watch = Promise.withResolvers<Location.LocationSubscription>();
+    watchLocation.mockReturnValue(watch.promise);
     const result = expoLocationGateway.getCoordinates(controller.signal);
     await jest.advanceTimersByTimeAsync(0);
 
     // When
     controller.abort();
-    resolveWatch?.({ remove });
+    watch.resolve({ remove });
     const settling = jest.advanceTimersByTimeAsync(0);
 
     // Then

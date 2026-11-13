@@ -1,4 +1,4 @@
-import { Box } from '../box';
+import { Box } from '../box/box';
 import { Button } from '../button/button';
 import { Spacing } from '../spacing/spacing';
 import { Text } from '../text/text';

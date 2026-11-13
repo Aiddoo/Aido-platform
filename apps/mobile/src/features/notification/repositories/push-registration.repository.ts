@@ -1,4 +1,4 @@
-import type { Storage } from '@src/core/ports/storage';
+import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 
 import {
   createEmptyPushRegistration,
@@ -14,7 +14,9 @@ export interface PushRegistrationRepository {
   save(registration: PushRegistration): Promise<void>;
 }
 
-export function createPushRegistrationRepository(storage: Storage): PushRegistrationRepository {
+export function createPushRegistrationRepository(
+  storage: KeyValueStorage,
+): PushRegistrationRepository {
   return {
     find: async () =>
       (await storage.get(PUSH_REGISTRATION_KEY, pushRegistrationStorageSchema)) ??

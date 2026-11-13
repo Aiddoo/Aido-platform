@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { PawIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -17,6 +18,7 @@ export function NudgePawButton({
   ...pressableProps
 }: NudgePawButtonProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <PressableFeedback
@@ -29,10 +31,9 @@ export function NudgePawButton({
       className={cn('min-h-11 min-w-11 items-center justify-center', className)}
     >
       <PawIcon
-        width={18}
-        height={18}
-        // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-        colorClassName={isDisabled === true ? 'text-gray-5' : 'text-main'}
+        width={fontScaledSize(18)}
+        height={fontScaledSize(18)}
+        colorClassName={cn(isDisabled === true ? 'text-gray-5' : 'text-main')}
       />
     </PressableFeedback>
   );

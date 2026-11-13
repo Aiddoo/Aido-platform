@@ -1,7 +1,7 @@
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
+import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box, Spacing } from '@src/shared/ui';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef } from 'react';
 import { type ControllerFieldState } from 'react-hook-form';
@@ -105,27 +105,26 @@ export function NewPasswordStep({
       >
         {step === 'newPasswordConfirm' && (
           <RevealedField onRevealed={focusConfirmInput}>
-            <VStack mb={8}>
-              <PasswordInput
-                ref={newPasswordConfirmInputRef}
-                label={t('forgotPassword.newPasswordConfirmLabel')}
-                placeholder={t('forgotPassword.newPasswordConfirmPlaceholder')}
-                value={newPasswordConfirm.field.value}
-                onChange={newPasswordConfirm.field.onChange}
-                textContentType="newPassword"
-                autoComplete="new-password"
-                returnKeyType="done"
-                isInvalid={confirmError != null}
-                errorMessage={resolveValidationMessage(confirmError, {
-                  default: 'password.mismatch',
-                })}
-                onSubmitEditing={handleNext}
-              />
-            </VStack>
+            <PasswordInput
+              ref={newPasswordConfirmInputRef}
+              label={t('forgotPassword.newPasswordConfirmLabel')}
+              placeholder={t('forgotPassword.newPasswordConfirmPlaceholder')}
+              value={newPasswordConfirm.field.value}
+              onChange={newPasswordConfirm.field.onChange}
+              textContentType="newPassword"
+              autoComplete="new-password"
+              returnKeyType="done"
+              isInvalid={confirmError != null}
+              errorMessage={resolveValidationMessage(confirmError, {
+                default: 'password.mismatch',
+              })}
+              onSubmitEditing={handleNext}
+            />
+            <Spacing size={8} />
           </RevealedField>
         )}
 
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+        <Animated.View entering={FadeIn.duration(ANIMATION.durationMs.normal)}>
           <VStack gap={4}>
             <PasswordInput
               ref={newPasswordInputRef}

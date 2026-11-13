@@ -1,5 +1,5 @@
 import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
-import { createLoggerStub } from '@src/testing/ports/logger.stub';
+import { createAppLoggerStub } from '@src/testing/ports/app-logger.stub';
 import Purchases, {
   INTRO_ELIGIBILITY_STATUS,
   PACKAGE_TYPE,
@@ -226,7 +226,7 @@ describe('toPurchasesGatewayError', () => {
 });
 
 describe('createRevenueCatPurchasesGateway', () => {
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const revenueCatPurchasesGateway = createRevenueCatPurchasesGateway({
     isLogEnabled: false,
     logger,

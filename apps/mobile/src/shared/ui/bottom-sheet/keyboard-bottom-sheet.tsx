@@ -36,10 +36,11 @@ import { useResolveClassNames } from 'uniwind';
 
 import { FocusedFieldContext } from '../input/focused-field';
 import { FieldMaxHeightContext } from '../text-area/field-max-height';
+import { ToastLayerClosingContext } from '../toast/toast-layer';
 import {
   HANDLE_HEIGHT,
   SHARED_SHEET_STYLES,
-  SHEET_ANIMATION_DURATION,
+  SHEET_ANIMATION_DURATION_MS,
   SHEET_CONTENT_PADDING,
   SHEET_FOOTER_PADDING_TOP,
   SHEET_INDEX,
@@ -89,6 +90,7 @@ export function KeyboardBottomSheet({
 }: KeyboardBottomSheetProps) {
   const { setEnabled } = useKeyboardContext();
   const portalTarget = usePortalTarget();
+  const startToastLayerClosing = use(ToastLayerClosingContext);
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
   const animatedPosition = useSharedValue(0);
   const animatedIndex = useSharedValue<number>(SHEET_INDEX.CLOSED);
@@ -100,7 +102,7 @@ export function KeyboardBottomSheet({
   const closeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizeFrameRef = useRef<number | undefined>(undefined);
   const insets = useSafeAreaInsets();
-  const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION });
+  const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION_MS });
   const { margins, topInset } = useSheetLayout({ minMargin: 0 });
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -124,7 +126,7 @@ export function KeyboardBottomSheet({
   // 스크롤 영역 아래 끝을 키보드 위에 맞춰야 footer 뒤로 들어간 내용(카테고리 색)까지 스크롤된다
   const scrollAnimatedStyle = useAnimatedStyle(() => ({
     marginBottom: withTiming(keyboardHiddenHeight.get() ?? 0, {
-      duration: SHEET_ANIMATION_DURATION,
+      duration: SHEET_ANIMATION_DURATION_MS,
     }),
   }));
   const footerAnimatedStyle = useAnimatedStyle(() => {
@@ -134,12 +136,12 @@ export function KeyboardBottomSheet({
     return {
       // 키보드 위로 시트가 끝까지 올라가는 작은 화면(접은 Duo·SE)에서만 footer 아래 safe area 여백을 줄인다
       paddingBottom: withTiming(isSheetAtTop ? FOOTER_KEYBOARD_GAP : bottomPadding, {
-        duration: SHEET_ANIMATION_DURATION,
+        duration: SHEET_ANIMATION_DURATION_MS,
       }),
       transform: [
         {
           translateY: withTiming(-(hiddenHeight ?? 0), {
-            duration: SHEET_ANIMATION_DURATION,
+            duration: SHEET_ANIMATION_DURATION_MS,
           }),
         },
       ],
@@ -332,6 +334,7 @@ export function KeyboardBottomSheet({
     if (toIndex === SHEET_INDEX.CLOSED) {
       isClosingRef.current = true;
       Keyboard.dismiss();
+      startToastLayerClosing?.();
       onCloseStart?.();
     }
   };

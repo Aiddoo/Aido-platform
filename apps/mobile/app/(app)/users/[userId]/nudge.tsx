@@ -1,13 +1,13 @@
 import { RemindNudgeBottomSheet } from '@src/features/social/nudge/components/nudge-bottom-sheet';
 import { remindNudgeParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { SheetRouteScreen } from '@src/shared/ui';
-import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function RemindNudgeSheetRoute() {
-  const params = remindNudgeParamsSchema.safeParse(useLocalSearchParams());
+  const route = useRouteParamsOrRedirect(remindNudgeParamsSchema, { fallbackHref: '/feed' });
 
-  if (!params.success) {
-    return <Redirect href="/feed" />;
+  if (route.redirect != null) {
+    return route.redirect;
   }
 
   return (

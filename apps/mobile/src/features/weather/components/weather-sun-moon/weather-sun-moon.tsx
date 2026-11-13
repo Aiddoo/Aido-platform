@@ -55,31 +55,31 @@ const SUN_FACT_COUNT = 3;
 /** 해·달 시각은 예보 위치 시간대로 읽고, 벽시계가 기기와 다를 때만 다음 해 시각에 '현지'를 붙인다. */
 export function WeatherSunMoon() {
   const { t } = useTranslation('weather');
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.sunMoon },
       useGetPreferenceQueryOptions(),
     ],
   });
   const now = useMinuteNow();
-  const dateFormat = useLocationDateFormat(data.location.timezone);
-  const localTime = useFormatLocalTime(data.location.timezone, now);
+  const dateFormat = useLocationDateFormat(weather.location.timezone);
+  const localTime = useFormatLocalTime(weather.location.timezone, now);
   const formatTime = (date: Instant) => formatClockTime(date, preference.timeFormat, dateFormat);
-  const today = findTodayOrFirstForecast(data, now);
+  const today = findTodayOrFirstForecast(weather, now);
   if (today == null) {
     return null;
   }
-  const todayKey = getTodayKey(data, now);
+  const todayKey = getTodayKey(weather, now);
   const sunEvents = WeatherReportPolicy.getSunEvents(today, {
-    isDaylight: data.current.isDaylight,
+    isDaylight: weather.current.isDaylight,
   });
   const nextEvent = WeatherDetailPolicy.findNextSunEvent(
     today,
-    WeatherDetailPolicy.findDayAfter(data.daily, todayKey),
+    WeatherDetailPolicy.findDayAfter(weather.daily, todayKey),
     now,
   );
   const daylight = WeatherDetailPolicy.findDaylightDuration(today);
-  const nextFullMoon = WeatherDetailPolicy.findNextFullMoon(data.daily, todayKey);
+  const nextFullMoon = WeatherDetailPolicy.findNextFullMoon(weather.daily, todayKey);
   const headline = match(sunEvents)
     .with({ kind: 'polarDay' }, () => ({ value: t('sunMoon.polarDay'), label: null }))
     .with({ kind: 'polarNight' }, () => ({ value: t('sunMoon.polarNight'), label: null }))
@@ -104,8 +104,8 @@ export function WeatherSunMoon() {
       <HStack
         align="baseline"
         justify="between"
-        gap={8}
-        className="mt-1.5"
+
+        className="mt-1.5 gap-2"
         accessible
         accessibilityLabel={
           headline.label == null
@@ -119,8 +119,8 @@ export function WeatherSunMoon() {
           className={cn(
             'shrink',
             isPolar
-              ? 'text-b1 font-semibold'
-              : 'text-[32px] leading-[38px] font-normal tracking-[-1px] tabular-nums',
+              ? 'font-semibold text-b1'
+              : 'font-normal text-[32px] leading-[38px] tracking-[-1px] tabular-nums',
           )}
         >
           {headline.value}
@@ -137,7 +137,7 @@ export function WeatherSunMoon() {
         isNight={isSunBelowHorizon(today, now)}
       />
       {sunEvents.kind === 'regular' && (
-        <HStack gap={4} className="mt-2">
+        <HStack className="mt-2 gap-1">
           <WeatherSunMoon.Fact
             label={t('sunMoon.sunrise')}
             value={sunEvents.sunrise == null ? t('details.noValue') : formatTime(sunEvents.sunrise)}
@@ -158,8 +158,8 @@ export function WeatherSunMoon() {
         </HStack>
       )}
       <Separator thickness={0.5} className="mt-3.5 bg-on-sky/[0.18]" />
-      <HStack gap={12} align="center" className="mt-3.5">
-        <WeatherMoonIcon phase={today.moonPhase} latitude={data.location.latitude} />
+      <HStack align="center" className="mt-3.5 gap-3">
+        <WeatherMoonIcon phase={today.moonPhase} latitude={weather.location.latitude} />
         <VStack className="min-w-0 flex-1" accessible>
           <Text size="b2" weight="semibold" tone="onSky" className="leading-[22px]">
             {t(MOON_PHASE_LABEL_KEYS[today.moonPhase])}
@@ -221,7 +221,7 @@ WeatherSunMoon.Loading = function Loading() {
       <TextSkeleton size="b4" className="w-16 opacity-40" />
       <TextSkeleton size="t1" className="mt-1.5 w-24 opacity-40" />
       <Box style={{ height: SUN_ARC_VIEWBOX.height }} />
-      <HStack gap={4} className="mt-2">
+      <HStack className="mt-2 gap-1">
         {range(SUN_FACT_COUNT).map((index) => (
           <VStack key={index} className="min-w-0 flex-1">
             <TextSkeleton size="b4" className="w-3/5 opacity-40" />
@@ -230,7 +230,7 @@ WeatherSunMoon.Loading = function Loading() {
         ))}
       </HStack>
       <Separator thickness={0.5} className="mt-3.5 bg-on-sky/[0.18]" />
-      <HStack gap={12} align="center" className="mt-3.5">
+      <HStack align="center" className="mt-3.5 gap-3">
         <Box className="size-[46px] rounded-full bg-on-sky/[0.12]" />
         <VStack className="min-w-0 flex-1">
           <TextSkeleton size="b2" className="w-24 opacity-40" />

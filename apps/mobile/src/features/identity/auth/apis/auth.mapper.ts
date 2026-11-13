@@ -23,10 +23,29 @@ import {
   type ResetPasswordResult,
 } from '../domains/auth.model';
 import { type LinkedAccount, type LinkedAccountsResult } from '../domains/oauth.model';
-import { type AuthTokensEnvelope, type RegisterEnvelope } from '../schemas/auth-response.schema';
+import type { RegisterInput } from '../schemas/auth-request.schema';
+import {
+  type AuthTokensEnvelope,
+  refreshEnvelopeSchema,
+  type RegisterEnvelope,
+} from '../schemas/auth-response.schema';
+import type { SignUpFormValues } from '../schemas/sign-up-form.schema';
 
 type AppleCredential = Extract<AppleSignInResult, { type: 'success' }>;
-type SessionDeviceType = NonNullable<LoginInput['deviceType']>;
+export type SessionDeviceType = NonNullable<LoginInput['deviceType']>;
+
+type AgreedSignUpFormValues = Omit<SignUpFormValues, 'termsAgreed' | 'privacyAgreed'> & {
+  termsAgreed: true;
+  privacyAgreed: true;
+};
+
+/** 혜택·소식 동의 하나를 마케팅 정보·광고성 푸시 동의 둘로 나눠 보낸다 */
+export function toRegisterRequest({
+  isMarketingAgreed,
+  ...values
+}: AgreedSignUpFormValues): RegisterInput {
+  return { ...values, marketingAgreed: isMarketingAgreed, marketingPushAgreed: isMarketingAgreed };
+}
 
 export function toEmailLoginRequest(
   { email, password }: Pick<LoginInput, 'email' | 'password'>,
@@ -76,7 +95,7 @@ export function toResendVerificationResult(
   return {
     message: dto.message,
     email: dto.email,
-    retryAfterSeconds: dto.retryAfterSeconds,
+    retryAfterSeconds: dto.retryAfterSeconds ?? null,
   };
 }
 
@@ -120,4 +139,14 @@ export function toLinkedAccounts(dto: LinkedAccountsResponse): LinkedAccountsRes
     accounts: dto.accounts.map(toLinkedAccount),
     canUnlink: dto.canUnlink,
   };
+}
+
+/** refresh 응답 본문에서 새 토큰 쌍을 읽는다. 계약과 다르면 null */
+export function parseRefreshTokens(
+  json: unknown,
+): { accessToken: string; refreshToken: string } | null {
+  const parsed = refreshEnvelopeSchema.safeParse(json);
+  return parsed.success
+    ? { accessToken: parsed.data.data.accessToken, refreshToken: parsed.data.data.refreshToken }
+    : null;
 }

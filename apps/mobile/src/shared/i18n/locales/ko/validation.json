@@ -36,5 +36,8 @@
   "comment": {
     "required": "댓글 내용을 입력해주세요",
     "tooLong": "댓글은 500자 이내로 입력해주세요"
+  },
+  "reportDetail": {
+    "tooLong": "상세 내용은 500자 이내로 입력해주세요"
   }
 }

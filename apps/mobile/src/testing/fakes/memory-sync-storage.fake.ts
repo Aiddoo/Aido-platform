@@ -1,5 +1,6 @@
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
+import { sumBy } from 'es-toolkit';
 
 export type MemorySyncStorage = jest.Mocked<EnumerableSyncStorage & ObservableSyncStorage> & {
   /** 모든 키에 남은 구독 수. 정리됐는지 확인할 때 쓴다 */
@@ -45,6 +46,6 @@ export function createMemorySyncStorage(): MemorySyncStorage {
       };
     }),
     getListenerCount: () =>
-      Array.from(listenersByKey.values()).reduce((count, listeners) => count + listeners.size, 0),
+      sumBy(Array.from(listenersByKey.values()), (listeners) => listeners.size),
   };
 }

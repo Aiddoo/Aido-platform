@@ -15,8 +15,8 @@ describe('ReportList.Item', () => {
     });
 
     // When
-    fireEvent.press(screen.getByRole('button', { name: '자세히 보기' }));
-    fireEvent.press(screen.getByRole('button', { name: '자세히 보기' }));
+    await fireEvent.press(screen.getByRole('button', { name: '자세히 보기' }));
+    await fireEvent.press(screen.getByRole('button', { name: '자세히 보기' }));
 
     // Then
     expect(router.navigate).toHaveBeenCalledTimes(1);

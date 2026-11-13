@@ -1,4 +1,6 @@
+import { dateSchema } from '@aido/api/common';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
+import { z } from 'zod';
 
 // Hinnant의 civil 날짜 ↔ 일수 변환(proleptic 그레고리력, "chrono-Compatible Low-Level Date Algorithms")이다.
 // Hermes에 Temporal이 없고 폴리필은 spike에서 버렸다. 3월을 해의 첫 달로 세면 윤일이 해의 끝에 와 식이 단순해진다
@@ -24,7 +26,12 @@ const MONTH_LENGTH_ROUNDING = 2;
 const EPOCH_SHIFT_DAYS = 719_468;
 // 1970-01-01은 목요일이다
 const EPOCH_DAY_OF_WEEK = 4;
-const ISO_WEEK_THURSDAY_OFFSET = 3;
+// 주의 첫날에서 가운데 날까지. 일요일 시작 주는 수요일, ISO 주(월요일 시작)는 목요일이다
+const WEEK_MIDDLE_DAY_OFFSET = 3;
+
+/** 시간대와 무관한 달력 날짜(계약 `YYYY-MM-DD`). 없는 날(2월 30일)은 받지 않는다 */
+export const dateKeySchema = dateSchema.brand<'DateKey'>();
+export type DateKey = z.infer<typeof dateKeySchema>;
 
 export interface CivilDate {
   year: number;
@@ -46,19 +53,42 @@ function getDaysInMonth(year: number, month: number): number {
   return DAYS_IN_MONTH[month - 1] ?? Number.NaN;
 }
 
-/** 계약의 `YYYY-MM-DD`(`z.iso.date()`)만 읽는다. 없는 날(2월 30일)도 null이다 */
-export function parseDateKey(dateKey: string): CivilDate | null {
-  const parts = DATE_KEY_PATTERN.exec(dateKey);
+/** `dateKeySchema`와 같은 규칙이다. 계산 결과를 Zod 없이 좁혀 달력 칸마다 드는 비용을 줄인다 */
+export function isDateKey(value: string): value is DateKey {
+  const parts = DATE_KEY_PATTERN.exec(value);
   if (parts == null) {
-    return null;
+    return false;
   }
   const [, yearText, monthText, dayText] = parts;
   const year = Number(yearText);
   const month = Number(monthText);
   const day = Number(dayText);
-  const isRealDate =
-    1 <= month && month <= MONTHS_PER_YEAR && 1 <= day && day <= getDaysInMonth(year, month);
-  return isRealDate ? { year, month, day } : null;
+  return 1 <= month && month <= MONTHS_PER_YEAR && 1 <= day && day <= getDaysInMonth(year, month);
+}
+
+/** brand는 입력 타입에 남지 않아 폼과 폼이 같이 쓰는 스키마는 이것을 쓴다 */
+export const dateKeyFieldSchema = z.custom<DateKey>(
+  (value) => typeof value === 'string' && isDateKey(value),
+);
+
+/** 날짜 key는 형식을 지난 값이라 자리만 잘라 읽는다 */
+export function toCivilDate(dateKey: DateKey): CivilDate {
+  return {
+    year: Number(dateKey.slice(0, 4)),
+    month: Number(dateKey.slice(5, 7)),
+    day: Number(dateKey.slice(8, 10)),
+  };
+}
+
+function formatDateKey(date: CivilDate): DateKey {
+  const month = String(date.month).padStart(2, '0');
+  const day = String(date.day).padStart(2, '0');
+  const dateKey = `${String(date.year).padStart(4, '0')}-${month}-${day}`;
+  // 0000~9999년을 벗어난 계산 결과는 계약 형식이 아니다
+  if (!isDateKey(dateKey)) {
+    throw new RangeError(`날짜 key로 쓸 수 없는 날짜다: ${dateKey}`);
+  }
+  return dateKey;
 }
 
 /** 3월=0 … 2월=11 */
@@ -102,7 +132,8 @@ function toYearOfEra(dayOfEra: number): number {
   return Math.floor((dayOfEra - leapDays) / DAYS_PER_COMMON_YEAR);
 }
 
-function toEpochDay({ year, month, day }: CivilDate): number {
+function toEpochDay(dateKey: DateKey): number {
+  const { year, month, day } = toCivilDate(dateKey);
   const marchYear = month <= FEBRUARY ? year - 1 : year;
   const era = Math.floor(marchYear / YEARS_PER_ERA);
   const yearOfEra = marchYear - era * YEARS_PER_ERA;
@@ -111,7 +142,7 @@ function toEpochDay({ year, month, day }: CivilDate): number {
   return era * DAYS_PER_ERA + dayOfEra - EPOCH_SHIFT_DAYS;
 }
 
-function toCivilDate(epochDay: number): CivilDate {
+function fromEpochDay(epochDay: number): CivilDate {
   const shifted = epochDay + EPOCH_SHIFT_DAYS;
   const era = Math.floor(shifted / DAYS_PER_ERA);
   const dayOfEra = shifted - era * DAYS_PER_ERA;
@@ -134,140 +165,108 @@ function getDaysSinceMonday(epochDay: number): number {
   return (toDayOfWeek(epochDay) + DAYS_PER_WEEK - 1) % DAYS_PER_WEEK;
 }
 
-function formatDateKey(date: CivilDate): string {
-  const month = String(date.month).padStart(2, '0');
-  const day = String(date.day).padStart(2, '0');
-  return `${String(date.year).padStart(4, '0')}-${month}-${day}`;
-}
-
-// 잘못된 key에서 나온 날짜는 빈 문자열이다. DateKey brand로 경계에서 막기 전까지의 약속이다(migration-status)
-function shiftDateKey(dateKey: string, toEpochDayShift: (epochDay: number) => number): string {
-  const date = parseDateKey(dateKey);
-  return date == null ? '' : formatDateKey(toCivilDate(toEpochDayShift(toEpochDay(date))));
-}
-
-export function addDaysToDateKey(dateKey: string, days: number): string {
-  return shiftDateKey(dateKey, (epochDay) => epochDay + days);
+export function addDaysToDateKey(dateKey: DateKey, days: number): DateKey {
+  return formatDateKey(fromEpochDay(toEpochDay(dateKey) + days));
 }
 
 /** 말일을 넘기면 그 달의 마지막 날로 맞춘다 */
-export function addMonthsToDateKey(dateKey: string, months: number): string {
-  const date = parseDateKey(dateKey);
-  if (date == null) {
-    return '';
-  }
+export function addMonthsToDateKey(dateKey: DateKey, months: number): DateKey {
+  const date = toCivilDate(dateKey);
   const monthIndex = date.year * MONTHS_PER_YEAR + (date.month - 1) + months;
   const year = Math.floor(monthIndex / MONTHS_PER_YEAR);
   const month = monthIndex - year * MONTHS_PER_YEAR + 1;
   return formatDateKey({ year, month, day: Math.min(date.day, getDaysInMonth(year, month)) });
 }
 
-export function getMonthStartDateKey(dateKey: string): string {
-  const date = parseDateKey(dateKey);
-  return date == null ? '' : formatDateKey({ ...date, day: 1 });
+export function getMonthStartDateKey(dateKey: DateKey): DateKey {
+  return formatDateKey({ ...toCivilDate(dateKey), day: 1 });
 }
 
 /** 두 YYYY-MM-DD의 달 차이 (to - from). 일은 보지 않고 달만 센다. */
-export function diffDateKeysInMonths(from: string, to: string): number {
-  const fromDate = parseDateKey(from);
-  const toDate = parseDateKey(to);
-  if (fromDate == null || toDate == null) {
-    return Number.NaN;
-  }
+export function diffDateKeysInMonths(from: DateKey, to: DateKey): number {
+  const fromDate = toCivilDate(from);
+  const toDate = toCivilDate(to);
   return (toDate.year - fromDate.year) * MONTHS_PER_YEAR + (toDate.month - fromDate.month);
 }
 
 /** 두 YYYY-MM-DD 사이의 달력 일수 (to - from, 시간대·DST 무관). */
-export function diffDateKeysInDays(from: string, to: string): number {
-  const fromDate = parseDateKey(from);
-  const toDate = parseDateKey(to);
-  if (fromDate == null || toDate == null) {
-    return Number.NaN;
-  }
-  return toEpochDay(toDate) - toEpochDay(fromDate);
+export function diffDateKeysInDays(from: DateKey, to: DateKey): number {
+  return toEpochDay(to) - toEpochDay(from);
 }
 
 /** YYYY-MM-DD의 요일 (0=일 … 6=토, Date#getDay()와 같은 인덱스). */
-export function getDayOfWeek(dateKey: string): number {
-  const date = parseDateKey(dateKey);
-  return date == null ? Number.NaN : toDayOfWeek(toEpochDay(date));
+export function getDayOfWeek(dateKey: DateKey): number {
+  return toDayOfWeek(toEpochDay(dateKey));
 }
 
 /** 그 날이 속한 월요일 시작 주의 월요일. 일요일은 앞선 월요일로 간다. */
-export function getMondayOfDateKey(dateKey: string): string {
-  return shiftDateKey(dateKey, (epochDay) => epochDay - getDaysSinceMonday(epochDay));
+export function getMondayOfDateKey(dateKey: DateKey): DateKey {
+  const epochDay = toEpochDay(dateKey);
+  return formatDateKey(fromEpochDay(epochDay - getDaysSinceMonday(epochDay)));
 }
 
-export function getYearOfDateKey(dateKey: string): number {
-  return parseDateKey(dateKey)?.year ?? Number.NaN;
+export function getYearOfDateKey(dateKey: DateKey): number {
+  return toCivilDate(dateKey).year;
 }
 
-export function getDayOfMonth(dateKey: string): number {
-  return parseDateKey(dateKey)?.day ?? Number.NaN;
+export function getDayOfMonth(dateKey: DateKey): number {
+  return toCivilDate(dateKey).day;
 }
 
 /** 그 날이 속한 ISO 주(월요일 시작)의 연도. 연말·연초에는 달력 연도와 다르다 (2027-01-01 → 2026). */
-export function getIsoWeekYear(dateKey: string): number {
-  const date = parseDateKey(dateKey);
-  if (date == null) {
-    return Number.NaN;
-  }
-  const epochDay = toEpochDay(date);
+export function getIsoWeekYear(dateKey: DateKey): number {
+  const epochDay = toEpochDay(dateKey);
   // ISO 주의 연도는 그 주 목요일이 속한 해다
-  return toCivilDate(epochDay - getDaysSinceMonday(epochDay) + ISO_WEEK_THURSDAY_OFFSET).year;
+  return fromEpochDay(epochDay - getDaysSinceMonday(epochDay) + WEEK_MIDDLE_DAY_OFFSET).year;
 }
 
-export function getDaysInDateKeyMonth(dateKey: string): number {
-  const date = parseDateKey(dateKey);
-  return date == null ? Number.NaN : getDaysInMonth(date.year, date.month);
+export function getDaysInDateKeyMonth(dateKey: DateKey): number {
+  const date = toCivilDate(dateKey);
+  return getDaysInMonth(date.year, date.month);
 }
 
-export function getMonthEndDateKey(dateKey: string): string {
-  const date = parseDateKey(dateKey);
-  return date == null ? '' : formatDateKey({ ...date, day: getDaysInMonth(date.year, date.month) });
+export function getMonthEndDateKey(dateKey: DateKey): DateKey {
+  const date = toCivilDate(dateKey);
+  return formatDateKey({ ...date, day: getDaysInMonth(date.year, date.month) });
 }
 
-export function isSameMonthDateKey(first: string, second: string): boolean {
-  const firstDate = parseDateKey(first);
-  const secondDate = parseDateKey(second);
-  return (
-    firstDate != null &&
-    secondDate != null &&
-    firstDate.year === secondDate.year &&
-    firstDate.month === secondDate.month
-  );
+export function isSameMonthDateKey(first: DateKey, second: DateKey): boolean {
+  const firstDate = toCivilDate(first);
+  const secondDate = toCivilDate(second);
+  return firstDate.year === secondDate.year && firstDate.month === secondDate.month;
 }
 
-export function isSameYearDateKey(first: string, second: string): boolean {
-  const firstDate = parseDateKey(first);
-  const secondDate = parseDateKey(second);
-  return firstDate != null && secondDate != null && firstDate.year === secondDate.year;
+export function isSameYearDateKey(first: DateKey, second: DateKey): boolean {
+  return getYearOfDateKey(first) === getYearOfDateKey(second);
 }
 
-/** 서버 주차 라벨과 같은 규칙이다. 주의 목요일이 속한 달의 몇 번째 목요일인지가 주차다 */
-export function getIsoWeekOfMonth(dateKey: string): {
-  thursdayDateKey: string;
-  weekOfMonth: number;
-} {
-  const thursdayDateKey = addDaysToDateKey(getMondayOfDateKey(dateKey), ISO_WEEK_THURSDAY_OFFSET);
-  return {
-    thursdayDateKey,
-    weekOfMonth: Math.ceil(getDayOfMonth(thursdayDateKey) / DAYS_PER_WEEK),
-  };
-}
-
-export interface CalendarWeek {
-  startDateKey: string;
-  endDateKey: string;
+export interface WeekOfMonth {
+  /** 주의 가운데 날(일요일 시작 주는 수요일, ISO 주는 목요일). 주차의 연·월은 이 날의 것이다 */
+  middleDateKey: DateKey;
+  /** 가운데 날이 그 달의 몇째 수·목요일인지(1~5) */
   weekOfMonth: number;
 }
 
-/** 주차는 그 주가 시작한 달 기준이다 (2027-01-01 → 2026-12-27 시작, 12월 4주차) */
-export function getCalendarWeek(dateKey: string): CalendarWeek {
+function toWeekOfMonth(middleDateKey: DateKey): WeekOfMonth {
+  return { middleDateKey, weekOfMonth: Math.ceil(getDayOfMonth(middleDateKey) / DAYS_PER_WEEK) };
+}
+
+/** 서버 getIsoWeekOfMonth와 같은 규칙이고 같은 표(packages/api/test/fixtures/week-of-month-cases.json)로 테스트한다 */
+export function getIsoWeekOfMonth(dateKey: DateKey): WeekOfMonth {
+  return toWeekOfMonth(addDaysToDateKey(getMondayOfDateKey(dateKey), WEEK_MIDDLE_DAY_OFFSET));
+}
+
+export interface CalendarWeek extends WeekOfMonth {
+  startDateKey: DateKey;
+  endDateKey: DateKey;
+}
+
+/** 일요일 시작 주. 2027-01-01(금)의 주는 2026-12-27에 시작하고 수요일 12월 30일이 속한 12월 5주차다 */
+export function getCalendarWeek(dateKey: DateKey): CalendarWeek {
   const startDateKey = addDaysToDateKey(dateKey, -getDayOfWeek(dateKey));
   return {
     startDateKey,
     endDateKey: addDaysToDateKey(startDateKey, DAYS_PER_WEEK - 1),
-    weekOfMonth: Math.ceil(getDayOfMonth(startDateKey) / DAYS_PER_WEEK),
+    ...toWeekOfMonth(addDaysToDateKey(startDateKey, WEEK_MIDDLE_DAY_OFFSET)),
   };
 }
