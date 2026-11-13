@@ -30,6 +30,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 | Controller 밖(guard 등)       | `RequestClientReader.current()`                                                       |
 
 - `X-Request-Id`는 UUID면 그대로, 아니면 새 UUID를 쓰고 응답 헤더로 돌려준다([관측](observability.md#http-로그와-요청-id)).
+- 헤더 Swagger 문서는 `platform/http/swagger/decorators/api-header.decorator.ts`의 `@ApiAppVersionHeader()`·`@ApiIdempotencyKeyHeader()`를 쓴다. query·path는 `@Query/@Param({ schema })`가 문서를 만든다. `@ApiQuery`·`@ApiParam`을 겹쳐 쓰면 그쪽이 이겨 문서가 검증과 달라지므로 새로 쓰지 않는다(남은 곳은 출시 지문을 갱신하며 옮긴다).
 - throttle은 전역 `UserAwareThrottlerGuard`다. 한도는 Controller 옆 이름 있는 상수(`AUTH_THROTTLE.LOGIN`처럼 `{ ttl, limit }`)이고, 인증 전은 IP, 사용자별은 `@ThrottleByUser()` + `@Throttle`이다. 출시된 endpoint의 새 한도는 `@ApiDoc` description 문장으로 적는다.
 
 ## Schema와 DTO
