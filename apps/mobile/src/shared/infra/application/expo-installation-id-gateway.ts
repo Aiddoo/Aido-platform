@@ -29,7 +29,7 @@ async function getIosInstallationId() {
 }
 
 export const expoInstallationIdGateway: InstallationIdGateway = {
-  async get() {
+  get: async () => {
     if (process.env.EXPO_OS === 'ios') {
       return getIosInstallationId();
     }

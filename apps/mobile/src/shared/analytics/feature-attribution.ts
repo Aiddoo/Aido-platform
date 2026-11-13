@@ -1,7 +1,8 @@
 import type { Analytics } from '@src/core/ports/analytics';
-import type { Logger } from '@src/core/ports/logger';
-import type { SyncStorage } from '@src/core/ports/sync-storage';
+import type { AppLogger } from '@src/core/ports/app-logger';
+import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
 import { DAY_MS } from '@src/shared/constants/time-units';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import {
   readStoredValue,
@@ -11,7 +12,10 @@ import {
 
 import { FEATURE_ATTRIBUTION_LOG_EVENT } from './feature-attribution-log-events';
 import type { CampaignId, FeatureKey } from './feature-key';
-import { featureAttributionStoredValue } from './schemas/feature-attribution-storage.schema';
+import {
+  featureAttributionStoredValue,
+  toFeatureAttributionKeyPrefix,
+} from './schemas/feature-attribution-storage.schema';
 import { track } from './track';
 
 export const FEATURE_ATTRIBUTION_TTL_MS = 7 * DAY_MS;
@@ -39,26 +43,30 @@ export interface FeatureAttributionStore {
 
 export function createFeatureAttributionStore(
   storage: SyncStorage,
-  now: () => number = Date.now,
+  now: () => Instant,
 ): FeatureAttributionStore {
   return {
-    record({ accountId, campaignId, feature }) {
+    record: ({ accountId, campaignId, feature }) => {
       writeStoredValue(
         storage,
         featureAttributionStoredValue,
-        { campaignId, feature, expiresAt: now() + FEATURE_ATTRIBUTION_TTL_MS },
+        { campaignId, feature, expiresAt: toEpochMs(now()) + FEATURE_ATTRIBUTION_TTL_MS },
         { accountId, feature },
       );
     },
 
-    consume({ accountId, feature }) {
+    consume: ({ accountId, feature }) => {
       const scope = { accountId, feature };
       const persisted = readStoredValue(storage, featureAttributionStoredValue, scope);
 
       // 재진입해도 한 번만 집계되도록 반환보다 삭제가 먼저다. 깨진 값도 함께 지운다
       removeStoredValue(storage, featureAttributionStoredValue, scope);
 
-      if (persisted == null || persisted.feature !== feature || persisted.expiresAt < now()) {
+      if (
+        persisted == null ||
+        persisted.feature !== feature ||
+        persisted.expiresAt < toEpochMs(now())
+      ) {
         return null;
       }
 
@@ -70,10 +78,22 @@ export function createFeatureAttributionStore(
   };
 }
 
+/** 탈퇴한 계정의 기록을 기능과 상관없이 모두 지운다. 지우기 실패는 탈퇴 정리가 남기도록 던진다 */
+export function clearFeatureAttributions(
+  storage: Pick<SyncStorage, 'remove'> & Pick<EnumerableSyncStorage, 'keys'>,
+  accountId: string,
+): void {
+  const prefix = toFeatureAttributionKeyPrefix(accountId);
+  storage
+    .keys()
+    .filter((key) => key.startsWith(prefix))
+    .forEach((key) => storage.remove(key));
+}
+
 interface AttributedFeatureSuccessPorts {
   analytics: Analytics;
   attribution: FeatureAttributionStore;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 export function trackAttributedFeatureSuccess(

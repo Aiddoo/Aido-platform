@@ -8,6 +8,14 @@ const POLL_INTERVAL_MS = 300;
 const POLL_TIMEOUT_MS = 15000;
 const BODYLESS_METHODS = ['GET', 'DELETE'];
 
+// Maestro http는 POST·PUT·PATCH에 본문이 없으면 보내지 않는다
+function requestBody(method, body) {
+  if (body !== undefined) {
+    return JSON.stringify(body);
+  }
+  return BODYLESS_METHODS.includes(method) ? undefined : '{}';
+}
+
 function call(method, path, token, body, allowedStatuses) {
   const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
   if (token) {
@@ -16,13 +24,7 @@ function call(method, path, token, body, allowedStatuses) {
   const response = http.request(output.config.apiUrl + path, {
     method: method,
     headers: headers,
-    // Maestro http는 POST·PUT·PATCH에 본문이 없으면 보내지 않는다
-    body:
-      body === undefined
-        ? BODYLESS_METHODS.includes(method)
-          ? undefined
-          : '{}'
-        : JSON.stringify(body),
+    body: requestBody(method, body),
   });
   if (!response.ok && !(allowedStatuses || []).includes(response.status)) {
     throw new Error(method + ' ' + path + ' 가 ' + response.status + '로 응답했습니다.');

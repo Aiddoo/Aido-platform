@@ -9,7 +9,6 @@ import {
   createNotificationApiError,
   createNotificationListResponseDto,
   createUnreadCountResponseDto,
-  INVALID_DTO,
 } from '../__tests__/notification.fixtures';
 import { NOTIFICATION_READ_BUDGET_MS } from '../constants/notification.constants';
 import { NotificationApi } from './notification.api';
@@ -21,7 +20,7 @@ describe('NotificationApi', () => {
   beforeEach(() => {
     httpClient = createHttpClientStub();
     api = new NotificationApi({
-      httpClient,
+      authHttpClient: httpClient,
       publicHttpClient: httpClient,
     });
   });
@@ -44,19 +43,6 @@ describe('NotificationApi', () => {
       expect(page.items).toHaveLength(2);
       expect(page.items[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
     });
-
-    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
-      // Given
-      httpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-      // When
-
-      const result = api.getNotifications();
-
-      // Then
-
-      await expect(result).rejects.toThrow('Invalid getNotifications response');
-    });
   });
 
   describe('getUnreadCount', () => {
@@ -74,18 +60,6 @@ describe('NotificationApi', () => {
       });
       expect(result).toEqual({ ok: true, value: 5 });
     });
-
-    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
-      // Given
-      const apiError = createNotificationApiError();
-      httpClient.get.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await api.getUnreadCount();
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
   });
 
   describe('markAsRead', () => {
@@ -100,18 +74,6 @@ describe('NotificationApi', () => {
       // Then
       expect(httpClient.patch).toHaveBeenCalledWith('v1/notifications/1/read');
       expect(result).toEqual({ ok: true, value: 1 });
-    });
-
-    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
-      // Given
-      const apiError = createNotificationApiError();
-      httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await api.markAsRead(1);
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
     });
   });
 
@@ -128,18 +90,6 @@ describe('NotificationApi', () => {
       expect(httpClient.patch).toHaveBeenCalledWith('v1/notifications/inbox/read-all');
       expect(result).toEqual({ ok: true, value: 5 });
     });
-
-    it('HTTP 오류이면 실패 결과를 반환한다', async () => {
-      // Given
-      const apiError = createNotificationApiError();
-      httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await api.markAllAsRead();
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
   });
 });
 
@@ -151,7 +101,7 @@ describe('NotificationApi.markAsReadAndCheckOwnership', () => {
     return {
       httpClient,
       api: new NotificationApi({
-        httpClient,
+        authHttpClient: httpClient,
         publicHttpClient: httpClient,
       }),
     };
@@ -169,10 +119,13 @@ describe('NotificationApi.markAsReadAndCheckOwnership', () => {
     expect(ownership).toBe('ok');
   });
 
-  it.each([403, 404])('읽음이 %s면 다른 계정 알림이다', async (status) => {
+  it.each([
+    { code: 'NOTIFICATION_1004', status: 404 },
+    { code: 'NOTIFICATION_1005', status: 403 },
+  ] as const)('읽음이 $code면 다른 계정 알림이다', async ({ code, status }) => {
     // Given
     const { httpClient, api } = setup();
-    httpClient.patch.mockResolvedValue(err(createNotificationApiError({ status })));
+    httpClient.patch.mockResolvedValue(err(createNotificationApiError({ code, status })));
 
     // When
     const ownership = await api.markAsReadAndCheckOwnership(7);

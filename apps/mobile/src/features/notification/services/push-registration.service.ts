@@ -1,8 +1,7 @@
-import { HttpStatus } from '@aido/api/errors';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RequestConfig } from '@src/core/ports/http-client';
-import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import type { Instant } from '@src/shared/date/instant';
@@ -12,6 +11,7 @@ import { isEqual, noop, withTimeout } from 'es-toolkit';
 import type { PushDeviceApi } from '../apis/push-device.api';
 import { toPushPermission } from '../apis/push-permission.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
+import { isPushRequestThrottledError } from '../domains/notification.error';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
 import type { PushDevice, PushPermission } from '../domains/push-permission.model';
 import {
@@ -42,7 +42,7 @@ interface PushRegistrationServicePorts {
   pushDeviceApi: Pick<PushDeviceApi, 'report' | 'unregister' | 'release'>;
   deviceIdService: Pick<DeviceIdService, 'get'>;
   registrationRepository: PushRegistrationRepository;
-  logger: Logger;
+  logger: AppLogger;
   getTimeZone: () => string;
   /** 서버는 푸시 문구 언어를 요청 헤더에서 읽어 언어가 바뀌면 다시 보낸다 */
   getLanguage: () => string;
@@ -55,7 +55,7 @@ export class PushRegistrationService {
   readonly #pushDeviceApi: Pick<PushDeviceApi, 'report' | 'unregister' | 'release'>;
   readonly #deviceIdService: Pick<DeviceIdService, 'get'>;
   readonly #registrationRepository: PushRegistrationRepository;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
   readonly #getTimeZone: () => string;
   readonly #getLanguage: () => string;
   readonly #sessionEpoch: Pick<SessionEpoch, 'current'>;
@@ -100,8 +100,8 @@ export class PushRegistrationService {
     const permission = toPushPermission(await this.#gateway.requestPermission());
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUESTED, { ...permission });
 
-    // 보고가 실패해도 권한 요청 결과는 그대로 돌려준다. 보고는 다음 포그라운드에 다시 보낸다
-    await this.report().then(
+    // 화면은 권한 결과로 바로 움직이고 보고는 뒤따른다. 실패는 다음 포그라운드가 다시 보내고, 로그아웃은 #reportsInFlight로 기다린다
+    this.report().then(
       (result) => {
         if (!result.ok) {
           this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, {
@@ -252,6 +252,13 @@ export class PushRegistrationService {
   flushRelease = (): Promise<void> => {
     const releasing = (this.#releasing ?? Promise.resolve())
       .then(() => this.#release())
+      .then((outcome) => {
+        if (outcome === 'throttled') {
+          this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_RELEASE_DEFERRED, {
+            reason: 'throttled',
+          });
+        }
+      })
       .catch((error: unknown) => {
         this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_RELEASE_DEFERRED, {
           error: getErrorMessage(error),
@@ -266,32 +273,34 @@ export class PushRegistrationService {
     return releasing;
   };
 
-  #release = async (): Promise<void> => {
+  /** 너무 자주 보내 막히면 기록을 남겨 다음 연결·복귀 때 다시 보낸다(throttled) */
+  #release = async (): Promise<'done' | 'throttled'> => {
     const cancelCount = this.#releaseCancelCount;
     const registration = await this.#registrationRepository.find();
     if (!PushRegistrationPolicy.hasPendingRelease(registration)) {
-      return;
+      return 'done';
     }
     const tokens = PushRegistrationPolicy.getReleaseTokens(registration, {
       currentToken: await this.#issueToken(),
     });
     if (tokens.length === 0) {
-      return;
+      return 'done';
     }
     const deviceId = await this.#deviceIdService.get();
     // 토큰을 받는 사이 새 세션이 보고했다면 그 등록을 지우지 않는다
     if (this.#releaseCancelCount !== cancelCount) {
-      return;
+      return 'done';
     }
     const results = await Promise.all(
       tokens.map((token) => this.#postRelease({ deviceId, token })),
     );
     if (results.includes('retry')) {
-      throw new Error('push device release throttled');
+      return 'throttled';
     }
     if (this.#releaseCancelCount === cancelCount) {
       await this.#updateRegistration(PushRegistrationPolicy.recordReleased);
     }
+    return 'done';
   };
 
   /** 연결·서버 장애는 던진다. 429면 다시 보낸다 */
@@ -300,7 +309,7 @@ export class PushRegistrationService {
     if (result.ok) {
       return 'done';
     }
-    if (result.error.status === HttpStatus.TOO_MANY_REQUESTS) {
+    if (isPushRequestThrottledError(result.error)) {
       return 'retry';
     }
     this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_RELEASE_REJECTED, {

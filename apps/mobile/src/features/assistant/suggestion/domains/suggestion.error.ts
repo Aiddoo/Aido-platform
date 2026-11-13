@@ -5,13 +5,3 @@ import { isApiError } from '@src/shared/errors';
 export function isSuggestionsPremiumRequiredError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.AI_1309);
 }
-
-/** 이미 처리했거나 만료돼 사라진 제안이다. 목록을 다시 받아 맞춘다 */
-export function isSuggestionUnavailableError(error: unknown) {
-  return (
-    isApiError(error) &&
-    (error.hasCode(ErrorCode.AI_1305) ||
-      error.hasCode(ErrorCode.AI_1306) ||
-      error.hasCode(ErrorCode.AI_1307))
-  );
-}

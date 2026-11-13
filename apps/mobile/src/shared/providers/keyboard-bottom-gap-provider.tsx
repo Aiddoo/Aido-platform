@@ -1,3 +1,5 @@
+import { Box } from '@src/shared/ui';
+import { getDistanceToWindowBottom } from '@src/shared/utils/get-distance-to-window-bottom';
 import {
   type ComponentRef,
   createContext,
@@ -8,9 +10,6 @@ import {
   useState,
 } from 'react';
 import { type LayoutChangeEvent, useWindowDimensions, type View } from 'react-native';
-
-import { Box } from '../ui/box';
-import { getDistanceToWindowBottom } from '../utils/get-distance-to-window-bottom';
 
 const KeyboardBottomGapContext = createContext(0);
 

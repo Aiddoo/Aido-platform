@@ -1,6 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -15,6 +12,7 @@ import {
 } from "../../domain/category-ordering.domain-service.js";
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
+import { todoCategoryNotFound } from "../categories.errors.js";
 import { TodoCategoryLockKeys } from "../categories.lock-keys.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
@@ -68,9 +66,7 @@ export class ReorderTodoCategoryUseCase {
         userId,
       );
       if (category == null) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
-          categoryId,
-        });
+        throw todoCategoryNotFound(TodoCategoryId.reconstitute(categoryId));
       }
 
       if (categoryId === targetCategoryId) {
@@ -84,9 +80,7 @@ export class ReorderTodoCategoryUseCase {
           userId,
         );
         if (target == null) {
-          throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
-            categoryId: targetCategoryId,
-          });
+          throw todoCategoryNotFound(TodoCategoryId.reconstitute(targetCategoryId));
         }
         plan = planReorderRelativeTo(category.sortOrder, target.sortOrder, position);
       } else {

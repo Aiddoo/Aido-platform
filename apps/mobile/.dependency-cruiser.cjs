@@ -1,4 +1,4 @@
-// 모바일 층·경계 규칙. 근거는 .claude/architecture.md#층과-의존, #portadapterdi, #모델과-policy.
+// 모바일 층·경계 규칙. 근거는 docs/architecture/structure.md#층과-의존·#di포트수명, docs/architecture/model.md.
 // 규칙으로 쓸 수 없는 feature 그래프(di-context 훅의 주인, 양방향 쌍)는 scripts/feature-graph.cjs 리포터가 본다.
 const { FEATURE_LAYERS, FEATURE_PATTERN } = require('./scripts/feature-graph.cjs');
 
@@ -16,11 +16,7 @@ function npm(names) {
   return `(?:^|/node_modules/)(?:${names.join('|')})(?:/|$)`;
 }
 
-function paths(prefixes) {
-  return `^(?:${prefixes.join('|')})`;
-}
-
-// 네이티브·외부 SDK는 shared/infra에서만 import한다(.claude/architecture.md#portadapterdi). 예외 목록은 두지 않는다.
+// 네이티브·외부 SDK는 shared/infra에서만 import한다(docs/architecture/structure.md#di포트수명). 예외 목록은 두지 않는다.
 // 이 목록에 넣지 않은 라이브러리와 이유:
 // - expo-router: 라우트 파일과 화면의 앱 뼈대다. 라우터 교체는 route 전체를 바꾸는 일이라 포트로 숨기지 않는다.
 // - UI 라이브러리(heroui-native, reanimated, gesture-handler, gorhom, expo-image, datetimepicker 등): 화면 그 자체다.
@@ -61,196 +57,6 @@ const SDK_MODULES = [
   '@react-native-firebase/analytics',
 ];
 
-// 1.15부터 손댄 모델은 자기 Zod 스키마를 갖고, 요청·응답 계약(@aido/api 루트·contracts)은 apis의 service·mapper만 안다.
-// 용어 튜플·상수(vocabulary)와 ErrorCode(errors)는 서버와 같은 값을 쓰도록 모델에서도 import한다.
-// 한꺼번에 옮기면 리뷰할 수 없어 옮긴 폴더·파일부터 이 목록에 올린다.
-const CLIENT_OWNED_MODEL_PATHS = [
-  'src/features/weather/components/',
-  'src/features/weather/constants/',
-  'src/features/weather/domains/',
-  'src/features/weather/hooks/',
-  'src/features/weather/queries/',
-  'src/features/weather/utils/',
-  'src/features/notes/memo/components/',
-  'src/features/notes/memo/constants/',
-  'src/features/notes/memo/domains/',
-  'src/features/notes/memo/hooks/',
-  'src/features/notes/memo/queries/',
-  'src/features/notes/memo/utils/',
-  'src/features/support/inquiry/constants/',
-  'src/features/support/inquiry/hooks/',
-  'src/features/support/inquiry/queries/',
-  'src/features/insights/achievement/constants/',
-  'src/features/insights/achievement/domains/',
-  'src/features/insights/achievement/hooks/',
-  'src/features/insights/achievement/queries/',
-  'src/features/insights/achievement/utils/',
-  'src/features/device/activation/components/',
-  'src/features/device/activation/constants/',
-  'src/features/device/activation/domains/',
-  'src/features/device/activation/hooks/',
-  'src/features/device/activation/queries/',
-  'src/features/identity/preference/constants/',
-  'src/features/identity/preference/domains/',
-  'src/features/identity/preference/queries/',
-  'src/features/identity/user/components/',
-  'src/features/identity/user/constants/',
-  'src/features/identity/user/domains/',
-  'src/features/identity/user/hooks/',
-  'src/features/identity/user/queries/',
-  'src/features/identity/user/utils/',
-  'src/features/identity/consent/components/',
-  'src/features/identity/consent/constants/',
-  'src/features/identity/consent/domains/',
-  'src/features/identity/consent/hooks/',
-  'src/features/identity/consent/queries/',
-  'src/features/identity/auth/components/',
-  'src/features/identity/auth/constants/',
-  'src/features/identity/auth/domains/',
-  'src/features/identity/auth/hooks/',
-  'src/features/identity/auth/queries/',
-  'src/features/identity/auth/utils/',
-  'src/features/device/app-icon/components/',
-  'src/features/device/app-icon/constants/',
-  'src/features/device/app-icon/domains/',
-  'src/features/device/app-icon/queries/',
-  'src/features/app-config/app-version/components/',
-  'src/features/app-config/app-version/domains/',
-  'src/features/app-config/app-version/queries/',
-  'src/features/app-config/whats-new/queries/',
-  'src/features/app-config/whats-new/components/',
-  'src/features/app-config/whats-new/constants/',
-  'src/features/app-config/whats-new/domains/',
-  'src/features/app-config/whats-new/hooks/',
-  'src/features/device/coachmark/components/',
-  'src/features/device/coachmark/constants/',
-  'src/features/device/coachmark/domains/',
-  'src/features/device/coachmark/hooks/',
-  'src/features/notification/components/',
-  'src/features/notification/constants/',
-  'src/features/notification/domains/',
-  'src/features/notification/hooks/',
-  'src/features/notification/queries/',
-  'src/features/notification/repositories/',
-  'src/features/notification/services/',
-  'src/features/notification/stores/',
-  'src/features/notification/utils/',
-  'src/features/device/store-review/constants/',
-  'src/features/device/store-review/domains/',
-  'src/features/device/store-review/hooks/',
-  'src/features/device/store-review/utils/',
-  'src/features/social/moderation/constants/',
-  'src/features/social/moderation/domains/',
-  'src/features/social/moderation/queries/',
-  'src/features/insights/report/components/',
-  'src/features/insights/report/constants/',
-  'src/features/insights/report/queries/',
-  'src/features/insights/report/utils/',
-  'src/features/assistant/suggestion/components/',
-  'src/features/assistant/suggestion/constants/',
-  'src/features/assistant/suggestion/domains/',
-  'src/features/assistant/suggestion/queries/',
-  'src/features/social/friend/components/',
-  'src/features/social/friend/constants/',
-  'src/features/social/friend/domains/',
-  'src/features/social/friend/queries/',
-  'src/features/social/friend/utils/',
-  'src/features/social/nudge/constants/',
-  'src/features/social/nudge/queries/',
-  'src/features/social/nudge/utils/',
-  'src/features/billing/subscription/domains/customer-info\\.model\\.ts$',
-  'src/features/billing/subscription/domains/entitlement\\.model\\.ts$',
-  'src/features/engagement/comment/components/',
-  'src/features/engagement/comment/constants/',
-  'src/features/engagement/comment/domains/',
-  'src/features/engagement/comment/hooks/',
-  'src/features/engagement/comment/queries/',
-  'src/features/engagement/comment/utils/',
-  'src/features/planning/todo/components/',
-  'src/features/planning/todo/constants/',
-  'src/features/planning/todo/domains/',
-  'src/features/planning/todo/hooks/',
-  'src/features/planning/todo/queries/',
-  'src/features/planning/todo/utils/',
-  'src/features/planning/composer/components/',
-  'src/features/planning/composer/domains/',
-  'src/features/planning/composer/hooks/',
-  'src/features/planning/composer/queries/',
-  'src/features/planning/composer/utils/',
-  'src/features/voice/domains/',
-  'src/features/planning/category/components/',
-  'src/features/planning/category/constants/',
-  'src/features/planning/category/domains/',
-  'src/features/planning/category/hooks/',
-  'src/features/planning/category/queries/',
-  'src/features/social/nudge/components/',
-  'src/features/social/nudge/domains/',
-  'src/features/social/nudge/hooks/',
-  'src/features/social/invite/components/',
-  'src/features/social/invite/constants/',
-  'src/features/social/invite/domains/',
-  'src/features/social/invite/hooks/',
-  'src/features/social/invite/queries/',
-  'src/features/social/invite/utils/',
-];
-
-// Zod 스키마를 domains/{entity}.model.ts와 schemas/로 옮긴 feature와 폴더
-const SCHEMA_FOLDER_FEATURE_PATHS = [
-  'src/features/notes/memo/',
-  'src/features/voice/',
-  'src/features/support/inquiry/',
-  'src/features/insights/achievement/',
-  'src/features/device/activation/',
-  'src/features/identity/preference/',
-  'src/features/identity/user/',
-  'src/features/identity/consent/',
-  'src/features/identity/auth/',
-  'src/features/billing/subscription/apis/',
-  'src/features/billing/subscription/components/',
-  'src/features/billing/subscription/domains/',
-  'src/features/billing/subscription/queries/',
-  'src/features/billing/subscription/utils/',
-  'src/features/device/app-icon/',
-  'src/features/app-config/app-version/',
-  'src/features/app-config/whats-new/',
-  'src/features/device/coachmark/',
-  'src/features/weather/',
-  'src/features/notification/',
-  'src/features/device/store-review/',
-  'src/features/planning/category/',
-  'src/features/social/nudge/',
-  'src/features/social/invite/',
-  'src/features/planning/todo/',
-  'src/features/planning/composer/',
-  'src/features/social/moderation/apis/',
-  'src/features/social/moderation/components/',
-  'src/features/social/moderation/constants/',
-  'src/features/social/moderation/domains/',
-  'src/features/social/moderation/hooks/',
-  'src/features/social/moderation/queries/',
-  'src/features/insights/report/apis/',
-  'src/features/insights/report/components/',
-  'src/features/insights/report/constants/',
-  'src/features/insights/report/queries/',
-  'src/features/insights/report/utils/',
-  'src/features/assistant/suggestion/apis/',
-  'src/features/assistant/suggestion/components/',
-  'src/features/assistant/suggestion/constants/',
-  'src/features/assistant/suggestion/queries/',
-  'src/features/social/friend/apis/',
-  'src/features/social/friend/components/',
-  'src/features/social/friend/constants/',
-  'src/features/social/friend/queries/',
-  'src/features/social/friend/utils/',
-  'src/features/engagement/comment/apis/',
-  'src/features/engagement/comment/components/',
-  'src/features/engagement/comment/constants/',
-  'src/features/engagement/comment/domains/',
-  'src/features/engagement/comment/hooks/',
-  'src/features/engagement/comment/queries/',
-  'src/features/engagement/comment/utils/',
-];
-
 // 지금 시각·기기 시간대를 읽는 모듈. 모델과 mapper는 시각을 인자로 받는다
 const CLOCK =
   '^src/shared/date/clock\\.ts$|^src/shared/hooks/use-(?:now|minute-now|today)\\.ts$|^src/shared/infra/localization/device-timezone\\.ts$';
@@ -259,7 +65,6 @@ function featureFolders(folders) {
   return `^src/features/.+/(?:${folders.join('|')})/`;
 }
 
-// 남은 위반은 .dependency-cruiser-known-violations.json(baseline #1400)에 있고 lint:deps가 --ignore-known으로 건너뛴다
 const modelAndFolderRules = [
   {
     name: 'domain-model-constants',
@@ -285,7 +90,7 @@ const modelAndFolderRules = [
     from: { path: '[^/]+\\.mapper\\.tsx?$', pathNot: TEST },
     to: {
       path: [
-        '^src/core/ports/(?:logger|error-reporter|analytics)\\.ts$',
+        '^src/core/ports/(?:app-logger|error-reporter|analytics)\\.ts$',
         '^src/shared/infra/',
         CLOCK,
       ],
@@ -302,7 +107,7 @@ const modelAndFolderRules = [
   {
     name: 'repository-folder-dependency',
     comment:
-      'repository는 저장 포트·storage 스키마·Logger만 쓴다. apis/·services/를 import하지 않는다.',
+      'repository는 저장 포트·storage 스키마·AppLogger만 쓴다. apis/·services/를 import하지 않는다.',
     severity: 'error',
     from: { path: featureFolders(['repositories']), pathNot: TEST },
     to: { path: featureFolders(['apis', 'services']) },
@@ -361,7 +166,7 @@ module.exports = {
     {
       name: 'feature-unknown-layer',
       comment:
-        '층이 정해지지 않은 feature다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더한다.',
+        '층이 정해지지 않은 feature다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 docs/architecture/structure.md의 층 표에 더한다.',
       severity: 'error',
       from: { path: FEATURE, pathNot: [KNOWN_FEATURE, TEST] },
       to: { path: '^src/features/', pathNot: '^src/features/$1/' },
@@ -369,7 +174,7 @@ module.exports = {
     {
       name: 'feature-unknown-layer-target',
       comment:
-        '층이 정해지지 않은 feature다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더한다.',
+        '층이 정해지지 않은 feature다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 docs/architecture/structure.md의 층 표에 더한다.',
       severity: 'error',
       from: { path: FEATURE, pathNot: TEST },
       to: { path: '^src/features/', pathNot: ['^src/features/$1/', KNOWN_FEATURE] },
@@ -395,9 +200,24 @@ module.exports = {
       to: { path: '^src/features/$1/', dependencyTypes: ['aliased'] },
     },
     {
+      name: 'feature-apis-import',
+      comment:
+        '다른 feature의 apis/(Api·mapper)를 import하지 않는다. 다른 feature 데이터는 그 feature의 모델·쿼리 옵션·cache helper로 쓴다. 순수 변환인 할 일 반복·할 일·이용권 mapper만 예외다(docs/architecture/structure.md#층과-의존).',
+      severity: 'error',
+      from: { path: FEATURE, pathNot: TEST },
+      to: {
+        path: '^src/features/.+/apis/',
+        pathNot: [
+          '^src/features/$1/',
+          '^src/features/planning/todo/apis/(?:todo-repeat|todo)\\.mapper\\.ts$',
+          '^src/features/billing/subscription/apis/entitlement\\.mapper\\.ts$',
+        ],
+      },
+    },
+    {
       name: 'sdk-outside-infra',
       comment:
-        'SDK는 shared/infra에서만 import한다. 포트와 어댑터를 거쳐 DI 훅으로 받는다. 라이브러리가 React 훅이면 경계 훅 파일 하나에 둔다(.claude/architecture.md#portadapterdi).',
+        'SDK는 shared/infra에서만 import한다. 포트와 어댑터를 거쳐 DI 훅으로 받는다. 라이브러리가 React 훅이면 경계 훅 파일 하나에 둔다(docs/architecture/structure.md#di포트수명).',
       severity: 'error',
       from: { path: '^(?:src|app)/', pathNot: ['^src/shared/infra/', TEST] },
       to: { path: npm(SDK_MODULES) },
@@ -431,6 +251,14 @@ module.exports = {
       to: { path: npm(['temporal-polyfill']) },
     },
     {
+      name: 'feature-to-bootstrap',
+      comment:
+        'feature는 5층 bootstrap을 import하지 않는다. DI 훅은 bootstrap/providers/di-context에서만 꺼내고, 기능이 쓰는 공용 조각(오류 피드백·재시도 등)은 shared에 둔다.',
+      severity: 'error',
+      from: { path: '^src/features/', pathNot: TEST },
+      to: { path: '^src/bootstrap/', pathNot: '^src/bootstrap/providers/di-context\\.tsx?$' },
+    },
+    {
       name: 'di-entry',
       comment:
         'feature와 app/은 DI 훅을 @src/bootstrap/providers/di-context에서 꺼낸다. 빠진 훅은 di-context가 다시 내보내게 한다.',
@@ -462,9 +290,9 @@ module.exports = {
     {
       name: 'client-model-contract',
       comment:
-        '클라이언트 모델은 요청·응답 계약(@aido/api 루트·contracts)을 import하지 않는다. apis/*.mapper.ts가 DTO를 모델로 바꿔야 서버가 바뀌어도 mapper만 고친다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져온다.',
+        '요청·응답 계약(@aido/api 루트·contracts)은 기능의 apis/(Api·mapper)와 schemas/(계약에서 유도한 요청 타입·폼 스키마)만 안다. 그 밖은 schemas/의 타입이나 모델을 쓴다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져온다.',
       severity: 'error',
-      from: { path: paths(CLIENT_OWNED_MODEL_PATHS), pathNot: ['\\.test\\.', DOMAIN_MODEL] },
+      from: { path: '^src/features/', pathNot: [TEST, '/apis/', '/schemas/', DOMAIN_MODEL] },
       to: { path: WIRE_CONTRACT },
     },
     {
@@ -473,7 +301,7 @@ module.exports = {
         'Zod 스키마는 클라이언트 모델이면 domains/{entity}.model.ts, 폼·route·초안·서버와 공유하는 요청 타입이면 schemas/에 둔다.',
       severity: 'error',
       from: {
-        path: paths(SCHEMA_FOLDER_FEATURE_PATHS),
+        path: '^src/features/',
         pathNot: [TEST, '/schemas/', DOMAIN_MODEL],
       },
       to: { path: npm(['zod']) },
@@ -485,7 +313,7 @@ module.exports = {
       severity: 'error',
       from: { path: '/queries/[^/]+-cache\\.ts$', pathNot: TEST },
       to: {
-        path: '^src/core/events/|/(?:apis|services)/[^/]+\\.(?:api|service)\\.tsx?$|/ports/(?:error-reporter|logger)\\.tsx?$',
+        path: '^src/core/events/|/(?:apis|services)/[^/]+\\.(?:api|service)\\.tsx?$|/ports/(?:error-reporter|app-logger)\\.tsx?$',
       },
     },
     ...modelAndFolderRules,

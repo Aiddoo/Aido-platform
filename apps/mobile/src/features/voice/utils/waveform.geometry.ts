@@ -1,3 +1,4 @@
+import type { SkRRect } from '@shopify/react-native-skia';
 import { range } from 'es-toolkit';
 
 import { WAVEFORM_BAR } from '../constants/voice-note.constants';
@@ -7,6 +8,7 @@ const QUIET_LEVEL = 0.06;
 const SPEECH_BASE_LEVEL = 0.35;
 const SPEECH_SWING = 0.55;
 const SPEECH_RIPPLE = { primary: 0.9, secondary: 0.37 } as const;
+const BAR_RADIUS = WAVEFORM_BAR.width / 2;
 
 function getBarCount(durationMs: number) {
   return Math.max(0, Math.ceil(durationMs / WAVEFORM_BAR.intervalMs));
@@ -134,4 +136,14 @@ export function resampleLevels(levels: readonly number[], count: number): number
     const to = Math.max(from + 1, Math.floor((slot + 1) * size));
     return Math.max(...levels.slice(from, to));
   });
+}
+
+// Skia.XYWHRect·RRectXY는 칸마다 네이티브 객체를 만든다. 경로에 넣는 값은 같은 모양의 평범한 객체면 된다
+export function toRoundedBar(left: number, top: number, height: number): SkRRect {
+  'worklet';
+  return {
+    rect: { x: left, y: top, width: WAVEFORM_BAR.width, height },
+    rx: BAR_RADIUS,
+    ry: BAR_RADIUS,
+  };
 }

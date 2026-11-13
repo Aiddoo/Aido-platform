@@ -9,7 +9,6 @@ import { useColorScheme } from 'react-native';
 import { match } from 'ts-pattern';
 import { Uniwind, useResolveClassNames } from 'uniwind';
 
-export type { ThemeMode };
 type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeProviderProps extends PropsWithChildren {
@@ -59,11 +58,11 @@ export function ThemeProvider({ children, syncStorage = deviceSyncStorage }: The
   );
 }
 
-export function useTheme(): ThemeContextValue {
+export function useAppTheme(): ThemeContextValue {
   const context = use(ThemeContext);
 
   if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider');
+    throw new Error('useAppTheme must be used within ThemeProvider');
   }
 
   return context;

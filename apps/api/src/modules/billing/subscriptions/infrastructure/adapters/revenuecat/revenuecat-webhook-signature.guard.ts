@@ -1,11 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
 
-import { ErrorCode } from "@aido/api/errors";
 import { CanActivate, ExecutionContext, Inject, Injectable, Logger } from "@nestjs/common";
 import type { Request } from "express";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-
+import { invalidWebhookSignature } from "../../../application/subscriptions.errors.js";
 import { SubscriptionLogEvent } from "../../../application/subscriptions.log-events.js";
 import {
   billingSubscriptionsConfig,
@@ -40,7 +38,7 @@ export class RevenueCatWebhookSignatureGuard implements CanActivate {
         event: SubscriptionLogEvent.WEBHOOK_SECRET_MISSING,
         action: "rejected",
       });
-      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
+      throw invalidWebhookSignature();
     }
 
     const authHeader = context.switchToHttp().getRequest<Request>().headers.authorization;
@@ -49,7 +47,7 @@ export class RevenueCatWebhookSignatureGuard implements CanActivate {
         event: SubscriptionLogEvent.WEBHOOK_AUTHORIZATION_REJECTED,
         reason: "missing",
       });
-      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
+      throw invalidWebhookSignature();
     }
 
     // Bearer prefix 포함/미포함 모두 지원 (RevenueCat은 설정값을 그대로 전송)
@@ -68,7 +66,7 @@ export class RevenueCatWebhookSignatureGuard implements CanActivate {
         event: SubscriptionLogEvent.WEBHOOK_AUTHORIZATION_REJECTED,
         reason: "mismatch",
       });
-      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
+      throw invalidWebhookSignature();
     }
 
     return true;

@@ -1,15 +1,16 @@
 import { VerifyEmailForm } from '@src/features/identity/auth/components/verify-email-form';
 import { verifyEmailParamsSchema } from '@src/features/identity/auth/schemas/verify-email-params.schema';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, ReadableContent } from '@src/shared/ui';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack } from 'expo-router';
 
 export default function VerifyEmailScreen() {
   const { t } = useTranslation('auth');
-  const params = verifyEmailParamsSchema.safeParse(useLocalSearchParams());
+  const route = useRouteParamsOrRedirect(verifyEmailParamsSchema, { fallbackHref: '/login' });
 
-  if (!params.success) {
-    return <Redirect href="/login" />;
+  if (route.redirect != null) {
+    return route.redirect;
   }
 
   return (
