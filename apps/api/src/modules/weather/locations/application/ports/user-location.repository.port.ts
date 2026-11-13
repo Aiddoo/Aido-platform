@@ -1,6 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { UserLocation } from "../../domain/user-location.entity.js";
+import type { UserLocation } from "../../domain/user-location.aggregate.js";
 
 export abstract class UserLocationRepositoryPort {
   abstract findByUserId(userId: UserId): Promise<UserLocation | null>;

@@ -5,7 +5,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type { UserLocation } from "../../locations/domain/user-location.entity.js";
+import type { UserLocation } from "../../locations/domain/user-location.aggregate.js";
 import { resolveKmaForecastAvailability } from "../domain/kma-forecast-availability.domain-service.js";
 import { forecastDateUnsupported, weatherServiceUnavailable } from "./forecasts.errors.js";
 import { ForecastLogEvent } from "./forecasts.log-events.js";
@@ -52,7 +52,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
    * KMA가 줄 수 없는 날짜는 공급자를 부르지 않고 400 SYS_0002로 거절한다.
    */
   async fetchForLocation(location: UserLocation, date: Date): Promise<WeatherForecast> {
-    const grid = location.requireKmaGrid();
+    const grid = location.requireForecastGrid();
     const availability = resolveKmaForecastAvailability({
       target: date,
       now: instantToDate(this.#dependencies.clock.now()),

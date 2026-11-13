@@ -3,7 +3,7 @@ import { LATITUDE_RANGE, LONGITUDE_RANGE } from "@aido/api/vocabulary";
 import type { Coordinate } from "./coordinate.vo.js";
 import { coordinateOutsideKoreanWeather } from "./weather.errors.js";
 
-/** 한국 공급자(KMA 격자·AirKorea)를 쓸 수 있는 범위. WGS84 자체의 유효 범위와 구분한다. */
+/** 한국 공급자(예보 격자·대기질)를 쓸 수 있는 범위. WGS84 자체의 유효 범위와 구분한다. */
 export function isKoreanWeatherCovered(coordinate: Coordinate): boolean {
   const { latitude, longitude } = coordinate;
   return (

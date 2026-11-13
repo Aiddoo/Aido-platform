@@ -6,7 +6,7 @@ import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundRejectedError } from "#api/platform/resilience/outbound-policy.errors";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
-import { convertToGrid } from "../../../shared/domain/kma-grid-projection.domain-service.js";
+import { toKmaGrid } from "../../../locations/infrastructure/adapters/kma-weather-grid-resolver.adapter.js";
 import { weatherServiceUnavailable } from "../../application/forecasts.errors.js";
 import type { WeatherForecastProviderPort } from "../../application/ports/weather-forecast-provider.port.js";
 import type { WeatherForecast } from "../../application/read-models/weather-forecast.read-model.js";
@@ -51,7 +51,7 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
   }
 
   async getForecast(lat: number, lon: number, timing: KmaForecastTiming): Promise<WeatherForecast> {
-    const grid = convertToGrid(lat, lon);
+    const grid = toKmaGrid(lat, lon);
 
     const current = await this.#requestForecast(grid, getKmaBaseDateTime(timing.issuance));
     if (current.response.header.resultCode === "00") {
@@ -84,7 +84,7 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
   }
 
   async #requestForecast(
-    { nx, ny }: ReturnType<typeof convertToGrid>,
+    { nx, ny }: ReturnType<typeof toKmaGrid>,
     { baseDate, baseTime }: KmaBaseDateTime,
   ): Promise<KmaApiResponse> {
     const outcome = await this.#policy

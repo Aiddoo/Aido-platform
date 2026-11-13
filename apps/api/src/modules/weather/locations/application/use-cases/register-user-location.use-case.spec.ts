@@ -10,7 +10,7 @@ import {
 
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import { KmaWeatherGridResolverAdapter } from "../../infrastructure/adapters/kma-weather-grid-resolver.adapter.js";
-import { UpsertUserLocationUseCase } from "./upsert-user-location.use-case.js";
+import { RegisterUserLocationUseCase } from "./register-user-location.use-case.js";
 
 const SEOUL = { latitude: 37.5665, longitude: 126.978 };
 const BUSAN = { latitude: 35.1796, longitude: 129.0756 };
@@ -23,7 +23,7 @@ function setup(options: { readonly saved?: ReturnType<typeof createUserLocationF
   );
   const timezoneResolver = new StubTimezoneResolver();
   const clock = new FixedClock(USER_LOCATION_FIXTURE_NOW);
-  const useCase = new UpsertUserLocationUseCase({
+  const useCase = new RegisterUserLocationUseCase({
     userLocationRepository: repository,
     weatherGridResolver: new KmaWeatherGridResolverAdapter(),
     timezoneResolver,
@@ -32,7 +32,7 @@ function setup(options: { readonly saved?: ReturnType<typeof createUserLocationF
   return { useCase, repository, timezoneResolver };
 }
 
-describe("UpsertUserLocationUseCase — 위치 저장", () => {
+describe("RegisterUserLocationUseCase — 위치 등록", () => {
   it("최초 위치를 해결한 격자와 시간대·저장 시각과 함께 저장한다", async () => {
     // Given
     const { useCase, repository } = setup();

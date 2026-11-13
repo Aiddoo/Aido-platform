@@ -3,7 +3,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { userLocationNotFound } from "../../../locations/application/locations.errors.js";
 import type { UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
-import type { UserLocation } from "../../../locations/domain/user-location.entity.js";
+import type { UserLocation } from "../../../locations/domain/user-location.aggregate.js";
 import { localDateTimeAt } from "../../../shared/domain/weather-calendar.domain-service.js";
 import { ForecastLogEvent } from "../forecasts.log-events.js";
 import type { AirQualityProviderPort } from "../ports/air-quality-provider.port.js";
@@ -47,7 +47,7 @@ export class GetWeatherConditionsUseCase {
     if (location == null) {
       throw userLocationNotFound();
     }
-    const grid = location.requireKmaGrid();
+    const grid = location.requireForecastGrid();
 
     const cached = await this.#dependencies.weatherCache.getConditions(
       grid.gridX,

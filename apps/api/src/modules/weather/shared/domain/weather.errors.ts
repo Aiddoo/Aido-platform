@@ -10,7 +10,7 @@ export function invalidGridCoordinate(field: "gridX" | "gridY", value: number): 
   return new DomainException(ErrorCode.SYS_0002, { field, value });
 }
 
-/** KMA 예보가 덮지 않는 좌표다 */
+/** 한국 예보 격자가 덮지 않는 좌표다 */
 export function coordinateOutsideKoreanWeather(
   field: "latitude" | "longitude",
   value: number,

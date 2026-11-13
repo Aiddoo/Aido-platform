@@ -5,42 +5,42 @@ import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import { Coordinate } from "../../../shared/domain/coordinate.vo.js";
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import { isKoreanWeatherCovered } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
-import { UserLocation } from "../../domain/user-location.entity.js";
+import { UserLocation } from "../../domain/user-location.aggregate.js";
 import type { TimezoneResolverPort } from "../ports/timezone-resolver.port.js";
 import type { UserLocationRepositoryPort } from "../ports/user-location.repository.port.js";
 import type { WeatherGridResolverPort } from "../ports/weather-grid-resolver.port.js";
 
 /**
- * 사용자 위치 등록/수정 입력. v2 리포트 조회·날씨 알림과 같은 칸 중심 시간대를 함께 저장하고, 한국 범위 안이면 v1 예보와
- * AI 제안이 쓰는 KMA 격자도 저장한다. 날씨 알림은 모든 위치에서 v2 리포트를 쓴다.
+ * v2 리포트 조회·날씨 알림과 같은 칸 중심 시간대를 함께 저장하고, 한국 범위 안이면 v1 예보와 AI 제안이 쓰는
+ * 예보 격자도 저장한다. 날씨 알림은 모든 위치에서 v2 리포트를 쓴다.
  */
-export interface UpsertUserLocationCommand {
+export interface RegisterUserLocationCommand {
   readonly userId: string;
   readonly latitude: number;
   readonly longitude: number;
 }
 
-export interface UpsertLocationResult {
+export interface RegisterUserLocationResult {
   readonly location: UserLocation;
   /** 저장한 위치가 속한 칸 중심의 IANA 시간대. `GET /v2/weather`의 `location.timezone`과 같다. */
   readonly timezone: string;
 }
 
-export interface UpsertUserLocationDependencies {
+export interface RegisterUserLocationDependencies {
   readonly userLocationRepository: Pick<UserLocationRepositoryPort, "save">;
   readonly weatherGridResolver: Pick<WeatherGridResolverPort, "resolveGrid">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
   readonly clock: ClockPort;
 }
 
-export class UpsertUserLocationUseCase {
-  readonly #dependencies: UpsertUserLocationDependencies;
+export class RegisterUserLocationUseCase {
+  readonly #dependencies: RegisterUserLocationDependencies;
 
-  constructor(dependencies: UpsertUserLocationDependencies) {
+  constructor(dependencies: RegisterUserLocationDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(command: UpsertUserLocationCommand): Promise<UpsertLocationResult> {
+  async execute(command: RegisterUserLocationCommand): Promise<RegisterUserLocationResult> {
     const { userLocationRepository, weatherGridResolver, timezoneResolver, clock } =
       this.#dependencies;
     const userId = UserId.reconstitute(command.userId);

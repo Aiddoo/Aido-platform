@@ -3,7 +3,7 @@ import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import { Coordinate } from "../../shared/domain/coordinate.vo.js";
 import { GridCoordinate } from "../../shared/domain/grid-coordinate.vo.js";
-import { UserLocation, type UserLocationPrimitives } from "./user-location.entity.js";
+import { UserLocation, type UserLocationPrimitives } from "./user-location.aggregate.js";
 
 const NOW = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
@@ -63,7 +63,7 @@ describe("UserLocation — 위치·시간대와 저장 격자", () => {
     );
 
     // When
-    const require = () => location.requireKmaGrid();
+    const require = () => location.requireForecastGrid();
 
     // Then
     expect(location.grid).toBeNull();

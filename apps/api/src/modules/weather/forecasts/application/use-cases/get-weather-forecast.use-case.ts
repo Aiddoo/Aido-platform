@@ -2,7 +2,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { userLocationNotFound } from "../../../locations/application/locations.errors.js";
 import type { UserLocationRepositoryPort } from "../../../locations/application/ports/user-location.repository.port.js";
-import type { UserLocation } from "../../../locations/domain/user-location.entity.js";
+import type { UserLocation } from "../../../locations/domain/user-location.aggregate.js";
 import type { WeatherForecast } from "../read-models/weather-forecast.read-model.js";
 import type { WeatherForecastReader } from "../weather-forecast.reader.js";
 
@@ -36,7 +36,7 @@ export class GetWeatherForecastUseCase {
     if (location == null) {
       throw userLocationNotFound();
     }
-    location.requireKmaGrid();
+    location.requireForecastGrid();
 
     const forecast = await forecastReader.fetchForLocation(location, query.date);
     return { forecast, location };

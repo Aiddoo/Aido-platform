@@ -1,5 +1,5 @@
 import { UserLocationRepositoryPort } from "#api/modules/weather/locations/application/ports/user-location.repository.port";
-import { UserLocation } from "#api/modules/weather/locations/domain/user-location.entity";
+import { UserLocation } from "#api/modules/weather/locations/domain/user-location.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 저장 사본을 두어 save 없이 바꾼 Entity가 저장소 상태로 새지 않게 한다
