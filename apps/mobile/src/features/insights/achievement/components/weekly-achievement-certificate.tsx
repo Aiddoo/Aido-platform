@@ -78,7 +78,7 @@ export function WeeklyAchievementCertificate() {
             <Text size="e1" shade={5}>
               {t('card.nameLabel')}
             </Text>
-            <Box className="border-b border-gray-3 pb-1 px-8">
+            <Box className="border-b border-gray-3 px-8 pb-1">
               <H4
                 weight="bold"
                 align="center"
@@ -108,7 +108,7 @@ export function WeeklyAchievementCertificate() {
               ),
               total: achievement.totalTodos,
               completed: achievement.completedTodos,
-              rate: formatPercent(achievement.completionRate),
+              rate: formatPercent(achievement.completionRate, dateFormatContext.locale),
             })}
           </Text>
 
@@ -169,7 +169,7 @@ WeeklyAchievementCertificate.Loading = function Loading() {
 
         <VStack align="center" gap={4}>
           <TextSkeleton size="e1" className="w-10" />
-          <Box className="border-b border-transparent pb-1 px-8">
+          <Box className="border-b border-transparent px-8 pb-1">
             <TextSkeleton size="t3" className="w-32" />
           </Box>
         </VStack>

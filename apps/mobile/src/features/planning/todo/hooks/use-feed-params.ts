@@ -4,7 +4,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useCallback } from 'react';
 
 import { CLEARED_TODO_SELECTION, feedParamsSchema } from '../schemas/feed-params.schema';
-import { toFeedDateKey } from '../utils/feed-date-key';
+import { toFeedDateKey } from '../utils/feed-date.view-model';
 
 /** 피드에서 고른 날짜 key. 오늘을 고르면 URL에서 `date`를 지워 자정이 지나면 새 오늘을 따라간다 */
 export function useFeedDateKey() {

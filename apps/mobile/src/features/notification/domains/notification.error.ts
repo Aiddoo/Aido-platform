@@ -1,11 +1,11 @@
-import { HttpStatus } from '@aido/api/errors';
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { isApiError, isConnectivityError } from '@src/shared/errors';
 
-/** 읽음 처리가 403·404로 막히면 이 기기 계정의 알림이 아니다 */
+/** 읽음 처리가 없는 알림(NOTIFICATION_1004)·남의 알림(NOTIFICATION_1005)으로 막히면 이 기기 계정의 알림이 아니다 */
 export function isForeignNotificationError(error: unknown) {
   return (
     isApiError(error) &&
-    (error.status === HttpStatus.FORBIDDEN || error.status === HttpStatus.NOT_FOUND)
+    (error.hasCode(ErrorCode.NOTIFICATION_1004) || error.hasCode(ErrorCode.NOTIFICATION_1005))
   );
 }
 

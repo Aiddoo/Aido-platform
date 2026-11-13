@@ -2,7 +2,7 @@ import type { LocalFileEntry, LocalFileSystem } from '@src/core/ports/local-file
 
 interface FakeFile {
   sizeBytes: number;
-  modifiedAt: Date | null;
+  modifiedAtMs: number | null;
 }
 
 export interface LocalFileSystemFake extends LocalFileSystem {
@@ -43,7 +43,7 @@ export function createLocalFileSystemFake(): LocalFileSystemFake {
 
   return {
     addFile: (directory, name, file = {}) => {
-      ensure(directory).set(name, { sizeBytes: 0, modifiedAt: null, ...file });
+      ensure(directory).set(name, { sizeBytes: 0, modifiedAtMs: null, ...file });
       return toUri(directory, name);
     },
     hasFile: (directory, name) => directories.get(toKey(directory))?.has(name) ?? false,

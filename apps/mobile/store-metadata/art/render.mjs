@@ -346,6 +346,13 @@ const FRAME_ASPECT = {
   card: 1080 / 2400,
 };
 
+function frameFor(role, layout, target) {
+  if (role === 'folded') {
+    return 'duo-closed';
+  }
+  return layout === 'duo-pair' ? 'duo-open' : target.frame;
+}
+
 async function buildScreenshotJob(job, captureRoot, preview) {
   const { target, slot, locale } = job;
   const copy = slotCopy(slot, target.store, locale);
@@ -370,8 +377,7 @@ async function buildScreenshotJob(job, captureRoot, preview) {
   for (const [devices, capture, role] of captureNeeds(job)) {
     const source = screenSource(job, captureRoot, devices, capture);
     sources.push(source);
-    const frame =
-      role === 'folded' ? 'duo-closed' : layout === 'duo-pair' ? 'duo-open' : target.frame;
+    const frame = frameFor(role, layout, target);
     const screen = await screenSpec(source, FRAME_ASPECT[frame], capture, locale, strip);
     spec[role === 'main' ? 'screen' : role] = screen;
   }
@@ -388,6 +394,16 @@ function glyphProblems(text) {
         `서브셋에 없는 글자 ${missing.join('')} — node store-metadata/art/fonts/subset.mjs를 다시 실행하세요`,
       ]
     : [];
+}
+
+function byteLimitFor(job) {
+  if (job.type === 'scene' && job.scene.maxBytes != null) {
+    return job.scene.maxBytes;
+  }
+  if (job.type === 'scene' && job.scene.design[0] === 1024) {
+    return MAX_BYTES.feature;
+  }
+  return MAX_BYTES[job.type];
 }
 
 async function finish(png, job, expected) {
@@ -409,12 +425,7 @@ async function finish(png, job, expected) {
   if (meta.hasAlpha || meta.channels !== 3) {
     problems.push('알파 채널이 남아 있다');
   }
-  const limit =
-    job.type === 'scene' && job.scene.maxBytes != null
-      ? job.scene.maxBytes
-      : job.type === 'scene' && job.scene.design[0] === 1024
-        ? MAX_BYTES.feature
-        : MAX_BYTES[job.type];
+  const limit = byteLimitFor(job);
   if (output.length > limit) {
     problems.push(`${Math.round(output.length / 1024)}KiB > ${Math.round(limit / 1024)}KiB`);
   }

@@ -3,7 +3,6 @@ import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
-import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
 import { getScheduledTime, hasScheduleChanged, TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
@@ -91,7 +90,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
                 },
               },
             );
-          if (!TodoRepeatPolicy.hasRepeatRule(todo)) {
+          if (!TodoPolicy.hasRepeatRule(todo)) {
             saveTime();
 
             return;

@@ -1,18 +1,19 @@
 import { useAppLifecycle, useIncomingLink } from '@src/bootstrap/providers/di-context';
+import type { AuthStatus } from '@src/core/session/auth-status';
 import { useAppLifecycleState } from '@src/shared/hooks/use-app-lifecycle-state';
 import { useOverlayState } from '@src/shared/ui';
 import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 
-import { isStableFeedForeground } from '../utils/is-stable-feed-foreground';
+import { isStableFeedForeground } from '../utils/feed-foreground.view-model';
 
 /** 로그인 상태와 곧 일어날 이동은 shared가 모르는 일이라 화면이 넘긴다 */
 export function useStableFeedForeground({
-  isAuthenticated,
+  authStatus,
   hasPendingNavigation,
 }: {
-  isAuthenticated: boolean;
+  authStatus: AuthStatus;
   hasPendingNavigation: boolean;
 }): boolean {
   const incomingLink = useIncomingLink();
@@ -76,7 +77,7 @@ export function useStableFeedForeground({
   }, [incomingLink, releasePendingDeepLinkWhenIdle]);
 
   return isStableFeedForeground({
-    isAuthenticated,
+    authStatus,
     isFocused,
     isAppActive,
     isKeyboardVisible,

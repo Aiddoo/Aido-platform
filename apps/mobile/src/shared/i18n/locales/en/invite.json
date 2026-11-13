@@ -188,8 +188,7 @@
     "allDoneDescription": "Keep it going longer with a friend",
     "allDoneDismiss": "Hide for today",
     "friendsEmptyTitle": "Invite your first friend",
-    "allDoneTitlePrefix": "You finished",
-    "allDoneTitleHighlight": "everything today"
+    "allDoneTitle": "You finished <highlight>everything today</highlight>"
   },
   "welcome": {
     "friendsTitle": "You're now friends with {{name}}",

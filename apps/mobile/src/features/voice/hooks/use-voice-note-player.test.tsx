@@ -6,7 +6,8 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
 
-import { useVoiceNotePlayback, useVoiceNotePlayer } from './use-voice-note-player';
+import { useVoiceNotePlayback } from './use-voice-note-playback';
+import { useVoiceNotePlayer } from './use-voice-note-player';
 
 let logger: ReturnType<typeof createAppLoggerStub>;
 

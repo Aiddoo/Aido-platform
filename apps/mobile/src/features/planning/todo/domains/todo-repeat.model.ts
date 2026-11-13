@@ -8,7 +8,6 @@ import {
   TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
-import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
   addMonthsToDateKey,
@@ -46,7 +45,7 @@ export function getRepeatPresetDays(preset: RepeatPreset): readonly DayOfWeek[] 
 const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
 // 수정에는 전체 범위가 없다. 첫 회차에서 이후를 고르면 전체를 고친 것과 같다
-export const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
+const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
 export type TodoUpdateScope = z.infer<typeof todoUpdateScopeSchema>;
 
 // 할 일·음성 계획 폼이 이 규칙을 그대로 쓰므로 폼 입력도 날짜 key다
@@ -183,29 +182,6 @@ export function getTodoEditScopeDecision({
   return isDateOnly ? 'this-only' : 'ask';
 }
 
-interface RepeatOccurrence {
-  recurrenceGroupId: string | null;
-  repeat: TodoRepeat | null;
-}
-
-// 규칙 없는 묶음(이관에서 패턴을 잃음)은 서버가 범위 수정·끝내기를 받지 않아 "이 할 일만"으로 다룬다
-export function hasRepeatRule({ recurrenceGroupId, repeat }: RepeatOccurrence): boolean {
-  return recurrenceGroupId != null && repeat != null;
-}
-
-// 반복 칩으로 규칙을 고칠 수 있는지. 규칙 없는 묶음의 회차는 서버가 전환을 받지 않는다(TODO_0845)
-export function canChangeRepeat(occurrence: RepeatOccurrence): boolean {
-  return occurrence.recurrenceGroupId == null || hasRepeatRule(occurrence);
-}
-
-// 삭제 때 고를 수 있는 범위. 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다
-export function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEditScope[] {
-  if (occurrence.recurrenceGroupId == null) {
-    return [];
-  }
-  return hasRepeatRule(occurrence) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
-}
-
 // 서버 RepeatRule과 같은 걷기: 하루씩 보지 않고 규칙이 맞는 날로 건너뛴다. 격주는 시작일이 속한 월요일 시작 주 기준이다
 function* walkDailyDateKeys(startDate: DateKey, upper: DateKey): Generator<DateKey> {
   for (let date = startDate; date <= upper; date = addDaysToDateKey(date, 1)) {
@@ -230,7 +206,7 @@ function* walkWeeklyDateKeys({
   for (
     let monday = getMondayOfDateKey(startDate);
     monday <= upper;
-    monday = addDaysToDateKey(monday, interval * DAYS_PER_WEEK)
+    monday = addDaysToDateKey(monday, interval * DAYS_OF_WEEK.length)
   ) {
     for (const offset of offsets) {
       const date = addDaysToDateKey(monday, offset);
@@ -357,12 +333,6 @@ export function isMonthBeyondRepeatHorizon(dateKey: DateKey, todayKey: DateKey):
 export const TodoRepeatPolicy = {
   getRepeatKind,
   hasSameRepeat,
-  isBeyondRepeatHorizon,
-  isMonthBeyondRepeatHorizon,
-  getTodoEditScopeDecision,
-  hasRepeatRule,
-  canChangeRepeat,
-  getDeleteScopes,
   withRepeatStartDate,
   isRepeatMonthDayClamped,
   getRepeatOccurrenceDateKeys,

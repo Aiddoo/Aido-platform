@@ -15,8 +15,8 @@ export interface SessionExpiredDetails {
 }
 
 /** 비자발적 로그아웃은 전부 조사 대상이라 어느 사유도 `info`가 아니다 (`no-refresh-token`을 낮춘 탓에 대량 로그아웃이 노이즈로 위장됐다) */
-export const sessionExpiredSeverity: Record<SessionExpiredReason, Severity> = {
+export const SESSION_EXPIRED_SEVERITY = {
   'refresh-rejected': 'warning',
   'tokens-missing': 'warning',
   'invalid-refresh-response': 'error',
-};
+} as const satisfies Record<SessionExpiredReason, Severity>;

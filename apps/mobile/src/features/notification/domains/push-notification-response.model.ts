@@ -1,6 +1,7 @@
 import type { AppLifecycleState } from '@src/core/ports/app-lifecycle-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import { diffMs, type Instant } from '@src/shared/date/instant';
 import { takeRight, without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -18,12 +19,12 @@ export interface PushNotificationResponse {
   id: string;
   actionIdentifier: string;
   notification: PushNotification;
-  receivedAt: number;
+  receivedAt: Instant;
   /** 시작할 때 읽은 마지막 응답이면 true. 꺼진 앱이 이 탭으로 켜졌다 */
   isLaunchResponse: boolean;
   /** 응답을 받을 때 앱 상태와, 앞에 있었다면 앞으로 온 시각 */
   appState: AppLifecycleState;
-  activeSince: number | null;
+  activeSince: Instant | null;
 }
 
 /** 이미 처리한 응답 id. 최근 것만 남긴다 */
@@ -47,14 +48,14 @@ function isMarketingOptOut(response: PushNotificationResponse) {
   return marketingOptOutActionSchema.safeParse(response.actionIdentifier).success;
 }
 
-function isExpired(response: PushNotificationResponse, now: number) {
-  return now - response.receivedAt > PENDING_RESPONSE_LIFETIME_MS;
+function isExpired(response: PushNotificationResponse, now: Instant) {
+  return diffMs(now, response.receivedAt) > PENDING_RESPONSE_LIFETIME_MS;
 }
 
 /** 눌린 응답을 지금 어떻게 할지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
 function getResponseAction(
   response: PushNotificationResponse,
-  { authStatus, now }: { authStatus: AuthStatus; now: number },
+  { authStatus, now }: { authStatus: AuthStatus; now: Instant },
 ): PushNotificationResponseAction {
   if (isExpired(response, now)) {
     return { type: 'drop', reason: 'expired' };
@@ -77,7 +78,7 @@ function getOpenAppState(response: PushNotificationResponse): PushOpenAppState {
   if (
     response.appState !== 'active' ||
     response.activeSince == null ||
-    response.receivedAt - response.activeSince < FOREGROUND_TAP_SETTLE_MS
+    diffMs(response.receivedAt, response.activeSince) < FOREGROUND_TAP_SETTLE_MS
   ) {
     return 'background';
   }

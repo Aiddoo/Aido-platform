@@ -1,4 +1,5 @@
 import { dateKeySchema } from '@src/shared/date/date-key';
+import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 /** 위젯을 누른 뒤 앱이 이 시간 안에 열려야 저장된 목적지로 옮긴다 */
@@ -54,16 +55,13 @@ export const widgetNavigationCommandSchema = z.object({
   id: z.string().min(1),
   uri: z.string().refine((uri) => parseWidgetNavigationUri(uri) != null),
   userId: z.string().min(1),
-  createdAt: z.number().int().nonnegative(),
+  createdAt: instantSchema,
 });
 export type WidgetNavigationCommand = z.infer<typeof widgetNavigationCommandSchema>;
 
-function isFresh(command: WidgetNavigationCommand, now: number): boolean {
-  return (
-    Number.isFinite(now) &&
-    command.createdAt <= now &&
-    now - command.createdAt < WIDGET_NAVIGATION_COMMAND_TTL_MS
-  );
+function isFresh(command: WidgetNavigationCommand, now: Instant): boolean {
+  const elapsedMs = diffMs(now, command.createdAt);
+  return 0 <= elapsedMs && elapsedMs < WIDGET_NAVIGATION_COMMAND_TTL_MS;
 }
 
 function isOwnedBy(command: WidgetNavigationCommand, userId: string): boolean {
@@ -84,7 +82,7 @@ type WidgetCommandState = 'stale' | 'ownerUnknown' | 'foreign' | 'valid';
 
 function getCommandState(
   command: WidgetNavigationCommand,
-  { userId, now }: { userId: string | null; now: number },
+  { userId, now }: { userId: string | null; now: Instant },
 ): WidgetCommandState {
   if (!isFresh(command, now)) {
     return 'stale';

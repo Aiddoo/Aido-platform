@@ -1,15 +1,21 @@
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type { RefreshOutcome } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, type SessionEpoch } from '@src/core/session/session-epoch';
-import { NetworkError } from '@src/shared/errors';
+import { NetworkError, TimeoutError } from '@src/shared/errors';
 import {
   createErrorReporterStub,
   createAppLoggerStub,
   createMemoryTokenStore,
+  observeSettlement,
   runKyAfterResponseHook,
+  setupFakeTimersPerTest,
 } from '@src/testing/core';
 
-import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
+import {
+  createTokenRefreshHook,
+  RETRY_MARKER_HEADER,
+  UNAUTHORIZED_RECOVERY_TIMEOUT_MS,
+} from './token-refresh-hook';
 
 // ky v2 훅은 `new Request(request, ...)`로 재시도 요청을 재구성하므로 실제 Request/Response를 쓴다.
 const createFakeRequest = (headers: Record<string, string> = {}): Request =>
@@ -257,5 +263,24 @@ describe('createTokenRefreshHook', () => {
     // Then
     expect(result).toBe(response);
     expect(endSession).not.toHaveBeenCalled();
+  });
+
+  describe('갱신이 끝나지 않을 때', () => {
+    setupFakeTimersPerTest();
+
+    it('401 요청은 갱신을 끝없이 기다리지 않고 제한 시간에 TimeoutError로 끝나며 세션은 유지한다', async () => {
+      // Given
+      tokenStore.getAccessToken.mockResolvedValue('current-token');
+      refresh.mockReturnValue(new Promise<RefreshOutcome>(() => undefined));
+      const request = createFakeRequest({ Authorization: 'Bearer current-token' });
+
+      // When
+      const result = observeSettlement(invokeHook(request, createErrorResponse(401, 'AUTH_0101')));
+      await jest.advanceTimersByTimeAsync(UNAUTHORIZED_RECOVERY_TIMEOUT_MS);
+
+      // Then
+      expect(result.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      expect(endSession).not.toHaveBeenCalled();
+    });
   });
 });

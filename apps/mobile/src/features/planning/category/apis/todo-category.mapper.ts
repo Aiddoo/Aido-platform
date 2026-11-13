@@ -7,12 +7,11 @@ import type {
 import { pick } from 'es-toolkit';
 
 import type {
-  TodoCategory,
   TodoCategoryDeletionRequest,
   TodoCategoryDeletionPreview,
   TodoCategoryDeletionResult,
-  TodoCategoryWithCount,
-} from '../domains/todo-category.model';
+} from '../domains/todo-category-deletion.model';
+import type { TodoCategory, TodoCategoryWithCount } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type { TodoCategoryRemoval } from '../schemas/todo-category-request.schema';
 

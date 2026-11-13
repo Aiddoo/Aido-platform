@@ -1,4 +1,4 @@
-import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { CategoryPickForm } from '@src/features/planning/category/components/category-pick-form';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -62,12 +62,12 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
   }
 
   return (
-    <CategorySelectInput
+    <CategoryPickForm
       defaultValue={defaultCategoryId}
       onSubmit={(categoryId) =>
         actOnSuggestionMutation.mutate(
           { suggestionId: suggestion.id, input: { action: 'accept', categoryId } },
-          { onSuccess: () => onClose({ type: 'back-then-replace', href: '/feed' }) },
+          { onSuccess: () => onClose({ type: 'dismiss-to', href: '/feed' }) },
         )
       }
       submitLabel={t('suggestions.category.submit')}
@@ -76,4 +76,4 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
   );
 };
 
-SuggestionCategoryBottomSheet.Loading = CategorySelectInput.Loading;
+SuggestionCategoryBottomSheet.Loading = CategoryPickForm.Loading;
