@@ -224,6 +224,50 @@ describe('reduceVoiceCapture', () => {
     expect(state).toMatchObject({ status: 'failed', reason: 'client' });
   });
 
+  it.each([
+    { reason: 'preparing-timeout', input: { status: 'preparing' } },
+    { reason: 'restart-loop', input: { status: 'listening', listeningSince: NOW } },
+  ] as const)(
+    '인식기가 답하지 않으면($reason) 그 이유로 실패하고 글자를 남긴다',
+    ({ reason, input }) => {
+      // Given
+      const state = createCaptureState({
+        ...input,
+        transcript: createTranscript({ interim: '장보기' }),
+      });
+
+      // When
+      const failed = VoiceCapturePolicy.reduceVoiceCapture(state, {
+        type: 'unresponsive',
+        reason,
+        at: NOW,
+      });
+
+      // Then
+      expect(failed).toMatchObject({
+        status: 'failed',
+        reason,
+        transcript: { sentences: ['장보기'], interim: '' },
+      });
+      expect(VoiceCapturePolicy.canResume(failed)).toBe(true);
+    },
+  );
+
+  it('듣기가 끝난 뒤 늦게 온 무응답은 상태를 바꾸지 않는다', () => {
+    // Given
+    const paused = createCaptureState({ status: 'paused', cause: 'user' });
+
+    // When
+    const state = VoiceCapturePolicy.reduceVoiceCapture(paused, {
+      type: 'unresponsive',
+      reason: 'preparing-timeout',
+      at: NOW,
+    });
+
+    // Then
+    expect(state).toBe(paused);
+  });
+
   it('앱이 구간을 닫으려고 멈춘 뒤 듣는 중이나 준비 중에 오는 client는 실패가 아니다', () => {
     // Given
     const listening = createCaptureState({ status: 'listening', listeningSince: NOW });

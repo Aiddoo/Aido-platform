@@ -12,6 +12,7 @@ import { toError } from '@src/shared/errors';
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import type { VoiceCaptureEntry, VoiceCaptureOutcome } from '../constants/voice.events';
 import {
+  type RecognizerUnresponsiveReason,
   VoiceCapturePolicy,
   type VoiceCaptureFailureReason,
   type VoiceCaptureState,
@@ -87,6 +88,12 @@ export function useVoiceCaptureTelemetry({ entry, mode }: UseVoiceCaptureTelemet
         speech_error: code,
         on_device: isOnDevice,
       });
+    },
+    recognizerUnresponsive: (
+      reason: RecognizerUnresponsiveReason,
+      isOnDevice: boolean | undefined,
+    ) => {
+      logger.info(VOICE_LOG_EVENT.RECOGNIZER_UNRESPONSIVE, { reason, on_device: isOnDevice });
     },
     offlineModelDeclined: (locale: SpeechLocale) => {
       trackEvent('voice_offline_model_requested', { locale, result: 'declined' });

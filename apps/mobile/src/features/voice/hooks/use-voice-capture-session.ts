@@ -29,6 +29,7 @@ import {
   type CapturedPlan,
   type VoiceCaptureState,
   type VoicePauseCause,
+  type RecognizerUnresponsiveReason,
   createVoiceCaptureState,
 } from '../domains/voice-capture.model';
 import {
@@ -134,6 +135,13 @@ export function useVoiceCaptureSession({
     telemetry.finished(toCaptureOutcome(next), next);
   }
 
+  const handleFailed = (failed: Extract<VoiceCaptureState, { status: 'failed' }>) => {
+    onFailed?.(failed.transcript);
+    clearTimers();
+    haptics.notify('error');
+    telemetry.failed(failed.reason);
+  };
+
   const handleError = (code: SpeechErrorCode) => {
     const { isStopRequested } = recognizer.linkRef.current;
     const { previous, next } = dispatch({ type: 'error', code, at: Date.now(), isStopRequested });
@@ -146,15 +154,20 @@ export function useVoiceCaptureSession({
     }
 
     if (next.status === 'failed') {
-      onFailed?.(next.transcript);
-      clearTimers();
-      haptics.notify('error');
-      telemetry.failed(next.reason);
+      handleFailed(next);
       return;
     }
     if (next.status === 'paused' && previous.status !== 'paused') {
       clearTimers();
       telemetry.paused('interrupted');
+    }
+  };
+
+  const handleUnresponsive = (reason: RecognizerUnresponsiveReason) => {
+    const { next } = dispatch({ type: 'unresponsive', reason, at: Date.now() });
+    telemetry.recognizerUnresponsive(reason, startOptionsRef.current?.isOnDevice);
+    if (next.status === 'failed') {
+      handleFailed(next);
     }
   };
 
@@ -174,7 +187,7 @@ export function useVoiceCaptureSession({
       return;
     }
     if (!recognizer.restartSegment(startOptions)) {
-      handleError('client');
+      handleUnresponsive('restart-loop');
     }
   };
 
@@ -287,7 +300,7 @@ export function useVoiceCaptureSession({
     onTimeout: () => {
       speechRecognizer.abort();
       recognizer.update({ type: 'ended' });
-      handleError('client');
+      handleUnresponsive('preparing-timeout');
     },
   });
 
