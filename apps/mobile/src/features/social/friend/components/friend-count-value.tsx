@@ -18,11 +18,11 @@ export function FriendCountValue() {
 
 function FriendCount() {
   const { t } = useTranslation('friend');
-  const { data } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
+  const { data: friends } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
 
   return (
     <SettingsListGroup.Value className="tabular-nums">
-      {t('list.countValue', { count: data.totalCount })}
+      {t('list.countValue', { count: friends.totalCount })}
     </SettingsListGroup.Value>
   );
 }

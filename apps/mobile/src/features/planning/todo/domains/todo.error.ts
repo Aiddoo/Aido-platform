@@ -13,12 +13,10 @@ export function isFriendFeedUnavailableError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.FOLLOW_0906);
 }
 
-/** 카테고리의 활성 할 일이 한도에 닿아 더 만들 수 없다 */
 export function isCategoryTodoLimitError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.TODO_0811);
 }
 
-/** 반복 할 일을 만들면 카테고리의 할 일 한도를 넘는다 */
 export function isRecurringCategoryTodoLimitError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.TODO_0813);
 }

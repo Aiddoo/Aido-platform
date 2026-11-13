@@ -1,4 +1,5 @@
 import type { AppLogger } from '@src/core/ports/app-logger';
+import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SignOutEpoch } from '@src/core/session/sign-out-epoch';
 import type { DraftService } from '@src/shared/draft/draft.service';
 import { getErrorMessage } from '@src/shared/errors';
@@ -30,6 +31,8 @@ interface SessionCleanupServicePorts {
   userDeviceData: Pick<UserDeviceDataService, 'clearForUser'>;
   /** 위층 기능이라 조립하는 곳이 넘긴다 */
   pushDevice: { requestRelease(): void };
+  /** 알림 payload에 받는 사람이 없어 지우지 않으면 다음 계정이 공용 기기에서 앞사람의 알림 문구를 본다 */
+  pushNotification: Pick<PushNotificationGateway, 'dismissDelivered'>;
   /** 로그아웃·탈퇴만 올린다. 만료는 같은 사람이 돌아와 이어 쓰므로 늦은 저장을 막지 않는다 */
   signOutEpoch: Pick<SignOutEpoch, 'advance'>;
   logger: Pick<AppLogger, 'warn'>;
@@ -45,8 +48,17 @@ export class SessionCleanupService {
   readonly #pendingRedemption: SessionCleanupServicePorts['pendingRedemption'];
   readonly #userDeviceData: SessionCleanupServicePorts['userDeviceData'];
   readonly #pushDevice: SessionCleanupServicePorts['pushDevice'];
+  readonly #pushNotification: SessionCleanupServicePorts['pushNotification'];
   readonly #signOutEpoch: SessionCleanupServicePorts['signOutEpoch'];
   readonly #logger: SessionCleanupServicePorts['logger'];
+  /**
+   * 서버가 지웠을 수 있는 탈퇴. 응답을 기다리거나(`requested`) 응답 없이 끝났다(`unanswered`). 계정 id를 몰라도 남겨
+   * 세션이 끝날 때 로그아웃처럼 지운다. 모르는 것은 지운 것이 아니라 계정이 살아 있다는 증거가 오면 잊는다
+   */
+  #pendingAccountDeletion: {
+    accountId: string | null;
+    status: 'requested' | 'unanswered';
+  } | null = null;
 
   constructor({
     queryCache,
@@ -57,6 +69,7 @@ export class SessionCleanupService {
     pendingRedemption,
     userDeviceData,
     pushDevice,
+    pushNotification,
     signOutEpoch,
     logger,
   }: SessionCleanupServicePorts) {
@@ -68,11 +81,12 @@ export class SessionCleanupService {
     this.#pendingRedemption = pendingRedemption;
     this.#userDeviceData = userDeviceData;
     this.#pushDevice = pushDevice;
+    this.#pushNotification = pushNotification;
     this.#signOutEpoch = signOutEpoch;
     this.#logger = logger;
   }
 
-  /** 로그아웃·탈퇴: 캐시와 이 계정의 기기 데이터를 모두 지운다 */
+  /** 로그아웃·탈퇴: 캐시와 이 계정의 기기 데이터를 모두 지운다. 탈퇴면 그 계정의 안내 기록도 지운다 */
   afterSignedOut = (): void => {
     // 지우기 전에 올려야 그 사이 늦게 온 초안·녹음 쓰기도 버린다
     this.#run('sign-out-epoch', () => this.#signOutEpoch.advance());
@@ -81,17 +95,54 @@ export class SessionCleanupService {
     this.#run('voice-notes', () => this.#voiceNotes.removeAll());
     this.#run('device-timezone', () => this.#deviceTimezone.clear());
     this.#run('pending-redemption', () => this.#pendingRedemption.clear());
+    this.#dismissDeliveredNotifications();
+    const deletedAccountId = this.#pendingAccountDeletion?.accountId ?? null;
+    this.#pendingAccountDeletion = null;
+    if (deletedAccountId != null) {
+      this.#run('user-device-data', () => this.#userDeviceData.clearForUser(deletedAccountId));
+    }
   };
 
-  /** 탈퇴: 그 계정의 안내 기록을 지운다. 로그아웃은 같은 사람이 돌아오므로 남긴다 */
-  afterAccountDeleted = (accountId: string): void => {
-    this.#run('user-device-data', () => this.#userDeviceData.clearForUser(accountId));
+  /**
+   * 탈퇴 요청 직전. 응답을 받지 못해도 서버는 지웠을 수 있어 이어서 세션이 끝나면 로그아웃처럼 지운다.
+   * 안내 기록은 계정 id가 있어야 지울 수 있어 모르면 남긴다
+   */
+  beforeAccountDeletion = (accountId: string | null): void => {
+    if (accountId == null) {
+      this.#logger.warn(AUTH_LOG_EVENT.ACCOUNT_DELETION_OWNER_UNKNOWN);
+    }
+    this.#pendingAccountDeletion = { accountId, status: 'requested' };
+  };
+
+  /** 서버가 탈퇴를 거절했거나 요청이 기기를 떠나지 못했다(오프라인). 계정이 남아 같은 사람이 이어 쓰므로 세션 만료는 초안을 남긴다 */
+  afterAccountDeletionRejected = (): void => {
+    this.#pendingAccountDeletion = null;
+  };
+
+  /** 요청이 서버에 닿았을 수 있는데 응답을 받지 못했다(시간 초과, 보낸 뒤 끊김) */
+  afterAccountDeletionUnanswered = (): void => {
+    if (this.#pendingAccountDeletion != null) {
+      this.#pendingAccountDeletion = { ...this.#pendingAccountDeletion, status: 'unanswered' };
+    }
+  };
+
+  /** 인증 요청이 성공했다. 응답을 기다리는 동안 온 성공은 탈퇴 전의 계정일 수 있어 응답 없이 끝난 뒤의 것만 본다 */
+  afterSessionConfirmed = (): void => {
+    if (this.#pendingAccountDeletion?.status === 'unanswered') {
+      this.#pendingAccountDeletion = null;
+    }
   };
 
   /** 세션 만료: 서버에 로그아웃을 알리지 못했으므로 이 기기의 푸시 등록도 푼다 */
   afterSessionExpired = (): void => {
-    this.afterSessionEnded();
+    if (this.#pendingAccountDeletion == null) {
+      this.afterSessionEnded();
+    } else {
+      this.afterSignedOut();
+    }
     this.#run('push-device-release', () => this.#pushDevice.requestRelease());
+    // 만료 뒤에는 다른 계정이 로그인할 수 있다
+    this.#dismissDeliveredNotifications();
   };
 
   /** 세션 만료·미인증 부팅: 캐시만 지운다. 같은 사람이 돌아오면 초안을 이어 쓴다 */
@@ -103,17 +154,32 @@ export class SessionCleanupService {
 
   /** 마운트된 채 다시 그려진 관찰자가 비운 콜백을 복구해 정리 뒤 캐시를 채울 수 있어 로그인 직전에 다시 비운다 */
   beforeSignIn = (): void => {
+    // 다시 로그인하는 계정은 지운 계정이 아니다
+    this.#pendingAccountDeletion = null;
     this.#run('sign-in-queries', () => this.#queryCache.clearQueries());
+  };
+
+  #dismissDeliveredNotifications = (): void => {
+    const step = 'delivered-notifications';
+    this.#run(step, () => {
+      this.#pushNotification
+        .dismissDelivered()
+        .catch((error: unknown) => this.#warnStepFailed(step, error));
+    });
   };
 
   #run = (step: string, cleanup: () => void): void => {
     try {
       cleanup();
     } catch (error) {
-      this.#logger.warn(AUTH_LOG_EVENT.SESSION_CLEANUP_STEP_FAILED, {
-        step,
-        error: getErrorMessage(error),
-      });
+      this.#warnStepFailed(step, error);
     }
+  };
+
+  #warnStepFailed = (step: string, error: unknown): void => {
+    this.#logger.warn(AUTH_LOG_EVENT.SESSION_CLEANUP_STEP_FAILED, {
+      step,
+      error: getErrorMessage(error),
+    });
   };
 }

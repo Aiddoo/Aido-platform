@@ -11,6 +11,7 @@ import {
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
+import type { DailyCompletionSummary } from '../domains/daily-completion.model';
 import type { CalendarViewMode } from '../schemas/calendar-view-mode-storage.schema';
 
 /** 앱 달력 주(일요일 시작)의 첫날 */
@@ -55,17 +56,26 @@ function getMonthGridRange(dateKey: DateKey): CalendarDateRange {
  * 고른 날의 달과 앞 달·다음 달(이웃)의 달력 범위. 주 보기도 같은 달 범위로 받아 달을 넘겨도 키가 같다.
  * 주 보기의 앞뒤 주는 고른 날이 든 달 범위나 그 이웃 달 범위 안에 있다
  */
-export function getCalendarMonthRanges(dateKey: DateKey): {
-  selected: CalendarDateRange;
-  neighbors: CalendarDateRange[];
-} {
+export function getCalendarMonthRanges(
+  dateKey: DateKey,
+): Record<'selected' | 'previous' | 'next', CalendarDateRange> {
   const monthStartKey = getMonthStartDateKey(dateKey);
   return {
     selected: getMonthGridRange(monthStartKey),
-    neighbors: [-1, 1].map((offset) =>
-      getMonthGridRange(addMonthsToDateKey(monthStartKey, offset)),
-    ),
+    previous: getMonthGridRange(addMonthsToDateKey(monthStartKey, -1)),
+    next: getMonthGridRange(addMonthsToDateKey(monthStartKey, 1)),
   };
+}
+
+export type CompletionsByDate = Record<string, DailyCompletionSummary>;
+
+/** 겹치는 앞뒤 주는 고른 달의 결과로 그린다 */
+export function mergeCalendarCompletions({
+  selected,
+  previous,
+  next,
+}: Record<'selected' | 'previous' | 'next', CompletionsByDate | undefined>): CompletionsByDate {
+  return { ...previous, ...next, ...selected };
 }
 
 interface ShiftCalendarDateInput {

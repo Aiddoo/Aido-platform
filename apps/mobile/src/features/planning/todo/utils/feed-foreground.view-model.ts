@@ -1,5 +1,7 @@
+import type { AuthStatus } from '@src/core/session/auth-status';
+
 interface StableFeedForegroundInput {
-  isAuthenticated: boolean;
+  authStatus: AuthStatus;
   isFocused: boolean;
   isAppActive: boolean;
   isKeyboardVisible: boolean;
@@ -10,7 +12,7 @@ interface StableFeedForegroundInput {
 }
 
 export function isStableFeedForeground({
-  isAuthenticated,
+  authStatus,
   isFocused,
   isAppActive,
   isKeyboardVisible,
@@ -19,7 +21,7 @@ export function isStableFeedForeground({
   hasPendingNavigation,
 }: StableFeedForegroundInput): boolean {
   return (
-    isAuthenticated &&
+    authStatus === 'authenticated' &&
     isFocused &&
     isAppActive &&
     !isKeyboardVisible &&

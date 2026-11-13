@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { RouteBottomSheet, EditIcon, type SheetRouteExit, TrashIcon, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
@@ -33,6 +34,7 @@ interface SubTodoActionListProps {
 
 SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoActionListProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const [date] = useTodoSheetDateKey();
   const target = useSheetSubTodo({ onMissing: onClose });
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
@@ -59,7 +61,13 @@ SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoA
   return (
     <VStack gap={8}>
       <TodoActionRow
-        icon={<EditIcon width={16} height={16} colorClassName="text-main" />}
+        icon={
+          <EditIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-main"
+          />
+        }
         label={t('actions.edit')}
         hasArrow
         isDisabled={isDeleting}
@@ -75,7 +83,13 @@ SubTodoActionsBottomSheet.ActionList = function ActionList({ onClose }: SubTodoA
       />
 
       <TodoActionRow
-        icon={<TrashIcon width={16} height={16} colorClassName="text-error" />}
+        icon={
+          <TrashIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-error"
+          />
+        }
         label={isDeleting ? t('actions.deleting') : t('actions.delete')}
         isDanger
         isDisabled={isDeleting}

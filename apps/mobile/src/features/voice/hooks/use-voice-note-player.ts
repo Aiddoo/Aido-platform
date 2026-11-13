@@ -14,7 +14,7 @@ import {
   findPartSeek,
   getVoiceNotePlayback,
   type VoiceNotePlayback,
-} from '../utils/voice-note-playback';
+} from '../utils/voice-note-playback.view-model';
 
 interface VoiceNotePlayerPart {
   uri: string;

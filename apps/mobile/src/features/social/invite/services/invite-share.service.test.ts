@@ -1,8 +1,9 @@
 import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
 import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
+import { createAppLoggerStub } from '@src/testing/core';
 
+import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { InviteShareService } from './invite-share.service';
 
 const content = {
@@ -33,25 +34,19 @@ function createService({
   const expoSystemShareGateway: Pick<SystemShareGateway, 'share'> = { share: systemShare };
   const copy = jest.fn().mockResolvedValue(undefined);
   const clipboard: ClipboardGateway = { copy };
-  const addBreadcrumb = jest.fn();
-  const errorReporter: ErrorReporter = {
-    captureException: jest.fn(),
-    captureMessage: jest.fn(),
-    addBreadcrumb,
-    setUserId: jest.fn(),
-  };
+  const logger = createAppLoggerStub();
 
   return {
     service: new InviteShareService({
       socialShare,
       systemShare: expoSystemShareGateway,
       clipboard,
-      errorReporter,
+      logger,
     }),
     kakaoShareFeed,
     systemShare,
     copy,
-    addBreadcrumb,
+    logger,
   };
 }
 
@@ -89,9 +84,9 @@ describe('InviteShareService', () => {
       expect(result).toEqual({ channel: 'system', outcome: 'shared' });
     });
 
-    it('카카오 공유가 실패하면 invite 행적을 남기고 OS 공유로 보낸 결과를 반환한다', async () => {
+    it('카카오 공유가 실패하면 경고를 남기고 OS 공유로 보낸 결과를 반환한다', async () => {
       // Given
-      const { service, systemShare, addBreadcrumb } = createService({
+      const { service, systemShare, logger } = createService({
         kakaoShareFeed: jest.fn().mockRejectedValue(new Error('kakao')),
       });
 
@@ -99,9 +94,9 @@ describe('InviteShareService', () => {
       const result = await service.share('kakao', content);
 
       // Then
-      expect(addBreadcrumb).toHaveBeenCalledWith(
-        expect.objectContaining({ category: 'invite', level: 'warning' }),
-      );
+      expect(logger.warn).toHaveBeenCalledWith(INVITE_LOG_EVENT.KAKAO_SHARE_FAILED, {
+        reason: 'Error',
+      });
       expect(systemShare).toHaveBeenCalledWith(
         expect.objectContaining({ url: 'https://aido.kr/i/K7M2QX' }),
       );

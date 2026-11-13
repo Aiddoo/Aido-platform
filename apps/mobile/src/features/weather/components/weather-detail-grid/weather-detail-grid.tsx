@@ -28,7 +28,6 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../../queries/weather.queries';
-import { toVisibilityKilometers } from '../../utils/to-visibility-kilometers';
 import { toUvMeterPosition } from '../../utils/weather-bar.geometry';
 import { toCompassDial, toPressureGauge } from '../../utils/weather-dial.geometry';
 import { getCompassShortLabelKey } from '../../utils/weather-labels.view-model';
@@ -36,7 +35,8 @@ import {
   formatDegrees,
   formatTemperature,
   toDisplayTemperature,
-} from '../../utils/weather-temperature';
+} from '../../utils/weather-temperature.view-model';
+import { toVisibilityKilometers } from '../../utils/weather-visibility.view-model';
 import { WeatherMeter } from '../weather-meter';
 import {
   TILE_GRID_GAP,

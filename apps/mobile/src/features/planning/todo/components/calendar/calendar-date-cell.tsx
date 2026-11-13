@@ -90,8 +90,8 @@ function CategoryIndicator({ colors }: CategoryIndicatorProps) {
   if (colors.length <= 1) {
     return (
       <Box
-        className={cn('size-1.5 rounded-2xl', !firstColor && 'bg-gray-5')}
-        style={firstColor ? { backgroundColor: firstColor } : undefined}
+        className={cn('size-1.5 rounded-2xl', firstColor == null && 'bg-gray-5')}
+        style={firstColor == null ? undefined : { backgroundColor: firstColor }}
       />
     );
   }

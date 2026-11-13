@@ -1,3 +1,4 @@
+import { fromEpochMs } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { createMemorySyncStorage } from '@src/testing/core';
@@ -15,7 +16,7 @@ function createFixture() {
   const openDraftService = () =>
     new DraftService(
       createDraftRepository(storage),
-      () => NOW,
+      () => fromEpochMs(NOW),
       () => 0,
     );
   const createIdempotencyKey = jest

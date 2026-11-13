@@ -84,7 +84,7 @@ export function TodoTimePicker({
       }
     >
       <VStack>
-        <VStack className="gap-2 overflow-hidden rounded-xl bg-gray-1 dark:bg-gray-2 px-1 py-2">
+        <VStack className="gap-2 overflow-hidden rounded-xl bg-gray-1 px-1 py-2 dark:bg-gray-2">
           <ControlField
             isSelected={localIsAllDay}
             onSelectedChange={setLocalIsAllDay}
@@ -159,7 +159,7 @@ export function TodoTimePicker({
 TodoTimePicker.Loading = function Loading() {
   return (
     <SheetHeaderLayout gap={24} header={<TextSkeleton size="b2" className="w-24 self-center" />}>
-      <VStack className="overflow-hidden rounded-xl bg-gray-1 dark:bg-gray-2 px-1 py-2" gap={8}>
+      <VStack className="overflow-hidden rounded-xl bg-gray-1 px-1 py-2 dark:bg-gray-2" gap={8}>
         <ListRow
           contents={<TextSkeleton size="b1" className="w-16" />}
           right={<Skeleton className="h-6 w-12 rounded-full" />}

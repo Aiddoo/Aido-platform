@@ -214,12 +214,12 @@ describe('useStartVoiceNote', () => {
       seenCoachmarks: ['ai-consent-renewal'],
     });
     speechRecognizer.getPermission.mockResolvedValue({
-      isGranted: false,
+      status: 'denied',
       canAskAgain: true,
       missing: 'microphone',
     });
     speechRecognizer.requestPermission.mockResolvedValue({
-      isGranted: false,
+      status: 'denied',
       canAskAgain: true,
       missing: 'microphone',
     });

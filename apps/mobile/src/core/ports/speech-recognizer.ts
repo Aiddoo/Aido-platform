@@ -1,3 +1,5 @@
+import type { OsPermission, OsPermissionStatus } from './os-permission';
+
 export const SPEECH_LOCALES = ['ko-KR', 'en-US'] as const;
 export type SpeechLocale = (typeof SPEECH_LOCALES)[number];
 
@@ -52,9 +54,13 @@ export type SpeechEvent =
 /** 듣기를 막고 있는 권한. iOS는 마이크와 음성 인식을 따로 거절할 수 있다 */
 export type MissingSpeechPermission = 'microphone' | 'speech-recognition' | 'both';
 
-export type PermissionSnapshot =
-  | { isGranted: true; canAskAgain: boolean }
-  | { isGranted: false; canAskAgain: boolean; missing: MissingSpeechPermission };
+/** 허용되지 않았으면 무엇이 막고 있는지(`missing`)를 함께 준다 */
+export type SpeechPermission =
+  | (OsPermission & { status: 'granted' })
+  | (OsPermission & {
+      status: Exclude<OsPermissionStatus, 'granted'>;
+      missing: MissingSpeechPermission;
+    });
 
 export interface SpeechCapabilities {
   isAvailable: boolean;
@@ -82,8 +88,8 @@ export interface SpeechStartOptions {
 
 export interface SpeechRecognizer {
   /** 필요한 권한은 언어마다 다르다. 기기 안에서 인식할 수 없는 언어는 음성 인식 권한도 필요하다 */
-  getPermission(mode: SpeechMode, locale: SpeechLocale): Promise<PermissionSnapshot>;
-  requestPermission(mode: SpeechMode, locale: SpeechLocale): Promise<PermissionSnapshot>;
+  getPermission(mode: SpeechMode, locale: SpeechLocale): Promise<SpeechPermission>;
+  requestPermission(mode: SpeechMode, locale: SpeechLocale): Promise<SpeechPermission>;
   getCapabilities(mode: SpeechMode, locale: SpeechLocale): Promise<SpeechCapabilities>;
   requestOfflineModel(locale: SpeechLocale): Promise<OfflineModelResult>;
   start(options: SpeechStartOptions): void;

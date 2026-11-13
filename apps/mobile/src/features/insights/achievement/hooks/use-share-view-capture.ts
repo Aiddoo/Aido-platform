@@ -2,7 +2,7 @@ import { useSystemShare, useViewCapture } from '@src/bootstrap/providers/di-cont
 import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import type { RefObject } from 'react';

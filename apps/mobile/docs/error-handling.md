@@ -15,9 +15,10 @@
             ▼
  KyHttpClient.#request ── readErrorEnvelope(@aido/api/common에서 error만)
    2xx 봉투 아님·JSON 아님 ─────────────► throw ParseError
-   4xx ─► Result.err(ApiError { code: 아는 코드|SYS_0001, message, status, details })
+   4xx ─► Result.err(ApiError { code: 아는 코드|SYS_0001, message, status, details, requestId })
    5xx ─► throw ServerError { status, serverCode: 아는 코드|null, details, requestId, request }
-   시간 초과 ─► throw TimeoutError · ky NetworkError / expo `fetch failed:` ─► throw NetworkError
+   시간 초과(헤더·본문 각각 요청 timeout, ky `.json()`) ─► throw TimeoutError
+   ky NetworkError / expo `fetch failed:` ─► throw NetworkError
    그 밖(요청 경로의 TypeError 등 코드 버그) ─► 그대로 throw
             ▼
  {Entity}Api: parseApiResponse(응답 스키마 + mapper toModel) 실패 ─► throw ParseError
@@ -50,7 +51,7 @@ classifyError(error): { kind: 'expected' | 'auth-expired' | 'connectivity' | 'un
 
 - 예상한 것만 이름으로 나열한다. 새 오류 종류를 예상한 쪽으로 옮기려면 이 함수와 `classify-error.test.ts` 표를 함께 고친다.
 - Sentry 어댑터(`captureError`), mutation·조회 전역 보고, 경계, `useReportUnexpectedError`가 모두 이 판정을 따른다.
-- 재시도(`bootstrap/query/query-retry.ts`)는 따로 정한다. 일시 장애(`isTransientError`: 연결·시간 초과·5xx)는 6회, 응답 계약 위반(`ParseError`)과 코드로 거절한 오류(`isCodedError`)는 0회, 그 밖은 3회다.
+- 재시도(`shared/query/query-retry.ts`)는 따로 정한다. 일시 장애(`isTransientError`: 연결·시간 초과·5xx)는 6회, 응답 계약 위반(`ParseError`)과 코드로 거절한 오류(`isCodedError`)는 0회, 그 밖은 3회다.
 
 ## 오류 클래스
 
@@ -58,7 +59,7 @@ classifyError(error): { kind: 'expected' | 'auth-expired' | 'connectivity' | 'un
 
 | 클래스                | 위치                              | 모양                                                                                        | 사용자 문구                                                      |
 | --------------------- | --------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `ApiError`            | `core/errors/api-error.ts`        | `code: ErrorCodeType`, `status`, `details: Record \| null`, `hasCode(code)`                 | 카탈로그 → 서버 message → `errors:fallback`                      |
+| `ApiError`            | `core/errors/api-error.ts`        | `code: ErrorCodeType`, `status`, `details: Record \| null`, `requestId`, `hasCode(code)`    | 카탈로그 → 서버 message → `errors:fallback`                      |
 | `ServerError`         | `shared/errors/infra-error.ts`    | `status`, `serverCode: ErrorCodeType \| null`, `details`, `requestId`, `request`            | 아는 `serverCode`면 카탈로그, 아니면 `common:infraErrors.server` |
 | `NetworkError`        | 〃                                | 상태 없음                                                                                   | `common:infraErrors.network`                                     |
 | `TimeoutError`        | 〃                                | 상태 없음(응답이 오지 않았다)                                                               | `common:infraErrors.timeout`                                     |
@@ -102,7 +103,7 @@ errorFeedback: { feature, fallbackKey?, isHandledByFeature?, describe? } | false
 | `isHandledByFeature(error)`가 true인 오류 | 아무것도 하지 않는다. 기능 `onError`(코드별 안내·이동·한도 시트)나 호출부 `form.setError`가 보인다                                         |
 | `false`                                   | 전역은 아무것도 하지 않는다. 실패 이유마다 안내가 다르거나(결제·복원, 음성 계획) 화면 뒤 작업(로그아웃, 푸시 기기 보고)이다                |
 
-`false`인 mutation과 여러 요청을 묶은 일괄 작업(날씨 일괄 옮기기)은 전역과 같은 본체 `useMutationErrorFeedback()`(`bootstrap/query/mutation-error-feedback.tsx`)로 햅틱·토스트·보고를 한 번에 한다. 토스트만 직접 띄우면 예상하지 못한 실패가 Sentry에 남지 않는다.
+`false`인 mutation과 여러 요청을 묶은 일괄 작업(날씨 일괄 옮기기)은 전역과 같은 본체 `useMutationErrorFeedback()`(`shared/query/use-mutation-error-feedback.ts`)로 햅틱·토스트·보고를 한 번에 한다. 토스트만 직접 띄우면 예상하지 못한 실패가 Sentry에 남지 않는다.
 
 ```typescript
 const showMutationError = useMutationErrorFeedback();
@@ -135,21 +136,17 @@ showMutationError(error, {
 | `unexpected`   | 5xx·파싱·렌더 오류 등                                          | `reportUnexpectedError`(요청 태그 포함) | fallback(다시 시도 + 문의하기)           |
 
 - 독립된 데이터 블록마다 `QueryErrorBoundary → Suspense → 블록`을 둬 부분 실패를 허용한다. 식별자가 바뀌면 `resetKeys`로 이전 실패를 푼다. mutation은 경계로 가지 않는다(`throwOnError` 미사용).
+- 안쪽 경계가 바깥 경계의 조회를 함께 그리면 `resetScope="parent"`로 다시 시도 범위를 바깥과 함께 쓴다. 범위가 갈리면 바깥 다시 시도 뒤에도 안쪽이 그 조회를 다시 받지 않는다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md#안쪽-경계가-바깥-경계의-조회를-함께-그릴-때)).
 - 기능 fallback은 `fallback={X.Error}`로 잇고 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. 한 칸 안의 실패는 `QueryErrorFallback.Inline`이다.
-- 문의하기는 경계가 받은 오류의 진단 코드·오류 코드·요청 ID(`getErrorDiagnosis`)를 본문 첫 줄에 담아 문의 화면을 연다. 사용자·기기 식별자와 오류 문구는 넣지 않는다. route 시트 안에서는 `onInquiry`가 받은 `href`로 `sheet.close({ type: 'replace', href })`한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
-- **경계 밖 조회.** 인라인 `useQuery`의 `isError` 화면과 데이터가 있는 재조회 실패는 경계로 가지 않는다. 앱 `QueryCache`의 `onError`(`query-error-report-cache.ts`)가 받아 `QueryErrorReport`가 `feature: query_cache`로 보고한다. 데이터 없이 실패한 `useSuspenseQuery`는 경계로 가므로 건너뛰고(TanStack `defaultThrowOnError`와 같은 조건), 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 기능이 조회 실패를 다시 보고하지 않는다.
+- 문의하기는 경계가 받은 오류의 진단 코드·오류 코드·요청 ID(`getErrorDiagnosis`, 4xx·5xx 모두)를 본문 첫 줄에 담아 문의 화면을 연다. 사용자·기기 식별자와 오류 문구는 넣지 않는다. route 시트 안에서는 `onInquiry`가 받은 `href`로 `sheet.close({ type: 'replace', href })`한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
+- **경계 밖 조회.** 인라인 `useQuery`의 `isError` 화면과 데이터가 있는 재조회 실패는 경계로 가지 않는다. 앱 `QueryCache`의 `onError`(`query-error-report-cache.ts`)가 받아 `QueryErrorReport`가 `feature: query_cache`로 보고한다. 데이터 없이 실패한 `useSuspenseQuery`와 붙은 observer의 `throwOnError`(함수면 그 결과)가 경계로 보내는 조회는 건너뛰고(TanStack `defaultThrowOnError`와 같은 조건), 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 기능이 조회 실패를 다시 보고하지 않는다.
+- **프리미엄 전용 거절.** 캐시의 한도 스냅샷이 늦어 프리미엄으로 물은 조회를 서버가 프리미엄 전용으로 거절하면, queryFn이 `*.error.ts` 판별 뒤 billing의 `invalidateEntitlements(client)`(`QueryFunctionContext.client`)를 기다린 다음 오류를 던진다. 기다리지 않으면 경계가 화면을 내리며 마지막 observer가 빠져 다시 받기가 취소되고 스냅샷이 되돌아간다(TanStack 조회 취소). 4xx는 재시도하지 않고 스냅샷 변경은 제안을 다시 묻지 않아 한 번으로 끝난다(AI 반복 제안 `suggestion.queries.ts`).
 - **조회에서 예상한 상태.** 경계로 던지지 않고 값으로 캐시에 둔다. 구독 요금제 조회는 `toOfferingsAvailability`로 `{ status: 'available' | 'unavailable' }`를 두고, 요금제 자리가 안내를 보일 때 `useReportStoreUnavailable`로 관측한다(설정 문제는 error, 일시 문제는 warning 메시지).
 
 ## 보고
 
-보고 API는 `captureError` 한 길이고 입구는 둘이다. 둘 다 `classifyError`로 이슈·breadcrumb를 정하고 같은 오류 객체는 한 번만 보낸다([관측](./observability.md#오류-분류와-한-번만-보고)).
+보고 API는 `captureError` 한 길이고 입구는 `reportUnexpectedError`·`logger.error` 둘이다. 어느 입구를 언제 쓰는지와 한 번만 보내는 규칙은 [관측](./observability.md#오류-분류와-한-번만-보고)·[AppLogger](./observability.md#applogger)가 원본이다.
 
-| 입구                                                   | 쓰는 곳                                                                                  | 예상한 오류         |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------- |
-| `reportUnexpectedError(errorReporter, error, feature)` | 전역 mutation·조회 보고, 경계, `useReportUnexpectedError`(기기 작업 등 mutation·조회 밖) | 보내지 않는다       |
-| `logger.error(KEY, toError(error), context)`           | DI 밖 코드, 로그 키로 기능을 밝히고 문맥(`speech_error` 등)을 남기는 곳                  | breadcrumb로 남긴다 |
-
-- 서비스는 삼킨 실패를 `logger.warn(KEY, { error: getErrorMessage(error) })`로만 남긴다. 예측 가능한 4xx는 이벤트가 아니다.
 - RN 브릿지·SDK는 `Error`가 아닌 값을 던지기도 한다. 보고에는 `toError`(원본은 `cause`), 로그 문맥에는 `getErrorMessage`를 쓴다. `new Error(String(error))`는 객체를 `[object Object]`로 만든다.
 - 삼키는 자리는 이유를 적는다. 확인 다이얼로그는 `onConfirm`(mutation)이 전역 피드백으로 이미 알려 실패를 삼키고 다이얼로그를 남긴다. 클립보드 실패(`ClipboardCopyError`)는 로그 키의 기능으로 보고한다.
 
@@ -165,33 +162,18 @@ showMutationError(error, {
 
 - 경계는 연결 상태를 `resetKeys`에 더해 오프라인 전환·복귀 때 오류 화면을 풀고 다시 불러온다.
 - `networkMode: 'always'`는 기기 안에서만 처리하는 작업(앱 아이콘, 클립보드, 알림 권한, 공유)과 로그아웃, 그리고 멈췄다가 나중에 실행되면 안 되는 쓰기(메모 저장·삭제·할 일 변환, 결제·복원, 음성 정리·계획 적용, AI 동의)다. 오프라인 저장은 바로 실패해 토스트가 한 번만 나온다.
-- 로그아웃은 오프라인이면 서버 요청 없이 토큰만 지우고, 온라인이면 요청마다 짧은 `timeout`을 건다(`logOutDevice`).
+- 로그아웃은 오프라인이면 서버 요청 없이 토큰만 지우고, 온라인이면 요청마다 짧은 `timeout`을 건다(`LogOutDeviceService`).
 - 구독 화면의 혜택은 스토어 응답 없이 그린다. 오프라인이면 요금제 자리에 「연결되면 보여드릴게요」 안내를 보이고 결제·복원 버튼을 이유와 함께 잠근다.
 
 ### 조회 캐시 보관
 
 오프라인으로 앱을 다시 열어도 마지막 데이터를 보이도록 opt-in한 조회(`...PERSISTED_QUERY_OPTIONS`)만 AES-256 MMKV `aido.query-cache.encrypted`에 24시간 보관한다. 토큰·결제·배지 수·AI 제안은 보관하지 않는다.
 
-- 키를 읽지 못한 실행은 `query-cache.encrypted-storage.unavailable` warn만 남기고 저장하지 않는다. 복원한 값은 `meta.persist`의 모델 스키마로 검증해 깨진 조회만 버리고(`query-cache.restored-queries.dropped`) 복원 직후 전체를 invalidate한다.
-- 로그인한 사용자 키에만 쓰고(`useClaimDeviceDataForUser`), 미인증 전환 때 `SessionCleanupService`가 인스턴스를 통째로 비운다(`clearAll` + `trim`). 앱 버전·OTA가 바뀌면 버린다. 저장소를 열지 못한 실행의 세션 종료는 정리 표시(`aido_session_pending-storage-cleanup_v1`)를 남겨 다음에 열 때 지운다.
+- 키를 읽지 못한 실행은 `query-cache.encrypted-storage.unavailable` warn만 남기고 저장하지 않는다. 복원한 값은 영속 스키마 표(`persisted-query-schemas.ts`)의 모델 스키마로 검증해 깨진 조회만 버리고(`query-cache.restored-queries.dropped`) 복원 직후 전체를 invalidate한다.
+- 로그인한 사용자 키에만 쓰고(`useClaimDeviceDataForUser`), 미인증 전환 때 `SessionCleanupService`가 인스턴스를 통째로 비운다(`clearAll` + `trim`). 앱 버전·OTA가 바뀌면 버린다. 저장소를 열지 못한 실행의 세션 종료는 정리 표시(`aido_session_pending_storage_cleanup_v1`)를 남겨 다음에 열 때 지운다.
+- 키를 읽지 못한 실행(재부팅 뒤 잠금 해제 전에 깨어남)의 초안은 버리지 않고 그 실행 동안 메모리에 둔다. 로그아웃하면 함께 버리고, 앱이 꺼지면 사라진다. 디스크의 초안을 읽지 못하므로 녹음 고아 정리와 "녹음 모두 지우기"의 폴더 비우기를 하지 않는다. 같은 실행에서 저장소를 다시 열지 않는다. 이미 만든 Service·화면이 든 저장소, 조회 캐시 복원, 로그아웃 정리 분기를 실행 중에 바꿔야 해서다.
 - 로그아웃·탈퇴 뒤 늦게 온 초안 저장·녹음 파일은 `SignOutEpoch`와 비교해 버린다. 세션 만료는 같은 사람이 이어 쓰므로 남긴다.
 
 ## 저장소 오류: KeychainLockedError
 
 `KeyValueStorage.get()`은 값이 없으면 `null`, 기기 잠금으로 지금 못 읽으면 `KeychainLockedError`, 영구 오류(키체인 손상·entitlement 오설정)면 원본, 저장 값 파싱 실패면 `null`이다. "지금 못 읽음"을 "토큰 없음"으로 확정하면 잠긴 키체인이 로그아웃이 되고, 모든 읽기 실패를 잠김으로 뭉개면 무한 로딩에 갇힌다. 벤더 판별(OSStatus 메시지)은 `secure-storage.ts`에만 두고 `resolve-initial-auth-status.ts`는 `isKeychainLockedError()`만 안다. 경계로 보내지 않는다.
-
-## 참고 파일
-
-| 파일                                                          | 설명                                             |
-| ------------------------------------------------------------- | ------------------------------------------------ |
-| `core/errors/{app-error,api-error,result}.ts`                 | 오류 바탕·ApiError·Result                        |
-| `shared/errors/classify-error.ts`                             | 분류                                             |
-| `shared/errors/report-unexpected-error.ts`                    | 예상하지 못한 오류 보고·요청 태그                |
-| `shared/errors/{infra-error,business-error,storage-error}.ts` | 오류 클래스                                      |
-| `shared/errors/{user-facing-message,error-diagnosis}.ts`      | 사용자 문구, 진단 값                             |
-| `shared/infra/http/{ky-client,ky-error,error-envelope}.ts`    | HTTP 결과 변환, 실패 봉투                        |
-| `bootstrap/query/mutation-error-feedback*`                    | mutation 전역 피드백, `useMutationErrorFeedback` |
-| `bootstrap/query/query-error-report*`                         | 경계 밖 조회 보고                                |
-| `bootstrap/query/query-retry.ts`                              | 재시도                                           |
-| `shared/ui/query-error-boundary/`                             | 경계, fallback, 문의 초안                        |
-| `features/*/domains/*.error.ts`                               | 기능 오류                                        |

@@ -1,7 +1,7 @@
 import { isStableFeedForeground } from './feed-foreground.view-model';
 
-const stableInput = {
-  isAuthenticated: true,
+const stableInput: Parameters<typeof isStableFeedForeground>[0] = {
+  authStatus: 'authenticated',
   isFocused: true,
   isAppActive: true,
   isKeyboardVisible: false,
@@ -19,15 +19,17 @@ describe('isStableFeedForeground', () => {
     expect(result).toBe(true);
   });
 
-  it.each([
-    [{ isAuthenticated: false }, '미인증'],
-    [{ isFocused: false }, '다른 화면'],
-    [{ isAppActive: false }, '백그라운드'],
-    [{ isKeyboardVisible: true }, '키보드'],
-    [{ hasActiveOverlay: true }, '피드 폼 또는 다른 오버레이'],
-    [{ hasPendingDeepLink: true }, '딥 링크'],
-    [{ hasPendingNavigation: true }, '눌린 푸시 처리 중'],
-  ])('%s 상태에서는 false를 반환한다', (overrides, _label) => {
+  it.each<{ label: string; overrides: Partial<typeof stableInput> }>([
+    { label: '로그인 전', overrides: { authStatus: 'unauthenticated' } },
+    { label: '로그인 판정 전', overrides: { authStatus: 'loading' } },
+    { label: '키체인 잠김', overrides: { authStatus: 'locked' } },
+    { label: '다른 화면', overrides: { isFocused: false } },
+    { label: '백그라운드', overrides: { isAppActive: false } },
+    { label: '키보드', overrides: { isKeyboardVisible: true } },
+    { label: '피드 폼 또는 다른 오버레이', overrides: { hasActiveOverlay: true } },
+    { label: '딥 링크', overrides: { hasPendingDeepLink: true } },
+    { label: '눌린 푸시 처리 중', overrides: { hasPendingNavigation: true } },
+  ])('$label 상태에서는 false를 반환한다', ({ overrides }) => {
     // When
     const result = isStableFeedForeground({ ...stableInput, ...overrides });
 

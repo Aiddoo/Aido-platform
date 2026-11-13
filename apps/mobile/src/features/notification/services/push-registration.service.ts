@@ -100,8 +100,8 @@ export class PushRegistrationService {
     const permission = toPushPermission(await this.#gateway.requestPermission());
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUESTED, { ...permission });
 
-    // 보고가 실패해도 권한 요청 결과는 그대로 돌려준다. 보고는 다음 포그라운드에 다시 보낸다
-    await this.report().then(
+    // 화면은 권한 결과로 바로 움직이고 보고는 뒤따른다. 실패는 다음 포그라운드가 다시 보내고, 로그아웃은 #reportsInFlight로 기다린다
+    this.report().then(
       (result) => {
         if (!result.ok) {
           this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, {

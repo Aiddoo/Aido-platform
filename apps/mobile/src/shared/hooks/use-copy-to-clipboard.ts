@@ -1,6 +1,6 @@
 import { useClipboard, useLogger } from '@src/shared/di/shared-di-context';
 import { toError } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 
 interface CopyOptions {
   successMessage: string;
