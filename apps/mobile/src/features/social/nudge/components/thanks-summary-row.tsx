@@ -73,10 +73,10 @@ export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
 ThanksSummaryRow.Preview = function Preview({ todoId, onOpenThanks }: ThanksSummaryRowProps) {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
-  const { data } = useSuspenseInfiniteQuery(
+  const { data: thanksPreviewPages } = useSuspenseInfiniteQuery(
     useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),
   );
-  const preview = data.pages[0];
+  const preview = thanksPreviewPages.pages[0];
   const heartStyle = useThanksCelebration(preview?.thankedRecipientCount ?? 0);
 
   if (preview == null) {
@@ -232,7 +232,7 @@ function ThanksSummaryCard({ tone, left, title, description, action }: ThanksSum
         gap={12}
         wrap={isActionStacked ? 'wrap' : 'nowrap'}
         className={cn(
-          'min-h-16 rounded-2xl py-3 pl-4 pr-3',
+          'min-h-16 rounded-2xl py-3 pr-3 pl-4',
           tone === 'highlighted' ? 'bg-main/8 dark:bg-main/20' : 'bg-gray-2',
         )}
       >

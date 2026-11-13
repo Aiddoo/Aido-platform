@@ -1,4 +1,4 @@
-import { Box } from '../box';
+import { Box } from '../box/box';
 import { Text } from './text';
 import type { H1Props, HeadingProps } from './text.types';
 

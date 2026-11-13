@@ -24,7 +24,7 @@ export function TodoThanksSummary({ todo, onClose }: TodoThanksSummaryProps) {
           {...fallbackProps}
           // 시트 바탕이 다크에서 gray-1이라 안내 면을 한 단계 올려 구분한다
           className="dark:bg-gray-2"
-          onInquiry={(href) => onClose({ type: 'replace', href })}
+          onInquiry={(href) => onClose({ type: 'dismiss-to', href })}
         />
       )}
     >

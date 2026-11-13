@@ -9,7 +9,7 @@ import {
   reportUnexpectedError,
 } from '@src/shared/errors';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
-import { QueryErrorResetBoundary } from '@tanstack/react-query';
+import { QueryErrorResetBoundary, useQueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { match } from 'ts-pattern';
@@ -27,35 +27,50 @@ interface QueryErrorBoundaryProps {
   fallback?: (props: QueryErrorFallbackProps) => ReactNode;
   /** 쿼리 식별자가 바뀌면 이전 식별자의 fallback 상태를 자동 해제한다. */
   resetKeys?: unknown[];
+  /**
+   * 다시 시도가 풀어 주는 조회 오류의 범위. 기본(`own`)은 이 경계 안이다. 바깥 경계가 맡은 조회를 안에서도 그리는
+   * 안쪽 경계는 `parent`로 바깥 범위를 함께 쓴다. 범위가 갈리면 바깥 다시 시도 뒤에도 안쪽이 그 조회를 다시 받지 않고
+   * 남은 오류를 그대로 던진다(TanStack `retryOnMount`)
+   */
+  resetScope?: 'own' | 'parent';
 }
 
-export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryErrorBoundaryProps) {
+export function QueryErrorBoundary({
+  children,
+  fallback,
+  resetKeys,
+  resetScope = 'own',
+}: QueryErrorBoundaryProps) {
   const errorReporter = useErrorReporter();
   const isOnline = useIsOnline();
+  const parentResetScope = useQueryErrorResetBoundary();
 
-  return (
-    <QueryErrorResetBoundary>
-      {({ reset }) => (
-        <ErrorBoundary
-          onReset={reset}
-          // 연결이 바뀌면 다시 그린다: 오프라인이면 쿼리가 멈춰 로딩을, 복귀하면 새로 불러온다
-          resetKeys={[...(resetKeys ?? []), isOnline]}
-          onError={(error) => {
-            reportBoundaryError(errorReporter, error);
-          }}
-          fallbackRender={({ error, resetErrorBoundary }) =>
-            fallback ? (
-              <Fallback render={fallback} error={error} reset={resetErrorBoundary} />
-            ) : (
-              <QueryErrorFallback reset={resetErrorBoundary} />
-            )
-          }
-        >
-          {children}
-        </ErrorBoundary>
-      )}
-    </QueryErrorResetBoundary>
+  const renderBoundary = (reset: () => void) => (
+    <ErrorBoundary
+      onReset={reset}
+      // 연결이 바뀌면 다시 그린다: 오프라인이면 쿼리가 멈춰 로딩을, 복귀하면 새로 불러온다
+      resetKeys={[...(resetKeys ?? []), isOnline]}
+      onError={(error) => {
+        reportBoundaryError(errorReporter, error);
+      }}
+      fallbackRender={({ error, resetErrorBoundary }) =>
+        fallback ? (
+          <Fallback render={fallback} error={error} reset={resetErrorBoundary} />
+        ) : (
+          <QueryErrorFallback reset={resetErrorBoundary} />
+        )
+      }
+    >
+      {children}
+    </ErrorBoundary>
   );
+
+  return match(resetScope)
+    .with('parent', () => renderBoundary(parentResetScope.reset))
+    .with('own', () => (
+      <QueryErrorResetBoundary>{({ reset }) => renderBoundary(reset)}</QueryErrorResetBoundary>
+    ))
+    .exhaustive();
 }
 
 /** 함수를 그대로 호출하면 React가 훅 디스패처를 걸어 주지 않아 fallback이 훅을 쓰는 순간 "Invalid hook call"로 터진다 */

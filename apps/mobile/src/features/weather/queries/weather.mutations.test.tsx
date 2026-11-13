@@ -1,6 +1,4 @@
-import { ErrorCode } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
-import { err } from '@src/core/errors/result';
+import { ServerError } from '@src/shared/errors/infra-error';
 import { createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
@@ -14,7 +12,7 @@ describe('useUpdateWeatherLocationMutationOptions', () => {
   it('위치 다시 등록이 실패해도 서버 위치가 바뀌었을 수 있어 받아 둔 리포트를 다시 받게 표시한다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    httpClient.put.mockResolvedValue(err(new ApiError(ErrorCode.SYS_0001, '서버 오류', 500)));
+    httpClient.put.mockRejectedValue(new ServerError(500));
     const { result, queryClient } = await renderScreenHook(
       () => useMutation(useUpdateWeatherLocationMutationOptions()),
       { di: createTestDi({ ports: { httpClient } }) },

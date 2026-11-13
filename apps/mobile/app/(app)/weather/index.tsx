@@ -16,6 +16,7 @@ import { WeatherScrollView } from '@src/features/weather/components/weather-scro
 import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon/weather-sun-moon';
 import type { WeatherLocationStatus } from '@src/features/weather/domains/weather-location.model';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
+import { useWeatherOpenKey } from '@src/features/weather/hooks/use-weather-open-key';
 import {
   useGetForecastCompletionsQueryOptions,
   useWeatherLocationRevision,
@@ -25,7 +26,7 @@ import {
   toWeatherLocationRegisteredResult,
   toWeatherOpenedEntry,
 } from '@src/features/weather/utils/weather-analytics';
-import { useTrack } from '@src/shared/analytics';
+import { useTrackView } from '@src/shared/analytics';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import {
   AdaptivePane,
@@ -38,7 +39,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { usePrefetchQuery } from '@tanstack/react-query';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 const SCREEN_GUTTER = 16;
@@ -169,24 +170,21 @@ WeatherScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
 };
 
 /**
- * 날씨 화면이 열릴 때 진입점을, 위치 확인이 처음 끝났을 때 그 결과를 한 번씩 남긴다.
- * 새로고침·포커스 재확인으로 상태가 다시 바뀌어도 같은 화면에서는 더 세지 않는다.
+ * 날씨 화면을 열 때마다 진입점을, 그 열기에서 위치 확인이 처음 끝났을 때 결과를 한 번씩 남긴다.
+ * 새로고침·포커스 재확인으로 상태가 다시 바뀌어도 같은 열기에서는 더 세지 않는다. `weather_opened`는 KPI·퍼널이
+ * 이름을 써서 경로 보기(`screen_view`)와 따로 남기는 예외다(observability.md)
  */
 function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status']): void {
   const [{ entry }] = useRouteParams(weatherEntryParamsSchema);
-  const { trackEvent } = useTrack();
-  const hasTrackedLocationRef = useRef(false);
+  const openKey = useWeatherOpenKey();
   const locationResult = toWeatherLocationRegisteredResult(locationStatus);
 
-  useEffect(() => {
-    trackEvent('weather_opened', { entry: toWeatherOpenedEntry(entry) });
-  }, [trackEvent, entry]);
-
-  useEffect(() => {
-    if (locationResult == null || hasTrackedLocationRef.current) {
-      return;
-    }
-    hasTrackedLocationRef.current = true;
-    trackEvent('weather_location_registered', { result: locationResult });
-  }, [trackEvent, locationResult]);
+  useTrackView('weather_opened', {
+    key: openKey,
+    params: { entry: toWeatherOpenedEntry(entry) },
+  });
+  useTrackView(
+    'weather_location_registered',
+    locationResult == null ? null : { key: openKey, params: { result: locationResult } },
+  );
 }

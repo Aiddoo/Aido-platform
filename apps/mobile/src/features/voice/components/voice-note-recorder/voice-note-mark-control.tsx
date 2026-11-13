@@ -16,9 +16,9 @@ import { useState } from 'react';
 import {
   RECORD_BUTTON_GAP,
   RECORD_BUTTON_ICON_SIZE,
+  RECORD_BUTTON_LABEL_CLEARANCE,
   RECORD_BUTTON_LABEL_MIN_SCALE,
   RecordButton,
-  useRecordButtonLabelClearance,
 } from './record-button';
 
 /** `Popover.Content`의 기본 간격과 같다 */
@@ -45,7 +45,6 @@ export function VoiceNoteMarkControl({
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const title = t('coach.mark.title');
   const description = t('coach.mark.description');
-  const labelClearance = useRecordButtonLabelClearance();
   const iconSize = fontScaledSize(RECORD_BUTTON_ICON_SIZE);
   const isMarked = markCount > 0;
 
@@ -89,7 +88,7 @@ export function VoiceNoteMarkControl({
             title={title}
             description={description}
             align="center"
-            offset={labelClearance + INFO_POPOVER_GAP}
+            offset={RECORD_BUTTON_LABEL_CLEARANCE + INFO_POPOVER_GAP}
           />
         </Popover>
       }

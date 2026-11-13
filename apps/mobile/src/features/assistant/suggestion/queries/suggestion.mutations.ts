@@ -6,7 +6,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';

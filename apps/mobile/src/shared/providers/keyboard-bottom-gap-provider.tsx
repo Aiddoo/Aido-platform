@@ -1,4 +1,4 @@
-import { Box } from '@src/shared/ui/box';
+import { Box } from '@src/shared/ui';
 import { getDistanceToWindowBottom } from '@src/shared/utils/get-distance-to-window-bottom';
 import {
   type ComponentRef,

@@ -200,6 +200,21 @@ module.exports = {
       to: { path: '^src/features/$1/', dependencyTypes: ['aliased'] },
     },
     {
+      name: 'feature-apis-import',
+      comment:
+        '다른 feature의 apis/(Api·mapper)를 import하지 않는다. 다른 feature 데이터는 그 feature의 모델·쿼리 옵션·cache helper로 쓴다. 순수 변환인 할 일 반복·할 일·이용권 mapper만 예외다(docs/architecture/structure.md#층과-의존).',
+      severity: 'error',
+      from: { path: FEATURE, pathNot: TEST },
+      to: {
+        path: '^src/features/.+/apis/',
+        pathNot: [
+          '^src/features/$1/',
+          '^src/features/planning/todo/apis/(?:todo-repeat|todo)\\.mapper\\.ts$',
+          '^src/features/billing/subscription/apis/entitlement\\.mapper\\.ts$',
+        ],
+      },
+    },
+    {
       name: 'sdk-outside-infra',
       comment:
         'SDK는 shared/infra에서만 import한다. 포트와 어댑터를 거쳐 DI 훅으로 받는다. 라이브러리가 React 훅이면 경계 훅 파일 하나에 둔다(docs/architecture/structure.md#di포트수명).',

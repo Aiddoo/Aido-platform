@@ -9,7 +9,7 @@ import {
 import { type User } from '../domains/user.model';
 import { USER_QUERY_KEYS } from './user-query-keys';
 
-/** 내 정보 조회 옵션. 조회 함수가 DI Api를 써서 `useGetMeQueryOptions`가 만들고 고른 값(select)은 옵션이 정한다 */
+/** 조회 함수가 DI Api를 써서 `useGetMeQueryOptions`가 만들고 고른 값(select)은 옵션이 정한다 */
 type MeQueryOptions<TData> = QueryExecuteOptions<
   User,
   DefaultError,

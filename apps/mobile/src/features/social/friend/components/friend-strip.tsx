@@ -22,7 +22,7 @@ import {
   VStack,
   QueryErrorFallback,
 } from '@src/shared/ui';
-import { TEXT_SIZE_CLASSES } from '@src/shared/ui/text/text.variants';
+import { TEXT_SIZE_CLASSES } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   usePrefetchInfiniteQuery,

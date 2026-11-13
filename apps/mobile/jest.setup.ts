@@ -64,6 +64,19 @@ jest.mock(
   () => require('react-native-safe-area-context/jest/mock').default,
 );
 require('react-native-gesture-handler/jestSetup');
+// Android 날짜·시간 피커는 import할 때 네이티브 모듈을 찾는다. `@src/shared/ui` 입구가 time-picker를 함께 읽어
+// 그 입구를 쓰는 Android 테스트(renderScreen의 HeroUIProvider 포함)가 모듈 등록 없이 죽지 않게 빈 모듈을 둔다
+if (process.env.EXPO_OS === 'android') {
+  const { NativeModules } = require('react-native');
+  for (const name of [
+    'RNCDatePicker',
+    'RNCTimePicker',
+    'RNCMaterialDatePicker',
+    'RNCMaterialTimePicker',
+  ]) {
+    NativeModules[name] = { open: jest.fn(), dismiss: jest.fn() };
+  }
+}
 
 // Expo's window alias is not a DOM environment; initialize the official web test runtime without it.
 const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');

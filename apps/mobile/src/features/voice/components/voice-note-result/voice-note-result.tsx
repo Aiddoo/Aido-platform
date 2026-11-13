@@ -38,7 +38,7 @@ import { type VoiceNoteTab, voiceNoteTabSchema } from '../../schemas/voice-note-
 import { formatMediaTime } from '../../utils/media-time.view-model';
 import { getDurationBucket } from '../../utils/voice-analytics';
 import { createSpeechLevels, getFlagBarIndexes } from '../../utils/waveform.geometry';
-import { PlanReview } from '../plan-review';
+import { PlanReview } from '../plan-review/plan-review';
 import { SentenceCaptionList } from '../sentence-caption-list';
 import { VoiceNoteToolbar } from '../voice-note-toolbar';
 import { KeyPointList } from './key-point-list';

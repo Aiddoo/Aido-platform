@@ -4,7 +4,7 @@ import { match } from 'ts-pattern';
 
 import { getSceneReferenceWidth } from '../../utils/weather-scene-particles.view-model';
 import type { WeatherSceneSun } from '../../utils/weather-scene.view-model';
-import { useSunRaysTexture } from './weather-scene-textures';
+import { type SceneTexture, useSunRaysTexture } from './weather-scene-textures';
 
 /** 다크 모드에서는 빛무리를 조금 낮춘다. */
 const THEME_GLOW = { light: 1, dark: 0.78 } as const;
@@ -193,7 +193,7 @@ SunLayer.Rays = function Rays({ center, size, time }: SunRaysProps) {
 };
 
 type RayImageProps = SunRaysProps & {
-  texture: ReturnType<typeof useSunRaysTexture>;
+  texture: SceneTexture;
   scale: number;
   turn: number;
   alpha: number;

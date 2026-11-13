@@ -7,7 +7,7 @@ import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { isThanksTodoNotCompletedError } from '../domains/todo-nudge.error';

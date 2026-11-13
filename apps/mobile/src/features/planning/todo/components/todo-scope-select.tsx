@@ -110,7 +110,7 @@ export function TodoScopeSelect<TScope extends TodoEditScope>({
 
   return (
     <VStack gap={8} testID="todo-scope-select">
-      <HStack align="center" className="py-2 px-4">
+      <HStack align="center" className="px-4 py-2">
         <Box className="flex-1 items-start">
           {onBack != null && (
             <IconButton

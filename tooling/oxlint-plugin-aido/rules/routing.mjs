@@ -83,6 +83,38 @@ const noDestructuredSearchParams = {
   },
 };
 
+const ROUTE_SETTER_MESSAGE =
+  'useRouteParams의 원시 setParams는 params 훅(hooks/use-*-params.ts)에서만 꺼냅니다. 연관 값을 함께 지우는 이름 있는 setter를 그 훅에서 내보내 쓰세요.';
+
+function isUseRouteParamsCall(node) {
+  return node?.type === 'CallExpression' && getCalleeName(node.callee) === 'useRouteParams';
+}
+
+// URL 값은 params 훅의 이름 있는 setter로만 바꾼다. 원시 setter를 꺼내면 연관 값 지우기를 호출부가 잊는다
+const routeSetterLocation = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      VariableDeclarator(node) {
+        const setter = node.id.type === 'ArrayPattern' ? node.id.elements[1] : null;
+        if (setter != null && isUseRouteParamsCall(unwrap(node.init))) {
+          context.report({ node: setter, message: ROUTE_SETTER_MESSAGE });
+        }
+      },
+      MemberExpression(node) {
+        if (
+          node.computed &&
+          node.property.type === 'Literal' &&
+          node.property.value === 1 &&
+          isUseRouteParamsCall(unwrap(node.object))
+        ) {
+          context.report({ node, message: ROUTE_SETTER_MESSAGE });
+        }
+      },
+    };
+  },
+};
+
 // 댓글 위치는 use-todo-comment-params가 search로만 바꾼다(.claude/todo-comments.md)
 const noRouterPush = {
   meta: { type: 'suggestion' },
@@ -470,6 +502,7 @@ const formShape = {
 export default {
   'route-params-guard': routeParamsGuard,
   'no-destructured-search-params': noDestructuredSearchParams,
+  'route-setter-location': routeSetterLocation,
   'no-router-push': noRouterPush,
   'my-page-menu-navigation': myPageMenuNavigation,
   'no-inline-query-options': noInlineQueryOptions,
