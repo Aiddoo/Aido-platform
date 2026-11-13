@@ -280,6 +280,11 @@ ls:
     .*.*.ts: regex:[^\s\S]
     .*.*.tsx: regex:[^\s\S]
 
+  # shared/ui의 공개 입구는 shared/ui/index.ts 하나다. 부품 폴더에는 barrel(index.ts)을 두지 않고 실제 파일을 import한다
+  apps/mobile/src/shared/ui/*:
+    .ts: regex:(?:.{0,4}|.{6,}|[^i]....|i[^n]...|in[^d]..|ind[^e].|inde[^x])
+    .tsx: regex:(?:.{0,4}|.{6,}|[^i]....|i[^n]...|in[^d]..|ind[^e].|inde[^x])
+
   # app/에는 route만 둔다. 화면 테스트는 src/features/{feature}/__tests__/{route}-screen.test.tsx다
   apps/mobile/app:
     .test.ts: regex:[^\s\S]

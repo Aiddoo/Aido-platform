@@ -13,7 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 
 /**
  * `stamp`: 크게 떠 있다가(1.7배, -20°) 쿵 찍히며 제자리(1배, -6°)로 온다.

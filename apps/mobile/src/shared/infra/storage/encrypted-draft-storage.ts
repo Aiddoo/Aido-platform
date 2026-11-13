@@ -108,6 +108,7 @@ function toEncryptedSyncStorage(mmkv: ReturnType<typeof createMMKV>): EncryptedS
   };
 }
 
+/** 암호화 전 평문 MMKV `aido.drafts`의 초안을 옮기고 그 저장소를 지운다. 1.16.0에서 지운다(compatibility.md) */
 function migrateLegacyDrafts(target: EnumerableSyncStorage) {
   if (!existsMMKV(LEGACY_DRAFT_STORAGE_ID)) {
     return;

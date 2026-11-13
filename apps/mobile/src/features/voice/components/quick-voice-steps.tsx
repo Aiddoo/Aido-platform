@@ -50,7 +50,7 @@ import { planReviewFormSchema } from '../schemas/plan-review-form.schema';
 import { formatMediaTime } from '../utils/media-time.view-model';
 import { createPlanReviewFormValues } from '../utils/plan-review-draft';
 import { LiveTranscript } from './live-transcript';
-import { PlanReview } from './plan-review';
+import { PlanReview } from './plan-review/plan-review';
 import { RecognitionLanguageTabs } from './recognition-language-tabs';
 import { VoiceVisual } from './voice-visual';
 

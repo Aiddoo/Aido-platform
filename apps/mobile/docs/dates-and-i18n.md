@@ -6,12 +6,12 @@
 
 ### 값과 도구
 
-| 값        | 앱 표현                                                                                                                                                                                     | 만드는 곳                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                            | `shared/date/instant.ts`     |
-| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `parseDateKey`(`DateKey \| null`), 폼은 `dateKeyFieldSchema`다 | `shared/date/date-key.ts`    |
-| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                                | `shared/date/time-of-day.ts` |
-| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                                     | `shared/date/zoned.ts`(계산) |
+| 값        | 앱 표현                                                                                                                                                                          | 만드는 곳                    |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                 | `shared/date/instant.ts`     |
+| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `isDateKey`(타입 가드), 폼은 `dateKeyFieldSchema`다 | `shared/date/date-key.ts`    |
+| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                     | `shared/date/time-of-day.ts` |
+| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                          | `shared/date/zoned.ts`(계산) |
 
 - 모델·캐시·전송은 문자열 brand다. 문자열은 같은 값이면 같은 참조라 재조회에도 구조 공유가 유지된다. 순간의 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다.
 - 날짜 key 계산(`addDaysToDateKey`·`getMonthStartDateKey`·`toDateKey(instant, timeZone)` 등)은 `DateKey`만 받고 돌려준다. 계산 결과는 `isDateKey`(스키마와 같은 규칙)로 좁혀 칸마다 Zod를 거치지 않고, 0000~9999년을 벗어나면 던진다. 테스트 리터럴은 `src/testing/date-key.ts`의 `createDateKey('2026-11-12')`로 만든다.
@@ -84,7 +84,7 @@ src/shared/i18n/
 
 - **언어 레지스트리** `app-locales.ts`: 언어마다 `{ nativeName, intlLocale, speechLocale, pickerLocale }`를 두고 `satisfies Record<SupportedLocale, AppLocaleConfig>`를 건다. 언어 매핑을 다른 곳에 흩어 두지 않는다. 컴포넌트는 `useLocaleContext()`(`shared/hooks`)로 읽고, React 밖은 `APP_LOCALES[language]`·`getTimePickerLocale`·`toLanguageOfIntlLocale`을 쓴다. 카탈로그 묶음 `resources.ts`도 `satisfies Record<SupportedLocale, …>`다.
 - `fallbackLng`는 `@aido/api/vocabulary`의 `FALLBACK_LOCALE`(`'en'`)이다.
-- **언어 선택**: 저장 값(`'system'|'ko'|'en'`, `aido_language`)과 `LanguageProvider`의 `useLanguage()`(`resolvedLanguage`)가 i18n과 단방향으로 동기화한다. `'system'`은 `useLocales()`를 구독해 기기 언어 변경도 반영한다. 기기 언어가 한국어면 `ko`, 그 밖과 감지 실패는 `en`이다(`resolveSupportedLocale`, `@aido/api/vocabulary`). 화면: `app/(app)/(tabs)/(mypage)/settings/language.tsx`.
+- **언어 선택**: 저장 값(`'system'|'ko'|'en'`, `aido_language`)과 `LanguageProvider`의 `useLanguage()`(`resolvedLanguage`)가 i18n과 단방향으로 동기화한다. `'system'`은 `useLocales()`를 구독해 기기 언어 변경도 반영한다. 기기 언어가 한국어면 `ko`, 그 밖과 감지 실패는 `en`이다(`resolveSupportedLocale`, `@aido/api/vocabulary`). 화면: `app/(app)/(tabs)/(me,memos,todos)/settings/language.tsx`.
 - 네임스페이스는 `resources.ts`가 정본이다. 기능별과 횡단 4개(`common`, `errors`, `validation`, `settings`). 파일은 kebab-case(`voice-plan.json`), namespace는 camelCase(`voicePlan`)다.
 
 ### 언어를 추가하려면

@@ -14,20 +14,26 @@ import {
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { updateCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
 import { invalidateAfterBlockChange } from '@src/features/social/moderation/queries/moderation-cache';
+import { DRAFT_SAVE_DELAY_MS } from '@src/shared/draft/use-form-draft-autosave';
 import { NetworkError, ServerError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
   createClipboardGatewayStub,
   createHttpClientStub,
+  createMemorySyncStorage,
   createPendingResponse,
+  createRouteParamsFake,
   createTestDi,
   deliverQueryNotifications,
+  respondByPath,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
@@ -125,6 +131,8 @@ interface RenderTodoDetailOptions {
   analytics?: ReturnType<typeof createAnalyticsStub>;
   /** 고마움 현황 응답. 넘기면 콕 답장·감사를 켠 서버다 */
   thanksPreview?: () => ReturnType<HttpClient['get']>;
+  /** 기기 초안 저장소. 같은 저장소로 다시 그리면 앱을 다시 연 것과 같다 */
+  draftStorage?: ReturnType<typeof createMemorySyncStorage>;
 }
 
 async function renderTodoDetail({
@@ -133,6 +141,7 @@ async function renderTodoDetail({
   listItems = [],
   analytics = createAnalyticsStub(),
   thanksPreview,
+  draftStorage,
 }: RenderTodoDetailOptions = {}) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async (path: string) => {
@@ -169,7 +178,9 @@ async function renderTodoDetail({
   jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
 
   const view = await renderScreen(<TodoDetailRoute />, {
-    di: createTestDi({ ports: { httpClient, analytics, clipboard: createClipboardGatewayStub() } }),
+    di: createTestDi({
+      ports: { httpClient, analytics, clipboard: createClipboardGatewayStub(), draftStorage },
+    }),
     withLocalDate: true,
     withOverlay: true,
   });
@@ -325,6 +336,28 @@ describe('TodoDetailRoute', () => {
     });
   });
 
+  describe('댓글 초안', () => {
+    setupFakeTimersPerTest({ advanceTimers: true });
+
+    it('새 댓글을 쓰다 화면을 떠난 뒤 앱을 다시 열어 같은 할 일을 열면 쓰던 글이 입력창에 돌아온다', async () => {
+      // Given
+      const draftStorage = createMemorySyncStorage();
+      const { unmount } = await renderTodoDetail({ draftStorage });
+      await fireEvent.changeText(screen.getByTestId('todo-comment-input-0'), '쓰다 만 댓글');
+      await act(() => jest.advanceTimersByTimeAsync(DRAFT_SAVE_DELAY_MS));
+      await unmount();
+
+      // When
+      await renderTodoDetail({ draftStorage });
+
+      // Then
+      await waitFor(() =>
+        expect(screen.getByTestId('todo-comment-input-0').props.value).toBe('쓰다 만 댓글'),
+      );
+      await waitFor(() => expect(screen.getByTestId('todo-comment-submit')).toBeEnabled());
+    });
+  });
+
   describe('할 일 상세 카드', () => {
     it('친구 할 일은 작성자 줄이 보이고 체크박스는 읽기 전용이다', async () => {
       // Given
@@ -420,6 +453,225 @@ describe('TodoDetailRoute', () => {
 
       // Then
       expect(router.replace).toHaveBeenCalledWith('/feed');
+    });
+  });
+
+  describe('상세와 댓글을 함께 기다리는 동안', () => {
+    /** Expo Router가 전환을 마치면 route에서 지우는 내부 param(useScreens의 transitionEnd) */
+    const ROUTER_NO_ANIMATION_PARAM = '__internal_expo_router_no_animation';
+    /** 응답을 기다리는 동안 조회 결과가 다시 만들어지는 상한. 끝나는 렌더는 한 자리 수다 */
+    const PENDING_RENDER_LIMIT = 100;
+
+    /** 화면을 연 직후 route params가 한 번 바뀐다. 앞 화면과 같은 값이라 조회는 그대로다 */
+    function RouterParamsCleanup() {
+      useEffect(() => {
+        router.setParams({ [ROUTER_NO_ANIMATION_PARAM]: undefined });
+      }, []);
+      return null;
+    }
+
+    it('화면을 연 직후 route params가 바뀌어도 기다리는 동안 렌더가 끝나고, 응답이 오면 본문과 입력창을 그린다', async () => {
+      // Given
+      const details = Promise.withResolvers<Awaited<ReturnType<HttpClient['get']>>>();
+      const threads = Promise.withResolvers<Awaited<ReturnType<HttpClient['get']>>>();
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockImplementation(
+        respondByPath({
+          'v1/auth/me': ok(createCurrentUserDto({ userId: USER_ID })),
+          'v1/auth/preference': ok(createPreferenceDto()),
+          [`v1/todos/${TODO_ID}/details`]: () => details.promise,
+          [`v2/todos/${TODO_ID}/comments`]: () => threads.promise,
+        }),
+      );
+      createRouteParamsFake({ todoId: String(TODO_ID), [ROUTER_NO_ANIMATION_PARAM]: 'true' });
+      const di = createTestDi({ ports: { httpClient } });
+      let pendingRenders = 0;
+      di.queryClient.getQueryCache().subscribe((event) => {
+        if (event.type !== 'observerResultsUpdated') {
+          return;
+        }
+        pendingRenders += 1;
+        // 끝나지 않는 렌더는 act 안에서 동기로 돌아 응답이 끼어들 수 없다. 상한에서 끊어 실패로 드러낸다
+        if (pendingRenders > PENDING_RENDER_LIMIT) {
+          throw new Error('응답을 기다리는 동안 렌더가 끝나지 않습니다');
+        }
+      });
+
+      // When
+      await renderScreen(
+        <>
+          <TodoDetailRoute />
+          <RouterParamsCleanup />
+        </>,
+        { di, withLocalDate: true, withOverlay: true },
+      );
+
+      // Then
+      expect(pendingRenders).toBeLessThan(PENDING_RENDER_LIMIT);
+
+      // When
+      await act(async () => {
+        details.resolve(ok(createDetailsDto()));
+        threads.resolve(ok({ items: [], pagination: PAGINATION, anchor: null }));
+      });
+
+      // Then
+      expect(await screen.findByTestId('todo-comment-count')).toHaveTextContent('1');
+      expect(screen.getByTestId('todo-comment-composer')).toBeOnTheScreen();
+    });
+  });
+
+  describe('불러오기 실패와 다시 시도', () => {
+    const DETAILS_PATH = `v1/todos/${TODO_ID}/details`;
+    const THREADS_PATH = `v2/todos/${TODO_ID}/comments`;
+
+    /** 정한 path만 서버 장애로 실패시킨 채 연다. `outage.isDown`을 끄면 정상 응답을 준다 */
+    async function renderScreenWithOutage(failingPath: string) {
+      const outage = { isDown: true };
+      const httpClient = createHttpClientStub();
+      const respond = respondByPath({
+        'v1/auth/me': ok(createCurrentUserDto({ userId: USER_ID })),
+        'v1/auth/preference': ok(createPreferenceDto()),
+        [DETAILS_PATH]: ok(createDetailsDto()),
+        [THREADS_PATH]: ok({
+          items: [
+            {
+              comment: COMMENT_DTO,
+              previewReply: null,
+              replySummary: { totalCount: 0, hiddenCount: 0, participantAuthors: [] },
+            },
+          ],
+          pagination: PAGINATION,
+          anchor: null,
+        }),
+      });
+      httpClient.get.mockImplementation(async (path) => {
+        if (outage.isDown && path === failingPath) {
+          throw new ServerError(503);
+        }
+        return respond(path);
+      });
+      jest.mocked(useLocalSearchParams).mockReturnValue({ todoId: String(TODO_ID) });
+      await renderScreen(<TodoDetailRoute />, {
+        di: createTestDi({ ports: { httpClient } }),
+        withLocalDate: true,
+        withOverlay: true,
+      });
+      const requestCount = (path: string) =>
+        httpClient.get.mock.calls.filter(([calledPath]) => calledPath === path).length;
+
+      return { outage, requestCount };
+    }
+
+    it('상세를 못 받아 칸 전체 오류가 뜬 뒤 서버가 돌아오면 다시 시도가 상세를 다시 받아 본문·댓글·입력창을 그린다', async () => {
+      // Given
+      const { outage, requestCount } = await renderScreenWithOutage(DETAILS_PATH);
+      expect(await screen.findByText('문제가 생겼어요')).toBeOnTheScreen();
+      const requestsBeforeRetry = requestCount(DETAILS_PATH);
+      outage.isDown = false;
+
+      // When
+      await fireEvent.press(screen.getByTestId('query-error-retry'));
+
+      // Then
+      expect(await screen.findByText('오늘도 화이팅!')).toBeOnTheScreen();
+      expect(screen.getByText('운동하기')).toBeOnTheScreen();
+      expect(screen.getByTestId('todo-comment-composer')).toBeOnTheScreen();
+      expect(requestCount(DETAILS_PATH)).toBeGreaterThan(requestsBeforeRetry);
+    });
+
+    it('댓글만 못 받으면 본문과 입력창은 남고, 다시 시도가 댓글을 다시 받아 목록을 그린다', async () => {
+      // Given
+      const { outage, requestCount } = await renderScreenWithOutage(THREADS_PATH);
+      expect(await screen.findByText('댓글을 불러오지 못했어요')).toBeOnTheScreen();
+      expect(screen.getByText('운동하기')).toBeOnTheScreen();
+      expect(screen.getByTestId('todo-comment-composer')).toBeOnTheScreen();
+      const requestsBeforeRetry = requestCount(THREADS_PATH);
+      outage.isDown = false;
+
+      // When
+      await fireEvent.press(screen.getByTestId('query-error-retry'));
+
+      // Then
+      expect(await screen.findByText('오늘도 화이팅!')).toBeOnTheScreen();
+      expect(screen.getByTestId('todo-comment-composer')).toBeOnTheScreen();
+      expect(requestCount(THREADS_PATH)).toBe(requestsBeforeRetry + 1);
+    });
+  });
+
+  describe('댓글 정렬', () => {
+    const POPULAR_COMMENT_ID = 'ckcomment0002';
+
+    // 정렬 메뉴는 누른 자리를 재야 열린다. 테스트에는 레이아웃이 없어 자리를 준다
+    beforeEach(() => {
+      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
+        if (typeof callback === 'function') {
+          callback(0, 0, 32, 24, 300, 200);
+        }
+      });
+    });
+
+    afterEach(() => {
+      jest.mocked(View.prototype.measure).mockReset();
+    });
+
+    function toThreadItem(comment: typeof COMMENT_DTO) {
+      return {
+        comment,
+        previewReply: null,
+        replySummary: { totalCount: 0, hiddenCount: 0, participantAuthors: [] },
+      };
+    }
+
+    it('인기순으로 바꾸면 새 정렬을 미리 받은 뒤 보던 목록을 다시 마운트하지 않고 바꾼다', async () => {
+      // Given
+      const popularComment = { ...COMMENT_DTO, id: POPULAR_COMMENT_ID, content: '하트 많은 댓글' };
+      const httpClient = createHttpClientStub();
+      const respond = respondByPath({
+        'v1/auth/me': ok(createCurrentUserDto({ userId: USER_ID })),
+        'v1/auth/preference': ok(createPreferenceDto()),
+        [`v1/todos/${TODO_ID}/details`]: ok(createDetailsDto()),
+      });
+      httpClient.get.mockImplementation(async (path, config) => {
+        if (path !== `v2/todos/${TODO_ID}/comments`) {
+          return respond(path);
+        }
+        const isPopular = config?.params?.sort === 'POPULAR';
+        return ok({
+          items: isPopular
+            ? [toThreadItem(popularComment), toThreadItem(COMMENT_DTO)]
+            : [toThreadItem(COMMENT_DTO), toThreadItem(popularComment)],
+          pagination: PAGINATION,
+          anchor: null,
+        });
+      });
+      createRouteParamsFake({ todoId: String(TODO_ID) });
+      await renderScreen(<TodoDetailRoute />, {
+        di: createTestDi({ ports: { httpClient } }),
+        withLocalDate: true,
+        withOverlay: true,
+      });
+      const shownRow = await screen.findByTestId(`todo-comment-thread-${COMMENT_ID}`);
+
+      // When
+      await fireEvent.press(screen.getByRole('button', { name: '댓글 정렬 기준, 최신순' }));
+      // 메뉴 항목은 그려진 자리를 재야 눌린다
+      const popularItem = await screen.findByRole('menuitem', { name: '인기순' });
+      await fireEvent(popularItem, 'layout', {
+        nativeEvent: { layout: { x: 0, y: 240, width: 200, height: 44 } },
+      });
+      await fireEvent.press(popularItem);
+
+      // Then
+      expect(
+        await screen.findByRole('button', { name: '댓글 정렬 기준, 인기순' }),
+      ).toBeOnTheScreen();
+      expect(httpClient.get).toHaveBeenCalledWith(`v2/todos/${TODO_ID}/comments`, {
+        params: expect.objectContaining({ sort: 'POPULAR' }),
+        signal: expect.anything(),
+      });
+      expect(screen.queryByTestId('todo-comment-thread-list-loading')).toBeNull();
+      expect(screen.getByTestId(`todo-comment-thread-${COMMENT_ID}`)).toBe(shownRow);
     });
   });
 

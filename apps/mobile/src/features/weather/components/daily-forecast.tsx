@@ -12,7 +12,7 @@ import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { CalendarIcon } from '@src/shared/ui/icon';
+import { CalendarIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { range, round, zip } from 'es-toolkit';

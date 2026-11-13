@@ -136,7 +136,7 @@ export default function TodoActionsSheetRoute() {
 
 - Stack 레이아웃에 `SHEET_ROUTE_SCREEN_OPTIONS`(`transparentModal`, `animation: 'none'`, 투명 배경)로 등록한다.
 - `sheet.close(next?)`는 닫기 애니메이션을 시작하고, 애니메이션이 끝나 `onOpenChange(false)`가 오면 route를 한 번만 떠난다. 기본은 `router.back()`이고 돌아갈 화면이 없으면(콜드 딥링크) fallback으로 `replace`한다.
-- 다음 시트로 이어질 때는 `close({ type: 'replace', href })`로 바꿔 뒤로가기 기록을 쌓지 않는다. 완료 후 아래 화면도 바꿔야 하면 `close({ type: 'back-then-replace', href })`를 쓴다.
+- 다음 시트로 이어질 때는 `close({ type: 'replace', href })`로 바꿔 뒤로가기 기록을 쌓지 않는다. 탭 화면(피드·문의)으로 떠날 때는 `close({ type: 'dismiss-to', href })`다. 시트와 그 아래 탭 위 화면을 닫고 탭 묶음 하나 안, 시트 아래 보던 탭에서 연다(`dismissToTab`). 탭 화면으로 `replace`하면 탭 묶음이 두 겹 쌓인다.
 - 구독 화면 이동처럼 애니메이션 없이 바로 떠날 때는 `sheet.exit()`를 쓴다.
 - Android 뒤로가기는 `BottomSheet`는 HeroUI가, `KeyboardBottomSheet`는 `useAndroidBackHandler`가 먼저 소비해 닫기 애니메이션 뒤 route를 떠난다.
 - `SheetRouteScreen`은 제스처 루트와 `OverlayProvider`를 route 안에 다시 둔다. iOS transparentModal은 루트 위에 따로 표시되므로, 시트와 그 위의 피커·다이얼로그가 이 모달 안에 그려지게 하기 위해서다. 호스트가 route 안에 있어 route 훅도 그대로 쓴다.
