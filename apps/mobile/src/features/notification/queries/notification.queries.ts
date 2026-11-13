@@ -8,7 +8,7 @@ import { uniqBy } from 'es-toolkit';
 
 import type { NotificationPage } from '../domains/notification.model';
 import type { NotificationListQueryKey } from '../schemas/notification-list-query-key.schema';
-import { toDateSectionedListItems } from '../utils/date-section';
+import { toDateSectionedListItems } from '../utils/notification-section.view-model';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;

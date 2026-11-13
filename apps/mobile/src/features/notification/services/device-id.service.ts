@@ -25,7 +25,8 @@ export class DeviceIdService {
 
   get = async (): Promise<string> => {
     const storedId = await this.#store.get();
-    if (storedId) {
+    // 빈 문자열은 깨진 값이라 새 id를 만든다
+    if (storedId != null && storedId !== '') {
       return storedId;
     }
 

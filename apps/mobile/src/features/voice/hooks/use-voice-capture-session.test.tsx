@@ -50,13 +50,17 @@ function SessionProbe({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin"
-        onPress={() => session.begin({ locale: 'ko-KR', hintWords: ['기획팀'] })}
+        onPress={() =>
+          session.begin({ locale: 'ko-KR', hintWords: ['기획팀'], recordingDirectory: null })
+        }
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin-without-waiting"
         onPress={() => {
-          session.begin({ locale: 'ko-KR', hintWords: [] }).catch(jest.fn());
+          session
+            .begin({ locale: 'ko-KR', hintWords: [], recordingDirectory: null })
+            .catch(jest.fn());
         }}
       />
       <Pressable

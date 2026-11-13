@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import type { AiReport, ReportStatus } from '../domains/report.model';
+import type { ReportStatus } from '../domains/report-status.model';
+import type { AiReport } from '../domains/report.model';
 import type { GetAiReportsQuery } from '../schemas/report-list-request.schema';
 
 export const REPORT_QUERY_KEYS = {

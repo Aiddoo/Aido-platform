@@ -16,7 +16,6 @@ export const ERROR_REPORT_FEATURES = [
   'error_boundary',
   'event_channel',
   'feature_attribution',
-  'feature_discovery',
   'firebase_analytics',
   'friend',
   'inquiry',
@@ -42,6 +41,7 @@ export const ERROR_REPORT_FEATURES = [
   'weather',
   'weather_location',
   'web_browser',
+  'whats_new',
   'widget',
 ] as const;
 export type ErrorReportFeature = (typeof ERROR_REPORT_FEATURES)[number];
@@ -70,6 +70,85 @@ const BREADCRUMB_CATEGORIES = [
   'error',
 ] as const;
 export type BreadcrumbCategory = (typeof BREADCRUMB_CATEGORIES)[number];
+
+/**
+ * 로그·breadcrumb `data`와 Sentry extra에 남길 수 있는 키. 목록 밖 키는 타입 오류이고 보낼 때도 지운다.
+ * 키를 더할 때는 값이 구조화된 식별자·코드·상태·수인지 확인한다(이메일·이름·사용자 글 금지)
+ */
+export const TELEMETRY_DATA_KEYS = [
+  'action',
+  'canAskAgain',
+  'cause',
+  'channel',
+  'code',
+  'date',
+  'dayCount',
+  'droppedCount',
+  'droppedPaths',
+  'droppedRoots',
+  'duration_bucket',
+  'durationMs',
+  'endpoint',
+  'error',
+  'errorCode',
+  'errorName',
+  'errorType',
+  'eventName',
+  'feature',
+  'fields',
+  'from',
+  'hasActiveToken',
+  'hasProductId',
+  'hasToken',
+  'hint',
+  'isPhysicalDevice',
+  'isReadable',
+  'key',
+  'kind',
+  'locale',
+  'loggerMessage',
+  'memoId',
+  'method',
+  'mode',
+  'moment',
+  'mutationKey',
+  'nextDate',
+  'nextTimeZone',
+  'on_device',
+  'outcome',
+  'path',
+  'platform',
+  'previousDate',
+  'previousTimeZone',
+  'reason',
+  'repository',
+  'request_id',
+  'requestId',
+  'responseId',
+  'result',
+  'screenName',
+  'serverErrorCode',
+  'source',
+  'speech_error',
+  'stage',
+  'state',
+  'status',
+  'status_code',
+  'statusCode',
+  'step',
+  'to',
+  'total',
+  'totalCount',
+  'trigger',
+  'url',
+  'utcOffsetMinutes',
+  'zodError',
+] as const;
+type TelemetryDataKey = (typeof TELEMETRY_DATA_KEYS)[number];
+/** 객체·배열은 사용자 글이 섞일 수 있어 보낼 때 지우므로 원시값만 받는다. 목록은 이어 붙인 문자열로 보낸다 */
+export type TelemetryData = Partial<
+  Record<TelemetryDataKey, string | number | boolean | null | undefined>
+>;
 
 /** GA 데이터 필터 "내부 트래픽"이 `traffic_type = internal`을 수집 시점에 제외한다 */
 export const INTERNAL_TRAFFIC_EVENT_PARAMETERS = { traffic_type: 'internal' } as const;

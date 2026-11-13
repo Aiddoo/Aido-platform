@@ -1,12 +1,11 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { NudgeId } from "./nudge-id.vo.js";
 import { NudgeMessage } from "./nudge-message.vo.js";
+import { cannotNudgeSelf } from "./nudges.errors.js";
 
 export interface NudgePrimitives {
   readonly id: number;
@@ -47,7 +46,7 @@ interface CreateNudgeParams {
 export class Nudge extends AggregateRoot<NudgeId, NudgeProps> {
   static create(params: CreateNudgeParams): Nudge {
     if (params.senderId.equals(params.receiverId)) {
-      throw new DomainException(ErrorCode.NUDGE_1104);
+      throw cannotNudgeSelf();
     }
     return new Nudge(params.id, {
       senderId: params.senderId,

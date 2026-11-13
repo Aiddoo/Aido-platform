@@ -34,7 +34,6 @@ import {
   ApiCreatedResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -42,6 +41,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TodoCategoryId } from "../../../../categories/domain/todo-category-id.vo.js";
 import { localDateAt } from "../../../../shared/domain/todo-calendar.domain-service.js";
 import { toTodoSeriesResponse } from "../../../../todo-series/presentation/http/v1/todo-series-response.mapper.js";
+import { createdTodoMissing, recurringTodoHasNoDates } from "../../../application/todos.errors.js";
 import { AddTodoItemUseCase } from "../../../application/use-cases/add-todo-item.use-case.js";
 import { ChangeTodoCategoryUseCase } from "../../../application/use-cases/change-todo-category.use-case.js";
 import { CreateTodoUseCase } from "../../../application/use-cases/create-todo.use-case.js";
@@ -327,7 +327,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     });
     const todo = todos.at(0);
     if (todo == null) {
-      throw new ApplicationException(ErrorCode.SYS_0001, { reason: "created todo missing" });
+      throw createdTodoMissing();
     }
 
     return {
@@ -399,12 +399,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       .catch((error: unknown) => {
         // 출시 앱 계약: 이 경로의 날짜 없음은 SYS_0002다. TODO_0843은 새 경로의 코드다.
         if (error instanceof DomainException && error.errorCode === ErrorCode.TODO_0843) {
-          throw new ApplicationException(ErrorCode.SYS_0002, {
-            message: "선택한 기간과 요일에 해당하는 날짜가 없습니다",
-            startDate: dto.startDate,
-            endDate: dto.endDate,
-            daysOfWeek: dto.daysOfWeek,
-          });
+          throw recurringTodoHasNoDates(dto.startDate, dto.endDate, dto.daysOfWeek);
         }
         throw error;
       });

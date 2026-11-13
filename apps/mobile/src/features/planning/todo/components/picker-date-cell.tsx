@@ -6,7 +6,7 @@ import { memo } from 'react';
 import { match } from 'ts-pattern';
 
 import { PICKER_DATE_CELL_HEIGHT } from '../constants/todo.constants';
-import { type CalendarDayType, DAY_TYPE_TONE } from '../utils/calendar-day';
+import { type CalendarDayType, DAY_TYPE_TONE } from '../utils/calendar-day.view-model';
 
 interface PickerDateCellProps {
   dateKey: DateKey;
@@ -23,8 +23,12 @@ interface PickerDateCellProps {
   onPress: (dateKey: DateKey) => void;
 }
 
-/** 날짜·반복 피커가 함께 쓰는 칸. 값이 바뀐 칸만 다시 그리고 칸 안에서 훅·날짜 계산을 하지 않는다 */
-function PickerDateCellBase({
+// 날짜·반복 피커가 함께 쓰는 칸. 고른 날이 바뀌면 값이 바뀐 칸만 다시 그리고 칸 안에서 훅·날짜 계산을 하지 않는다
+export function PickerDateCell(props: PickerDateCellProps) {
+  return <MemoizedDateCell {...props} />;
+}
+
+const MemoizedDateCell = memo(function DateCell({
   dateKey,
   dayNumber,
   label,
@@ -66,11 +70,9 @@ function PickerDateCellBase({
       </Box>
     </PressableFeedback>
   );
-}
+});
 
-/** 보고 있는 달 밖의 칸. 자리만 잡아 주 줄의 칸 폭을 맞춘다 */
-function Placeholder() {
+// 보고 있는 달 밖의 칸. 자리만 잡아 주 줄의 칸 폭을 맞춘다
+PickerDateCell.Placeholder = function Placeholder() {
   return <Box className="flex-1" style={{ height: PICKER_DATE_CELL_HEIGHT }} />;
-}
-
-export const PickerDateCell = Object.assign(memo(PickerDateCellBase), { Placeholder });
+};

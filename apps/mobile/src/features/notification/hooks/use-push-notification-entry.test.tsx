@@ -1,3 +1,4 @@
+import { fromEpochMs } from '@src/shared/date/instant';
 import { renderScreenHook } from '@src/testing/render';
 import { act } from '@testing-library/react-native';
 
@@ -8,7 +9,7 @@ const RESPONSE = createPushNotificationResponse({
   id: 'response-1',
   isLaunchResponse: true,
   appState: 'active',
-  activeSince: 0,
+  activeSince: fromEpochMs(0),
 });
 
 async function setup() {

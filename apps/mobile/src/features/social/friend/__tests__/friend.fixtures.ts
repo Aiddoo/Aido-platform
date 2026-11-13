@@ -235,8 +235,6 @@ export function createFriendApiError(
   );
 }
 
-export const INVALID_DTO = { invalid: 'data' };
-
 export function createFriendUser(id: string, overrides?: Partial<FriendUser>): FriendUser {
   return friendUserSchema.parse({
     id,

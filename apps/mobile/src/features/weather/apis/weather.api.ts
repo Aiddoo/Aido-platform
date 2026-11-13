@@ -74,7 +74,7 @@ export class WeatherApi {
   #logFallbackFields = (raw: unknown, dto: unknown) => {
     const fields = getFallbackFieldPaths(raw, dto);
     if (fields.length > 0) {
-      this.#logger.warn(WEATHER_LOG_EVENT.REPORT_ENUM_FALLBACK, { fields });
+      this.#logger.warn(WEATHER_LOG_EVENT.REPORT_ENUM_FALLBACK, { fields: fields.join(',') });
     }
   };
 }

@@ -3,8 +3,8 @@ import Refresh from '@expo/material-symbols/refresh.xml';
 import { WeatherLocationPolicy } from '@src/features/weather/domains/weather-location.model';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
 import {
-  refetchWeather,
   getWeatherReportsFilters,
+  refreshWeather,
 } from '@src/features/weather/queries/weather-cache';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -22,6 +22,8 @@ import { useResolveClassNames } from 'uniwind';
 const ALERT_SETTINGS_ICON = process.env.EXPO_OS === 'ios' ? 'bell' : Notifications;
 const REFRESH_ICON = process.env.EXPO_OS === 'ios' ? 'arrow.clockwise' : Refresh;
 
+// 헤더 색·새로고침 버튼이 위치·리포트 조회를 보므로 레이아웃이 읽는다. 화면의 Stack.Toolbar로 옮기면 화면이 그려지기
+// 전 헤더가 비어 깜박일 수 있어 기기에서 확인하기 전까지 여기 둔다
 export default function WeatherLayout() {
   const { t } = useTranslation(['weather', 'notification']);
   const location = useWeatherLocation();
@@ -62,7 +64,7 @@ export default function WeatherLayout() {
             accessibilityLabel={t('attribution.refresh')}
             hidden={!isSkyScene}
             disabled={isRefreshing}
-            onPress={() => refetchWeather(queryClient)}
+            onPress={() => refreshWeather(queryClient)}
           >
             {t('attribution.refresh')}
           </Stack.Toolbar.Button>

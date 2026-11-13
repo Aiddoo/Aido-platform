@@ -1,5 +1,6 @@
+import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useDraftService } from '@src/bootstrap/providers/di-context';
+import { useDraftService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
@@ -10,12 +11,18 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { ANIMATION } from '@src/shared/constants/animation';
+import {
+  SAVED_VALUES_RESET_OPTIONS,
+  SERVER_VALUES_RESET_OPTIONS,
+} from '@src/shared/constants/server-values-reset-options';
 import { toEpochMs } from '@src/shared/date/instant';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -23,7 +30,6 @@ import {
   AiFilledIcon,
   Box,
   CheckmarkIcon,
-  useConfirmDialog,
   HStack,
   IconButton,
   type IconButtonProps,
@@ -46,7 +52,7 @@ import {
   VStack,
   MenuContent,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   useIsMutating,
@@ -55,9 +61,9 @@ import {
   useSuspenseQueries,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useNavigation } from 'expo-router';
 import { Menu, Separator, Spinner } from 'heroui-native';
-import { type ComponentType, useLayoutEffect, useRef, useState } from 'react';
+import { type ComponentType, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   type Control,
   Controller,
@@ -69,16 +75,13 @@ import { Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
-import { MEMO_TOOLBAR_ICON } from '../constants/memo.constants';
 import { isMemoUnavailableError } from '../domains/memo.error';
-import { MemoPolicy } from '../domains/memo.model';
-import type { Memo } from '../domains/memo.model';
+import { type Memo, MemoPolicy } from '../domains/memo.model';
 import { useMemoId, useSelectedMemoId } from '../hooks/use-memo-params';
+import { useOpenMemoDeleteDialog } from '../hooks/use-open-memo-delete-dialog';
 import { MEMO_MUTATION_KEYS } from '../queries/memo-mutation-keys';
 import {
-  useDeleteMemoMutationOptions,
   useParseMemoMutationOptions,
   useSetMemoPinnedMutationOptions,
   useUpdateMemoMutationOptions,
@@ -87,6 +90,7 @@ import { useGetMemoQueryOptions } from '../queries/memo.queries';
 import { memoFormSchema, type MemoFormValues } from '../schemas/memo-form.schema';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
+import { MEMO_TOOLBAR_ICON } from '../utils/memo-toolbar.view-model';
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
 
 const MEMO_MORE_MENU_WIDTH = 220;
@@ -103,7 +107,6 @@ interface MemoEditorToolbarProps {
   onSaveChanges: () => Promise<Memo | null>;
   onBack: () => void;
   onConverted: () => void;
-  /** 삭제 확인에서 지운 뒤 */
   onDeleted: () => void;
 }
 
@@ -197,11 +200,11 @@ MemoEditor.StackToolbar = function StackToolbar({
 
   const pin = useMemoPinAction(memo);
   const aiParse = useMemoAiParse({ accountId: me.id, onSaveChanges });
-  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
-  const openDeleteDialog = useOpenMemoDeleteDialog({ onDeleted });
+  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted, onDeleted });
+  const openDeleteDialog = useOpenMemoDeleteDialog({ memoId, onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
-  const { color: pinnedTint } = useResolveClassNames('text-main');
-  const { color: saveTint } = useResolveClassNames(canSave ? 'text-main' : 'text-gray-4');
+  const pinnedTint = useResolvedColor('text-main');
+  const saveTint = useResolvedColor(canSave ? 'text-main' : 'text-gray-4');
 
   const pinLabel = t(pin.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin');
   const aiSubtitle = aiParse.isParsing ? t('memo:detail.aiParsing') : aiQuota;
@@ -429,6 +432,7 @@ interface MemoPinButtonProps extends MemoActionProps {
 
 function MemoPinButton({ isPinned, ...props }: MemoPinButtonProps) {
   const { t } = useTranslation('memo');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <IconButton
@@ -437,9 +441,17 @@ function MemoPinButton({ isPinned, ...props }: MemoPinButtonProps) {
       className="min-h-9 min-w-9"
       icon={
         isPinned ? (
-          <PinFilledIcon width={20} height={20} colorClassName="text-main" />
+          <PinFilledIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-main"
+          />
         ) : (
-          <PinIcon width={20} height={20} colorClassName="text-gray-9" />
+          <PinIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-gray-9"
+          />
         )
       }
       {...props}
@@ -453,6 +465,7 @@ interface MemoSaveButtonProps extends MemoActionProps {
 
 function MemoSaveButton({ isHighlighted, className, ...props }: MemoSaveButtonProps) {
   const { t } = useTranslation('common');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <IconButton
@@ -461,8 +474,8 @@ function MemoSaveButton({ isHighlighted, className, ...props }: MemoSaveButtonPr
       className={cn('min-h-9 min-w-9 rounded-full', isHighlighted && 'bg-main', className)}
       icon={
         <CheckmarkIcon
-          width={20}
-          height={20}
+          width={fontScaledSize(20)}
+          height={fontScaledSize(20)}
           colorClassName={cn('text-gray-5', isHighlighted && 'text-white dark:text-gray-9')}
         />
       }
@@ -478,14 +491,16 @@ function MemoMoreMenu({
   onDeleted,
 }: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDeleted'>) {
   const { t } = useTranslation(['memo', 'common']);
+  const fontScaledSize = useFontScaledSize();
 
+  const [memoId] = useMemoId();
   const accountId = useSuspenseMyAccountId();
 
   const [isOpen, setIsOpen] = useState(false);
 
   const aiParse = useMemoAiParse({ accountId, onSaveChanges });
-  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
-  const openDeleteDialog = useOpenMemoDeleteDialog({ onDeleted });
+  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted, onDeleted });
+  const openDeleteDialog = useOpenMemoDeleteDialog({ memoId, onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
 
   return (
@@ -497,7 +512,13 @@ function MemoMoreMenu({
           accessibilityState={{ expanded: isOpen }}
           hitSlop={4}
           className="min-h-9 min-w-9"
-          icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
+          icon={
+            <MoreIcon
+              width={fontScaledSize(20)}
+              height={fontScaledSize(20)}
+              colorClassName="text-gray-9"
+            />
+          }
         />
       </Menu.Trigger>
       <MenuContent width={MEMO_MORE_MENU_WIDTH}>
@@ -527,7 +548,7 @@ function MemoMoreMenu({
   );
 }
 
-/** 입력값·초안·편집 상태를 맡는다. 복원한 초안을 입력값으로 두고 비교 기준은 서버 원본이다 */
+/** 입력값·초안·편집 상태를 맡는다. 비교 기준은 서버 원본이고 복원한 초안은 고친 글자다 */
 function useMemoForm({ memo, accountId }: { memo: Memo; accountId: string }) {
   const { t } = useTranslation('memo');
   const toast = useAppToast();
@@ -540,9 +561,11 @@ function useMemoForm({ memo, accountId }: { memo: Memo; accountId: string }) {
       onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
     },
   );
+  // 다시 받은 서버 글로 비교 기준을 맞춘다. 고치지 않은 입력은 새 글을 보이고 고치던 글자는 남는다
   const form = useForm({
     resolver: zodResolver(memoFormSchema),
-    defaultValues: restoredDraft ?? savedValues,
+    values: savedValues,
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
   const { isDirty, isValid } = useFormState({ control: form.control });
   const [isEditing, setIsEditing] = useState(restoredDraft != null);
@@ -553,12 +576,12 @@ function useMemoForm({ memo, accountId }: { memo: Memo; accountId: string }) {
     clearDraft,
   });
 
-  // 복원한 초안을 입력값으로 둔 채 비교 기준만 서버 원본으로 맞춰 isDirty가 "저장 안 된 변경"을 뜻하게 한다.
+  // 복원한 초안은 그리기 전에 고친 글자로 넣어 isDirty가 "저장 안 된 변경"을 뜻하게 한다
   useLayoutEffect(() => {
     if (restoredDraft != null) {
-      form.reset({ content: memo.content }, { keepValues: true });
+      form.setValue('content', restoredDraft.content, { shouldDirty: true });
     }
-  }, [memo.content, form, restoredDraft]);
+  }, [form, restoredDraft]);
 
   return { form, canSave: isDirty && isValid, isEditing, setIsEditing, discardDraft };
 }
@@ -568,13 +591,12 @@ interface MemoSaveOptions extends Pick<MemoEditorProps, 'onLeave'> {
   form: UseFormReturn<MemoFormValues>;
   canSave: boolean;
   discardDraft: () => void;
-  /** 저장 버튼으로 저장을 마쳤을 때 */
   onFinish: () => void;
 }
 
 /** 고친 글자를 저장하고 andThen대로 이어 간다. 저장한 메모를 돌려주고, 저장하지 못하면 null이다 */
 function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: MemoSaveOptions) {
-  const updateMemo = useMutation(useUpdateMemoMutationOptions());
+  const updateMemo = useMutation(useUpdateMemoMutationOptions({ memoId: memo.id }));
 
   const isSavingChangesRef = useRef(false);
 
@@ -583,7 +605,7 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
     if (!MemoPolicy.hasContentChanged(memo, content)) {
       return memo;
     }
-    return updateMemo.mutateAsync({ memoId: memo.id, values: { content: content.trim() } });
+    return updateMemo.mutateAsync({ content });
   };
 
   // 저장 버튼과 뒤로 가기는 handleSubmit으로 보내 저장하는 동안(isSubmitting) 두 버튼을 끈다. 유효하지 않으면 null
@@ -621,7 +643,7 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
       }
       match(andThen)
         .with('finish', () => {
-          form.reset({ content: savedMemo.content });
+          form.reset({ content: savedMemo.content }, SAVED_VALUES_RESET_OPTIONS);
           discardDraft();
           onFinish();
           Keyboard.dismiss();
@@ -633,7 +655,7 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
         .with('stay', () => {
           // 응답을 기다리는 사이 더 친 글자는 지우지 않는다
           if (form.getValues('content') === content) {
-            form.reset({ content: savedMemo.content });
+            form.reset({ content: savedMemo.content }, SAVED_VALUES_RESET_OPTIONS);
             discardDraft();
           }
         })
@@ -657,12 +679,12 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
 
 /** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 고정 동작을 쓴다. */
 function useMemoPinAction(memo: Memo) {
-  const setPinned = useMutation(useSetMemoPinnedMutationOptions());
+  const setPinned = useMutation(useSetMemoPinnedMutationOptions({ memoId: memo.id }));
 
   return {
     isPinned: memo.isPinned,
     isDisabled: setPinned.isPending,
-    toggle: () => setPinned.mutate({ memoId: memo.id, isPinned: !memo.isPinned }),
+    toggle: () => setPinned.mutate({ isPinned: !memo.isPinned }),
   };
 }
 
@@ -674,8 +696,10 @@ function useMemoAiParse({
   accountId: string;
 } & Pick<MemoEditorToolbarProps, 'onSaveChanges'>) {
   const { t } = useTranslation('errors');
+  const haptics = useHaptics();
   const toast = useAppToast();
   const push = useSingleTap(router.push);
+  const navigation = useNavigation();
   const draftService = useDraftService();
   const { timeZone } = useDateFormatContext();
   const [memoId] = useMemoId();
@@ -687,12 +711,34 @@ function useMemoAiParse({
   const claimRenewalPrompt = useClaimAiConsentRenewal();
   const aiConsent = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const isStartingRef = useRef(false);
+  const isMountedRef = useRef(false);
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesQuery.data?.categories ?? [],
     null,
   );
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // 저장·정리(최대 30초)를 기다리는 사이 편집기를 떠났으면 지금 보는 화면 위로 끌고 가지 않는다.
+  // 받은 결과는 mutation이 초안에 남겨 이 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다
+  const openReview = () => {
+    if (isMountedRef.current && navigation.isFocused()) {
+      push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
+    }
+  };
+
   // 정리 중 서버가 동의 없음(AI_1311)으로 거절했는데 이번 시도에서 동의를 묻지 않았으면 'consentRevoked'다
+  // 동의 안내를 이미 본 시도에서 다시 거절되면 안내를 또 띄우지 않고 이유만 알린다
+  const showConsentRequired = () => {
+    haptics.notify('error');
+    toast.error(t(ErrorCode.AI_1311));
+  };
+
   const parseSavedMemo = async (savedMemo: Memo): Promise<'done' | 'consentRevoked'> => {
     const sourceUpdatedAt = toEpochMs(savedMemo.updatedAt);
     // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다
@@ -703,7 +749,7 @@ function useMemoAiParse({
       },
     );
     if (draft.status === 'restored') {
-      push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
+      openReview();
 
       return 'done';
     }
@@ -721,7 +767,7 @@ function useMemoAiParse({
         categoryId: defaultCategoryId,
         sourceUpdatedAt,
       });
-      push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
+      openReview();
 
       return 'done';
     } catch {
@@ -734,7 +780,7 @@ function useMemoAiParse({
     }
     // 이번 시도에서 이미 안내했다면 다시 띄우지 않고 이유만 알린다
     if (consent.wasAsked) {
-      toast.error(t('AI_1311'));
+      showConsentRequired();
 
       return 'done';
     }
@@ -758,7 +804,7 @@ function useMemoAiParse({
       }
       // 정리하다 동의가 사라진 것을 알았으면 동의를 물으며 한 번만 다시 시작한다. 그래도 거절되면 이유만 알린다
       if ((await parseSavedMemo(savedMemo)) === 'consentRevoked') {
-        toast.error(t('AI_1311'));
+        showConsentRequired();
       }
     } finally {
       isStartingRef.current = false;
@@ -772,32 +818,11 @@ function useMemoAiParse({
   };
 }
 
-/** 지우는 동안 다이얼로그를 남기고 버튼만 불러오는 중으로 바꾼다. 실패하면 남은 다이얼로그에서 다시 누른다 */
-function useOpenMemoDeleteDialog({ onDeleted }: Pick<MemoEditorToolbarProps, 'onDeleted'>) {
-  const { t } = useTranslation(['memo', 'common']);
-  const [memoId] = useMemoId();
-  const confirmDialog = useConfirmDialog();
-  const deleteMemo = useMutation(useDeleteMemoMutationOptions());
-
-  return async () => {
-    const isDeleted = await confirmDialog.openAsync({
-      title: t('memo:detail.deleteConfirmTitle'),
-      description: t('memo:detail.deleteConfirmDescription'),
-      cancelLabel: t('common:actions.cancel'),
-      confirmLabel: t('common:actions.delete'),
-      confirmColor: 'danger',
-      onConfirm: () => deleteMemo.mutateAsync(memoId),
-    });
-    if (isDeleted) {
-      onDeleted();
-    }
-  };
-}
-
 function useOpenMemoConvertSheet({
   onSaveChanges,
   onConverted,
-}: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted'>) {
+  onDeleted,
+}: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDeleted'>) {
   const todayKey = useTodayKey();
   const openKeyboardSheet = useOpenKeyboardSheet();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
@@ -825,6 +850,8 @@ function useOpenMemoConvertSheet({
         onClose={close}
         onOpenChange={onOpenChange}
         onConverted={onConverted}
+        // 이미 없는 메모는 지운 메모처럼 초안을 버리고 떠난다
+        onUnavailable={onDeleted}
       />
     ));
   };

@@ -4,7 +4,7 @@ import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import { getEmailDomainSuggestions } from '../utils/get-email-domain-suggestions';
+import { getEmailDomainSuggestions } from '../utils/email-domain-suggestions.view-model';
 
 type SuggestedEmailDomainListProps = Pick<ComponentProps<typeof Input>, 'value' | 'onChange'>;
 

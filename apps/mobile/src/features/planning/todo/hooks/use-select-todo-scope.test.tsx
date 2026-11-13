@@ -1,4 +1,3 @@
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import '@src/shared/i18n/init';
 import { Text } from '@src/shared/ui';
 import { createErrorReporterStub, createAnalyticsStub, createTestDi } from '@src/testing/core';
@@ -32,16 +31,12 @@ function SheetProbe({ onSettled }: { onSettled: (scope: TodoEditScope | null) =>
 
 async function renderSheet() {
   const onSettled = jest.fn();
-  const { unmount } = await renderScreen(
-    <LocalDateProvider>
-      <SheetProbe onSettled={onSettled} />
-    </LocalDateProvider>,
-    {
-      di: createTestDi({
-        ports: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
-      }),
-    },
-  );
+  const { unmount } = await renderScreen(<SheetProbe onSettled={onSettled} />, {
+    withLocalDate: true,
+    di: createTestDi({
+      ports: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
+    }),
+  });
   await fireEvent.changeText(screen.getByTestId('title'), '장보기');
   // 범위를 고를 때까지 끝나지 않는 핸들러라 기다리지 않는다
   fireEvent.press(screen.getByTestId('save')).catch(() => undefined);

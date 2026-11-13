@@ -1,9 +1,7 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { notificationAccessDenied } from "./inbox.errors.js";
 import { NotificationId } from "./notification-id.vo.js";
 import type { NotificationType } from "./notification-type.constants.js";
 
@@ -65,7 +63,7 @@ export class Notification extends AggregateRoot<NotificationId, NotificationProp
   // 이미 읽은 알림이어도 남의 알림이면 소유권 오류가 먼저다
   markRead(requesterId: UserId, now: Temporal.Instant): boolean {
     if (!this.props.userId.equals(requesterId)) {
-      throw new DomainException(ErrorCode.NOTIFICATION_1005, { notificationId: this.id.value });
+      throw notificationAccessDenied(this.id.value);
     }
     if (this.props.isRead) {
       return false;

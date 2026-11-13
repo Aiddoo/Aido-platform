@@ -1,9 +1,9 @@
 import { Box } from '@src/shared/ui';
 import { range } from 'es-toolkit';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { FlatList, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 
-import { getCalendarPageAtOffset } from '../../utils/calendar-pager.geometry';
+import { findCalendarPageAtOffset } from '../../utils/calendar-pager.geometry';
 
 /** 가운데(오늘이 있는 쪽)에서 양쪽으로 둘 쪽 수. 주 보기에서는 약 5년, 월 보기에서는 약 21년이다 */
 const CALENDAR_PAGE_RADIUS = 260;
@@ -22,25 +22,22 @@ interface CalendarPagerProps {
 }
 
 export function CalendarPager({ value, pageWidth, onChange, children }: CalendarPagerProps) {
-  const flatListRef = useRef<FlatList<number>>(null);
-  const currentPageRef = useRef(CALENDAR_CENTER_PAGE);
-
-  const handleScrollEnd = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { contentOffset, layoutMeasurement } = event.nativeEvent;
-      const page = getCalendarPageAtOffset({
-        offsetX: contentOffset.x,
-        viewportWidth: layoutMeasurement.width,
-        totalPages: CALENDAR_TOTAL_PAGES,
-      });
-      if (page === currentPageRef.current) {
-        return;
-      }
-      currentPageRef.current = page;
-      onChange(page);
-    },
-    [onChange],
+  // 너비마다 새 목록을 만든다. 같은 목록이면 이전 픽셀 오프셋이 남아, 폭이 반 아래로 줄 때(Duo 분할)
+  // 새 목록 폭을 넘어 네이티브가 마지막 쪽(+260주, 5년 뒤)으로 잘라 그 주가 선택된다(792e95e2b)
+  return (
+    <CalendarPageList key={pageWidth} value={value} pageWidth={pageWidth} onChange={onChange}>
+      {children}
+    </CalendarPageList>
   );
+}
+
+function CalendarPageList({ value, pageWidth, onChange, children }: CalendarPagerProps) {
+  const flatListRef = useRef<FlatList<number>>(null);
+  // 새 목록은 옛 목록이 머문 쪽이 아니라 고른 쪽에서 시작한다. 폭이 바뀌는 동안 옛 목록은 고른 날짜와 어긋날 수 있다
+  const [initialPage] = useState(value);
+  const currentPageRef = useRef(initialPage);
+  // initialScrollIndex만 두면 다시 열 때 네이티브 contentSize가 0이라 scrollTo가 잘려 날짜 줄이 빈다. contentOffset으로 준다
+  const [initialContentOffset] = useState(() => ({ x: initialPage * pageWidth, y: 0 }));
 
   useEffect(() => {
     if (value === currentPageRef.current) {
@@ -54,31 +51,34 @@ export function CalendarPager({ value, pageWidth, onChange, children }: Calendar
     });
   }, [value]);
 
-  const getItemLayout = useCallback(
-    (_: unknown, index: number) => ({
-      length: pageWidth,
-      offset: pageWidth * index,
-      index,
-    }),
-    [pageWidth],
+  const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, layoutMeasurement } = event.nativeEvent;
+    const page = findCalendarPageAtOffset({
+      offsetX: contentOffset.x,
+      viewportWidth: layoutMeasurement.width,
+      pageWidth,
+      totalPages: CALENDAR_TOTAL_PAGES,
+    });
+    // 네이티브는 넘기지 않아도(뷰가 창에서 떨어질 때 등) 스크롤 끝을 보낸다. 옛 폭의 목록이 보낸 것은 넘긴 쪽이 아니다
+    if (page == null || page === currentPageRef.current) {
+      return;
+    }
+    currentPageRef.current = page;
+    onChange(page);
+  };
+
+  const getItemLayout = (_: unknown, index: number) => ({
+    length: pageWidth,
+    offset: pageWidth * index,
+    index,
+  });
+
+  const renderItem = ({ item: page }: { item: number }) => (
+    <Box style={{ width: pageWidth }}>{children(page)}</Box>
   );
 
-  const renderItem = useCallback(
-    ({ item: page }: { item: number }) => <Box style={{ width: pageWidth }}>{children(page)}</Box>,
-    [pageWidth, children],
-  );
-
-  // initialScrollIndex만 두면 다시 열 때 네이티브 contentSize가 0이라 scrollTo가 잘려 날짜 줄이 빈다. contentOffset으로 준다
-  const initialContentOffset = useMemo(
-    // oxlint-disable-next-line react/refs -- 목록을 새로 만들 때 한 번만 지금 쪽을 시작 위치로 읽는다
-    () => ({ x: currentPageRef.current * pageWidth, y: 0 }),
-    [pageWidth],
-  );
-
-  // 너비마다 새 목록으로 현재 페이지에서 시작한다. 이전 오프셋을 두면 네이티브가 +260주로 잘라 몇 년 뒤가 선택된다
   return (
     <FlatList
-      key={pageWidth}
       ref={flatListRef}
       horizontal
       pagingEnabled
@@ -86,8 +86,7 @@ export function CalendarPager({ value, pageWidth, onChange, children }: Calendar
       keyExtractor={(page) => String(page)}
       renderItem={renderItem}
       getItemLayout={getItemLayout}
-      // oxlint-disable-next-line react/refs -- 위 contentOffset과 같은 이유로 새 목록의 시작 쪽만 정한다
-      initialScrollIndex={currentPageRef.current}
+      initialScrollIndex={initialPage}
       contentOffset={initialContentOffset}
       showsHorizontalScrollIndicator={false}
       onMomentumScrollEnd={handleScrollEnd}
@@ -102,6 +101,7 @@ export function CalendarPager({ value, pageWidth, onChange, children }: Calendar
       // 보기를 바꾼 첫 프레임에는 보이는 쪽만 그리고, 양옆 쪽은 다음 배치에서 채운다
       initialNumToRender={1}
       maxToRenderPerBatch={2}
+      testID="calendar-pager"
     />
   );
 }

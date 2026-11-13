@@ -2,6 +2,8 @@ import { useSubTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import type { DateKey } from '@src/shared/date/date-key';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
+import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
@@ -9,7 +11,9 @@ import {
   beginTodoWrite,
   findCachedTodo,
   getCachedTodoDateSpan,
+  getTodoOverviewFilters,
   settleTodoWrite,
+  syncDailyCompletionWithList,
   updateCachedTodo,
 } from './todo-cache';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
@@ -201,5 +205,151 @@ export function useReorderSubTodosMutationOptions() {
       });
     },
     meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.changeFailedRetry' } },
+  });
+}
+
+interface AddSubTodoVariables {
+  todoId: number;
+  title: string;
+  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
+  date: DateKey;
+}
+
+export function useAddSubTodoMutationOptions() {
+  const subTodoApi = useSubTodoApi();
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+
+  return mutationOptions({
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
+    mutationKey: TODO_MUTATION_KEYS.completionWrites(),
+    mutationFn: async ({ todoId, title }: AddSubTodoVariables) => {
+      const result = await subTodoApi.addSubTodo(todoId, { title });
+      return unwrap(result);
+    },
+    onMutate: async ({ todoId, title, date }) => {
+      // 끝낸 일에 더할 때만 완료가 풀려 달력·위젯·시작 체크리스트가 바뀐다. 취소는 진행 중 조회를 되돌려 먼저 읽어도 같다
+      const wasCompleted = findCachedTodo(queryClient, { date, todoId })?.completed ?? false;
+      const ticket = await beginTodoWrite(queryClient, {
+        date,
+        todoId,
+        isCompletionAffected: wasCompleted,
+      });
+      const optimisticId = createOptimisticId();
+      const span = getCachedTodoDateSpan(queryClient, { date, todoId });
+      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
+        SubTodoPolicy.withSubTodoAdded(todo, {
+          id: optimisticId,
+          title,
+          completed: false,
+          sortOrder: todo.subTodos.length,
+        }),
+      );
+      if (wasCompleted) {
+        syncDailyCompletionWithList(queryClient, { date });
+      }
+
+      return { optimisticId, wasCompleted, ticket, span };
+    },
+    onSuccess: (saved, { todoId, date }, { optimisticId }) => {
+      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
+        SubTodoPolicy.withSubTodoConfirmed(todo, optimisticId, saved),
+      );
+      trackEvent('todo_item_added', { todo_id: todoId });
+    },
+    onError: (_error, { todoId, date }, context) => {
+      if (context == null) {
+        return;
+      }
+      // 함께 진행 중인 쓰기가 있으면 그 쓰기가 남긴 완료 값을 지킨다. 뒤에 더한 항목이 남으면 완료가 아니다
+      const shouldRestoreCompletion =
+        context.wasCompleted && isLastMutation(queryClient, TODO_MUTATION_KEYS.listWrites());
+      updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
+        ...SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
+        completed: shouldRestoreCompletion || todo.completed,
+      }));
+      if (shouldRestoreCompletion) {
+        syncDailyCompletionWithList(queryClient, { date });
+      }
+    },
+    onSettled: (_saved, error, { todoId, date }, context) => {
+      const wasCompleted = context?.wasCompleted ?? true;
+      settleTodoWrite(queryClient, {
+        date,
+        todoId,
+        span: context?.span ?? { startDate: date, endDate: date },
+        isCompletionAffected: wasCompleted,
+        hasFailed: error != null,
+        ticket: context?.ticket,
+        extra: wasCompleted ? getTodoOverviewFilters() : [],
+      });
+    },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.subTodoAddFailed' } },
+  });
+}
+
+interface UpdateSubTodoVariables {
+  todoId: number;
+  subTodoId: number;
+  title: string;
+  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
+  date: DateKey;
+}
+
+export function useUpdateSubTodoMutationOptions() {
+  const subTodoApi = useSubTodoApi();
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+
+  return mutationOptions({
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
+    mutationFn: async ({ todoId, subTodoId, title }: UpdateSubTodoVariables) => {
+      const result = await subTodoApi.updateSubTodo(todoId, subTodoId, { title });
+      return unwrap(result);
+    },
+    onMutate: async ({ todoId, subTodoId, title, date }) => {
+      const ticket = await beginTodoWrite(queryClient, {
+        date,
+        todoId,
+        isCompletionAffected: false,
+      });
+      const previous = findCachedTodo(queryClient, { date, todoId })?.subTodos.find(
+        (subTodo) => subTodo.id === subTodoId,
+      );
+      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
+        SubTodoPolicy.withSubTodoRenamed(todo, subTodoId, title),
+      );
+
+      return {
+        previousTitle: previous?.title,
+        ticket,
+        span: getCachedTodoDateSpan(queryClient, { date, todoId }),
+      };
+    },
+    onSuccess: (_data, { todoId, subTodoId }) => {
+      trackEvent('todo_item_updated', { todo_id: todoId, item_id: subTodoId });
+    },
+    onError: (_error, { todoId, subTodoId, date }, context) => {
+      const previousTitle = context?.previousTitle;
+      if (previousTitle != null) {
+        updateCachedTodo(queryClient, { date, todoId }, (todo) =>
+          SubTodoPolicy.withSubTodoRenamed(todo, subTodoId, previousTitle),
+        );
+      }
+    },
+    onSettled: (_data, error, { todoId, date }, context) => {
+      settleTodoWrite(queryClient, {
+        date,
+        todoId,
+        span: context?.span ?? { startDate: date, endDate: date },
+        isCompletionAffected: false,
+        hasFailed: error != null,
+        ticket: context?.ticket,
+      });
+    },
+    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.subTodoUpdateFailed' } },
   });
 }

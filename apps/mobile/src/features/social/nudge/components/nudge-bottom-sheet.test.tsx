@@ -3,7 +3,7 @@ import { err, ok } from '@src/core/errors/result';
 import { createAuthApiError } from '@src/features/identity/auth/__tests__/auth.fixtures';
 import { createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { RemindNudgeBottomSheet } from './nudge-bottom-sheet';
 
@@ -70,5 +70,26 @@ describe('콕 메시지 시트', () => {
     await waitFor(() => expect(httpClient.post).toHaveBeenCalled());
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
     expect(screen.getByDisplayValue('화이팅')).toBeTruthy();
+  });
+
+  it('보내기를 같은 프레임에 두 번 눌러도 콕은 한 번만 보낸다', async () => {
+    // Given
+    const { httpClient } = await renderSheet();
+    httpClient.post.mockReturnValue(new Promise(() => {}));
+    await fireEvent.changeText(
+      await screen.findByPlaceholderText('(선택) 작은 할 일 하나부터 같이 시작해보자!'),
+      '화이팅',
+    );
+    const send = screen.getByText('응원 보내기');
+
+    // When
+    await act(async () => {
+      fireEvent.press(send);
+      fireEvent.press(send);
+    });
+
+    // Then
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalled());
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 });
