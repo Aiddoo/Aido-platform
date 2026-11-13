@@ -1,12 +1,10 @@
 import { createHash } from "node:crypto";
 
-import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { createRemoteJWKSet, errors, jwtVerify, type RemoteJWKSet } from "jose";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-
+import { expiredSocialToken, invalidSocialToken } from "../../application/auth.errors.js";
 import { AuthLogEvent } from "../../application/auth.log-events.js";
 import {
   OAuthIdentityProviderPort,
@@ -55,7 +53,7 @@ export class AppleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         const hashedNonce = createHash("sha256").update(expectedNonce).digest("hex");
         if (claims.nonce !== hashedNonce) {
           this.#logger.warn({ event: AuthLogEvent.OAUTH_NONCE_REJECTED, provider: "APPLE" });
-          throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "APPLE" });
+          throw invalidSocialToken("APPLE");
         }
       }
 
@@ -67,9 +65,9 @@ export class AppleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
     } catch (error) {
       logOAuthTokenVerifyFailed(this.#logger, "APPLE", error);
       if (error instanceof errors.JWTExpired) {
-        throw new ApplicationException(ErrorCode.SOCIAL_0203, { provider: "APPLE" });
+        throw expiredSocialToken("APPLE");
       }
-      throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "APPLE" });
+      throw invalidSocialToken("APPLE");
     }
   }
 

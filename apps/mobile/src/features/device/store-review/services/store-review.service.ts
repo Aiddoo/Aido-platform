@@ -1,4 +1,5 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store-review-gateway';
+import type { DateKey } from '@src/shared/date/date-key';
 import { type Instant } from '@src/shared/date/instant';
 
 import {
@@ -37,7 +38,7 @@ export class StoreReviewService {
   readonly #gateway: AppStoreReviewGateway;
   readonly #now: () => Instant;
   readonly #inFlightAccounts = new Set<string>();
-  /** 서비스는 앱 프로세스마다 하나라 한 번 요청한 실행 안에서는 다시 묻지 않는다 */
+  /** 서비스는 DIProvider 마운트마다 하나다. 같은 마운트 안에서 한 번 요청했으면 다시 묻지 않는다(루트 "다시 시도"는 새로 센다) */
   #hasRequestedThisSession = false;
 
   constructor(
@@ -51,7 +52,7 @@ export class StoreReviewService {
   }
 
   /** 할 일을 하나라도 끝낸 날을 남긴다. 하루에 몇 개를 끝냈는지는 세지 않는다 */
-  recordActiveDay = (accountId: string, localDate: string): void => {
+  recordActiveDay = (accountId: string, localDate: DateKey): void => {
     this.#repository.update(accountId, (state) =>
       StoreReviewPolicy.withActiveDay(state, localDate),
     );

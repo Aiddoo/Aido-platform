@@ -11,7 +11,7 @@
   "card": {
     "title": "주간 달성 배지",
     "nameLabel": "성명",
-    "certificate": "위 사람은 {{weekLabel}}에\n{{total}}개의 할 일 중 {{completed}}개를 완료하여\n완료율 {{rate}}%를 달성하였기에\n이 배지를 수여합니다.",
+    "certificate": "위 사람은 {{weekLabel}}에\n{{total}}개의 할 일 중 {{completed}}개를 완료하여\n완료율 {{rate}}를 달성하였기에\n이 배지를 수여합니다.",
     "share": "공유하기",
     "statPerfect": "완벽",
     "statStreak": "연속",
@@ -27,6 +27,7 @@
     "startNow": "지금 시작하기",
     "emptyRecordTitle": "배지를 모으면 기록이 쌓여요",
     "emptyRecordDescription": "매주 완료한 할 일이 여기에 기록돼요",
-    "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} 완료"
+    "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} 완료",
+    "openCertificate": "인증서 보기"
   }
 }

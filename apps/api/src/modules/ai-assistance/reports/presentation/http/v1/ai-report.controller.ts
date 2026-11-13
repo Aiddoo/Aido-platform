@@ -173,13 +173,13 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetAiReportsQueryDto }) query: GetAiReportsQueryDto,
   ): Promise<AiReportListResponseDto> {
-    const reports = await this.#getReportsUseCase.execute({
+    const { reports, localToday } = await this.#getReportsUseCase.execute({
       userId: user.userId,
       type: query.type,
       limit: query.limit,
     });
 
-    return { reports: reports.map(toAiReportResponse) };
+    return { reports: reports.map((report) => toAiReportResponse(report, localToday)) };
   }
 
   /**
@@ -198,7 +198,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 | \`type\` | string | \`WEEKLY\` 또는 \`MONTHLY\` |
 | \`year\` | number | 연도 (예: 2026) |
 | \`period\` | number | 주차(1~53) 또는 월(1~12) |
-| \`periodLabel\` | string | 사람이 읽기 쉬운 기간 (예: "2026년 10주차", "2026년 3월") |
+| \`periodLabel\` | string | 사람이 읽기 쉬운 기간 (예: "3월 1주차", 올해가 아닌 주는 "2025년 12월 1주차", "2026년 3월") |
 | \`dateRange\` | object | \`{ startDate, endDate }\` — 분석 기간 (YYYY-MM-DD) |
 | \`stats\` | object | 완료율, 이전 기간 완료율, 연속 일수 등 |
 | \`categoryBreakdown\` | array | 카테고리별 \`{ name, color, total, completed, rate }\` |
@@ -217,11 +217,11 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: AiReportIdParamDto }) params: AiReportIdParamDto,
   ): Promise<AiReportResponseDto> {
-    const report = await this.#getReportByIdUseCase.execute({
+    const { report, localToday } = await this.#getReportByIdUseCase.execute({
       userId: user.userId,
       reportId: params.id,
     });
 
-    return { report: toAiReportResponse(report) };
+    return { report: toAiReportResponse(report, localToday) };
   }
 }

@@ -4,13 +4,18 @@ import {
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import { subscribeTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
-import { readWithoutBlocking } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
+import {
+  ensureConsent,
+  getCachedConsent,
+} from '@src/features/identity/consent/queries/consent-cache';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
+import { ensurePreference } from '@src/features/identity/preference/queries/preference-cache';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
+import { readWithoutBlocking } from '@src/shared/query/read-without-blocking';
 import { useOverlay } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
@@ -21,6 +26,7 @@ import { MarketingPushOptInBottomSheet } from '../components/marketing-push-opt-
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
+import { ensurePushPermission } from '../queries/push-permission-cache';
 import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 
 /** null은 답 없이 사라졌을 때(로그아웃 등)라 거절로 남기지 않는다 */
@@ -103,26 +109,25 @@ function useFindMarketingPushOfferAccountId() {
       });
     // 설정 화면을 열지 않았어도 제안할 수 있게 캐시가 없으면 받아 온다
     const [preference, consent, permission] = await Promise.all([
-      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-      queryClient.ensureQueryData(preferenceQueryOptions).catch((error: unknown) => {
+      ensurePreference(queryClient, preferenceQueryOptions).catch((error: unknown) => {
         logSkipped(error);
         return null;
       }),
       readWithoutBlocking(
-        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-        queryClient.getQueryData(consentQueryOptions.queryKey),
-        // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-        () => queryClient.ensureQueryData(consentQueryOptions),
+        getCachedConsent(queryClient),
+        () => ensureConsent(queryClient, consentQueryOptions),
         logSkipped,
       ),
-      // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-      queryClient.ensureQueryData(permissionQueryOptions),
+      ensurePushPermission(queryClient, permissionQueryOptions),
     ]);
     if (
       preference == null ||
       consent == null ||
       !PushPermissionPolicy.canReceivePush(permission, preference) ||
-      !MarketingPushPromptPolicy.shouldPrompt(consent, repository.find(me.id), getNowInstant())
+      !MarketingPushPromptPolicy.shouldPrompt(repository.find(me.id), {
+        consent,
+        now: getNowInstant(),
+      })
     ) {
       return null;
     }
@@ -138,6 +143,7 @@ function useOpenMarketingPushOffer() {
 
   return async (accountId: string, { isCurrent }: { isCurrent: () => boolean }) => {
     trackEvent('marketing_push_prompt_shown', { source: 'completion_sheet' });
+    // 동의 기록 중에는 끌어 내림·뒤로 가기를 막아야 해 닫힘을 막을 자리가 없는 useOpenSheet 대신 overlay로 띄운다
     const choice = await overlay.openAsync<MarketingPushOfferChoice>(
       ({ isOpen, close, unmount }) => (
         <MarketingPushOptInBottomSheet
@@ -154,7 +160,6 @@ function useOpenMarketingPushOffer() {
       { dismissedValue: null },
     );
     match(choice)
-      .with('agree', () => trackEvent('marketing_push_opted_in', { source: 'completion_sheet' }))
       .with('dismiss', () => {
         // 시트가 떠 있는 사이 세션이 끝났으면 끝난 계정에 거절 시각을 남기지 않는다
         if (!isCurrent()) {
@@ -163,7 +168,8 @@ function useOpenMarketingPushOffer() {
         repository.dismiss(accountId, getNowInstant());
         trackEvent('marketing_push_prompt_dismissed', { source: 'completion_sheet' });
       })
-      .with(null, noop)
+      // 동의는 서버가 기록한 뒤 동의 mutation이 센다
+      .with('agree', null, noop)
       .exhaustive();
   };
 }

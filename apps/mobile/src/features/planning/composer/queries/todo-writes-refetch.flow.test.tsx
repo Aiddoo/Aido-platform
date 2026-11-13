@@ -1,23 +1,29 @@
 import type { FriendTodo, Todo as TodoDto, TodoItemResponse } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
-import '@src/shared/i18n/init';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
+import '@src/shared/i18n/init';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import {
+  createDailyCompletionsDto,
   createTodoApiError,
   createTodoDto,
   createTodoFormValues,
   createTodoItemResponseDto,
+  createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
 import {
+  useAddSubTodoMutationOptions,
   useDeleteSubTodoMutationOptions,
   useReorderSubTodosMutationOptions,
   useToggleSubTodoMutationOptions,
+  useUpdateSubTodoMutationOptions,
 } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
+import { useStopTodoSeriesMutationOptions } from '@src/features/planning/todo/queries/todo-series.mutations';
 import {
   useChangeTodoCategoryMutationOptions,
   useDeleteTodoMutationOptions,
@@ -38,33 +44,35 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
+  deliverQueryNotifications,
+  createTestDi,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
-import {
-  hashKey,
-  notifyManager,
-  type QueryKey,
-  useMutation,
-  useQuery,
-} from '@tanstack/react-query';
+import { hashKey, type QueryKey, useMutation, useQuery } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { Profiler } from 'react';
 
 import {
-  useAddSubTodoMutationOptions,
+  useCreateRecurringTodoMutationOptions,
   useCreateTodoMutationOptions,
-  useUpdateSubTodoMutationOptions,
   useUpdateTodoMutationOptions,
 } from './todo-composer.mutations';
 
-const DAY = '2026-03-08';
-const OTHER_DAY = '2026-03-20';
-const MOVED_DAY = '2026-04-20';
-const MONTH = { startDate: '2026-02-23', endDate: '2026-04-05' };
-const NEXT_MONTH = { startDate: '2026-04-06', endDate: '2026-05-10' };
+const DAY = createDateKey('2026-03-08');
+const OTHER_DAY = createDateKey('2026-03-20');
+const MOVED_DAY = createDateKey('2026-04-20');
+const MONTH = { startDate: createDateKey('2026-02-23'), endDate: createDateKey('2026-04-05') };
+const NEXT_MONTH = { startDate: createDateKey('2026-04-06'), endDate: createDateKey('2026-05-10') };
 const FRIEND_ID = 'friend-1';
 const OWNER_ID = 'clz7x5p8k0010qz0z8z8z8z8z';
+const WEEKLY: TodoRepeat = {
+  frequency: 'WEEKLY',
+  interval: 1,
+  weekdays: ['SUN'],
+  end: { type: 'NEVER' },
+};
 
 /** 보는 화면이 붙들고 있는 조회. 이름으로 다시 받은 조회를 읽는다 */
 const WATCHED: Record<string, QueryKey> = {
@@ -191,7 +199,25 @@ function createTodoServer() {
       const created = createTodoDto({ id: state.nextId, title, startDate: DAY, sortOrder: 9 });
       state.nextId += 1;
       state.todos = [...state.todos, created];
-      return { message: 'ok', todo: created };
+      if (!('repeat' in input) || input.repeat == null) {
+        return { message: 'ok', todo: created };
+      }
+      const series = {
+        id: 'series-1',
+        title,
+        categoryId: created.category.id,
+        visibility: created.visibility,
+        scheduledTime: null,
+        timezone: 'Asia/Seoul',
+        repeat: input.repeat,
+        startDate: DAY,
+        nextOccurrenceDate: DAY,
+        isActive: true,
+        checklist: [],
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+      };
+      return { message: 'ok', todo: created, series };
     }
     if (path[1] === 'complete') {
       return replace(todoId, (todo) => ({
@@ -267,7 +293,7 @@ function createTodoServer() {
 function WatchedQueries() {
   useQuery(useGetTodosByDateQueryOptions({ date: OTHER_DAY }));
   useQuery(useGetDailyCompletionsQueryOptions(NEXT_MONTH));
-  useQuery(useGetTodoSummaryQueryOptions({ date: DAY }));
+  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
   useQuery(useGetTodoOverviewQueryOptions());
   useQuery(useGetTodoCategoriesQueryOptions());
   useQuery(useGetFriendTodosQueryOptions({ friendUserId: FRIEND_ID, date: DAY }));
@@ -294,6 +320,8 @@ function DetailProbe() {
 function useTodoWrites() {
   return {
     createTodo: useMutation(useCreateTodoMutationOptions()),
+    createRecurringTodo: useMutation(useCreateRecurringTodoMutationOptions()),
+    stopTodoSeries: useMutation(useStopTodoSeriesMutationOptions()),
     toggleTodo: useMutation(useToggleTodoMutationOptions()),
     deleteTodo: useMutation(useDeleteTodoMutationOptions()),
     reorderTodo: useMutation(useReorderTodoMutationOptions()),
@@ -308,16 +336,6 @@ function useTodoWrites() {
   };
 }
 type TodoWrites = ReturnType<typeof useTodoWrites>;
-
-/** 쿼리 알림이 다 나갈 때까지 기다리는 스케줄러 차례 수. 비동기 onMutate가 남긴 알림은 다음 차례에 잡힌다 */
-const NOTIFICATION_ROUNDS = 3;
-
-/** TanStack notifyManager는 구독자 알림을 다음 틱으로 미룬다. 같은 스케줄러에 여러 번 줄을 서 앞선 알림이 다 나간 뒤 돌아온다 */
-async function deliverQueryNotifications() {
-  for (let round = 0; round < NOTIFICATION_ROUNDS; round += 1) {
-    await new Promise<void>((resolve) => notifyManager.schedule(resolve));
-  }
-}
 
 async function renderFeed() {
   const server = createTodoServer();
@@ -369,7 +387,7 @@ async function renderFeed() {
         }}
       />
     </>,
-    { queryClient, withLocalDate: true, di: { httpClient } },
+    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
   );
   await act(deliverQueryNotifications);
 
@@ -465,18 +483,18 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
     {
       path: '할 일 순서 바꾸기',
       start: (w) =>
-        w.reorderTodo.mutateAsync({ id: 2, input: { targetTodoId: 1, position: 'before' } }),
+        w.reorderTodo.mutateAsync({ todoId: 2, input: { targetTodoId: 1, position: 'before' } }),
       expected: ['list:day', 'widget:day'],
     },
     {
       path: '제목 고치기',
-      start: (w) => w.updateTodo.mutateAsync({ todoId: 1, input: { title: '새 제목' } }),
+      start: (w) => w.updateTodo.mutateAsync({ todoId: 1, fields: { title: '새 제목' } }),
       expected: ['list:day', 'widget:day'],
     },
     {
       path: '날짜 옮기기',
       start: (w) =>
-        w.updateTodo.mutateAsync({ todoId: 1, input: { startDate: MOVED_DAY, endDate: null } }),
+        w.updateTodo.mutateAsync({ todoId: 1, fields: { startDate: MOVED_DAY, endDate: null } }),
       expected: ['calendar:month', 'calendar:next-month', 'list:day', 'widget:day'],
     },
     {
@@ -671,7 +689,7 @@ describe('할 일 쓰기의 되돌리기와 겹친 쓰기', () => {
     // Given
     const { tap, settleWrite, listTodo, refetched } = await renderFeed();
     await tap((w) => w.toggleTodo.mutateAsync({ todoId: 2, body: { completed: true }, date: DAY }));
-    await tap((w) => w.updateTodo.mutateAsync({ todoId: 1, input: { title: '새 제목' } }));
+    await tap((w) => w.updateTodo.mutateAsync({ todoId: 1, fields: { title: '새 제목' } }));
 
     // When
     await settleWrite(1);
@@ -686,5 +704,287 @@ describe('할 일 쓰기의 되돌리기와 겹친 쓰기', () => {
     // Then
     expect(listTodo(1)?.title).toBe('새 제목');
     expect(listTodo(2)?.completed).toBe(true);
+  });
+
+  it.each<{ path: string; start: (writes: TodoWrites) => Promise<unknown> }>([
+    {
+      path: '반복 할 일 만들기',
+      start: (w) =>
+        w.createRecurringTodo.mutateAsync({
+          values: {
+            ...createTodoFormValues({ title: '매주 할 일', startDate: DAY }),
+            repeat: WEEKLY,
+          },
+        }),
+    },
+    {
+      path: '이후 회차까지 제목 고치기',
+      start: (w) =>
+        w.updateTodo.mutateAsync({
+          todoId: 1,
+          fields: { title: '새 제목' },
+          options: { scope: 'THIS_AND_FOLLOWING' },
+        }),
+    },
+    {
+      path: '이후 회차까지 카테고리 바꾸기',
+      start: (w) =>
+        w.changeCategory.mutateAsync({
+          todoId: 1,
+          input: { categoryId: 2 },
+          scope: 'THIS_AND_FOLLOWING',
+        }),
+    },
+    {
+      path: '이후 회차까지 시각 바꾸기',
+      start: (w) =>
+        w.updateSchedule.mutateAsync({
+          todoId: 1,
+          changedField: 'time',
+          input: { startDate: DAY, endDate: null, scheduledTime: '10:00', isAllDay: false },
+          scope: 'THIS_AND_FOLLOWING',
+        }),
+    },
+    {
+      path: '이후 회차까지 지우기',
+      start: (w) => w.deleteTodo.mutateAsync({ todoId: 3, date: DAY, scope: 'THIS_AND_FOLLOWING' }),
+    },
+    {
+      path: '반복 끝내기',
+      start: (w) => w.stopTodoSeries.mutateAsync({ todoId: 1 }),
+    },
+  ])(
+    '체크를 기다리는 동안 $path가 끝나도 목록은 체크가 끝난 뒤에 다시 받는다',
+    async ({ start }) => {
+      // Given
+      const { tap, settleWrite, listTodo, refetched } = await renderFeed();
+      await tap((w) =>
+        w.toggleTodo.mutateAsync({ todoId: 2, body: { completed: true }, date: DAY }),
+      );
+      await tap(start);
+
+      // When
+      await settleWrite(1);
+
+      // Then
+      expect(listTodo(2)?.completed).toBe(true);
+      expect(refetched()).not.toContain('list:day');
+
+      // When
+      await settleWrite(0);
+
+      // Then
+      expect(listTodo(2)?.completed).toBe(true);
+      expect(refetched()).toContain('list:day');
+    },
+  );
+});
+
+const WEEK = { startDate: createDateKey('2026-03-02'), endDate: createDateKey('2026-03-08') };
+const BLUE = '#3B82F6';
+const RED = '#EF4444';
+const EXISTING = createTodoDto({
+  id: 1,
+  startDate: DAY,
+  category: { id: 2, name: '업무', color: RED, sortOrder: 1 },
+});
+const CREATED = createTodoDto({ id: 501, title: '새 할 일', startDate: DAY, sortOrder: 1 });
+const VALUES = createTodoFormValues({ title: '새 할 일', startDate: DAY });
+
+function completionsDto(range: { startDate: string; endDate: string }, hasCreated: boolean) {
+  return createDailyCompletionsDto({
+    completions: [
+      {
+        date: DAY,
+        totalTodos: hasCreated ? 2 : 1,
+        completedTodos: 0,
+        isComplete: false,
+        completionRate: 0,
+        // 서버는 GROUP BY 순서로 색을 모아 목록 순서와 다를 수 있다
+        categoryColors: hasCreated ? [BLUE, RED] : [RED],
+      },
+    ],
+    totalCompleteDays: 0,
+    dateRange: range,
+  });
+}
+
+function respondAsServer(
+  url: string,
+  params: Record<string, unknown> | undefined,
+  hasCreated: boolean,
+) {
+  if (url === 'v1/todo-categories') {
+    return ok(createTodoCategoryListDto());
+  }
+  if (url === 'v1/daily-completions') {
+    return ok(completionsDto(params?.startDate === WEEK.startDate ? WEEK : MONTH, hasCreated));
+  }
+  if (url === 'v1/todos/overview') {
+    return ok({ hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false });
+  }
+  if (url === 'v1/todos/summary') {
+    return ok({
+      date: DAY,
+      totalTodos: hasCreated ? 2 : 1,
+      completedTodos: 0,
+      completionRate: 0,
+      isComplete: false,
+      currentStreak: 0,
+      topTodos: [],
+    });
+  }
+  return ok(createTodoListResponseDto({ items: hasCreated ? [EXISTING, CREATED] : [EXISTING] }));
+}
+
+function FeedCalendarProbe() {
+  // MyCalendar처럼 data와 isError만 읽는다
+  const query = useQuery(useGetDailyCompletionsQueryOptions(MONTH));
+  return query.isError || query.data == null ? null : null;
+}
+
+function FeedListProbe() {
+  // TodoList처럼 목록·카테고리 data와 dataUpdatedAt을 읽는다
+  const categories = useQuery(useGetTodoCategoriesQueryOptions());
+  const list = useQuery(useGetTodosByDateQueryOptions({ date: DAY }));
+  return categories.data == null || list.data == null || list.dataUpdatedAt < 0 ? null : null;
+}
+
+function BackgroundProbe() {
+  // 위젯 동기화·시작 체크리스트가 피드 뒤에서 붙들고 있는 조회
+  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
+  useQuery(useGetDailyCompletionsQueryOptions(WEEK));
+  useQuery(useGetTodoOverviewQueryOptions());
+  return null;
+}
+
+type CreateTodo = ReturnType<typeof useCreateTodo>['mutateAsync'];
+
+function useCreateTodo() {
+  return useMutation(useCreateTodoMutationOptions());
+}
+
+async function renderCreateFeed() {
+  const httpClient = createHttpClientStub();
+  const server = { hasCreated: false };
+  const heldGets: Array<() => void> = [];
+  httpClient.get.mockImplementation(async (url, options) => {
+    const response = respondAsServer(url, options?.params, server.hasCreated);
+    if (!server.hasCreated) {
+      return response;
+    }
+    // 만든 뒤 다시 받는 응답은 붙잡아 두었다가 따로 돌려 렌더를 단계별로 센다
+    const pending = createPendingResponse(response);
+    heldGets.push(pending.settle);
+    return pending.response;
+  });
+  const created = createPendingResponse<Result<unknown, ApiError>>(
+    ok({ message: 'ok', todo: CREATED }),
+  );
+  const failed = createPendingResponse<Result<unknown, ApiError>>(err(createTodoApiError()));
+  let createResponse = created;
+  httpClient.post.mockImplementation(() => {
+    server.hasCreated = createResponse === created;
+    return createResponse.response;
+  });
+  // 운영처럼 5분 동안 신선해 붙을 때 다시 받지 않는다
+  const queryClient = createTestQueryClient({
+    defaultOptions: { queries: { staleTime: 5 * MINUTE_MS } },
+  });
+  const renders = { calendar: 0, list: 0 };
+  const mutation: { createTodo: CreateTodo | null } = { createTodo: null };
+
+  function MutationProbe({ onRender }: { onRender: (createTodo: CreateTodo) => void }) {
+    onRender(useCreateTodo().mutateAsync);
+    return null;
+  }
+
+  await renderScreen(
+    <>
+      <Profiler id="calendar" onRender={() => (renders.calendar += 1)}>
+        <FeedCalendarProbe />
+      </Profiler>
+      <Profiler id="list" onRender={() => (renders.list += 1)}>
+        <FeedListProbe />
+      </Profiler>
+      <BackgroundProbe />
+      <MutationProbe
+        onRender={(createTodo) => {
+          mutation.createTodo = createTodo;
+        }}
+      />
+    </>,
+    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
+  );
+  await act(deliverQueryNotifications);
+
+  const refetched: string[] = [];
+  queryClient.getQueryCache().subscribe((event) => {
+    if (event.type === 'updated' && event.action.type === 'fetch') {
+      refetched.push(event.query.queryHash);
+    }
+  });
+  renders.calendar = 0;
+  renders.list = 0;
+  httpClient.get.mockClear();
+
+  /** 사용자가 저장을 누르고 → 서버가 답하고 → 다시 받은 응답이 오는 세 단계를 따로 그린다 */
+  async function addTodo() {
+    await act(async () => {
+      mutation.createTodo?.({ values: VALUES }).catch(noop);
+      await deliverQueryNotifications();
+    });
+    await act(async () => {
+      createResponse.settle();
+      await deliverQueryNotifications();
+    });
+    await act(async () => {
+      heldGets.splice(0).forEach((settle) => settle());
+      await deliverQueryNotifications();
+    });
+  }
+
+  function failCreate() {
+    createResponse = failed;
+  }
+
+  return { httpClient, queryClient, renders, refetched, addTodo, failCreate };
+}
+
+describe('할 일을 만든 뒤 다시 받는 조회', () => {
+  it('하루짜리를 만들면 서버만 아는 위젯 요약만 다시 받고 달력은 낙관적 반영 한 번만 그린다', async () => {
+    // Given
+    const { httpClient, renders, refetched, addTodo } = await renderCreateFeed();
+
+    // When
+    await addTodo();
+
+    // Then
+    expect(refetched).toEqual([
+      hashKey(TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null })),
+    ]);
+    expect(httpClient.get).toHaveBeenCalledTimes(1);
+    expect(renders).toEqual({ calendar: 1, list: 2 });
+  });
+
+  it('만들기가 실패하면 고친 날짜 목록과 그날 달력 범위를 서버 값으로 다시 맞춘다', async () => {
+    // Given
+    const { queryClient, refetched, addTodo, failCreate } = await renderCreateFeed();
+    failCreate();
+
+    // When
+    await addTodo();
+
+    // Then
+    expect(refetched).toEqual(
+      expect.arrayContaining([
+        hashKey(TODO_QUERY_KEYS.listByDate({ date: DAY })),
+        hashKey(TODO_QUERY_KEYS.completionsByRange(MONTH)),
+        hashKey(TODO_QUERY_KEYS.completionsByRange(WEEK)),
+      ]),
+    );
+    expect(queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }))?.todos).toHaveLength(
+      1,
+    );
   });
 });

@@ -62,7 +62,7 @@
     "rewardInvitee": "가입하면 바로 프리미엄 {{days}}일",
     "rewardInviterLabel": "나",
     "rewardLineLabel": "{{label}}, {{value}}",
-    "rewardInviter": "친구가 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{days}}일 + 친구\u00a01\u2060명\u00a0더",
+    "rewardInviter": "친구가 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{days}}일 + 친구 1⁠명 더",
     "heroTitle": "친구를 초대하고\n서로의 할 일을 응원해요",
     "codeLabel": "내 초대 코드",
     "copy": "복사",
@@ -125,14 +125,17 @@
     "emptyDescription": "초대 링크로 가입한 친구가 여기에 보여요",
     "tab": {
       "all": "전체 {{count}}",
-      "waiting": "발자국 대기 {{count}}"
+      "waiting": "발자국 대기 {{count}}",
+      "allLabel": "전체",
+      "waitingLabel": "발자국 대기"
     },
     "seeAll": "전체 보기 {{count}}명",
     "emptyWaitingTitle": "발자국을 기다리는 친구가 없어요",
     "emptyWaitingDescription": "가입했지만 아직 발자국이 찍히지 않은 친구가 여기에 보여요",
     "unavailable": "초대가 다시 열리면 초대한 친구를 볼 수 있어요",
     "waitingNotStarted": "{{count}}일 동안 할 일을 끝내면 발자국이 찍혀요",
-    "nudgeLabel": "{{name}}에게 콕 찌르러 가기. {{count}}일만 더 하면 발자국이 찍혀요"
+    "nudgeLabel": "{{name}}에게 콕 찌르러 가기. {{count}}일만 더 하면 발자국이 찍혀요",
+    "loadFailed": "초대한 친구를 불러오지 못했어요"
   },
   "share": {
     "kakao": "카카오톡으로 초대하기",
@@ -167,8 +170,7 @@
     "allDoneDescription": "친구와 같이 하면 더 오래 이어가요",
     "allDoneDismiss": "오늘은 그만 보기",
     "friendsEmptyTitle": "첫 친구를 초대해보세요",
-    "allDoneTitlePrefix": "오늘 할 일을",
-    "allDoneTitleHighlight": "다 끝냈어요"
+    "allDoneTitle": "오늘 할 일을 <highlight>다 끝냈어요</highlight>"
   },
   "welcome": {
     "friendsTitle": "{{name}}님과 친구가 됐어요",

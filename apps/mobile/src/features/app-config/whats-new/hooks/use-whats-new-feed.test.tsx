@@ -3,12 +3,16 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { toInstant } from '@src/shared/date/instant';
-import { createMemoryObservableSyncStorage, createTestQueryClient } from '@src/testing/core';
+import {
+  createMemoryObservableSyncStorage,
+  createTestQueryClient,
+  createTestDi,
+} from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
-import { waitFor } from '@testing-library/react-native';
+import { act, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { RELEASE_1_15_0 } from '../constants/releases';
+import { RELEASE_1_15_0 } from '../constants/releases.constants';
 import { RELEASE_ID } from '../constants/whats-new.constants';
 import type { WhatsNewCampaignConfig } from '../domains/whats-new-campaign.model';
 import { WHATS_NEW_QUERY_KEYS } from '../queries/whats-new-query-keys';
@@ -43,17 +47,16 @@ async function renderFeed({
   const hook = await renderScreenHook(
     () => useWhatsNewFeed({ isStable: true, isOnboardingSettled: onboarding.isSettled }),
     {
-      queryClient,
+      di: createTestDi({
+        ports: { syncStorage, queryClient },
+        seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+      }),
       withLocalDate: true,
-      di: {
-        authSessionStore: createAuthSessionStoreStub('authenticated'),
-        syncStorage,
-      },
     },
   );
   const settleOnboarding = () => {
     onboarding.isSettled = true;
-    hook.rerender({});
+    hook.rerender(undefined);
   };
   return { ...hook, settleOnboarding };
 }
@@ -79,7 +82,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
 
     // When
-    rerender({});
+    rerender(undefined);
 
     // Then
     expect(router.push).toHaveBeenCalledTimes(1);
@@ -103,8 +106,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
       signedUpAt: '2026-10-01T00:00:00.000Z',
       isOnboardingSettled: false,
     });
-    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
-    await new Promise((resolve) => setImmediate(resolve));
+    await act(async () => undefined);
     expect(router.push).not.toHaveBeenCalled();
 
     // When
@@ -126,8 +128,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     await renderFeed({ signedUpAt: '2026-10-01T00:00:00.000Z', syncStorage });
 
     // Then
-    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
-    await new Promise((resolve) => setImmediate(resolve));
+    await act(async () => undefined);
     expect(router.push).not.toHaveBeenCalled();
   });
 });

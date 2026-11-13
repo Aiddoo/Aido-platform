@@ -1,22 +1,39 @@
 import type { ErrorCodeType } from '@aido/api/errors';
 
+import { AppError, type AppErrorOptions } from './app-error';
 import type { CodedError } from './result';
 
-export class ApiError extends Error implements CodedError {
+interface ApiErrorOptions extends AppErrorOptions {
+  /** 이 요청의 `X-Request-Id`. 문의 초안과 경계 breadcrumb가 서버 로그를 찾는 데 쓴다 */
+  requestId?: string;
+}
+
+/** 서버가 코드로 거절한 4xx. `KyHttpClient`가 실패 봉투를 읽어 만든다 */
+export class ApiError extends AppError implements CodedError {
   override readonly name = 'ApiError';
+  /** 앱이 모르는 코드는 `SYS_0001`이다. 문구는 그래도 서버 message를 먼저 쓴다 */
+  readonly code: ErrorCodeType;
+  readonly status: number;
+  /** 운영에는 `PUBLIC_ERROR_DETAILS`에 등록한 코드만 실린다. `*.error.ts`가 공유 스키마로 읽는다 */
+  readonly details: Record<string, unknown> | null;
+  readonly requestId: string | null;
 
   constructor(
-    public readonly code: string,
+    code: ErrorCodeType,
     message: string,
-    public readonly status: number,
-    public readonly details?: Record<string, unknown>,
+    status: number,
+    details: Record<string, unknown> | null = null,
+    { requestId, ...options }: ApiErrorOptions = {},
   ) {
-    super(message);
+    super(message, options);
+    this.code = code;
+    this.status = status;
+    this.details = details;
+    this.requestId = requestId ?? null;
   }
 
-  hasCode<C extends ErrorCodeType>(code: C): this is ApiError & { code: C } {
-    return this.code === code;
-  }
+  hasCode = <C extends ErrorCodeType>(code: C): this is ApiError & { code: C } =>
+    this.code === code;
 }
 
 export function isApiError(error: unknown): error is ApiError {

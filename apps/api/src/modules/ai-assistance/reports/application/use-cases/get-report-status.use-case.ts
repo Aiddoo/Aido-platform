@@ -72,6 +72,7 @@ export class GetReportStatusUseCase {
       daysUntilMonthly: localToday.until(nextMonthlyDate).days,
       latestWeekly,
       latestMonthly,
+      localToday,
     };
   }
 }

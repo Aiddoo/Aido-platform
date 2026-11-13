@@ -1,14 +1,9 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
-import catSuggestionImage from '@assets/images/weather/mascot-suggestion.webp';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import {
-  TodoCheckbox,
-  TodoProgress,
-  TodoRow,
-} from '@src/features/planning/todo/components/todo-row';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import {
   formatClockTime,
   formatInstantHour,
@@ -18,6 +13,7 @@ import { type Instant } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -41,7 +37,7 @@ import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query
 import { mapValues } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, Separator } from 'heroui-native';
-import { type ComponentProps, Fragment, useEffect, useRef } from 'react';
+import { type ComponentProps, Fragment } from 'react';
 import { match } from 'ts-pattern';
 
 import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors.constants';
@@ -53,6 +49,7 @@ import {
 } from '../domains/weather-briefing.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
+import { useWeatherOpenKey } from '../hooks/use-weather-open-key';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { toWeatherBriefingKind } from '../utils/weather-analytics';
 import {
@@ -61,8 +58,8 @@ import {
   type BriefingRow,
   toBriefingView,
 } from '../utils/weather-briefing.view-model';
-import { toWeatherRescheduleHref } from '../utils/weather-reschedule-link';
-import { formatTemperature } from '../utils/weather-temperature';
+import { toWeatherRescheduleHref } from '../utils/weather-reschedule-link.view-model';
+import { formatTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 import { WeatherMascot } from './weather-mascot';
@@ -75,30 +72,19 @@ const VISIBLE_TODO_LIMIT = 3;
 type RescheduleAction = Extract<BriefingAction, { kind: 'reschedule' }>;
 type SuggestTodoAction = Extract<BriefingAction, { kind: 'suggestTodo' }>;
 
-/** 값 안에 넣은 문구까지 번역해 한 문장으로 만든다. */
-function useTranslateBriefingCopy() {
-  const { t } = useTranslation('weather');
-  const translate = (copy: BriefingCopy): string => {
-    const values = mapValues(copy.values ?? {}, (value) =>
-      typeof value === 'object' ? translate(value) : value,
-    );
-    return t(copy.key, values);
-  };
-  return translate;
-}
-
 /** 리포트 실패는 리포트 경계 한 곳에서만 보이도록 던지지 않는 useQuery로 구독하고, 이 경계는 할 일 실패만 맡는다 */
 export function WeatherBriefing() {
+  const todayKey = useTodayKey();
+  const now = useMinuteNow();
+  const { timeZone: deviceTimeZone } = useDateFormatContext();
   const { data: report } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: WeatherReportSelect.briefing,
   });
-  const todayKey = useTodayKey();
   const [{ data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [useGetTodosByDateQueryOptions({ date: todayKey }), useGetPreferenceQueryOptions()],
   });
-  const now = useMinuteNow();
-  const { timeZone: deviceTimeZone } = useDateFormatContext();
+
   const state = getBriefingState(report, { now, deviceTimeZone });
 
   if (report == null || state === 'loading') {
@@ -142,8 +128,7 @@ WeatherBriefing.Card = function Card({
 }) {
   const { t } = useTranslation('weather');
   const translate = useTranslateBriefingCopy();
-  const { trackEvent } = useTrack();
-  const hasTrackedShownRef = useRef(false);
+  const openKey = useWeatherOpenKey();
   const dateFormat = useDateFormatContext();
   const unit = useTemperatureUnit();
   const view = toBriefingView(briefing, {
@@ -158,14 +143,11 @@ WeatherBriefing.Card = function Card({
   const hiddenCount = view.rows.length - visibleRows.length;
   const { action } = view;
 
-  // 분 단위 갱신·할 일 변경으로 종류가 바뀌어도 이 화면에서는 처음 보인 브리핑만 센다
-  useEffect(() => {
-    if (hasTrackedShownRef.current) {
-      return;
-    }
-    hasTrackedShownRef.current = true;
-    trackEvent('weather_briefing_shown', { kind: toWeatherBriefingKind(briefing.kind) });
-  }, [trackEvent, briefing.kind]);
+  // 분 단위 갱신·할 일 변경으로 종류가 바뀌어도 이 열기에서는 처음 보인 브리핑만 센다
+  useTrackView('weather_briefing_shown', {
+    key: openKey,
+    params: { kind: toWeatherBriefingKind(briefing.kind) },
+  });
 
   return (
     <WeatherCard
@@ -174,8 +156,8 @@ WeatherBriefing.Card = function Card({
       className="gap-0 p-4"
     >
       <Spacing size={10} />
-      <HStack gap={12} align="start">
-        <VStack flex={1} gap={6}>
+      <HStack className="gap-3" align="start">
+        <VStack className="gap-1.5" flex={1}>
           <Text size="t3" weight="semibold" tone="onSky" className="text-[21px] tracking-[-0.6px]">
             {translate(view.headline)}
           </Text>
@@ -184,7 +166,7 @@ WeatherBriefing.Card = function Card({
           </Text>
         </VStack>
         <WeatherMascot
-          source={catSuggestionImage}
+          name="weatherSuggestion"
           className="-mt-1.5 -mr-1 size-[72px]"
           fallbackCondition={view.mascotCondition}
         />
@@ -238,6 +220,7 @@ WeatherBriefing.Item = function Item({
   timeFormat: TimeFormat;
 }) {
   const { t } = useTranslation(['todo', 'weather']);
+  const fontScaledSize = useFontScaledSize();
   const translate = useTranslateBriefingCopy();
   const dateFormat = useDateFormatContext();
   const todayKey = useTodayKey();
@@ -272,7 +255,7 @@ WeatherBriefing.Item = function Item({
       onPress={openActions}
       className={cn('min-h-[60px] justify-center rounded-none', todo.completed && 'opacity-60')}
       left={
-        <TodoCheckbox
+        <TodoRow.Checkbox
           accessibilityLabel={todo.title}
           isSelected={todo.completed}
           isDisabled={toggleTodo.isPending}
@@ -314,7 +297,7 @@ WeatherBriefing.Item = function Item({
         todo.subTodoProgress == null && !isChipStacked ? undefined : (
           <VStack gap={6} className="mt-1">
             {todo.subTodoProgress != null && (
-              <TodoProgress
+              <TodoRow.Progress
                 tone="onSky"
                 value={todo.subTodoProgress.completed}
                 total={todo.subTodoProgress.total}
@@ -334,7 +317,12 @@ WeatherBriefing.Item = function Item({
             hitSlop={12}
             className="size-6 items-center justify-center"
           >
-            <MoreIcon width={20} height={20} colorClassName="text-on-sky/60" />
+            {/* 누름 칸(size-6)이 고정이라 칸 안에 들어가는 앱 기본 비율로 키운다 */}
+            <MoreIcon
+              width={fontScaledSize(20)}
+              height={fontScaledSize(20)}
+              colorClassName="text-on-sky/60"
+            />
           </PressableFeedback>
         </HStack>
       }
@@ -366,7 +354,7 @@ WeatherBriefing.Chip = function BriefingChip({
     <Chip
       variant="tertiary"
       className={cn(
-        'min-h-[26px] gap-[3px] self-start rounded-[13px] py-0 pr-[9px] pl-[7px]',
+        'min-h-[26px] gap-0.75 self-start rounded-[13px] py-0 pr-2.25 pl-1.75',
         BRIEFING_ROW_TONES[tone].chip,
         className,
       )}
@@ -475,8 +463,8 @@ WeatherBriefing.Loading = function Loading() {
     <WeatherCard className="gap-0 p-4">
       <TextSkeleton size="b4" className="w-24 opacity-40" />
       <Spacing size={10} />
-      <HStack gap={12} align="start">
-        <VStack flex={1} gap={6}>
+      <HStack className="gap-3" align="start">
+        <VStack className="gap-1.5" flex={1}>
           <TextSkeleton size="t3" className="w-full opacity-40" />
           <TextSkeleton size="b3" className="w-3/4 opacity-40" />
         </VStack>
@@ -518,4 +506,16 @@ function useOpenReschedule(action: RescheduleAction) {
     });
     push(toWeatherRescheduleHref({ todoIds: action.todoIds, reason: action.reason }));
   };
+}
+
+/** 값 안에 넣은 문구까지 번역해 한 문장으로 만든다. */
+function useTranslateBriefingCopy() {
+  const { t } = useTranslation('weather');
+  const translate = (copy: BriefingCopy): string => {
+    const values = mapValues(copy.values ?? {}, (value) =>
+      typeof value === 'object' ? translate(value) : value,
+    );
+    return t(copy.key, values);
+  };
+  return translate;
 }

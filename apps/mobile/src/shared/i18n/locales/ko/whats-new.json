@@ -99,25 +99,6 @@
       }
     }
   },
-  "v1_14_0": {
-    "release": {
-      "title": "친구와 함께 발자국을 모아 보세요",
-      "description": "친구를 초대하면 친구도 나도 프리미엄을 받을 수 있어요"
-    },
-    "friendInvite": {
-      "title": "친구와 함께 발자국을 모아요",
-      "description": "친구가 {{activeDays}}일 동안 할 일을 끝내면 발자국이 찍히고 둘 다 프리미엄을 받을 수 있어요",
-      "action": "초대하러 가기"
-    },
-    "demo": {
-      "steps": {
-        "invite": "초대",
-        "join": "친구 합류",
-        "pawPrint": "발자국",
-        "reward": "프리미엄"
-      }
-    }
-  },
   "list": {
     "title": "새로운 기능",
     "newBadge": "새 기능",

@@ -1,7 +1,7 @@
 import { collectImportedNames } from '../ast.mjs';
 
 const RE_EXPORT_MESSAGE =
-  '다시 내보내지 않는다. 쓰는 곳이 정의 파일을 import한다. 재수출은 정해진 공개 진입 파일(서버 *.public.ts·Drizzle schema 묶음)에서만 한다.';
+  '다시 내보내지 않는다. 쓰는 곳이 정의 파일을 import한다. 재수출은 정해진 공개 진입 파일(서버 *.public.ts·Drizzle schema 묶음, 앱 shared 공개 면)에서만 한다.';
 
 function getLocalName(specifier) {
   const { local } = specifier;
@@ -135,9 +135,58 @@ const noPgEnumLiteral = {
   },
 };
 
+const CODED_EXCEPTIONS = new Set([
+  'ApplicationException',
+  'DomainException',
+  'ErrorCodedException',
+]);
+
+const INLINE_MESSAGE = (name) =>
+  `${name}을 바로 만들지 않는다. slice <slice>.errors.ts의 이름 있는 생성 함수로 만든다(거부는 application, 불변식은 domain).`;
+
+// 같은 코드의 details 모양이 흩어지면 공개 details 등록이 빠진다(VERIFY_0753). 만드는 곳을 *.errors.ts로 모은다
+const noInlineCodedException = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    // 이 파일에서 코드 예외 클래스를 가리키는 이름(별칭 import 포함)
+    let exceptionNames = new Set(CODED_EXCEPTIONS);
+    const checkSubclass = (node) => {
+      const base = node.superClass;
+      // 바탕 클래스 둘(ApplicationException·DomainException)은 ErrorCodedException을 잇는 정의 자리다
+      const isBaseDefinition = node.id != null && CODED_EXCEPTIONS.has(node.id.name);
+      if (base?.type === 'Identifier' && exceptionNames.has(base.name) && !isBaseDefinition) {
+        context.report({
+          node,
+          message: `${base.name}을 잇는 예외 클래스를 만들지 않는다. 코드와 details는 slice <slice>.errors.ts의 생성 함수가 정한다.`,
+        });
+      }
+    };
+    return {
+      before() {
+        exceptionNames = new Set(CODED_EXCEPTIONS);
+      },
+      ImportSpecifier(node) {
+        const imported =
+          node.imported.type === 'Identifier' ? node.imported.name : node.imported.value;
+        if (CODED_EXCEPTIONS.has(imported)) {
+          exceptionNames.add(node.local.name);
+        }
+      },
+      NewExpression(node) {
+        if (node.callee.type === 'Identifier' && exceptionNames.has(node.callee.name)) {
+          context.report({ node, message: INLINE_MESSAGE(node.callee.name) });
+        }
+      },
+      ClassDeclaration: checkSubclass,
+      ClassExpression: checkSubclass,
+    };
+  },
+};
+
 export default {
   'no-re-export': noReExport,
   'no-barrel-file': noBarrelFile,
   'no-member-accessibility': noMemberAccessibility,
   'no-pg-enum-literal': noPgEnumLiteral,
+  'no-inline-coded-exception': noInlineCodedException,
 };

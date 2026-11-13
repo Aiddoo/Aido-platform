@@ -54,7 +54,7 @@ export function SubscriptionReceipt() {
         <IconCircle
           tone="brand"
           pointerEvents="none"
-          className="absolute right-4 top-4 -rotate-6"
+          className="absolute top-4 right-4 -rotate-6"
           icon={
             <>
               <Box className="absolute inset-1 rounded-full border border-dashed border-white/90 dark:border-gray-1/90" />
@@ -65,7 +65,7 @@ export function SubscriptionReceipt() {
       )}
 
       <Box className="px-5 pt-5" testID={`subscription-receipt-${variant}`}>
-        <HStack gap={16} className="items-center">
+        <HStack className="items-center gap-4">
           <FillTicketIcon width={40} height={40} />
 
           {/* 도장 자리를 비워 두어 긴 제목이 도장 아래로 들어가지 않게 한다 */}
@@ -120,14 +120,14 @@ export function SubscriptionReceipt() {
         )}
       </Box>
 
-      <DashedDivider className="my-5 mx-5" />
+      <DashedDivider className="mx-5 my-5" />
 
       <Box className="px-5">
         <Text size="b3" weight="semibold" shade={9} className="mb-3">
           {t('subscriber.benefitsTitle')}
         </Text>
 
-        <VStack gap={2}>
+        <VStack className="gap-0.5">
           <ReceiptBenefitRow shade={8} title={t('benefits.aiParsing.title')} />
           <ReceiptBenefitRow
             shade={8}
@@ -150,7 +150,7 @@ export function SubscriptionReceipt() {
         </VStack>
       </Box>
 
-      <DashedDivider className="my-5 mx-5" />
+      <DashedDivider className="mx-5 my-5" />
 
       <Barcode className="px-5 pb-5" />
     </ScallopedContainer>
@@ -187,11 +187,11 @@ SubscriptionReceipt.Loading = function Loading() {
         </VStack>
       </Box>
 
-      <DashedDivider className="my-5 mx-5" />
+      <DashedDivider className="mx-5 my-5" />
 
       <Box className="px-5">
         <TextSkeleton size="b3" className="mb-3 w-32" />
-        <VStack gap={2}>
+        <VStack className="gap-0.5">
           {range(BENEFIT_ROW_COUNT).map((index) => (
             <ListRow
               key={index}
@@ -203,7 +203,7 @@ SubscriptionReceipt.Loading = function Loading() {
         </VStack>
       </Box>
 
-      <DashedDivider className="my-5 mx-5" />
+      <DashedDivider className="mx-5 my-5" />
 
       <Barcode className="px-5 pb-5" />
     </ScallopedContainer>
@@ -238,7 +238,7 @@ interface ReceiptRowsProps {
 
 /** 출처마다 보이는 줄과 순서가 달라 줄을 한 줄씩 적는다. 없는 줄은 값이 없을 때만 빠진다 */
 function ReceiptRows({ receipt, formatDate, planPrices }: ReceiptRowsProps) {
-  const { t } = useTranslation('subscription');
+  const { t } = useTranslation(['subscription', 'common']);
 
   return match(receipt)
     .with({ variant: 'admin' }, ({ details }) => (
@@ -342,7 +342,7 @@ function ReceiptRows({ receipt, formatDate, planPrices }: ReceiptRowsProps) {
           type="daysLeft"
           label={t('receipt.rows.daysLeft')}
           value={match(details.daysLeft.endingNotice)
-            .with('today', () => t('endingNotice.badgeToday'))
+            .with('today', () => t('common:relativeDay.today'))
             .with('tomorrow', () => t('endingNotice.badgeTomorrow'))
             .with(null, () => t('receipt.rows.days', { count: details.daysLeft.days }))
             .exhaustive()}
