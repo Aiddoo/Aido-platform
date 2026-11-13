@@ -163,6 +163,22 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return this.#db.$count(todo, and(eq(todo.userId, userId.value), eq(todo.completed, true)));
   }
 
+  async existsByUserId(userId: UserId): Promise<boolean> {
+    const row = await this.#db.query.todo.findFirst({
+      columns: { id: true },
+      where: { userId: userId.value },
+    });
+    return row != null;
+  }
+
+  async existsCompletedByUserId(userId: UserId): Promise<boolean> {
+    const row = await this.#db.query.todo.findFirst({
+      columns: { id: true },
+      where: { userId: userId.value, completed: true },
+    });
+    return row != null;
+  }
+
   async getTodayTodoStats(
     userId: UserId,
     today: Temporal.PlainDate,

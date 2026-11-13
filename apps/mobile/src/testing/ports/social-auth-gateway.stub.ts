@@ -11,6 +11,6 @@ export function createSocialAuthGatewayStub(): jest.Mocked<SocialAuthGateway> {
     signInWithApple: mockMethod<SocialAuthGateway['signInWithApple']>(async () => ({
       type: 'cancelled',
     })),
-    completeOAuthSession: jest.fn(),
+    completeOAuthSession: mockMethod<SocialAuthGateway['completeOAuthSession']>(),
   };
 }

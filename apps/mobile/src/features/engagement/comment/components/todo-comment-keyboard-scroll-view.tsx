@@ -50,17 +50,17 @@ export function TodoCommentKeyboardScrollView({
   const viewportHeight = useSharedValue(0);
   const contentHeight = useSharedValue(0);
   // 내용이 짧으면 아래 빈자리가 키보드를 받아 내, 첫 댓글을 쓸 때 할 일이 화면 밖으로 밀리지 않는다.
-  const blankSpace = useDerivedValue(() => Math.max(0, viewportHeight.value - contentHeight.value));
+  const blankSpace = useDerivedValue(() => Math.max(0, viewportHeight.get() - contentHeight.get()));
 
   return (
     <KeyboardChatScrollView
       {...props}
       onLayout={(event) => {
-        viewportHeight.value = event.nativeEvent.layout.height;
+        viewportHeight.set(event.nativeEvent.layout.height);
         onLayout?.(event);
       }}
       onContentSizeChange={(width, height) => {
-        contentHeight.value = height;
+        contentHeight.set(height);
         onContentSizeChange?.(width, height);
       }}
       blankSpace={blankSpace}

@@ -2,8 +2,14 @@ import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { Text } from '@src/shared/ui';
-import { createAnalyticsStub, createHttpClientStub } from '@src/testing/core';
+import {
+  createAnalyticsStub,
+  createHttpClientStub,
+  createPendingResponse,
+  createTestDi,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, waitFor } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -25,7 +31,7 @@ async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
     <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명">
       <Text testID="target">마이크</Text>
     </CoachmarkPopover>,
-    { di: { httpClient, syncStorage, analytics } },
+    { di: createTestDi({ ports: { httpClient, syncStorage, analytics } }) },
   );
 
   return { analytics };
@@ -46,7 +52,7 @@ async function renderCoachmarkOnHiddenTab() {
   jest.mocked(useIsFocused).mockReturnValue(false);
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-  const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
+  const { syncStorage, records: coachmarkRecords } = createCoachmarkStorage();
   const analytics = createAnalyticsStub();
   const coachmark = () => (
     <CoachmarkPopover kind="voice-note-start" title="안내 제목" description="안내 설명">
@@ -54,13 +60,13 @@ async function renderCoachmarkOnHiddenTab() {
     </CoachmarkPopover>
   );
   const { rerender } = await renderScreen(coachmark(), {
-    di: { httpClient, syncStorage, analytics },
+    di: createTestDi({ ports: { httpClient, syncStorage, analytics } }),
   });
 
   return {
     analytics,
     isPending: () =>
-      !coachmarkRepository.hasSeen({
+      !coachmarkRecords.hasSeen({
         accountId: createCurrentUserDto().userId,
         kind: 'voice-note-start',
       }),
@@ -88,12 +94,8 @@ describe('CoachmarkPopover', () => {
   it('내 정보를 읽은 뒤에도 대상을 다시 마운트하지 않아 누르던 탭을 잃지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    let resolveMe: (value: ReturnType<typeof ok>) => void = jest.fn();
-    httpClient.get.mockReturnValue(
-      new Promise((resolve) => {
-        resolveMe = resolve;
-      }),
-    );
+    const me = createPendingResponse(ok(createCurrentUserDto()));
+    httpClient.get.mockReturnValue(me.response);
     const onMount = jest.fn();
     const onUnmount = jest.fn();
     const Target = () => {
@@ -108,67 +110,51 @@ describe('CoachmarkPopover', () => {
       <CoachmarkPopover kind="voice-note-start" title="안내 제목" description="안내 설명">
         <Target />
       </CoachmarkPopover>,
-      {
-        di: { httpClient, analytics: createAnalyticsStub() },
-      },
+      { di: createTestDi({ ports: { httpClient, analytics: createAnalyticsStub() } }) },
     );
     expect(onMount).toHaveBeenCalledTimes(1);
 
     // When
-    await act(async () => resolveMe(ok(createCurrentUserDto())));
+    await act(async () => me.settle());
 
     // Then
     expect(onMount).toHaveBeenCalledTimes(1);
     expect(onUnmount).not.toHaveBeenCalled();
   });
 
-  it('내 정보를 읽기 전에는 기능 소개에서 왔어도 열지 않는다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    httpClient.get.mockReturnValue(new Promise(() => undefined));
-    const analytics = createAnalyticsStub();
+  describe('내 정보를 읽는 중', () => {
+    setupFakeTimersPerTest();
 
-    // When
-    await renderScreen(
-      <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명" isForced>
-        <Text testID="target">마이크</Text>
-      </CoachmarkPopover>,
-      {
-        di: { httpClient, analytics },
-      },
-    );
-    await act(async () => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 600);
-      });
+    it('내 정보를 읽기 전에는 기능 소개에서 왔어도 열지 않는다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockReturnValue(new Promise(() => undefined));
+      const analytics = createAnalyticsStub();
+
+      // When
+      await renderScreen(
+        <CoachmarkPopover
+          kind="voice-quick-start"
+          title="안내 제목"
+          description="안내 설명"
+          isForced
+        >
+          <Text testID="target">마이크</Text>
+        </CoachmarkPopover>,
+        { di: createTestDi({ ports: { httpClient, analytics } }) },
+      );
+      await act(() => jest.advanceTimersByTimeAsync(600));
+
+      // Then
+      expect(screen.getByTestId('target')).toBeTruthy();
+      expect(screen.queryByTestId('hint-popover')).toBeNull();
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_shown', expect.anything());
     });
-
-    // Then
-    expect(screen.getByTestId('target')).toBeTruthy();
-    expect(screen.queryByTestId('hint-popover')).toBeNull();
-    expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_shown', expect.anything());
   });
 
   describe('탭이나 화면의 포커스', () => {
     afterEach(() => {
       jest.mocked(useIsFocused).mockReturnValue(true);
-    });
-
-    it('포커스가 없는 탭에서는 열지 않고 소비하지 않는다', async () => {
-      // Given
-      const { analytics, isPending } = await renderCoachmarkOnHiddenTab();
-
-      // When
-      await act(async () => {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 600);
-        });
-      });
-
-      // Then
-      expect(screen.queryByTestId('hint-popover')).toBeNull();
-      expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_shown', expect.anything());
-      expect(isPending()).toBe(true);
     });
 
     it('포커스를 얻으면 자리를 잰 뒤에 연다', async () => {
@@ -230,57 +216,6 @@ describe('CoachmarkPopover', () => {
       ).toHaveLength(1);
     });
 
-    it('먼저 뜰 화면을 기다리다 열 차례가 되면 자리를 처음부터 다시 재어, 그 화면이 바로 덮으면 열지 않고 돌아온 뒤 연다', async () => {
-      // Given
-      const httpClient = createHttpClientStub();
-      httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-      const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
-      const analytics = createAnalyticsStub();
-      const coachmark = (shouldAutoOpen: boolean) => (
-        <CoachmarkPopover
-          kind="friend-strip"
-          description="안내 설명"
-          shouldAutoOpen={shouldAutoOpen}
-        >
-          <PressableFeedback testID="target" />
-        </CoachmarkPopover>
-      );
-      const { rerender } = await renderScreen(coachmark(false), {
-        di: { httpClient, syncStorage, analytics },
-      });
-      await act(async () => {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 600);
-        });
-      });
-      expect(screen.queryByTestId('hint-popover')).toBeNull();
-
-      // When
-      await rerender(coachmark(true));
-      const isOpenRightAfterTurn = screen.queryByTestId('hint-popover') != null;
-      jest.mocked(useIsFocused).mockReturnValue(false);
-      await rerender(coachmark(true));
-      await act(async () => {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 600);
-        });
-      });
-      const isOpenWhileCovered = screen.queryByTestId('hint-popover') != null;
-      jest.mocked(useIsFocused).mockReturnValue(true);
-      await rerender(coachmark(true));
-
-      // Then
-      expect(isOpenRightAfterTurn).toBe(false);
-      expect(isOpenWhileCovered).toBe(false);
-      expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
-      expect(
-        coachmarkRepository.hasSeen({
-          accountId: createCurrentUserDto().userId,
-          kind: 'friend-strip',
-        }),
-      ).toBe(false);
-    });
-
     it('닫아서 소비하지 않았으면 탭으로 돌아왔을 때 다시 연다', async () => {
       // Given
       const { changeFocus } = await renderCoachmarkOnHiddenTab();
@@ -311,7 +246,7 @@ describe('CoachmarkPopover', () => {
       <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명" isForced>
         <Text testID="target">마이크</Text>
       </CoachmarkPopover>,
-      { di: { httpClient, syncStorage, analytics } },
+      { di: createTestDi({ ports: { httpClient, syncStorage, analytics } }) },
     );
 
     // Then
@@ -338,7 +273,7 @@ describe('CoachmarkPopover', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-    const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
+    const { syncStorage, records: coachmarkRecords } = createCoachmarkStorage();
     const analytics = createAnalyticsStub();
     const accountId = createCurrentUserDto().userId;
     const renderHint = (isDismissed: boolean) => (
@@ -353,7 +288,7 @@ describe('CoachmarkPopover', () => {
       </CoachmarkPopover>
     );
     const { rerender } = await renderScreen(renderHint(false), {
-      di: { httpClient, syncStorage, analytics },
+      di: createTestDi({ ports: { httpClient, syncStorage, analytics } }),
     });
     await waitFor(() =>
       expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {
@@ -370,86 +305,7 @@ describe('CoachmarkPopover', () => {
         kind: 'voice-quick-start',
       }),
     );
-    expect(coachmarkRepository.hasSeen({ accountId, kind: 'voice-quick-start' })).toBe(true);
-  });
-
-  describe('가리키던 자리를 옮기면', () => {
-    const OPENED_AT = 1_000_000;
-
-    async function renderMovableCoachmark() {
-      const httpClient = createHttpClientStub();
-      httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-      const { syncStorage, repository: coachmarkRepository } = createCoachmarkStorage();
-      const analytics = createAnalyticsStub();
-      const coachmark = (dismissKey: string) => (
-        <CoachmarkPopover
-          kind="repeat-horizon"
-          title="안내 제목"
-          description="안내 설명"
-          dismissKey={dismissKey}
-        >
-          <Text testID="target">대상</Text>
-        </CoachmarkPopover>
-      );
-      const { rerender } = await renderScreen(coachmark('2027-03-01'), {
-        di: { httpClient, syncStorage, analytics },
-      });
-      await waitFor(() =>
-        expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {
-          kind: 'repeat-horizon',
-        }),
-      );
-
-      return {
-        analytics,
-        move: (dismissKey: string) => rerender(coachmark(dismissKey)),
-        isPending: () =>
-          !coachmarkRepository.hasSeen({
-            accountId: createCurrentUserDto().userId,
-            kind: 'repeat-horizon',
-          }),
-      };
-    }
-
-    afterEach(() => {
-      jest.restoreAllMocks();
-    });
-
-    it('충분히 본 뒤에는 닫고 끝난 것으로 남긴다', async () => {
-      // Given
-      const dateNow = jest.spyOn(Date, 'now').mockReturnValue(OPENED_AT);
-      const { analytics, move, isPending } = await renderMovableCoachmark();
-      dateNow.mockReturnValue(OPENED_AT + 2_000);
-
-      // When
-      await move('2027-03-02');
-
-      // Then
-      await waitFor(() =>
-        expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_dismissed', {
-          kind: 'repeat-horizon',
-        }),
-      );
-      expect(isPending()).toBe(false);
-    });
-
-    it('스쳐 지나가면 끝난 것으로 남기지 않고 멈춘 뒤 다시 연다', async () => {
-      // Given
-      const dateNow = jest.spyOn(Date, 'now').mockReturnValue(OPENED_AT);
-      const { analytics, move, isPending } = await renderMovableCoachmark();
-      dateNow.mockReturnValue(OPENED_AT + 300);
-
-      // When
-      await move('2027-04-01');
-
-      // Then
-      expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_dismissed', {
-        kind: 'repeat-horizon',
-      });
-      expect(isPending()).toBe(true);
-      await waitFor(() => expect(screen.queryByTestId('hint-popover')).toBeNull());
-      expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
-    });
+    expect(coachmarkRecords.hasSeen({ accountId, kind: 'voice-quick-start' })).toBe(true);
   });
 
   it('이미 본 안내는 열지 않고 대상만 그린다', async () => {

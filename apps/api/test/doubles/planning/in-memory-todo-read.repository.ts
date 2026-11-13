@@ -94,6 +94,14 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
       (record) => record.userId === userId.value && record.completed,
     ).length;
   }
+  async existsByUserId(userId: UserId): Promise<boolean> {
+    return [...this.records.values()].some((record) => record.userId === userId.value);
+  }
+  async existsCompletedByUserId(userId: UserId): Promise<boolean> {
+    return [...this.records.values()].some(
+      (record) => record.userId === userId.value && record.completed,
+    );
+  }
   async getTodayTodoStats(
     _userId: UserId,
     _today: Temporal.PlainDate,

@@ -1,6 +1,8 @@
 import { CATEGORY_TODO_HANDLINGS, type CategoryTodoHandling } from '@aido/api/vocabulary';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -13,15 +15,13 @@ import {
   ConfirmDialog,
   H4,
   HStack,
-  INQUIRY_SHEET_EXIT,
   ListRow,
-  ModalBottomSheet,
   QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   Text,
   TextSkeleton,
-  useOverlay,
+  useOpenSheet,
   useSheetRoute,
   VStack,
   WordWrapText,
@@ -32,12 +32,15 @@ import { Card, PressableFeedback, RadioGroup, Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, Suspense, useEffect, useState } from 'react';
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
-import { TodoCategoryDeletionPolicy, TodoCategoryPolicy } from '../domains/todo-category.model';
-import type {
-  TodoCategoryDeletionPreview,
-  TodoCategoryWithCount,
+import {
+  TodoCategoryDeletionPolicy,
+  type TodoCategoryDeletionPreview,
+} from '../domains/todo-category-deletion.model';
+import {
+  type TodoCategory,
+  TodoCategoryPolicy,
+  type TodoCategoryWithCount,
 } from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
 import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
@@ -46,7 +49,7 @@ import {
   useGetTodoCategoryDeletionPreviewQueryOptions,
 } from '../queries/todo-category.queries';
 import { toTodoCountBucket } from '../utils/todo-category-analytics';
-import { CategorySelectInput } from './category-select-input';
+import { CategoryPickForm } from './category-pick-form';
 
 const AnimatedCard = Animated.createAnimatedComponent(Card);
 
@@ -87,7 +90,7 @@ export function CategoryDeleteBottomSheet() {
         category={category}
         preview={preview}
         isOpen={sheet.isOpen}
-        onOpenChange={sheet.onOpenChange}
+        onFinish={() => sheet.exit()}
       />
     );
   }
@@ -139,83 +142,50 @@ CategoryDeleteBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFa
 
   return (
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorFallback reset={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+      <QueryErrorFallback
+        reset={reset}
+        onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
+      />
     </BottomSheet>
   );
 };
 
 interface CategoryDeleteConfirmDialogProps extends Pick<
   ComponentProps<typeof ConfirmDialog>,
-  'isOpen' | 'onOpenChange'
+  'isOpen' | 'onFinish'
 > {
   category: TodoCategoryWithCount;
   preview: TodoCategoryDeletionPreview;
 }
 
-/** 지우는 동안 다이얼로그를 그대로 두고 삭제 버튼만 불러오는 중으로 바꾼다. 실패하면 mutation이 토스트로 한 번 알리고 다이얼로그는 남는다 */
+/** 시트 없이 확인 다이얼로그만 그린다. 지우는 동안 다이얼로그를 남기고, 실패하면 mutation이 토스트로 한 번 알린 뒤 다시 누를 수 있다 */
 function CategoryDeleteConfirmDialog({
   category,
   preview,
-  isOpen,
-  onOpenChange,
+  ...dialogProps
 }: CategoryDeleteConfirmDialogProps) {
   const { t } = useTranslation(['todo', 'common']);
   const deleteCategory = useMutation(useDeleteTodoCategoryMutationOptions());
-  const isDeletePending = deleteCategory.isPending;
   const deletionRequest = TodoCategoryDeletionPolicy.toDeletionRequest(preview, null);
-
-  // 지우는 중에 바깥 탭·뒤로 가기로 닫으면 결과가 토스트로만 남아 끝날 때까지 닫지 않는다
-  const handleOpenChange = (nextIsOpen: boolean) => {
-    if (!nextIsOpen && isDeletePending) {
-      return;
-    }
-    onOpenChange(nextIsOpen);
-  };
-
-  const handleDelete = () => {
-    if (deletionRequest == null || isDeletePending) {
-      return;
-    }
-    deleteCategory.mutate(
-      { id: category.id, deletion: deletionRequest },
-      { onSuccess: () => onOpenChange(false) },
-    );
-  };
 
   return (
     <ConfirmDialog
-      isOpen={isOpen}
-      onOpenChange={handleOpenChange}
-      title={
-        <ConfirmDialog.Title>
-          {t('categoryDelete.title', { name: category.name })}
-        </ConfirmDialog.Title>
-      }
+      {...dialogProps}
+      title={t('categoryDelete.title', { name: category.name })}
       description={
-        <ConfirmDialog.Description>
-          {TodoCategoryDeletionPolicy.canDelete(preview)
-            ? t('categoryDelete.description')
-            : t('categoryDelete.lastCategory')}
-        </ConfirmDialog.Description>
+        TodoCategoryDeletionPolicy.canDelete(preview)
+          ? t('categoryDelete.description')
+          : t('categoryDelete.lastCategory')
       }
-      cancelButton={
-        <ConfirmDialog.CancelButton
-          isDisabled={isDeletePending}
-          onPress={() => onOpenChange(false)}
-        >
-          {t('common:actions.cancel')}
-        </ConfirmDialog.CancelButton>
-      }
-      confirmButton={
-        <ConfirmDialog.ConfirmButton
-          testID="category-delete-confirm"
-          color="danger"
-          isDisabled={deletionRequest == null}
-          isLoading={isDeletePending}
-          onPress={handleDelete}
-        >
-          {t('common:actions.delete')}
-        </ConfirmDialog.ConfirmButton>
+      cancelLabel={t('common:actions.cancel')}
+      confirmLabel={t('common:actions.delete')}
+      confirmColor="danger"
+      confirmTestID="category-delete-confirm"
+      isConfirmDisabled={deletionRequest == null}
+      onConfirm={
+        deletionRequest == null
+          ? undefined
+          : () => deleteCategory.mutateAsync({ id: category.id, deletion: deletionRequest })
       }
     />
   );
@@ -245,12 +215,9 @@ function TodoHandlingBottomSheet({
   const isDeletePending = deleteCategory.isPending;
   const [todoHandling, setTodoHandling] = useState<CategoryTodoHandling>('move');
   const [pickedMoveTargetCategoryId, setPickedMoveTargetCategoryId] = useState<number | null>(null);
-  // 서버 id가 없는 임시 행으로는 옮길 수 없다
   const moveTarget = TodoCategoryPolicy.findMoveTarget(
     category,
-    categoriesResult.categories.filter(
-      (candidate) => !TodoCategoryPolicy.isOptimisticCategory(candidate),
-    ),
+    categoriesResult.categories,
     pickedMoveTargetCategoryId,
   );
   const deletionRequest = TodoCategoryDeletionPolicy.toDeletionRequest(preview, {
@@ -261,12 +228,10 @@ function TodoHandlingBottomSheet({
   const todoCountBucket = toTodoCountBucket(preview.todoCount);
   const hasSeries = preview.activeSeriesCount > 0;
 
-  useEffect(() => {
-    trackEvent('category_delete_sheet_viewed', {
-      todo_count_bucket: todoCountBucket,
-      has_series: hasSeries,
-    });
-  }, [trackEvent, todoCountBucket, hasSeries]);
+  useTrackView('category_delete_sheet_viewed', {
+    key: String(category.id),
+    params: { todo_count_bucket: todoCountBucket, has_series: hasSeries },
+  });
 
   // 닫힘 애니메이션이 끝난 뒤에 온다. 지우는 중이거나 지운 뒤 닫힌 것은 취소가 아니다
   const handleOpenChange = (nextIsOpen: boolean) => {
@@ -357,7 +322,7 @@ function TodoHandlingBottomSheet({
             />
             {moveTarget != null && (
               <MoveTargetRow
-                deletingCategoryId={category.id}
+                deletingCategory={category}
                 moveTargetCategoryId={moveTarget.id}
                 onMoveTargetChange={handleMoveTargetChange}
                 isDisabled={isDeletePending}
@@ -432,10 +397,8 @@ function TodoHandlingCard({
   className,
   ...props
 }: TodoHandlingCardProps) {
-  const { color: selectedBorderColor } = useResolveClassNames(
-    isDanger ? 'text-error' : 'text-main',
-  );
-  const { color: idleBorderColor } = useResolveClassNames('text-gray-2');
+  const selectedBorderColor = useResolvedColor(isDanger ? 'text-error' : 'text-main');
+  const idleBorderColor = useResolvedColor('text-gray-2');
 
   return (
     <AnimatedCard
@@ -444,7 +407,7 @@ function TodoHandlingCard({
       style={{
         borderColor: isSelected ? selectedBorderColor : idleBorderColor,
         transitionProperty: 'borderColor',
-        transitionDuration: ANIMATION.duration.fast,
+        transitionDuration: ANIMATION.durationMs.fast,
         transitionTimingFunction: ANIMATION.easing.easeOut,
       }}
     />
@@ -496,21 +459,22 @@ interface MoveTargetRowProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
   'children' | 'onPress'
 > {
-  deletingCategoryId: number;
+  deletingCategory: TodoCategory;
   moveTargetCategoryId: number;
   onMoveTargetChange: (categoryId: number) => void;
 }
 
 /** 할 일 작성기의 카테고리 고르기처럼 시트 위 시트에서 바꾼다 */
 function MoveTargetRow({
-  deletingCategoryId,
+  deletingCategory,
   moveTargetCategoryId,
   onMoveTargetChange,
   className,
   ...props
 }: MoveTargetRowProps) {
   const { t } = useTranslation(['todo', 'common']);
-  const overlay = useOverlay();
+  const fontScaledSize = useFontScaledSize();
+  const openSheet = useOpenSheet();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const moveTarget = TodoCategoryPolicy.findCategory(
     categoriesResult.categories,
@@ -521,24 +485,22 @@ function MoveTargetRow({
     return null;
   }
 
-  const openMoveTargetPicker = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close()} onExit={unmount}>
-        <QueryErrorBoundary>
-          <Suspense fallback={<CategorySelectInput.Loading />}>
-            <CategorySelectInput
-              defaultValue={moveTargetCategoryId}
-              excludedCategoryId={deletingCategoryId}
-              submitLabel={t('common:actions.confirm')}
-              onSubmit={(categoryId) => {
-                onMoveTargetChange(categoryId);
-                close();
-              }}
-            />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ModalBottomSheet>
+  const openMoveTargetPicker = async () => {
+    const categoryId = await openSheet<number>((close) => (
+      <QueryErrorBoundary>
+        <Suspense fallback={<CategoryPickForm.Loading />}>
+          <CategoryPickForm
+            defaultValue={moveTargetCategoryId}
+            filters={(candidate) => TodoCategoryPolicy.isMoveTarget(candidate, deletingCategory)}
+            submitLabel={t('common:actions.confirm')}
+            onSubmit={close}
+          />
+        </Suspense>
+      </QueryErrorBoundary>
     ));
+    if (categoryId != null) {
+      onMoveTargetChange(categoryId);
+    }
   };
 
   return (
@@ -558,7 +520,13 @@ function MoveTargetRow({
             {moveTarget.name}
           </Text>
         }
-        right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-6" />}
+        right={
+          <ArrowRightIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-6"
+          />
+        }
         horizontalPadding="medium"
         className="rounded-xl bg-gray-1 dark:bg-gray-3"
       />

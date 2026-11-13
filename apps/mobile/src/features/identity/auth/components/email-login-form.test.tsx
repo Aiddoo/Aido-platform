@@ -1,12 +1,13 @@
 import '@src/shared/i18n/init';
-import { err } from '@src/core/errors/result';
+import { err, ok } from '@src/core/errors/result';
 import { H3, Spacing } from '@src/shared/ui';
+import { createPendingResponse } from '@src/testing/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { TextInput } from 'react-native';
 
 import { createAuthSession } from '../__tests__/auth-session.test-utils';
-import { createAuthApiError } from '../__tests__/auth.fixtures';
+import { createAuthApiError, createAuthTokensDto } from '../__tests__/auth.fixtures';
 import { EmailLoginForm } from './email-login-form';
 
 async function renderEmailLoginForm() {
@@ -90,5 +91,24 @@ describe('이메일 로그인 폼', () => {
         params: { email: 'user@aido.app' },
       }),
     );
+  });
+
+  it('로그인 버튼을 연달아 눌러도 요청은 한 번이다', async () => {
+    // Given
+    const session = await renderEmailLoginForm();
+    const pending = createPendingResponse(ok(createAuthTokensDto()));
+    session.publicHttp.post.mockReturnValue(pending.response);
+    await typeCredentials('user@aido.app', 'password-1');
+    const submit = screen.getByTestId('email-login-submit');
+
+    // When
+    const firstPress = fireEvent.press(submit);
+    await waitFor(() => expect(submit).toBeDisabled());
+    await fireEvent.press(submit);
+    pending.settle();
+    await firstPress;
+
+    // Then
+    expect(session.publicHttp.post).toHaveBeenCalledTimes(1);
   });
 });

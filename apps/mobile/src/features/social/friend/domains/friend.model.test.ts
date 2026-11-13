@@ -1,7 +1,7 @@
 import { userTagParamSchema } from '@aido/api';
 
 import { createSearchedUser } from '../__tests__/friend.fixtures';
-import { FriendPolicy, isValidSearchQuery, isValidUserTag } from './friend.model';
+import { FriendPolicy, getFriendLimit, isValidSearchQuery, isValidUserTag } from './friend.model';
 
 describe('isValidSearchQuery', () => {
   it.each([
@@ -73,7 +73,7 @@ describe('getRequestState', () => {
 describe('getFriendLimit', () => {
   it('서버가 알려 준 한도를 먼저 반환한다', () => {
     // When
-    const limit = FriendPolicy.getFriendLimit({ serverLimit: 6, knownLimit: 5 });
+    const limit = getFriendLimit({ serverLimit: 6, knownLimit: 5 });
 
     // Then
     expect(limit).toBe(6);
@@ -81,7 +81,7 @@ describe('getFriendLimit', () => {
 
   it('서버가 알려 준 한도가 0이어도 그 값을 반환한다', () => {
     // When
-    const limit = FriendPolicy.getFriendLimit({ serverLimit: 0, knownLimit: 5 });
+    const limit = getFriendLimit({ serverLimit: 0, knownLimit: 5 });
 
     // Then
     expect(limit).toBe(0);
@@ -93,7 +93,7 @@ describe('getFriendLimit', () => {
     const input = { serverLimit: null, knownLimit: 6 };
 
     // When
-    const limit = FriendPolicy.getFriendLimit(input);
+    const limit = getFriendLimit(input);
 
     // Then
     expect(limit).toBe(6);
@@ -104,7 +104,7 @@ describe('getFriendLimit', () => {
     const input = { serverLimit: null, knownLimit: null };
 
     // When
-    const limit = FriendPolicy.getFriendLimit(input);
+    const limit = getFriendLimit(input);
 
     // Then
     // PREMIUM_FEATURES.FRIEND.free

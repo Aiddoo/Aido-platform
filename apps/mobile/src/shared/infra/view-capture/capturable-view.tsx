@@ -9,7 +9,11 @@ export function CapturableView({
 }: PropsWithChildren<{ ref: Ref<ViewCaptureHandle> }>) {
   const viewShotRef = useRef<ViewShotRef>(null);
 
-  useImperativeHandle(ref, () => ({ capture: async () => viewShotRef.current?.capture?.() }), []);
+  useImperativeHandle(
+    ref,
+    () => ({ capture: async () => (await viewShotRef.current?.capture?.()) ?? null }),
+    [],
+  );
 
   return (
     <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>

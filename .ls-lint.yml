@@ -146,6 +146,152 @@ ls:
     .*.*.tsx: regex:[^\s\S]
     .*.*.*.ts: regex:[^\s\S]
 
+  # domains/는 모델과 기능 오류만 둔다
+  apps/mobile/src/features/**/domains:
+    .model.ts: kebab-case
+    .model.test.ts: kebab-case
+    .error.ts: kebab-case
+    .error.test.ts: kebab-case
+    .flow.test.ts: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  # constants/는 일반 상수, 분석 이벤트, 로그 키, 라벨 키 표만 둔다
+  apps/mobile/src/features/**/constants:
+    .constants.ts: kebab-case
+    .constants.test.ts: kebab-case
+    .events.ts: kebab-case
+    .events.test.ts: kebab-case
+    .ts: regex:[a-z0-9-]+-(?:log-events|labels)
+    .test.ts: regex:[a-z0-9-]+-(?:log-events|labels)
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  # utils/는 표시 값(.view-model), 좌표(.geometry), 초안(-draft), 분석 값(-analytics)만 둔다.
+  # wait-for-settled-screen은 structure.md의 하나뿐인 예외(store-review)다
+  apps/mobile/src/features/**/utils:
+    .view-model.ts: kebab-case
+    .view-model.test.ts: kebab-case
+    .view-model.test.tsx: kebab-case
+    .geometry.ts: kebab-case
+    .geometry.test.ts: kebab-case
+    .ts: regex:(?:[a-z0-9-]+-(?:draft|analytics)|wait-for-settled-screen)
+    .test.ts: regex:(?:[a-z0-9-]+-(?:draft|analytics)|wait-for-settled-screen)
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  # 모바일 역할 폴더의 파일은 그 역할의 접미사를 단다. 테스트는 원본 이름 뒤 .test, 여러 모듈 흐름은 .flow.test다.
+  # 이름 있는 확장자 규칙이 와일드카드보다 먼저라 남은 다중 점 이름(`todo.service.ts`)은 `.*.ts`가 막는다
+  apps/mobile/src/features/**/apis:
+    .api.ts: kebab-case
+    .api.test.ts: kebab-case
+    .mapper.ts: kebab-case
+    .mapper.test.ts: kebab-case
+    .flow.test.ts: kebab-case
+    .flow.test.tsx: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/services:
+    .service.ts: kebab-case
+    .service.test.ts: kebab-case
+    .session.ts: kebab-case
+    .session.test.ts: kebab-case
+    .flow.test.ts: kebab-case
+    .flow.test.tsx: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/repositories:
+    .repository.ts: kebab-case
+    .repository.test.ts: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/stores:
+    .store.ts: kebab-case
+    .store.test.ts: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/queries:
+    .ts: regex:[a-z0-9-]+-(?:query-keys|mutation-keys|cache)
+    .test.ts: regex:[a-z0-9-]+-(?:query-keys|mutation-keys|cache)
+    .test.tsx: regex:[a-z0-9-]+-cache
+    .queries.ts: kebab-case
+    .queries.test.ts: kebab-case
+    .queries.test.tsx: kebab-case
+    .mutations.ts: kebab-case
+    .mutations.test.ts: kebab-case
+    .mutations.test.tsx: kebab-case
+    .flow.test.ts: kebab-case
+    .flow.test.tsx: kebab-case
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  apps/mobile/src/features/**/hooks:
+    .ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .tsx: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .test.ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .test.tsx: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .android.ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .android.test.ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .ios.ts: regex:use-[a-z0-9]+(?:-[a-z0-9]+)*
+    .flow.test.tsx: kebab-case
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+
+  # shared/ui의 공개 입구는 shared/ui/index.ts 하나다. 부품 폴더에는 barrel(index.ts)을 두지 않고 실제 파일을 import한다
+  apps/mobile/src/shared/ui/*:
+    .ts: regex:(?:.{0,4}|.{6,}|[^i]....|i[^n]...|in[^d]..|ind[^e].|inde[^x])
+    .tsx: regex:(?:.{0,4}|.{6,}|[^i]....|i[^n]...|in[^d]..|ind[^e].|inde[^x])
+
+  # app/에는 route만 둔다. 화면 테스트는 src/features/{feature}/__tests__/{route}-screen.test.tsx다
+  apps/mobile/app:
+    .test.ts: regex:[^\s\S]
+    .test.tsx: regex:[^\s\S]
+    .*.test.ts: regex:[^\s\S]
+    .*.test.tsx: regex:[^\s\S]
+
 ignore:
   # vitest가 spec 옆에 만드는 스냅숏 폴더
   - apps/api/src/modules/*/*/**/__snapshots__

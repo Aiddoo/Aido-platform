@@ -1,7 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
 import { REVOKE_REASON, SECURITY_EVENT, type UserRole } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -12,6 +10,12 @@ import type { AuthSession } from "../../domain/auth-session.aggregate.js";
 import { AUTH_DEFAULTS, TOKEN_REUSE_GRACE_PERIOD_MS } from "../../domain/auth.constants.js";
 import { SessionId } from "../../domain/session-id.vo.js";
 import { AuthAlerts } from "../auth.alerts.js";
+import {
+  refreshTokenReused,
+  sessionExpired,
+  sessionNotFound,
+  sessionRevoked,
+} from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthTokenIssuerPort } from "../ports/auth-crypto.port.js";
@@ -59,7 +63,7 @@ export class RefreshTokensUseCase {
   async execute(input: RefreshTokensCommand): Promise<RefreshTokensResult> {
     const { sessionId } = input.verifiedPayload;
     if (!sessionId) {
-      throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
+      throw sessionNotFound();
     }
 
     const refreshTokenHash = this.#dependencies.tokenService.hashRefreshToken(input.refreshToken);
@@ -73,7 +77,7 @@ export class RefreshTokensUseCase {
       SessionId.reconstitute(sessionId),
     );
     if (authSession == null || !authSession.wasPreviouslyIssued(refreshTokenHash)) {
-      throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
+      throw sessionNotFound();
     }
 
     if (
@@ -116,7 +120,7 @@ export class RefreshTokensUseCase {
       ...AuthAlerts.REFRESH_TOKEN_REUSED,
       details: { revokedCount: revokedSessionIds.length },
     });
-    throw new ApplicationException(ErrorCode.SESSION_0704, { tokenFamily: undefined });
+    throw refreshTokenReused();
   }
 
   async #rotateSession(
@@ -127,18 +131,15 @@ export class RefreshTokensUseCase {
     const now = this.#dependencies.clock.now();
     const validity = session.validityAt(now);
     if (validity === "revoked") {
-      throw new ApplicationException(ErrorCode.SESSION_0703, {
-        sessionId: undefined,
-        reason: undefined,
-      });
+      throw sessionRevoked();
     }
     if (validity === "expired") {
-      throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId: undefined });
+      throw sessionExpired();
     }
 
     const { userId, email, sessionId, role: claimRole } = input.verifiedPayload;
     if (!session.isOwnedBy(UserId.reconstitute(userId)) || session.id.value !== sessionId) {
-      throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
+      throw sessionNotFound();
     }
 
     const role = await this.#readCurrentRole(session, claimRole);
@@ -168,7 +169,7 @@ export class RefreshTokensUseCase {
         userId,
         sessionId,
       });
-      throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId: undefined });
+      throw sessionExpired();
     }
 
     await this.#dependencies.cacheService.invalidateSession(session.id);

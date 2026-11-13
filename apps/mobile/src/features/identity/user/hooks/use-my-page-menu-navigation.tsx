@@ -1,3 +1,5 @@
+import { useMyPageDetailRootStore } from '@src/bootstrap/providers/di-context';
+import { createEventChannel } from '@src/core/events/event-channel';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { usePaneSizeClass } from '@src/shared/ui';
 import { type Href, router, usePathname } from 'expo-router';
@@ -11,17 +13,14 @@ import {
 } from 'react';
 import { Keyboard } from 'react-native';
 
-import {
-  clearMyPageDetailRootRequest,
-  requestMyPageDetailRoot,
-} from '../utils/my-page-detail-options';
-import { isMyPageMenuItemSelected } from '../utils/my-page-menu-navigation';
+import { isMyPageMenuItemSelected } from '../utils/my-page-menu.view-model';
 
 export type MyPageMenuPathname = Extract<Href, string>;
 
+// 경로 원천은 router다. 행마다 usePathname을 구독하면 이동마다 메뉴 행이 모두 다시 그려져, 칸이 한 번 받아 선택이 바뀐 행만 알린다
 function createCurrentPathnameStore(initialPathname: string) {
   let pathname = initialPathname;
-  const listeners = new Set<() => void>();
+  const changed = createEventChannel('my-page-menu-pathname');
 
   return {
     get: () => pathname,
@@ -30,14 +29,9 @@ function createCurrentPathnameStore(initialPathname: string) {
         return;
       }
       pathname = nextPathname;
-      listeners.forEach((listener) => listener());
+      changed.emit();
     },
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe: (listener: () => void) => changed.subscribe(listener),
   };
 }
 
@@ -52,12 +46,13 @@ const MyPageMenuNavigationContext = createContext<MyPageMenuNavigation | null>(n
 export function MyPageMenuNavigationProvider({ children }: PropsWithChildren) {
   const pathname = usePathname();
   const isCompact = usePaneSizeClass() === 'compact';
+  const detailRootStore = useMyPageDetailRootStore();
   const [currentPathname] = useState(() => createCurrentPathnameStore(pathname));
 
   useEffect(() => {
     currentPathname.set(pathname);
-    clearMyPageDetailRootRequest();
-  }, [currentPathname, pathname]);
+    detailRootStore.clear();
+  }, [currentPathname, detailRootStore, pathname]);
 
   const navigate = useSingleTap((target: Href) => {
     if (pathname === (typeof target === 'string' ? target : target.pathname)) {
@@ -67,7 +62,7 @@ export function MyPageMenuNavigationProvider({ children }: PropsWithChildren) {
     Keyboard.dismiss();
     // 넓은 화면은 상세를 고른 메뉴 하나로 바꾼다. 그 안에서 더 들어간 화면이 뒤로 가기에 남지 않게 먼저 걷어 낸다
     if (!isCompact && router.canDismiss()) {
-      requestMyPageDetailRoot(typeof target === 'string' ? target : target.pathname);
+      detailRootStore.request(typeof target === 'string' ? target : target.pathname);
       router.dismissAll();
     }
     router.push(target);

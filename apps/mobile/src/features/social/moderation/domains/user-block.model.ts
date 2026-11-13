@@ -1,12 +1,9 @@
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
-export const blockedUserSchema = z.object({
-  id: z.string(),
-  userTag: z.string(),
-  name: z.string().nullable(),
-  profileImage: z.string().nullable(),
+export const blockedUserSchema = userSummarySchema.extend({
   blockedAt: instantSchema,
 });
 export type BlockedUser = z.infer<typeof blockedUserSchema>;

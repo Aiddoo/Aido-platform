@@ -1,9 +1,9 @@
-import type { TodoExistence } from '@src/features/planning/todo/domains/todo.model';
+import type { TodoOverview } from '@src/features/planning/todo/domains/todo.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-const activationProgressSchema = z.object({
+export const activationProgressSchema = z.object({
   todoCreatedAt: instantSchema.nullable(),
   activatedAt: instantSchema.nullable(),
 });
@@ -49,13 +49,13 @@ function shouldOfferChecklist(
 // 재설치·다른 기기·웹에서 만든 할 일도 세도록 서버 기록과 기기 기록 중 하나라도 있으면 끝이다(서버를 못 읽었으면 기기만 본다)
 function getChecklistSteps(
   progress: ActivationProgress,
-  todoExistence: TodoExistence | undefined,
+  todoOverview: Pick<TodoOverview, 'hasTodo' | 'hasCompletedTodo'> | undefined,
 ): ActivationChecklistSteps {
   const hasCompletedTodo =
-    progress.activatedAt != null || (todoExistence?.hasCompletedTodo ?? false);
+    progress.activatedAt != null || (todoOverview?.hasCompletedTodo ?? false);
   return {
     hasCreatedTodo:
-      hasCompletedTodo || progress.todoCreatedAt != null || (todoExistence?.hasTodo ?? false),
+      hasCompletedTodo || progress.todoCreatedAt != null || (todoOverview?.hasTodo ?? false),
     hasCompletedTodo,
   };
 }
@@ -69,10 +69,27 @@ function getDaysSinceSignup(user: ActivationUser, now: Instant): number {
   return calculateElapsedDays(toEpochMs(user.createdAt), toEpochMs(now));
 }
 
+/** 처음 만든 순간만 남긴다 */
+function withTodoCreated(progress: ActivationProgress, at: Instant): ActivationProgress {
+  return progress.todoCreatedAt == null ? { ...progress, todoCreatedAt: at } : progress;
+}
+
+/** 이 기기에서 할 일을 만든 뒤 처음 끝낸 순간이 활성화다. 계정마다 한 번만 센다 */
+function canActivate(progress: ActivationProgress): boolean {
+  return progress.todoCreatedAt != null && progress.activatedAt == null;
+}
+
+function withActivated(progress: ActivationProgress, at: Instant): ActivationProgress {
+  return { ...progress, activatedAt: at };
+}
+
 export const ActivationPolicy = {
   isInChecklistWindow,
   getChecklistSteps,
   getDaysSinceSignup,
   shouldOfferChecklist,
   hasFinishedRequiredSteps,
+  withTodoCreated,
+  canActivate,
+  withActivated,
 } as const;

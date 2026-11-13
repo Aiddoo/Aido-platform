@@ -1,10 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { GrantableFeature } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { invalidGrantQuantity } from "./entitlements.errors.js";
 import { FeatureGrantId } from "./feature-grant-id.vo.js";
 
 export interface FeatureGrantPrimitives {
@@ -39,11 +38,7 @@ export class FeatureGrant extends AggregateRoot<FeatureGrantId, FeatureGrantProp
     readonly now: Temporal.Instant;
   }): FeatureGrant {
     if (!Number.isSafeInteger(params.quantity) || params.quantity <= 0) {
-      throw new DomainException(ErrorCode.SYS_0001, {
-        reason: "feature grant quantity must be a positive integer",
-        feature: params.feature,
-        quantity: params.quantity,
-      });
+      throw invalidGrantQuantity(params.feature, params.quantity);
     }
     return new FeatureGrant(params.id, {
       userId: params.userId,

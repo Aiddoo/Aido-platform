@@ -1,11 +1,11 @@
 import { PASSWORD_RULES } from '@aido/api/vocabulary';
 
-import { PasswordPolicy } from './password.model';
+import { hasLetter, hasMinLength, hasNumber } from './password.model';
 
 describe('hasLetter', () => {
   it.each(['a', 'Z', 'Password1'])('"%s"는 영문을 포함하므로 true를 반환한다', (password) => {
     // When
-    const result = PasswordPolicy.hasLetter(password);
+    const result = hasLetter(password);
 
     // Then
     expect(result).toBe(true);
@@ -13,7 +13,7 @@ describe('hasLetter', () => {
 
   it.each(['123456', '!@#$%', ''])('"%s"는 영문이 없으므로 false를 반환한다', (password) => {
     // When
-    const result = PasswordPolicy.hasLetter(password);
+    const result = hasLetter(password);
 
     // Then
     expect(result).toBe(false);
@@ -23,7 +23,7 @@ describe('hasLetter', () => {
 describe('hasNumber', () => {
   it.each(['1', 'abc1', 'Password1'])('"%s"는 숫자를 포함하므로 true를 반환한다', (password) => {
     // When
-    const result = PasswordPolicy.hasNumber(password);
+    const result = hasNumber(password);
 
     // Then
     expect(result).toBe(true);
@@ -31,7 +31,7 @@ describe('hasNumber', () => {
 
   it.each(['abc', '!@#$%', ''])('"%s"는 숫자가 없으므로 false를 반환한다', (password) => {
     // When
-    const result = PasswordPolicy.hasNumber(password);
+    const result = hasNumber(password);
 
     // Then
     expect(result).toBe(false);
@@ -46,7 +46,7 @@ describe('hasMinLength', () => {
       const password = '1'.repeat(length);
 
       // When
-      const result = PasswordPolicy.hasMinLength(password);
+      const result = hasMinLength(password);
 
       // Then
       expect(result).toBe(true);
@@ -60,7 +60,7 @@ describe('hasMinLength', () => {
       const password = '1'.repeat(length);
 
       // When
-      const result = PasswordPolicy.hasMinLength(password);
+      const result = hasMinLength(password);
 
       // Then
       expect(result).toBe(false);

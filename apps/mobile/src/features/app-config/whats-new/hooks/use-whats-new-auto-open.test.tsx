@@ -8,12 +8,13 @@ import {
   createMemoryObservableSyncStorage,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
-import { createWhatsNewRepository } from '../apis/whats-new.repository';
+import { createWhatsNewRepository } from '../repositories/whats-new.repository';
 import { useWhatsNewAutoOpen } from './use-whats-new-auto-open';
 
 const USER_ID = 'user-1';
@@ -40,12 +41,10 @@ async function renderAutoOpen({
   );
 
   const hook = await renderScreenHook(() => useWhatsNewAutoOpen({ isOnboardingSettled: true }), {
-    queryClient,
-    di: {
-      authSessionStore: createAuthSessionStoreStub('authenticated'),
-      jsonFetcher,
-      syncStorage,
-    },
+    di: createTestDi({
+      ports: { jsonFetcher, syncStorage, queryClient },
+      seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+    }),
   });
 
   return { ...hook, repository: createWhatsNewRepository(syncStorage) };

@@ -3,9 +3,16 @@ import { type Instant } from '@src/shared/date/instant';
 import { splitIntoSentences } from '@src/shared/utils/split-into-sentences';
 import { clamp, isEqual, range, sumBy } from 'es-toolkit';
 
-import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
-import { type VoiceNote, type VoiceNoteSentence, VoiceNotePolicy } from './voice-note.model';
+import {
+  type VoiceNote,
+  type VoiceNoteSentence,
+  VoiceNotePolicy,
+  createVoiceNote,
+} from './voice-note.model';
 import { type VoiceTranscript, VoiceTranscriptPolicy } from './voice-transcript.model';
+
+/** 자막 한 카드의 최대 글자 수. 문장부호가 없어도 카드가 끝없이 길어지지 않게 끊는다 */
+const VOICE_NOTE_SENTENCE_MAX_LENGTH = 120;
 
 /** 아직 인식 중인 꼬리를 문장으로 나눈 것. 시작 시각은 그 문장을 처음 본 때다 */
 interface ProvisionalSentence {
@@ -279,7 +286,7 @@ export function createTranscribedVoiceNote({
   );
 
   return VoiceNotePolicy.withSentences(
-    VoiceNotePolicy.createVoiceNote({ draftId, locale, createdAt }),
+    createVoiceNote({ draftId, locale, createdAt }),
     toTimedSentences(pieces, { fromMs: 0, toMs: durationMs, segments: [], segmentStartMs: 0 }),
     durationMs,
   );
@@ -294,9 +301,7 @@ export function toVoiceNoteCaptions({ sentences }: VoiceNote): VoiceNoteCaptions
 }
 
 export const VoiceNoteCaptionPolicy = {
-  createVoiceNoteCaptions,
   toVoiceNoteCaptions,
-  createTranscribedVoiceNote,
   commitProvisional,
   applyCaptionResult,
   withBookmark,

@@ -1,19 +1,19 @@
 import type { AiReport as AiReportDto, ReportStatus as ReportStatusDto } from '@aido/api';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
-import type { AiReport, ReportStatus, ReportType } from '../domains/report.model';
-
-const REPORT_TYPES = {
-  WEEKLY: 'WEEKLY',
-  MONTHLY: 'MONTHLY',
-} as const satisfies Record<AiReportDto['type'], ReportType>;
+import type { ReportStatus } from '../domains/report-status.model';
+import type { AiReport } from '../domains/report.model';
 
 export function toAiReport(dto: AiReportDto): AiReport {
   return {
     ...pick(dto, ['id', 'year', 'period', 'aiSummary', 'aiTips', 'hasActivity']),
-    type: REPORT_TYPES[dto.type],
-    dateRange: pick(dto.dateRange, ['startDate', 'endDate']),
+    type: dto.type,
+    dateRange: {
+      startDate: dateKeySchema.parse(dto.dateRange.startDate),
+      endDate: dateKeySchema.parse(dto.dateRange.endDate),
+    },
     stats: pick(dto.stats, [
       'totalTodos',
       'completedTodos',

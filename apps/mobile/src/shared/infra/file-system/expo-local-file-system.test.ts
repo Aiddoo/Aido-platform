@@ -70,9 +70,9 @@ describe('expoLocalFileSystem', () => {
         name: 'a.wav',
         uri: 'file:///documents/a.wav',
         sizeBytes: 1_900,
-        modifiedAt: new Date('2026-11-01T00:00:00.000Z'),
+        modifiedAtMs: Date.parse('2026-11-01T00:00:00.000Z'),
       },
-      { name: 'b.wav', uri: 'file:///documents/b.wav', sizeBytes: 0, modifiedAt: null },
+      { name: 'b.wav', uri: 'file:///documents/b.wav', sizeBytes: 0, modifiedAtMs: null },
     ]);
   });
 });

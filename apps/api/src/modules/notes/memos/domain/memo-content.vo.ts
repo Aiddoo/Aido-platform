@@ -1,14 +1,14 @@
-import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS, TODO_LIMITS } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { memoContentLengthOutOfRange } from "./memos.errors.js";
 
 export class MemoContent extends ValueObject<string> {
   static create(raw: string): MemoContent {
     const isWithinLimit = 1 <= raw.length && raw.length <= MEMO_LIMITS.MAX_CONTENT_LENGTH;
     if (!isWithinLimit) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "content", length: raw.length });
+      throw memoContentLengthOutOfRange(raw.length);
     }
     return new MemoContent(raw);
   }

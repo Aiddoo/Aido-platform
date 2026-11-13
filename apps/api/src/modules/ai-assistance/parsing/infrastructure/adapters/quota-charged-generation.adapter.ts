@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
@@ -14,6 +13,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AiGenerationLogEvent } from "../../../generation/application/ai-generation.log-events.js";
 import type { AiTaskId } from "../../../generation/application/ports/ai-generator.port.js";
+import { chargeUnconfirmed, emptyGeneration } from "../../application/parsing.errors.js";
 import {
   type ChargedGeneration,
   type ChargedGenerationResult,
@@ -26,9 +26,8 @@ interface QuotaChargedGenerationDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
-/** 환불하지 못한 요청은 차감 여부를 보장할 수 없으므로 details의 charged:false를 떼고 같은 코드로 던진다. */
 function withoutChargedClaim(error: unknown): unknown {
-  return error instanceof ApplicationException ? new ApplicationException(error.errorCode) : error;
+  return error instanceof ApplicationException ? chargeUnconfirmed(error) : error;
 }
 
 /** access의 사용량 원장(QuotaLedger)으로 AI 생성의 예약을 확정·환불한다. 그 예약은 정리 잡이 돌려준다. */
@@ -54,7 +53,7 @@ export class QuotaChargedGenerationAdapter extends ChargedGenerationPort {
     return match(outcome)
       .with("EMPTY", async () => {
         const refunded = await quota.refund(reservation, "NO_ACTION");
-        const empty = new ApplicationException(ErrorCode.AI_1302, { charged: false });
+        const empty = emptyGeneration();
         throw refunded ? empty : withoutChargedClaim(empty);
       })
       .with("NO_ACTION", async () => {

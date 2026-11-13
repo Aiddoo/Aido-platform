@@ -1,15 +1,13 @@
 import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { uniqBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-const todoCommentAuthorSchema = z.object({
-  id: z.string(),
-  name: z.string().nullable(),
+const todoCommentAuthorSchema = userSummarySchema.extend({
   userTag: z.string().nullable(),
-  profileImage: z.string().nullable(),
   isTodoOwner: z.boolean(),
 });
 export type TodoCommentAuthor = z.infer<typeof todoCommentAuthorSchema>;

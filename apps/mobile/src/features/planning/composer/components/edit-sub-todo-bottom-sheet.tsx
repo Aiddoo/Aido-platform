@@ -1,53 +1,42 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import type { SubTodo } from '@src/features/planning/todo/domains/sub-todo.model';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { type SubTodo, SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import { useSubTodoId, useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useSheetSubTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
-import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
-import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import {
+  useDeleteSubTodoMutationOptions,
+  useUpdateSubTodoMutationOptions,
+} from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { type ComponentProps, useEffect } from 'react';
+import { type ComponentProps } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
-import { useUpdateSubTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
 import { SubTodoBottomSheet, SubTodoDictation, SubTodoTitleInput } from './sub-todo-bottom-sheet';
-import { TodoComposerSubmitButton } from './todo-composer-fields';
+import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
 type EditSubTodoBottomSheetProps = Omit<ComponentProps<typeof SubTodoBottomSheet>, 'children'>;
 
 export function EditSubTodoBottomSheet(props: EditSubTodoBottomSheetProps) {
   return (
     <SubTodoBottomSheet {...props}>
-      {(close) => <EditSubTodoBottomSheet.Contents onClose={close} />}
+      {(close) => <EditSubTodoBottomSheet.Form onClose={close} />}
     </SubTodoBottomSheet>
   );
 }
 
-EditSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () => void }) {
-  const [todoId] = useTodoId();
-  const [subTodoId] = useSubTodoId();
-  const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
-  const subTodo = useRetainedValue(TodoPolicy.findSubTodo(todo, subTodoId));
+EditSubTodoBottomSheet.Form = function Form({ onClose }: { onClose: () => void }) {
+  const target = useSheetSubTodo({ onMissing: onClose });
 
-  useEffect(() => {
-    if (todo == null || subTodo == null) {
-      onClose();
-    }
-  }, [todo, subTodo, onClose]);
-
-  if (todo == null || subTodo == null) {
+  if (target == null) {
     return null;
   }
+  const { todo, subTodo } = target;
 
   return <EditSubTodoForm todo={todo} subTodo={subTodo} onClose={onClose} />;
 };
@@ -62,9 +51,11 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
   const { t } = useTranslation('todo');
   const [date] = useTodoSheetDateKey();
   const fontScaledSize = useFontScaledSize();
+  // 다시 받은 제목으로 비교 기준을 맞춘다. 고치던 제목은 남는다
   const form = useForm({
     resolver: zodResolver(subTodoFormSchema),
-    defaultValues: { title: subTodo.title },
+    values: { title: subTodo.title },
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
   const { isValid } = useFormState({ control: form.control });
   const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());

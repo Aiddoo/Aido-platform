@@ -1,15 +1,9 @@
 import { DAY_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 
-import {
-  addDaysToDateKey,
-  addMonthsToDateKey,
-  diffDateKeysInDays,
-  diffDateKeysInMonths,
-  getMonthStartDateKey,
-} from './date-key';
+import { addDaysToDateKey, type DateKey, diffDateKeysInDays, isDateKey } from './date-key';
 import { getFormatter, getPartValue, PARTS_LOCALE } from './format/intl-formatter';
 import { fromEpochMs, type Instant, toEpochMs } from './instant';
-import { toLocalDay, toNativeDate } from './native-date';
+import { toNativeDate } from './native-date';
 
 const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
@@ -25,7 +19,7 @@ const WALL_CLOCK_OPTIONS: Intl.DateTimeFormatOptions = {
   hourCycle: 'h23',
 };
 
-// 앱 모델은 Instant지만 달력·피커가 넘기는 Date도 같은 순간으로 읽는다
+// 앱 모델은 Instant지만 네이티브 피커·파일 시각이 넘기는 Date도 같은 순간으로 읽는다
 type ZonedInput = Date | Instant;
 
 function getEpochMs(value: ZonedInput): number {
@@ -61,7 +55,7 @@ export function toZonedInstant({
   time,
   timeZone,
 }: {
-  date: string;
+  date: DateKey;
   time: string;
   timeZone: string;
 }): Instant {
@@ -75,16 +69,14 @@ export function toZonedInstant({
   return fromEpochMs(matches.length > 0 ? Math.min(...matches) : wallClockAsUtc - offsetBefore);
 }
 
-export function toDateKey(value: ZonedInput, timeZone: string): string {
-  const epochMs = getEpochMs(value);
-  if (!Number.isFinite(epochMs)) {
-    return '';
+/** 잘못된 `Date`(NaN)는 날짜가 없어 던진다. `Instant`는 늘 유효하다 */
+export function toDateKey(value: ZonedInput, timeZone: string): DateKey {
+  const parts = formatParts(getEpochMs(value), timeZone, DATE_KEY_OPTIONS);
+  const dateKey = `${getPartValue(parts, 'year')}-${getPartValue(parts, 'month')}-${getPartValue(parts, 'day')}`;
+  if (!isDateKey(dateKey)) {
+    throw new RangeError(`${timeZone}에서 날짜 key로 읽을 수 없는 순간이다`);
   }
-  const parts = formatParts(epochMs, timeZone, DATE_KEY_OPTIONS);
-  const year = getPartValue(parts, 'year');
-  const month = getPartValue(parts, 'month');
-  const day = getPartValue(parts, 'day');
-  return year && month && day ? `${year}-${month}-${day}` : '';
+  return dateKey;
 }
 
 export function getZonedHour(value: ZonedInput, timeZone: string): number {
@@ -127,33 +119,11 @@ export function calculateCalendarDaysLeft(endsAt: Instant, now: Instant, timeZon
 }
 
 /** 그 날짜가 시작하는 순간. 자정이 없거나 두 번 오는 날도 그 날의 첫 순간이다 */
-export function getStartOfDateKey(dateKey: string, timeZone: string): Instant {
+export function getStartOfDateKey(dateKey: DateKey, timeZone: string): Instant {
   return toZonedInstant({ date: dateKey, time: '00:00', timeZone });
 }
 
-// 달력 칸 Date는 기기 시간대 그날 0시다. 그 시간대의 날짜 key로 읽어 옮기고 마지막에 Date로 되돌린다
-
-export function startOfLocalDay(date: Date, timeZone: string): Date {
-  return toLocalDay(toDateKey(date, timeZone));
-}
-
-export function addLocalDays(date: Date, days: number, timeZone: string): Date {
-  return toLocalDay(addDaysToDateKey(toDateKey(date, timeZone), days));
-}
-
-export function addLocalMonths(date: Date, months: number, timeZone: string): Date {
-  return toLocalDay(addMonthsToDateKey(toDateKey(date, timeZone), months));
-}
-
-export function startOfLocalMonth(date: Date, timeZone: string): Date {
-  return toLocalDay(getMonthStartDateKey(toDateKey(date, timeZone)));
-}
-
-/** 달만 옮기고 일은 기준 날짜의 일을 쓴다. 그 달에 없는 일은 마지막 날이다 */
-export function moveToLocalMonth(date: Date, monthSource: Date, timeZone: string): Date {
-  return addLocalMonths(date, diffLocalMonths(monthSource, date, timeZone), timeZone);
-}
-
-export function diffLocalMonths(first: Date, second: Date, timeZone: string): number {
-  return diffDateKeysInMonths(toDateKey(second, timeZone), toDateKey(first, timeZone));
+/** 자정이 없거나 두 번 오는 DST 날짜도 다음 날짜의 첫 순간이다 */
+export function getNextLocalMidnight(now: Instant, timeZone: string): Instant {
+  return getStartOfDateKey(addDaysToDateKey(toDateKey(now, timeZone), 1), timeZone);
 }
