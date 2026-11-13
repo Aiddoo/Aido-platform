@@ -104,7 +104,7 @@ describe("PremiumAccessDomainService", () => {
 
     it.each([
       { status: "ACTIVE" as const, expected: true },
-      // 결제 실패 때 RevenueCat은 BILLING_ISSUE와 함께 CANCELLATION(BILLING_ERROR)을 보낸다
+      // 결제가 실패하면 공급자는 결제 문제와 해지(BILLING_ERROR)를 함께 알린다
       { status: "CANCELLED" as const, expected: true },
       { status: "EXPIRED" as const, expected: false },
     ])(

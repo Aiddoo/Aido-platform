@@ -4,12 +4,7 @@ import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "./store-subscription-reconcile.queue.js";
 import { StoreSubscriptionReconcileScheduler } from "./store-subscription-reconcile.scheduler.js";
 
-const ENABLED = {
-  revenuecat: {
-    projectId: "proj_test",
-    apiV2SecretKey: "sk_test",
-  },
-};
+const ENABLED = { reconcilesStoreStatus: true };
 
 describe("StoreSubscriptionReconcileScheduler — 웹훅 뒤 대조 예약", () => {
   it("같은 1분 구간의 예약은 사용자당 한 잡으로 묶고 구간이 끝난 뒤 시작한다", async () => {
@@ -65,11 +60,11 @@ describe("StoreSubscriptionReconcileScheduler — 웹훅 뒤 대조 예약", () 
     ]);
   });
 
-  it("RevenueCat 읽기 설정이 없으면 잡을 넣지 않는다", async () => {
+  it("스토어 상태 읽기 설정이 없으면 잡을 넣지 않는다", async () => {
     // Given
     const jobQueue = new InMemoryJobQueue();
     const scheduler = new StoreSubscriptionReconcileScheduler(jobQueue, {
-      revenuecat: { ...ENABLED.revenuecat, apiV2SecretKey: undefined },
+      reconcilesStoreStatus: false,
     });
 
     // When

@@ -17,18 +17,21 @@ import {
   storeSubscriptionReconcileIdempotencyKey,
 } from "./store-subscription-reconcile.queue.js";
 
-/** RevenueCat 읽기 설정이 없으면 대조를 예약하지 않고 기존 웹훅 처리만 한다. */
+/** 스토어 상태 읽기 설정이 없으면 대조를 예약하지 않고 기존 웹훅 처리만 한다. */
 @Injectable()
 export class StoreSubscriptionReconcileScheduler
   implements StoreSubscriptionReconcileSchedulerPort, OnModuleInit
 {
   readonly #logger = new Logger(StoreSubscriptionReconcileScheduler.name);
   readonly #jobQueue: JobQueuePort;
-  readonly #config: Pick<BillingSubscriptionsConfig, "revenuecat">;
+  readonly #config: Pick<BillingSubscriptionsConfig, "reconcilesStoreStatus">;
 
   constructor(
     jobQueue: JobQueuePort,
-    @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
+    @Inject(billingSubscriptionsConfig.KEY) config: Pick<
+      BillingSubscriptionsConfig,
+      "reconcilesStoreStatus"
+    >,
   ) {
     this.#jobQueue = jobQueue;
     this.#config = config;
@@ -57,7 +60,6 @@ export class StoreSubscriptionReconcileScheduler
   }
 
   #isEnabled(): boolean {
-    const { apiV2SecretKey, projectId } = this.#config.revenuecat;
-    return apiV2SecretKey != null && projectId != null;
+    return this.#config.reconcilesStoreStatus;
   }
 }

@@ -1,7 +1,7 @@
 /**
  * 자동 갱신 중(ACTIVE)인 스토어 구독은 만료 시각이 지나도 이만큼은 유효하다고 본다.
  *
- * 갱신 결제나 만료는 RENEWAL·EXPIRATION 웹훅으로만 알 수 있다. RevenueCat은 실패한 웹훅을
+ * 갱신 결제나 만료는 갱신·만료 이벤트로만 알 수 있다. 지금 결제 공급자는 실패한 웹훅을
  * 5·10·20·40·80분 간격으로 다시 보내므로(합 약 2.6시간) 그 재시도가 끝날 때까지 기다린다.
  * Billing(보상 기간 시작 판단)과 Access(엔타이틀먼트 판단)가 같은 값을 써야 한쪽만 프리미엄이
  * 끝났다고 보는 구간이 생기지 않는다.
@@ -32,7 +32,7 @@ export function storeRenewalCutoff(now: Temporal.Instant): Temporal.Instant {
 /**
  * 스토어 구독의 엔타이틀먼트가 끝나는 시각(이 시각 미만이면 유효). 엔타이틀먼트가 없는 상태면 null이다.
  * 자동 갱신 중이면 갱신 웹훅을 기다리는 유예까지, 취소했으면 만료 시각까지이고, 결제 유예 중이면
- * 그 끝까지 늘어난다(결제 실패 시 RevenueCat은 BILLING_ISSUE와 함께 CANCELLATION을 보낸다).
+ * 그 끝까지 늘어난다(결제가 실패하면 공급자는 결제 문제와 해지를 함께 알린다).
  * Billing·Access의 TS 판단과 SQL 조건이 모두 이 규칙을 따른다.
  */
 export function storeEntitlementEndsAt(store: StoreEntitlementWindow): Temporal.Instant | null {
