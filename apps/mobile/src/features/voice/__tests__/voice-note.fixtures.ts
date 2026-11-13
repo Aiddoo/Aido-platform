@@ -1,57 +1,43 @@
 import { toInstant } from '@src/shared/date/instant';
+import { defineFixture } from '@src/testing/fixture';
 
 import {
   type VoiceNote,
-  type VoiceNoteDigest,
   voiceNoteDigestSchema,
-  type VoiceNoteKeyPoint,
   voiceNoteKeyPointSchema,
   voiceNoteSchema,
-  type VoiceNoteSentence,
   voiceNoteSentenceSchema,
   createVoiceNote,
 } from '../domains/voice-note.model';
 
-export function createVoiceNoteSentence(
-  overrides: Partial<VoiceNoteSentence> = {},
-): VoiceNoteSentence {
-  return voiceNoteSentenceSchema.parse({
-    text: '이번 주 목표는 온보딩 이탈을 줄이는 거예요.',
-    startMs: 12_000,
-    endMs: 16_000,
-    isBookmarked: false,
-    lowConfidenceWords: [],
-    ...overrides,
-  });
-}
+export const createVoiceNoteSentence = defineFixture(voiceNoteSentenceSchema, {
+  text: '이번 주 목표는 온보딩 이탈을 줄이는 거예요.',
+  startMs: 12_000,
+  endMs: 16_000,
+  isBookmarked: false,
+  lowConfidenceWords: [],
+});
 
-export function createVoiceNoteKeyPoint(
-  overrides: Partial<VoiceNoteKeyPoint> = {},
-): VoiceNoteKeyPoint {
-  return voiceNoteKeyPointSchema.parse({
-    id: 'key-point-1',
-    text: '목표는 온보딩 이탈 줄이기',
-    startMs: 12_000,
-    isBookmarked: false,
-    ...overrides,
-  });
-}
+export const createVoiceNoteKeyPoint = defineFixture(voiceNoteKeyPointSchema, {
+  id: 'key-point-1',
+  text: '목표는 온보딩 이탈 줄이기',
+  startMs: 12_000,
+  isBookmarked: false,
+});
 
-export function createVoiceNoteDigest(overrides: Partial<VoiceNoteDigest> = {}): VoiceNoteDigest {
-  return voiceNoteDigestSchema.parse({
-    title: '온보딩 개선 주간 회의',
-    summary: '온보딩 이탈을 줄이는 게 이번 주 목표예요.',
-    keyPoints: [
-      createVoiceNoteKeyPoint({ id: 'key-point-1', startMs: 12_000 }),
-      createVoiceNoteKeyPoint({ id: 'key-point-2', text: '디자인 시안 2개', startMs: 41_000 }),
-      createVoiceNoteKeyPoint({ id: 'key-point-3', text: 'A/B 실험 시작', startMs: 117_000 }),
-    ],
-    ...overrides,
-  });
-}
+export const createVoiceNoteDigest = defineFixture(voiceNoteDigestSchema, {
+  title: '온보딩 개선 주간 회의',
+  summary: '온보딩 이탈을 줄이는 게 이번 주 목표예요.',
+  keyPoints: [
+    createVoiceNoteKeyPoint({ id: 'key-point-1', startMs: 12_000 }),
+    createVoiceNoteKeyPoint({ id: 'key-point-2', text: '디자인 시안 2개', startMs: 41_000 }),
+    createVoiceNoteKeyPoint({ id: 'key-point-3', text: 'A/B 실험 시작', startMs: 117_000 }),
+  ],
+});
 
 type VoiceNoteOverrides = Partial<Omit<VoiceNote, 'draftId'>> & { draftId?: string };
 
+// 녹음 파일 이름이 draftId에서 나오고 draftId 문자열에 brand를 붙여야 해 호출마다 검증한다
 export function createSpokenVoiceNote({
   draftId = 'draft-1',
   ...overrides
