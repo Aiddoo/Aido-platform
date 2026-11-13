@@ -8,6 +8,7 @@ import { BillingUserLockPort } from "../premium-grants/application/ports/billing
 import { PremiumAccessCachePort } from "../premium-grants/application/ports/premium-access-cache.port.js";
 import { ProjectPremiumAccessUseCase } from "../premium-grants/application/use-cases/project-premium-access.use-case.js";
 import { SweepBillingNoticesUseCase } from "../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
+import { StoreCustomerConsolePort } from "./application/ports/store-customer-console.port.js";
 import { StoreSubscriptionReconcileSchedulerPort } from "./application/ports/store-subscription-reconcile-scheduler.port.js";
 import { StoreSubscriptionStatusReaderPort } from "./application/ports/store-subscription-status.reader.port.js";
 import { SubscriptionEventNotifierPort } from "./application/ports/subscription-event-notifier.port.js";
@@ -23,6 +24,7 @@ import { ApplyStoreSubscriptionEventUseCase } from "./application/use-cases/appl
 import { NotifyEndingTrialsUseCase } from "./application/use-cases/notify-ending-trials.use-case.js";
 import { NotifyUpcomingRenewalsUseCase } from "./application/use-cases/notify-upcoming-renewals.use-case.js";
 import { ReconcileStoreSubscriptionsUseCase } from "./application/use-cases/reconcile-store-subscriptions.use-case.js";
+import { RevenueCatCustomerConsoleAdapter } from "./infrastructure/adapters/revenuecat/revenuecat-customer-console.adapter.js";
 import { RevenueCatStoreSubscriptionStatusAdapter } from "./infrastructure/adapters/revenuecat/revenuecat-store-subscription-status.adapter.js";
 import { RevenueCatWebhookReceiver } from "./infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter.js";
 import { RevenueCatWebhookSignatureGuard } from "./infrastructure/adapters/revenuecat/revenuecat-webhook-signature.guard.js";
@@ -48,6 +50,7 @@ export const BILLING_SUBSCRIPTIONS_PROVIDERS = [
     useClass: DrizzleSubscriptionEventReceiptRepository,
   },
   { provide: SubscriptionEventNotifierPort, useClass: SubscriptionEventNotifierAdapter },
+  { provide: StoreCustomerConsolePort, useClass: RevenueCatCustomerConsoleAdapter },
   { provide: SubscriptionWebhookLockPort, useClass: SubscriptionWebhookLockAdapter },
   {
     provide: StoreSubscriptionStatusReaderPort,

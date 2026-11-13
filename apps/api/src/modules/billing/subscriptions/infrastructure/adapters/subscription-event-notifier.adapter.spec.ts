@@ -14,20 +14,19 @@ import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import type { StoreCustomerConsolePort } from "../../application/ports/store-customer-console.port.js";
 import type { StoreSubscriptionEventFailureContext } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
-function createAdapter(options: { projectId?: string } = {}) {
+function createAdapter(options: { customerConsoleUrl?: string } = {}) {
   const adminEventNotifier = new RecordingAdminEventNotifier();
   const alerts = new RecordingOperationalAlert();
   const jobQueue = new InMemoryJobQueue();
-  const config = {
-    revenuecat: {
-      projectId: options.projectId,
-      apiV2SecretKey: undefined,
-    },
+  const customerConsole: StoreCustomerConsolePort = {
+    customerUrlOf: (appUserId) =>
+      options.customerConsoleUrl == null ? null : `${options.customerConsoleUrl}/${appUserId}`,
   };
   const adapter = new SubscriptionEventNotifierAdapter(
     adminEventNotifier,
@@ -36,7 +35,7 @@ function createAdapter(options: { projectId?: string } = {}) {
       new FixedClock(Temporal.Instant.from("2028-02-26T12:00:00Z")),
     ),
     alerts,
-    config,
+    customerConsole,
   );
   return { adapter, alerts, forwarded: adminEventNotifier.subscriptionEvents, jobQueue };
 }
@@ -114,20 +113,18 @@ describe("SubscriptionEventNotifierAdapter — 구독 이벤트 운영 알림", 
     appUserId: "app user/1",
   };
 
-  it("프로젝트 ID가 있으면 RevenueCat 고객 화면 주소를 붙여 넘긴다", () => {
+  it("공급자 고객 화면 주소가 있으면 앱 사용자 ID로 만든 주소를 붙여 넘긴다", () => {
     // Given
-    const { adapter, forwarded } = createAdapter({ projectId: "6a6ea506" });
+    const { adapter, forwarded } = createAdapter({ customerConsoleUrl: "https://console.test" });
 
     // When
     adapter.notifySubscriptionEvent(event);
 
     // Then
-    expect(forwarded[0]?.providerCustomerUrl).toBe(
-      "https://app.revenuecat.com/projects/6a6ea506/customers/app%20user%2F1",
-    );
+    expect(forwarded[0]?.providerCustomerUrl).toBe("https://console.test/app user/1");
   });
 
-  it("프로젝트 ID가 없으면 고객 화면 주소 없이 넘기고 앱 사용자 ID는 싣지 않는다", () => {
+  it("공급자 고객 화면 주소가 없으면 주소 없이 넘기고 앱 사용자 ID는 싣지 않는다", () => {
     // Given
     const { adapter, forwarded } = createAdapter();
 

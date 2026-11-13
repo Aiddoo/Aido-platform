@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import {
@@ -10,16 +10,13 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { StoreCustomerConsolePort } from "../../application/ports/store-customer-console.port.js";
 import {
   type StoreSubscriptionEventFailureContext,
   SubscriptionEventNotifierPort,
 } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
-import {
-  type BillingSubscriptionsConfig,
-  billingSubscriptionsConfig,
-} from "../../billing-subscriptions.config.js";
 
 /**
  * 구독 이벤트 알림 어댑터.
@@ -32,19 +29,19 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
   readonly #adminEventNotifier: AdminEventNotifierPort;
   readonly #notificationQueueService: NotificationQueueAdapter;
   readonly #alert: OperationalAlertPort;
-  readonly #config: Pick<BillingSubscriptionsConfig, "revenuecat">;
+  readonly #customerConsole: StoreCustomerConsolePort;
 
   constructor(
     adminEventNotifier: AdminEventNotifierPort,
     notificationQueueService: NotificationQueueAdapter,
     alert: OperationalAlertPort,
-    @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
+    customerConsole: StoreCustomerConsolePort,
   ) {
     super();
     this.#adminEventNotifier = adminEventNotifier;
     this.#notificationQueueService = notificationQueueService;
     this.#alert = alert;
-    this.#config = config;
+    this.#customerConsole = customerConsole;
   }
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
@@ -77,11 +74,10 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
   }
 
   #providerCustomerUrl(appUserId: string | undefined): string | undefined {
-    const projectId = this.#config.revenuecat.projectId;
-    if (projectId == null || appUserId == null) {
+    if (appUserId == null) {
       return undefined;
     }
-    return `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(appUserId)}`;
+    return this.#customerConsole.customerUrlOf(appUserId) ?? undefined;
   }
 }
 
