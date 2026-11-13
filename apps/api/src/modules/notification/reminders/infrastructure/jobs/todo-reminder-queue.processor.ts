@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import { uniq } from "es-toolkit";
+import { memoize, uniq } from "es-toolkit";
 
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { WindowedCounter } from "#api/shared/application/alerts/windowed-counter";
@@ -56,7 +56,7 @@ const LATE_SKIP_COUNTER_KEY = "late-skip";
 interface ReminderBatchContext {
   readonly todos: ReadonlyMap<number, ActiveTodo>;
   readonly locales: ReadonlyMap<string, SupportedLocale>;
-  readonly dormantSinceByOwner: Map<string, Promise<string | null>>;
+  readonly dormantSince: (userId: string) => Promise<string | null>;
 }
 
 interface ReminderDraft {
@@ -154,7 +154,13 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       this.#reader.findActiveTodos(reminderTodoIds),
       this.#recipientLocaleReader.getLocales(userIds.map((userId) => UserId.reconstitute(userId))),
     ]);
-    return { todos, locales, dormantSinceByOwner: new Map() };
+    return {
+      todos,
+      locales,
+      dormantSince: memoize((userId: string): Promise<string | null> =>
+        this.#seriesOwnerDormancy.findDormantSince(UserId.reconstitute(userId)),
+      ),
+    };
   }
 
   async #prepareReminder(
@@ -183,7 +189,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       return null;
     }
 
-    const dormantSince = todo.seriesId == null ? null : await this.#dormantSince(userId, context);
+    const dormantSince = todo.seriesId == null ? null : await context.dormantSince(userId);
     if (dormantSince != null) {
       // 운영에서 세므로 debug가 아닌 info다. 단계·식별자만 남긴다.
       this.#logger.log({
@@ -224,16 +230,6 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       metadata: { stage: stageLabel },
       reminderOccurrenceKey: createReminderOccurrenceKey(todo.startDate, todo.scheduledLocalTime),
     };
-  }
-
-  #dormantSince(userId: string, context: ReminderBatchContext): Promise<string | null> {
-    const known = context.dormantSinceByOwner.get(userId);
-    if (known != null) {
-      return known;
-    }
-    const asked = this.#seriesOwnerDormancy.findDormantSince(UserId.reconstitute(userId));
-    context.dormantSinceByOwner.set(userId, asked);
-    return asked;
   }
 
   // 중복 판단은 유니크 인덱스(할 일 + 단계 + 회차) 한 곳이 한다. 이미 울린 회차는 묶음 발행이 세지 않는다

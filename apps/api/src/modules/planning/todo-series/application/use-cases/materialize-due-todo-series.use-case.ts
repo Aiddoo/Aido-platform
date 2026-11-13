@@ -1,5 +1,5 @@
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
-import { uniq } from "es-toolkit";
+import { memoize, uniq } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -90,6 +90,10 @@ export class MaterializeDueTodoSeriesUseCase {
       const owners = await seriesOwner.findOperatingOwners(
         uniq(dueBatch.map(({ userId }) => userId)).map((userId) => UserId.reconstitute(userId)),
       );
+      // 휴면 제외 등급은 소유자 단위라 같은 묶음의 여러 규칙이 한 번만 묻는다
+      const isExempt = memoize((userId: string): Promise<boolean> =>
+        seriesOwner.isExemptFromDormancy(UserId.reconstitute(userId)),
+      );
       for (const due of dueBatch) {
         if (performance.now() - startedAt >= deadlineMs) {
           timedOut = true;
@@ -101,7 +105,7 @@ export class MaterializeDueTodoSeriesUseCase {
         }
         if (
           isSeriesOwnerDormant(owner, this.#dependencies.clock.now()) &&
-          !(await seriesOwner.isExemptFromDormancy(UserId.reconstitute(due.userId)))
+          !(await isExempt(due.userId))
         ) {
           dormantCount += 1;
           continue;

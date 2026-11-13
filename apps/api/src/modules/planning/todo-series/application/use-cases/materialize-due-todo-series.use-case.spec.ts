@@ -160,6 +160,23 @@ describe("회차 채우기", () => {
     expect(result).toMatchObject({ processedCount: 1, createdCount: 3, dormantCount: 0 });
   });
 
+  it("같은 휴면 소유자의 여러 규칙은 휴면 제외 등급을 한 번만 묻는다", async () => {
+    // Given
+    await seed("series-1");
+    await seed("series-2");
+    await seed("series-3");
+    fixture.seriesOwner.activity = {
+      lastActiveAt: Temporal.Instant.from("2026-09-05T00:00:00.000Z"),
+      signedUpAt: Temporal.Instant.from("2026-01-01T00:00:00.000Z"),
+      timezone: "Asia/Seoul",
+    };
+    // When
+    const result = await useCase().execute();
+    // Then
+    expect(result).toMatchObject({ processedCount: 0, dormantCount: 3 });
+    expect(fixture.seriesOwner.exemptionChecks).toBe(1);
+  });
+
   it("정지·탈퇴 대기 계정은 건너뛰고 휴면으로도 세지 않는다", async () => {
     // Given
     await seed("series-1");
