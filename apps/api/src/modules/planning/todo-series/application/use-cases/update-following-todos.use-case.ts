@@ -1,8 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual, sortBy, uniq, uniqBy } from "es-toolkit";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -35,6 +33,13 @@ import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-chang
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeries, TodoSeriesChanges } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
+import {
+  categoryTodoLimitReached,
+  todoNotFound,
+  todoNotRepeating,
+  todoSeriesLimitReached,
+  todoSeriesNotFound,
+} from "../todo-series.errors.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
 import type { MaterializeTodoOccurrencesUseCase } from "./materialize-todo-occurrences.use-case.js";
 import type { PublishTodoSeriesEditUseCase } from "./publish-todo-series-edit.use-case.js";
@@ -113,7 +118,7 @@ export class UpdateFollowingTodosUseCase {
       UserId.reconstitute(userId),
     );
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: edited.responseTodoId });
+      throw todoNotFound(edited.responseTodoId);
     }
     return response;
   }
@@ -131,18 +136,15 @@ export class UpdateFollowingTodosUseCase {
     const ownerId = UserId.reconstitute(userId);
     const todo = await todoRepository.findByIdAndUserId(TodoId.reconstitute(id), ownerId);
     if (todo == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      throw todoNotFound(id);
     }
     const { seriesId } = todo;
     if (seriesId == null) {
-      throw new ApplicationException(ErrorCode.TODO_0844, {
-        todoId: id,
-        scope: "THIS_AND_FOLLOWING",
-      });
+      throw todoNotRepeating(id);
     }
     const series = await seriesRepository.lockForUpdate(TodoSeriesId.reconstitute(seriesId));
     if (series == null || series.userId.value !== userId) {
-      throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
+      throw todoSeriesNotFound(seriesId);
     }
     if (input.categoryId != null) {
       await this.#dependencies.categoryOwnership.validateOwnership(
@@ -152,7 +154,7 @@ export class UpdateFollowingTodosUseCase {
     }
     const { occurrenceDate } = todo;
     if (occurrenceDate == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      throw todoNotFound(id);
     }
     return this.#applyTo(input, series, occurrenceDate.toString());
   }
@@ -410,20 +412,14 @@ export class UpdateFollowingTodosUseCase {
       TodoCategoryId.reconstitute(categoryId),
     );
     if (activeCount >= TODO_LIMITS.MAX_PER_CATEGORY) {
-      throw new ApplicationException(ErrorCode.TODO_0811, {
-        activeCount,
-        maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
-      });
+      throw categoryTodoLimitReached(activeCount);
     }
   }
 
   async #assertSeriesLimit(userId: UserId): Promise<void> {
     const activeCount = await this.#dependencies.seriesRepository.countActiveByUserId(userId);
     if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {
-      throw new ApplicationException(ErrorCode.TODO_0842, {
-        limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
-        activeCount,
-      });
+      throw todoSeriesLimitReached(activeCount);
     }
   }
 }

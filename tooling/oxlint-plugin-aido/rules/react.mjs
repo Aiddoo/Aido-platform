@@ -179,44 +179,6 @@ const sharedValueAccessor = {
   },
 };
 
-const SPACING_PROP_NAMES = new Set([
-  'p',
-  'px',
-  'py',
-  'pt',
-  'pb',
-  'pl',
-  'pr',
-  'm',
-  'mx',
-  'my',
-  'mt',
-  'mb',
-  'ml',
-  'mr',
-]);
-
-// 여백은 className으로 쓴다. 한 태그에 spacing prop과 className을 섞지 않는다(gap·flex prop은 대상이 아니다)
-const spacingPropsWithClassName = {
-  meta: { type: 'suggestion' },
-  createOnce(context) {
-    return {
-      JSXOpeningElement(node) {
-        const names = node.attributes
-          .filter((attribute) => attribute.type === 'JSXAttribute')
-          .map((attribute) => context.sourceCode.getText(attribute.name));
-        const spacingNames = names.filter((name) => SPACING_PROP_NAMES.has(name));
-        if (spacingNames.length > 0 && names.includes('className')) {
-          context.report({
-            node,
-            message: `spacing prop(${spacingNames.join(', ')})과 className을 한 태그에 섞지 않습니다. 여백은 className으로 씁니다.`,
-          });
-        }
-      },
-    };
-  },
-};
-
 // useStepper의 Render는 훅을 쓰는 컴포넌트라 함수로 부르면 훅 순서가 부모와 섞인다
 const noRenderCall = {
   meta: { type: 'problem' },
@@ -390,7 +352,6 @@ export default {
   'menu-item-title-text': menuItemTitleText,
   'no-classname-concat': noClassNameConcat,
   'shared-value-accessor': sharedValueAccessor,
-  'spacing-props-with-classname': spacingPropsWithClassName,
   'no-render-call': noRenderCall,
   'card-uses-heroui-card': cardUsesHerouiCard,
   'no-route-id-props': noRouteIdProps,

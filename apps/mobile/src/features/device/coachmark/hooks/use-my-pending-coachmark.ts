@@ -1,5 +1,6 @@
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
+
 import type { CoachmarkKind } from '../domains/coachmark.model';
-import { useMyAccountId } from './use-my-account-id';
 import { usePendingCoachmark } from './use-pending-coachmark';
 
 export function useMyPendingCoachmark(kind: CoachmarkKind) {

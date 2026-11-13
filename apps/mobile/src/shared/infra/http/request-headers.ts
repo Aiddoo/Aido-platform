@@ -9,8 +9,8 @@ import { getDeviceHeaders } from './device-headers';
 export const REQUEST_ID_HEADER = 'X-Request-Id';
 
 export interface AppHeaderSource {
-  appVersion?: string;
-  appBuild?: string;
+  appVersion: string | null;
+  appBuild: string | null;
 }
 
 /** 실행 중 바뀌지 않는 앱·기기 헤더. 클라이언트를 만들 때 한 번 정한다. */

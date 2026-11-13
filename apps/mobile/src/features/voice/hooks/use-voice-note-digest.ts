@@ -3,11 +3,16 @@ import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
 import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-request.model';
-import { type VoiceNoteDigestInput, VoiceNotePolicy } from '../domains/voice-note.model';
+import {
+  type VoiceNoteDigestInput,
+  VoiceNotePolicy,
+  createDigestInput,
+} from '../domains/voice-note.model';
 import { getVoicePlanFailureCause, type VoicePlanFailureCause } from '../domains/voice.error';
 import { useCreateVoiceNoteDigestMutationOptions } from '../queries/voice.mutations';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
@@ -25,6 +30,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
   const aiConsent = useAiDataSharingConsentGate();
   const mutation = useMutation(useCreateVoiceNoteDigestMutationOptions());
+  const reportUnexpectedError = useReportUnexpectedError('voice');
   const [failure, setFailure] = useState<VoiceNoteDigestFailure | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const hasAskedConsentRef = useRef(false);
@@ -55,7 +61,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
     }
 
     setFailure(null);
-    const input = VoiceNotePolicy.createDigestInput(note);
+    const input = createDigestInput(note);
     const request: PreparedPlanRequest<VoiceNoteDigestInput> = {
       fingerprint: JSON.stringify(input),
       input,
@@ -88,6 +94,8 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
         }
       }
       const cause = getVoicePlanFailureCause(error);
+      // 정리 실패는 화면이 직접 보여 mutation이 알리지 않으므로 예상하지 못한 실패는 여기서 보고한다
+      reportUnexpectedError(error);
       setFailure(cause === 'limit' ? null : { cause, isFreeOfCharge: isFreeOfChargeError(error) });
     }
   };

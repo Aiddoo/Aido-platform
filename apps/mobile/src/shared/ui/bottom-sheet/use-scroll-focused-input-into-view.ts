@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import {
   type HostInstance,
   Keyboard,
@@ -50,18 +50,33 @@ function measureInWindow(node: Pick<HostInstance, 'measureInWindow'>) {
   });
 }
 
-function waitForFocusedInput() {
+// 시트가 닫히면(effect 정리) 남은 프레임을 취소하고 null로 끝낸다
+function waitForFocusedInput(signal: AbortSignal) {
   return new Promise<HostInstance | null>((resolve) => {
     let frames = 0;
+    let frameId: number | null = null;
+    const stop = () => {
+      if (frameId != null) {
+        cancelAnimationFrame(frameId);
+      }
+      resolve(null);
+    };
     const check = () => {
+      frameId = null;
       const input = TextInput.State.currentlyFocusedInput();
       frames += 1;
       if (input != null || frames >= MAX_FOCUS_WAIT_FRAMES) {
+        signal.removeEventListener('abort', stop);
         resolve(input ?? null);
         return;
       }
-      requestAnimationFrame(check);
+      frameId = requestAnimationFrame(check);
     };
+    if (signal.aborted) {
+      resolve(null);
+      return;
+    }
+    signal.addEventListener('abort', stop);
     check();
   });
 }
@@ -120,12 +135,17 @@ export function useScrollFocusedInputIntoView({
     },
   );
 
-  const scrollFocusedInputIntoView = useCallback(
-    async (keyboardTop: number) => {
-      const input = await waitForFocusedInput();
+  const releasePlan = useCallback(() => {
+    scrollPlan.set(null);
+  }, [scrollPlan]);
+
+  // 키보드 구독을 bottomInset이 바뀔 때마다 다시 만들면 정리가 떠 있는 키보드 위치를 지워 아래 다시 맞추기가 돌지 않는다
+  const scrollFocusedInputIntoView = useEffectEvent(
+    async (keyboardTop: number, signal: AbortSignal) => {
+      const input = await waitForFocusedInput(signal);
       const scrollView = scrollViewRef.current;
       const content = scrollView?.getInnerViewRef();
-      if (scrollView == null || content == null || input == null) {
+      if (signal.aborted || scrollView == null || content == null || input == null) {
         return;
       }
 
@@ -135,6 +155,9 @@ export function useScrollFocusedInputIntoView({
         measureInWindow(content),
         measureInWindow(field ?? input),
       ]);
+      if (signal.aborted) {
+        return;
+      }
       const layoutAboveKeyboard = getLayoutAboveKeyboard(
         { viewport, content: contentRect, input: inputRect },
         keyboardTop,
@@ -166,20 +189,16 @@ export function useScrollFocusedInputIntoView({
         toOffset: offset,
       });
     },
-    [animatedPosition, bottomInset, scrollPlan, scrollViewRef, viewportTopLimit],
   );
-
-  const releasePlan = useCallback(() => {
-    scrollPlan.set(null);
-  }, [scrollPlan]);
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
+    const pending = new AbortController();
     const handleKeyboardShow = (event: KeyboardEvent) => {
       keyboardTopRef.current = event.endCoordinates.screenY;
-      scrollFocusedInputIntoView(event.endCoordinates.screenY).catch(releasePlan);
+      scrollFocusedInputIntoView(event.endCoordinates.screenY, pending.signal).catch(releasePlan);
     };
     const handleKeyboardHide = () => {
       keyboardTopRef.current = null;
@@ -192,19 +211,23 @@ export function useScrollFocusedInputIntoView({
       Keyboard.addListener(KEYBOARD_HIDE_EVENT, handleKeyboardHide),
     ];
     return () => {
+      pending.abort();
       subscriptions.forEach((subscription) => subscription.remove());
       keyboardTopRef.current = null;
       releasePlan();
     };
-  }, [isOpen, releasePlan, scrollFocusedInputIntoView]);
+  }, [isOpen, releasePlan]);
 
   // 고정 영역 높이는 키보드가 올라온 뒤에 재어질 수 있으므로, 바뀌면 떠 있는 키보드 기준으로 다시 맞춘다(KeyboardAwareScrollView가 bottomOffset 변경에 하듯)
   useEffect(() => {
     const keyboardTop = keyboardTopRef.current;
-    if (keyboardTop != null) {
-      scrollFocusedInputIntoView(keyboardTop).catch(releasePlan);
+    if (keyboardTop == null) {
+      return;
     }
-  }, [bottomInset, releasePlan, scrollFocusedInputIntoView]);
+    const pending = new AbortController();
+    scrollFocusedInputIntoView(keyboardTop, pending.signal).catch(releasePlan);
+    return () => pending.abort();
+  }, [bottomInset, releasePlan]);
 
   // 사용자가 직접 스크롤하기 시작하면 더는 붙잡지 않는다
   return { scrollViewRef, handleScrollBeginDrag: releasePlan, reportFocusedField };

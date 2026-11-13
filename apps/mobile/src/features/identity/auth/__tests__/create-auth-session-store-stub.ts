@@ -1,7 +1,7 @@
 import type { AuthStatus } from '@src/core/session/auth-status';
 
-import { type AuthSessionStore, createAuthSessionStore } from '../apis/auth-session.store';
 import type { AuthSessionState } from '../domains/auth-session.model';
+import { type AuthSessionStore, createAuthSessionStore } from '../stores/auth-session.store';
 
 function createAuthSessionState(status: AuthStatus): AuthSessionState {
   return status === 'unauthenticated' ? { status, reason: 'none' } : { status };
@@ -12,21 +12,38 @@ export function createAuthSessionStoreStub(initialStatus: AuthStatus = 'authenti
   let store = createAuthSessionStore(createAuthSessionState(initialStatus));
   const listeners = new Set<() => void>();
 
+  const notify = () => listeners.forEach((listener) => listener());
   const stub: AuthSessionStore & { setStatus(status: AuthStatus): void } = {
-    getState: () => store.getState(),
+    getSnapshot: () => store.getSnapshot(),
     subscribe: (listener) => {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
       };
     },
-    dispatch: (event) => {
-      store.dispatch(event);
-      listeners.forEach((listener) => listener());
+    resolveBoot: (status) => {
+      store.resolveBoot(status);
+      notify();
+    },
+    failBoot: () => {
+      store.failBoot();
+      notify();
+    },
+    signIn: () => {
+      store.signIn();
+      notify();
+    },
+    signOut: () => {
+      store.signOut();
+      notify();
+    },
+    expire: () => {
+      store.expire();
+      notify();
     },
     setStatus: (status) => {
       store = createAuthSessionStore(createAuthSessionState(status));
-      listeners.forEach((listener) => listener());
+      notify();
     },
   };
   return stub;

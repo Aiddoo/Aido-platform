@@ -30,14 +30,6 @@ export class AppRelease extends Entity<AppReleaseId, AppReleaseProps> {
     return this.props.latestVersion;
   }
 
-  // 알 수 없거나 SemVer가 아닌 앱 버전은 업데이트를 강요하지 않는다
-  isUpdateRequired(clientVersion: string | null): boolean {
-    if (clientVersion == null) {
-      return false;
-    }
-    return AppVersion.reconstitute(clientVersion).isOlderThan(this.props.latestVersion);
-  }
-
   toPrimitives(): AppReleasePrimitives {
     return { platform: this.platform, latestVersion: this.props.latestVersion.value };
   }

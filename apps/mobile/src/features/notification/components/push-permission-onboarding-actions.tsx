@@ -1,13 +1,12 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useTrack } from '@src/shared/analytics';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, STACK_CLOSE_ICON } from '@src/shared/ui';
-import { useQuery } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
@@ -20,13 +19,17 @@ const SOURCE: PushPermissionPromptSource = 'onboarding';
 export function PushPermissionOnboardingActions() {
   const { t } = useTranslation(['notification', 'common']);
   const { trackEvent } = useTrack();
-  const { data: me } = useQuery(useGetMeQueryOptions());
-  const [_deferredAt, setDeferredAt] = useStoredValue(pushPermissionDeferredAtStoredValue, me?.id);
+  const accountId = useMyAccountId();
+  const [_deferredAt, setDeferredAt] = useStoredValue(
+    pushPermissionDeferredAtStoredValue,
+    accountId,
+  );
   const { runStep, isPending } = usePushPermissionAction({ source: SOURCE });
 
-  useEffect(() => {
-    trackEvent('push_permission_prompt_shown', { source: SOURCE, step: PUSH_PERMISSION_STEP.ASK });
-  }, [trackEvent]);
+  useTrackView('push_permission_prompt_shown', {
+    key: PUSH_PERMISSION_STEP.ASK,
+    params: { source: SOURCE, step: PUSH_PERMISSION_STEP.ASK },
+  });
 
   const handleClose = useCallback(() => {
     trackEvent('push_permission_prompt_dismissed', {

@@ -1,6 +1,9 @@
 import type { ErrorCodeType } from "@aido/api/errors";
 
-import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+import {
+  ErrorCodedException,
+  type ErrorCodedExceptionOptions,
+} from "#api/shared/domain/exceptions/error-coded.exception";
 
 /**
  * 애플리케이션 예외
@@ -9,8 +12,8 @@ import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.e
  * (예: 대상 리소스 없음, 권한 없음, 중복 요청)
  */
 export class ApplicationException extends ErrorCodedException {
-  constructor(errorCode: ErrorCodeType, details?: unknown, message?: string) {
-    super(errorCode, details, message);
+  constructor(errorCode: ErrorCodeType, details?: unknown, options?: ErrorCodedExceptionOptions) {
+    super(errorCode, details, options);
     this.name = "ApplicationException";
   }
 }

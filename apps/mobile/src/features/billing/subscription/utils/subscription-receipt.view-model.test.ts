@@ -41,13 +41,13 @@ describe('toSubscriptionReceiptViewModel', () => {
       // Then
       expect(result).toEqual({
         variant: 'trial',
-        rows: [
-          { type: 'plan', planType: null },
-          { type: 'trialEndsOn', date: TRIAL_ENDS_AT },
-          { type: 'firstBillingDate', date: TRIAL_ENDS_AT },
-          { type: 'autoRenewal', willRenew: true },
-          { type: 'bankedReward', days: 5, endsAt: null },
-        ],
+        details: {
+          planType: null,
+          trialEndsOn: TRIAL_ENDS_AT,
+          billing: { type: 'firstBillingDate', date: TRIAL_ENDS_AT },
+          willRenew: true,
+          banked: { days: 5, endsAt: null },
+        },
         footnote: { type: 'cancelTrialInStore' },
         primaryAction: 'manage',
         endingNotice: null,
@@ -84,11 +84,9 @@ describe('toSubscriptionReceiptViewModel', () => {
       const result = createReceipt(me, { now: toInstant('2028-03-25T03:00:00Z') });
 
       // Then
-      expect(result.rows).toEqual([
-        { type: 'plan', planType: null },
-        { type: 'trialEndsOn', date: TRIAL_ENDS_AT },
-        { type: 'autoRenewal', willRenew: false },
-      ]);
+      expect(result).toMatchObject({
+        details: { trialEndsOn: TRIAL_ENDS_AT, billing: null, willRenew: false, banked: null },
+      });
       expect(result.footnote).toEqual({ type: 'returnsToFreePlan', date: TRIAL_ENDS_AT });
       expect(result.endingNotice).toEqual({ daysLeft: 1, willRenew: false, planType: null });
     });
@@ -98,8 +96,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       const result = createReceipt(createTrialMe(), { now: toInstant('2028-03-26T05:00:00Z') });
 
       // Then
-      expect(result.rows).toContainEqual({ type: 'renewalPending' });
-      expect(result.rows).not.toContainEqual(expect.objectContaining({ type: 'firstBillingDate' }));
+      expect(result).toMatchObject({ details: { billing: { type: 'renewalPending' } } });
       expect(result.endingNotice).toBeNull();
     });
 
@@ -109,7 +106,9 @@ describe('toSubscriptionReceiptViewModel', () => {
 
       // Then
       expect(result.variant).toBe('paid');
-      expect(result.rows[1]).toEqual({ type: 'nextBillingDate', date: TRIAL_ENDS_AT });
+      expect(result).toMatchObject({
+        details: { billing: { type: 'nextBillingDate', date: TRIAL_ENDS_AT } },
+      });
     });
   });
 
@@ -122,12 +121,12 @@ describe('toSubscriptionReceiptViewModel', () => {
       // 갱신마다 밀리는 보상 끝 날짜는 고정 날짜처럼 보이지 않게 뺀다
       expect(result).toEqual({
         variant: 'paid',
-        rows: [
-          { type: 'plan', planType: null },
-          { type: 'nextBillingDate', date: toInstant('2028-03-10T04:00:00.000Z') },
-          { type: 'autoRenewal', willRenew: true },
-          { type: 'bankedReward', days: 5, endsAt: null },
-        ],
+        details: {
+          planType: null,
+          billing: { type: 'nextBillingDate', date: toInstant('2028-03-10T04:00:00.000Z') },
+          willRenew: true,
+          banked: { days: 5, endsAt: null },
+        },
         footnote: { type: 'rewardStartsAfterSubscription', days: 5 },
         primaryAction: 'manage',
         endingNotice: null,
@@ -150,7 +149,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       const result = createReceipt(me);
 
       // Then
-      expect(result.rows).toContainEqual({ type: 'bankedReward', days, endsAt: null });
+      expect(result).toMatchObject({ details: { banked: { days, endsAt: null } } });
       expect(result.footnote).toEqual({ type: 'rewardStartsAfterSubscription', days });
     });
 
@@ -162,12 +161,13 @@ describe('toSubscriptionReceiptViewModel', () => {
       });
 
       // Then
-      expect(result.rows).toEqual([
-        { type: 'plan', planType: null },
-        { type: 'subscriptionEndsOn', date: toInstant('2028-03-10T04:00:00.000Z') },
-        { type: 'autoRenewal', willRenew: false },
-        { type: 'bankedReward', days: 7, endsAt: toInstant('2028-03-17T04:00:00.000Z') },
-      ]);
+      expect(result).toMatchObject({
+        details: {
+          billing: { type: 'subscriptionEndsOn', date: toInstant('2028-03-10T04:00:00.000Z') },
+          willRenew: false,
+          banked: { days: 7, endsAt: toInstant('2028-03-17T04:00:00.000Z') },
+        },
+      });
       expect(result.endingNotice).toBeNull();
     });
 
@@ -202,7 +202,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       });
 
       // Then
-      expect(result.rows[1]).toEqual({ type: 'renewalPending' });
+      expect(result).toMatchObject({ details: { billing: { type: 'renewalPending' } } });
     });
 
     it('자동 갱신 결제 예정 시각 1분 전에는 다음 결제일을 그대로 보인다', () => {
@@ -212,9 +212,10 @@ describe('toSubscriptionReceiptViewModel', () => {
       });
 
       // Then
-      expect(result.rows[1]).toEqual({
-        type: 'nextBillingDate',
-        date: toInstant('2028-03-10T04:00:00.000Z'),
+      expect(result).toMatchObject({
+        details: {
+          billing: { type: 'nextBillingDate', date: toInstant('2028-03-10T04:00:00.000Z') },
+        },
       });
     });
 
@@ -225,7 +226,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       // Then
       expect(result).toEqual({
         variant: 'paid',
-        rows: [],
+        details: null,
         footnote: null,
         primaryAction: 'manage',
         endingNotice: null,
@@ -242,10 +243,11 @@ describe('toSubscriptionReceiptViewModel', () => {
       // 결제 용어(다음 결제일·자동 갱신) 행이 없다
       expect(result).toEqual({
         variant: 'reward',
-        rows: [
-          { type: 'rewardPeriod', endsAt: toInstant('2028-03-12T04:00:00.000Z') },
-          { type: 'daysLeft', days: 11, endingNotice: null },
-        ],
+        details: {
+          periodEndsAt: toInstant('2028-03-12T04:00:00.000Z'),
+          chained: null,
+          daysLeft: { days: 11, endingNotice: null },
+        },
         footnote: { type: 'returnsToFreePlan', date: toInstant('2028-03-12T04:00:00.000Z') },
         primaryAction: 'subscribe',
         endingNotice: null,
@@ -258,12 +260,13 @@ describe('toSubscriptionReceiptViewModel', () => {
 
       // Then
       // 남은 기간과 무료 플랜 안내는 전체 끝(3월 11일) 기준이다
-      expect(result.rows).toEqual([
-        { type: 'rewardPeriod', endsAt: toInstant('2028-03-04T04:00:00.000Z') },
-        { type: 'bankedReward', days: 7, endsAt: null },
-        { type: 'overallPeriod', endsAt: toInstant('2028-03-11T04:00:00.000Z') },
-        { type: 'daysLeft', days: 10, endingNotice: null },
-      ]);
+      expect(result).toMatchObject({
+        details: {
+          periodEndsAt: toInstant('2028-03-04T04:00:00.000Z'),
+          chained: { bankedDays: 7, overallEndsAt: toInstant('2028-03-11T04:00:00.000Z') },
+          daysLeft: { days: 10, endingNotice: null },
+        },
+      });
       expect(result.footnote).toEqual({
         type: 'returnsToFreePlan',
         date: toInstant('2028-03-11T04:00:00.000Z'),
@@ -292,7 +295,7 @@ describe('toSubscriptionReceiptViewModel', () => {
         });
 
         // Then
-        expect(result.rows).toContainEqual({ type: 'daysLeft', days, endingNotice: notice });
+        expect(result).toMatchObject({ details: { daysLeft: { days, endingNotice: notice } } });
         expect(result.endingNotice).toBe(notice);
       },
     );
@@ -326,7 +329,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       // Then
       expect(result).toEqual({
         variant: 'admin',
-        rows: [{ type: 'account' }],
+        details: { rewardRecordEndsAt: null, bankedDays: null },
         footnote: null,
         primaryAction: null,
         endingNotice: null,
@@ -341,10 +344,9 @@ describe('toSubscriptionReceiptViewModel', () => {
       );
 
       // Then
-      expect(result.rows).toEqual([
-        { type: 'account' },
-        { type: 'rewardRecord', endsAt: toInstant('2028-03-12T04:00:00.000Z') },
-      ]);
+      expect(result).toMatchObject({
+        details: { rewardRecordEndsAt: toInstant('2028-03-12T04:00:00.000Z'), bankedDays: null },
+      });
       expect(result.endingNotice).toBeNull();
       expect(result.primaryAction).toBeNull();
     });
@@ -373,7 +375,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       const result = createReceipt(createRenewingMe({ premiumPlanType }));
 
       // Then
-      expect(result.rows[0]).toEqual({ type: 'plan', planType });
+      expect(result).toMatchObject({ details: { planType } });
     });
 
     it.each([

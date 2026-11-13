@@ -71,7 +71,7 @@ export class WeatherReportReader implements WeatherReportReaderPort {
           errorType: toErrorType(error),
           errorCode: ErrorCode.WEATHER_1901,
         });
-        throw weatherServiceUnavailable();
+        throw weatherServiceUnavailable(undefined, error);
       }
       this.#dependencies.logger.warn({
         event: ForecastLogEvent.REPORT_FALLBACK_USED,

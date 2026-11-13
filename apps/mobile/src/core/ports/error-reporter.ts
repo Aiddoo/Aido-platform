@@ -1,3 +1,4 @@
+import type { ErrorCodeType } from '@aido/api/errors';
 import type { Breadcrumb } from '@src/core/observability/breadcrumb';
 import type { Severity } from '@src/core/observability/severity';
 import type {
@@ -12,7 +13,7 @@ export interface ErrorReporterContext {
   /** 클라이언트가 판단한 사유. */
   errorCode?: string;
   /** 서버가 내려준 `@aido/api/errors` 코드. 클라 판단(`errorCode`)과 섞지 않는다. */
-  serverErrorCode?: string;
+  serverErrorCode?: ErrorCodeType;
   statusCode?: number;
   severity?: Severity;
 }

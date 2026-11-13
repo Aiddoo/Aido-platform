@@ -44,7 +44,7 @@ export function createAccessibilitySettingStore({
   };
 
   return {
-    subscribe(onStoreChange: () => void) {
+    subscribe: (onStoreChange: () => void) => {
       listeners.add(onStoreChange);
       if (stopListening == null) {
         start();

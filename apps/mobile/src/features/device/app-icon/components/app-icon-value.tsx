@@ -1,7 +1,7 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Text, LabelChip } from '@src/shared/ui';
+import { QueryErrorBoundary, LabelChip, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -32,8 +32,6 @@ function AppIcon() {
   }
 
   return currentIcon == null ? null : (
-    <Text size="b3" shade={7}>
-      {t(currentIcon.labelKey)}
-    </Text>
+    <SettingsListGroup.Value>{t(currentIcon.labelKey)}</SettingsListGroup.Value>
   );
 }

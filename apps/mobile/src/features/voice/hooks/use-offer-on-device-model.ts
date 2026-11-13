@@ -4,7 +4,7 @@ import { t } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { useConfirmDialog } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 
 import type { VoiceCaptureEntry } from '../constants/voice.events';
 import { offlineModelDeclinedStoredValue } from '../schemas/offline-model-declined-storage.schema';

@@ -4,13 +4,15 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
-import { renderScreen } from '@src/testing/render';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
 import { createUpdateProfileDto, createUser } from '../__tests__/user.fixtures';
 import { type User } from '../domains/user.model';
+import type { ProfileChange } from '../schemas/update-profile-request.schema';
 import { USER_QUERY_KEYS } from './user-query-keys';
 import { useUpdateProfileMutationOptions } from './user.mutations';
 
@@ -19,22 +21,13 @@ const NEW_IMAGE = 'https://example.com/new.jpg';
 async function renderUpdateProfile(httpClient = createHttpClientStub()) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ name: '이전', profileImage: null }));
-  let mutateAsync: ReturnType<typeof useUpdate> | undefined;
-  function useUpdate() {
-    return useMutation(useUpdateProfileMutationOptions()).mutateAsync;
-  }
-  function Capture() {
-    mutateAsync = useUpdate();
-    return null;
-  }
-  await renderScreen(<Capture />, {
-    queryClient,
-    di: { httpClient, haptics: createHapticsGatewayStub() },
+  const { result } = await renderScreenHook(() => useMutation(useUpdateProfileMutationOptions()), {
+    di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub(), queryClient } }),
   });
 
   return {
     cached: () => queryClient.getQueryData<User>(USER_QUERY_KEYS.me()),
-    update: (change: Parameters<NonNullable<typeof mutateAsync>>[0]) => mutateAsync?.(change),
+    update: (change: ProfileChange) => result.current.mutateAsync(change),
   };
 }
 

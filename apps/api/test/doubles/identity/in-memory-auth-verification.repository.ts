@@ -55,17 +55,21 @@ export class InMemoryAuthVerificationRepository extends AuthVerificationReposito
     return latest == null ? null : AuthVerification.reconstitute(latest);
   }
 
-  async countRecentByUserIdAndType(
+  async findLatestIssuedAtByUserIdAndType(
     userId: UserId,
     type: VerificationType,
     since: Temporal.Instant,
-  ): Promise<number> {
-    return this.all.filter(
-      (verification) =>
-        verification.userId === userId.value &&
-        verification.type === type &&
-        Temporal.Instant.compare(verification.createdAt, since) >= 0,
-    ).length;
+  ): Promise<Temporal.Instant | null> {
+    const issuedAts = this.all
+      .filter(
+        (verification) =>
+          verification.userId === userId.value &&
+          verification.type === type &&
+          Temporal.Instant.compare(verification.createdAt, since) >= 0,
+      )
+      .map((verification) => verification.createdAt)
+      .toSorted((left, right) => Temporal.Instant.compare(right, left));
+    return issuedAts[0] ?? null;
   }
 
   async save(verification: AuthVerification): Promise<void> {

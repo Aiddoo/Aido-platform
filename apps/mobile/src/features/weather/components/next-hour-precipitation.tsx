@@ -12,7 +12,8 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
-import { WeatherRainIcon } from '@src/shared/ui/icon';
+import { AspectRatio } from '@src/shared/ui';
+import { WeatherRainIcon } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Separator } from 'heroui-native';
@@ -29,10 +30,6 @@ import { match } from 'ts-pattern';
 
 import { NEXT_HOUR_CHART_COLORS } from '../constants/weather-colors.constants';
 import {
-  PRECIPITATION_LEVEL_LABEL_KEYS,
-  PRECIPITATION_SUBJECT_LABEL_KEYS,
-} from '../constants/weather-labels';
-import {
   getPrecipitationWindow,
   type HourlyPrecipitationOutlook,
   isNowcastExpired,
@@ -43,9 +40,20 @@ import {
 import type { MinuteForecast } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { NEXT_HOUR_CHART_SIZE, toNextHourChart } from '../utils/next-hour-chart.geometry';
+import {
+  NEXT_HOUR_CHART_SIZE,
+  type PrecipitationLevel,
+  toNextHourChart,
+} from '../utils/next-hour-chart.geometry';
+import { getPrecipitationSubjectLabelKey } from '../utils/weather-labels.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
+
+const PRECIPITATION_LEVEL_LABEL_KEYS = {
+  light: 'nextHour.level.light',
+  moderate: 'nextHour.level.moderate',
+  heavy: 'nextHour.level.heavy',
+} as const satisfies Record<PrecipitationLevel, string>;
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -62,7 +70,7 @@ const GUIDE_LABEL_FONT_SIZE = 10;
 /** 분 단위 예보가 없는 지역(국내 등)은 시간 단위 카드로 알리고, 6시간 넘게 낡은 데이터로는 안내하지 않는다 */
 export function NextHourPrecipitation() {
   const { t } = useTranslation('weather');
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.precipitation },
       useGetPreferenceQueryOptions(),
@@ -70,29 +78,30 @@ export function NextHourPrecipitation() {
   });
   const now = useMinuteNow();
   const toMessage = useFormatPrecipitationMessage({
-    timeZone: data.location.timezone,
+    timeZone: weather.location.timezone,
     timeFormat: preference.timeFormat,
     now,
   });
+  const titleIconSize = Math.round(TITLE_ICON_SIZE * useFontScaleRatio());
 
-  if (isNowcastExpired(data, now)) {
+  if (isNowcastExpired(weather, now)) {
     return <NextHourPrecipitation.Empty />;
   }
-  if (data.nextHour == null) {
-    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(data.hourly, now);
+  if (weather.nextHour == null) {
+    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(weather.hourly, now);
     return outlook == null ? (
       <NextHourPrecipitation.Empty />
     ) : (
       <NextHourPrecipitation.HourlyOutlook
         outlook={outlook}
-        timeZone={data.location.timezone}
+        timeZone={weather.location.timezone}
         timeFormat={preference.timeFormat}
         now={now}
       />
     );
   }
 
-  const window = getPrecipitationWindow(data, now);
+  const window = getPrecipitationWindow(weather, now);
   const { headline, detail } = toMessage(window);
   const summary = detail == null ? headline : t('nextHour.summary', { headline, detail });
 
@@ -101,8 +110,8 @@ export function NextHourPrecipitation() {
       title={t('nextHour.title')}
       icon={
         <WeatherRainIcon
-          width={TITLE_ICON_SIZE}
-          height={TITLE_ICON_SIZE}
+          width={titleIconSize}
+          height={titleIconSize}
           colorClassName="text-on-sky/[0.62]"
         />
       }
@@ -119,7 +128,7 @@ export function NextHourPrecipitation() {
         )}
       </VStack>
       <Separator thickness={0.5} className="mt-3 bg-on-sky/[0.18]" />
-      <NextHourPrecipitation.Chart minutes={data.nextHour.minutes} summary={summary} />
+      <NextHourPrecipitation.Chart minutes={weather.nextHour.minutes} summary={summary} />
     </WeatherCard>
   );
 }
@@ -210,20 +219,14 @@ NextHourPrecipitation.Chart = function Chart({
       return;
     }
     if (isReducedMotion) {
-      // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-      lineProgress.value = 1;
-      // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-      areaOpacity.value = 1;
+      lineProgress.set(1);
+      areaOpacity.set(1);
       return;
     }
-    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-    lineProgress.value = 0;
-    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-    areaOpacity.value = 0;
-    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-    lineProgress.value = withTiming(1, { duration: DRAW_DURATION_MS, easing: LINE_EASING });
-    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-    areaOpacity.value = withTiming(1, { duration: DRAW_DURATION_MS, easing: AREA_EASING });
+    lineProgress.set(0);
+    areaOpacity.set(0);
+    lineProgress.set(withTiming(1, { duration: DRAW_DURATION_MS, easing: LINE_EASING }));
+    areaOpacity.set(withTiming(1, { duration: DRAW_DURATION_MS, easing: AREA_EASING }));
     return () => {
       cancelAnimation(lineProgress);
       cancelAnimation(areaOpacity);
@@ -231,11 +234,9 @@ NextHourPrecipitation.Chart = function Chart({
   }, [hasChart, isReducedMotion, lineProgress, areaOpacity]);
 
   const lineProps = useAnimatedProps(() => ({
-    // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-    strokeDashoffset: length * (1 - lineProgress.value),
+    strokeDashoffset: length * (1 - lineProgress.get()),
   }));
-  // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-  const areaProps = useAnimatedProps(() => ({ opacity: areaOpacity.value }));
+  const areaProps = useAnimatedProps(() => ({ opacity: areaOpacity.get() }));
 
   if (chart == null) {
     return null;
@@ -248,58 +249,64 @@ NextHourPrecipitation.Chart = function Chart({
       accessibilityRole="image"
       accessibilityLabel={t('nextHour.chartLabel', { summary })}
     >
-      <Svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ aspectRatio: width / height }}>
-        <Defs>
-          <LinearGradient id={AREA_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={NEXT_HOUR_CHART_COLORS.area} stopOpacity={0.75} />
-            <Stop offset="1" stopColor={NEXT_HOUR_CHART_COLORS.area} stopOpacity={0.08} />
-          </LinearGradient>
-        </Defs>
-        {chart.guides.map((guide) => (
+      <AspectRatio ratio={width / height}>
+        <Svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`}>
+          <Defs>
+            <LinearGradient id={AREA_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={NEXT_HOUR_CHART_COLORS.area} stopOpacity={0.75} />
+              <Stop offset="1" stopColor={NEXT_HOUR_CHART_COLORS.area} stopOpacity={0.08} />
+            </LinearGradient>
+          </Defs>
+          {chart.guides.map((guide) => (
+            <Line
+              key={guide.level}
+              x1={0}
+              x2={width}
+              y1={guide.y}
+              y2={guide.y}
+              stroke={guideColor}
+              strokeWidth={1}
+              strokeDasharray="2 4"
+            />
+          ))}
+          {chart.guides.map((guide) => (
+            <SvgText
+              key={`${guide.level}-label`}
+              x={width}
+              y={guide.y - 4}
+              textAnchor="end"
+              fill={guideLabelColor}
+              fontSize={GUIDE_LABEL_FONT_SIZE}
+              fontFamily={LABEL_FONT}
+            >
+              {t(PRECIPITATION_LEVEL_LABEL_KEYS[guide.level])}
+            </SvgText>
+          ))}
           <Line
-            key={guide.level}
             x1={0}
             x2={width}
-            y1={guide.y}
-            y2={guide.y}
-            stroke={guideColor}
+            y1={baseline}
+            y2={baseline}
+            stroke={baselineColor}
             strokeWidth={1}
-            strokeDasharray="2 4"
           />
-        ))}
-        {chart.guides.map((guide) => (
-          <SvgText
-            key={`${guide.level}-label`}
-            x={width}
-            y={guide.y - 4}
-            textAnchor="end"
-            fill={guideLabelColor}
-            fontSize={GUIDE_LABEL_FONT_SIZE}
-            fontFamily={LABEL_FONT}
-          >
-            {t(PRECIPITATION_LEVEL_LABEL_KEYS[guide.level])}
-          </SvgText>
-        ))}
-        <Line
-          x1={0}
-          x2={width}
-          y1={baseline}
-          y2={baseline}
-          stroke={baselineColor}
-          strokeWidth={1}
-        />
-        <AnimatedPath d={chart.area} fill={`url(#${AREA_GRADIENT_ID})`} animatedProps={areaProps} />
-        <AnimatedPath
-          d={chart.line}
-          fill="none"
-          stroke={NEXT_HOUR_CHART_COLORS.line}
-          strokeWidth={2}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          strokeDasharray={length}
-          animatedProps={lineProps}
-        />
-      </Svg>
+          <AnimatedPath
+            d={chart.area}
+            fill={`url(#${AREA_GRADIENT_ID})`}
+            animatedProps={areaProps}
+          />
+          <AnimatedPath
+            d={chart.line}
+            fill="none"
+            stroke={NEXT_HOUR_CHART_COLORS.line}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            strokeDasharray={length}
+            animatedProps={lineProps}
+          />
+        </Svg>
+      </AspectRatio>
       <HStack justify="between" className="mt-1.5">
         {TICK_MINUTES.map((minute) => (
           <Text key={minute} size="e1" weight="medium" className="text-on-sky/[0.62] tabular-nums">
@@ -344,7 +351,7 @@ function useFormatPrecipitationMessage({
 
   /** 공급자가 형태 없이 강수라고만 알리면(null) 비와 눈을 함께 말한다. */
   const toSubject = (type: WeatherPrecipitationType | null) =>
-    t(PRECIPITATION_SUBJECT_LABEL_KEYS[type ?? 'MIXED']);
+    t(getPrecipitationSubjectLabelKey(type ?? 'MIXED'));
 
   const formatEnd = (wet: Exclude<PrecipitationWindow, { kind: 'dry' }>) => {
     if (wet.endsAt == null) {

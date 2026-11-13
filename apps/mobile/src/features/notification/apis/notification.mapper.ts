@@ -6,6 +6,7 @@ import {
   notificationRoutingSchema,
 } from '@aido/api';
 import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { type Instant, toInstant } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
@@ -77,13 +78,13 @@ export function toNotificationTarget(
       kind: 'TODO',
       todoId,
       ownerId: todoOwnerId ?? null,
-      dateKey: todoDate ?? null,
+      dateKey: todoDate == null ? null : dateKeySchema.parse(todoDate),
     }))
     .with({ kind: 'TODO_COMMENT' }, ({ todoId, todoOwnerId, todoDate, commentId }) => ({
       kind: 'TODO_COMMENT',
       todoId,
       ownerId: todoOwnerId ?? null,
-      dateKey: todoDate ?? null,
+      dateKey: todoDate == null ? null : dateKeySchema.parse(todoDate),
       commentId,
     }))
     .with({ kind: 'NUDGE' }, ({ nudgeId }) => ({ kind: 'NUDGE', nudgeId }))

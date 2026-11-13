@@ -1,11 +1,13 @@
 import type {
-  PermissionSnapshot,
+  SpeechPermission,
   SpeechCapabilities,
   SpeechEvent,
   SpeechRecognizer,
 } from '@src/core/ports/speech-recognizer';
 
-const GRANTED: PermissionSnapshot = { isGranted: true, canAskAgain: true };
+import { mockMethod } from '../mock-method';
+
+const GRANTED: SpeechPermission = { status: 'granted', canAskAgain: true };
 const FULL_CAPABILITIES: SpeechCapabilities = {
   isAvailable: true,
   canRecognizeOnDevice: true,
@@ -26,10 +28,10 @@ export function createSpeechRecognizerStub(): SpeechRecognizerStub {
 
   return {
     getPermission: jest
-      .fn<Promise<PermissionSnapshot>, Parameters<SpeechRecognizer['getPermission']>>()
+      .fn<Promise<SpeechPermission>, Parameters<SpeechRecognizer['getPermission']>>()
       .mockResolvedValue(GRANTED),
     requestPermission: jest
-      .fn<Promise<PermissionSnapshot>, Parameters<SpeechRecognizer['requestPermission']>>()
+      .fn<Promise<SpeechPermission>, Parameters<SpeechRecognizer['requestPermission']>>()
       .mockResolvedValue(GRANTED),
     getCapabilities: jest
       .fn<Promise<SpeechCapabilities>, Parameters<SpeechRecognizer['getCapabilities']>>()
@@ -40,15 +42,17 @@ export function createSpeechRecognizerStub(): SpeechRecognizerStub {
         Parameters<SpeechRecognizer['requestOfflineModel']>
       >()
       .mockResolvedValue('unavailable'),
-    start: jest.fn(),
-    stop: jest.fn(),
-    abort: jest.fn(),
-    subscribe: jest.fn((listener: (event: SpeechEvent) => void) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    }),
+    start: mockMethod<SpeechRecognizer['start']>(),
+    stop: mockMethod<SpeechRecognizer['stop']>(),
+    abort: mockMethod<SpeechRecognizer['abort']>(),
+    subscribe: mockMethod<SpeechRecognizer['subscribe']>(
+      (listener: (event: SpeechEvent) => void) => {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    ),
     emit: (event) => {
       for (const listener of listeners) {
         listener(event);
