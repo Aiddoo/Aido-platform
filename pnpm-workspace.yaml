@@ -46,6 +46,8 @@ overrides:
   lodash@<=4.17.23: ^4.18.1
   multer@<2.5.0: ^2.5.0
   node-forge@<1.4.3: ^1.4.3
+  # glob 13.0.7은 GHSA-3g3m-2fjr-6pw4 수정을 13.x에 백포트했다(Sentry 소스맵 업로드·Jest가 13을 쓴다).
+  glob@>=13.0.0 <13.0.7: ^13.0.7
   re2js@>=2.2.0 <2.8.7: ^2.8.7
   # @expo/cli > @expo/router-server만 쓴다(GHSA-xqc2-xf4c-x3h3). 앱 번들에는 들어가지 않는다.
   react-server-dom-webpack@>=19.3.0 <19.3.1: ^19.3.1
@@ -99,7 +101,7 @@ catalog:
   'express': '5.3.0'
   'google-auth-library': '11.3.4'
   'helmet': '8.3.0'
-  'ioredis': '5.11.1'
+  'ioredis': '6.0.0'
   'jose': '6.2.17'
   'knip': '6.45.1'
   'lru-cache': '11.5.3'
@@ -219,7 +221,11 @@ patchedDependencies:
   react-native-screens@4.30.1: patches/react-native-screens@4.30.1.patch
   expo-widgets@58.0.28: patches/expo-widgets@58.0.28.patch
 auditConfig:
-  # @expo/cli(Expo 빌드 도구) 내부 node-forge(GHSA-86w9-cpqp-85rv)·zod 3.x(GHSA-mrhx-c7xc-m3w5)는 패치 버전이 없어 위험을 수용한다. @expo/cli가 패치된 버전을 받으면 제거한다.
+  # 빌드 도구에만 있는 권고라 위험을 수용한다. 상위 패키지가 고친 버전을 받으면 지운다.
+  # - GHSA-g3hv-75wg-m249(minimatch <11.0.1): @expo/fingerprint가 기본 optimizationLevel 1로 써서 해당 없다고
+  #   Expo가 밝혔다(@expo/fingerprint build/Options.js). 9·10에 백포트가 없고 11은 glob 13과 맞지 않는다.
+  # - GHSA-3g3m-2fjr-6pw4(glob <=14.0.1): 13.0.7 백포트를 위 override로 받는다. 권고 범위가 갱신되지 않아
+  #   계속 잡히고, 남은 glob 10은 AbortSignal을 쓰지 않는 개발 도구다.
   ignoreGhsas:
-    - GHSA-86w9-cpqp-85rv
-    - GHSA-mrhx-c7xc-m3w5
+    - GHSA-g3hv-75wg-m249
+    - GHSA-3g3m-2fjr-6pw4

@@ -25,8 +25,8 @@ export interface RedisConnectionSettings {
  * - `commandTimeout`: 연결은 살아있는데 응답이 없는 blackhole 상황 상한
  * - `maxRetriesPerRequest: 1`: 재연결 후 1회만 재시도
  *
- * retryStrategy는 ioredis 기본값 유지 — 백그라운드 자동 재접속이
- * half-open probe 역할을 하므로 복구 시 별도 조치 없이 정상화된다.
+ * retryStrategy·keepAlive는 ioredis 6 기본값(지수 백오프 상한 5초, keepAlive 30초)을 쓴다.
+ * 백그라운드 자동 재접속이 half-open probe 역할을 하므로 복구 시 별도 조치 없이 정상화된다.
  */
 export function buildCommandRedisOptions(settings: RedisConnectionSettings): RedisOptions {
   return {

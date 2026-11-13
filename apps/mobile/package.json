@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@aido/api": "workspace:*",
-    "@babel/runtime": "7.29.13",
+    "@babel/runtime": "7.29.14",
     "@expo/material-symbols": "catalog:expo58",
     "@expo/metro-runtime": "catalog:expo58",
     "@expo/ui": "catalog:expo58",

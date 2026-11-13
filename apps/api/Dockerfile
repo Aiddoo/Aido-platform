@@ -1,4 +1,4 @@
-FROM node:26.13.0-alpine3.24 AS base
+FROM node:26.13.1-alpine3.24 AS base
 WORKDIR /app
 ENV TZ=UTC
 ENV COREPACK_HOME=/usr/local/share/corepack
@@ -53,7 +53,7 @@ USER migrate
 RUN test -r "$NODE_EXTRA_CA_CERTS"
 CMD ["pnpm", "db:deploy"]
 
-FROM node:26.13.0-alpine3.24 AS production
+FROM node:26.13.1-alpine3.24 AS production
 WORKDIR /app
 # 운영 서버는 node로만 실행한다. 베이스 이미지 번들 npm의 취약 의존성이 운영 이미지에 남지 않게 걷어 낸다.
 RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \

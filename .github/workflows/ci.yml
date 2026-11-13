@@ -200,7 +200,7 @@ jobs:
           platforms: linux/arm64
           load: true
           push: false
-          pull: true # node:26.13.0-alpine3.24의 최신 base 보안 digest 수급
+          pull: true # node:26.13.1-alpine3.24의 최신 base 보안 digest 수급
           provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
           tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
           cache-from: type=gha,scope=api
@@ -223,7 +223,7 @@ jobs:
           platforms: linux/arm64
           load: true
           push: false
-          pull: true # node:26.13.0-alpine3.24의 최신 base 보안 digest 수급
+          pull: true # node:26.13.1-alpine3.24의 최신 base 보안 digest 수급
           provenance: false
           tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
           cache-from: type=gha,scope=migrate
