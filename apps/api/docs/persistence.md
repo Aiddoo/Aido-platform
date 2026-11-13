@@ -32,7 +32,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 - Reader 사례: [DrizzleTodoCommentReader](../src/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader.ts)는 댓글 overview·대화를 root keyset으로 읽고 page 단위 좋아요를 합친다(viewer 상태·cursor 문맥이 있어 공유 캐시를 쓰지 않는다).
 - 다른 Context의 테이블은 읽지도 쓰지도 않는다. 필요한 projection은 소유 Context가 public 조회 포트로 열고 그 Context의 Reader가 SQL을 가진다([아키텍처](architecture.md#의존-규칙과-강제)).
 
-**작업 원장(work ledger) 저장소**: Aggregate 없이 작업 행을 집합으로 옮기는 저장소다. 푸시 발송(`DrizzlePushDeliveryOutboxRepository`·`DrizzlePushDeliveryLifecycleRepository`·`DrizzlePushReceiptRepository`), 리텐션(`DrizzleRetentionRepository`), 결제 안내(`DrizzleTrialEndingNoticeRepository`·`DrizzleUpcomingRenewalNoticeRepository`·`DrizzlePremiumGrantEndingNoticeRepository`)가 그렇다. 여기서는 `find*`·`save` 대신 업무 이름의 집합 연산(`claim`·`finalizeResults`·`expireUnreceipted`)을 둔다(소유자 결정, [이름 사전](conventions.md#repository-메서드)). 경합은 조건부 UPDATE·세대 fence·정렬된 행 잠금이 막고, 로그·발송·enqueue는 그대로 UseCase가 한다.
+**작업 원장(work ledger) 저장소**: Aggregate 없이 작업 행을 집합으로 옮기는 저장소다. 푸시 발송(`DrizzlePushDeliveryOutboxRepository`·`DrizzlePushDeliveryLifecycleRepository`·`DrizzlePushReceiptRepository`), 리텐션(`DrizzleRetentionRepository`), 결제 안내(`DrizzleTrialEndingNoticeRepository`·`DrizzleUpcomingRenewalNoticeRepository`·`DrizzlePremiumGrantEndingNoticeRepository`), 지운 계정의 댓글 정리(`DrizzleTodoCommentPurgeRepository`)가 그렇다. Aggregate 저장소도 많은 행을 한 문장으로 바꾸는 경로만 같은 묶음 메서드를 둔다(지운 글의 좋아요를 모두 끄는 `unlikeAllByCommentId`). 여기서는 `find*`·`save` 대신 업무 이름의 집합 연산(`claim`·`finalizeResults`·`expireUnreceipted`)을 둔다(소유자 결정, [이름 사전](conventions.md#repository-메서드)). 경합은 조건부 UPDATE·세대 fence·정렬된 행 잠금이 막고, 로그·발송·enqueue는 그대로 UseCase가 한다.
 
 ## 저장과 잠금
 
