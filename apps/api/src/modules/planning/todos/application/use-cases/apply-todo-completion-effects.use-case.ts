@@ -1,6 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 
@@ -26,13 +25,13 @@ export interface ApplyTodoCompletionEffectsDependencies {
   readonly todoNotification: TodoNotificationPort;
   readonly streakPort: Pick<StreakPort, "recordTodoToggle">;
   readonly clock: ClockPort;
-  readonly logger: Pick<ApplicationLoggerPort, "log" | "error">;
+  readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
 /**
- * 완료 토글이 커밋된 뒤 다른 Context(스트릭·친구 알림·마일스톤)에 미치는 효과다. 리마인더 취소는 UseCase가
- * 같은 트랜잭션에서 한다. 소유 Context가 내구성 있는 구독으로 옮기기 전까지 커밋 뒤 바로 부르고,
- * 실패는 기록만 하고 할 일 응답에 전파하지 않는다.
+ * 완료 토글이 다른 Context(스트릭·친구 완료 알림·마일스톤)에 미치는 효과다. 토글과 같은 트랜잭션 안에서 부른다.
+ * 스트릭은 응답 직후 위젯·요약에 바로 보여야 해서 큐로 미루지 않고, 알림은 작업 행이 함께 커밋된다.
+ * 실패는 토글과 함께 되돌린다(트랜잭션 안에서 SQL 오류를 삼키면 이후 문장이 모두 실패한다).
  */
 export class ApplyTodoCompletionEffectsUseCase {
   readonly #dependencies: ApplyTodoCompletionEffectsDependencies;
@@ -50,110 +49,60 @@ export class ApplyTodoCompletionEffectsUseCase {
   }
 
   async #apply({ userId, completed, timezone }: TodoToggledEvent): Promise<void> {
-    const milestone = completed ? this.#notifyMilestone(userId) : Promise.resolve();
+    const ownerId = UserId.reconstitute(userId);
     // 스트릭과 친구 완료 알림이 같은 오늘 현황을 보므로 한 번만 센다
-    const todayStats = await this.#readTodayStats(userId, timezone);
-    const effects = [milestone, this.#recordStreak(userId, completed, timezone, todayStats)];
-    if (completed && todayStats != null) {
-      effects.push(this.#notifyFriendsIfAllDone(userId, timezone, todayStats));
-    }
-    await Promise.all(effects);
-  }
+    const todayStats = await this.#readTodayStats(ownerId, timezone);
 
-  async #readTodayStats(userId: string, timezone: string): Promise<TodayCompletionStats | null> {
-    try {
-      const date = localDateAt(this.#dependencies.clock.now(), timezone);
-      const stats = await this.#dependencies.todoReadRepository.getTodayTodoStats(
-        UserId.reconstitute(userId),
-        date,
-      );
-      return { date, ...stats };
-    } catch (error) {
-      this.#dependencies.logger.error({
-        event: TodoLogEvent.TODAY_STATS_FAILED,
-        userId,
-        errorType: toErrorType(error),
-      });
-      return null;
+    await this.#dependencies.streakPort.recordTodoToggle(ownerId, completed, timezone, todayStats);
+
+    if (completed) {
+      await this.#notifyMilestone(ownerId);
+      await this.#notifyFriendsIfAllDone(ownerId, timezone, todayStats);
     }
   }
 
-  async #recordStreak(
-    userId: string,
-    completed: boolean,
-    timezone: string,
-    todayStats: TodayCompletionStats | null,
-  ): Promise<void> {
-    try {
-      await this.#dependencies.streakPort.recordTodoToggle(
-        UserId.reconstitute(userId),
-        completed,
-        timezone,
-        todayStats,
-      );
-    } catch (error) {
-      this.#dependencies.logger.error({
-        event: TodoLogEvent.STREAK_RECORD_FAILED,
-        userId,
-        errorType: toErrorType(error),
-      });
-    }
+  async #readTodayStats(ownerId: UserId, timezone: string): Promise<TodayCompletionStats> {
+    const date = localDateAt(this.#dependencies.clock.now(), timezone);
+    const stats = await this.#dependencies.todoReadRepository.getTodayTodoStats(ownerId, date);
+    return { date, ...stats };
   }
 
   async #notifyFriendsIfAllDone(
-    userId: string,
+    ownerId: UserId,
     timezone: string,
     todayStats: TodayCompletionStats,
   ): Promise<void> {
     if (!isAllCompletedToday(todayStats)) {
       return;
     }
-    try {
-      const ownerId = UserId.reconstitute(userId);
-      const [friendIds, userName] = await Promise.all([
-        this.#dependencies.friendPort.getMutualFriendIds(ownerId),
-        this.#dependencies.friendPort.getUserDisplayName(ownerId),
-      ]);
-      if (friendIds.length === 0) {
-        return;
-      }
-      await this.#dependencies.todoNotification.enqueueFriendCompleted({
-        friendId: userId,
-        friendName: userName,
-        notifyUserIds: friendIds,
-        timezone,
-      });
-      this.#dependencies.logger.log({
-        event: TodoLogEvent.FRIEND_COMPLETED_ENQUEUED,
-        userId,
-        count: friendIds.length,
-      });
-    } catch (error) {
-      this.#dependencies.logger.error({
-        event: TodoLogEvent.FRIEND_COMPLETED_FAILED,
-        userId,
-        errorType: toErrorType(error),
-      });
+    const friendIds = await this.#dependencies.friendPort.getMutualFriendIds(ownerId);
+    if (friendIds.length === 0) {
+      return;
     }
+    await this.#dependencies.todoNotification.enqueueFriendCompleted({
+      friendId: ownerId.value,
+      friendName: await this.#dependencies.friendPort.getUserDisplayName(ownerId),
+      notifyUserIds: friendIds,
+      timezone,
+    });
+    this.#dependencies.logger.log({
+      event: TodoLogEvent.FRIEND_COMPLETED_ENQUEUED,
+      userId: ownerId.value,
+      count: friendIds.length,
+    });
   }
 
-  async #notifyMilestone(userId: string): Promise<void> {
-    try {
-      const milestone = milestoneForCount(
-        await this.#dependencies.todoReadRepository.countCompletedByUser(
-          UserId.reconstitute(userId),
-          MILESTONE_COMPLETION_COUNT_LIMIT,
-        ),
-      );
-      if (milestone == null) {
-        return;
-      }
-      await this.#dependencies.todoNotification.enqueueMilestoneReached({ userId, milestone });
-    } catch (error) {
-      this.#dependencies.logger.error({
-        event: TodoLogEvent.MILESTONE_CHECK_FAILED,
-        userId,
-        errorType: toErrorType(error),
+  async #notifyMilestone(ownerId: UserId): Promise<void> {
+    const milestone = milestoneForCount(
+      await this.#dependencies.todoReadRepository.countCompletedByUser(
+        ownerId,
+        MILESTONE_COMPLETION_COUNT_LIMIT,
+      ),
+    );
+    if (milestone != null) {
+      await this.#dependencies.todoNotification.enqueueMilestoneReached({
+        userId: ownerId.value,
+        milestone,
       });
     }
   }
