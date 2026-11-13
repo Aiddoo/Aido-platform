@@ -24,7 +24,7 @@ CI 검증 → 같은 SHA의 API/migrate 이미지 → Deploy to EC2
   → 배포 락·SHA 확인 → migration/verify → API 교체 → health 확인
 ```
 
-deploy workflow는 같은 저장소의 main push/dispatch로 끝난 CI run만 배포한다. SSH host key는 `EC2_SSH_HOST_FINGERPRINT` secret(`ssh-keygen -lf`의 `SHA256:…` 값)이 있을 때만 검증하므로 등록해 둔다.
+deploy workflow는 같은 저장소의 main push/dispatch로 끝난 CI run만 배포한다. 접속은 러너의 OpenSSH이고 host key는 `EC2_SSH_HOST_KEYS` secret(서버 `/etc/ssh/ssh_host_*_key.pub`의 `종류 키` 줄)으로 고정한다. 없으면 배포가 시작되지 않는다. 서버를 새로 만들어 host key가 바뀌면 `ssh <서버> 'for f in /etc/ssh/ssh_host_*_key.pub; do cut -d" " -f1,2 "$f"; done' | gh secret set EC2_SSH_HOST_KEYS`로 다시 넣는다. 토큰은 stdin 스크립트로만 넘긴다.
 
 서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·최소 3GB 디스크 여유를 확인하고 운영 env(`apps/api/.env`, 600)를 확인하고, 지금 돌고 있는 컨테이너의 이미지를 rollback 태그로 보존한다. 이미지는 GHCR에서 pull만 하고 기동은 `--no-build --pull never`로 준비된 이미지만 쓴다. 토큰이 없으면 서버에서 빌드하지 않고 중단하며, 서버 빌드는 `--build`를 준 비상 폴백뿐이다.
 
