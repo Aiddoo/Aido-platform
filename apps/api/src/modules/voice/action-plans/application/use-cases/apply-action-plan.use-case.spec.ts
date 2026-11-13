@@ -74,7 +74,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
       },
     },
     afterCommit: { register: (task) => registered.push(task) },
-    repository: {
+    planApplicationRepository: {
       findByIdempotencyKey: async (userId, key) => {
         order.push("findByKey");
         return repository.findByIdempotencyKey(userId, key);

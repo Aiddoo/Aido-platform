@@ -29,16 +29,16 @@ describe("PurgePlanApplicationsUseCase — 적용 멱등 기록 정리", () => {
       );
     }
     const useCase = new PurgePlanApplicationsUseCase({
-      repository,
+      planApplicationRepository: repository,
       clock: new FixedClock(NOW),
       logger: new SilentLogger(),
     });
 
     // When
-    const deletedCount = await useCase.execute();
+    const purgedCount = await useCase.execute();
 
     // Then
-    expect(deletedCount).toBe(1);
+    expect(purgedCount).toBe(1);
     expect(
       repository.saved.map((application) => application.toPrimitives().idempotencyKey),
     ).toEqual(["recent", "just-seven-days"]);

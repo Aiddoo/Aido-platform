@@ -18,11 +18,10 @@ interface QuotaChargedPlanRunnerDependencies {
 }
 
 /** access 사용량 원장에 Idempotency-Key로 예약하고, 앞선 시도의 결과가 남아 있으면 다시 만들지 않고 돌려준다. */
-export class QuotaChargedPlanRunnerAdapter extends ChargedPlanRunnerPort {
+export class QuotaChargedPlanRunnerAdapter implements ChargedPlanRunnerPort {
   readonly #dependencies: QuotaChargedPlanRunnerDependencies;
 
   constructor(dependencies: QuotaChargedPlanRunnerDependencies) {
-    super();
     this.#dependencies = dependencies;
   }
 

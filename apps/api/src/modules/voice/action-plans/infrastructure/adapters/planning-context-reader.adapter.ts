@@ -11,10 +11,8 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
-import {
-  type PlanningContext,
-  PlanningContextReaderPort,
-} from "../../application/ports/planning-context.reader.port.js";
+import { PlanningContextReaderPort } from "../../application/ports/planning-context.reader.port.js";
+import type { PlanningContextReadModel } from "../../application/read-models/planning-context.read-model.js";
 
 // 알 수 없는 시간대는 계획을 멈추지 않고 UTC 오늘로 본다
 function toPlanningTimeZone(raw: string): TimeZone {
@@ -27,7 +25,7 @@ function toPlanningTimeZone(raw: string): TimeZone {
 
 /** 카테고리 id·이름과 다가오는 할 일을 읽기만 한다. 다른 Context의 공개 포트로만 읽는다. */
 @Injectable()
-export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
+export class PlanningContextReaderAdapter implements PlanningContextReaderPort {
   readonly #categoryReader: Pick<TodoCategoryReaderPort, "listForUser">;
   readonly #todoReader: Pick<TodoPlanReaderPort, "findUpcoming">;
   readonly #clock: ClockPort;
@@ -37,13 +35,12 @@ export class PlanningContextReaderAdapter extends PlanningContextReaderPort {
     todoReader: TodoPlanReaderPort,
     clock: ClockPort,
   ) {
-    super();
     this.#categoryReader = categoryReader;
     this.#todoReader = todoReader;
     this.#clock = clock;
   }
 
-  async read(userId: UserId, timezone: string): Promise<PlanningContext> {
+  async read(userId: UserId, timezone: string): Promise<PlanningContextReadModel> {
     const today = localDateOf(this.#clock.now(), toPlanningTimeZone(timezone));
     const [categories, upcomingTodos] = await Promise.all([
       this.#categoryReader.listForUser(userId),

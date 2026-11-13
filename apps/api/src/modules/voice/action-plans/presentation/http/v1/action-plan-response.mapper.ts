@@ -3,7 +3,8 @@ import type {
   ApplyActionPlanResponse,
   PlannedAction,
   QuickPlanResponse,
-} from "@aido/api";
+} from "@aido/api/contracts/voice";
+import { match } from "ts-pattern";
 
 import { toTodoResponse } from "#api/modules/planning/todos/planning-todos.public";
 
@@ -13,10 +14,15 @@ import type { CreatedQuickPlan } from "../../../application/use-cases/create-qui
 
 export function toActionPlanResponse(plan: ActionPlanReadModel): ActionPlan {
   return {
-    actions: plan.actions.map((action): PlannedAction =>
-      action.type === "CREATE_TODO"
-        ? { ...action, items: action.items.map(({ title }) => ({ title })) }
-        : { ...action },
+    actions: plan.actions.map((action) =>
+      match(action)
+        .returnType<PlannedAction>()
+        .with({ type: "CREATE_TODO" }, (todo) => ({
+          ...todo,
+          items: todo.items.map(({ title }) => ({ title })),
+        }))
+        .with({ type: "CREATE_MEMO" }, (memo) => ({ ...memo }))
+        .exhaustive(),
     ),
     omittedTodoCount: plan.omittedTodoCount,
   };
