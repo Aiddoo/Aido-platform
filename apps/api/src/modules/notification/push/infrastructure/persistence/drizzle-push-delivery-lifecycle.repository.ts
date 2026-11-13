@@ -629,7 +629,8 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
       .update(pushDispatchOutbox)
       .set({
         status: "PENDING",
-        availableAt: now,
+        // claim이 DB 시계(LOCALTIMESTAMP(3))로 비교하므로 같은 시계로 열어야 서버 시계가 앞서도 이번 relay가 바로 잡는다
+        availableAt: sql`LOCALTIMESTAMP(3)`,
         lockedAt: null,
         publishedAt: null,
         lastError: STALE_PROCESSING_LEASE_ERROR,
