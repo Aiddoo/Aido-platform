@@ -7,22 +7,26 @@ import { WeatherAlerts } from '@src/features/weather/components/weather-alerts';
 import { WeatherAttribution } from '@src/features/weather/components/weather-attribution';
 import { WeatherBackground } from '@src/features/weather/components/weather-background';
 import { WeatherBriefing } from '@src/features/weather/components/weather-briefing';
-import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid';
+import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid/weather-detail-grid';
 import { WeatherHero } from '@src/features/weather/components/weather-hero';
 import { WeatherLocationNotice } from '@src/features/weather/components/weather-location-notice';
 import { WeatherLocationPrompt } from '@src/features/weather/components/weather-location-prompt';
 import { WeatherReportGate } from '@src/features/weather/components/weather-report-gate';
 import { WeatherScrollView } from '@src/features/weather/components/weather-scroll-view';
-import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon';
+import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon/weather-sun-moon';
 import type { WeatherLocationStatus } from '@src/features/weather/domains/weather-location.model';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
-import { useWeatherLocationRevision } from '@src/features/weather/queries/weather.queries';
+import { useWeatherOpenKey } from '@src/features/weather/hooks/use-weather-open-key';
+import {
+  useGetForecastCompletionsQueryOptions,
+  useWeatherLocationRevision,
+} from '@src/features/weather/queries/weather.queries';
 import { weatherEntryParamsSchema } from '@src/features/weather/schemas/weather-entry-params.schema';
 import {
   toWeatherLocationRegisteredResult,
   toWeatherOpenedEntry,
 } from '@src/features/weather/utils/weather-analytics';
-import { useTrack } from '@src/shared/analytics';
+import { useTrackView } from '@src/shared/analytics';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import {
   AdaptivePane,
@@ -34,7 +38,8 @@ import {
   Spacing,
   VStack,
 } from '@src/shared/ui';
-import { Suspense, useEffect, useRef } from 'react';
+import { usePrefetchQuery } from '@tanstack/react-query';
+import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 const SCREEN_GUTTER = 16;
@@ -73,12 +78,18 @@ export default function WeatherScreen() {
                         <Box px={SCREEN_GUTTER}>
                           <WeatherLocationNotice />
                         </Box>
-                        <Box pt={HERO_TOP} px={HERO_GUTTER}>
+
+                        <Spacing size={HERO_TOP} />
+
+                        <Box px={HERO_GUTTER}>
                           <WeatherReportGate.Suspense fallback={<WeatherHero.Loading />}>
                             <WeatherHero />
                           </WeatherReportGate.Suspense>
                         </Box>
-                        <VStack gap={CARD_GAP} pt={CARDS_TOP} px={SCREEN_GUTTER}>
+
+                        <Spacing size={CARDS_TOP} />
+
+                        <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>
                           {/* 특보는 대부분 없어서 자리를 미리 잡으면 로딩 뒤 화면이 당겨진다. 자리를 두지 않는다. */}
                           <WeatherReportGate.Suspense fallback={null}>
                             <WeatherAlerts />
@@ -96,9 +107,11 @@ export default function WeatherScreen() {
                             <HourlyForecast />
                           </WeatherReportGate.Suspense>
                         </VStack>
+
                         {isCompact && (
                           <>
                             <Spacing size={CARD_GAP} />
+
                             <ForecastCards />
                           </>
                         )}
@@ -124,6 +137,9 @@ export default function WeatherScreen() {
 }
 
 function ForecastCards() {
+  // 리포트를 기다리는 블록 안에서 받으면 할 일 점 조회가 리포트 응답 뒤에 나간다
+  usePrefetchQuery(useGetForecastCompletionsQueryOptions());
+
   return (
     <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>
       <WeatherReportGate.Suspense fallback={<DailyForecast.Loading />}>
@@ -154,24 +170,21 @@ WeatherScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
 };
 
 /**
- * 날씨 화면이 열릴 때 진입점을, 위치 확인이 처음 끝났을 때 그 결과를 한 번씩 남긴다.
- * 새로고침·포커스 재확인으로 상태가 다시 바뀌어도 같은 화면에서는 더 세지 않는다.
+ * 날씨 화면을 열 때마다 진입점을, 그 열기에서 위치 확인이 처음 끝났을 때 결과를 한 번씩 남긴다.
+ * 새로고침·포커스 재확인으로 상태가 다시 바뀌어도 같은 열기에서는 더 세지 않는다. `weather_opened`는 KPI·퍼널이
+ * 이름을 써서 경로 보기(`screen_view`)와 따로 남기는 예외다(observability.md)
  */
 function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status']): void {
   const [{ entry }] = useRouteParams(weatherEntryParamsSchema);
-  const { trackEvent } = useTrack();
-  const hasTrackedLocationRef = useRef(false);
+  const openKey = useWeatherOpenKey();
   const locationResult = toWeatherLocationRegisteredResult(locationStatus);
 
-  useEffect(() => {
-    trackEvent('weather_opened', { entry: toWeatherOpenedEntry(entry) });
-  }, [trackEvent, entry]);
-
-  useEffect(() => {
-    if (locationResult == null || hasTrackedLocationRef.current) {
-      return;
-    }
-    hasTrackedLocationRef.current = true;
-    trackEvent('weather_location_registered', { result: locationResult });
-  }, [trackEvent, locationResult]);
+  useTrackView('weather_opened', {
+    key: openKey,
+    params: { entry: toWeatherOpenedEntry(entry) },
+  });
+  useTrackView(
+    'weather_location_registered',
+    locationResult == null ? null : { key: openKey, params: { result: locationResult } },
+  );
 }

@@ -1,15 +1,14 @@
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
-import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { i18n } from '@src/shared/i18n';
 import { useSystemLocale } from '@src/shared/infra/localization/device-locale';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
 import {
-  LANGUAGE_MODE_STORAGE_KEY,
   type LanguageMode,
-  toLanguageMode,
   type ResolvedLanguage,
   resolveLanguage,
 } from '@src/shared/preferences/language.preference';
+import { languageModeStoredValue } from '@src/shared/preferences/schemas/language-mode-storage.schema';
+import { useStoredValueIn } from '@src/shared/storage/use-stored-value';
 import { noop } from 'es-toolkit';
 import { createContext, type PropsWithChildren, use, useEffect, useMemo } from 'react';
 
@@ -36,8 +35,7 @@ export function LanguageProvider({
   syncStorage = deviceSyncStorage,
   useDeviceLanguage = useSystemLanguage,
 }: LanguageProviderProps) {
-  const [savedMode, setLanguageMode] = useSyncStorageString(syncStorage, LANGUAGE_MODE_STORAGE_KEY);
-  const languageMode = toLanguageMode(savedMode);
+  const [languageMode, setLanguageMode] = useStoredValueIn(syncStorage, languageModeStoredValue);
   const deviceLanguage = useDeviceLanguage();
 
   const resolvedLanguage = useMemo(

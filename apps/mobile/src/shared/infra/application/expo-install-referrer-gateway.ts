@@ -3,7 +3,7 @@ import * as Application from 'expo-application';
 
 // Play 설치 referrer만 있다. iOS는 웹에서 코드를 보여 주고 직접 입력하게 한다
 export const expoInstallReferrerGateway: InstallReferrerGateway = {
-  get() {
+  get: () => {
     if (process.env.EXPO_OS !== 'android') {
       return Promise.resolve(null);
     }

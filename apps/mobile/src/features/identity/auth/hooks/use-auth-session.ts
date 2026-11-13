@@ -7,11 +7,11 @@ export function useAuthSession() {
 
   return {
     signIn: () => {
-      if (store.getState().status !== 'authenticated') {
+      if (store.getSnapshot().status !== 'authenticated') {
         sessionCleanupService.beforeSignIn();
       }
-      store.dispatch({ type: 'signedIn' });
+      store.signIn();
     },
-    signOut: () => store.dispatch({ type: 'signedOut' }),
+    signOut: () => store.signOut(),
   };
 }

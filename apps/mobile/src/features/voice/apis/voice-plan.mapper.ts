@@ -10,6 +10,7 @@ import {
 } from '@aido/api';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { match } from 'ts-pattern';
 
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
@@ -48,8 +49,8 @@ function toPlannedAction(dto: PlannedActionDto): PlannedAction {
       type: 'create-todo',
       actionId: todo.key,
       title: todo.title,
-      startDate: todo.startDate,
-      endDate: todo.endDate,
+      startDate: dateKeySchema.parse(todo.startDate),
+      endDate: todo.endDate == null ? null : dateKeySchema.parse(todo.endDate),
       scheduledTime: todo.scheduledTime,
       repeat: todo.repeat == null ? null : toRepeat(todo.repeat),
       visibility: todo.visibility,

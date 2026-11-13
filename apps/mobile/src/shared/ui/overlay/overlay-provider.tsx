@@ -12,6 +12,7 @@ import {
 } from 'react';
 
 import { PortalTargetContext } from '../bottom-sheet/portal-target';
+import { ToastLayerClosingContext } from '../toast/toast-layer';
 import { OverlayStateContext } from './overlay-state-context';
 
 export interface OverlayController {
@@ -42,7 +43,7 @@ export function OverlayProvider({
   );
 
   useLayoutEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- resetKey가 바뀌면(로그아웃 등) 떠 있던 오버레이를 한 번에 걷는다
+    // oxlint-disable-next-line react/set-state-in-effect -- resetKey(화면 경로)가 바뀌면 떠 있던 오버레이를 한 번에 걷는다
     setOverlays((previous) => (previous.size === 0 ? previous : new Map()));
   }, [resetKey]);
 
@@ -71,10 +72,13 @@ export function OverlayProvider({
       <OverlayStateContext value={state}>
         <PortalTargetContext value={portalTarget}>
           {children}
-          {[...overlays.entries()].map(([id, { element, version }]) => (
-            <Fragment key={`${id}-${version}`}>{element}</Fragment>
-          ))}
-          <PortalHost name={hostName} />
+          {/* overlay와 Portal로 그린 시트는 route 시트가 아니라, 닫혀도 route의 토스트 면을 닫지 않는다 */}
+          <ToastLayerClosingContext value={null}>
+            {[...overlays.entries()].map(([id, { element, version }]) => (
+              <Fragment key={`${id}-${version}`}>{element}</Fragment>
+            ))}
+            <PortalHost name={hostName} />
+          </ToastLayerClosingContext>
         </PortalTargetContext>
       </OverlayStateContext>
     </OverlayContext>

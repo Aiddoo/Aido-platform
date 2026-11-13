@@ -119,6 +119,14 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     );
   }
 
+  async existsActiveByUserId(userId: UserId): Promise<boolean> {
+    const row = await this.#db.query.todoSeries.findFirst({
+      columns: { id: true },
+      where: { userId: userId.value, nextOccurrenceDate: { isNotNull: true } },
+    });
+    return row != null;
+  }
+
   async updateTimezoneByUserId(userId: UserId, timezone: string): Promise<number> {
     const updated = await this.#db
       .update(todoSeries)

@@ -1,12 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import type { DailyCompletionsResult } from '../domains/daily-completion.model';
-import type {
-  TodoDetails,
-  TodoExistence,
-  TodoListResult,
-  TodoSummary,
-} from '../domains/todo.model';
+import type { TodoDetails, TodoListResult, TodoOverview, TodoSummary } from '../domains/todo.model';
 
 export const TODO_QUERY_KEYS = {
   all: ['todo'] as const,
@@ -21,20 +16,21 @@ export const TODO_QUERY_KEYS = {
 
   // 홈 위젯 요약. completions() 하위라 토글·생성·삭제의 invalidation을 그대로 상속한다
   widgetSummary: () => [...TODO_QUERY_KEYS.completions(), 'widget-summary'] as const,
-  widgetSummaryByDate: ({ date, userId }: { date: string; userId?: string | null }) =>
+  widgetSummaryByDate: ({ date, userId }: { date: string; userId: string | null }) =>
     queryOptions<TodoSummary>({
-      queryKey: [...TODO_QUERY_KEYS.widgetSummary(), { date, userId: userId ?? null }],
+      queryKey: [...TODO_QUERY_KEYS.widgetSummary(), { date, userId }],
     }).queryKey,
 
-  // 할 일·완료한 할 일이 있는지(시작 체크리스트) — completions() 하위라 생성·토글·삭제 invalidation을 상속한다
-  existence: () =>
-    queryOptions<TodoExistence>({ queryKey: [...TODO_QUERY_KEYS.completions(), 'existence'] })
+  // 할 일·완료한 할 일·진행 중 반복이 있는지(시작 체크리스트, 3개월 안내) — completions() 하위라 생성·토글·삭제 invalidation을 상속한다
+  overview: () =>
+    queryOptions<TodoOverview>({ queryKey: [...TODO_QUERY_KEYS.completions(), 'overview'] })
       .queryKey,
 
-  // 다가오는 반복 할 일이 있는지(3개월 안내) — 위와 같이 생성·토글·삭제 invalidation을 상속한다
-  upcomingRepeats: () => [...TODO_QUERY_KEYS.completions(), 'upcoming-repeat'] as const,
-  upcomingRepeat: ({ date }: { date: string }) =>
-    queryOptions<boolean>({ queryKey: [...TODO_QUERY_KEYS.upcomingRepeats(), { date }] }).queryKey,
+  // 날짜 목록(lists)과 따로 둬 할 일 쓰기의 날짜별 무효화·낙관적 갱신이 이 범위를 건드리지 않는다
+  upcomingList: ({ startDate, endDate }: { startDate: string; endDate: string }) =>
+    queryOptions<TodoListResult>({
+      queryKey: [...TODO_QUERY_KEYS.all, 'upcoming', { startDate, endDate }],
+    }).queryKey,
 
   lists: () => [...TODO_QUERY_KEYS.all, 'list'] as const,
   listByDate: ({ date }: { date: string }) =>

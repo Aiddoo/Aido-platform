@@ -1,4 +1,5 @@
 import { InMemoryWeeklyAchievementRepository } from "#test/doubles/insights/in-memory-weekly-achievement.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import {
   createWeeklyAchievementFixture,
   WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
@@ -13,6 +14,8 @@ function useCaseWith(weeks: readonly number[]) {
         createWeeklyAchievementFixture({ id: week, week, totalTodos: 5, completedTodos: 5 }),
       ),
     ),
+    ownerTimezoneReader: { read: async () => "Asia/Seoul" },
+    clock: new FixedClock(Temporal.Instant.from("2026-11-12T00:00:00Z")),
   });
 }
 

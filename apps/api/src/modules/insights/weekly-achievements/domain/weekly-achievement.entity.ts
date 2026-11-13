@@ -1,11 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { Entity } from "#api/shared/domain/model/entity";
 
 import { IsoWeek } from "./iso-week.vo.js";
 import { WeeklyAchievementId } from "./weekly-achievement-id.vo.js";
+import { invalidCompletedTodos, invalidTotalTodos } from "./weekly-achievements.errors.js";
 
 export interface WeeklyAchievementPrimitives {
   readonly id: number;
@@ -40,14 +38,10 @@ export class WeeklyAchievement extends Entity<WeeklyAchievementId, WeeklyAchieve
   static create(params: CreateWeeklyAchievementParams): WeeklyAchievement {
     const { totalTodos, completedTodos } = params;
     if (totalTodos < 0) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "totalTodos", value: totalTodos });
+      throw invalidTotalTodos(totalTodos);
     }
     if (completedTodos < 0 || completedTodos > totalTodos) {
-      throw new DomainException(ErrorCode.SYS_0002, {
-        field: "completedTodos",
-        completedTodos,
-        totalTodos,
-      });
+      throw invalidCompletedTodos(completedTodos, totalTodos);
     }
     return new WeeklyAchievement(params.id, {
       userId: params.userId,

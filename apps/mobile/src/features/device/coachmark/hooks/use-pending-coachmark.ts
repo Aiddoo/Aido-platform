@@ -1,24 +1,28 @@
-import { useCoachmarkService } from '@src/bootstrap/providers/di-context';
-import { useCallback, useSyncExternalStore } from 'react';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
+import { useCallback } from 'react';
 
-import type { CoachmarkInput } from '../domains/coachmark.model';
+import { type CoachmarkInput, CoachmarkPolicy } from '../domains/coachmark.model';
+import { coachmarkCompletedAtStoredValue } from '../schemas/coachmark-storage.schema';
+import { useCompleteCoachmark } from './use-complete-coachmark';
 
 interface PendingCoachmarkInput extends Omit<CoachmarkInput, 'accountId'> {
   /** 내 정보를 아직 못 읽었으면 null이다. 그동안은 남은 안내가 없는 것으로 본다 */
   accountId: string | null;
 }
 
+// 저장 값을 구독해 다른 화면이 끝내거나(claim·complete) 탈퇴 정리가 지워도 바로 따라간다
 export function usePendingCoachmark({ accountId, kind }: PendingCoachmarkInput) {
-  const service = useCoachmarkService();
-  const isPending = useSyncExternalStore(
-    service.subscribe,
-    () => accountId != null && service.isPending({ accountId, kind }),
+  const [completedAt] = useStoredValue(
+    coachmarkCompletedAtStoredValue,
+    accountId == null ? null : { accountId, kind },
   );
+  const completeCoachmark = useCompleteCoachmark();
+  const isPending = accountId != null && CoachmarkPolicy.shouldShow({ kind, completedAt });
   const complete = useCallback(() => {
     if (accountId != null) {
-      service.complete({ accountId, kind });
+      completeCoachmark({ accountId, kind });
     }
-  }, [accountId, kind, service]);
+  }, [accountId, kind, completeCoachmark]);
 
   return [isPending, complete] as const;
 }

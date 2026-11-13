@@ -1,17 +1,15 @@
+import { useMyPagePaneLayoutStore } from '@src/bootstrap/providers/di-context';
 import { useIsFocused } from 'expo-router';
 import { type ComponentRef, useEffect, useLayoutEffect, useRef } from 'react';
 import type { NativeScrollEvent, ScrollView } from 'react-native';
 
-import { createMyPagePaneLayoutStore } from '../utils/my-page-pane-layout-store';
-
-const myPagePaneLayoutStore = createMyPagePaneLayoutStore();
-
 export function useMyPagePaneLayout() {
+  const myPagePaneLayoutStore = useMyPagePaneLayoutStore();
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const restoreOffsetRef = useRef<number | null>(null);
   const isFocused = useIsFocused();
 
-  useEffect(() => myPagePaneLayoutStore.attach(), []);
+  useEffect(() => myPagePaneLayoutStore.attach(), [myPagePaneLayoutStore]);
 
   useLayoutEffect(() => {
     if (!isFocused) {
@@ -21,7 +19,7 @@ export function useMyPagePaneLayout() {
     const offset = myPagePaneLayoutStore.getScrollOffset();
     restoreOffsetRef.current = offset > 0 ? offset : null;
     scrollRef.current?.scrollTo({ y: offset, animated: false });
-  }, [isFocused]);
+  }, [isFocused, myPagePaneLayoutStore]);
 
   // 스크롤이 멈출 때만 저장해 프레임마다 JS로 오지 않는다. 복원이 끝나기 전 잘린 위치로 저장값을 덮지 않는다
   const handleScrollEnd = ({

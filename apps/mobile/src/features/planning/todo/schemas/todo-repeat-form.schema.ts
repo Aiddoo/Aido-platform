@@ -4,53 +4,53 @@ import {
   TODO_REPEAT_INTERVALS,
   TODO_REPEAT_MONTH_DAY_MAX,
 } from '@aido/api/vocabulary';
-import { getDayOfMonth } from '@src/shared/date/date-key';
+import { dateKeyFieldSchema, getDayOfMonth } from '@src/shared/date/date-key';
 import { sortDaysOfWeek } from '@src/shared/date/day-of-week';
-import { instantFieldSchema } from '@src/shared/date/instant';
-import { toDateKey } from '@src/shared/date/zoned';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
-import { TodoRepeatPolicy } from '../domains/todo-repeat.model';
-import { type TodoRepeat, type TodoRepeatEnd } from '../domains/todo-repeat.model';
+import {
+  type TodoRepeat,
+  todoRepeatCountSchema,
+  type TodoRepeatEnd,
+  TodoRepeatPolicy,
+} from '../domains/todo-repeat.model';
 
 const todoRepeatFormShape = z.object({
-  startDate: instantFieldSchema,
+  startDate: dateKeyFieldSchema,
   weekdays: z.array(z.enum(DAYS_OF_WEEK)),
   interval: z.literal(TODO_REPEAT_INTERVALS),
   isMonthly: z.boolean(),
   /** 규칙이 가진 매월 며칠. 시작일을 옮기기 전까지 유지해 2월 28일 회차에서 열어도 31일 규칙이 그대로다. 없으면 시작일을 따른다 */
   monthDay: z.int().min(1).max(TODO_REPEAT_MONTH_DAY_MAX).nullable(),
   endType: z.enum(TODO_REPEAT_END_TYPES),
-  untilDate: instantFieldSchema.nullable(),
-  count: z.int().min(TODO_REPEAT_COUNT.MIN).max(TODO_REPEAT_COUNT.MAX),
+  untilDate: dateKeyFieldSchema.nullable(),
+  count: todoRepeatCountSchema,
 });
 
 export type TodoRepeatFormValues = z.input<typeof todoRepeatFormShape>;
 
-export function getTodoRepeatFormMonthDay(
-  { monthDay, startDate }: Pick<TodoRepeatFormValues, 'monthDay' | 'startDate'>,
-  timeZone: string,
-): number {
-  return monthDay ?? getDayOfMonth(toDateKey(startDate, timeZone));
+export function getTodoRepeatFormMonthDay({
+  monthDay,
+  startDate,
+}: Pick<TodoRepeatFormValues, 'monthDay' | 'startDate'>): number {
+  return monthDay ?? getDayOfMonth(startDate);
 }
 
-function toTodoRepeatEnd(values: TodoRepeatFormValues, timeZone: string): TodoRepeatEnd | null {
+function toTodoRepeatEnd(values: TodoRepeatFormValues): TodoRepeatEnd | null {
   return match(values.endType)
     .returnType<TodoRepeatEnd | null>()
     .with('NEVER', () => ({ type: 'NEVER' }))
     .with('UNTIL', () =>
-      values.untilDate == null
-        ? null
-        : { type: 'UNTIL', date: toDateKey(values.untilDate, timeZone) },
+      values.untilDate == null ? null : { type: 'UNTIL', date: values.untilDate },
     )
     .with('COUNT', () => ({ type: 'COUNT', count: values.count }))
     .exhaustive();
 }
 
-export function toTodoRepeat(values: TodoRepeatFormValues, timeZone: string): TodoRepeat | null {
-  const end = toTodoRepeatEnd(values, timeZone);
+// 폼 검사(.check)가 규칙으로 바뀌는지로 판정해 스키마 옆에 둔다. mapper로 옮기면 스키마가 apis를 본다
+export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
+  const end = toTodoRepeatEnd(values);
   if (end == null) {
     return null;
   }
@@ -58,7 +58,7 @@ export function toTodoRepeat(values: TodoRepeatFormValues, timeZone: string): To
   if (values.isMonthly) {
     return {
       frequency: 'MONTHLY',
-      monthDay: getTodoRepeatFormMonthDay(values, timeZone),
+      monthDay: getTodoRepeatFormMonthDay(values),
       end,
     };
   }
@@ -81,21 +81,15 @@ export function toTodoRepeat(values: TodoRepeatFormValues, timeZone: string): To
 
 export type TodoRepeatFormIssue = 'no-weekdays' | 'until-required' | 'no-occurrence';
 
-export function getTodoRepeatFormIssue(
-  values: TodoRepeatFormValues,
-  timeZone: string,
-): TodoRepeatFormIssue | null {
+export function getTodoRepeatFormIssue(values: TodoRepeatFormValues): TodoRepeatFormIssue | null {
   if (!values.isMonthly && values.weekdays.length === 0) {
     return 'no-weekdays';
   }
-  const repeat = toTodoRepeat(values, timeZone);
+  const repeat = toTodoRepeat(values);
   if (repeat == null) {
     return 'until-required';
   }
-  return TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(
-    repeat,
-    toDateKey(values.startDate, timeZone),
-  ) == null
+  return TodoRepeatPolicy.findFirstRepeatOccurrenceDateKey(repeat, values.startDate) == null
     ? 'no-occurrence'
     : null;
 }
@@ -106,11 +100,9 @@ const ISSUE_PATH = {
   'no-occurrence': 'untilDate',
 } as const satisfies Record<TodoRepeatFormIssue, keyof TodoRepeatFormValues>;
 
-export function createTodoRepeatFormSchema(timeZone: string) {
-  return todoRepeatFormShape.check(({ value, issues }) => {
-    const issue = getTodoRepeatFormIssue(value, timeZone);
-    if (issue != null) {
-      issues.push({ code: 'custom', input: value, message: issue, path: [ISSUE_PATH[issue]] });
-    }
-  });
-}
+export const todoRepeatFormSchema = todoRepeatFormShape.check(({ value, issues }) => {
+  const issue = getTodoRepeatFormIssue(value);
+  if (issue != null) {
+    issues.push({ code: 'custom', input: value, message: issue, path: [ISSUE_PATH[issue]] });
+  }
+});

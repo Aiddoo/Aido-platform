@@ -95,23 +95,32 @@ export function describeAuthVerificationRepositoryContract(
       expect(found?.id.value).toBe(latest.id.value);
     });
 
-    it("최근 발급 수는 since와 같거나 뒤에 만든 같은 종류 코드만 센다", async () => {
+    it("최근 발급 시각은 since와 같거나 뒤에 만든 같은 종류 코드 중 가장 늦은 것이다", async () => {
       // Given
       const repository = await createRepository();
       await saveVerification(repository, { createdAt: AUTH_FIXTURE_NOW.subtract({ seconds: 1 }) });
       await saveVerification(repository, { createdAt: AUTH_FIXTURE_NOW });
       await saveVerification(repository, { createdAt: LATER });
-      await saveVerification(repository, { createdAt: LATER, type: "EMAIL_VERIFY" });
+      await saveVerification(repository, {
+        createdAt: LATER.add({ seconds: 1 }),
+        type: "EMAIL_VERIFY",
+      });
 
       // When
-      const count = await repository.countRecentByUserIdAndType(
+      const issuedAt = await repository.findLatestIssuedAtByUserIdAndType(
         UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         AUTH_FIXTURE_NOW,
       );
+      const noneSince = await repository.findLatestIssuedAtByUserIdAndType(
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
+        "PASSWORD_RESET",
+        LATER.add({ seconds: 1 }),
+      );
 
       // Then
-      expect(count).toBe(2);
+      expect(issuedAt).toEqual(LATER);
+      expect(noneSince).toBeNull();
     });
 
     it("무효화는 남은 같은 종류 코드의 만료를 지금으로 당기고 그 수를 준다", async () => {
@@ -205,7 +214,7 @@ export function describeAuthVerificationRepositoryContract(
       await repository.save(
         createAuthVerificationFixture({ ...saved.toPrimitives(), attempts: 4, usedAt: LATER }),
       );
-      const afterSave = await repository.countRecentByUserIdAndType(
+      const afterSave = await repository.findLatestIssuedAtByUserIdAndType(
         UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         AUTH_FIXTURE_NOW,
@@ -213,7 +222,7 @@ export function describeAuthVerificationRepositoryContract(
 
       // Then
       expect(afterIncrements?.toPrimitives().attempts).toBe(2);
-      expect(afterSave).toBe(1);
+      expect(afterSave).toEqual(saved.toPrimitives().createdAt);
       expect(
         await repository.findValidByUserIdAndType(
           UserId.reconstitute(AUTH_FIXTURE_USER_ID),

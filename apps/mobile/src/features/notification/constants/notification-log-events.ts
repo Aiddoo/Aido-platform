@@ -8,9 +8,9 @@ export const NOTIFICATION_LOG_EVENT = {
   BADGE_SYNC_FAILED: 'notification.badge-sync.failed',
   BADGE_CLEAR_FAILED: 'notification.badge-clear.failed',
   CENTER_NAVIGATION_FAILED: 'notification.center-navigation.failed',
-  OPT_OUT_ANALYTICS_FAILED: 'notification.opt-out-analytics.failed',
   OPEN_ANALYTICS_FAILED: 'notification.open-analytics.failed',
   LOCAL_READ_SYNC_FAILED: 'notification.local-read-sync.failed',
+  MARK_READ_FAILED: 'notification.mark-read.failed',
   OPEN_RECORDING_FAILED: 'notification.open-recording.failed',
   FOREGROUND_HANDLER_FAILED: 'notification.foreground-handler.failed',
   PUSH_DEVICE_REPORTED: 'notification.push-device.reported',
@@ -21,7 +21,6 @@ export const NOTIFICATION_LOG_EVENT = {
   PUSH_REGISTRATION_SAVE_FAILED: 'notification.push-registration.save-failed',
   PUSH_PERMISSION_REQUESTED: 'notification.push-permission.requested',
   PUSH_PERMISSION_REQUEST_FAILED: 'notification.push-permission.request-failed',
-  PUSH_PERMISSION_SETTINGS_OPEN_FAILED: 'notification.push-permission.settings-open-failed',
   TIMEZONE_NOTICE_SKIPPED: 'notification.timezone-notice.skipped',
   MARKETING_PUSH_OFFER_SKIPPED: 'notification.marketing-push-offer.skipped',
 } as const;
