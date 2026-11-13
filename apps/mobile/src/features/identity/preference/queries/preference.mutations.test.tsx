@@ -1,12 +1,14 @@
 import { err, ok } from '@src/core/errors/result';
+import { NetworkError } from '@src/shared/errors/infra-error';
+import { i18n } from '@src/shared/i18n';
 import {
   createHapticsGatewayStub,
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { NetworkError } from '@src/shared/errors/infra-error';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
@@ -25,23 +27,18 @@ async function renderUpdate(httpClient = createHttpClientStub()) {
     PREFERENCE_QUERY_KEYS.current(),
     createPreference({ pushEnabled: true, nightPushEnabled: false }),
   );
-  let mutateAsync: ReturnType<typeof useUpdate> | undefined;
-  function useUpdate() {
-    return useMutation(useUpdatePreferenceMutationOptions()).mutateAsync;
-  }
-  function Capture() {
-    mutateAsync = useUpdate();
-    return null;
-  }
-  await renderUi(<Capture />, {
-    queryClient,
-    di: { httpClient, haptics: createHapticsGatewayStub() },
-  });
+  const { result } = await renderScreenHook(
+    () => useMutation(useUpdatePreferenceMutationOptions()),
+    {
+      di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub(), queryClient } }),
+    },
+  );
   const cached = () => queryClient.getQueryData<Preference>(PREFERENCE_QUERY_KEYS.current());
 
   return {
     cached,
-    update: (change: Parameters<NonNullable<typeof mutateAsync>>[0]) => mutateAsync?.(change),
+    update: (change: Parameters<typeof result.current.mutateAsync>[0]) =>
+      result.current.mutateAsync(change),
   };
 }
 
@@ -61,11 +58,14 @@ describe('설정 토글 저장', () => {
     expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
   });
 
-  it('프리미엄 전용 시각을 서버가 거절하면 우리 문구로 알리고 값을 되돌린다', async () => {
+  it('프리미엄 전용 시각을 서버가 거절하면 카탈로그 문구를 전역 피드백으로 알리고 값을 되돌린다', async () => {
     // Given
+    const catalogMessage = i18n.t('errors:PREFERENCE_1701');
     const httpClient = createHttpClientStub();
     httpClient.patch.mockResolvedValue(
-      err(createPreferenceApiError({ code: 'PREFERENCE_1701', message: '서버 문구', status: 403 })),
+      err(
+        createPreferenceApiError({ code: 'PREFERENCE_1701', message: catalogMessage, status: 403 }),
+      ),
     );
     const { cached, update } = await renderUpdate(httpClient);
 
@@ -73,12 +73,11 @@ describe('설정 토글 저장', () => {
     const result = update({ morningReminderHour: 6 });
 
     // Then
-    await expect(result).rejects.toThrow('서버 문구');
+    await expect(result).rejects.toThrow(catalogMessage);
     expect(cached()?.morningReminderHour).toBe(8);
     expect(await screen.findAllByText('리마인드 시간 변경은 프리미엄 기능이에요')).not.toHaveLength(
       0,
     );
-    expect(screen.queryByText('서버 문구')).toBeNull();
   });
 });
 

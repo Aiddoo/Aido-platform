@@ -1,6 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { formatDateKeyRange, formatHourLabel } from '@src/shared/date/date-format';
-import { getDayOfWeekLabel } from '@src/shared/date/date-labels';
+import { formatHourLabel } from '@src/shared/date/format/date-format';
+import { formatDateKeyRange, getDayOfWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -26,6 +26,7 @@ import { match } from 'ts-pattern';
 
 import { isReportUnavailableError } from '../domains/report.error';
 import { type AiReport, ReportPolicy } from '../domains/report.model';
+import { getDayPatternLevel } from '../utils/day-pattern.view-model';
 import { formatReportPeriodLabel } from '../utils/report-period.view-model';
 import { ReportTypeChip } from './report-type-chip';
 
@@ -99,7 +100,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
       <ReportTypeChip type={report.type} className="self-center" />
 
       <Text size="b2" weight="semibold" shade={9}>
-        {formatReportPeriodLabel(report, dateFormatContext)}
+        {formatReportPeriodLabel(report, todayKey, dateFormatContext)}
       </Text>
 
       <Text size="b4" shade={5}>
@@ -116,6 +117,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
 
 function TodoCompletionStats({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
+  const { locale } = useDateFormatContext();
   const { stats } = report;
   const rateDiff = ReportPolicy.getCompletionRateChange(report);
 
@@ -131,12 +133,11 @@ function TodoCompletionStats({ report }: { report: AiReport }) {
             {t('report.card.completionRate')}
           </Text>
           <Text size="t2" weight="bold" tone="brand">
-            {formatPercent(stats.completionRate)}%
+            {formatPercent(stats.completionRate, locale)}
           </Text>
           {rateDiff != null && (
             <Text size="e2" tone={rateDiff >= 0 ? 'success' : 'danger'}>
-              {rateDiff > 0 ? '+' : ''}
-              {formatPercent(rateDiff)}%
+              {formatPercent(rateDiff, locale, { signDisplay: 'exceptZero' })}
             </Text>
           )}
         </VStack>
@@ -170,6 +171,7 @@ function TodoCompletionStats({ report }: { report: AiReport }) {
 
 function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) {
   const { t } = useTranslation('ai');
+  const { locale } = useDateFormatContext();
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
@@ -179,16 +181,16 @@ function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) 
         <VStack key={item.name} gap={4}>
           <HStack justify="between" align="center">
             <HStack align="center" gap={6}>
-              <Box className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+              <Box className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
               <Text size="b4" shade={8}>
                 {item.name}
               </Text>
             </HStack>
             <Text size="b4" shade={6}>
-              {item.completed}/{item.total} ({formatPercent(item.rate)}%)
+              {item.completed}/{item.total} ({formatPercent(item.rate, locale)})
             </Text>
           </HStack>
-          <Box className="h-2 bg-gray-3 rounded-full overflow-hidden">
+          <Box className="h-2 overflow-hidden rounded-full bg-gray-3">
             <Box
               className="h-full rounded-full"
               style={{ width: `${item.rate}%`, backgroundColor: item.color }}
@@ -209,7 +211,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
       </Text>
       <HStack justify="around">
         {items.map((item) => {
-          const level = ReportPolicy.getCompletionLevel(item);
+          const level = getDayPatternLevel(item);
 
           return (
             <VStack key={item.day} align="center" gap={4}>
@@ -218,7 +220,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
               </Text>
               <Box
                 className={cn(
-                  'w-8 h-8 rounded-full items-center justify-center',
+                  'h-8 w-8 items-center justify-center rounded-full',
                   match(level)
                     .with('high', () => 'bg-main/20')
                     .with('medium', () => 'bg-main/10')

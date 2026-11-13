@@ -5,7 +5,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { useEffect } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { MARKETING_OPT_OUT_ACTION } from '../constants/notification.constants';
+import { marketingOptOutActionSchema } from '../domains/push-notification-response.model';
 
 export function useRegisterMarketingNotificationCategory() {
   const logger = useLogger();
@@ -18,7 +18,7 @@ export function useRegisterMarketingNotificationCategory() {
         identifier: MARKETING_PUSH_CATEGORY_ID,
         actions: [
           {
-            identifier: MARKETING_OPT_OUT_ACTION,
+            identifier: marketingOptOutActionSchema.value,
             title: t('actions.marketingOptOut'),
             opensAppToForeground: true,
           },

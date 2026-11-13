@@ -1,10 +1,2 @@
-import { type DayOfWeek, TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
-
-export const TODO_REPEAT_COUNT = {
-  MIN: 1,
-  MAX: TODO_SERIES_LIMITS.MAX_COUNT,
-  DEFAULT: 10,
-} as const;
-
-export const TODO_REPEAT_WEEKDAYS: readonly DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
-export const TODO_REPEAT_WEEKEND_DAYS: readonly DayOfWeek[] = ['SAT', 'SUN'];
+/** 반복을 횟수로 끝낼 때 처음 채워 두는 횟수 */
+export const TODO_REPEAT_DEFAULT_COUNT = 10;

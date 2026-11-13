@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { omit } from "es-toolkit";
 
 import type {
@@ -18,7 +17,6 @@ import type {
   ActionPlanGeneratorPort,
   VoiceNoteDigestGeneration,
 } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -39,6 +37,7 @@ import { type TranscriptSegment, VoiceTranscript } from "../../domain/voice-tran
 import type { VoiceNoteDigestResult } from "../ports/voice-note-digest-result-replay.port.js";
 import type { VoiceNoteDigestReadModel } from "../read-models/voice-note-digest.read-model.js";
 import { VoiceNoteAlerts } from "../voice-notes.alerts.js";
+import { voiceNoteTooLong } from "../voice-notes.errors.js";
 import { VoiceNoteLogEvent } from "../voice-notes.log-events.js";
 
 export interface DigestVoiceNoteCommand {
@@ -166,12 +165,11 @@ export class DigestVoiceNoteUseCase {
       });
     }
     if (featureQuota.perUse != null && transcript.exceeds(featureQuota.perUse)) {
-      throw new ApplicationException(ErrorCode.AI_1312, {
-        charged: false,
+      throw voiceNoteTooLong(
         featureQuota,
-        characterCount: transcript.characterCount,
-        maxCharacters: featureQuota.perUse.maxCharacters,
-      });
+        transcript.characterCount,
+        featureQuota.perUse.maxCharacters,
+      );
     }
   }
 

@@ -1,16 +1,13 @@
 import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
 import { PremiumAccessPolicy, premiumAccessSchema } from './premium-access.model';
 
-export const userSchema = z.object({
-  id: z.string(),
+export const userSchema = userSummarySchema.extend({
   email: z.string(),
-  name: z.string().nullable(),
-  profileImage: z.string().nullable(),
-  userTag: z.string(),
-  role: z.enum([USER_ROLE.USER, USER_ROLE.ADMIN]),
+  role: z.enum(USER_ROLE),
   subscriptionStatus: z.enum(SUBSCRIPTION_STATUS),
   subscriptionExpiresAt: instantSchema.nullable(),
   providers: z.array(z.enum(ACCOUNT_PROVIDERS)),
@@ -22,10 +19,7 @@ export const userSchema = z.object({
 export type User = z.infer<typeof userSchema>;
 
 /** profileImage null은 사진을 지운 상태다 */
-const updateProfileResultSchema = z.object({
-  name: z.string().nullable(),
-  profileImage: z.string().nullable(),
-});
+const updateProfileResultSchema = userSummarySchema.pick({ name: true, profileImage: true });
 export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;
 
 function hasCredential(user: User) {

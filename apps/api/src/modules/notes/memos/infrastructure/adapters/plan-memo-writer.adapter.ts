@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { pick } from "es-toolkit";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
@@ -15,7 +16,7 @@ import type { Memo } from "../../domain/memo.aggregate.js";
 function toPlanMemo(memo: Memo): PlanMemo {
   const primitives = memo.toPrimitives();
   return {
-    ...primitives,
+    ...pick(primitives, ["id", "userId", "content", "isPinned", "sortOrder"]),
     createdAt: toIsoString(primitives.createdAt),
     updatedAt: toIsoString(primitives.updatedAt),
   };
@@ -33,7 +34,11 @@ export class PlanMemoWriterAdapter implements PlanMemoWriterPort {
 
   async create(input: { readonly userId: UserId; readonly content: string }): Promise<PlanMemo> {
     return toPlanMemo(
-      await this.#createMemo.execute({ userId: input.userId.value, content: input.content }),
+      await this.#createMemo.execute({
+        userId: input.userId.value,
+        content: input.content,
+        idempotencyKey: null,
+      }),
     );
   }
 

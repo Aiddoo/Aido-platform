@@ -11,22 +11,27 @@ PushNotificationGateway (core/ports) ← createExpoPushNotificationGateway (shar
 PushRegistrationService (features/notification/services) → PushDeviceApi (apis) → PUT /v1/notifications/push-devices/{deviceId}
 ```
 
-| 조각                                                                                                 | 역할                                                                                                        |
-| ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `domains/push-permission.model.ts`                                                                   | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)                                                |
-| `apis/push-permission.mapper.ts`                                                                     | OS 권한 → 모델                                                                                              |
-| `apis/push-device.mapper.ts`                                                                         | 모델·토큰 → 서버 보고 입력                                                                                  |
-| `apis/push-notification.mapper.ts`                                                                   | `parsePushNotification(data: unknown)`: 푸시 data → 모델 또는 `null`                                        |
-| `apis/push-device.api.ts`                                                                            | `PushDeviceApi`: 기기 보고(PUT)·해제(DELETE)·인증 없는 해제(POST unregister) 요청                           |
-| `services/push-registration.service.ts`                                                              | `PushRegistrationService`: 권한 읽기·요청, 토큰 → 보고, 로그아웃 해제와 해제 기록                           |
-| `schemas/push-permission-deferred-at-storage.schema.ts`·`push-notice-dismissed-at-storage.schema.ts` | 알림 화면·피드 안내를 닫은 시각을 계정마다 저장하는 저장 값 정의                                            |
-| `queries/push-permission.{queries,mutations}.ts`, `push-permission-cache.ts`                         | 권한 조회와 요청·설정 열기·앱 푸시 켜기. 쿼리 키 루트는 `['device', 'push-permission']`                     |
-| `hooks/use-push-permission-action.ts`                                                                | `usePushPermissionAction({ source })` → `{ runStep(step), isPending }`. 권한 단계 실행과 추적의 유일한 입구 |
-| `hooks/use-push-device-sync.ts`                                                                      | 로그인한 동안 보고 시점을 모은다(`NotificationProvider`가 한 번 호출)                                       |
-| `hooks/use-notification-response-observer.ts`                                                        | 눌린 푸시의 입구 하나. `AuthGateLayout`이 호출한다                                                          |
-| `hooks/use-notification-entry.ts`                                                                    | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                       |
-| `stores/notification-entry.store.ts`                                                                 | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다                                                     |
-| `apis/notification.mapper.ts`                                                                        | 서버 `navigation` → 앱 목적지(`target`). 알림함 항목도 같은 길이다                                          |
+| 조각                                                                                                 | 역할                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `domains/push-permission.model.ts`                                                                   | 권한 모델 + `PushPermissionPolicy`(다음 단계·14일 숨김 판정)                                                                       |
+| `apis/push-permission.mapper.ts`                                                                     | OS 권한 → 모델                                                                                                                     |
+| `apis/push-device.mapper.ts`                                                                         | 권한·토큰 → 서버 보고 요청, 서버 기기 응답 → 모델                                                                                  |
+| `apis/push-notification.mapper.ts`                                                                   | `parsePushNotification(data: unknown)`: 푸시 data → `{ notification: 모델 \| null, droppedPaths }`(틀린 칸만 버리고 경로를 남긴다) |
+| `apis/push-device.api.ts`                                                                            | `PushDeviceApi`: 기기 보고(PUT)·해제(DELETE)·인증 없는 해제(POST unregister) 요청                                                  |
+| `services/push-registration.service.ts`                                                              | `PushRegistrationService`: 권한 읽기·요청, 토큰 → 보고, 로그아웃 해제와 해제 기록                                                  |
+| `schemas/push-permission-deferred-at-storage.schema.ts`·`push-notice-dismissed-at-storage.schema.ts` | 알림 화면·피드 안내를 닫은 시각을 계정마다 저장하는 저장 값 정의                                                                   |
+| `queries/push-permission.{queries,mutations}.ts`, `push-permission-cache.ts`                         | 권한 조회와 요청·설정 열기·앱 푸시 켜기. 쿼리 키 루트는 `['device', 'push-permission']`                                            |
+| `hooks/use-push-permission-action.ts`                                                                | `usePushPermissionAction({ source })` → `{ runStep(step), isPending }`. 권한 단계 실행과 추적의 유일한 입구                        |
+| `hooks/use-push-device-sync.ts`                                                                      | 기기 등록을 서버와 맞춘다. 로그인한 동안 보고 시점을 모으고 로그아웃 상태면 해제를 다시 보낸다                                     |
+| `hooks/use-push-notification-response.ts`                                                            | 눌린 푸시의 입구 하나. `AuthGateLayout`의 null 자식 `AppEntryWatchers`가 호출하고, 끝난 effect의 늦은 결과는 버린다                |
+| `hooks/use-push-notification-entry.ts`                                                               | 콜드 스타트에서 첫 화면을 정하는 진입 상태(레이아웃, `app/index.tsx`)                                                              |
+| `stores/push-notification-entry.store.ts`                                                            | 눌린 응답 슬롯. 경계가 다시 그려도 남도록 DI가 소유한다                                                                            |
+| `stores/push-onboarding-guard.store.ts`                                                              | 앱 화면 묶음이 그린 알림 화면 guard 값. 피드가 열 차례를 이 값으로 읽고 DI가 소유한다                                              |
+| `apis/notification.mapper.ts`                                                                        | `toNotificationTarget`: 서버 `navigation` → 앱 `NotificationTarget`. 알림함 항목도 같은 길이다                                     |
+| `domains/push-notification.model.ts`·`push-notification-response.model.ts`                           | 받은 푸시(`{ notificationId, type, target, … }`)와 누른 응답, 각자의 Policy                                                        |
+| `utils/notification-destination.view-model.ts`                                                       | `toNotificationDestination(target, { windowSizeClass, viewerId })`: target → 앱 경로·외부 링크                                     |
+| `hooks/use-notification-destination.ts`                                                              | `useResolveNotificationDestination`(창 크기·보는 사람으로 정함)·`useOpenNotificationDestination({ openRoute })`(연다)              |
+| `shared/navigation/open-entry-href.ts`                                                               | `openEntryHref(href)`: 켜진 앱에서 누른 푸시를 OS 링크처럼 보던 탭에 연다(Stack에 있으면 돌아가고 없으면 쌓는다)                   |
 
 ## 클라이언트가 하는 일
 
@@ -45,7 +50,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | 기기 시간대 변경           | `force` 보고. 서버는 시간대를 `X-Timezone`에서 읽는다                  |
 | 푸시 토큰 변경 리스너      | 보고. 토큰 값이 바뀔 때만 알려 보고 → 토큰 발급 → 이벤트 루프를 막는다 |
 | 앱 언어 변경               | `force` 보고. 서버는 푸시 문구 언어를 `Accept-Language`에서 읽는다     |
-| 권한 요청 직후             | 바뀐 권한을 바로 보고한다. 실패해도 요청 결과는 그대로 돌려준다        |
+| 권한 요청 직후             | 바로 보고한다. 화면은 보고를 기다리지 않고, 로그아웃은 기다린다        |
 
 - 보고 중에 다시 불리면 끝난 뒤 한 번만 더 보낸다.
 - 권한·토큰이 같아도 마지막으로 보고한 시간대·언어와 다르면 다시 보낸다. 앱이 뒤에 있는 사이 바뀐 언어의 보고가 실패해도 다음 복귀 때 한 번 다시 보낸다. 시간대·언어는 계정 하나에 마지막으로 보고한 기기 값을 쓴다. 요청이 없는 화면에 돌아와도 서버 시간대가 바로 바뀐다. 보고가 성공하면 `useTimezoneChangeNotice`가 처음 알아챈 변경을 한 번 안내한다.
@@ -61,20 +66,21 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | 할 일 시간 `todo-time` | 아직 묻지 않음 / 거절                                  | `SYSTEM_DIALOG`: 그 자리에서 시스템 창 / `DENIED_NOTICE`: 칩 아래 한 줄 "설정 열기"      |
 | 피드 `feed`            | 거절 + 오늘 알림이 갈 할 일이 남음 + 닫은 지 14일 지남 | `DENIED_NOTICE`: `PushPermissionNotice`(다시 물을 수 있으면 시스템 창, 아니면 설정 열기) |
 
-- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={usePushOnboardingGuard()} redirectTo=".."` 안에 있다. 판정은 이 guard 한 곳에서 하고, 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) guard가 열린 채 그려진 뒤에만 연다. 피드가 따로 판정하면 다시 연 앱에서 권한을 읽은 순간 피드가 guard보다 먼저 `true`를 보고 열어, 화면이 곧바로 guard에 막혀 피드로 돌아간다. 권한이 정해지거나 닫기가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다.
+- 알림 화면은 `(app)/_layout`의 `Stack.Protected guard={usePushOnboardingGuard()} redirectTo=".."` 안에 있다. 판정은 이 guard 한 곳에서 하고 그린 값(`'open' | 'closed' | 'pending'`)을 `PushOnboardingGuardStore`에 남긴다. 다른 화면은 `usePushOnboardingGuardState()`로 읽는다. 피드가 앞에 자리 잡으면(`useOpenPushOnboarding`) guard가 `open`으로 그려진 뒤에만 열고, 다른 자동 화면은 `closed`일 때만 연다. 피드가 따로 판정하면 다시 연 앱에서 권한을 읽은 순간 피드가 guard보다 먼저 `true`를 보고 열어, 화면이 곧바로 guard에 막혀 피드로 돌아간다. 권한이 정해지거나 닫기가 남으면 조건이 풀려 화면이 빠지고 연 화면(피드)으로 돌아간다.
   - 본문 버튼은 시스템 창을 여는 [계속] 하나다. 나가는 길은 흐름형 화면처럼 네이티브 헤더 오른쪽 닫기이고, Android 뒤로 가기도 닫기다.
   - 시스템 창을 바로 여는 버튼은 알림 화면·피드 안내·설정 줄 모두 `permission.continue`([계속])다. HIG가 권한 전 버튼에 "허용" 대신 Continue·Next를 쓰라고 해서 날씨 위치 안내(`locationPrompt.continue`)와 같은 규칙을 따른다.
-  - `redirectTo`를 비우면 열린 화면의 guard가 풀릴 때 anchor 그룹 `/(app)/(tabs)`로 replace한다. 탭이 없는 그룹 경로라 탭 묶음이 새로 생기고 글자 순 첫 탭 `(mypage)`가 열린다. `..`는 뒤로 가기라 있던 탭 묶음과 탭이 그대로 남는다.
+  - `redirectTo`를 비우면 열린 화면의 guard가 풀릴 때 anchor 그룹 `/(app)/(tabs)`로 replace한다. 탭이 없는 그룹 경로라 탭 묶음이 새로 생겨 탭마다 쌓아 둔 화면이 사라진다. `..`는 뒤로 가기라 있던 탭 묶음과 탭이 그대로 남는다.
 - 알림 화면 닫기와 피드 안내 닫기는 저장 값 정의 2개(`pushPermissionDeferredAtStoredValue`·`pushNoticeDismissedAtStoredValue`, `useStoredValue`)로 계정마다 남긴다. 로그아웃은 남기고 탈퇴는 `UserDeviceDataService.clearForUser`가 지운다.
-- 설정 > 알림 > 푸시 맨 위 `PushPermissionSettings`는 기기 알림 한 줄이다. 꺼져 있으면 줄을 눌러 다음 단계(시스템 창 또는 설정 열기)를 하고 아래 토글을 흐리게 둔다. 허용했으면 `허용됨`을 보이고 누르면 기기 설정을 연다.
-- 앱 푸시 설정을 켜면 이어서 OS 권한을 묻는다(`useUpdatePushEnabledAndAskPermissionMutationOptions`).
+- 설정 > 알림 > 푸시 맨 위 `PushPermissionSettings`는 기기 알림 한 줄이다. 꺼져 있으면 줄을 눌러 다음 단계(시스템 창 또는 설정 열기)를 하고 아래 토글을 흐리게 둔다. 허용했으면 `허용됨`을 보이고 누르면 기기 설정을 연다(권한을 되찾는 단계가 아니라 권한 이벤트를 남기지 않는다).
+- 권한 안내·화면·토글·설정 줄·초대 환영 시트는 모두 `usePushPermissionAction({ source }).runStep(step)` 하나로 단계를 실행한다. 단계는 `PushPermissionPolicy.getNextStep`이 정한다.
+- 설정에서 앱 푸시를 켜면 설정 저장이 끝난 뒤 `useRequestPushPermissionMutationOptions`로 OS 권한을 묻고 `source: 'settings'`로 남긴다. 권한 단계 `ENABLE_IN_APP`(기기는 이미 허용)은 같은 mutation을 `source` 없이 불러 기기 등록만 맞추고 권한 이벤트를 남기지 않는다.
 - 할 일 목록 시간 옆 종 꺼짐 표시는 OS 권한과 앱 푸시 설정(`PushPermissionPolicy.canReceivePush`)으로 정한다. 피드가 한 번 읽어 목록에 넘긴다.
-- 혜택·소식(광고성) 제안은 첫 할 일 완료 뒤 시트 한 번이다(`useOfferMarketingPushAfterCompletion`). 기기 알림과 앱 푸시가 켜져 있을 때만 띄우고, 거절하면 계정마다 90일 뒤 다시 제안한다.
+- 혜택·소식(광고성) 제안은 첫 할 일 완료 뒤 시트 한 번이다(`useOfferMarketingPushAfterCompletion`). [동의]는 서버 기록이 성공한 뒤에만 닫고 기록 중에는 끌어 내림·뒤로 가기도 막아, `useOpenSheet`가 아니라 `useOverlay().openAsync`로 띄운다. 기기 알림과 앱 푸시가 켜져 있을 때만 띄우고, 거절하면 계정마다 90일 뒤 다시 제안한다. 대상을 읽는 사이 로그아웃하거나 화면 묶음이 내려가면 띄우지 않고 답도 남기지 않는다.
 - 분석 이벤트는 [observability.md](./observability.md#푸시-권한-퍼널)를 본다. 권한 mutation은 `source`를 변수로 받아 `onSuccess`에서 한 번 추적하고 실패는 전역 오류 피드백(`meta.errorFeedback`)이 처리한다.
 
 ## 앱이 앞에 있을 때 받은 알림
 
-`registerForegroundNotificationPresentation`이 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고, `NotificationProvider`의 `useForegroundPushPresentation`이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `PushNotificationPolicy.getForegroundPresentation` 하나다.
+`createExpoPushNotificationGateway`가 앱이 그려지기 전에(`composition-root`가 기기 포트를 만들 때 프로세스에 한 번) `setNotificationHandler`를 걸고 지금 판단을 게이트웨이 팩토리의 클로저 변수에 둔다. `NotificationProvider`의 null 자식 `ForegroundPushPresentation`(`useForegroundPushPresentation`)이 지금 화면에 맞춘 판단을 `PushNotificationGateway.setForegroundPresentation`으로 넘긴다. 판단 규칙은 `utils/foreground-push-presentation.view-model.ts`의 `getForegroundPushPresentation` 하나다(배너·조용히는 표시 방식이라 모델에 두지 않는다). 이 훅은 화면 밖 null 자식이라 화면의 params 튜플을 쓸 수 없어 `useFocusedRouteParams`로 지금 화면의 id를 읽는다. `useGlobalSearchParams`는 초대 환영을 거친 뒤 내 피드에도 초대한 친구의 `friendId`가 남아 그 친구 피드를 보는 것으로 판정한다(`use-foreground-push-presentation.flow.test.tsx`). URL이 바뀔 때마다 다시 그려지는 것은 이 null 자식 하나에 가둔다.
 
 | 지금 화면                                                         | 보이는 방식                           | 이유                                                                     |
 | ----------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
@@ -84,59 +90,73 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | 그 밖의 화면, 모르는 타입, 계약에 맞지 않는 data, 판단 실패       | `banner`: 배너·목록·소리              | 앱이 뒤에 있을 때와 같게 알린다. 판단 전(그려지기 전)에 온 알림도 배너다 |
 
 - "여는 화면"은 경로와 보는 대상 id(할 일·친구·콕)가 모두 같을 때다. 날짜·진입 경로·댓글 위치(`date`·`entry`·`comment`)는 비교하지 않는다(`isViewingNotificationDestination`).
-- 어느 쪽이든 받은 즉시 알림함·안 읽은 수와 그 타입의 화면을 다시 받는다(`useForegroundNotificationSync`). 배지는 그 수를 따른다.
+- 어느 쪽이든 받은 즉시 알림함·안 읽은 수와 그 타입의 화면을 다시 받는다(`useForegroundPushSync`). 배지는 그 수를 따른다.
 - `shouldSetBadge`는 끈다. 배지는 안 읽은 수 조회 하나가 맞춘다.
 
 ## 로그아웃과 배지
 
-- 로그아웃은 `PushRegistrationService.unregister()`가 `PushDeviceApi`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고를 모두 제한 시간 안에서 기다리고, 해제가 시작되면 늦은 보고는 보내지 않는다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`logOutDevice`).
+- 로그아웃은 `PushRegistrationService.unregister()`가 `PushDeviceApi`로 `DELETE v1/notifications/token?deviceId=`를 보낸다. 진행 중인 보고를 모두 제한 시간 안에서 기다리고, 해제가 시작되면 늦은 보고는 보내지 않는다. 늦게 도착한 보고가 해제된 기기를 되살리지 않게 하기 위해서다. 해제가 실패하거나 오프라인이어도 로컬 세션은 항상 지운다(`LogOutDeviceService`).
 - 오프라인 로그아웃은 온라인이 되면 `POST v1/auth/logout`으로 서버 세션을 풀고, 서버가 `releaseSessions`로 그 세션의 기기를 함께 푼다([오프라인 로그아웃](./auth.md#오프라인-로그아웃)).
 - 온라인 로그아웃 없이 세션이 끝나면 서버는 끝난 세션의 토큰을 지우지 않아 이전 계정의 푸시가 계속 온다. 그래서 refresh 만료·거절(`reason: 'expired'`), 오프라인 로그아웃, 인증 해제(`DELETE`)가 실패한 로그아웃은 `PushRegistrationService.requestRelease()`로 기기에 해제 기록을 남기고 `POST v1/notifications/push-devices/unregister`(인증 없음, `{ deviceId, token }`, 항상 200)로 푼다. 토큰은 마지막으로 보고한 토큰과 지금 Expo 토큰이고, 보고한 뒤 바뀌었으면 둘 다 보낸다(`PushRegistrationPolicy.getReleaseTokens`).
-  - 연결·서버 장애·429·토큰 발급 실패면 기록을 남겨 로그아웃 상태에서 연결될 때와 앱이 앞으로 올 때 다시 보낸다(`usePushDeviceReleaseFlush`). 앱을 다시 켜도 기록(키체인 `pushRegistration`, 토큰을 담아 평문 MMKV에 두지 않는다)이 남는다. 화면을 막지 않는다.
+  - 연결·서버 장애·429·토큰 발급 실패면 기록을 남겨 로그아웃 상태에서 연결될 때와 앱이 앞으로 올 때 다시 보낸다(`usePushDeviceSync`). 앱을 다시 켜도 기록(키체인 `pushRegistration`, 토큰을 담아 평문 MMKV에 두지 않는다)이 남는다. 화면을 막지 않는다.
   - 다시 로그인해 보고하면 해제 기록을 버리고, 가는 중인 해제가 있으면 끝난 뒤에 보고해 새 등록이 지워지지 않는다. 같은 값도 다시 보고하도록 보고 기록을 비운다.
   - 로그인한 적 없는 시작(`none`)과 판정 실패(`boot-failed`)는 등록을 건드리지 않는다. 잠긴 키체인처럼 세션이 살아 있을 수 있어서다.
+- 로그아웃·탈퇴·세션 만료는 OS 알림 센터에 이미 도착한 알림을 지운다(`SessionCleanupService` → `PushNotificationGateway.dismissDelivered`). 페이로드에 받는 사람이 없어 남기면 공용 기기에서 다음 계정이 앞 계정의 알림 문구를 본다(눌러도 소유 확인에서 버려진다). 만료 뒤에도 지우는 것은 다음에 다른 계정이 로그인할 수 있어서다. 로그인한 적 없는 시작과 판정 실패는 세션이 살아 있을 수 있어 지우지 않는다. 지우기가 실패해도 다른 정리는 계속하고 경고만 남긴다. 배지는 아래처럼 미인증이면 0이 된다.
 - 탈퇴는 앱이 해제하지 않는다. 서버 탈퇴가 전 세션과 기기를 함께 푼다. 탈퇴 전에 풀면 비밀번호 오류에도 이 기기의 알림이 끊긴다.
 - 앱 아이콘 배지는 알림함의 안 읽은 수 조회(`useGetUnreadCountQueryOptions`) 하나를 따른다. `NotificationProvider`의 `useNotificationBadgeSync`가 로그인한 동안 이 조회를 구독해, 앱이 앞으로 올 때(`focusManager`, `staleTime: 0`)·다시 연결될 때·푸시 수신과 읽음 처리의 무효화·낙관적 수정 때마다 배지를 그 수로 맞춘다. 그래서 다른 기기에서 읽거나 받은 알림도 이 기기를 열면 배지에 반영된다. 배지만 따로 서버에 묻지 않는다. 읽음 처리(`NOTIFICATION_MUTATION_KEYS.writes()`)는 실패하면 그 알림만 안 읽음으로 되돌리고, 마지막 처리가 끝날 때만 다시 받아 배지가 앞 처리의 값으로 깜빡이지 않는다.
 - 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 배지를 건드리지 않고, 로그아웃(`unauthenticated`)일 때만 지운다(`NotificationBadgePolicy.getBadgeCount`).
 
 ## 눌린 푸시 처리
 
-탭은 읽음(`markAsReadAndCheckOwnership`)과 열림(`POST …/opened`, 읽음 포함)을 기존 API로 남기고, 이동한 뒤 `push_notification_opened`를 한 번 보낸다. `app_state`는 `NotificationResponsePolicy.getOpenAppState`가 정한다. 시작할 때 읽은 마지막 응답은 `cold`, 앱이 뒤에 있었거나 앞으로 온 지 1초 안이면 `background`(응답과 복귀 이벤트의 순서가 플랫폼마다 다르다), 그 밖은 `foreground`다. 개인 정보는 보내지 않는다.
+탭은 읽음(`markAsReadAndCheckOwnership`)과 열림(`POST …/opened`, 읽음 포함)을 기존 API로 남기고, 이동한 뒤 `push_notification_opened`를 한 번 보낸다. `app_state`는 `PushNotificationResponsePolicy.getOpenAppState`가 정한다. 시작할 때 읽은 마지막 응답은 `cold`, 앱이 뒤에 있었거나 앞으로 온 지 1초 안이면 `background`(응답과 복귀 이벤트의 순서가 플랫폼마다 다르다), 그 밖은 `foreground`다. 개인 정보는 보내지 않는다.
 
 Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNotificationResponse`와 응답 리스너를 받아 슬롯에 넣고, 처리 뒤 `clearLastNotificationResponse`로 재시작 중복을 막는다. 푸시는 URL을 싣지 않으므로 `+native-intent`는 관여하지 않는다.
 
-| 상황                                    | 동작                                                                                                                                                                  |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 인증 확인 중(`loading`·`locked`)        | 슬롯에 둔다. `locked`는 스피너로 넘기고 잠금이 풀리면 이어간다                                                                                                        |
-| 로그아웃 상태                           | 슬롯에 둔다(10분). 로그인 뒤 같은 Index 경로로 한 번만 연다                                                                                                           |
-| 연속 두 탭                              | 슬롯이 하나라 마지막 탭만 연다. 앞 탭의 늦은 읽음 응답은 버린다                                                                                                       |
-| 같은 탭이 다시 옴                       | 처리한 응답 id를 최근 20개 기억해(`HandledResponsePolicy.rememberHandledResponse`) 콜드 스타트의 마지막 응답·리스너 중복·다시 그린 레이아웃에도 한 번만 연다          |
-| 로그아웃·세션 만료                      | 슬롯과 마지막 응답을 지운다. 진행 중 응답은 `SessionEpoch`와 슬롯 id로 버린다                                                                                         |
-| 다른 계정 알림·없는 대상                | 읽음이 403·404면 버리고 머문다. 페이로드에 수신자 id가 없어 이것이 유일한 방어다                                                                                      |
-| 오프라인·5xx·읽음 지연                  | `NOTIFICATION_READ_BUDGET_MS`(800ms, 초깃값, Release 측정 뒤 확정) 안에 끝내고 연다. 서버의 `opened`가 읽음도 처리하므로 mutation이 연결될 때까지 멈췄다가 재시도한다 |
-| 모르는 타입, `navigation` 있음          | `navigation`을 따른다. Analytics `type`은 `UNKNOWN`이다                                                                                                               |
-| `navigation` 없음·모르는 kind·틀린 모양 | `parsePushNotification`이 `null`을 돌려주고 알림 목록으로 연다(로그를 남긴다). 서버는 모든 푸시·알림함 행에 `navigation`을 계산해 싣는다                              |
-| 수신 거부 버튼                          | 인증 없이 공개 API로 보낸다. 다음 탭에 밀리지 않게 슬롯을 따로 두고 실패하면 포그라운드 복귀 때 다시 보낸다(10분)                                                     |
-| 알림함 항목                             | 서버가 푸시와 같은 계산으로 싣는 `navigation`을 따른다                                                                                                                |
+### 열리는 자리
+
+목적지는 그룹 없는 평범한 경로(`/friends?view=receiver`)이고, 어느 탭에 열지는 연 순간의 탭이 정한다([탭과 함께 쓰는 화면](./architecture/state-and-routing.md#탭과-함께-쓰는-화면)). 콜드(앱 진입 중)는 Index가 `Redirect withAnchor`로 열어 화면을 가진 탭의 첫 화면이 아래에 깔린다. 웜(앱 화면 안)은 `openEntryHref`로 OS가 같은 URL을 연 것처럼 연다. Stack에 그 화면이 있으면 그리로 돌아가고 없으면 보던 탭 위에 쌓는다. 시트·탭 위 화면을 연 채 눌러도 그 아래 보던 탭이다. 탭 위 화면(할 일 상세·시트)을 보던 중 탭 화면을 열면 탭 위 화면을 닫아 탭 바가 한 겹이다(`router.navigate`는 탭 묶음을 하나 더 쌓는다). 알림함은 탭마다 함께 쓰는 화면이라 행은 앱 안 이동(`router.navigate`)으로 같은 탭에 쌓고 뒤로 가면 알림함이다.
+
+| 목적지                                                                                                      | 콜드(꺼진 앱)                             | 웜(뒤·앞에 있던 앱)                                                       |
+| ----------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------- |
+| 탭 첫 화면(`/feed`, 친구 피드·응원 `/feed?friendId=`)                                                       | 할 일 탭. 뒤로 갈 곳이 없다               | 할 일 탭으로 바뀌고 그 Stack의 첫 화면으로 돌아간다                       |
+| 함께 쓰는 화면(`/notifications`, `/friends`, `/friends/invite`, `/achievements`, `/reports`, `/settings/…`) | 마이 탭. 뒤로 가면 내 정보 메뉴           | 보던 탭 위. 뒤로 가면 보던 화면. 시트·탭 위 화면을 보던 중이면 그 아래 탭 |
+| 탭 위 화면(`/todo/[todoId]`, `/nudges/[nudgeId]`, `/suggestions`, 날씨)                                     | 아래에 할 일 탭. 뒤로 가면 피드           | 보던 화면 위. 뒤로 가면 보던 화면. Stack에 같은 화면이 있으면 그 화면     |
+| 외부 링크·이동 없음                                                                                         | 피드. 외부 링크는 그 위에 브라우저를 연다 | 보던 화면 그대로. 외부 링크는 브라우저를 연다                             |
+
+- 같은 할 일에 온 댓글 알림은 상세를 다시 쌓지 않고 댓글 위치(`?comment=`)만 바꾼다. 다른 할 일이면 위에 쌓는다.
+- 읽음은 한 번이다. 열기 전 소유 확인(`PATCH …/read`)과 연 뒤 열림 기록(`POST …/opened`, 같은 탭은 멱등)을 응답마다 한 번씩 보내고, 안 읽은 수 캐시는 열림 기록이 한 번 고친다. 처리한 응답은 DI가 가진 슬롯이 기억해 입구 훅이 다시 마운트돼도 다시 열거나 읽지 않는다.
+- 프리미엄 화면(리포트·AI 제안)은 푸시에서 게이트를 묻지 않고 화면이 구독 상태를 보고 미리보기를 그린다. 알림함 행은 열기 전에 묻는다.
+
+| 상황                                      | 동작                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 인증 확인 중(`loading`·`locked`)          | 슬롯에 둔다. `locked`는 스피너로 넘기고 잠금이 풀리면 이어간다                                                                                                                                                                                                                                                                               |
+| 로그아웃 상태                             | 슬롯에 둔다(10분). 로그인 뒤 같은 Index 경로로 한 번만 연다. 다른 계정으로 로그인하면 아래 소유 확인에서 버리고 피드에 머문다                                                                                                                                                                                                                |
+| 연속 두 탭                                | 슬롯이 하나라 마지막 탭만 연다. 앞 탭의 늦은 읽음 응답은 버린다                                                                                                                                                                                                                                                                              |
+| 같은 탭이 다시 옴                         | 처리한 응답 id를 최근 20개 기억해(`rememberHandledResponse`) 콜드 스타트의 마지막 응답·리스너 중복·다시 그린 레이아웃에도 한 번만 연다                                                                                                                                                                                                       |
+| 로그아웃·세션 만료                        | 슬롯과 마지막 응답을 지운다. 진행 중 읽음 확인은 `SessionEpoch`와 슬롯 id로, 가는 중인 수신 거부는 effect의 `AbortSignal`로 결과를 버린다                                                                                                                                                                                                    |
+| 다른 계정 알림·지워진 알림                | 읽음이 `NOTIFICATION_1005`(남의 알림)·`NOTIFICATION_1004`(없는 알림)면 버리고 머문다(콜드는 피드). 페이로드에 수신자 id가 없어 이것이 유일한 방어다. 남의 알림 문구를 다시 보이지 않게 안내도 띄우지 않는다                                                                                                                                  |
+| 대상이 사라짐                             | 목적지 화면이 안내한다. 지운 할 일·끊긴 친구의 할 일은 상세가 "지금은 볼 수 없는 할 일이에요"와 [뒤로 가기]로 피드, 콕은 "지금은 이 콕에 답할 수 없어요"와 [뒤로 가기]로 알림함, 끊긴 친구 피드는 "이제 친구 피드를 볼 수 없어요"와 [내 피드로 가기]다. 열기 전에 대상을 묻지 않는다(읽음 예산 800ms 안에 두 요청을 넣지 않는다)             |
+| 오프라인·5xx·읽음 지연                    | `NOTIFICATION_READ_BUDGET_MS`(800ms, 초깃값, Release 측정 뒤 확정) 안에 끝내고 연다. 서버의 `opened`가 읽음도 처리하므로 mutation이 연결될 때까지 멈췄다가 재시도한다                                                                                                                                                                        |
+| 모르는 타입, `navigation` 있음            | `navigation`을 따른다. Analytics `type`은 `UNKNOWN`이다                                                                                                                                                                                                                                                                                      |
+| `navigation` 없음·모르는 kind·틀린 모양   | 그 칸만 버리고 `toNotificationTarget`이 알림함 target을 만든다(버린 칸의 경로를 `notification.push.parse-dropped`로 남긴다). 서버는 모든 푸시·알림함 행에 `navigation`을 계산해 싣는다                                                                                                                                                       |
+| 모르는 종류·분석 칸·수신 거부 토큰이 틀림 | 그 칸만 버리고(`null`) 종류·목적지는 그대로 연다(로그를 남긴다)                                                                                                                                                                                                                                                                              |
+| data를 읽지 못함                          | `parsePushNotification`의 `notification`이 `null`이면 로그를 남기고 버리지 않은 채 알림함으로 연다(`createUnreadablePushNotification`)                                                                                                                                                                                                       |
+| 수신 거부 버튼                            | 인증 없이 공개 API로 보낸다. 다음 탭에 밀리지 않게 슬롯을 따로 두고 실패하면 포그라운드 복귀 때 다시 보낸다(10분)                                                                                                                                                                                                                            |
+| 알림함 항목                               | 서버가 푸시와 같은 계산으로 싣는 `navigation`을 따른다(서버 1.15.1+, [배포 순서](../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)). 알림함을 여는 항목은 같은 화면을 다시 열지 않는다. iOS 좁은 화면에서 읽은 알림이 할 일·콕 상세로 가면 길게 눌러 목적지를 미리본다([Link](./architecture/state-and-routing.md#link)) |
 
 ### 목적지 대조
 
-서버가 푸시·알림함 행에 싣는 `navigation`이 유일한 목적지 입력이다. 앱은 옛 type·action·context·routing 필드로 목적지를 계산하지 않는다(서버가 호환용으로 함께 싣는 옛 필드는 출시된 구 앱의 몫이다). `packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽어 kind별 목적지를 고정하고, 앱은 compact·medium·expanded와 보는 사람 없음·주인·다른 사람 조합을 확인한다.
+서버가 푸시·알림함 행에 싣는 `navigation`이 유일한 목적지 입력이다. 앱은 옛 type·action·context·routing 필드를 읽지 않는다(서버가 호환용으로 함께 싣는 옛 필드는 출시된 구 앱의 몫이다). 알림함 행의 `navigation`은 서버 1.15.1부터 실리므로 서버 1.15.1 이상을 앱 1.15.2보다 먼저 배포하고 그 아래로 되돌리지 않는다. 이번 릴리스는 서버 1.15.2를 앱과 함께 배포한다. 길은 하나다: `navigation` →(mapper `toNotificationTarget`) `NotificationTarget` →(`toNotificationDestination`) 경로·외부 링크·이동 없음.
+
+`packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽는다. 앱은 navigation이 있는 줄마다 접힌 화면이 여는 곳을 적어 두고(`utils/notification-destination.view-model.test.ts`, 접는 쪽은 `apis/notification.mapper.test.ts`), 서버가 줄을 더하면 앱 테스트가 먼저 깨진다. 할 일이 아닌 목적지는 medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서도 같은지, 할 일 목적지는 펼친 화면의 목록 pane(주인·날짜)을 따로 확인한다.
+
+**새 navigation kind 더하기.** 서버 계약(`notificationNavigationSchema`)에 kind가 더해지면 앱 모델 `notificationTargetSchema`(앱이 쓰는 칸만)와 mapper `toNotificationTarget`, 목적지 `toNotificationDestination`(그룹 없는 경로)에 한 줄씩 더한다. 빠뜨리면 `match().exhaustive()`가 빌드를 막는다(계약 union이 넓어져 mapper가 먼저 깨진다). 열리는 탭은 [열리는 자리](#열리는-자리)가 정해 kind마다 적지 않는다. 테스트는 대조표 줄의 목적지(`COMPACT_DESTINATIONS`)와 콜드·웜 자리(`auth-gate-layout.push-entry.flow.test.tsx`의 `LANDINGS`, 타입이 kind마다 요구한다)를 적는다.
 
 ### 콜드 스타트 순서
 
-| 순서 | 동작                                               |
-| ---- | -------------------------------------------------- |
-| 1    | 스플래시 유지, 글꼴·암호화 저장소 대기             |
-| 2    | 응답을 슬롯에 받음, `/` → `/loading`               |
-| 3    | 인증과 복원 확정. 스플래시와 로딩 가드 유지        |
-| 4    | 읽음 확인(최대 800ms)                              |
-| 5    | 가드 해제 → Index가 목적지로 `Redirect withAnchor` |
-| 6    | 다음 프레임에 스플래시 hide                        |
-| 7    | `clearLastResponse`, `opened` 기록                 |
+스플래시를 둔 채 글꼴·암호화 저장소를 기다리고 → 응답을 슬롯에 받아 `/` → `/loading` → 인증과 복원을 확정하고(스플래시와 로딩 가드 유지) → 읽음을 확인하고(최대 800ms) → 가드를 풀면 Index가 목적지로 `Redirect withAnchor` → 다음 프레임에 스플래시를 내리고 → `clearLastResponse`와 `opened`를 남긴다.
 
-- 피드는 anchor로 아래에 있고 focus되지 않아 안내와 화면 기록이 생기지 않는다. 뒤로 가기는 피드다.
-- 외부 링크와 이동 없음은 경로가 없어 피드로 간 뒤 처리한다.
+- 목적지 아래의 탭 첫 화면(할 일 상세는 피드, 함께 쓰는 화면은 내 정보)은 anchor로 깔리고 focus되지 않아 안내와 화면 기록이 생기지 않는다. 뒤로 가기는 그 첫 화면이다.
 - 스플래시에 갇히지 않는다. 읽음은 예산으로 항상 끝나고, 진입 대기는 3초 상한(`NOTIFICATION_ENTRY_HOLD_MAX_MS`) 뒤 내리며, Index가 이동하지 못하면 슬롯을 비워 피드로 보낸다. 루트 오류 경계와 `AppProviders`의 조회 오류 경계도 내린다.
 - 앱 종료 상태의 알림 탭이 스플래시 다음 바로 목적지로 가고 뒤로 가기가 탭 바가 있는 피드로 돌아오는 것을 iOS 시뮬레이터 Release(약 2.2초)와 Android 폴드 Release(로컬 알림)에서 확인했다. 실제 APNs·FCM 경유와 배지는 실기기 체크리스트로 확인한다.
 
@@ -161,8 +181,6 @@ iOS 개발 빌드 번들은 `com.aido.mobile.dev`다. 알림 권한은 앱에서
   "body": {
     "notificationId": 0,
     "type": "TODO_SHARED",
-    "action": { "type": "DEEP_LINK" },
-    "context": { "todoId": 42 },
     "navigation": { "kind": "TODO", "todoId": 42 }
   }
 }
@@ -179,4 +197,4 @@ Android 에뮬레이터는 FCM 없이 로컬 알림으로 본다. 임시 코드�
 
 ## 테스트
 
-포트를 구현한 `createPushNotificationGatewayStub`을 DI로 넣는다. 예시는 `push-permission-notice.test.tsx`, `use-push-device-sync.test.tsx`, `expo-push-notification-gateway.test.ts`(어댑터 경계)다. 눌린 푸시의 진입 순서는 실제 라우터로 도는 `auth-gate-layout.push-entry.test.tsx`다. 자세한 규칙은 [testing.md](./testing.md)를 본다.
+포트를 구현한 `createPushNotificationGatewayStub`을 DI로 넣는다. 예시는 `use-push-device-sync.test.tsx`, `expo-push-notification-gateway.test.ts`(어댑터 경계)다. 눌린 푸시의 진입 순서와 kind마다 콜드·웜에서 열리는 자리(경로·탭·뒤로 가기·읽음 한 번)는 실제 라우터와 앱 탭 anchor로 도는 `auth-gate-layout.push-entry.flow.test.tsx`, 웜 이동의 pop·push는 `open-entry-href.test.tsx`다. 자세한 규칙은 [testing.md](./testing.md)를 본다.

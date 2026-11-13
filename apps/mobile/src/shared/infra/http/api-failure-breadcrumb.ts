@@ -1,8 +1,8 @@
-import { ErrorCode } from '@aido/api/errors';
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { AfterResponseState } from 'ky';
 
-import { errorEnvelopeSchema } from './error-envelope';
+import { readErrorEnvelope } from './error-envelope';
 import { REQUEST_ID_HEADER } from './request-headers';
 import { getPathname } from './request-path';
 
@@ -20,8 +20,8 @@ async function recordFailureBreadcrumb(
   request: Request,
   response: Response,
 ): Promise<void> {
-  const parsed = errorEnvelopeSchema.safeParse(await readBody(response));
-  const code = parsed.success ? parsed.data.error.code : ErrorCode.SYS_0001;
+  // 앱이 모르는 새 코드도 진단에 쓰도록 서버가 보낸 코드 그대로 남긴다
+  const code = readErrorEnvelope(await readBody(response))?.code ?? ErrorCode.SYS_0001;
   errorReporter.addBreadcrumb({
     category: 'http',
     level: 'warning',
@@ -41,7 +41,7 @@ export function createApiFailureBreadcrumbHook(
   errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>,
 ) {
   return async ({ request, response }: AfterResponseState): Promise<void> => {
-    if (!response.ok && response.status !== 401) {
+    if (!response.ok && response.status !== HttpStatus.UNAUTHORIZED) {
       await recordFailureBreadcrumb(errorReporter, request, response);
     }
   };

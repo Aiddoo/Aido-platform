@@ -9,6 +9,6 @@ export const WEATHER_QUERY_KEYS = {
   reports: () => [...WEATHER_QUERY_KEYS.all, 'report'] as const,
   report: (params: WeatherReportQueryKey) =>
     queryOptions<WeatherReport>({ queryKey: [...WEATHER_QUERY_KEYS.reports(), params] }).queryKey,
-  location: () =>
-    queryOptions<LocationReading>({ queryKey: [...WEATHER_QUERY_KEYS.all, 'location'] }).queryKey,
+  /** 기기 위치는 OS 상태라 `['device', …]` 루트에 둬 날씨 무효화에 휩쓸려 위치를 다시 읽지 않는다 */
+  location: () => queryOptions<LocationReading>({ queryKey: ['device', 'location'] }).queryKey,
 } as const;

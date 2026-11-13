@@ -1,21 +1,15 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createAppLifecycleGatewayStub, createTestDi } from '@src/shared/__tests__';
-import { act, renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { createAppLifecycleGatewayStub, createTestDi } from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
+import { act } from '@testing-library/react-native';
 
 import { useOnAppForeground } from './use-on-app-foreground';
 
 async function setup() {
   const appLifecycle = createAppLifecycleGatewayStub();
   const onForeground = jest.fn();
-  function wrapper({ children }: PropsWithChildren) {
-    return (
-      <StaticDIProvider container={createTestDi({ appLifecycle })}>{children}</StaticDIProvider>
-    );
-  }
-  const hook = await renderHook(
+  const hook = await renderScreenHook(
     ({ onForeground: callback }: { onForeground: () => void }) => useOnAppForeground(callback),
-    { wrapper, initialProps: { onForeground } },
+    { di: createTestDi({ ports: { appLifecycle } }), initialProps: { onForeground } },
   );
   return { ...hook, appLifecycle, onForeground };
 }

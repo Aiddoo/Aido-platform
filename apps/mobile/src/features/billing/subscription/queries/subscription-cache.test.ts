@@ -6,7 +6,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { MEMO_QUERY_KEYS } from '@src/features/notes/memo/queries/memo-query-keys';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { TODO_NUDGE_QUERY_KEYS } from '@src/features/social/nudge/queries/todo-nudge-query-keys';
-import { createTestQueryClient } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/testing/core';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 import { ENTITLEMENT_QUERY_KEYS } from './entitlement-query-keys';
@@ -158,7 +158,7 @@ describe('syncMeUntilStorePremium', () => {
       bankedPremiumDays: 0,
     }),
   );
-  const DELAYS = [500, 1_000, 1_500];
+  const DELAYS_MS = [500, 1_000, 1_500];
   let queryClient: QueryClient;
   const wait = jest.fn(async (_ms: number) => {});
 
@@ -178,7 +178,7 @@ describe('syncMeUntilStorePremium', () => {
     const fetchMe = await serveMe(FREE_ME, FREE_ME, STORE_ME);
 
     // When
-    const isReflected = await syncMeUntilStorePremium(queryClient, { delays: DELAYS, wait });
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
 
     // Then
     expect(isReflected).toBe(true);
@@ -191,11 +191,21 @@ describe('syncMeUntilStorePremium', () => {
     const fetchMe = await serveMe(FREE_ME);
 
     // When
-    const isReflected = await syncMeUntilStorePremium(queryClient, { delays: DELAYS, wait });
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
 
     // Then
     expect(isReflected).toBe(false);
-    expect(fetchMe).toHaveBeenCalledTimes(1 + DELAYS.length);
+    expect(fetchMe).toHaveBeenCalledTimes(1 + DELAYS_MS.length);
+  });
+
+  it('내 정보가 없으면(로그아웃 뒤) 다시 불러오지 않고 바로 false를 반환한다', async () => {
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(wait).not.toHaveBeenCalled();
+    expect(queryClient.getQueryState(USER_QUERY_KEYS.me())).toBeUndefined();
   });
 
   it('이미 STORE면 다시 불러오지 않는다', async () => {
@@ -203,11 +213,49 @@ describe('syncMeUntilStorePremium', () => {
     const fetchMe = await serveMe(STORE_ME);
 
     // When
-    const isReflected = await syncMeUntilStorePremium(queryClient, { delays: DELAYS, wait });
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
 
     // Then
     expect(isReflected).toBe(true);
     expect(fetchMe).toHaveBeenCalledTimes(1);
     expect(wait).not.toHaveBeenCalled();
+  });
+
+  it('기다리는 동안 로그아웃으로 캐시가 비워지면 더 다시 불러오지 않고 false를 반환한다', async () => {
+    // Given
+    const fetchMe = await serveMe(FREE_ME);
+    const clearDuringWait = jest.fn(async (_ms: number) => {
+      queryClient.clear();
+    });
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, {
+      delaysMs: DELAYS_MS,
+      wait: clearDuringWait,
+    });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(clearDuringWait).toHaveBeenCalledTimes(1);
+    expect(fetchMe).toHaveBeenCalledTimes(1);
+  });
+
+  it('기다리는 동안 다른 계정으로 바뀌면 그 계정의 내 정보를 다시 불러오지 않고 false를 반환한다', async () => {
+    // Given
+    const fetchMe = await serveMe(FREE_ME);
+    const switchAccount = jest.fn(async (_ms: number) => {
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), { ...FREE_ME, id: 'other-user' });
+    });
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, {
+      delaysMs: DELAYS_MS,
+      wait: switchAccount,
+    });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(switchAccount).toHaveBeenCalledTimes(1);
+    expect(fetchMe).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,8 +1,7 @@
-import { WEBHOOK_SYNC_DELAY } from '@src/features/billing/subscription/constants/subscription.constants';
+import { WEBHOOK_SYNC_DELAY_MS } from '@src/features/billing/subscription/constants/subscription.constants';
 import { type CustomerInfo } from '@src/features/billing/subscription/domains/customer-info.model';
 import { CustomerInfoPolicy } from '@src/features/billing/subscription/domains/customer-info.model';
 import { useRefreshOnPremiumEnd } from '@src/features/billing/subscription/hooks/use-refresh-on-premium-end';
-import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { watchPremiumEntitlementChanges } from '@src/features/billing/subscription/queries/subscription-cache';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { type PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
@@ -25,8 +24,7 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
     () =>
       debounce(() => {
         invalidateMe(queryClient);
-        invalidateEntitlements(queryClient);
-      }, WEBHOOK_SYNC_DELAY),
+      }, WEBHOOK_SYNC_DELAY_MS),
     [queryClient],
   );
 
@@ -42,18 +40,20 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
     ...useGetMeQueryOptions(),
     enabled: isAuthenticated,
   });
+  const userId = user?.id;
 
+  // 내 정보의 다른 칸(이름·프리미엄)이 바뀔 때마다 스토어에 다시 로그인하지 않게 계정 id에만 반응한다
   useEffect(() => {
-    if (isAuthenticated && user) {
-      session.logIn(user.id);
+    if (isAuthenticated && userId != null) {
+      session.logIn(userId);
     }
 
     if (status === 'unauthenticated') {
       session.logOut();
     }
-  }, [isAuthenticated, user, status, session]);
+  }, [isAuthenticated, userId, status, session]);
 
-  // 프리미엄은 스토어 구독과 보상 기간을 합친 서버 값이 단일 원천이라 캐시에 쓰지 않고 내 정보·권한만 다시 불러온다
+  // 프리미엄은 서버 값이 원천이라 내 정보만 다시 받는다. 권한 스냅샷은 위 watcher가 따라 갱신한다
   const onCustomerInfoUpdated = useCallback(
     (customerInfo: CustomerInfo) => {
       if (CustomerInfoPolicy.hasStoreEntitlement(customerInfo)) {
@@ -63,7 +63,6 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
 
       syncServerAfterWebhook.cancel();
       invalidateMe(queryClient);
-      invalidateEntitlements(queryClient);
     },
     [queryClient, syncServerAfterWebhook],
   );

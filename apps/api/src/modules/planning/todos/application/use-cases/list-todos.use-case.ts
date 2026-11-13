@@ -1,6 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
 import type { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -10,6 +7,7 @@ import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { FindTodosParams } from "../ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { invalidDateRange } from "../todos.errors.js";
 
 interface GetTodosParams {
   readonly userId: string;
@@ -42,11 +40,7 @@ export class ListTodosUseCase {
       input.endDate != null &&
       Temporal.PlainDate.compare(input.startDate, input.endDate) > 0
     ) {
-      throw new ApplicationException(ErrorCode.SYS_0002, {
-        message: "startDate must be less than or equal to endDate",
-        startDate: input.startDate.toString(),
-        endDate: input.endDate.toString(),
-      });
+      throw invalidDateRange(input.startDate, input.endDate);
     }
 
     await this.#dependencies.seriesCatchUp.execute(input.userId);

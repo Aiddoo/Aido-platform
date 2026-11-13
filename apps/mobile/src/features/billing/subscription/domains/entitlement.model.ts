@@ -5,15 +5,9 @@ import {
   PLAN_QUOTA_PERIODS,
   type PlanLimitFeatureKey,
 } from '@aido/api/vocabulary';
-import {
-  calculateCalendarDaysLeft,
-  hasInstantPassed,
-  type Instant,
-  instantSchema,
-} from '@src/shared/date/instant';
+import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
+import { calculateCalendarDaysLeft } from '@src/shared/date/zoned';
 import { z } from 'zod';
-
-import type { LimitedFeature } from './entitlement.error';
 
 const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
 export type EntitlementFeature = z.infer<typeof entitlementFeatureSchema>;
@@ -170,8 +164,14 @@ function withFeatureQuota(snapshot: EntitlementSnapshot, quota: FeatureQuota): E
   return { ...snapshot, features: { ...snapshot.features, [quota.feature]: quota } };
 }
 
+export interface LimitedFeature {
+  feature: EntitlementFeature;
+  /** 서버가 오류와 함께 준 현재 한도. 상세를 싣지 않는 코드는 null이다 */
+  featureQuota: FeatureQuota | null;
+}
+
 /** 서버가 막은 기능의 오류가 한도 소진인지 등급 잠금인지. 서버가 한도를 함께 줬으면 그 값을 따른다 */
-function getBlockedDecision(limited: LimitedFeature): Exclude<AccessDecision, 'allow'> {
+export function getBlockedDecision(limited: LimitedFeature): Exclude<AccessDecision, 'allow'> {
   if (limited.featureQuota != null) {
     return limited.featureQuota.allowed ? 'limit-reached' : 'locked';
   }
@@ -196,9 +196,4 @@ export const EntitlementPolicy = {
   withFeatureQuota,
   shouldOfferPremium,
   getFreeLimit,
-} as const;
-
-/** 서버가 한도 오류로 막은 기능 */
-export const LimitedFeaturePolicy = {
-  getBlockedDecision,
 } as const;

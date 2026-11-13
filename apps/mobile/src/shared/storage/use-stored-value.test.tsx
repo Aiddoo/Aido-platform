@@ -1,8 +1,9 @@
 import {
   createMemoryObservableSyncStorage,
   createMemorySyncStorage,
-  renderUiHook,
-} from '@src/shared/__tests__';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { act } from '@testing-library/react-native';
 import { z } from 'zod';
 
@@ -27,14 +28,14 @@ describe('useStoredValue', () => {
     // Given
     const syncStorage = createMemoryObservableSyncStorage();
     syncStorage.set('aido_test_dismissals_v1:account-1', '{"AI_PARSE":"2026-11-11"}');
-    const { result, rerender } = await renderUiHook(
+    const { result, rerender } = await renderScreenHook(
       () => useStoredValue(dismissalsStoredValue, 'account-1'),
-      { di: { syncStorage } },
+      { di: createTestDi({ ports: { syncStorage } }) },
     );
     const [first] = result.current;
 
     // When
-    await rerender({});
+    await rerender(undefined);
 
     // Then
     expect(result.current[0]).toBe(first);
@@ -44,9 +45,9 @@ describe('useStoredValue', () => {
   it('다른 곳에서 같은 키를 쓰면 구독한 훅이 새 값으로 다시 그린다', async () => {
     // Given
     const syncStorage = createMemoryObservableSyncStorage();
-    const { result } = await renderUiHook(
+    const { result } = await renderScreenHook(
       () => useStoredValue(dismissalsStoredValue, 'account-1'),
-      { di: { syncStorage } },
+      { di: createTestDi({ ports: { syncStorage } }) },
     );
 
     // When
@@ -59,9 +60,10 @@ describe('useStoredValue', () => {
   it('범위가 없으면 fallback이고 세터는 아무것도 쓰지 않는다', async () => {
     // Given
     const syncStorage = createMemoryObservableSyncStorage();
-    const { result } = await renderUiHook(() => useStoredValue(dismissalsStoredValue, undefined), {
-      di: { syncStorage },
-    });
+    const { result } = await renderScreenHook(
+      () => useStoredValue(dismissalsStoredValue, undefined),
+      { di: createTestDi({ ports: { syncStorage } }) },
+    );
 
     // When
     await act(() => result.current[1]({ AI_PARSE: '2026-11-11' }));
@@ -76,9 +78,10 @@ describe('useStoredValue', () => {
     // Given
     const syncStorage = createMemoryObservableSyncStorage();
     const draftStorage = createMemorySyncStorage();
-    const { result } = await renderUiHook(() => useStoredValue(languageStoredValue, 'account-1'), {
-      di: { syncStorage, draftStorage },
-    });
+    const { result } = await renderScreenHook(
+      () => useStoredValue(languageStoredValue, 'account-1'),
+      { di: createTestDi({ ports: { syncStorage, draftStorage } }) },
+    );
 
     // When
     await act(() => result.current[1]('en'));

@@ -1,12 +1,11 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { PushDevicePlatform, PushPermissionStatus } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { PushDeviceId } from "./push-device-id.vo.js";
 import { PushPermission } from "./push-permission.vo.js";
+import { pushUnavailableDevice } from "./push.errors.js";
 
 export interface PushDevicePrimitives {
   readonly deviceId: string;
@@ -56,7 +55,7 @@ interface CreatePushDeviceParams {
 export class PushDevice extends AggregateRoot<PushDeviceId, PushDeviceProps> {
   static create(params: CreatePushDeviceParams): PushDevice {
     if (params.platform == null) {
-      throw new DomainException(ErrorCode.NOTIFICATION_1006, { deviceId: params.id.value });
+      throw pushUnavailableDevice(params.id.value);
     }
     return new PushDevice(params.id, {
       userId: params.userId,

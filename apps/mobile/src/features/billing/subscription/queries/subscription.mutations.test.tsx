@@ -6,20 +6,20 @@ import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
+import { i18n } from '@src/shared/i18n';
 import {
   createHttpClientStub,
   createPurchasesGatewayStub,
   createTestDi,
   createTestQueryClient,
-  renderUiHook,
   setupFakeTimersPerTest,
-} from '@src/shared/__tests__';
-import { i18n } from '@src/shared/i18n';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
 import { type SubscriptionPlan } from '../domains/subscription.model';
-import { usePurchaseMutationOptions } from './subscription.mutations';
+import { usePurchaseMutationOptions, useRestoreMutationOptions } from './subscription.mutations';
 
 const SYNC_PENDING_TOAST = i18n.t('subscription:toast.purchaseSyncPending');
 
@@ -68,25 +68,30 @@ async function renderPurchase({
   const purchases = createPurchasesGatewayStub();
   purchases.purchase.mockResolvedValue({
     type: 'purchased',
-    status: { activeEntitlements: [{ store: 'APP_STORE', productIdentifier: 'aido.annual' }] },
+    status: {
+      activeEntitlements: [{ store: 'APP_STORE', productIdentifier: 'aido.annual' }],
+      managementUrl: null,
+    },
   });
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(serverMe));
-  const di = createTestDi({ httpClient, purchasesGateway: purchases });
-  di.purchasesSession.configure();
   // 결제 전 캐시가 화면을 여는 순간 서버 값으로 바뀌지 않게 다시 받지 않는다
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(previousMe));
+  const di = createTestDi({ ports: { httpClient, purchases, queryClient } });
+  di.purchasesSession.configure();
+  // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
+  await di.purchasesSession.logIn('user-1');
 
   // 결제 화면처럼 내 정보를 구독해 두어야 결제 뒤 다시 받을 수 있다
-  const { result } = await renderUiHook(
+  const { result } = await renderScreenHook(
     () => {
       useQuery(useGetMeQueryOptions());
       return useMutation(usePurchaseMutationOptions());
     },
-    { di, queryClient, withOverlay: true },
+    { di, withOverlay: true },
   );
 
   return {
@@ -160,6 +165,92 @@ describe('결제 성공', () => {
     expect(
       await screen.findAllByText(SYNC_PENDING_TOAST, {}, { timeout: LONGER_THAN_STORE_SYNC_MS }),
     ).not.toHaveLength(0);
-    expect(getResult()).toEqual({ isReflected: false, hadRewardOnly: false });
+    await waitFor(() => expect(getResult()).toEqual({ isReflected: false, hadRewardOnly: false }));
+  });
+});
+
+const STORE_ENTITLEMENT_STATUS = {
+  activeEntitlements: [{ store: 'APP_STORE', productIdentifier: 'aido.annual' }],
+  managementUrl: null,
+} as const;
+const NO_ENTITLEMENT_STATUS = { activeEntitlements: [], managementUrl: null } as const;
+
+async function renderRestore({
+  previousMe,
+  serverMe,
+  hasStorePurchase,
+}: {
+  previousMe: CurrentUserResponse;
+  serverMe: CurrentUserResponse;
+  hasStorePurchase: boolean;
+}) {
+  const purchases = createPurchasesGatewayStub();
+  purchases.restore.mockResolvedValue(
+    hasStorePurchase ? STORE_ENTITLEMENT_STATUS : NO_ENTITLEMENT_STATUS,
+  );
+  const httpClient = createHttpClientStub();
+  httpClient.get.mockResolvedValue(ok(serverMe));
+  const queryClient = createTestQueryClient({
+    defaultOptions: { queries: { staleTime: Infinity } },
+  });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(previousMe));
+  const di = createTestDi({ ports: { httpClient, purchases, queryClient } });
+  di.purchasesSession.configure();
+  // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
+  await di.purchasesSession.logIn('user-1');
+
+  const { result } = await renderScreenHook(
+    () => {
+      useQuery(useGetMeQueryOptions());
+      return useMutation(useRestoreMutationOptions());
+    },
+    { di, withOverlay: true },
+  );
+
+  await act(async () => {
+    result.current.mutate();
+  });
+}
+
+describe('구매 복원', () => {
+  setupFakeTimersPerTest();
+
+  it.each([
+    [
+      '복원할 구매가 없고 초대 보상 기간이면 보상은 그대로라고',
+      REWARD_ME,
+      REWARD_ME,
+      false,
+      'subscription:toast.restoreEmptyWithReward',
+    ],
+    [
+      '복원할 구매가 없고 보상도 없으면 복원할 것이 없다고',
+      FREE_ME,
+      FREE_ME,
+      false,
+      'subscription:toast.restoreEmpty',
+    ],
+    [
+      '스토어 구매를 되찾고 서버가 반영하면 복원했다고',
+      FREE_ME,
+      createStoreMe({ isTrial: false, bankedDays: 0 }),
+      true,
+      'subscription:toast.restoreSuccess',
+    ],
+    [
+      '스토어 구매를 되찾았지만 서버 반영이 늦으면 반영을 기다린다고',
+      FREE_ME,
+      FREE_ME,
+      true,
+      'subscription:toast.purchaseSyncPending',
+    ],
+  ] as const)('%s 알린다', async (_case, previousMe, serverMe, hasStorePurchase, toastKey) => {
+    // When
+    await renderRestore({ previousMe, serverMe, hasStorePurchase });
+
+    // Then
+    expect(
+      await screen.findAllByText(i18n.t(toastKey), {}, { timeout: LONGER_THAN_STORE_SYNC_MS }),
+    ).not.toHaveLength(0);
   });
 });

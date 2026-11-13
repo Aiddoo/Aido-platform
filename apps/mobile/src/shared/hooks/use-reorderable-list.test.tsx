@@ -1,7 +1,5 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDi } from '@src/shared/__tests__';
-import { act, renderHook } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
+import { renderScreenHook } from '@src/testing/render';
+import { act } from '@testing-library/react-native';
 
 import { useReorderableList } from './use-reorderable-list';
 
@@ -20,14 +18,10 @@ async function renderReorderableList({
   isOptimistic?: (item: Item) => boolean;
 }) {
   const onReorder = jest.fn();
-  const container = createTestDi();
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <StaticDIProvider container={container}>{children}</StaticDIProvider>
-  );
-  const view = await renderHook(
+  const view = await renderScreenHook(
     (props: { items: Item[]; updatedAt: number; isPending: boolean }) =>
       useReorderableList({ ...props, getItemId: (item: Item) => item.id, isOptimistic, onReorder }),
-    { initialProps: { ...initial, isPending: false }, wrapper },
+    { initialProps: { ...initial, isPending: false } },
   );
 
   return { ...view, onReorder };

@@ -1,27 +1,29 @@
 import '@src/shared/i18n/init';
+import { Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createAppLifecycleGatewayStub,
   createErrorReporterStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createSpeechRecognizerStub,
-  renderUi,
-} from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
-import { Text } from '@src/shared/ui';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { noop } from 'es-toolkit';
 import { Pressable } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
-import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
 import type { CapturedPlan } from '../domains/voice-capture.model';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
-let logger: ReturnType<typeof createLoggerStub>;
+/** 모델이 말소리로 보는 음량 기준보다 크다 */
+const SPEAKING_LEVEL = 0.5;
+
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 function SessionProbe({
@@ -48,13 +50,17 @@ function SessionProbe({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin"
-        onPress={() => session.begin({ locale: 'ko-KR', hintWords: ['기획팀'] })}
+        onPress={() =>
+          session.begin({ locale: 'ko-KR', hintWords: ['기획팀'], recordingDirectory: null })
+        }
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin-without-waiting"
         onPress={() => {
-          session.begin({ locale: 'ko-KR', hintWords: [] }).catch(jest.fn());
+          session
+            .begin({ locale: 'ko-KR', hintWords: [], recordingDirectory: null })
+            .catch(jest.fn());
         }}
       />
       <Pressable
@@ -97,37 +103,27 @@ async function renderSession({
   const analytics = createAnalyticsStub();
   const errorReporter = createErrorReporterStub();
   const onCaptured = jest.fn().mockResolvedValue(null);
-  const { unmount } = await renderUi(
+  const { unmount } = await renderScreen(
     <SessionProbe
       onCaptured={onCaptured}
       mode={mode}
       maxSeconds={maxSeconds}
       onLimitReached={onLimitReached}
     />,
-    { di: { speechRecognizer, appLifecycle, analytics, logger, errorReporter } },
+    {
+      di: createTestDi({
+        ports: { speechRecognizer, appLifecycle, analytics, logger, errorReporter },
+      }),
+    },
   );
   return { speechRecognizer, appLifecycle, analytics, errorReporter, onCaptured, unmount };
 }
 
-function createDeferred<T>() {
-  let resolve: (value: T) => void = noop;
-  let reject: (reason: unknown) => void = noop;
-  const promise = new Promise<T>((onResolve, onReject) => {
-    resolve = onResolve;
-    reject = onReject;
-  });
-  return {
-    promise,
-    resolve: (value: T) => resolve(value),
-    reject: (reason: unknown) => reject(reason),
-  };
-}
-
 describe('useVoiceCaptureSession', () => {
-  it('기기 인식이 가능하면 기기 인식으로 시작하고 실제 값을 분석에 남긴다', async () => {
+  it('기기 인식이 가능하면 기기 인식으로 시작한다', async () => {
     // Given
     const user = userEvent.setup();
-    const { speechRecognizer, analytics } = await renderSession();
+    const { speechRecognizer } = await renderSession();
 
     // When
     await user.press(screen.getByRole('button', { name: 'begin' }));
@@ -140,10 +136,6 @@ describe('useVoiceCaptureSession', () => {
         isOnDevice: true,
         hintWords: expect.arrayContaining(['기획팀']),
       }),
-    );
-    expect(analytics.trackEvent).toHaveBeenCalledWith(
-      'voice_capture_started',
-      expect.objectContaining({ mode: 'quick', on_device: true, locale: 'ko-KR' }),
     );
     expect(screen.getByTestId('status')).toHaveTextContent('listening');
   });
@@ -178,14 +170,12 @@ describe('useVoiceCaptureSession', () => {
     const SAMPLE_MS = 50;
     const LOUD = 0.6;
 
-    afterEach(() => {
-      jest.useRealTimers();
-    });
+    setupFakeTimersPerTest();
 
     const startSpeaking = async () => {
       const session = await renderSession();
-      await userEvent.press(screen.getByRole('button', { name: 'begin' }));
-      jest.useFakeTimers();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => session.speechRecognizer.emit({ type: 'start' }));
       return session;
     };
@@ -442,7 +432,7 @@ describe('useVoiceCaptureSession', () => {
 
     describe('글자 없이 말소리만 들리는 시간을 재서', () => {
       const SAMPLE_MS = 50;
-      const VOICE = SPEAKING_VOLUME_THRESHOLD;
+      const VOICE = SPEAKING_LEVEL;
       const QUIET = 0;
 
       setupFakeTimersPerTest({ advanceTimers: true });
@@ -645,13 +635,15 @@ describe('useVoiceCaptureSession', () => {
     // Given
     const user = userEvent.setup();
     const speechRecognizer = createSpeechRecognizerStub();
-    const { unmount } = await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
-      di: {
-        speechRecognizer,
-        analytics: createAnalyticsStub(),
-        logger,
-        errorReporter: createErrorReporterStub(),
-      },
+    const { unmount } = await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
+      di: createTestDi({
+        ports: {
+          speechRecognizer,
+          analytics: createAnalyticsStub(),
+          logger,
+          errorReporter: createErrorReporterStub(),
+        },
+      }),
     });
     await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
@@ -944,7 +936,7 @@ describe('useVoiceCaptureSession', () => {
 
     const beginThenUnmount = async () => {
       const session = await renderSession();
-      const capabilities = createDeferred<typeof FULL>();
+      const capabilities = Promise.withResolvers<typeof FULL>();
       session.speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
       await userEvent.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
       await act(async () => session.unmount());
@@ -988,7 +980,7 @@ describe('useVoiceCaptureSession', () => {
       const { speechRecognizer, unmount } = await renderSession();
       await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
-      const capabilities = createDeferred<typeof FULL>();
+      const capabilities = Promise.withResolvers<typeof FULL>();
       speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
       await user.press(screen.getByRole('button', { name: 'change-locale-without-waiting' }));
 
@@ -1015,149 +1007,6 @@ describe('useVoiceCaptureSession', () => {
       act(async () =>
         speechRecognizer.emit({ type: 'result', transcript: '한 말', isFinal: true, segments: [] }),
       );
-
-    it('시작을 이벤트와 breadcrumb으로 남긴다', async () => {
-      // When
-      const { analytics, errorReporter } = await beginListening();
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_started', {
-        mode: 'quick',
-        entry: 'add_todo_sheet',
-        locale: 'ko-KR',
-        on_device: true,
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.started',
-        data: { mode: 'quick', locale: 'ko-KR', on_device: true },
-      });
-    });
-
-    it('글자가 있으면 끝을 completed로, 정리 요청을 breadcrumb으로 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics, errorReporter } = await beginListening();
-      await say(speechRecognizer);
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'finish' }));
-      await act(async () => speechRecognizer.emit({ type: 'end' }));
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_finished', {
-        mode: 'quick',
-        outcome: 'completed',
-        duration_bucket: expect.any(String),
-        pause_count: 0,
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.finished',
-        data: { mode: 'quick', duration_bucket: expect.any(String) },
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'plan.requested',
-        data: { mode: 'quick' },
-      });
-    });
-
-    it('글자가 없으면 끝을 empty로 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics } = await beginListening();
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'finish' }));
-      await act(async () => speechRecognizer.emit({ type: 'end' }));
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'voice_capture_finished',
-        expect.objectContaining({ outcome: 'empty' }),
-      );
-    });
-
-    it('일시정지 뒤에 끝내도 멈춘 횟수와 함께 completed로 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics } = await beginListening();
-      await say(speechRecognizer);
-      await user.press(screen.getByRole('button', { name: 'pause' }));
-      await act(async () => speechRecognizer.emit({ type: 'end' }));
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'finish' }));
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'voice_capture_finished',
-        expect.objectContaining({ outcome: 'completed', pause_count: 1 }),
-      );
-    });
-
-    it.each([
-      { button: 'cancel', outcome: 'cancelled' },
-      { button: 'hand-off', outcome: 'upgraded' },
-    ])('$button은 들은 글자가 있으면 $outcome으로 남기고 인식기를 끊는다', async (expected) => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics } = await beginListening();
-      await say(speechRecognizer);
-
-      // When
-      await user.press(screen.getByRole('button', { name: expected.button }));
-
-      // Then
-      expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'voice_capture_finished',
-        expect.objectContaining({ outcome: expected.outcome }),
-      );
-    });
-
-    it('취소해도 들은 글자가 없으면 empty로 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { analytics } = await beginListening();
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'cancel' }));
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith(
-        'voice_capture_finished',
-        expect.objectContaining({ outcome: 'empty' }),
-      );
-    });
-
-    it('일시정지와 이어 듣기를 남긴다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { speechRecognizer, analytics, errorReporter } = await beginListening();
-
-      // When
-      await user.press(screen.getByRole('button', { name: 'pause' }));
-      await act(async () => speechRecognizer.emit({ type: 'end' }));
-      await user.press(screen.getByRole('button', { name: 'resume' }));
-
-      // Then
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.paused',
-        data: { mode: 'quick', cause: 'user' },
-      });
-      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_resumed', {
-        mode: 'quick',
-        cause: 'user',
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.resumed',
-        data: { mode: 'quick' },
-      });
-    });
 
     it.each(['not-allowed', 'audio-capture'] as const)(
       '%s로 실패하면 실패 이벤트를 남기고 글자를 든 채 멈춘다',
@@ -1209,13 +1058,15 @@ describe('useVoiceCaptureSession', () => {
       const speechRecognizer = createSpeechRecognizerStub();
       speechRecognizer.getCapabilities.mockRejectedValue(new Error('native'));
       logger.error.mockClear();
-      await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
-        di: {
-          speechRecognizer,
-          analytics: createAnalyticsStub(),
-          logger,
-          errorReporter: createErrorReporterStub(),
-        },
+      await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
+        di: createTestDi({
+          ports: {
+            speechRecognizer,
+            analytics: createAnalyticsStub(),
+            logger,
+            errorReporter: createErrorReporterStub(),
+          },
+        }),
       });
 
       // When
@@ -1242,13 +1093,15 @@ describe('useVoiceCaptureSession', () => {
         canSaveRecording: false,
         canContinue: false,
       });
-      await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
-        di: {
-          speechRecognizer,
-          analytics: createAnalyticsStub(),
-          logger,
-          errorReporter: createErrorReporterStub(),
-        },
+      await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
+        di: createTestDi({
+          ports: {
+            speechRecognizer,
+            analytics: createAnalyticsStub(),
+            logger,
+            errorReporter: createErrorReporterStub(),
+          },
+        }),
       });
 
       // When
@@ -1270,13 +1123,15 @@ describe('useVoiceCaptureSession', () => {
         canSaveRecording: false,
         canContinue: false,
       });
-      await renderUi(<SessionProbe onCaptured={jest.fn()} />, {
-        di: {
-          speechRecognizer,
-          analytics: createAnalyticsStub(),
-          logger,
-          errorReporter: createErrorReporterStub(),
-        },
+      await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
+        di: createTestDi({
+          ports: {
+            speechRecognizer,
+            analytics: createAnalyticsStub(),
+            logger,
+            errorReporter: createErrorReporterStub(),
+          },
+        }),
       });
       await user.press(screen.getByRole('button', { name: 'begin' }));
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
@@ -1286,32 +1141,6 @@ describe('useVoiceCaptureSession', () => {
 
       // Then
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
-    });
-
-    it('멈춘 인식기를 다시 열면 이벤트와 breadcrumb으로 남긴다', async () => {
-      // Given
-      jest.useFakeTimers({ advanceTimers: true });
-      const { speechRecognizer, analytics, errorReporter } = await beginListening({ mode: 'note' });
-
-      // When
-      await act(async () => {
-        for (let elapsed = 0; elapsed < 6_100; elapsed += 50) {
-          jest.advanceTimersByTime(50);
-          speechRecognizer.emit({ type: 'volume', level: SPEAKING_VOLUME_THRESHOLD });
-        }
-      });
-      jest.useRealTimers();
-
-      // Then
-      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_recognizer_stalled', {
-        mode: 'note',
-        on_device: true,
-      });
-      expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith({
-        category: 'voice',
-        message: 'capture.recognizer-stalled',
-        data: { mode: 'note', on_device: true },
-      });
     });
   });
 });

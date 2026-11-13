@@ -1,12 +1,5 @@
-import { HOUR_MS } from '@src/shared/constants/time-units';
-
-export const VOICE_NOTE_RETENTION_DAYS = 30;
-
 /** 메모 탭에 바로 보이는 최근 말로 메모 수. 넘치면 전체 목록으로 보내 아래 메모가 밀리지 않게 한다 */
 export const VOICE_NOTE_PREVIEW_COUNT = 3;
-
-/** 글자 없이 실패한 채 앱을 끄면 남는 고아 녹음 파일의 보관 시간. 쓰는 중인 파일만 피하면 되어 짧다 */
-export const VOICE_RECORDING_ORPHAN_RETENTION_MS = HOUR_MS;
 
 export const VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS = 800;
 
@@ -32,9 +25,6 @@ export const WAVEFORM_BAR = {
 } as const;
 
 export const SPEECH_LEVEL_THRESHOLD = 0.2;
-
-/** 자막 한 카드의 최대 글자 수. 문장부호가 없어도 카드가 끝없이 길어지지 않게 끊는다 */
-export const VOICE_NOTE_SENTENCE_MAX_LENGTH = 120;
 
 /** 끝낸 뒤 인식기가 녹음 파일을 다 쓸 때까지 화면이 기다리는 시간. 넘기면 글자만 먼저 넘긴다 */
 export const VOICE_RECORDING_SAVE_WAIT_MS = 3_000;

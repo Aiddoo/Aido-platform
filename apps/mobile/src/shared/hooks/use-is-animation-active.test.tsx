@@ -1,8 +1,7 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createAppLifecycleGatewayStub, createTestDi } from '@src/shared/__tests__';
-import { act, renderHook } from '@testing-library/react-native';
+import { createAppLifecycleGatewayStub, createTestDi } from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
+import { act } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
-import type { PropsWithChildren } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
 import { useIsAnimationActive } from './use-is-animation-active';
@@ -12,14 +11,10 @@ let mockIsReducedMotion = false;
 describe('공용 애니메이션 멈춤 조건', () => {
   let appLifecycle = createAppLifecycleGatewayStub();
 
-  function wrapper({ children }: PropsWithChildren) {
-    return (
-      <StaticDIProvider container={createTestDi({ appLifecycle })}>{children}</StaticDIProvider>
-    );
-  }
-
   function renderActiveHook() {
-    return renderHook(() => useIsAnimationActive(), { wrapper });
+    return renderScreenHook(() => useIsAnimationActive(), {
+      di: createTestDi({ ports: { appLifecycle } }),
+    });
   }
 
   beforeEach(() => {

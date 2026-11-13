@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { USER_TAG_LENGTH } from "@aido/api/vocabulary";
 import {
   Header,
   Body,
@@ -133,7 +134,7 @@ export class FollowController {
     name: "userTag",
     description: "친구 요청을 보낼 대상 Aido ID (8자 영문 대문자·숫자, 예: JOHN2026)",
     example: "JOHN2026",
-    schema: { type: "string", pattern: "^[A-Z0-9]{8}$" },
+    schema: { type: "string", pattern: `^[A-Z0-9]{${USER_TAG_LENGTH}}$` },
   })
   @ApiDoc({
     summary: "친구 요청 보내기",

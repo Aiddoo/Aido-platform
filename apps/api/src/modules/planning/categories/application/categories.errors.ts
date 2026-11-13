@@ -5,9 +5,24 @@ import { ApplicationException } from "#api/shared/application/application.except
 
 import type { CategoryDeletionRejection } from "../domain/category-deletion.domain-service.js";
 import type { TodoCategoryId } from "../domain/todo-category-id.vo.js";
+import type { TodoCategoryFeatureQuota } from "./ports/todo-category-limit.reader.port.js";
 
 export function todoCategoryNotFound(categoryId: TodoCategoryId): ApplicationException {
   return new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId: categoryId.value });
+}
+
+export function todoCategoryNotOwned(categoryId: TodoCategoryId): ApplicationException {
+  return new ApplicationException(ErrorCode.TODO_CATEGORY_0852, { categoryId: categoryId.value });
+}
+
+export function duplicateCategoryName(name: string): ApplicationException {
+  return new ApplicationException(ErrorCode.TODO_CATEGORY_0853, { name });
+}
+
+export function todoCategoryLimitReached(
+  featureQuota: TodoCategoryFeatureQuota,
+): ApplicationException {
+  return new ApplicationException(ErrorCode.TODO_CATEGORY_0857, { charged: false, featureQuota });
 }
 
 // 코드·details·문구는 출시 앱이 받던 그대로다(0855 details의 todoCount, 같은 대상 SYS_0002 문구)

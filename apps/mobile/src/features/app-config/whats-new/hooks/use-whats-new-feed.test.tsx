@@ -1,20 +1,21 @@
 import '@src/shared/i18n/init';
-import type { FeatureCampaignConfig } from '@src/features/app-config/feature-campaign/domains/feature-campaign.model';
-import { FEATURE_CAMPAIGN_QUERY_KEYS } from '@src/features/app-config/feature-campaign/queries/feature-campaign-query-keys';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { toInstant } from '@src/shared/date/instant';
 import {
   createMemoryObservableSyncStorage,
   createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
-import { toInstant } from '@src/shared/date/instant';
-import { waitFor } from '@testing-library/react-native';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
+import { act, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { RELEASE_1_15_0 } from '../constants/releases';
+import { RELEASE_1_15_0 } from '../constants/releases.constants';
 import { RELEASE_ID } from '../constants/whats-new.constants';
+import type { WhatsNewCampaignConfig } from '../domains/whats-new-campaign.model';
+import { WHATS_NEW_QUERY_KEYS } from '../queries/whats-new-query-keys';
 import { useWhatsNewFeed } from './use-whats-new-feed';
 
 const USER_ID = 'user-1';
@@ -35,28 +36,27 @@ async function renderFeed({
     USER_QUERY_KEYS.me(),
     createUser({ id: USER_ID, createdAt: toInstant(signedUpAt) }),
   );
-  const config: FeatureCampaignConfig = {
+  const config: WhatsNewCampaignConfig = {
     enabled: true,
     campaignId: RELEASE_1_15_0.campaignId,
     minAppVersion: '1.15.0',
     autoOpen: true,
   };
-  queryClient.setQueryData(FEATURE_CAMPAIGN_QUERY_KEYS.config(), config);
+  queryClient.setQueryData(WHATS_NEW_QUERY_KEYS.campaign(), config);
   const onboarding = { isSettled: isOnboardingSettled };
-  const hook = await renderUiHook(
+  const hook = await renderScreenHook(
     () => useWhatsNewFeed({ isStable: true, isOnboardingSettled: onboarding.isSettled }),
     {
-      queryClient,
+      di: createTestDi({
+        ports: { syncStorage, queryClient },
+        seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+      }),
       withLocalDate: true,
-      di: {
-        authSessionStore: createAuthSessionStoreStub('authenticated'),
-        syncStorage,
-      },
     },
   );
   const settleOnboarding = () => {
     onboarding.isSettled = true;
-    hook.rerender({});
+    hook.rerender(undefined);
   };
   return { ...hook, settleOnboarding };
 }
@@ -82,7 +82,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
 
     // When
-    rerender({});
+    rerender(undefined);
 
     // Then
     expect(router.push).toHaveBeenCalledTimes(1);
@@ -106,7 +106,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
       signedUpAt: '2026-10-01T00:00:00.000Z',
       isOnboardingSettled: false,
     });
-    await new Promise((resolve) => setImmediate(resolve));
+    await act(async () => undefined);
     expect(router.push).not.toHaveBeenCalled();
 
     // When
@@ -128,7 +128,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     await renderFeed({ signedUpAt: '2026-10-01T00:00:00.000Z', syncStorage });
 
     // Then
-    await new Promise((resolve) => setImmediate(resolve));
+    await act(async () => undefined);
     expect(router.push).not.toHaveBeenCalled();
   });
 });

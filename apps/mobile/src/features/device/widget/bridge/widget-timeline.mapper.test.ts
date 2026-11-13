@@ -1,3 +1,5 @@
+import { toInstant } from '@src/shared/date/instant';
+
 import { createWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { toWidgetTimelineEntries } from './widget-timeline.mapper';
 
@@ -10,7 +12,7 @@ describe('toWidgetTimelineEntries', () => {
     // Given
     // 서울 2026-07-12 23:59:59
     const snapshot = createWidgetSnapshot({}, { state: 'empty', totalTodos: 0 });
-    const now = new Date('2026-07-12T14:59:59.000Z');
+    const now = toInstant('2026-07-12T14:59:59.000Z');
 
     // When
     const entries = toWidgetTimelineEntries(snapshot, {
@@ -31,7 +33,7 @@ describe('toWidgetTimelineEntries', () => {
     // Given
     // 서울 2026-07-13 00:00:00
     const snapshot = createWidgetSnapshot({}, { state: 'empty', totalTodos: 0 });
-    const now = new Date('2026-07-12T15:00:00.000Z');
+    const now = toInstant('2026-07-12T15:00:00.000Z');
 
     // When
     const entries = toWidgetTimelineEntries(snapshot, {
@@ -50,7 +52,7 @@ describe('toWidgetTimelineEntries', () => {
   it('내일 요약을 받지 못했으면 다음 자정부터 stale을 표시한다', () => {
     // Given
     const snapshot = createWidgetSnapshot();
-    const now = new Date('2026-07-12T09:00:00.000Z');
+    const now = toInstant('2026-07-12T09:00:00.000Z');
 
     // When
     const entries = toWidgetTimelineEntries(snapshot, {
@@ -69,7 +71,7 @@ describe('toWidgetTimelineEntries', () => {
   it('비로그인 snapshot은 날짜와 무관한 entry 하나만 쓴다', () => {
     // Given
     const snapshot = createWidgetSnapshot({ state: 'loggedOut' });
-    const now = new Date('2026-07-12T09:00:00.000Z');
+    const now = toInstant('2026-07-12T09:00:00.000Z');
 
     // When
     const entries = toWidgetTimelineEntries(snapshot, {

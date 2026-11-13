@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
-import { AI_SUGGESTION_STATUSES } from "../../../vocabulary/ai.constants.js";
+import { AI_SUGGESTION_STATUSES, SUGGESTION_ACTIONS } from "../../../vocabulary/ai.constants.js";
 import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
 
 export const suggestionStatusSchema = z.enum(AI_SUGGESTION_STATUSES);
@@ -30,7 +30,7 @@ export type SuggestionListResponse = z.infer<typeof suggestionListResponseSchema
 // 제안 액션 (수락/거절)
 
 export const suggestionActionSchema = z.object({
-  action: z.enum(["accept", "dismiss"]),
+  action: z.enum(SUGGESTION_ACTIONS),
   categoryId: z.number().int().positive().optional(),
   startDate: dateSchema.optional(),
   endDate: dateSchema.optional(),

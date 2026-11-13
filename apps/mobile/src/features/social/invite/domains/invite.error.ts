@@ -9,9 +9,25 @@ export const INVITE_ERROR_CODE = {
 
 export type InviteErrorCode = (typeof INVITE_ERROR_CODE)[keyof typeof INVITE_ERROR_CODE];
 
-/** 서버가 코드로 거절한 초대 코드(없음·바뀜·내 코드 등). 같은 화면에서 다시 입력하게 코드 칸에 보인다 */
+/** 코드 자체가 틀린 거절(없음·바뀜·내 코드·이미 다른 초대 수락). 초대 꺼짐(2105)·친구 한도(2106)·요청 과다는 칸 오류가 아니다 */
+const INVITE_CODE_FIELD_ERROR_CODES = [
+  ErrorCode.INVITE_2101,
+  ErrorCode.INVITE_2102,
+  ErrorCode.INVITE_2103,
+  ErrorCode.INVITE_2104,
+] as const;
+
+/** 같은 화면에서 다시 입력하게 코드 칸에 보일 오류. 형식이 틀린 코드(앱 판단)도 포함한다 */
 export function isInviteCodeFieldError(error: unknown) {
-  return isCodedError(error);
+  return (
+    isCodedError(error, INVITE_ERROR_CODE.INVALID_CODE) ||
+    (isApiError(error) && INVITE_CODE_FIELD_ERROR_CODES.some((code) => error.hasCode(code)))
+  );
+}
+
+/** 이유를 아는 수락 거절(아래 표). 연결·서버 장애·모르는 코드는 빼고 이유를 분석에 남긴다 */
+export function isRedeemRejectedError(error: unknown) {
+  return toRedeemFailureReason(error) !== 'unknown';
 }
 
 /** 서버 플래그로 친구 초대가 꺼져 있다(INVITE_2105). 재시도 대신 쓸 수 없음 안내를 보인다 */
@@ -50,11 +66,7 @@ export function toRedeemFailureReason(error: unknown): RedeemFailureReason {
     .otherwise(() => 'unknown' as const);
 }
 
-/**
- * 다시 열어도 결과가 같은 실패인지. 미리보기를 받지 못했을 때 이어서 열 초대를 지울지 정한다.
- * 잠시 막힌 경우(초대 중지·친구 자리·장애)는 지우지 않는다. 다만 초대 카드를 보는 순간
- * 이어서 열 초대를 지우므로 다음 실행 때 다시 열리는 것은 카드에 닿기 전에 끊긴 경우뿐이다.
- */
+/** 다시 열어도 결과가 같은 실패인지. 같으면 이어서 열 초대를 지우고, 잠시 막힌 경우(초대 중지·친구 자리·장애)는 지우지 않는다 */
 export function isTerminalRedeemFailure(reason: RedeemFailureReason) {
   return match(reason)
     .with('invalid_code', 'not_found', 'rotated', 'self', 'already_redeemed', 'blocked', () => true)

@@ -8,18 +8,19 @@ import { type Consent } from '@src/features/identity/consent/domains/consent.mod
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { Button, OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createSpeechRecognizerStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { Button, OverlayProvider } from '@src/shared/ui';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -31,10 +32,10 @@ const PREVIOUS_AGREEMENT: Partial<Consent> = {
   aiDataSharingDecision: 'AGREED',
   aiDataSharingConsentVersion: '2026-10-26',
 };
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 function StartProbe() {
@@ -80,22 +81,24 @@ async function renderStart({
     );
   }
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <StartProbe />
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      queryClient,
-      di: {
-        httpClient,
-        syncStorage,
-        speechRecognizer,
-        analytics,
-        errorReporter: createErrorReporterStub(),
-        logger,
-      },
+      di: createTestDi({
+        ports: {
+          httpClient,
+          syncStorage,
+          speechRecognizer,
+          analytics,
+          errorReporter: createErrorReporterStub(),
+          logger,
+          queryClient,
+        },
+      }),
     },
   );
 
@@ -211,12 +214,12 @@ describe('useStartVoiceNote', () => {
       seenCoachmarks: ['ai-consent-renewal'],
     });
     speechRecognizer.getPermission.mockResolvedValue({
-      isGranted: false,
+      status: 'denied',
       canAskAgain: true,
       missing: 'microphone',
     });
     speechRecognizer.requestPermission.mockResolvedValue({
-      isGranted: false,
+      status: 'denied',
       canAskAgain: true,
       missing: 'microphone',
     });

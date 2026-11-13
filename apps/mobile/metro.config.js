@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { escapeRegExp } = require('es-toolkit');
 const { withUniwindConfig } = require('uniwind/metro');
 const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 
@@ -23,6 +24,9 @@ config.resolver.blockList = [
   /.*\.test\.[jt]sx?$/,
   /.*\.spec\.[jt]sx?$/,
   /\/__tests__\//,
+  // node_modules 안의 다른 패키지 src/testing(rxjs 등)은 막지 않는다
+  new RegExp(`^${escapeRegExp(path.join(__dirname, 'src', 'testing'))}${escapeRegExp(path.sep)}`),
+  /.*\.fixtures\.[jt]sx?$/,
 ];
 
 const uniwindConfig = withUniwindConfig(config, {

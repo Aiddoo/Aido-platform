@@ -4,11 +4,10 @@ import {
 } from '@src/features/device/widget/hooks/use-widget-snapshot-sync';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { usePendingRevocationFlush } from '@src/features/identity/auth/hooks/use-pending-revocation-flush';
-import { type PropsWithChildren, useEffect } from 'react';
+import type { PropsWithChildren } from 'react';
 import { match } from 'ts-pattern';
 
 import { useAuthBoot } from '../hooks/use-auth-boot';
-import { useWidgetSyncService } from './di-context';
 
 /** 정리가 위젯 쓰기보다 뒤에 돌도록 `useAuthBoot`를 마지막에 부른다 */
 export function AuthBootProvider({ children }: PropsWithChildren) {
@@ -18,12 +17,6 @@ export function AuthBootProvider({ children }: PropsWithChildren) {
     .with('authenticated', 'unauthenticated', (resolved) => resolved)
     .with('loading', 'locked', () => 'resolving')
     .exhaustive();
-
-  const widgetSyncService = useWidgetSyncService();
-
-  useEffect(() => {
-    widgetSyncService.reportHeadlessFailure();
-  }, [widgetSyncService]);
 
   usePendingRevocationFlush();
   useWidgetSnapshotSync(widgetSyncAuthState);

@@ -1,7 +1,7 @@
 {
   "timezoneChanged": {
     "title": "To-do reminders now follow your time zone",
-    "description": "A 10 AM to-do stays at 10 AM"
+    "description": "A {{time}} to-do stays at {{time}}"
   },
   "actions": {
     "marketingOptOut": "Turn off promotional notifications"
@@ -73,9 +73,9 @@
     "weatherLabel": "Weather alerts",
     "weatherDescription": "Get today's weather in the morning and tomorrow's in the evening",
     "weatherMorningLabel": "Morning weather alert",
-    "weatherMorningDescription": "Get today's weather at your morning time",
+    "weatherMorningDescription": "Get today's weather at the time you set",
     "weatherEveningLabel": "Evening weather alert",
-    "weatherEveningDescription": "Get tomorrow's weather at your evening time",
+    "weatherEveningDescription": "Get tomorrow's weather at the time you set",
     "reminderLabel": "Reminders",
     "reminderMorningLabel": "Morning reminder",
     "reminderMorningDescription": "Get today's to-dos in the morning (00:00–11:59)",

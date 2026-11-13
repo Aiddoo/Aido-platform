@@ -1,4 +1,4 @@
-import { createTestQueryClient } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/testing/core';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { createWeatherReport } from '../__tests__/weather-report.fixtures';

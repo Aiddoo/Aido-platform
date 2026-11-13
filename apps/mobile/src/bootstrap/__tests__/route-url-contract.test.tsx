@@ -1,20 +1,22 @@
 import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
-import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
+import { useTodoCommentSort } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
 import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
-import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-category';
-import { notificationDirectionParamSchema } from '@src/features/notification/schemas/notification-params.schema';
+import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-params';
+import { notificationDirectionViewSchema } from '@src/features/notification/schemas/notification-params.schema';
 import { categorySettingsViewSchema } from '@src/features/planning/category/schemas/category-settings-params.schema';
 import { useFeedAction, useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
-import { useFriendListEditMode } from '@src/features/social/friend/hooks/use-friend-list-edit-mode';
-import { useFriendListView } from '@src/features/social/friend/hooks/use-friend-list-view';
-import { invitedFriendsViewSchema } from '@src/features/social/invite/schemas/invite-params.schema';
+import {
+  useFriendListIsEditing,
+  useFriendListView,
+} from '@src/features/social/friend/hooks/use-friend-list-params';
+import { useInvitedFriendsView } from '@src/features/social/invite/hooks/use-invited-friends-view';
 import { voiceNoteTabSchema } from '@src/features/voice/schemas/voice-note-params.schema';
-import { useWeatherRescheduleParams } from '@src/features/weather/hooks/use-weather-reschedule-params';
-import { stubWindowDimensions } from '@src/shared/__tests__';
-import { renderRouteHook } from '@src/shared/__tests__/render-route-hook';
+import { useWeatherRescheduleTodoIds } from '@src/features/weather/hooks/use-weather-reschedule-params';
 import { useView } from '@src/shared/hooks/use-view';
+import { stubWindowDimensions } from '@src/testing/core';
+import { renderRouteHook } from '@src/testing/render-route-hook';
 
 jest.unmock('expo-router');
 
@@ -108,12 +110,12 @@ describe('공개 URL 계약', () => {
 
   it('댓글: 정렬을 바꾸면 알림으로 연 위치가 사라진다', async () => {
     // Given
-    const route = await renderRouteHook(() => useTodoCommentParams(), {
+    const route = await renderRouteHook(() => useTodoCommentSort(), {
       url: `/feed?sort=LATEST&comment=${COMMENT}`,
     });
 
     // When
-    await route.run(([_values, setParams]) => setParams({ sort: 'POPULAR', comment: undefined }));
+    await route.run(([_sort, setSort]) => setSort('POPULAR'));
 
     // Then
     expect(route.url()).toBe('/feed?sort=POPULAR');
@@ -121,12 +123,12 @@ describe('공개 URL 계약', () => {
 
   it('날씨 옮기기: 할 일을 빼면 쉼표 목록이 줄고 reason은 남는다', async () => {
     // Given
-    const route = await renderRouteHook(() => useWeatherRescheduleParams(), {
+    const route = await renderRouteHook(() => useWeatherRescheduleTodoIds(), {
       url: '/weather/reschedule?todoIds=12,15,18&reason=heat',
     });
 
     // When
-    await route.run(([_values, setParams]) => setParams({ todoIds: [12, 18] }));
+    await route.run(([_todoIds, setTodoIds]) => setTodoIds([12, 18]));
 
     // Then
     expect(route.url()).toBe('/weather/reschedule?todoIds=12%2C18&reason=heat');
@@ -137,7 +139,7 @@ describe('공개 URL 계약', () => {
     ['끄면 값이 사라진다', '/friends?isEditing=true', false, '/friends'],
   ])('친구 편집: %s', async (_name, url, next, expected) => {
     // Given
-    const route = await renderRouteHook(() => useFriendListEditMode(), { url });
+    const route = await renderRouteHook(() => useFriendListIsEditing(), { url });
 
     // When
     await route.run(([_isEditMode, setIsEditMode]) => setIsEditMode(next));
@@ -173,7 +175,7 @@ describe('공개 URL 계약', () => {
   it('알림 방향', async () => {
     // Given
     const route = await renderRouteHook(
-      () => useView('direction', notificationDirectionParamSchema),
+      () => useView('direction', notificationDirectionViewSchema),
       {
         url: '/notifications',
       },
@@ -195,7 +197,7 @@ describe('공개 URL 계약', () => {
     const route = await renderRouteHook(
       () => [
         useNotificationCategory()[0],
-        useView('direction', notificationDirectionParamSchema)[0],
+        useView('direction', notificationDirectionViewSchema)[0],
       ],
       { url },
     );
@@ -206,7 +208,7 @@ describe('공개 URL 계약', () => {
 
   it('초대한 친구 보기', async () => {
     // Given
-    const route = await renderRouteHook(() => useView('view', invitedFriendsViewSchema), {
+    const route = await renderRouteHook(() => useInvitedFriendsView(), {
       url: '/invitees',
     });
 

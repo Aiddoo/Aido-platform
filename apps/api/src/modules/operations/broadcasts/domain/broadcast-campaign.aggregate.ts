@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import {
   BROADCAST_CAMPAIGN_STATUS,
   type BroadcastCampaignStatus,
@@ -7,7 +6,6 @@ import {
   type SupportedLocale,
 } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
@@ -18,6 +16,7 @@ import {
   BroadcastLocalizedContent,
   type BroadcastLocalizedCopy,
 } from "./broadcast-localized-content.vo.js";
+import { broadcastNotDistributing } from "./broadcasts.errors.js";
 
 export interface BroadcastAction {
   readonly type: NotificationActionType;
@@ -226,9 +225,7 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
 
   recordPage(page: BroadcastCampaignPage, now: Temporal.Instant): void {
     if (this.props.status !== BROADCAST_CAMPAIGN_STATUS.FANNING_OUT) {
-      throw new DomainException(ErrorCode.SYS_0002, {
-        reason: "분배 중인 캠페인만 페이지를 기록할 수 있습니다",
-      });
+      throw broadcastNotDistributing();
     }
     this.props.cursorUserId = page.lastUserId;
     this.props.processedCount += page.processedCount;

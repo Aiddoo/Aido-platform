@@ -3,7 +3,7 @@ import * as Linking from 'expo-linking';
 import * as StoreReview from 'expo-store-review';
 
 export const expoAppStoreListingGateway: AppStoreListingGateway = {
-  async openListing() {
+  openListing: async () => {
     const url = StoreReview.storeUrl();
     if (!url) {
       throw new Error('App store listing URL is unavailable');
