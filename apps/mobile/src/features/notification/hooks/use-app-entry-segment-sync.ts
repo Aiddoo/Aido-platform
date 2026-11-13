@@ -2,11 +2,15 @@ import { usePushNotificationEntryStore } from '@src/bootstrap/providers/di-conte
 import { useSegments } from 'expo-router';
 import { useLayoutEffect } from 'react';
 
-/** 앱 화면이 아직 정해지지 않은 자리. `(auth)`는 로그인 직후 Index로 넘어가기 전 한 커밋이다 */
+/**
+ * 앱 화면이 아직 정해지지 않은 자리. `(auth)`는 로그인 직후 Index로 넘어가기 전 한 커밋이다.
+ * `auth`는 Android OAuth 콜백 화면이다. 곧 닫혀 로그인 화면으로 돌아가고 로그인은 Index가 이어 받는다
+ */
 const APP_ENTRY_SEGMENTS: ReadonlySet<string | undefined> = new Set([
   undefined,
   'loading',
   '(auth)',
+  'auth',
 ]);
 
 /**

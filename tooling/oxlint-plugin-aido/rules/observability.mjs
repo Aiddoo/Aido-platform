@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
-import { getKeyName } from '../ast.mjs';
+import { getCalleeName, getKeyName, unwrap } from '../ast.mjs';
 
 const EVENT_VERBS = [
   'shown',
@@ -255,8 +255,87 @@ const loggerEventConstant = {
   },
 };
 
+const EFFECT_HOOKS = new Set([
+  'useEffect',
+  'useLayoutEffect',
+  'useInsertionEffect',
+  'useFocusEffect',
+]);
+const CALLBACK_HOOKS = new Set(['useCallback']);
+const TRACKING_FUNCTIONS = new Set(['track', 'trackEvent', 'trackScreenView']);
+const TRACKING_METHODS = new Set(['trackEvent', 'trackScreenView']);
+const FUNCTION_TYPES = new Set([
+  'ArrowFunctionExpression',
+  'FunctionExpression',
+  'FunctionDeclaration',
+]);
+
+function isTrackingCall(callee) {
+  const target = unwrap(callee);
+  if (target?.type === 'Identifier') {
+    return TRACKING_FUNCTIONS.has(target.name);
+  }
+  return (
+    target?.type === 'MemberExpression' &&
+    !target.computed &&
+    TRACKING_METHODS.has(target.property.name)
+  );
+}
+
+function findEnclosingFunction(node) {
+  for (let current = node.parent; current != null; current = current.parent) {
+    if (FUNCTION_TYPES.has(current.type)) {
+      return current;
+    }
+  }
+  return null;
+}
+
+function isFirstArgumentOf(node, hookNames) {
+  const { parent } = node;
+  return (
+    parent?.type === 'CallExpression' &&
+    parent.arguments[0] === node &&
+    hookNames.has(getCalleeName(parent.callee))
+  );
+}
+
+/** `useEffect(() => …)`·`useFocusEffect(useCallback(() => …))`의 본문 함수 */
+function isEffectBody(fn) {
+  if (isFirstArgumentOf(fn, EFFECT_HOOKS)) {
+    return true;
+  }
+  const { parent } = fn;
+  return isFirstArgumentOf(fn, CALLBACK_HOOKS) && isFirstArgumentOf(parent, EFFECT_HOOKS);
+}
+
+// 보기 하나에 장치 하나다. 경로 보기는 전역 screen_view, 경로가 아닌 보기는 useTrackView가 key마다 한 번 보낸다.
+// 효과 본문에서 바로 보내면 deps가 바뀌거나 다시 마운트될 때 같은 보기를 다시 센다. 구독 콜백·.then 같은 중첩 함수는 사건이라 보지 않는다
+const noTrackingInEffect = {
+  meta: { type: 'problem' },
+  createOnce(context) {
+    return {
+      CallExpression(node) {
+        if (!isTrackingCall(node.callee)) {
+          return;
+        }
+        const fn = findEnclosingFunction(node);
+        if (fn == null || !isEffectBody(fn)) {
+          return;
+        }
+        context.report({
+          node,
+          message:
+            '효과 본문에서 추적하지 않습니다. 경로 보기는 전역 screen_view, 시트·카드·받은 내용 노출은 useTrackView, 누름·결과는 핸들러·mutation에서 보냅니다(observability.md).',
+        });
+      },
+    };
+  },
+};
+
 export default {
   'analytics-event-catalog': analyticsEventCatalog,
   'log-event-key': logEventKey,
   'logger-event-constant': loggerEventConstant,
+  'no-tracking-in-effect': noTrackingInEffect,
 };

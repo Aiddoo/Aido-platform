@@ -12,6 +12,7 @@ import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import { useIsRestoring, useMutation } from '@tanstack/react-query';
 import {
   useCallback,
@@ -263,7 +264,8 @@ function useOpenReadyEntry(
 ) {
   const { isEnteringApp } = usePushNotificationEntry();
   const logger = useLogger();
-  const openDestination = useOpenNotificationDestination();
+  // 앱이 켜져 있을 때 누른 푸시도 OS 링크처럼 연다. 탭 위 화면에서 열어도 탭 묶음·첫 화면이 두 번 쌓이지 않는다
+  const openDestination = useOpenNotificationDestination({ openRoute: openEntryHref });
   const { trackEvent } = useTrack();
   const { mutate: recordOpened } = useMutation(useRecordPushOpenedMutationOptions());
   const openedByIndexIdRef = useRef<string | null>(null);

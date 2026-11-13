@@ -39,19 +39,31 @@
 
 ### 어디서 추적하나
 
-| 무엇               | 어디서                                                            |
-| ------------------ | ----------------------------------------------------------------- |
-| 서버가 확정한 결과 | mutation `onSuccess`·`onError`. `source`는 mutation 변수로 넘긴다 |
-| 보여짐·누름·단계   | 컴포넌트·훅                                                       |
-| 추적하지 않는 층   | api, service, repository, store, mapper, model, cache             |
+보기 종류마다 장치는 하나다. 같은 보기를 두 장치가 세지 않는다.
 
-- 노출 이벤트는 화면·구간마다 한 번이다. 재렌더·분 단위 갱신으로 다시 보내지 않는다.
+| 무엇                                                       | 어디서                                                                                          |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 경로 보기(pathname이 바뀜. 시트 route 포함)                | 전역 `screen_view` 하나([화면 조회](#화면-조회)). 화면은 따로 보내지 않는다                     |
+| 경로가 아닌 보기(카드·말풍선·캐러셀 장·받은 내용·오버레이) | `useTrackView(event, { key, params } \| null)`(`shared/analytics`). 마운트 안에서 key마다 한 번 |
+| 같은 경로 안 단계                                          | `useStepper`의 `onStepChange`(entry마다 한 번, 뒤로 가면 다시)                                  |
+| 누름·외부 앱 열기                                          | 핸들러                                                                                          |
+| 서버가 확정한 결과                                         | mutation `onSuccess`·`onError`. `source`는 mutation 변수로 넘긴다                               |
+| 추적하지 않는 층                                           | api, service, repository, store, mapper, model, cache                                           |
+
+- 노출 이벤트는 보기마다 한 번이다. `useTrackView`는 params 객체를 새로 만들어 다시 그려도, 포커스가 돌아와도, 숨었다 다시 보여도 같은 key를 다시 보내지 않는다. 화면이 다시 마운트되면(뒤로 갔다 다시 열기) 새 보기로 센다. `null`은 아직 보이지 않은 것이라 뒤 탭·숨은 카드는 `null`을 넘긴다.
+- 화면·훅의 효과 본문에서 `trackEvent`를 바로 부르지 않는다(`aido/no-tracking-in-effect`). 예외는 줄 단위로 끄고 이유를 적는다: 노출과 닫힘이 한 수명의 짝인 `feature_hub_impression`·`coachmark_shown`, 보기가 아닌 디바운스 입력 `friend_search_submitted`, 마운트를 넘어 프로세스 수명 store가 막는 `invite_link_opened`.
+- key는 "무엇을 봤나"다. 같은 화면에서 다른 것을 보면 key가 바뀐다(캐러셀 장 index, 주, 단계). 마운트를 넘어 막아야 하는 것(초대 링크 열림)은 DI store가 맡는다.
+- `weather_opened`는 경로와 URL param(`entry`)만 담아 원칙상 `screen_view`의 맥락이지만, KPI·퍼널·잠재고객이 이 이름을 써서 화면 진입 이벤트로 남기는 예외다. 날씨는 앱 Stack에 하나(`dangerouslySingular`)라 Stack에 남은 날씨를 알림으로 다시 열면 다시 마운트되지 않는다. 그래서 날씨를 여는 링크는 `toWeatherHref`로 연 시각(`openedAt`)을 붙이고, 날씨 화면의 노출(`weather_opened`·`weather_location_registered`·`weather_briefing_shown`·`weather_report_failed`)은 그 열기(`useWeatherOpenKey`)마다 한 번이다. 하위 화면에서 돌아오는 것은 세지 않는다. 1.15.1(화면을 열 때마다 새로 쌓음)과 같은 수다(`weather-screen.test.tsx`).
 
 ### 화면 조회
 
-- `useScreenTracking`(`AuthGateLayout`의 null 자식 `RouteWatchers`에서 호출)이 `screen_view.screen_name`에 실제 경로가 아닌 route 템플릿(`toScreenName(useSegments())`, 예 `/invite/[inviteCode]`)을 보낸다. 초대 코드·사용자 id가 남지 않는다. 그룹(`(app)`)과 `index`는 뺀다. 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)도 경로가 바뀌면 한 번 더 센다. Sentry 내비게이션 breadcrumb도 같은 이름을 쓴다.
+- `useScreenTracking`(`AuthGateLayout`의 null 자식 `RouteWatchers`에서 호출)이 `screen_view.screen_name`에 실제 경로가 아닌 route 템플릿(`toScreenName(useSegments())`, 예 `/invite/[inviteCode]`)을 보낸다. 초대 코드·사용자 id가 남지 않는다. 그룹(`(app)`)과 `index`는 뺀다. 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)도 경로가 바뀌면 한 번 더 센다. 상세·시트에서 돌아오면 아래 화면을 다시 센다(Expo Router·React Navigation의 표준 방식이고 이력도 이어진다). Sentry 내비게이션 breadcrumb도 같은 이름을 쓴다.
+- `screen_view`는 레이아웃 효과에서 보내 같은 이동에서 새 화면이 마운트하며 보내는 이벤트(`weather_opened`, `useTrackView`)보다 먼저 나간다. Firebase가 이벤트에 붙이는 화면 이름(`firebase_screen`)이 앞 화면이 되지 않는다. 순서는 `auth-gate-layout.test.tsx`가 지킨다.
+- 스플래시 뒤로 지나가는 입구 `/`·`/loading`·`/auth/[provider]`는 세지 않는다(1.15.2부터). 목록은 앱 경로를 아는 bootstrap(`RouteWatchers`의 `ENTRY_REDIRECT_SCREENS`)이 넘긴다. 건너뛴 화면은 앞 화면으로 기억하지 않아 `/feed` → `/` → `/feed` 왕복은 다시 세지 않는다. 콜드 스타트는 첫 화면 한 번, 로그인·로그아웃은 도착한 화면 한 번이다(`auth-gate-layout.test.tsx`).
+- 인증 가드가 막은 route(`(auth)`·`(app)`·`loading`) 안의 화면은 세지 않는다(1.15.2부터). 가드가 바뀌면 Expo Router가 그 route를 Redirect로 바꿔 묶음 navigator가 먼저 내려가고, 옮기기 전까지 묶음 첫 화면(가입 뒤 `/login`, 상세에서 로그아웃 뒤 `/feed`)에 focus가 머문다. 가드 값은 `AuthGateLayout`의 `routeGuards` 하나를 `Stack.Protected`와 tracker가 함께 읽는다. 가입 뒤는 `/sign-up` → `/feed`, 상세에서 로그아웃하면 `/todo/[todoId]` → `/login`이다.
 - URL로 바뀌는 탭 전환은 `ViewTabs`가 `view_tab_changed { screen_name, view }`를 보낸다(같은 탭을 다시 누르면 보내지 않는다). 조회 오류 화면의 다시 시도는 `error_fallback_retry_tapped { screen_name }`이다. `screen_name`은 모두 `useScreenName()`이다.
-- 넓은 화면의 상세 pane은 마운트될 때 그 상세 화면 이름으로 조회를 보낸다.
+- 넓은 화면(iPad·폴더블)에서 목록 옆 칸에 상세를 고르면 같은 전역 tracker가 좁은 화면의 상세 route 이름(`/todo/[todoId]`·`/memo/[memoId]`)으로 한 번 센다(1.15.2부터). 표는 bootstrap(`RouteWatchers`의 `PANE_DETAIL_SCREENS`: 목록 화면, 칸 query, 상세 템플릿)이 넘기고 query 이름은 기능 params 스키마의 키로 타입 검사한다. 다른 상세를 고르면 다시 세고, 칸을 닫거나 날짜 같은 query만 바뀌면 목록을 다시 세지 않는다. 칸에 상세를 연 채 접혀 상세 화면으로 넘기면 같은 보기라 다시 세지 않고, 거기서 뒤로 가면 목록을 센다(`auth-gate-layout.test.tsx`). 칸 query는 화면이 읽는 값과 같은 지금 화면의 params(`useFocusedRouteParams`)로 본다. 전역 params는 상위 route params를 합쳐 상세 링크로 연 앱(`/todo/3`)이 피드로 돌아와도 `todoId`가 남는다.
+- 경로 보기에 URL에서 나오는 맥락(진입점 등)이 더 필요하면 화면에 새 `*_opened` 마운트 이벤트를 만들지 않는다. 전역 tracker가 같은 효과에서 `trackScreenView(name, params)`로 붙이도록 bootstrap 표(`ENTRY_REDIRECT_SCREENS`·`PANE_DETAIL_SCREENS`와 같은 자리)에 화면별 params 순수 함수를 둔다. 받은 데이터에서 나오는 맥락은 경로 보기가 아니라 내용 노출이라 `useTrackView`가 맡는다. 지금 이 길로 옮긴 이벤트는 없다.
 
 ### 측정 규칙
 
@@ -65,7 +77,7 @@
 
 ### 푸시 권한 퍼널
 
-`source`는 `PushPermissionPromptSource`(`onboarding`·`todo_time`·`feed_card`·`settings`·`paywall`, 초대 환영 시트는 `invite_welcome`), `step`은 `PUSH_PERMISSION_STEP`(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다. `shown`은 안내가 보일 때 한 번이고 앱 안 다이얼로그는 `step=ASK`다. 단계 실행은 `usePushPermissionAction({ source }).runStep(step)` 하나이고, 권한 mutation이 `source`를 변수로 받아 `onSuccess`에서 한 번 추적한다(`requested`·`settings_opened`). 흐름은 [푸시 알림](./push-notifications.md)에 있다.
+`source`는 `PushPermissionPromptSource`(`onboarding`·`todo_time`·`feed_card`·`settings`·`paywall`, 초대 환영 시트는 `invite_welcome`), `step`은 `PUSH_PERMISSION_STEP`(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다. `shown`은 안내가 보일 때 마운트·단계마다 한 번이고(`useTrackView`, key는 `step`) 앱 안 다이얼로그는 `step=ASK`다. 피드 카드는 할 일 시각이 지나 숨었다 다음 할 일로 다시 보여도 같은 단계면 다시 세지 않는다(1.15.2부터, `push-permission-notice.test.tsx`). 단계 실행은 `usePushPermissionAction({ source }).runStep(step)` 하나이고, 권한 mutation이 `source`를 변수로 받아 `onSuccess`에서 한 번 추적한다(`requested`·`settings_opened`). 흐름은 [푸시 알림](./push-notifications.md)에 있다.
 
 ## Sentry
 

@@ -1,6 +1,6 @@
 # 훅
 
-한 훅은 한 책임이고, 같은 일은 공용 훅 하나로 한다. params 튜플 훅과 상태 원천은 [state-and-routing](./state-and-routing.md), 쿼리·mutation 옵션 훅은 [data](./data.md)에 있다. 아직 이 모양이 아닌 훅은 [migration-status](./migration-status.md)에 있다.
+한 훅은 한 책임이고, 같은 일은 공용 훅 하나로 한다. params 튜플 훅과 상태 원천은 [state-and-routing](./state-and-routing.md), 쿼리·mutation 옵션 훅은 [data](./data.md)에 있다. 아직 이 모양이 아닌 훅은 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다.
 
 ## 규칙
 
@@ -71,16 +71,16 @@
 
 있는 도구도 같은 일에는 하나만 쓴다.
 
-| 훅                                                   | 자리                                            | 모양                                                       | 쓰는 때                            |
-| ---------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- | ---------------------------------- |
-| `useRouteParams(schema)`                             | `shared/hooks/use-route-params.ts`              | `[params, setParams]`                                      | URL 값 여럿                        |
-| `useRouteParamsOrRedirect(schema, { fallbackHref })` | `shared/hooks/use-route-params-or-redirect.tsx` | `{ params, redirect: null } \| { params: null, redirect }` | route 파일의 params 검증           |
-| `useView(key, schema)`                               | `shared/hooks/use-view.ts`                      | `[view, setView]`                                          | 탭·보기 URL 값 하나                |
-| `useStepper(options)`                                | `shared/hooks/use-stepper.tsx`                  | `Stepper`                                                  | 단계 흐름(아래)                    |
-| `useRefresh(refetch)`                                | `shared/hooks/use-refresh.ts`                   | `[isRefreshing, handleRefresh]`                            | 당겨서 새로고침 표시               |
-| `useSingleTap(onTap)`                                | `shared/hooks/use-single-tap.ts`                | 같은 인자의 함수                                           | 연타로 화면이 두 번 쌓이는 것 막기 |
-| `useConfirmDialog()`                                 | `shared/ui/confirm-dialog`                      | `{ openAsync(options) }` → `Promise<boolean>`              | 확인 다이얼로그                    |
-| `useFetchNextPage(…)`                                | `shared/ui/infinite-list`                       | 다음 페이지 요청                                           | `InfiniteList`의 끝 도달           |
+| 훅                                                   | 자리                                            | 모양                                                       | 쓰는 때                                                                                                             |
+| ---------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `useRouteParams(schema)`                             | `shared/hooks/use-route-params.ts`              | `[params, setParams]`                                      | URL 값 여럿                                                                                                         |
+| `useRouteParamsOrRedirect(schema, { fallbackHref })` | `shared/hooks/use-route-params-or-redirect.tsx` | `{ params, redirect: null } \| { params: null, redirect }` | route 파일의 params 검증                                                                                            |
+| `useView(key, schema)`                               | `shared/hooks/use-view.ts`                      | `[view, setView]`                                          | 탭·보기 URL 값 하나                                                                                                 |
+| `useStepper(options)`                                | `shared/hooks/use-stepper.tsx`                  | `Stepper`                                                  | 단계 흐름(아래)                                                                                                     |
+| `useRefresh(refetch)`                                | `shared/hooks/use-refresh.ts`                   | `[isRefreshing, handleRefresh]`                            | 당겨서 새로고침 표시                                                                                                |
+| `useSingleTap(onTap)`                                | `shared/hooks/use-single-tap.ts`                | 같은 인자의 함수                                           | 연타로 화면이 두 번 쌓이는 것 막기, 닫히는 폼의 같은 프레임 저장 연타 막기(`handleSavePress`, [data](./data.md#폼)) |
+| `useConfirmDialog()`                                 | `shared/ui/confirm-dialog`                      | `{ openAsync(options) }` → `Promise<boolean>`              | 확인 다이얼로그                                                                                                     |
+| `useFetchNextPage(…)`                                | `shared/ui/infinite-list`                       | 다음 페이지 요청                                           | `InfiniteList`의 끝 도달                                                                                            |
 
 애니메이션 멈춤 조건 `useIsAnimationActive()`(꾸밈 `withRepeat`·프레임 콜백은 모두 이것으로 멈춘다)와 UI 부품이 주는 훅은 [ui](./ui.md)·[ui-catalog](./ui-catalog.md)에 있다.
 

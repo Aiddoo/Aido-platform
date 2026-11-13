@@ -400,7 +400,7 @@
       }
     },
     {
-      "files": ["src/shared/ui/**/*.{spec,test}.{ts,tsx}", "src/shared/ui/**/__tests__/**"],
+      "files": ["src/shared/ui/**/*.{spec,test}.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -491,7 +491,7 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
@@ -547,7 +547,7 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
@@ -612,7 +612,7 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
@@ -683,7 +683,7 @@
       }
     },
     {
-      "files": ["**/hooks/use-*-param.{ts,tsx}", "**/hooks/use-*-params.{ts,tsx}"],
+      "files": ["**/hooks/use-*-params.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -739,10 +739,7 @@
       }
     },
     {
-      "files": [
-        "src/features/**/hooks/use-*-param.{ts,tsx}",
-        "src/features/**/hooks/use-*-params.{ts,tsx}"
-      ],
+      "files": ["src/features/**/hooks/use-*-params.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -817,7 +814,7 @@
       }
     },
     {
-      "files": ["src/**/*.d.ts", "src/**/generated/**", "app/**/*.d.ts"],
+      "files": ["src/**/*.d.ts"],
       "rules": {
         "aido/no-strict-nullish": "off"
       }
@@ -901,6 +898,7 @@
         "aido/no-return-type-of-hook": "error",
         "aido/query-data-alias": "error",
         "aido/logger-event-constant": "error",
+        "aido/no-tracking-in-effect": "error",
         "react/forbid-elements": [
           "error",
           {
@@ -915,13 +913,13 @@
       }
     },
     {
-      "files": ["src/**/*.d.ts", "app/**/*.d.ts"],
+      "files": ["src/**/*.d.ts"],
       "rules": {
         "aido/function-declaration": "off"
       }
     },
     {
-      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "files": ["src/**/domains/**"],
       "rules": {
         "aido/no-role-comparison": "off"
       }
@@ -1010,7 +1008,7 @@
       }
     },
     {
-      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "files": ["src/**/domains/**"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -1032,7 +1030,7 @@
       }
     },
     {
-      "files": ["src/**/queries/*.mutations.ts", "app/**/queries/*.mutations.ts"],
+      "files": ["src/**/queries/*.mutations.ts"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -1048,7 +1046,7 @@
       }
     },
     {
-      "files": ["src/**/queries/*.mutations.{ts,tsx}", "app/**/queries/*.mutations.{ts,tsx}"],
+      "files": ["src/**/queries/*.mutations.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -1102,16 +1100,14 @@
       "files": [
         "src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "src/**/__tests__/**",
-        "src/testing/**",
-        "app/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
-        "app/**/__tests__/**"
+        "src/testing/**"
       ],
       "rules": {
         "aido/no-jest-module-mock": "error"
       }
     },
     {
-      "files": ["src/shared/infra/**/*.{spec,test}.{ts,tsx}", "src/shared/infra/**/__tests__/**"],
+      "files": ["src/shared/infra/**/*.{spec,test}.{ts,tsx}"],
       "rules": {
         "aido/no-jest-module-mock": [
           "error",
@@ -1124,7 +1120,7 @@
     {
       "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
       "excludeFiles": [
-        "src/shared/ui/**/index.ts",
+        "src/shared/ui/index.ts",
         "src/shared/{i18n,errors,analytics}/index.ts",
         "src/shared/infra/{analytics,logger}/index.ts",
         "src/bootstrap/providers/di-context.tsx",
@@ -1152,6 +1148,20 @@
       "files": ["src/features/engagement/comment/hooks/use-todo-comment-params.ts"],
       "rules": {
         "aido/no-router-push": "off"
+      }
+    },
+    {
+      // 원시 setParams는 params 훅에서만 꺼낸다. 펼친 피드의 할 일 선택은 칸 크기와 함께 이름 있는 setter를 만든다
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "**/hooks/use-*-params.{ts,tsx}",
+        "src/features/planning/todo/hooks/use-feed-selected-todo-id.ts",
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/route-setter-location": "error"
       }
     },
     {
@@ -1278,6 +1288,16 @@
       "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
       "rules": {
         "aido/no-clock-read": "error"
+      }
+    },
+    {
+      // 보기마다 한 번을 지키는 공용 장치 둘만 효과에서 보낸다
+      "files": [
+        "src/shared/analytics/use-track-view.ts",
+        "src/shared/hooks/use-screen-tracking.ts"
+      ],
+      "rules": {
+        "aido/no-tracking-in-effect": "off"
       }
     },
     {

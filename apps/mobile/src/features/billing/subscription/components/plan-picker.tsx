@@ -1,5 +1,5 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { type QueryErrorFallbackProps, TextSkeleton, VStack } from '@src/shared/ui';
@@ -55,12 +55,13 @@ PlanPicker.Plans = function Plans({
   const selectedPlan = SubscriptionPolicy.findSelectedPlan(offering, selectedPlanId);
 
   // 요금제를 받아 실제로 보였을 때만 센다(게이트 → 프리미엄 보기 → 페이월 → 결제 퍼널). 못 받은 상태는 세지 않는다
-  useEffect(() => {
-    trackEvent('paywall_viewed', {
+  useTrackView('paywall_viewed', {
+    key: `${view}:${feature ?? ''}`,
+    params: {
       view,
       ...(feature != null && { feature: getPremiumGateAnalyticsFeature(feature) }),
-    });
-  }, [trackEvent, view, feature]);
+    },
+  });
 
   const handleValueChange = (planId: string) => {
     const nextPlan = SubscriptionPolicy.findSelectedPlan(offering, planId);

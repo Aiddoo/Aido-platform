@@ -107,7 +107,7 @@ export default function NotificationsScreen() {
   const [direction] = useNotificationDirection();
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
       {match(direction)
         .with('received', () => (
           <QueryErrorBoundary fallback={NotificationList.Error}>
@@ -134,6 +134,7 @@ export default function NotificationsScreen() {
 - 상태별 화면은 `match(view).with(…).exhaustive()`로 스크린에서 고른다. 넘기기용 래퍼(`Content → Header → Section`), 재수출한 화면, JSX 상수(`const waveform = …`)를 만들지 않는다.
 - 한 쿼리를 두 경계에서 읽지 않는다(한 오류는 한 곳). 로딩·오류·빈·데이터 4상태를 그린다. route 파일은 params 검증과 경계만 맡는다([state-and-routing](./state-and-routing.md#params-튜플)).
 - 스스로 숨는 블록은 간격도 함께 사라진다. 조건을 스크린이 알면 `{isAvailable && (…)}` 안에 `Spacing`과 블록을 함께 두고, 조회해야 아는 카드만 `className`으로 바깥 여백을 받는다.
+- 여러 탭에서 여는 화면(친구·설정류)은 탭마다 함께 쓰는 그룹에 파일 하나로 두고 제목은 화면이 정한다. 어느 탭에 열리는지와 더하는 법은 [탭과 함께 쓰는 화면](./state-and-routing.md#탭과-함께-쓰는-화면)이다.
 
 ## 코드 배치
 
@@ -173,6 +174,7 @@ export default function NotificationsScreen() {
 - **기기.** iPhone, iPad, 폴더블(접음·펼침), iPhone Duo, Android 휴대폰·태블릿을 지원한다. 칸 수는 사이드바·레일 inset을 뺀 탭 안 내용 폭(Android는 시스템 바·컷아웃 inset을 빼지 않은 폭) `usePaneSizeClass()`(`compact`·`medium`·`expanded`), 창 전체 정책(방향·시트 배치)은 `useWindowSizeClass()`로 정한다. 기기 이름·힌지로 나누지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`다(`Platform.OS`는 `no-restricted-properties`, 번들에서 다른 플랫폼 코드가 빠진다).
 - 2열은 `AdaptivePane` 하나라 접고 펴도 다시 마운트되지 않는다. 폭마다 다시 만드는 무거운 부품은 `useDeferredValue`로 늦춘다. 배치 규칙(짧은 창, 방향 잠금, 칸 나누기, 접힘선)은 `shared/ui/adaptive-pane/window-layout.ts`의 `WindowLayoutPolicy`다. Mac(Designed for iPad)은 늘 `compact`다.
 - Duo 세로 레일(84pt)은 safe area로 피한다. 탭 Stack 페이지 스크롤은 `SafeAreaScrollView`, 고정 헤더·하단 버튼·가상 목록 화면은 루트 `edges`에 `left`·`right`를 더한다. 같은 축을 두 번 감싸지 않는다. 헤더는 네이티브 Stack 헤더와 `Stack.Toolbar`만 쓴다.
+- 탭 안 스크롤 목록은 루트 `edges`에 `bottom`을 넣지 않고 목록에 `contentInsetAdjustmentBehavior="automatic"`을 준다(피드·메모·알림함·배지·녹음 저장 공간). 아래 inset에 떠 있는 탭 막대가 들어 있어 `bottom`을 넣으면 목록이 막대 위에서 잘리고 막대 뒤가 빈 띠로 남는다. 내용 칸 `flexGrow`는 빈 안내를 그릴 때만 준다. 행이 있을 때도 주면 짧은 목록이 자동 inset만큼 끌려 올라간 채 머문다. Android 탭은 내용을 막대 위에 놓아 따로 띄우지 않는다.
 
 ## 모션과 Skia
 

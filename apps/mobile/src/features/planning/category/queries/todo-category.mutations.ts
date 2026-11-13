@@ -11,7 +11,7 @@ import {
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';

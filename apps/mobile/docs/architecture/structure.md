@@ -1,6 +1,6 @@
 # 구조
 
-기능을 어디에 두고, 기능 폴더에 무엇을 두고, 무엇이 무엇을 import하는지 정한다. 모델은 [model](./model.md), Api·저장소·쿼리·폼은 [data](./data.md), 상태·route는 [state-and-routing](./state-and-routing.md)이 원본이다. 아직 이 모양이 아닌 코드는 [migration-status](./migration-status.md)에만 적는다. 지금 걸린 검사와 규칙 이름은 [guardrails](./guardrails.md)다.
+기능을 어디에 두고, 기능 폴더에 무엇을 두고, 무엇이 무엇을 import하는지 정한다. 모델은 [model](./model.md), Api·저장소·쿼리·폼은 [data](./data.md), 상태·route는 [state-and-routing](./state-and-routing.md)이 원본이다. 아직 이 모양이 아닌 코드는 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다. 지금 걸린 검사와 규칙 이름은 [guardrails](./guardrails.md)다.
 
 ## 앱 폴더
 
@@ -21,7 +21,7 @@ src/
 - `shared/providers`는 어디서나 읽는 앱 설정 Context(테마, 언어, 글꼴 배율, 로컬 날짜)다. `bootstrap/providers`는 루트에 한 번 끼우는 조립과 전역 동작이고 `children`만 감싼다.
 - `shared/stores`는 React 밖에서도 구독하는 메모리 저장소다. 기기 저장 값은 `shared/storage`가 맡는다([data](./data.md)).
 - 다른 기능은 `@src/features/{area}/{feature}/…` 절대 경로로 import한다. 상대 경로는 같은 기능 안에서만 쓴다.
-- 새 barrel `index.ts`를 만들지 않는다. 재수출은 이미 공개 면인 `shared/ui`, `shared/i18n`, `shared/errors`, `shared/analytics`, `shared/infra/{analytics,logger}`, `bootstrap/providers/di-context`(shared DI 훅)와 테스트 입구 `src/testing/core.ts`에만 있다(`aido/no-re-export`).
+- 새 barrel `index.ts`를 만들지 않는다. 재수출은 이미 공개 면인 `shared/ui`, `shared/i18n`, `shared/errors`, `shared/analytics`, `shared/infra/{analytics,logger}`, `bootstrap/providers/di-context`(shared DI 훅)와 테스트 입구 `src/testing/core.ts`에만 있다(`aido/no-re-export`). `shared/ui`의 입구는 `shared/ui/index.ts` 하나이고 부품 폴더에는 `index.ts`를 두지 않는다(ls-lint, [ui-catalog](./ui-catalog.md)).
 
 ## 기능 경계
 
@@ -157,12 +157,12 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - **꺼내는 입구는 `bootstrap/providers/di-context.tsx` 하나다.** DI 훅은 `use{Entity}Api`, `use{Name}Service`, `use{Name}Repository`, `use{Name}Store`이고 훅 이름은 컨테이너 필드 이름과 같다. 포트는 필드·훅 모두 역할 이름이고 `Gateway`를 붙이지 않는다(`haptics`·`useHaptics`, `purchases`, `socialShare`). 공개·인증 HTTP 짝은 어디서나 `publicHttpClient`·`authHttpClient`이고, 생성자 의존 객체 타입은 `{X}Ports`다. `shared/di/shared-di-context.tsx`는 `shared`만 쓰고 `di-context`가 다시 내보낸다. `DIContainer`·`createAppContainer`의 반환·di-context 훅은 같은 순서다(포트 → 기능 층 표 1→4, 기능마다 빈 줄). 훅이 없는 필드는 시작·세션 정리만 쓰는 저장소(`coachmarkRepository`, `activationProgressRepository`)뿐이다.
 - **라이브러리 교체는 어댑터 하나와 `create-device-ports` 한 줄이다.** 어댑터 밖이 바뀌면 포트 설계가 틀린 것이다. 새 포트는 `core/ports` → 어댑터 → `create-device-ports` → `createTestPorts` stub 기본값을 함께 더한다.
 
-| 수명     | 무엇                                                                                                                                                            | 만드는 곳                                             |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| 프로세스 | `AppLogger`·`Analytics`·`ErrorReporter`, `QueryClient`, 보안·암호화 저장소, `TokenStore`·토큰 갱신기, HTTP 클라이언트, 결제 SDK 게이트웨이, 그 밖의 기기 어댑터 | `composition-root.ts`가 한 번                         |
-| 마운트   | Api, service, repository, store                                                                                                                                 | `DIProvider`가 마운트마다 `createAppContainer(ports)` |
+| 수명     | 무엇                                                                                                                                                                                                                                  | 만드는 곳                                             |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 프로세스 | `AppLogger`·`Analytics`·`ErrorReporter`, `QueryClient`, 보안·암호화 저장소, `TokenStore`·토큰 갱신기, HTTP 클라이언트, 결제 SDK 게이트웨이, 그 밖의 기기 어댑터, 루트 "다시 시도"를 넘어 기억할 메모리 store(`inviteLinkOpenedStore`) | `composition-root.ts`가 한 번                         |
+| 마운트   | Api, service, repository, store                                                                                                                                                                                                       | `DIProvider`가 마운트마다 `createAppContainer(ports)` |
 
-- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`에만 둔다. 그 밖의 모듈 전역 상태는 DI store(`pushOnboardingGuardStore`, `myPagePaneLayoutStore`, `myPageDetailRootStore`, `inviteLinkOpenedStore`)나 어댑터 팩토리의 클로저 변수(푸시 게이트웨이의 앞 알림 표시 판단)로 옮긴다. DI보다 먼저 있거나 DI 밖에서 읽어 옮길 수 없는 것만 남기고 늘리지 않는다.
+- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`에만 둔다. 그 밖의 모듈 전역 상태는 DI store(`pushOnboardingGuardStore`, `myPagePaneLayoutStore`, `myPageDetailRootStore`, 프로세스 수명 포트의 `inviteLinkOpenedStore`)나 어댑터 팩토리의 클로저 변수(푸시 게이트웨이의 앞 알림 표시 판단)로 옮긴다. DI보다 먼저 있거나 DI 밖에서 읽어 옮길 수 없는 것만 남기고 늘리지 않는다.
   - `bootstrap/navigation/cold-start-link`: 앱 트리·DI보다 먼저 받은 첫 URL을 Index가 한 번 읽는다
   - `shared/ui/bottom-sheet/keyboard-bottom-sheet`의 열린 시트 수: 키보드 컨트롤러가 네이티브 전역 하나라 수도 그 수명을 따른다
   - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면, 접근성 설정 store, 위젯 진입점)이 쓰는 로거. `composition-root`가 한 번 정한다
@@ -175,7 +175,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
   - `shared/infra/storage/device-sync-storage`의 MMKV 인스턴스: DI보다 먼저 그리는 설정 Provider(테마·언어·글꼴)와 `i18n/init`이 읽는다
   - `shared/infra/observability/capture-error`의 보고한 오류 `WeakSet`: DI 밖(루트 경계·전역 로거)과 안의 보고가 같은 오류를 두 번 보내지 않게 하는 한 곳이고 오류 객체와 함께 사라진다
   - `bootstrap/query/{mutation-error-feedback,query-error-report}-cache`의 구독자 표: 캐시 `onError`는 DI 밖 `createAppQueryClient`에서 만들어진다. 표는 캐시를 키로 한 `WeakMap`이라 캐시마다 따로이고 캐시와 함께 사라진다
-  - `app/+native-intent`의 초대 링크 도장(마지막 한 칸)과 `app/_layout`의 `rootErrorReporter`: 시스템 URL 변환은 앱 트리·DI보다 먼저 돌고, 루트 오류 경계는 DI 밖에서 그려질 수 있다
+  - `app/+native-intent`의 초대 링크 도장(마지막 한 칸)과 그 변환이 보던 탭을 읽는 `shared/navigation/selected-tab-path`의 `navigationContainer`, `app/_layout`의 `rootErrorReporter`: 시스템 URL 변환은 앱 트리·DI보다 먼저 React 밖에서 돌고, 루트 오류 경계는 DI 밖에서 그려질 수 있다. expo-router는 내비게이션 컨테이너를 훅(`useNavigationContainerRef`) 말고 공개하지 않아, 루트 레이아웃이 묶는 훅(`useBindSelectedTabPath`, 언마운트 때 비운다)과 읽는 함수(`toSelectedTabPath`)를 한 파일에 두어 이 값을 쓰고 읽는 곳을 그 둘로 묶는다
   - `shared/hooks/use-rebuilt-path`의 `EMPTY_PATH`: 그리기 전과 놓은 뒤 Canvas가 읽는 빈 Skia 경로 하나다. 모든 훅이 함께 쓰고 놓지 않아 프로세스 수명이다
 - 루트 "다시 시도"는 마운트 수명 컨테이너만 새로 만든다. 로그인·결제 설정·보고는 그대로 남는다.
 - 언마운트·로그아웃 뒤에 도는 일이 없어야 한다. await 뒤 상태 변경·이동은 막고, 핸들러가 건 rAF·타이머는 지우고, 리스너 세트 대신 `subscribe`가 해제 함수를 돌려주는 관찰 가능한 저장소를 쓴다. 화면 밖에서 늦게 오는 쓰기(초안 자동 저장의 마지막 저장, 늦은 녹음 파일)는 로그아웃·탈퇴 세대(`SignOutEpoch`)와 비교해 로그아웃·탈퇴 뒤에는 쓰지 않는다(`DraftService.createSessionSave`, `VoiceRecordingIntakeSession`). 세션 만료는 같은 사람이 돌아와 이어 쓰므로 막지 않는다. 결제 SDK 로그인·로그아웃은 `PurchasesSession`이 하나씩, 마지막 요청만 보내고 멈춘 호출(로그인 뒤 속성 동기화 포함)은 `PURCHASES_SDK_CALL_TIMEOUT_MS`(15초)에서 끊는다. 결제·복원은 그때의 SDK 사용자에게 귀속되므로 `waitForSignedInUser`로 로그인·로그아웃이 끝나길 기다리고, 마지막 계정의 로그인이 실패·시간 초과였으면 그 계정으로 다시 로그인해 기다린 뒤 그래도 아니면 스토어 연결 오류(`SUBSCRIPTION_STORE_PROBLEM`)로 막는다. 상세: [data의 메모리와 수명](./data.md#메모리와-수명).
