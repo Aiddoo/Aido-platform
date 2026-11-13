@@ -17,7 +17,7 @@ const freeTrialSchema = z.object({
 });
 export type FreeTrial = z.infer<typeof freeTrialSchema>;
 
-const subscriptionPlanSchema = z.object({
+export const subscriptionPlanSchema = z.object({
   identifier: z.string(),
   planType: planTypeSchema,
   priceString: z.string(),

@@ -16,7 +16,7 @@ const PUSH_PROMPT_SNOOZE_DAYS = 14;
 /** 가입 뒤 이 날수 안에만 알림 화면을 보여 준다. 그 뒤에는 할 일 시간을 정할 때 묻는다 */
 const PUSH_ONBOARDING_WINDOW_DAYS = 1;
 
-const pushPermissionSchema = z.object({
+export const pushPermissionSchema = z.object({
   status: z.enum(PUSH_PERMISSION_STATUS),
   canAskAgain: z.boolean(),
 });

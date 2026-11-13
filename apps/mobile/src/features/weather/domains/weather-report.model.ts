@@ -139,7 +139,7 @@ const weatherAlertSchema = z.object({
 });
 export type WeatherAlert = z.infer<typeof weatherAlertSchema>;
 
-const airQualitySchema = z.object({
+export const airQualitySchema = z.object({
   pm10: z.number().nullable(),
   pm25: z.number().nullable(),
   source: z.enum(WEATHER_AIR_QUALITY_SOURCES),

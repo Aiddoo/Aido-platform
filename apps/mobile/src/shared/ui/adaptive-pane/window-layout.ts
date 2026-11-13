@@ -18,7 +18,7 @@ function getWindowSizeClass(windowWidth: number): WindowSizeClass {
 }
 
 /** 앱 창. 크기는 `useWindowDimensions`의 dp(iOS pt)다 */
-const appWindowSchema = z.object({
+export const appWindowSchema = z.object({
   width: z.number(),
   height: z.number(),
   os: z.enum(APP_PLATFORMS),
@@ -29,7 +29,7 @@ const appWindowSchema = z.object({
 export type AppWindow = z.infer<typeof appWindowSchema>;
 
 /** 목록·상세 칸을 나눌 탭 안 영역. iPadOS 26+ 사이드바·iPhone Duo 레일은 영역 폭을 줄이지 않고 좌우 inset으로 온다 */
-const paneAreaSchema = z.object({
+export const paneAreaSchema = z.object({
   /** 영역 폭. `PaneArea` 밖이면 null이라 창 폭을 쓴다 */
   width: z.number().nullable(),
   /** 목록 칸이 닿는 가장자리(LTR 왼쪽)의 inset */

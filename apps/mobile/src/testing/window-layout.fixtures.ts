@@ -1,19 +1,21 @@
-import type { AppWindow, PaneAreaSize } from '@src/shared/ui/adaptive-pane/window-layout';
+import { appWindowSchema, paneAreaSchema } from '@src/shared/ui/adaptive-pane/window-layout';
 
-export function createAppWindow(overrides: Partial<AppWindow> = {}): AppWindow {
-  return { width: 412, height: 915, os: 'android', isDesktop: false, ...overrides };
-}
+import { defineFixture } from './fixture';
 
-export function createPaneArea(overrides: Partial<PaneAreaSize> = {}): PaneAreaSize {
-  return {
-    width: 1000,
-    leadingInset: 0,
-    trailingInset: 0,
-    insetsOccupyPane: true,
-    foldX: null,
-    ...overrides,
-  };
-}
+export const createAppWindow = defineFixture(appWindowSchema, {
+  width: 412,
+  height: 915,
+  os: 'android',
+  isDesktop: false,
+});
+
+export const createPaneArea = defineFixture(paneAreaSchema, {
+  width: 1000,
+  leadingInset: 0,
+  trailingInset: 0,
+  insetsOccupyPane: true,
+  foldX: null,
+});
 
 /** 기기 창 크기(dp/pt). 제조사 해상도 ÷ 밀도로 어림한 값이다 */
 export const DEVICE_WINDOW = {
