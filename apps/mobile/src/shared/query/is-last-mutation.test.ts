@@ -1,4 +1,4 @@
-import { createPendingResponse, createTestQueryClient } from '@src/shared/__tests__';
+import { createPendingResponse, createTestQueryClient } from '@src/testing/core';
 
 import { isLastMutation } from './is-last-mutation';
 

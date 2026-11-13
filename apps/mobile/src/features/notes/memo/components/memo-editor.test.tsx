@@ -1,33 +1,39 @@
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { type EntitlementSnapshot } from '@src/features/billing/subscription/domains/entitlement.model';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
-import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
 import { type Consent } from '@src/features/identity/consent/domains/consent.model';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
+import { toEpochMs, toInstant } from '@src/shared/date/instant';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createHttpClientStub,
   createSpeechRecognizerStub,
-  createVoiceNoteStorageFake,
+  createTestDi,
+  createPendingResponse,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { toInstant } from '@src/shared/date/instant';
-import { NetworkError } from '@src/shared/errors/infra-error';
+  createVoiceNoteStorageFake,
+  deliverQueryNotifications,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Suspense } from 'react';
 import { Keyboard } from 'react-native';
 
 import { createMemo } from '../__tests__/memo.fixtures';
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
+import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
+import { createMemoDraftKey } from '../utils/memo-draft';
+import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 import { MemoEditor } from './memo-editor';
 import { MemoList } from './memo-list';
 
@@ -48,7 +54,7 @@ const AGREED_CONSENT_DTO = {
   aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
 };
 const PARSE_MEMO_URL = 'v1/ai/parse-memo';
-const CONSENT_REQUIRED_ERROR = new ApiError('AI_1311', '동의 필요', 403);
+const CONSENT_REQUIRED_ERROR = new ApiError(ErrorCode.AI_1311, '동의 필요', HttpStatus.FORBIDDEN);
 
 function createAgreedConsent() {
   return createConsent({
@@ -68,7 +74,14 @@ async function renderEditor(
     withList = false,
     consent,
     entitlements,
-  }: { withList?: boolean; consent?: Consent; entitlements?: EntitlementSnapshot } = {},
+    draft,
+  }: {
+    withList?: boolean;
+    consent?: Consent;
+    entitlements?: EntitlementSnapshot;
+    /** 앱을 다시 열기 전에 남긴 고치던 글자 */
+    draft?: string;
+  } = {},
 ) {
   jest.mocked(useLocalSearchParams).mockReturnValue({ memoId: String(MEMO_ID) });
   const queryClient = createTestQueryClient({
@@ -89,7 +102,6 @@ async function renderEditor(
     pages: [
       {
         items: [createMemo({ id: MEMO_ID, content: '처음 메모' })],
-        hasNext: false,
         nextCursor: null,
       },
     ],
@@ -107,8 +119,23 @@ async function renderEditor(
     return new Promise(() => undefined);
   });
   const onLeave = jest.fn();
+  const di = createTestDi({
+    ports: {
+      httpClient,
+      queryClient,
+      speechRecognizer: createSpeechRecognizerStub(),
+      ...createVoiceNoteStorageFake().ports,
+    },
+  });
+  if (draft != null) {
+    di.draftService.save(
+      createMemoDraftKey({ userId: 'account-1', memoId: MEMO_ID }),
+      { content: draft },
+      { sourceUpdatedAt: toEpochMs(createMemo().updatedAt) },
+    );
+  }
 
-  await renderUi(
+  await renderScreen(
     <Suspense fallback={null}>
       {withList && <MemoList />}
       <MemoEditor
@@ -117,18 +144,13 @@ async function renderEditor(
       />
     </Suspense>,
     {
-      queryClient,
       withLocalDate: true,
       withOverlay: true,
-      di: {
-        httpClient,
-        speechRecognizer: createSpeechRecognizerStub(),
-        ...createVoiceNoteStorageFake().di,
-      },
+      di,
     },
   );
 
-  return { httpClient, onLeave };
+  return { httpClient, queryClient, onLeave, di };
 }
 
 async function editContent(content: string) {
@@ -159,7 +181,8 @@ describe('MemoEditor', () => {
       }),
     );
     await waitFor(() => expect(screen.queryByLabelText('저장')).toBeNull());
-    expect(screen.getByDisplayValue('고친 메모')).toBeTruthy();
+    // 입력칸은 저장한 글로 돌아간다(공백을 그대로 비교한다)
+    expect(screen.getByDisplayValue('고친 메모', { normalizer: (text) => text })).toBeTruthy();
   });
 
   it('공백만 넣고 저장하면 요청 없이 편집을 끝낸다', async () => {
@@ -193,6 +216,130 @@ describe('MemoEditor', () => {
     expect(httpClient.patch).not.toHaveBeenCalled();
   });
 
+  it.each([
+    {
+      scenario: '고치지 않은 입력은 다시 받은 글을 보인다',
+      draft: undefined,
+      edited: null,
+      expected: '다른 기기에서 고친 메모',
+    },
+    {
+      scenario: '고치던 입력은 덮지 않는다',
+      draft: undefined,
+      edited: '쓰던 글',
+      expected: '쓰던 글',
+    },
+    {
+      scenario: '복원한 초안은 덮지 않는다',
+      draft: '앱을 닫기 전 글',
+      edited: null,
+      expected: '앱을 닫기 전 글',
+    },
+  ])('다시 받은 메모가 바뀌면 $scenario', async ({ draft, edited, expected }) => {
+    // Given
+    const { queryClient } = await renderEditor('pane', { draft });
+    await screen.findByDisplayValue(draft ?? '처음 메모');
+    if (edited != null) {
+      await editContent(edited);
+    }
+
+    // When
+    await act(async () => {
+      queryClient.setQueryData(
+        MEMO_QUERY_KEYS.detail({ memoId: MEMO_ID }),
+        createMemo({ id: MEMO_ID, content: '다른 기기에서 고친 메모' }),
+      );
+    });
+
+    // Then
+    expect(await screen.findByDisplayValue(expected)).toBeTruthy();
+  });
+
+  it.each([
+    { scenario: '고치던 글자', draft: undefined, edited: '쓰던 글', expected: '쓰던 글' },
+    {
+      scenario: '복원한 초안',
+      draft: '앱을 닫기 전 글',
+      edited: null,
+      expected: '앱을 닫기 전 글',
+    },
+  ])(
+    '$scenario는 고치는 사이 서버 글이 바뀌어도 뒤로 갈 때 저장한다',
+    async ({ draft, edited, expected }) => {
+      // Given
+      const { httpClient, queryClient, onLeave } = await renderEditor('stack', { draft });
+      httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+      await screen.findByDisplayValue(draft ?? '처음 메모');
+      if (edited != null) {
+        await editContent(edited);
+      }
+      await act(async () => {
+        queryClient.setQueryData(
+          MEMO_QUERY_KEYS.detail({ memoId: MEMO_ID }),
+          createMemo({ id: MEMO_ID, content: '다른 기기에서 고친 메모' }),
+        );
+        await deliverQueryNotifications();
+      });
+
+      // When
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      });
+
+      // Then
+      await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+      expect(httpClient.patch).toHaveBeenCalledTimes(1);
+      expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}`, { content: expected });
+    },
+  );
+
+  it('복원한 초안은 열자마자 뒤로 가도 저장한다', async () => {
+    // Given
+    const { httpClient, onLeave } = await renderEditor('stack', { draft: '앱을 닫기 전 글' });
+    httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+    await screen.findByDisplayValue('앱을 닫기 전 글');
+
+    // When
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+    });
+
+    // Then
+    await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+    expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}`, {
+      content: '앱을 닫기 전 글',
+    });
+  });
+
+  it('할 일로 바꾸기가 이미 없는 메모라 거절되면 시트를 닫고 메모를 떠난다', async () => {
+    // Given
+    const { httpClient, onLeave } = await renderEditor('stack');
+    httpClient.post.mockResolvedValue(
+      err(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
+    );
+    await waitFor(() =>
+      expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
+    );
+    await act(async () => {});
+    await act(async () => {
+      fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+    });
+    const sheet = await screen.findByTestId('memo-convert-sheet');
+
+    // When
+    await act(async () => {
+      fireEvent.press(within(sheet).getByLabelText('저장하기'));
+    });
+
+    // Then
+    await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+    expect(httpClient.post).toHaveBeenCalledWith(
+      `v1/memos/${MEMO_ID}/convert-to-todos`,
+      expect.anything(),
+    );
+  });
+
   describe('고치던 글자가 있을 때 메뉴', () => {
     it('할 일로 바꾸기는 고친 글자를 먼저 저장한 뒤 그 글자로 시트를 연다', async () => {
       // Given
@@ -223,7 +370,9 @@ describe('MemoEditor', () => {
     it('저장에 실패하면 시트를 열지 않는다', async () => {
       // Given
       const { httpClient } = await renderEditor('stack');
-      httpClient.patch.mockResolvedValue(err(new ApiError('MEMO_2001', '거절', 400)));
+      httpClient.patch.mockResolvedValue(
+        err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+      );
       await editContent('고친 메모');
       await waitFor(() =>
         expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
@@ -273,7 +422,7 @@ describe('MemoEditor', () => {
 
     // Then
     await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
-    expect(screen.getByText('고친 메모')).toBeTruthy();
+    expect(await screen.findByText('고친 메모')).toBeTruthy();
     expect(screen.queryByText('처음 메모')).toBeNull();
   });
 
@@ -295,7 +444,9 @@ describe('MemoEditor', () => {
   it('서버가 거절하면 글자를 지키려고 화면에 남는다', async () => {
     // Given
     const { httpClient, onLeave } = await renderEditor('stack');
-    httpClient.patch.mockResolvedValue(err(new ApiError('MEMO_2001', '거절', 400)));
+    httpClient.patch.mockResolvedValue(
+      err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+    );
     await editContent('고친 메모');
 
     // When
@@ -375,7 +526,9 @@ describe('MemoEditor', () => {
     it('저장 버튼이 거절되면 글자와 편집 상태를 그대로 두고 키보드도 내리지 않는다', async () => {
       // Given
       const { httpClient, onLeave } = await renderEditor('pane');
-      httpClient.patch.mockResolvedValue(err(new ApiError('MEMO_2001', '거절', 400)));
+      httpClient.patch.mockResolvedValue(
+        err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+      );
       await editContent('고친 메모');
 
       // When
@@ -448,6 +601,69 @@ describe('MemoEditor', () => {
       // 동의를 답할 때까지 끝나지 않는 핸들러라 기다리지 않는다
       fireEvent.press(await screen.findByText('AI로 할 일 나누기')).catch(() => undefined);
     }
+
+    it('정리를 기다리는 사이 편집기를 떠나면 결과 화면으로 끌고 가지 않고 결과는 초안에 남긴다', async () => {
+      // Given
+      const { httpClient, di } = await renderForAiParse({ consent: createAgreedConsent() });
+      const pendingParse = createPendingResponse(ok(createParseMemoResponseDto()));
+      httpClient.post.mockReturnValue(pendingParse.response);
+      await startAiParse();
+      await waitFor(() => expect(getParseRequestCount(httpClient)).toBe(1));
+      await screen.unmount();
+
+      // When
+      await act(async () => {
+        pendingParse.settle();
+      });
+
+      // Then
+      const planDraftKey = createMemoPlanDraftKey({
+        userId: 'account-1',
+        memoId: MEMO_ID,
+        timeZone: 'Asia/Seoul',
+      });
+      await waitFor(() => expect(di.draftService.restore(planDraftKey).status).toBe('restored'));
+      expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it('정리를 기다리는 사이 탭을 바꿔 편집기가 마운트된 채 가려지면 끌고 가지 않고 돌아와 누르면 차감 없이 연다', async () => {
+      // Given
+      const navigation = {
+        isFocused: jest.fn(() => true),
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      };
+      jest.mocked(useNavigation).mockReturnValue(navigation);
+      const { httpClient } = await renderForAiParse({ consent: createAgreedConsent() });
+      const pendingParse = createPendingResponse(ok(createParseMemoResponseDto()));
+      httpClient.post.mockReturnValue(pendingParse.response);
+      await startAiParse();
+      await waitFor(() => expect(getParseRequestCount(httpClient)).toBe(1));
+      navigation.isFocused.mockReturnValue(false);
+
+      // When
+      await act(async () => {
+        pendingParse.settle();
+      });
+      await act(deliverQueryNotifications);
+
+      // Then
+      expect(screen.getByDisplayValue('처음 메모')).toBeOnTheScreen();
+      expect(router.push).not.toHaveBeenCalled();
+
+      // When
+      navigation.isFocused.mockReturnValue(true);
+      await startAiParse();
+
+      // Then
+      await waitFor(() =>
+        expect(router.push).toHaveBeenCalledWith({
+          pathname: '/memo/[memoId]/ai-review',
+          params: { memoId: MEMO_ID },
+        }),
+      );
+      expect(getParseRequestCount(httpClient)).toBe(1);
+    });
 
     it('이번 달 한도를 다 썼으면 안내를 띄우고 정리를 요청하지 않는다', async () => {
       // Given

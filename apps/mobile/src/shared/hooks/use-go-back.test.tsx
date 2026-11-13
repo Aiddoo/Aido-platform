@@ -1,4 +1,4 @@
-import { router } from '@src/shared/__tests__/mocks/expo-router';
+import { router } from '@src/testing/mocks/expo-router';
 import { renderHook } from '@testing-library/react-native';
 
 import { useGoBack } from './use-go-back';
@@ -28,6 +28,21 @@ describe('useGoBack', () => {
     // Then
     expect(router.back).not.toHaveBeenCalled();
     expect(router.replace).toHaveBeenCalledWith('/feed');
+  });
+
+  it('돌아갈 화면이 없으면 화면 대신 onFallback을 한 번 부른다', async () => {
+    // Given
+    router.canGoBack.mockReturnValue(false);
+    const onFallback = jest.fn();
+    const { result } = await renderHook(() => useGoBack({ onFallback }));
+
+    // When
+    result.current();
+    result.current();
+
+    // Then
+    expect(onFallback).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalled();
   });
 
   it('fallback이 없고 돌아갈 화면도 없으면 아무것도 하지 않는다', async () => {

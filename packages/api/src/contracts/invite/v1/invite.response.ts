@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
+import { USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
 import { REDEEM_OUTCOME } from "../../../vocabulary/invite.constants.js";
 import {
   inviteCodeFormatSchema,
@@ -14,7 +15,7 @@ import {
 
 const userTagSchema = z
   .string()
-  .length(8)
+  .length(USER_TAG_LENGTH)
   .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)");
 const userNameSchema = z.string().nullable().describe("사용자 이름 (미설정 시 null)");
 const profileImageSchema = z

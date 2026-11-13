@@ -11,7 +11,7 @@
   "card": {
     "title": "Weekly achievement badge",
     "nameLabel": "Name",
-    "certificate": "This certifies that the person above\ncompleted {{completed}} of {{total}} to-dos in {{weekLabel}},\nachieving a {{rate}}% completion rate,\nand is hereby awarded this badge.",
+    "certificate": "This certifies that the person above\ncompleted {{completed}} of {{total}} to-dos in {{weekLabel}},\nachieving a {{rate}} completion rate,\nand is hereby awarded this badge.",
     "share": "Share",
     "statPerfect": "Perfect",
     "statStreak": "Streak",
@@ -29,6 +29,7 @@
     "startNow": "Start now",
     "emptyRecordTitle": "Collect badges to build your history",
     "emptyRecordDescription": "Your weekly completed to-dos are recorded here",
-    "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} done"
+    "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} done",
+    "openCertificate": "View certificate"
   }
 }

@@ -1,4 +1,4 @@
-import { renderRouteHook } from '@src/shared/__tests__/render-route-hook';
+import { renderRouteHook } from '@src/testing/render-route-hook';
 import { z } from 'zod';
 
 import { useView } from './use-view';

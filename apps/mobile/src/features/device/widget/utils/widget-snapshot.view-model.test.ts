@@ -1,3 +1,5 @@
+import { createDateKey } from '@src/testing/date-key';
+
 import {
   createWidgetSnapshotContext,
   createWidgetSummary,
@@ -12,13 +14,13 @@ import {
 describe('toWidgetWeek', () => {
   it('주간 발자국은 할 일이 있고 모두 완료한 날에만 표시한다', () => {
     // Given
-    const summary = createWidgetSummary({ date: '2026-07-15', isComplete: false });
+    const summary = createWidgetSummary({ date: createDateKey('2026-07-15'), isComplete: false });
     const context = createWidgetSnapshotContext({
       weekCompletions: [
-        { date: '2026-07-12', totalTodos: 0, isComplete: true },
-        { date: '2026-07-13', totalTodos: 2, isComplete: true },
-        { date: '2026-07-14', totalTodos: 3, isComplete: false },
-        { date: '2026-07-15', totalTodos: 2, isComplete: true },
+        { date: createDateKey('2026-07-12'), totalTodos: 0, isComplete: true },
+        { date: createDateKey('2026-07-13'), totalTodos: 2, isComplete: true },
+        { date: createDateKey('2026-07-14'), totalTodos: 3, isComplete: false },
+        { date: createDateKey('2026-07-15'), totalTodos: 2, isComplete: true },
       ],
     });
 
@@ -48,13 +50,17 @@ describe('toWidgetWeek', () => {
       '17',
       '18',
     ]);
-    expect(week.rangeLabel).toBe('07.12 – 07.18');
+    expect(week.rangeLabel).toBe('07.12 ~ 07.18');
     expect(week.days[3]?.hasTodos).toBe(true);
   });
 
   it('주간 조회가 실패해도 오늘 요약과 달력 날짜를 표시한다', () => {
     // Given
-    const summary = createWidgetSummary({ date: '2026-12-31', totalTodos: 2, isComplete: true });
+    const summary = createWidgetSummary({
+      date: createDateKey('2026-12-31'),
+      totalTodos: 2,
+      isComplete: true,
+    });
 
     // When
     const week = toWidgetWeek(summary, createWidgetSnapshotContext({ locale: 'en' }));
@@ -69,16 +75,17 @@ describe('toWidgetWeek', () => {
     expect(week.rangeLabel).toBe('12.27 – 01.02');
   });
 
-  it('월을 걸친 주는 일요일이 속한 달과 주차를 제목에 쓴다', () => {
+  it('월을 걸친 주는 수요일이 속한 달과 주차를 앱 달력과 같은 글자로 제목에 쓴다', () => {
     // Given
-    const summary = createWidgetSummary({ date: '2026-10-01' });
+    const summary = createWidgetSummary({ date: createDateKey('2026-10-01') });
 
     // When
     const week = toWidgetWeek(summary, createWidgetSnapshotContext());
 
     // Then
     expect(week.days[0]?.date).toBe('2026-09-27');
-    expect(week.title).toBe('widget:calendar.weekTitle({"month":"9월","week":4})');
+    // 9월 27일~10월 3일 주의 수요일은 9월 30일이다
+    expect(week.title).toBe('9월 5주차');
   });
 });
 

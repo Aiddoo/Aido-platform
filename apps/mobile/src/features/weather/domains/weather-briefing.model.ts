@@ -2,16 +2,9 @@ import { WEATHER_BRIEFING_RULES, type WeatherCondition } from '@aido/api/vocabul
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { HOUR_MS } from '@src/shared/constants/time-units';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
-import {
-  type Instant,
-  fromEpochMs,
-  fromWallClock,
-  getZonedHour,
-  hasSameWallClock,
-  toDateKey,
-  toEpochMs,
-} from '@src/shared/date/instant';
+import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
+import { type Instant, fromEpochMs, toEpochMs } from '@src/shared/date/instant';
+import { toZonedInstant, getZonedHour, hasSameWallClock, toDateKey } from '@src/shared/date/zoned';
 import { keyBy, maxBy, range, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
@@ -56,7 +49,7 @@ export interface BriefingTodo {
 /** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
 function toBriefingTodo(
   todo: Todo,
-  { date, timeZone }: { date: string; timeZone: string },
+  { date, timeZone }: { date: DateKey; timeZone: string },
 ): BriefingTodo {
   return {
     id: todo.id,
@@ -64,7 +57,7 @@ function toBriefingTodo(
     scheduledAt:
       todo.isAllDay || todo.localTime == null
         ? null
-        : fromWallClock(date, todo.localTime, timeZone),
+        : toZonedInstant({ date, time: todo.localTime, timeZone }),
     completed: todo.completed,
     subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
       ? SubTodoPolicy.getSubTodoStats(todo.subTodos)
@@ -122,7 +115,8 @@ interface BriefingClock {
   timeZone: string;
 }
 
-function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): number {
+// findIndex처럼 그 시각을 담은 시간이 없으면 -1이다
+function getHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): number {
   const time = toEpochMs(at);
   return hourly.findIndex((hour) => {
     const startsAt = toEpochMs(hour.startsAt);
@@ -142,7 +136,6 @@ function isFrozenHour(hour: HourlyForecastEntry): boolean {
   return WeatherReportPolicy.isFrozenPrecipitation(hour.precipitationType);
 }
 
-/** 기준 시간에서 앞뒤로 조건이 이어지는 시간을 묶는다. */
 function toHourRange(
   hourly: readonly HourlyForecastEntry[],
   anchor: number,
@@ -178,7 +171,7 @@ function getForecastTodos(
     if (todo.scheduledAt == null || toEpochMs(todo.scheduledAt) < toEpochMs(now)) {
       return [];
     }
-    const hour = hourly[findHourIndexAt(hourly, todo.scheduledAt)];
+    const hour = hourly[getHourIndexAt(hourly, todo.scheduledAt)];
     if (hour == null) {
       return [];
     }
@@ -228,7 +221,7 @@ function toWetBriefing(
   if (stormyTodo != null) {
     const range = toHourRange(
       hourly,
-      findHourIndexAt(hourly, stormyTodo.hour.startsAt),
+      getHourIndexAt(hourly, stormyTodo.hour.startsAt),
       isThunderHour,
     );
     if (range != null) {
@@ -247,7 +240,7 @@ function toHotBriefing(
 ): BriefingResult | null {
   const [first] = todos;
   const range =
-    first == null ? null : toHourRange(hourly, findHourIndexAt(hourly, first.hour.startsAt), isHot);
+    first == null ? null : toHourRange(hourly, getHourIndexAt(hourly, first.hour.startsAt), isHot);
   if (range == null) {
     return null;
   }
@@ -271,7 +264,7 @@ function toRainLaterBriefing(
   todos: ForecastTodo[],
   { now, timeZone }: BriefingClock,
 ): BriefingResult | null {
-  const nowIndex = findHourIndexAt(hourly, now);
+  const nowIndex = getHourIndexAt(hourly, now);
   const current = hourly[nowIndex];
   if (current == null || WeatherReportPolicy.isWetHour(current)) {
     return null;
@@ -282,7 +275,7 @@ function toRainLaterBriefing(
   }
   const todayKey = toDateKey(now, timeZone);
   const wetDateKey = toDateKey(wetHour.startsAt, timeZone);
-  const day = match(wetDateKey)
+  const day = match<string>(wetDateKey)
     .with(todayKey, () => 'today' as const)
     .with(addDaysToDateKey(todayKey, 1), () => 'tomorrow' as const)
     .otherwise(() => null);
@@ -322,7 +315,7 @@ function toClearBriefing(
   }
   const range = toHourRange(
     hourly,
-    findHourIndexAt(hourly, best.startsAt),
+    getHourIndexAt(hourly, best.startsAt),
     (hour) =>
       daylightHours.includes(hour) &&
       best.apparentTemperature - hour.apparentTemperature <= BEST_TIME_TOLERANCE,
@@ -354,7 +347,7 @@ function toTomorrowMorningBriefing(
 
 /**
  * 서버가 고른 할 일에 닿는 위험(뇌우·눈·비 → 더위)을 먼저, 없으면 곧 올 비·맑은 날·내일 아침 순으로 알린다.
- * 서버가 판단하지 못한 리포트(옛 서버·오늘 할 일 읽기 실패)는 앱이 다시 판단하지 않고 null이다.
+ * 서버가 판단하지 못한 리포트(오늘 할 일 읽기 실패)는 앱이 다시 판단하지 않고 null이다.
  */
 export function getWeatherBriefing(
   report: BriefingSource,

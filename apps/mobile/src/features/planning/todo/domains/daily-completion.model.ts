@@ -1,10 +1,11 @@
+import { dateKeySchema, type DateKey } from '@src/shared/date/date-key';
 import { orderBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 import { type Todo, TodoPolicy } from './todo.model';
 
 const dailyCompletionSummarySchema = z.object({
-  date: z.string(),
+  date: dateKeySchema,
   totalTodos: z.int().min(0),
   completedTodos: z.int().min(0),
   isComplete: z.boolean(),
@@ -16,7 +17,7 @@ export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummarySchema
 export const dailyCompletionsResultSchema = z.object({
   completions: z.array(dailyCompletionSummarySchema),
   totalCompleteDays: z.int().min(0),
-  dateRange: z.object({ startDate: z.string(), endDate: z.string() }),
+  dateRange: z.object({ startDate: dateKeySchema, endDate: dateKeySchema }),
 });
 export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
 
@@ -53,7 +54,7 @@ function withCompletions(
 
 export function withTodoDailyCompletion(
   result: DailyCompletionsResult,
-  date: string,
+  date: DateKey,
   todos: readonly Todo[],
 ): DailyCompletionsResult {
   const { startDate, endDate } = result.dateRange;

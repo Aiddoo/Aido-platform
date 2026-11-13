@@ -1,6 +1,7 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { fromEpochMs } from '@src/shared/date/instant';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
+import { createMemorySyncStorage } from '@src/testing/core';
 
 import {
   createMemoPlanRequestDraftKey,
@@ -12,7 +13,12 @@ const request = { userId: 'user-1', memoId: 7, content: '메모', categoryId: 1,
 
 function createFixture() {
   const storage = createMemorySyncStorage();
-  const openDraftService = () => new DraftService(createDraftRepository(storage), () => NOW);
+  const openDraftService = () =>
+    new DraftService(
+      createDraftRepository(storage),
+      () => fromEpochMs(NOW),
+      () => 0,
+    );
   const createIdempotencyKey = jest
     .fn<string, []>()
     .mockReturnValueOnce('key-1')

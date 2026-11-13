@@ -1,6 +1,7 @@
-import { stubWindowDimensions, TestUiProvider } from '@src/shared/__tests__';
+import { stubWindowDimensions } from '@src/testing/core';
+import { renderAppRoute } from '@src/testing/render-route-hook';
 import { router } from 'expo-router';
-import { act, renderRouter, screen } from 'expo-router/testing-library';
+import { act, screen } from 'expo-router/testing-library';
 import { useEffect } from 'react';
 import { Text } from 'react-native';
 
@@ -20,7 +21,7 @@ function createScreen(testID: string) {
 }
 
 async function renderMyPageStack(initialUrl: string) {
-  return renderRouter(
+  return renderAppRoute(
     {
       _layout: {
         default: () => <MyPageStack menu={<Text testID="menu">메뉴</Text>} />,
@@ -29,8 +30,9 @@ async function renderMyPageStack(initialUrl: string) {
       'mypage/index': createScreen('mypage'),
       'settings/notifications/index': createScreen('notifications'),
       'settings/notifications/push': createScreen('push'),
+      'notifications/index': createScreen('inbox'),
     },
-    { initialUrl, wrapper: TestUiProvider },
+    { url: initialUrl },
   );
 }
 
@@ -62,6 +64,19 @@ describe('MyPageStack', () => {
     // Then
     expect(screen.getByTestId('push')).toBeTruthy();
     expect(screen.getAllByTestId('menu', { includeHiddenElements: true })).toHaveLength(3);
+  });
+
+  it('넓은 화면에서 첫 화면 종으로 연 알림함도 메뉴 칸 옆에 연다', async () => {
+    // Given
+    stubWindowDimensions(1032);
+    await renderMyPageStack('/mypage');
+
+    // When
+    await act(() => router.push('/notifications'));
+
+    // Then
+    expect(screen.getByTestId('inbox')).toBeTruthy();
+    expect(screen.getAllByTestId('menu', { includeHiddenElements: true })).toHaveLength(2);
   });
 
   it('접고 펴도 보고 있던 화면을 다시 마운트하지 않는다', async () => {

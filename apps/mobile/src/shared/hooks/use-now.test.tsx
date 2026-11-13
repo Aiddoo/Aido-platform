@@ -1,12 +1,11 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { fromEpochMs, toEpochMs, type Instant } from '@src/shared/date/instant';
 import {
   createAppLifecycleGatewayStub,
   createTestDi,
   setupFakeTimersPerTest,
-} from '@src/shared/__tests__';
-import { fromEpochMs, toEpochMs, type Instant } from '@src/shared/date/instant';
-import { act, renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
+import { act } from '@testing-library/react-native';
 
 import { useNow } from './use-now';
 
@@ -20,13 +19,8 @@ interface UseNowProps {
 
 async function setup(initialProps: UseNowProps) {
   const appLifecycle = createAppLifecycleGatewayStub();
-  function wrapper({ children }: PropsWithChildren) {
-    return (
-      <StaticDIProvider container={createTestDi({ appLifecycle })}>{children}</StaticDIProvider>
-    );
-  }
-  const hook = await renderHook((props: UseNowProps) => useNow(props), {
-    wrapper,
+  const hook = await renderScreenHook((props: UseNowProps) => useNow(props), {
+    di: createTestDi({ ports: { appLifecycle } }),
     initialProps,
   });
   return { ...hook, appLifecycle };

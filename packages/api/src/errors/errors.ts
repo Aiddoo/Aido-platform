@@ -197,6 +197,8 @@ export const ErrorCode = {
   NUDGE_1108: "NUDGE_1108",
   NUDGE_1109: "NUDGE_1109",
   NUDGE_1110: "NUDGE_1110",
+  /** 서버 설정으로 콕 답장·감사가 꺼졌다. 1.15.1 이하 앱은 같은 경우에 NUDGE_1105를 받는다 */
+  NUDGE_1111: "NUDGE_1111",
 
   // 응원 (CHEER_1200-1299)
   CHEER_1201: "CHEER_1201",
@@ -268,6 +270,7 @@ export const ErrorCode = {
   MEMO_2001: "MEMO_2001",
   MEMO_2002: "MEMO_2002",
   MEMO_2003: "MEMO_2003",
+  MEMO_2004: "MEMO_2004",
 
   // 친구 초대 (INVITE_2100-2199)
   /** 초대 코드를 찾을 수 없어요 */
@@ -784,7 +787,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.VERIFY_0753]: {
     code: "VERIFY_0753",
-    message: "인증 코드 재발송은 1분 후에 가능합니다.",
+    message: "인증 코드는 1분 뒤에 다시 보낼 수 있습니다.",
     description: "인증 코드 재발송 제한 시간이 아직 지나지 않았습니다.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
@@ -1060,7 +1063,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.NUDGE_1102]: {
     code: "NUDGE_1102",
-    message: "쿨다운 기간입니다. 24시간 후 다시 시도해주세요.",
+    message: "쿨다운 기간입니다. 24시간 뒤에 다시 시도해주세요.",
     description: "같은 할일에 대해 24시간 내 재콕 찌르기는 불가합니다.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
@@ -1096,7 +1099,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.NUDGE_1108]: {
     code: "NUDGE_1108",
-    message: "리마인드 쿨다운 기간입니다. 1시간 후 다시 시도해주세요.",
+    message: "리마인드 쿨다운 기간입니다. 1시간 뒤에 다시 시도해주세요.",
     description: "같은 친구에게 1시간 이내 리마인드 콕 찌르기를 다시 보낼 수 없습니다.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
@@ -1112,6 +1115,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description: "아직 완료하지 않은 할 일에는 감사를 전할 수 없습니다.",
     httpStatus: HttpStatus.CONFLICT,
   },
+  [ErrorCode.NUDGE_1111]: {
+    code: "NUDGE_1111",
+    message: "지금은 콕 답장과 감사를 사용할 수 없습니다.",
+    description:
+      "서버 설정으로 콕 답장·감사 기능이 꺼져 있습니다. 앱은 답장·감사 진입점과 보낸 콕 목록을 숨깁니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
 
   // 응원 (CHEER_1200-1299)
   [ErrorCode.CHEER_1201]: {
@@ -1122,7 +1132,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.CHEER_1202]: {
     code: "CHEER_1202",
-    message: "쿨다운 기간입니다. 24시간 후 다시 시도해주세요.",
+    message: "쿨다운 기간입니다. 24시간 뒤에 다시 시도해주세요.",
     description: "같은 친구에게 24시간 내 재응원은 불가합니다.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
@@ -1385,6 +1395,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "메모 개수가 최대 한도에 도달했습니다.",
     description: "사용자당 최대 메모 개수를 초과했습니다. 기존 메모를 정리해주세요.",
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.MEMO_2004]: {
+    code: "MEMO_2004",
+    message: "같은 Idempotency-Key로 다른 메모를 보냈습니다.",
+    description:
+      "Idempotency-Key는 메모 저장 한 번을 가리킵니다. 내용이 달라졌으면 새 키로 보냅니다. 이 요청은 메모를 만들지 않았습니다.",
+    httpStatus: HttpStatus.CONFLICT,
   },
 
   // 친구 초대 (INVITE_2100-2199)

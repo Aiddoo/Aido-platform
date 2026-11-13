@@ -1,13 +1,11 @@
-import { type Memo, memoSchema } from '../domains/memo.model';
+import { defineFixture } from '@src/testing/fixture';
 
-const DEFAULT_MEMO = memoSchema.parse({
+import { memoSchema } from '../domains/memo.model';
+
+export const createMemo = defineFixture(memoSchema, {
   id: 1,
   content: '장보기',
   isPinned: false,
   createdAt: '2026-11-06T00:00:00.000Z',
   updatedAt: '2026-11-06T00:00:00.000Z',
 });
-
-export function createMemo(overrides: Partial<Memo> = {}): Memo {
-  return { ...DEFAULT_MEMO, ...overrides };
-}

@@ -1,287 +1,195 @@
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+import type { NotificationInboxItem } from '@aido/api';
 
-import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
-import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
-import { resolveNotificationDestination } from '../utils/notification-destination';
-import { toNotification, toNotificationListResult } from './notification.mapper';
+import { NAVIGATION_CASES } from '../__tests__/notification-navigation-cases';
+import {
+  createNotificationInboxResponseDto,
+  createNotificationListResponseDto,
+} from '../__tests__/notification.fixtures';
+import { notificationTargetSchema } from '../domains/notification.model';
+import { toNotification, toNotificationPage, toNotificationTarget } from './notification.mapper';
 
-setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
+const SENDER_ID = 'cmsender0000000000000001';
 
-const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
+function createInboxItemDto(overrides: Partial<NotificationInboxItem> = {}): NotificationInboxItem {
+  const [dto] = createNotificationInboxResponseDto([
+    {
+      id: 1,
+      userId: 'user-1',
+      type: 'FOLLOW_NEW',
+      title: '새로운 친구 요청',
+      body: '홍길동님이 친구 요청을 보냈어요',
+      isRead: false,
+      metadata: null,
+      createdAt: '2026-03-08T10:00:00.000Z',
+      readAt: null,
+      navigation: { kind: 'FRIEND_REQUESTS' },
+      ...overrides,
+    },
+  ]).notifications;
+  if (dto == null) {
+    throw new Error('Expected notification DTO');
+  }
+  return dto;
+}
 
 describe('toNotification', () => {
-  it('createdAt ISO 문자열을 Instant로 바꾼다', () => {
-    // Given
-    const server = createNotificationListResponseDto().notifications[0];
-    if (!server) {
-      throw new Error('Expected notification DTO');
-    }
-
+  it('createdAt ISO 문자열을 Instant로, 서버 navigation을 target으로 바꾼다', () => {
     // When
-    const result = toNotification(server);
+    const notification = toNotification(createInboxItemDto());
 
     // Then
-    expect(result.createdAt).toBe('2026-03-08T10:00:00.000Z');
-    expect(result.id).toBe(1);
-    expect(result.type).toBe('FOLLOW_NEW');
-  });
-
-  it('readAt ISO 문자열을 Instant로 바꾼다', () => {
-    // Given
-    const server = createNotificationListResponseDto().notifications[1];
-    if (!server) {
-      throw new Error('Expected notification DTO');
-    }
-
-    // When
-    const result = toNotification(server);
-
-    // Then
-    expect(result.readAt).toBe('2026-03-07T10:00:00.000Z');
-  });
-
-  it('readAt이 null이면 null이다', () => {
-    // Given
-    const server = createNotificationListResponseDto().notifications[0];
-    if (!server) {
-      throw new Error('Expected notification DTO');
-    }
-
-    // When
-    const result = toNotification(server);
-
-    // Then
-    expect(result.readAt).toBeNull();
-  });
-
-  it('댓글 metadata는 검증된 routing만 모델에 노출한다', () => {
-    // Given
-    const server = createNotificationListResponseDto().notifications[0];
-    if (!server) {
-      throw new Error('Expected notification DTO');
-    }
-
-    // When
-    const result = toNotification({
-      ...server,
-      type: 'TODO_SHARED',
-      context: { todoId: 42 },
-      metadata: {
-        commentId: COMMENT_ID,
-        activityKind: 'REPLY',
-        senderId: 'sender-1',
-        type: 'FOLLOW_ACCEPTED',
-        todoId: 999,
-      },
+    expect(notification).toEqual({
+      id: 1,
+      type: 'FOLLOW_NEW',
+      title: '새로운 친구 요청',
+      body: '홍길동님이 친구 요청을 보냈어요',
+      isRead: false,
+      target: { kind: 'FRIEND_REQUESTS' },
+      receivedCheer: null,
+      createdAt: '2026-03-08T10:00:00.000Z',
     });
+  });
+
+  it('서버가 navigation을 싣지 못한 항목은 알림함으로 연다', () => {
+    // When
+    const notification = toNotification(createInboxItemDto({ navigation: undefined }));
 
     // Then
-    expect(result.routing).toEqual({
-      commentId: COMMENT_ID,
+    expect(notification.target).toEqual({ kind: 'NOTIFICATIONS' });
+  });
+
+  it('모르는 metadata(반복 알림 멈춤 stage)가 있어도 목록이 깨지지 않고 navigation대로 연다', () => {
+    // When
+    const notification = toNotification(
+      createInboxItemDto({
+        type: 'TODO_REMINDER',
+        metadata: { stage: 'series-paused' },
+        navigation: { kind: 'TODO', todoId: 42 },
+      }),
+    );
+
+    // Then
+    expect(notification.target).toEqual({
+      kind: 'TODO',
+      todoId: 42,
+      ownerId: null,
+      dateKey: null,
+    });
+  });
+
+  it.each([
+    [
+      '받은 응원은 신고할 응원과 보낸 친구·이름을 싣는다',
+      {
+        type: 'CHEER_RECEIVED',
+        context: { cheerId: 7, friendId: SENDER_ID },
+        metadata: { senderId: SENDER_ID, senderName: '지윤' },
+      },
+      { cheerId: 7, senderId: SENDER_ID, senderName: '지윤' },
+    ],
+    [
+      '보낸 사람 이름이 없으면 이름 없이 싣는다',
+      { type: 'CHEER_RECEIVED', context: { cheerId: 7, friendId: SENDER_ID }, metadata: null },
+      { cheerId: 7, senderId: SENDER_ID, senderName: null },
+    ],
+    [
+      '응원 ID가 없으면 신고 대상이 아니다',
+      { type: 'CHEER_RECEIVED', context: { friendId: SENDER_ID }, metadata: null },
+      null,
+    ],
+    [
+      '응원이 아닌 알림은 신고 대상이 아니다',
+      { type: 'NUDGE_RECEIVED', context: { cheerId: 7, friendId: SENDER_ID }, metadata: null },
+      null,
+    ],
+  ] as const)('%s', (_case, overrides, expected) => {
+    // When
+    const notification = toNotification(createInboxItemDto(overrides));
+
+    // Then
+    expect(notification.receivedCheer).toEqual(expected);
+  });
+});
+
+describe('toNotificationTarget', () => {
+  it.each(
+    NAVIGATION_CASES.flatMap(({ name, navigation }) =>
+      navigation == null ? [] : [{ name, navigation }],
+    ),
+  )('$name: 서버 navigation과 같은 종류의 앱 target이 된다', ({ navigation }) => {
+    // When
+    const target = toNotificationTarget(navigation);
+
+    // Then
+    expect(target.kind).toBe(navigation.kind);
+    expect(notificationTargetSchema.safeParse(target).success).toBe(true);
+  });
+
+  it('없는 navigation은 알림함이다', () => {
+    // When
+    const target = toNotificationTarget(undefined);
+
+    // Then
+    expect(target).toEqual({ kind: 'NOTIFICATIONS' });
+  });
+
+  it('할 일 주인·날짜는 앱 이름으로 옮기고 없으면 null이다', () => {
+    // When
+    const withOwner = toNotificationTarget({
+      kind: 'TODO_COMMENT',
+      todoId: 42,
+      todoOwnerId: SENDER_ID,
+      todoDate: '2026-11-03',
+      commentId: 'cmt92zn3n000b7voxx9quc2th',
+      threadCommentId: 'cmt92zn3n000a7voxx9quc2th',
       activityKind: 'REPLY',
-      senderId: 'sender-1',
     });
-    expect(result).not.toHaveProperty('metadata');
+    const withoutOwner = toNotificationTarget({ kind: 'TODO', todoId: 42 });
+
+    // Then
+    expect(withOwner).toEqual({
+      kind: 'TODO_COMMENT',
+      todoId: 42,
+      ownerId: SENDER_ID,
+      dateKey: '2026-11-03',
+      commentId: 'cmt92zn3n000b7voxx9quc2th',
+    });
+    expect(withoutOwner).toEqual({ kind: 'TODO', todoId: 42, ownerId: null, dateKey: null });
   });
 
-  it('유효하지 않은 댓글 metadata는 routing으로 승격하지 않는다', () => {
-    // Given
-    const server = createNotificationListResponseDto().notifications[0];
-    if (!server) {
-      throw new Error('Expected notification DTO');
-    }
-
+  it.each(['BROWSER', 'WEBVIEW'] as const)('외부 링크는 %s로 연다', (presentation) => {
     // When
-    const result = toNotification({
-      ...server,
-      metadata: { commentId: 'not-a-comment-id' },
+    const target = toNotificationTarget({
+      kind: 'EXTERNAL_URL',
+      url: 'https://aido.kr/notice',
+      presentation,
     });
 
     // Then
-    expect(result.routing).toBeUndefined();
+    expect(target).toEqual({
+      kind: 'EXTERNAL_URL',
+      url: 'https://aido.kr/notice',
+      opensIn: presentation,
+    });
   });
 });
 
-describe('toNotificationListResult', () => {
-  it('배열 변환 + unreadCount/hasMore/nextCursor', () => {
-    // Given
-    const dto = createNotificationListResponseDto();
-
-    // When
-    const result = toNotificationListResult(dto);
-
-    // Then
-    expect(result.notifications).toHaveLength(2);
-    expect(result.notifications[0]?.createdAt).toBe('2026-03-08T10:00:00.000Z');
-    expect(result.hasMore).toBe(false);
-    expect(result.nextCursor).toBeNull();
-  });
-
-  it('빈 배열', () => {
-    // Given
-    const dto = createNotificationListResponseDto({
-      notifications: [],
-    });
-
-    // When
-    const result = toNotificationListResult(dto);
-
-    // Then
-    expect(result.notifications).toEqual([]);
-  });
-});
-
-describe('pushNotificationPayloadSchema', () => {
-  const validData = {
-    notificationId: 7,
-    type: 'NUDGE_RECEIVED',
-    action: { type: 'DEEP_LINK' },
-    context: { nudgeId: 3 },
-    campaignKey: 'spring',
-    unknownField: 'ignored',
-  };
-
-  it('계약에 맞는 data는 앱 모델로 읽고 모르는 키는 버린다', () => {
-    // Given
-    // When
-    const result = pushNotificationPayloadSchema.safeParse(validData);
-
-    // Then
-    expect(result).toEqual({
-      success: true,
-      data: {
-        notificationId: 7,
-        type: 'NUDGE_RECEIVED',
-        action: { type: 'DEEP_LINK' },
-        context: { nudgeId: 3 },
-        campaignKey: 'spring',
-      },
-    });
-  });
-
-  it.each([undefined, { ...validData, context: 'broken' }])(
-    '모양이 맞지 않으면 오류를 돌려준다: %j',
-    (data) => {
+describe('toNotificationPage', () => {
+  it.each([
+    { hasMore: true, nextCursor: 5, expected: 5 },
+    { hasMore: false, nextCursor: 5, expected: null },
+  ])(
+    'hasMore $hasMore·커서 $nextCursor이면 다음 커서는 $expected다',
+    ({ hasMore, nextCursor, expected }) => {
       // Given
+      const dto = createNotificationListResponseDto({ hasMore, nextCursor });
+
       // When
-      const result = pushNotificationPayloadSchema.safeParse(data);
+      const result = toNotificationPage(dto);
 
       // Then
-      expect(result.success).toBe(false);
+      expect(result.items).toHaveLength(2);
+      expect(result.nextCursor).toBe(expected);
     },
   );
-});
-
-describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paused)', () => {
-  it('모르는 stage가 와도 푸시를 읽고 탭하면 그 회차를 연다', () => {
-    // Given
-    const data = {
-      notificationId: 7,
-      type: 'TODO_REMINDER',
-      action: { type: 'DEEP_LINK' },
-      context: { todoId: 42 },
-      stage: 'series-paused',
-    };
-
-    // When
-    const result = pushNotificationPayloadSchema.safeParse(data);
-
-    // Then
-    if (!result.success) {
-      throw new Error('Expected push payload');
-    }
-    expect(
-      resolveNotificationDestination(result.data, {
-        shouldOpenToday: true,
-        windowSizeClass: 'compact',
-      }),
-    ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
-  });
-
-  it('알림 목록의 metadata에 stage만 있어도 목록이 깨지지 않고 그 회차를 연다', () => {
-    // Given
-    const [server] = createNotificationListResponseDto().notifications;
-    if (!server) {
-      throw new Error('Expected notification DTO');
-    }
-
-    // When
-    const notification = toNotification({
-      ...server,
-      type: 'TODO_REMINDER',
-      context: { todoId: 42 },
-      metadata: { stage: 'series-paused' },
-    });
-
-    // Then
-    expect(notification.routing).toBeUndefined();
-    expect(
-      resolveNotificationDestination(notification, {
-        shouldOpenToday: true,
-        windowSizeClass: 'compact',
-      }),
-    ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
-  });
-});
-
-describe('pushNotificationPayloadSchema의 navigation·깨진 필드 처리', () => {
-  const BASE = { notificationId: 7, type: 'FOLLOW_NEW', action: { type: 'DEEP_LINK' } };
-
-  it('navigation을 앱 모델로 넘긴다', () => {
-    // When
-    const result = pushNotificationPayloadSchema.safeParse({
-      ...BASE,
-      navigation: { kind: 'FRIEND_REQUESTS' },
-    });
-
-    // Then
-    expect(result).toMatchObject({
-      success: true,
-      data: { navigation: { kind: 'FRIEND_REQUESTS' } },
-    });
-  });
-
-  it('모르는 타입은 그 필드만 버린다', () => {
-    // When
-    const result = pushNotificationPayloadSchema.safeParse({ ...BASE, type: 'NEW_KIND' });
-
-    // Then
-    expect(result).toMatchObject({ success: true, data: { type: null, notificationId: 7 } });
-  });
-
-  it('서버의 새 kind나 틀린 모양의 navigation은 버려 구 필드로 간다', () => {
-    // When
-    const newKind = pushNotificationPayloadSchema.safeParse({
-      ...BASE,
-      navigation: { kind: 'NEW_SCREEN' },
-    });
-    const wrongShape = pushNotificationPayloadSchema.safeParse({
-      ...BASE,
-      navigation: { kind: 'TODO', todoId: 'x' },
-    });
-
-    // Then
-    expect(newKind).toMatchObject({ success: true, data: { type: 'FOLLOW_NEW' } });
-    expect(newKind.success && newKind.data.navigation).toBeUndefined();
-    expect(wrongShape.success && wrongShape.data.navigation).toBeUndefined();
-  });
-
-  it('읽음 ID와 액션이 깨져도 탭은 동작한다', () => {
-    // When
-    const result = pushNotificationPayloadSchema.safeParse({ type: 'FOLLOW_NEW' });
-
-    // Then
-    expect(result).toMatchObject({
-      success: true,
-      data: { notificationId: 0, action: { type: 'DEEP_LINK' } },
-    });
-  });
-
-  it('dispatchId는 앱 모델에 넣지 않는다', () => {
-    // When
-    const result = pushNotificationPayloadSchema.safeParse({ ...BASE, dispatchId: 3 });
-
-    // Then
-    expect(result.success && 'dispatchId' in result.data).toBe(false);
-  });
 });

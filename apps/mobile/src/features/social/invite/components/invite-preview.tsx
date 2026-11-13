@@ -36,10 +36,10 @@ export function InvitePreview() {
     return <InvitePreview.Empty />;
   }
 
-  return <InvitePreview.Contents inviteCode={inviteCode} />;
+  return <InvitePreview.Inviter inviteCode={inviteCode} />;
 }
 
-InvitePreview.Contents = function Contents({ inviteCode }: { inviteCode: InviteCode }) {
+InvitePreview.Inviter = function Inviter({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
   const { data: preview } = useSuspenseQuery(useGetInvitePreviewQueryOptions({ inviteCode }));
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');

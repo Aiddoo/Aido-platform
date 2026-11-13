@@ -13,7 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 
 /**
  * `stamp`: 크게 떠 있다가(1.7배, -20°) 쿵 찍히며 제자리(1배, -6°)로 온다.
@@ -44,7 +44,7 @@ const STAMP_BURST = {
 } as const;
 
 /** 동작 줄이기면 찍힌 모습에서 시작해 움직이지 않는다 */
-export function getStampPressStartProgress(isReducedMotion: boolean): number {
+function getStampPressStartProgress(isReducedMotion: boolean): number {
   return isReducedMotion ? 1 : 0;
 }
 

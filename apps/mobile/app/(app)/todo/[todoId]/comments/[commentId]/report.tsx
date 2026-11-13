@@ -1,13 +1,13 @@
 import { CommentReportBottomSheet } from '@src/features/engagement/comment/components/comment-report-bottom-sheet';
 import { commentReportParamsSchema } from '@src/features/social/moderation/schemas/moderation-params.schema';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { SheetRouteScreen } from '@src/shared/ui';
-import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function CommentReportSheetRoute() {
-  const params = commentReportParamsSchema.safeParse(useLocalSearchParams());
+  const route = useRouteParamsOrRedirect(commentReportParamsSchema, { fallbackHref: '/feed' });
 
-  if (!params.success) {
-    return <Redirect href="/feed" />;
+  if (route.redirect != null) {
+    return route.redirect;
   }
 
   return (

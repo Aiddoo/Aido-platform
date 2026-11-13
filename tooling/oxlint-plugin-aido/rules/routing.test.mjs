@@ -8,27 +8,40 @@ import rules from './routing.mjs';
 
 const tester = createRuleTester();
 
-tester.run('sheet-route-params', rules['sheet-route-params'], {
+tester.run('route-params-guard', rules['route-params-guard'], {
   valid: [
-    `const parsed = schema.safeParse(params);
-if (!parsed.success) { return <Redirect href="/" />; }
-return <SheetRouteScreen />;`,
-    `const parsed = schema.safeParse(params);
-const id = parsed.data;`,
+    `const route = useRouteParamsOrRedirect(schema, { fallbackHref: '/feed' });
+if (route.redirect != null) { return route.redirect; }
+return <Screen />;`,
+    'const [{ todoId }] = useRouteParams(schema);',
   ],
   invalid: [
     {
-      code: `const parsed = schema.safeParse(params);
-const id = parsed.data.todoId;
-return <SheetRouteScreen />;`,
+      code: `const route = useRouteParamsOrRedirect(schema, { fallbackHref: '/feed' });
+const id = route.params.todoId;`,
       errors: 1,
     },
+    { code: 'const parsed = schema.safeParse(useLocalSearchParams());', errors: 1 },
   ],
 });
 
 tester.run('no-destructured-search-params', rules['no-destructured-search-params'], {
   valid: ['const params = useLocalSearchParams();'],
   invalid: [{ code: 'const { todoId } = useLocalSearchParams();', errors: 1 }],
+});
+
+tester.run('route-setter-location', rules['route-setter-location'], {
+  valid: [
+    'const [{ todoId }] = useRouteParams(schema);',
+    'const [params] = useRouteParams(schema);',
+    'const [view, setView] = useView(key, schema);',
+    'const [sort, setSort] = useTodoCommentSort();',
+  ],
+  invalid: [
+    { code: 'const [{ startVoiceNote }, setParams] = useRouteParams(schema);', errors: 1 },
+    { code: 'const [, update] = useRouteParams(schema);', errors: 1 },
+    { code: 'const setParams = useRouteParams(schema)[1];', errors: 1 },
+  ],
 });
 
 tester.run('no-router-push', rules['no-router-push'], {
@@ -79,8 +92,24 @@ tester.run('query-key-location', rules['query-key-location'], {
     'useQuery({ queryKey: todoQueryKeys.detail(todoId) });',
     "const keys = { queryKey: ['todos'] as const };",
     'const { queryKey: [scope] } = query;',
+    {
+      code: "queryOptions<Memo>({ queryKey: [...MEMO_QUERY_KEYS.all, 'detail', { memoId }] });",
+      filename: '/repo/apps/mobile/src/features/notes/memo/queries/memo-query-keys.ts',
+    },
   ],
-  invalid: [{ code: "useQuery({ queryKey: ['todos', todoId] });", errors: 1 }],
+  invalid: [
+    { code: "useQuery({ queryKey: ['todos', todoId] });", errors: 1 },
+    {
+      code: "queryOptions<Memo>({ queryKey: [...MEMO_QUERY_KEYS.all, 'detail', { memoId }] });",
+      filename: '/repo/apps/mobile/src/features/notes/memo/constants/memo-query-keys.ts',
+      errors: 1,
+    },
+    {
+      code: "useQuery({ queryKey: ['memo', 'list'] });",
+      filename: '/repo/apps/mobile/src/features/notes/memo/queries/memo.queries.ts',
+      errors: 1,
+    },
+  ],
 });
 
 const GLOBAL_FEEDBACK =

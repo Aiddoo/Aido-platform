@@ -1,14 +1,13 @@
-import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import type { RequestMetadata } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { passwordAlreadySet, userNotFound } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -54,7 +53,7 @@ export class SetPasswordUseCase {
 
     const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
+      throw userNotFound(input.userId);
     }
     if (user.isDeleted) {
       throw accountDeleted(user.id.value);
@@ -65,7 +64,7 @@ export class SetPasswordUseCase {
       "CREDENTIAL",
     );
     if (existingAccount != null) {
-      throw new ApplicationException(ErrorCode.USER_0614, { userId: input.userId });
+      throw passwordAlreadySet(input.userId);
     }
 
     const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);
@@ -73,7 +72,7 @@ export class SetPasswordUseCase {
     await this.#dependencies.unitOfWork.run(async () => {
       const lockedUser = await this.#dependencies.userRepository.findByIdForUpdate(userId);
       if (lockedUser == null) {
-        throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
+        throw userNotFound(input.userId);
       }
       if (lockedUser.isDeleted) {
         throw accountDeleted(lockedUser.id.value);
@@ -83,7 +82,7 @@ export class SetPasswordUseCase {
         "CREDENTIAL",
       );
       if (currentAccount != null) {
-        throw new ApplicationException(ErrorCode.USER_0614, { userId: input.userId });
+        throw passwordAlreadySet(input.userId);
       }
       await this.#dependencies.consumeVerificationCode.execute({
         userId: input.userId,

@@ -27,8 +27,8 @@ export const textAreaContainerVariants = tv({
   base: '',
   variants: {
     variant: {
-      filled: 'min-h-[120px] bg-gray-1 rounded-xl border border-gray-2 px-4 py-3',
-      line: 'min-h-[120px] bg-transparent border-b border-gray-3 rounded-none px-4 py-3',
+      filled: 'min-h-[120px] rounded-xl border border-gray-2 bg-gray-1 px-4 py-3',
+      line: 'min-h-[120px] rounded-none border-b border-gray-3 bg-transparent px-4 py-3',
       plain: 'min-h-14 bg-transparent px-0 py-1',
       bare: 'flex-1 bg-transparent p-0',
     },

@@ -40,7 +40,6 @@ describe('toBlockedUsersPage', () => {
         },
       ],
       totalCount: 1,
-      hasMore: false,
       nextCursor: null,
     });
   });

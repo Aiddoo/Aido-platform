@@ -1,43 +1,34 @@
-import { toDateKey, toInstant } from '@src/shared/date/instant';
+import { toInstant } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
+import { isPlainObject } from 'es-toolkit';
 import { z } from 'zod';
 
-import { plannedMemoSchema, plannedTodoSchema } from '../domains/voice-plan.model';
+import {
+  type PlanReviewDraft,
+  planReviewDraftSchema,
+  selectablePlannedTodoSchema,
+} from '../domains/voice-plan.model';
 
-const selectedField = { isSelected: z.boolean() };
+export type PlanTodoFormValues = z.infer<typeof selectablePlannedTodoSchema>;
 
-const planTodoFormSchema = plannedTodoSchema.safeExtend(selectedField);
-export type PlanTodoFormValues = z.infer<typeof planTodoFormSchema>;
-
-const planActionFormSchema = z.discriminatedUnion('type', [
-  planTodoFormSchema,
-  plannedMemoSchema.extend(selectedField),
-]);
-
-export const planReviewFormSchema = z.object({ actions: z.array(planActionFormSchema) });
+export const planReviewFormSchema = planReviewDraftSchema.shape.form;
 
 export type PlanReviewFormValues = z.infer<typeof planReviewFormSchema>;
 
-export const planReviewDraftSchema = z.object({
-  omittedTodoCount: z.int().nonnegative(),
-  form: planReviewFormSchema,
-});
-export type PlanReviewDraft = z.infer<typeof planReviewDraftSchema>;
+const planActionFormSchema = planReviewFormSchema.shape.actions.element;
 
-export const planTodoEditFormSchema = z.object({ todo: planTodoFormSchema });
+export const planTodoEditFormSchema = z.object({ todo: selectablePlannedTodoSchema });
 export type PlanTodoEditFormValues = z.infer<typeof planTodoEditFormSchema>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value != null;
-}
-
-// 저장 시간대가 없는 옛 ISO 초안은 지금 기기 시간대로 읽는다. 자정 반올림 추측은 날짜 선택기 값에서 더 자주 틀린다
+// 저장 시간대가 없는 옛 ISO 초안은 지금 기기 시간대로 읽는다. 자정 반올림 추측은 날짜 선택기 값에서 더 자주 틀린다.
+// 초안 보관 기간(30일)이 지나면 옮기는 코드와 함께 1.16.0에서 지운다(compatibility.md)
 export function restoreDraftDateKey(value: unknown, timeZone: string) {
   const instant = z.iso.datetime().safeParse(value);
   return instant.success ? toDateKey(toInstant(instant.data), timeZone) : value;
 }
 
 function restoreActionDates(action: unknown, timeZone: string) {
-  if (!isRecord(action) || action.type !== 'create-todo') {
+  if (!isPlainObject(action) || action.type !== 'create-todo') {
     return action;
   }
   return {

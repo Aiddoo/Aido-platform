@@ -1,4 +1,11 @@
-import { getKeyName, getTypeArguments, isFunction, topLevelDeclarations, unwrap } from '../ast.mjs';
+import {
+  getKeyName,
+  getMemberNames,
+  getTypeArguments,
+  isFunction,
+  topLevelDeclarations,
+  unwrap,
+} from '../ast.mjs';
 
 const POLICY_NAME = /Policy$/u;
 const MODEL_SCHEMA_NAME = /^[a-z][A-Za-z]*Schema$/u;
@@ -119,7 +126,7 @@ function describeFirstParameter(declaration, aliases) {
   });
 }
 
-// Policy는 모듈 함수를 같은 이름으로 모으기만 한다. 멤버는 모델 전체를 첫 인자로 받는다(.claude/architecture.md#모델과-policy)
+// Policy는 모듈 함수를 같은 이름으로 모으기만 한다. 멤버는 모델 전체를 첫 인자로 받는다(apps/mobile/docs/architecture/model.md#모델과-policy)
 const policyFacade = {
   meta: { type: 'suggestion' },
   create(context) {
@@ -240,8 +247,42 @@ const noThisOutsideClass = {
   },
 };
 
+const CLOCK_CALLS = new Set(['Date.now', 'performance.now']);
+
+// 모델·mapper는 시각을 인자(now)로 받는다. 안에서 시계를 읽으면 같은 입력이 다른 결과를 내 테스트와 캐시가 흔들린다
+const noClockRead = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    const message =
+      '모델·mapper는 시계를 읽지 않습니다. 지금·오늘은 인자(now: Instant, today: DateKey)로 받습니다.';
+    return {
+      CallExpression(node) {
+        const names = getMemberNames(node.callee);
+        if (names != null && CLOCK_CALLS.has(names.join('.'))) {
+          context.report({ node, message });
+        }
+      },
+      NewExpression(node) {
+        if (
+          node.callee.type === 'Identifier' &&
+          node.callee.name === 'Date' &&
+          node.arguments.length === 0
+        ) {
+          context.report({ node, message });
+        }
+      },
+      MemberExpression(node) {
+        if (getMemberNames(node)?.join('.') === 'Temporal.Now') {
+          context.report({ node, message });
+        }
+      },
+    };
+  },
+};
+
 export default {
   'policy-facade': policyFacade,
   'model-exports': modelExports,
   'no-this-outside-class': noThisOutsideClass,
+  'no-clock-read': noClockRead,
 };

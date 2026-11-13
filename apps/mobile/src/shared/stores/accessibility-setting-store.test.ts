@@ -48,18 +48,14 @@ describe('createAccessibilitySettingStore', () => {
 
   it('첫 읽기보다 바뀜 이벤트가 먼저 오면 늦게 온 읽기 값으로 되돌리지 않는다', async () => {
     // Given
-    let resolveRead: (isEnabled: boolean) => void = () => undefined;
-    const { source, emit } = createSource(
-      new Promise((resolve) => {
-        resolveRead = resolve;
-      }),
-    );
+    const read = Promise.withResolvers<boolean>();
+    const { source, emit } = createSource(read.promise);
     const store = createAccessibilitySettingStore(source);
     store.subscribe(() => undefined);
 
     // When
     emit(true);
-    resolveRead(false);
+    read.resolve(false);
     await Promise.resolve();
 
     // Then

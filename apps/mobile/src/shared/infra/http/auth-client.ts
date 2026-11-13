@@ -1,5 +1,6 @@
+import { emitSessionConfirmed } from '@src/core/events/session-confirmed';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { Logger } from '@src/core/ports/logger';
 import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
@@ -11,15 +12,15 @@ import { createAppHeaders, setPerRequestHeaders } from './request-headers';
 import { API_REQUEST_TIMEOUT_MS } from './request-timeout';
 import { createTokenRefreshHook, type EndSession, markRequestEpoch } from './token-refresh-hook';
 
-interface AuthClientDeps {
-  appVersion?: string;
-  appBuild?: string;
+interface AuthClientPorts {
+  appVersion: string | null;
+  appBuild: string | null;
   tokenStore: TokenStore;
   /** 앱 전체 단일 인스턴스. 갈라지면 single-flight mutex가 분리돼 토큰 패밀리를 소모한다. */
   refresh: TokenRefresher;
   endSession: EndSession;
   sessionEpoch: SessionEpoch;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
   errorReporter: Pick<ErrorReporter, 'addBreadcrumb' | 'captureMessage'>;
 }
 
@@ -33,7 +34,7 @@ export function createAuthClient({
   sessionEpoch,
   logger,
   errorReporter,
-}: AuthClientDeps): KyInstance {
+}: AuthClientPorts): KyInstance {
   return ky.create({
     prefix: ENV.API_URL,
     timeout: API_REQUEST_TIMEOUT_MS,
@@ -60,6 +61,13 @@ export function createAuthClient({
       ],
       afterResponse: [
         createApiFailureBreadcrumbHook(errorReporter),
+        // 인증 요청 성공은 결과를 모르던 탈퇴가 일어나지 않았다는 증거다(SessionCleanupService)
+        ({ response }) => {
+          if (response.ok) {
+            emitSessionConfirmed();
+          }
+          return response;
+        },
         createTokenRefreshHook({
           tokenStore,
           refresh,

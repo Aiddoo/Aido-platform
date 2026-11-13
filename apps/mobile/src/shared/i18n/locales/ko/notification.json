@@ -1,7 +1,7 @@
 {
   "timezoneChanged": {
     "title": "할 일 알림 시간을 지금 시간대에 맞췄어요",
-    "description": "오전 10시 할 일은 여기서도 오전 10시예요"
+    "description": "{{time}} 할 일은 여기서도 {{time}}예요"
   },
   "actions": {
     "marketingOptOut": "광고성 푸시 그만 받기"
@@ -14,11 +14,10 @@
     "later": "나중에"
   },
   "consentResult": {
-    "marketingAgreed": "{{date}} 아이두 마케팅 정보 수신에 동의했어요",
-    "marketingPushAgreed": "{{date}} 아이두 광고성 앱 푸시 수신에 동의했어요",
-    "marketingWithdrawn": "{{date}} 아이두 마케팅 정보 수신 동의를 철회했어요",
-    "marketingPushWithdrawn": "{{date}} 아이두 광고성 앱 푸시 수신 동의를 철회했어요",
-    "marketingPushOptedOut": "광고성 앱 푸시를 더 보내지 않을게요"
+    "marketingAgreed": "{{date}}에 아이두 마케팅 정보 수신에 동의했어요",
+    "marketingPushAgreed": "{{date}}에 아이두 광고성 앱 푸시 수신에 동의했어요",
+    "marketingWithdrawn": "{{date}}에 아이두 마케팅 정보 수신 동의를 철회했어요",
+    "marketingPushWithdrawn": "{{date}}에 아이두 광고성 앱 푸시 수신 동의를 철회했어요"
   },
   "titles": {
     "notifications": "알림",
@@ -73,10 +72,10 @@
     "marketingPushDeviceOff": "기기 알림이 꺼져 있어 지금은 받을 수 없어요",
     "weatherLabel": "날씨 알림",
     "weatherDescription": "아침엔 오늘, 저녁엔 내일 날씨를 알려줘요",
-    "weatherMorningLabel": "오전 날씨 알림",
-    "weatherMorningDescription": "설정한 오전 시간에 오늘의 날씨를 알려줘요",
-    "weatherEveningLabel": "오후 날씨 알림",
-    "weatherEveningDescription": "설정한 오후 시간에 내일의 날씨를 알려줘요",
+    "weatherMorningLabel": "아침 날씨 알림",
+    "weatherMorningDescription": "설정한 시간에 오늘의 날씨를 알려줘요",
+    "weatherEveningLabel": "저녁 날씨 알림",
+    "weatherEveningDescription": "설정한 시간에 내일의 날씨를 알려줘요",
     "reminderLabel": "리마인드 알림",
     "reminderMorningLabel": "오전 리마인드",
     "reminderMorningDescription": "오전 시간대(00:00~11:59)에 오늘의 할 일을 알려줘요",

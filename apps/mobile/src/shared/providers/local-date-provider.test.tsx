@@ -4,7 +4,8 @@ import {
   createAppLifecycleGatewayStub,
   createErrorReporterStub,
   createTestDi,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -17,21 +18,17 @@ interface FakeDeviceCalendar {
 const PROCESS_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 describe('앱 로컬 날짜 Provider', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   async function setup(device: FakeDeviceCalendar = { timeZone: PROCESS_TIME_ZONE }) {
     const analytics = createAnalyticsStub();
     const errorReporter = createErrorReporterStub();
     const appLifecycle = createAppLifecycleGatewayStub();
 
+    const di = createTestDi({ ports: { analytics, appLifecycle, errorReporter } });
+    // 시험 대상인 Provider에 기기 달력을 넣어야 해 직접 감싼다
     const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={createTestDi({ analytics, appLifecycle, errorReporter })}>
+      <StaticDIProvider container={di}>
         <LocalDateProvider useDeviceCalendar={() => ({ timeZone: device.timeZone })}>
           {children}
         </LocalDateProvider>

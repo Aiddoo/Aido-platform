@@ -7,7 +7,7 @@ import { type ReactNode, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { AspectRatio, type AspectRatioProps } from '../aspect-ratio';
+import { AspectRatio, type AspectRatioProps } from '../aspect-ratio/aspect-ratio';
 
 type MediaStatus = 'loading' | 'loaded' | 'failed';
 
@@ -50,7 +50,7 @@ export function FeatureMedia({
         contentFit={contentFit}
         cachePolicy="memory-disk"
         recyclingKey={recyclingKey}
-        transition={isReducedMotion || isBundled ? 0 : ANIMATION.duration.normal}
+        transition={isReducedMotion || isBundled ? 0 : ANIMATION.durationMs.normal}
         style={StyleSheet.absoluteFill}
         onLoadStart={() => {
           if (!isBundled) {

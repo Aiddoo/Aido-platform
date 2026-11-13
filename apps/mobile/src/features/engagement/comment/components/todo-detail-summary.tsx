@@ -1,12 +1,7 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
-import {
-  TodoCheckbox,
-  TodoLabel,
-  TodoProgress,
-  TodoRow,
-} from '@src/features/planning/todo/components/todo-row';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
@@ -16,18 +11,19 @@ import {
   useGetTodoDetailsQueryOptions,
   useGetTodosByDateQueryOptions,
 } from '@src/features/planning/todo/queries/todo.queries';
-import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
-import { formatTodoTime } from '@src/features/planning/todo/utils/format-todo-time';
-import { ThanksSummaryRow } from '@src/features/social/nudge/components/nudge-interactions/thanks-summary-row';
+import { formatTodoPeriod } from '@src/features/planning/todo/utils/todo-period.view-model';
+import { formatRepeatSummary } from '@src/features/planning/todo/utils/todo-repeat-summary.view-model';
+import { formatTodoTime } from '@src/features/planning/todo/utils/todo-time.view-model';
+import { ThanksSummaryRow } from '@src/features/social/nudge/components/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
 import { TodoThanksPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
-import { formatDateKeyRange, formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
   EyeIcon,
@@ -39,11 +35,11 @@ import {
   TodoIllustration,
   VStack,
 } from '@src/shared/ui';
+import { formatCompactCount } from '@src/shared/utils/number-format';
 import { useMutation, useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense } from 'react';
-import { match, P } from 'ts-pattern';
 
 /** 제목(t3) 한 줄 높이. 여러 줄 제목에서도 체크박스를 첫 줄 가운데에 맞춘다 */
 const TITLE_LINE_HEIGHT = 28;
@@ -57,7 +53,7 @@ export function TodoDetailSummary() {
 
       <TodoDetailSummary.Task />
 
-      <VStack gap={10} className="ms-9">
+      <VStack className="ms-9 gap-2.5">
         <TodoDetailSummary.Schedule />
 
         <TodoDetailSummary.SubTodos />
@@ -101,7 +97,7 @@ TodoDetailSummary.Task = function Task() {
   return (
     <HStack gap={12} align="start">
       <Box className="justify-center" style={{ height: fontScaledSize(TITLE_LINE_HEIGHT) }}>
-        <TodoCheckbox
+        <TodoRow.Checkbox
           testID="todo-detail-checkbox"
           accessibilityLabel={todo.title}
           className="size-6"
@@ -145,11 +141,7 @@ TodoDetailSummary.Schedule = function Schedule() {
   const { todo } = detail;
   const timeLabel = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const isRecurring = TodoPolicy.isRecurringTodo(todo);
-  const dateLabel = match({ endDate: todo.endDate, isMultiDay: TodoPolicy.isMultiDayTodo(todo) })
-    .with({ isMultiDay: true, endDate: P.string }, ({ endDate }) =>
-      formatDateKeyRange(todo.startDate, endDate, todayKey, dateFormatContext),
-    )
-    .otherwise(() => formatYearAwareDateKeyLabel(todo.startDate, todayKey, dateFormatContext));
+  const dateLabel = formatTodoPeriod(todo, todayKey, dateFormatContext);
 
   return (
     <VStack gap={6}>
@@ -199,13 +191,13 @@ TodoDetailSummary.SubTodos = function SubTodos() {
 
   return (
     <VStack gap={4}>
-      <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
+      <TodoRow.Progress value={subTodoStats.completed} total={subTodoStats.total} />
       <VStack>
         {todo.subTodos.map((subTodo) => (
           <TodoRow
             key={subTodo.id}
             left={
-              <TodoCheckbox
+              <TodoRow.Checkbox
                 testID={`todo-detail-sub-todo-checkbox-${subTodo.id}`}
                 accessibilityLabel={subTodo.title}
                 isSelected={subTodo.completed}
@@ -223,7 +215,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
                 }
               />
             }
-            top={<TodoLabel isCompleted={subTodo.completed}>{subTodo.title}</TodoLabel>}
+            top={<TodoRow.Label isCompleted={subTodo.completed}>{subTodo.title}</TodoRow.Label>}
           />
         ))}
       </VStack>
@@ -233,6 +225,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
 
 TodoDetailSummary.Metrics = function Metrics() {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const todayKey = useTodayKey();
@@ -241,7 +234,13 @@ TodoDetailSummary.Metrics = function Metrics() {
   return (
     <HStack gap={16} align="center" wrap="wrap">
       <Metric
-        icon={<EyeIcon width={16} height={16} colorClassName="text-gray-5" />}
+        icon={
+          <EyeIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-5"
+          />
+        }
         count={detail.metrics.viewCount}
       />
       {canNudge && (
@@ -282,22 +281,21 @@ TodoDetailSummary.Thanks = function Thanks() {
   );
 };
 
-/** 자기 할 일이 대부분이라 작성자 줄 자리는 잡지 않는다. 친구 할 일은 그 한 줄만 받은 뒤 들어온다 */
+/** 받아야 있는지 아는 줄(친구 할 일의 작성자, 시간·반복)은 자리를 잡지 않는다. 그 줄이 있는 할 일만 받은 뒤 한 줄 늘어난다 */
 TodoDetailSummary.Loading = function Loading() {
   const fontScaledSize = useFontScaledSize();
 
   return (
     <VStack gap={12} testID="todo-detail-card-loading">
-      <HStack gap={12} align="start">
+      <HStack className="gap-3" align="start">
         <Box className="justify-center" style={{ height: fontScaledSize(TITLE_LINE_HEIGHT) }}>
           <Skeleton className="size-6 rounded-md" />
         </Box>
         <TextSkeleton size="t3" className="w-3/5" />
       </HStack>
 
-      <VStack gap={10} className="ms-9">
+      <VStack className="ms-9 gap-2.5">
         <VStack gap={6}>
-          <TextSkeleton size="b4" className="w-32" />
           <HStack gap={8} align="center">
             <CategoryHeaderPill.Loading />
             <TextSkeleton size="e1" className="w-14" />
@@ -359,11 +357,13 @@ function OwnRepeatLabel() {
 }
 
 function Metric({ icon, count }: { icon: ReactNode; count: number }) {
+  const { resolvedLanguage } = useLanguage();
+
   return (
     <HStack gap={4} align="center">
       {icon}
       <Text size="e1" shade={5}>
-        {count}
+        {formatCompactCount(count, resolvedLanguage)}
       </Text>
     </HStack>
   );

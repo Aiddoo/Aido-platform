@@ -8,6 +8,10 @@ import {
 } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
 import { cursorPageSchema } from "../../../common/pagination.js";
+import {
+  TODAY_SUMMARY_TOP_TODOS_MAX,
+  TODO_SERIES_LIMITS,
+} from "../../../vocabulary/todo.constants.js";
 import { todoCategorySummarySchema } from "../../todo-category/v1/todo-category.response.js";
 import { todoSeriesResponseSchema } from "./todo-series.response.js";
 import { todoRepeatSchema, todoVisibilitySchema } from "./todo.common.js";
@@ -336,7 +340,7 @@ export const todoSummaryResponseSchema = z
     currentStreak: z.number().int().min(0).describe("현재 연속 달성 일수 (0 이상)"),
     topTodos: z
       .array(todoSummaryTodoSchema)
-      .max(10)
+      .max(TODAY_SUMMARY_TOP_TODOS_MAX)
       .describe(
         "오늘 할 일 상위 목록 (미완료 우선, 이후 카테고리/정렬 순 — 최대 10개, 홈 위젯 표시용)",
       ),
@@ -357,3 +361,27 @@ export const todoSummaryResponseSchema = z
   });
 
 export type TodoSummaryResponse = z.infer<typeof todoSummaryResponseSchema>;
+
+export const todoOverviewResponseSchema = z
+  .object({
+    hasTodo: z
+      .boolean()
+      .describe("할 일이 하나라도 있는지 (날짜·완료 여부와 무관, 지운 할 일은 세지 않음)"),
+    hasCompletedTodo: z
+      .boolean()
+      .describe("완료한 할 일이 하나라도 있는지 (날짜와 무관, 완료를 풀면 세지 않음)"),
+    hasActiveRepeat: z
+      .boolean()
+      .describe(
+        `진행 중인 반복이 하나라도 있는지. 앞으로 만들 회차가 남은 반복 규칙을 센다(진행 중 반복 상한과 같은 기준). 그만뒀거나 남은 회차를 이미 모두 만든 규칙(종료일·횟수가 미리 만드는 ${TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS}일 안에서 끝남)은 세지 않고, 오래 앱을 열지 않아 멈춘(휴면) 규칙은 끝난 것이 아니라 센다`,
+      ),
+  })
+  .meta({
+    example: {
+      hasTodo: true,
+      hasCompletedTodo: false,
+      hasActiveRepeat: true,
+    },
+  });
+
+export type TodoOverviewResponse = z.infer<typeof todoOverviewResponseSchema>;

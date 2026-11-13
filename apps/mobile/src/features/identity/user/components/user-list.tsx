@@ -9,7 +9,7 @@ import {
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, type ScrollViewProps } from 'react-native';
 
 import { UserAvatar } from './user-avatar';
 
@@ -48,6 +48,8 @@ interface UserListLoadingProps {
   hasSubtitle?: boolean;
   right?: ReactNode;
   ListHeaderComponent?: ReactNode;
+  /** 헤더 inset·키보드 inset처럼 화면이 스크롤 부모에 요구하는 값 */
+  scrollProps?: ScrollViewProps;
 }
 
 function Loading({
@@ -55,9 +57,10 @@ function Loading({
   hasSubtitle = false,
   right,
   ListHeaderComponent,
+  scrollProps,
 }: UserListLoadingProps) {
   return (
-    <ScrollView className="flex-1" contentContainerStyle={USER_LIST_CONTENT_STYLE}>
+    <ScrollView className="flex-1" contentContainerStyle={USER_LIST_CONTENT_STYLE} {...scrollProps}>
       {ListHeaderComponent}
       {range(rows).map((index) => (
         <ListRow

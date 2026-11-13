@@ -1,5 +1,5 @@
-import { RELEASES } from '@src/features/app-config/whats-new/constants/releases';
-import { getNowInstant } from '@src/shared/date/instant';
+import { RELEASES } from '@src/features/app-config/whats-new/constants/releases.constants';
+import { getNowInstant } from '@src/shared/date/clock';
 import { useEffect } from 'react';
 
 import type { DIContainer } from '../providers/di-context';
@@ -11,7 +11,7 @@ type StartupCleanupTargets = Pick<
   | 'draftService'
   | 'syncStorage'
   | 'whatsNewRepository'
-  | 'coachmarkService'
+  | 'coachmarkRepository'
   | 'activationProgressRepository'
   | 'logger'
 >;
@@ -21,7 +21,7 @@ export function useStartupCleanup({
   draftService,
   syncStorage,
   whatsNewRepository,
-  coachmarkService,
+  coachmarkRepository,
   activationProgressRepository,
   logger,
 }: StartupCleanupTargets): void {
@@ -35,7 +35,9 @@ export function useStartupCleanup({
             campaignIds: RELEASES.flatMap((release) => release.campaignId ?? []),
             now: getNowInstant(),
           }),
-        coachmark: () => coachmarkService.removeRetiredKeys(),
+        // 코치마크를 읽는 화면은 비동기 인증 판정 뒤에 붙어, 첫 마운트의 이 effect가 그보다 먼저 옮긴다
+        'coachmark-migration': () => coachmarkRepository.migrateLegacyKeys(),
+        coachmark: () => coachmarkRepository.removeRetiredKeys(),
         activation: () => activationProgressRepository.removeRetiredKeys(),
       },
       logger,
@@ -44,7 +46,7 @@ export function useStartupCleanup({
     draftService,
     syncStorage,
     whatsNewRepository,
-    coachmarkService,
+    coachmarkRepository,
     activationProgressRepository,
     logger,
   ]);

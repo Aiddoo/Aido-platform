@@ -1,5 +1,6 @@
 import type { WeatherCondition, WeatherPrecipitationType } from '@aido/api/vocabulary';
-import { type Instant, toDateKey } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
+import { toDateKey } from '@src/shared/date/zoned';
 import { countBy, maxBy, minBy, takeWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 

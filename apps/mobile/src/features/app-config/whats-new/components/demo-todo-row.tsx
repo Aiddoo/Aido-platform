@@ -1,12 +1,6 @@
+import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import {
-  TodoCheckbox,
-  TodoLabel,
-  TodoProgress,
-  TodoRow,
-  TodoScheduleLine,
-  TodoTitleLine,
-} from '@src/features/planning/todo/components/todo-row';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import {
   isPrivateVisibility,
   isRecurring,
@@ -14,8 +8,8 @@ import {
 } from '@src/features/planning/todo/domains/todo.model';
 import type { PlanTodoFormValues } from '@src/features/voice/schemas/plan-review-form.schema';
 import { getPlanTodoSubtitle } from '@src/features/voice/utils/plan-todo-subtitle.view-model';
-import { formatTimeOfDay } from '@src/shared/date/date-format';
-import { getHour, getMinute } from '@src/shared/date/time-of-day';
+import { formatTimeOfDay } from '@src/shared/date/format/date-format';
+import { toTimeOfDay } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -63,7 +57,7 @@ export function DemoTodoRow({
   const fontScaledSize = useFontScaledSize();
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
   const { data: preference } = useQuery(useGetPreferenceQueryOptions());
-  const timeFormat = preference?.timeFormat ?? 'TWELVE_HOUR';
+  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
   const isPrivate = isPrivateVisibility(todo.visibility);
 
   return match(surface)
@@ -73,7 +67,7 @@ export function DemoTodoRow({
 
       return (
         <HStack gap={SELECT_GAP} align="center">
-          <TodoCheckbox
+          <TodoRow.Checkbox
             accessibilityLabel={t('plan.select', { title: todo.title })}
             hitSlop={SELECT_GAP}
             isSelected={isSelected}
@@ -81,15 +75,15 @@ export function DemoTodoRow({
           />
           <SurfaceCard surface="sheet" className={PLAN_CARD_CLASS_NAME}>
             <VStack flex={1} gap={2}>
-              <TodoTitleLine
+              <TodoRow.TitleLine
                 label={
-                  <TodoLabel
+                  <TodoRow.Label
                     isCompleted={false}
                     lineBreakStrategyIOS="hangul-word"
                     className={cn('flex-1', unselectedClassName)}
                   >
                     {todo.title}
-                  </TodoLabel>
+                  </TodoRow.Label>
                 }
                 isPrivate={isPrivate}
               />
@@ -127,17 +121,13 @@ export function DemoTodoRow({
       const timeLabel =
         todo.scheduledTime == null
           ? null
-          : formatTimeOfDay(
-              { hour: getHour(todo.scheduledTime), minute: getMinute(todo.scheduledTime) },
-              timeFormat,
-              dateFormatContext,
-            );
+          : formatTimeOfDay(toTimeOfDay(todo.scheduledTime), timeFormat, dateFormatContext);
 
       return (
         <TodoRow
           {...rowProps}
           left={
-            <TodoCheckbox
+            <TodoRow.Checkbox
               accessibilityLabel={todo.title}
               hitSlop={SELECT_GAP}
               isSelected={isSelected}
@@ -145,22 +135,24 @@ export function DemoTodoRow({
             />
           }
           top={
-            <TodoTitleLine
+            <TodoRow.TitleLine
               label={
-                <TodoLabel isCompleted={isSelected} className="flex-1">
+                <TodoRow.Label isCompleted={isSelected} className="flex-1">
                   {todo.title}
-                </TodoLabel>
+                </TodoRow.Label>
               }
               isPrivate={isPrivate}
             />
           }
           middle={
             timeLabel != null || isRecurring(todo.recurrenceGroupId) ? (
-              <TodoScheduleLine todo={todo} timeLabel={timeLabel} />
+              <TodoRow.ScheduleLine todo={todo} timeLabel={timeLabel} />
             ) : undefined
           }
           bottom={
-            todo.items.length > 0 ? <TodoProgress value={0} total={todo.items.length} /> : undefined
+            todo.items.length > 0 ? (
+              <TodoRow.Progress value={0} total={todo.items.length} />
+            ) : undefined
           }
         />
       );

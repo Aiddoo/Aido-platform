@@ -1,19 +1,19 @@
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import { entitlementSnapshotSchema } from '@src/features/billing/subscription/domains/entitlement.model';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { preferenceSchema } from '@src/features/identity/preference/domains/preference.model';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { userSchema } from '@src/features/identity/user/domains/user.model';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { todoCategoriesResultSchema } from '@src/features/planning/category/domains/todo-category.model';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { dailyCompletionsResultSchema } from '@src/features/planning/todo/domains/daily-completion.model';
 import { todoListResultSchema } from '@src/features/planning/todo/domains/todo.model';
-import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-query-keys';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { friendUserPagesSchema } from '@src/features/social/friend/domains/friend.model';
-import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
+import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';
 import { locationReadingSchema } from '@src/features/weather/domains/weather-location.model';
 import { weatherReportSchema } from '@src/features/weather/domains/weather-report.model';
+import { WEATHER_QUERY_KEYS } from '@src/features/weather/queries/weather-query-keys';
 
 import type { PersistedQuerySchema } from './query-cache-persistence';
 

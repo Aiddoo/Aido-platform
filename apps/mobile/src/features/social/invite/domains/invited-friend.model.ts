@@ -5,15 +5,14 @@ import {
   REDEMPTION_STATUS_UNKNOWN,
 } from '@aido/api/vocabulary';
 import { instantSchema, toEpochMs } from '@src/shared/date/instant';
+import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 // 모르는 새 상태·사유는 응답을 읽을 때 UNKNOWN·null로 바꿔 둔다
-export const invitedFriendSchema = z.object({
+export const invitedFriendSchema = userSummarySchema.omit({ id: true }).extend({
   userId: z.string(),
-  name: z.string().nullable(),
-  userTag: z.string(),
-  profileImage: z.string().nullable(),
   status: z.union([z.enum(REDEMPTION_STATUS), z.literal(REDEMPTION_STATUS_UNKNOWN)]),
   activeDayCount: z.int().nonnegative(),
   joinedAt: instantSchema,
@@ -21,6 +20,11 @@ export const invitedFriendSchema = z.object({
   rejectionReason: z.enum(REDEMPTION_REJECTION_REASON).nullable(),
 });
 export type InvitedFriend = z.infer<typeof invitedFriendSchema>;
+
+const invitedFriendPageSchema = cursorPageSchema(invitedFriendSchema, z.string()).extend({
+  totalCount: z.number(),
+});
+export type InvitedFriendPage = z.infer<typeof invitedFriendPageSchema>;
 
 function calculateActiveDaysLeft(activeDays: number, requiredDays: number) {
   return Math.max(requiredDays - activeDays, 0);

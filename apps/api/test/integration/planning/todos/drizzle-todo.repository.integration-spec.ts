@@ -3,9 +3,11 @@ import { omit } from "es-toolkit";
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
+import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { todoCategory, user } from "#api/platform/database/schema/index";
+import { describeTodoReadRepositoryContract } from "#test/contracts/planning/todo-read-repository.contract";
 import { describeTodoRepositoryContract } from "#test/contracts/planning/todo-repository.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
@@ -53,10 +55,13 @@ describe("DrizzleTodoRepository (실제 PostgreSQL)", () => {
     return {
       todoRepository: new DrizzleTodoRepository(txHost, new DateClock()),
       seriesRepository: new DrizzleTodoSeriesRepository(txHost, new DateClock()),
+      todoReadRepository: new DrizzleTodoReadRepository(txHost),
     };
   }
 
   describeTodoRepositoryContract(async () => ({ ...createRepositories(), categoryId }));
+
+  describeTodoReadRepositoryContract(async () => ({ ...createRepositories(), categoryId }));
 
   it("없는 할 일이나 하위 항목을 고치거나 지우면 부재 오류를 낸다", async () => {
     // Given

@@ -1,16 +1,18 @@
 import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { createTodoDetails } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import type { DateKey } from '@src/shared/date/date-key';
+import { createDateKey } from '@src/testing/date-key';
 
 import { createNudgeLimitInfo } from '../__tests__/todo-nudge.fixtures';
 import {
+  isLimitReached,
   isMessageTooLong,
   normalizeMessage,
-  NudgeLimitPolicy,
   TodoNudgePolicy,
 } from './todo-nudge.model';
 
-const TODAY_KEY = '2026-02-25';
-const NEXT_DAY_KEY = '2026-02-26';
+const TODAY_KEY = createDateKey('2026-02-25');
+const NEXT_DAY_KEY = createDateKey('2026-02-26');
 
 describe('canNudgeTodoOnDate', () => {
   it('미완료 + 오늘이면 true를 반환한다', () => {
@@ -51,13 +53,13 @@ describe('canNudgeTodoInRange', () => {
   const createInput = ({
     canNudge = true,
     completed = false,
-    startDate = '2026-08-17',
+    startDate = createDateKey('2026-08-17'),
     endDate = null,
   }: {
     canNudge?: boolean;
     completed?: boolean;
-    startDate?: string;
-    endDate?: string | null;
+    startDate?: DateKey;
+    endDate?: DateKey | null;
   } = {}) =>
     createTodoDetails({
       todo: createParentTodo({ completed, startDate, endDate }),
@@ -67,10 +69,13 @@ describe('canNudgeTodoInRange', () => {
   it('오늘이 친구의 미완료 할 일 범위 안이면 true를 반환한다', () => {
     // Given
     // 시작일보다 늦어도 종료일 전이면 서버의 기간 할 일 정책과 같다.
-    const input = createInput({ startDate: '2026-08-16', endDate: '2026-08-18' });
+    const input = createInput({
+      startDate: createDateKey('2026-08-16'),
+      endDate: createDateKey('2026-08-18'),
+    });
 
     // When
-    const result = TodoNudgePolicy.canNudgeTodoInRange(input, '2026-08-17');
+    const result = TodoNudgePolicy.canNudgeTodoInRange(input, createDateKey('2026-08-17'));
 
     // Then
     expect(result).toBe(true);
@@ -82,7 +87,7 @@ describe('canNudgeTodoInRange', () => {
     const input = createInput({ canNudge: false });
 
     // When
-    const result = TodoNudgePolicy.canNudgeTodoInRange(input, '2026-08-17');
+    const result = TodoNudgePolicy.canNudgeTodoInRange(input, createDateKey('2026-08-17'));
 
     // Then
     expect(result).toBe(false);
@@ -93,7 +98,7 @@ describe('canNudgeTodoInRange', () => {
     const input = createInput({ completed: true });
 
     // When
-    const result = TodoNudgePolicy.canNudgeTodoInRange(input, '2026-08-17');
+    const result = TodoNudgePolicy.canNudgeTodoInRange(input, createDateKey('2026-08-17'));
 
     // Then
     expect(result).toBe(false);
@@ -102,10 +107,10 @@ describe('canNudgeTodoInRange', () => {
   it('지난 단일 날짜 할 일은 false를 반환한다', () => {
     // Given
     // 8월 17일에 첨부 화면의 8월 16일 할 일을 보는 경우다.
-    const input = createInput({ startDate: '2026-08-16', endDate: null });
+    const input = createInput({ startDate: createDateKey('2026-08-16'), endDate: null });
 
     // When
-    const result = TodoNudgePolicy.canNudgeTodoInRange(input, '2026-08-17');
+    const result = TodoNudgePolicy.canNudgeTodoInRange(input, createDateKey('2026-08-17'));
 
     // Then
     expect(result).toBe(false);
@@ -200,7 +205,7 @@ describe('isLimitReached', () => {
     const limitInfo = createNudgeLimitInfo({ remainingToday: 0 });
 
     // When
-    const result = NudgeLimitPolicy.isLimitReached(limitInfo);
+    const result = isLimitReached(limitInfo);
 
     // Then
     expect(result).toBe(true);
@@ -211,7 +216,7 @@ describe('isLimitReached', () => {
     const limitInfo = createNudgeLimitInfo({ remainingToday: 2 });
 
     // When
-    const result = NudgeLimitPolicy.isLimitReached(limitInfo);
+    const result = isLimitReached(limitInfo);
 
     // Then
     expect(result).toBe(false);
@@ -222,7 +227,7 @@ describe('isLimitReached', () => {
     const limitInfo = createNudgeLimitInfo({ remainingToday: 1 });
 
     // When
-    const result = NudgeLimitPolicy.isLimitReached(limitInfo);
+    const result = isLimitReached(limitInfo);
 
     // Then
     expect(result).toBe(false);
@@ -233,7 +238,7 @@ describe('isLimitReached', () => {
     const limitInfo = createNudgeLimitInfo({ remainingToday: null });
 
     // When
-    const result = NudgeLimitPolicy.isLimitReached(limitInfo);
+    const result = isLimitReached(limitInfo);
 
     // Then
     expect(result).toBe(false);
