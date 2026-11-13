@@ -38,7 +38,7 @@ interface ComparableInput {
   currentVersion: string;
 }
 
-function isValidVersion(version: string | null | undefined): version is string {
+function isValidVersion(version: string | null): version is string {
   return appStoreVersionSchema.safeParse(version).success;
 }
 

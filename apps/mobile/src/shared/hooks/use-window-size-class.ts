@@ -1,5 +1,5 @@
-import { WindowLayoutPolicy } from '@src/shared/ui/adaptive-pane/window-layout';
-import type { WindowSizeClass } from '@src/shared/ui/adaptive-pane/window-layout';
+import { WindowLayoutPolicy } from '@src/shared/ui';
+import type { WindowSizeClass } from '@src/shared/ui';
 
 import { useAppWindow } from './use-app-window';
 

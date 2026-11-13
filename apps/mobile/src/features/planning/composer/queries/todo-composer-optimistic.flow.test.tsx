@@ -20,18 +20,21 @@ import type {
 import {
   useAddSubTodoMutationOptions,
   useDeleteSubTodoMutationOptions,
+  useReorderSubTodosMutationOptions,
+  useToggleSubTodoMutationOptions,
   useUpdateSubTodoMutationOptions,
 } from '@src/features/planning/todo/queries/sub-todo.mutations';
-import { useReorderSubTodosMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
-import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
-import { useDeleteTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
-import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
+import {
+  useDeleteTodoMutationOptions,
+  useToggleTodoMutationOptions,
+} from '@src/features/planning/todo/queries/todo.mutations';
 import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
   createTestDi,
+  deliverQueryNotifications,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -119,7 +122,7 @@ function useTodoMutations() {
   };
 }
 
-const flush = () => act(async () => {});
+const flush = () => act(deliverQueryNotifications);
 /** 행과 상세의 진행 막대가 읽는 값 */
 const progress = (todo: Todo | undefined) => todo && SubTodoPolicy.getSubTodoStats(todo.subTodos);
 
@@ -695,17 +698,10 @@ describe('useTodoMutations', () => {
     it('반복 할 일을 체크해도 반복 규칙 칸은 그대로고 그 회차만 바뀐다', async () => {
       // Given
       const { httpClient, queryClient, mutations, cachedTodo } = await renderMutations();
-      const repeat = {
-        frequency: 'DAILY',
-        interval: 1,
-        daysOfWeek: [],
-        monthDay: null,
-        end: { type: 'NEVER' },
-      };
       const occurrence = createParentTodo({
         startDate: DAY_1,
         recurrenceGroupId: 'series-1',
-        repeat: JSON.parse(JSON.stringify(repeat)),
+        repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
       });
       queryClient.setQueryData(LIST_DAY_1, toList([occurrence]));
       queryClient.setQueryData(LIST_DAY_2, toList([{ ...occurrence, id: 2, startDate: DAY_2 }]));

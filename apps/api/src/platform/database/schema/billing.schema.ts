@@ -29,8 +29,7 @@ export const subscription = pgTable(
     createdAt: instant()
       .default(sql`now()`)
       .notNull(),
-    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
-    dataRetentionUntil: instant(),
+    // DB에는 dataRetentionUntil이 남아 있다(1.15.1 이미지가 SELECT). 1.16.0에서 지운다(compatibility.md)
     deletedAt: instant(),
     /** 구매 웹훅의 결제 환경. 이 열을 추가하기 전에 만든 행은 null(알 수 없음)이다. */
     environment: subscriptionEnvironment(),

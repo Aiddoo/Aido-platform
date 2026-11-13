@@ -1,8 +1,5 @@
 import { KeychainLockedError } from '@src/shared/errors';
-import {
-  disabledDraftStorage,
-  type EncryptedStorageBootstrap,
-} from '@src/shared/infra/storage/encrypted-draft-storage';
+import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createErrorReporterStub,
@@ -20,7 +17,7 @@ function opened(): EncryptedStorageBootstrap {
 }
 
 function failed(failure: unknown = new Error('keychain read failed')): EncryptedStorageBootstrap {
-  return { draftStorage: disabledDraftStorage, queryCacheStorage: null, failure };
+  return { draftStorage: createMemorySyncStorage(), queryCacheStorage: null, failure };
 }
 
 /** 저장소 열기는 `results`를 차례로 돌려주고 마지막 것을 되풀이한다 */
@@ -77,10 +74,11 @@ describe('createCompositionRoot', () => {
     expect(created.storageOpens).toBe(1);
   });
 
-  it('저장소를 열지 못하면 저장을 끈 포트로 열고 다음에 다시 열며 같은 실패는 한 번만 보고한다', async () => {
+  it('저장소를 열지 못하면 기기에 저장하지 않는 포트로 열고 다음에 다시 열며 같은 실패는 한 번만 보고한다', async () => {
     // Given
+    const unavailable = failed();
     const storage = opened();
-    const { root, created, errorReporter } = createRoot([failed(), failed(), storage]);
+    const { root, created, errorReporter } = createRoot([unavailable, failed(), storage]);
     const withoutStorage = await root.openPorts();
     expect(root.getOpenedPorts()).toBeNull();
     await root.openPorts();
@@ -89,7 +87,8 @@ describe('createCompositionRoot', () => {
     const reopened = await root.openPorts();
 
     // Then
-    expect(withoutStorage.draftStorage).toBe(disabledDraftStorage);
+    expect(withoutStorage.draftStorage).toBe(unavailable.draftStorage);
+    expect(withoutStorage.queryCacheStorage).toBeNull();
     expect(reopened.draftStorage).toBe(storage.draftStorage);
     expect(root.getOpenedPorts()).toBe(reopened);
     expect(reopened.tokenStore).toBe(withoutStorage.tokenStore);

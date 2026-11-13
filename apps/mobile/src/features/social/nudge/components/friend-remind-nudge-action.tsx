@@ -1,4 +1,5 @@
 import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, PawIcon, Result, Text } from '@src/shared/ui';
@@ -11,6 +12,7 @@ import { useGetRemindNudgeCooldownQueryOptions } from '../queries/todo-nudge.que
 /** 오늘 할 일이 없는 친구에게 독촉 시트를 여는 버튼. 쿨다운 중이면 눌러지지 않는다 */
 export function FriendRemindNudgeAction({ friend }: { friend: FriendUser }) {
   const { t } = useTranslation(['todo', 'friend']);
+  const fontScaledSize = useFontScaledSize();
   const { data: cooldownInfo } = useQuery(
     useGetRemindNudgeCooldownQueryOptions({ userId: friend.id }),
   );
@@ -35,8 +37,8 @@ export function FriendRemindNudgeAction({ friend }: { friend: FriendUser }) {
           {canNudge ? t('todo:friendTodo.nudge') : t('todo:friendTodo.alreadyNudged')}
         </Text>
         <PawIcon
-          width={16}
-          height={16}
+          width={fontScaledSize(16)}
+          height={fontScaledSize(16)}
           colorClassName={cn(canNudge ? 'text-main' : 'text-gray-5')}
         />
       </HStack>

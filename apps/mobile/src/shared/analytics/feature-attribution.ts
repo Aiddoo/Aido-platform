@@ -1,6 +1,6 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { AppLogger } from '@src/core/ports/app-logger';
-import type { SyncStorage } from '@src/core/ports/sync-storage';
+import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
@@ -12,7 +12,10 @@ import {
 
 import { FEATURE_ATTRIBUTION_LOG_EVENT } from './feature-attribution-log-events';
 import type { CampaignId, FeatureKey } from './feature-key';
-import { featureAttributionStoredValue } from './schemas/feature-attribution-storage.schema';
+import {
+  featureAttributionStoredValue,
+  toFeatureAttributionKeyPrefix,
+} from './schemas/feature-attribution-storage.schema';
 import { track } from './track';
 
 export const FEATURE_ATTRIBUTION_TTL_MS = 7 * DAY_MS;
@@ -73,6 +76,18 @@ export function createFeatureAttributionStore(
       };
     },
   };
+}
+
+/** 탈퇴한 계정의 기록을 기능과 상관없이 모두 지운다. 지우기 실패는 탈퇴 정리가 남기도록 던진다 */
+export function clearFeatureAttributions(
+  storage: Pick<SyncStorage, 'remove'> & Pick<EnumerableSyncStorage, 'keys'>,
+  accountId: string,
+): void {
+  const prefix = toFeatureAttributionKeyPrefix(accountId);
+  storage
+    .keys()
+    .filter((key) => key.startsWith(prefix))
+    .forEach((key) => storage.remove(key));
 }
 
 interface AttributedFeatureSuccessPorts {

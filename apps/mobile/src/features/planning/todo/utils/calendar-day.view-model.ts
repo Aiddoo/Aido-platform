@@ -77,13 +77,13 @@ function getMonthViewDayType({ dayOfWeek, isSelected, isToday }: DayTypeInput): 
   return 'default';
 }
 
-export const DAY_TYPE_TONE: Record<CalendarDayType, TextTone> = {
+export const DAY_TYPE_TONE = {
   selected: 'white',
   today: 'brand',
   sunday: 'danger',
   saturday: 'info',
   default: 'neutral',
-};
+} as const satisfies Record<CalendarDayType, TextTone>;
 
 interface WeekRangeDay {
   isInRange: boolean;

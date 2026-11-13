@@ -11,8 +11,10 @@ import type {
 } from '@tanstack/react-query';
 import { last } from 'es-toolkit';
 
-import { DailyCompletionPolicy } from '../domains/daily-completion.model';
-import { type DailyCompletionsResult } from '../domains/daily-completion.model';
+import {
+  DailyCompletionPolicy,
+  type DailyCompletionsResult,
+} from '../domains/daily-completion.model';
 import {
   getTodoDateSpan,
   type Todo,
@@ -585,6 +587,6 @@ export function invalidateCategorizedTodos(queryClient: QueryClient) {
 }
 
 /** 카테고리 이름·색처럼 할 일 상세 화면에 함께 보이는 값이 바뀐 뒤 열린 상세를 다시 불러온다 */
-export function invalidateTodoPages(queryClient: QueryClient) {
+function invalidateTodoPages(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.pages() });
 }

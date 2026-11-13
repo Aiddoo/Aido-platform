@@ -1,5 +1,5 @@
 import { CATEGORY_TODO_HANDLINGS, type CategoryTodoHandling } from '@aido/api/vocabulary';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
@@ -33,8 +33,10 @@ import { type ComponentProps, type ReactNode, Suspense, useEffect, useState } fr
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { TodoCategoryDeletionPolicy } from '../domains/todo-category-deletion.model';
-import type { TodoCategoryDeletionPreview } from '../domains/todo-category-deletion.model';
+import {
+  TodoCategoryDeletionPolicy,
+  type TodoCategoryDeletionPreview,
+} from '../domains/todo-category-deletion.model';
 import {
   type TodoCategory,
   TodoCategoryPolicy,
@@ -142,7 +144,7 @@ CategoryDeleteBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFa
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
       <QueryErrorFallback
         reset={reset}
-        onInquiry={(href) => sheet.close({ type: 'replace', href })}
+        onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
       />
     </BottomSheet>
   );
@@ -226,12 +228,10 @@ function TodoHandlingBottomSheet({
   const todoCountBucket = toTodoCountBucket(preview.todoCount);
   const hasSeries = preview.activeSeriesCount > 0;
 
-  useEffect(() => {
-    trackEvent('category_delete_sheet_viewed', {
-      todo_count_bucket: todoCountBucket,
-      has_series: hasSeries,
-    });
-  }, [trackEvent, todoCountBucket, hasSeries]);
+  useTrackView('category_delete_sheet_viewed', {
+    key: String(category.id),
+    params: { todo_count_bucket: todoCountBucket, has_series: hasSeries },
+  });
 
   // 닫힘 애니메이션이 끝난 뒤에 온다. 지우는 중이거나 지운 뒤 닫힌 것은 취소가 아니다
   const handleOpenChange = (nextIsOpen: boolean) => {

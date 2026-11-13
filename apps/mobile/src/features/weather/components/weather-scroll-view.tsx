@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
 import { useWeatherScene } from '../hooks/use-weather-scene';
-import { refetchWeather } from '../queries/weather-cache';
+import { refreshWeather } from '../queries/weather-cache';
 import { ScrimLayer } from './weather-scene-canvas/scrim-layer';
 import { SkyGradientLayer } from './weather-scene-canvas/sky-gradient-layer';
 
@@ -39,7 +39,7 @@ export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollVi
   const queryClient = useQueryClient();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const [isRefreshing, refresh] = useRefresh(() => refetchWeather(queryClient));
+  const [isRefreshing, refresh] = useRefresh(() => refreshWeather(queryClient));
   const refreshTint = useResolvedColor('text-on-sky');
 
   return (

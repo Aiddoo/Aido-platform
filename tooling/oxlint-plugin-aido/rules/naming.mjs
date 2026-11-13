@@ -20,7 +20,7 @@ function getMemberPropertyName(node) {
 }
 
 // 역할이 드러나지 않는 조각 이름(Body, Frame, Section, Blocks, Wrapper)을 막는다.
-// standaloneNames는 네임스페이스 조각(`X.Header`)이 아닌 선언에만 건다
+// standaloneNames는 네임스페이스 조각(`X.Header`)이 아닌 선언에만 건다. allowNames는 공용 카탈로그가 정한 이름이라 예외다
 const componentName = {
   meta: {
     type: 'suggestion',
@@ -30,16 +30,18 @@ const componentName = {
         properties: {
           suffixes: { type: 'array', items: { type: 'string' } },
           standaloneNames: { type: 'array', items: { type: 'string' } },
+          allowNames: { type: 'array', items: { type: 'string' } },
         },
         additionalProperties: false,
       },
     ],
   },
   create(context) {
+    const allowNames = new Set(context.options[0]?.allowNames ?? []);
     const suffixes = context.options[0]?.suffixes ?? DEFAULT_FORBIDDEN_SUFFIXES;
     const standaloneNames = new Set(context.options[0]?.standaloneNames ?? []);
     function check(node, name, isStandalone) {
-      if (!isComponentName(name)) {
+      if (!isComponentName(name) || allowNames.has(name)) {
         return;
       }
       const suffix = suffixes.find((candidate) => name.endsWith(candidate));

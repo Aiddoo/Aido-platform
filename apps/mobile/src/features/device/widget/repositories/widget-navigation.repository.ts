@@ -1,11 +1,12 @@
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
+import { diffMs } from '@src/shared/date/instant';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import {
   type WidgetNavigationCommand,
-  widgetNavigationCommandSchema,
   WidgetNavigationPolicy,
 } from '../domains/widget-navigation.model';
+import { widgetNavigationCommandStorageSchema } from '../schemas/widget-navigation-command-storage.schema';
 
 export const WIDGET_NAVIGATION_COMMAND_KEY = 'aido_widget_pending_navigation_v1';
 
@@ -31,7 +32,7 @@ export function createWidgetNavigationRepository(
     }
 
     cachedRaw = raw;
-    cachedCommand = parseStoredJson(raw, widgetNavigationCommandSchema);
+    cachedCommand = parseStoredJson(raw, widgetNavigationCommandStorageSchema);
     return cachedCommand;
   };
 
@@ -39,15 +40,15 @@ export function createWidgetNavigationRepository(
     findPendingCommand,
     subscribe: (listener) => storage.subscribe(WIDGET_NAVIGATION_COMMAND_KEY, listener),
     save: (command) => {
-      const result = widgetNavigationCommandSchema.safeParse(command);
-      if (!result.success) {
+      const stored = widgetNavigationCommandStorageSchema.safeEncode(command);
+      if (!stored.success) {
         return false;
       }
       const current = findPendingCommand();
-      if (current && current.createdAt > result.data.createdAt) {
+      if (current != null && diffMs(current.createdAt, command.createdAt) > 0) {
         return false;
       }
-      storage.set(WIDGET_NAVIGATION_COMMAND_KEY, JSON.stringify(result.data));
+      storage.set(WIDGET_NAVIGATION_COMMAND_KEY, JSON.stringify(stored.data));
       return true;
     },
     clearIfCurrent: (command) => {
