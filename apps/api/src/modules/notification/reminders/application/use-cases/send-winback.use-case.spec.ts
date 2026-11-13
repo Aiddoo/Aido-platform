@@ -95,7 +95,9 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
         }),
       ]);
       await vi.waitFor(async () => {
-        expect(await dedup.hasWinbackStage("user-1", stage)).toBe(true);
+        expect(await dedup.findSentWinbackStages([{ userId: "user-1", stage }])).toEqual(
+          new Set(["user-1"]),
+        );
       });
     },
   );
@@ -121,6 +123,29 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
       },
     });
     expect(sent()[0]).toMatchObject({ title: expected.title, body: expected.body });
+  });
+
+  it("여러 사용자의 단계 기록을 한 번에 보고 이미 같은 단계를 받은 사용자만 뺀다", async () => {
+    // Given
+    reader.winbackUsers = [
+      { id: "user-1", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
+      { id: "user-2", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
+      { id: "user-3", lastActiveAt: Temporal.Instant.from("2024-01-02T00:00:00Z") },
+    ];
+    await dedup.recordWinbackStages([
+      { userId: "user-1", stage: "day7" },
+      { userId: "user-3", stage: "day7" },
+    ]);
+
+    // When
+    const result = await strategy.execute(ctx);
+
+    // Then
+    expect(result).toEqual({ sent: 2 });
+    expect(sent().map(({ userId, metadata }) => [userId, metadata])).toEqual([
+      ["user-2", { stage: "day7" }],
+      ["user-3", { stage: "day14" }],
+    ]);
   });
 
   it("이미 같은 단계를 보낸 사용자는 건너뛴다", async () => {

@@ -20,7 +20,10 @@ interface WinbackStrategyDependencies {
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
-  readonly schedulerDedup: Pick<SchedulerDedupPort, "hasWinbackStage" | "recordWinbackStages">;
+  readonly schedulerDedup: Pick<
+    SchedulerDedupPort,
+    "findSentWinbackStages" | "recordWinbackStages"
+  >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -61,40 +64,33 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0 };
     }
 
-    // 단계별 중복 방지: per-user Redis SISMEMBER 병렬 확인
-    const checks = await Promise.all(
-      filteredUsers.map(async (user) => {
-        if (user.lastActiveAt == null) {
-          return null;
-        }
-
-        const inactiveDays = elapsedDaysUntil(today, user.lastActiveAt);
-        const stage = resolveWinbackStage(inactiveDays);
-        const alreadySent = await this.#dependencies.schedulerDedup.hasWinbackStage(user.id, stage);
-        return { user, stage, inactiveDays, alreadySent };
-      }),
-    );
-
-    const activeChecks = checks.filter(
-      (check): check is NonNullable<typeof check> => check != null && !check.alreadySent,
-    );
+    const checks = filteredUsers.flatMap(({ id, lastActiveAt }) => {
+      if (lastActiveAt == null) {
+        return [];
+      }
+      const inactiveDays = elapsedDaysUntil(today, lastActiveAt);
+      return [{ userId: id, stage: resolveWinbackStage(inactiveDays), inactiveDays }];
+    });
+    // 단계별 중복 방지: 사용자마다 묻지 않고 한 번에 확인한다
+    const sentStageUserIds = await this.#dependencies.schedulerDedup.findSentWinbackStages(checks);
+    const activeChecks = checks.filter(({ userId }) => !sentStageUserIds.has(userId));
     const locales = await this.#dependencies.preferenceReader.findUserLocales(
-      activeChecks.map((check) => check.user.id),
+      activeChecks.map((check) => check.userId),
     );
 
     const notifications: CreateNotificationData[] = [];
     for (const check of activeChecks) {
       const message = createWinbackNotificationMessage({
         inactiveDays: check.inactiveDays,
-        locale: locales.get(check.user.id) ?? DEFAULT_LOCALE,
+        locale: locales.get(check.userId) ?? DEFAULT_LOCALE,
         variantContext: {
           campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.${check.stage}`,
-          recipientId: check.user.id,
+          recipientId: check.userId,
           occurrenceKey: today.toString(),
         },
       });
       notifications.push({
-        userId: check.user.id,
+        userId: check.userId,
         type: "WINBACK",
         purpose: "ENGAGEMENT",
         campaignKey: SCHEDULER_CAMPAIGN_KEY.WINBACK,
@@ -113,10 +109,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       await this.#dependencies.notificationPublisher.publishBatch(notifications);
 
       void this.#dependencies.schedulerDedup.recordWinbackStages(
-        activeChecks.map((check) => ({
-          userId: check.user.id,
-          stage: check.stage,
-        })),
+        activeChecks.map(({ userId, stage }) => ({ userId, stage })),
       );
 
       this.#dependencies.logger.log({

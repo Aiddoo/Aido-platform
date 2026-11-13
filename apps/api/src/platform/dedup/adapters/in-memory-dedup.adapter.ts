@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 
-import { DedupProviderPort } from "../dedup-provider.port.js";
+import { type DedupEntry, DedupProviderPort } from "../dedup-provider.port.js";
 
 // 키는 날짜·주·사용자 단위다. 넘치면 가장 오래 안 쓴 Set을 버리고, 그 뒤 중복은 DB unique index가 막는다
 export const DEDUP_MAX_ENTRIES = 20_000;
@@ -36,8 +36,8 @@ export class InMemoryDedupAdapter extends DedupProviderPort implements OnModuleI
     return new Set(members.filter((m) => set.has(m)));
   }
 
-  async isMember(setKey: string, member: string): Promise<boolean> {
-    return this.#sets.get(setKey)?.has(member) ?? false;
+  async filterEntries<TEntry extends DedupEntry>(entries: readonly TEntry[]): Promise<TEntry[]> {
+    return entries.filter(({ setKey, member }) => this.#sets.get(setKey)?.has(member) === true);
   }
 
   async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
@@ -51,5 +51,11 @@ export class InMemoryDedupAdapter extends DedupProviderPort implements OnModuleI
     }
     // 다시 넣어 Redis PEXPIRE처럼 TTL을 지금부터 새로 잰다
     this.#sets.set(setKey, set, { ttl: ttlMs });
+  }
+
+  async addEntries(entries: readonly DedupEntry[], ttlMs: number): Promise<void> {
+    for (const { setKey, member } of entries) {
+      await this.addMembers(setKey, [member], ttlMs);
+    }
   }
 }
