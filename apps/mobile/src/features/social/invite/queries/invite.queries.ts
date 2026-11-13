@@ -1,5 +1,5 @@
 import type { RedemptionStatus } from '@aido/api/vocabulary';
-import { useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
+import { useInviteApi, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
@@ -26,11 +26,11 @@ import { INVITE_QUERY_KEYS } from './invite-query-keys';
 const AVAILABILITY_STALE_TIME_MS = 5 * MINUTE_MS;
 
 export function useGetInviteAvailabilityQueryOptions() {
-  const inviteService = useInviteService();
+  const inviteApi = useInviteApi();
 
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.availability(),
-    queryFn: async ({ signal }) => unwrap(await inviteService.getAvailability(signal)),
+    queryFn: async ({ signal }) => unwrap(await inviteApi.getAvailability(signal)),
     staleTime: AVAILABILITY_STALE_TIME_MS,
   });
 }
@@ -52,13 +52,13 @@ export function useGetInvitePreviewQueryOptions({ inviteCode }: { inviteCode: In
 const INVITE_STALE_TIME_MS = 30 * SECOND_MS;
 
 export function useGetInviteQueryOptions() {
-  const inviteService = useInviteService();
+  const inviteApi = useInviteApi();
   const logger = useLogger();
 
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.me(),
     queryFn: async ({ signal, client }) => {
-      const result = await inviteService.getInvite(signal);
+      const result = await inviteApi.getInvite(signal);
       // 서버가 초대가 꺼졌다고 답하면 진입점이 숨도록 사용 가능 여부를 다시 받는다
       if (!result.ok && isInviteDisabledError(result.error)) {
         invalidateInviteAvailability(client).catch((error) =>
@@ -82,13 +82,13 @@ interface InviteesFilter {
 
 /** 상태마다 다른 캐시를 둔다. 서버가 상태로 거르고 totalCount도 그 조건으로 센다 */
 export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFilter) {
-  const inviteService = useInviteService();
+  const inviteApi = useInviteApi();
 
   return infiniteQueryOptions({
     queryKey: INVITE_QUERY_KEYS.invitees({ status }),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await inviteService.getInvitedFriends(
+        await inviteApi.getInvitedFriends(
           {
             cursor: pageParam,
             limit: DEFAULT_PAGE_SIZE,

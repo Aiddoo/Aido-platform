@@ -1,7 +1,7 @@
-import { ErrorCode } from "@aido/api/errors";
 import {
   DAY_OF_WEEK_ORDER,
   TODO_REPEAT_INTERVALS,
+  TODO_REPEAT_MONTH_DAY_MAX,
   TODO_SERIES_LIMITS,
   type DayOfWeek,
   type TodoRepeatFrequency,
@@ -9,10 +9,10 @@ import {
 } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
 import { addDaysToKey } from "../../shared/domain/todo-calendar.domain-service.js";
+import { invalidRepeatRule } from "./todo-series.errors.js";
 
 export type RepeatEnd =
   | { readonly type: "NEVER" }
@@ -43,7 +43,7 @@ const NEXT_OCCURRENCE_SEARCH_DAYS = 62;
 
 function assertRule(condition: boolean, field: string): void {
   if (!condition) {
-    throw new DomainException(ErrorCode.TODO_0845, { field });
+    throw invalidRepeatRule(field);
   }
 }
 
@@ -81,7 +81,10 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
   }
 
   static #monthly(monthDay: number, end: RepeatEnd): RepeatRule {
-    assertRule(Number.isInteger(monthDay) && monthDay >= 1 && monthDay <= 31, "monthDay");
+    assertRule(
+      Number.isInteger(monthDay) && 1 <= monthDay && monthDay <= TODO_REPEAT_MONTH_DAY_MAX,
+      "monthDay",
+    );
     assertEnd(end);
     return new RepeatRule({ frequency: "MONTHLY", interval: 1, weekdays: null, monthDay, end });
   }

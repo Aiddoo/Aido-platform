@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { entityIdSchema, entityIdSchemaWithMessage } from "../../../common/entity-id.js";
-import { USER_SEARCH_QUERY_LENGTH } from "../../../vocabulary/follow.constants.js";
+import { USER_SEARCH_QUERY_LENGTH, USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
 import { reorderPositionSchema } from "../../todo-category/v1/todo-category.common.js";
 
 export const userIdParamSchema = z.object({
@@ -15,7 +15,7 @@ export type UserIdParam = z.infer<typeof userIdParamSchema>;
 export const userTagParamSchema = z.object({
   userTag: z
     .string()
-    .length(8, "사용자 태그는 8자리입니다")
+    .length(USER_TAG_LENGTH, "사용자 태그는 8자리입니다")
     .regex(/^[A-Z0-9]+$/, "사용자 태그는 영문 대문자와 숫자만 허용됩니다")
     .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
 });

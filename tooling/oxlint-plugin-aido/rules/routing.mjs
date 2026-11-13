@@ -10,40 +10,48 @@ import {
   unwrap,
 } from '../ast.mjs';
 
-// 시트 route는 safeParse로 검증하고 Redirect만 한다. 대상은 시트가 같은 스키마의 route 훅으로 읽는다
-const sheetRouteParams = {
+// route 파일은 useRouteParamsOrRedirect로 검증하고 redirect만 그린다. 값은 안쪽 화면이 같은 스키마의 튜플 훅으로 읽는다
+const routeParamsGuard = {
   meta: { type: 'suggestion' },
   create(context) {
-    const safeParseResults = new Set();
-    const dataReads = [];
+    const guardResults = new Set();
+    const paramsReads = [];
     return {
       VariableDeclarator(node) {
         if (
           node.id.type === 'Identifier' &&
           node.init?.type === 'CallExpression' &&
-          node.init.callee.type === 'MemberExpression' &&
-          !node.init.callee.computed &&
-          node.init.callee.property.name === 'safeParse'
+          getCalleeName(node.init.callee) === 'useRouteParamsOrRedirect'
         ) {
-          safeParseResults.add(node.id.name);
+          guardResults.add(node.id.name);
+        }
+      },
+      CallExpression(node) {
+        if (
+          getCalleeName(node.callee) === 'safeParse' &&
+          node.arguments[0]?.type === 'CallExpression' &&
+          getCalleeName(node.arguments[0].callee) === 'useLocalSearchParams'
+        ) {
+          context.report({
+            node,
+            message:
+              'route params는 useRouteParamsOrRedirect로 검증합니다. 리다이렉트를 직접 만들지 마세요.',
+          });
         }
       },
       MemberExpression(node) {
         const names = getMemberNames(node);
-        if (names?.[1] === 'data') {
-          dataReads.push({ node, name: names[0] });
+        if (names?.[1] === 'params') {
+          paramsReads.push({ node, name: names[0] });
         }
       },
       'Program:exit'() {
-        if (!context.sourceCode.text.includes('<SheetRouteScreen')) {
-          return;
-        }
-        for (const { node, name } of dataReads) {
-          if (safeParseResults.has(name)) {
+        for (const { node, name } of paramsReads) {
+          if (guardResults.has(name)) {
             context.report({
               node,
               message:
-                '시트 route는 safeParse로 검증하고 Redirect만 합니다. 대상은 시트가 같은 스키마의 route 훅으로 읽습니다.',
+                'route 파일은 검증과 redirect만 합니다. 값은 안쪽 화면이 같은 스키마의 튜플 훅으로 읽습니다.',
             });
           }
         }
@@ -69,6 +77,38 @@ const noDestructuredSearchParams = {
             message:
               'useLocalSearchParams 결과를 구조 분해하지 마세요. schemas/의 스키마로 parse한 값을 씁니다.',
           });
+        }
+      },
+    };
+  },
+};
+
+const ROUTE_SETTER_MESSAGE =
+  'useRouteParams의 원시 setParams는 params 훅(hooks/use-*-params.ts)에서만 꺼냅니다. 연관 값을 함께 지우는 이름 있는 setter를 그 훅에서 내보내 쓰세요.';
+
+function isUseRouteParamsCall(node) {
+  return node?.type === 'CallExpression' && getCalleeName(node.callee) === 'useRouteParams';
+}
+
+// URL 값은 params 훅의 이름 있는 setter로만 바꾼다. 원시 setter를 꺼내면 연관 값 지우기를 호출부가 잊는다
+const routeSetterLocation = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      VariableDeclarator(node) {
+        const setter = node.id.type === 'ArrayPattern' ? node.id.elements[1] : null;
+        if (setter != null && isUseRouteParamsCall(unwrap(node.init))) {
+          context.report({ node: setter, message: ROUTE_SETTER_MESSAGE });
+        }
+      },
+      MemberExpression(node) {
+        if (
+          node.computed &&
+          node.property.type === 'Literal' &&
+          node.property.value === 1 &&
+          isUseRouteParamsCall(unwrap(node.object))
+        ) {
+          context.report({ node, message: ROUTE_SETTER_MESSAGE });
         }
       },
     };
@@ -207,7 +247,7 @@ const MUTATION_OPTIONS_FACTORY = /MutationOptions$/u;
 const UNRESOLVED = Symbol('unresolved');
 
 const MISSING_MESSAGE =
-  'mutationOptions에 meta.errorFeedback을 둡니다. 전역으로 알리면 { feature, fallbackKey }, 기능이 모든 실패를 직접 보이거나 화면 뒤 작업이면 false입니다.';
+  'mutationOptions에 meta.errorFeedback을 둡니다. 전역으로 알리면 { feature, fallbackKey?, describe? }, 기능이 실패 이유마다 다르게 보이면(useMutationErrorFeedback) 또는 화면 뒤 작업이면 false입니다.';
 const DUPLICATE_FEEDBACK_MESSAGE =
   'meta.errorFeedback이 이미 햅틱·토스트로 알립니다. onError는 롤백과 isHandledByFeature로 뺀 오류만 다룹니다.';
 const UNCONDITIONAL_FALLBACK_TOAST_MESSAGE =
@@ -436,7 +476,7 @@ const FORM_VARIABLE_NAMES = new Set(['methods', 'formMethods']);
 const FORM_SHAPE_MESSAGE =
   '폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요.';
 
-// 폼은 `form` 하나를 props로 넘기고 입력은 Controller로 잇는다(.claude/architecture.md#폼)
+// 폼은 `form` 하나를 props로 넘기고 입력은 Controller로 잇는다(apps/mobile/docs/architecture/data.md#폼)
 const formShape = {
   meta: { type: 'suggestion' },
   createOnce(context) {
@@ -460,8 +500,9 @@ const formShape = {
 };
 
 export default {
-  'sheet-route-params': sheetRouteParams,
+  'route-params-guard': routeParamsGuard,
   'no-destructured-search-params': noDestructuredSearchParams,
+  'route-setter-location': routeSetterLocation,
   'no-router-push': noRouterPush,
   'my-page-menu-navigation': myPageMenuNavigation,
   'no-inline-query-options': noInlineQueryOptions,

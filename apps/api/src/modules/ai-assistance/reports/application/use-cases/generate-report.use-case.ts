@@ -140,7 +140,13 @@ export class GenerateReportUseCase {
       timezone,
       type,
       window,
-      periodLabel: computePeriodLabel(type, window.year, window.period, locale),
+      periodLabel: computePeriodLabel({
+        type,
+        year: window.year,
+        period: window.period,
+        locale,
+        localToday,
+      }),
       locale,
       isFinalAttempt,
     });

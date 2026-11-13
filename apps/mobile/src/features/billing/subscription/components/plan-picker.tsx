@@ -1,20 +1,20 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { type QueryErrorFallbackProps, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Card } from 'heroui-native';
 import { type ComponentProps, useEffect } from 'react';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
+import type { StoreUnavailable } from '../domains/subscription-failure.model';
 import { type SubscriptionOffering } from '../domains/subscription.model';
 import { hasFreeTrial, SubscriptionPolicy } from '../domains/subscription.model';
 import { useReportStoreUnavailable } from '../hooks/use-report-store-unavailable';
 import { useSelectedPlanId, useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
-import type { StoreUnavailable } from '../utils/offerings-availability';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import {
   toSubscriptionLoadFailure,
@@ -55,12 +55,13 @@ PlanPicker.Plans = function Plans({
   const selectedPlan = SubscriptionPolicy.findSelectedPlan(offering, selectedPlanId);
 
   // 요금제를 받아 실제로 보였을 때만 센다(게이트 → 프리미엄 보기 → 페이월 → 결제 퍼널). 못 받은 상태는 세지 않는다
-  useEffect(() => {
-    trackEvent('paywall_viewed', {
+  useTrackView('paywall_viewed', {
+    key: `${view}:${feature ?? ''}`,
+    params: {
       view,
       ...(feature != null && { feature: getPremiumGateAnalyticsFeature(feature) }),
-    });
-  }, [trackEvent, view, feature]);
+    },
+  });
 
   const handleValueChange = (planId: string) => {
     const nextPlan = SubscriptionPolicy.findSelectedPlan(offering, planId);
@@ -87,8 +88,7 @@ PlanPicker.Plans = function Plans({
 PlanPicker.Loading = function Loading() {
   const isOnline = useIsOnline();
   // 다크에서 카드 바탕(gray-2)과 기본 글 스켈레톤 색이 같아 한 단계 밝은 색으로 그린다
-  const { backgroundColor: skeletonColor } = useResolveClassNames('bg-gray-3');
-  const color = typeof skeletonColor === 'string' ? skeletonColor : undefined;
+  const color = useResolvedColor('text-gray-3');
 
   return match(isOnline)
     .with(false, () => <SubscriptionResult.Offline target="plans" />)

@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
@@ -8,11 +7,11 @@ import type {
 } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { emailAlreadyVerified, emailNotRegistered } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
@@ -55,7 +54,7 @@ export class VerifyEmailUseCase {
 
     const user = await this.#dependencies.userRepository.findByEmail(email);
     if (user == null) {
-      throw new ApplicationException(ErrorCode.EMAIL_0502, { email });
+      throw emailNotRegistered(email);
     }
 
     if (user.isDeleted) {
@@ -64,10 +63,7 @@ export class VerifyEmailUseCase {
 
     if (user.status !== "PENDING_VERIFY") {
       if (user.emailVerifiedAt != null) {
-        throw new ApplicationException(ErrorCode.USER_0604, {
-          email,
-          message: "이미 인증이 완료된 계정입니다.",
-        });
+        throw emailAlreadyVerified(email);
       }
       assertStatusAllowsLogin(user.status, email);
     }

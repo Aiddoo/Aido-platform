@@ -91,9 +91,6 @@ export const relations = defineRelations(schema, (r) => ({
   premiumGrant: {
     user: r.one.user({ from: r.premiumGrant.userId, to: r.user.id, optional: false }),
   },
-  pushDailyBudget: {
-    user: r.one.user({ from: r.pushDailyBudget.userId, to: r.user.id, optional: false }),
-  },
   pushDeliveryAttempt: {
     dispatch: r.one.pushDispatch({
       from: r.pushDeliveryAttempt.dispatchId,
@@ -248,7 +245,6 @@ export const relations = defineRelations(schema, (r) => ({
     dailyCompletions: r.many.dailyCompletion(),
     memos: r.many.memo(),
     notifications: r.many.notification(),
-    pushDailyBudgets: r.many.pushDailyBudget(),
     pushDispatches: r.many.pushDispatch(),
     pushDevices: r.many.pushDevice(),
     pushTokens: r.many.pushToken(),

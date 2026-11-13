@@ -1,13 +1,11 @@
-import {
-  PremiumAccessPolicy,
-  type PremiumPlanType,
-} from '@src/features/identity/user/domains/premium-access.model';
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
+import type { PlanType } from '@src/shared/domains/plan-type.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { InlineAlert, Text } from '@src/shared/ui';
+import { InlineAlert, SurfaceCard, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip } from 'heroui-native';
@@ -20,12 +18,12 @@ import type { SubscriptionReceiptViewModel } from '../utils/subscription-receipt
 type PremiumNoticeProps = Pick<ComponentProps<typeof Text>, 'className'>;
 
 /** 체험은 끝나기 며칠 전부터, 그 밖의 프리미엄은 이어질 길이 없을 때 하루 안에 끝나면 알린다 */
-function Ending({ className }: PremiumNoticeProps) {
-  const { t } = useTranslation('subscription');
+export function PremiumNotice({ className }: PremiumNoticeProps) {
+  const { t } = useTranslation(['subscription', 'common']);
   const receipt = useSubscriptionReceipt();
   const toDaysLeftBadge = (daysLeft: number) =>
     match(daysLeft)
-      .with(0, () => t('endingNotice.badgeToday'))
+      .with(0, () => t('common:relativeDay.today'))
       .with(1, () => t('endingNotice.badgeTomorrow'))
       .otherwise((days) => t('endingNotice.badgeDaysLeft', { days }));
 
@@ -50,7 +48,7 @@ function Ending({ className }: PremiumNoticeProps) {
       }),
     )
     .with({ variant: 'paid', endingNotice: 'today' }, () => ({
-      badge: t('endingNotice.badgeToday'),
+      badge: t('common:relativeDay.today'),
       message: t('endingNotice.paidToday'),
     }))
     .with({ variant: 'paid', endingNotice: 'tomorrow' }, () => ({
@@ -58,7 +56,7 @@ function Ending({ className }: PremiumNoticeProps) {
       message: t('endingNotice.paidTomorrow'),
     }))
     .with({ variant: 'reward', endingNotice: 'today' }, () => ({
-      badge: t('endingNotice.badgeToday'),
+      badge: t('common:relativeDay.today'),
       message: t('endingNotice.today'),
     }))
     .with({ variant: 'reward', endingNotice: 'tomorrow' }, () => ({
@@ -94,7 +92,7 @@ const PLAN_NAME_KEYS = {
   annual: 'endingNotice.plan.annual',
   monthly: 'endingNotice.plan.monthly',
   unknown: 'endingNotice.plan.unknown',
-} as const satisfies Record<PremiumPlanType | 'unknown', string>;
+} as const satisfies Record<PlanType | 'unknown', string>;
 
 type TrialEndingNotice = NonNullable<
   Extract<SubscriptionReceiptViewModel, { variant: 'trial' }>['endingNotice']
@@ -112,7 +110,7 @@ function getTrialEndingMessageKey({ daysLeft, willRenew }: TrialEndingNotice) {
     .exhaustive();
 }
 
-function GrantEnded({ className }: PremiumNoticeProps) {
+PremiumNotice.GrantEnded = function GrantEnded({ className }: PremiumNoticeProps) {
   const { t } = useTranslation('subscription');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const dateFormatContext = useDateFormatContext();
@@ -124,21 +122,12 @@ function GrantEnded({ className }: PremiumNoticeProps) {
   }
 
   return (
-    <Text
-      size="b4"
-      shade={7}
-      align="center"
-      lineBreakStrategyIOS="hangul-word"
-      className={cn('rounded-2xl bg-gray-1 px-4 py-3', className)}
-    >
-      {t('paywall.grantEnded', {
-        date: formatYearAwareDateLabel(grantEndedAt, todayKey, dateFormatContext),
-      })}
-    </Text>
+    <SurfaceCard className={cn('px-4 py-3', className)}>
+      <Text size="b4" shade={7} align="center" lineBreakStrategyIOS="hangul-word">
+        {t('paywall.grantEnded', {
+          date: formatYearAwareDateLabel(grantEndedAt, todayKey, dateFormatContext),
+        })}
+      </Text>
+    </SurfaceCard>
   );
-}
-
-export const PremiumNotice = {
-  Ending,
-  GrantEnded,
-} as const;
+};

@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import {
   VoiceNoteCaptionPolicy,
   type VoiceNoteCaptions,
+  createVoiceNoteCaptions,
 } from '../domains/voice-note-caption.model';
 import type { VoiceNote } from '../domains/voice-note.model';
 
@@ -24,7 +25,7 @@ export function useVoiceNoteCaptions({
   const haptics = useHaptics();
   const [captions, setCaptions] = useState<VoiceNoteCaptions>(() =>
     seedNote == null
-      ? VoiceNoteCaptionPolicy.createVoiceNoteCaptions()
+      ? createVoiceNoteCaptions()
       : VoiceNoteCaptionPolicy.toVoiceNoteCaptions(seedNote),
   );
   const captionsRef = useRef(captions);

@@ -1,7 +1,6 @@
-import { getNextLocalMidnight } from '@src/shared/date/clock';
 import type { Instant } from '@src/shared/date/instant';
 import { instantToDate } from '@src/shared/date/native-date';
-import { toDateKey } from '@src/shared/date/zoned';
+import { getNextLocalMidnight, toDateKey } from '@src/shared/date/zoned';
 import type { WidgetTimelineEntry } from 'expo-widgets';
 
 import { toWidgetProps } from '../apis/widget-props.mapper';

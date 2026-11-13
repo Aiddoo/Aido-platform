@@ -2,7 +2,7 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
 import { toInstant } from '@src/shared/date/instant';
 
-import { toPlanSummary } from './plan-summary.view-model';
+import { toDisplayedUsedCount, toPlanSummary } from './plan-summary.view-model';
 import { toSubscriptionReceiptViewModel } from './subscription-receipt.view-model';
 
 // 2026년 11월 9일 12:00 KST
@@ -68,5 +68,19 @@ describe('toPlanSummary', () => {
     // Then
     expect(summary.period).toEqual({ type: 'nextBilling', date: toInstant(periodEndsAt) });
     expect(summary.dateLabel).toBe('fullDate');
+  });
+});
+
+describe('toDisplayedUsedCount', () => {
+  it.each([
+    { title: '한도 안이면 쓴 횟수 그대로다', used: 3, limit: 10, expected: 3 },
+    { title: '한도까지 쓰면 한도다', used: 10, limit: 10, expected: 10 },
+    { title: '한도보다 많이 센 기록은 한도로 줄인다', used: 14, limit: 10, expected: 10 },
+  ])('$title', ({ used, limit, expected }) => {
+    // When
+    const displayed = toDisplayedUsedCount(used, limit);
+
+    // Then
+    expect(displayed).toBe(expected);
   });
 });

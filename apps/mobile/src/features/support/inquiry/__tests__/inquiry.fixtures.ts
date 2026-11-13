@@ -1,4 +1,5 @@
 import type { CreateInquiryResponse } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
 function generateCreateInquiryResponseDto(): CreateInquiryResponse {
@@ -17,13 +18,11 @@ export function createInquiryResponseDto(
 }
 
 export function createInquiryApiError(
-  overrides?: Partial<{ code: string; message: string; status: number }>,
+  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
   return new ApiError(
-    overrides?.code ?? 'INQUIRY_FAILED',
+    overrides?.code ?? 'SYS_0001',
     overrides?.message ?? '문의 접수에 실패했습니다',
     overrides?.status ?? 500,
   );
 }
-
-export const INVALID_DTO = { invalid: 'data' };

@@ -1,5 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
-
 import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
 import type {
   CreateTodoData,
@@ -7,7 +5,6 @@ import type {
   StagedTodoCreatorPort,
 } from "#api/modules/planning/todos/planning-todos.public";
 import { TodoLockKeys } from "#api/modules/planning/todos/planning-todos.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -15,7 +12,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { MemoId } from "../../domain/memo-id.vo.js";
-import { memoNotFound } from "../memos.errors.js";
+import { memoNotFound, stagedTodoMissing } from "../memos.errors.js";
 import { MemoLockKeys } from "../memos.lock-keys.js";
 import { MemoLogEvent } from "../memos.log-events.js";
 import type { MemoRepositoryPort } from "../ports/memo.repository.port.js";
@@ -74,9 +71,7 @@ export class ConvertMemoToTodoUseCase {
       });
       const createdTodo = staged.todos.at(0);
       if (createdTodo == null) {
-        throw new ApplicationException(ErrorCode.SYS_0001, {
-          detail: "Staged todo creation returned no todo",
-        });
+        throw stagedTodoMissing();
       }
       afterCommit.register(staged.afterCommit);
       await memoRepository.delete(memo);

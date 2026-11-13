@@ -31,24 +31,24 @@ export function KeyboardAdaptiveButton({
   useKeyboardHandler({
     onStart: (event) => {
       'worklet';
-      isKeyboardOpen.value = event.height > 0;
+      isKeyboardOpen.set(event.height > 0);
     },
   });
 
   const containerStyle = useAnimatedStyle(() => ({
-    paddingLeft: withTiming(insets.left + (isKeyboardOpen.value ? 0 : CONTAINER_PADDING_X), {
+    paddingLeft: withTiming(insets.left + (isKeyboardOpen.get() ? 0 : CONTAINER_PADDING_X), {
       duration: ANIMATION_DURATION_MS,
     }),
-    paddingRight: withTiming(insets.right + (isKeyboardOpen.value ? 0 : CONTAINER_PADDING_X), {
+    paddingRight: withTiming(insets.right + (isKeyboardOpen.get() ? 0 : CONTAINER_PADDING_X), {
       duration: ANIMATION_DURATION_MS,
     }),
-    paddingBottom: withTiming(isKeyboardOpen.value ? 0 : insets.bottom || DEFAULT_BOTTOM_PADDING, {
+    paddingBottom: withTiming(isKeyboardOpen.get() ? 0 : insets.bottom || DEFAULT_BOTTOM_PADDING, {
       duration: ANIMATION_DURATION_MS,
     }),
   }));
 
   const buttonStyle = useAnimatedStyle(() => ({
-    borderRadius: withTiming(isKeyboardOpen.value ? 0 : BUTTON_RADIUS, {
+    borderRadius: withTiming(isKeyboardOpen.get() ? 0 : BUTTON_RADIUS, {
       duration: ANIMATION_DURATION_MS,
     }),
   }));

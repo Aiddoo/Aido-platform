@@ -9,6 +9,47 @@ const createProgress = (overrides?: Partial<ActivationProgress>): ActivationProg
   ...overrides,
 });
 
+describe('canActivate', () => {
+  it.each([
+    { title: '이 기기에서 만든 기록이 없으면 활성화로 세지 않는다', progress: {}, expected: false },
+    {
+      title: '만든 뒤 아직 활성화하지 않았으면 센다',
+      progress: { todoCreatedAt: toInstant('2026-08-02T10:00:00.000Z') },
+      expected: true,
+    },
+    {
+      title: '이미 활성화했으면 다시 세지 않는다',
+      progress: {
+        todoCreatedAt: toInstant('2026-08-02T10:00:00.000Z'),
+        activatedAt: toInstant('2026-08-02T12:00:00.000Z'),
+      },
+      expected: false,
+    },
+  ])('$title', ({ progress, expected }) => {
+    // When
+    const result = ActivationPolicy.canActivate(createProgress(progress));
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('withTodoCreated', () => {
+  it('처음 만든 시각을 덮어쓰지 않는다', () => {
+    // Given
+    const progress = createProgress({ todoCreatedAt: toInstant('2026-08-02T10:00:00.000Z') });
+
+    // When
+    const result = ActivationPolicy.withTodoCreated(
+      progress,
+      toInstant('2026-08-03T10:00:00.000Z'),
+    );
+
+    // Then
+    expect(result).toBe(progress);
+  });
+});
+
 describe('shouldOfferChecklist', () => {
   const user = { id: 'new-user', createdAt: toInstant('2026-08-01T09:00:00.000Z') };
 
