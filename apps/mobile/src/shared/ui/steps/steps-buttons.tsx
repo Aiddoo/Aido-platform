@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { cn } from '@src/shared/utils/cn';
@@ -40,6 +41,10 @@ export function StepsButtons({
   onNext,
 }: StepsButtonsProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
+  const fontScaledSize = useFontScaledSize();
+  // 체크는 옆 글자와 함께 커지고 슬롯도 같은 비율로 넓힌다
+  const checkSize = fontScaledSize(CHECK_SIZE);
+  const checkSlotWidth = fontScaledSize(CHECK_SLOT_WIDTH);
   const containerWidth = useSharedValue(0);
   const canGoBack = index > 0;
   const handleBack = useSingleTap(onBack);
@@ -66,7 +71,7 @@ export function StepsButtons({
   }));
 
   const checkStyle = useAnimatedStyle(() => ({
-    width: interpolate(checkProgress.get(), [0, 1], [0, CHECK_SLOT_WIDTH]),
+    width: interpolate(checkProgress.get(), [0, 1], [0, checkSlotWidth]),
     opacity: checkProgress.get(),
     marginRight: interpolate(checkProgress.get(), [0, 1], [0, CHECK_SLOT_GAP]),
   }));
@@ -104,8 +109,8 @@ export function StepsButtons({
           <View style={styles.label}>
             <Animated.View style={[styles.check, checkStyle]}>
               <CheckmarkIcon
-                width={CHECK_SIZE}
-                height={CHECK_SIZE}
+                width={checkSize}
+                height={checkSize}
                 colorClassName="text-white dark:text-gray-9"
               />
             </Animated.View>

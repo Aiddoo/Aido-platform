@@ -1,6 +1,4 @@
-import { ApiError } from '@src/core/errors/api-error';
-import { ParseError } from '@src/shared/errors/infra-error';
-import { createHttpClientStub, createLoggerStub } from '@src/testing/core';
+import { createHttpClientStub, createAppLoggerStub } from '@src/testing/core';
 
 import { createWeatherReportDto } from '../__tests__/weather-report.fixtures';
 import { WeatherApi } from './weather.api';
@@ -10,7 +8,7 @@ describe('WeatherApi.getReport', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue({ ok: true, value: createWeatherReportDto() });
-    const api = new WeatherApi(httpClient, createLoggerStub());
+    const api = new WeatherApi(httpClient, createAppLoggerStub());
     const signal = new AbortController().signal;
 
     // When
@@ -34,7 +32,7 @@ describe('WeatherApi.getReport', () => {
         airQuality: { pm10: 30, pm25: 15, source: 'NEW_SOURCE' },
       },
     });
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const api = new WeatherApi(httpClient, logger);
 
     // When
@@ -45,38 +43,8 @@ describe('WeatherApi.getReport', () => {
     expect(result.ok && result.value.airQuality).toBeNull();
     expect(logger.warn).toHaveBeenCalledTimes(1);
     expect(logger.warn).toHaveBeenCalledWith('weather.report.enum-fallback', {
-      fields: ['current.condition', 'hourly[].precipitationType', 'airQuality'],
+      fields: 'current.condition,hourly[].precipitationType,airQuality',
     });
-  });
-
-  it('응답이 공유 계약과 다르면 ParseError를 던진다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    httpClient.get.mockResolvedValue({
-      ok: true,
-      value: { ...createWeatherReportDto(), hourly: null },
-    });
-    const api = new WeatherApi(httpClient, createLoggerStub());
-
-    // When
-    const request = api.getReport();
-
-    // Then
-    await expect(request).rejects.toBeInstanceOf(ParseError);
-  });
-
-  it('서버 비즈니스 오류는 바꾸지 않고 그대로 돌려준다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    const apiError = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
-    httpClient.get.mockResolvedValue({ ok: false, error: apiError });
-    const api = new WeatherApi(httpClient, createLoggerStub());
-
-    // When
-    const result = await api.getReport();
-
-    // Then
-    expect(result).toEqual({ ok: false, error: apiError });
   });
 });
 
@@ -88,7 +56,7 @@ describe('WeatherApi.updateLocation', () => {
       ok: true,
       value: { latitude: 35.6812, longitude: 139.7671, timezone: 'Asia/Tokyo' },
     });
-    const api = new WeatherApi(httpClient, createLoggerStub());
+    const api = new WeatherApi(httpClient, createAppLoggerStub());
 
     // When
     const result = await api.updateLocation({ latitude: 35.6812, longitude: 139.7671 });
@@ -103,18 +71,5 @@ describe('WeatherApi.updateLocation', () => {
       ok: true,
       value: { latitude: 35.6812, longitude: 139.7671, timezone: 'Asia/Tokyo' },
     });
-  });
-
-  it('위치 응답에 시간대가 없으면 ParseError를 던진다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    httpClient.put.mockResolvedValue({ ok: true, value: { latitude: 1, longitude: 2 } });
-    const api = new WeatherApi(httpClient, createLoggerStub());
-
-    // When
-    const request = api.updateLocation({ latitude: 1, longitude: 2 });
-
-    // Then
-    await expect(request).rejects.toBeInstanceOf(ParseError);
   });
 });

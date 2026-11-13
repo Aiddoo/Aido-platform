@@ -1,10 +1,15 @@
 import { toInstant } from '@src/shared/date/instant';
 import { createDateKey } from '@src/testing/date-key';
 
-import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
+import { RELEASE_1_15_0, RELEASES } from '../constants/releases.constants';
 import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
 import type { Release } from './whats-new.model';
-import { WhatsNewPolicy } from './whats-new.model';
+import {
+  findReleaseByCampaign,
+  getLatestRelease,
+  shouldShowReentry,
+  WhatsNewPolicy,
+} from './whats-new.model';
 
 const createEnabledConfig = (
   overrides: Partial<Extract<WhatsNewCampaignConfig, { enabled: true }>> = {},
@@ -40,7 +45,7 @@ describe('shouldAutoOpen', () => {
       { config: createEnabledConfig({ campaignId: 'feature-discovery-2026-08' }) },
     ],
     ['지원 버전보다 낮은 앱', { appVersion: '1.14.9' }],
-    ['알 수 없는 앱 버전', { appVersion: undefined }],
+    ['알 수 없는 앱 버전', { appVersion: null }],
     ['이미 본 캠페인', { hasSeen: true }],
     ['자동 열기 비활성', { config: createEnabledConfig({ autoOpen: false }) }],
   ])('%s이면 열지 않는다', (_label, overrides) => {
@@ -64,7 +69,7 @@ describe('getLatestRelease', () => {
     ];
 
     // When
-    const result = WhatsNewPolicy.getLatestRelease(releases);
+    const result = getLatestRelease(releases);
 
     // Then
     expect(result.releasedOn).toBe('2026-11-01');
@@ -74,34 +79,14 @@ describe('getLatestRelease', () => {
 describe('findReleaseByCampaign', () => {
   it.each([
     ['앱이 모르는', 'feature-discovery-2026-08'],
-    ['목록에만 남긴 지난 출시(친구 초대)가 쓰던', 'feature-discovery-2026-11'],
+    ['지운 지난 출시(친구 초대)가 쓰던', 'feature-discovery-2026-11'],
   ])('%s 캠페인이면 찾지 못해 자동으로 열지 않는다', (_label, campaignId) => {
     // When
-    const result = WhatsNewPolicy.findReleaseByCampaign(RELEASES, campaignId);
+    const result = findReleaseByCampaign(RELEASES, campaignId);
 
     // Then
     expect(result).toBeNull();
   });
-});
-
-describe('canViewRelease', () => {
-  it.each([
-    [true, false, false],
-    [true, true, true],
-    [false, false, true],
-  ])(
-    '초대 필요 %s, 초대 가능 %s이면 목록에 보이는지 %s다',
-    (requiresInvite, isInviteAvailable, expected) => {
-      // When
-      const result = WhatsNewPolicy.canViewRelease(
-        { ...RELEASES[0], requiresInvite },
-        { isInviteAvailable },
-      );
-
-      // Then
-      expect(result).toBe(expected);
-    },
-  );
 });
 
 describe('shouldShowReentry', () => {
@@ -114,7 +99,7 @@ describe('shouldShowReentry', () => {
     ['2026-10-31T23:59:59.000Z', true],
   ])('%s에는 %s다', (now, expected) => {
     // When
-    const result = WhatsNewPolicy.shouldShowReentry(openedAt, toInstant(now));
+    const result = shouldShowReentry(openedAt, toInstant(now));
 
     // Then
     expect(result).toBe(expected);
@@ -122,7 +107,7 @@ describe('shouldShowReentry', () => {
 
   it('처음 본 기록이 없으면 보이지 않는다', () => {
     // When
-    const result = WhatsNewPolicy.shouldShowReentry(null, openedAt);
+    const result = shouldShowReentry(null, openedAt);
 
     // Then
     expect(result).toBe(false);

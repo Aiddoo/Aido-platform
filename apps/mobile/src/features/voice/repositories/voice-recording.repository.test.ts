@@ -1,5 +1,5 @@
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
-import { createLocalFileSystemFake, createLoggerStub } from '@src/testing/core';
+import { createLocalFileSystemFake, createAppLoggerStub } from '@src/testing/core';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { createVoiceRecordingRepository } from './voice-recording.repository';
@@ -9,7 +9,7 @@ const OWNER_DIRECTORY = ['voice-notes', 'user-1'];
 
 function createRepository() {
   const files = createLocalFileSystemFake();
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
 
   return { files, logger, repository: createVoiceRecordingRepository(files, logger) };
 }
@@ -87,11 +87,11 @@ describe('VoiceRecordingRepository', () => {
   it('초안이 가리키지 않고 한 시간이 지난 파일만 지운다', () => {
     // Given
     const { files, repository } = createRepository();
-    const old = new Date('2026-11-01T00:00:00.000Z');
-    files.addFile(OWNER_DIRECTORY, 'orphan-old.wav', { modifiedAt: old });
-    files.addFile(OWNER_DIRECTORY, 'referenced-old.wav', { modifiedAt: old });
+    const old = Date.parse('2026-11-01T00:00:00.000Z');
+    files.addFile(OWNER_DIRECTORY, 'orphan-old.wav', { modifiedAtMs: old });
+    files.addFile(OWNER_DIRECTORY, 'referenced-old.wav', { modifiedAtMs: old });
     files.addFile(OWNER_DIRECTORY, 'orphan-new.wav', {
-      modifiedAt: new Date(toEpochMs(NOW) - 10 * 60 * 1_000),
+      modifiedAtMs: toEpochMs(NOW) - 10 * 60 * 1_000,
     });
 
     // When

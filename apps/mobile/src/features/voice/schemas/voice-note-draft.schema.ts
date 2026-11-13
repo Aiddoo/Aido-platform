@@ -15,7 +15,7 @@ function createStoredPlanDraftSchema(timeZone: string) {
   });
 }
 
-// 기기에 남긴 초안. 칸이 생기기 전에 저장한 초안도 읽도록 새 칸은 기본값을 둔다
+// 기기에 남긴 초안. 칸이 생기기 전에 저장한 초안도 읽도록 새 칸은 기본값을 둔다. 기본값은 1.16.0에서 지운다(compatibility.md)
 function buildVoiceNoteDraftSchema(timeZone: string) {
   const { shape } = voiceNoteSchema;
   return voiceNoteSchema.extend({

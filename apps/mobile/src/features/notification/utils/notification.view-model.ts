@@ -30,7 +30,6 @@ const LABEL_KEY_BY_TYPE = {
   SYSTEM_NOTICE: 'notice',
   ADMIN_BROADCAST: 'notice',
   ADMIN_TARGETED: 'notice',
-  // 보상 기간이 곧 끝난다는 알림이면 구독 화면의 남은 기간을 서버 값으로 맞춘다
   PREMIUM_GRANT_ENDING: 'notice',
   SOCIAL_DIGEST: 'social',
   NUDGE_SUGGEST: 'social',

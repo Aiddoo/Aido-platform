@@ -40,8 +40,20 @@ export const friendQuotaErrorDetailsSchema = quotaErrorDetailsSchema
   .extend(friendLimitErrorDetailsSchema.shape)
   .describe("친구 한도 초과 상세 (current·limit + 차감 없음 + 현재 한도)");
 
+/** 인증 코드 재발송 대기(VERIFY_0753). 앱이 다시 보내기 타이머를 켜는 남은 초 */
+export const verificationResendCooldownErrorDetailsSchema = z
+  .object({
+    remainingSeconds: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe("마지막 발급에서 다시 보낼 수 있을 때까지 남은 초"),
+  })
+  .describe("인증 코드 재발송 대기 상세");
+
 // 운영 응답에는 여기 등록한 코드의 검증된 필드만 싣고 나머지 details는 숨긴다
 const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
+  [ErrorCode.VERIFY_0753]: verificationResendCooldownErrorDetailsSchema,
   [ErrorCode.TODO_0841]: todoSeriesNotFoundErrorDetailsSchema,
   [ErrorCode.TODO_0842]: todoSeriesLimitErrorDetailsSchema,
   [ErrorCode.TODO_0843]: todoSeriesNoDatesErrorDetailsSchema,
@@ -63,6 +75,11 @@ const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
   [ErrorCode.AI_1315]: actionPlanRejectedErrorDetailsSchema,
   [ErrorCode.AI_1318]: notChargedErrorDetailsSchema,
 };
+
+/** 운영 응답에 details를 싣는 코드인지. 앱이 details를 읽는 코드는 모두 여기 등록돼야 한다 */
+export function hasPublicErrorDetails(code: string): boolean {
+  return Object.hasOwn(PUBLIC_ERROR_DETAILS, code);
+}
 
 /** 공개 상세가 정해진 코드면 그 스키마로 거른 값을, 아니면 undefined를 반환한다. */
 export function toPublicErrorDetails(code: ErrorCodeType, details: unknown): unknown {

@@ -1,7 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -13,6 +11,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
@@ -50,7 +49,7 @@ export class UpdateTodoVisibilityUseCase {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(id)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
       if (todo == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+        throw todoNotFound(id);
       }
 
       if (!todo.changeVisibility(visibility, this.#dependencies.clock.now())) {
@@ -71,7 +70,7 @@ export class UpdateTodoVisibilityUseCase {
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, ownerId);
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      throw todoNotFound(id);
     }
     return response;
   }

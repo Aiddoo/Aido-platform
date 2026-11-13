@@ -2,7 +2,12 @@ import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { Text } from '@src/shared/ui';
-import { createAnalyticsStub, createHttpClientStub } from '@src/testing/core';
+import {
+  createAnalyticsStub,
+  createHttpClientStub,
+  createPendingResponse,
+  createTestDi,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, waitFor } from '@testing-library/react-native';
@@ -26,7 +31,7 @@ async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
     <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명">
       <Text testID="target">마이크</Text>
     </CoachmarkPopover>,
-    { di: { httpClient, syncStorage, analytics } },
+    { di: createTestDi({ ports: { httpClient, syncStorage, analytics } }) },
   );
 
   return { analytics };
@@ -55,7 +60,7 @@ async function renderCoachmarkOnHiddenTab() {
     </CoachmarkPopover>
   );
   const { rerender } = await renderScreen(coachmark(), {
-    di: { httpClient, syncStorage, analytics },
+    di: createTestDi({ ports: { httpClient, syncStorage, analytics } }),
   });
 
   return {
@@ -89,12 +94,8 @@ describe('CoachmarkPopover', () => {
   it('내 정보를 읽은 뒤에도 대상을 다시 마운트하지 않아 누르던 탭을 잃지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    let resolveMe: (value: ReturnType<typeof ok>) => void = jest.fn();
-    httpClient.get.mockReturnValue(
-      new Promise((resolve) => {
-        resolveMe = resolve;
-      }),
-    );
+    const me = createPendingResponse(ok(createCurrentUserDto()));
+    httpClient.get.mockReturnValue(me.response);
     const onMount = jest.fn();
     const onUnmount = jest.fn();
     const Target = () => {
@@ -109,14 +110,12 @@ describe('CoachmarkPopover', () => {
       <CoachmarkPopover kind="voice-note-start" title="안내 제목" description="안내 설명">
         <Target />
       </CoachmarkPopover>,
-      {
-        di: { httpClient, analytics: createAnalyticsStub() },
-      },
+      { di: createTestDi({ ports: { httpClient, analytics: createAnalyticsStub() } }) },
     );
     expect(onMount).toHaveBeenCalledTimes(1);
 
     // When
-    await act(async () => resolveMe(ok(createCurrentUserDto())));
+    await act(async () => me.settle());
 
     // Then
     expect(onMount).toHaveBeenCalledTimes(1);
@@ -142,9 +141,7 @@ describe('CoachmarkPopover', () => {
         >
           <Text testID="target">마이크</Text>
         </CoachmarkPopover>,
-        {
-          di: { httpClient, analytics },
-        },
+        { di: createTestDi({ ports: { httpClient, analytics } }) },
       );
       await act(() => jest.advanceTimersByTimeAsync(600));
 
@@ -249,7 +246,7 @@ describe('CoachmarkPopover', () => {
       <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명" isForced>
         <Text testID="target">마이크</Text>
       </CoachmarkPopover>,
-      { di: { httpClient, syncStorage, analytics } },
+      { di: createTestDi({ ports: { httpClient, syncStorage, analytics } }) },
     );
 
     // Then
@@ -291,7 +288,7 @@ describe('CoachmarkPopover', () => {
       </CoachmarkPopover>
     );
     const { rerender } = await renderScreen(renderHint(false), {
-      di: { httpClient, syncStorage, analytics },
+      di: createTestDi({ ports: { httpClient, syncStorage, analytics } }),
     });
     await waitFor(() =>
       expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {

@@ -33,9 +33,9 @@ export const registerSchema = z
     passwordConfirm: z.string().describe("비밀번호 확인 (password 필드와 일치 필수)"),
     name: z
       .string()
+      .trim()
       .min(1, "이름을 입력해주세요")
       .max(20, "이름은 20자 이내여야 합니다")
-      .trim()
       .optional()
       .describe("사용자 이름 (선택, 최대 20자, 예: 홍길동)"),
     termsAgreed: z
@@ -191,9 +191,9 @@ export const updateProfileSchema = z
   .object({
     name: z
       .string()
+      .trim()
       .min(1, "이름을 입력해주세요")
       .max(20, "이름은 20자 이내여야 합니다")
-      .trim()
       .optional()
       .describe("사용자 이름"),
     profileImage: z

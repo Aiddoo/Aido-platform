@@ -1,14 +1,15 @@
+import { HttpStatus } from '@aido/api/errors';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { useErrorReporter } from '@src/shared/di/shared-di-context';
 import {
-  classifyBoundaryError,
+  classifyError,
+  getErrorDiagnosis,
   getErrorMessage,
-  isApiError,
-  isConnectivityError,
-  toError,
+  reportUnexpectedError,
 } from '@src/shared/errors';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
-import { QueryErrorResetBoundary } from '@tanstack/react-query';
+import { QueryErrorResetBoundary, useQueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { match } from 'ts-pattern';
@@ -26,6 +27,50 @@ interface QueryErrorBoundaryProps {
   fallback?: (props: QueryErrorFallbackProps) => ReactNode;
   /** 쿼리 식별자가 바뀌면 이전 식별자의 fallback 상태를 자동 해제한다. */
   resetKeys?: unknown[];
+  /**
+   * 다시 시도가 풀어 주는 조회 오류의 범위. 기본(`own`)은 이 경계 안이다. 바깥 경계가 맡은 조회를 안에서도 그리는
+   * 안쪽 경계는 `parent`로 바깥 범위를 함께 쓴다. 범위가 갈리면 바깥 다시 시도 뒤에도 안쪽이 그 조회를 다시 받지 않고
+   * 남은 오류를 그대로 던진다(TanStack `retryOnMount`)
+   */
+  resetScope?: 'own' | 'parent';
+}
+
+export function QueryErrorBoundary({
+  children,
+  fallback,
+  resetKeys,
+  resetScope = 'own',
+}: QueryErrorBoundaryProps) {
+  const errorReporter = useErrorReporter();
+  const isOnline = useIsOnline();
+  const parentResetScope = useQueryErrorResetBoundary();
+
+  const renderBoundary = (reset: () => void) => (
+    <ErrorBoundary
+      onReset={reset}
+      // 연결이 바뀌면 다시 그린다: 오프라인이면 쿼리가 멈춰 로딩을, 복귀하면 새로 불러온다
+      resetKeys={[...(resetKeys ?? []), isOnline]}
+      onError={(error) => {
+        reportBoundaryError(errorReporter, error);
+      }}
+      fallbackRender={({ error, resetErrorBoundary }) =>
+        fallback ? (
+          <Fallback render={fallback} error={error} reset={resetErrorBoundary} />
+        ) : (
+          <QueryErrorFallback reset={resetErrorBoundary} />
+        )
+      }
+    >
+      {children}
+    </ErrorBoundary>
+  );
+
+  return match(resetScope)
+    .with('parent', () => renderBoundary(parentResetScope.reset))
+    .with('own', () => (
+      <QueryErrorResetBoundary>{({ reset }) => renderBoundary(reset)}</QueryErrorResetBoundary>
+    ))
+    .exhaustive();
 }
 
 /** 함수를 그대로 호출하면 React가 훅 디스패처를 걸어 주지 않아 fallback이 훅을 쓰는 순간 "Invalid hook call"로 터진다 */
@@ -36,62 +81,34 @@ function Fallback({
   return <>{render(props)}</>;
 }
 
-export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryErrorBoundaryProps) {
-  const errorReporter = useErrorReporter();
-  const isOnline = useIsOnline();
-
-  return (
-    <QueryErrorResetBoundary>
-      {({ reset }) => (
-        <ErrorBoundary
-          onReset={reset}
-          // 연결이 바뀌면 다시 그린다: 오프라인이면 쿼리가 멈춰 로딩을, 복귀하면 새로 불러온다
-          resetKeys={[...(resetKeys ?? []), isOnline]}
-          onError={(error) => {
-            match(classifyBoundaryError(error))
-              // 로컬에 담기는 일시적 401은 에러 이슈 대신 warning 이벤트로 남긴다 —
-              // 에러로 리포트하면 콜드스타트마다 알림이 울리고, 완전 무음이면 추적이 불가능하다.
-              .with('auth-transition', () =>
-                errorReporter.captureMessage(ERROR_REPORT_MESSAGES.QUERY_BOUNDARY_AUTH_CONTAINED, {
-                  severity: 'warning',
-                  feature: 'error_boundary',
-                  statusCode: 401,
-                }),
-              )
-              .with('expected-state', () =>
-                errorReporter.addBreadcrumb({
-                  category: 'http',
-                  message: 'query_boundary_expected_state',
-                  data: isApiError(error)
-                    ? { code: error.code, statusCode: error.status }
-                    : undefined,
-                }),
-              )
-              .with('error', () => {
-                if (isConnectivityError(error)) {
-                  errorReporter.addBreadcrumb({
-                    category: 'network',
-                    level: 'warning',
-                    message: 'query_boundary_connectivity',
-                    data: { error: getErrorMessage(error) },
-                  });
-                  return;
-                }
-                errorReporter.captureException(toError(error), { feature: 'error_boundary' });
-              })
-              .exhaustive();
-          }}
-          fallbackRender={({ error, resetErrorBoundary }) =>
-            fallback ? (
-              <Fallback render={fallback} error={error} reset={resetErrorBoundary} />
-            ) : (
-              <QueryErrorFallback reset={resetErrorBoundary} />
-            )
-          }
-        >
-          {children}
-        </ErrorBoundary>
-      )}
-    </QueryErrorResetBoundary>
-  );
+/** 경계가 받은 오류를 종류마다 한 번 남긴다. 이슈는 예상하지 못한 오류뿐이다 */
+function reportBoundaryError(errorReporter: ErrorReporter, error: unknown) {
+  match(classifyError(error).kind)
+    // 로컬에 담기는 일시적 401은 이슈 대신 warning 메시지로 남긴다. 이슈면 콜드 스타트마다 알림이 울리고, 무음이면 추적하지 못한다
+    .with('auth-expired', () =>
+      errorReporter.captureMessage(ERROR_REPORT_MESSAGES.QUERY_BOUNDARY_AUTH_CONTAINED, {
+        severity: 'warning',
+        feature: 'error_boundary',
+        statusCode: HttpStatus.UNAUTHORIZED,
+      }),
+    )
+    // 404·403(없음·볼 수 없음·기능 꺼짐)처럼 다시 해도 같은 업무 상태다. fallback이 안내한다
+    .with('expected', () => {
+      const { code, status } = getErrorDiagnosis(error);
+      errorReporter.addBreadcrumb({
+        category: 'http',
+        message: 'query_boundary_expected_state',
+        data: { code, statusCode: status },
+      });
+    })
+    .with('connectivity', () =>
+      errorReporter.addBreadcrumb({
+        category: 'network',
+        level: 'warning',
+        message: 'query_boundary_connectivity',
+        data: { error: getErrorMessage(error) },
+      }),
+    )
+    .with('unexpected', () => reportUnexpectedError(errorReporter, error, 'error_boundary'))
+    .exhaustive();
 }

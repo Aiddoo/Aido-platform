@@ -5,8 +5,14 @@ import { z } from 'zod';
 import repeatLastOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-last-occurrence-cases.json';
 import repeatOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-occurrence-cases.json';
 import { toRepeat } from '../apis/todo-repeat.mapper';
-import { type TodoRepeat, todoRepeatSchema } from './todo-repeat.model';
-import { TodoRepeatPolicy } from './todo-repeat.model';
+import {
+  getTodoEditScopeDecision,
+  isBeyondRepeatHorizon,
+  isMonthBeyondRepeatHorizon,
+  type TodoRepeat,
+  TodoRepeatPolicy,
+  todoRepeatSchema,
+} from './todo-repeat.model';
 
 /** 서버 RepeatRule도 같은 표를 읽는다. 두 구현이 어긋나면 어느 한쪽 테스트가 깨진다 */
 const SHARED_OCCURRENCE_CASES = z
@@ -37,17 +43,19 @@ const SHARED_LAST_OCCURRENCE_CASES = z
 const MONDAY = createDateKey('2026-11-02');
 const WEDNESDAY = createDateKey('2026-11-04');
 
-const createWeekly = (overrides: Partial<Extract<TodoRepeat, { frequency: 'WEEKLY' }>> = {}) =>
-  todoRepeatSchema.parse({
+function createWeekly(overrides: Partial<Extract<TodoRepeat, { frequency: 'WEEKLY' }>> = {}) {
+  return todoRepeatSchema.parse({
     frequency: 'WEEKLY',
     interval: 1,
     weekdays: ['MON'],
     end: { type: 'NEVER' },
     ...overrides,
   });
+}
 
-const createMonthly = (monthDay: number) =>
-  todoRepeatSchema.parse({ frequency: 'MONTHLY', monthDay, end: { type: 'NEVER' } });
+function createMonthly(monthDay: number) {
+  return todoRepeatSchema.parse({ frequency: 'MONTHLY', monthDay, end: { type: 'NEVER' } });
+}
 
 const withUntil = (repeat: TodoRepeat, date: string): TodoRepeat => ({
   ...repeat,
@@ -226,6 +234,26 @@ describe('getRepeatOccurrenceDateKeys', () => {
     // Then
     expect(dates).toEqual(['2026-11-30', '2026-12-07']);
   });
+
+  describe('서버와 같은 회차 표', () => {
+    it.each(SHARED_OCCURRENCE_CASES)('$name', ({ startDate, repeat, through, expected }) => {
+      // Given
+      const appRepeat = toRepeat(repeat);
+
+      // When
+      const occurrences = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
+        appRepeat,
+        createDateKey(startDate),
+        {
+          from: createDateKey(startDate),
+          to: createDateKey(through),
+        },
+      );
+
+      // Then
+      expect(occurrences).toEqual(expected);
+    });
+  });
 });
 
 describe('findFirstRepeatOccurrenceDateKey', () => {
@@ -266,35 +294,97 @@ describe('findLastRepeatOccurrenceDateKey', () => {
     // Then
     expect(results).toEqual(['2026-11-09', null]);
   });
+
+  describe('서버와 같은 마지막 회차 표', () => {
+    it.each(SHARED_LAST_OCCURRENCE_CASES)(
+      '$name',
+      ({ startDate, repeat, expectedCount, expectedLast }) => {
+        // Given
+        const appRepeat = toRepeat(repeat);
+
+        // When
+        const last = TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(
+          appRepeat,
+          createDateKey(startDate),
+        );
+        const count = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
+          appRepeat,
+          createDateKey(startDate),
+          {
+            from: createDateKey(startDate),
+            to: createDateKey(expectedLast),
+          },
+        ).length;
+
+        // Then
+        expect({ count, last }).toEqual({ count: expectedCount, last: expectedLast });
+      },
+    );
+  });
 });
 
 describe('hasSameRepeat', () => {
-  it('7요일 매주와 매일, 요일 순서만 다른 매주는 같은 규칙이다', () => {
-    // Given
-    const allDays: TodoRepeat = {
-      frequency: 'WEEKLY',
-      interval: 1,
-      weekdays: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
-      end: { type: 'NEVER' },
-    };
-    const daily: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
+  const daily: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
+  const everyDay = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+  const allDays = createWeekly({ weekdays: [...everyDay] });
 
+  it.each([
+    { name: '7요일 매주와 매일', repeat: allDays, other: daily, expected: true },
+    {
+      name: '요일 순서만 다른 매주',
+      repeat: createWeekly({ weekdays: ['MON', 'THU'] }),
+      other: createWeekly({ weekdays: ['THU', 'MON'] }),
+      expected: true,
+    },
+    {
+      name: '격주와 매주',
+      repeat: createWeekly({ interval: 2 }),
+      other: createWeekly(),
+      expected: false,
+    },
+    {
+      name: '7요일 격주와 매일',
+      repeat: createWeekly({ interval: 2, weekdays: [...everyDay] }),
+      other: daily,
+      expected: false,
+    },
+    {
+      name: '끝 횟수만 다른 매일',
+      repeat: withCount(daily, 1),
+      other: withCount(daily, 2),
+      expected: false,
+    },
+    { name: '반복 없음 둘', repeat: null, other: null, expected: true },
+    { name: '없던 반복을 만들기', repeat: null, other: daily, expected: false },
+  ] satisfies {
+    name: string;
+    repeat: TodoRepeat | null;
+    other: TodoRepeat | null;
+    expected: boolean;
+  }[])('$name는 같은 규칙인지: $expected', ({ repeat, other, expected }) => {
     // When
-    const result = TodoRepeatPolicy.hasSameRepeat(allDays, daily);
+    const result = TodoRepeatPolicy.hasSameRepeat(repeat, other);
 
     // Then
-    expect(result).toBe(true);
+    expect(result).toBe(expected);
   });
+});
 
-  it('없던 반복을 만들면 다른 규칙이다', () => {
+describe('todoRepeatSchema', () => {
+  it.each([
+    { count: 0, isValid: false },
+    { count: 1, isValid: true },
+    { count: 365, isValid: true },
+    { count: 366, isValid: false },
+  ])('끝 횟수 $count번은 쓸 수 있는지: $isValid', ({ count, isValid }) => {
     // When
-    const result = TodoRepeatPolicy.hasSameRepeat(null, {
+    const result = todoRepeatSchema.safeParse({
       frequency: 'DAILY',
-      end: { type: 'NEVER' },
+      end: { type: 'COUNT', count },
     });
 
     // Then
-    expect(result).toBe(false);
+    expect(result.success).toBe(isValid);
   });
 });
 
@@ -334,7 +424,7 @@ describe('getTodoEditScopeDecision', () => {
     },
   ] as const)('$title', ({ input, expected }) => {
     // When
-    const decision = TodoRepeatPolicy.getTodoEditScopeDecision(input);
+    const decision = getTodoEditScopeDecision(input);
 
     // Then
     expect(decision).toBe(expected);
@@ -350,7 +440,7 @@ describe('isBeyondRepeatHorizon', () => {
     { title: '오늘 + 91일부터는 미리 만든 범위를 넘는다', dateKey: '2027-02-04', expected: true },
   ])('$title', ({ dateKey, expected }) => {
     // When
-    const result = TodoRepeatPolicy.isBeyondRepeatHorizon(createDateKey(dateKey), HORIZON_TODAY);
+    const result = isBeyondRepeatHorizon(createDateKey(dateKey), HORIZON_TODAY);
 
     // Then
     expect(result).toBe(expected);
@@ -368,130 +458,9 @@ describe('isMonthBeyondRepeatHorizon', () => {
     { title: '범위를 완전히 벗어난 달은 넘어간 달이다', dateKey: '2027-03-01', expected: true },
   ])('$title', ({ dateKey, expected }) => {
     // When
-    const result = TodoRepeatPolicy.isMonthBeyondRepeatHorizon(
-      createDateKey(dateKey),
-      HORIZON_TODAY,
-    );
+    const result = isMonthBeyondRepeatHorizon(createDateKey(dateKey), HORIZON_TODAY);
 
     // Then
     expect(result).toBe(expected);
-  });
-});
-
-const REPEAT_RULE = createWeekly();
-const RULE_OCCURRENCE = { recurrenceGroupId: 'series-1', repeat: REPEAT_RULE };
-const RULELESS_OCCURRENCE = { recurrenceGroupId: 'old-group', repeat: null };
-const SINGLE_OCCURRENCE = { recurrenceGroupId: null, repeat: null };
-
-describe('hasRepeatRule', () => {
-  it.each([
-    { title: '규칙 있는 회차는 반복 규칙이 있다', occurrence: RULE_OCCURRENCE, expected: true },
-    {
-      title: '규칙 없는 묶음은 반복 규칙이 없다',
-      occurrence: RULELESS_OCCURRENCE,
-      expected: false,
-    },
-    { title: '단일 할 일은 반복 규칙이 없다', occurrence: SINGLE_OCCURRENCE, expected: false },
-  ])('$title', ({ occurrence, expected }) => {
-    // When
-    const result = TodoRepeatPolicy.hasRepeatRule(occurrence);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('canChangeRepeat', () => {
-  it.each([
-    { title: '규칙 있는 회차는 반복을 바꿀 수 있다', occurrence: RULE_OCCURRENCE, expected: true },
-    {
-      title: '규칙 없는 묶음은 반복을 바꿀 수 없다',
-      occurrence: RULELESS_OCCURRENCE,
-      expected: false,
-    },
-    {
-      title: '단일 할 일은 반복을 새로 정할 수 있다',
-      occurrence: SINGLE_OCCURRENCE,
-      expected: true,
-    },
-  ])('$title', ({ occurrence, expected }) => {
-    // When
-    const result = TodoRepeatPolicy.canChangeRepeat(occurrence);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('getDeleteScopes', () => {
-  it.each([
-    {
-      title: '규칙 있는 회차는 이번만, 이후 전체, 전체를 고를 수 있다',
-      occurrence: RULE_OCCURRENCE,
-      expected: ['THIS_ONLY', 'THIS_AND_FOLLOWING', 'ALL'],
-    },
-    {
-      title: '규칙 없는 묶음은 이후 전체를 정할 수 없어 이번만과 전체만 고른다',
-      occurrence: RULELESS_OCCURRENCE,
-      expected: ['THIS_ONLY', 'ALL'],
-    },
-    {
-      title: '단일 할 일은 고를 범위가 없다',
-      occurrence: SINGLE_OCCURRENCE,
-      expected: [],
-    },
-  ])('$title', ({ occurrence, expected }) => {
-    // When
-    const scopes = TodoRepeatPolicy.getDeleteScopes(occurrence);
-
-    // Then
-    expect(scopes).toEqual(expected);
-  });
-});
-
-describe('서버와 같은 마지막 회차 표', () => {
-  it.each(SHARED_LAST_OCCURRENCE_CASES)(
-    '$name',
-    ({ startDate, repeat, expectedCount, expectedLast }) => {
-      // Given
-      const appRepeat = toRepeat(repeat);
-
-      // When
-      const last = TodoRepeatPolicy.findLastRepeatOccurrenceDateKey(
-        appRepeat,
-        createDateKey(startDate),
-      );
-      const count = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
-        appRepeat,
-        createDateKey(startDate),
-        {
-          from: createDateKey(startDate),
-          to: createDateKey(expectedLast),
-        },
-      ).length;
-
-      // Then
-      expect({ count, last }).toEqual({ count: expectedCount, last: expectedLast });
-    },
-  );
-});
-
-describe('서버와 같은 회차 표', () => {
-  it.each(SHARED_OCCURRENCE_CASES)('$name', ({ startDate, repeat, through, expected }) => {
-    // Given
-    const appRepeat = toRepeat(repeat);
-
-    // When
-    const occurrences = TodoRepeatPolicy.getRepeatOccurrenceDateKeys(
-      appRepeat,
-      createDateKey(startDate),
-      {
-        from: createDateKey(startDate),
-        to: createDateKey(through),
-      },
-    );
-
-    // Then
-    expect(occurrences).toEqual(expected);
   });
 });

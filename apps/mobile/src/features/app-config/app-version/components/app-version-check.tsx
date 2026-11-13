@@ -1,11 +1,10 @@
 import { useApplicationMetadata } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, HStack, SettingsListGroup, Text, useConfirmDialog } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { Spinner } from 'heroui-native';
 import { match } from 'ts-pattern';
@@ -17,7 +16,6 @@ import { useGetAppVersionQueryOptions } from '../queries/app-version.queries';
 export function AppVersionCheck() {
   const { t } = useTranslation('appVersion');
   const applicationMetadata = useApplicationMetadata();
-  const reportUnexpectedError = useReportUnexpectedError('app_version');
   const toast = useAppToast();
   const { trackEvent } = useTrack();
   const confirmDialog = useConfirmDialog();
@@ -33,11 +31,9 @@ export function AppVersionCheck() {
       return;
     }
 
+    // 조회 실패의 보고는 전역 조회 캐시가 한다
     const result = await query.refetch();
-    if (result.isError || !result.data || !installation) {
-      if (result.error) {
-        reportUnexpectedError(result.error);
-      }
+    if (result.isError || result.data == null || installation == null) {
       toast.error(t('checkFailed'));
       return;
     }

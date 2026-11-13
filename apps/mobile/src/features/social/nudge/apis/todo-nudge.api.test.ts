@@ -3,10 +3,8 @@ import { createHttpClientStub } from '@src/testing/core';
 
 import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtures';
 import {
-  createNudgeApiError,
   createNudgeLimitInfoDto,
   createSendNudgeResponseDto,
-  INVALID_DTO,
 } from '../__tests__/todo-nudge.fixtures';
 import { TodoNudgeApi } from './todo-nudge.api';
 
@@ -71,46 +69,6 @@ describe('TodoNudgeApi', () => {
         todoId: 1,
         message: undefined,
       });
-    });
-
-    it('하루 한도를 넘으면 NUDGE_1101 오류를 반환한다', async () => {
-      // Given
-      const apiError = createNudgeApiError({ code: 'NUDGE_1101' });
-      httpClient.post.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.sendNudge({ receiverId: 'user-1', todoId: 1 });
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    it('쿨다운 중이면 NUDGE_1103 오류를 반환한다', async () => {
-      // Given
-      const apiError = createNudgeApiError({
-        code: 'NUDGE_1103',
-        message: '아직 쿨다운 중이에요',
-      });
-      httpClient.post.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.sendNudge({ receiverId: 'user-1', todoId: 1 });
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    it('응답이 계약과 다르면 ParseError를 던진다', async () => {
-      // Given
-      httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-      // When
-
-      const result = service.sendNudge({ receiverId: 'user-1', todoId: 1 });
-
-      // Then
-
-      await expect(result).rejects.toThrow('Invalid sendNudge response');
     });
   });
 

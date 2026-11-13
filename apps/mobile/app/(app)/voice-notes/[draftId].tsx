@@ -1,18 +1,46 @@
+import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
-import { VoiceNoteDigest } from '@src/features/voice/components/note/voice-note-digest';
-import { VoiceNoteOffline } from '@src/features/voice/components/note/voice-note-offline';
-import { VoiceNoteResult } from '@src/features/voice/components/note/voice-note-result';
-import { useCurrentVoiceNoteStage } from '@src/features/voice/hooks/use-current-voice-note';
+import { VoiceNoteDigest } from '@src/features/voice/components/voice-note-digest/voice-note-digest';
+import { VoiceNoteOffline } from '@src/features/voice/components/voice-note-offline';
+import { VoiceNoteResult } from '@src/features/voice/components/voice-note-result/voice-note-result';
+import { useCurrentVoiceNoteStage } from '@src/features/voice/hooks/use-current-voice-note-stage';
+import { useVoiceNoteDraftId } from '@src/features/voice/hooks/use-voice-note-params';
 import { voiceNoteParamsSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Result, StyledSafeAreaView, VStack } from '@src/shared/ui';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack } from 'expo-router';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
+export default function VoiceNoteRoute() {
+  const route = useRouteParamsOrRedirect(voiceNoteParamsSchema, { fallbackHref: '/memo' });
+
+  if (route.redirect != null) {
+    return route.redirect;
+  }
+
+  return <VoiceNoteScreen />;
+}
+
 function VoiceNoteScreen() {
-  const stage = useCurrentVoiceNoteStage();
+  const [draftId] = useVoiceNoteDraftId();
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
+      <QueryErrorBoundary fallback={VoiceNoteResult.Error} resetKeys={[draftId]}>
+        <Suspense fallback={<VoiceNoteScreen.Loading />}>
+          <VoiceNoteScreen.Stage key={draftId} />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
+  );
+}
+
+VoiceNoteScreen.Stage = function Stage() {
+  const accountId = useSuspenseMyAccountId();
+  const stage = useCurrentVoiceNoteStage(accountId);
   const refreshMemos = useRefreshMemos();
 
   return (
@@ -24,7 +52,7 @@ function VoiceNoteScreen() {
         .exhaustive()}
     </VStack>
   );
-}
+};
 
 /** 헤더는 레이아웃이 미리 그려 받은 뒤에 밀리지 않는다. 오프라인이면 연결을 기다린다고 알린다 */
 VoiceNoteScreen.Loading = function Loading() {
@@ -51,21 +79,3 @@ VoiceNoteScreen.NotFound = function NotFound() {
     </>
   );
 };
-
-export default function VoiceNoteRoute() {
-  const params = voiceNoteParamsSchema.safeParse(useLocalSearchParams());
-
-  if (!params.success) {
-    return <Redirect href="/memo" />;
-  }
-
-  return (
-    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
-      <QueryErrorBoundary fallback={VoiceNoteResult.Error} resetKeys={[params.data.draftId]}>
-        <Suspense fallback={<VoiceNoteScreen.Loading />}>
-          <VoiceNoteScreen key={params.data.draftId} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </StyledSafeAreaView>
-  );
-}

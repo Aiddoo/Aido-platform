@@ -1,5 +1,4 @@
 import type { LocalFileEntry, LocalFileSystem } from '@src/core/ports/local-file-system';
-import { toNativeDate } from '@src/shared/date/native-date';
 import { Directory, File, Paths } from 'expo-file-system';
 
 function openDirectory(directory: readonly string[]) {
@@ -13,7 +12,7 @@ function toEntry(file: File): LocalFileEntry {
     name: file.name,
     uri: file.uri,
     sizeBytes: file.size,
-    modifiedAt: lastModified == null ? null : toNativeDate(lastModified),
+    modifiedAtMs: lastModified ?? null,
   };
 }
 

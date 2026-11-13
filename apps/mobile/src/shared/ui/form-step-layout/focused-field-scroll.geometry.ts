@@ -1,3 +1,5 @@
+import { clamp } from 'react-native-reanimated';
+
 // 칸 아래 끝(오류 문구·글자 수)과 키보드 위 버튼 사이
 const FIELD_GAP_ABOVE_FOOTER = 8;
 
@@ -98,8 +100,8 @@ function getCaretSpan({ field, caret }: FocusedFieldScrollInput, contentTop: num
     return { top: inputTop, bottom: inputTop };
   }
   return {
-    top: inputTop + Math.min(Math.max(caret.top, 0), field.inputHeight),
-    bottom: inputTop + Math.min(Math.max(caret.bottom, 0), field.inputHeight),
+    top: inputTop + clamp(caret.top, 0, field.inputHeight),
+    bottom: inputTop + clamp(caret.bottom, 0, field.inputHeight),
   };
 }
 
@@ -138,7 +140,7 @@ export function getKeyboardTransitionScroll(
   const progress =
     toHeight === fromHeight
       ? 1
-      : Math.min(Math.max((keyboardHeight - fromHeight) / (toHeight - fromHeight), 0), 1);
+      : clamp((keyboardHeight - fromHeight) / (toHeight - fromHeight), 0, 1);
   return fromScroll + (targetScroll - fromScroll) * progress;
 }
 

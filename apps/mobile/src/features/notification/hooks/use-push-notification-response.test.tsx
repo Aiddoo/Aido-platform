@@ -1,21 +1,24 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { NetworkError, ServerError } from '@src/shared/errors';
 import {
   createAnalyticsStub,
+  createErrorReporterStub,
   createHttpClientStub,
-  createLoggerStub,
+  createAppLoggerStub,
+  createPendingResponse,
   createPushNotificationGatewayStub,
   createTestDi,
-  createTestQueryClient,
 } from '@src/testing/core';
-import { TestUiProvider } from '@src/testing/render';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { renderAppRoute } from '@src/testing/render-route-hook';
+import { noop } from 'es-toolkit';
 import { Slot } from 'expo-router';
-import { act, renderRouter, waitFor } from 'expo-router/testing-library';
-import type { PropsWithChildren } from 'react';
+import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
+import { useState } from 'react';
+import { Pressable, Text } from 'react-native';
 
+import { createMarkReadResponseDto } from '../__tests__/notification.fixtures';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import { usePushNotificationResponse } from './use-push-notification-response';
 
@@ -29,45 +32,39 @@ const RESPONSE = {
 
 async function setup({ status }: { status: AuthStatus }) {
   const gateway = createPushNotificationGatewayStub();
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const authSessionStore = createAuthSessionStoreStub(status);
   const httpClient = createHttpClientStub();
   const analytics = createAnalyticsStub();
-  const container = createTestDi({
-    httpClient,
-    pushNotification: gateway,
-    logger,
-    authSessionStore,
-    analytics,
+  const errorReporter = createErrorReporterStub();
+  const di = createTestDi({
+    ports: { httpClient, pushNotification: gateway, logger, analytics, errorReporter },
+    seeds: { authSessionStore },
   });
-  const queryClient = createTestQueryClient();
 
   function Layout() {
     usePushNotificationResponse();
     return <Slot />;
   }
 
-  await renderRouter(
+  await renderAppRoute(
     { _layout: Layout, index: () => null },
-    {
-      wrapper: ({ children }: PropsWithChildren) => (
-        <QueryClientProvider client={queryClient}>
-          <StaticDIProvider container={container}>
-            <TestUiProvider>
-              <LocalDateProvider>{children}</LocalDateProvider>
-            </TestUiProvider>
-          </StaticDIProvider>
-        </QueryClientProvider>
-      ),
-    },
+    { url: '/', di, withLocalDate: true },
   );
   return {
     gateway,
     httpClient,
     analytics,
+    errorReporter,
     logger,
-    store: container.pushNotificationEntryStore,
+    store: di.pushNotificationEntryStore,
     changeStatus: (next: AuthStatus) => act(async () => authSessionStore.setStatus(next)),
+    // 로그아웃은 토큰을 지워 세션 세대를 올리고 상태를 바꾼다
+    signOut: () =>
+      act(async () => {
+        await di.tokenStore.clear();
+        authSessionStore.setStatus('unauthenticated');
+      }),
   };
 }
 
@@ -107,7 +104,7 @@ describe('usePushNotificationResponse', () => {
     expect(logger.warn).toHaveBeenCalledWith('notification.push.parse-dropped', {
       source: 'response',
       responseId: 'response-1',
-      droppedPaths: ['navigation.kind'],
+      droppedPaths: 'navigation.kind',
       isReadable: true,
     });
   });
@@ -184,16 +181,13 @@ describe('usePushNotificationResponse', () => {
 
   it('수신 거부를 보내는 사이 로그아웃하면 끝난 결과를 기록하거나 응답을 다시 지우지 않는다', async () => {
     // Given
-    const { gateway, httpClient, analytics, changeStatus } = await setup({
+    const { gateway, httpClient, analytics, signOut } = await setup({
       status: 'authenticated',
     });
-    let resolveOptOut: ((value: { ok: true; value: unknown }) => void) | undefined;
-    httpClient.post.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveOptOut = resolve;
-        }),
+    const optOut = createPendingResponse(
+      ok({ optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' }),
     );
+    httpClient.post.mockReturnValueOnce(optOut.response);
     await act(async () =>
       gateway.emitResponse({
         ...RESPONSE,
@@ -202,16 +196,11 @@ describe('usePushNotificationResponse', () => {
         data: { ...RESPONSE.data, marketingOptOutToken: 'token-1' },
       }),
     );
-    await changeStatus('unauthenticated');
+    await signOut();
     gateway.clearLastResponse.mockClear();
 
     // When
-    await act(async () =>
-      resolveOptOut?.({
-        ok: true,
-        value: { optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' },
-      }),
-    );
+    await act(async () => optOut.settle());
 
     // Then
     expect(analytics.trackEvent).not.toHaveBeenCalledWith(
@@ -219,6 +208,87 @@ describe('usePushNotificationResponse', () => {
       expect.anything(),
     );
     expect(gateway.clearLastResponse).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { scenario: '서버 오류(5xx)', error: new ServerError(500), reportCount: 1 },
+    { scenario: '연결 끊김', error: new NetworkError(), reportCount: 0 },
+  ])(
+    '수신 거부가 $scenario로 실패하면 다음에 다시 보내고 예상하지 못한 실패만 $reportCount번 보고한다',
+    async ({ error, reportCount }) => {
+      // Given
+      const { gateway, httpClient, errorReporter } = await setup({ status: 'authenticated' });
+      httpClient.post.mockRejectedValueOnce(error);
+
+      // When
+      await act(async () =>
+        gateway.emitResponse({
+          ...RESPONSE,
+          id: 'opt-out',
+          actionIdentifier: 'MARKETING_OPT_OUT',
+          data: { ...RESPONSE.data, marketingOptOutToken: 'token-1' },
+        }),
+      );
+
+      // Then
+      await waitFor(() => expect(httpClient.post).toHaveBeenCalled());
+      await act(async () => {});
+      expect(errorReporter.captureException).toHaveBeenCalledTimes(reportCount);
+      expect(gateway.clearLastResponse).not.toHaveBeenCalled();
+    },
+  );
+
+  it('처리한 응답은 입구 훅이 다시 마운트돼 OS가 같은 응답을 다시 줘도 다시 읽거나 열지 않는다', async () => {
+    // Given
+    const gateway = createPushNotificationGatewayStub();
+    // OS 마지막 응답 지우기가 실패해 다시 마운트돼도 같은 응답이 남는다
+    gateway.clearLastResponse.mockImplementation(noop);
+    const httpClient = createHttpClientStub();
+    httpClient.patch.mockResolvedValue(ok(createMarkReadResponseDto()));
+    httpClient.post.mockResolvedValue(ok({ opened: true }));
+    const analytics = createAnalyticsStub();
+    const di = createTestDi({
+      ports: { httpClient, pushNotification: gateway, analytics },
+      seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+    });
+    // 앱 화면 안이라 입구 훅이 직접 연다
+    di.pushNotificationEntryStore.markAppEntry(false);
+    function Watcher() {
+      usePushNotificationResponse();
+      return null;
+    }
+    function Layout() {
+      const [mountKey, setMountKey] = useState(0);
+      return (
+        <>
+          <Watcher key={mountKey} />
+          <Pressable accessibilityRole="button" onPress={() => setMountKey((key) => key + 1)}>
+            <Text>다시 마운트</Text>
+          </Pressable>
+          <Slot />
+        </>
+      );
+    }
+    await renderAppRoute(
+      { _layout: Layout, index: () => null },
+      { url: '/', di, withLocalDate: true },
+    );
+    const response = {
+      ...RESPONSE,
+      data: { ...RESPONSE.data, notificationId: 7, navigation: { kind: 'NONE' } },
+    };
+    gateway.setLastResponse(response);
+    await act(async () => gateway.emitResponse(response));
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
+
+    // When
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: '다시 마운트' })));
+
+    // Then
+    expect(gateway.getLastResponse()).toEqual(response);
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
   });
 
   it('언마운트 전까지 응답 리스너는 하나다', async () => {

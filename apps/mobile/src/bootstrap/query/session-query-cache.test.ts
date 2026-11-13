@@ -5,6 +5,7 @@ import {
   createHapticsGatewayStub,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { act, screen } from '@testing-library/react-native';
@@ -42,15 +43,14 @@ describe('createSessionQueryCache', () => {
   it('끝난 세션의 실패는 다음 화면에 햅틱·토스트로 알리지 않는다', async () => {
     // Given
     const haptics = createHapticsGatewayStub();
-    const { queryClient } = await renderScreenHook(() => null, { di: { haptics } });
-    let fail: () => void = noop;
-    const response = new Promise<string>((_resolve, reject) => {
-      fail = () => reject(new ParseError());
+    const { queryClient } = await renderScreenHook(() => null, {
+      di: createTestDi({ ports: { haptics } }),
     });
+    const response = Promise.withResolvers<string>();
     const running = queryClient
       .getMutationCache()
       .build(queryClient, {
-        mutationFn: () => response,
+        mutationFn: () => response.promise,
         meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.addFailedRetry' } },
       })
       .execute(undefined);
@@ -59,7 +59,7 @@ describe('createSessionQueryCache', () => {
     // When
     createSessionQueryCache(queryClient).abandonPendingMutations();
     await act(async () => {
-      fail();
+      response.reject(new ParseError());
       await running.catch(noop);
     });
 

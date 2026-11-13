@@ -4,13 +4,13 @@ import {
   createAnalyticsStub,
   createAppLifecycleGatewayStub,
   createErrorReporterStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createSpeechRecognizerStub,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { noop } from 'es-toolkit';
 import { Pressable } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
@@ -20,10 +20,10 @@ import { useVoiceCaptureSession } from './use-voice-capture-session';
 /** 모델이 말소리로 보는 음량 기준보다 크다 */
 const SPEAKING_LEVEL = 0.5;
 
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 function SessionProbe({
@@ -50,13 +50,17 @@ function SessionProbe({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin"
-        onPress={() => session.begin({ locale: 'ko-KR', hintWords: ['기획팀'] })}
+        onPress={() =>
+          session.begin({ locale: 'ko-KR', hintWords: ['기획팀'], recordingDirectory: null })
+        }
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin-without-waiting"
         onPress={() => {
-          session.begin({ locale: 'ko-KR', hintWords: [] }).catch(jest.fn());
+          session
+            .begin({ locale: 'ko-KR', hintWords: [], recordingDirectory: null })
+            .catch(jest.fn());
         }}
       />
       <Pressable
@@ -106,23 +110,13 @@ async function renderSession({
       maxSeconds={maxSeconds}
       onLimitReached={onLimitReached}
     />,
-    { di: { speechRecognizer, appLifecycle, analytics, logger, errorReporter } },
+    {
+      di: createTestDi({
+        ports: { speechRecognizer, appLifecycle, analytics, logger, errorReporter },
+      }),
+    },
   );
   return { speechRecognizer, appLifecycle, analytics, errorReporter, onCaptured, unmount };
-}
-
-function createDeferred<T>() {
-  let resolve: (value: T) => void = noop;
-  let reject: (reason: unknown) => void = noop;
-  const promise = new Promise<T>((onResolve, onReject) => {
-    resolve = onResolve;
-    reject = onReject;
-  });
-  return {
-    promise,
-    resolve: (value: T) => resolve(value),
-    reject: (reason: unknown) => reject(reason),
-  };
 }
 
 describe('useVoiceCaptureSession', () => {
@@ -642,12 +636,14 @@ describe('useVoiceCaptureSession', () => {
     const user = userEvent.setup();
     const speechRecognizer = createSpeechRecognizerStub();
     const { unmount } = await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
-      di: {
-        speechRecognizer,
-        analytics: createAnalyticsStub(),
-        logger,
-        errorReporter: createErrorReporterStub(),
-      },
+      di: createTestDi({
+        ports: {
+          speechRecognizer,
+          analytics: createAnalyticsStub(),
+          logger,
+          errorReporter: createErrorReporterStub(),
+        },
+      }),
     });
     await user.press(screen.getByRole('button', { name: 'begin' }));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
@@ -940,7 +936,7 @@ describe('useVoiceCaptureSession', () => {
 
     const beginThenUnmount = async () => {
       const session = await renderSession();
-      const capabilities = createDeferred<typeof FULL>();
+      const capabilities = Promise.withResolvers<typeof FULL>();
       session.speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
       await userEvent.press(screen.getByRole('button', { name: 'begin-without-waiting' }));
       await act(async () => session.unmount());
@@ -984,7 +980,7 @@ describe('useVoiceCaptureSession', () => {
       const { speechRecognizer, unmount } = await renderSession();
       await user.press(screen.getByRole('button', { name: 'begin' }));
       await act(async () => speechRecognizer.emit({ type: 'start' }));
-      const capabilities = createDeferred<typeof FULL>();
+      const capabilities = Promise.withResolvers<typeof FULL>();
       speechRecognizer.getCapabilities.mockReturnValue(capabilities.promise);
       await user.press(screen.getByRole('button', { name: 'change-locale-without-waiting' }));
 
@@ -1063,12 +1059,14 @@ describe('useVoiceCaptureSession', () => {
       speechRecognizer.getCapabilities.mockRejectedValue(new Error('native'));
       logger.error.mockClear();
       await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
-        di: {
-          speechRecognizer,
-          analytics: createAnalyticsStub(),
-          logger,
-          errorReporter: createErrorReporterStub(),
-        },
+        di: createTestDi({
+          ports: {
+            speechRecognizer,
+            analytics: createAnalyticsStub(),
+            logger,
+            errorReporter: createErrorReporterStub(),
+          },
+        }),
       });
 
       // When
@@ -1096,12 +1094,14 @@ describe('useVoiceCaptureSession', () => {
         canContinue: false,
       });
       await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
-        di: {
-          speechRecognizer,
-          analytics: createAnalyticsStub(),
-          logger,
-          errorReporter: createErrorReporterStub(),
-        },
+        di: createTestDi({
+          ports: {
+            speechRecognizer,
+            analytics: createAnalyticsStub(),
+            logger,
+            errorReporter: createErrorReporterStub(),
+          },
+        }),
       });
 
       // When
@@ -1124,12 +1124,14 @@ describe('useVoiceCaptureSession', () => {
         canContinue: false,
       });
       await renderScreen(<SessionProbe onCaptured={jest.fn()} />, {
-        di: {
-          speechRecognizer,
-          analytics: createAnalyticsStub(),
-          logger,
-          errorReporter: createErrorReporterStub(),
-        },
+        di: createTestDi({
+          ports: {
+            speechRecognizer,
+            analytics: createAnalyticsStub(),
+            logger,
+            errorReporter: createErrorReporterStub(),
+          },
+        }),
       });
       await user.press(screen.getByRole('button', { name: 'begin' }));
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));

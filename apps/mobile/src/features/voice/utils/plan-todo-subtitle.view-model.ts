@@ -1,15 +1,13 @@
-import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
+import { formatTodoPeriod } from '@src/features/planning/todo/utils/todo-period.view-model';
+import { formatRepeatSummary } from '@src/features/planning/todo/utils/todo-repeat-summary.view-model';
 import type { DateKey } from '@src/shared/date/date-key';
 import {
   type DateFormatContext,
-  formatDateKeyRange,
   formatTimeOfDay,
-  formatYearAwareDateKeyLabel,
   type TimeFormat,
 } from '@src/shared/date/format/date-format';
 import { toTimeOfDay } from '@src/shared/date/time-of-day';
 import { compact } from 'es-toolkit';
-import { match, P } from 'ts-pattern';
 
 import type { PlanTodoFormValues } from '../schemas/plan-review-form.schema';
 
@@ -24,16 +22,9 @@ export function getPlanTodoSubtitle(
   todo: Pick<PlanTodoFormValues, 'startDate' | 'endDate' | 'scheduledTime' | 'repeat'>,
   { todayKey, timeFormat, dateFormatContext }: PlanTodoSubtitleContext,
 ): string | null {
-  const dateLabel = match(todo)
-    .with({ endDate: P.nonNullable }, ({ startDate, endDate }) =>
-      formatDateKeyRange(startDate, endDate, todayKey, dateFormatContext),
-    )
-    // 반복은 시작일보다 반복 규칙이 중요해 날짜를 숨기고, 오늘 할 일도 날짜를 보이지 않는다
-    .when(
-      ({ repeat, startDate }) => repeat == null && startDate !== todayKey,
-      ({ startDate }) => formatYearAwareDateKeyLabel(startDate, todayKey, dateFormatContext),
-    )
-    .otherwise(() => null);
+  // 하루짜리 반복은 시작일보다 반복 규칙이 중요해 날짜를 숨긴다
+  const isSingleDayRepeat = todo.repeat != null && todo.endDate == null;
+  const dateLabel = isSingleDayRepeat ? null : formatTodoPeriod(todo, todayKey, dateFormatContext);
   const timeLabel =
     todo.scheduledTime == null
       ? null

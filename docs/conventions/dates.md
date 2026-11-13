@@ -4,20 +4,31 @@
 
 ## 1. 값의 종류
 
-| 값          | 저장·전송                                                          | 예                                               |
-| ----------- | ------------------------------------------------------------------ | ------------------------------------------------ |
-| 순간        | DB `timestamp(3)`·`timestamptz(3)`(UTC), API ISO datetime/epoch ms | `createdAt`, `expiresAt`, `Todo.scheduledTime`   |
-| 달력 날짜   | DB `date`, API `YYYY-MM-DD`                                        | 할 일 `startDate`, 피드 `date`                   |
-| 벽시계 시각 | DB `varchar(5)`, API `HH:mm`(`timeOfDaySchema`)                    | 할 일 `scheduledLocalTime`, 설정의 리마인더 시각 |
-| 시간대      | IANA 이름(`Asia/Seoul`)                                            | `X-Timezone`, `UserPreference.timezone`          |
-| 표시 언어   | `ko` / `en`                                                        | `Accept-Language`, 앱 언어 설정                  |
+| 값          | 저장·전송                                                          | 예                                                |
+| ----------- | ------------------------------------------------------------------ | ------------------------------------------------- |
+| 순간        | DB `timestamp(3)`·`timestamptz(3)`(UTC), API ISO datetime/epoch ms | `createdAt`, `expiresAt`, `Todo.scheduledTime`    |
+| 달력 날짜   | DB `date`, API `YYYY-MM-DD`                                        | 할 일 `startDate`, 피드 `date`                    |
+| 벽시계 시각 | DB `varchar(5)`, API `HH:mm`(`timeOfDaySchema`)                    | 할 일 `scheduledLocalTime`, 공지 예약 `localTime` |
+| 시간대      | IANA 이름(`Asia/Seoul`)                                            | `X-Timezone`, `UserPreference.timezone`           |
+| 표시 언어   | `ko` / `en`                                                        | `Accept-Language`, 앱 언어 설정                   |
 
+- 설정의 리마인더 시각은 `HH:mm`이 아니라 시·분 숫자 두 칸이다(`morningReminderHour`·`morningReminderMinute`, `eveningReminderHour`·`eveningReminderMinute`). 앱은 이 두 칸을 `TimeOfDay`로 읽는다.
 - **할 일 시간은 떠 있는 시각이다.** 진실은 달력 날짜 + 벽시계이고 어디서든 그 시각이다. `Todo.scheduledTime`(순간)은 `날짜 + 벽시계 + 사용자 현재 시간대`로 만든 파생값으로 알림과 출시 앱 호환에 쓴다([5절](#5-떠-있는-시각)).
-- **모바일 앱 모델의 순간은 `Instant`다.** `shared/date/instant.ts`의 ISO 8601 문자열 brand(`instantSchema`는 Zod `.brand()`, 오프셋 표기도 받는다)로 서버 값을 `toInstant`로 한 번 검증해 `Date` 변환 없이 둔다. `Date`는 구조 공유가 안 돼 재조회마다 모든 항목이 다시 그려지지만 문자열은 같은 값이면 같은 참조다(메모 18개 재조회: 참조 유지 0개 → 18개). 읽기·비교는 `toDateKey(instant, timeZone)`, `toHHmm(instant, timeZone)`, `formatDateLabel(instant, …)`, `toEpochMs`, `diffMs`를 쓴다. 달력 날짜(`DateKey`)와 벽시계(`TimeOfDay`, `HH:mm`)도 같은 문자열 brand이고 모델·캐시·전송에 그대로 둔다. 문자열 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다. `Date`는 네이티브 피커 같은 경계 컴포넌트 안에서만 만든다. 초안 `sourceUpdatedAt`처럼 숫자로 저장된 값은 `toEpochMs(instant)`로 `Date#getTime()`과 같은 값을 만든다. 영속 캐시는 JSON 그대로 저장한다. 옛 `$date` 직렬화는 지웠고 `QUERY_CACHE_SCHEMA_VERSION`을 5로 올려 옛 캐시를 버린다. 지금 순간은 `getNowInstant()`, React 안의 지금 시각은 `useNow({ tickMs })`(`Instant`) 하나다. 앱 모델에 `Date`를 두지 않으며, 네이티브 피커·파일 수정 시각(`LocalFileEntry.modifiedAt`)만 경계에서 `Date`를 쓴다. 달력·날짜 피커 칸은 `DateKey`이고 달마다 한 번 만든 view-model(`getPickerMonthWeeks`)을 그려 칸에서 Intl을 부르지 않는다.
+- **모바일 앱 모델의 순간은 `Instant`다.** `shared/date/instant.ts`의 ISO 8601 문자열 brand(`instantSchema`는 Zod `.brand()`, 오프셋 표기도 받는다)로 서버 값을 `toInstant`로 한 번 검증해 `Date` 변환 없이 둔다. `Date`는 구조 공유가 안 돼 재조회마다 모든 항목이 다시 그려지지만 문자열은 같은 값이면 같은 참조다(메모 18개 재조회: 참조 유지 0개 → 18개). 읽기·비교는 `toDateKey(instant, timeZone)`, `toHHmm(instant, timeZone)`, `formatDateLabel(instant, …)`, `toEpochMs`, `diffMs`를 쓴다. 달력 날짜(`DateKey`, `YYYY-MM-DD` brand)도 모델·캐시·전송에 문자열 그대로 둔다. 벽시계는 모델·전송이 `HH:mm` 문자열(`timeOfDaySchema`)이고 계산·피커만 `TimeOfDay`(`{ hour, minute }`)로 읽는다. `DateKey`는 자리수가 고정이라 사전순 비교(`a < b`)가 날짜 순서와 같아 써도 된다. `Instant`는 오프셋 표기가 다르면 사전순이 틀리므로 `diffMs`·`toEpochMs`로 비교한다. `Date`는 네이티브 피커 같은 경계 컴포넌트 안에서만 만든다. 초안 `sourceUpdatedAt`처럼 숫자로 저장된 값은 `toEpochMs(instant)`로 `Date#getTime()`과 같은 값을 만든다. 영속 캐시는 JSON 그대로 저장한다. 옛 `$date` 직렬화는 지웠고 `QUERY_CACHE_SCHEMA_VERSION`을 5로 올려 옛 캐시를 버린다. 지금 순간은 `getNowInstant()`다. React 안에서 분 단위로 여러 화면이 함께 보는 지금은 공유 분 시계 `useMinuteNow()`, 화면마다 다른 간격이나 마감까지 다시 읽는 지금은 `useNow({ tickMs, until })`다(둘 다 `Instant`). 앱 모델에 `Date`를 두지 않으며, 네이티브 피커·파일 수정 시각(`LocalFileEntry.modifiedAt`)만 경계에서 `Date`를 쓴다. 달력·날짜 피커 칸은 `DateKey`이고 달마다 한 번 만든 view-model(`getPickerMonthWeeks`)을 그려 칸에서 Intl을 부르지 않는다.
 - 달력 날짜를 process 시간대의 `Date`로 바꾼 뒤 요일·자정을 계산하지 않는다. 날짜 산술은 `YYYY-MM-DD` key로 한다.
 - 서버 process(Docker `ENV TZ=UTC`·CI `TZ: UTC`)와 PostgreSQL 세션(`TimeZone=UTC`)은 UTC로 고정한다. 그래도 코드는 process 시간대에 의존하지 않는다.
 - **서버 날짜 계산은 Temporal이다.** 순간은 `Temporal.Instant`, 달력 날짜는 `Temporal.PlainDate`, 벽시계는 `Temporal.PlainTime`(분 단위), 시간대 계산은 IANA 이름을 명시한 `ZonedDateTime`이다. 서버의 현재 시각은 `ClockPort.now()` 하나다. 계약(`@aido/api`)은 문자열을 유지하고(Hermes에는 Temporal이 없다) 변환은 서버 presentation 경계에서만 한다. 순간 직렬화는 `toIsoString`(ms 3자리)으로 `Date#toISOString()`과 바이트 단위로 같다. `Temporal.Instant`는 `<`·`>`로 비교하지 않고 `Temporal.Instant.compare`를 쓴다. 서버 상세는 [영속성](../../apps/api/docs/persistence.md#시간-칼럼)에 있다.
-- 서버와 모바일 모두 dayjs가 없다. 모바일은 Hermes에 Temporal이 없고 폴리필도 쓰지 않는다. 날짜 key 산술은 `shared/date/date-key.ts`의 순수 계산, 순간 직렬화는 `Date#toISOString`(서버 `toIsoString`과 같은 글자), 시간대 변환과 표시는 캐시된 `Intl.DateTimeFormat`이다. 이름과 규칙은 서버 `shared/domain/time`과 같고(`toZonedInstant`) 테스트가 Node 26 Temporal과 결과를 비교한다([Temporal spike](../../apps/mobile/docs/dates-and-i18n.md#temporal-spike)).
+- 서버와 모바일 모두 dayjs가 없다. 모바일은 Hermes에 Temporal이 없고 폴리필도 쓰지 않는다. 날짜 key 산술은 `shared/date/date-key.ts`의 순수 계산, 순간 직렬화는 `Date#toISOString`(서버 `toIsoString`과 같은 글자), 시간대 변환과 표시는 캐시된 `Intl.DateTimeFormat`이다. 같은 계산은 아래 표처럼 짝이 있고 앱 테스트가 Node 26 Temporal과 결과를 비교한다([Temporal spike](../../apps/mobile/docs/dates-and-i18n.md#temporal-spike)). 주차·반복 회차처럼 두 구현이 같은 답을 내야 하는 규칙은 `packages/api/test/fixtures/*-cases.json` 표 하나를 서버 spec과 앱 테스트가 함께 읽는다.
+
+  | 계산                    | 서버(`apps/api/src/shared/domain/time`)                      | 앱(`apps/mobile/src/shared/date`)                                                |
+  | ----------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+  | 지금                    | `ClockPort.now()`                                            | `getNowInstant()`(`clock.ts`)                                                    |
+  | 순간 직렬화             | `toIsoString`                                                | `Date#toISOString`(`instant.ts`)                                                 |
+  | 날짜 + 벽시계 → 순간    | `toZonedInstant`                                             | `toZonedInstant`(`zoned.ts`)                                                     |
+  | 순간 → 사용자 달력 날짜 | `localDateIn`·`localDateOf`                                  | `toDateKey`(`zoned.ts`)                                                          |
+  | 날짜 산술               | `Temporal.PlainDate#add`·`until`                             | `addDaysToDateKey`·`diffDateKeysInDays`(`date-key.ts`)                           |
+  | ISO 주차·라벨           | `getIsoWeekOfMonth`·`formatIsoWeekLabel`(`week-of-month.ts`) | `getIsoWeekOfMonth`(`date-key.ts`)·`formatIsoWeekLabel`(`format/date-labels.ts`) |
+  | 일요일 시작 주차·라벨   | 없음                                                         | `getCalendarWeek`·`formatCalendarWeekLabel`                                      |
 
 ## 2. "오늘"과 시간대의 출처
 
@@ -32,7 +43,7 @@
 
   응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 규칙 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/time`(`TimeZone` VO, `localDateIn`, `localDateOf`, `toZonedInstant`, `resolveTimezone`, `toIsoString`)이다. 한 순간의 사용자 달력 날짜는 `localDateIn(instant, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`이다.
 
-- **모바일**: 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key·자정 전환은 `LocalDateProvider`가 소유하고 컴포넌트는 `useTodayKey`, 지금 시각은 `useNow` 하나로 읽는다. render 중 `new Date()`를 기준 상태로 만들지 않고, 시간대 인자는 생략할 수 없다. 구현과 도구는 [날짜·언어](../../apps/mobile/docs/dates-and-i18n.md#오늘과-시계)에 있다.
+- **모바일**: 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key·자정 전환은 `LocalDateProvider`가 소유하고 컴포넌트는 `useTodayKey`, 지금 시각은 `useMinuteNow`(분 단위 공유)·`useNow`(간격·마감)로 읽는다. render 중 `new Date()`를 기준 상태로 만들지 않고, 시간대 인자는 생략할 수 없다. 구현과 도구는 [날짜·언어](../../apps/mobile/docs/dates-and-i18n.md#오늘과-시계)에 있다.
 - 언어: 앱은 기기 언어가 한국어면 `ko`, 그 밖은 `en`을 앱 언어로 쓰고 요청마다 `Accept-Language`로 보낸다. 서버는 같은 `@aido/api/vocabulary` `resolveSupportedLocale`(없음 `ko`, 지원하지 않는 언어 `en`)로 응답 문구와 푸시 문구의 언어를 정한다. 예외는 저장·알림함·날씨에 쓰는 요청 언어 `RequestClient.locale`(`@Locale()`, `parseAcceptLanguage`)로, 헤더가 없으면 null(저장값 유지)이고 지원하지 않는 언어는 옛 호환으로 `ko`다. 출시 앱은 `ko`·`en`만 보내 이 경로를 타지 않는다. 표와 이유: [서버 다국어](../../apps/api/docs/i18n.md#언어-결정).
 - 음성 인식 언어는 사용자가 고른 값이고 없으면 앱 언어다(`useRecognitionLanguage`). 기기 언어와 달라도 된다.
 - AI 출력 언어는 ai-assistance `language-policy.messages.ts` 한 곳이다. 할 일 제목은 말한 언어 그대로, 요약·핵심 포인트는 요청 언어(없으면 저장된 사용자 언어)다.
@@ -40,11 +51,12 @@
 - 표시 언어는 글자 모양만 바꾼다. 언어로 시간대·오늘·주 시작·날짜 key를 바꾸지 않는다.
 - 유료 기능 사용량 창: 응원·찌르기 일간 한도는 요청 `X-Timezone`의 하루(자정 초기화), AI 할 일 만들기·말로 메모하기 월간 한도는 계약에 고정된 KST 달력 월(매월 1일 00:00 KST)이다. 서버가 응답의 `resetsAt`으로 다음 초기화 순간을 준다.
 - 반복 할 일의 시간을 고치면 고른 시각을 요청 시간대(없으면 저장값)로 해석하고 규칙의 시간대도 그 값으로 저장한다. 반복을 만들 때도 같다. 이관에서 사용자 시간대가 없거나 잘못되면 `Asia/Seoul`이고 저장된 `UTC`는 유지한다.
-- 주 시작은 사용자 설정을 따른다. 현재는 설정이 없어 일요일 시작 규칙 하나(`apps/mobile/src/shared/date/date-key.ts`의 `getCalendarWeek`)이고, 서버 리포트 기간은 각 기능의 명시한 규칙(ISO 주 등)을 쓴다. 같은 화면에서 두 주 규칙을 섞지 않는다.
+- 주 시작은 사용자 설정을 따른다. 현재는 설정이 없어 앱 달력·위젯은 일요일 시작 주(`getCalendarWeek`), 주간 성취·리포트는 서버와 같은 ISO 주(월요일 시작)다. 같은 화면에서 두 주 규칙을 섞지 않는다.
+- **주차**("11월 2주차")는 주의 가운데 날(일요일 시작 주는 수요일, ISO 주는 목요일)이 속한 달과 그 달의 몇째 주(가운데 날의 일 ÷ 7 올림)다. 그래서 달이 걸치는 주는 날이 더 많은 달로 세고, 연말·연초 주는 다른 해의 달일 수 있다(2027-01-01 → 2026년 12월 5주차). 라벨은 주차 달의 해가 올해가 아니면 연도를 붙여 해가 다른 같은 주차와 구별한다(ko "2025년 12월 1주차", en "Week 1 of Dec 2025", 올해면 "12월 1주차"). 올해는 서버가 `ClockPort`와 사용자 저장 시간대, 앱이 `useTodayKey`로 정한다. 달력 머리·위젯·주간 성취·주간 리포트(서버 `weekLabel`·`periodLabel` 포함)가 이 규칙 하나를 쓰고 경계와 라벨은 `packages/api/test/fixtures/week-of-month-cases.json`이 고정한다.
 
 ## 3. 표시
 
-- 모바일 표시는 `apps/mobile/src/shared/date/format/`이 하고, 카탈로그 문구가 필요한 요일·주 헤더·상대 시간도 그 폴더의 label helper가 한다. 모든 helper는 `DateFormatContext { locale, timeZone }`를 인자로 받고 `Intl.DateTimeFormat`에 둘을 명시한다. 달력 날짜는 `formatDateKeyLabel`, 순간은 `formatDateLabel`, 벽시계는 `formatTimeOfDay`다. 카탈로그에 날짜 형식을 넣거나 화면에서 포맷을 다시 만들지 않는다.
+- 모바일 표시는 `apps/mobile/src/shared/date/format/`이 하고, 카탈로그 문구가 필요한 요일·주차·상대 시간·오늘/내일·기간 구분자도 그 폴더의 label helper가 한다. 모든 helper는 `DateFormatContext { locale, timeZone }`를 인자로 받고 `Intl.DateTimeFormat`에 둘을 명시한다. 달력 날짜는 `formatDateKeyLabel`, 순간은 `formatDateLabel`, 벽시계는 `formatTimeOfDay`다. 카탈로그에 날짜 형식을 넣거나 화면에서 포맷을 다시 만들지 않는다.
 - 할 일 시각은 `TodoPolicy.getLocalTime(todo, timeZone)` 하나만 표시·수정 기본값에 쓴다. 매퍼 `toTodo`는 시간대를 읽지 않고 `scheduledLocalTime`을 `localTime`으로, `scheduledTime`을 `scheduledAt`(Instant)으로 옮긴다. 벽시계 칸이 없는 응답(옛 서버·옛 캐시)만 `getLocalTime`이 보는 순간의 시간대로 `scheduledAt`을 읽는다.
 - 서버가 만드는 문구(푸시·이메일·AI)는 사용자 locale과 시간대를 함께 넘겨 만든다.
 
