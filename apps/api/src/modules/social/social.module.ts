@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { SocialBlocksModule } from "./blocks/social-blocks.module.js";
 import { SocialCheersModule } from "./cheers/social-cheers.module.js";
 import { SocialFriendsModule } from "./friends/social-friends.module.js";
+import { SocialInviteRedemptionsModule } from "./invite-redemptions/social-invite-redemptions.module.js";
 import { SocialInvitesModule } from "./invites/social-invites.module.js";
 import { SocialNudgesModule } from "./nudges/social-nudges.module.js";
 import { SocialReminderNudgesModule } from "./reminder-nudges/social-reminder-nudges.module.js";
@@ -17,6 +18,7 @@ import { SocialReportsModule } from "./reports/social-reports.module.js";
     SocialNudgesModule,
     SocialReminderNudgesModule,
     SocialInvitesModule,
+    SocialInviteRedemptionsModule,
     SocialReportsModule,
     SocialReportsAdminModule,
   ],
@@ -27,6 +29,7 @@ import { SocialReportsModule } from "./reports/social-reports.module.js";
     SocialNudgesModule,
     SocialReminderNudgesModule,
     SocialInvitesModule,
+    SocialInviteRedemptionsModule,
     SocialReportsModule,
     SocialReportsAdminModule,
   ],

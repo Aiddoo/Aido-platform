@@ -1,19 +1,15 @@
-import { REWARD_TYPE } from "@aido/api/vocabulary";
-import { sumBy, uniq } from "es-toolkit";
+import { uniq } from "es-toolkit";
 
 import {
   type RewardGrantFailure,
   RewardGrantRepositoryPort,
-} from "#api/modules/social/invites/application/ports/reward-grant.repository.port";
-import { InviteRedemptionId } from "#api/modules/social/invites/domain/invite-redemption-id.vo";
-import type { InviterRewardTotal } from "#api/modules/social/invites/domain/invite-reward.domain-service";
-import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/invites/domain/invites.constants";
-import { RewardGrantId } from "#api/modules/social/invites/domain/reward-grant-id.vo";
+} from "#api/modules/social/invite-redemptions/application/ports/reward-grant.repository.port";
+import { InviteRedemptionId } from "#api/modules/social/invite-redemptions/domain/invite-redemption-id.vo";
+import type { RewardGrantId } from "#api/modules/social/invite-redemptions/domain/reward-grant-id.vo";
 import {
   RewardGrant,
   type RewardGrantPrimitives,
-} from "#api/modules/social/invites/domain/reward-grant.entity";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+} from "#api/modules/social/invite-redemptions/domain/reward-grant.entity";
 
 function compareText(left: string, right: string): number {
   if (left === right) {
@@ -34,8 +30,6 @@ function isSameLedgerKey(left: RewardGrantPrimitives, right: RewardGrantPrimitiv
 // Drizzle 저장소처럼 적용·실패 표시는 조건이 맞을 때만 바꾸고, 원장 키가 겹치면 저장하지 않는다
 export class InMemoryRewardGrantRepository extends RewardGrantRepositoryPort {
   readonly #grants = new Map<string, RewardGrantPrimitives>();
-  readonly #ownRedemptionIds = new Map<string, string>();
-  #sequence = 0;
 
   constructor(grants: readonly RewardGrant[] = []) {
     super();
@@ -60,17 +54,12 @@ export class InMemoryRewardGrantRepository extends RewardGrantRepositoryPort {
     }
   }
 
-  /** 초대받은 사람으로 받은 자기 수락. 초대한 사람 보상 집계에서 뺀다. */
-  recordOwnRedemption(userId: string, redemptionId: string): void {
-    this.#ownRedemptionIds.set(userId, redemptionId);
+  // InMemory 조회 대역이 같은 원장을 읽도록 연다
+  listAll(): RewardGrantPrimitives[] {
+    return [...this.#grants.values()];
   }
 
-  async nextId(): Promise<RewardGrantId> {
-    this.#sequence += 1;
-    return RewardGrantId.reconstitute(`c${String(this.#sequence).padStart(24, "0")}`);
-  }
-
-  async addAll(grants: readonly RewardGrant[]): Promise<number> {
+  async addPending(grants: readonly RewardGrant[]): Promise<number> {
     let insertedCount = 0;
     for (const grant of grants) {
       const primitives = grant.toPrimitives();
@@ -81,40 +70,6 @@ export class InMemoryRewardGrantRepository extends RewardGrantRepositoryPort {
       insertedCount += 1;
     }
     return insertedCount;
-  }
-
-  async summarizeInviterRewards(
-    inviterId: UserId,
-    windowStart: Temporal.Instant,
-  ): Promise<InviterRewardTotal[]> {
-    const ownRedemptionId = this.#ownRedemptionIds.get(inviterId.value);
-    const inviterGrants = [...this.#grants.values()].filter(
-      (grant) =>
-        grant.recipientId === inviterId.value &&
-        grant.sourceType === "INVITE_REDEMPTION" &&
-        grant.sourceId !== ownRedemptionId &&
-        (grant.status !== "FAILED" || grant.attempts < INVITE_REWARD_MAX_ATTEMPTS),
-    );
-    return Object.values(REWARD_TYPE).flatMap((rewardType) => {
-      const rows = inviterGrants.filter((grant) => grant.rewardType === rewardType);
-      if (rows.length === 0) {
-        return [];
-      }
-      return [
-        {
-          rewardType,
-          quantityInWindow: sumBy(
-            rows.filter((grant) => Temporal.Instant.compare(grant.createdAt, windowStart) > 0),
-            (grant) => grant.quantity,
-          ),
-          totalQuantity: sumBy(rows, (grant) => grant.quantity),
-          appliedQuantity: sumBy(
-            rows.filter((grant) => grant.status === "APPLIED"),
-            (grant) => grant.quantity,
-          ),
-        },
-      ];
-    });
   }
 
   async listByRedemptionId(redemptionId: InviteRedemptionId): Promise<RewardGrant[]> {

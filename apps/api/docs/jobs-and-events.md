@@ -17,7 +17,7 @@
 
 ## 도메인 이벤트 fan-out
 
-- 구독은 `*.event-handler.ts`가 `defineEventSubscription({ name, eventName, delivery, payloadSchema, queue })`로 선언하고(`shared/application/ports/domain-event-publisher.port.ts`), slice module `providers`에 `provideEventSubscriptions(...)`로 넣는다. `EventSubscriptionCatalog`가 조립 때 모은다(이름이 겹치면 부팅 실패). 사례: [InviteeActivityEventHandler](../src/modules/social/invites/infrastructure/event-handlers/invitee-activity.event-handler.ts)(`social.invitee-activity` ← `planning.todo.completed`).
+- 구독은 `*.event-handler.ts`가 `defineEventSubscription({ name, eventName, delivery, payloadSchema, queue })`로 선언하고(`shared/application/ports/domain-event-publisher.port.ts`), slice module `providers`에 `provideEventSubscriptions(...)`로 넣는다. `EventSubscriptionCatalog`가 조립 때 모은다(이름이 겹치면 부팅 실패). 사례: [InviteeActivityEventHandler](../src/modules/social/invite-redemptions/infrastructure/event-handlers/invitee-activity.event-handler.ts)(`social.invitee-activity` ← `planning.todo.completed`).
 - 이벤트는 `PublishedDomainEvent`(`eventName`·`eventId`·`occurredAt`·`toPayload()`)다. [FanOutDomainEventPublisher](../src/platform/events/fan-out-domain-event.publisher.ts)가 구독 schema로 먼저 `parse`해 계약이 어긋나면 트랜잭션째 실패한다.
 - `durable`은 구독마다 그 큐에 `JobQueuePort.enqueue`를 같은 트랜잭션으로 넣는다. idempotency key는 `<eventId>:<subscription name>`이라 구독 이름을 바꾸면 같은 이벤트가 다시 전달된다. worker는 구독 Context가 `JobQueuePort.work(queue, …)`로 등록한다. pg-boss 테이블이 곧 트랜잭셔널 아웃박스다.
 - `after-commit`은 커밋 뒤 `EventEmitter2.emitAsync(subscription.name, payload)`로 보낸다. 받는 쪽은 그 구독 이름 채널을 `EventEmitter2`로 듣고, 실패는 구독 단위로 로그(`PlatformLogEvent.DOMAIN_EVENT_PUBLISH_FAILED`)만 남긴다.

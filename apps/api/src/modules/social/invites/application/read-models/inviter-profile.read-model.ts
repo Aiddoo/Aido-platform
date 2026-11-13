@@ -1,6 +1,4 @@
-import type { Invite } from "../../domain/invite.aggregate.js";
-
-/** 로그인 전에도 보이는 초대한 사람 공개 프로필 */
+// 로그인 전에도 보이는 초대한 사람 공개 프로필
 export interface InviterProfile {
   readonly userId: string;
   readonly name: string | null;
@@ -8,7 +6,10 @@ export interface InviterProfile {
   readonly profileImage: string | null;
 }
 
-export interface InviteWithInviter {
-  readonly invite: Invite;
+// 미리보기·수락이 코드로 읽는 초대. 수락 판정은 ACTIVE인지만 본다
+export interface InviteWithInviterReadModel {
+  readonly inviteId: string;
+  readonly inviterId: string;
+  readonly isActive: boolean;
   readonly inviter: InviterProfile;
 }

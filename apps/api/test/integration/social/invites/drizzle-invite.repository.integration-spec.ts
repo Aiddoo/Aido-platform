@@ -1,7 +1,9 @@
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { DrizzleInviteReader } from "#api/modules/social/invites/infrastructure/persistence/drizzle-invite.reader";
 import { DrizzleInviteRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-invite.repository";
+import { InviteId } from "#api/modules/social/shared/domain/invite-id.vo";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -42,16 +44,24 @@ describe("DrizzleInviteRepository (실제 PostgreSQL)", () => {
     return new DrizzleInviteRepository(txHost, new DateClock());
   }
 
-  describeInviteRepositoryContract(async () => createRepository());
+  function createReader(): DrizzleInviteReader {
+    const { txHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleInviteReader(txHost);
+  }
+
+  describeInviteRepositoryContract(async () => ({
+    repository: createRepository(),
+    reader: createReader(),
+  }));
 
   it("한 사람에게 ACTIVE 초대는 하나만 저장된다", async () => {
     // Given
     const repository = createRepository();
-    await repository.add(createInviteFixture({ id: (await repository.nextId()).value }));
-    const second = createInviteFixture({ id: (await repository.nextId()).value, code: "B2C3D4" });
+    await repository.saveIfCodeUnused(createInviteFixture({ id: InviteId.generate().value }));
+    const second = createInviteFixture({ id: InviteId.generate().value, code: "B2C3D4" });
 
     // When
-    const added = repository.add(second);
+    const added = repository.saveIfCodeUnused(second);
 
     // Then
     await expect(added).rejects.toSatisfy(isUniqueConstraintViolation);
@@ -60,15 +70,15 @@ describe("DrizzleInviteRepository (실제 PostgreSQL)", () => {
   it("탈퇴 대기 중인 사람의 초대는 코드로 찾지 않는다", async () => {
     // Given
     const repository = createRepository();
-    const invite = createInviteFixture({ id: (await repository.nextId()).value });
-    await repository.add(invite);
+    const invite = createInviteFixture({ id: InviteId.generate().value });
+    await repository.saveIfCodeUnused(invite);
     await client
       .update(user)
       .set({ deletedAt: Temporal.Instant.from("2028-02-28T04:00:00Z") })
       .where(eq(user.id, INVITE_FIXTURE_INVITER_ID));
 
     // When
-    const found = await repository.findByCodeWithInviter(invite.code);
+    const found = await createReader().findByCodeWithInviter(invite.code);
 
     // Then
     expect(found).toBeNull();
@@ -79,10 +89,10 @@ describe("DrizzleInviteRepository (실제 PostgreSQL)", () => {
     vi.stubEnv("TZ", "Asia/Seoul");
     const repository = createRepository();
     const createdAt = Temporal.Instant.from("2028-02-29T23:59:59.123Z");
-    const invite = createInviteFixture({ id: (await repository.nextId()).value, createdAt });
+    const invite = createInviteFixture({ id: InviteId.generate().value, createdAt });
 
     // When
-    await repository.add(invite);
+    await repository.saveIfCodeUnused(invite);
     const { rows } = await client.execute<{ TimeZone: string }>(sql`SHOW TimeZone`);
     const found = await repository.findActiveByInviterId(
       UserId.reconstitute(INVITE_FIXTURE_INVITER_ID),

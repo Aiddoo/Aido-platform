@@ -1,5 +1,5 @@
-import { InviteUserReaderPort } from "#api/modules/social/invites/application/ports/invite-user.reader.port";
-import type { InviteeIdentity } from "#api/modules/social/invites/application/read-models/invitee-identity.read-model";
+import { InviteUserReaderPort } from "#api/modules/social/invite-redemptions/application/ports/invite-user.reader.port";
+import type { InviteeIdentity } from "#api/modules/social/invite-redemptions/application/read-models/invitee-identity.read-model";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { INVITE_FIXTURE_NOW, INVITE_FIXTURE_USERS } from "#test/fixtures/social/invite.fixture";
 

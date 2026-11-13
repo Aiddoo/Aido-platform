@@ -1,7 +1,7 @@
 import { INVITE_CODE } from "@aido/api/vocabulary";
 
 import { InviteCodeGeneratorPort } from "#api/modules/social/invites/application/ports/invite-code-generator.port";
-import { InviteCode } from "#api/modules/social/invites/domain/invite-code.vo";
+import { InviteCode } from "#api/modules/social/shared/domain/invite-code.vo";
 
 // 정해 둔 코드를 순서대로 주고, 다 쓰면 알파벳에서 겹치지 않는 코드를 차례로 만든다
 export class StubInviteCodeGenerator extends InviteCodeGeneratorPort {

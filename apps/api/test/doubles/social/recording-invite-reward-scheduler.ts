@@ -1,8 +1,8 @@
 import {
   type InviteRewardTrigger,
   InviteRewardSchedulerPort,
-} from "#api/modules/social/invites/application/ports/invite-reward-scheduler.port";
-import type { InviteRedemptionId } from "#api/modules/social/invites/domain/invite-redemption-id.vo";
+} from "#api/modules/social/invite-redemptions/application/ports/invite-reward-scheduler.port";
+import type { InviteRedemptionId } from "#api/modules/social/invite-redemptions/domain/invite-redemption-id.vo";
 
 export interface ScheduledInviteReward {
   readonly redemptionId: string;

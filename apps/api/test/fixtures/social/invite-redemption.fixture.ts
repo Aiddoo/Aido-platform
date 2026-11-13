@@ -1,7 +1,7 @@
 import {
   InviteRedemption,
   type InviteRedemptionPrimitives,
-} from "#api/modules/social/invites/domain/invite-redemption.aggregate";
+} from "#api/modules/social/invite-redemptions/domain/invite-redemption.aggregate";
 
 import {
   INVITE_FIXTURE_ID,

@@ -1,11 +1,13 @@
 import { sortBy } from "es-toolkit";
 
-import type { RewardGrantRepositoryPort } from "#api/modules/social/invites/application/ports/reward-grant.repository.port";
-import { InviteRedemptionId } from "#api/modules/social/invites/domain/invite-redemption-id.vo";
+import type { InviteRedemptionReaderPort } from "#api/modules/social/invite-redemptions/application/ports/invite-redemption.reader.port";
+import type { RewardGrantRepositoryPort } from "#api/modules/social/invite-redemptions/application/ports/reward-grant.repository.port";
+import { InviteRedemptionId } from "#api/modules/social/invite-redemptions/domain/invite-redemption-id.vo";
+import { RewardGrantId } from "#api/modules/social/invite-redemptions/domain/reward-grant-id.vo";
 import type {
   RewardGrant,
   RewardGrantPrimitives,
-} from "#api/modules/social/invites/domain/reward-grant.entity";
+} from "#api/modules/social/invite-redemptions/domain/reward-grant.entity";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   INVITE_FIXTURE_INVITEE_ID,
@@ -21,51 +23,43 @@ const REDEMPTION_A = "c0000000000000000000rdm0a";
 const REDEMPTION_B = "c0000000000000000000rdm0b";
 const REDEMPTION_C = "c0000000000000000000rdm0c";
 
-async function grantOf(
-  repository: RewardGrantRepositoryPort,
-  overrides: Partial<RewardGrantPrimitives> = {},
-): Promise<RewardGrant> {
-  return createRewardGrantFixture({ id: (await repository.nextId()).value, ...overrides });
+function grantOf(overrides: Partial<RewardGrantPrimitives> = {}): RewardGrant {
+  return createRewardGrantFixture({ id: RewardGrantId.generate().value, ...overrides });
 }
 
 async function addGrant(
   repository: RewardGrantRepositoryPort,
   overrides: Partial<RewardGrantPrimitives> = {},
 ): Promise<RewardGrant> {
-  const grant = await grantOf(repository, overrides);
-  await repository.addAll([grant]);
+  const grant = grantOf(overrides);
+  await repository.addPending([grant]);
   return grant;
 }
 
+// 원장에 쓰고 초대한 사람 보상 합계는 수락 조회로 읽는다
+export interface RewardGrantRepositoryContractSubject {
+  readonly repository: RewardGrantRepositoryPort;
+  readonly reader: Pick<InviteRedemptionReaderPort, "summarizeInviterRewards">;
+}
+
 export function describeRewardGrantRepositoryContract(
-  createRepository: () => Promise<RewardGrantRepositoryPort>,
+  createSubject: () => Promise<RewardGrantRepositoryContractSubject>,
 ): void {
   describe("보상 지급 원장 저장소 계약", () => {
-    it("nextId는 부를 때마다 다른 id를 준다", async () => {
-      // Given
-      const repository = await createRepository();
-
-      // When
-      const ids = [await repository.nextId(), await repository.nextId()];
-
-      // Then
-      expect(ids[0]?.equals(ids[1] ?? ids[0])).toBe(false);
-    });
-
     it("같은 (출처, 받는 사람, 종류)는 한 번만 저장하고 수락의 지급을 id 오름차순으로 읽는다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const base = { sourceId: REDEMPTION_A };
       const grants = [
-        await grantOf(repository, { ...base, recipientId: INVITE_FIXTURE_INVITEE_ID }),
-        await grantOf(repository, { ...base, rewardType: "PREMIUM_DAYS" }),
-        await grantOf(repository, { ...base, rewardType: "FRIEND_SLOT", quantity: 1 }),
-        await grantOf(repository, { ...base, rewardType: "FRIEND_SLOT", quantity: 1 }),
-        await grantOf(repository, { sourceId: REDEMPTION_B }),
+        grantOf({ ...base, recipientId: INVITE_FIXTURE_INVITEE_ID }),
+        grantOf({ ...base, rewardType: "PREMIUM_DAYS" }),
+        grantOf({ ...base, rewardType: "FRIEND_SLOT", quantity: 1 }),
+        grantOf({ ...base, rewardType: "FRIEND_SLOT", quantity: 1 }),
+        grantOf({ sourceId: REDEMPTION_B }),
       ];
 
       // When
-      const insertedCount = await repository.addAll(grants);
+      const insertedCount = await repository.addPending(grants);
       const listed = await repository.listByRedemptionId(
         InviteRedemptionId.reconstitute(REDEMPTION_A),
       );
@@ -82,7 +76,7 @@ export function describeRewardGrantRepositoryContract(
 
     it("적용 표시는 PENDING·FAILED일 때 한 번만 바뀌고 실패 표시는 적용 전에만 시도 횟수를 센다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const pending = await addGrant(repository, { sourceId: REDEMPTION_A });
       const failing = await addGrant(repository, { sourceId: REDEMPTION_B });
 
@@ -126,7 +120,7 @@ export function describeRewardGrantRepositoryContract(
 
     it("초대한 사람 보상은 종류별로 기간 안·전체·적용 합계를 내고 자동 재시도를 다 쓴 실패는 뺀다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository, reader } = await createSubject();
       const windowStart = NOW.subtract({ hours: 1 });
       await addGrant(repository, { sourceId: REDEMPTION_A, quantity: 7, status: "APPLIED" });
       await addGrant(repository, {
@@ -153,8 +147,8 @@ export function describeRewardGrantRepositoryContract(
       });
 
       // When
-      const totals = await repository.summarizeInviterRewards(INVITER_ID, windowStart);
-      const empty = await repository.summarizeInviterRewards(
+      const totals = await reader.summarizeInviterRewards(INVITER_ID, windowStart);
+      const empty = await reader.summarizeInviterRewards(
         UserId.reconstitute(INVITE_FIXTURE_INVITEE_ID),
         windowStart,
       );
@@ -174,7 +168,7 @@ export function describeRewardGrantRepositoryContract(
 
     it("재시도할 지급이 남은 수락만 id 순서로 한 번씩 이어 준다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const createdBefore = NOW;
       await addGrant(repository, { sourceId: REDEMPTION_A });
       await addGrant(repository, {
