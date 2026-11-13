@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -44,8 +45,8 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
     id: 'change-password',
     initial: { step: 'currentPassword' },
   });
-  const changePassword = useMutation(useChangePasswordMutationOptions());
   const { t } = useTranslation('auth');
+  const changePassword = useMutation(useChangePasswordMutationOptions());
   const newPassword = useController({
     control: form.control,
     name: 'newPassword',
@@ -54,10 +55,12 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
   });
   const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
   const { isSubmitting } = useFormState({ control: form.control });
+  const goBack = useGoBack({ fallbackHref: '/settings/profile' });
 
   const submitNewPassword = form.handleSubmit(async (input) => {
     try {
       await changePassword.mutateAsync(input);
+      goBack();
     } catch (error) {
       // 그 밖의 실패 안내는 mutation의 meta.errorFeedback이 맡는다
       const fieldError = findPasswordFieldError(error);
@@ -143,7 +146,7 @@ function CurrentPasswordStep({ title, form, onNext }: CurrentPasswordStepProps) 
                 autoFocus
                 submitBehavior="submit"
                 returnKeyType="next"
-                isInvalid={!!error}
+                isInvalid={error != null}
                 errorMessage={resolveValidationMessage(error, {
                   default: 'currentPassword.required',
                   byType: { [PASSWORD_MISMATCH_FIELD_ERROR.type]: 'currentPassword.mismatch' },

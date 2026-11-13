@@ -2,7 +2,7 @@ import { toInstant } from '@src/shared/date/instant';
 import { act, renderHook } from '@testing-library/react-native';
 import { useForm } from 'react-hook-form';
 
-import { toScheduleChanges, toSelectionKey } from '../utils/weather-reschedule-form';
+import { toScheduleChanges, toSelectionKey } from '../utils/weather-reschedule-form.view-model';
 import {
   weatherRescheduleFormSchema,
   type WeatherRescheduleFormValues,

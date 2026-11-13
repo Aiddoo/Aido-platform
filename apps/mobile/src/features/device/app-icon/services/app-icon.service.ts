@@ -15,14 +15,13 @@ export class AppIconService {
 
   getCurrentIcon = async (signal?: AbortSignal): Promise<AppIconKey> => {
     const nativeKey = await this.#gateway.getCurrentIcon();
-    if (signal?.aborted) {
-      throw new Error('App icon lookup cancelled');
-    }
+    // 조회가 취소됐으면 AbortError를 던져 TanStack이 취소로 다루게 한다
+    signal?.throwIfAborted();
     return toAppIconKey(nativeKey);
   };
 
   changeIcon = (key: AppIconKey): Promise<AppIconKey> => {
-    if (this.#pendingChange) {
+    if (this.#pendingChange != null) {
       return this.#pendingChange;
     }
 

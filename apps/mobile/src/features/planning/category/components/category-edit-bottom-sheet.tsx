@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -16,8 +17,8 @@ import { noop } from 'es-toolkit';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import type { TodoCategory } from '../domains/todo-category.model';
+import { toTodoCategoryFormValues } from '../apis/todo-category.mapper';
+import { type TodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
 import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
@@ -76,7 +77,7 @@ CategoryEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFall
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
       <QueryErrorFallback
         reset={reset}
-        onInquiry={(href) => sheet.close({ type: 'replace', href })}
+        onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
       />
     </BottomSheet>
   );
@@ -94,9 +95,12 @@ function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps
   const { t } = useTranslation('common');
   const updateCategory = useMutation(useUpdateTodoCategoryMutationOptions());
 
+  // 다시 받은 카테고리로 비교 기준을 맞춘다. 고치지 않은 칸은 새 값을 보이고 고치던 칸은 남는다
   const form = useForm({
     resolver: zodResolver(todoCategoryFormSchema),
-    defaultValues: { name: category.name, color: category.color },
+    values: toTodoCategoryFormValues(category),
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
+    mode: 'onChange',
   });
   const { isSubmitting } = useFormState({ control: form.control });
 

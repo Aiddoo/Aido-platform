@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 
-import { resolveTestWorkers } from "@aido/vitest-config/test-workers";
+import { resolveTestWorkers } from "@aido/test-config/test-workers";
 import swc from "unplugin-swc";
 import { defineConfig } from "vitest/config";
 

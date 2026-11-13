@@ -13,7 +13,7 @@ export function toPushSummary(
   if (PushPermissionPolicy.isPushDeliverable(permission)) {
     return pushEnabled ? 'on' : 'off';
   }
-  return pushEnabled && !PushPermissionPolicy.isNotDetermined(permission) ? 'deviceOff' : 'off';
+  return pushEnabled && !PushPermissionPolicy.isUndecided(permission) ? 'deviceOff' : 'off';
 }
 
 export function getPushSummaryLabelKey(summary: PushSummary) {

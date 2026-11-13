@@ -6,7 +6,7 @@ import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
-import { WhatsNewPolicy } from '../domains/whats-new.model';
+import { shouldShowReentry } from '../domains/whats-new.model';
 import { useWhatsNewAutoOpen } from './use-whats-new-auto-open';
 
 interface WhatsNewFeedInput {
@@ -51,8 +51,7 @@ export function useWhatsNewFeed({ isStable, isOnboardingSettled }: WhatsNewFeedI
     return () => cancelIdleCallback(task);
   }, [shouldAutoOpen, identity, isStable, isOnboardingSettled, push, release, repository]);
 
-  const isReentryVisible =
-    identity != null && WhatsNewPolicy.shouldShowReentry(reentryOpenedAt, now);
+  const isReentryVisible = identity != null && shouldShowReentry(reentryOpenedAt, now);
 
   const openFromReentry = () => {
     if (release != null) {

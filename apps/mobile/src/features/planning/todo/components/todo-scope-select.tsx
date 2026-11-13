@@ -1,6 +1,7 @@
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -67,33 +68,61 @@ function ScopeRow({
   );
 }
 
-interface TodoScopeSelectProps {
+interface TodoScopeSelectProps<TScope extends TodoEditScope> {
   action: TodoScopeAction;
   /** 범위를 정하는 할 일의 날짜(YYYY-MM-DD). 설명에 "n월 n일"로 보인다 */
   date: DateKey;
   /** 보일 범위. 규칙 변경은 이후만, 규칙 없는 묶음의 삭제는 이후가 없다 */
-  scopes: readonly TodoEditScope[];
-  onChange: (scope: TodoEditScope) => void;
+  scopes: readonly TScope[];
+  onChange: (scope: TScope) => void;
   onBack?: () => void;
 }
 
-export function TodoScopeSelect({ action, date, scopes, onChange, onBack }: TodoScopeSelectProps) {
+export function TodoScopeSelect<TScope extends TodoEditScope>({
+  action,
+  date,
+  scopes,
+  onChange,
+  onBack,
+}: TodoScopeSelectProps<TScope>) {
   const { t } = useTranslation(['todo', 'common']);
+  const fontScaledSize = useFontScaledSize();
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const dateLabel = formatYearAwareDateKeyLabel(date, todayKey, dateFormatContext);
-  const calendarIcon = <CalendarIcon width={16} height={16} colorClassName="text-gray-7" />;
-  const repeatIcon = <RepeatIcon width={16} height={16} colorClassName="text-gray-7" />;
+  const thisOnlyScope = scopes.find((scope) => scope === 'THIS_ONLY');
+  const followingScope = scopes.find((scope) => scope === 'THIS_AND_FOLLOWING');
+  const allScope = scopes.find((scope) => scope === 'ALL');
+  const calendarIcon = (
+    <CalendarIcon
+      width={fontScaledSize(16)}
+      height={fontScaledSize(16)}
+      colorClassName="text-gray-7"
+    />
+  );
+  const repeatIcon = (
+    <RepeatIcon
+      width={fontScaledSize(16)}
+      height={fontScaledSize(16)}
+      colorClassName="text-gray-7"
+    />
+  );
 
   return (
     <VStack gap={8} testID="todo-scope-select">
-      <HStack align="center" className="py-2 px-4">
+      <HStack align="center" className="px-4 py-2">
         <Box className="flex-1 items-start">
           {onBack != null && (
             <IconButton
               accessibilityLabel={t('common:actions.goBack')}
-              icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-8" />}
-              className="min-h-0 min-w-0"
+              icon={
+                <ArrowLeftIcon
+                  width={fontScaledSize(20)}
+                  height={fontScaledSize(20)}
+                  colorClassName="text-gray-8"
+                />
+              }
+              className="size-5 min-h-0 min-w-0"
               hitSlop={12}
               onPress={onBack}
             />
@@ -104,7 +133,7 @@ export function TodoScopeSelect({ action, date, scopes, onChange, onBack }: Todo
         </Text>
         <Box className="flex-1" />
       </HStack>
-      {scopes.includes('THIS_ONLY') && (
+      {thisOnlyScope != null && (
         <ScopeRow
           icon={calendarIcon}
           label={t('scope.thisOnly')}
@@ -112,10 +141,10 @@ export function TodoScopeSelect({ action, date, scopes, onChange, onBack }: Todo
             action === 'edit' ? 'scope.editThisOnlyHint' : 'scope.deleteThisOnlyHint',
             { date: dateLabel },
           )}
-          onPress={() => onChange('THIS_ONLY')}
+          onPress={() => onChange(thisOnlyScope)}
         />
       )}
-      {scopes.includes('THIS_AND_FOLLOWING') && (
+      {followingScope != null && (
         <ScopeRow
           icon={repeatIcon}
           label={t('scope.thisAndFollowing')}
@@ -123,16 +152,22 @@ export function TodoScopeSelect({ action, date, scopes, onChange, onBack }: Todo
             action === 'edit' ? 'scope.editFollowingHint' : 'scope.deleteFollowingHint',
             { date: dateLabel },
           )}
-          onPress={() => onChange('THIS_AND_FOLLOWING')}
+          onPress={() => onChange(followingScope)}
         />
       )}
-      {scopes.includes('ALL') && (
+      {allScope != null && (
         <ScopeRow
           isDanger
-          icon={<TrashIcon width={16} height={16} colorClassName="text-error" />}
+          icon={
+            <TrashIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-error"
+            />
+          }
           label={t('scope.allRepeats')}
           description={t('scope.deleteAllHint')}
-          onPress={() => onChange('ALL')}
+          onPress={() => onChange(allScope)}
         />
       )}
     </VStack>

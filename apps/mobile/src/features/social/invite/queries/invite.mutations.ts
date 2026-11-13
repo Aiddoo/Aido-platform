@@ -1,5 +1,6 @@
 import {
   useHaptics,
+  useInviteApi,
   useInviteService,
   useLogger,
   useInviteShareService,
@@ -9,7 +10,7 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
@@ -21,8 +22,12 @@ import {
   toRedeemFailureReason,
 } from '../domains/invite.error';
 import type { InviteShareChannel, InviteShareContent } from '../services/invite-share.service';
-import { invalidateAfterRedeem, storeRedemptionResult, replaceMyInvite } from './invite-cache';
-import { INVITE_QUERY_KEYS } from './invite-query-keys';
+import {
+  invalidateAfterRedeem,
+  replaceMyInvite,
+  setInvitePreviewInCache,
+  storeRedemptionResult,
+} from './invite-cache';
 
 /** 코드 입력에서 없는 코드를 바로 알리고, 받은 미리보기는 초대 카드가 다시 부르지 않게 캐시에 둔다 */
 export function useCheckInvitePreviewMutationOptions() {
@@ -35,7 +40,7 @@ export function useCheckInvitePreviewMutationOptions() {
     mutationFn: async (inviteCode: InviteCode) =>
       unwrap(await inviteService.getPreview(inviteCode)),
     onSuccess: (preview, inviteCode) => {
-      queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode }), preview);
+      setInvitePreviewInCache(queryClient, { inviteCode, preview });
     },
     meta: {
       errorFeedback: {
@@ -80,14 +85,14 @@ export function useRedeemInviteMutationOptions() {
 
 export function useRotateInviteCodeMutationOptions() {
   const haptics = useHaptics();
-  const inviteService = useInviteService();
+  const inviteApi = useInviteApi();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
   return mutationOptions({
     // 오프라인에 멈춘 채 나중에 코드가 바뀌지 않게 바로 실패해 토스트로 알린다
     networkMode: 'always',
-    mutationFn: async () => unwrap(await inviteService.rotateInviteCode()),
+    mutationFn: async () => unwrap(await inviteApi.rotateInviteCode()),
     onSuccess: (myInvite) => {
       replaceMyInvite(queryClient, myInvite);
       haptics.notify('success');

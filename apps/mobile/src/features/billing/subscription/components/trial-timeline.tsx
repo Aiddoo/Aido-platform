@@ -1,6 +1,6 @@
 import { PREMIUM_TRIAL_ENDING_NOTICE_DAYS } from '@aido/api/vocabulary';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { useTrack } from '@src/shared/analytics';
+import { useTrackView } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
@@ -59,9 +59,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
   const { data: availability } = useSuspenseQuery(useGetOfferingsQueryOptions());
   const { currentLocalDateKey } = useLocalDate();
   const dateFormatContext = useDateFormatContext();
-  const { trackEvent } = useTrack();
   const haptics = useHaptics();
-  const hasTrackedRef = useRef(false);
   const wasVisibleRef = useRef<boolean | null>(null);
   const plan =
     availability.status === 'available'
@@ -70,14 +68,11 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
   const steps = plan == null ? null : toTrialScheduleSteps(plan, currentLocalDateKey);
   const visiblePlanType = steps == null ? null : (plan?.planType ?? null);
 
-  // 요금제를 오가며 다시 보여도 페이월을 본 한 번만 센다
-  useEffect(() => {
-    if (visiblePlanType == null || hasTrackedRef.current) {
-      return;
-    }
-    hasTrackedRef.current = true;
-    trackEvent('trial_timeline_viewed', { plan_type: visiblePlanType });
-  }, [trackEvent, visiblePlanType]);
+  // 요금제를 오가며 다시 보여도 페이월을 본 한 번만 센다. 처음 보인 요금제를 남긴다
+  useTrackView(
+    'trial_timeline_viewed',
+    visiblePlanType == null ? null : { key: 'paywall', params: { plan_type: visiblePlanType } },
+  );
 
   useEffect(() => {
     const isVisible = visiblePlanType != null;

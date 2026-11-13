@@ -1,0 +1,16 @@
+{
+  "lineLimit": 200,
+  "lineLimits": {
+    "AGENTS.md": 100,
+    "apps/mobile/AGENTS.md": 150
+  },
+  "ruleLineLimit": 40,
+  "agentsBytesLimit": 24576,
+  "allow": [
+    {
+      "path": "README.md",
+      "check": "limit",
+      "reason": "사람용 소개(면접관이 처음 보는 화면). 에이전트 세션에 로드되지 않고, 아키텍처 그림과 설계 판단을 한 화면에 둔다(사용자 결정)"
+    }
+  ]
+}

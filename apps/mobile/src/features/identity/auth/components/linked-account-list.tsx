@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AppleIcon,
@@ -21,21 +22,23 @@ import { Chip, Skeleton, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-import { getOAuthProviderLabel } from '../constants/oauth-labels';
-import { type OAuthProvider } from '../domains/oauth.model';
-import { OAuthPolicy } from '../domains/oauth.model';
+import { toOAuthProviderSlug } from '../apis/oauth.mapper';
+import { LinkedAccountsPolicy, type OAuthProvider } from '../domains/oauth.model';
 import {
   useLinkAccountMutationOptions,
   useUnlinkAccountMutationOptions,
 } from '../queries/auth.mutations';
 import { useGetLinkedAccountsQueryOptions } from '../queries/auth.queries';
+import { getOAuthProviderLabelKey } from '../utils/oauth-provider.view-model';
 
 export function LinkedAccountList() {
+  const fontScaledSize = useFontScaledSize();
+
   return (
     <SettingsListGroup>
       <ProviderRow
         provider="KAKAO"
-        icon={<KakaoIcon width={18} height={18} />}
+        icon={<KakaoIcon width={fontScaledSize(18)} height={fontScaledSize(18)} />}
         iconClassName="bg-yellow-300"
       />
 
@@ -43,7 +46,7 @@ export function LinkedAccountList() {
 
       <ProviderRow
         provider="GOOGLE"
-        icon={<GoogleIcon width={18} height={18} />}
+        icon={<GoogleIcon width={fontScaledSize(18)} height={fontScaledSize(18)} />}
         iconClassName="bg-white border border-gray-2"
       />
 
@@ -53,7 +56,13 @@ export function LinkedAccountList() {
 
           <ProviderRow
             provider="APPLE"
-            icon={<AppleIcon width={18} height={18} colorClassName="text-white dark:text-black" />}
+            icon={
+              <AppleIcon
+                width={fontScaledSize(18)}
+                height={fontScaledSize(18)}
+                colorClassName="text-white dark:text-black"
+              />
+            }
             iconClassName="bg-apple-button dark:bg-apple-button-dark"
           />
         </>
@@ -63,7 +72,13 @@ export function LinkedAccountList() {
 
       <ProviderRow
         provider="NAVER"
-        icon={<NaverIcon width={18} height={18} colorClassName="text-white" />}
+        icon={
+          <NaverIcon
+            width={fontScaledSize(18)}
+            height={fontScaledSize(18)}
+            colorClassName="text-white"
+          />
+        }
         iconClassName="bg-success"
       />
     </SettingsListGroup>
@@ -106,25 +121,23 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
   const { t } = useTranslation(['auth', 'common']);
   const { data: linkedAccounts } = useSuspenseQuery(useGetLinkedAccountsQueryOptions());
   const { mutate: link, isPending: isLinking } = useMutation(useLinkAccountMutationOptions());
-  const { mutate: unlink, isPending: isUnlinking } = useMutation(useUnlinkAccountMutationOptions());
-  const confirmDialog = useConfirmDialog();
-  const isLinked = linkedAccounts.accounts.some(
-    (account) => account.provider === provider && account.linked,
+  const { mutateAsync: unlink, isPending: isUnlinking } = useMutation(
+    useUnlinkAccountMutationOptions(),
   );
+  const confirmDialog = useConfirmDialog();
+  const isLinked = LinkedAccountsPolicy.isProviderLinked(linkedAccounts, provider);
   const isPending = isLinking || isUnlinking;
 
   const requestUnlink = async () => {
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('linkedAccounts.unlinkDialogTitle'),
       description: t('linkedAccounts.unlinkDialogMessage', {
-        provider: getOAuthProviderLabel(provider),
+        provider: t(getOAuthProviderLabelKey(provider)),
       }),
       confirmLabel: t('linkedAccounts.unlink'),
       cancelLabel: t('common:actions.cancel'),
+      onConfirm: () => unlink(provider),
     });
-    if (isConfirmed) {
-      unlink(provider);
-    }
   };
 
   return (
@@ -135,7 +148,7 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
       contents={
         <VStack gap={2}>
           <Text size="b3" weight="medium">
-            {getOAuthProviderLabel(provider)}
+            {t(getOAuthProviderLabelKey(provider))}
           </Text>
           <Chip
             size="sm"
@@ -174,11 +187,7 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
           </Button>
         ))
         .with({ isPending: false, isLinked: false }, () => (
-          <Button
-            size="small"
-            display="inline"
-            onPress={() => link(OAuthPolicy.toOAuthProviderSlug(provider))}
-          >
+          <Button size="small" display="inline" onPress={() => link(toOAuthProviderSlug(provider))}>
             {t('linkedAccounts.connect')}
           </Button>
         ))

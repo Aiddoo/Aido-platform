@@ -1,5 +1,6 @@
 import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createAppLifecycleGatewayStub,
   createHttpClientStub,
@@ -274,7 +275,10 @@ describe('usePushDeviceSync', () => {
   it('로그아웃 상태면 켤 때와 앱이 앞으로 올 때 끝난 세션의 해제를 다시 보내고 보고하지 않는다', async () => {
     // Given
     const { pushRegistrationService, httpClient, rerender, emitAppState } = await setup('loading');
-    const flushRelease = jest.spyOn(pushRegistrationService, 'flushRelease');
+    // 끊긴 채 끝난 세션이라 해제 기록이 남아 있다
+    httpClient.post.mockRejectedValue(new NetworkError());
+    await act(() => pushRegistrationService.requestRelease());
+    httpClient.post.mockClear();
 
     // When
     await rerender({ status: 'unauthenticated' });
@@ -285,7 +289,11 @@ describe('usePushDeviceSync', () => {
     });
 
     // Then
-    expect(flushRelease).toHaveBeenCalledTimes(2);
+    expect(httpClient.post).toHaveBeenCalledTimes(2);
+    expect(httpClient.post).toHaveBeenLastCalledWith(
+      'v1/notifications/push-devices/unregister',
+      expect.objectContaining({ token: 'ExponentPushToken[device-123]' }),
+    );
     expect(httpClient.put).not.toHaveBeenCalled();
   });
 

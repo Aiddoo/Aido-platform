@@ -154,7 +154,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function QuickstartRow({ action }: { action: PremiumQuickstartAction }) {
   const { t } = useTranslation('subscription');
   const { trackEvent } = useTrack();
-  const { leaveTo } = useCheckoutRoute();
+  const [, leaveTo] = useCheckoutRoute();
   const { title, description, open } = match(action)
     .with('voice_note', () => ({
       title: t('welcome.quickstart.voiceNote.title'),

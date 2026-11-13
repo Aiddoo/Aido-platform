@@ -118,6 +118,7 @@ export class LogOutDeviceService {
 
     const config = { timeout: LOGOUT_REQUEST_TIMEOUT_MS };
 
+    // 기기 해제는 인증 요청이라 세션을 끊는 로그아웃보다 먼저 보낸다
     try {
       const unregisterResult = await this.#pushRegistrationService.unregister(config);
       isPushUnregistered = unregisterResult.ok;

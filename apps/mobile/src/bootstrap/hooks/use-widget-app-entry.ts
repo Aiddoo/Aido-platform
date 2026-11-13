@@ -3,20 +3,22 @@ import {
   WidgetNavigationPolicy,
 } from '@src/features/device/widget/domains/widget-navigation.model';
 import {
-  findWidgetRoute,
-  getWidgetOpenedDestination,
-  isWidgetRouteShown,
+  findWidgetEntry,
   isWidgetWakeLink,
-} from '@src/features/device/widget/utils/widget-navigation-link';
+} from '@src/features/device/widget/utils/widget-navigation-link.view-model';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { useTrack } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/clock';
+import { toEpochMs } from '@src/shared/date/instant';
 import { toError } from '@src/shared/errors';
 import { useLinkingUrl } from '@src/shared/infra/linking/use-linking-url';
+import { openEntryHref } from '@src/shared/navigation/open-entry-href';
+import { useFocusedRouteParams } from '@src/shared/navigation/use-focused-route-params';
 import { useQueryClient } from '@tanstack/react-query';
-import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
+import { usePathname, useSegments } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from 'react';
 
 import {
@@ -38,7 +40,7 @@ export function useWidgetAppEntry() {
   const accountId = useMyAccountId({ isEnabled: status === 'authenticated' });
   const segments = useSegments();
   const pathname = usePathname();
-  const parameters = feedParamsSchema.parse(useGlobalSearchParams());
+  const parameters = feedParamsSchema.parse(useFocusedRouteParams());
   const url = useLinkingUrl();
   const pendingCommand = useSyncExternalStore(
     widgetNavigationRepository.subscribe,
@@ -48,14 +50,14 @@ export function useWidgetAppEntry() {
   const previousUrlRef = useRef(url);
   const commandRestoredAtRef = useRef<number | null>(null);
   const [pendingInitialUrl, setPendingInitialUrl] = useState<string | null>(() =>
-    findWidgetRoute(url) ? url : null,
+    findWidgetEntry(url) == null ? null : url,
   );
   const isAuthenticatedRouteMounted = segments[0] === '(app)';
 
   const trackWidgetOpened = useEffectEvent((uri: string) => {
-    const destination = getWidgetOpenedDestination(uri);
-    if (destination != null) {
-      trackEvent('widget_opened', { destination });
+    const entry = findWidgetEntry(uri);
+    if (entry != null) {
+      trackEvent('widget_opened', { destination: entry.openedDestination });
     }
   });
   // 켜진 앱의 위젯 링크는 Expo Router가 직접 열어 들어온 링크마다 센다. 인증 전 링크는 복원할 때 센다
@@ -71,7 +73,7 @@ export function useWidgetAppEntry() {
     if (
       restoredAt != null &&
       isWidgetWakeLink(uri) &&
-      Date.now() - restoredAt < WAKE_LINK_AFTER_COMMAND_MS
+      toEpochMs(getNowInstant()) - restoredAt < WAKE_LINK_AFTER_COMMAND_MS
     ) {
       commandRestoredAtRef.current = null;
       return;
@@ -95,7 +97,7 @@ export function useWidgetAppEntry() {
       if (command != null) {
         const commandState = WidgetNavigationPolicy.getCommandState(command, {
           userId: getCachedMe(queryClient)?.id ?? null,
-          now: Date.now(),
+          now: getNowInstant(),
         });
         if (commandState === 'ownerUnknown') {
           return;
@@ -107,14 +109,15 @@ export function useWidgetAppEntry() {
         }
       }
 
-      const destination = findWidgetRoute(destinationUrl);
-      if (!destination) {
+      const entry = findWidgetEntry(destinationUrl);
+      if (entry == null) {
         return;
       }
       setPendingInitialUrl(null);
       try {
-        if (!isWidgetRouteShown(destinationUrl, pathname, parameters)) {
-          router.navigate(destination, { withAnchor: true });
+        // 앱이 켜진 채 시트·상세 위에서 눌러도 OS 링크처럼 열어 탭 묶음이 두 겹 쌓이지 않는다
+        if (!entry.isShown({ pathname, params: parameters })) {
+          openEntryHref(entry.href);
         }
         if (command == null) {
           widgetNavigationRepository.removeCorrupted();
@@ -127,7 +130,7 @@ export function useWidgetAppEntry() {
         });
         trackWidgetOpened(destinationUrl);
         if (command != null) {
-          commandRestoredAtRef.current = Date.now();
+          commandRestoredAtRef.current = toEpochMs(getNowInstant());
         }
       } catch (error) {
         errorReporter.captureException(toError(error), {
@@ -156,7 +159,7 @@ export function useWidgetAppEntry() {
       setPendingInitialUrl(null);
       return;
     }
-    setPendingInitialUrl(findWidgetRoute(url) ? url : null);
+    setPendingInitialUrl(findWidgetEntry(url) == null ? null : url);
   }, [url, status, isAuthenticatedRouteMounted]);
 
   useEffect(() => {
@@ -176,7 +179,7 @@ export function useWidgetAppEntry() {
         ? null
         : WidgetNavigationPolicy.getCommandState(pendingCommand, {
             userId: accountId,
-            now: Date.now(),
+            now: getNowInstant(),
           });
     if (pendingCommand != null && commandState === 'stale') {
       setPendingInitialUrl(null);
@@ -196,7 +199,7 @@ export function useWidgetAppEntry() {
     }
 
     const destinationUrl = pendingCommand?.uri ?? pendingInitialUrl;
-    if (!destinationUrl || !findWidgetRoute(destinationUrl)) {
+    if (destinationUrl == null || findWidgetEntry(destinationUrl) == null) {
       widgetNavigationRepository.removeCorrupted();
       return;
     }
