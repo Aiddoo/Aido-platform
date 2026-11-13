@@ -68,6 +68,7 @@ ENV NODE_EXTRA_CA_CERTS=/app/certs/rds-ca.pem
 EXPOSE 8080
 USER nestjs
 RUN test -r "$NODE_EXTRA_CA_CERTS"
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+# start-interval(Docker 25+): 기동 중에는 2초마다 확인해 배포 헬스 게이트를 빨리 통과한다
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --start-interval=2s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 CMD ["node", "--max-old-space-size=384", "dist/src/bootstrap.js"]

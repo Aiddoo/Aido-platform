@@ -10,9 +10,10 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
 
+# PR은 새 push가 옛 run을 취소한다. main은 진행 중인 run을 끝까지 돌려 이미지 발행이 끊기지 않게 한다.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -23,6 +24,9 @@ jobs:
     if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read # 마지막으로 이미지를 발행한 CI run 조회
     outputs:
       api: ${{ steps.scope.outputs.api }}
       mobile: ${{ steps.scope.outputs.mobile }}
@@ -35,10 +39,33 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
+      # main push는 직전 push(event.before)가 아니라 마지막으로 이미지를 발행한 CI 커밋부터 비교한다.
+      # 앞선 run이 대기 중 밀려 취소되거나 실패해 이미지를 못 만들었으면 그 API 변경을 이번 run이 다시 담는다.
+      - name: Resolve last image commit
+        id: base
+        if: github.event_name == 'push'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'ci.yml', branch: 'main', status: 'success', per_page: 100,
+            });
+            for (const run of data.workflow_runs) {
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                owner, repo, run_id: run.id, per_page: 100,
+              });
+              if (jobs.some((job) => job.name === 'Build & Push Image' && job.conclusion === 'success')) {
+                core.setOutput('sha', run.head_sha);
+                return;
+              }
+            }
+            core.warning('최근 main CI 100회에 이미지 발행이 없어 전체 범위로 검증한다');
+
       - name: Resolve changed scope
         id: scope
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || steps.base.outputs.sha }}
         run: node scripts/ci/dependency-scope.mjs "$BASE_SHA" "$GITHUB_SHA" | tee -a "$GITHUB_OUTPUT"
 
   dependency-review:
@@ -146,6 +173,7 @@ jobs:
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
   # 같은 run의 검증이 성공한 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
+  # job 이름 'Build & Push Image'는 deploy.yml과 위 scope가 이미지 발행 여부를 찾는 기준이다. 바꾸면 함께 바꾼다.
   docker:
     name: Build & Push Image
     needs: [scope, verify]
@@ -161,12 +189,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
-      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       # 검사를 통과한 이미지만 GHCR에 올린다. deploy는 두 이미지가 모두 있는 SHA만 배포한다.
       - name: Build api image
@@ -214,6 +236,13 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '1'
+
+      # GHCR 쓰기 로그인은 서드파티 스캔이 끝난 뒤 push 바로 앞에서만 한다(빌드·스캔에는 필요 없다).
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push images
         id: push

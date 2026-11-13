@@ -40,6 +40,8 @@ export BUILDKIT_PROGRESS=plain
 
 # --env-file: compose 변수 보간(${PORT:-8080} 등)은 서비스 env_file이 아닌 이 플래그/호스트 env만 읽음
 compose() { docker compose --env-file apps/api/.env -f "$COMPOSE_FILE" "$@"; }
+# 운영 compose에 build:가 있어도 기동은 준비된 이미지로만 한다(태그가 없으면 서버에서 몰래 빌드하지 않고 실패)
+compose_up() { compose up -d --no-build --pull never "$@"; }
 log()  { printf '\n[deploy] %s\n' "$*"; }
 fail() { printf '\n[deploy][ERROR] %s\n' "$*" >&2; exit 1; }
 file_mode() { stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"; }
@@ -94,7 +96,7 @@ rollback() {
   log "배포 실패 — 이전 이미지로 롤백 시도"
   dump_logs
   restore_previous_images
-  compose up -d --no-deps api   # migrate 재실행 없이 api만 복구 (--no-deps 필수)
+  compose_up --no-deps api   # migrate 재실행 없이 api만 복구 (--no-deps 필수)
   local healthy=0
   wait_healthy && healthy=1
   [[ "$DEPLOY_MODE" == "build" ]] && prune_build_cache
@@ -136,11 +138,15 @@ main() {
   cd "$(dirname "$0")/.."
   mkdir -p "$STATE_DIR"
   acquire_lock
+  [[ -f apps/api/.env && ! -L apps/api/.env ]] \
+    || fail "운영 env apps/api/.env 없음 — apps/api/docs/deployment.md '서버 관리' (서비스는 구 버전)"
+  [[ "$(file_mode apps/api/.env)" =~ ^[46]00$ ]] || fail "apps/api/.env 권한은 600이어야 한다"
 
   if [[ "$DEPLOY_MODE" == "rollback" ]]; then
     restore_previous_images
-    compose up -d --no-deps api
+    compose_up --no-deps api
     wait_healthy || { dump_logs; fail "수동 롤백 후에도 unhealthy"; }
+    printf '%s %s rollback\n' "$(date -Is)" "$(git rev-parse --short HEAD)" >> "$STATE_DIR/history.log"
     log "수동 롤백 완료"
     exit 0
   fi
@@ -179,14 +185,17 @@ main() {
       || fail "정리 후에도 디스크 여유 부족($(( avail_kb / 1024 / 1024 ))GB) — 빌드 미시작, 서비스는 구 버전으로 계속 동작 중. df -h / docker system df로 원인 확인"
   fi
 
-  # 2. 현재 이미지를 롤백 지점으로 태깅 (첫 실행 시 자동 시드)
-  if docker image inspect "$API_IMAGE:latest" >/dev/null 2>&1; then
-    docker tag "$API_IMAGE:latest" "$API_IMAGE:rollback"
-    docker image inspect "$MIGRATE_IMAGE:latest" >/dev/null 2>&1 \
-      && docker tag "$MIGRATE_IMAGE:latest" "$MIGRATE_IMAGE:rollback"
-    log "롤백 태그 갱신 완료"
+  # 2. 지금 돌고 있는 이미지를 롤백 지점으로 태깅 (첫 실행 시 자동 시드)
+  #    :latest가 아니라 컨테이너 기준이다. 중단된 배포는 헬스 검증 전 이미지를 :latest에 남긴다
+  local running_image
+  if running_image="$(docker inspect -f '{{.Image}}' "$API_CONTAINER" 2>/dev/null)"; then
+    docker tag "$running_image" "$API_IMAGE:rollback"
+    if running_image="$(docker inspect -f '{{.Image}}' "$MIGRATE_CONTAINER" 2>/dev/null)"; then
+      docker tag "$running_image" "$MIGRATE_IMAGE:rollback"
+    fi
+    log "롤백 태그 갱신 완료(실행 중 컨테이너 기준)"
   else
-    log "기존 latest 없음(첫 배포) — 롤백 태그 생략"
+    log "실행 중 api 없음(첫 배포) — 롤백 태그 생략"
   fi
 
   # 3. 이미지 준비 — 기본: CI 또는 Mac이 빌드해 GHCR에 올린 이미지 pull (실패 시 컨테이너 무접촉 중단)
@@ -215,7 +224,7 @@ main() {
 
   # 4. 기동 (migrate 완료 대기 후 api 재생성; migrate 실패 시 구 api 유지된 채 비정상 종료 → 롤백 경로)
   log "컨테이너 기동 (migrate → api)"
-  compose up -d
+  compose_up
 
   # 5. 헬스 게이트
   wait_healthy || rollback
