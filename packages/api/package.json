@@ -39,10 +39,6 @@
   "scripts": {
     "build": "tsc --build tsconfig.build.json",
     "clean": "rm -rf dist *.tsbuildinfo",
-    "format": "oxfmt .",
-    "format:check": "oxfmt --check .",
-    "lint": "oxlint .",
-    "lint:fix": "oxlint . --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

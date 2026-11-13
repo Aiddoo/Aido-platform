@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["import", "typescript", "unicorn", "node"],
-  "jsPlugins": ["@aido/oxlint-plugin"],
+  "jsPlugins": ["./tooling/oxlint-plugin-aido/index.mjs"],
   "categories": {
     "correctness": "error"
   },

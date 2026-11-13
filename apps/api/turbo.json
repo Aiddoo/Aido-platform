@@ -5,6 +5,47 @@
     "build": {
       "inputs": [
         "src/**",
+        "!src/**/*.spec.ts",
+        "drizzle/**",
+        "package.json",
+        "drizzle.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc"
+      ]
+    },
+    "typecheck": {
+      "inputs": [
+        "src/**",
+        "test/**",
+        "drizzle/**",
+        "package.json",
+        "drizzle.config.ts",
+        "tsconfig*.json",
+        "vitest.config.ts"
+      ]
+    },
+    "test": {
+      "inputs": [
+        "src/**",
+        "test/**",
+        "drizzle/**",
+        "package.json",
+        "drizzle.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        "docs/alerts.md",
+        "$TURBO_ROOT$/apps/*/package.json",
+        "$TURBO_ROOT$/packages/*/package.json",
+        "$TURBO_ROOT$/tooling/*/package.json"
+      ]
+    },
+    "test:integration": {
+      "inputs": [
+        "src/**",
+        "test/**",
         "drizzle/**",
         "package.json",
         "drizzle.config.ts",
@@ -12,89 +53,25 @@
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "test": {
-      "inputs": [
-        "src/**",
-        "drizzle/**",
-        "package.json",
-        "drizzle.config.ts",
-        "tsconfig*.json",
-        "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts",
-        "test/**",
-        "$TURBO_ROOT$/apps/*/package.json",
-        "$TURBO_ROOT$/packages/*/package.json"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "test:e2e": {
-      "cache": false,
-      "inputs": [
-        "src/**",
-        "drizzle/**",
-        "package.json",
-        "drizzle.config.ts",
-        "tsconfig*.json",
-        "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts",
-        "test/**"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "test:integration": {
-      "inputs": [
-        "src/**",
-        "drizzle/**",
-        "package.json",
-        "drizzle.config.ts",
-        "tsconfig*.json",
-        "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts",
-        "test/**"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "test:contract": {
-      "dependsOn": ["^build"],
-      "inputs": [
-        "src/**",
-        "drizzle/**",
-        "package.json",
-        "drizzle.config.ts",
-        "tsconfig*.json",
-        "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts",
-        "test/**"
       ]
     },
-    "typecheck": {
+    "test:contract": {
       "inputs": [
         "src/**",
+        "test/**",
         "drizzle/**",
         "package.json",
         "drizzle.config.ts",
         "tsconfig*.json",
         "nest-cli.json",
         ".swcrc",
-        "vitest.config.ts",
-        "test/**"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "db:generate": {
-      "cache": false
+        "vitest.config.ts"
+      ]
     },
     "test:cov": {
-      "dependsOn": ["^build"],
       "inputs": [
         "src/**",
+        "test/**",
         "drizzle/**",
         "package.json",
         "drizzle.config.ts",
@@ -102,7 +79,7 @@
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
-        "test/**"
+        "docs/alerts.md"
       ]
     }
   }

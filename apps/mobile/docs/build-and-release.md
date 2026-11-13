@@ -77,11 +77,9 @@ eas env:create --name SENTRY_AUTH_TOKEN --value "<TOKEN>" --environment producti
 | EAS Submit·EAS Update(OTA) | `eas submit`, `eas update`                     | 차감 안 됨                      | 빌드 시간과 별개                                     |
 
 ```bash
-pnpm build:development[:android|:ios]   # dev client
-pnpm build:preview[:android|:ios]
-pnpm build:production[:android|:ios]
-pnpm build:production:local:android     # = eas build --local --platform android --profile production
-pnpm build:production:local:ios
+eas build --profile development --platform <ios|android|all>   # dev client
+eas build --profile preview --platform <ios|android|all>
+eas build --local --profile production --platform <ios|android>
 pnpm update:preview "메시지"            # OTA
 pnpm update:production "메시지"
 ```
@@ -150,8 +148,8 @@ JS만 바뀐 핫픽스는 OTA로 낸다. runtime이 fingerprint라 운영 빌드
 
 ## 스토어 제출
 
-- **iOS**: production 빌드 → `eas submit --platform ios --path ./build.ipa`(또는 `pnpm submit:production:ios`) 또는 Transporter(Mac App Store, `mas install 1450874784`)로 올린다 → TestFlight 확인 → App Store Connect에서 정보·가격·지역을 입력하고 심사 제출한다.
-- **Android**: production AAB → `eas submit --platform android --path ./build.aab`(또는 `pnpm submit:production:android`) 또는 Play Console(프로덕션 → .aab 업로드) → 앱 콘텐츠·배포 국가를 입력하고 프로덕션 트랙으로 출시한다.
+- **iOS**: production 빌드 → `eas submit --platform ios --path ./build.ipa` 또는 Transporter(Mac App Store, `mas install 1450874784`)로 올린다 → TestFlight 확인 → App Store Connect에서 정보·가격·지역을 입력하고 심사 제출한다.
+- **Android**: production AAB → `eas submit --platform android --path ./build.aab` 또는 Play Console(프로덕션 → .aab 업로드) → 앱 콘텐츠·배포 국가를 입력하고 프로덕션 트랙으로 출시한다.
 - 스토어 문구·스크린샷 순서·체크리스트의 준비본은 `store-metadata/{버전}/release.json`이고 변경해도 외부 스토어에 자동 게시되지 않는다. 한·영 등록 정보는 `store-metadata/listing/`에 있고 `pnpm store:check`로 검사한다(`store:export`, `store:art`, `store:screens`).
 - API URL이 프로덕션 서버인지, 버전 번호(`app.config.ts`), 앱 아이콘·스플래시를 제출 전에 확인한다.
 - **Android 데이터 보안**: 앱은 대략적 위치만 받는다(`app.config.ts`의 `blockedPermissions`가 `ACCESS_FINE_LOCATION`을 뺀다). 제출 전에 데이터 보안 신고(위치·음성 녹음·사용자 콘텐츠)를 코드의 실제 전송 경로와 대조한다. 정확한 위치가 필요한 기능은 Play 권한 신고부터 검토한다.

@@ -28,7 +28,7 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 ## 명령
 
 - `pnpm install` · `pnpm docker:up`(PostgreSQL) · `pnpm dev` · `pnpm build`
-- `pnpm check`: lint(관례 포함) → format:check → docs:check → 이름(ls-lint) → 경계(dependency-cruiser) → 미사용(knip) → typecheck(커밋 전 한 번)
+- `pnpm check`: lint(관례 포함)·format:check·docs:check·이름(ls-lint)·경계(dependency-cruiser)·미사용(knip)·typecheck를 turbo 한 번으로 돌린다(커밋 전 한 번, 바뀐 패키지만)
 - 가드레일: `pnpm lint`(Oxlint, 관례 규칙은 `tooling/oxlint-plugin-aido`의 `aido/*`) · `pnpm docs:check`(문서 링크·경로·길이·에이전트 파일) · `pnpm lint:names`(ls-lint) · `turbo run lint:deps`(dependency-cruiser, 서버·모바일) · `pnpm check:unused`(knip: 모바일을 뺀 모든 workspace의 파일·export·의존성·catalog) · `pnpm --filter @aido/mobile check:unused`(모바일 knip)
 - `pnpm lint` · `pnpm format` · `pnpm format:check` · `pnpm typecheck`
 - `pnpm test` · `pnpm test:integration` · `pnpm test:e2e` · `pnpm test:contract`. 여러 러너가 함께 돌면 `AIDO_TEST_WORKERS`·`AIDO_TEST_DB_WORKERS`로 worker를 줄인다
