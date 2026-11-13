@@ -79,5 +79,55 @@ tester.run('log-event-key', rules['log-event-key'], {
       filename: voiceFile,
       errors: 1,
     },
+    {
+      code: "export const VOICE_EVENTS = { STOPPED: 'voice.recording.stopped' } as const;",
+      filename: voiceFile,
+      errors: 1,
+    },
+    {
+      code: "export const VOICE_LOG_EVENT = { STOPPED: 'voice.recording.stopped' } as const;\nexport const VOICE_RETRY_LIMIT = 3;",
+      filename: voiceFile,
+      errors: 1,
+    },
+  ],
+});
+
+tester.run('logger-event-constant', rules['logger-event-constant'], {
+  valid: [
+    'logger.warn(VOICE_LOG_EVENT.START_FAILED, { error });',
+    'this.logger.info(MEMO_LOG_EVENT.SAVED);',
+    "appLogger.info('memo.save.failed');",
+    "console.warn('plain');",
+    "logger.child('voice');",
+  ],
+  invalid: [
+    { code: "logger.warn('voice.recording.failed');", errors: 1 },
+    { code: 'logger.error(`voice.${step}.failed`, { error });', errors: 1 },
+    { code: "this.logger.debug('memo.list.loaded');", errors: 1 },
+    { code: "class A { #logger; run() { this.#logger.info('memo.list.loaded'); } }", errors: 1 },
+  ],
+});
+
+tester.run('no-tracking-in-effect', rules['no-tracking-in-effect'], {
+  valid: [
+    "const onPress = () => { trackEvent('memo_share_tapped'); };",
+    "useEffect(() => store.subscribe(() => trackEvent('local_day_changed')), [store]);",
+    "useEffect(() => { load().then(() => analytics.trackEvent('x')); }, []);",
+    "const emit = useEffectEvent(() => trackEvent('x')); useEffect(() => emit(), []);",
+    "useMemo(() => trackEvent('x'), []);",
+    'useEffect(() => { logger.info(EVENT); }, []);',
+    'useEffect(() => { tracker.trackPage(); }, []);',
+  ],
+  invalid: [
+    { code: "useEffect(() => { trackEvent('ai_report_viewed', { id }); }, [id]);", errors: 1 },
+    { code: "useEffect(() => trackEvent('weather_opened'), []);", errors: 1 },
+    { code: "React.useEffect(() => { if (isOpen) { trackEvent('x'); } }, [isOpen]);", errors: 1 },
+    {
+      code: 'useLayoutEffect(function () { analytics.trackScreenView(name); }, [name]);',
+      errors: 1,
+    },
+    { code: "useInsertionEffect(() => { track(analytics, 'x'); });", errors: 1 },
+    { code: "useFocusEffect(() => { this.analytics.trackEvent('x'); });", errors: 1 },
+    { code: "useFocusEffect(useCallback(() => { trackEvent('x'); }, []));", errors: 1 },
   ],
 });

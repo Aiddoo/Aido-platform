@@ -13,14 +13,16 @@ import {
   RoundedRect,
   Shader,
   Skia,
+  type SkImage,
   type SkPath,
+  type SkPathBuilder,
   type SkSize,
   useTexture,
   vec,
 } from '@shopify/react-native-skia';
 import { range } from 'es-toolkit';
 import { type DependencyList, type ReactElement, useEffect, useMemo } from 'react';
-import { useAnimatedReaction } from 'react-native-reanimated';
+import { type SharedValue, useAnimatedReaction } from 'react-native-reanimated';
 import { scheduleOnUI } from 'react-native-worklets';
 
 import { createSeededRandom } from '../../utils/weather-scene-particles.view-model';
@@ -94,7 +96,13 @@ const GLASS_DROP = {
 } as const;
 
 /** 한 번만 구운 텍스처를 캔버스가 사라질 때 UI 스레드에서 해제한다. */
-function useOwnedTexture(element: ReactElement, size: SkSize, deps: DependencyList = []) {
+export type SceneTexture = SharedValue<SkImage | null>;
+
+function useOwnedTexture(
+  element: ReactElement,
+  size: SkSize,
+  deps: DependencyList = [],
+): SceneTexture {
   const texture = useTexture(element, size, deps);
   useAnimatedReaction(
     () => texture.get(),
@@ -122,6 +130,13 @@ function getCenter(sprite: ParticleSprite) {
   return vec(sprite.x + sprite.width / 2, sprite.y + sprite.height / 2);
 }
 
+/** 한 번만 쓰는 빌더는 경로를 넘긴 뒤 바로 놓는다 */
+function detachOnce(builder: SkPathBuilder): SkPath {
+  const path = builder.detach();
+  builder.dispose();
+  return path;
+}
+
 function buildCrystalPath(): SkPath {
   const { crystal } = PARTICLE_SPRITES;
   const center = getCenter(crystal);
@@ -145,16 +160,17 @@ function buildCrystalPath(): SkPath {
       .moveTo(fork.x, fork.y)
       .lineTo(right.x, right.y);
   }
-  return builder.detach();
+  return detachOnce(builder);
 }
 
 function buildLeafVeinPath(): SkPath {
   const center = getCenter(PARTICLE_SPRITES.leaf);
   const halfLength = PARTICLE_SPRITES.leaf.width * LEAF.veinHalfLength;
-  return Skia.PathBuilder.Make()
-    .moveTo(center.x - halfLength, center.y)
-    .lineTo(center.x + halfLength, center.y)
-    .detach();
+  return detachOnce(
+    Skia.PathBuilder.Make()
+      .moveTo(center.x - halfLength, center.y)
+      .lineTo(center.x + halfLength, center.y),
+  );
 }
 
 // 입력이 상수인 텍스처 경로는 앱 수명 동안 한 번만 만든다. 장면을 열 때마다 네이티브 경로를 새로 만들지 않는다
@@ -331,7 +347,7 @@ function buildWavePath(
       builder.lineTo(x, y);
     }
   }
-  return builder.detach();
+  return detachOnce(builder);
 }
 
 /** 바람 줄기는 가운데가 가장 크게 물결치고 양 끝이 사라지는 선이다. */
@@ -394,7 +410,7 @@ function buildGlassDropRimPath(): SkPath {
     GLASS_DROP.rimStartDegrees,
     GLASS_DROP.rimSweepDegrees,
   );
-  return builder.detach();
+  return detachOnce(builder);
 }
 
 const GLASS_DROP_RIM_PATH = buildGlassDropRimPath();
@@ -437,12 +453,9 @@ const SUN_RAYS = {
 type SunRay = { angle: number; length: number; alpha: number; path: SkPath };
 
 function buildSunRayPath(length: number, halfWidth: number): SkPath {
-  return Skia.PathBuilder.Make()
-    .moveTo(0, -halfWidth)
-    .lineTo(length, 0)
-    .lineTo(0, halfWidth)
-    .close()
-    .detach();
+  return detachOnce(
+    Skia.PathBuilder.Make().moveTo(0, -halfWidth).lineTo(length, 0).lineTo(0, halfWidth).close(),
+  );
 }
 
 function createSunRays(): SunRay[] {
@@ -464,7 +477,7 @@ function createSunRays(): SunRay[] {
 const SUN_RAY_SHAPES = createSunRays();
 
 /** 가는 빛살 64개를 미리 흐리게 구워 두고, 그리는 동안에는 돌리기만 한다. */
-export function useSunRaysTexture() {
+export function useSunRaysTexture(): SceneTexture {
   const center = SUN_RAYS_SIZE / 2;
   return useOwnedTexture(
     <Group

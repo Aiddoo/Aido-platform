@@ -1,7 +1,7 @@
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
+import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box, Spacing } from '@src/shared/ui';
 import { useCallback, useState } from 'react';
 import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 import { Keyboard } from 'react-native';
@@ -81,33 +81,33 @@ export function SignUpPasswordForm({ form, step, onNextStep, onSubmit }: SignUpP
         >
           {step === 'passwordConfirm' && (
             <RevealedField onRevealed={focusPasswordConfirmInput}>
-              <VStack mb={20}>
-                <Controller
-                  control={control}
-                  name="passwordConfirm"
-                  render={({ field: { ref, onChange, onBlur, value }, fieldState }) => {
-                    const error = fieldState.isTouched ? fieldState.error : undefined;
-                    return (
-                      <PasswordInput
-                        ref={ref}
-                        label={t('signUp.passwordConfirmLabel')}
-                        placeholder={t('signUp.passwordConfirmPlaceholder')}
-                        value={value}
-                        onChange={onChange}
-                        onBlur={onBlur}
-                        textContentType="newPassword"
-                        autoComplete="new-password"
-                        returnKeyType="done"
-                        isInvalid={error != null}
-                        errorMessage={resolveValidationMessage(error, {
-                          default: 'password.mismatch',
-                        })}
-                        onSubmitEditing={submitStep}
-                      />
-                    );
-                  }}
-                />
-              </VStack>
+              <Controller
+                control={control}
+                name="passwordConfirm"
+                render={({ field: { ref, onChange, onBlur, value }, fieldState }) => {
+                  // 다음 버튼이 꺼진 이유를 칸을 벗어나기 전에 알린다(비밀번호 바꾸기·재설정 확인 칸과 같은 시점)
+                  const error = fieldState.isDirty ? fieldState.error : undefined;
+                  return (
+                    <PasswordInput
+                      ref={ref}
+                      label={t('signUp.passwordConfirmLabel')}
+                      placeholder={t('signUp.passwordConfirmPlaceholder')}
+                      value={value}
+                      onChange={onChange}
+                      onBlur={onBlur}
+                      textContentType="newPassword"
+                      autoComplete="new-password"
+                      returnKeyType="done"
+                      isInvalid={error != null}
+                      errorMessage={resolveValidationMessage(error, {
+                        default: 'password.mismatch',
+                      })}
+                      onSubmitEditing={submitStep}
+                    />
+                  );
+                }}
+              />
+              <Spacing size={20} />
             </RevealedField>
           )}
 

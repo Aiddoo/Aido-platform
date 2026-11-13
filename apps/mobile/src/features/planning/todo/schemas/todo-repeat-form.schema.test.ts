@@ -10,17 +10,19 @@ import {
 
 const THURSDAY = createDateKey('2026-11-05');
 
-const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues => ({
-  startDate: THURSDAY,
-  weekdays: ['THU'],
-  interval: 1,
-  isMonthly: false,
-  monthDay: null,
-  endType: 'NEVER',
-  untilDate: null,
-  count: 10,
-  ...overrides,
-});
+function createValues(overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeatFormValues {
+  return {
+    startDate: THURSDAY,
+    weekdays: ['THU'],
+    interval: 1,
+    isMonthly: false,
+    monthDay: null,
+    endType: 'NEVER',
+    untilDate: null,
+    count: 10,
+    ...overrides,
+  };
+}
 
 describe('todoRepeatFormSchema', () => {
   const CASES: [string, Partial<TodoRepeatFormValues>, TodoRepeatFormIssue, string][] = [

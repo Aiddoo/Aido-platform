@@ -1,4 +1,4 @@
-import { Atlas, rect, Skia, useRSXformBuffer } from '@shopify/react-native-skia';
+import { Atlas, Skia, useRSXformBuffer } from '@shopify/react-native-skia';
 import { range } from 'es-toolkit';
 import { Extrapolation, interpolate, type SharedValue } from 'react-native-reanimated';
 
@@ -88,7 +88,9 @@ export function RainLayer({
     (index) => (seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0) ** FAR_DEPTH_BIAS,
   );
   const { sprite } = style;
-  const sprites = range(count).map(() => rect(sprite.x, sprite.y, sprite.width, sprite.height));
+  const sprites = range(count).map(() =>
+    Skia.XYWHRect(sprite.x, sprite.y, sprite.width, sprite.height),
+  );
   const rgb = isDaylight ? style.rgb.day : style.rgb.night;
   const colors = depths.map((depth) =>
     Skia.Color(`rgba(${rgb},${interpolate(depth, UNIT, style.alpha)})`),

@@ -52,7 +52,7 @@ import {
   VStack,
   MenuContent,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   useIsMutating,
@@ -77,8 +77,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import { isMemoUnavailableError } from '../domains/memo.error';
-import { MemoPolicy } from '../domains/memo.model';
-import type { Memo } from '../domains/memo.model';
+import { type Memo, MemoPolicy } from '../domains/memo.model';
 import { useMemoId, useSelectedMemoId } from '../hooks/use-memo-params';
 import { useOpenMemoDeleteDialog } from '../hooks/use-open-memo-delete-dialog';
 import { MEMO_MUTATION_KEYS } from '../queries/memo-mutation-keys';
@@ -201,7 +200,7 @@ MemoEditor.StackToolbar = function StackToolbar({
 
   const pin = useMemoPinAction(memo);
   const aiParse = useMemoAiParse({ accountId: me.id, onSaveChanges });
-  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
+  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted, onDeleted });
   const openDeleteDialog = useOpenMemoDeleteDialog({ memoId, onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
   const pinnedTint = useResolvedColor('text-main');
@@ -500,7 +499,7 @@ function MemoMoreMenu({
   const [isOpen, setIsOpen] = useState(false);
 
   const aiParse = useMemoAiParse({ accountId, onSaveChanges });
-  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted });
+  const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted, onDeleted });
   const openDeleteDialog = useOpenMemoDeleteDialog({ memoId, onDeleted });
   const { label: aiQuota } = useQuotaStatus('AI_PARSE');
 
@@ -822,7 +821,8 @@ function useMemoAiParse({
 function useOpenMemoConvertSheet({
   onSaveChanges,
   onConverted,
-}: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted'>) {
+  onDeleted,
+}: Pick<MemoEditorToolbarProps, 'onSaveChanges' | 'onConverted' | 'onDeleted'>) {
   const todayKey = useTodayKey();
   const openKeyboardSheet = useOpenKeyboardSheet();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
@@ -850,6 +850,8 @@ function useOpenMemoConvertSheet({
         onClose={close}
         onOpenChange={onOpenChange}
         onConverted={onConverted}
+        // 이미 없는 메모는 지운 메모처럼 초안을 버리고 떠난다
+        onUnavailable={onDeleted}
       />
     ));
   };

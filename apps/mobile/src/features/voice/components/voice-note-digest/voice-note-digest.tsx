@@ -1,5 +1,6 @@
 import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quota-status';
 import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -106,6 +107,7 @@ interface DigestButtonProps extends Omit<ComponentProps<typeof Button>, 'childre
 /** 확인 창 없이 횟수를 쓰므로 보조 문구로 알린다. 프리미엄·관리자는 숨기고, 읽는 동안 자리를 잡아 밀리지 않게 한다 */
 function DigestButton({ label, ...buttonProps }: DigestButtonProps) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const { status, isPending } = useQuotaStatus('VOICE_NOTE');
   const cost = match(status)
     .with({ type: 'untracked' }, () => null)
@@ -121,7 +123,11 @@ function DigestButton({ label, ...buttonProps }: DigestButtonProps) {
       {cost == null && isPending && <TextSkeleton size="e1" className="mx-auto w-32" />}
       {cost != null && (
         <HStack gap={4} align="center" justify="center">
-          <AiFilledIcon width={14} height={14} colorClassName="text-main" />
+          <AiFilledIcon
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+            colorClassName="text-main"
+          />
           <Text size="e1" shade={6} numberOfLines={1} testID="voice-note-digest-cost">
             {cost}
           </Text>

@@ -6,10 +6,10 @@ import { getErrorMessage } from '@src/shared/errors';
 import { match } from 'ts-pattern';
 
 import type { AuthApi } from '../apis/auth.api';
+import { parseRefreshTokens } from '../apis/auth.mapper';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import { getPendingRefreshFailure } from '../domains/auth.error';
 import type { PendingRevocationRepository } from '../repositories/pending-revocation.repository';
-import { refreshEnvelopeSchema } from '../schemas/auth-response.schema';
 import type { PendingRevocation } from '../schemas/pending-revocation-storage.schema';
 
 /** 기기에 refresh 토큰이 남는 시간이라 가장 긴 직항 비행(약 19시간)을 덮는 하루로 두고, 지나면 refresh 만료(최대 7일)에 맡긴다 */
@@ -116,8 +116,8 @@ export class SessionRevocationService {
       return { type: 'ended' };
     }
 
-    const parsed = refreshEnvelopeSchema.safeParse(await response.json().catch(() => null));
-    if (!parsed.success) {
+    const tokens = parseRefreshTokens(await response.json().catch(() => null));
+    if (tokens == null) {
       this.#logger.warn(AUTH_LOG_EVENT.SESSION_REVOCATION_REJECTED, {
         code: 'invalid-refresh-response',
       });
@@ -125,7 +125,7 @@ export class SessionRevocationService {
     }
 
     // 서버가 회전했다. 로그아웃이 실패해도 다음 시도가 재사용 감지에 걸리지 않게 새 토큰을 남긴다
-    await this.#repository.save({ ...pending, refreshToken: parsed.data.data.refreshToken });
-    return { type: 'issued', accessToken: parsed.data.data.accessToken };
+    await this.#repository.save({ ...pending, refreshToken: tokens.refreshToken });
+    return { type: 'issued', accessToken: tokens.accessToken };
   };
 }

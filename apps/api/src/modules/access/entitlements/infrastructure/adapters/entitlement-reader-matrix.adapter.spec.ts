@@ -6,7 +6,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import type { AccessUserInput } from "#test/fixtures/access/access-user.fixture";
 import { createEntitlementFixture } from "#test/fixtures/access/entitlement.fixture";
 
-import { assertEntitled, assertEntitledInTx } from "../../application/entitlements.errors.js";
+import { assertEntitled } from "../../application/entitlements.errors.js";
 
 const NOW = Temporal.Instant.from("2026-11-03T00:00:00.000Z");
 const SECOND_MS = 1000;
@@ -148,12 +148,10 @@ describe("assertEntitled — 기능별 기존 거부 코드", () => {
     const fixture = entitlementAt(SUBJECTS.FREE);
 
     // When
-    const cached = assertEntitled(fixture.reader, fixture.userId, feature);
-    const fresh = assertEntitledInTx(fixture.reader, fixture.userId, feature);
+    const denied = assertEntitled(fixture.reader, fixture.userId, feature);
 
     // Then
-    await expect(cached).rejects.toEqual(new ApplicationException(errorCode));
-    await expect(fresh).rejects.toMatchObject({ errorCode });
+    await expect(denied).rejects.toEqual(new ApplicationException(errorCode));
   });
 
   it("ADMIN과 프리미엄은 거부하지 않는다", async () => {
@@ -164,7 +162,7 @@ describe("assertEntitled — 기능별 기존 거부 코드", () => {
     // When / Then
     await expect(assertEntitled(admin.reader, admin.userId, "AI_REPORT")).resolves.toBeUndefined();
     await expect(
-      assertEntitledInTx(premium.reader, premium.userId, "CUSTOM_REMINDER_TIME"),
+      assertEntitled(premium.reader, premium.userId, "CUSTOM_REMINDER_TIME"),
     ).resolves.toBeUndefined();
   });
 });

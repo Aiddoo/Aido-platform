@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
 import type { VariantProps } from 'tailwind-variants';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 import { iconCircleVariants } from './icon-circle.variants';
 
 interface IconCircleProps extends VariantProps<typeof iconCircleVariants> {

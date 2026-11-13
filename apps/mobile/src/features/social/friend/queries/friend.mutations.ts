@@ -12,7 +12,7 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { findFriendLimit } from '../domains/friend.error';
@@ -110,7 +110,7 @@ export function useRemoveFriendMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    // 삭제 중에는 행 버튼이 꺼진다. 오프라인에 멈춰 두면 행이 빠진 채 연결될 때까지 남으니 바로 실패해 되돌린다
+    // 삭제 중에는 확인 다이얼로그가 진행 중으로 남는다. 오프라인에 멈춰 두면 행이 빠진 채 연결될 때까지 남으니 바로 실패해 되돌린다
     networkMode: 'always',
     mutationKey: FRIEND_MUTATION_KEYS.writes(),
     mutationFn: async (userId: string) => {

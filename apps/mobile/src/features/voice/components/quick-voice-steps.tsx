@@ -50,7 +50,7 @@ import { planReviewFormSchema } from '../schemas/plan-review-form.schema';
 import { formatMediaTime } from '../utils/media-time.view-model';
 import { createPlanReviewFormValues } from '../utils/plan-review-draft';
 import { LiveTranscript } from './live-transcript';
-import { PlanReview } from './plan-review';
+import { PlanReview } from './plan-review/plan-review';
 import { RecognitionLanguageTabs } from './recognition-language-tabs';
 import { VoiceVisual } from './voice-visual';
 
@@ -412,7 +412,8 @@ CaptureLayout.Header = function Header({ center, right, onClose }: CaptureLayout
       <Box flex={isCompact ? undefined : 1} className="items-start">
         <CloseButton
           variant="ghost"
-          style={{ width: fontScaledSize(22), height: fontScaledSize(22) }}
+          className="size-[22px]"
+          hitSlop={11}
           onPress={onClose}
           accessibilityLabel={t('listening.cancel')}
           testID="quick-voice-cancel"

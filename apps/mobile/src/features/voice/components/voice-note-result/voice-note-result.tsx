@@ -28,7 +28,6 @@ import { Stack } from 'expo-router';
 import { Skeleton, Tabs } from 'heroui-native';
 import { type ComponentProps, type PropsWithChildren, Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
@@ -39,7 +38,7 @@ import { type VoiceNoteTab, voiceNoteTabSchema } from '../../schemas/voice-note-
 import { formatMediaTime } from '../../utils/media-time.view-model';
 import { getDurationBucket } from '../../utils/voice-analytics';
 import { createSpeechLevels, getFlagBarIndexes } from '../../utils/waveform.geometry';
-import { PlanReview } from '../plan-review';
+import { PlanReview } from '../plan-review/plan-review';
 import { SentenceCaptionList } from '../sentence-caption-list';
 import { VoiceNoteToolbar } from '../voice-note-toolbar';
 import { KeyPointList } from './key-point-list';
@@ -77,7 +76,7 @@ export function VoiceNoteResult({ onMemoChanged }: VoiceNoteResultProps) {
       <HStack flex={1} gap={20}>
         <VStack flex={1} gap={12}>
           <VoiceNoteResult.TabList value={selectedTab} onValueChange={setTab} />
-          <Animated.View entering={FadeIn.duration(200)} key={selectedTab} style={{ flex: 1 }}>
+          <Box flex={1}>
             {match(selectedTab)
               .with('summary', () => (
                 <VoiceNoteResult.Summary>
@@ -98,7 +97,7 @@ export function VoiceNoteResult({ onMemoChanged }: VoiceNoteResultProps) {
                 <VoiceNoteResult.Transcript player={player} canPlay={canPlay} />
               ))
               .exhaustive()}
-          </Animated.View>
+          </Box>
         </VStack>
         {!isCompact && (
           <Box flex={1} style={{ maxWidth: READABLE_CONTENT_MAX_WIDTH }}>

@@ -1,7 +1,9 @@
 import { USER_REPORT_LIMITS, type UserReportTargetType } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   BottomSheetTextArea,
   Button,
@@ -13,7 +15,7 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -65,16 +67,9 @@ export function ReportReasonBottomSheet({
     mode: 'onChange',
   });
 
-  const handleReport = async (values: UserReportFormValues) => {
-    try {
-      await reportContent.mutateAsync({ target, form: values });
-    } catch (error) {
-      if (isReportTargetUnavailableError(error)) {
-        sheet.close();
-      }
-      return;
-    }
-
+  // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
+  const saveReport = form.handleSubmit(async (values) => {
+    await reportContent.mutateAsync({ target, form: values });
     sheet.close();
     toast.success(t('report.toast'), {
       description: t('report.toastDescription'),
@@ -87,16 +82,24 @@ export function ReportReasonBottomSheet({
           }),
       },
     });
-  };
+  });
+
+  // isSubmitting은 다음 렌더에야 켜지고 신고에는 멱등 키가 없어 같은 프레임의 두 번째 탭이 신고를 한 번 더 보낸다
+  const handleSavePress = useSingleTap(() => {
+    saveReport().catch((error: unknown) => {
+      // 실패 안내는 mutation의 meta.errorFeedback이 맡는다. 대상이 사라졌으면 더 신고할 수 없어 닫는다
+      if (isReportTargetUnavailableError(error)) {
+        sheet.close();
+      }
+    });
+  });
 
   return (
     <KeyboardBottomSheet
       {...sheetProps}
       isOpen={sheet.isOpen}
       onOpenChange={sheet.onOpenChange}
-      footer={
-        <SubmitButton control={form.control} onPress={() => form.handleSubmit(handleReport)()} />
-      }
+      footer={<SubmitButton control={form.control} onPress={handleSavePress} />}
     >
       <VStack gap={16} pb={16} testID="report-reason-sheet">
         <VStack gap={2}>
@@ -152,7 +155,7 @@ export function ReportReasonBottomSheet({
                 value={value ?? ''}
                 onChange={onChange}
                 isInvalid={error != null}
-                errorMessage={error?.message}
+                errorMessage={resolveValidationMessage(error, { default: 'reportDetail.tooLong' })}
                 maxLength={USER_REPORT_LIMITS.MAX_DETAIL_LENGTH}
                 className="h-[88px] min-h-0"
                 testID="report-detail-input"
@@ -192,7 +195,7 @@ interface SubmitButtonProps extends Pick<ComponentProps<typeof Button>, 'onPress
 function SubmitButton({ control, onPress }: SubmitButtonProps) {
   const { t } = useTranslation('moderation');
   const reason = useWatch({ control, name: 'reason' });
-  const { isSubmitting } = useFormState({ control });
+  const { isSubmitting, isSubmitSuccessful } = useFormState({ control });
 
   return (
     <Button
@@ -201,7 +204,8 @@ function SubmitButton({ control, onPress }: SubmitButtonProps) {
       display="block"
       onPress={onPress}
       isDisabled={reason == null}
-      isLoading={isSubmitting}
+      // 신고하면 시트가 내려가는 동안에도 고른 사유가 남는다. 그동안 다시 보내지 않는다
+      isLoading={isSubmitting || isSubmitSuccessful}
       testID="report-submit"
     >
       {t('report.submit')}

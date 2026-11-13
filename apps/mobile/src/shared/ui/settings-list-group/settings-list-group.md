@@ -188,12 +188,3 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 ### SettingsScreenLayout
 
 `ScrollView` props와 같아요. `gap`(기본 12)은 카드 사이 간격이에요. `SafeAreaScrollView` 위에 있어 스크롤바와 배경은 가장자리까지 두고 내용만 가로·아래 safe area를 피하며(공식 iPhone Duo 안내), 마이 탭 칸의 context inset을 따라요. `ReadableContent`로 넓은 화면의 폭을 모아요.
-
-## 파일 구조
-
-```
-settings-list-group/
-├── index.ts
-├── settings-list-group.tsx   # SettingsListGroup, .Item, .Toggle, .Radio, .Segment, .Empty, 스켈레톤, SettingsScreenLayout
-└── settings-list-group.md
-```

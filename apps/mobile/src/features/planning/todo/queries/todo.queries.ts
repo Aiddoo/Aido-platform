@@ -95,6 +95,8 @@ export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.detail({ todoId }),
     queryFn: async ({ signal }) => unwrap(await todoApi.getTodoDetails(todoId, signal)),
+    // 차단한 사람의 할 일을 보던 상세는 다시 받아 볼 수 없음 안내로 바뀐다
+    meta: { refreshOnBlockChange: true },
   });
 }
 

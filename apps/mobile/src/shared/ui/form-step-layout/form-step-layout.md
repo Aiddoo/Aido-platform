@@ -58,17 +58,3 @@ import { FormStepLayout, KeyboardAdaptiveButton } from '@src/shared/ui';
 `FormScrollView`는 `title` 없이 `footer`와 `ScrollView` props를 받는다.
 
 기본값: `flex: 1`, 좌우 16·위 24·아래 24 여백, `keyboardShouldPersistTaps="handled"`, 스크롤 표시줄 숨김.
-
-## 파일 구조
-
-```
-form-step-layout/
-├── form-scroll-view.tsx
-├── form-step-layout.tsx
-├── form-step-layout.md
-├── focused-field-scroll.geometry.ts         # 칸 전체·커서 줄이 보이는 스크롤 위치, 키보드 비율 보간(순수 worklet)
-├── focused-field-scroll.geometry.test.ts
-├── keyboard-footer-height.ts                # 버튼이 제 높이를 알리는 Context
-├── use-focused-field-keyboard-scroll.ts     # 키보드·포커스·커서 이벤트를 받아 UI 스레드에서 스크롤
-└── index.ts
-```

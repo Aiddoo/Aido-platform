@@ -23,6 +23,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
   EyeIcon,
@@ -34,6 +35,7 @@ import {
   TodoIllustration,
   VStack,
 } from '@src/shared/ui';
+import { formatCompactCount } from '@src/shared/utils/number-format';
 import { useMutation, useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -51,7 +53,7 @@ export function TodoDetailSummary() {
 
       <TodoDetailSummary.Task />
 
-      <VStack className="gap-2.5 ms-9">
+      <VStack className="ms-9 gap-2.5">
         <TodoDetailSummary.Schedule />
 
         <TodoDetailSummary.SubTodos />
@@ -223,6 +225,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
 
 TodoDetailSummary.Metrics = function Metrics() {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const todayKey = useTodayKey();
@@ -231,7 +234,13 @@ TodoDetailSummary.Metrics = function Metrics() {
   return (
     <HStack gap={16} align="center" wrap="wrap">
       <Metric
-        icon={<EyeIcon width={16} height={16} colorClassName="text-gray-5" />}
+        icon={
+          <EyeIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-5"
+          />
+        }
         count={detail.metrics.viewCount}
       />
       {canNudge && (
@@ -272,7 +281,7 @@ TodoDetailSummary.Thanks = function Thanks() {
   );
 };
 
-/** 자기 할 일이 대부분이라 작성자 줄 자리는 잡지 않는다. 친구 할 일은 그 한 줄만 받은 뒤 들어온다 */
+/** 받아야 있는지 아는 줄(친구 할 일의 작성자, 시간·반복)은 자리를 잡지 않는다. 그 줄이 있는 할 일만 받은 뒤 한 줄 늘어난다 */
 TodoDetailSummary.Loading = function Loading() {
   const fontScaledSize = useFontScaledSize();
 
@@ -285,9 +294,8 @@ TodoDetailSummary.Loading = function Loading() {
         <TextSkeleton size="t3" className="w-3/5" />
       </HStack>
 
-      <VStack className="gap-2.5 ms-9">
+      <VStack className="ms-9 gap-2.5">
         <VStack gap={6}>
-          <TextSkeleton size="b4" className="w-32" />
           <HStack gap={8} align="center">
             <CategoryHeaderPill.Loading />
             <TextSkeleton size="e1" className="w-14" />
@@ -349,11 +357,13 @@ function OwnRepeatLabel() {
 }
 
 function Metric({ icon, count }: { icon: ReactNode; count: number }) {
+  const { resolvedLanguage } = useLanguage();
+
   return (
     <HStack gap={4} align="center">
       {icon}
       <Text size="e1" shade={5}>
-        {count}
+        {formatCompactCount(count, resolvedLanguage)}
       </Text>
     </HStack>
   );

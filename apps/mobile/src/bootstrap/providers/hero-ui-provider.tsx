@@ -1,8 +1,4 @@
-import {
-  ToastLayerRegistration,
-  ToastLayersProvider,
-  useToastPlacement,
-} from '@src/shared/ui/toast';
+import { ToastLayerRegistration, ToastLayersProvider, useToastPlacement } from '@src/shared/ui';
 import { HeroUINativeProvider } from 'heroui-native';
 import type { ComponentProps } from 'react';
 

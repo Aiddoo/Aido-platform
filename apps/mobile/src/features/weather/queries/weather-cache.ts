@@ -21,7 +21,7 @@ export function queryCachedWeatherReport<TError, TQueryKey extends QueryKey>(
 }
 
 /** 위치를 먼저 읽어 이전 위치의 리포트를 한 번 더 받지 않고, 연달아 불리면 진행 중인 요청을 기다린다 */
-export async function refetchWeather(queryClient: QueryClient) {
+export async function refreshWeather(queryClient: QueryClient) {
   const getRevision = () =>
     WeatherLocationPolicy.getReadingRevision(
       queryClient.getQueryData(WEATHER_QUERY_KEYS.location()),

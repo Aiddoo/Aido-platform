@@ -37,10 +37,8 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
-import { SubTodoPolicy } from '../../domains/sub-todo.model';
-import { type SubTodo } from '../../domains/sub-todo.model';
-import { isPrivateVisibility, TodoPolicy } from '../../domains/todo.model';
-import { type Todo } from '../../domains/todo.model';
+import { type SubTodo, SubTodoPolicy } from '../../domains/sub-todo.model';
+import { isPrivateVisibility, type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {
@@ -124,12 +122,12 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   );
 };
 
-interface CategoryHeaderProps {
+interface CategoryAddPillProps {
   category: TodoCategoryWithCount;
   date: DateKey;
 }
 
-function CategoryAddPill({ category, date }: CategoryHeaderProps) {
+function CategoryAddPill({ category, date }: CategoryAddPillProps) {
   const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
@@ -177,7 +175,7 @@ function TodoReorderableList({
     isOptimistic: TodoPolicy.isOptimisticTodo,
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderMutation.mutate({
-        id: movedId,
+        todoId: movedId,
         input: { targetTodoId: targetId, position },
       });
     },

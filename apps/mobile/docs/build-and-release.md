@@ -177,11 +177,11 @@ Play Console은 AAB에서 Android 15(API 35)가 지원 중단한 시스템 바 �
 
 ## 스크립트
 
-| 명령                                                                     | 설명                                                                                    |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `pnpm dev` · `dev:android` · `dev:ios`                                   | Metro(Android는 `adb reverse` 포함)                                                     |
-| `pnpm check`(루트)                                                       | 형식·이름·lint·경계·안 쓰는 코드·타입([가드레일](./architecture/structure.md#가드레일)) |
-| `pnpm check:ipa-linkage` · `check:native-icons` · `check:revenuecat-env` | 빌드 산출물·자산·RevenueCat 환경 검사                                                   |
-| `pnpm test:node`                                                         | 설정·스크립트 테스트(node:test, [testing](./testing.md#파일-위치와-이름))               |
+| 명령                                                                     | 설명                                                                            |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `pnpm dev` · `dev:android` · `dev:ios`                                   | Metro(Android는 `adb reverse` 포함)                                             |
+| `pnpm check`(루트)                                                       | 형식·이름·lint·경계·안 쓰는 코드·타입([가드레일](./architecture/guardrails.md)) |
+| `pnpm check:ipa-linkage` · `check:native-icons` · `check:revenuecat-env` | 빌드 산출물·자산·RevenueCat 환경 검사                                           |
+| `pnpm test:node`                                                         | 설정·스크립트 테스트(node:test, [testing](./testing.md#파일-위치와-이름))       |
 
 참고: [EAS Build](https://docs.expo.dev/build/introduction/) · [EAS Submit](https://docs.expo.dev/submit/introduction/) · [App Store Connect](https://appstoreconnect.apple.com/) · [Play Console](https://play.google.com/console)
