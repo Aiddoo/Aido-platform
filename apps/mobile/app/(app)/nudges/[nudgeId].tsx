@@ -7,6 +7,7 @@ import { useNudgeId } from '@src/features/social/nudge/hooks/use-nudge-id';
 import { nudgeParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
+import { dismissToTab } from '@src/shared/navigation/open-entry-href';
 import {
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
@@ -15,7 +16,6 @@ import {
   Spacing,
   StyledSafeAreaView,
 } from '@src/shared/ui';
-import { router } from 'expo-router';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -84,7 +84,7 @@ NudgeDetailScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFal
           title={t('todo:interaction.unavailable')}
           description={t('todo:interaction.unavailableDescription')}
           button={
-            <Result.Button onPress={() => router.replace({ pathname: '/notifications' })}>
+            <Result.Button onPress={() => dismissToTab('/notifications')}>
               {t('common:actions.goBack')}
             </Result.Button>
           }

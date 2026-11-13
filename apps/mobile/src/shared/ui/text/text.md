@@ -2,12 +2,6 @@
 
 타이포그래피를 위한 기본 텍스트 컴포넌트입니다.
 
-## 가져오기
-
-```tsx
-import { Text, H1, H2, H3, H4 } from '@src/shared/ui';
-```
-
 ## 기본 사용법
 
 ```tsx
@@ -124,40 +118,6 @@ import { Text, H1, H2, H3, H4 } from '@src/shared/ui';
 // 회원가입 (큰 제목)
 ```
 
-## 스타일 조합 예시
+## 조합
 
-```tsx
-// 기본 본문
-<Text>일반 텍스트입니다.</Text>
-
-// 굵은 브랜드 색상
-<Text tone="brand" weight="bold" size="t2">
-  중요한 안내
-</Text>
-
-// 연한 회색 캡션
-<Text tone="neutral" shade={6} size="e1">
-  2024년 1월 18일
-</Text>
-
-// 에러 메시지
-<Text tone="danger" size="b4">
-  비밀번호가 일치하지 않습니다.
-</Text>
-
-// 취소선이 있는 텍스트
-<Text strikethrough tone="neutral" shade={6}>
-  ₩50,000
-</Text>
-
-// 최대 2줄로 제한
-<Text numberOfLines={2}>
-  긴 텍스트가 2줄을 넘으면 말줄임표로 표시됩니다...
-</Text>
-```
-
-## className으로 추가 스타일링
-
-```tsx
-<Text className="mt-4 px-2">추가 마진과 패딩</Text>
-```
+`tone`·`size`·`weight`·`shade`를 함께 준다(`<Text tone="danger" size="b4">`). 줄 수 제한은 `numberOfLines`, 취소선은 `strikethrough`다.

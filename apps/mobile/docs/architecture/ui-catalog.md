@@ -12,10 +12,11 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | 4    | React Native  | 위에 없을 때만(`ScrollView` 등)                                                                                 |
 
 - 글자와 레이아웃은 `shared/ui`가 먼저다. RN `Text`·`View`·`Pressable`을 직접 쓰지 않는다. 예외는 `shared/ui` 내부 구현과 native ref·Animated가 필요한 곳이다.
+- `shared/ui` 밖은 `@src/shared/ui`(입구 `shared/ui/index.ts`) 하나로 import한다. 부품 폴더에는 `index.ts`를 두지 않고(ls-lint), `shared/ui` 안의 부품끼리는 실제 파일을 import한다. 타입만 가져오는 `shared/hooks`·`shared/providers`도 입구를 쓴다. 예외는 입구에 내지 않는 테스트 전용 값(`OverlayStateContext`, `PaneAreaSize`)을 읽는 테스트와 `src/testing`이다.
 
 ## 역할별 부품
 
-굵은 이름은 1.15.2에서 새로 만든 공용 부품이다. 아직 옮기지 않은 자리는 [migration-status](./migration-status.md)에 있다.
+굵은 이름은 1.15.2에서 새로 만든 공용 부품이다. 아직 옮기지 않은 자리는 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다.
 
 | 역할                | 쓸 것                                                                                                                                          | 판정                                                                                          |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |

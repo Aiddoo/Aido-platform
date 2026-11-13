@@ -59,7 +59,6 @@ ReportStatusBanner.Error = function ErrorFallback({ reset }: QueryErrorFallbackP
   );
 };
 
-/** 다음 리포트까지 남은 날 한 칸 */
 function DdayCell({ label, dday }: { label: string; dday: string }) {
   return (
     <VStack gap={4} align="center" className="flex-1">

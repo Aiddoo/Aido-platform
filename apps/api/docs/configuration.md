@@ -101,6 +101,6 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 
 릴리스마다 맞춘다. `.env*.example`의 값은 옛 예시이므로 복사하지 않는다.
 
-- `FEATURE_DISCOVERY_CAMPAIGN_ID`: 그 릴리스 앱에 번들된 id다(모바일 `features/app-config/whats-new/constants/releases.ts`의 `campaignId`). 앱은 자기가 모르는 id면 소개를 띄우지 않는다.
+- `FEATURE_DISCOVERY_CAMPAIGN_ID`: 그 릴리스 앱에 번들된 id다(모바일 `features/app-config/whats-new/constants/releases.constants.ts`의 `campaignId`). 앱은 자기가 모르는 id면 소개를 띄우지 않는다.
 - `FEATURE_DISCOVERY_MIN_APP_VERSION`: 그 캠페인을 번들한 앱 버전이다.
 - `FEATURE_DISCOVERY_LAUNCHED_AT`: 끝이 `Z`인 UTC ISO로 쓴 그 릴리스의 배포 시각이다. 켜면 필수이고 응답에 그대로 나간다. 1.15.0 이하 앱만 읽어 이 시각 전 가입자에게만 소개를 자동으로 열고 이후 가입자에게 시작 체크리스트를 보인다. 1.15.1 앱은 읽지 않고 가입 시점과 상관없이 소개를 한 번 연다.

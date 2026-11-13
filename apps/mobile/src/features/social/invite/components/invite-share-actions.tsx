@@ -15,14 +15,15 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
-import type { ComponentProps, ReactNode } from 'react';
+import { debounce, noop } from 'es-toolkit';
+import { type ComponentProps, type ReactNode, useCallback, useEffect, useState } from 'react';
 
-import { useCopiedFeedback } from '../hooks/use-copied-feedback';
 import { useCreateInviteShareContent } from '../hooks/use-create-invite-share-content';
 import { useShareInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import type { InviteShareChannel } from '../services/invite-share.service';
+
+const COPIED_FEEDBACK_MS = 1500;
 
 export function InviteShareActions() {
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
@@ -175,4 +176,19 @@ function InviteSecondaryShareButton({
       </HStack>
     </Button>
   );
+}
+
+/** 복사 버튼 아이콘을 잠깐 체크로 바꾼다. 다시 누르면 시간을 새로 센다 */
+function useCopiedFeedback() {
+  const [isCopied, setIsCopied] = useState(false);
+  const [hideCopied] = useState(() => debounce(() => setIsCopied(false), COPIED_FEEDBACK_MS));
+
+  useEffect(() => () => hideCopied.cancel(), [hideCopied]);
+
+  const showCopied = useCallback(() => {
+    setIsCopied(true);
+    hideCopied();
+  }, [hideCopied]);
+
+  return [isCopied, showCopied] as const;
 }

@@ -13,7 +13,7 @@ import { useVoiceCaptureReadiness } from '@src/features/voice/hooks/use-voice-ca
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useTranslation } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';

@@ -232,7 +232,7 @@ function ThanksSummaryCard({ tone, left, title, description, action }: ThanksSum
         gap={12}
         wrap={isActionStacked ? 'wrap' : 'nowrap'}
         className={cn(
-          'min-h-16 rounded-2xl py-3 pl-4 pr-3',
+          'min-h-16 rounded-2xl py-3 pr-3 pl-4',
           tone === 'highlighted' ? 'bg-main/8 dark:bg-main/20' : 'bg-gray-2',
         )}
       >

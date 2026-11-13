@@ -261,7 +261,7 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
 
   return (
     <Box flex={1} className="justify-center overflow-hidden rounded-3xl bg-highlight p-3">
-      <Mascot name="catHi" size={132} className="absolute -bottom-6 -right-2.5" />
+      <Mascot name="catHi" size={132} className="absolute -right-2.5 -bottom-6" />
       <VStack gap={8}>
         <FeatureCard
           Icon={VoiceDuoIcon}

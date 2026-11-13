@@ -1,11 +1,11 @@
-import { Box } from '@src/shared/ui/box';
-import { CheckmarkIcon } from '@src/shared/ui/icon';
 import { cn } from '@src/shared/utils/cn';
 import { Image as ExpoImage } from 'expo-image';
 import { type AvatarRootProps, Avatar as HeroUIAvatar } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import type { ImageSourcePropType } from 'react-native';
 
+import { Box } from '../box/box';
+import { CheckmarkIcon } from '../icon/icons';
 import { getAvatarRecyclingKey } from './get-avatar-recycling-key';
 
 interface AvatarProps extends AvatarRootProps {
@@ -55,7 +55,7 @@ Avatar.Image = function Image({ source, ...props }: AvatarImageProps) {
 
 function SelectedBadge() {
   return (
-    <Box className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-main items-center justify-center z-10">
+    <Box className="absolute -top-1 -right-1 z-10 h-6 w-6 items-center justify-center rounded-full bg-main">
       <CheckmarkIcon width={14} height={14} colorClassName="text-white dark:text-gray-9" />
     </Box>
   );

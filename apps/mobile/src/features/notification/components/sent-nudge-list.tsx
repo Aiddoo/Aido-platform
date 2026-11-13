@@ -78,7 +78,10 @@ export function SentNudgeList() {
       }
       ListEmptyComponent={<SentNudgeList.Empty />}
       ItemSeparatorComponent={() => <Separator className="mx-4" />}
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+      // 화면이 아래 safe area를 빼지 않아 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 행은 유리 밑으로 스크롤된다
+      contentInsetAdjustmentBehavior="automatic"
+      // 빈 안내만 칸을 채운다. 행이 있을 때도 채우면 짧은 목록이 iOS 자동 inset만큼 끌려 올라간 채 머문다
+      contentContainerStyle={{ flexGrow: listItems.length === 0 ? 1 : 0, paddingBottom: 24 }}
     />
   );
 }
@@ -122,7 +125,8 @@ SentNudgeList.Loading = NotificationList.Loading;
 
 SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
-  // 목록 API의 NUDGE_1105·1111은 꺼짐 뜻뿐이다. 1105도 받아 1.15.2 서버가 먼저 나가지 않았거나 되돌려져도 꺼진 상태로 보인다
+  // 목록 API의 NUDGE_1105·1111은 꺼짐 뜻뿐이다. 1105도 받아 1.15.2 서버가 먼저 나가지 않았거나 되돌려져도 꺼진 상태로 보인다.
+  // 1105 수용은 서버 롤백 바닥이 1.15.2가 된 뒤 1.16.0에서 지운다(compatibility.md)
   const isListDisabled = isNudgeUnavailableError(error);
 
   return (

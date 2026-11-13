@@ -1,4 +1,3 @@
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { Box, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
@@ -7,9 +6,13 @@ import { Easing } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 export const RECORD_BUTTON_GAP = 8;
+// 아이콘만 있는 버튼이라 원(누름 칸)은 고정이고 안의 아이콘만 글꼴 단계를 따른다(ui.md). 큰 단계에서 원이 커져 옆 버튼과 어긋나지 않는다
 const RECORD_BUTTON_SIDE_SIZE = 52;
 const RECORD_BUTTON_PRIMARY_SIZE = 64;
 export const RECORD_BUTTON_ICON_SIZE = 24;
+/** 라벨에서 옆 버튼 위까지. 버튼 줄은 큰 원 높이이고 옆 원은 그 가운데에 있다 */
+export const RECORD_BUTTON_LABEL_CLEARANCE =
+  RECORD_BUTTON_GAP + (RECORD_BUTTON_PRIMARY_SIZE + RECORD_BUTTON_SIDE_SIZE) / 2;
 /** 큰 글자에서 라벨이 줄어드는 한계. 옆 칸 라벨과 기준선이 함께 바뀐다 */
 export const RECORD_BUTTON_LABEL_MIN_SCALE = 0.8;
 /** 크기가 다른 녹음 버튼들이 같은 비율로 눌린다 */
@@ -21,15 +24,6 @@ const RECORD_BUTTON_PRESS = {
     ignoreScaleCoefficient: true,
   },
 };
-
-export function useRecordButtonLabelClearance() {
-  const fontScaledSize = useFontScaledSize();
-
-  return (
-    RECORD_BUTTON_GAP +
-    (fontScaledSize(RECORD_BUTTON_PRIMARY_SIZE) + fontScaledSize(RECORD_BUTTON_SIDE_SIZE)) / 2
-  );
-}
 
 interface RecordButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   label: string;
@@ -67,14 +61,9 @@ RecordButton.Column = function Column({
   label: ReactNode;
   children: ReactNode;
 }) {
-  const fontScaledSize = useFontScaledSize();
-
   return (
     <VStack flex={1} align="center" gap={RECORD_BUTTON_GAP}>
-      <Box
-        className="items-center justify-center"
-        style={{ height: fontScaledSize(RECORD_BUTTON_PRIMARY_SIZE) }}
-      >
+      <Box className="items-center justify-center" style={{ height: RECORD_BUTTON_PRIMARY_SIZE }}>
         {children}
       </Box>
       {label}
@@ -90,8 +79,7 @@ RecordButton.Button = function Button({
   children,
   ...pressableProps
 }: RecordButtonProps) {
-  const fontScaledSize = useFontScaledSize();
-  const size = fontScaledSize(isPrimary ? RECORD_BUTTON_PRIMARY_SIZE : RECORD_BUTTON_SIDE_SIZE);
+  const size = isPrimary ? RECORD_BUTTON_PRIMARY_SIZE : RECORD_BUTTON_SIDE_SIZE;
 
   return (
     <PressableFeedback

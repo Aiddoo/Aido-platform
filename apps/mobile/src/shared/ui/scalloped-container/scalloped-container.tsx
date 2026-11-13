@@ -5,7 +5,7 @@ import type { ColorValue } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useResolveClassNames } from 'uniwind';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 
 const SCALLOP_RADIUS = 8;
 

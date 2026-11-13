@@ -70,7 +70,7 @@ export function SocialLoginButtons() {
         label={t('login.continueWith', { provider: t(getOAuthProviderLabelKey('GOOGLE')) })}
         onPress={() => googleLogin.mutate(undefined, exchangeOnSuccess('google'))}
         isLoading={googleLogin.isPending || exchangeCode.isPending}
-        className="bg-white border border-gray-3 dark:border-gray-2 dark:bg-gray-2"
+        className="border border-gray-3 bg-white dark:border-gray-2 dark:bg-gray-2"
         labelClassName="dark:text-gray-9"
       />
       <SocialLoginButton
