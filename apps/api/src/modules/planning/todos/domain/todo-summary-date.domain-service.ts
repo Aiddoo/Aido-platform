@@ -1,6 +1,4 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { summaryDateNotAllowed } from "./todos.errors.js";
 
 /**
  * 요약 대상 날짜를 사용자 시간대의 오늘 또는 내일로 제한합니다.
@@ -18,11 +16,7 @@ export function resolveTodoSummaryDate(
 
   const tomorrow = today.add({ days: 1 });
   if (!requestedDate.equals(today) && !requestedDate.equals(tomorrow)) {
-    throw new DomainException(ErrorCode.SYS_0002, {
-      field: "date",
-      value: requestedDate.toString(),
-      allowed: [today.toString(), tomorrow.toString()],
-    });
+    throw summaryDateNotAllowed(requestedDate.toString(), [today.toString(), tomorrow.toString()]);
   }
 
   return requestedDate;

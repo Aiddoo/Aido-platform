@@ -7,7 +7,7 @@ import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { EMPTY_TODO_COMMENT_FORM_VALUES } from '../schemas/todo-comment-form.schema';
-import { getTodoCommentBackAction } from '../utils/get-todo-comment-back-action';
+import { getTodoCommentBackAction } from '../utils/todo-comment-back.view-model';
 import { useIsTodoCommentSubmitting } from './use-is-todo-comment-submitting';
 import { useTodoCommentForm } from './use-todo-comment-form';
 

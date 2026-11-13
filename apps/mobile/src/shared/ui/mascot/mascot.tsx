@@ -1,5 +1,7 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import catSuggestionImage from '@assets/images/ido_cat_suggestion.webp';
+import weatherAnchorImage from '@assets/images/weather/mascot-anchor.png';
+import weatherSuggestionImage from '@assets/images/weather/mascot-suggestion.webp';
 import type { ComponentProps } from 'react';
 
 import { Image } from '../image/image';
@@ -8,6 +10,8 @@ import { Image } from '../image/image';
 const MASCOTS = {
   catHi: { source: catHiImage, centerOffsetRatio: (512 - 554) / 1024 },
   catSuggestion: { source: catSuggestionImage, centerOffsetRatio: 0 },
+  weatherAnchor: { source: weatherAnchorImage, centerOffsetRatio: 0 },
+  weatherSuggestion: { source: weatherSuggestionImage, centerOffsetRatio: 0 },
 } as const;
 
 type MascotProps = Omit<ComponentProps<typeof Image>, 'source'> & {

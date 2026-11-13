@@ -1,7 +1,7 @@
 {
   "timezoneChanged": {
     "title": "To-do reminders now follow your time zone",
-    "description": "A 10 AM to-do stays at 10 AM"
+    "description": "A {{time}} to-do stays at {{time}}"
   },
   "actions": {
     "marketingOptOut": "Turn off promotional notifications"

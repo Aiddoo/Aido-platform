@@ -1,10 +1,8 @@
-import { ErrorCode } from "@aido/api/errors";
-
 import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { emailAlreadyVerified } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthUserRepositoryPort } from "../ports/auth-user.repository.port.js";
 import type { IssueVerificationCodeUseCase } from "./issue-verification-code.use-case.js";
@@ -40,10 +38,7 @@ export class ResendVerificationUseCase {
 
     if (user.status !== "PENDING_VERIFY") {
       if (user.emailVerifiedAt != null) {
-        throw new ApplicationException(ErrorCode.USER_0604, {
-          email,
-          message: "이미 인증이 완료된 계정입니다.",
-        });
+        throw emailAlreadyVerified(email);
       }
       assertStatusAllowsLogin(user.status, email);
     }

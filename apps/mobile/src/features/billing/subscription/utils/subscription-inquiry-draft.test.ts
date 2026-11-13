@@ -10,7 +10,12 @@ describe('toSubscriptionInquiryDraft', () => {
     const draft = toSubscriptionInquiryDraft({
       subject: '결제를 마치지 못했어요',
       diagnosticCode: 'SUBSCRIPTION_PURCHASE_FAILED (2)',
-      installation: { platform: 'ios', currentVersion: '1.13.0' },
+      installation: {
+        platform: 'ios',
+        currentVersion: '1.13.0',
+        currentBuild: null,
+        applicationId: null,
+      },
     });
 
     // Then
@@ -24,7 +29,7 @@ describe('toSubscriptionInquiryDraft', () => {
     const draft = toSubscriptionInquiryDraft({
       subject: '요금제를 불러오지 못했어요',
       diagnosticCode: 'NETWORK',
-      installation: undefined,
+      installation: null,
     });
 
     // Then
@@ -36,7 +41,7 @@ describe('toSubscriptionInquiryDraft', () => {
     const draft = toSubscriptionInquiryDraft({
       subject: '지금은 구독 상품을\n보여드릴 수 없어요',
       diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE (23)',
-      installation: undefined,
+      installation: null,
     });
 
     // Then
@@ -53,7 +58,12 @@ describe('toSubscriptionInquiryDraft', () => {
     const draft = toSubscriptionInquiryDraft({
       subject: "Couldn't load plans",
       diagnosticCode: 'SERVER_503',
-      installation: { platform: 'android', currentVersion: '1.13.0' },
+      installation: {
+        platform: 'android',
+        currentVersion: '1.13.0',
+        currentBuild: null,
+        applicationId: null,
+      },
     });
 
     // Then

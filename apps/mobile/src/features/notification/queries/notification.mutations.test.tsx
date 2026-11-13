@@ -1,4 +1,3 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { err, ok } from '@src/core/errors/result';
 import {
   createHttpClientStub,
@@ -7,9 +6,9 @@ import {
   createTestDi,
   createTestQueryClient,
 } from '@src/testing/core';
-import { type InfiniteData, QueryClientProvider, useMutation } from '@tanstack/react-query';
-import { act, renderHook, waitFor } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { renderScreenHook } from '@src/testing/render';
+import { type InfiniteData, useMutation } from '@tanstack/react-query';
+import { act, waitFor } from '@testing-library/react-native';
 
 import {
   createMarkReadResponseDto,
@@ -25,37 +24,27 @@ import {
 } from './notification.mutations';
 
 async function setup() {
-  const server = { unreadCount: 3, finishOpened: () => {} };
+  const server = { unreadCount: 3 };
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async () => ({
     ok: true,
     value: { unreadCount: server.unreadCount },
   }));
-  httpClient.post.mockImplementation(
-    () =>
-      new Promise((resolve) => {
-        server.finishOpened = () => {
-          server.unreadCount = 2;
-          resolve({ ok: true, value: { opened: true } });
-        };
-      }),
-  );
+  const opened = createPendingResponse(ok({ opened: true }));
+  httpClient.post.mockReturnValue(opened.response);
   const gateway = createPushNotificationGatewayStub();
-  const container = createTestDi({ httpClient, pushNotification: gateway });
-  const queryClient = createTestQueryClient();
-  const wrapper = ({ children }: PropsWithChildren) => (
-    <StaticDIProvider container={container}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </StaticDIProvider>
-  );
-  const { result } = await renderHook(
+  const { result } = await renderScreenHook(
     () => {
       useNotificationBadgeSync({ authStatus: 'authenticated' });
       return useMutation(useRecordPushOpenedMutationOptions());
     },
-    { wrapper },
+    { di: createTestDi({ ports: { httpClient, pushNotification: gateway } }) },
   );
-  return { result, gateway, finishOpened: () => server.finishOpened() };
+  const finishOpened = () => {
+    server.unreadCount = 2;
+    opened.settle();
+  };
+  return { result, gateway, finishOpened };
 }
 
 describe('useRecordPushOpenedMutationOptions', () => {
@@ -98,18 +87,12 @@ describe('useMarkAsReadMutationOptions', () => {
       pageParams: [undefined],
     };
     queryClient.setQueryData(listKey, inbox);
-    const container = createTestDi({ httpClient, pushNotification: gateway });
-    const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={container}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </StaticDIProvider>
-    );
-    const { result } = await renderHook(
+    const { result } = await renderScreenHook(
       () => {
         useNotificationBadgeSync({ authStatus: 'authenticated' });
         return useMutation(useMarkAsReadMutationOptions());
       },
-      { wrapper },
+      { di: createTestDi({ ports: { httpClient, pushNotification: gateway, queryClient } }) },
     );
     await waitFor(() => expect(gateway.setBadgeCount).toHaveBeenLastCalledWith(2));
     const reads = await act(async () => [

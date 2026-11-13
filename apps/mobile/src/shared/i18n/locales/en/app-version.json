@@ -1,6 +1,7 @@
 {
   "section": "App info",
   "item": "Version",
+  "itemHint": "Opens the app store if a new version is available",
   "latestTitle": "App version",
   "latestDescription": "You're using the latest version.",
   "confirm": "OK",
