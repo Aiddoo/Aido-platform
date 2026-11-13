@@ -1,5 +1,8 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import {
+  selectAccountId,
+  useGetMeQueryOptions,
+} from '@src/features/identity/user/queries/user.queries';
 import { getErrorMessage } from '@src/shared/errors';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
@@ -13,10 +16,14 @@ import { usePendingCoachmark } from '../hooks/use-pending-coachmark';
 
 type ReorderCoachmarkKind = 'todo' | 'category';
 
-// 보조 안내라 내 정보를 못 읽으면 목록을 막지 않고 조용히 빠진다
+// 보조 안내라 내 정보를 못 읽으면 목록을 막지 않고 조용히 빠진다. 빠진 이유를 남기려고 useMyAccountId 대신 오류도 읽는다
 export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
   const logger = useLogger();
-  const { data: user, error } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
+  const { data: accountId, error } = useQuery({
+    ...useGetMeQueryOptions(),
+    throwOnError: false,
+    select: selectAccountId,
+  });
 
   useEffect(() => {
     if (error == null) {
@@ -28,11 +35,11 @@ export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
     });
   }, [error, kind, logger]);
 
-  if (user == null) {
+  if (accountId == null) {
     return null;
   }
 
-  return <ReorderCoachmark.Alert kind={kind} accountId={user.id} />;
+  return <ReorderCoachmark.Alert kind={kind} accountId={accountId} />;
 }
 
 ReorderCoachmark.Alert = function Alert({

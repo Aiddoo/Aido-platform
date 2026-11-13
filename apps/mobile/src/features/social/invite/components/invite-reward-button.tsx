@@ -2,6 +2,7 @@ import {
   useIsMyPageMenuItemSelected,
   useMyPageMenuNavigate,
 } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -37,6 +38,7 @@ const PREVIEW_CELL_SIZE = 44;
 /** 마이페이지의 친구 초대 카드. 사용 가능 여부와 경계는 마이페이지가 정한다 */
 export function InviteRewardButton({ className, ...props }: InviteRewardButtonProps) {
   const { t } = useTranslation('invite');
+  const fontScaledSize = useFontScaledSize();
   const { data: invite } = useSuspenseQuery(useGetInviteQueryOptions());
   const openMyInvite = useOpenMyInvite();
   const navigate = useMyPageMenuNavigate();
@@ -80,7 +82,11 @@ export function InviteRewardButton({ className, ...props }: InviteRewardButtonPr
                 .exhaustive()}
             </Text>
           </VStack>
-          <ArrowRightIcon width={20} height={20} colorClassName="text-gray-5" />
+          <ArrowRightIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-gray-5"
+          />
         </HStack>
 
         <HStack

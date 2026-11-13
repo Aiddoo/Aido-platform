@@ -8,7 +8,6 @@ export { getErrorDiagnosis } from './error-diagnosis';
 
 export {
   isConnectivityError,
-  isInfraError,
   isTransientError,
   NetworkError,
   ParseError,

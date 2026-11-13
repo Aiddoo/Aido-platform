@@ -29,6 +29,7 @@
     "startNow": "Start now",
     "emptyRecordTitle": "Collect badges to build your history",
     "emptyRecordDescription": "Your weekly completed to-dos are recorded here",
-    "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} done"
+    "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} done",
+    "openCertificate": "View certificate"
   }
 }

@@ -27,7 +27,9 @@
   "daysOfWeekSeparator": ", ",
   "calendar": {
     "nextMonth": "Next month",
+    "nextWeek": "Next week",
     "previousMonth": "Previous month",
+    "previousWeek": "Previous week",
     "weekHeader": "Week {{week}} of {{month}}"
   },
   "relativeDay": {

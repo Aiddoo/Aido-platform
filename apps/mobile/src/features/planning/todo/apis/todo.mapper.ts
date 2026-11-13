@@ -13,10 +13,10 @@ import {
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toNullableInstant } from '@src/shared/date/instant';
 
-import { DailyCompletionPolicy } from '../domains/daily-completion.model';
 import {
-  type DailyCompletionSummary,
+  DailyCompletionPolicy,
   type DailyCompletionsResult,
+  type DailyCompletionSummary,
 } from '../domains/daily-completion.model';
 import {
   getScheduledTime,
@@ -132,7 +132,7 @@ export function toTodoListResult(dto: TodoListResponse): TodoListResult {
   };
 }
 
-/** 할 일 만들기 요청. 작성 시트·반복 작성·메모 옮기기가 모두 이 모양으로 보낸다 */
+/** 작성 시트·반복 작성·메모 옮기기가 모두 이 모양으로 보낸다 */
 export function toCreateTodoRequest(values: TodoFormValues): CreateTodoInput {
   const scheduledTime = getScheduledTime(values);
   return {
@@ -161,7 +161,7 @@ export function toTodoFormValues(todo: Todo, timeZone: string): TodoFormValues {
   };
 }
 
-/** 할 일 고치기 요청. 고친 칸에 반복 범위·규칙·체크리스트를 붙인다 */
+/** 고친 칸에 반복 범위·규칙·체크리스트를 붙인다 */
 export function toUpdateTodoRequest(
   fields: TodoFieldChanges,
   { scope, repeat, checklist }: TodoSeriesEditOptions,

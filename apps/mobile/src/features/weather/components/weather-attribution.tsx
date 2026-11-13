@@ -16,7 +16,10 @@ import { match } from 'ts-pattern';
 import type { AttributionInfo } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { type AttributionBackground, toAttributionMark } from '../utils/to-attribution-mark';
+import {
+  type AttributionBackground,
+  toAttributionMark,
+} from '../utils/weather-attribution.view-model';
 
 /** Apple 지침: 로고는 1x 크기(높이 14pt) 그대로 그린다. 폭은 언어마다 달라 원본 비율을 따른다. */
 const LOGO_HEIGHT = 14;

@@ -3,7 +3,7 @@ import { join, relative, sep } from 'node:path';
 
 import { NOTIFICATION_NAVIGATION_KIND, NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import type { DateKey } from '@src/shared/date/date-key';
-import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
+import type { WindowSizeClass } from '@src/shared/ui';
 import { createDateKey } from '@src/testing/date-key';
 import type { Href } from 'expo-router';
 
@@ -20,6 +20,7 @@ const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 const VIEWER = 'cmviewer00000000000000001';
 const FRIEND = 'cmfriend00000000000000001';
 const DATE = createDateKey('2026-08-14');
+const OPENED_AT = 1000;
 
 function todoTarget({
   ownerId = null,
@@ -66,7 +67,7 @@ const TODO_COMMENT: NotificationDestination = {
 };
 const WEATHER: NotificationDestination = {
   kind: 'route',
-  href: { pathname: '/weather', params: { entry: 'notification' } },
+  href: { pathname: '/weather', params: { entry: 'notification', openedAt: OPENED_AT } },
 };
 const INVITE: NotificationDestination = { kind: 'route', href: { pathname: '/friends/invite' } };
 const SUBSCRIPTION: NotificationDestination = {
@@ -208,6 +209,7 @@ describe('toNotificationDestination', () => {
     const destination = toNotificationDestination(todoTarget({ ownerId: FRIEND, dateKey: DATE }), {
       windowSizeClass: 'compact',
       viewerId: VIEWER,
+      openedAt: OPENED_AT,
     });
 
     // Then
@@ -219,8 +221,14 @@ describe('toNotificationDestination', () => {
 
   it.each(['medium', 'expanded'] as const)('%s 화면은 할 일을 피드 상세 pane에 고른다', (size) => {
     // When
-    const todo = toNotificationDestination(todoTarget(), { windowSizeClass: size });
-    const comment = toNotificationDestination(todoCommentTarget(), { windowSizeClass: size });
+    const todo = toNotificationDestination(todoTarget(), {
+      windowSizeClass: size,
+      openedAt: OPENED_AT,
+    });
+    const comment = toNotificationDestination(todoCommentTarget(), {
+      windowSizeClass: size,
+      openedAt: OPENED_AT,
+    });
 
     // Then
     expect(todo).toEqual({ kind: 'route', href: { pathname: '/feed', params: { todoId: 42 } } });
@@ -261,6 +269,7 @@ describe('toNotificationDestination', () => {
     const destination = toNotificationDestination(target, {
       windowSizeClass: 'medium',
       viewerId,
+      openedAt: OPENED_AT,
     });
 
     // Then
@@ -308,6 +317,7 @@ describe('toNotificationDestination', () => {
         // When
         const destination = toNotificationDestination(toNotificationTarget(navigation), {
           windowSizeClass: 'compact',
+          openedAt: OPENED_AT,
         });
 
         // Then
@@ -317,7 +327,7 @@ describe('toNotificationDestination', () => {
 
     describe.each(
       WIDE_WINDOW_SIZE_CLASSES.flatMap((windowSizeClass) =>
-        VIEWER_IDS.map((viewerId) => ({ windowSizeClass, viewerId })),
+        VIEWER_IDS.map((viewerId) => ({ windowSizeClass, viewerId, openedAt: OPENED_AT })),
       ),
     )('$windowSizeClass, 나 $viewerId', (context) => {
       it.each(
@@ -344,7 +354,10 @@ describe('toNotificationDestination', () => {
     )('$name: 서버 navigation의 목적지는 있는 화면이다', ({ navigation }) => {
       // When
       const destinations = WINDOW_SIZE_CLASSES.map((windowSizeClass) =>
-        toNotificationDestination(toNotificationTarget(navigation), { windowSizeClass }),
+        toNotificationDestination(toNotificationTarget(navigation), {
+          windowSizeClass,
+          openedAt: OPENED_AT,
+        }),
       );
 
       // Then
@@ -357,7 +370,7 @@ describe('toNotificationDestination', () => {
       // When
       const destination = toNotificationDestination(
         { kind: 'NOTIFICATIONS' },
-        { windowSizeClass: 'compact' },
+        { windowSizeClass: 'compact', openedAt: OPENED_AT },
       );
 
       // Then

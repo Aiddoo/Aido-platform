@@ -97,7 +97,7 @@ function RouteSheetBoundary({ sheet, loading, children }: RouteSheetBoundaryProp
       fallback={({ reset }) => (
         <QueryErrorFallback
           reset={reset}
-          onInquiry={(href) => sheet.close({ type: 'replace', href })}
+          onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
         />
       )}
     >

@@ -12,8 +12,8 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
-import { AspectRatio } from '@src/shared/ui/aspect-ratio';
-import { WeatherRainIcon } from '@src/shared/ui/icon';
+import { AspectRatio } from '@src/shared/ui';
+import { WeatherRainIcon } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Separator } from 'heroui-native';
@@ -82,6 +82,7 @@ export function NextHourPrecipitation() {
     timeFormat: preference.timeFormat,
     now,
   });
+  const titleIconSize = Math.round(TITLE_ICON_SIZE * useFontScaleRatio());
 
   if (isNowcastExpired(weather, now)) {
     return <NextHourPrecipitation.Empty />;
@@ -109,8 +110,8 @@ export function NextHourPrecipitation() {
       title={t('nextHour.title')}
       icon={
         <WeatherRainIcon
-          width={TITLE_ICON_SIZE}
-          height={TITLE_ICON_SIZE}
+          width={titleIconSize}
+          height={titleIconSize}
           colorClassName="text-on-sky/[0.62]"
         />
       }

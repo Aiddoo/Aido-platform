@@ -155,8 +155,6 @@ export function createNotificationApiError(
   );
 }
 
-export const INVALID_DTO = { invalid: 'data' };
-
 export const createPushNotification = defineFixture(pushNotificationSchema, {
   notificationId: 7,
   type: 'FOLLOW_NEW',

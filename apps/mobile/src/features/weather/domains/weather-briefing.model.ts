@@ -115,7 +115,8 @@ interface BriefingClock {
   timeZone: string;
 }
 
-function findHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): number {
+// findIndex처럼 그 시각을 담은 시간이 없으면 -1이다
+function getHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): number {
   const time = toEpochMs(at);
   return hourly.findIndex((hour) => {
     const startsAt = toEpochMs(hour.startsAt);
@@ -170,7 +171,7 @@ function getForecastTodos(
     if (todo.scheduledAt == null || toEpochMs(todo.scheduledAt) < toEpochMs(now)) {
       return [];
     }
-    const hour = hourly[findHourIndexAt(hourly, todo.scheduledAt)];
+    const hour = hourly[getHourIndexAt(hourly, todo.scheduledAt)];
     if (hour == null) {
       return [];
     }
@@ -220,7 +221,7 @@ function toWetBriefing(
   if (stormyTodo != null) {
     const range = toHourRange(
       hourly,
-      findHourIndexAt(hourly, stormyTodo.hour.startsAt),
+      getHourIndexAt(hourly, stormyTodo.hour.startsAt),
       isThunderHour,
     );
     if (range != null) {
@@ -239,7 +240,7 @@ function toHotBriefing(
 ): BriefingResult | null {
   const [first] = todos;
   const range =
-    first == null ? null : toHourRange(hourly, findHourIndexAt(hourly, first.hour.startsAt), isHot);
+    first == null ? null : toHourRange(hourly, getHourIndexAt(hourly, first.hour.startsAt), isHot);
   if (range == null) {
     return null;
   }
@@ -263,7 +264,7 @@ function toRainLaterBriefing(
   todos: ForecastTodo[],
   { now, timeZone }: BriefingClock,
 ): BriefingResult | null {
-  const nowIndex = findHourIndexAt(hourly, now);
+  const nowIndex = getHourIndexAt(hourly, now);
   const current = hourly[nowIndex];
   if (current == null || WeatherReportPolicy.isWetHour(current)) {
     return null;
@@ -314,7 +315,7 @@ function toClearBriefing(
   }
   const range = toHourRange(
     hourly,
-    findHourIndexAt(hourly, best.startsAt),
+    getHourIndexAt(hourly, best.startsAt),
     (hour) =>
       daylightHours.includes(hour) &&
       best.apparentTemperature - hour.apparentTemperature <= BEST_TIME_TOLERANCE,

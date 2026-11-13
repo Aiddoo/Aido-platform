@@ -40,7 +40,7 @@ import {
   formatTemperature,
   type TemperatureUnit,
   toDisplayTemperature,
-} from '../utils/weather-temperature';
+} from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 

@@ -27,7 +27,9 @@ import { InvitedFriendRow } from './invited-friend-row';
  */
 export function InvitedFriendSummary() {
   const { t } = useTranslation('invite');
-  const { data } = useSuspenseInfiniteQuery(useGetInvitedFriendSummaryInfiniteQueryOptions());
+  const { data: invitedFriendSummary } = useSuspenseInfiniteQuery(
+    useGetInvitedFriendSummaryInfiniteQueryOptions(),
+  );
   const openInvitedFriends = useSingleTap(() =>
     router.push({
       pathname: '/friends/invite/invitees',
@@ -39,23 +41,23 @@ export function InvitedFriendSummary() {
     <VStack gap={8}>
       <HStack align="center" justify="between" className="min-h-8">
         <H4>{t('friendList.title')}</H4>
-        {data.hasMore && (
+        {invitedFriendSummary.hasMore && (
           <TextButton
             testID="invitees-see-all"
             variant="arrow"
             size="small"
             onPress={openInvitedFriends}
           >
-            {t('friendList.seeAll', { count: data.totalCount })}
+            {t('friendList.seeAll', { count: invitedFriendSummary.totalCount })}
           </TextButton>
         )}
       </HStack>
 
-      {data.invitedFriends.length === 0 ? (
+      {invitedFriendSummary.invitedFriends.length === 0 ? (
         <InvitedFriendSummary.Empty />
       ) : (
         <VStack accessibilityRole="list">
-          {data.invitedFriends.map((friend) => (
+          {invitedFriendSummary.invitedFriends.map((friend) => (
             <InvitedFriendRow key={friend.userId} friend={friend} horizontalPadding="none" />
           ))}
         </VStack>

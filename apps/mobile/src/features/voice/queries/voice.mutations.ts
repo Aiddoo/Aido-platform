@@ -8,12 +8,12 @@ import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { NetworkError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient, onlineManager } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
@@ -58,6 +58,7 @@ export function useApplyActionPlanMutationOptions({
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const toast = useAppToast();
+  const showMutationError = useMutationErrorFeedback();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 고친 카드를 남긴 채 안내한다
@@ -79,7 +80,6 @@ export function useApplyActionPlanMutationOptions({
       onSaved?.({ todoCount });
       haptics.notify('success');
       emitTodoCreated();
-      invalidateTodos(queryClient);
       if (hasMemo || sourceMemoId != null) {
         onMemoChanged();
       }
@@ -117,17 +117,20 @@ export function useApplyActionPlanMutationOptions({
       }
     },
     onError: (error) => {
-      haptics.notify('error');
       const cause = getVoicePlanFailureCause(error);
-      if (cause === 'rejected') {
-        invalidateTodoCategories(queryClient);
-      }
       if (cause === 'source-memo-missing') {
         onMemoChanged();
       }
-      toast.error(t(`voicePlan:failure.${cause}.title`), {
+      showMutationError(error, {
+        feature: 'voice',
+        title: t(`voicePlan:failure.${cause}.title`),
         description: t(`voicePlan:failure.${cause}.description`),
       });
+    },
+    // 응답을 놓친 실패도 서버에는 저장됐을 수 있고, 거절(내 카테고리가 아님)은 카테고리를 다시 받아야 한다.
+    // 저장 완료가 다시 받기를 기다리지 않게 돌려주지 않는다
+    onSettled: () => {
+      invalidateTodos(queryClient);
     },
     meta: { errorFeedback: false },
   });
@@ -149,7 +152,7 @@ export function useCreateQuickPlanMutationOptions({
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const haptics = useHaptics();
-  const toast = useAppToast();
+  const showMutationError = useMutationErrorFeedback();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
 
   return mutationOptions({
@@ -181,8 +184,8 @@ export function useCreateQuickPlanMutationOptions({
         source: toAnalyticsSource(input.source),
         cause,
       });
-      haptics.notify('error');
       if (gate.promptIfBlockedError(error, { onSubscribe })) {
+        haptics.notify('error');
         return;
       }
 
@@ -191,7 +194,9 @@ export function useCreateQuickPlanMutationOptions({
         reflectFeatureQuota(queryClient, featureQuota);
       }
       // 서버가 환불까지 끝냈다고 알린 오류에만 "차감되지 않아요"를 보여 준다
-      toast.error(t(`voicePlan:failure.${cause}.title`), {
+      showMutationError(error, {
+        feature: 'voice',
+        title: t(`voicePlan:failure.${cause}.title`),
         description: isFreeOfChargeError(error)
           ? `${t(`voicePlan:failure.${cause}.description`)} ${t('subscription:gate.notCharged')}`
           : t(`voicePlan:failure.${cause}.description`),
@@ -257,7 +262,7 @@ export function useCreateVoiceNoteDigestMutationOptions() {
       if (featureQuota != null) {
         reflectFeatureQuota(queryClient, featureQuota);
       }
-      // 화면이 실패를 직접 보여 주므로 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다
+      // 화면이 실패를 직접 보여 주므로 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다(보고는 정리 훅이 한다)
     },
     meta: { errorFeedback: false },
   });

@@ -1,4 +1,4 @@
-import type { LogContext, AppLogger, LogLevel } from '@src/core/ports/app-logger';
+import type { AppLogger, DebugLogContext, LogContext, LogLevel } from '@src/core/ports/app-logger';
 
 const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
   debug: 0,
@@ -16,7 +16,7 @@ export function createConsoleLogger({ minLevel }: ConsoleLoggerOptions): AppLogg
     LOG_LEVEL_ORDER[level] >= LOG_LEVEL_ORDER[minLevel];
 
   return {
-    debug: (message: string, context?: LogContext): void => {
+    debug: (message: string, context?: DebugLogContext): void => {
       if (!shouldLog('debug')) {
         return;
       }

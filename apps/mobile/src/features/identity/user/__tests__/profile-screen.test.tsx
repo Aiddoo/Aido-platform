@@ -5,7 +5,7 @@ import { createHttpClientStub, createPendingResponse, createTestDi } from '@src/
 import { renderScreen } from '@src/testing/render';
 import { act, screen } from '@testing-library/react-native';
 
-import ProfileScreen from '../../../../../app/(app)/(tabs)/(mypage)/settings/profile';
+import ProfileScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/profile';
 import { createCurrentUserDto } from './user.fixtures';
 
 describe('프로필 화면', () => {

@@ -34,7 +34,7 @@ async function setup(actResponse: Result<unknown, ApiError>) {
 }
 
 describe('useActOnSuggestionMutationOptions', () => {
-  it('거절은 다시 받은 목록에서 행이 사라질 때까지 진행 중으로 남아 두 번 보내지 않는다', async () => {
+  it('거절은 다시 받은 목록에서 행이 사라질 때까지 진행 중으로 남는다', async () => {
     // Given
     const { result, finishRefetch } = await setup(
       ok({ message: '거절했어요', suggestion: { ...SUGGESTION, status: 'DISMISSED' } }),

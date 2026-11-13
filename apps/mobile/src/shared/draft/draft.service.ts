@@ -1,3 +1,5 @@
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
+
 import {
   type DraftKey,
   type DraftRestoreResult,
@@ -17,10 +19,10 @@ interface DraftSourceOptions {
 
 export class DraftService {
   readonly #repository: DraftRepository;
-  readonly #now: () => number;
+  readonly #now: () => Instant;
   readonly #readSignOutEpoch: ReadSignOutEpoch;
 
-  constructor(repository: DraftRepository, now: () => number, readSignOutEpoch: ReadSignOutEpoch) {
+  constructor(repository: DraftRepository, now: () => Instant, readSignOutEpoch: ReadSignOutEpoch) {
     this.#repository = repository;
     this.#now = now;
     this.#readSignOutEpoch = readSignOutEpoch;
@@ -32,7 +34,7 @@ export class DraftService {
   ): DraftRestoreResult<TValue> =>
     resolveDraftRestore(this.#repository.find(draftKey.id), {
       schema: draftKey.schema,
-      now: this.#now(),
+      now: this.#nowMs(),
       sourceUpdatedAt,
     });
 
@@ -43,7 +45,7 @@ export class DraftService {
   ): void => {
     this.#repository.save(draftKey.id, {
       value,
-      savedAt: this.#now(),
+      savedAt: this.#nowMs(),
       sourceUpdatedAt: sourceUpdatedAt ?? null,
     });
   };
@@ -68,7 +70,7 @@ export class DraftService {
   };
 
   removeExpired = (): void => {
-    const now = this.#now();
+    const now = this.#nowMs();
 
     for (const id of this.#repository.findAllIds()) {
       const entry = this.#repository.find(id);
@@ -89,4 +91,7 @@ export class DraftService {
   removeAll = (): void => {
     this.#repository.removeAll();
   };
+
+  // 저장 형식(savedAt·만료 비교)은 epoch ms 그대로다
+  #nowMs = (): number => toEpochMs(this.#now());
 }
