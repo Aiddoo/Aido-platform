@@ -10,11 +10,7 @@ export interface RequestConfig {
   body?: unknown;
 }
 
-/**
- * Result 기반 HttpClient
- * - 4xx 에러: Result.err(ApiError) 반환
- * - 5xx/네트워크/타임아웃: throw → ErrorBoundary 처리
- */
+/** 4xx는 Result.err(ApiError)로, 5xx·네트워크·타임아웃은 throw해 ErrorBoundary가 처리한다 */
 export interface HttpClient {
   get(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>>;
   post(url: string, data?: unknown, config?: RequestConfig): Promise<Result<unknown, ApiError>>;

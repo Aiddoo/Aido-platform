@@ -1,4 +1,12 @@
-import { BusinessError } from '@src/shared/errors';
+import {
+  ApiError,
+  BusinessError,
+  NetworkError,
+  ParseError,
+  ServerError,
+  TimeoutError,
+} from '@src/shared/errors';
+import { match, P } from 'ts-pattern';
 
 export const SUBSCRIPTION_ERROR_CODE = {
   /** 스토어 SDK를 쓸 수 없다(키 없음·초기화 실패·스토어 설정 문제) */
@@ -21,38 +29,51 @@ export type SubscriptionErrorCode =
 export class SubscriptionError extends BusinessError<SubscriptionErrorCode> {
   // Sentry breadcrumb 메시지가 오류 이름을 쓴다
   override readonly name: string = 'SubscriptionError';
+  /** 스토어 SDK가 준 원래 오류 코드. 문의·진단에만 쓰고 화면 분기는 `code`로 한다 */
+  readonly storeErrorCode: string | null;
 
-  constructor(
-    code: SubscriptionErrorCode,
-    /** 스토어 SDK가 준 원래 오류 코드. 문의·진단에만 쓰고 화면 분기는 `code`로 한다 */
-    readonly storeErrorCode: string | null = null,
-  ) {
+  constructor(code: SubscriptionErrorCode, storeErrorCode: string | null = null) {
     super(code);
+    this.storeErrorCode = storeErrorCode;
   }
 }
 
 export const SubscriptionErrors = {
-  storeUnavailable: (storeErrorCode?: string | null) =>
+  storeUnavailable: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE, storeErrorCode),
 
-  storeProblem: (storeErrorCode?: string | null) =>
+  storeProblem: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.STORE_PROBLEM, storeErrorCode),
 
-  offeringsUnavailable: (storeErrorCode?: string | null) =>
+  offeringsUnavailable: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.OFFERINGS_UNAVAILABLE, storeErrorCode),
 
-  network: (storeErrorCode?: string | null) =>
+  network: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.NETWORK, storeErrorCode),
 
-  purchaseCancelled: (storeErrorCode?: string | null) =>
+  purchaseCancelled: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.PURCHASE_CANCELLED, storeErrorCode),
 
-  paymentPending: (storeErrorCode?: string | null) =>
+  paymentPending: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.PAYMENT_PENDING, storeErrorCode),
 
-  purchaseFailed: (storeErrorCode?: string | null) =>
+  purchaseFailed: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.PURCHASE_FAILED, storeErrorCode),
 
-  restoreFailed: (storeErrorCode?: string | null) =>
+  restoreFailed: (storeErrorCode: string | null = null) =>
     new SubscriptionError(SUBSCRIPTION_ERROR_CODE.RESTORE_FAILED, storeErrorCode),
 } as const;
+
+/** 메시지·사용자 정보 없이 원인을 찾을 만큼만 담는다. 스토어 SDK 코드가 있으면 괄호로 덧붙인다 */
+export function getSubscriptionDiagnosticCode(error: unknown): string {
+  return match(error)
+    .with(P.instanceOf(SubscriptionError), ({ code, storeErrorCode }) =>
+      storeErrorCode == null ? code : `${code} (${storeErrorCode})`,
+    )
+    .with(P.instanceOf(ApiError), ({ code }) => code)
+    .with(P.instanceOf(NetworkError), () => 'NETWORK')
+    .with(P.instanceOf(TimeoutError), () => 'TIMEOUT')
+    .with(P.instanceOf(ServerError), ({ status }) => `SERVER_${status}`)
+    .with(P.instanceOf(ParseError), () => 'INVALID_RESPONSE')
+    .otherwise(() => 'UNKNOWN');
+}

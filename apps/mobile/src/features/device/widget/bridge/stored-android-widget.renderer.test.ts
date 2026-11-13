@@ -1,3 +1,4 @@
+import { createDateKey } from '@src/testing/date-key';
 import type { WidgetInfo } from 'react-native-android-widget';
 
 import { createStoredAndroidWidgetRenderer } from './stored-android-widget.renderer';
@@ -27,7 +28,7 @@ describe('Android 위젯 첫 동기화 전 렌더링', () => {
     const renderWidget = jest.fn();
     const renderStoredWidget = createStoredAndroidWidgetRenderer({
       snapshotRepository: { findSnapshot: () => null, findUserId: () => null },
-      readLocalDateKey: () => '2026-11-07',
+      readLocalDateKey: () => createDateKey('2026-11-07'),
       readDeviceLanguage: () => language,
       readAppScheme: () => 'aido-dev',
       renderWidget,

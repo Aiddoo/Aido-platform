@@ -32,24 +32,27 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
 
   const handleDeletePress = form.handleSubmit(async ({ password }) => {
     Keyboard.dismiss();
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('deleteAccount.dialogTitle'),
       description: t('deleteAccount.dialogMessage'),
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('deleteAccount.confirm'),
       confirmColor: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteAccountMutation.mutateAsync({ password });
+        } catch (error) {
+          // 비밀번호가 틀리면 다시 눌러도 같아 다이얼로그를 닫고 그 칸에 보인다. 그 밖의 실패는 다이얼로그를 남기고 안내는 meta.errorFeedback이 맡는다
+          const fieldError = findPasswordFieldError(error);
+          if (fieldError == null) {
+            throw error;
+          }
+          form.setError('password', fieldError);
+        }
+      },
     });
-    if (!isConfirmed) {
-      return;
-    }
-    try {
-      await deleteAccountMutation.mutateAsync({ password });
-    } catch (error) {
-      // 그 밖의 실패 안내는 mutation의 meta.errorFeedback이 맡는다
-      const fieldError = findPasswordFieldError(error);
-      if (fieldError != null) {
-        form.setError('password', fieldError, { shouldFocus: true });
-      }
+    if (form.getFieldState('password').error != null) {
+      form.setFocus('password');
     }
   });
 
@@ -68,7 +71,7 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
           </KeyboardAdaptiveButton>
         }
       >
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+        <Animated.View entering={FadeIn.duration(ANIMATION.durationMs.normal)}>
           <Controller
             control={form.control}
             name="password"

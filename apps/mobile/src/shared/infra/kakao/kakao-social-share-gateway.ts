@@ -19,7 +19,7 @@ export function createKakaoSocialShareGateway(
 
   return {
     isAvailable: () => nativeAppKey != null && nativeAppKey !== '',
-    async shareFeed(feed) {
+    shareFeed: async (feed) => {
       if (nativeAppKey == null || nativeAppKey === '') {
         throw new Error('[KakaoShare] native app key is not configured');
       }

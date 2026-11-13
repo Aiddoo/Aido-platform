@@ -17,6 +17,7 @@ export default function InviteCardScreen() {
 
   return (
     <Box flex={1} className="bg-white">
+      {/* 미리보기·받을 혜택·수락 버튼이 모두 같은 미리보기 조회라 실패(없는·바뀐 코드 등)는 화면 하나로 알린다 */}
       <QueryErrorBoundary fallback={InvitePreview.Error}>
         <ScrollView
           className="flex-1"

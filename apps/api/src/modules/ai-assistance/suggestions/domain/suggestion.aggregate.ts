@@ -1,11 +1,10 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { AI_SUGGESTION_STATUSES, DayOfWeek } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { SuggestionId } from "./suggestion-id.vo.js";
+import { suggestionAlreadyHandled, suggestionExpired } from "./suggestions.errors.js";
 
 /** 제안 상태: PENDING(대기) → ACCEPTED(수락) | DISMISSED(거절). DB SuggestionStatus enum과 같은 튜플이다 */
 export type SuggestionStatus = (typeof AI_SUGGESTION_STATUSES)[number];
@@ -130,13 +129,10 @@ export class Suggestion extends AggregateRoot<SuggestionId, SuggestionProps> {
 
   #ensureActionable(now: Temporal.Instant): void {
     if (this.props.status !== "PENDING") {
-      throw new DomainException(ErrorCode.AI_1306, {
-        suggestionId: this.id.value,
-        currentStatus: this.props.status,
-      });
+      throw suggestionAlreadyHandled(this.id.value, this.props.status);
     }
     if (this.#isExpiredAt(now)) {
-      throw new DomainException(ErrorCode.AI_1307, { suggestionId: this.id.value });
+      throw suggestionExpired(this.id.value);
     }
   }
 }

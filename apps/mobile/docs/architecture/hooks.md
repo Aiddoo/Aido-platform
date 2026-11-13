@@ -1,6 +1,6 @@
 # 훅
 
-한 훅은 한 책임이고, 같은 일은 공용 훅 하나로 한다. params 튜플 훅과 상태 원천은 [state-and-routing](./state-and-routing.md), 쿼리·mutation 옵션 훅은 [data](./data.md)에 있다. 아직 이 모양이 아닌 훅은 [migration-status](./migration-status.md)에 있다.
+한 훅은 한 책임이고, 같은 일은 공용 훅 하나로 한다. params 튜플 훅과 상태 원천은 [state-and-routing](./state-and-routing.md), 쿼리·mutation 옵션 훅은 [data](./data.md)에 있다. 아직 이 모양이 아닌 훅은 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다.
 
 ## 규칙
 
@@ -46,36 +46,43 @@
 
 새로 만들기 전에 이 표를 본다. 같은 일을 하는 훅이 있으면 그것을 쓰고, 모양이 맞지 않으면 그 훅을 고친다.
 
-| 훅                                                     | 자리                                  | 모양                                                                                                                     | 없애는 복제                                          |
-| ------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| `useGoBack({ fallbackHref })`                          | `shared/hooks`                        | `() => void`(두 번 탭 방지)                                                                                              | `canGoBack ? back : replace` 8곳                     |
-| `useAndroidBackHandler({ isEnabled, onBack })`         | `shared/hooks`                        | `void`(`useEffectEvent`, 화면 포커스와 묶음)                                                                             | BackHandler 5곳                                      |
-| `useOnAppForeground(onForeground)`                     | `shared/hooks`                        | `void`(AppLifecycle 포트)                                                                                                | 4곳                                                  |
-| `useNow({ tickMs, until })`                            | `shared/hooks`                        | `Instant`                                                                                                                | 지금 시계 4곳                                        |
-| `useLocaleContext()`                                   | `shared/hooks`                        | 앱 언어 + `APP_LOCALES` 항목                                                                                             | 언어 매핑 약 15곳                                    |
-| `useCopyToClipboard()`                                 | `shared/hooks`                        | `{ copy(text, { successMessage, failureMessage }) }`                                                                     | 2곳(`useCopiedFeedback`은 아이콘 타이머라 따로 둔다) |
-| `useEnsurePermission({ get, request, copy })`          | `shared/hooks`                        | `() => Promise<boolean>`                                                                                                 | 마이크·위치 권한 흐름                                |
-| `useLayoutSize()`                                      | `shared/hooks`                        | `[size, onLayout]`                                                                                                       | 4곳                                                  |
-| `useOpenSheet()`                                       | `shared/ui/overlay`                   | `openSheet(render, options)`                                                                                             | 14곳                                                 |
-| `useStoredValue(def, scopeId?)`                        | `shared/storage`                      | `[value, setValue]`                                                                                                      | repository 11개                                      |
-| `useMyAccountId({ isEnabled })`                        | `features/identity/user/hooks`        | `string \| null`(꺼지면 캐시가 있어도 `null`)                                                                            | id만 쓰는 `me` 직접 조회 12곳                        |
-| `usePushPermissionAction({ source })`                  | `features/notification/hooks`         | `{ runStep(step), isPending }`                                                                                           | 권한 요청·추적 6곳                                   |
-| `useVoiceCaptureReadiness({ feature, surface, mode })` | `features/voice/hooks`                | `({ locale, entry, onSubscribe }) => Promise<{ isReady }>`(한도 → 동의 → 마이크, 답을 기다리는 사이 내려가면 준비 안 됨) | `useStartVoiceNote`·`useAddTodoQuickVoice` 복제      |
-| `useWhatsNewCampaign()`                                | `features/app-config/whats-new/hooks` | `{ release, identity }`                                                                                                  | 3개 훅의 같은 조회                                   |
+| 훅                                                     | 자리                                  | 모양                                                                                                                     | 없애는 복제                                                                |
+| ------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `useGoBack({ fallbackHref } \| { onFallback })`        | `shared/hooks`                        | `() => void`(두 번 탭 방지)                                                                                              | `canGoBack ? back : replace` 8곳, 구독 시작 화면 완료(`onFallback`)        |
+| `useAndroidBackHandler({ isEnabled, onBack })`         | `shared/hooks`                        | `void`(`useEffectEvent`, 화면 포커스와 묶음)                                                                             | BackHandler 5곳                                                            |
+| `useOnAppForeground(onForeground)`                     | `shared/hooks`                        | `void`(AppLifecycle 포트)                                                                                                | 4곳                                                                        |
+| `useAppLifecycleState()`                               | `shared/hooks`                        | `AppLifecycleState`(AppLifecycle 포트 구독 하나)                                                                         | `useSyncExternalStore(appLifecycle…)` 3곳                                  |
+| `useNow({ tickMs, until })`                            | `shared/hooks`                        | `Instant`                                                                                                                | 지금 시계 4곳                                                              |
+| `useMinuteNow()`                                       | `shared/hooks`                        | `Instant`(앱 하나의 분 시계 구독, 상대 시간·날짜 판단)                                                                   | 행마다 거는 분 타이머                                                      |
+| `useLocaleContext()`                                   | `shared/hooks`                        | 앱 언어 + `APP_LOCALES` 항목                                                                                             | 언어 매핑 약 15곳                                                          |
+| `useCopyToClipboard()`                                 | `shared/hooks`                        | `{ copy(text, { successMessage, failureMessage }) }`                                                                     | 2곳(`useCopiedFeedback`은 아이콘 타이머라 따로 둔다)                       |
+| `useMutationErrorFeedback()`                           | `shared/query`                        | `(error, { feature, fallbackKey?, title?, description? }) => void`(전역 mutation 피드백과 같은 햅틱·토스트·보고 한 번)   | `errorFeedback: false` mutation·일괄 작업의 햅틱 + `toast.error` 직접 복제 |
+| `useReportUnexpectedError(feature)`                    | `shared/hooks`                        | `(error) => void`(예상하지 못한 오류만, 요청 태그 포함)                                                                  | mutation·조회 밖 실패(기기 작업)의 `captureException` 직접 호출            |
+| `useLayoutSize()`                                      | `shared/hooks`                        | `[size \| null, onLayout]`(재기 전 `null`, 첫 프레임은 `size?.width ?? 어림값`)                                          | `onLayout` → `setSize` 직접 구현                                           |
+| `useRebuiltPath(read, draw)`                           | `shared/hooks`                        | `SharedValue<SkPath>`(읽은 값·`draw`가 바뀔 때만 다시 그림, 빌더 하나를 되씀)                                            | voice 경로 3곳, 날씨 `usePathValue` 2곳                                    |
+| `useOpenSheet()`                                       | `shared/ui/overlay`                   | `openSheet(render, options)` → `Promise<T \| undefined>`(취소·끌어 내림은 `undefined`)                                   | overlay + `ModalBottomSheet` 직접 연결                                     |
+| `useOpenKeyboardSheet()`                               | `shared/ui/overlay`                   | `openKeyboardSheet(({ isOpen, onOpenChange, close }) => …)`                                                              | `KeyboardBottomSheet`를 그리는 폼 시트의 닫기·지우기 연결                  |
+| `useStoredValue(def, scopeId?)`                        | `shared/storage`                      | `[value, setValue]`                                                                                                      | repository 11개                                                            |
+| `useMyAccountId({ isEnabled })`                        | `features/identity/user/hooks`        | `string \| null`(꺼지면 캐시가 있어도 `null`)                                                                            | id만 쓰는 `me` 직접 조회 12곳                                              |
+| `useSuspenseMyAccountId()`                             | `features/identity/user/hooks`        | `string`(경계 안, `select`로 id만 골라 다른 칸이 바뀌어도 다시 그리지 않는다)                                            | id만 쓰는 `useSuspenseQuery(useGetMeQueryOptions())`                       |
+| `usePushPermissionAction({ source })`                  | `features/notification/hooks`         | `{ runStep(step), isPending }`                                                                                           | 권한 요청·추적 6곳                                                         |
+| `useVoiceCaptureReadiness({ feature, surface, mode })` | `features/voice/hooks`                | `({ locale, entry, onSubscribe }) => Promise<{ isReady }>`(한도 → 동의 → 마이크, 답을 기다리는 사이 내려가면 준비 안 됨) | `useStartVoiceNote`·`useAddTodoQuickVoice` 복제                            |
+| `useWhatsNewCampaign()`                                | `features/app-config/whats-new/hooks` | `{ config, isConfigLoading, release, identity, hasSeen }`                                                                | 3개 훅의 같은 조회                                                         |
 
 있는 도구도 같은 일에는 하나만 쓴다.
 
-| 훅                       | 자리                               | 모양                                          | 쓰는 때                            |
-| ------------------------ | ---------------------------------- | --------------------------------------------- | ---------------------------------- |
-| `useRouteParams(schema)` | `shared/hooks/use-route-params.ts` | `[params, setParams]`                         | URL 값 여럿                        |
-| `useView(key, schema)`   | `shared/hooks/use-view.ts`         | `[view, setView]`                             | 탭·보기 URL 값 하나                |
-| `useStepper(options)`    | `shared/hooks/use-stepper.tsx`     | `Stepper`                                     | 단계 흐름(아래)                    |
-| `useRefresh(refetch)`    | `shared/hooks/use-refresh.ts`      | `[isRefreshing, handleRefresh]`               | 당겨서 새로고침 표시               |
-| `useSingleTap(onTap)`    | `shared/hooks/use-single-tap.ts`   | 같은 인자의 함수                              | 연타로 화면이 두 번 쌓이는 것 막기 |
-| `useConfirmDialog()`     | `shared/ui/confirm-dialog`         | `{ openAsync(options) }` → `Promise<boolean>` | 확인 다이얼로그                    |
-| `useFetchNextPage(…)`    | `shared/ui/infinite-list`          | 다음 페이지 요청                              | `InfiniteList`의 끝 도달           |
+| 훅                                                   | 자리                                            | 모양                                                       | 쓰는 때                                                                                                             |
+| ---------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `useRouteParams(schema)`                             | `shared/hooks/use-route-params.ts`              | `[params, setParams]`                                      | URL 값 여럿                                                                                                         |
+| `useRouteParamsOrRedirect(schema, { fallbackHref })` | `shared/hooks/use-route-params-or-redirect.tsx` | `{ params, redirect: null } \| { params: null, redirect }` | route 파일의 params 검증                                                                                            |
+| `useView(key, schema)`                               | `shared/hooks/use-view.ts`                      | `[view, setView]`                                          | 탭·보기 URL 값 하나                                                                                                 |
+| `useStepper(options)`                                | `shared/hooks/use-stepper.tsx`                  | `Stepper`                                                  | 단계 흐름(아래)                                                                                                     |
+| `useRefresh(refetch)`                                | `shared/hooks/use-refresh.ts`                   | `[isRefreshing, handleRefresh]`                            | 당겨서 새로고침 표시                                                                                                |
+| `useSingleTap(onTap)`                                | `shared/hooks/use-single-tap.ts`                | 같은 인자의 함수                                           | 연타로 화면이 두 번 쌓이는 것 막기, 닫히는 폼의 같은 프레임 저장 연타 막기(`handleSavePress`, [data](./data.md#폼)) |
+| `useConfirmDialog()`                                 | `shared/ui/confirm-dialog`                      | `{ openAsync(options) }` → `Promise<boolean>`              | 확인 다이얼로그                                                                                                     |
+| `useFetchNextPage(…)`                                | `shared/ui/infinite-list`                       | 다음 페이지 요청                                           | `InfiniteList`의 끝 도달                                                                                            |
 
-애니메이션 멈춤 조건 `useIsAnimationActive()`와 UI 부품이 주는 훅은 [ui](./ui.md)·[ui-catalog](./ui-catalog.md)에 있다.
+애니메이션 멈춤 조건 `useIsAnimationActive()`(꾸밈 `withRepeat`·프레임 콜백은 모두 이것으로 멈춘다)와 UI 부품이 주는 훅은 [ui](./ui.md)·[ui-catalog](./ui-catalog.md)에 있다.
 
 ## 만들지 않는 것
 
@@ -119,17 +126,7 @@ stepper.history.replace('verification', (prev) => ({ ...prev, email: nextEmail }
 | 비밀번호 찾기   | `email` → `verificationCode` → (`newPassword` → `newPasswordConfirm`)  |
 | 비밀번호 바꾸기 | `currentPassword` → (`newPassword` → `newPasswordConfirm`)             |
 
-`@use-funnel/react-navigation-native`는 쓰지 않는다. Expo Router와 맞지 않기 때문이다.
-
-- 별도 navigation 사본을 만들어 Expo Router의 스택과 이어지지 않는다.
-- 단계를 route params에 저장해 입력 단계를 URL로 복원하지 않는 규칙과 부딪힌다.
-- 단계마다 화면이 새로 마운트돼 폼도 다시 마운트된다.
-
-`@use-funnel/core@0.1.0`의 `createUseFunnel(router)`로 Expo Router용 router를 직접 붙이는 길도 검토했다. 쓰지 않는 이유는 다음과 같다.
-
-- Android 뒤로 가기가 단계마다 한 칸씩 돌아야 하는데 그 연결을 우리가 다시 써야 한다.
-- 같은 단계를 연속으로 push하면 건너뛰는 규칙과 `onStepChange` 추적이 우리 훅에 이미 있다.
-- 의존성이 하나 더 늘고, 0.1.0이라 계약이 바뀔 위험이 있다.
+라이브러리를 쓰지 않는 이유: `@use-funnel/react-navigation-native`는 Expo Router와 이어지지 않는 navigation 사본을 만들고 단계를 route params에 저장해 단계마다 폼이 다시 마운트된다. `@use-funnel/core`의 `createUseFunnel(router)`는 Android 뒤로 가기 연결과 같은 단계 연속 push 건너뛰기·`onStepChange` 추적을 다시 써야 하고 0.1.0이라 계약이 바뀔 위험이 있다.
 
 ## 좋은 훅인지 판단하는 질문
 

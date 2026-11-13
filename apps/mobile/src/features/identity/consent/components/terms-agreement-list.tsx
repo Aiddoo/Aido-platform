@@ -21,16 +21,13 @@ export function TermsAgreementList(props: SettingsSectionProps) {
   const { resolvedLanguage } = useLanguage();
   const dateFormatContext = useDateFormatContext();
 
-  const formatAgreedDate = (date: Instant | null) => {
-    if (date == null) {
-      return t('terms.notAgreed');
-    }
-    return formatDateLabel(date, 'fullDate', dateFormatContext);
-  };
-
   const getConsentDescription = (agreedAt: Instant | null) =>
     compact([
-      t('terms.agreedAt', { date: formatAgreedDate(agreedAt) }),
+      agreedAt == null
+        ? t('terms.notAgreed')
+        : t('terms.agreedAt', {
+            date: formatDateLabel(agreedAt, 'monthDayYear', dateFormatContext),
+          }),
       consent.agreedTermsVersion && t('terms.version', { version: consent.agreedTermsVersion }),
     ]).join('\n');
 

@@ -6,6 +6,7 @@ import {
   createHapticsGatewayStub,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
@@ -38,14 +39,7 @@ async function renderBoard({
     <Suspense fallback={null}>
       <InvitePawPrintBoard />
     </Suspense>,
-    {
-      queryClient,
-      withLocalDate: true,
-      di: {
-        syncStorage,
-        haptics,
-      },
-    },
+    { di: createTestDi({ ports: { syncStorage, haptics, queryClient } }), withLocalDate: true },
   );
   await screen.findAllByRole('image');
 

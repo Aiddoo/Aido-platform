@@ -5,11 +5,6 @@ import { z } from 'zod';
 export const instantSchema = z.iso.datetime({ offset: true }).brand<'Instant'>();
 export type Instant = z.infer<typeof instantSchema>;
 
-/** brand는 입력 타입에 남지 않아 폼용 스키마를 따로 둔다 */
-export const instantFieldSchema = z.custom<Instant>(
-  (value) => instantSchema.safeParse(value).success,
-);
-
 /** 순간으로 읽을 수 없는 문자열은 던진다. 서버·저장소 경계에서 한 번만 부른다 */
 export function toInstant(value: string): Instant {
   return instantSchema.parse(value);

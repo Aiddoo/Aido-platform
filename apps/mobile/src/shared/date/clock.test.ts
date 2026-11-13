@@ -1,13 +1,15 @@
+import { createDateKey } from '@src/testing/date-key';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
+
 import {
   createLocalDateState,
-  getNextLocalMidnight,
   getNowInstant,
   isSameLocalDateState,
   millisecondsUntilNextLocalMidnight,
 } from './clock';
 import { addDaysToDateKey } from './date-key';
 import { diffMs, toInstant } from './instant';
-import { toDateKey, toHHmm } from './zoned';
+import { getNextLocalMidnight, toDateKey, toHHmm } from './zoned';
 
 describe('로컬 날짜와 시간대 상태', () => {
   it('같은 시각도 명시한 시간대의 날짜로 계산한다', () => {
@@ -151,21 +153,17 @@ describe('다음 로컬 자정 계산', () => {
     // Then
     expect(afterFebruary28).toBe('2028-02-28T15:00:00.000Z');
     expect(afterFebruary29).toBe('2028-02-29T15:00:00.000Z');
-    expect(addDaysToDateKey('2028-02-28', 1)).toBe('2028-02-29');
-    expect(addDaysToDateKey('2028-02-29', 1)).toBe('2028-03-01');
+    expect(addDaysToDateKey(createDateKey('2028-02-28'), 1)).toBe('2028-02-29');
+    expect(addDaysToDateKey(createDateKey('2028-02-29'), 1)).toBe('2028-03-01');
   });
 });
 
 describe('getNowInstant', () => {
-  afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
-  });
+  setupFakeTimersPerTest();
 
   it('고정한 시계의 지금을 밀리초까지 같은 순간으로 돌려준다', () => {
     // Given
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers({ now: new Date('2026-10-01T14:59:59.999Z') });
+    jest.setSystemTime(new Date('2026-10-01T14:59:59.999Z'));
 
     // When
     const now = getNowInstant();
@@ -177,8 +175,7 @@ describe('getNowInstant', () => {
 
   it('서머타임이 끝나는 날 같은 벽시계 한 시간이 두 번 와도 서로 다른 순간이다', () => {
     // Given
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers({ now: new Date('2026-11-01T08:30:00.000Z') });
+    jest.setSystemTime(new Date('2026-11-01T08:30:00.000Z'));
     const first = getNowInstant();
 
     // When

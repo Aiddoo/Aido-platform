@@ -7,6 +7,7 @@ import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { PUSH_ASK_MOMENT, PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
+import { ensurePushPermission } from '../queries/push-permission-cache';
 import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 import { usePushPermissionAction } from './use-push-permission-action';
 
@@ -21,8 +22,7 @@ export function useAskPushPermissionOnTodoTime() {
   const logger = useLogger();
 
   const askIfUndetermined = async () => {
-    // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-    const permission = await queryClient.ensureQueryData(permissionQueryOptions);
+    const permission = await ensurePushPermission(queryClient, permissionQueryOptions);
     if (
       PushPermissionPolicy.getAskMoment(permission, { surface: 'todo-time' }) !==
       PUSH_ASK_MOMENT.SYSTEM_DIALOG

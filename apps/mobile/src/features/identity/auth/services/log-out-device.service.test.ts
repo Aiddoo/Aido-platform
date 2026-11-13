@@ -10,7 +10,7 @@ import {
   ServerError,
   TimeoutError,
 } from '@src/shared/errors';
-import { createLoggerStub } from '@src/testing/core';
+import { createAppLoggerStub } from '@src/testing/core';
 
 import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from './log-out-device.service';
 
@@ -65,7 +65,7 @@ describe('LogOutDeviceService.logOut', () => {
     const stub = createStubServices();
 
     // When
-    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+    await new LogOutDeviceService({ ...stub, logger: createAppLoggerStub() }).logOut({
       isOnline: false,
     });
 
@@ -80,7 +80,7 @@ describe('LogOutDeviceService.logOut', () => {
     const stub = createStubServices();
 
     // When
-    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+    await new LogOutDeviceService({ ...stub, logger: createAppLoggerStub() }).logOut({
       isOnline: true,
     });
 
@@ -98,7 +98,7 @@ describe('LogOutDeviceService.logOut', () => {
     });
 
     // When
-    const result = new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+    const result = new LogOutDeviceService({ ...stub, logger: createAppLoggerStub() }).logOut({
       isOnline: true,
     });
 
@@ -111,7 +111,7 @@ describe('LogOutDeviceService.logOut', () => {
     const stub = createStubServices();
 
     // When
-    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+    await new LogOutDeviceService({ ...stub, logger: createAppLoggerStub() }).logOut({
       isOnline: false,
     });
 
@@ -133,7 +133,7 @@ describe('LogOutDeviceService.logOut', () => {
     });
 
     // When
-    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+    await new LogOutDeviceService({ ...stub, logger: createAppLoggerStub() }).logOut({
       isOnline: true,
     });
 
@@ -148,7 +148,7 @@ describe('LogOutDeviceService.logOut', () => {
     });
 
     // When
-    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+    await new LogOutDeviceService({ ...stub, logger: createAppLoggerStub() }).logOut({
       isOnline: true,
     });
 
@@ -168,7 +168,7 @@ describe('LogOutDeviceService.logOut', () => {
           throw new Error('keychain write failed');
         },
       },
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
     }).logOut({ isOnline: false });
 
     // Then
@@ -188,7 +188,7 @@ describe('LogOutDeviceService.logOut', () => {
           throw new Error('keychain read failed');
         },
       },
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
     }).logOut({ isOnline: false });
 
     // Then
@@ -209,7 +209,7 @@ describe('LogOutDeviceService.logOut', () => {
           throw new Error('keychain write failed');
         },
       },
-      logger: { ...createLoggerStub(), warn: (...args: unknown[]) => warnings.push(args) },
+      logger: { ...createAppLoggerStub(), warn: (...args: unknown[]) => warnings.push(args) },
     }).logOut({ isOnline: false });
 
     // Then
@@ -236,7 +236,7 @@ describe('LogOutDeviceService.logOut', () => {
       ...stub,
       authApi,
       tokenStore: { ...stub.tokenStore, getRefreshToken },
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
     }).logOut({ isOnline: true });
 
     // Then
@@ -265,7 +265,7 @@ describe('LogOutDeviceService.logOut', () => {
       ...stub,
       authApi,
       tokenStore: { ...stub.tokenStore, getRefreshToken },
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
     }).logOut({ isOnline: true });
 
     // Then
@@ -287,7 +287,7 @@ describe('LogOutDeviceService.logOut', () => {
     const outcome = await new LogOutDeviceService({
       ...stub,
       tokenStore,
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
     }).logOut({ isOnline: false });
 
     // Then
@@ -298,7 +298,7 @@ describe('LogOutDeviceService.logOut', () => {
     const stub = createStubServices();
 
     // When
-    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+    await new LogOutDeviceService({ ...stub, logger: createAppLoggerStub() }).logOut({
       isOnline: false,
     });
 
@@ -311,7 +311,7 @@ describe('LogOutDeviceService.logOut', () => {
     const stub = createStubServices();
 
     // When
-    await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+    await new LogOutDeviceService({ ...stub, logger: createAppLoggerStub() }).logOut({
       isOnline: true,
     });
 
@@ -334,7 +334,7 @@ describe('LogOutDeviceService.logOut', () => {
       const stub = createStubServices({ unregister });
 
       // When
-      await new LogOutDeviceService({ ...stub, logger: createLoggerStub() }).logOut({
+      await new LogOutDeviceService({ ...stub, logger: createAppLoggerStub() }).logOut({
         isOnline: true,
       });
 

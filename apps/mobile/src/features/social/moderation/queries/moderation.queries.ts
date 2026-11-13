@@ -1,5 +1,5 @@
 import { USER_BLOCK_LIMITS } from '@aido/api/vocabulary';
-import { useModerationService } from '@src/bootstrap/providers/di-context';
+import { useModerationApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
@@ -17,13 +17,13 @@ function selectBlockedUsers(blockedUserPages: InfiniteData<BlockedUserPage, stri
 }
 
 export function useGetBlockedUsersInfiniteQueryOptions() {
-  const moderationService = useModerationService();
+  const moderationApi = useModerationApi();
 
   return infiniteQueryOptions({
     queryKey: MODERATION_QUERY_KEYS.blockedUsers(),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await moderationService.getBlockedUsers(
+        await moderationApi.getBlockedUsers(
           { cursor: pageParam, limit: USER_BLOCK_LIMITS.DEFAULT_PAGE_SIZE },
           signal,
         ),

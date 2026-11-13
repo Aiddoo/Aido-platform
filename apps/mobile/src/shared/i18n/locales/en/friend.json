@@ -32,7 +32,8 @@
     "edit": "Edit",
     "loadFailed": "Couldn’t load friends",
     "countValue_one": "{{count}} friend",
-    "countValue_other": "{{count}} friends"
+    "countValue_other": "{{count}} friends",
+    "openFeed": "View friend feed"
   },
   "add": {
     "title": "Add your friends",

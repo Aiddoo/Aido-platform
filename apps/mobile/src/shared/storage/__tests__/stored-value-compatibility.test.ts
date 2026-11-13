@@ -1,5 +1,7 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { upsellDismissalStoredValue } from '@src/features/billing/subscription/schemas/upsell-dismissal-storage.schema';
+import { activationProgressStoredValue } from '@src/features/device/activation/schemas/activation-progress-storage.schema';
+import { coachmarkCompletedAtStoredValue } from '@src/features/device/coachmark/schemas/coachmark-storage.schema';
 import { widgetHeadlessFailureStoredValue } from '@src/features/device/widget/schemas/widget-headless-failure-storage.schema';
 import { deviceTimezoneStoredValue } from '@src/features/notification/schemas/device-timezone-storage.schema';
 import { pushNoticeDismissedAtStoredValue } from '@src/features/notification/schemas/push-notice-dismissed-at-storage.schema';
@@ -12,7 +14,11 @@ import { pendingRedemptionStoredValue } from '@src/features/social/invite/schema
 import { offlineModelDeclinedStoredValue } from '@src/features/voice/schemas/offline-model-declined-storage.schema';
 import { recognitionLanguageStoredValue } from '@src/features/voice/schemas/recognition-language-storage.schema';
 import { toInstant } from '@src/shared/date/instant';
+import { fontScaleStoredValue } from '@src/shared/preferences/schemas/font-scale-storage.schema';
+import { languageModeStoredValue } from '@src/shared/preferences/schemas/language-mode-storage.schema';
+import { themeModeStoredValue } from '@src/shared/preferences/schemas/theme-mode-storage.schema';
 import { createMemorySyncStorage } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 
 import {
   readStoredValue,
@@ -41,6 +47,33 @@ function releasedValue<TValue, TScope>(
 }
 
 const RELEASED_VALUES = [
+  {
+    name: 'themeModeStoredValue',
+    ...releasedValue(themeModeStoredValue, [], {
+      key: 'aido_theme_mode',
+      raw: 'dark',
+      value: 'dark',
+      area: 'device',
+    }),
+  },
+  {
+    name: 'languageModeStoredValue',
+    ...releasedValue(languageModeStoredValue, [], {
+      key: 'aido_language',
+      raw: 'en',
+      value: 'en',
+      area: 'device',
+    }),
+  },
+  {
+    name: 'fontScaleStoredValue',
+    ...releasedValue(fontScaleStoredValue, [], {
+      key: 'aido_font_scale',
+      raw: 'xlarge',
+      value: 'xlarge',
+      area: 'device',
+    }),
+  },
   {
     name: 'calendarViewModeStoredValue',
     ...releasedValue(calendarViewModeStoredValue, [], {
@@ -91,7 +124,7 @@ const RELEASED_VALUES = [
     ...releasedValue(upsellDismissalStoredValue, ['user-1'], {
       key: 'aido_upsell_dismissed_v1:user-1',
       raw: '{"AI_PARSE":"2026-11-10","FUTURE_FEATURE":"2026-11-01"}',
-      value: { AI_PARSE: '2026-11-10', FUTURE_FEATURE: '2026-11-01' },
+      value: { AI_PARSE: createDateKey('2026-11-10'), FUTURE_FEATURE: createDateKey('2026-11-01') },
       area: 'device',
     }),
   },
@@ -141,6 +174,28 @@ const RELEASED_VALUES = [
     }),
   },
   {
+    name: 'activationProgressStoredValue',
+    ...releasedValue(activationProgressStoredValue, ['user-1'], {
+      key: 'aido_activation_v2:user-1',
+      raw: `{"todoCreatedAt":"${SAVED_AT}","activatedAt":null}`,
+      value: { todoCreatedAt: toInstant(SAVED_AT), activatedAt: null },
+      area: 'device',
+    }),
+  },
+  {
+    name: 'coachmarkCompletedAtStoredValue',
+    ...releasedValue(
+      coachmarkCompletedAtStoredValue,
+      [{ accountId: 'user-1', kind: 'voice-note-start' }],
+      {
+        key: 'aido_coachmark_v1:user-1:voice-note-start',
+        raw: SAVED_AT,
+        value: SAVED_AT,
+        area: 'device',
+      },
+    ),
+  },
+  {
     name: 'deviceTimezoneStoredValue',
     ...releasedValue(deviceTimezoneStoredValue, [], {
       key: 'aido_device_timezone_v1',
@@ -169,4 +224,19 @@ describe('StoredValueDefinition', () => {
       expect(definitionArea).toBe(area);
     },
   );
+
+  it('activationProgressStoredValue: 1.14.x가 남긴 모르는 칸은 버리고 진행을 읽는다', () => {
+    // Given
+    const storage = createMemorySyncStorage();
+    storage.set(
+      'aido_activation_v2:user-1',
+      `{"todoCreatedAt":"${SAVED_AT}","activatedAt":null,"pushRegistrationUnlockedAt":"${SAVED_AT}"}`,
+    );
+
+    // When
+    const value = readStoredValue(storage, activationProgressStoredValue, 'user-1');
+
+    // Then
+    expect(value).toEqual({ todoCreatedAt: toInstant(SAVED_AT), activatedAt: null });
+  });
 });

@@ -9,9 +9,6 @@
   "list": {
     "more": "+{{overflow}}개 더"
   },
-  "calendar": {
-    "weekTitle": "{{month}} {{week}}주차"
-  },
   "actions": {
     "addTodo": "할 일 만들기",
     "openTodo": "할 일을 누르면 앱에서 열려요"

@@ -1,5 +1,4 @@
-import { ErrorCode } from "@aido/api/errors";
-
+import { invalidCredentials } from "#api/modules/identity/auth/application/auth.errors";
 import {
   type ExchangedToken,
   type GenerateAuthUrlParams,
@@ -9,7 +8,6 @@ import {
   type VerifiedProfile,
 } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
 import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
-import { ApplicationException } from "#api/shared/application/application.exception";
 
 export type OAuthIdentityProviders = ReadonlyMap<AccountProvider, OAuthIdentityProviderPort>;
 
@@ -103,7 +101,7 @@ export class FakeOAuthProviderRegistry {
   simulateExchangeFailure(
     provider: AccountProvider,
     code: string,
-    error: Error = new ApplicationException(ErrorCode.USER_0602),
+    error: Error = invalidCredentials(),
   ): void {
     const key = exchangeKey(provider, code);
     this.#exchangeTokens.delete(key);
@@ -123,7 +121,7 @@ export class FakeOAuthProviderRegistry {
     }
 
     if (code.startsWith("invalid")) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     return {

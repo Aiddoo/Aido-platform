@@ -25,8 +25,10 @@ import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
 import { useTrack } from '@src/shared/analytics';
+import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
@@ -54,7 +56,7 @@ import { match } from 'ts-pattern';
 
 type CheckoutStepContexts = {
   status: Record<string, never>;
-  welcome: { plan: SubscriptionPlan; purchasedOn: string; hadRewardOnly: boolean };
+  welcome: { plan: SubscriptionPlan; purchasedOn: DateKey; hadRewardOnly: boolean };
 };
 
 /** 결제가 끝나면 서버 반영과 상관없이 방금 산 요금제로 시작 화면을 보여 준다. 뒤로 가기로 결제 화면에 돌아가지 않는다 */
@@ -66,6 +68,8 @@ function SubscriptionScreen() {
     initial: { step: 'status', context: {} },
     onStepChange: ({ step }) => trackEvent('checkout_step_viewed', { step }),
   });
+  // 링크로 바로 열어 돌아갈 화면이 없으면 이용 중 화면으로 바꾼다
+  const finishWelcome = useGoBack({ onFallback: () => stepper.history.replace('status', {}) });
 
   return (
     <stepper.Render
@@ -76,12 +80,7 @@ function SubscriptionScreen() {
           }
         />
       )}
-      welcome={({ context, history }) => (
-        <SubscriptionScreen.Welcome
-          {...context}
-          onDone={() => (router.canGoBack() ? router.back() : history.replace('status', {}))}
-        />
-      )}
+      welcome={({ context }) => <SubscriptionScreen.Welcome {...context} onDone={finishWelcome} />}
     />
   );
 }
@@ -168,7 +167,7 @@ SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
 
       <Spacing size={24} />
 
-      <VStack gap={8} className="items-center">
+      <VStack className="items-center gap-2">
         <Paywall.RenewalNotice />
         <Paywall.Terms />
         <RestorePurchaseButton size="small" />
@@ -179,7 +178,7 @@ SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
 
 interface WelcomeProps {
   plan: SubscriptionPlan;
-  purchasedOn: string;
+  purchasedOn: DateKey;
   hadRewardOnly: boolean;
   onDone: () => void;
 }
@@ -209,7 +208,7 @@ SubscriptionScreen.Welcome = function Welcome({
         </StyledSafeAreaView>
       </ScrollView>
 
-      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pt-2 pb-4">
         <ReadableContent>
           <Button onPress={onDone} testID="subscription-welcome-done">
             {t('welcome.done')}
@@ -226,7 +225,7 @@ SubscriptionScreen.Receipt = function Receipt() {
   const openSubscriptionManagement = useOpenSubscriptionManagement();
   const isOnline = useIsOnline();
   const push = useSingleTap(router.push);
-  const { pathname } = useCheckoutRoute();
+  const [pathname] = useCheckoutRoute();
 
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
@@ -263,7 +262,7 @@ SubscriptionScreen.Receipt = function Receipt() {
 
           <Spacing size={16} />
 
-          <VStack gap={8} className="items-center">
+          <VStack className="items-center gap-2">
             <RestorePurchaseButton size="medium" />
             {!isOnline && <SubscriptionOfflineActionsNotice />}
           </VStack>
@@ -277,7 +276,7 @@ SubscriptionScreen.Receipt = function Receipt() {
 SubscriptionScreen.Loading = function Loading() {
   const isOnline = useIsOnline();
   const [{ view }] = useSubscriptionParams();
-  const { pathname } = useCheckoutRoute();
+  const [pathname] = useCheckoutRoute();
   const { data: hasPremiumAccess = false } = useQuery({
     ...useGetMeQueryOptions(),
     select: UserPolicy.hasPremiumAccess,
@@ -380,7 +379,7 @@ function PlansScaffold({ children, footer, isScrollEnabled = true, testID }: Pla
         </StyledSafeAreaView>
       </ScrollView>
 
-      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pt-2 pb-4">
         <ReadableContent>{footer}</ReadableContent>
       </StyledSafeAreaView>
     </Box>
@@ -425,7 +424,7 @@ function PlanComparisonHeading() {
 }
 
 /** billing은 알림 기능을 모르므로 체험 일정의 알림 칸은 화면이 알림 토글로 채운다 */
-function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: string }) {
+function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: DateKey }) {
   const { t } = useTranslation('notification');
   const { currentLocalDateKey } = useLocalDate();
   const date = formatYearAwareDateKeyLabel(

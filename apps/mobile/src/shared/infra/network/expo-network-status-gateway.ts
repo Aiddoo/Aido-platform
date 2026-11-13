@@ -1,4 +1,4 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
 import { getErrorMessage } from '@src/shared/errors';
 import { addNetworkStateListener, getNetworkStateAsync, type NetworkState } from 'expo-network';
@@ -10,7 +10,9 @@ function isOnline(state: NetworkState): boolean {
   return state.isConnected !== false;
 }
 
-export function createExpoNetworkStatusGateway(logger: Pick<Logger, 'warn'>): NetworkStatusGateway {
+export function createExpoNetworkStatusGateway(
+  logger: Pick<AppLogger, 'warn'>,
+): NetworkStatusGateway {
   return {
     subscribe: (listener) => {
       let hasEvent = false;
