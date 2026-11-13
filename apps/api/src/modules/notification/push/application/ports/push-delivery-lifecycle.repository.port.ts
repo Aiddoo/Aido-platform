@@ -7,7 +7,7 @@ import type {
 } from "../read-models/push-delivery.read-model.js";
 import type { PushResult } from "./push-provider.port.js";
 
-interface PushDeliveryFence {
+export interface PushDeliveryFence {
   readonly dispatchId: number;
   readonly publishAttempt: number;
   readonly processingJobId: string;
@@ -46,11 +46,6 @@ export interface FinalizeSkippedPushDeliveryInput {
   readonly reason: PushDispatchSkipReason;
 }
 
-export interface ReservePushDeliveryRateLimitInput {
-  readonly fence: PushDeliveryFence;
-  readonly reservedAt: Temporal.Instant;
-}
-
 export interface FinalizePushDeliveryResultsInput {
   readonly fence: PushDeliveryFence;
   readonly context: PushDeliveryContext;
@@ -78,7 +73,8 @@ export abstract class PushDeliveryLifecycleRepositoryPort {
     input: ReopenPushDeliveriesAfterClaimFailureInput,
   ): Promise<number>;
   abstract markRateLimitReserved(
-    inputs: readonly ReservePushDeliveryRateLimitInput[],
+    fences: readonly PushDeliveryFence[],
+    reservedAt: Temporal.Instant,
   ): Promise<readonly number[]>;
   abstract finalizeSkipped(inputs: readonly FinalizeSkippedPushDeliveryInput[]): Promise<number>;
   abstract finalizeResults(inputs: readonly FinalizePushDeliveryResultsInput[]): Promise<number>;

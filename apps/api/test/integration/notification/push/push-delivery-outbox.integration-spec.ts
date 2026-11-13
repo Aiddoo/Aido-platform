@@ -92,11 +92,11 @@ function staging(host: DatabaseTransactionHost): DrizzlePushDispatchStagingRepos
 }
 
 function outbox(host: DatabaseTransactionHost): DrizzlePushDeliveryOutboxRepository {
-  return new DrizzlePushDeliveryOutboxRepository(host);
+  return new DrizzlePushDeliveryOutboxRepository(host, new DateClock());
 }
 
 function lifecycle(host: DatabaseTransactionHost): DrizzlePushDeliveryLifecycleRepository {
-  return new DrizzlePushDeliveryLifecycleRepository(host);
+  return new DrizzlePushDeliveryLifecycleRepository(host, new DateClock());
 }
 
 describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
@@ -846,9 +846,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     ).resolves.toBe(0);
 
     await expect(
-      inTransaction(() =>
-        lifecycle(host).markRateLimitReserved([{ fence: retry.fence, reservedAt: nowInstant() }]),
-      ),
+      inTransaction(() => lifecycle(host).markRateLimitReserved([retry.fence], nowInstant())),
     ).resolves.toEqual([staged.dispatchId]);
     await expect(
       inTransaction(() =>

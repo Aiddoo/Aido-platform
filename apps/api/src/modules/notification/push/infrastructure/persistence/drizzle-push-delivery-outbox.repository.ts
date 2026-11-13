@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, inArray, lte, type SQL, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, lt, lte, type SQL, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -9,6 +9,7 @@ import {
   pushDispatch,
   pushDispatchOutbox,
 } from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type {
   ClaimPushDeliveryOutboxInput,
@@ -20,16 +21,26 @@ import type {
   PushDeliveryPublication,
 } from "../../application/read-models/push-delivery.read-model.js";
 import { pushDeliveryLaneOf } from "../../domain/push-delivery-lane.domain-service.js";
+import type { PushDispatchStatus } from "../../domain/push-delivery-status.constants.js";
 import { matchesPublicationGeneration } from "./push-outbox-generation.mapper.js";
 
 const candidate = alias(pushDispatchOutbox, "candidate");
+// 끝난 dispatch의 outbox는 발행 표시로 닫고, 아직 보내지 않은 dispatch의 outbox는 다시 연다
+const FINISHED_DISPATCH_STATUSES: readonly PushDispatchStatus[] = [
+  "SENT",
+  "SKIPPED",
+  "FAILED",
+  "HOLDOUT",
+];
 
 @Injectable()
 export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -94,7 +105,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
         lockedAt: null,
         publishedAt: null,
         lastError: input.error.slice(0, 500),
-        updatedAt: sql`CURRENT_TIMESTAMP`,
+        updatedAt: this.#clock.now(),
       })
       .where(this.#processingGenerations(input.publications))
       .returning({ dispatchId: pushDispatchOutbox.dispatchId });
@@ -122,47 +133,56 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
   }
 
   async recoverStaleProcessing(lockedBefore: Temporal.Instant): Promise<number> {
-    const result = await this.#db.execute<Record<string, unknown>>(sql`
-      WITH locked_outboxes AS MATERIALIZED (
-        SELECT
-          outbox."dispatchId",
-          dispatch."status" AS "dispatchStatus"
-        FROM ${pushDispatchOutbox} AS outbox
-        INNER JOIN ${pushDispatch} AS dispatch
-          ON dispatch."id" = outbox."dispatchId"
-        WHERE outbox."status" = 'PROCESSING'::"PushDispatchOutboxStatus"
-          AND outbox."lockedAt" < ${sql.param(lockedBefore, pushDispatchOutbox.lockedAt)}
-          AND dispatch."status" <> 'PROCESSING'::"PushDispatchStatus"
-        ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
-        FOR UPDATE OF outbox SKIP LOCKED
+    const now = this.#clock.now();
+    const published = await this.#db
+      .update(pushDispatchOutbox)
+      .set({
+        status: "PUBLISHED",
+        lockedAt: null,
+        publishedAt: sql`COALESCE(${pushDispatchOutbox.publishedAt}, ${sql.param(now, pushDispatchOutbox.publishedAt)})`,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          inArray(
+            pushDispatchOutbox.dispatchId,
+            this.#staleProcessing(lockedBefore, FINISHED_DISPATCH_STATUSES),
+          ),
+          eq(pushDispatchOutbox.status, "PROCESSING"),
+        ),
       )
-      UPDATE ${pushDispatchOutbox} AS outbox
-      SET
-        "status" = CASE
-          WHEN locked_outboxes."dispatchStatus" IN (
-            'SENT'::"PushDispatchStatus",
-            'SKIPPED'::"PushDispatchStatus",
-            'FAILED'::"PushDispatchStatus",
-            'HOLDOUT'::"PushDispatchStatus"
-          ) THEN 'PUBLISHED'::"PushDispatchOutboxStatus"
-          ELSE 'PENDING'::"PushDispatchOutboxStatus"
-        END,
-        "lockedAt" = NULL,
-        "publishedAt" = CASE
-          WHEN locked_outboxes."dispatchStatus" IN (
-            'SENT'::"PushDispatchStatus",
-            'SKIPPED'::"PushDispatchStatus",
-            'FAILED'::"PushDispatchStatus",
-            'HOLDOUT'::"PushDispatchStatus"
-          ) THEN COALESCE(outbox."publishedAt", CURRENT_TIMESTAMP)
-          ELSE NULL
-        END,
-        "updatedAt" = CURRENT_TIMESTAMP
-      FROM locked_outboxes
-      WHERE outbox."dispatchId" = locked_outboxes."dispatchId"
-        AND outbox."status" = 'PROCESSING'::"PushDispatchOutboxStatus"
-    `);
-    return result.rowCount ?? 0;
+      .returning({ dispatchId: pushDispatchOutbox.dispatchId });
+    const reopened = await this.#db
+      .update(pushDispatchOutbox)
+      .set({ status: "PENDING", lockedAt: null, publishedAt: null, updatedAt: now })
+      .where(
+        and(
+          inArray(pushDispatchOutbox.dispatchId, this.#staleProcessing(lockedBefore, ["PENDING"])),
+          eq(pushDispatchOutbox.status, "PROCESSING"),
+        ),
+      )
+      .returning({ dispatchId: pushDispatchOutbox.dispatchId });
+    return published.length + reopened.length;
+  }
+
+  // 발행 표시 전에 멈춘 outbox lease. 실행 중인 delivery(dispatch PROCESSING)와 다른 worker가 잡은 행은 건너뛴다
+  #staleProcessing(
+    lockedBefore: Temporal.Instant,
+    dispatchStatuses: readonly PushDispatchStatus[],
+  ) {
+    return this.#db
+      .select({ dispatchId: pushDispatchOutbox.dispatchId })
+      .from(pushDispatchOutbox)
+      .innerJoin(pushDispatch, eq(pushDispatch.id, pushDispatchOutbox.dispatchId))
+      .where(
+        and(
+          eq(pushDispatchOutbox.status, "PROCESSING"),
+          lt(pushDispatchOutbox.lockedAt, lockedBefore),
+          inArray(pushDispatch.status, [...dispatchStatuses]),
+        ),
+      )
+      .orderBy(asc(pushDispatchOutbox.availableAt), asc(pushDispatchOutbox.dispatchId))
+      .for("update", { of: pushDispatchOutbox, skipLocked: true });
   }
 
   async #claim(input: {
@@ -193,7 +213,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
         publishedAt: null,
         publishAttempts: sql`${pushDispatchOutbox.publishAttempts} + 1`,
         lastError: null,
-        updatedAt: sql`CURRENT_TIMESTAMP`,
+        updatedAt: input.lockedAt,
       })
       .where(inArray(pushDispatchOutbox.dispatchId, candidates))
       .returning({

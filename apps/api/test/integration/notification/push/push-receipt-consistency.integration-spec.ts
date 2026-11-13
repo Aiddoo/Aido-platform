@@ -69,7 +69,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     await client.insert(userTable).values(user);
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     const tokens = new DrizzlePushTokenRepository(txHost);
-    const receipts = new DrizzlePushReceiptRepository(txHost);
+    const receipts = new DrizzlePushReceiptRepository(txHost, new DateClock());
     const token = await tokens.registerPushToken({
       userId: UserId.reconstitute(user.id),
       token: `ExponentPushToken[${suffix}-old]`,
@@ -396,8 +396,8 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       .returning();
     const notification = requireRecord(created);
     const staging = new DrizzlePushDispatchStagingRepository(f.txHost, new DateClock());
-    const outbox = new DrizzlePushDeliveryOutboxRepository(f.txHost);
-    const lifecycle = new DrizzlePushDeliveryLifecycleRepository(f.txHost);
+    const outbox = new DrizzlePushDeliveryOutboxRepository(f.txHost, new DateClock());
+    const lifecycle = new DrizzlePushDeliveryLifecycleRepository(f.txHost, new DateClock());
     const staged = await f.uow.run(() =>
       staging.stage({
         notificationId: notification.id,

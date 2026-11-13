@@ -230,7 +230,7 @@ export const pushDeliveryAttempt = pgTable(
     pushTokenId: integer().notNull(),
     receiptCheckedAt: instant(),
     status: pushDeliveryStatus().default("PENDING").notNull(),
-    // 발송 저장소가 insert·update마다 명시한다(ClockPort 값 또는 같은 문장의 CURRENT_TIMESTAMP)
+    // 발송 저장소가 insert·update마다 ClockPort 값으로 명시한다
     updatedAt: instant().notNull(),
     tokenFingerprint: varchar({ length: 64 }),
   },
@@ -291,7 +291,7 @@ export const pushDispatch = pgTable(
     skipReason: varchar({ length: 100 }),
     status: pushDispatchStatus().default("PENDING").notNull(),
     timezone: varchar({ length: 50 }).default("UTC").notNull(),
-    // 발송 저장소가 insert·update마다 명시한다(ClockPort 값 또는 같은 문장의 CURRENT_TIMESTAMP)
+    // 발송 저장소가 insert·update마다 ClockPort 값으로 명시한다
     updatedAt: instant().notNull(),
     userId: text().notNull(),
     variantId: varchar({ length: 100 }),
@@ -352,7 +352,7 @@ export const pushDispatchOutbox = pgTable(
     publishAttempts: integer().default(0).notNull(),
     publishedAt: instant(),
     status: pushDispatchOutboxStatus().default("PENDING").notNull(),
-    // 발송 저장소가 insert·update마다 명시한다(ClockPort 값 또는 같은 문장의 CURRENT_TIMESTAMP)
+    // 발송 저장소가 insert·update마다 ClockPort 값으로 명시한다
     updatedAt: instant().notNull(),
   },
   (table) => [

@@ -5,8 +5,8 @@ import {
   type FinalizeSkippedPushDeliveryInput,
   type ReleasePushDeliveryInput,
   type ReopenPushDeliveriesAfterClaimFailureInput,
+  type PushDeliveryFence,
   PushDeliveryLifecycleRepositoryPort,
-  type ReservePushDeliveryRateLimitInput,
 } from "#api/modules/notification/push/application/ports/push-delivery-lifecycle.repository.port";
 
 const PUSH_DELIVERY_LIFECYCLE_OPERATIONS = [
@@ -33,7 +33,10 @@ export class StubPushDeliveryLifecycleRepository extends PushDeliveryLifecycleRe
   readonly claimInputs: ClaimPushDeliveriesInput[] = [];
   readonly reopenAfterFinalClaimFailureInputs: ReopenPushDeliveriesAfterClaimFailureInput[] = [];
   readonly reopenFailedPublicationsInputs: ReopenPushDeliveriesAfterClaimFailureInput[] = [];
-  readonly rateLimitReservations: ReservePushDeliveryRateLimitInput[][] = [];
+  readonly rateLimitReservations: {
+    readonly fences: readonly PushDeliveryFence[];
+    readonly reservedAt: Temporal.Instant;
+  }[] = [];
   readonly finalizedSkipped: FinalizeSkippedPushDeliveryInput[][] = [];
   readonly finalizedResults: FinalizePushDeliveryResultsInput[][] = [];
   readonly released: ReleasePushDeliveryInput[][] = [];
@@ -73,13 +76,14 @@ export class StubPushDeliveryLifecycleRepository extends PushDeliveryLifecycleRe
   }
 
   async markRateLimitReserved(
-    inputs: readonly ReservePushDeliveryRateLimitInput[],
+    fences: readonly PushDeliveryFence[],
+    reservedAt: Temporal.Instant,
   ): Promise<readonly number[]> {
-    this.rateLimitReservations.push([...inputs]);
+    this.rateLimitReservations.push({ fences: [...fences], reservedAt });
     this.#enter("markRateLimitReserved");
     const reservable = this.reservableDispatchIds;
-    return inputs
-      .map((input) => input.fence.dispatchId)
+    return fences
+      .map((fence) => fence.dispatchId)
       .filter((dispatchId) => reservable == null || reservable.has(dispatchId));
   }
 

@@ -271,10 +271,8 @@ export class DeliverPushNotificationsUseCase {
     const reservedAt = this.#now();
     const reserved = await this.#dependencies.unitOfWork.run(async () => {
       const reservedDispatchIds = await this.#dependencies.lifecycle.markRateLimitReserved(
-        claimedDeliveries.map((claimed) => ({
-          fence: claimed.fence,
-          reservedAt,
-        })),
+        claimedDeliveries.map((claimed) => claimed.fence),
+        reservedAt,
       );
       if (reservedDispatchIds.length !== claimedDeliveries.length) {
         const reservedIds = new Set(reservedDispatchIds);
