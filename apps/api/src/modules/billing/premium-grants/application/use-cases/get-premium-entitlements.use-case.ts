@@ -9,30 +9,30 @@ import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
 import type { StoreEntitlementReaderPort } from "../ports/store-entitlement.reader.port.js";
 
-export interface LoadPremiumEntitlementsQuery {
+export interface GetPremiumEntitlementsQuery {
   readonly userId: UserId;
   /** 웹훅이 방금 판단한 거래 체인 상태 */
   readonly eventChain?: StoreEventChainState;
 }
 
-export interface LoadedPremiumEntitlements {
+export interface UserPremiumEntitlements {
   readonly entitlements: PremiumEntitlements;
   readonly premiumGrants: readonly PremiumGrant[];
 }
 
-export interface LoadPremiumEntitlementsDependencies {
+export interface GetPremiumEntitlementsDependencies {
   readonly storeEntitlementReader: Pick<StoreEntitlementReaderPort, "listByUserId">;
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "listOpenByUserId">;
 }
 
-export class LoadPremiumEntitlementsUseCase {
-  readonly #dependencies: LoadPremiumEntitlementsDependencies;
+export class GetPremiumEntitlementsUseCase {
+  readonly #dependencies: GetPremiumEntitlementsDependencies;
 
-  constructor(dependencies: LoadPremiumEntitlementsDependencies) {
+  constructor(dependencies: GetPremiumEntitlementsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: LoadPremiumEntitlementsQuery): Promise<LoadedPremiumEntitlements> {
+  async execute(query: GetPremiumEntitlementsQuery): Promise<UserPremiumEntitlements> {
     const { storeEntitlementReader, premiumGrantRepository } = this.#dependencies;
     // 행의 소유자로 신뢰를 정한다. 보상 기간이 바꾸는 User projection에 기대지 않는다
     const [storeSubscriptions, premiumGrants] = await Promise.all([

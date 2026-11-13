@@ -1,6 +1,6 @@
 import type { SubscriptionStatus } from "@aido/api/vocabulary";
 
-import { LoadPremiumEntitlementsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/load-premium-entitlements.use-case";
+import { GetPremiumEntitlementsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/get-premium-entitlements.use-case";
 import { ProjectPremiumAccessUseCase } from "#api/modules/billing/premium-grants/application/use-cases/project-premium-access.use-case";
 import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
@@ -61,7 +61,7 @@ function setup(
     userLock: new FakeUserMutationLock([SUBSCRIPTION_FIXTURE_USER_ID]),
     unitOfWork: new ImmediateUnitOfWork(),
     projectPremiumAccess: new ProjectPremiumAccessUseCase({
-      loadPremiumEntitlements: new LoadPremiumEntitlementsUseCase({
+      getPremiumEntitlements: new GetPremiumEntitlementsUseCase({
         storeEntitlementReader: new InMemoryStoreEntitlementReader(subscriptionRepository),
         premiumGrantRepository,
       }),

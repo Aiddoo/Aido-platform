@@ -8,14 +8,12 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 import { premiumGrantStatus } from "#api/platform/database/schema/enums.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {
   type ListPremiumGrantUsersToReconcileParams,
   PremiumGrantRepositoryPort,
 } from "../../application/ports/premium-grant.repository.port.js";
-import { PremiumGrantId } from "../../domain/premium-grant-id.vo.js";
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import { toPremiumGrant, toPremiumGrantRow } from "./premium-grant-row.mapper.js";
 
@@ -51,10 +49,6 @@ export class DrizzlePremiumGrantRepository extends PremiumGrantRepositoryPort {
       );
   }
 
-  async nextId(): Promise<PremiumGrantId> {
-    return PremiumGrantId.reconstitute(createEntityId());
-  }
-
   async listOpenByUserId(userId: UserId): Promise<PremiumGrant[]> {
     const rows = await this.#db.query.premiumGrant.findMany({
       where: { userId: userId.value, status: { in: ["BANKED", "ACTIVE"] } },
@@ -77,13 +71,29 @@ export class DrizzlePremiumGrantRepository extends PremiumGrantRepositoryPort {
     return row?.endsAt ?? null;
   }
 
-  async saveIfAbsent(grant: PremiumGrant): Promise<boolean> {
-    const inserted = await this.#db
+  async existsBySourceKey(sourceKey: string): Promise<boolean> {
+    const row = await this.#db.query.premiumGrant.findFirst({
+      columns: { id: true },
+      where: { sourceKey },
+    });
+    return row != null;
+  }
+
+  async save(grant: PremiumGrant): Promise<void> {
+    const row = toPremiumGrantRow(grant);
+    await this.#db
       .insert(premiumGrant)
-      .values(toPremiumGrantRow(grant))
-      .onConflictDoNothing({ target: premiumGrant.sourceKey })
-      .returning({ id: premiumGrant.id });
-    return inserted.length === 1;
+      .values(row)
+      .onConflictDoUpdate({
+        target: premiumGrant.id,
+        // 종료 안내 시각은 안내 작업의 조건부 표시(claim)만 쓴다
+        set: {
+          status: row.status,
+          startsAt: row.startsAt,
+          endsAt: row.endsAt,
+          updatedAt: row.updatedAt,
+        },
+      });
   }
 
   async saveAll(grants: readonly PremiumGrant[]): Promise<void> {

@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { LoadPremiumEntitlementsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/load-premium-entitlements.use-case";
+import { GetPremiumEntitlementsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/get-premium-entitlements.use-case";
 import { ProjectPremiumAccessUseCase } from "#api/modules/billing/premium-grants/application/use-cases/project-premium-access.use-case";
 import type { PremiumGrant } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
 import { FakeSubscriptionWebhookLock } from "#test/doubles/billing/fake-subscription-webhook-lock";
@@ -144,7 +144,7 @@ function setup(
     users.map((user) => user.id),
   );
   const projectPremiumAccess = new ProjectPremiumAccessUseCase({
-    loadPremiumEntitlements: new LoadPremiumEntitlementsUseCase({
+    getPremiumEntitlements: new GetPremiumEntitlementsUseCase({
       storeEntitlementReader: new InMemoryStoreEntitlementReader(subscriptionRepository),
       premiumGrantRepository,
     }),

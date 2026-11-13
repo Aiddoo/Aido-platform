@@ -18,7 +18,7 @@ import {
 } from "#test/fixtures/billing/subscription.fixture";
 
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
-import { LoadPremiumEntitlementsUseCase } from "./load-premium-entitlements.use-case.js";
+import { GetPremiumEntitlementsUseCase } from "./get-premium-entitlements.use-case.js";
 import { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 import { SweepPremiumGrantsUseCase } from "./sweep-premium-grants.use-case.js";
 
@@ -30,7 +30,7 @@ function setup(grants: PremiumGrant[], knownUserIds = [SUBSCRIPTION_FIXTURE_USER
   const premiumGrantRepository = new InMemoryPremiumGrantRepository(grants);
   const projection = new InMemoryUserSubscriptionProjectionRepository(knownUserIds);
   const cache = new RecordingPremiumAccessCache();
-  const loadPremiumEntitlements = new LoadPremiumEntitlementsUseCase({
+  const getPremiumEntitlements = new GetPremiumEntitlementsUseCase({
     storeEntitlementReader: new InMemoryStoreEntitlementReader(
       new InMemorySubscriptionRepository(),
     ),
@@ -40,7 +40,7 @@ function setup(grants: PremiumGrant[], knownUserIds = [SUBSCRIPTION_FIXTURE_USER
     premiumGrantRepository,
     userSubscriptionProjection: projection,
     projectPremiumAccess: new ProjectPremiumAccessUseCase({
-      loadPremiumEntitlements,
+      getPremiumEntitlements,
       premiumGrantRepository,
       userSubscriptionProjection: projection,
     }),

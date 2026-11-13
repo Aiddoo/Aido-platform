@@ -1,5 +1,6 @@
 import type { PremiumGrantEndingNoticeRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
 import type { PremiumGrantRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant.repository.port";
+import { PremiumGrantId } from "#api/modules/billing/premium-grants/domain/premium-grant-id.vo";
 import type { PremiumGrantPrimitives } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
 import type { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import type { SubscriptionPrimitives } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
@@ -31,9 +32,9 @@ async function saveGrant(
 ): Promise<string> {
   sequence += 1;
   const { banked = false, ...rest } = overrides;
-  const id = (await grants.nextId()).value;
+  const id = PremiumGrantId.generate().value;
   const create = banked ? createBankedPremiumGrantFixture : createPremiumGrantFixture;
-  await grants.saveIfAbsent(create({ id, sourceKey: `invite:ending-${sequence}`, ...rest }));
+  await grants.save(create({ id, sourceKey: `invite:ending-${sequence}`, ...rest }));
   return id;
 }
 

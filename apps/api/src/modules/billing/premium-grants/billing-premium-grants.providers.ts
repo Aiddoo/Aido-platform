@@ -17,8 +17,8 @@ import { PremiumGranterPort } from "./application/ports/premium-granter.port.js"
 import { StoreEntitlementReaderPort } from "./application/ports/store-entitlement.reader.port.js";
 import { UserSubscriptionProjectionRepositoryPort } from "./application/ports/user-subscription-projection.repository.port.js";
 import { GetPremiumAccessUseCase } from "./application/use-cases/get-premium-access.use-case.js";
+import { GetPremiumEntitlementsUseCase } from "./application/use-cases/get-premium-entitlements.use-case.js";
 import { GrantPremiumUseCase } from "./application/use-cases/grant-premium.use-case.js";
-import { LoadPremiumEntitlementsUseCase } from "./application/use-cases/load-premium-entitlements.use-case.js";
 import { NotifyEndingPremiumGrantsUseCase } from "./application/use-cases/notify-ending-premium-grants.use-case.js";
 import { ProjectPremiumAccessUseCase } from "./application/use-cases/project-premium-access.use-case.js";
 import { RevokePremiumGrantUseCase } from "./application/use-cases/revoke-premium-grant.use-case.js";
@@ -49,23 +49,23 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
   { provide: QuietHoursReaderPort, useClass: QuietHoursReaderAdapter },
   { provide: PremiumGranterPort, useClass: PremiumGranterAdapter },
   { provide: PremiumAccessReaderPort, useClass: PremiumAccessReaderAdapter },
-  provideUseCase(LoadPremiumEntitlementsUseCase, {
+  provideUseCase(GetPremiumEntitlementsUseCase, {
     storeEntitlementReader: StoreEntitlementReaderPort,
     premiumGrantRepository: PremiumGrantRepositoryPort,
   }),
   provideUseCase(ProjectPremiumAccessUseCase, {
-    loadPremiumEntitlements: LoadPremiumEntitlementsUseCase,
+    getPremiumEntitlements: GetPremiumEntitlementsUseCase,
     premiumGrantRepository: PremiumGrantRepositoryPort,
     userSubscriptionProjection: UserSubscriptionProjectionRepositoryPort,
   }),
   provideUseCase(GetPremiumAccessUseCase, {
-    loadPremiumEntitlements: LoadPremiumEntitlementsUseCase,
+    getPremiumEntitlements: GetPremiumEntitlementsUseCase,
     premiumGrantRepository: PremiumGrantRepositoryPort,
     clock: ClockPort,
   }),
   provideUseCase(GrantPremiumUseCase, {
     premiumGrantRepository: PremiumGrantRepositoryPort,
-    loadPremiumEntitlements: LoadPremiumEntitlementsUseCase,
+    getPremiumEntitlements: GetPremiumEntitlementsUseCase,
     projectPremiumAccess: ProjectPremiumAccessUseCase,
     userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,

@@ -17,7 +17,7 @@ import {
 
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import { bankedRemainderSourceKey } from "../../domain/premium-grant.aggregate.js";
-import { LoadPremiumEntitlementsUseCase } from "./load-premium-entitlements.use-case.js";
+import { GetPremiumEntitlementsUseCase } from "./get-premium-entitlements.use-case.js";
 import { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 import { RevokePremiumGrantUseCase } from "./revoke-premium-grant.use-case.js";
 
@@ -30,7 +30,7 @@ function setup(grants: PremiumGrant[]) {
     SUBSCRIPTION_FIXTURE_USER_ID,
   ]);
   const cache = new RecordingPremiumAccessCache();
-  const loadPremiumEntitlements = new LoadPremiumEntitlementsUseCase({
+  const getPremiumEntitlements = new GetPremiumEntitlementsUseCase({
     storeEntitlementReader: new InMemoryStoreEntitlementReader(
       new InMemorySubscriptionRepository(),
     ),
@@ -39,7 +39,7 @@ function setup(grants: PremiumGrant[]) {
   const useCase = new RevokePremiumGrantUseCase({
     premiumGrantRepository,
     projectPremiumAccess: new ProjectPremiumAccessUseCase({
-      loadPremiumEntitlements,
+      getPremiumEntitlements,
       premiumGrantRepository,
       userSubscriptionProjection: projection,
     }),

@@ -2,7 +2,6 @@ import {
   type ListPremiumGrantUsersToReconcileParams,
   PremiumGrantRepositoryPort,
 } from "#api/modules/billing/premium-grants/application/ports/premium-grant.repository.port";
-import { PremiumGrantId } from "#api/modules/billing/premium-grants/domain/premium-grant-id.vo";
 import { PremiumGrant } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
 import {
   isStoreEntitlementValid,
@@ -27,7 +26,6 @@ export interface InMemoryPremiumGrantRepositoryOptions {
 export class InMemoryPremiumGrantRepository extends PremiumGrantRepositoryPort {
   readonly #grants = new Map<string, PremiumGrant>();
   readonly #storeEntitlementsOf: (userId: string) => readonly StoreEntitlement[];
-  #sequence = 0;
 
   constructor(
     grants: readonly PremiumGrant[] = [],
@@ -42,11 +40,6 @@ export class InMemoryPremiumGrantRepository extends PremiumGrantRepositoryPort {
 
   get all(): readonly PremiumGrant[] {
     return [...this.#grants.values()].map(copyOf);
-  }
-
-  async nextId(): Promise<PremiumGrantId> {
-    this.#sequence += 1;
-    return PremiumGrantId.reconstitute(`generated-grant-${this.#sequence}`);
   }
 
   async listOpenByUserId(userId: UserId): Promise<PremiumGrant[]> {
@@ -73,12 +66,16 @@ export class InMemoryPremiumGrantRepository extends PremiumGrantRepositoryPort {
     return ended[0] ?? null;
   }
 
-  async saveIfAbsent(grant: PremiumGrant): Promise<boolean> {
-    if ([...this.#grants.values()].some((stored) => stored.sourceKey === grant.sourceKey)) {
-      return false;
+  async existsBySourceKey(sourceKey: string): Promise<boolean> {
+    return [...this.#grants.values()].some((stored) => stored.sourceKey === sourceKey);
+  }
+
+  async save(grant: PremiumGrant): Promise<void> {
+    if (!this.#grants.has(grant.id.value)) {
+      this.#grants.set(grant.id.value, copyOf(grant));
+      return;
     }
-    this.#grants.set(grant.id.value, copyOf(grant));
-    return true;
+    await this.saveAll([grant]);
   }
 
   async saveAll(grants: readonly PremiumGrant[]): Promise<void> {
