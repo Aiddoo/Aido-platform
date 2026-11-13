@@ -2,8 +2,8 @@ export interface LocalFileEntry {
   name: string;
   uri: string;
   sizeBytes: number;
-  /** 알 수 없으면 null */
-  modifiedAt: Date | null;
+  /** 마지막 수정 시각(epoch ms). core는 shared의 Instant를 모르므로 포트는 다른 포트처럼 ms로 준다. 알 수 없으면 null */
+  modifiedAtMs: number | null;
 }
 
 /**

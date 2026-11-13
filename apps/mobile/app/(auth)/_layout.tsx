@@ -11,10 +11,11 @@ function AuthLayout() {
     <Stack
       screenOptions={{
         ...screenOptions,
+        // 로그인 첫 화면은 전체 화면 그림이라 헤더를 숨기고 입력 화면만 아래에서 켠다
         headerShown: false,
         title: '',
         animation: process.env.EXPO_OS === 'ios' ? 'default' : 'fade_from_bottom',
-        animationDuration: ANIMATION.duration.normal,
+        animationDuration: ANIMATION.durationMs.normal,
         contentStyle: { backgroundColor },
       }}
     >

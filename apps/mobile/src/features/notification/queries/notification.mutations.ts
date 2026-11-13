@@ -5,7 +5,10 @@ import {
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { getErrorMessage, isConnectivityError, ServerError } from '@src/shared/errors';
+import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
+import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
+import { useTrack } from '@src/shared/analytics';
+import { getErrorMessage, isConnectivityError, ServerError, toError } from '@src/shared/errors';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
@@ -55,6 +58,7 @@ export function useMarkAllAsReadMutationOptions() {
 
 export function useMarkAsReadMutationOptions() {
   const haptics = useHaptics();
+  const logger = useLogger();
   const notificationApi = useNotificationApi();
   const queryClient = useQueryClient();
 
@@ -65,12 +69,13 @@ export function useMarkAsReadMutationOptions() {
     onMutate: async (notificationId) => ({
       change: await optimisticallyMarkNotificationsRead(queryClient, notificationId),
     }),
-    onError: (_error, _variables, context) => {
+    onError: (error, _variables, context) => {
       if (context?.change != null) {
         revertNotificationsRead(queryClient, context.change);
       }
-      // 읽음은 다음 탭에 다시 보내므로 이어서 이동한 화면을 토스트로 가리지 않는다
+      // 읽음은 다음 탭에 다시 보내므로 이어서 이동한 화면을 토스트로 가리지 않고, 예상하지 못한 실패만 보고한다
       haptics.notify('error');
+      logger.error(NOTIFICATION_LOG_EVENT.MARK_READ_FAILED, toError(error));
     },
     onSettled: () => invalidateAfterLastNotificationWrite(queryClient),
     meta: { errorFeedback: false },
@@ -117,6 +122,32 @@ export function useRecordPushOpenedMutationOptions() {
       sessionEpoch.current() === context?.epoch
         ? invalidateAfterLastNotificationWrite(queryClient)
         : undefined,
+    meta: { errorFeedback: false },
+  });
+}
+
+/** 알림의 [광고 알림 끄기]를 보낸다. 실패는 알리지 않고 응답을 남겨 앱이 다시 앞에 오면 또 보낸다 */
+export function useOptOutMarketingPushMutationOptions() {
+  const notificationApi = useNotificationApi();
+  const sessionEpoch = useSessionEpoch();
+  const queryClient = useQueryClient();
+  const { trackEvent } = useTrack();
+  const showConsentResult = useConsentResultToast();
+
+  return mutationOptions({
+    mutationFn: async (token: string) => unwrap(await notificationApi.optOutMarketingPush(token)),
+    onMutate: () => ({ epoch: sessionEpoch.current() }),
+    // 보내는 사이 로그아웃했으면 끝난 화면·캐시에 안내와 무효화를 남기지 않는다
+    onSuccess: ({ withdrawnAt }, _token, context) => {
+      if (sessionEpoch.current() !== context.epoch) {
+        return;
+      }
+      trackEvent('marketing_push_opted_out', { source: 'push_action' });
+      // 설정 토글과 같은 결과 안내(처리 일시는 서버 값)를 띄운다
+      showConsentResult('marketingPush', { type: 'withdrawn', at: withdrawnAt });
+    },
+    onSettled: (_result, _error, _token, context) =>
+      sessionEpoch.current() === context?.epoch ? invalidateConsent(queryClient) : undefined,
     meta: { errorFeedback: false },
   });
 }

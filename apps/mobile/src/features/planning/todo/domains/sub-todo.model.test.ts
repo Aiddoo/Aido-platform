@@ -1,8 +1,11 @@
+import { range } from 'es-toolkit';
+
 import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
 import { SubTodoPolicy } from './sub-todo.model';
 
-const createSubTodos = (count: number) =>
-  Array.from({ length: count }, (_, index) => createSubTodo({ id: index + 1 }));
+function createSubTodos(count: number) {
+  return range(count).map((index) => createSubTodo({ id: index + 1 }));
+}
 
 describe('getSubTodoStats', () => {
   it('진행 숫자는 항목 목록에서 센다', () => {

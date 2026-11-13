@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ErrorCode,
   friendLimitErrorDetailsSchema,
+  hasPublicErrorDetails,
   toPublicErrorDetails,
 } from "../src/errors/index.js";
 
@@ -63,8 +64,29 @@ describe("toPublicErrorDetails", () => {
     expect(result).toEqual({ charged: false, featureQuota });
   });
 
+  it("인증 코드 재발송 대기는 앱 타이머가 읽는 남은 초만 남긴다", () => {
+    // Given
+    const details = { remainingSeconds: 42, userId: "secret" };
+
+    // When
+    const result = toPublicErrorDetails(ErrorCode.VERIFY_0753, details);
+
+    // Then
+    expect(result).toEqual({ remainingSeconds: 42 });
+  });
+
   it.each([
     { name: "공개 상세가 없는 코드", code: ErrorCode.FOLLOW_0905, details: { targetUserId: "u1" } },
+    {
+      name: "음수 남은 초",
+      code: ErrorCode.VERIFY_0753,
+      details: { remainingSeconds: -1 },
+    },
+    {
+      name: "소수 남은 초",
+      code: ErrorCode.VERIFY_0753,
+      details: { remainingSeconds: 1.5 },
+    },
     {
       name: "한도가 0인 잘못된 값",
       code: ErrorCode.FOLLOW_0909,
@@ -94,5 +116,20 @@ describe("toPublicErrorDetails", () => {
 
     // Then
     expect(result).toBeUndefined();
+  });
+});
+
+describe("hasPublicErrorDetails", () => {
+  it.each([
+    { code: ErrorCode.VERIFY_0753, expected: true },
+    { code: ErrorCode.FOLLOW_0909, expected: true },
+    { code: ErrorCode.FOLLOW_0905, expected: false },
+    { code: "toString", expected: false },
+  ])("$code의 운영 details 공개 여부는 $expected다", ({ code, expected }) => {
+    // When
+    const result = hasPublicErrorDetails(code);
+
+    // Then
+    expect(result).toBe(expected);
   });
 });

@@ -1,7 +1,4 @@
-/**
- * HTTP 상태 코드 (NestJS 의존성 없이 클라이언트와 공유 가능)
- * @description FAANG 스타일 에러 핸들링을 위한 HTTP 상태 코드 정의
- */
+/** HTTP 상태 코드. NestJS 없이 서버·앱이 같은 값을 쓴다. */
 export const HttpStatus = {
   // 2xx Success
   OK: 200,

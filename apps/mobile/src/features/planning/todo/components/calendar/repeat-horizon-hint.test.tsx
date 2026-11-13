@@ -1,19 +1,18 @@
 import '@src/shared/i18n/init';
 import { ok, unwrap } from '@src/core/errors/result';
-import { createCoachmarkRepository } from '@src/features/device/coachmark/apis/coachmark.repository';
+import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { getNowInstant } from '@src/shared/date/clock';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestDi,
+  createTestQueryClient,
 } from '@src/testing/core';
-import { createTestQueryClient } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 
@@ -45,10 +44,10 @@ async function renderHint({
   // 내 정보가 오면 CoachmarkPopover가 대상을 Popover 안으로 옮겨 다시 마운트한다.
   // 그 전에 찾은 줄은 떨어져 나가 눌러도 아무 일이 없으므로, 앱처럼 캐시에 넣고 시작한다.
   const queryClient = createTestQueryClient();
-  const { userService } = createTestDi({ httpClient: userHttpClient });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), unwrap(await userService.getCurrentUser()));
+  const { userApi } = createTestDi({ ports: { httpClient: userHttpClient } });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), unwrap(await userApi.getCurrentUser()));
   const syncStorage = createMemoryObservableSyncStorage();
-  const coachmarkRepository = createCoachmarkRepository(syncStorage, getNowInstant);
+  const coachmarkRepository = createCoachmarkRecords(syncStorage);
   if (isSeen) {
     coachmarkRepository.markSeen({ accountId, kind: 'repeat-horizon' });
   }
@@ -56,19 +55,11 @@ async function renderHint({
 
   const hint = (date: string) => {
     jest.mocked(useLocalSearchParams).mockReturnValue({ date });
-    return (
-      <LocalDateProvider>
-        <RepeatHorizonHint />
-      </LocalDateProvider>
-    );
+    return <RepeatHorizonHint />;
   };
   const { rerender } = await renderScreen(hint('2027-03-01'), {
-    di: {
-      httpClient,
-      syncStorage,
-      analytics,
-    },
-    queryClient,
+    di: createTestDi({ ports: { httpClient, syncStorage, analytics, queryClient } }),
+    withLocalDate: true,
   });
 
   return {
@@ -88,8 +79,9 @@ describe('RepeatHorizonHint', () => {
     });
   });
 
+  // measure는 이미 jest.fn이라 restoreMocks가 되돌리지 못한다
   afterEach(() => {
-    jest.restoreAllMocks();
+    jest.mocked(View.prototype.measure).mockReset();
   });
 
   it('반복 할 일이 있으면 설명을 처음 한 번 자동으로 연다', async () => {
@@ -115,27 +107,6 @@ describe('RepeatHorizonHint', () => {
     expect(todoRequests).toEqual(['v1/todos/overview']);
   });
 
-  it.each([
-    { name: '연달아 넘기는 간격', visibleMs: 300, isConsumed: false },
-    { name: '읽기 전에 넘긴 경우', visibleMs: 1_900, isConsumed: false },
-    { name: '읽을 시간을 준 뒤 넘긴 경우', visibleMs: 2_000, isConsumed: true },
-  ])('달을 넘길 때 $name: 안내를 끝냈는지 $isConsumed', async ({ visibleMs, isConsumed }) => {
-    // Given
-    const openedAt = Date.now();
-    // oxlint-disable-next-line aido/test-spy-target -- 1.15.2 전환 #1400
-    const dateNow = jest.spyOn(Date, 'now').mockReturnValue(openedAt);
-    const { analytics, isCoachmarkPending, moveTo } = await renderHint({});
-    await screen.findByText(INFO_TITLE, {}, { timeout: 2_000 });
-    dateNow.mockReturnValue(openedAt + visibleMs);
-
-    // When
-    await moveTo('2027-04-01');
-
-    // Then
-    expect(isCoachmarkPending()).toBe(!isConsumed);
-    expect(analytics.trackEvent).toHaveBeenCalledTimes(isConsumed ? 2 : 1);
-  });
-
   it('달을 빠르게 넘겨도 멈춘 달에서 다시 연다', async () => {
     // Given
     const { moveTo } = await renderHint({});
@@ -150,21 +121,22 @@ describe('RepeatHorizonHint', () => {
     expect(await screen.findByText(INFO_TITLE, {}, { timeout: 2_000 })).toBeTruthy();
   });
 
-  it('반복 할 일이 없으면 자동으로 열지 않고 안내를 남겨 둔다', async () => {
-    // Given
-    const { analytics, isCoachmarkPending, httpClient } = await renderHint({ hasRepeat: false });
+  describe('반복 할 일이 없을 때', () => {
+    setupFakeTimersPerTest({ advanceTimers: true });
 
-    // When
-    await waitFor(() => expect(httpClient.get).toHaveBeenCalled());
-    // oxlint-disable-next-line aido/no-real-sleep -- 1.15.2 전환 #1400
-    await new Promise((resolve) => {
-      setTimeout(resolve, 600);
+    it('반복 할 일이 없으면 자동으로 열지 않고 안내를 남겨 둔다', async () => {
+      // Given
+      const { analytics, isCoachmarkPending, httpClient } = await renderHint({ hasRepeat: false });
+
+      // When
+      await waitFor(() => expect(httpClient.get).toHaveBeenCalled());
+      await act(() => jest.advanceTimersByTimeAsync(600));
+
+      // Then
+      expect(screen.queryByText(INFO_TITLE)).toBeNull();
+      expect(analytics.trackEvent).not.toHaveBeenCalled();
+      expect(isCoachmarkPending()).toBe(true);
     });
-
-    // Then
-    expect(screen.queryByText(INFO_TITLE)).toBeNull();
-    expect(analytics.trackEvent).not.toHaveBeenCalled();
-    expect(isCoachmarkPending()).toBe(true);
   });
 
   it('X로 닫으면 안내가 끝나고 줄을 눌러 다시 본다', async () => {

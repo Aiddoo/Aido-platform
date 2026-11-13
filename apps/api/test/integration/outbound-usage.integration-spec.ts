@@ -4,8 +4,8 @@ import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/applica
 import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
-import { describeUsageMeterContract } from "#api/platform/metering/adapters/usage-meter.contract";
 import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
+import { describeUsageMeterContract } from "#test/contracts/platform/usage-meter.contract";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";

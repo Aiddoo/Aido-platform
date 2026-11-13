@@ -5,8 +5,8 @@ declare module '@src/shared/analytics/event-map' {
     badge_summary_viewed: {
       badge_type: BadgeType;
       completion_rate: number;
-      // oxlint-disable-next-line aido/analytics-event-catalog -- 1.15.2 전환 #1400
-      week_label: string;
+      /** `{ISO 주 연도}-W{주}` */
+      week_label: `${number}-W${number}`;
     };
     badge_item_tapped: {
       badge_type: BadgeType;

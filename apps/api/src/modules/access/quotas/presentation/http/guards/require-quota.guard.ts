@@ -1,11 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { QuotaMeter } from "@aido/api/vocabulary";
 import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { z } from "zod";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
-
+import { authenticationRequired } from "../../../application/quotas.errors.js";
 import { CheckQuotaRemainingUseCase } from "../../../application/use-cases/check-quota-remaining.use-case.js";
 
 /** 라우트가 미리 확인할 계량기. @RequireQuota가 붙인다 */
@@ -35,7 +33,7 @@ export class RequireQuotaGuard implements CanActivate {
     const request = authenticatedRequestSchema.safeParse(context.switchToHttp().getRequest());
     if (!request.success) {
       // JwtAuthGuard가 먼저 실행되어야 한다
-      throw new ApplicationException(ErrorCode.AUTH_0107);
+      throw authenticationRequired();
     }
     await this.#checkQuotaRemaining.execute({ userId: request.data.user.userId, meter });
     return true;

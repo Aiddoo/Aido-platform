@@ -223,7 +223,10 @@ describe("AI 리포트 E2E", () => {
       expect(response.status).toBe(200);
       expect(response.body.data.report.aiSummary).toBe(raw.summary);
       expect(response.body.data.report.aiTips).toEqual(raw.tips);
-      expect(response.body.data.report.periodLabel).toBe(toAiReportResponse(report).periodLabel);
+      // 라벨의 올해는 저장 시간대(테스트 사용자는 기본값 UTC)로 정한다
+      expect(response.body.data.report.periodLabel).toBe(
+        toAiReportResponse(report, Temporal.Now.plainDateISO("UTC")).periodLabel,
+      );
       expect(fakeAiGenerator.getCallCount()).toBe(1);
       const stored = await ctx.testDatabase
         .getClient()

@@ -1,6 +1,6 @@
 import { useScreenOrientation } from '@src/bootstrap/providers/di-context';
-import { WindowLayoutPolicy } from '@src/shared/domains/window-layout.model';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
+import { WindowLayoutPolicy } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { useEffect } from 'react';
 import { match } from 'ts-pattern';

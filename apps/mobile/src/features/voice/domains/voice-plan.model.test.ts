@@ -1,3 +1,5 @@
+import { createDateKey } from '@src/testing/date-key';
+
 import {
   getPlanActionGroups,
   type PlanHeadline,
@@ -13,7 +15,7 @@ const todo = (overrides: Partial<PlannedTodo> = {}): PlannedTodo => ({
   type: 'create-todo',
   actionId: 'a1',
   title: '영양제 먹기',
-  startDate: '2026-11-05',
+  startDate: createDateKey('2026-11-05'),
   endDate: null,
   scheduledTime: '08:00',
   repeat: null,

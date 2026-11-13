@@ -1,3 +1,8 @@
+const isDocumentation = (path) =>
+  /\.(md|mdx)$/.test(path) ||
+  path.startsWith('docs/') ||
+  path.startsWith('.github/ISSUE_TEMPLATE/');
+
 /** Unknown/root inputs deliberately invalidate every scope; a failed diff passes null. */
 export function dependencyScope(paths) {
   const scope = { api: false, mobile: false, shared: false };
@@ -5,11 +10,7 @@ export function dependencyScope(paths) {
     return { api: true, mobile: true, shared: true };
   }
   for (const path of paths) {
-    if (
-      /\.(md|mdx)$/.test(path) ||
-      path.startsWith('docs/') ||
-      path.startsWith('.github/ISSUE_TEMPLATE/')
-    ) {
+    if (isDocumentation(path)) {
       continue;
     }
     if (
@@ -31,4 +32,9 @@ export function dependencyScope(paths) {
     }
   }
   return scope;
+}
+
+/** Docs are outside every dependency scope, so a docs-only diff needs its own light check. */
+export function touchesDocumentation(paths) {
+  return paths !== null && paths.some(isDocumentation);
 }

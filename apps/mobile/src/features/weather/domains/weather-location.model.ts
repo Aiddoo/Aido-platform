@@ -1,7 +1,6 @@
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { SAVED_LOCATION_REVISION } from '../constants/weather.constants';
 import { registeredLocationSchema } from './weather-report.model';
 
 // 기기 위치와 서버에 등록한 위치를 같은 좌표 값으로 비교한다
@@ -9,6 +8,8 @@ const coordinatesSchema = registeredLocationSchema.pick({ latitude: true, longit
 export type Coordinates = z.infer<typeof coordinatesSchema>;
 
 const revisionSchema = z.int().nonnegative();
+/** 기기에 저장된 위치로 받은 리포트의 리비전. 새로 등록할 때마다 1씩 올린다 */
+const SAVED_LOCATION_REVISION = 0;
 
 const placeNameSchema = z.object({ city: z.string(), district: z.string().nullable() });
 export type PlaceName = z.infer<typeof placeNameSchema>;
@@ -23,7 +24,7 @@ export const locationReadingSchema = z.discriminatedUnion('status', [
     place: placeNameSchema.nullable(),
     countryCode: z.string().nullable(),
     revision: revisionSchema,
-    isLastKnown: z.boolean().optional(),
+    isLastKnown: z.boolean(),
   }),
 ]);
 export type LocationReading = z.infer<typeof locationReadingSchema>;
@@ -79,7 +80,7 @@ function getLocationStatus(reading: LocationReading): WeatherLocationStatus {
       status: 'ready' as const,
       place,
       countryCode,
-      isLastKnown: isLastKnown === true,
+      isLastKnown,
     }))
     .exhaustive();
 }

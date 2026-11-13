@@ -1,14 +1,13 @@
-import { ErrorCode } from "@aido/api/errors";
 import type {
   UserReportReason,
   UserReportStatus,
   UserReportTargetType,
 } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { cannotReportSelf } from "./reports.errors.js";
 import { UserReportDetail } from "./user-report-detail.vo.js";
 import { UserReportId } from "./user-report-id.vo.js";
 import { UserReportResolutionNote } from "./user-report-resolution-note.vo.js";
@@ -63,7 +62,7 @@ export class UserReport extends AggregateRoot<UserReportId, UserReportProps> {
   static create(params: CreateUserReportParams): UserReport {
     // 자기 신고를 상세 내용 검증보다 먼저 거부한다(출시 앱이 받는 오류 우선순위)
     if (params.reporterId.equals(params.targetUserId)) {
-      throw new DomainException(ErrorCode.REPORT_2251);
+      throw cannotReportSelf();
     }
     return new UserReport(params.id, {
       reporterId: params.reporterId,

@@ -1,3 +1,4 @@
+import { createDateKey } from '@src/testing/date-key';
 import { temporalOracle } from '@src/testing/temporal-oracle';
 
 import { toInstant } from './instant';
@@ -41,15 +42,15 @@ describe('toDateKey', () => {
     expect(losAngeles).toBe('2028-02-29');
   });
 
-  it('유효하지 않은 Date는 빈 문자열을 반환한다', () => {
+  it('유효하지 않은 Date는 날짜가 없어 던진다', () => {
     // Given
     const invalid = new Date(Number.NaN);
 
     // When
-    const result = toDateKey(invalid, 'Asia/Seoul');
+    const read = () => toDateKey(invalid, 'Asia/Seoul');
 
     // Then
-    expect(result).toBe('');
+    expect(read).toThrow(RangeError);
   });
 });
 
@@ -210,7 +211,7 @@ describe('toZonedInstant', () => {
     ],
   ])('%s는 서버처럼 겹치면 앞쪽, 없으면 전환 뒤 순간이다', (_name, timeZone, date, time, iso) => {
     // When
-    const instant = toZonedInstant({ date, time, timeZone });
+    const instant = toZonedInstant({ date: createDateKey(date), time, timeZone });
 
     // Then
     expect(instant).toBe(iso);
@@ -243,7 +244,7 @@ describe('toZonedInstant', () => {
     // When
     const mismatches = cases.filter(
       ({ timeZone, date, time }) =>
-        toZonedInstant({ date, time, timeZone }) !==
+        toZonedInstant({ date: createDateKey(date), time, timeZone }) !==
         temporalOracle.toZonedInstant(date, time, timeZone),
     );
 
@@ -260,7 +261,7 @@ describe('toZonedInstant', () => {
     const timeZone = 'America/Los_Angeles';
 
     // When
-    const instant = toZonedInstant({ date: dateKey, time: hhmm, timeZone });
+    const instant = toZonedInstant({ date: createDateKey(dateKey), time: hhmm, timeZone });
 
     // Then
     expect(new Date(instant).toISOString()).toBe(iso);
@@ -271,7 +272,7 @@ describe('toZonedInstant', () => {
     ['America/Los_Angeles', '2026-10-01T21:30:00.000Z'],
   ])('같은 벽시계도 %s에서는 다른 순간이다', (timeZone, iso) => {
     // Given
-    const dateKey = '2026-10-01';
+    const dateKey = createDateKey('2026-10-01');
 
     // When
     const instant = toZonedInstant({ date: dateKey, time: '14:30', timeZone });

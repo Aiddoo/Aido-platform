@@ -1,8 +1,8 @@
-import { ErrorCode } from "@aido/api/errors";
 import { INVITE_CODE_PATTERN } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { invalidInviteCode } from "./invites.errors.js";
 
 const INVITE_CODE_REGEX = new RegExp(INVITE_CODE_PATTERN);
 
@@ -16,7 +16,7 @@ export class InviteCode extends ValueObject<string> {
   static create(raw: string): InviteCode {
     const normalized = normalizeInviteCode(raw);
     if (!INVITE_CODE_REGEX.test(normalized)) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "inviteCode" });
+      throw invalidInviteCode();
     }
     return new InviteCode(normalized);
   }

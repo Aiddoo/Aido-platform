@@ -1,21 +1,22 @@
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
+import { createDateKey } from '@src/testing/date-key';
 
-import {
-  STORE_REVIEW_MAX_REQUESTS_PER_WINDOW,
-  STORE_REVIEW_MIN_ACTIVE_DAYS,
-  STORE_REVIEW_REQUEST_COOLDOWN_DAYS,
-  STORE_REVIEW_REQUEST_WINDOW_DAYS,
-} from '../constants/store-review.constants';
 import type { StoreReviewState } from './store-review.model';
-import { StoreReviewPolicy } from './store-review.model';
+import { createEmptyStoreReviewState, StoreReviewPolicy } from './store-review.model';
+
+/** iOS가 365일에 3번까지 띄우는 몫을 120일 간격으로 나눈다 */
+const REQUEST_COOLDOWN_DAYS = 120;
+const REQUEST_WINDOW_DAYS = 365;
 
 const NOW = toInstant('2026-10-27T12:00:00.000Z');
 const daysBefore = (days: number, msLater = 0) =>
   toInstant(new Date(toEpochMs(NOW) - days * DAY_MS + msLater).toISOString());
 
 const withActiveDays = (...localDates: string[]): StoreReviewState =>
-  localDates.reduce(StoreReviewPolicy.withActiveDay, StoreReviewPolicy.createEmptyState());
+  localDates
+    .map(createDateKey)
+    .reduce(StoreReviewPolicy.withActiveDay, createEmptyStoreReviewState());
 
 const ENGAGED: StoreReviewState = withActiveDays('2026-10-20', '2026-10-24', '2026-10-27');
 
@@ -25,12 +26,11 @@ describe('getEligibility', () => {
     const twoDays = withActiveDays('2026-10-25', '2026-10-26');
 
     // When
-    const threeDays = StoreReviewPolicy.withActiveDay(twoDays, '2026-10-27');
+    const threeDays = StoreReviewPolicy.withActiveDay(twoDays, createDateKey('2026-10-27'));
     const twoDaysEligibility = StoreReviewPolicy.getEligibility(twoDays, NOW);
     const threeDaysEligibility = StoreReviewPolicy.getEligibility(threeDays, NOW);
 
     // Then
-    expect(STORE_REVIEW_MIN_ACTIVE_DAYS).toBe(3);
     expect(twoDaysEligibility).toBe('not_engaged');
     expect(threeDaysEligibility).toBe('eligible');
   });
@@ -51,11 +51,11 @@ describe('getEligibility', () => {
     // Given
     const justBefore: StoreReviewState = {
       ...ENGAGED,
-      requestedAt: [daysBefore(STORE_REVIEW_REQUEST_COOLDOWN_DAYS, 1)],
+      requestedAt: [daysBefore(REQUEST_COOLDOWN_DAYS, 1)],
     };
     const elapsed: StoreReviewState = {
       ...ENGAGED,
-      requestedAt: [daysBefore(STORE_REVIEW_REQUEST_COOLDOWN_DAYS)],
+      requestedAt: [daysBefore(REQUEST_COOLDOWN_DAYS)],
     };
 
     // When
@@ -75,7 +75,7 @@ describe('getEligibility', () => {
     };
     const oldestLeftWindow: StoreReviewState = {
       ...ENGAGED,
-      requestedAt: [daysBefore(STORE_REVIEW_REQUEST_WINDOW_DAYS), daysBefore(244), daysBefore(124)],
+      requestedAt: [daysBefore(REQUEST_WINDOW_DAYS), daysBefore(244), daysBefore(124)],
     };
 
     // When
@@ -83,7 +83,6 @@ describe('getEligibility', () => {
     const oldestLeftWindowEligibility = StoreReviewPolicy.getEligibility(oldestLeftWindow, NOW);
 
     // Then
-    expect(STORE_REVIEW_MAX_REQUESTS_PER_WINDOW).toBe(3);
     expect(threeInWindowEligibility).toBe('window_limit_reached');
     expect(oldestLeftWindowEligibility).toBe('eligible');
   });

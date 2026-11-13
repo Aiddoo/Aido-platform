@@ -1,7 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { invalidGridCoordinate } from "./weather.errors.js";
 
 interface GridCoordinateValue {
   readonly gridX: number;
@@ -12,10 +11,10 @@ interface GridCoordinateValue {
 export class GridCoordinate extends ValueObject<GridCoordinateValue> {
   static create(gridX: number, gridY: number): GridCoordinate {
     if (!Number.isSafeInteger(gridX)) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "gridX", value: gridX });
+      throw invalidGridCoordinate("gridX", gridX);
     }
     if (!Number.isSafeInteger(gridY)) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "gridY", value: gridY });
+      throw invalidGridCoordinate("gridY", gridY);
     }
     return new GridCoordinate({ gridX, gridY });
   }
