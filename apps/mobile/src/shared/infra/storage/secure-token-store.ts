@@ -1,13 +1,42 @@
 import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
+import { Mutex } from 'es-toolkit';
+import { match } from 'ts-pattern';
 import { z } from 'zod';
 
+type UnsyncedChange = { kind: 'saved'; tokens: AuthTokenPair } | { kind: 'cleared' };
+
 export function createSecureTokenStore(storage: KeyValueStorage): TokenStore {
-  // 서버가 이미 회전한 토큰이라 키체인 쓰기가 늦거나 실패해도 이 실행은 키체인의 지난 토큰보다 이것을 쓴다(지난 refresh 토큰은 grace 뒤 SESSION_0704)
-  let unsavedTokens: AuthTokenPair | null = null;
-  let pendingWrites: Promise<unknown> = Promise.resolve();
-  let clearCount = 0;
+  // 서버가 이미 회전한 토큰이라 쓰기가 늦거나 실패해도 키체인의 지난 토큰보다 이것을 읽는다(지난 refresh 토큰은 grace 뒤 SESSION_0704)
+  let latestChange: UnsyncedChange | null = null;
+  // 늦게 끝난 앞 작업이 뒤 세션을 덮거나 지우면 다음 실행이 지난 세션을 읽거나 로그아웃된다
+  const keychainLock = new Mutex();
+
+  const forget = (change: UnsyncedChange) => {
+    if (latestChange === change) {
+      latestChange = null;
+    }
+  };
+
+  const readToken = async (key: string, pick: (tokens: AuthTokenPair) => string) => {
+    if (latestChange == null) {
+      return storage.get(key, z.string());
+    }
+    return match(latestChange)
+      .with({ kind: 'saved' }, ({ tokens }) => pick(tokens))
+      .with({ kind: 'cleared' }, () => null)
+      .exhaustive();
+  };
+
+  const runInOrder = async (task: () => Promise<void>) => {
+    await keychainLock.acquire();
+    try {
+      await task();
+    } finally {
+      keychainLock.release();
+    }
+  };
 
   /** 한쪽 삭제가 실패해도 다른 쪽 삭제를 시도한다 — 반쪽 세션을 남기지 않는다. */
   const removeTokens = async (): Promise<void> => {
@@ -30,39 +59,25 @@ export function createSecureTokenStore(storage: KeyValueStorage): TokenStore {
   };
 
   return {
-    getAccessToken: async () =>
-      unsavedTokens?.accessToken ?? storage.get(STORAGE_KEYS.ACCESS_TOKEN, z.string()),
+    getAccessToken: () => readToken(STORAGE_KEYS.ACCESS_TOKEN, (tokens) => tokens.accessToken),
 
-    getRefreshToken: async () =>
-      unsavedTokens?.refreshToken ?? storage.get(STORAGE_KEYS.REFRESH_TOKEN, z.string()),
+    getRefreshToken: () => readToken(STORAGE_KEYS.REFRESH_TOKEN, (tokens) => tokens.refreshToken),
 
     save: async (tokens) => {
-      unsavedTokens = tokens;
-      const clearCountAtSave = clearCount;
-      const isSessionEnded = () => clearCount !== clearCountAtSave;
-      // 쓰기는 부른 차례대로 한다. 늦게 끝난 앞 쓰기가 뒤에 받은 토큰을 덮으면 다음 실행이 지난 refresh 토큰을 읽는다
-      const written = pendingWrites.then(async () => {
-        if (isSessionEnded()) {
-          return;
-        }
-        await writeTokens(tokens);
-        // 쓰는 사이 세션이 끝났다. 늦게 쓴 토큰이 남으면 로그아웃한 세션이 다음 실행에 되살아난다. 차례 안에서 지워 뒤에 저장한 새 세션은 건드리지 않는다
-        if (isSessionEnded()) {
-          await removeTokens();
-        }
-      });
-      pendingWrites = written.catch(() => undefined);
-      await written;
-
-      if (unsavedTokens === tokens) {
-        unsavedTokens = null;
-      }
+      const change: UnsyncedChange = { kind: 'saved', tokens };
+      latestChange = change;
+      await runInOrder(() => writeTokens(tokens));
+      forget(change);
     },
 
     clear: async () => {
-      unsavedTokens = null;
-      clearCount += 1;
-      await removeTokens();
+      const change: UnsyncedChange = { kind: 'cleared' };
+      latestChange = change;
+      try {
+        await runInOrder(removeTokens);
+      } finally {
+        forget(change);
+      }
     },
   };
 }

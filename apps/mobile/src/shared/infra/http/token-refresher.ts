@@ -43,7 +43,6 @@ export function createTokenRefresher({
 }: TokenRefresherPorts): TokenRefresher {
   let inFlight: { epoch: number; outcome: Promise<RefreshOutcome> } | null = null;
 
-  // 멈춘 키체인 읽기가 갱신을 붙잡으면 뒤의 401이 모두 그 갱신에 합류해 회복이 없다. 제한을 넘기면 이 갱신만 일시 장애로 끝낸다
   const readRefreshToken = async (): Promise<string | null> => {
     try {
       return await withTimeout(() => tokenStore.getRefreshToken(), TOKEN_READ_TIMEOUT_MS);
@@ -98,8 +97,7 @@ export function createTokenRefresher({
       }
 
       const { accessToken, refreshToken: nextRefreshToken } = parsed.data.data;
-      // 기다리는 요청은 키체인 쓰기를 기다리지 않고 새 토큰으로 바로 다시 보낸다. 저장소는 부른 즉시 새 토큰을 읽어 준다(TokenStore.save)
-      // 실패로 던지지 않는다. 기다리던 요청이 실패한 채 다시 갱신하면 회전 전 refresh 토큰을 보내 grace 뒤 SESSION_0704가 된다
+      // 쓰기를 기다리거나 실패로 던지면 기다리던 요청이 회전 전 refresh 토큰으로 다시 갱신해 grace 뒤 SESSION_0704가 된다
       tokenStore.save({ accessToken, refreshToken: nextRefreshToken }).catch((error: unknown) => {
         logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_PERSIST_FAILED, {
           error: getErrorMessage(error),

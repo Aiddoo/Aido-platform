@@ -89,32 +89,38 @@ describe('createSecureTokenStore', () => {
   });
 
   describe('키체인 쓰기가 늦거나 실패할 때', () => {
-    /** 키마다 쓰기를 붙잡아 두고 테스트가 끝낼 때만 저장소에 반영한다 */
-    function holdWrites() {
+    /** 키체인 작업을 붙잡아 두고 테스트가 끝낸 것만 반영한다 */
+    function holdWrites({ holdsRemoves = false }: { holdsRemoves?: boolean } = {}) {
       const stored = new Map<string, unknown>();
-      const held: Array<{ key: string; value: unknown; finish: () => void }> = [];
-      storage.set.mockImplementation(async (key, value) => {
-        const write = Promise.withResolvers<void>();
-        held.push({ key, value, finish: write.resolve });
-        await write.promise;
-        stored.set(key, value);
-      });
+      const held: Array<{ finish: () => void }> = [];
+      const hold = async (apply: () => void) => {
+        const operation = Promise.withResolvers<void>();
+        held.push({ finish: operation.resolve });
+        await operation.promise;
+        apply();
+      };
+      storage.set.mockImplementation((key, value) => hold(() => stored.set(key, value)));
       storage.get.mockImplementation(async (key: string) => stored.get(key) ?? null);
       storage.remove.mockImplementation(async (key: string) => {
+        if (holdsRemoves) {
+          await hold(() => stored.delete(key));
+          return;
+        }
         stored.delete(key);
       });
+      // 다음 키체인 작업이 잠금을 넘겨받아 불릴 때까지 기다린다
       const settle = async () => {
-        for (let turn = 0; turn < 3; turn += 1) {
+        for (let turn = 0; turn < 20; turn += 1) {
           await Promise.resolve();
         }
       };
       const finishNext = async () => {
-        held.shift()?.finish();
         await settle();
+        held.shift()?.finish();
       };
       const finishLast = async () => {
-        held.pop()?.finish();
         await settle();
+        held.pop()?.finish();
       };
       return { stored, finishNext, finishLast };
     }
@@ -180,14 +186,56 @@ describe('createSecureTokenStore', () => {
       const saved = tokenStore.save({ accessToken: 'access-2', refreshToken: 'refresh-2' });
 
       // When
-      await tokenStore.clear();
-      await finishNext();
-      await finishNext();
-      await saved;
+      const cleared = tokenStore.clear();
+      const readWhileClearing = await tokenStore.getRefreshToken();
+      for (let operation = 0; operation < 4; operation += 1) {
+        await finishNext();
+      }
+      await Promise.all([saved, cleared]);
 
       // Then
+      expect(readWhileClearing).toBeNull();
       expect(stored.size).toBe(0);
       await expect(tokenStore.getRefreshToken()).resolves.toBeNull();
+    });
+
+    it('지운 직후 저장한 새 세션은 앞 삭제가 늦게 끝나도 지워지지 않는다', async () => {
+      // Given
+      const { stored, finishLast } = holdWrites({ holdsRemoves: true });
+      const tokenStore = createSecureTokenStore(storage);
+      const cleared = tokenStore.clear();
+
+      // When
+      // 나중에 부른 키체인 작업이 먼저 끝나는 키체인
+      const saved = tokenStore.save({ accessToken: 'access-2', refreshToken: 'refresh-2' });
+      for (let operation = 0; operation < 8; operation += 1) {
+        await finishLast();
+      }
+      await Promise.all([cleared, saved]);
+
+      // Then
+      expect(stored.get(STORAGE_KEYS.REFRESH_TOKEN)).toBe('refresh-2');
+      expect(stored.get(STORAGE_KEYS.ACCESS_TOKEN)).toBe('access-2');
+    });
+
+    it('쓰는 도중 로그아웃하고 다시 로그인한 세션은 앞 세션 정리로 지워지지 않는다', async () => {
+      // Given
+      const { stored, finishLast } = holdWrites({ holdsRemoves: true });
+      const tokenStore = createSecureTokenStore(storage);
+      const rotated = tokenStore.save({ accessToken: 'access-a', refreshToken: 'refresh-a' });
+      const loggedOut = tokenStore.clear();
+
+      // When
+      const signedIn = tokenStore.save({ accessToken: 'access-b', refreshToken: 'refresh-b' });
+      for (let operation = 0; operation < 12; operation += 1) {
+        await finishLast();
+      }
+      await Promise.all([rotated, loggedOut, signedIn]);
+
+      // Then
+      expect(stored.get(STORAGE_KEYS.REFRESH_TOKEN)).toBe('refresh-b');
+      expect(stored.get(STORAGE_KEYS.ACCESS_TOKEN)).toBe('access-b');
+      await expect(tokenStore.getRefreshToken()).resolves.toBe('refresh-b');
     });
   });
 

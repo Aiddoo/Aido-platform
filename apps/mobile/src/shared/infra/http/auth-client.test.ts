@@ -521,7 +521,6 @@ describe('createAuthClient: 키체인이 늦거나 멈출 때', () => {
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
 
-  /** 실제 SecureTokenStore를 키체인 fake 위에 둔다. 키체인 쓰기·읽기가 멈추는 것을 테스트가 정한다 */
   async function createKeychain() {
     const storage = createMemoryKeyValueStorage();
     await storage.set(STORAGE_KEYS.ACCESS_TOKEN, 'access-1');
@@ -529,7 +528,6 @@ describe('createAuthClient: 키체인이 늦거나 멈출 때', () => {
     return { storage, tokenStore: createSecureTokenStore(storage) };
   }
 
-  /** 서버는 마지막으로 발급한 access 토큰만 받는다 */
   function createPipeline(tokenStore: TokenStore, requestRefresh: RefreshTokensRequest) {
     const sessionEpoch = createSessionEpoch();
     const epochTokenStore = withSessionEpoch(tokenStore, sessionEpoch);
@@ -706,7 +704,7 @@ describe('createAuthClient: 갱신이 429·503·응답 없음을 거쳐 돌아�
   const DETAILS_PATH = 'v1/todos/2055/details';
   const ROTATED = JSON.stringify({ data: { accessToken: 'access-2', refreshToken: 'refresh-2' } });
   const KY_RETRY_PAUSE_MS = 1_000;
-  /** React Query 재시도 대기(1·2·4·5·5초)와 응답 없는 갱신의 제한 시간을 모두 넘긴다 */
+  /** React Query 재시도 대기와 응답 없는 갱신의 제한 시간을 모두 넘긴다 */
   const QUERY_RECOVERY_WINDOW_MS = 60 * SECOND_MS;
 
   type RefreshAnswer = () => Promise<Response>;

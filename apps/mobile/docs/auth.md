@@ -58,7 +58,7 @@
 
 - 클라이언트 refresh 타임아웃 8초(`REFRESH_TIMEOUT_MS`)는 서버 reuse grace 10초보다 짧게 둔다. 회전 성공 뒤 응답이 유실돼도 재시도할 여백이다. 8초는 응답 본문까지 센다(`withTimeout`). ky `timeout`은 헤더까지만 세서, 200 헤더 뒤 본문이 멈추면 single-flight를 기다리는 401 요청이 모두 끝나지 않고 화면이 로딩에 남는다. 넘기면 `TimeoutError`이고, 늦게 온 본문은 저장하지 않는다. 그사이 다시 회전한 토큰을 지난 토큰으로 덮기 때문이다.
 - 401 하나의 회복(코드 읽기, 토큰 비교, 갱신 대기, 세션 종료)은 `UNAUTHORIZED_RECOVERY_TIMEOUT_MS`(16초) 안에 끝난다. ky `timeout`은 afterResponse 훅을 세지 않아 둔 안전망이다. 넘기면 그 요청만 `TimeoutError`로 끝나 React Query가 다시 시도하고, 계속 실패하면 경계의 다시 시도 화면이 뜬다. 세션은 끝내지 않는다. single-flight 갱신 하나도 refresh 토큰 읽기 `TOKEN_READ_TIMEOUT_MS`(4초)와 왕복 8초 안에 끝난다. 멈춘 키체인 읽기가 갱신을 붙잡으면 뒤의 401이 모두 거기에 합류해 앱을 다시 켤 때까지 갱신하지 않는다. 429(`Retry-After`가 있어도)·503·응답 없음은 상태를 남기지 않아 다음 401이 새로 갱신한다.
-- **회전한 토큰은 키체인 쓰기를 기다리지 않는다.** 갱신기는 `TokenStore.save`의 끝을 기다리지 않고 `refreshed`를 돌려준다. `SecureTokenStore`는 부른 즉시(쓰기 전·실패 뒤에도 이 실행 동안) 새 토큰을 읽어 줘 기다리던 요청·새 요청·다음 갱신이 모두 새 토큰을 쓴다. 쓰기 실패는 `token-refresher.token-persist.failed`로 남기고 던지지 않는다. 던지면 다시 갱신하며 회전 전 refresh 토큰을 보내 grace(10초) 뒤 `SESSION_0704`로 끝난다. 쓰기는 부른 차례대로 해 늦은 앞 쓰기가 뒤 토큰을 덮지 않고, 쓰는 도중 `clear`가 오면 쓰기 뒤 다시 지운다. 남는 위험은 쓰기가 끝내 실패한 채 앱이 꺼지는 경우다. 다음 실행이 회전 전 토큰을 읽어 `SESSION_0704`가 되고, 키체인을 못 쓰는 실행은 남길 곳이 없어 로그로 본다.
+- **회전한 토큰은 키체인 쓰기를 기다리지 않는다.** 갱신기는 `TokenStore.save`의 끝을 기다리지 않고 `refreshed`를 돌려준다. `SecureTokenStore`는 부른 즉시(쓰기 전·실패 뒤에도 이 실행 동안) 새 토큰을 읽어 줘 기다리던 요청·새 요청·다음 갱신이 모두 새 토큰을 쓴다. 쓰기 실패는 `token-refresher.token-persist.failed`로 남기고 던지지 않는다. 던지면 다시 갱신하며 회전 전 refresh 토큰을 보내 grace(10초) 뒤 `SESSION_0704`로 끝난다. 저장과 삭제는 같은 잠금(es-toolkit `Mutex`)으로 부른 차례대로 해 늦게 끝난 앞 작업이 뒤 세션을 덮거나 지우지 않고, `clear`를 부른 뒤로는 삭제가 끝나기 전에도 토큰을 읽지 않는다. 남는 위험은 쓰기가 끝내 실패한 채 앱이 꺼지는 경우다. 다음 실행이 회전 전 토큰을 읽어 `SESSION_0704`가 되고, 키체인을 못 쓰는 실행은 남길 곳이 없어 로그로 본다.
 
 ## 세션 종료 사유의 두 축
 
@@ -94,7 +94,7 @@
 
 로그아웃은 자기 `clear`로도 세대를 올리고, 만료가 먼저 와도 사용자가 나간 것으로 끝내야 한다(초안 삭제, `auth_logout`). 그래서 세대만으로 끝내지 않는다. 세대가 그대로면 토큰을 지우고 끝낸다. 세대가 올랐으면 서버 로그아웃과 토큰 삭제를 건너뛰고, 저장소에 토큰이 없을 때만 끝낸다. 토큰이 있거나 읽지 못하면 새 세션으로 보고 `auth_logout`, `clearUser()`, `signOut`을 하지 않는다.
 
-`save` 도중의 `clear`는 쓰기가 끝난 뒤 다시 지운다([토큰 갱신](#토큰-갱신-sharedinfrahttptoken-refresherts-token-refresh-hookts)). ky의 `timeout`은 요청 한 번의 응답 대기라 `afterResponse` 훅을 덮지 않는다. 로그아웃 POST 자신의 401은 갱신이 끝날 때까지 기다리고, 그 대기(최대 8초)는 `LOGOUT_REQUEST_TIMEOUT_MS`에 들어가지 않는다.
+`save` 도중의 `clear`는 그 쓰기가 끝난 뒤 지운다([토큰 갱신](#토큰-갱신-sharedinfrahttptoken-refresherts-token-refresh-hookts)). ky의 `timeout`은 요청 한 번의 응답 대기라 `afterResponse` 훅을 덮지 않는다. 로그아웃 POST 자신의 401은 갱신이 끝날 때까지 기다리고, 그 대기(최대 8초)는 `LOGOUT_REQUEST_TIMEOUT_MS`에 들어가지 않는다.
 
 ## 로그아웃과 로컬 데이터
 
