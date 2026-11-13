@@ -27,7 +27,7 @@ heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 �
 | `--border`    | 라이트 | #dedee0 → `--gray-4` #dedede | 1.34 → 1.35:1 | 1.27 → 1.27:1  |
 | `--border`    | 다크   | #28282c → `--gray-2` #424242 | 1.28 → 1.86:1 | 1.10 → 1.60:1  |
 
-- 구분선은 iOS 불투명 구분선(라이트 #c6c6c8, 다크 #38383a)에 가장 가까운 앱 회색이다. 화면과 `gray-1` 면(댓글 ⋯ 메뉴 등) 위에서 모두 1.5:1 이상으로 보이고 조용하다. 직접 색을 준 실선(`gray-2`·`gray-3`)은 디자인 톤을 지키려고 옮기지 않는다([migration-status](./architecture/migration-status.md#1152에서-바꾸지-않기로-한-것)).
+- 구분선은 iOS 불투명 구분선(라이트 #c6c6c8, 다크 #38383a)에 가장 가까운 앱 회색이다. 화면과 `gray-1` 면(댓글 ⋯ 메뉴 등) 위에서 모두 1.5:1 이상으로 보이고 조용하다. 직접 색을 준 실선(`gray-2`·`gray-3`)은 디자인 톤을 지키려고 옮기지 않는다([1.15.2에서 바꾸지 않기로 한 것](../../../docs/releases/1.15.2/README.md#1152에서-바꾸지-않기로-한-것)).
 - 테두리는 heroui 기본과 같은 밝기에서 푸른 기만 뺐다. 다크는 시트·메뉴 면(`--gray-1`) 위에서 보이도록 구분선과 같은 `--gray-2`다.
 - InputOTP 가운데 줄(구분선 50%)은 라이트 #d4d4d6 → #dedede(`--gray-4`와 같다), 다크 #2d2d2f → #2a2a2a라 덮지 않는다.
 - 나머지 heroui 변수는 기본값이다. 무채색(`--snow`·`--backdrop`·그림자), 위 값을 따르는 것(`--focus`·`--field-placeholder`·대부분의 `*-foreground`), 거의 검정인 글자(라이트 `--default-foreground` #18181b), 앱에 그려지지 않는 것(`--surface-secondary`·`--surface-tertiary`·`--field-foreground`·`--field-border`)이다. 그려지기 시작하면 이 표에 먼저 더한다.

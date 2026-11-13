@@ -1,6 +1,6 @@
 # 데이터
 
-서버·OS·기기 저장소와 값을 주고받는 층의 규칙이다. 층 표와 의존 방향은 [structure](./structure.md), 모델·Policy·mapper는 [model](./model.md), 상태 원천과 params는 [state-and-routing](./state-and-routing.md), 오류 분류는 [error-handling](../error-handling.md)이 원본이다. 아직 이 모양이 아닌 코드는 [migration-status](./migration-status.md)에 있다.
+서버·OS·기기 저장소와 값을 주고받는 층의 규칙이다. 층 표와 의존 방향은 [structure](./structure.md), 모델·Policy·mapper는 [model](./model.md), 상태 원천과 params는 [state-and-routing](./state-and-routing.md), 오류 분류는 [error-handling](../error-handling.md)이 원본이다. 아직 이 모양이 아닌 코드는 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다.
 
 ## Server API
 
