@@ -106,7 +106,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 ### User·Replay·Trace
 
 - `useSyncUserIdentity`가 로그인하면 `setUserId(id)`, 비인증이면 `setUserId(null)`을 부른다. 내부 계정 id만 싣는다. `sendDefaultPii: false`다. RN SDK 8은 이 값으로 IP 추론·라우트 URL·딥링크 수집을 가르므로 그대로 둔다.
-- Session Replay(`shared/infra/observability/error-reporting.ts`): `replaysSessionSampleRate` 0, `replaysOnErrorSampleRate` 0.2, `mobileReplayIntegration`의 `maskAllText`·`maskAllImages`·`maskAllVectors` 모두 `true`. 마스킹을 끄지 않는다(할 일·전사가 보인다). 상시 녹화는 무료 할당(월 50개)을 넘겨 버려졌고, 오류 녹화는 월 약 40개로 할당 안에 든다.
+- Session Replay(`shared/infra/observability/error-reporting.ts`): `replaysSessionSampleRate` 0, `replaysOnErrorSampleRate` 0.2, `mobileReplayIntegration`의 `maskAllText`·`maskAllImages`·`maskAllVectors` 모두 `true`. 마스킹을 끄지 않는다(할 일·전사가 보인다). 무료 할당은 월 50개인데 30일 541개가 한도에 걸려 버려졌다. 그래서 `beforeErrorSampling`(`replay-error-sampling.ts`)이 앱이 잡지 못한 오류(`mechanism.handled === false`)와 강제 종료(`level: fatal`)만 녹화하게 한다(1.15.3부터). `captureException`·`logger.error`·경계로 보고한 오류는 녹화하지 않는다. 메시지 이벤트(`captureMessage`)는 SDK가 원래 녹화하지 않는다.
 - `tracePropagationTargets`는 `ENV.API_URL`의 출처 하나다(`trace-propagation-targets.ts`). 외부 주소에는 `sentry-trace`·`baggage`를 붙이지 않는다. `tracesSampleRate`는 두지 않아 앱 span을 보내지 않고 표본 여부는 서버가 정한다.
 
 ### Severity

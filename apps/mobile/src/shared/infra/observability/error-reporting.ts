@@ -2,10 +2,11 @@ import * as Sentry from '@sentry/react-native';
 import { ENV } from '@src/shared/config/env';
 import type { ComponentType } from 'react';
 
+import { shouldCaptureErrorReplay } from './replay-error-sampling';
 import { scrubBreadcrumb, scrubSentryEvent } from './scrub-sentry-event';
 import { toTracePropagationTargets } from './trace-propagation-targets';
 
-// 무료 할당 월 50개 ÷ 30일 오류 약 200건(조직 전체) = 0.25. 오류가 늘어도 할당 안에 들게 0.2로 둔다
+// 무료 할당은 월 50개인데 30일 541개가 한도에 걸렸다. 잡지 못한 오류·강제 종료만 녹화하고(shouldCaptureErrorReplay) 그중 0.2를 보낸다
 const REPLAY_ON_ERROR_SAMPLE_RATE = 0.2;
 
 /** 앱 루트와 위젯 헤드리스 진입점이 각자 부르므로 이미 초기화됐으면 건너뛴다. Session Replay는 개인정보 노출 방지를 위해 전부 마스킹한다 */
@@ -38,6 +39,7 @@ export function initErrorReporting(): void {
         maskAllText: true,
         maskAllImages: true,
         maskAllVectors: true,
+        beforeErrorSampling: shouldCaptureErrorReplay,
       }),
     ],
   });
