@@ -12,19 +12,20 @@ import {
   todoFormSchema,
 } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { todoCreateParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
-import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
-import { QuickVoiceQuota } from '@src/features/voice/components/quick-voice/quick-voice-quota';
+import { QuickVoiceButton } from '@src/features/voice/components/quick-voice-button';
+import { QuickVoiceQuota } from '@src/features/voice/components/quick-voice-quota';
 import {
   QuickVoiceFailed,
   QuickVoiceListening,
   QuickVoicePlanning,
   QuickVoiceReview,
-} from '@src/features/voice/components/quick-voice/quick-voice-steps';
-import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-edge-glow';
+} from '@src/features/voice/components/quick-voice-steps';
+import { SheetEdgeGlow } from '@src/features/voice/components/sheet-edge-glow';
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -48,15 +49,13 @@ import { Controller, useForm, type UseFormReturn, useFormState, useWatch } from 
 import { match, P } from 'ts-pattern';
 
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
+import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
 import {
   useCreateRecurringTodoMutationOptions,
   useCreateTodoMutationOptions,
 } from '../queries/todo-composer.mutations';
-import {
-  TodoComposerChips,
-  TodoComposerSubmitButton,
-  useReopenTodoRepeatPicker,
-} from './todo-composer-fields';
+import { TodoComposerChips } from './todo-composer-chips';
+import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
 interface TodoCreateBottomSheetProps {
   onMemoChanged: () => void;
@@ -81,7 +80,7 @@ TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSh
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const categoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesResult.categories,
-    requestedCategoryId,
+    requestedCategoryId ?? null,
   );
 
   useEffect(() => {
@@ -127,7 +126,7 @@ TodoCreateBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallba
         button={
           <QueryErrorActions
             onRetry={reset}
-            onInquiry={(href) => sheet.close({ type: 'replace', href })}
+            onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
           />
         }
       />
@@ -161,33 +160,42 @@ function TodoCreateForm({
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const confirmDialog = useConfirmDialog();
 
+  const [isVoiceHintPending] = useMyPendingCoachmark('voice-quick-start');
+  const { type: aiParseQuotaType } = useQuotaStatus('AI_PARSE');
+
   const form = useForm({
     resolver: zodResolver(todoFormSchema),
     defaultValues,
   });
-  const { isSubmitting, isValid } = useFormState({ control: form.control });
+  const { isSubmitting, isSubmitSuccessful, isValid } = useFormState({ control: form.control });
   const title = useWatch({ control: form.control, name: 'title' });
   // 한도 아래로 지워도 칸을 바꾸지 않는다. 다시 마운트되면 커서와 키보드가 튄다
   const [hasExceededTitleLimit, setHasExceededTitleLimit] = useState(false);
   if (!hasExceededTitleLimit && title.length > TODO_LIMITS.TITLE_MAX_LENGTH) {
     setHasExceededTitleLimit(true);
   }
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
+  const [hasTouchedForm, setHasTouchedForm] = useState(false);
+  const hasStartedRequestedVoiceRef = useRef(false);
 
   const createTodo = useMutation(useCreateTodoMutationOptions());
   const createRecurringTodo = useMutation(useCreateRecurringTodoMutationOptions());
   const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
-
   const voice = useAddTodoQuickVoice({ form, onExit });
-  useOnScreenBlur(voice.interrupt);
-  const [isVoiceHintPending] = useMyPendingCoachmark('voice-quick-start');
-  const { type: aiParseQuotaType } = useQuotaStatus('AI_PARSE');
-  // 이번 달 AI를 다 썼으면 말로 하라고 권하지 않는다. 직접 입력은 계속 된다
-  const canSuggestVoice = aiParseQuotaType !== 'used-up';
-  const isVoiceHintShown = canSuggestVoice && isVoiceHintPending;
-  const hasStartedRequestedVoiceRef = useRef(false);
   const startRequestedVoice = useEffectEvent(() => {
     voice.start().catch(reportUnexpectedError);
   });
+
+  // 이번 달 AI를 다 썼으면 말로 하라고 권하지 않는다. 직접 입력은 계속 된다
+  const canSuggestVoice = aiParseQuotaType !== 'used-up';
+  const isVoiceHintShown = canSuggestVoice && isVoiceHintPending;
+  const isFormStep = VoiceCapturePolicy.isManualInput(voice.state);
+  // 저장하면 시트가 내려가는 동안에도 같은 제목이 남아 있다. 그동안 다시 보내지 않는다
+  const isSubmitLocked = isSubmitting || isSubmitSuccessful;
+  const isSubmitDisabled = !isValid || isSubmitLocked;
+  const voiceDismissAction = VoiceCapturePolicy.getDismissAction(voice.state);
+
+  useOnScreenBlur(voice.interrupt);
   // 시트가 다 열린 뒤 한 번만 시작한다. 동의·마이크를 거절하면 시트에 남아 마이크로 다시 시도한다
   useEffect(() => {
     if (!isVoiceStartRequested || !isOpen || hasStartedRequestedVoiceRef.current) {
@@ -202,34 +210,34 @@ function TodoCreateForm({
       form.trigger('title').catch(reportUnexpectedError);
     }
   }, [form, hasExceededTitleLimit, title, reportUnexpectedError]);
-  const [isTitleFocused, setIsTitleFocused] = useState(false);
-  const [hasTouchedForm, setHasTouchedForm] = useState(false);
 
-  const submitTodo = form.handleSubmit(async (values) => {
+  // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
+  const saveTodo = form.handleSubmit(async (values) => {
     const { repeat } = values;
-    try {
-      if (repeat == null) {
-        await createTodo.mutateAsync({ values }, { onSuccess: onClose });
-      } else {
-        await createRecurringTodo.mutateAsync(
-          { values: { ...values, repeat } },
-          { onSuccess: onClose },
-        );
-      }
-    } catch (error) {
+    if (repeat == null) {
+      await createTodo.mutateAsync({ values }, { onSuccess: onClose });
+
+      return;
+    }
+    await createRecurringTodo.mutateAsync(
+      { values: { ...values, repeat } },
+      { onSuccess: onClose },
+    );
+  });
+
+  // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 할 일을 하나 더 만든다
+  const handleSavePress = useSingleTap(() => {
+    saveTodo().catch((error: unknown) => {
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
       if (shouldReopenRepeatPicker(error)) {
         reopenRepeatPicker().catch(reportUnexpectedError);
       }
-    }
+    });
   });
 
-  const isFormStep = VoiceCapturePolicy.isManualInput(voice.state);
-  const isSubmitDisabled = !isValid || isSubmitting;
-
-  // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
+  // 저장 중이거나 저장해 닫히는 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
   const handleTitleSubmit = () => {
-    if (isSubmitting) {
+    if (isSubmitLocked) {
       return;
     }
     if (title.trim().length === 0) {
@@ -237,7 +245,7 @@ function TodoCreateForm({
 
       return;
     }
-    submitTodo();
+    handleSavePress();
   };
 
   const confirmDiscardPlan = async () => {
@@ -253,7 +261,6 @@ function TodoCreateForm({
     }
   };
 
-  const voiceDismissAction = VoiceCapturePolicy.getDismissAction(voice.state);
   const handleVoiceDismissRequest =
     voiceDismissAction == null
       ? undefined
@@ -288,7 +295,9 @@ function TodoCreateForm({
             onFinish={voice.finish}
             onCancel={voice.cancel}
             onResume={voice.resume}
-            onContinueAsVoiceNote={voice.continueAsVoiceNote}
+            onContinueAsVoiceNote={() => {
+              voice.continueAsVoiceNote().catch(reportUnexpectedError);
+            }}
           />
         ))
         .with({ status: 'planning' }, () => (
@@ -301,11 +310,13 @@ function TodoCreateForm({
             isCharged={isCharged}
             onMemoChanged={onMemoChanged}
             onApplied={onClose}
-            onRestart={voice.restart}
+            onRestart={() => {
+              voice.restart().catch(reportUnexpectedError);
+            }}
             onTypeInstead={voice.typeInstead}
           />
         ))
-        .otherwise(() => (
+        .with({ status: P.union('idle', 'failed') }, () => (
           <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
             <QuickVoiceFailed
               state={voice.state}
@@ -336,7 +347,7 @@ function TodoCreateForm({
                     growsWithContent
                     textSize="b3"
                     preserveErrorSpace={false}
-                    className="min-h-12 max-h-28"
+                    className="max-h-28 min-h-12"
                     returnKeyType="done"
                     submitBehavior="submit"
                     onFocus={() => setIsTitleFocused(true)}
@@ -380,17 +391,23 @@ function TodoCreateForm({
                 isPassThrough
                 isDismissed={hasTouchedForm}
               >
-                <QuickVoiceButton onPress={() => voice.start()} testID="todo-quick-voice-button" />
+                <QuickVoiceButton
+                  onPress={() => {
+                    voice.start().catch(reportUnexpectedError);
+                  }}
+                  testID="todo-quick-voice-button"
+                />
               </CoachmarkPopover>
               <TodoComposerSubmitButton
                 isDisabled={isSubmitDisabled}
-                isSubmitting={isSubmitting}
-                onPress={() => submitTodo()}
+                isSubmitting={isSubmitLocked}
+                onPress={() => handleSavePress()}
                 testID="todo-add-submit"
               />
             </HStack>
           </VStack>
-        ))}
+        ))
+        .exhaustive()}
     </KeyboardBottomSheet>
   );
 }

@@ -2,13 +2,15 @@ import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toTodoFormValues } from '@src/features/planning/todo/apis/todo.mapper';
 import { TodoScopeSelect } from '@src/features/planning/todo/components/todo-scope-select';
-import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
-import { type TodoUpdateScope } from '@src/features/planning/todo/domains/todo-repeat.model';
+import {
+  getTodoEditScopeDecision,
+  type TodoUpdateScope,
+} from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { type Todo } from '@src/features/planning/todo/domains/todo.model';
+import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useSheetTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import type { DateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
@@ -28,20 +30,17 @@ import {
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
-import { TodoChangePolicy } from '../domains/todo-change.model';
+import { getTodoUpdateChanges, TodoChangePolicy } from '../domains/todo-change.model';
+import { useFocusTodoTitle } from '../hooks/use-focus-todo-title';
+import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
 import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
-import { toTodoUpdateChanges } from '../utils/to-todo-update-changes';
-import {
-  TodoComposerChips,
-  TodoComposerSubmitButton,
-  useReopenTodoRepeatPicker,
-} from './todo-composer-fields';
+import { TodoComposerChips } from './todo-composer-chips';
+import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
-/** 고칠 범위를 정한 결과. 범위 없이 고치는 할 일, 범위를 고른 반복 회차, 범위 고르기에서 뒤로 간 취소 셋이다 */
 type EditScopeChoice =
   | { kind: 'unscoped' }
   | { kind: 'scoped'; scope: TodoUpdateScope }
@@ -87,7 +86,7 @@ TodoEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallback
         button={
           <QueryErrorActions
             onRetry={reset}
-            onInquiry={(href) => sheet.close({ type: 'replace', href })}
+            onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
           />
         }
       />
@@ -108,22 +107,20 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
   const openSheet = useOpenSheet();
   const reportUnexpectedError = useReportUnexpectedError('todo');
 
-  // 서버 재조회로 할 일이 바뀌어도 고치기 시작한 값과 비교한다. 사용자가 안 고친 칸을 덮어쓰지 않는다
-  const [initialValues] = useState(() => toTodoFormValues(todo, timeZone));
-  const canChangeRepeat = TodoRepeatPolicy.canChangeRepeat({
-    ...todo,
-    repeat: initialValues.repeat,
-  });
+  // 다시 받은 할 일로 비교 기준을 맞춘다. 고치지 않은 칸은 새 값을 보이고 고치던 칸은 남아 고친 칸만 보낸다
+  const savedValues = toTodoFormValues(todo, timeZone);
+  const canChangeRepeat = TodoPolicy.canChangeRepeat(todo);
 
   const form = useForm({
     resolver: zodResolver(todoFormSchema),
-    defaultValues: initialValues,
+    values: savedValues,
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
   const { isSubmitting, isValid } = useFormState({ control: form.control });
   const updateTodo = useMutation(useUpdateTodoMutationOptions());
   const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
 
-  const focusTitle = () => requestAnimationFrame(() => form.setFocus('title'));
+  const focusTitle = useFocusTodoTitle(form);
 
   // 입력 시트 안에서 내용을 갈아 끼우면 키보드가 내려가는 동안 높이가 튀어 떠 있는 시트로 묻는다
   const selectEditScope = async (
@@ -135,7 +132,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
         action="edit"
         date={date}
         scopes={isFollowingOnly ? ['THIS_AND_FOLLOWING'] : TODO_UPDATE_SCOPES}
-        onChange={(selected) => close(selected === 'ALL' ? undefined : selected)}
+        onChange={(selected) => close(selected)}
         onBack={() => close()}
       />
     ));
@@ -148,15 +145,15 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
 
   const submitTodo = form.handleSubmit(async (values) => {
     try {
-      const changes = toTodoUpdateChanges(values, initialValues);
+      const changes = getTodoUpdateChanges(values, savedValues);
       if (!TodoChangePolicy.hasTodoUpdateChanges(changes)) {
         onClose();
 
         return;
       }
       const choice = await match(
-        TodoRepeatPolicy.getTodoEditScopeDecision({
-          isSeries: TodoRepeatPolicy.hasRepeatRule({ ...todo, repeat: initialValues.repeat }),
+        getTodoEditScopeDecision({
+          isSeries: TodoPolicy.hasRepeatRule(todo),
           repeat: changes.repeat,
           isDateOnly: TodoChangePolicy.hasOnlyDateChanges(changes),
         }),
@@ -175,7 +172,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
       await updateTodo.mutateAsync(
         {
           todoId: todo.id,
-          input: changes.input,
+          fields: changes.fields,
           options: {
             ...(choice.kind === 'scoped' && { scope: choice.scope }),
             // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 보낸다

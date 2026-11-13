@@ -1,4 +1,4 @@
-import { INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
+import { INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
@@ -15,6 +15,7 @@ import {
 } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { router, useNavigation } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import { Controller, useForm, useFormState } from 'react-hook-form';
@@ -40,30 +41,29 @@ export function InquiryForm({ title }: InquiryFormProps) {
     defaultValues: initialValues,
     mode: 'onChange',
   });
-  const { isSubmitting, isValid } = useFormState({ control: form.control });
+  const { isSubmitting, isSubmitSuccessful, isValid } = useFormState({ control: form.control });
+  // 보내면 화면이 내려가는 동안에도 같은 글이 남는다. 그동안 다시 보내지 않는다
+  const isSubmitLocked = isSubmitting || isSubmitSuccessful;
 
-  // 실패하면 토스트는 mutation이 한 번 알리고 화면과 입력값은 그대로 둔다
-  const submitInquiry = form.handleSubmit(async (values) => {
-    try {
-      await createInquiry.mutateAsync(values);
-      // 보내는 동안 이미 떠났다면 지금 화면이 이전 화면이므로 또 뒤로 가지 않는다
-      if (navigation.isFocused()) {
-        goBack();
-      }
-    } catch {
-      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
+  // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
+  const saveInquiry = form.handleSubmit(async (values) => {
+    await createInquiry.mutateAsync(values);
+    // 보내는 동안 이미 떠났다면 지금 화면이 이전 화면이므로 또 뒤로 가지 않는다
+    if (navigation.isFocused()) {
+      goBack();
     }
   });
-  const handleSubmit = useSingleTap(() => submitInquiry());
+  // 실패하면 토스트는 mutation의 meta.errorFeedback이 한 번 알리고 화면과 입력값은 그대로 둔다
+  const handleSavePress = useSingleTap(() => saveInquiry().catch(noop));
 
   return (
     <FormStepLayout
       title={title}
       footer={
         <KeyboardAdaptiveButton
-          onPress={handleSubmit}
+          onPress={handleSavePress}
           isDisabled={!isValid}
-          isLoading={isSubmitting}
+          isLoading={isSubmitLocked}
           testID="inquiry-submit"
         >
           {t('form.submit')}
@@ -77,24 +77,24 @@ export function InquiryForm({ title }: InquiryFormProps) {
           <SettingsListGroup>
             <RadioGroup value={value} onValueChange={onChange} className="gap-0">
               <SettingsListGroup.Radio
-                value="BUG_REPORT"
+                value={INQUIRY_CATEGORY.BUG_REPORT}
                 label={t('category.bugReport')}
-                testID="inquiry-category-BUG_REPORT"
+                testID={`inquiry-category-${INQUIRY_CATEGORY.BUG_REPORT}`}
               />
               <SettingsListGroup.Radio
-                value="FEATURE_REQUEST"
+                value={INQUIRY_CATEGORY.FEATURE_REQUEST}
                 label={t('category.featureRequest')}
-                testID="inquiry-category-FEATURE_REQUEST"
+                testID={`inquiry-category-${INQUIRY_CATEGORY.FEATURE_REQUEST}`}
               />
               <SettingsListGroup.Radio
-                value="PAYMENT"
+                value={INQUIRY_CATEGORY.PAYMENT}
                 label={t('category.payment')}
-                testID="inquiry-category-PAYMENT"
+                testID={`inquiry-category-${INQUIRY_CATEGORY.PAYMENT}`}
               />
               <SettingsListGroup.Radio
-                value="OTHER"
+                value={INQUIRY_CATEGORY.OTHER}
                 label={t('category.other')}
-                testID="inquiry-category-OTHER"
+                testID={`inquiry-category-${INQUIRY_CATEGORY.OTHER}`}
               />
             </RadioGroup>
           </SettingsListGroup>

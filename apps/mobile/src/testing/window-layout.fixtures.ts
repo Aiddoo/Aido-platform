@@ -1,4 +1,4 @@
-import type { AppWindow, PaneAreaSize } from '@src/shared/domains/window-layout.model';
+import type { AppWindow, PaneAreaSize } from '@src/shared/ui/adaptive-pane/window-layout';
 
 export function createAppWindow(overrides: Partial<AppWindow> = {}): AppWindow {
   return { width: 412, height: 915, os: 'android', isDesktop: false, ...overrides };

@@ -1,10 +1,11 @@
+import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useTodoCommentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+import { isTransientError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
@@ -12,6 +13,7 @@ import { match, P } from 'ts-pattern';
 import {
   isTodoCommentRateLimitedError,
   isTodoCommentUnavailableError,
+  isWarnedTodoCommentError,
 } from '../domains/todo-comment.error';
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import type {
@@ -20,6 +22,7 @@ import type {
 } from '../schemas/todo-comment-request.schema';
 import {
   addTodoCommentRepliesToCaches,
+  fetchTodoCommentThreads,
   cancelTodoCommentQueries,
   findCachedTodoComment,
   findTodoCommentPlacements,
@@ -31,6 +34,7 @@ import {
   restoreTodoCommentToCaches,
 } from './todo-comment-cache';
 import { TODO_COMMENT_MUTATION_KEYS } from './todo-comment-mutation-keys';
+import { useGetTodoCommentThreadsInfiniteQueryOptions } from './todo-comment.queries';
 
 const MAX_RETRY_COUNT = 2;
 const RETRY_BASE_DELAY_MS = 500;
@@ -60,17 +64,6 @@ interface SetTodoCommentLikeVariables {
   via: TodoCommentLikeVia;
 }
 
-function isRetryableCreationError(error: unknown) {
-  return (
-    error instanceof NetworkError || error instanceof ServerError || error instanceof TimeoutError
-  );
-}
-
-/** 지워진 댓글과 연타 제한은 onError가 경고 토스트로 알린다 */
-function isWarnedTodoCommentError(error: unknown) {
-  return isTodoCommentUnavailableError(error) || isTodoCommentRateLimitedError(error);
-}
-
 /**
  * 서버가 id와 순서를 정하므로 낙관적 행은 넣지 않는다.
  * 답글은 그 묶음 끝에 붙이고, 새 댓글은 정렬 자리를 몰라 묶음 목록만 다시 받는다.
@@ -85,8 +78,7 @@ export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: n
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 연결 뒤 몰래 보내지 않는다
     networkMode: 'always',
     mutationKey: TODO_COMMENT_MUTATION_KEYS.createCommentChain({ todoId }),
-    retry: (failureCount, error) =>
-      failureCount < MAX_RETRY_COUNT && isRetryableCreationError(error),
+    retry: (failureCount, error) => failureCount < MAX_RETRY_COUNT && isTransientError(error),
     retryDelay: (attempt) => Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS),
     mutationFn: async ({ input }: CreateTodoCommentChainVariables) =>
       unwrap(await todoCommentApi.createCommentChain(todoId, input)),
@@ -211,7 +203,7 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
   const mutationKey = TODO_COMMENT_MUTATION_KEYS.deleteComment({ todoId });
 
   return mutationOptions({
-    // 지우는 동안 메뉴 버튼이 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌린다
+    // 지우는 동안 확인 다이얼로그가 진행 중이다. 오프라인에 멈춰 두면 연결될 때까지 닫을 수 없으니 바로 실패해 되돌린다
     networkMode: 'always',
     mutationKey,
     mutationFn: async ({ comment }: DeleteTodoCommentVariables) =>
@@ -330,5 +322,30 @@ export function useSetTodoCommentLikeMutationOptions({
         isHandledByFeature: isWarnedTodoCommentError,
       },
     },
+  });
+}
+
+/** 정렬을 바꾸기 전에 새 정렬의 첫 페이지를 받아 둔다. 진행 중 표시는 이 mutation의 isPending이다 */
+export function usePrefetchTodoCommentThreadsMutationOptions({ todoId }: { todoId: number }) {
+  const queryClient = useQueryClient();
+  const latestOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
+    todoId,
+    sort: TODO_COMMENT_SORT.LATEST,
+    anchorCommentId: null,
+  });
+  const popularOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
+    todoId,
+    sort: TODO_COMMENT_SORT.POPULAR,
+    anchorCommentId: null,
+  });
+
+  return mutationOptions({
+    mutationFn: (sort: TodoCommentSort) =>
+      fetchTodoCommentThreads(
+        queryClient,
+        sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions,
+      ),
+    // 미리 받지 못해도 정렬은 바꾸고 목록이 스스로 다시 받아 실패를 보인다
+    meta: { errorFeedback: false },
   });
 }

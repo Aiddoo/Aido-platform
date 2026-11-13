@@ -15,7 +15,7 @@ import {
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
-import { toInstant } from '@src/shared/date/instant';
+import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 import { defineFixture } from '@src/testing/fixture';
 
 import { notificationSchema } from '../domains/notification.model';
@@ -155,8 +155,6 @@ export function createNotificationApiError(
   );
 }
 
-export const INVALID_DTO = { invalid: 'data' };
-
 export const createPushNotification = defineFixture(pushNotificationSchema, {
   notificationId: 7,
   type: 'FOLLOW_NEW',
@@ -180,7 +178,7 @@ export function createPushNotificationResponse(
     id: 'response-1',
     actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
     notification: createPushNotification(),
-    receivedAt: 0,
+    receivedAt: fromEpochMs(0),
     isLaunchResponse: false,
     appState: 'background',
     activeSince: null,

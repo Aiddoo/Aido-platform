@@ -6,36 +6,36 @@ import {
   useSignInService,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { getCachedMe, invalidateMe } from '@src/features/identity/user/queries/user-cache';
+import { ensureMe, invalidateMe } from '@src/features/identity/user/queries/user-cache';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
 import type { AppEventMap } from '@src/shared/analytics/event-map';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
 
-import { getOAuthProviderLabel } from '../constants/oauth-labels';
+import { toOAuthProvider, toOAuthProviderSlug } from '../apis/oauth.mapper';
 import {
   findLoginFailureReason,
+  isAccountDeletionUnanswered,
   isEmailAlreadyRegisteredError,
   isEmailNotVerifiedError,
   isLoginCancelledError,
   isPasswordMismatchError,
 } from '../domains/auth.error';
 import { type OAuthProvider, type OAuthProviderSlug } from '../domains/oauth.model';
-import { OAuthPolicy } from '../domains/oauth.model';
 import { useAuthSession } from '../hooks/use-auth-session';
-import {
-  type ChangePasswordInput,
-  type DeleteAccountInput,
-  type ExchangeCodeInput,
-  type ForgotPasswordInput,
-  type RegisterInput,
-  type ResendVerificationInput,
-  type ResetPasswordInput,
-  type VerifyEmailInput,
+import type {
+  ChangePasswordInput,
+  DeleteAccountInput,
+  ExchangeCodeInput,
+  ForgotPasswordInput,
+  RegisterInput,
+  ResendVerificationInput,
+  ResetPasswordInput,
+  VerifyEmailInput,
 } from '../schemas/auth-request.schema';
+import { getOAuthProviderLabelKey } from '../utils/oauth-provider.view-model';
 import { invalidateLinkedAccounts } from './auth-cache';
 
 type EmailVerificationSource = AppEventMap['auth_email_verified']['source'];
@@ -272,22 +272,45 @@ export function useDeleteAccountMutationOptions() {
   const toast = useAppToast();
   const { signOut } = useAuthSession();
   const queryClient = useQueryClient();
+  const meQueryOptions = useGetMeQueryOptions();
   const sessionCleanupService = useSessionCleanupService();
+
+  // 탈퇴 뒤에는 서버가 내 정보를 주지 않아 요청 전에 받는다. 오프라인에 멈추거나 재시도로 늦추지 않고, 받지 못해도 탈퇴는 이어 간다
+  const findAccountId = async () => {
+    try {
+      const me = await ensureMe(queryClient, {
+        ...meQueryOptions,
+        retry: false,
+        networkMode: 'always',
+      });
+      return me.id;
+    } catch {
+      return null;
+    }
+  };
 
   return mutationOptions({
     networkMode: 'always',
     // 푸시 기기는 서버 탈퇴가 함께 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
     // 세션 만료가 먼저 커밋되면 정리가 콜백을 지워 초안·안내 기록이 남으므로 콜백에 두지 않는다
     mutationFn: async (input: DeleteAccountInput) => {
-      const accountId = getCachedMe(queryClient)?.id;
-      unwrap(await signInService.deleteAccount(input));
+      sessionCleanupService.beforeAccountDeletion(await findAccountId());
+      const wasOnline = onlineManager.isOnline();
+      try {
+        unwrap(await signInService.deleteAccount(input));
+      } catch (error) {
+        // 서버에 닿았을 수 있으면 지웠는지 몰라 이어지는 세션 종료를 로그아웃처럼 정리한다. 닿지 않았으면 잊는다
+        if (isAccountDeletionUnanswered(error, { wasOnline })) {
+          sessionCleanupService.afterAccountDeletionUnanswered();
+        } else {
+          sessionCleanupService.afterAccountDeletionRejected();
+        }
+        throw error;
+      }
       haptics.notify('success');
       toast.success(t('auth:toasts.accountDeleted'));
       trackEvent('auth_account_deleted');
       resetData();
-      if (accountId != null) {
-        sessionCleanupService.afterAccountDeleted(accountId);
-      }
       signOut();
     },
     // 비밀번호가 틀리면 폼이 그 칸에 보인다
@@ -307,8 +330,6 @@ export function useDeleteAccountMutationOptions() {
 }
 
 export function useRegisterMutationOptions() {
-  const replace = useSingleTap(router.replace);
-  const haptics = useHaptics();
   const authApi = useAuthApi();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
@@ -322,19 +343,7 @@ export function useRegisterMutationOptions() {
         toast.warning(t('auth:toasts.verificationEmailNotSent'));
       }
     },
-    onError: (error) => {
-      if (isEmailAlreadyRegisteredError(error)) {
-        haptics.notify('error');
-        toast.error(t('auth:toasts.alreadyRegistered'), {
-          action: {
-            label: t('auth:toasts.goToLogin'),
-            onPress: () => {
-              replace('/(auth)/email-login');
-            },
-          },
-        });
-      }
-    },
+    // 이미 가입한 이메일은 로그인하러 가기 동작이 있는 토스트를 폼이 띄운다
     meta: {
       errorFeedback: {
         feature: 'auth',
@@ -457,7 +466,7 @@ export function useLinkAccountMutationOptions() {
     onSuccess: async (_data, provider) => {
       toast.success(
         t('auth:toasts.accountLinked', {
-          provider: getOAuthProviderLabel(OAuthPolicy.toOAuthProvider(provider)),
+          provider: t(getOAuthProviderLabelKey(toOAuthProvider(provider))),
         }),
       );
       trackEvent('auth_social_linked', { provider });
@@ -491,10 +500,10 @@ export function useUnlinkAccountMutationOptions() {
     mutationFn: async (provider: OAuthProvider) => unwrap(await authApi.unlinkAccount(provider)),
     onSuccess: async (_data, provider) => {
       toast.success(
-        t('auth:toasts.accountUnlinked', { provider: getOAuthProviderLabel(provider) }),
+        t('auth:toasts.accountUnlinked', { provider: t(getOAuthProviderLabelKey(provider)) }),
       );
       trackEvent('auth_social_unlinked', {
-        provider: OAuthPolicy.toOAuthProviderSlug(provider),
+        provider: toOAuthProviderSlug(provider),
       });
       // 화면에 머무는 행이라 새 연결 상태를 받을 때까지 버튼을 꺼 둔다. 옛 버튼을 다시 눌러 요청이 또 가지 않게 한다
       await Promise.all([invalidateLinkedAccounts(queryClient), invalidateMe(queryClient)]);

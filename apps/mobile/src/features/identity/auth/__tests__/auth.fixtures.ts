@@ -183,8 +183,6 @@ export function createAuthApiError(
   );
 }
 
-export const INVALID_DTO = { invalid: 'data' };
-
 export function createAppleSignInSuccess(): AppleSignInResult {
   return {
     type: 'success',

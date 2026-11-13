@@ -1,13 +1,15 @@
-import { HttpStatus } from '@aido/api/errors';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { HOUR_MS } from '@src/shared/constants/time-units';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
+import { match } from 'ts-pattern';
 
 import type { AuthApi } from '../apis/auth.api';
+import { parseRefreshTokens } from '../apis/auth.mapper';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
+import { getPendingRefreshFailure } from '../domains/auth.error';
 import type { PendingRevocationRepository } from '../repositories/pending-revocation.repository';
-import { refreshEnvelopeSchema } from '../schemas/auth-response.schema';
 import type { PendingRevocation } from '../schemas/pending-revocation-storage.schema';
 
 /** 기기에 refresh 토큰이 남는 시간이라 가장 긴 직항 비행(약 19시간)을 덮는 하루로 두고, 지나면 refresh 만료(최대 7일)에 맡긴다 */
@@ -15,12 +17,17 @@ export const PENDING_REVOCATION_TTL_MS = 24 * HOUR_MS;
 
 const LOGOUT_TIMEOUT_MS = 5_000;
 
+type IssuedAccessToken =
+  | { type: 'issued'; accessToken: string }
+  | { type: 'ended' }
+  | { type: 'retry'; status: number };
+
 interface SessionRevocationServicePorts {
   repository: PendingRevocationRepository;
   requestRefresh: RefreshTokensRequest;
   authApi: Pick<AuthApi, 'revokeSession'>;
   logger: Pick<AppLogger, 'info' | 'warn'>;
-  now: () => number;
+  now: () => Instant;
 }
 
 /** 토큰을 지운 뒤엔 인증 요청을 못 보내 남겨 둔 refresh 토큰으로 로그아웃한다. 현재 세션 상태는 건드리지 않는다 */
@@ -29,7 +36,7 @@ export class SessionRevocationService {
   readonly #requestRefresh: RefreshTokensRequest;
   readonly #authApi: Pick<AuthApi, 'revokeSession'>;
   readonly #logger: Pick<AppLogger, 'info' | 'warn'>;
-  readonly #now: () => number;
+  readonly #now: () => Instant;
   #inFlight: Promise<void> | null = null;
 
   constructor({ repository, requestRefresh, authApi, logger, now }: SessionRevocationServicePorts) {
@@ -43,7 +50,7 @@ export class SessionRevocationService {
   record = (refreshToken: string): Promise<void> =>
     this.#repository.save({
       refreshToken,
-      expiresAt: this.#now() + PENDING_REVOCATION_TTL_MS,
+      expiresAt: toEpochMs(this.#now()) + PENDING_REVOCATION_TTL_MS,
     });
 
   /** 던지지 않는다. 일시 실패면 기록을 남겨 다음 복귀 때 다시 시도한다 */
@@ -68,52 +75,57 @@ export class SessionRevocationService {
     if (pending == null) {
       return;
     }
-    if (this.#now() >= pending.expiresAt) {
+    if (toEpochMs(this.#now()) >= pending.expiresAt) {
       this.#logger.info(AUTH_LOG_EVENT.SESSION_REVOCATION_EXPIRED);
       await this.#repository.clear();
       return;
     }
 
-    const accessToken = await this.#issueAccessToken(pending);
-    if (accessToken == null) {
-      await this.#repository.clear();
+    const issued = await this.#issueAccessToken(pending);
+    if (issued.type !== 'issued') {
+      await match(issued)
+        // 오프라인·잠금 중 시작처럼 늘 일어나는 일이라 기록을 두고 경고로 올리지 않는다
+        .with({ type: 'retry' }, ({ status }) =>
+          this.#logger.info(AUTH_LOG_EVENT.SESSION_REVOCATION_DEFERRED, { status }),
+        )
+        .with({ type: 'ended' }, () => this.#repository.clear())
+        .exhaustive();
       return;
     }
 
-    const result = await this.#authApi.revokeSession(accessToken, { timeout: LOGOUT_TIMEOUT_MS });
+    const result = await this.#authApi.revokeSession(issued.accessToken, {
+      timeout: LOGOUT_TIMEOUT_MS,
+    });
     if (!result.ok) {
       this.#logger.warn(AUTH_LOG_EVENT.SESSION_REVOCATION_REJECTED, { code: result.error.code });
     }
     await this.#repository.clear();
   };
 
-  /** 세션이 이미 끝났으면 null. 일시 실패는 던져 기록을 남긴다 */
-  #issueAccessToken = async (pending: PendingRevocation): Promise<string | null> => {
+  #issueAccessToken = async (pending: PendingRevocation): Promise<IssuedAccessToken> => {
     const response = await this.#requestRefresh(pending.refreshToken);
 
-    const isTransient =
-      response.status === HttpStatus.TOO_MANY_REQUESTS ||
-      response.status >= HttpStatus.INTERNAL_SERVER_ERROR;
-    if (isTransient) {
-      throw new Error(`refresh status ${response.status}`);
-    }
     if (!response.ok) {
+      const failure = getPendingRefreshFailure(response.status);
+      if (failure === 'retry') {
+        return { type: 'retry', status: response.status };
+      }
       this.#logger.info(AUTH_LOG_EVENT.SESSION_REVOCATION_ALREADY_ENDED, {
         status: response.status,
       });
-      return null;
+      return { type: 'ended' };
     }
 
-    const parsed = refreshEnvelopeSchema.safeParse(await response.json().catch(() => null));
-    if (!parsed.success) {
+    const tokens = parseRefreshTokens(await response.json().catch(() => null));
+    if (tokens == null) {
       this.#logger.warn(AUTH_LOG_EVENT.SESSION_REVOCATION_REJECTED, {
         code: 'invalid-refresh-response',
       });
-      return null;
+      return { type: 'ended' };
     }
 
     // 서버가 회전했다. 로그아웃이 실패해도 다음 시도가 재사용 감지에 걸리지 않게 새 토큰을 남긴다
-    await this.#repository.save({ ...pending, refreshToken: parsed.data.data.refreshToken });
-    return parsed.data.data.accessToken;
+    await this.#repository.save({ ...pending, refreshToken: tokens.refreshToken });
+    return { type: 'issued', accessToken: tokens.accessToken };
   };
 }

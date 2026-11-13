@@ -6,9 +6,9 @@ import { createPendingRedemption } from '../__tests__/invite.fixtures';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
 import { PendingRedemptionService } from './pending-redemption.service';
 
-function createService({ referrer = null }: { referrer?: string | null } = {}) {
+function createService({ referrer }: { referrer?: string } = {}) {
   const storage = createMemorySyncStorage();
-  const readReferrer = jest.fn().mockResolvedValue(referrer);
+  const readReferrer = jest.fn().mockResolvedValue(referrer ?? null);
   const service = new PendingRedemptionService(storage, { get: readReferrer });
 
   return { service, storage, readReferrer };

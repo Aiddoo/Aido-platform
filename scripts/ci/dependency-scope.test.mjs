@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { dependencyScope } from './dependency-scope.mjs';
+import { dependencyScope, touchesDocumentation } from './dependency-scope.mjs';
 
 const none = { api: false, mobile: false, shared: false };
 const all = { api: true, mobile: true, shared: true };
@@ -33,4 +33,11 @@ test('cumulative stack diff includes the API ancestor even for a mobile tip', ()
     api: true,
     mobile: true,
   });
+});
+test('documentation in the diff asks for the docs check; an unavailable diff leaves it to verify', () => {
+  assert.equal(touchesDocumentation(['apps/mobile/docs/architecture/data.md']), true);
+  assert.equal(touchesDocumentation(['docs/api.png', 'apps/api/src/main.ts']), true);
+  assert.equal(touchesDocumentation(['apps/api/src/main.ts']), false);
+  assert.equal(touchesDocumentation([]), false);
+  assert.equal(touchesDocumentation(null), false);
 });

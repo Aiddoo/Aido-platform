@@ -1,13 +1,6 @@
 import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import {
-  TodoCheckbox,
-  TodoLabel,
-  TodoProgress,
-  TodoRow,
-  TodoScheduleLine,
-  TodoTitleLine,
-} from '@src/features/planning/todo/components/todo-row';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import {
   isPrivateVisibility,
   isRecurring,
@@ -74,7 +67,7 @@ export function DemoTodoRow({
 
       return (
         <HStack gap={SELECT_GAP} align="center">
-          <TodoCheckbox
+          <TodoRow.Checkbox
             accessibilityLabel={t('plan.select', { title: todo.title })}
             hitSlop={SELECT_GAP}
             isSelected={isSelected}
@@ -82,15 +75,15 @@ export function DemoTodoRow({
           />
           <SurfaceCard surface="sheet" className={PLAN_CARD_CLASS_NAME}>
             <VStack flex={1} gap={2}>
-              <TodoTitleLine
+              <TodoRow.TitleLine
                 label={
-                  <TodoLabel
+                  <TodoRow.Label
                     isCompleted={false}
                     lineBreakStrategyIOS="hangul-word"
                     className={cn('flex-1', unselectedClassName)}
                   >
                     {todo.title}
-                  </TodoLabel>
+                  </TodoRow.Label>
                 }
                 isPrivate={isPrivate}
               />
@@ -134,7 +127,7 @@ export function DemoTodoRow({
         <TodoRow
           {...rowProps}
           left={
-            <TodoCheckbox
+            <TodoRow.Checkbox
               accessibilityLabel={todo.title}
               hitSlop={SELECT_GAP}
               isSelected={isSelected}
@@ -142,22 +135,24 @@ export function DemoTodoRow({
             />
           }
           top={
-            <TodoTitleLine
+            <TodoRow.TitleLine
               label={
-                <TodoLabel isCompleted={isSelected} className="flex-1">
+                <TodoRow.Label isCompleted={isSelected} className="flex-1">
                   {todo.title}
-                </TodoLabel>
+                </TodoRow.Label>
               }
               isPrivate={isPrivate}
             />
           }
           middle={
             timeLabel != null || isRecurring(todo.recurrenceGroupId) ? (
-              <TodoScheduleLine todo={todo} timeLabel={timeLabel} />
+              <TodoRow.ScheduleLine todo={todo} timeLabel={timeLabel} />
             ) : undefined
           }
           bottom={
-            todo.items.length > 0 ? <TodoProgress value={0} total={todo.items.length} /> : undefined
+            todo.items.length > 0 ? (
+              <TodoRow.Progress value={0} total={todo.items.length} />
+            ) : undefined
           }
         />
       );

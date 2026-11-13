@@ -26,4 +26,4 @@ paths:
 - 금지: 실제 sleep, `Date.now`·`AppState`·`queryClient.invalidateQueries` spy. 시간은 주입한 `now`와 fake timer로 다룬다.
 - 누름 동작은 RNTL 통과 뒤 기기에서도 확인한다.
 
-자세히: [테스트](../../docs/testing.md)
+자세히: [테스트 범위·격리](../../docs/testing.md) · [테스트 도구](../../docs/testing-tools.md)

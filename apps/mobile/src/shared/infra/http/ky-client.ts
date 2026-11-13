@@ -4,7 +4,7 @@ import { err, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { isNil, mapValues, omitBy } from 'es-toolkit';
-import { HTTPError, type KyInstance, type Options } from 'ky';
+import { HTTPError, type KyInstance, type Options, type ResponsePromise } from 'ky';
 
 import { readJsonBody, toApiError, toTransportError } from './ky-error';
 
@@ -51,10 +51,10 @@ export class KyHttpClient implements HttpClient {
     );
   };
 
-  #request = async (request: () => Promise<Response>): Promise<Result<unknown, ApiError>> => {
+  // ky의 `.json()` 단축 메서드만 요청 timeout을 본문 읽기에도 건다. 받은 Response의 `json()`은 헤더 뒤 본문이 멈추면 조회가 끝나지 않는다
+  #request = async (request: () => ResponsePromise): Promise<Result<unknown, ApiError>> => {
     try {
-      const response = await request();
-      const parsed = successEnvelopeSchema.safeParse(await readJsonBody(() => response.json()));
+      const parsed = successEnvelopeSchema.safeParse(await readJsonBody(() => request().json()));
       if (!parsed.success) {
         throw new ParseError(`[KyHttpClient] Invalid success envelope: ${parsed.error.message}`);
       }

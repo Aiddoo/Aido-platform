@@ -1,6 +1,4 @@
 import type { UpdateProfileResponse } from '@aido/api';
-import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
 import { toInstant } from '@src/shared/date/instant';
 
 import { type User, userSchema } from '../domains/user.model';
@@ -57,6 +55,7 @@ export function createUser(overrides?: Partial<User>): User {
       isTrial: false,
       bankedDays: 0,
       grantEndedAt: null,
+      planType: null,
     },
     isPremium: false,
     createdAt: toInstant('2026-01-01T09:00:00.000Z'),
@@ -80,15 +79,3 @@ export function createUpdateProfileDto(
     ...overrides,
   };
 }
-
-export function createUserApiError(
-  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
-) {
-  return new ApiError(
-    overrides?.code ?? 'USER_0601',
-    overrides?.message ?? '사용자를 찾을 수 없습니다',
-    overrides?.status ?? 404,
-  );
-}
-
-export const INVALID_DTO = { invalid: 'data' };

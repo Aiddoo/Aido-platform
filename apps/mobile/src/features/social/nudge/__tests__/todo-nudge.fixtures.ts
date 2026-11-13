@@ -72,8 +72,6 @@ export function createNudgeApiError(
   );
 }
 
-export const INVALID_DTO = { invalid: 'data' };
-
 export function createNudgeLimitInfo(
   overrides?: Partial<NudgeLimitInfoModel>,
 ): NudgeLimitInfoModel {

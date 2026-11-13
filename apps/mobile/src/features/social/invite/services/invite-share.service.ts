@@ -1,8 +1,9 @@
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
 import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
 
+import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import { INVITE_SHARE_IMAGE } from '../constants/invite.constants';
 import type { InviteCode } from '../domains/invite-code.model';
 
@@ -37,7 +38,7 @@ interface InviteShareServicePorts {
   socialShare: SocialShareGateway;
   systemShare: Pick<SystemShareGateway, 'share'>;
   clipboard: ClipboardGateway;
-  errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 /**
@@ -48,7 +49,7 @@ export class InviteShareService {
   readonly #socialShare: SocialShareGateway;
   readonly #systemShare: Pick<SystemShareGateway, 'share'>;
   readonly #clipboard: ClipboardGateway;
-  readonly #errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>;
+  readonly #logger: Pick<AppLogger, 'warn'>;
 
   readonly #channels: Record<
     InviteShareChannel,
@@ -59,11 +60,11 @@ export class InviteShareService {
     system: (content) => this.#shareToSystem(content),
   };
 
-  constructor({ socialShare, systemShare, clipboard, errorReporter }: InviteShareServicePorts) {
+  constructor({ socialShare, systemShare, clipboard, logger }: InviteShareServicePorts) {
     this.#socialShare = socialShare;
     this.#systemShare = systemShare;
     this.#clipboard = clipboard;
-    this.#errorReporter = errorReporter;
+    this.#logger = logger;
   }
 
   share = (channel: InviteShareChannel, content: InviteShareContent) =>
@@ -87,12 +88,9 @@ export class InviteShareService {
       });
       return { channel: 'kakao', outcome: 'shared' };
     } catch (error) {
-      // 카카오톡 미설치·SDK 오류는 OS 공유로 넘기므로 예외 대신 행적만 남긴다
-      this.#errorReporter.addBreadcrumb({
-        category: 'invite',
-        message: 'kakao share failed, falling back to system share',
-        level: 'warning',
-        data: { reason: error instanceof Error ? error.name : 'unknown' },
+      // 카카오톡 미설치·SDK 오류는 OS 공유로 넘기므로 삼키고 경고만 남긴다
+      this.#logger.warn(INVITE_LOG_EVENT.KAKAO_SHARE_FAILED, {
+        reason: error instanceof Error ? error.name : 'unknown',
       });
       return this.#shareToSystem(content);
     }

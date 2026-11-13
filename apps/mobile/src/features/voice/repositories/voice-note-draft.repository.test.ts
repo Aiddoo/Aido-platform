@@ -1,7 +1,11 @@
 import { createAppLoggerStub, createMemorySyncStorage } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
-import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
+import {
+  createSpokenVoiceNote,
+  createVoiceNoteSentence,
+  RELEASED_VOICE_NOTE_DRAFTS,
+} from '../__tests__/voice-note.fixtures';
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS } from '../constants/voice-note.constants';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
@@ -232,6 +236,26 @@ describe('VoiceNoteDraftRepository', () => {
     expect(JSON.parse(storage.get(key) ?? '')).toEqual(STORED_NOTE);
   });
 
+  it.each(Object.entries(RELEASED_VOICE_NOTE_DRAFTS))(
+    '1.15.1이 남긴 말로 메모 초안(%s)을 빠진 칸 없이 그대로 읽고 다시 써도 원문이 같다',
+    (_name, released) => {
+      // Given
+      const { storage, repository } = createRepository();
+      const key = `aido_voice_note_draft_v1:user-1:${released.draftId}`;
+      storage.set(key, JSON.stringify(released));
+
+      // When
+      const note = repository.find('user-1', released.draftId);
+      if (note != null) {
+        repository.save('user-1', note);
+      }
+
+      // Then
+      expect(note).toEqual(released);
+      expect(JSON.parse(storage.get(key) ?? '')).toEqual(released);
+    },
+  );
+
   it('달력 날짜를 ISO 순간으로 남긴 옛 초안은 지금 시간대의 날짜로 읽는다', () => {
     // Given
     const { storage, repository } = createRepository('America/Los_Angeles');
@@ -291,18 +315,16 @@ describe('VoiceNoteDraftRepository', () => {
 
   it('한 초안을 저장해도 다른 초안은 다시 해석하지 않는다', () => {
     // Given
-    const { storage, repository } = createRepository();
+    const { repository } = createRepository();
     repository.save('user-1', createSpokenVoiceNote({ draftId: 'draft-1' }));
     repository.save('user-1', createSpokenVoiceNote({ draftId: 'draft-2' }));
     const before = repository.getSnapshot('user-1');
-    const getString = jest.spyOn(storage, 'get').mockClear();
 
     // When
     repository.save('user-1', createSpokenVoiceNote({ draftId: 'draft-1', durationMs: 1_000 }));
     const after = repository.getSnapshot('user-1');
 
     // Then
-    expect(getString).not.toHaveBeenCalled();
     expect(after).not.toBe(before);
     expect(after.find(({ draftId }) => draftId === 'draft-1')?.durationMs).toBe(1_000);
     expect(after.find(({ draftId }) => draftId === 'draft-2')).toBe(

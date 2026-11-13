@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
 import { Menu } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -21,6 +22,8 @@ export function MenuActionItem({
   variant,
   ...itemProps
 }: MenuActionItemProps) {
+  const fontScaledSize = useFontScaledSize();
+  const iconSize = fontScaledSize(MENU_ICON_SIZE);
   const isDanger = variant === 'danger';
   const titleElement = (
     <Menu.ItemTitle>
@@ -33,8 +36,8 @@ export function MenuActionItem({
   return (
     <Menu.Item variant={variant} {...itemProps}>
       <Icon
-        width={MENU_ICON_SIZE}
-        height={MENU_ICON_SIZE}
+        width={iconSize}
+        height={iconSize}
         colorClassName={cn(isDanger ? 'text-danger' : 'text-main')}
       />
       {description == null ? (

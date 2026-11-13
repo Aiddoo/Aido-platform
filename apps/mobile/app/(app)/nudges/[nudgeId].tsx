@@ -1,25 +1,21 @@
-import { NudgeModerationToolbar } from '@src/features/social/nudge/components/nudge-detail/nudge-moderation-toolbar';
-import { NudgeResponse } from '@src/features/social/nudge/components/nudge-detail/nudge-response';
-import { NudgeSummary } from '@src/features/social/nudge/components/nudge-detail/nudge-summary';
-import { NudgeTodoButton } from '@src/features/social/nudge/components/nudge-detail/nudge-todo-button';
+import { NudgeModerationToolbar } from '@src/features/social/nudge/components/nudge-moderation-toolbar';
+import { NudgeResponse } from '@src/features/social/nudge/components/nudge-response';
+import { NudgeSummary } from '@src/features/social/nudge/components/nudge-summary';
+import { NudgeTodoButton } from '@src/features/social/nudge/components/nudge-todo-button';
 import { isNudgeUnavailableError } from '@src/features/social/nudge/domains/todo-nudge.error';
 import { useNudgeId } from '@src/features/social/nudge/hooks/use-nudge-id';
 import { nudgeParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
+import { dismissToTab } from '@src/shared/navigation/open-entry-href';
 import {
-  HStack,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   ReadableContent,
   Result,
   Spacing,
   StyledSafeAreaView,
-  TextSkeleton,
-  VStack,
 } from '@src/shared/ui';
-import { router } from 'expo-router';
-import { Skeleton } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -68,25 +64,11 @@ NudgeDetailScreen.Loading = function Loading() {
   return (
     <ScrollView contentContainerClassName="grow">
       <StyledSafeAreaView edges={['left', 'right']} className="p-6">
-        <VStack gap={24}>
-          <HStack gap={12} align="center">
-            <Skeleton className="size-12 rounded-full" />
-            <VStack flex={1} gap={4}>
-              <TextSkeleton size="b3" className="w-40" />
-              <TextSkeleton size="e1" className="w-16" />
-            </VStack>
-          </HStack>
+        <NudgeSummary.Loading />
 
-          <TextSkeleton size="t3" className="w-3/4" />
+        <Spacing size={24} />
 
-          <HStack gap={12} align="center" p={16}>
-            <Skeleton className="size-7 rounded-full" />
-            <VStack flex={1} gap={4}>
-              <TextSkeleton size="b3" className="w-3/4" />
-              <TextSkeleton size="e1" className="w-16" />
-            </VStack>
-          </HStack>
-        </VStack>
+        <NudgeTodoButton.Loading />
       </StyledSafeAreaView>
     </ScrollView>
   );
@@ -102,7 +84,7 @@ NudgeDetailScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFal
           title={t('todo:interaction.unavailable')}
           description={t('todo:interaction.unavailableDescription')}
           button={
-            <Result.Button onPress={() => router.replace('/notifications')}>
+            <Result.Button onPress={() => dismissToTab('/notifications')}>
               {t('common:actions.goBack')}
             </Result.Button>
           }

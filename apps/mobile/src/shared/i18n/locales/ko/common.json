@@ -27,7 +27,9 @@
   "daysOfWeekSeparator": "·",
   "calendar": {
     "nextMonth": "다음 달",
+    "nextWeek": "다음 주",
     "previousMonth": "이전 달",
+    "previousWeek": "이전 주",
     "weekHeader": "{{month}} {{week}}주차"
   },
   "relativeDay": {

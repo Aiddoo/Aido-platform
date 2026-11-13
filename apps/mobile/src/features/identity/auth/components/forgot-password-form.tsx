@@ -60,9 +60,9 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     initial: { step: 'email' },
     onStepChange: ({ step }) => trackEvent('auth_password_reset_step_viewed', { step }),
   });
+  const { t } = useTranslation('auth');
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const resetPassword = useMutation(useResetPasswordMutationOptions());
-  const { t } = useTranslation('auth');
   const newPassword = useController({
     control: form.control,
     name: 'newPassword',
@@ -136,7 +136,7 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
           }}
           onResend={async () => {
             await forgotPassword.mutateAsync({ email });
-            return {};
+            return { retryAfterSeconds: null };
           }}
         />
       )}
@@ -191,7 +191,7 @@ function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
                     autoFocus
                     returnKeyType="done"
                     submitBehavior="submit"
-                    isInvalid={!!error}
+                    isInvalid={error != null}
                     errorMessage={resolveValidationMessage(error, {
                       default: 'email.invalid',
                       byType: { too_big: 'email.tooLong' },

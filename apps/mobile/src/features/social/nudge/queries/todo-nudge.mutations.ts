@@ -7,7 +7,7 @@ import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { isThanksTodoNotCompletedError } from '../domains/todo-nudge.error';
@@ -111,8 +111,11 @@ export function useSendTodoNudgeMutationOptions() {
   return mutationOptions({
     networkMode: 'always',
     mutationFn: async (input: CreateNudgeInput) => unwrap(await todoNudgeApi.sendNudge(input)),
+    // 남은 횟수는 보낸 뒤에만 바뀐다. 한도에 막힌 실패는 한도 시트가 받은 한도로 스냅샷을 맞춘다
     onSuccess: () => {
       haptics.notify('success');
+      invalidateNudgeLimit(queryClient);
+      invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');
     },
@@ -122,12 +125,7 @@ export function useSendTodoNudgeMutationOptions() {
       }
     },
     // 할 일 상세의 콕 버튼은 서버가 계산한 permissions.canNudge를 따른다
-    onSettled: (_data, _error, { todoId }) =>
-      Promise.all([
-        invalidateNudgeLimit(queryClient),
-        invalidateEntitlements(queryClient),
-        invalidateTodoDetails(queryClient, { todoId }),
-      ]),
+    onSettled: (_data, _error, { todoId }) => invalidateTodoDetails(queryClient, { todoId }),
     meta: {
       errorFeedback: {
         feature: 'todo_nudge',

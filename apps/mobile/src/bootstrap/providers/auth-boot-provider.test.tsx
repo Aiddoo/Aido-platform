@@ -54,6 +54,9 @@ const LogoutProbe = () => {
   );
 };
 
+/** 세션 정리가 캐시를 비웠는지 보는 키. 부팅이 다시 채우지 않는다 */
+const CACHED_PROBE_KEY = ['test', 'cached-probe'];
+
 describe('AuthBootProvider', () => {
   setupFakeTimersPerTest();
 
@@ -226,7 +229,7 @@ describe('AuthBootProvider', () => {
         schema: z.object({ content: z.string() }),
       });
       di.draftService.save(draftKey, { content: '작성 중' });
-      const clearSpy = jest.spyOn(queryClient, 'clear');
+      queryClient.setQueryData(CACHED_PROBE_KEY, '지난 실행의 캐시');
       tokenStore.getRefreshToken.mockResolvedValue(null);
 
       // When
@@ -234,7 +237,7 @@ describe('AuthBootProvider', () => {
 
       // Then
       await expectStatus('unauthenticated');
-      expect(clearSpy).toHaveBeenCalled();
+      expect(queryClient.getQueryData(CACHED_PROBE_KEY)).toBeUndefined();
       expect(di.draftService.restore(draftKey)).toEqual({
         status: 'restored',
         value: { content: '작성 중' },
@@ -507,15 +510,15 @@ describe('AuthBootProvider', () => {
     it('만료 리스너 실행 중에는 캐시를 비우지 않고, 커밋 이후에 비운다', async () => {
       // Given — 리스너에서 곧바로 clear()하면 아직 마운트된 인증 화면의 suspense 쿼리가
       // 즉시 재요청 → 401 → 다시 만료 → ErrorBoundary("재시도/로그아웃") 루프를 돈다.
-      const clearSpy = jest.spyOn(queryClient, 'clear');
       tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
+      queryClient.setQueryData(CACHED_PROBE_KEY, '로그인 중 캐시');
 
       let clearedDuringEmit = false;
       unsubscribes.push(
         subscribeSessionExpired(() => {
-          clearedDuringEmit = clearSpy.mock.calls.length > 0;
+          clearedDuringEmit = queryClient.getQueryData(CACHED_PROBE_KEY) == null;
         }),
       );
 
@@ -527,7 +530,7 @@ describe('AuthBootProvider', () => {
       // Then
       await expectStatus('unauthenticated');
       expect(clearedDuringEmit).toBe(false);
-      expect(clearSpy).toHaveBeenCalledTimes(1);
+      expect(queryClient.getQueryData(CACHED_PROBE_KEY)).toBeUndefined();
     });
 
     it('로그아웃하면 다음 사용자가 보지 못하도록 작성 중 초안을 모두 지운다', async () => {

@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';

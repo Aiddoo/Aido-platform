@@ -87,7 +87,7 @@ describe('앱 아이콘 서비스', () => {
     const lookup = service.getCurrentIcon(controller.signal);
 
     // Then
-    await expect(lookup).rejects.toThrow('App icon lookup cancelled');
+    await expect(lookup).rejects.toMatchObject({ name: 'AbortError' });
   });
 
   it('메서드를 분리해서 호출해도 주입한 네이티브 포트를 사용한다', async () => {

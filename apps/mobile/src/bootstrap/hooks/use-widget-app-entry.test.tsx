@@ -2,6 +2,8 @@ import { type WidgetNavigationCommand } from '@src/features/device/widget/domain
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { getNowInstant } from '@src/shared/date/clock';
+import { fromEpochMs, toEpochMs } from '@src/shared/date/instant';
 import {
   createAnalyticsStub,
   createIncomingLinkGatewayStub,
@@ -97,7 +99,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       id: 'first-tap',
       uri: 'aido://todo/12',
       userId: 'original-account',
-      createdAt: Date.now(),
+      createdAt: getNowInstant(),
     };
   });
 
@@ -118,10 +120,10 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).toHaveBeenCalledTimes(1);
-    expect(router.navigate).toHaveBeenCalledWith(
-      { pathname: '/todo/[todoId]', params: { todoId: '12' } },
-      { withAnchor: true },
-    );
+    expect(router.navigate).toHaveBeenCalledWith({
+      pathname: '/todo/[todoId]',
+      params: { todoId: '12' },
+    });
     expect(di.widgetNavigationRepository.findPendingCommand()).toBeNull();
     expect(widgetOpenedCalls()).toEqual([['widget_opened', { destination: 'todo' }]]);
     await hook.rerender(undefined);
@@ -144,10 +146,10 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).toHaveBeenCalledTimes(1);
-    expect(router.navigate).toHaveBeenCalledWith(
-      { pathname: '/todo/[todoId]', params: { todoId: '13' } },
-      { withAnchor: true },
-    );
+    expect(router.navigate).toHaveBeenCalledWith({
+      pathname: '/todo/[todoId]',
+      params: { todoId: '13' },
+    });
   });
 
   it('warm Linking 이동은 중복하지 않고 뒤로간 뒤 같은 목적지를 다시 누르면 이동한다', async () => {
@@ -270,7 +272,10 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       }
       di.widgetNavigationRepository.save(
         scenario === 'expired'
-          ? { ...command, createdAt: Date.now() - WIDGET_NAVIGATION_COMMAND_TTL_MS }
+          ? {
+              ...command,
+              createdAt: fromEpochMs(toEpochMs(getNowInstant()) - WIDGET_NAVIGATION_COMMAND_TTL_MS),
+            }
           : command,
       );
 

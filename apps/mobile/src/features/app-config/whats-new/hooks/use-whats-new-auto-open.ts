@@ -3,7 +3,7 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useMemo } from 'react';
 
 import { WhatsNewPolicy } from '../domains/whats-new.model';
-import { shouldShowCoachmarks } from '../utils/should-show-coachmarks';
+import { shouldShowCoachmarks } from '../utils/whats-new-coachmarks.view-model';
 import { useWhatsNewCampaign } from './use-whats-new-campaign';
 
 interface WhatsNewAutoOpenInput {

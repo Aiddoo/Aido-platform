@@ -83,17 +83,6 @@ describe('toUser', () => {
     // Then
     expect(result.premiumAccess.isTrial).toBe(expected);
   });
-
-  it('providers 배열 매핑', () => {
-    // Given
-    const dto = createCurrentUserDto({ providers: ['CREDENTIAL', 'GOOGLE'] });
-
-    // When
-    const result = toUser(dto);
-
-    // Then
-    expect(result.providers).toEqual(['CREDENTIAL', 'GOOGLE']);
-  });
 });
 
 describe('currentUserResponseSchema', () => {

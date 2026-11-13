@@ -34,15 +34,6 @@ import { ActionButton, CalendarIcon } from '@src/shared/ui';
 
 - `ActionButton.Icon`: 글꼴 배율에 맞춘 칩 아이콘 크기(`fontScaledSize(16, 0.3)`)를 칩이 정한다. 아이콘이 아닌 표시(카테고리 색 점)는 `icon`에 바로 넘긴다.
 
-## 파일 구조
-
-```
-action-button/
-├── action-button.tsx   # 컴포넌트 구현
-├── action-button.md    # 문서
-└── index.ts            # export
-```
-
 ## heroui `Chip`으로 옮기지 않은 이유
 
 heroui `Chip`은 `Pressable`이라 눌림 크기 변화가 없고 role도 없다. `ActionButton`은 `PressableFeedback` 위에서 눌림, 고정 높이 32, role `button`을 함께 갖는다.
