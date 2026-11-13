@@ -164,6 +164,20 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
       expect(todos).toBe(0.05);
       expect(webhook).toBe(1);
     });
+
+    it("SENTRY_TRACES_SAMPLE_RATE를 비워 두면 0이 아니라 기본 HTTP 비율이다", () => {
+      // Given
+      const { tracesSampler } = resolveSentryOptions({
+        APP_ENV: "production",
+        SENTRY_TRACES_SAMPLE_RATE: "",
+      });
+
+      // When
+      const todos = tracesSampler({ attributes: { "url.path": "/v1/todos" } });
+
+      // Then
+      expect(todos).toBe(DEFAULT_HTTP_TRACE_RATE);
+    });
   });
 });
 
@@ -196,6 +210,12 @@ describe("sampleTrace — 무료 플랜 span 한도 안의 경로·큐별 비율
       input: { attributes: { [JOB_QUEUE_SPAN_ATTRIBUTE]: "new-queue.v1" } },
       rate: DEFAULT_JOB_TRACE_RATE,
     },
+    {
+      name: "경로도 큐도 없는 루트 span(타이머·Redis·pg 폴링)",
+      input: { attributes: { "db.system.name": "redis" } },
+      rate: 0,
+    },
+    { name: "속성이 없는 루트 span", input: {}, rate: 0 },
   ])("$name → $rate", ({ input, rate }) => {
     // When
     const sampled = sampleTrace(input, DEFAULT_HTTP_TRACE_RATE);

@@ -139,7 +139,8 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 | `POST /v1/webhooks/*`, `DELETE /v1/auth/account`                                             | 1    | 결제·계정 삭제, 드묾                                           |
 | `/v1/auth/*`                                                                                 | 0.25 | 로그인·토큰 갱신                                               |
 | `/v1/ai/*`, `quick-plans`, `voice-notes`, `action-plans`                                     | 0.5  | 느리고 비쌈                                                    |
-| 그 밖의 HTTP(`SENTRY_TRACES_SAMPLE_RATE`로 바꿈)                                             | 0.1  | 기본                                                           |
+| 그 밖의 HTTP(`SENTRY_TRACES_SAMPLE_RATE`로 바꿈)                                             | 0.1  | 기본. 값을 비우면(`KEY=`) 0이 아니라 기본                      |
+| 경로도 큐도 없는 루트 span(타이머·Redis·pg-boss 폴링)                                        | 0    | 요청·작업 밖이라 볼 것이 없고 무료 span 한도를 먹음            |
 | 매분 큐(`timezone-reminder`·`retention`·`push-delivery`)                                     | 0.01 | 하루 1,440회씩                                                 |
 | `notification`·`todo-reminder`                                                               | 0.02 | 건수 많음                                                      |
 | `account-purge`·`store-subscription-reconcile`·`invite-reward`·`todo-series-materialization` | 1    | 드물고 중요                                                    |
