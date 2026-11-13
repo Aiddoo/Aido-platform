@@ -24,16 +24,15 @@
 
 ## docs-check
 
-| 검사          | 실패 조건                                                                           |
-| ------------- | ----------------------------------------------------------------------------------- |
-| `link`        | 상대 링크의 파일·폴더가 없다                                                        |
-| `anchor`      | `#제목`이 대상 문서의 GitHub 제목 slug에 없다                                       |
-| `path`        | 백틱 안 저장소 경로(`apps/`·`features/`·`app/`… 또는 `*.md`)가 없다(무시 파일 제외) |
-| `limit`       | 줄 수 한도를 넘는다                                                                 |
-| `agent-files` | 위 에이전트 파일 모양과 다르거나 루트+앱 `AGENTS.md`가 24KB를 넘는다                |
-| `ui-doc`      | shared/ui 부품 문서가 없다                                                          |
-| `allow-stale` | 허용 항목이 더는 걸리지 않는다                                                      |
+| 검사          | 실패 조건                                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 링크(remark)  | 상대 링크의 파일·폴더나 `#제목`(GitHub slug)이 없다([remark-validate-links](https://github.com/remarkjs/remark-validate-links)) |
+| `path`        | 백틱 안 저장소 경로(`apps/`·`features/`·`app/`… 또는 `*.md`)가 없다(무시 파일 제외)                                             |
+| `limit`       | 줄 수 한도를 넘는다                                                                                                             |
+| `agent-files` | 위 에이전트 파일 모양과 다르거나 루트+앱 `AGENTS.md`가 24KB를 넘는다                                                            |
+| `ui-doc`      | shared/ui 부품 문서가 없다                                                                                                      |
+| `allow-stale` | 허용 항목이 더는 걸리지 않는다                                                                                                  |
 
-- 출시 기록은 링크한 파일만 본다. changesets·`CHANGELOG.md`·heroui 스킬·스토어 메타데이터는 보지 않는다.
+- 출시 기록은 그때 상태로 두어 보지 않는다. changesets·`CHANGELOG.md`·heroui 스킬·스토어 메타데이터는 보지 않는다.
 - 예외는 [docs-check.config.json](../../scripts/docs/docs-check.config.json)의 `allow`에 `reason`과 함께 둔다.
 - 백틱 식별자가 코드에 있는지는 `node scripts/docs/docs-check.mjs --idents`로 릴리스 끝에 한 번 사람이 읽는다. 반례·외부 API가 섞여 실패로 보지 않는다.

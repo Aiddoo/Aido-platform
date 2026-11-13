@@ -5,8 +5,9 @@
     ".": {
       "entry": ["scripts/**/*.mjs", "turbo/generators/config.ts"],
       "project": ["*.ts", "scripts/**/*.mjs", "turbo/generators/**/*.ts"],
-      // vitest의 필수 peer다. pnpm resolvePeersFromWorkspaceRoot로 모든 workspace의 vitest가 이 catalog 버전을 쓴다
-      "ignoreDependencies": ["vite"],
+      // vite: vitest의 필수 peer다. pnpm resolvePeersFromWorkspaceRoot로 모든 workspace의 vitest가 이 catalog 버전을 쓴다
+      // remark-*: docs-check.mjs가 추적 문서 목록을 넘겨 경로로 실행한다
+      "ignoreDependencies": ["vite", "remark-cli", "remark-validate-links"],
     },
     "apps/api": {
       // 테스트 진입점(spec·setup·globalSetup)은 vitest 플러그인이 vitest.config.ts에서 읽는다
