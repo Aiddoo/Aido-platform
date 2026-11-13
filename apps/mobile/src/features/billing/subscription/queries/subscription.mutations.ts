@@ -9,8 +9,7 @@ import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
-import { useConfirmDialog } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -31,8 +30,6 @@ export function usePurchaseMutationOptions() {
   const errorReporter = useErrorReporter();
   const { trackEvent } = useTrack();
   const toast = useAppToast();
-  const confirmDialog = useConfirmDialog();
-  const openInquiry = useOpenSubscriptionInquiry();
   const queryClient = useQueryClient();
 
   return mutationOptions({
@@ -73,7 +70,7 @@ export function usePurchaseMutationOptions() {
         .with({ type: 'paymentPending' }, () =>
           toast.success(t('subscription:toast.paymentPending')),
         )
-        // 돈이 빠져나갔을 수도 있어 지나가는 토스트 대신 다이얼로그로 문의할 길을 남긴다
+        // 돈이 빠져나갔을 수도 있어 문의할 길을 남기는 다이얼로그는 결제 버튼이 띄운다
         .with({ type: 'contactSupport' }, (failure) => {
           haptics.notify('error');
           const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.getFailureCause(error));
@@ -89,20 +86,6 @@ export function usePurchaseMutationOptions() {
             severity: 'warning',
             errorCode: failure.diagnosticCode,
           });
-          // 다이얼로그가 닫힐 때까지 구매 버튼이 돌지 않게 기다리지 않는다
-          confirmDialog
-            .openAsync({
-              title: t(failure.titleKey),
-              description: t(failure.descriptionKey),
-              cancelLabel: t('common:actions.close'),
-              confirmLabel: t('subscription:failure.contactSupport'),
-            })
-            .then((shouldContactSupport) => {
-              if (shouldContactSupport) {
-                openInquiry(failure);
-              }
-            })
-            .catch(noop);
         })
         .exhaustive(),
     meta: { errorFeedback: false },
@@ -149,7 +132,7 @@ export function useRestoreMutationOptions() {
     },
     onError: (error) =>
       match(toSubscriptionActionFailure('restore', error))
-        .with({ type: 'cancelled' }, { type: 'paymentPending' }, () => undefined)
+        .with({ type: 'cancelled' }, { type: 'paymentPending' }, noop)
         // 복원 버튼은 화면에 그대로 남아 다시 누를 수 있으니 토스트에서 문의로만 잇는다
         .with({ type: 'contactSupport' }, (failure) => {
           haptics.notify('error');

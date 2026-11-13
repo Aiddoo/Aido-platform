@@ -1,9 +1,8 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDi, stubWindowDimensions } from '@src/testing/core';
-import { TestUiProvider } from '@src/testing/render';
+import { stubWindowDimensions } from '@src/testing/core';
+import { renderAppRoute } from '@src/testing/render-route-hook';
 import { router } from 'expo-router';
-import { act, renderRouter, screen } from 'expo-router/testing-library';
-import { type PropsWithChildren, useEffect, useState } from 'react';
+import { act, screen } from 'expo-router/testing-library';
+import { useEffect } from 'react';
 import { Text } from 'react-native';
 
 import { MyPageStack } from './my-page-stack';
@@ -21,18 +20,8 @@ function createScreen(testID: string) {
   };
 }
 
-/** 마이 Stack이 DI의 첫 상세 저장소를 읽는다 */
-function MyPageTestProvider({ children }: PropsWithChildren) {
-  const [container] = useState(() => createTestDi());
-  return (
-    <StaticDIProvider container={container}>
-      <TestUiProvider>{children}</TestUiProvider>
-    </StaticDIProvider>
-  );
-}
-
 async function renderMyPageStack(initialUrl: string) {
-  return renderRouter(
+  return renderAppRoute(
     {
       _layout: {
         default: () => <MyPageStack menu={<Text testID="menu">메뉴</Text>} />,
@@ -41,8 +30,9 @@ async function renderMyPageStack(initialUrl: string) {
       'mypage/index': createScreen('mypage'),
       'settings/notifications/index': createScreen('notifications'),
       'settings/notifications/push': createScreen('push'),
+      'notifications/index': createScreen('inbox'),
     },
-    { initialUrl, wrapper: MyPageTestProvider },
+    { url: initialUrl },
   );
 }
 
@@ -74,6 +64,19 @@ describe('MyPageStack', () => {
     // Then
     expect(screen.getByTestId('push')).toBeTruthy();
     expect(screen.getAllByTestId('menu', { includeHiddenElements: true })).toHaveLength(3);
+  });
+
+  it('넓은 화면에서 첫 화면 종으로 연 알림함도 메뉴 칸 옆에 연다', async () => {
+    // Given
+    stubWindowDimensions(1032);
+    await renderMyPageStack('/mypage');
+
+    // When
+    await act(() => router.push('/notifications'));
+
+    // Then
+    expect(screen.getByTestId('inbox')).toBeTruthy();
+    expect(screen.getAllByTestId('menu', { includeHiddenElements: true })).toHaveLength(2);
   });
 
   it('접고 펴도 보고 있던 화면을 다시 마운트하지 않는다', async () => {

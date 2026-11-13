@@ -1,4 +1,3 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
   createQueryCacheStorage,
   QUERY_CACHE_STORAGE_KEY,
@@ -10,24 +9,23 @@ import {
   createCurrentUserDto,
   createUser,
 } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserApi } from '@src/features/identity/user/apis/user.api';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { HOUR_MS } from '@src/shared/constants/time-units';
 import { createDraftKey } from '@src/shared/draft/draft.model';
-import { createDraftRepository } from '@src/shared/draft/draft.repository';
-import { DraftService } from '@src/shared/draft/draft.service';
+import { KeychainLockedError } from '@src/shared/errors';
+import { openEncryptedStorage } from '@src/shared/infra/storage/encrypted-draft-storage';
 import {
-  createAnalyticsStub,
-  createErrorReporterStub,
   createHttpClientStub,
+  createLocalFileSystemFake,
+  createMemoryKeyValueStorage,
   createMemorySyncStorage,
   createPendingResponse,
   createTestDi,
   createTestQueryClient,
+  type TestDi,
 } from '@src/testing/core';
-import { QueryClientProvider } from '@tanstack/react-query';
-import type { QueryClient } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { renderScreenHook } from '@src/testing/render';
+import { waitFor } from '@testing-library/react-native';
 import { z } from 'zod';
 
 import { useClaimDeviceDataForUser } from './use-claim-device-data-for-user';
@@ -43,49 +41,32 @@ const createMemoDraftKey = (ownerId: string) =>
   });
 
 describe('useClaimDeviceDataForUser', () => {
-  let draftService: DraftService;
+  let di: TestDi;
   let queryCacheStorage: QueryCacheStorage;
-  let queryClient: QueryClient;
-  let wrapper: (props: PropsWithChildren) => React.JSX.Element;
 
   beforeEach(() => {
-    draftService = new DraftService(
-      createDraftRepository(createMemorySyncStorage()),
-      Date.now,
-      () => 0,
-    );
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
-    queryClient = createTestQueryClient();
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
-    const container = createTestDi({
-      authSessionStore: createAuthSessionStoreStub('authenticated'),
-      draftService,
-      queryCacheStorage,
-      analytics: createAnalyticsStub(),
-      errorReporter: createErrorReporterStub(),
-      userApi: new UserApi(httpClient),
+    di = createTestDi({
+      ports: { httpClient, queryCacheStorage },
+      seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
     });
-    wrapper = ({ children }) => (
-      <StaticDIProvider container={container}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </StaticDIProvider>
-    );
   });
 
   it('로그인한 사용자의 초안은 남기고 이전 사용자의 초안은 삭제한다', async () => {
     // Given — 세션 만료로 남은 초안
-    draftService.save(createMemoDraftKey(CURRENT_USER_ID), { content: '내 초안' });
-    draftService.save(createMemoDraftKey('user-2'), { content: '이전 사용자 초안' });
+    di.draftService.save(createMemoDraftKey(CURRENT_USER_ID), { content: '내 초안' });
+    di.draftService.save(createMemoDraftKey('user-2'), { content: '이전 사용자 초안' });
 
     // When
-    await renderHook(useClaimDeviceDataForUser, { wrapper });
+    await renderScreenHook(useClaimDeviceDataForUser, { di });
 
     // Then
     await waitFor(() =>
-      expect(draftService.restore(createMemoDraftKey('user-2'))).toEqual({ status: 'empty' }),
+      expect(di.draftService.restore(createMemoDraftKey('user-2'))).toEqual({ status: 'empty' }),
     );
-    expect(draftService.restore(createMemoDraftKey(CURRENT_USER_ID))).toEqual({
+    expect(di.draftService.restore(createMemoDraftKey(CURRENT_USER_ID))).toEqual({
       status: 'restored',
       value: { content: '내 초안' },
     });
@@ -97,7 +78,7 @@ describe('useClaimDeviceDataForUser', () => {
     queryCacheStorage.setItem(QUERY_CACHE_STORAGE_KEY, '이전 사용자 캐시');
 
     // When
-    await renderHook(useClaimDeviceDataForUser, { wrapper });
+    await renderScreenHook(useClaimDeviceDataForUser, { di });
 
     // Then
     await waitFor(() => expect(queryCacheStorage.getItem(QUERY_CACHE_STORAGE_KEY)).toBeNull());
@@ -115,36 +96,61 @@ describe('useClaimDeviceDataForUser', () => {
     restoredClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'user-2' }), {
       updatedAt: Date.now() - 60_000,
     });
-    const container = createTestDi({
-      authSessionStore: createAuthSessionStoreStub('authenticated'),
-      draftService,
-      userApi: new UserApi(httpClient),
+    const restored = createTestDi({
+      ports: { httpClient, queryClient: restoredClient },
+      seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
     });
-    draftService.save(createMemoDraftKey(CURRENT_USER_ID), { content: '내 초안' });
+    restored.draftService.save(createMemoDraftKey(CURRENT_USER_ID), { content: '내 초안' });
 
     // When
-    await renderHook(useClaimDeviceDataForUser, {
-      wrapper: ({ children }: PropsWithChildren) => (
-        <StaticDIProvider container={container}>
-          <QueryClientProvider client={restoredClient}>{children}</QueryClientProvider>
-        </StaticDIProvider>
-      ),
-    });
+    await renderScreenHook(useClaimDeviceDataForUser, { di: restored });
 
     // Then
-    expect(draftService.restore(createMemoDraftKey(CURRENT_USER_ID))).toEqual({
+    expect(restored.draftService.restore(createMemoDraftKey(CURRENT_USER_ID))).toEqual({
       status: 'restored',
       value: { content: '내 초안' },
     });
 
     // When
-    draftService.save(createMemoDraftKey('user-2'), { content: '이전 사용자 초안' });
+    restored.draftService.save(createMemoDraftKey('user-2'), { content: '이전 사용자 초안' });
     meResponse.settle();
 
     // Then
     await waitFor(() =>
-      expect(draftService.restore(createMemoDraftKey('user-2'))).toEqual({ status: 'empty' }),
+      expect(restored.draftService.restore(createMemoDraftKey('user-2'))).toEqual({
+        status: 'empty',
+      }),
     );
-    expect(draftService.restore(createMemoDraftKey(CURRENT_USER_ID)).status).toBe('restored');
+    expect(restored.draftService.restore(createMemoDraftKey(CURRENT_USER_ID)).status).toBe(
+      'restored',
+    );
+  });
+
+  it('키체인이 잠겨 초안 저장소를 열지 못한 실행에서 로그인해도 1시간 지난 녹음을 고아로 지우지 않는다', async () => {
+    // Given
+    // 재부팅 뒤 잠금 해제 전에 깨어나 초안 저장소를 열지 못했고, 같은 실행에서 잠금이 풀려 인증됐다
+    const secureStorage = createMemoryKeyValueStorage();
+    secureStorage.get.mockRejectedValue(new KeychainLockedError(new Error('locked')));
+    const { draftStorage } = await openEncryptedStorage(secureStorage, null);
+    const files = createLocalFileSystemFake();
+    files.addFile(['voice-notes', CURRENT_USER_ID], 'draft-1-0.wav', {
+      modifiedAtMs: Date.now() - 2 * HOUR_MS,
+    });
+    files.addFile(['voice-notes', 'user-2'], 'draft-9-0.wav');
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+    const locked = createTestDi({
+      ports: { httpClient, draftStorage, queryCacheStorage: null, localFileSystem: files },
+      seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+    });
+
+    // When
+    await renderScreenHook(useClaimDeviceDataForUser, { di: locked });
+
+    // Then
+    await waitFor(() =>
+      expect(files.hasFile(['voice-notes', 'user-2'], 'draft-9-0.wav')).toBe(false),
+    );
+    expect(files.hasFile(['voice-notes', CURRENT_USER_ID], 'draft-1-0.wav')).toBe(true);
   });
 });

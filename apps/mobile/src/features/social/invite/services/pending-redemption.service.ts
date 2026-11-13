@@ -11,7 +11,7 @@ import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invit
 import type { PendingRedemption } from '../domains/pending-redemption.model';
 import { installReferrerCheckedStoredValue } from '../schemas/install-referrer-checked-storage.schema';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
-import { parseInstallReferrerInviteCode } from '../utils/install-referrer';
+import { parseInstallReferrerInviteCode } from '../utils/install-referrer.view-model';
 
 /** 로그인 전에 받은 초대(링크·설치 referrer)를 기기에 남겼다가 이어서 여는 흐름 */
 export class PendingRedemptionService {

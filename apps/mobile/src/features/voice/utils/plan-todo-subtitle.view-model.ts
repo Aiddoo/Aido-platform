@@ -1,5 +1,5 @@
-import { formatRepeatSummary } from '@src/features/planning/todo/utils/format-repeat-summary';
 import { formatTodoPeriod } from '@src/features/planning/todo/utils/todo-period.view-model';
+import { formatRepeatSummary } from '@src/features/planning/todo/utils/todo-repeat-summary.view-model';
 import type { DateKey } from '@src/shared/date/date-key';
 import {
   type DateFormatContext,

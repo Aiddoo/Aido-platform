@@ -5,7 +5,7 @@ import {
   PushNotificationResponsePolicy,
   rememberHandledResponse,
 } from '../domains/push-notification-response.model';
-import type { NotificationDestination } from '../utils/notification-destination';
+import type { NotificationDestination } from '../utils/notification-destination.view-model';
 
 interface PushNotificationEntryState {
   /** 아직 열지 못한 탭 하나. 마지막 탭이 이긴다 */

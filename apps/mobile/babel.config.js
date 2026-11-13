@@ -12,20 +12,8 @@ module.exports = (api) => {
   api.cache(true);
   return {
     presets: ['babel-preset-expo'],
-    plugins: [
-      [
-        'module-resolver',
-        {
-          root: ['.'],
-          alias: {
-            '@': './app',
-            '@src': './src',
-            '@assets': './assets',
-          },
-        },
-      ],
-      // react-native-worklets/plugin은 babel-preset-expo(SDK 57+)가 자동 주입
-    ],
+    // 경로 별칭(@src·@assets)은 Expo CLI가 tsconfig paths로 푼다. react-native-worklets/plugin은 babel-preset-expo(SDK 57+)가 자동 주입
+    plugins: [],
     // 테스트 파일은 jest.mock 호이스팅이 깨지므로 제외한다
     overrides:
       reactCompilerPlugins.length === 0

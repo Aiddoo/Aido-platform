@@ -1,7 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { invalidCoordinate } from "./weather.errors.js";
 
 interface CoordinateValue {
   readonly latitude: number;
@@ -12,10 +11,10 @@ interface CoordinateValue {
 export class Coordinate extends ValueObject<CoordinateValue> {
   static create(latitude: number, longitude: number): Coordinate {
     if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "latitude", value: latitude });
+      throw invalidCoordinate("latitude", latitude);
     }
     if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "longitude", value: longitude });
+      throw invalidCoordinate("longitude", longitude);
     }
     return new Coordinate({ latitude, longitude });
   }

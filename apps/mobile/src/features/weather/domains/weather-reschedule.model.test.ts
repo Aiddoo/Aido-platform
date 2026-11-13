@@ -298,3 +298,34 @@ describe('getExpiredTargets', () => {
     expect(expired).toEqual([]);
   });
 });
+
+describe('getUpcomingOptions·getExpiredTargets 정각 경계', () => {
+  const STARTS_AT = '2026-11-02T08:00:00.000Z';
+  const options =
+    createWeatherReport({
+      hourly: HOURLY,
+      briefing: createBriefingDto({
+        reason: 'rain',
+        affectedTodoIds: [12],
+        rescheduleOptions: [{ todoId: 12, options: [createRescheduleOptionDto(STARTS_AT)] }],
+      }),
+    }).briefing?.rescheduleOptions[0]?.options ?? [];
+  const target = { todo: { id: 12, completed: false }, startsAt: toInstant(STARTS_AT) };
+
+  it.each([
+    { name: '1ms 전', now: '2026-11-02T07:59:59.999Z', isUpcoming: true, isExpired: false },
+    { name: '정확히 그 시각', now: STARTS_AT, isUpcoming: false, isExpired: true },
+    { name: '1ms 뒤', now: '2026-11-02T08:00:00.001Z', isUpcoming: false, isExpired: true },
+  ])(
+    '후보 시각의 $name이면 후보는 남는지 $isUpcoming, 선택은 지났는지 $isExpired',
+    ({ now, isUpcoming, isExpired }) => {
+      // When
+      const upcoming = WeatherReschedulePolicy.getUpcomingOptions(options, toInstant(now));
+      const expired = WeatherReschedulePolicy.getExpiredTargets([target], toInstant(now));
+
+      // Then
+      expect(upcoming.length === 1).toBe(isUpcoming);
+      expect(expired.length === 1).toBe(isExpired);
+    },
+  );
+});

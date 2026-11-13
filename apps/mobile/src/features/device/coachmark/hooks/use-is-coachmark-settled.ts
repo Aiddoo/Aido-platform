@@ -11,8 +11,14 @@ const KEYBOARD_MOVE_EVENTS = [
   'keyboardDidHide',
 ] as const;
 
-// 다시 가려지거나 키보드가 움직이거나 `restartKey`가 바뀌면(달력 넘기기) 시트·대상이 움직이므로 처음부터 기다린다
-export function useIsCoachmarkSettled(isVisible: boolean, restartKey?: string) {
+interface UseIsCoachmarkSettledOptions {
+  isVisible: boolean;
+  /** 바뀌면(달력 넘기기) 대상이 움직였으므로 처음부터 기다린다 */
+  restartKey?: string;
+}
+
+// 다시 가려지거나 키보드가 움직이거나 `restartKey`가 바뀌면 시트·대상이 움직이므로 처음부터 기다린다
+export function useIsCoachmarkSettled({ isVisible, restartKey }: UseIsCoachmarkSettledOptions) {
   const [keyboardMoveCount, setKeyboardMoveCount] = useState(0);
   const [isSettled, setIsSettled] = useState(false);
 
@@ -22,6 +28,7 @@ export function useIsCoachmarkSettled(isVisible: boolean, restartKey?: string) {
       return;
     }
     const subscriptions = KEYBOARD_MOVE_EVENTS.map((event) =>
+      // oxlint-disable-next-line no-restricted-properties -- 위치를 흉내 내지 않고 키보드가 움직인 횟수만 세어 말풍선 열기를 미룬다
       Keyboard.addListener(event, () => setKeyboardMoveCount((count) => count + 1)),
     );
 

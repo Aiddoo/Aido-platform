@@ -10,12 +10,13 @@ import {
   createMemoryObservableSyncStorage,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
+  createWidgetBridgeStub,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
 
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
-import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 import { useWidgetSnapshotSync, type WidgetSyncAuthState } from './use-widget-snapshot-sync';
 
 const ACCOUNT_ID = 'account-a';
@@ -35,11 +36,11 @@ function createSummaryDto(date: unknown) {
 async function renderSync({
   authState,
   getSummary = async (date) => ok(createSummaryDto(date)),
-  writeSnapshot = jest.fn<Promise<void>, [WidgetSnapshot, (string | null)?]>(async () => {}),
+  widgetBridge = createWidgetBridgeStub(),
 }: {
   authState: WidgetSyncAuthState;
   getSummary?: (date: unknown) => Promise<Result<unknown, ApiError>>;
-  writeSnapshot?: jest.Mock<Promise<void>, [WidgetSnapshot, (string | null)?]>;
+  widgetBridge?: ReturnType<typeof createWidgetBridgeStub>;
 }) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async (url, options) => {
@@ -48,7 +49,6 @@ async function renderSync({
     }
     return ok(createDailyCompletionsDto());
   });
-  const widgetBridge = { writeSnapshot };
   const errorReporter = createErrorReporterStub();
   const widgetStorage = createMemoryObservableSyncStorage();
   const queryClient = createTestQueryClient({
@@ -57,8 +57,9 @@ async function renderSync({
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   const current = { authState };
   const hook = await renderScreenHook(() => useWidgetSnapshotSync(current.authState), {
-    di: { httpClient, widgetBridge, errorReporter, widgetStorage },
-    queryClient,
+    di: createTestDi({
+      ports: { httpClient, widgetBridge, errorReporter, widgetStorage, queryClient },
+    }),
     withLocalDate: true,
   });
 
@@ -111,14 +112,15 @@ describe('useWidgetSnapshotSync', () => {
       // Given
       const firstWrite = createPendingResponse(undefined);
       const finishedStates: string[] = [];
-      const writeSnapshot = jest.fn(async (snapshot: WidgetSnapshot) => {
-        if (writeSnapshot.mock.calls.length === 1) {
+      const widgetBridge = createWidgetBridgeStub();
+      widgetBridge.writeSnapshot.mockImplementation(async (snapshot) => {
+        if (widgetBridge.writeSnapshot.mock.calls.length === 1) {
           await firstWrite.response;
         }
         finishedStates.push(snapshot.days[0].state);
       });
-      const { changeAuthState } = await renderSync({ authState: 'authenticated', writeSnapshot });
-      await waitFor(() => expect(writeSnapshot).toHaveBeenCalledTimes(1));
+      const { changeAuthState } = await renderSync({ authState: 'authenticated', widgetBridge });
+      await waitFor(() => expect(widgetBridge.writeSnapshot).toHaveBeenCalledTimes(1));
 
       // When
       await changeAuthState('unauthenticated');
@@ -126,7 +128,7 @@ describe('useWidgetSnapshotSync', () => {
 
       // Then
       await waitFor(() => expect(finishedStates).toEqual(['data', 'loggedOut']));
-      expect(writeSnapshot).toHaveBeenLastCalledWith(
+      expect(widgetBridge.writeSnapshot).toHaveBeenLastCalledWith(
         expect.objectContaining({ days: [expect.objectContaining({ state: 'loggedOut' })] }),
         null,
       );
@@ -136,12 +138,11 @@ describe('useWidgetSnapshotSync', () => {
   it('위젯 쓰기 실패는 앱 흐름을 막지 않고 widget 기능으로 보고한다', async () => {
     // Given
     const failure = new Error('native failure');
+    const widgetBridge = createWidgetBridgeStub();
+    widgetBridge.writeSnapshot.mockRejectedValue(failure);
 
     // When
-    const { errorReporter } = await renderSync({
-      authState: 'unauthenticated',
-      writeSnapshot: jest.fn().mockRejectedValue(failure),
-    });
+    const { errorReporter } = await renderSync({ authState: 'unauthenticated', widgetBridge });
 
     // Then
     await waitFor(() =>
@@ -164,7 +165,7 @@ describe('useWidgetSnapshotSync', () => {
 
     // When
     await renderScreenHook(() => useWidgetSnapshotSync('resolving'), {
-      di: { errorReporter, widgetStorage },
+      di: createTestDi({ ports: { errorReporter, widgetStorage } }),
       withLocalDate: true,
     });
 
@@ -192,7 +193,7 @@ describe('useWidgetSnapshotSync', () => {
 
     // When
     const render = renderScreenHook(() => useWidgetSnapshotSync('resolving'), {
-      di: { errorReporter, widgetStorage },
+      di: createTestDi({ ports: { errorReporter, widgetStorage } }),
       withLocalDate: true,
     });
 

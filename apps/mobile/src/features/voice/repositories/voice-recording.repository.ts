@@ -8,7 +8,7 @@ import {
   VOICE_RECORDING_EXTENSION,
   VOICE_RECORDING_ROOT_DIRECTORY,
 } from '../constants/voice-note.constants';
-import { VoiceRecordingFilePolicy } from '../domains/voice-note.model';
+import { VoiceRecordingFilePolicy } from '../domains/voice-recording-file.model';
 
 interface SaveRecordingInput {
   accountId: string;

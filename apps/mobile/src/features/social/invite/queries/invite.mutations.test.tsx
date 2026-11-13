@@ -7,6 +7,7 @@ import {
   createHapticsGatewayStub,
   createSocialShareGatewayStub,
   createSystemShareGatewayStub,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
@@ -41,7 +42,7 @@ describe('useShareInviteMutationOptions', () => {
     const haptics = createHapticsGatewayStub();
     const errorReporter = createErrorReporterStub();
     const { result } = await renderScreenHook(() => useMutation(useShareInviteMutationOptions()), {
-      di: { socialShare, systemShare, clipboard, haptics, errorReporter },
+      di: createTestDi({ ports: { socialShare, systemShare, clipboard, haptics, errorReporter } }),
     });
 
     // When

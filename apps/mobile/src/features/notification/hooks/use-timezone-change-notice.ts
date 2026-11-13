@@ -16,7 +16,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { isEqual } from 'es-toolkit';
 import { useEffect, useEffectEvent, useState } from 'react';
@@ -25,7 +25,7 @@ import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { DeviceTimezonePolicy } from '../domains/device-timezone.model';
 import type { DeviceTimezone, DeviceTimezoneChange } from '../domains/device-timezone.model';
 import { deviceTimezoneStoredValue } from '../schemas/device-timezone-storage.schema';
-import { getTimezoneOffsetBucket } from '../utils/notification-analytics';
+import { getTimezoneOffsetBucket } from '../utils/device-timezone-analytics';
 
 const EXAMPLE_TODO_TIME: TimeOfDay = { hour: 10, minute: 0 };
 

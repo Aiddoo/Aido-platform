@@ -12,8 +12,8 @@ import { NOTIFICATION_READ_BUDGET_MS } from '../constants/notification.constants
 import { isForeignNotificationError } from '../domains/notification.error';
 import type { NotificationOwnership } from '../domains/notification.model';
 import { isServerNotificationId } from '../domains/push-notification.model';
-import type { GetNotificationsQuery } from '../schemas/get-notifications-request.schema';
 import { marketingPushOptOutEnvelopeSchema } from '../schemas/marketing-push-opt-out-response.schema';
+import type { GetNotificationsQuery } from '../schemas/notification-list-request.schema';
 import {
   toMarketingPushOptOutResult,
   toNotificationPage,

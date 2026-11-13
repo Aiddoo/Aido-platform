@@ -1,51 +1,50 @@
-import { useLogger, useSystemShare, useViewCapture } from '@src/bootstrap/providers/di-context';
+import { useSystemShare, useViewCapture } from '@src/bootstrap/providers/di-context';
 import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
-import { getErrorMessage } from '@src/shared/errors';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import { type RefObject, useCallback, useRef, useState } from 'react';
+import { useAppToast } from '@src/shared/ui';
+import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
+import type { RefObject } from 'react';
+import { match } from 'ts-pattern';
 
-import { SHARE_VIEW_CAPTURE_LOG_EVENT } from '../constants/share-view-capture-log-events';
+type ShareOutcome = 'shared' | 'unsupported' | 'capture-failed';
 
 export function useShareViewCapture(viewShotRef: RefObject<ViewCaptureHandle | null>) {
   const systemShare = useSystemShare();
   const viewCapture = useViewCapture();
-  const logger = useLogger();
-  const { warning, error } = useAppToast();
-  const [isSharing, setIsSharing] = useState(false);
-  // 상태는 다시 그린 뒤에야 바뀌므로 그 전에 한 번 더 누르는 것은 ref로 막는다
-  const isSharingRef = useRef(false);
-
-  const shareCapture = useCallback(async () => {
-    if (isSharingRef.current) {
-      return;
-    }
-    isSharingRef.current = true;
-    setIsSharing(true);
-    try {
-      const isAvailable = await systemShare.isImageShareAvailable();
-      if (!isAvailable) {
-        warning(t('common:share.unsupported'));
-        return;
+  const toast = useAppToast();
+  const share = useMutation({
+    // 공유는 기기 안의 일이라 오프라인에도 멈추지 않는다
+    networkMode: 'always',
+    mutationFn: async (): Promise<ShareOutcome> => {
+      if (!(await systemShare.isImageShareAvailable())) {
+        return 'unsupported';
       }
-
       const uri = await viewCapture.capture(viewShotRef.current);
       if (uri == null) {
-        error(t('common:share.prepareFailed'));
-        return;
+        return 'capture-failed';
       }
-
       await systemShare.shareImage(uri);
-    } catch (shareError) {
-      logger.warn(SHARE_VIEW_CAPTURE_LOG_EVENT.SHARE_FAILED, {
-        error: getErrorMessage(shareError),
-      });
-      error(t('common:share.failed'));
-    } finally {
-      isSharingRef.current = false;
-      setIsSharing(false);
-    }
-  }, [systemShare, viewCapture, logger, viewShotRef, warning, error]);
+      return 'shared';
+    },
+    onSuccess: (outcome) =>
+      match(outcome)
+        .with('shared', noop)
+        .with('unsupported', () => toast.warning(t('common:share.unsupported')))
+        .with('capture-failed', () => toast.error(t('common:share.prepareFailed')))
+        .exhaustive(),
+    meta: {
+      errorFeedback: { feature: 'share_view_capture', fallbackKey: 'common:share.failed' },
+    },
+  });
 
-  return { shareCapture, isSharing };
+  // isPending은 다시 그린 뒤에야 바뀌어 그 전의 연타는 한 번 누름으로 접는다
+  const shareCapture = useSingleTap(() => {
+    if (!share.isPending) {
+      share.mutate();
+    }
+  });
+
+  return { shareCapture, isSharing: share.isPending };
 }

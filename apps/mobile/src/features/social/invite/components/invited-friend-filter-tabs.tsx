@@ -40,6 +40,31 @@ export function InvitedFriendFilterTabs() {
   );
 }
 
+/** 수를 받지 못해도 탭은 그대로 바꿀 수 있게 수 없는 라벨로 그린다 */
+InvitedFriendFilterTabs.Error = function ErrorFallback() {
+  const { t } = useTranslation('invite');
+  const [view, setView] = useInvitedFriendsView();
+
+  return (
+    <ViewTabs
+      schema={invitedFriendsViewSchema}
+      value={view}
+      onValueChange={setView}
+      variant="primary"
+    >
+      <Tabs.List>
+        <Tabs.Indicator />
+        <SegmentTabTrigger value="all" testID="invitees-tab-all" size="b2">
+          {t('friendList.tab.allLabel')}
+        </SegmentTabTrigger>
+        <SegmentTabTrigger value="waiting" testID="invitees-tab-waiting" size="b2">
+          {t('friendList.tab.waitingLabel')}
+        </SegmentTabTrigger>
+      </Tabs.List>
+    </ViewTabs>
+  );
+};
+
 /** 숫자를 받기 전에도 같은 탭 모양·선택을 두고 라벨 자리만 비워 둔다 */
 InvitedFriendFilterTabs.Loading = function Loading() {
   const [view] = useInvitedFriendsView();

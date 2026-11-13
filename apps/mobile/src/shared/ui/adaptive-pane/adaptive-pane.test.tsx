@@ -107,12 +107,12 @@ describe('AdaptivePane 컴포넌트', () => {
 
     // When
     await render(
-      <SafeAreaInsetsContext.Provider value={{ top: 0, right: 84, bottom: 34, left: 0 }}>
+      <SafeAreaInsetsContext value={{ top: 0, right: 84, bottom: 34, left: 0 }}>
         <AdaptivePane
           primary={<InsetsProbe label="목록" />}
           secondary={<InsetsProbe label="상세" />}
         />
-      </SafeAreaInsetsContext.Provider>,
+      </SafeAreaInsetsContext>,
     );
 
     // Then

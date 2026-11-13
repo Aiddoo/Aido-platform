@@ -3,7 +3,7 @@ import { unwrap } from '@src/core/errors/result';
 import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { toUserReportRequest } from '../apis/user-report.mapper';
@@ -30,7 +30,7 @@ export function useBlockUserMutationOptions() {
       emitNotificationsChanged();
       invalidateAfterBlockChange(queryClient);
     },
-    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'friend' } },
   });
 }
 
@@ -53,7 +53,7 @@ export function useUnblockUserMutationOptions() {
       // 화면에 머무는 차단 목록이라 행이 사라질 때까지 해제 버튼을 꺼 둔다. 다시 눌러 요청이 또 가지 않게 한다
       await invalidateAfterBlockChange(queryClient);
     },
-    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'friend' } },
   });
 }
 
@@ -74,6 +74,6 @@ export function useReportContentMutationOptions() {
     onSuccess: (_result, { target, form }) => {
       trackEvent('content_reported', { target_type: target.targetType, reason: form.reason });
     },
-    meta: { errorFeedback: { feature: 'friend', fallbackKey: 'common:toast.defaultError' } },
+    meta: { errorFeedback: { feature: 'friend' } },
   });
 }

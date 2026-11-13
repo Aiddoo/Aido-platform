@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { createTestQueryClient } from '@src/testing/core';
+import { createTestQueryClient, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -20,7 +20,7 @@ describe('MemoCreateButton', () => {
       <Suspense fallback={null}>
         <MemoCreateButton />
       </Suspense>,
-      { queryClient },
+      { di: createTestDi({ ports: { queryClient } }) },
     );
 
     // When

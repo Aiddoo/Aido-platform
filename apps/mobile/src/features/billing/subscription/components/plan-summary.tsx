@@ -1,10 +1,12 @@
 import type { PlanQuotaFeatureKey } from '@aido/api/vocabulary';
 import { useMyPageMenuNavigate } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
   ArrowRightIcon,
+  Box,
   CrownDuoIcon,
   HStack,
   SettingsListGroup,
@@ -37,25 +39,10 @@ interface QuotaProps {
 }
 
 export function PlanSummary() {
-  const { t } = useTranslation('subscription');
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const navigate = useMyPageMenuNavigate();
 
   return match(EntitlementPolicy.hasFullAccess(entitlements))
-    .with(false, () => (
-      <PlanSummary.Quota
-        action={
-          <TextButton
-            size="small"
-            variant="arrow"
-            onPress={() => navigate(SUBSCRIPTION_PATHNAME)}
-            testID="plan-summary-see-premium"
-          >
-            {t('upsell.viewPremium')}
-          </TextButton>
-        }
-      />
-    ))
+    .with(false, () => <PlanSummary.Quota action={<ViewPremiumButton />} />)
     .with(true, () => <PlanSummary.Premium />)
     .exhaustive();
 }
@@ -143,30 +130,97 @@ PlanSummary.Quota = function Quota({ action }: QuotaProps) {
 
   return (
     <SurfaceCard className="gap-4" testID="quota-summary">
-      <HStack gap={6} align="center">
-        <AiFilledIcon width={16} height={16} colorClassName="text-main" />
-        <Text size="b4" weight="semibold" shade={7} className="flex-1">
-          {t('quota.summaryTitle')}
-        </Text>
-        {action}
-      </HStack>
+      <QuotaHeader action={action} />
       <QuotaRow feature="AI_PARSE" label={t('quota.aiParse')} hint={t('quota.aiParseHint')} />
       <QuotaRow feature="VOICE_NOTE" label={t('quota.voiceNote')} />
     </SurfaceCard>
   );
 };
 
+/** 받은 뒤와 같은 카드로 자리를 잡는다. 영속 권한 캐시로 프리미엄을 알면 그 모양, 모르면 대부분인 무료 모양이다 */
 PlanSummary.Loading = function Loading() {
-  return (
-    <SurfaceCard className="gap-3" accessibilityState={{ busy: true }}>
-      <TextSkeleton size="b4" className="w-32" />
-      <TextSkeleton size="b3" className="w-full" />
-      <TextSkeleton size="b3" className="w-3/4" />
-    </SurfaceCard>
-  );
+  const { data: entitlements } = useQuery(useGetEntitlementsQueryOptions());
+
+  if (entitlements != null && EntitlementPolicy.hasFullAccess(entitlements)) {
+    return <PremiumSkeleton />;
+  }
+  return <QuotaSkeleton />;
 };
 
 PlanSummary.Error = SettingsListGroup.Error;
+
+function ViewPremiumButton() {
+  const { t } = useTranslation('subscription');
+  const navigate = useMyPageMenuNavigate();
+
+  return (
+    <TextButton
+      size="small"
+      variant="arrow"
+      onPress={() => navigate(SUBSCRIPTION_PATHNAME)}
+      testID="plan-summary-see-premium"
+    >
+      {t('upsell.viewPremium')}
+    </TextButton>
+  );
+}
+
+function PremiumSkeleton() {
+  return (
+    <Box className="rounded-2xl bg-gray-1 p-4" accessibilityState={{ busy: true }}>
+      <HStack className="gap-3" align="center">
+        <SettingsListGroup.Icon Icon={CrownDuoIcon} />
+        <VStack flex={1} gap={2}>
+          <TextSkeleton size="b2" className="w-28" />
+          <TextSkeleton size="b4" className="w-40" />
+        </VStack>
+        <ArrowRightIcon colorClassName="text-gray-6" />
+      </HStack>
+    </Box>
+  );
+}
+
+function QuotaSkeleton() {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <SurfaceCard className="gap-4" accessibilityState={{ busy: true }}>
+      <QuotaHeader action={<ViewPremiumButton />} />
+      <QuotaRowLayout
+        label={t('quota.aiParse')}
+        hint={t('quota.aiParseHint')}
+        usage={<TextSkeleton size="b4" className="w-12" />}
+        meter={{ used: 0, limit: 1 }}
+        refill={null}
+      />
+      <QuotaRowLayout
+        label={t('quota.voiceNote')}
+        usage={<TextSkeleton size="b4" className="w-12" />}
+        meter={{ used: 0, limit: 1 }}
+        refill={null}
+      />
+    </SurfaceCard>
+  );
+}
+
+function QuotaHeader({ action }: QuotaProps) {
+  const { t } = useTranslation('subscription');
+  const fontScaledSize = useFontScaledSize();
+
+  return (
+    <HStack gap={6} align="center">
+      <AiFilledIcon
+        width={fontScaledSize(16)}
+        height={fontScaledSize(16)}
+        colorClassName="text-main"
+      />
+      <Text size="b4" weight="semibold" shade={7} className="flex-1">
+        {t('quota.summaryTitle')}
+      </Text>
+      {action}
+    </HStack>
+  );
+}
 
 interface QuotaRowProps {
   feature: PlanQuotaFeatureKey;
@@ -192,14 +246,12 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
   }
 
   const isUsedUp = type === 'used-up';
-  const refill = isUsedUp ? formatRefillSentence(snapshot, feature) : null;
 
   return (
-    <VStack gap={6}>
-      <HStack gap={12} align="center">
-        <Text size="b3" weight="medium" className="flex-1">
-          {label}
-        </Text>
+    <QuotaRowLayout
+      label={label}
+      hint={hint}
+      usage={
         <Text
           size="b4"
           weight="semibold"
@@ -212,10 +264,33 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
             limit: formatCount(limit, locale),
           })}
         </Text>
+      }
+      meter={{ used, limit }}
+      refill={isUsedUp ? formatRefillSentence(snapshot, feature) : null}
+    />
+  );
+}
+
+interface QuotaRowLayoutProps {
+  label: string;
+  hint?: string;
+  usage: ReactNode;
+  meter: { used: number; limit: number };
+  refill: string | null;
+}
+
+function QuotaRowLayout({ label, hint, usage, meter, refill }: QuotaRowLayoutProps) {
+  return (
+    <VStack gap={6}>
+      <HStack gap={12} align="center">
+        <Text size="b3" weight="medium" className="flex-1">
+          {label}
+        </Text>
+        {usage}
       </HStack>
       <Meter
-        value={used}
-        max={limit}
+        value={meter.used}
+        max={meter.limit}
         size="medium"
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"

@@ -12,7 +12,7 @@ import {
 import { TextInput, type View } from 'react-native';
 import { withUniwind } from 'uniwind';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 import { HStack } from '../h-stack/h-stack';
 import { type FocusedFieldNode, useReportFocusedField } from '../input/focused-field';
 import { Text } from '../text/text';

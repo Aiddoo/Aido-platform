@@ -1,4 +1,5 @@
 import { refreshTokensSchema } from '@aido/api/contracts/auth';
+import { HttpStatus } from '@aido/api/errors';
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type {
@@ -9,13 +10,21 @@ import type {
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
 import { getErrorMessage, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+import { TimeoutError as DeadlineError, withTimeout } from 'es-toolkit';
 import { TimeoutError as KyTimeoutError } from 'ky';
 import { z } from 'zod';
 
+import { REFRESH_TIMEOUT_MS, TOKEN_READ_TIMEOUT_MS } from './request-timeout';
 import { toServerErrorCode } from './server-error-code';
 import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
 const refreshEnvelopeSchema = z.object({ data: refreshTokensSchema });
+
+interface RefreshExchange {
+  response: Response;
+  /** JSON이 아니면 null이다 */
+  body: unknown;
+}
 
 interface TokenRefresherPorts {
   tokenStore: TokenStore;
@@ -36,23 +45,31 @@ export function createTokenRefresher({
 
   const readRefreshToken = async (): Promise<string | null> => {
     try {
-      return await tokenStore.getRefreshToken();
+      return await withTimeout(() => tokenStore.getRefreshToken(), TOKEN_READ_TIMEOUT_MS);
     } catch (error) {
       // 키체인 접근 실패(기기 잠김 등)는 "토큰 없음"이 아니다. 세션을 끝내면 안 된다.
       logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_READ_FAILED, { error: getErrorMessage(error) });
-      throw new NetworkError();
+      throw error instanceof DeadlineError ? new TimeoutError() : new NetworkError();
     }
   };
 
-  const sendRefreshRequest = async (refreshToken: string): Promise<Response> => {
+  // ky timeout은 응답 헤더까지만 센다. 본문이 멈추면 이 갱신을 기다리는 401 요청이 모두 멈추므로 본문까지 같은 제한 안에 받는다
+  // 제한을 넘겨 늦게 온 본문은 버린다. 저장하면 그사이 다시 회전한 토큰을 지난 토큰으로 덮는다
+  const exchangeRefreshToken = async (refreshToken: string): Promise<RefreshExchange> => {
     try {
-      return await requestRefresh(refreshToken);
+      return await withTimeout(async () => {
+        const response = await requestRefresh(refreshToken);
+        // 갱신 응답은 이 함수 밖으로 나가지 않으므로 본문을 직접 읽어도 안전하다.
+        return { response, body: await response.json().catch(() => null) };
+      }, REFRESH_TIMEOUT_MS);
     } catch (error) {
-      // 네트워크/타임아웃 — 서버는 회전하지 않았으므로 보유 토큰은 여전히 유효하다.
+      // 네트워크/타임아웃 — 서버는 회전하지 않았거나 grace 안이라 보유 토큰으로 다시 시도할 수 있다.
       logger.warn(TOKEN_REFRESHER_LOG_EVENT.TRANSIENT_REFRESH_FAILED, {
         error: getErrorMessage(error),
       });
-      throw error instanceof KyTimeoutError ? new TimeoutError() : new NetworkError();
+      throw error instanceof KyTimeoutError || error instanceof DeadlineError
+        ? new TimeoutError()
+        : new NetworkError();
     }
   };
 
@@ -66,10 +83,7 @@ export function createTokenRefresher({
       return concludeInvalid({ reason: 'tokens-missing' });
     }
 
-    const response = await sendRefreshRequest(refreshToken);
-
-    // 갱신 응답은 이 함수 밖으로 나가지 않으므로 본문을 직접 읽어도 안전하다.
-    const body = await response.json().catch(() => null);
+    const { response, body } = await exchangeRefreshToken(refreshToken);
 
     if (response.ok) {
       const parsed = refreshEnvelopeSchema.safeParse(body);
@@ -83,19 +97,16 @@ export function createTokenRefresher({
       }
 
       const { accessToken, refreshToken: nextRefreshToken } = parsed.data.data;
-      try {
-        await tokenStore.save({ accessToken, refreshToken: nextRefreshToken });
-      } catch (error) {
-        // 저장 실패. 서버는 회전했지만 보유 토큰은 grace(10초) 안에서 아직 통한다.
+      // 쓰기를 기다리거나 실패로 던지면 기다리던 요청이 회전 전 refresh 토큰으로 다시 갱신해 grace 뒤 SESSION_0704가 된다
+      tokenStore.save({ accessToken, refreshToken: nextRefreshToken }).catch((error: unknown) => {
         logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_PERSIST_FAILED, {
           error: getErrorMessage(error),
         });
-        throw new NetworkError();
-      }
+      });
       return { kind: 'refreshed', accessToken };
     }
 
-    if (response.status === 401) {
+    if (response.status === HttpStatus.UNAUTHORIZED) {
       // 서버가 리프레시 토큰 자체를 거부했다. 어떤 코드인지가 진단의 전부다 —
       // SESSION_0704(토큰 재사용 → 패밀리 폐기)와 SESSION_0702(단순 만료)는 전혀 다른 사건이다.
       return concludeInvalid({

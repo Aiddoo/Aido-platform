@@ -457,7 +457,9 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
     it("커스텀 메시지가 있는 DomainException은 메시지를 보존한다", () => {
       // Given
-      const exception = new DomainException(ErrorCode.TODO_0801, undefined, "커스텀 도메인 메시지");
+      const exception = new DomainException(ErrorCode.TODO_0801, undefined, {
+        message: "커스텀 도메인 메시지",
+      });
 
       // When
       filter.catch(exception, host);

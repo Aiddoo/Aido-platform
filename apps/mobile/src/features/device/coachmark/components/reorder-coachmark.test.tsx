@@ -1,3 +1,4 @@
+import { createTestDi } from '@src/testing/core';
 import '@src/shared/i18n/init';
 import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
@@ -19,7 +20,7 @@ describe('ReorderCoachmark', () => {
 
     // When
     await renderScreen(<ReorderCoachmark.Alert kind="todo" accountId={INPUT.accountId} />, {
-      di: { syncStorage },
+      di: createTestDi({ ports: { syncStorage } }),
     });
 
     // Then
@@ -33,7 +34,7 @@ describe('ReorderCoachmark', () => {
 
     // When
     await renderScreen(<ReorderCoachmark.Alert kind="todo" accountId={INPUT.accountId} />, {
-      di: { syncStorage },
+      di: createTestDi({ ports: { syncStorage } }),
     });
 
     // Then
@@ -50,7 +51,7 @@ describe('ReorderCoachmark', () => {
         <ReorderCoachmark.Alert kind="todo" accountId={INPUT.accountId} />
         <NeverResolves />
       </Suspense>,
-      { di: { syncStorage } },
+      { di: createTestDi({ ports: { syncStorage } }) },
     );
 
     // Then
