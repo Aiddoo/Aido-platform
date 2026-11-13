@@ -1,7 +1,8 @@
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
-    /** 댓글·답글 2단계(1.14.1+). chain_size는 한 번에 이어 쓴 글 수다. */
+    /** 댓글·답글 2단계. chain_size는 한 번에 이어 쓴 글 수다. */
     todo_comment_created: { todo_id: number; is_reply: boolean; chain_size: number };
+    todo_comment_updated: { todo_id: number; is_reply: boolean };
     todo_comment_deleted: { todo_id: number; is_reply: boolean };
     todo_comment_liked: { todo_id: number; is_liked: boolean; via: 'button' | 'double_tap' };
     todo_comment_sorted: { todo_id: number; sort: 'POPULAR' | 'LATEST' };

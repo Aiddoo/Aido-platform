@@ -1,11 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { CheerId } from "./cheer-id.vo.js";
 import { CheerMessage } from "./cheer-message.vo.js";
+import { cannotCheerSelf } from "./cheers.errors.js";
 
 export interface CheerPrimitives {
   readonly id: number;
@@ -35,7 +33,7 @@ interface CreateCheerParams {
 export class Cheer extends AggregateRoot<CheerId, CheerProps> {
   static create(params: CreateCheerParams): Cheer {
     if (params.senderId.equals(params.receiverId)) {
-      throw new DomainException(ErrorCode.CHEER_1204);
+      throw cannotCheerSelf();
     }
     return new Cheer(params.id, {
       senderId: params.senderId,

@@ -4,7 +4,7 @@ import { CustomerInfoPolicy } from './customer-info.model';
 function createCustomerInfo(
   activeEntitlements: CustomerInfo['activeEntitlements'] = [],
 ): CustomerInfo {
-  return { activeEntitlements };
+  return { activeEntitlements, managementUrl: null };
 }
 
 describe('hasStoreEntitlement', () => {

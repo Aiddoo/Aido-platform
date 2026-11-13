@@ -26,7 +26,7 @@ export function createLocalFileEntry(overrides: Partial<LocalFileEntry> = {}): L
     name: 'recording.m4a',
     uri: 'file:///voice/recording.m4a',
     sizeBytes: 1024,
-    modifiedAt: null,
+    modifiedAtMs: null,
     ...overrides,
   };
 }

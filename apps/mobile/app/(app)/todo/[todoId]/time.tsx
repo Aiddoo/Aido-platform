@@ -1,20 +1,20 @@
-import { usePromptPushPermission } from '@src/features/notification/hooks/use-prompt-push-permission';
+import { useAskPushPermissionOnTodoTime } from '@src/features/notification/hooks/use-ask-push-permission-on-todo-time';
 import { TodoTimeBottomSheet } from '@src/features/planning/todo/components/todo-list/todo-time-bottom-sheet';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { SheetRouteScreen } from '@src/shared/ui';
-import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function TodoTimeSheetRoute() {
-  const params = todoParamsSchema.safeParse(useLocalSearchParams());
-  const promptPushPermission = usePromptPushPermission();
+  const route = useRouteParamsOrRedirect(todoParamsSchema, { fallbackHref: '/feed' });
+  const askPushPermission = useAskPushPermissionOnTodoTime();
 
-  if (!params.success) {
-    return <Redirect href="/feed" />;
+  if (route.redirect != null) {
+    return route.redirect;
   }
 
   return (
     <SheetRouteScreen>
-      <TodoTimeBottomSheet onTimeScheduled={promptPushPermission} />
+      <TodoTimeBottomSheet onTimeScheduled={askPushPermission} />
     </SheetRouteScreen>
   );
 }

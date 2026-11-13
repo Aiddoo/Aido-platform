@@ -1,7 +1,6 @@
 import { clamp, maxBy, minBy } from 'es-toolkit';
 
-import { PM10_UPPER_BOUNDS, PM25_UPPER_BOUNDS } from '../constants/weather.constants';
-import type { AirPollutant } from '../domains/weather-indicator.model';
+import { type AirPollutant, getPollutantUpperBounds } from '../domains/weather-indicator.model';
 import type { DailyForecastEntry } from '../domains/weather-report.model';
 
 /** 막대 끝에 점이 반쯤 잘리지 않도록 3%~97% 안에 둔다. */
@@ -11,9 +10,14 @@ const METER_MAX = 0.97;
 const UV_METER_MAX = 11;
 
 /** 막대를 등급 4칸으로 똑같이 나누고, 매우 나쁨 칸은 마지막 기준의 두 배까지 펼친다. */
+function toAirMeterBounds(pollutant: AirPollutant): readonly number[] {
+  const upperBounds = getPollutantUpperBounds(pollutant);
+  return [0, ...upperBounds, upperBounds[2] * 2];
+}
+
 const AIR_METER_BOUNDS = {
-  pm10: [0, ...PM10_UPPER_BOUNDS, PM10_UPPER_BOUNDS[2] * 2],
-  pm25: [0, ...PM25_UPPER_BOUNDS, PM25_UPPER_BOUNDS[2] * 2],
+  pm10: toAirMeterBounds('pm10'),
+  pm25: toAirMeterBounds('pm25'),
 } as const satisfies Record<AirPollutant, readonly number[]>;
 
 /** 0~1 막대·궤적 위 자리. 범위를 벗어나면 양 끝에 두고, 폭이 1보다 좁으면 1로 본다. */

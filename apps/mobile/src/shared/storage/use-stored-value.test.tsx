@@ -1,4 +1,8 @@
-import { createMemoryObservableSyncStorage, createMemorySyncStorage } from '@src/testing/core';
+import {
+  createMemoryObservableSyncStorage,
+  createMemorySyncStorage,
+  createTestDi,
+} from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { act } from '@testing-library/react-native';
 import { z } from 'zod';
@@ -26,12 +30,12 @@ describe('useStoredValue', () => {
     syncStorage.set('aido_test_dismissals_v1:account-1', '{"AI_PARSE":"2026-11-11"}');
     const { result, rerender } = await renderScreenHook(
       () => useStoredValue(dismissalsStoredValue, 'account-1'),
-      { di: { syncStorage } },
+      { di: createTestDi({ ports: { syncStorage } }) },
     );
     const [first] = result.current;
 
     // When
-    await rerender({});
+    await rerender(undefined);
 
     // Then
     expect(result.current[0]).toBe(first);
@@ -43,7 +47,7 @@ describe('useStoredValue', () => {
     const syncStorage = createMemoryObservableSyncStorage();
     const { result } = await renderScreenHook(
       () => useStoredValue(dismissalsStoredValue, 'account-1'),
-      { di: { syncStorage } },
+      { di: createTestDi({ ports: { syncStorage } }) },
     );
 
     // When
@@ -58,9 +62,7 @@ describe('useStoredValue', () => {
     const syncStorage = createMemoryObservableSyncStorage();
     const { result } = await renderScreenHook(
       () => useStoredValue(dismissalsStoredValue, undefined),
-      {
-        di: { syncStorage },
-      },
+      { di: createTestDi({ ports: { syncStorage } }) },
     );
 
     // When
@@ -78,9 +80,7 @@ describe('useStoredValue', () => {
     const draftStorage = createMemorySyncStorage();
     const { result } = await renderScreenHook(
       () => useStoredValue(languageStoredValue, 'account-1'),
-      {
-        di: { syncStorage, draftStorage },
-      },
+      { di: createTestDi({ ports: { syncStorage, draftStorage } }) },
     );
 
     // When

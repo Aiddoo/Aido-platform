@@ -1,4 +1,5 @@
 import { useTrack } from '@src/shared/analytics';
+import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -19,10 +20,10 @@ import {
 import type { ComponentType } from 'react';
 import { match } from 'ts-pattern';
 
-import { PLAN_PRICE_LABEL_KEYS } from '../constants/subscription-labels';
 import type { PremiumQuickstartAction } from '../constants/subscription.events';
 import type { SubscriptionPlan } from '../domains/subscription.model';
 import { useCheckoutRoute } from '../hooks/use-checkout-route';
+import { getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
 import { toTrialScheduleSteps } from '../utils/trial-schedule.view-model';
 
 const CROWN_CIRCLE_SIZE = 72;
@@ -32,10 +33,10 @@ interface SubscriptionWelcomeProps {
   /** 방금 산 요금제. 서버 반영(/me)이 늦거나 실패해도 같은 화면을 그린다 */
   plan: SubscriptionPlan;
   /** 결제한 날. 체험 일정은 이 날부터 센다 */
-  purchasedOn: string;
+  purchasedOn: DateKey;
   hadRewardOnly: boolean;
   /** 체험 알림 칸. billing은 알림 기능을 모르므로 화면이 채운다 */
-  reminder?: ComponentType<{ reminderDateKey: string }>;
+  reminder?: ComponentType<{ reminderDateKey: DateKey }>;
 }
 
 export function SubscriptionWelcome({
@@ -51,8 +52,8 @@ export function SubscriptionWelcome({
   const steps = toTrialScheduleSteps(plan, purchasedOn);
   const reminderStep = steps?.find((step) => step.kind === 'reminder');
   const chargeStep = steps?.find((step) => step.kind === 'charge');
-  const price = t(PLAN_PRICE_LABEL_KEYS[plan.planType], { price: plan.priceString });
-  const formatDate = (dateKey: string) =>
+  const price = t(getPlanPriceLabelKey(plan.planType), { price: plan.priceString });
+  const formatDate = (dateKey: DateKey) =>
     formatYearAwareDateKeyLabel(dateKey, todayKey, dateFormatContext);
 
   return (
@@ -153,7 +154,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function QuickstartRow({ action }: { action: PremiumQuickstartAction }) {
   const { t } = useTranslation('subscription');
   const { trackEvent } = useTrack();
-  const { leaveTo } = useCheckoutRoute();
+  const [, leaveTo] = useCheckoutRoute();
   const { title, description, open } = match(action)
     .with('voice_note', () => ({
       title: t('welcome.quickstart.voiceNote.title'),

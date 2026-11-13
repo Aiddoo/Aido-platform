@@ -5,21 +5,14 @@ import {
   type SupportedLocale,
 } from '@aido/api/vocabulary';
 
-const LANGUAGE_MODES = ['system', ...SUPPORTED_LOCALES] as const;
+export const LANGUAGE_MODES = ['system', ...SUPPORTED_LOCALES] as const;
 
 export type LanguageMode = (typeof LANGUAGE_MODES)[number];
 
 export type ResolvedLanguage = SupportedLocale;
 
-// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
-export const LANGUAGE_MODE_STORAGE_KEY = 'aido_language';
-
 export function isLanguageMode(value: unknown): value is LanguageMode {
   return LANGUAGE_MODES.some((candidate) => candidate === value);
-}
-
-export function toLanguageMode(saved: string | undefined): LanguageMode {
-  return isLanguageMode(saved) ? saved : 'system';
 }
 
 /**

@@ -1,21 +1,21 @@
 import { DAY_MS } from '@src/shared/constants/time-units';
+import { dateKeySchema, type DateKey } from '@src/shared/date/date-key';
 import { type Instant, diffMs, instantSchema, toEpochMs } from '@src/shared/date/instant';
-import { maxBy } from 'es-toolkit';
+import { maxBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
-import {
-  STORE_REVIEW_MAX_REQUESTS_PER_WINDOW,
-  STORE_REVIEW_MIN_ACTIVE_DAYS,
-  STORE_REVIEW_MOMENTS,
-  STORE_REVIEW_REQUEST_COOLDOWN_DAYS,
-  STORE_REVIEW_REQUEST_WINDOW_DAYS,
-} from '../constants/store-review.constants';
+/** 하루 한두 개만 끝내는 사용자도 닿도록 완료 횟수가 아니라 서로 다른 날을 세고, 저장도 이 수까지만 한다 */
+const STORE_REVIEW_MIN_ACTIVE_DAYS = 3;
+/** iOS는 365일에 최대 3번만 시스템 창을 띄운다. 그 몫을 한 해에 고르게 나눠 쓴다 */
+const STORE_REVIEW_REQUEST_COOLDOWN_DAYS = 120;
+const STORE_REVIEW_MAX_REQUESTS_PER_WINDOW = 3;
+const STORE_REVIEW_REQUEST_WINDOW_DAYS = 365;
 
-const storeReviewMomentSchema = z.enum(STORE_REVIEW_MOMENTS);
+const storeReviewMomentSchema = z.enum(['all_todos_done', 'paw_print_celebration']);
 export type StoreReviewMoment = z.infer<typeof storeReviewMomentSchema>;
 
 export const storeReviewStateSchema = z.object({
-  activeDays: z.array(z.iso.date()).max(STORE_REVIEW_MIN_ACTIVE_DAYS),
+  activeDays: z.array(dateKeySchema).max(STORE_REVIEW_MIN_ACTIVE_DAYS),
   requestedAt: z.array(instantSchema).max(STORE_REVIEW_MAX_REQUESTS_PER_WINDOW),
 });
 export type StoreReviewState = z.infer<typeof storeReviewStateSchema>;
@@ -26,7 +26,7 @@ export type StoreReviewEligibility =
   | 'cooling_down'
   | 'window_limit_reached';
 
-function createEmptyState(): StoreReviewState {
+export function createEmptyStoreReviewState(): StoreReviewState {
   return { activeDays: [], requestedAt: [] };
 }
 
@@ -34,14 +34,17 @@ function isWithinRequestWindow(requestedAt: Instant, now: Instant) {
   return diffMs(now, requestedAt) < STORE_REVIEW_REQUEST_WINDOW_DAYS * DAY_MS;
 }
 
+/** 할 일을 끝낸 날들을 차례로 더한다. 같은 날은 한 번만 세고 마지막 날들만 남긴다 */
+function withActiveDays(state: StoreReviewState, localDates: readonly DateKey[]): StoreReviewState {
+  return {
+    ...state,
+    activeDays: uniq([...state.activeDays, ...localDates]).slice(-STORE_REVIEW_MIN_ACTIVE_DAYS),
+  };
+}
+
 /** 할 일을 하나라도 끝낸 날을 남긴다. 같은 날은 한 번만 센다 */
-function withActiveDay(state: StoreReviewState, localDate: string): StoreReviewState {
-  return state.activeDays.includes(localDate)
-    ? state
-    : {
-        ...state,
-        activeDays: [...state.activeDays, localDate].slice(-STORE_REVIEW_MIN_ACTIVE_DAYS),
-      };
+function withActiveDay(state: StoreReviewState, localDate: DateKey): StoreReviewState {
+  return state.activeDays.includes(localDate) ? state : withActiveDays(state, [localDate]);
 }
 
 /** 창 밖으로 나간 요청은 한도 계산에 쓰이지 않으므로 지운다 */
@@ -56,7 +59,7 @@ function withRequest(state: StoreReviewState, at: Instant): StoreReviewState {
 }
 
 function hasEnoughActiveDays(state: Pick<StoreReviewState, 'activeDays'>) {
-  return new Set(state.activeDays).size >= STORE_REVIEW_MIN_ACTIVE_DAYS;
+  return uniq(state.activeDays).length >= STORE_REVIEW_MIN_ACTIVE_DAYS;
 }
 
 function getLastRequestedAt(state: Pick<StoreReviewState, 'requestedAt'>) {
@@ -91,7 +94,7 @@ function getEligibility(state: StoreReviewState, now: Instant): StoreReviewEligi
 }
 
 export const StoreReviewPolicy = {
-  createEmptyState,
+  withActiveDays,
   withActiveDay,
   withRequest,
   getEligibility,

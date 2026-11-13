@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { i18n } from '@src/shared/i18n';
-import { createClipboardGatewayStub, createTestQueryClient } from '@src/testing/core';
+import { createClipboardGatewayStub, createTestQueryClient, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
@@ -17,7 +17,7 @@ async function renderProfileRow(clipboard: ReturnType<typeof createClipboardGate
     <MyPageMenuNavigationProvider>
       <ProfileRow tierChip={null} />
     </MyPageMenuNavigationProvider>,
-    { queryClient, di: { clipboard } },
+    { di: createTestDi({ ports: { clipboard, queryClient } }) },
   );
 }
 

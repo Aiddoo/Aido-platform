@@ -5,6 +5,7 @@ import type {
   MemoListResponse,
   MemoMutationResponse,
 } from "@aido/api/contracts/memo";
+import { pick } from "es-toolkit";
 
 import {
   type TodoReadModel,
@@ -29,7 +30,7 @@ export const MEMO_RESPONSE_MESSAGES = {
 export function toMemoResponse(memo: Memo): MemoResponse {
   const primitives = memo.toPrimitives();
   return {
-    ...primitives,
+    ...pick(primitives, ["id", "userId", "content", "isPinned", "sortOrder"]),
     createdAt: toIsoString(primitives.createdAt),
     updatedAt: toIsoString(primitives.updatedAt),
   };

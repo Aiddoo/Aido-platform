@@ -31,6 +31,8 @@ function setUp(options: {
     findManyByUserId: unused,
     findPublicTodosByUserId: unused,
     countCategoryUsage: unused,
+    existsByUserId: unused,
+    existsCompletedByUserId: unused,
     findTodayTopTodos: unused,
     getTodayTodoStats: async () => ({ ...options.todayStats }),
     countCompletedByUser: async () => options.completedCount,

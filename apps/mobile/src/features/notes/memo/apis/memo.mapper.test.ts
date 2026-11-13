@@ -1,10 +1,11 @@
-import { memoListResponseSchema, updateMemoSchema } from '@aido/api';
-import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
-import { instantFromDate } from '@src/shared/date/native-date';
-import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
+import { type MemoListResponse, memoListResponseSchema, updateMemoSchema } from '@aido/api';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { createTestQueryClient } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { ZodError } from 'zod';
 
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
+import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
 import { memoFormSchema } from '../schemas/memo-form.schema';
 import {
   toConvertMemoToTodosRequest,
@@ -13,7 +14,7 @@ import {
   toMemoVoicePlan,
 } from './memo.mapper';
 
-describe('메모 페이지 응답 매핑', () => {
+describe('toMemoPage', () => {
   it('날짜를 변환하고 다음 페이지 커서를 화면 모델로 분리한다', () => {
     // Given
     const dto = memoListResponseSchema.parse({
@@ -49,9 +50,38 @@ describe('메모 페이지 응답 매핑', () => {
     // Then
     expect(result).toEqual({ items: [], nextCursor: null });
   });
+
+  describe('재조회의 구조 공유', () => {
+    it('서버 값이 같으면 재조회해도 메모 항목의 참조가 그대로라 행이 다시 그려지지 않는다', async () => {
+      // Given
+      const client = createTestQueryClient();
+      const queryKey = MEMO_QUERY_KEYS.list();
+      const fetchPage = async () => {
+        await client.query({
+          queryKey,
+          queryFn: () => ({
+            pages: [toMemoPage(createMemoListResponse())],
+            pageParams: [undefined],
+          }),
+          staleTime: 0,
+        });
+        return client.getQueryData(queryKey);
+      };
+      const first = await fetchPage();
+
+      // When
+      const second = await fetchPage();
+
+      // Then
+      const keptCount =
+        second?.pages[0]?.items.filter((item, index) => item === first?.pages[0]?.items[index])
+          .length ?? 0;
+      expect(keptCount).toBe(MEMO_COUNT);
+    });
+  });
 });
 
-describe('메모 작성·수정 요청', () => {
+describe('toMemoRequest', () => {
   it.each([
     ['한 글자', 'a'],
     ['최대 길이', 'a'.repeat(5000)],
@@ -66,24 +96,18 @@ describe('메모 작성·수정 요청', () => {
     expect(result.success).toBe(true);
   });
 
-  it('빈 글자와 최대 길이를 넘는 글자는 폼에서 막는다', () => {
-    // Given
-    const tooLong = 'a'.repeat(5001);
-
+  it('편집기가 입력 칸 글자를 그대로 넘겨도 앞뒤 공백을 지워 보낸다', () => {
     // When
-    const results = [
-      memoFormSchema.safeParse({ content: '' }),
-      memoFormSchema.safeParse({ content: tooLong }),
-    ];
+    const request = toMemoRequest({ content: '  장보기\n' });
 
     // Then
-    expect(results.map(({ success }) => success)).toEqual([false, false]);
+    expect(request).toEqual({ content: '장보기' });
   });
 });
 
-const createFormData = (overrides: Partial<AddTodoFormValues> = {}): AddTodoFormValues => ({
+const createFormData = (overrides: Partial<TodoFormValues> = {}): TodoFormValues => ({
   title: '수정한 메모 제목',
-  startDate: instantFromDate(new Date(2026, 9, 2)),
+  startDate: createDateKey('2026-10-02'),
   endDate: null,
   scheduledTime: null,
   isAllDay: true,
@@ -93,15 +117,13 @@ const createFormData = (overrides: Partial<AddTodoFormValues> = {}): AddTodoForm
   ...overrides,
 });
 
-const TIME_ZONE = getDeviceTimezone();
-
 describe('toConvertMemoToTodosRequest', () => {
   it('편집한 제목과 카테고리, 공개 범위를 기존 batch 계약의 한 항목으로 보낸다', () => {
     // Given
     const values = createFormData({ visibility: 'PRIVATE' });
 
     // When
-    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const input = toConvertMemoToTodosRequest(values);
 
     // Then
     expect(input.todos).toHaveLength(1);
@@ -121,7 +143,7 @@ describe('toConvertMemoToTodosRequest', () => {
     });
 
     // When
-    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const input = toConvertMemoToTodosRequest(values);
 
     // Then
     expect(input.todos[0]?.repeat).toEqual({
@@ -138,13 +160,13 @@ describe('toConvertMemoToTodosRequest', () => {
         frequency: 'WEEKLY',
         interval: 1,
         weekdays: ['MON', 'FRI'],
-        end: { type: 'UNTIL', date: '2026-10-30' },
+        end: { type: 'UNTIL', date: createDateKey('2026-10-30') },
       },
       scheduledTime: '13:30',
     });
 
     // When
-    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const input = toConvertMemoToTodosRequest(values);
 
     // Then
     expect(input.todos[0]).toMatchObject({
@@ -164,11 +186,11 @@ describe('toConvertMemoToTodosRequest', () => {
     const values = createFormData({
       isAllDay: false,
       scheduledTime: '13:30',
-      endDate: instantFromDate(new Date(2026, 9, 3)),
+      endDate: createDateKey('2026-10-03'),
     });
 
     // When
-    const input = toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const input = toConvertMemoToTodosRequest(values);
 
     // Then
     expect(input.todos[0]).toMatchObject({ scheduledTime: '13:30', endDate: '2026-10-03' });
@@ -180,7 +202,7 @@ describe('toConvertMemoToTodosRequest', () => {
     const values = createFormData({ title: 'a'.repeat(201) });
 
     // When
-    const convert = () => toConvertMemoToTodosRequest(values, TIME_ZONE);
+    const convert = () => toConvertMemoToTodosRequest(values);
 
     // Then
     expect(convert).toThrow(ZodError);
@@ -290,3 +312,20 @@ describe('toMemoVoicePlan', () => {
     });
   });
 });
+
+const MEMO_COUNT = 18;
+
+function createMemoListResponse(): MemoListResponse {
+  return {
+    items: Array.from({ length: MEMO_COUNT }, (_, index) => ({
+      id: index + 1,
+      userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+      content: `메모 ${index + 1}`,
+      isPinned: false,
+      sortOrder: index,
+      createdAt: '2026-10-02T00:00:00.000Z',
+      updatedAt: '2026-10-02T00:00:00.000Z',
+    })),
+    pagination: { hasNext: false, nextCursor: null, size: MEMO_COUNT },
+  };
+}

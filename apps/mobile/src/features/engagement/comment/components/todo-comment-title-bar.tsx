@@ -2,6 +2,7 @@ import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-param
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -32,7 +33,7 @@ export function TodoCommentTitleBar() {
   const { t } = useTranslation('todo');
 
   return (
-    <HStack align="center" gap={4} className="min-h-14 pl-5 pr-1">
+    <HStack align="center" gap={4} className="min-h-14 pr-1 pl-5">
       <Text size="b2" weight="bold" numberOfLines={1} className="min-w-0 flex-1">
         {t('detail.pageTitle')}
       </Text>
@@ -105,6 +106,7 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
 /** 내 할 일이면 기존 할 일 옵션 시트를 연다. 친구 할 일의 신고·차단은 TodoModerationMenu가 맡는다. */
 function TodoActionsButton() {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const [date] = useFeedDateKey();
   const push = useSingleTap(router.push);
@@ -116,7 +118,13 @@ function TodoActionsButton() {
 
   return (
     <IconButton
-      icon={<MoreIcon width={22} height={22} colorClassName="text-gray-9" />}
+      icon={
+        <MoreIcon
+          width={fontScaledSize(22)}
+          height={fontScaledSize(22)}
+          colorClassName="text-gray-9"
+        />
+      }
       className="size-11 rounded-full"
       accessibilityLabel={t('actions.more')}
       onPress={() => push({ pathname: '/todo/[todoId]/actions', params: { todoId, date } })}
@@ -127,6 +135,7 @@ function TodoActionsButton() {
 /** 펼친 피드 pane의 ⋯. 친구 할 일에서만 신고·차단을 보인다 */
 function TodoModerationMenu() {
   const { t } = useTranslation('moderation');
+  const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const moderation = useTodoModerationActions({ todoId });
   const [isOpen, setIsOpen] = useState(false);
@@ -139,7 +148,13 @@ function TodoModerationMenu() {
     <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
       <Menu.Trigger asChild>
         <IconButton
-          icon={<MoreIcon width={20} height={20} colorClassName="text-gray-9" />}
+          icon={
+            <MoreIcon
+              width={fontScaledSize(20)}
+              height={fontScaledSize(20)}
+              colorClassName="text-gray-9"
+            />
+          }
           className="size-11 rounded-full"
           accessibilityLabel={t('menu.more')}
           accessibilityState={{ expanded: isOpen }}

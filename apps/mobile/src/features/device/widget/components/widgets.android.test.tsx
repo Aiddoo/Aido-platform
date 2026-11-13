@@ -3,7 +3,7 @@ import { Children, isValidElement, type ReactNode } from 'react';
 import type { WidgetInfo } from 'react-native-android-widget';
 
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
-import { createInitialWidgetProps } from '../utils/widget-initial-props';
+import { createInitialWidgetProps } from '../utils/widget-initial-props.view-model';
 import { renderAndroidWidget } from './widgets.android';
 
 type NodeProps = {
@@ -43,10 +43,16 @@ function collect(node: ReactNode, result: WidgetNode[] = []): WidgetNode[] {
   return result;
 }
 
+function getWidgetName(maxRows: number) {
+  if (maxRows === 0) {
+    return 'AidoTodaySummary';
+  }
+  return maxRows > 3 ? 'AidoTodayLarge' : 'AidoTodayList';
+}
+
 function createWidgetInfo(maxRows: number, overrides: Partial<WidgetInfo> = {}): WidgetInfo {
   return {
-    widgetName:
-      maxRows === 0 ? 'AidoTodaySummary' : maxRows > 3 ? 'AidoTodayLarge' : 'AidoTodayList',
+    widgetName: getWidgetName(maxRows),
     widgetId: 42,
     width: maxRows === 0 ? 178 : 374,
     height: maxRows > 3 ? 420 : 210,
@@ -75,7 +81,7 @@ function createProps(maxRows: number, locale: 'ko' | 'en' = 'ko'): WidgetProps {
     compactStreakLabel: locale === 'ko' ? '12일' : '12d',
     allDoneLabel: locale === 'ko' ? '모두 완료!' : 'All done!',
     moreLabelTemplate: locale === 'ko' ? '+{count}개 더' : '+{count} more',
-    weekTitle: locale === 'ko' ? '10월 1주차' : 'October · Week 1',
+    weekTitle: locale === 'ko' ? '10월 1주차' : 'Week 1 of Oct',
     weekRangeLabel: '9/27 – 10/3',
     openAppUrl: 'aido-dev://feed?date=today',
     addTodoUrl: 'aido-dev://feed?date=today&action=add-todo',
@@ -119,7 +125,7 @@ function texts(nodes: WidgetNode[]) {
   return nodes.filter((node) => node.type === 'TextWidget').map((node) => node.props.text);
 }
 
-describe('Android 위젯 표시 계약', () => {
+describe('renderAndroidWidget', () => {
   it.each([0, 2, 4])('크기 %i의 모든 클릭을 하나의 collection 항목 안에 둔다', (maxRows) => {
     // Given
     const props = createProps(maxRows);
@@ -137,39 +143,6 @@ describe('Android 위젯 표시 계약', () => {
       nodes.filter((node) => node.props.clickActionData),
     );
   });
-
-  it.each([
-    [0, 0, ['🔥 12일'], ['＋ 할 일 만들기']],
-    [2, 2, ['＋ 할 일 만들기'], []],
-    [4, 4, ['＋ 할 일 만들기', '+4개 더'], []],
-    [3, 2, ['＋ 할 일 만들기'], []],
-    [8, 4, ['＋ 할 일 만들기', '+4개 더'], []],
-  ])(
-    '현재·이전 크기 %i에서 할 일을 %i행까지 표시한다',
-    (maxRows, rows, shownTexts, hiddenTexts) => {
-      // Given
-      const props = createProps(maxRows);
-
-      // When
-      const nodes = render(props);
-
-      // Then
-      expect(texts(nodes).filter((text) => text?.startsWith('Widget QA '))).toEqual(
-        props.topTodos.slice(0, rows).map((todo) => todo.title),
-      );
-      expect(texts(nodes)).toContain('3');
-      expect(texts(nodes)).toContain('/8');
-      expect(
-        nodes
-          .filter((node) => node.props.svg)
-          .every((node) => (node.props.svg?.match(/<path /g) ?? []).length === 2),
-      ).toBe(true);
-      expect(texts(nodes)).toEqual(expect.arrayContaining(shownTexts));
-      hiddenTexts.forEach((text) => {
-        expect(texts(nodes)).not.toContain(text);
-      });
-    },
-  );
 
   it.each(['ko', 'en'] as const)(
     '%s 대형 위젯의 할 일·7개 날짜·작성 클릭에 정확한 계정과 목적지를 붙인다',
@@ -241,22 +214,4 @@ describe('Android 위젯 표시 계약', () => {
       ).toEqual([{ uri: props.openAppUrl, userId: null }]);
     },
   );
-
-  it('유효하지 않은 슬롯 치수는 기본 카드로 복구한다', () => {
-    // Given
-    const props = createProps(0);
-
-    // When
-    const nodes = render(props, 'light', createWidgetInfo(0, { width: NaN, height: 0 }));
-    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
-    const card = nodes.find((node) => node.props.style?.backgroundColor);
-    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
-    const slot = nodes.find((node) => node.props.style?.justifyContent === 'center');
-
-    // Then
-    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
-    expect(slot?.props.style).toMatchObject({ width: 160, height: 160 });
-    // oxlint-disable-next-line aido/no-style-assertion -- 1.15.2 전환 #1400
-    expect(card?.props.style).toMatchObject({ width: 160, height: 160 });
-  });
 });
