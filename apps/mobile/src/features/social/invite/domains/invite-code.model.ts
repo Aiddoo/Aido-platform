@@ -64,10 +64,6 @@ export function normalizePastedInviteCode(previous: string, next: string) {
   return pasted.length === INVITE_CODE.LENGTH ? pasted : normalizeInviteCodeInput(next);
 }
 
-export function isFilledInviteCode(raw: string) {
-  return normalizeTypedInviteCode(raw).length === INVITE_CODE.LENGTH;
-}
-
 function classifyInvalidCharacter(character: string): InvalidCharacterKind {
   return CONFUSABLE_CHARACTERS.has(character) ? 'confusable' : 'unused';
 }
@@ -82,12 +78,3 @@ export function findInvalidCharacters(raw: string): InvalidInviteCodeCharacter[]
         : [{ character, index, kind: classifyInvalidCharacter(character) }],
     );
 }
-
-export const InviteCodePolicy = {
-  parseInviteCode,
-  normalizeInviteCode,
-  normalizeInviteCodeInput,
-  normalizePastedInviteCode,
-  isFilledInviteCode,
-  findInvalidCharacters,
-} as const;

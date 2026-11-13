@@ -1,7 +1,7 @@
 import { isApiError } from '@src/core/errors/api-error';
-import { tDynamic } from '@src/shared/i18n';
 
 import { BusinessError } from './business-error';
+import { findErrorCodeMessage } from './error-code-message';
 import { isInfraError, ParseError } from './infra-error';
 
 /**
@@ -13,7 +13,7 @@ export function getUserFacingMessage(error: unknown): string | undefined {
     return undefined;
   }
   if (error instanceof BusinessError) {
-    return tDynamic('errors', error.code) || undefined;
+    return findErrorCodeMessage(error.code) ?? undefined;
   }
   if (!isApiError(error) && !isInfraError(error)) {
     return undefined;

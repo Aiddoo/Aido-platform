@@ -2,7 +2,7 @@ import { act, fireEvent, render, renderHook, screen } from '@testing-library/rea
 import { useEffect, useState } from 'react';
 import { BackHandler, TextInput } from 'react-native';
 
-import { useStepper } from './use-stepper';
+import { type Stepper, useStepper } from './use-stepper';
 
 type Contexts = {
   email: { email: string };
@@ -184,6 +184,93 @@ describe('useStepper', () => {
 
     // Then
     expect(backHandler.remove).toHaveBeenCalled();
+  });
+
+  it('context가 빈 단계는 context 없이 시작하고 옮긴다', async () => {
+    // Given
+    const { result } = await renderHook(() =>
+      useStepper<Contexts>({ id: 'signup', initial: { step: 'done' } }),
+    );
+
+    // When
+    await act(async () => {
+      result.current.history.push('email', { email: '' });
+    });
+    await act(async () => {
+      result.current.history.push('done');
+    });
+
+    // Then
+    expect(result.current.historySteps).toEqual([
+      { step: 'done', context: {} },
+      { step: 'email', context: { email: '' } },
+      { step: 'done', context: {} },
+    ]);
+  });
+
+  it('updater는 부른 순간의 지금 단계 context로 다음 context를 만든다', async () => {
+    // Given
+    const { result } = await renderHook(() =>
+      useStepper<Contexts>({
+        id: 'signup',
+        initial: { step: 'email', context: { email: 'a@b.c' } },
+      }),
+    );
+
+    // When
+    await act(async () => {
+      result.current.history.push('password', (prev) => ({ email: `${prev.email}m` }));
+    });
+    await act(async () => {
+      result.current.history.replace('password', (prev) => ({ email: `${prev.email}!` }));
+    });
+
+    // Then
+    expect(result.current.historySteps).toEqual([
+      { step: 'email', context: { email: 'a@b.c' } },
+      { step: 'password', context: { email: 'a@b.cm!' } },
+    ]);
+  });
+
+  it('이웃 단계에 같은 렌더러를 넘기면 한 화면으로 이어지고 렌더러가 다르면 새로 마운트한다', async () => {
+    // Given
+    const onMount = jest.fn();
+    function StepField({ step }: { step: string }) {
+      const [mountedStep] = useState(step);
+      useEffect(() => {
+        onMount(mountedStep);
+      }, [mountedStep]);
+      return <TextInput testID="field" value={step} />;
+    }
+    let stepper: Stepper<Contexts> | null = null;
+    function Screen() {
+      const current = useStepper<Contexts>({ id: 'signup', initial: INITIAL });
+      stepper = current;
+      const renderEmailFields = ({ step }: { step: string }) => <StepField step={step} />;
+      return (
+        <current.Render
+          email={renderEmailFields}
+          password={renderEmailFields}
+          done={() => <StepField step="done" />}
+        />
+      );
+    }
+    await render(<Screen />);
+
+    // When
+    await act(async () => {
+      stepper?.history.push('password', { email: '' });
+    });
+    await act(async () => {
+      stepper?.history.back();
+    });
+    await act(async () => {
+      stepper?.history.push('done');
+    });
+
+    // Then
+    expect(onMount.mock.calls).toEqual([['email'], ['done']]);
+    expect(screen.getByTestId('field').props.value).toBe('done');
   });
 
   it('부모가 다시 그려져도 Render 안의 입력은 다시 마운트되지 않는다', async () => {

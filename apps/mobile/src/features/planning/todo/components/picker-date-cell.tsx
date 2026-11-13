@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
@@ -5,10 +6,10 @@ import { memo } from 'react';
 import { match } from 'ts-pattern';
 
 import { PICKER_DATE_CELL_HEIGHT } from '../constants/todo.constants';
-import { type CalendarDayType, DAY_TYPE_TONE } from '../utils/calendar-day';
+import { type CalendarDayType, DAY_TYPE_TONE } from '../utils/calendar-day.view-model';
 
 interface PickerDateCellProps {
-  dateKey: string;
+  dateKey: DateKey;
   dayNumber: string;
   /** 읽어 줄 날짜. 달을 그릴 때 한 번 만들어 칸에서 Intl을 부르지 않는다 */
   label: string;
@@ -19,11 +20,15 @@ interface PickerDateCellProps {
   isDisabled?: boolean;
   /** 기간 안이지만 반복하지 않는 날 */
   isDimmed?: boolean;
-  onPress: (dateKey: string) => void;
+  onPress: (dateKey: DateKey) => void;
 }
 
-/** 날짜·반복 피커가 함께 쓰는 칸. 값이 바뀐 칸만 다시 그리고 칸 안에서 훅·날짜 계산을 하지 않는다 */
-function PickerDateCellBase({
+// 날짜·반복 피커가 함께 쓰는 칸. 고른 날이 바뀌면 값이 바뀐 칸만 다시 그리고 칸 안에서 훅·날짜 계산을 하지 않는다
+export function PickerDateCell(props: PickerDateCellProps) {
+  return <MemoizedDateCell {...props} />;
+}
+
+const MemoizedDateCell = memo(function DateCell({
   dateKey,
   dayNumber,
   label,
@@ -65,11 +70,9 @@ function PickerDateCellBase({
       </Box>
     </PressableFeedback>
   );
-}
+});
 
-/** 보고 있는 달 밖의 칸. 자리만 잡아 주 줄의 칸 폭을 맞춘다 */
-function Placeholder() {
+// 보고 있는 달 밖의 칸. 자리만 잡아 주 줄의 칸 폭을 맞춘다
+PickerDateCell.Placeholder = function Placeholder() {
   return <Box className="flex-1" style={{ height: PICKER_DATE_CELL_HEIGHT }} />;
-}
-
-export const PickerDateCell = Object.assign(memo(PickerDateCellBase), { Placeholder });
+};

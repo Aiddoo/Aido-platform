@@ -48,7 +48,7 @@ describe('토큰 갱신 요청', () => {
 
   it('갱신 실패 응답을 throw하지 않고 갱신기에 그대로 넘긴다', async () => {
     // Given
-    const requestRefresh = createRefreshTokensRequest({});
+    const requestRefresh = createRefreshTokensRequest({ appVersion: null, appBuild: null });
 
     // When
     const response = await requestRefresh('refresh-1');

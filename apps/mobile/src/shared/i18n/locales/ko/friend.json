@@ -29,7 +29,8 @@
     "reject": "거절",
     "edit": "편집",
     "loadFailed": "친구 목록을 불러오지 못했어요",
-    "countValue": "{{count}}명"
+    "countValue": "{{count}}명",
+    "openFeed": "친구 피드 보기"
   },
   "add": {
     "title": "친구를 추가해보세요",

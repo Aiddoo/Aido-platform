@@ -1,8 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { todoCategoryNotFound } from "../../application/categories.errors.js";
 import type { TodoCategoryCountReaderPort } from "../../application/ports/todo-category-count.reader.port.js";
 import type { TodoCategoryReaderPort } from "../../application/ports/todo-category.reader.port.js";
 import { type TodoCategoryRepositoryPort } from "../../application/ports/todo-category.repository.port.js";
@@ -36,9 +34,7 @@ export class TodoCategoryReaderAdapter
   async validateOwnership(categoryId: TodoCategoryId, userId: UserId): Promise<void> {
     const category = await this.#dependencies.repository.findByIdAndUserId(categoryId, userId);
     if (category == null) {
-      throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
-        categoryId: categoryId.value,
-      });
+      throw todoCategoryNotFound(categoryId);
     }
   }
 }

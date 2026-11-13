@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { LOGIN_ATTEMPT, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
@@ -12,11 +11,11 @@ import {
 } from "#api/modules/identity/auth/domain/auth.constants";
 import { Email } from "#api/modules/identity/auth/domain/email.vo";
 import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { accountLocked, emailNotVerified, invalidCredentials } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -88,10 +87,7 @@ export class LoginWithPasswordUseCase {
         metadata: { email, recentFailures },
       });
 
-      throw new ApplicationException(ErrorCode.USER_0607, {
-        email,
-        remainingMinutes: undefined,
-      });
+      throw accountLocked(email);
     }
 
     const user = await this.#dependencies.userRepository.findByEmail(email);
@@ -100,7 +96,7 @@ export class LoginWithPasswordUseCase {
         ...attemptContext,
         failureReason: LOGIN_FAILURE_REASON.USER_NOT_FOUND,
       });
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
@@ -112,7 +108,7 @@ export class LoginWithPasswordUseCase {
         ...attemptContext,
         failureReason: LOGIN_FAILURE_REASON.NO_CREDENTIAL_ACCOUNT,
       });
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const isPasswordValid = await this.#dependencies.passwordService.verify(
@@ -127,13 +123,10 @@ export class LoginWithPasswordUseCase {
 
       const remainingAttempts = LOGIN_ATTEMPT.MAX_FAILURES - recentFailures - 1;
       if (remainingAttempts <= 0) {
-        throw new ApplicationException(ErrorCode.USER_0607, {
-          email,
-          remainingMinutes: undefined,
-        });
+        throw accountLocked(email);
       }
 
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const expectedPasswordHash = account.password;
@@ -170,7 +163,7 @@ export class LoginWithPasswordUseCase {
 
     if (!needsRestore) {
       if (user.status === "PENDING_VERIFY") {
-        throw new ApplicationException(ErrorCode.EMAIL_0503, { email });
+        throw emailNotVerified(email);
       }
       assertStatusAllowsLogin(user.status, email);
     }

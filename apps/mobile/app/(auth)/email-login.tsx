@@ -1,9 +1,9 @@
+import { AuthLinkRow } from '@src/features/identity/auth/components/auth-link-row';
 import { EmailLoginForm } from '@src/features/identity/auth/components/email-login-form';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { H3, HStack, ReadableContent, Spacing, TextButton, Box, Mascot } from '@src/shared/ui';
+import { H3, ReadableContent, Spacing, TextButton, Box, Mascot } from '@src/shared/ui';
 import { router } from 'expo-router';
-import { Separator } from 'heroui-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function EmailLoginScreen() {
@@ -28,20 +28,20 @@ export default function EmailLoginScreen() {
             <>
               <Spacing size={24} />
 
-              <HStack justify="center" align="center" gap={8}>
+              <AuthLinkRow>
                 <TextButton size="medium" onPress={() => push('/sign-up')}>
                   {t('emailLogin.signUp')}
                 </TextButton>
-                <Separator orientation="vertical" className="h-3 bg-gray-6" />
                 <TextButton size="medium" onPress={() => push('/(auth)/forgot-password')}>
                   {t('emailLogin.forgotPassword')}
                 </TextButton>
-              </HStack>
+              </AuthLinkRow>
             </>
           }
         >
           <H3 align="center">{t('emailLogin.title')}</H3>
 
+          {/* oxlint-disable-next-line aido/spacing-scale -- 제목과 이메일 입력 사이 한 화면 전용 구역. 규격 단계 밖 60px을 쓴다 */}
           <Spacing size={60} />
         </EmailLoginForm>
       </ReadableContent>

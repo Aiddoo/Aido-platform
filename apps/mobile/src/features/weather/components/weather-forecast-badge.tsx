@@ -1,3 +1,6 @@
+import { getNowInstant } from '@src/shared/date/clock';
+import { toEpochMs } from '@src/shared/date/instant';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextSkeleton } from '@src/shared/ui';
@@ -11,10 +14,11 @@ import type { CurrentWeather, WeatherReport } from '../domains/weather-report.mo
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions } from '../queries/weather.queries';
-import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
-import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature';
+import { toWeatherHref } from '../utils/weather-link.view-model';
+import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
 
+// 날씨 카드가 아니라 피드 머리 도구 막대에 있어 앱 기본 비율(useFontScaledSize)로 키운다
 const BADGE_ICON_SIZE = 18;
 
 function selectBadge(report: WeatherReport) {
@@ -53,15 +57,14 @@ WeatherForecastBadge.Item = function Item({
   serviceName: string;
 }) {
   const { t } = useTranslation('weather');
-  const push = useSingleTap(router.push);
+  const fontScaledSize = useFontScaledSize();
+  const openWeather = useOpenBadgeWeather();
   const unit = useTemperatureUnit();
   const temperature = toDisplayTemperature(current.temperature, unit);
 
   return (
     <PressableFeedback
-      onPress={() =>
-        push({ pathname: '/weather', params: { entry: 'feed_badge' satisfies WeatherEntry } })
-      }
+      onPress={openWeather}
       accessibilityRole="button"
       accessibilityLabel={t('badge.temperature', { temperature, serviceName })}
       hitSlop={4}
@@ -71,8 +74,8 @@ WeatherForecastBadge.Item = function Item({
         <WeatherIcon
           condition={current.condition}
           isDaylight={current.isDaylight}
-          width={BADGE_ICON_SIZE}
-          height={BADGE_ICON_SIZE}
+          width={fontScaledSize(BADGE_ICON_SIZE)}
+          height={fontScaledSize(BADGE_ICON_SIZE)}
           variant="mono"
           colorClassName="text-gray-6"
         />
@@ -86,13 +89,12 @@ WeatherForecastBadge.Item = function Item({
 
 WeatherForecastBadge.Entry = function Entry() {
   const { t } = useTranslation('weather');
-  const push = useSingleTap(router.push);
+  const fontScaledSize = useFontScaledSize();
+  const openWeather = useOpenBadgeWeather();
 
   return (
     <PressableFeedback
-      onPress={() =>
-        push({ pathname: '/weather', params: { entry: 'feed_badge' satisfies WeatherEntry } })
-      }
+      onPress={openWeather}
       accessibilityRole="button"
       accessibilityLabel={t('badge.entry')}
       hitSlop={4}
@@ -102,8 +104,8 @@ WeatherForecastBadge.Entry = function Entry() {
         <WeatherIcon
           condition="PARTLY_CLOUDY"
           isDaylight
-          width={BADGE_ICON_SIZE}
-          height={BADGE_ICON_SIZE}
+          width={fontScaledSize(BADGE_ICON_SIZE)}
+          height={fontScaledSize(BADGE_ICON_SIZE)}
           variant="mono"
           colorClassName="text-gray-6"
         />
@@ -122,3 +124,9 @@ WeatherForecastBadge.Loading = function Loading() {
     </HStack>
   );
 };
+
+function useOpenBadgeWeather() {
+  const push = useSingleTap(router.push);
+
+  return () => push(toWeatherHref({ entry: 'feed_badge', openedAt: toEpochMs(getNowInstant()) }));
+}

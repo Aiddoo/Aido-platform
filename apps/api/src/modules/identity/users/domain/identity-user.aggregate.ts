@@ -1,11 +1,10 @@
-import { ErrorCode } from "@aido/api/errors";
 import { ACCOUNT_DELETION, type SubscriptionStatus, type UserRole } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import type { UserStatus } from "../../auth/domain/auth.constants.js";
+import { accountDeleted } from "./users.errors.js";
 
 export interface IdentityUserPrimitives {
   readonly id: string;
@@ -75,12 +74,12 @@ export class IdentityUser extends AggregateRoot<UserId, IdentityUserProps> {
     if (Temporal.Instant.compare(this.props.deletedAt, now.subtract(GRACE_PERIOD)) > 0) {
       return true;
     }
-    throw new DomainException(ErrorCode.USER_0606, { userId: this.id.value });
+    throw accountDeleted(this.id.value);
   }
 
   requestDeletion(now: Temporal.Instant): void {
     if (this.props.deletedAt != null) {
-      throw new DomainException(ErrorCode.USER_0606, { userId: this.id.value });
+      throw accountDeleted(this.id.value);
     }
     this.props.status = "SUSPENDED";
     this.props.deletedAt = now;

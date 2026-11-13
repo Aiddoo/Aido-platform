@@ -1,6 +1,7 @@
 import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import type { FeatureQuota } from '@src/features/billing/subscription/domains/entitlement.model';
 import { todoRepeatSchema } from '@src/features/planning/todo/domains/todo-repeat.model';
+import { dateKeyFieldSchema } from '@src/shared/date/date-key';
 import { groupBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -11,8 +12,8 @@ const plannedTodoShape = {
   type: z.literal('create-todo'),
   actionId: plannedActionIdSchema,
   title: z.string().trim().min(1).max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH),
-  startDate: z.iso.date(),
-  endDate: z.iso.date().nullable(),
+  startDate: dateKeyFieldSchema,
+  endDate: dateKeyFieldSchema.nullable(),
   scheduledTime: z.iso.time({ precision: -1 }).nullable(),
   repeat: todoRepeatSchema.nullable(),
   visibility: z.enum(TODO_VISIBILITIES).nullable(),

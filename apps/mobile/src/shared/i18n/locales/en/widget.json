@@ -9,9 +9,6 @@
   "list": {
     "more": "+{{overflow}} more"
   },
-  "calendar": {
-    "weekTitle": "{{month}} · Week {{week}}"
-  },
   "actions": {
     "addTodo": "Add to-do",
     "openTodo": "Tap a to-do to open it"

@@ -3,18 +3,16 @@ import 'intl-pluralrules';
 import { FALLBACK_LOCALE } from '@aido/api/vocabulary';
 import { getDeviceLanguage } from '@src/shared/infra/localization/device-locale';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
-import {
-  LANGUAGE_MODE_STORAGE_KEY,
-  toLanguageMode,
-  resolveLanguage,
-} from '@src/shared/preferences/language.preference';
+import { resolveLanguage } from '@src/shared/preferences/language.preference';
+import { languageModeStoredValue } from '@src/shared/preferences/schemas/language-mode-storage.schema';
+import { readStoredValue } from '@src/shared/storage/define-stored-value';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import { resources } from './resources';
 
 const initialLanguage = resolveLanguage(
-  toLanguageMode(deviceSyncStorage.get(LANGUAGE_MODE_STORAGE_KEY)),
+  readStoredValue(deviceSyncStorage, languageModeStoredValue),
   getDeviceLanguage(),
 );
 

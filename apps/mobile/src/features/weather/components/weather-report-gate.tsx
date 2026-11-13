@@ -16,9 +16,9 @@ interface WeatherReportGateProps {
  * 개발 빌드는 경계가 잡은 오류도 화면을 덮는 Render Error로 띄운다
  */
 export function WeatherReportGate({ children, fallback: Fallback }: WeatherReportGateProps) {
-  const { data, error, refetch } = useQuery(useGetWeatherReportQueryOptions());
+  const { data: report, error, refetch } = useQuery(useGetWeatherReportQueryOptions());
 
-  if (data == null && isLocationNotRegisteredError(error)) {
+  if (report == null && isLocationNotRegisteredError(error)) {
     return (
       <Fallback
         error={error}
@@ -36,9 +36,9 @@ WeatherReportGate.Suspense = function ReportSuspense({
   fallback = null,
   children,
 }: ComponentProps<typeof Suspense>) {
-  const { data, error } = useQuery(useGetWeatherReportQueryOptions());
+  const { data: report, error } = useQuery(useGetWeatherReportQueryOptions());
 
-  if (data == null && (error == null || isLocationNotRegisteredError(error))) {
+  if (report == null && (error == null || isLocationNotRegisteredError(error))) {
     return fallback;
   }
   return <Suspense fallback={fallback}>{children}</Suspense>;

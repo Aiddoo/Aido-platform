@@ -1,4 +1,4 @@
-import { useHaptics, useTodoApi } from '@src/bootstrap/providers/di-context';
+import { useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
@@ -9,26 +9,22 @@ import {
   invalidateTodoCategories,
 } from '@src/features/planning/category/queries/todo-category-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getIsoWeekYear } from '@src/shared/date/date-key';
+import { getIsoWeekYear, type DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
-import {
-  findTodoSeriesFailure,
-  getTodoSeriesLimit,
-  isTodoSeriesFailure,
-  shouldRefreshTodos,
-} from '../domains/todo-series.error';
+import { isTodoSeriesFailure } from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
+import { useTodoSeriesFailureFeedback } from '../hooks/use-todo-series-failure-feedback';
 import type {
-  ChangeTodoCategoryInput,
-  ReorderTodoInput,
-  ToggleTodoCompleteInput,
-  UpdateTodoScheduleInput,
+  TodoCategoryMove,
+  TodoCompletionChange,
+  TodoReorder,
+  TodoScheduleChange,
 } from '../schemas/todo-request.schema';
 import {
   beginTodoWrite,
@@ -37,11 +33,12 @@ import {
   getCachedTodoDateSpan,
   getTodoOverviewFilters,
   invalidateTodoDependentQueries,
-  invalidateTodos,
   removeTodoFromList,
+  removeTodoPage,
   restoreTodo,
   settleTodoEdit,
   settleTodoReorder,
+  settleTodoSeriesWrite,
   settleTodoWrite,
   snapshotTodo,
   syncDailyCompletionWithList,
@@ -54,9 +51,9 @@ import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 interface ToggleTodoVariables {
   todoId: number;
-  body: ToggleTodoCompleteInput;
+  body: TodoCompletionChange;
   /** 체크한 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
 }
 
 export function useToggleTodoMutationOptions() {
@@ -147,15 +144,15 @@ export function useToggleTodoMutationOptions() {
 
 interface ChangeTodoCategoryVariables {
   todoId: number;
-  input: ChangeTodoCategoryInput;
+  input: TodoCategoryMove;
   scope?: TodoUpdateScope;
 }
 
 export function useChangeTodoCategoryMutationOptions() {
   const todoApi = useTodoApi();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
-  const haptics = useHaptics();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -168,13 +165,7 @@ export function useChangeTodoCategoryMutationOptions() {
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
-    onSuccess: (saved, variables, { before }) => {
-      // 이후 회차까지 바꾸면 바뀐 날짜를 몰라 넓게 맞춘다
-      if (variables.scope == null) {
-        settleTodoEdit(queryClient, { before, after: saved });
-      } else {
-        invalidateTodos(queryClient);
-      }
+    onSuccess: (_saved, variables) => {
       toast.success(t('todo:toast.categoryChanged'));
       trackEvent('todo_edited', { todo_id: variables.todoId, field: 'categoryId' });
       if (variables.scope != null) {
@@ -182,18 +173,17 @@ export function useChangeTodoCategoryMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
+      showTodoSeriesFailure(error);
+    },
+    onSettled: (saved, _error, { scope }, context) => {
+      if (saved == null) {
+        return;
+      }
+      // 이후 회차까지 바꾸면 바뀐 날짜를 몰라 넓게 맞춘다
+      if (scope == null) {
+        settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
+      } else {
+        settleTodoSeriesWrite(queryClient);
       }
     },
     meta: {
@@ -209,7 +199,7 @@ export function useChangeTodoCategoryMutationOptions() {
 interface DeleteTodoVariables {
   todoId: number;
   /** 지운 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
   scope?: TodoEditScope;
 }
 
@@ -217,8 +207,8 @@ export function useDeleteTodoMutationOptions() {
   const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 안내하고 낙관 삭제를 되돌린다
@@ -242,42 +232,33 @@ export function useDeleteTodoMutationOptions() {
       return { snapshot, span, ticket };
     },
     onSuccess: (_, { todoId, scope }, context) => {
+      removeTodoPage(queryClient, { todoId });
       toast.success(t('todo:toast.todoDeleted'));
       trackEvent('todo_deleted', { todo_id: todoId });
       if (scope != null) {
         trackEvent('todo_series_deleted', { scope });
-        invalidateTodos(queryClient);
         return;
       }
       const categoryId = context.snapshot?.todo.category.id;
-      if (categoryId == null) {
-        invalidateTodoCategories(queryClient);
-        return;
+      if (categoryId != null) {
+        changeCachedCategoryTodoCount(queryClient, { categoryId, delta: -1 });
       }
-      changeCachedCategoryTodoCount(queryClient, { categoryId, delta: -1 });
     },
     onError: (error, _variables, context) => {
-      if (context?.snapshot) {
+      if (context?.snapshot != null) {
         restoreTodo(queryClient, context.snapshot);
         syncDailyCompletionWithList(queryClient, { date: context.snapshot.date });
       }
 
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
-      }
+      showTodoSeriesFailure(error);
     },
-    onSettled: (_data, error, { todoId, date }, context) => {
+    onSettled: (_data, error, { todoId, date, scope }, context) => {
       invalidateTodoDependentQueries(queryClient);
+      if (error == null && scope != null) {
+        settleTodoSeriesWrite(queryClient);
+      } else if (error == null && context?.snapshot == null) {
+        invalidateTodoCategories(queryClient);
+      }
       settleTodoWrite(queryClient, {
         date,
         todoId,
@@ -288,7 +269,8 @@ export function useDeleteTodoMutationOptions() {
         extra: [
           // 마지막 할 일·반복 회차를 지웠는지는 서버만 안다
           ...getTodoOverviewFilters(),
-          { queryKey: TODO_QUERY_KEYS.page({ todoId }) },
+          // 지우지 못했으면 상세도 서버 값으로 맞춘다. 지웠으면 성공 때 버렸다
+          ...(error == null ? [] : [{ queryKey: TODO_QUERY_KEYS.page({ todoId }) }]),
         ],
       });
     },
@@ -303,8 +285,8 @@ export function useDeleteTodoMutationOptions() {
 }
 
 interface ReorderTodoVariables {
-  id: number;
-  input: ReorderTodoInput;
+  todoId: number;
+  input: TodoReorder;
 }
 
 export function useReorderTodoMutationOptions() {
@@ -316,19 +298,19 @@ export function useReorderTodoMutationOptions() {
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ id, input }: ReorderTodoVariables) => {
-      const result = await todoApi.reorderTodo(id, input);
+    mutationFn: async ({ todoId, input }: ReorderTodoVariables) => {
+      const result = await todoApi.reorderTodo(todoId, input);
       return unwrap(result);
     },
     onSuccess: () => {
       trackEvent('todo_reordered', { source: 'feed' });
       const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
+      if (accountId != null) {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_reorder' });
       }
     },
-    onSettled: (_data, _error, { id }) => {
-      settleTodoReorder(queryClient, { todoId: id });
+    onSettled: (_data, _error, { todoId }) => {
+      settleTodoReorder(queryClient, { todoId });
     },
     meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.changeFailedRetry' } },
   });
@@ -336,7 +318,7 @@ export function useReorderTodoMutationOptions() {
 
 export interface UpdateTodoScheduleVariables {
   todoId: number;
-  input: UpdateTodoScheduleInput;
+  input: TodoScheduleChange;
   /** 사용자가 고친 칸. 저장 안내 문구를 고른다. 안내를 따로 띄우는 곳(날씨 일괄 옮기기)은 넘기지 않는다 */
   changedField?: 'date' | 'time';
   scope?: TodoUpdateScope;
@@ -345,8 +327,8 @@ export interface UpdateTodoScheduleVariables {
 export function useUpdateTodoScheduleMutationOptions() {
   const todoApi = useTodoApi();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
-  const haptics = useHaptics();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -359,13 +341,7 @@ export function useUpdateTodoScheduleMutationOptions() {
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
-    onSuccess: (saved, { changedField, scope }, { before }) => {
-      // 이후 회차까지 옮기면 바뀐 날짜를 몰라 넓게 맞춘다
-      if (scope == null) {
-        settleTodoEdit(queryClient, { before, after: saved });
-      } else {
-        invalidateTodos(queryClient);
-      }
+    onSuccess: (_saved, { changedField, scope }) => {
       toast.success(
         changedField === 'time' ? t('todo:toast.timeChanged') : t('todo:toast.dateChanged'),
       );
@@ -374,18 +350,17 @@ export function useUpdateTodoScheduleMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
+      showTodoSeriesFailure(error);
+    },
+    onSettled: (saved, _error, { scope }, context) => {
+      if (saved == null) {
+        return;
+      }
+      // 이후 회차까지 옮기면 바뀐 날짜를 몰라 넓게 맞춘다
+      if (scope == null) {
+        settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
+      } else {
+        settleTodoSeriesWrite(queryClient);
       }
     },
     meta: {

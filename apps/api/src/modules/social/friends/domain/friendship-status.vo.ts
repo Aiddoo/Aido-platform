@@ -1,8 +1,8 @@
-import { ErrorCode } from "@aido/api/errors";
 import { FOLLOW_STATUSES } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { unknownFriendshipStatus } from "./friends.errors.js";
 
 export type FriendshipStatusValue = (typeof FOLLOW_STATUSES)[number];
 
@@ -13,10 +13,7 @@ function isFriendshipStatusValue(raw: string): raw is FriendshipStatusValue {
 export class FriendshipStatus extends ValueObject<FriendshipStatusValue> {
   static create(raw: string): FriendshipStatus {
     if (!isFriendshipStatusValue(raw)) {
-      throw new DomainException(ErrorCode.SYS_0001, {
-        detail: "Unknown friendship status",
-        value: raw,
-      });
+      throw unknownFriendshipStatus(raw);
     }
     return new FriendshipStatus(raw);
   }

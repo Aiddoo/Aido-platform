@@ -1,4 +1,4 @@
-import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
+import type { WindowSizeClass } from '@src/shared/ui';
 import { clamp } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
@@ -12,11 +12,7 @@ export function getMemoColumnCount(paneSizeClass: WindowSizeClass, memoCount: nu
   return clamp(memoCount, 1, columnCount);
 }
 
-/**
- * 지난 그림 뒤에 목록 앞이나 사이에 새로 생긴 메모만 고른다(새로 만든 메모, 다른 기기에서 만든 메모).
- * 처음 그림·탭 전환·다시 마운트·칸 수나 폭 변경은 아는 메모만 있어 고를 것이 없다.
- * 다음 쪽으로 끝에 붙은 메모는 아는 마지막 메모 뒤라 고르지 않는다. 아는 메모가 하나도 남지 않았으면(빈 목록에서 첫 메모) 새 메모를 모두 고른다
- */
+/** 지난 그림 뒤 목록 앞·사이에 새로 생긴 메모만 고른다. 다음 쪽으로 끝에 붙은 메모는 제외하고, 아는 메모가 없으면 모두 고른다 */
 export function getEnteringMemoIds(
   knownIds: ReadonlySet<number>,
   memoIds: readonly number[],

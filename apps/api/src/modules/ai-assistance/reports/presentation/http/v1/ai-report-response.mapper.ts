@@ -7,19 +7,24 @@ import type { ReportStatusReadModel } from "../../../application/read-models/rep
 import type { AiReport } from "../../../domain/ai-report.aggregate.js";
 import { computeDateRange } from "../../../domain/report-period.domain-service.js";
 
-export function toAiReportResponse(report: AiReport): AiReportResponse {
+/** `localToday`는 읽는 사용자 시간대의 오늘이다. 주간 라벨이 다른 해의 주면 연도를 붙인다 */
+export function toAiReportResponse(
+  report: AiReport,
+  localToday: Temporal.PlainDate,
+): AiReportResponse {
   const primitives = report.toPrimitives();
   return {
     id: primitives.id,
     type: primitives.type,
     year: primitives.year,
     period: primitives.period,
-    periodLabel: computePeriodLabel(
-      primitives.type,
-      primitives.year,
-      primitives.period,
-      primitives.locale,
-    ),
+    periodLabel: computePeriodLabel({
+      type: primitives.type,
+      year: primitives.year,
+      period: primitives.period,
+      locale: primitives.locale,
+      localToday,
+    }),
     dateRange: computeDateRange(primitives.type, primitives.year, primitives.period),
     stats: primitives.stats,
     categoryBreakdown: [...primitives.categoryBreakdown],
@@ -33,12 +38,13 @@ export function toAiReportResponse(report: AiReport): AiReportResponse {
 }
 
 export function toReportStatusResponse(status: ReportStatusReadModel): ReportStatus {
+  const { latestWeekly, latestMonthly, localToday } = status;
   return {
     nextWeeklyAt: toIsoString(status.nextWeeklyAt),
     nextMonthlyAt: toIsoString(status.nextMonthlyAt),
     daysUntilWeekly: status.daysUntilWeekly,
     daysUntilMonthly: status.daysUntilMonthly,
-    latestWeekly: status.latestWeekly == null ? null : toAiReportResponse(status.latestWeekly),
-    latestMonthly: status.latestMonthly == null ? null : toAiReportResponse(status.latestMonthly),
+    latestWeekly: latestWeekly == null ? null : toAiReportResponse(latestWeekly, localToday),
+    latestMonthly: latestMonthly == null ? null : toAiReportResponse(latestMonthly, localToday),
   };
 }

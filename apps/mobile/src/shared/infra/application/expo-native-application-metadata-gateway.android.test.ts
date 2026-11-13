@@ -5,6 +5,7 @@ import { expoNativeApplicationMetadataGateway } from './expo-native-application-
 jest.mock('expo-application', () => ({
   nativeApplicationVersion: '1.10.0',
   nativeBuildVersion: '123',
+  applicationId: 'com.aido.mobile',
 }));
 
 describe('expoNativeApplicationMetadataGateway (Android)', () => {
@@ -32,6 +33,7 @@ describe('expoNativeApplicationMetadataGateway (Android)', () => {
       platform: 'android',
       currentVersion: '1.10.0',
       currentBuild: '123',
+      applicationId: 'com.aido.mobile',
     });
   });
 });

@@ -1,5 +1,6 @@
 import { useNotificationApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import type { DateKey } from '@src/shared/date/date-key';
 import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
@@ -7,14 +8,14 @@ import { uniqBy } from 'es-toolkit';
 
 import type { NotificationPage } from '../domains/notification.model';
 import type { NotificationListQueryKey } from '../schemas/notification-list-query-key.schema';
-import { toDateSectionedListItems } from '../utils/date-section';
+import { toDateSectionedListItems } from '../utils/notification-section.view-model';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
 interface NotificationsInfiniteQueryInput extends NotificationListQueryKey {
   /** 날짜 섹션을 나누는 기준. 키에 넣지 않아 날짜가 바뀌어도 다시 받지 않고 select만 다시 돈다 */
-  todayDateKey: string;
+  todayDateKey: DateKey;
   timeZone: string;
 }
 
