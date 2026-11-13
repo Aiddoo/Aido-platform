@@ -1,20 +1,18 @@
-import { Text } from '@src/shared/ui';
+import { LabelChip, Text } from '@src/shared/ui';
 import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { type EntitlementFeature } from '../domains/entitlement.model';
 import { useQuotaStatus } from '../hooks/use-quota-status';
 
-interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
+interface QuotaChipProps extends Omit<
+  ComponentProps<typeof Chip>,
+  'children' | 'color' | 'variant'
+> {
   feature: EntitlementFeature;
 }
 
-export function QuotaChip({
-  feature,
-  size = 'sm',
-  variant = 'soft',
-  ...chipProps
-}: QuotaChipProps) {
+export function QuotaChip({ feature, size = 'sm', ...chipProps }: QuotaChipProps) {
   const { type, label } = useQuotaStatus(feature);
 
   if (label == null) {
@@ -22,18 +20,15 @@ export function QuotaChip({
   }
 
   return type === 'remaining' ? (
-    <Chip size={size} variant={variant} color="accent" {...chipProps}>
-      <Text
-        size="e1"
-        weight="semibold"
-        numberOfLines={1}
-        className="shrink text-accent-soft-foreground tabular-nums"
-      >
-        {label}
-      </Text>
-    </Chip>
+    <LabelChip
+      color="accent"
+      label={label}
+      size={size}
+      labelProps={{ weight: 'semibold', numberOfLines: 1, className: 'shrink tabular-nums' }}
+      {...chipProps}
+    />
   ) : (
-    <Chip size={size} variant={variant} color="default" {...chipProps}>
+    <Chip size={size} variant="soft" color="default" {...chipProps}>
       <Text size="e1" weight="semibold" shade={6} numberOfLines={1} className="shrink">
         {label}
       </Text>

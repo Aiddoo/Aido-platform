@@ -1,6 +1,4 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { accountLocked, accountSuspended } from "./users.errors.js";
 
 /**
  * 계정 상태 로그인 가능성 불변식.
@@ -19,12 +17,9 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
 export function assertStatusAllowsLogin(status: string, identifier: string): void {
   switch (status) {
     case "LOCKED":
-      throw new DomainException(ErrorCode.USER_0607, {
-        email: identifier,
-        remainingMinutes: undefined,
-      });
+      throw accountLocked(identifier);
     case "SUSPENDED":
-      throw new DomainException(ErrorCode.USER_0605, { userId: identifier });
+      throw accountSuspended(identifier);
     default:
       // ACTIVE, PENDING_VERIFY는 상태 게이트에서 통과
       break;

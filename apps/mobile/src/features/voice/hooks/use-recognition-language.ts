@@ -1,31 +1,14 @@
-import { useRecognitionLanguageRepository } from '@src/bootstrap/providers/di-context';
-import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useLanguage } from '@src/shared/providers/language-provider';
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useSyncExternalStore } from 'react';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
+import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
 
-import { APP_LANGUAGE_SPEECH_LOCALE } from '../constants/voice.constants';
+import { recognitionLanguageStoredValue } from '../schemas/recognition-language-storage.schema';
 
+/** 계정이 고른 인식 언어. 고른 적 없으면 앱 언어를 따르고, 계정을 모르면 저장하지 않는다 */
 export function useRecognitionLanguage() {
-  const repository = useRecognitionLanguageRepository();
-  const { resolvedLanguage } = useLanguage();
-  const { data: me } = useQuery(useGetMeQueryOptions());
-  const accountId = me?.id;
+  const { speechLocale } = useLocaleContext();
+  const accountId = useMyAccountId();
+  const [savedLocale, setLocale] = useStoredValue(recognitionLanguageStoredValue, accountId);
 
-  const savedLocale = useSyncExternalStore(repository.subscribe, () =>
-    accountId == null ? null : repository.find(accountId),
-  );
-  const locale = savedLocale ?? APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage];
-
-  const setLocale = useCallback(
-    (nextLocale: SpeechLocale) => {
-      if (accountId != null) {
-        repository.save(accountId, nextLocale);
-      }
-    },
-    [repository, accountId],
-  );
-
-  return [locale, setLocale] as const;
+  return [savedLocale ?? speechLocale, setLocale] as const;
 }

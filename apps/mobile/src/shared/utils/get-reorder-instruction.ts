@@ -1,4 +1,4 @@
-type ReorderPosition = 'before' | 'after';
+import type { ReorderPosition } from '@aido/api/vocabulary';
 
 export interface ReorderInstruction<TId> {
   movedId: TId;

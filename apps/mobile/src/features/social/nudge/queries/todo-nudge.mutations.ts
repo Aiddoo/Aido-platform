@@ -1,16 +1,15 @@
-import { useHaptics, useTodoNudgeService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoNudgeApi } from '@src/bootstrap/providers/di-context';
 import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
+import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage, unwrap } from '@src/shared/errors';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { unwrap } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_NUDGE_QUERY_KEYS } from '../constants/todo-nudge-query-keys';
 import { isThanksTodoNotCompletedError } from '../domains/todo-nudge.error';
 import type {
   CreateNudgeInput,
@@ -18,13 +17,17 @@ import type {
   ReplyToNudgeInput,
   SendNudgeThanksInput,
 } from '../schemas/nudge-request.schema';
-import { invalidateNudgeInteractions } from './todo-nudge-cache';
+import {
+  invalidateNudgeInteraction,
+  invalidateNudgeInteractionLists,
+  invalidateNudgeInteractions,
+  invalidateNudgeLimit,
+  invalidateRemindNudgeCooldown,
+  setNudgeInteractionInCache,
+} from './todo-nudge-cache';
 
 export function useReplyToNudgeMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
-  const todoNudgeService = useTodoNudgeService();
-  const reportUnexpectedError = useReportUnexpectedError('todo_nudge');
+  const todoNudgeApi = useTodoNudgeApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
@@ -32,30 +35,23 @@ export function useReplyToNudgeMutationOptions() {
     // 화면에 머물며 답장 버튼이 응답까지 꺼진다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async ({ nudgeId, input }: { nudgeId: number; input: ReplyToNudgeInput }) =>
-      unwrap(await todoNudgeService.replyToNudge(nudgeId, input)),
-    onSuccess: (data, variables) => {
-      trackEvent('nudge_replied', { reply_kind: variables.input.replyKind });
-      queryClient.setQueryData(
-        TODO_NUDGE_QUERY_KEYS.interaction({ nudgeId: variables.nudgeId }),
-        data,
-      );
+      unwrap(await todoNudgeApi.replyToNudge(nudgeId, input)),
+    onSuccess: (nudge, { input }) => {
+      trackEvent('nudge_replied', { reply_kind: input.replyKind });
+      setNudgeInteractionInCache(queryClient, nudge);
       emitNotificationsChanged();
-      invalidateNudgeInteractions(queryClient);
     },
-    onError: (error) => {
-      reportUnexpectedError(error);
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.retryLater') });
-      invalidateNudgeInteractions(queryClient);
+    // 이미 답했거나 사라진 콕이면 상세를 서버 값으로 맞춘다. 성공하면 방금 쓴 상세는 다시 받지 않는다
+    onError: (_error, { nudgeId }) => {
+      invalidateNudgeInteraction(queryClient, { nudgeId });
     },
+    onSettled: () => invalidateNudgeInteractionLists(queryClient),
+    meta: { errorFeedback: { feature: 'todo_nudge', fallbackKey: 'todo:toast.retryLater' } },
   });
 }
 
 export function useSendNudgeThanksMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
-  const todoNudgeService = useTodoNudgeService();
-  const reportUnexpectedError = useReportUnexpectedError('todo_nudge');
+  const todoNudgeApi = useTodoNudgeApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
@@ -63,82 +59,79 @@ export function useSendNudgeThanksMutationOptions() {
     // 감사 버튼이 응답까지 돈다. 답장과 같은 이유로 오프라인에서 멈추지 않는다
     networkMode: 'always',
     mutationFn: async ({ todoId, input }: { todoId: number; input: SendNudgeThanksInput }) =>
-      unwrap(await todoNudgeService.sendThanks(todoId, input)),
+      unwrap(await todoNudgeApi.sendThanks(todoId, input)),
     onSuccess: (recipientCount) => {
       if (recipientCount > 0) {
         trackEvent('nudge_thanks_sent', { recipient_count: recipientCount });
       }
       emitNotificationsChanged();
-      invalidateNudgeInteractions(queryClient);
     },
     onError: (error, { todoId }) => {
-      reportUnexpectedError(error);
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.retryLater') });
-      invalidateNudgeInteractions(queryClient);
       if (isThanksTodoNotCompletedError(error)) {
         invalidateTodoDetails(queryClient, { todoId });
       }
     },
+    // 감사는 그 할 일에 온 콕 모두의 기록을 바꿔 답장·감사를 넓게 다시 받는다
+    onSettled: () => invalidateNudgeInteractions(queryClient),
+    meta: { errorFeedback: { feature: 'todo_nudge', fallbackKey: 'todo:toast.retryLater' } },
   });
 }
 
 export function useSendRemindNudgeMutationOptions() {
   const haptics = useHaptics();
-  const todoNudgeService = useTodoNudgeService();
+  const todoNudgeApi = useTodoNudgeApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const reportUnexpectedError = useReportUnexpectedError('todo_nudge');
 
   return mutationOptions({
     // 저장 후 떠나는 시트라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (input: CreateRemindNudgeInput) =>
-      unwrap(await todoNudgeService.sendRemindNudge(input)),
-    onSuccess: (_data, variables) => {
+      unwrap(await todoNudgeApi.sendRemindNudge(input)),
+    onSuccess: () => {
       haptics.notify('success');
-      queryClient.invalidateQueries({
-        queryKey: TODO_NUDGE_QUERY_KEYS.remindCooldown({ userId: variables.receiverId }),
-      });
       toast.success(t('todo:toast.remindNudgeSent'));
       trackEvent('remind_nudge_sent');
     },
-    onError: (error) => {
-      reportUnexpectedError(error);
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.retryLater') });
-    },
+    onSettled: (_data, _error, { receiverId }) =>
+      invalidateRemindNudgeCooldown(queryClient, { userId: receiverId }),
+    meta: { errorFeedback: { feature: 'todo_nudge', fallbackKey: 'todo:toast.retryLater' } },
   });
 }
 
 export function useSendTodoNudgeMutationOptions() {
   const haptics = useHaptics();
-  const todoNudgeService = useTodoNudgeService();
+  const todoNudgeApi = useTodoNudgeApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
-  const reportUnexpectedError = useReportUnexpectedError('todo_nudge');
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async (input: CreateNudgeInput) => unwrap(await todoNudgeService.sendNudge(input)),
+    mutationFn: async (input: CreateNudgeInput) => unwrap(await todoNudgeApi.sendNudge(input)),
+    // 남은 횟수는 보낸 뒤에만 바뀐다. 한도에 막힌 실패는 한도 시트가 받은 한도로 스냅샷을 맞춘다
     onSuccess: () => {
       haptics.notify('success');
-      queryClient.invalidateQueries({ queryKey: TODO_NUDGE_QUERY_KEYS.limit() });
+      invalidateNudgeLimit(queryClient);
       invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');
     },
     onError: (error) => {
-      reportUnexpectedError(error);
-      haptics.notify('error');
       if (gate.promptIfBlockedError(error)) {
-        return;
+        haptics.notify('error');
       }
-
-      toast.error(getUserFacingMessage(error), { fallback: t('todo:toast.retryLater') });
+    },
+    // 할 일 상세의 콕 버튼은 서버가 계산한 permissions.canNudge를 따른다
+    onSettled: (_data, _error, { todoId }) => invalidateTodoDetails(queryClient, { todoId }),
+    meta: {
+      errorFeedback: {
+        feature: 'todo_nudge',
+        fallbackKey: 'todo:toast.retryLater',
+        isHandledByFeature: isLimitedFeatureError,
+      },
     },
   });
 }

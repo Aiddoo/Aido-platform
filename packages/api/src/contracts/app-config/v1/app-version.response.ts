@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-export const appStoreVersionPattern = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$";
+import { APP_STORE_VERSION_PATTERN } from "../../../vocabulary/app-version.constants.js";
 
 export const appStoreVersionSchema = z
   .string()
-  .regex(new RegExp(appStoreVersionPattern), "Must be a stable MAJOR.MINOR.PATCH version");
+  .regex(new RegExp(APP_STORE_VERSION_PATTERN), "Must be a stable MAJOR.MINOR.PATCH version");
 
 const platformVersionSchema = z.strictObject({ latestVersion: appStoreVersionSchema });
 

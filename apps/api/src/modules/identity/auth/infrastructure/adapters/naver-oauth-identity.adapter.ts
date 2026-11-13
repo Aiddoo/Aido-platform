@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
@@ -8,6 +7,11 @@ import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
+import {
+  expiredSocialToken,
+  invalidCredentials,
+  invalidSocialToken,
+} from "../../application/auth.errors.js";
 import { AuthLogEvent } from "../../application/auth.log-events.js";
 import {
   type ExchangedToken,
@@ -48,7 +52,7 @@ export class NaverOAuthIdentityAdapter extends OAuthIdentityProviderPort {
   async generateAuthUrl(params: GenerateAuthUrlParams): Promise<string> {
     const { clientId, callbackUrl, isConfigured } = this.#config;
     if (!isConfigured || !clientId || !callbackUrl) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     await params.persistState("NAVER", params.validatedRedirectUri, {
@@ -68,7 +72,7 @@ export class NaverOAuthIdentityAdapter extends OAuthIdentityProviderPort {
   async exchangeCode(code: string, state?: string): Promise<ExchangedToken> {
     const { clientId, clientSecret, callbackUrl, isConfigured } = this.#config;
     if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const tokenRequestBody = new URLSearchParams({
@@ -101,7 +105,7 @@ export class NaverOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         statusCode: tokenResponse.status,
         providerError: await readOAuthProviderError(tokenResponse),
       });
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const tokenData = await readJson(tokenResponse, naverTokenResponseSchema);
@@ -110,7 +114,7 @@ export class NaverOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         event: AuthLogEvent.OAUTH_TOKEN_EXCHANGE_INVALID,
         provider: this.provider,
       });
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
     return { token: tokenData.data.access_token };
   }
@@ -128,15 +132,12 @@ export class NaverOAuthIdentityAdapter extends OAuthIdentityProviderPort {
       );
 
       if (!response.ok) {
-        throw new ApplicationException(
-          response.status === 401 ? ErrorCode.SOCIAL_0203 : ErrorCode.SOCIAL_0202,
-          { provider: "NAVER" },
-        );
+        throw response.status === 401 ? expiredSocialToken("NAVER") : invalidSocialToken("NAVER");
       }
 
       const parsed = await readJson(response, naverUserInfoSchema);
       if (!parsed.success || parsed.data.resultcode !== "00" || !parsed.data.response) {
-        throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "NAVER" });
+        throw invalidSocialToken("NAVER");
       }
       const naverUser = parsed.data.response;
       // 네이버는 이메일 인증 여부를 주지 않아 자동 연동하지 않고 수동 연동으로 보낸다
@@ -152,7 +153,7 @@ export class NaverOAuthIdentityAdapter extends OAuthIdentityProviderPort {
       if (error instanceof ApplicationException) {
         throw error;
       }
-      throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "NAVER" });
+      throw invalidSocialToken("NAVER");
     }
   }
 

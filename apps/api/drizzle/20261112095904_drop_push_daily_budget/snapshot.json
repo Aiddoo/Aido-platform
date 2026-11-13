@@ -1,0 +1,75 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "90ce44ae-0164-428e-96f0-33533d8fcc3b",
+  "prevIds": [
+    "6f05fff6-d085-4122-865c-9e280f618f30"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDailyBudget"
+      ],
+      "writes": [
+        "s|tbl|public.PushDailyBudget",
+        "n|tbl|public.PushDailyBudget",
+        "e|tbl|public.PushDailyBudget",
+        "n|rel|public.PushDailyBudget",
+        "n|type|public.PushDailyBudget"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "tables\u0000[\"public\",\"PushDailyBudget\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"PushDailyBudget\",\"automatedCount\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"PushDailyBudget\",\"createdAt\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"PushDailyBudget\",\"id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"PushDailyBudget\",\"lastSentAt\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"PushDailyBudget\",\"localDate\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"PushDailyBudget\",\"updatedAt\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"PushDailyBudget\",\"userId\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"PushDailyBudget\",\"PushDailyBudget_userId_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "pks\u0000[\"public\",\"PushDailyBudget\",\"PushDailyBudget_pkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "uniques\u0000[\"public\",\"PushDailyBudget\",\"PushDailyBudget_userId_localDate_key\"]"
+    }
+  ]
+}

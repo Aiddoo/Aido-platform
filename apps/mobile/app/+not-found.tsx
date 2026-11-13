@@ -1,11 +1,9 @@
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useTranslation } from '@src/shared/i18n';
 import { Result, SearchIllustration, StyledSafeAreaView } from '@src/shared/ui';
-import { router } from 'expo-router';
 
 export default function NotFoundScreen() {
-  const goBack = useSingleTap(router.back);
-  const replace = useSingleTap(router.replace);
+  const goBack = useGoBack({ fallbackHref: '/feed' });
 
   const { t } = useTranslation();
 
@@ -14,19 +12,7 @@ export default function NotFoundScreen() {
       <Result
         icon={<SearchIllustration />}
         title={t('notFound.title')}
-        button={
-          <Result.Button
-            onPress={() => {
-              if (router.canGoBack()) {
-                goBack();
-              } else {
-                replace('/feed');
-              }
-            }}
-          >
-            {t('notFound.goBack')}
-          </Result.Button>
-        }
+        button={<Result.Button onPress={goBack}>{t('notFound.goBack')}</Result.Button>}
       />
     </StyledSafeAreaView>
   );

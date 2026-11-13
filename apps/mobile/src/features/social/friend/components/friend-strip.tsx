@@ -5,6 +5,7 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useTrack } from '@src/shared/analytics';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -12,17 +13,16 @@ import {
   Box,
   HStack,
   PlusIcon,
-  QueryErrorActions,
   type QueryErrorFallbackProps,
   RefreshIcon,
-  Result,
   Text,
   TextSkeleton,
   useAdaptivePaneLayoutKey,
   useFetchNextPage,
   VStack,
+  QueryErrorFallback,
 } from '@src/shared/ui';
-import { TEXT_SIZE_CLASSES } from '@src/shared/ui/text/text.variants';
+import { TEXT_SIZE_CLASSES } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   usePrefetchInfiniteQuery,
@@ -39,7 +39,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import type { FriendUser } from '../domains/friend.model';
 import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
-import { getFriendStripRevealOffset } from '../utils/friend-strip-scroll';
+import { getFriendStripRevealOffset } from '../utils/friend-strip-scroll.geometry';
 
 /** 아바타 40 + 양쪽 선택 링 2 + 링 안쪽 여백 2. 선택 여부와 관계없이 늘 같은 크기다 */
 const AVATAR_FRAME_SIZE = 48;
@@ -79,6 +79,7 @@ export function FriendStrip({ onInvite, isHintDismissed, shouldShowHint }: Frien
   // 아래에서 내 정보를 기다리며 멈추기 전에 친구 목록도 함께 받기 시작한다
   usePrefetchInfiniteQuery(friendsQueryOptions);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const [selectedFriendId, selectFriend] = useFeedFriendId();
   const {
     data: friendPages,
     fetchNextPage,
@@ -103,6 +104,8 @@ export function FriendStrip({ onInvite, isHintDismissed, shouldShowHint }: Frien
           name={t('friendStrip.me')}
           profileImage={user.profileImage}
           width={width}
+          isSelected={selectedFriendId == null}
+          onSelect={selectFriend}
         />
       </Box>
       <Divider />
@@ -118,6 +121,7 @@ export function FriendStrip({ onInvite, isHintDismissed, shouldShowHint }: Frien
             ref={listRef}
             horizontal
             data={friends}
+            extraData={selectedFriendId}
             keyExtractor={(friend) => friend.followId}
             renderItem={({ item: friend }) => (
               <FriendStrip.Item
@@ -125,6 +129,8 @@ export function FriendStrip({ onInvite, isHintDismissed, shouldShowHint }: Frien
                 name={friend.name ?? t('fallbackName')}
                 profileImage={friend.profileImage}
                 width={width}
+                isSelected={selectedFriendId === friend.id}
+                onSelect={selectFriend}
               />
             )}
             ItemSeparatorComponent={ItemGap}
@@ -143,7 +149,12 @@ export function FriendStrip({ onInvite, isHintDismissed, shouldShowHint }: Frien
             style={{ flex: 1 }}
             contentContainerStyle={{ paddingRight: STRIP_PADDING + edgeInsets.end }}
           />
-          <SelectedFriendReveal listRef={listRef} friends={friends} isListLoaded={isListLoaded} />
+          <SelectedFriendReveal
+            listRef={listRef}
+            friends={friends}
+            selectedFriendId={selectedFriendId}
+            isListLoaded={isListLoaded}
+          />
         </>
       )}
     </HStack>
@@ -157,6 +168,9 @@ interface FriendStripItemProps {
   profileImage: string | null;
   /** 칸 폭. 셀마다 글꼴 배율을 다시 읽지 않게 친구 줄이 한 번 정해 넘긴다 */
   width: number;
+  /** 피드 route의 선택을 친구 줄이 한 번 읽어 넘긴다. 칸마다 route 훅을 부르지 않는다 */
+  isSelected: boolean;
+  onSelect: (friendId: string | undefined) => void;
 }
 
 /** 원시 값만 받아 페이지가 붙거나 부모가 다시 그려져도 같은 친구 칸은 다시 그리지 않는다 */
@@ -165,14 +179,14 @@ FriendStrip.Item = memo(function Item({
   name,
   profileImage,
   width,
+  isSelected,
+  onSelect,
 }: FriendStripItemProps) {
   const haptics = useHaptics();
   const { t } = useTranslation('friend');
-  const [selectedFriendId, setSelectedFriendId] = useFeedFriendId();
-  const isSelected = selectedFriendId === friendId;
   const selectFriend = useSingleTap((nextFriendId: string | undefined) => {
     haptics.selection();
-    setSelectedFriendId(nextFriendId);
+    onSelect(nextFriendId);
   });
 
   return (
@@ -239,21 +253,17 @@ FriendStrip.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const edgeInsets = useStripEdgeInsets();
 
   return (
-    <HStack
-      pl={STRIP_PADDING + edgeInsets.start}
-      pr={STRIP_PADDING + edgeInsets.end}
-      gap={8}
-      align="center"
-      style={{ height }}
-    >
-      <Text size="b4" shade={6} numberOfLines={2} className="flex-1">
-        {t('friend:list.loadFailed')}
-      </Text>
-      <VStack align="center" gap={2}>
-        <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
-        <QueryErrorActions.Inquiry />
-      </VStack>
-    </HStack>
+    <QueryErrorFallback.Inline
+      message={t('friend:list.loadFailed')}
+      messageProps={{ numberOfLines: 2 }}
+      reset={reset}
+      hasInquiry
+      style={{
+        height,
+        paddingLeft: STRIP_PADDING + edgeInsets.start,
+        paddingRight: STRIP_PADDING + edgeInsets.end,
+      }}
+    />
   );
 };
 
@@ -267,6 +277,7 @@ FriendStrip.Empty = function Empty({
   shouldShowHint = true,
 }: FriendStripProps) {
   const { t } = useTranslation('friend');
+  const fontScaledSize = useFontScaledSize();
   const { trackEvent } = useTrack();
   const push = useSingleTap(router.push);
   const isInviteAvailable = onInvite != null;
@@ -307,7 +318,13 @@ FriendStrip.Empty = function Empty({
         }}
       >
         <ActionCell
-          icon={<PlusIcon width={16} height={16} colorClassName="text-gray-6" />}
+          icon={
+            <PlusIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-gray-6"
+            />
+          }
           label={label}
         />
       </PressableFeedback>
@@ -326,6 +343,7 @@ function ListEnd({
   onRetry: () => void;
 }) {
   const { t } = useTranslation('friend');
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
   if (isFetchNextPageError) {
@@ -337,7 +355,13 @@ function ListEnd({
           onPress={onRetry}
         >
           <ActionCell
-            icon={<RefreshIcon width={16} height={16} colorClassName="text-gray-6" />}
+            icon={
+              <RefreshIcon
+                width={fontScaledSize(16)}
+                height={fontScaledSize(16)}
+                colorClassName="text-gray-6"
+              />
+            }
             label={t('friendStrip.loadMoreFailed')}
           />
         </PressableFeedback>
@@ -361,7 +385,13 @@ function ListEnd({
         onPress={() => push('/friends/search')}
       >
         <ActionCell
-          icon={<PlusIcon width={16} height={16} colorClassName="text-gray-6" />}
+          icon={
+            <PlusIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-gray-6"
+            />
+          }
           label={t('friendStrip.findFriends')}
         />
       </PressableFeedback>
@@ -370,20 +400,20 @@ function ListEnd({
 }
 
 /**
- * 고른 친구가 잘려 있으면 보이게 옮긴다. 선택 구독을 이 칸에만 두어 선택이 바뀌어도 친구 줄 전체가
- * 다시 그려지지 않는다. 딥링크로 아직 안 불러온 친구를 고르면 친구 피드가 페이지를 이어 불러오고,
+ * 고른 친구가 잘려 있으면 보이게 옮긴다. 딥링크로 아직 안 불러온 친구를 고르면 친구 피드가 페이지를 이어 불러오고,
  * 같은 캐시라 여기서 그 친구가 나타나는 순간 옮긴다.
  */
 function SelectedFriendReveal({
   listRef,
   friends,
+  selectedFriendId,
   isListLoaded,
 }: {
   listRef: RefObject<FlashListRef<FriendUser> | null>;
   friends: readonly FriendUser[];
+  selectedFriendId: string | undefined;
   isListLoaded: boolean;
 }) {
-  const [selectedFriendId] = useFeedFriendId();
   const { width } = useFriendStripItemSize();
   const { end: endInset } = useStripEdgeInsets();
   const hasRevealedRef = useRef(false);

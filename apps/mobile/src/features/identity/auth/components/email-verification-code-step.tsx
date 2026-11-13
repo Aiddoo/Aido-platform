@@ -1,28 +1,33 @@
 import { VERIFICATION_CODE } from '@aido/api/vocabulary';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { SECOND_MS } from '@src/shared/constants/time-units';
+import { getNowInstant } from '@src/shared/date/clock';
+import { fromEpochMs, toEpochMs } from '@src/shared/date/instant';
+import { useNow } from '@src/shared/hooks/use-now';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import type { InputOTPRef } from 'heroui-native';
-import { type ComponentProps, useRef, useState } from 'react';
+import { range } from 'es-toolkit';
+import { InputOTP, type InputOTPRef } from 'heroui-native';
+import { type ComponentProps, useCallback, useRef, useState } from 'react';
 
 import { findResendCooldown } from '../domains/auth.error';
-import { useCooldown } from '../hooks/use-cooldown';
-import { verificationCodeSchema } from '../schemas/verify-email-params.schema';
-import { maskEmail } from '../utils/mask-email';
-import { VerificationCodeInput } from './verification-code-input';
+import { isVerificationCode } from '../domains/auth.model';
+import { getRemainingCooldownSeconds } from '../utils/cooldown.view-model';
+import { maskEmail } from '../utils/email.view-model';
 
 interface EmailVerificationCodeStepProps extends Pick<
   ComponentProps<typeof VerificationCodeInput>,
   'isSeparated'
 > {
   email: string;
+  /** 서버가 이 코드를 거절해 돌아왔다. 칸을 오류로 보이고 비운 채 연다 */
+  isRejected?: boolean;
   isVerifying?: boolean;
   isResending?: boolean;
   /** 코드를 모두 입력하면 호출한다. reject하면 입력을 비우고 오류 상태로 표시한다. */
   onComplete: (code: string) => Promise<unknown>;
-  /** 코드를 다시 보낸다. 성공하면 retryAfterSeconds(없으면 기본값)만큼 재발송을 막는다. */
-  onResend: () => Promise<{ retryAfterSeconds?: number }>;
+  /** 코드를 다시 보낸다. 성공하면 retryAfterSeconds(null이면 기본값)만큼 재발송을 막는다. */
+  onResend: () => Promise<{ retryAfterSeconds: number | null }>;
 }
 
 /** 검증과 발송 mutation은 화면이 소유한다 */
@@ -30,15 +35,15 @@ export function EmailVerificationCodeStep({
   email,
   onComplete,
   onResend,
+  isRejected = false,
   isVerifying = false,
   isResending = false,
   isSeparated,
 }: EmailVerificationCodeStepProps) {
   const { t } = useTranslation('auth');
-  const reportUnexpectedError = useReportUnexpectedError('auth');
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [code, setCode] = useState('');
-  const [isInvalid, setIsInvalid] = useState(false);
+  const [isInvalid, setIsInvalid] = useState(isRejected);
   const [cooldown, startCooldown] = useCooldown();
 
   const clearCode = () => {
@@ -47,7 +52,7 @@ export function EmailVerificationCodeStep({
   };
 
   const handleComplete = async (completedCode: string) => {
-    if (!verificationCodeSchema.safeParse(completedCode).success) {
+    if (!isVerificationCode(completedCode)) {
       setIsInvalid(true);
       clearCode();
       return;
@@ -56,10 +61,9 @@ export function EmailVerificationCodeStep({
     setIsInvalid(false);
     try {
       await onComplete(completedCode);
-    } catch (error) {
+    } catch {
       setIsInvalid(true);
       clearCode();
-      reportUnexpectedError(error);
     }
   };
 
@@ -99,7 +103,8 @@ export function EmailVerificationCodeStep({
             {t('verification.verifying')}
           </Text>
 
-          <HStack gap={8} justify="center">
+          {/* 다시 보낼 수 있을 때까지의 안내가 좁은 화면·큰 글꼴에서 넘치지 않게 줄을 바꾼다 */}
+          <HStack gap={8} justify="center" wrap="wrap">
             <Text size="b4" shade={7}>
               {t('verification.didNotReceive')}
             </Text>
@@ -117,4 +122,60 @@ export function EmailVerificationCodeStep({
       </FormStepLayout>
     </Box>
   );
+}
+
+interface VerificationCodeInputProps extends Omit<
+  ComponentProps<typeof InputOTP>,
+  'maxLength' | 'children'
+> {
+  /** 코드를 절반씩 나누고 가운데 구분선을 보여 준다. */
+  isSeparated?: boolean;
+}
+
+/** 서버 인증 코드 길이만큼 칸을 만드는 인증 코드 입력 */
+function VerificationCodeInput({ isSeparated = false, ...props }: VerificationCodeInputProps) {
+  const half = Math.ceil(VERIFICATION_CODE.LENGTH / 2);
+
+  return (
+    <InputOTP maxLength={VERIFICATION_CODE.LENGTH} {...props}>
+      {isSeparated ? (
+        <>
+          <InputOTP.Group>
+            {range(half).map((index) => (
+              <InputOTP.Slot key={index} index={index} />
+            ))}
+          </InputOTP.Group>
+          <InputOTP.Separator />
+          <InputOTP.Group>
+            {range(VERIFICATION_CODE.LENGTH - half).map((offset) => (
+              <InputOTP.Slot key={half + offset} index={half + offset} />
+            ))}
+          </InputOTP.Group>
+        </>
+      ) : (
+        <InputOTP.Group>
+          {range(VERIFICATION_CODE.LENGTH).map((index) => (
+            <InputOTP.Slot key={index} index={index} />
+          ))}
+        </InputOTP.Group>
+      )}
+    </InputOTP>
+  );
+}
+
+/** 1초 타이머를 이어 세면 iOS 백그라운드에서 멈춘 만큼 늦어져 마감 시각과의 차이를 틱과 앱 복귀 때 다시 계산한다 */
+function useCooldown() {
+  const [deadlineMs, setDeadlineMs] = useState<number | null>(null);
+  const now = useNow({
+    tickMs: SECOND_MS,
+    until: deadlineMs == null ? null : fromEpochMs(deadlineMs),
+    isEnabled: deadlineMs != null,
+  });
+  const cooldown = getRemainingCooldownSeconds(deadlineMs, toEpochMs(now));
+
+  const startCooldown = useCallback((seconds: number) => {
+    setDeadlineMs(toEpochMs(getNowInstant()) + seconds * SECOND_MS);
+  }, []);
+
+  return [cooldown, startCooldown] as const;
 }

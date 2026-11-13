@@ -1,10 +1,10 @@
 import type { RedemptionStatus } from '@aido/api/vocabulary';
-import { useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
+import { useInviteApi, useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { getErrorMessage } from '@src/shared/errors';
-import type { Page } from '@src/shared/types/page.types';
 import {
   queryOptions,
   type InfiniteData,
@@ -14,24 +14,23 @@ import {
 import { orderBy } from 'es-toolkit';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
-import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import { INVITED_FRIEND_SUMMARY_LIMIT } from '../constants/invite.constants';
 import type { InviteCode } from '../domains/invite-code.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { isInviteDisabledError } from '../domains/invite.error';
-import { InvitedFriendPolicy } from '../domains/invited-friend.model';
-import type { InvitedFriend } from '../domains/invited-friend.model';
+import { InvitedFriendPolicy, type InvitedFriendPage } from '../domains/invited-friend.model';
 import { invalidateInviteAvailability } from './invite-cache';
+import { INVITE_QUERY_KEYS } from './invite-query-keys';
 
 // 운영 플래그라 자주 바뀌지 않는다. 진입점이 여러 곳이어도 한 번만 묻는다
 const AVAILABILITY_STALE_TIME_MS = 5 * MINUTE_MS;
 
 export function useGetInviteAvailabilityQueryOptions() {
-  const inviteService = useInviteService();
+  const inviteApi = useInviteApi();
 
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.availability(),
-    queryFn: async ({ signal }) => unwrap(await inviteService.getAvailability(signal)),
+    queryFn: async ({ signal }) => unwrap(await inviteApi.getAvailability(signal)),
     staleTime: AVAILABILITY_STALE_TIME_MS,
   });
 }
@@ -53,13 +52,13 @@ export function useGetInvitePreviewQueryOptions({ inviteCode }: { inviteCode: In
 const INVITE_STALE_TIME_MS = 30 * SECOND_MS;
 
 export function useGetInviteQueryOptions() {
-  const inviteService = useInviteService();
+  const inviteApi = useInviteApi();
   const logger = useLogger();
 
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.me(),
     queryFn: async ({ signal, client }) => {
-      const result = await inviteService.getInvite(signal);
+      const result = await inviteApi.getInvite(signal);
       // 서버가 초대가 꺼졌다고 답하면 진입점이 숨도록 사용 가능 여부를 다시 받는다
       if (!result.ok && isInviteDisabledError(result.error)) {
         invalidateInviteAvailability(client).catch((error) =>
@@ -83,13 +82,13 @@ interface InviteesFilter {
 
 /** 상태마다 다른 캐시를 둔다. 서버가 상태로 거르고 totalCount도 그 조건으로 센다 */
 export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFilter) {
-  const inviteService = useInviteService();
+  const inviteApi = useInviteApi();
 
   return infiniteQueryOptions({
     queryKey: INVITE_QUERY_KEYS.invitees({ status }),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await inviteService.getInvitedFriends(
+        await inviteApi.getInvitedFriends(
           {
             cursor: pageParam,
             limit: DEFAULT_PAGE_SIZE,
@@ -99,17 +98,10 @@ export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFil
         ),
       ),
     initialPageParam: FIRST_PAGE_CURSOR,
-    // 친구 목록과 같이 마지막 userId가 다음 cursor다
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.items.at(-1)?.userId : undefined),
-    select: selectInvitedFriends,
+    getNextPageParam: getNextCursor,
+    // 서버가 이미 최근 가입 순(joinedAt desc, id desc)으로 페이지를 주므로 이어 붙이기만 한다
+    select: selectPageItems,
   });
-}
-
-// 서버가 이미 최근 가입 순(joinedAt desc, id desc)으로 페이지를 주므로 이어 붙이기만 한다
-function selectInvitedFriends(
-  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | undefined>,
-) {
-  return invitedFriendPages.pages.flatMap((page) => page.items);
 }
 
 /**
@@ -117,11 +109,11 @@ function selectInvitedFriends(
  * 받은 페이지 안에서만 고르므로 첫 페이지 밖의 기다리는 친구는 전체 보기에서 본다.
  */
 function selectInvitedFriendSummary(
-  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | undefined>,
+  invitedFriendPages: InfiniteData<InvitedFriendPage, string | undefined>,
 ) {
   const totalCount = selectInvitedFriendTotalCount(invitedFriendPages);
   const invitedFriends = orderBy(
-    invitedFriendPages.pages.flatMap((page) => page.items),
+    selectPageItems(invitedFriendPages),
     [InvitedFriendPolicy.orderByWaitingFirst, InvitedFriendPolicy.orderByJoinedAtDesc],
     ['asc', 'asc'],
   );
@@ -141,7 +133,7 @@ export function useGetInvitedFriendSummaryInfiniteQueryOptions() {
 }
 
 function selectInvitedFriendTotalCount(
-  invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | undefined>,
+  invitedFriendPages: InfiniteData<InvitedFriendPage, string | undefined>,
 ) {
   return invitedFriendPages.pages[0]?.totalCount ?? 0;
 }

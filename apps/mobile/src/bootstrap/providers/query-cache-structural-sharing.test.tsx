@@ -1,7 +1,7 @@
-import { createMemorySyncStorage, createTestQueryClient } from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { toInstant } from '@src/shared/date/instant';
+import { createMemorySyncStorage, createTestQueryClient } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { QueryClientProvider, useSuspenseQuery } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,

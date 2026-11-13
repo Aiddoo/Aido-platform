@@ -16,7 +16,7 @@ import {
 } from './friend.mapper';
 
 describe('toFriendsPage', () => {
-  it('친구 목록과 totalCount, hasMore를 옮기고 친구가 된 시각은 순간으로 읽는다', () => {
+  it('친구 목록과 totalCount를 옮기고 친구가 된 시각은 순간으로 읽는다', () => {
     // Given
     const dto = createFriendsListDto();
 
@@ -27,7 +27,31 @@ describe('toFriendsPage', () => {
     expect(page.items).toHaveLength(dto.friends.length);
     expect(page.items[0]?.friendsSince).toBe('2026-01-15T00:00:00.000Z');
     expect(page.totalCount).toBe(dto.totalCount);
-    expect(page.hasMore).toBe(dto.hasMore);
+  });
+
+  it('다음 쪽이 있으면 마지막 친구의 followId가 다음 커서다', () => {
+    // Given
+    const dto = createFriendsListDto({ hasMore: true });
+
+    // When
+    const page = toFriendsPage(dto);
+
+    // Then
+    expect(page.nextCursor).toBe(dto.friends.at(-1)?.followId);
+  });
+
+  it.each([
+    { name: '마지막 쪽', overrides: { hasMore: false } },
+    { name: '다음 쪽이 있다는데 빈 쪽', overrides: { hasMore: true, friends: [] } },
+  ])('$name이면 다음 커서가 없다', ({ overrides }) => {
+    // Given
+    const dto = createFriendsListDto(overrides);
+
+    // When
+    const page = toFriendsPage(dto);
+
+    // Then
+    expect(page.nextCursor).toBeNull();
   });
 
   it('계약을 통과한 응답은 앱 친구 모델도 통과한다', () => {

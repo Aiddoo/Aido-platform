@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createErrorReporterStub, runKyAfterResponseHook } from '@src/shared/__tests__';
+import { createErrorReporterStub, runKyAfterResponseHook } from '@src/testing/core';
 
 import {
   createApiFailureBreadcrumbHook,

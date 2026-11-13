@@ -1,11 +1,12 @@
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
+import { ServerError } from '@src/shared/errors/infra-error';
 import {
   createAppStoreListingGatewayStub,
   createErrorReporterStub,
   createNativeApplicationMetadataGatewayStub,
-  renderUi,
-} from '@src/shared/__tests__';
-import { ServerError } from '@src/shared/errors/infra-error';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { fireEvent, screen } from '@testing-library/react-native';
 
@@ -29,17 +30,21 @@ async function renderCheck({
   const listing = createAppStoreListingGatewayStub();
   listing.openListing.mockImplementation(openListing);
   const errorReporter = createErrorReporterStub();
-  await renderUi(<AppVersionCheck />, {
+  await renderScreen(<AppVersionCheck />, {
+    di: createTestDi({
+      ports: {
+        jsonFetcher,
+        applicationMetadata: createNativeApplicationMetadataGatewayStub({
+          platform: 'ios',
+          currentVersion,
+          currentBuild: null,
+          applicationId: null,
+        }),
+        appStoreListing: listing,
+        errorReporter,
+      },
+    }),
     withOverlay: true,
-    di: {
-      jsonFetcher,
-      applicationMetadata: createNativeApplicationMetadataGatewayStub({
-        platform: 'ios',
-        currentVersion,
-      }),
-      appStoreListing: listing,
-      errorReporter,
-    },
   });
 
   return { listing, errorReporter };

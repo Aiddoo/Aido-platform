@@ -1,18 +1,18 @@
-import { DigestProgress } from '@src/features/voice/components/note/digest-progress';
-import { DigestScanPreview } from '@src/features/voice/components/note/digest-scan-preview';
-import { KeyPointList } from '@src/features/voice/components/note/key-point-list';
-import { RecognizerWaveform } from '@src/features/voice/components/note/recognizer-waveform';
-import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
-import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
+import { SentenceCaptionList } from '@src/features/voice/components/sentence-caption-list';
+import { DigestProgress } from '@src/features/voice/components/voice-note-digest/digest-progress';
+import { DigestScanPreview } from '@src/features/voice/components/voice-note-digest/digest-scan-preview';
+import { RecognizerWaveform } from '@src/features/voice/components/voice-note-recorder/recognizer-waveform';
+import { RecordingTimer } from '@src/features/voice/components/voice-note-recorder/recording-timer';
+import { KeyPointList } from '@src/features/voice/components/voice-note-result/key-point-list';
 import type { VoiceNoteSentence } from '@src/features/voice/domains/voice-note.model';
 import {
   type VoiceNoteTab,
   voiceNoteTabSchema,
 } from '@src/features/voice/schemas/voice-note-params.schema';
-import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
+import { formatMediaTime } from '@src/features/voice/utils/media-time.view-model';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { SECOND_MS } from '@src/shared/constants/time-units';
-import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -63,8 +63,10 @@ const DIGEST_STEP_COUNT = 3;
 /** 실제 정리 화면처럼 앞 문장 몇 개만 스캔하는 모습으로 보여 준다 */
 const SCAN_PREVIEW_SENTENCE_COUNT = 2;
 const DIGEST_AI_ICON_SIZE = 18;
-const CAPTION_ENTERING = FadeIn.duration(ANIMATION.duration.slow).reduceMotion(ReduceMotion.System);
-const CAPTION_LAYOUT = LinearTransition.duration(ANIMATION.duration.slow).reduceMotion(
+const CAPTION_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(
+  ReduceMotion.System,
+);
+const CAPTION_LAYOUT = LinearTransition.duration(ANIMATION.durationMs.slow).reduceMotion(
   ReduceMotion.System,
 );
 
@@ -86,7 +88,7 @@ export function VoiceNoteRecordDemo() {
   const elapsedMs =
     heardCount === 0 ? 0 : (DEMO_NOTE_SENTENCES[heardCount]?.startMs ?? DEMO_NOTE_DURATION_MS);
   const isRecording = heardCount < DEMO_NOTE_SENTENCES.length;
-  const level = useDemoVoiceLevel(isRecording);
+  const level = useDemoVoiceLevel({ isSpeaking: isRecording });
   const heardSentences = DEMO_NOTE_SENTENCES.slice(0, heardCount);
   const captions = heardSentences.slice(-VISIBLE_CAPTION_COUNT);
 

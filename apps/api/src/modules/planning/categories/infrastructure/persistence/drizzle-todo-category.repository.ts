@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import {
@@ -23,10 +22,10 @@ import {
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { duplicateCategoryName } from "../../application/categories.errors.js";
 import type {
   CategoryTodoCount,
   TodoCategoryRepositoryPort,
@@ -77,9 +76,7 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
       await this.#db.insert(todoCategory).values(toTodoCategoryRow(category));
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
-          name: category.name.value,
-        });
+        throw duplicateCategoryName(category.name.value);
       }
       throw error;
     }
@@ -104,9 +101,7 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
       return toTodoCategory(requireRecord(row));
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
-          name: input.name ?? "",
-        });
+        throw duplicateCategoryName(input.name ?? "");
       }
       throw error;
     }

@@ -1,4 +1,4 @@
-import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-storage';
+import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { QUERY_CACHE_MAX_AGE_MS } from '@src/shared/constants/query-persistence';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
@@ -21,8 +21,8 @@ import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
 export const QUERY_CACHE_STORAGE_KEY = 'aido.query-cache';
 const QUERY_CACHE_OWNER_KEY = 'aido.query-cache.owner';
 
-/** 저장한 클라이언트 모델의 모양이 바뀌면 올려 이전 캐시를 버린다 */
-const QUERY_CACHE_SCHEMA_VERSION = 5;
+/** 영속 쿼리의 키나 클라이언트 모델의 모양이 바뀌면 올려 이전 캐시를 버린다 */
+const QUERY_CACHE_SCHEMA_VERSION = 6;
 
 /** persister가 쓰는 저장소. 캐시는 주인(사용자 id)별 키에 두고, 주인이 없으면 읽지도 쓰지도 않는다 */
 export interface QueryCacheStorage {
@@ -35,6 +35,9 @@ export interface QueryCacheStorage {
   clear(): void;
 }
 
+/** 조회 캐시만 담는 인스턴스. 통째로 비워도 다른 값이 지워지지 않는다 */
+type QueryCacheInstance = Pick<EnumerableSyncStorage, 'get' | 'set' | 'remove' | 'clear'>;
+
 /** 암호화 저장소를 열지 못했을 때. 캐시를 기기에 남기지 않고 주인 지정·삭제도 할 일이 없다 */
 export const disabledQueryCacheStorage: QueryCacheStorage = {
   getItem: () => null,
@@ -44,15 +47,10 @@ export const disabledQueryCacheStorage: QueryCacheStorage = {
   clear: noop,
 };
 
-export function createQueryCacheStorage(storage: SyncStorage): QueryCacheStorage {
-  const ownedKey = (key: string, ownerId = storage.get(QUERY_CACHE_OWNER_KEY)) =>
-    ownerId == null ? null : `${key}:${encodeURIComponent(ownerId)}`;
-
-  const removeOwnedCache = (ownerId: string | undefined) => {
-    const key = ownedKey(QUERY_CACHE_STORAGE_KEY, ownerId);
-    if (key != null) {
-      storage.remove(key);
-    }
+export function createQueryCacheStorage(storage: QueryCacheInstance): QueryCacheStorage {
+  const ownedKey = (key: string) => {
+    const ownerId = storage.get(QUERY_CACHE_OWNER_KEY);
+    return ownerId == null ? null : `${key}:${encodeURIComponent(ownerId)}`;
   };
 
   return {
@@ -73,21 +71,18 @@ export function createQueryCacheStorage(storage: SyncStorage): QueryCacheStorage
       }
     },
     setOwner: (userId) => {
-      const previousOwnerId = storage.get(QUERY_CACHE_OWNER_KEY);
-      if (previousOwnerId === userId) {
+      if (storage.get(QUERY_CACHE_OWNER_KEY) === userId) {
         return;
       }
-      removeOwnedCache(previousOwnerId);
+      // 키 하나만 지우면 이전 주인의 다른 키가 파일에 남는다
+      storage.clear();
       storage.set(QUERY_CACHE_OWNER_KEY, userId);
     },
-    clear: () => {
-      removeOwnedCache(storage.get(QUERY_CACHE_OWNER_KEY));
-      storage.remove(QUERY_CACHE_OWNER_KEY);
-    },
+    clear: () => storage.clear(),
   };
 }
 
-/** 암호화 이전에 기본 MMKV에 평문으로 남긴 캐시와 주인을 지운다 */
+/** 암호화 이전에 기본 MMKV에 평문으로 남긴 캐시와 주인을 지운다. 1.16.0에서 지운다(compatibility.md) */
 export function removePlaintextQueryCache(
   storage: Pick<EnumerableSyncStorage, 'keys' | 'remove'>,
 ): void {
@@ -128,7 +123,7 @@ function keepValidPersistedQueries(
     logger.warn(QUERY_CACHE_LOG_EVENT.RESTORED_QUERIES_DROPPED, {
       droppedCount: droppedQueries.length,
       totalCount: queries.length,
-      droppedRoots: uniq(droppedQueries.map(({ queryKey }) => String(queryKey[0]))),
+      droppedRoots: uniq(droppedQueries.map(({ queryKey }) => String(queryKey[0]))).join(','),
     });
   }
 
@@ -150,10 +145,10 @@ export function createQueryCacheBuster({
   appVersion,
   language,
 }: {
-  appVersion: string | null | undefined;
+  appVersion: string;
   language: string;
 }): string {
-  return `${QUERY_CACHE_SCHEMA_VERSION}:${appVersion ?? 'unknown'}:${language}`;
+  return `${QUERY_CACHE_SCHEMA_VERSION}:${appVersion}:${language}`;
 }
 
 export function createQueryPersistOptions({

@@ -1,4 +1,4 @@
-import { renderUi } from '@src/shared/__tests__';
+import { renderScreen } from '@src/testing/render';
 import { screen, userEvent } from '@testing-library/react-native';
 
 import { AppIconInput } from './app-icon-input';
@@ -8,7 +8,7 @@ describe('AppIconInput', () => {
     // Given
     const onChange = jest.fn();
     const user = userEvent.setup();
-    await renderUi(<AppIconInput value="cream_cat" onValueChange={onChange} />);
+    await renderScreen(<AppIconInput value="cream_cat" onValueChange={onChange} />);
 
     // When
     await user.press(screen.getByRole('radio', { name: '턱시도 고양이' }));
@@ -21,7 +21,9 @@ describe('AppIconInput', () => {
 
   it('프로필 사진 주소처럼 아이콘 키가 아닌 값이면 아무것도 선택하지 않는다', async () => {
     // When
-    await renderUi(<AppIconInput value="https://example.com/me.png" onValueChange={jest.fn()} />);
+    await renderScreen(
+      <AppIconInput value="https://example.com/me.png" onValueChange={jest.fn()} />,
+    );
 
     // Then
     expect(screen.getByRole('radio', { name: '기본' })).not.toBeChecked();
@@ -31,7 +33,7 @@ describe('AppIconInput', () => {
     // Given
     const onChange = jest.fn();
     const user = userEvent.setup();
-    await renderUi(<AppIconInput value="default" onValueChange={onChange} isDisabled />);
+    await renderScreen(<AppIconInput value="default" onValueChange={onChange} isDisabled />);
 
     // When
     await user.press(screen.getByRole('radio', { name: '샴' }));

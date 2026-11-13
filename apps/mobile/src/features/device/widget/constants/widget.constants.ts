@@ -12,14 +12,6 @@ export const ANDROID_WIDGET_DEFINITIONS = [
   { name: 'AidoTodayLarge', maxRows: WIDGET_LARGE_MAX_ROWS },
 ] as const;
 
-export const ANDROID_WIDGET_STORAGE_KEYS = {
-  snapshot: 'aido_widget_snapshot_v1',
-  snapshotUserId: 'aido_widget_snapshot_user_id_v1',
-} as const;
-
 export const ANDROID_WIDGET_NAVIGATION_ACTION = 'AIDO_WIDGET_NAVIGATE';
 
 export const WIDGET_BRAND_COLOR = '#FF6B43';
-
-/** 위젯을 누른 뒤 앱이 이 시간 안에 열려야 저장된 목적지로 옮긴다 */
-export const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * 60_000;

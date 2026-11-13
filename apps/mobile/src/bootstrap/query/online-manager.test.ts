@@ -1,6 +1,6 @@
 import type { Breadcrumb } from '@src/core/observability/breadcrumb';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
-import { createAnalyticsStub } from '@src/shared/__tests__';
+import { createAnalyticsStub } from '@src/testing/core';
 import { onlineManager } from '@tanstack/react-query';
 
 import { connectOnlineManager } from './online-manager';

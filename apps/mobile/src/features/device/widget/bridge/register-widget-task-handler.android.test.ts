@@ -1,6 +1,6 @@
 import { captureException, init } from '@sentry/react-native';
-import { resetSentryClient } from '@src/shared/__tests__/mocks/sentry-react-native';
 import { ENV } from '@src/shared/config/env';
+import { resetSentryClient } from '@src/testing/mocks/sentry-react-native';
 import { registerWidgetTaskHandler as registerNativeWidgetTaskHandler } from 'react-native-android-widget';
 import type { WidgetTaskHandler, WidgetTaskHandlerProps } from 'react-native-android-widget';
 

@@ -5,9 +5,9 @@ import {
   quotaErrorDetailsSchema,
 } from '@aido/api/errors';
 import { isApiError } from '@src/core/errors/api-error';
+import { ServerError } from '@src/shared/errors';
 
-import { toFeatureQuota } from '../apis/entitlement.mapper';
-import { type EntitlementFeature, type FeatureQuota } from './entitlement.model';
+import { type EntitlementFeature } from './entitlement.model';
 
 const LIMITED_FEATURE_BY_ERROR_CODE = {
   [ErrorCode.AI_1303]: 'AI_PARSE',
@@ -27,31 +27,31 @@ function isLimitedErrorCode(code: string): code is LimitedErrorCode {
   return Object.hasOwn(LIMITED_FEATURE_BY_ERROR_CODE, code);
 }
 
-export interface LimitedFeature {
-  feature: EntitlementFeature;
-  /** 서버가 오류와 함께 준 현재 한도. 상세를 싣지 않는 코드는 null이다 */
-  featureQuota: FeatureQuota | null;
-}
-
-export function findLimitedFeature(error: unknown): LimitedFeature | null {
+/** 한도에 막힌 오류의 기능. 한도 게이트가 안내 시트로 보인다 */
+export function findLimitedFeatureByErrorCode(error: unknown): EntitlementFeature | null {
   if (!isApiError(error) || !isLimitedErrorCode(error.code)) {
     return null;
   }
-  return {
-    feature: LIMITED_FEATURE_BY_ERROR_CODE[error.code],
-    featureQuota: findErrorFeatureQuota(error),
-  };
+  return LIMITED_FEATURE_BY_ERROR_CODE[error.code];
 }
 
-/** 처리 중·길이 초과처럼 한도 오류가 아니어도 서버가 함께 준 현재 한도. 없으면 null */
-export function findErrorFeatureQuota(error: unknown): FeatureQuota | null {
+/** 처리 중·길이 초과처럼 한도 오류가 아니어도 서버가 함께 준 현재 한도 상세. 없으면 null */
+export function findQuotaErrorDetails(error: unknown) {
   if (!isApiError(error)) {
     return null;
   }
   const details = quotaErrorDetailsSchema.safeParse(error.details);
-  return details.success ? toFeatureQuota(details.data.featureQuota) : null;
+  return details.success ? details.data : null;
 }
 
+export function isLimitedFeatureError(error: unknown): boolean {
+  return findLimitedFeatureByErrorCode(error) != null;
+}
+
+/** AI 업체 장애(AI_1301)는 503이라 ServerError로 오고, 처리 중(AI_1314) 같은 4xx는 ApiError로 온다. 둘 다 details를 본다 */
 export function isFreeOfChargeError(error: unknown): boolean {
-  return isApiError(error) && notChargedErrorDetailsSchema.safeParse(error.details).success;
+  if (isApiError(error) || error instanceof ServerError) {
+    return notChargedErrorDetailsSchema.safeParse(error.details).success;
+  }
+  return false;
 }

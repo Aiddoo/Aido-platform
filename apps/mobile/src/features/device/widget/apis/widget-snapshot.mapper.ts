@@ -1,7 +1,7 @@
-import type { Instant } from '@src/shared/date/instant';
+import type { DateKey } from '@src/shared/date/date-key';
+import { type Instant } from '@src/shared/date/instant';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 
-import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
 import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 import {
   getWidgetDayState,
@@ -13,7 +13,7 @@ import {
 
 /** todo feature에 의존하지 않도록 GET v1/todos/summary 모델과 같은 모양을 구조적 타입으로 둔다 */
 export interface WidgetSummaryInput {
-  date: string;
+  date: DateKey;
   totalTodos: number;
   completedTodos: number;
   completionRate: number;
@@ -33,7 +33,6 @@ export interface WidgetSnapshotContext {
   now: Instant;
   /** 쓰기 시점의 기기 시간대. 표시 내용이 같아도 바뀌면 iOS timeline의 자정 경계를 다시 써야 한다. */
   timeZone: string;
-  userId?: string;
   weekCompletions?: readonly WidgetWeekCompletion[];
 }
 
@@ -60,7 +59,7 @@ function toWidgetDaySnapshot(
   summary: WidgetSummaryInput,
   context: WidgetSnapshotContext,
 ): WidgetDaySnapshot {
-  const topTodos = summary.topTodos.slice(0, WIDGET_TOP_TODOS_LIMIT).map((todo) => ({
+  const topTodos = summary.topTodos.map((todo) => ({
     id: todo.id,
     title: todo.title,
     completed: todo.completed,
@@ -88,7 +87,7 @@ function toWidgetDaySnapshot(
 }
 
 export function toLoggedOutWidgetSnapshot(
-  localDate: string,
+  localDate: DateKey,
   context: WidgetSnapshotContext,
 ): WidgetSnapshot {
   return {

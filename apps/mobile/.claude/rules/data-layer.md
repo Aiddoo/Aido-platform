@@ -16,8 +16,8 @@ paths:
 
 **저장 값**
 
-- 저장 값 하나는 `defineStoredValue({ key, schema, fallback, migrate? })` 정의 하나다. 정의는 `schemas/*-storage.schema.ts`에 둔다.
-- 읽기는 `useStoredValue(def, scopeId?)` 튜플과 `readStoredValue`다. 깨진 값은 `fallback`이다.
+- 저장 값 하나는 `defineStoredValue({ key, area?, schema, fallback, migrate? })` 정의 하나이고 파일 하나다(`schemas/{name}-storage.schema.ts`의 `{name}StoredValue`). `key`는 문자열이거나 범위(계정 id, `{ accountId, locale }`)를 받는 함수, `area`는 `device`(기본)·`account`(로그아웃 때 비우는 암호화 저장소)다. 원문이 JSON이면 `storedJsonSchema(schema)`로 감싼다.
+- 화면은 `useStoredValue(def, scope?)` 튜플, 핸들러·effect는 `useStoredValueStorage(def)` + `readStoredValue`·`writeStoredValue`, Service는 받은 저장 포트로 같은 함수를 쓴다. 깨진 값은 `fallback`, `null`을 쓰면 지운다.
 - 키는 `aido_{feature}_{name}_v{n}`이고 계정 범위면 `:{accountId}`를 붙인다. 키 문자열을 정의 밖에 쓰지 않는다.
 
 **쿼리와 mutation**
@@ -27,7 +27,7 @@ paths:
 - `queryClient`는 `queries/{feature}-cache.ts`만 만진다. 컴포넌트·훅은 helper(`invalidate*`·`set*InCache`·`refresh{Feature}`)를 부른다.
 - `onSuccess`는 서버 응답을 캐시에 쓰고 무효화는 `onSettled`에 둔다. 같은 키를 set한 뒤 다시 invalidate하지 않는다.
 - 다른 기능의 `all`을 무효화하지 않는다. 다른 기능 효과는 `meta.refreshOn*`나 그 기능이 내보낸 helper로 한다.
-- 오류 안내는 mutation 옵션의 `meta.errorFeedback` 하나다. 기능 `onError`는 롤백만 하고 토스트·햅틱·보고를 더하지 않는다. 칸 오류만 호출부가 `form.setError`로 보인다.
+- 오류 안내는 mutation 옵션마다 둔 `meta.errorFeedback` 하나다(`aido/mutation-error-feedback`, 모양은 [오류](../../docs/error-handling.md#mutation-오류-피드백)). 기능 `onError`는 롤백과 `isHandledByFeature`로 뺀 오류만 다루고, 칸 오류는 호출부가 `form.setError`로 보인다. 마지막 변경 판정은 `isLastMutation` 하나다.
 - 추적은 mutation 옵션(서버가 확정한 결과)이나 UI에서만 한다. api·repository·mapper에서 하지 않는다.
 
 **파싱·null**

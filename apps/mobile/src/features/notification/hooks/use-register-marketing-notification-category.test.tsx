@@ -1,14 +1,8 @@
 import '@src/shared/i18n/init';
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import {
-  createPushNotificationGatewayStub,
-  createTestDi,
-  createTestQueryClient,
-} from '@src/shared/__tests__';
 import { i18n } from '@src/shared/i18n';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { act, renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { createPushNotificationGatewayStub, createTestDi } from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
+import { act } from '@testing-library/react-native';
 
 import { useRegisterMarketingNotificationCategory } from './use-register-marketing-notification-category';
 
@@ -21,13 +15,9 @@ describe('useRegisterMarketingNotificationCategory', () => {
     // Given
     await i18n.changeLanguage('ko');
     const gateway = createPushNotificationGatewayStub();
-    const container = createTestDi({ pushNotification: gateway });
-    const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={container}>
-        <QueryClientProvider client={createTestQueryClient()}>{children}</QueryClientProvider>
-      </StaticDIProvider>
-    );
-    await renderHook(() => useRegisterMarketingNotificationCategory(), { wrapper });
+    await renderScreenHook(() => useRegisterMarketingNotificationCategory(), {
+      di: createTestDi({ ports: { pushNotification: gateway } }),
+    });
 
     // When
     await act(async () => {

@@ -1,4 +1,6 @@
-import { fromEpochMs, getNowInstant, toInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
+import { fromEpochMs, toInstant } from '@src/shared/date/instant';
+import { createDateKey } from '@src/testing/date-key';
 
 import {
   createDailyForecast,
@@ -120,11 +122,15 @@ describe('findDayAfter', () => {
   const daily =
     today == null
       ? []
-      : [today, { ...today, date: '2026-11-03' }, { ...today, date: '2026-11-04' }];
+      : [
+          today,
+          { ...today, date: createDateKey('2026-11-03') },
+          { ...today, date: createDateKey('2026-11-04') },
+        ];
 
   it('오늘 다음 날짜의 예보를 찾는다', () => {
     // When
-    const day = WeatherDetailPolicy.findDayAfter(daily, '2026-11-02');
+    const day = WeatherDetailPolicy.findDayAfter(daily, createDateKey('2026-11-02'));
 
     // Then
     expect(day?.date).toBe('2026-11-03');
@@ -132,7 +138,7 @@ describe('findDayAfter', () => {
 
   it('오늘 다음 날짜 중 가장 이른 예보를 찾는다', () => {
     // When
-    const day = WeatherDetailPolicy.findDayAfter(daily, '2026-11-03');
+    const day = WeatherDetailPolicy.findDayAfter(daily, createDateKey('2026-11-03'));
 
     // Then
     expect(day?.date).toBe('2026-11-04');
@@ -140,7 +146,7 @@ describe('findDayAfter', () => {
 
   it('예보 범위의 마지막 날이면 null이다', () => {
     // When
-    const day = WeatherDetailPolicy.findDayAfter(daily, '2026-11-04');
+    const day = WeatherDetailPolicy.findDayAfter(daily, createDateKey('2026-11-04'));
 
     // Then
     expect(day).toBeNull();
@@ -159,12 +165,15 @@ describe('findNextFullMoon', () => {
         ? []
         : [
             today,
-            { ...today, date: '2026-11-05', moonPhase: 'FULL' as const },
-            { ...today, date: '2026-11-07', moonPhase: 'FULL' as const },
+            { ...today, date: createDateKey('2026-11-05'), moonPhase: 'FULL' as const },
+            { ...today, date: createDateKey('2026-11-07'), moonPhase: 'FULL' as const },
           ];
 
     // When
-    const fullMoonDate = WeatherDetailPolicy.findNextFullMoon(forecast, '2026-11-02');
+    const fullMoonDate = WeatherDetailPolicy.findNextFullMoon(
+      forecast,
+      createDateKey('2026-11-02'),
+    );
 
     // Then
     expect(fullMoonDate).toBe('2026-11-05');
@@ -172,7 +181,7 @@ describe('findNextFullMoon', () => {
 
   it('예보 범위에 보름달이 없으면 null이다', () => {
     // When
-    const fullMoonDate = WeatherDetailPolicy.findNextFullMoon(daily, '2026-11-02');
+    const fullMoonDate = WeatherDetailPolicy.findNextFullMoon(daily, createDateKey('2026-11-02'));
 
     // Then
     expect(fullMoonDate).toBeNull();

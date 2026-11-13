@@ -1,9 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import type { Request } from "express";
 
 import type { CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
-import { ApplicationException } from "#api/shared/application/application.exception";
+
+import { adminRequired, invalidAccessToken } from "../../../application/auth.errors.js";
 
 /**
  * 관리자 전용 가드
@@ -26,13 +26,11 @@ export class AdminGuard implements CanActivate {
     const user = request.user;
 
     if (!user) {
-      throw new ApplicationException(ErrorCode.AUTH_0101, {
-        reason: "User information not found",
-      });
+      throw invalidAccessToken("User information not found");
     }
 
     if (user.role !== "ADMIN") {
-      throw new ApplicationException(ErrorCode.ADMIN_1401);
+      throw adminRequired();
     }
 
     return true;

@@ -1,10 +1,8 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import type { AccountProvider } from "./auth.constants.js";
+import { lastLoginMethodRequired, linkedAccountNotFound } from "./auth.errors.js";
 
 export interface IdentityAccountPrimitives {
   readonly id: number;
@@ -41,10 +39,10 @@ export class IdentityAccounts extends AggregateRoot<UserId, IdentityAccountsProp
   unlink(provider: AccountProvider): IdentityAccountPrimitives {
     const account = this.props.accounts.find((candidate) => candidate.provider === provider);
     if (account == null) {
-      throw new DomainException(ErrorCode.USER_0603, { provider: undefined });
+      throw linkedAccountNotFound();
     }
     if (!this.canUnlink) {
-      throw new DomainException(ErrorCode.USER_0610);
+      throw lastLoginMethodRequired();
     }
     this.props.accounts = this.props.accounts.filter((candidate) => candidate.id !== account.id);
     return account;
