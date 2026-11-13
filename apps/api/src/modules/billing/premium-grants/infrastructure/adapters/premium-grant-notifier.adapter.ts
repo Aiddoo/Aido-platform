@@ -6,11 +6,10 @@ import {
   NotificationRecipientLocaleReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import type { PremiumGrantEndingNotice } from "../../application/ports/premium-grant-ending-notice.repository.port.js";
 import { PremiumGrantNotifierPort } from "../../application/ports/premium-grant-notifier.port.js";
+import type { PremiumGrantEndingNotice } from "../../domain/premium-grant-ending-notice.entity.js";
 
 @Injectable()
 export class PremiumGrantNotifierAdapter extends PremiumGrantNotifierPort {
@@ -31,16 +30,14 @@ export class PremiumGrantNotifierAdapter extends PremiumGrantNotifierPort {
     if (notices.length === 0) {
       return;
     }
-    const locales = await this.#localeReader.getLocales(
-      notices.map((notice) => UserId.reconstitute(notice.userId)),
-    );
+    const locales = await this.#localeReader.getLocales(notices.map((notice) => notice.userId));
     await this.#notificationPublisher.publishBatch(
       notices.map((notice) => {
         const message = createPremiumGrantEndingNotificationMessage({
-          locale: locales.get(notice.userId) ?? DEFAULT_LOCALE,
+          locale: locales.get(notice.userId.value) ?? DEFAULT_LOCALE,
         });
         return {
-          userId: notice.userId,
+          userId: notice.userId.value,
           type: "PREMIUM_GRANT_ENDING",
           title: message.title,
           body: message.body,

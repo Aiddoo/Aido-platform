@@ -11,10 +11,9 @@ import type { ListDueBillingNoticesParams } from "../../../shared/application/po
 import { currentStoreChainOf } from "../../../shared/domain/premium-access.domain-service.js";
 import { toStorePeriodType } from "../../../shared/domain/store-period-type.domain-service.js";
 import { storeProductIdsOfPlan } from "../../../shared/domain/subscription-plan.domain-service.js";
-import {
-  type UpcomingRenewalNotice,
-  UpcomingRenewalNoticeRepositoryPort,
-} from "../../application/ports/upcoming-renewal-notice.repository.port.js";
+import { UpcomingRenewalNoticeRepositoryPort } from "../../application/ports/upcoming-renewal-notice.repository.port.js";
+import type { UpcomingRenewalNotice } from "../../domain/upcoming-renewal-notice.entity.js";
+import { toUpcomingRenewalNotice } from "./upcoming-renewal-notice-row.mapper.js";
 
 @Injectable()
 export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNoticeRepositoryPort {
@@ -34,7 +33,7 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
   ): Promise<UpcomingRenewalNotice[]> {
     const rows = await this.#db
       .select({
-        subscriptionId: subscription.id,
+        id: subscription.id,
         storeSubscriptionId: subscription.storeSubscriptionId,
         userId: subscription.userId,
         expiresAt: subscription.expiresAt,
@@ -57,7 +56,7 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
             ? undefined
             : tupleGreaterThan(
                 [subscription.expiresAt, subscription.id],
-                [params.after.expiresAt, params.after.subscriptionId],
+                [params.after.expiresAt, params.after.id.value],
               ),
         ),
       )
@@ -67,10 +66,9 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
       rows.map((row) => row.userId),
       params.now,
     );
-    return rows.map(({ storeSubscriptionId, ...row }) => ({
-      ...row,
-      isCurrentChain: currentChains.get(row.userId) === storeSubscriptionId,
-    }));
+    return rows.map(({ storeSubscriptionId, ...row }) =>
+      toUpcomingRenewalNotice(row, currentChains.get(row.userId) === storeSubscriptionId),
+    );
   }
 
   // 현재 체인은 /me와 같은 도메인 규칙으로 고른다. 사용자 묶음을 한 번에 읽는다
@@ -122,7 +120,7 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
           or(
             ...notices.map((notice) =>
               and(
-                eq(subscription.id, notice.subscriptionId),
+                eq(subscription.id, notice.id.value),
                 eq(subscription.expiresAt, notice.expiresAt),
               ),
             ),
@@ -133,6 +131,6 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
       )
       .returning({ id: subscription.id });
     const claimedIds = new Set(claimed.map((row) => row.id));
-    return notices.filter((notice) => claimedIds.has(notice.subscriptionId));
+    return notices.filter((notice) => claimedIds.has(notice.id.value));
   }
 }

@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { SUBSCRIPTION_FIXTURE_NOW } from "#test/fixtures/billing/subscription.fixture";
@@ -16,8 +17,20 @@ import {
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
 
-interface TestNotice extends BillingNotice {
+class TestNotice implements BillingNotice {
   readonly id: number;
+  readonly userId: UserId;
+  readonly #isNoticeable: boolean;
+
+  constructor(id: number, isNoticeable: boolean) {
+    this.id = id;
+    this.userId = UserId.reconstitute(`user-${id}`);
+    this.#isNoticeable = isNoticeable;
+  }
+
+  isNoticeable(): boolean {
+    return this.#isNoticeable;
+  }
 }
 
 class InMemoryNoticeRepository extends BillingNoticeRepositoryPort<TestNotice> {
@@ -79,11 +92,11 @@ function setup(quiet: ReadonlySet<string> = new Set()) {
   return { useCase, logger };
 }
 
-function noticesOf(count: number): TestNotice[] {
-  return Array.from({ length: count }, (_, index) => ({
-    id: index + 1,
-    userId: `user-${index + 1}`,
-  }));
+function noticesOf(count: number, isNoticeable: (id: number) => boolean = () => true) {
+  return Array.from({ length: count }, (_, index) => {
+    const id = index + 1;
+    return new TestNotice(id, isNoticeable(id));
+  });
 }
 
 describe("SweepBillingNoticesUseCase — 결제·보상 안내 sweep", () => {
@@ -95,13 +108,7 @@ describe("SweepBillingNoticesUseCase — 결제·보상 안내 sweep", () => {
 
     // When
     const result = await useCase.execute({
-      task: {
-        noticeDays: 3,
-        isNoticeable: () => true,
-        logEvent: "test.notified",
-        source,
-        notifier,
-      },
+      task: { noticeDays: 3, logEvent: "test.notified", source, notifier },
       now: NOW,
     });
 
@@ -124,7 +131,7 @@ describe("SweepBillingNoticesUseCase — 결제·보상 안내 sweep", () => {
 
     // When
     const result = await useCase.execute({
-      task: { noticeDays: 3, isNoticeable: () => true, logEvent: "test", source, notifier },
+      task: { noticeDays: 3, logEvent: "test", source, notifier },
       now: NOW,
     });
 
@@ -133,15 +140,15 @@ describe("SweepBillingNoticesUseCase — 결제·보상 안내 sweep", () => {
     expect(source.claimed.has(2)).toBe(false);
   });
 
-  it("보낼 수 없는 후보는 표시하지 않고 건너뛴 수로 센다", async () => {
+  it("안내가 보낼 수 없다고 본 후보는 표시하지 않고 건너뛴 수로 센다", async () => {
     // Given
     const { useCase } = setup();
-    const source = new InMemoryNoticeRepository(noticesOf(3));
+    const source = new InMemoryNoticeRepository(noticesOf(3, (id) => id !== 1));
     const notifier = new RecordingNotifier();
 
     // When
     const result = await useCase.execute({
-      task: { noticeDays: 3, isNoticeable: (n) => n.id !== 1, logEvent: "test", source, notifier },
+      task: { noticeDays: 3, logEvent: "test", source, notifier },
       now: NOW,
     });
 
@@ -158,11 +165,11 @@ describe("SweepBillingNoticesUseCase — 결제·보상 안내 sweep", () => {
 
     // When
     await useCase.execute({
-      task: { noticeDays: 3, isNoticeable: () => true, logEvent: "test", source, notifier },
+      task: { noticeDays: 3, logEvent: "test", source, notifier },
       now: NOW,
     });
     await useCase.execute({
-      task: { noticeDays: 3, isNoticeable: () => true, logEvent: "test", source, notifier },
+      task: { noticeDays: 3, logEvent: "test", source, notifier },
       now: NOW,
     });
 
@@ -178,7 +185,7 @@ describe("SweepBillingNoticesUseCase — 결제·보상 안내 sweep", () => {
 
     // When
     const result = await useCase.execute({
-      task: { noticeDays: 3, isNoticeable: () => true, logEvent: "test", source, notifier },
+      task: { noticeDays: 3, logEvent: "test", source, notifier },
       now: NOW,
     });
 
@@ -194,13 +201,7 @@ describe("SweepBillingNoticesUseCase — 결제·보상 안내 sweep", () => {
 
     // When
     await useCase.execute({
-      task: {
-        noticeDays: 3,
-        isNoticeable: () => true,
-        logEvent: "test",
-        source,
-        notifier: new RecordingNotifier(),
-      },
+      task: { noticeDays: 3, logEvent: "test", source, notifier: new RecordingNotifier() },
       now: NOW,
     });
 

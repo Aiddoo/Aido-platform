@@ -50,7 +50,7 @@ export function describeUpcomingRenewalNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => notice.subscriptionId)).toEqual([sooner.id, later.id]);
+      expect(due.map((notice) => notice.id.value)).toEqual([sooner.id, later.id]);
     });
 
     it("월간이거나 안내 기간 밖이거나 이미 끝난 구독은 고르지 않는다", async () => {
@@ -88,7 +88,7 @@ export function describeUpcomingRenewalNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => notice.subscriptionId)).toEqual([normal.id, unset.id]);
+      expect(due.map((notice) => notice.id.value)).toEqual([normal.id, unset.id]);
     });
 
     it("예약한 상품 변경이 있으면 다음 결제 상품으로 연간 여부를 본다", async () => {
@@ -109,7 +109,7 @@ export function describeUpcomingRenewalNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => notice.subscriptionId)).toEqual([toAnnual.id]);
+      expect(due.map((notice) => notice.id.value)).toEqual([toAnnual.id]);
     });
 
     it("Play 기본요금제가 붙은 상품 ID도 연간으로 본다", async () => {
@@ -124,7 +124,7 @@ export function describeUpcomingRenewalNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => notice.subscriptionId)).toEqual([play.id]);
+      expect(due.map((notice) => notice.id.value)).toEqual([play.id]);
     });
 
     it("사용자의 현재 체인만 isCurrentChain이고 요금제를 바꾸고 남은 옛 체인은 아니다", async () => {
@@ -143,7 +143,7 @@ export function describeUpcomingRenewalNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => [notice.subscriptionId, notice.isCurrentChain])).toEqual([
+      expect(due.map((notice) => [notice.id.value, notice.toPrimitives().isCurrentChain])).toEqual([
         [old.id, false],
         [current.id, true],
       ]);
@@ -166,7 +166,7 @@ export function describeUpcomingRenewalNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => notice.isCurrentChain)).toEqual([true, true]);
+      expect(due.map((notice) => notice.toPrimitives().isCurrentChain)).toEqual([true, true]);
     });
 
     it("after 다음부터 limit만큼 이어서 읽는다", async () => {
@@ -184,7 +184,7 @@ export function describeUpcomingRenewalNoticeRepositoryContract(
       });
 
       // Then
-      expect([head?.subscriptionId, next.map((notice) => notice.subscriptionId)]).toEqual([
+      expect([head?.id.value, next.map((notice) => notice.id.value)]).toEqual([
         first.id,
         [second.id],
       ]);
@@ -225,7 +225,7 @@ export function describeUpcomingRenewalNoticeRepositoryContract(
       const afterRenewal = await repository.listDue(window);
 
       // Then
-      expect([afterClaim, afterRenewal.map((notice) => notice.subscriptionId)]).toEqual([[], [id]]);
+      expect([afterClaim, afterRenewal.map((notice) => notice.id.value)]).toEqual([[], [id]]);
     });
 
     it("읽은 뒤 기간이 바뀐 구독은 claim하지 않는다", async () => {

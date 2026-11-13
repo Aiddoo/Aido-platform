@@ -8,10 +8,9 @@ import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 
 import type { ListDueBillingNoticesParams } from "../../../shared/application/ports/billing-notice.repository.port.js";
-import {
-  type PremiumGrantEndingNotice,
-  PremiumGrantEndingNoticeRepositoryPort,
-} from "../../application/ports/premium-grant-ending-notice.repository.port.js";
+import { PremiumGrantEndingNoticeRepositoryPort } from "../../application/ports/premium-grant-ending-notice.repository.port.js";
+import type { PremiumGrantEndingNotice } from "../../domain/premium-grant-ending-notice.entity.js";
+import { toPremiumGrantEndingNotice } from "./premium-grant-ending-notice-row.mapper.js";
 
 const grantOf = alias(premiumGrant, "grant");
 const nextOf = alias(premiumGrant, "next");
@@ -35,7 +34,7 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
     params: ListDueBillingNoticesParams<PremiumGrantEndingNotice>,
   ): Promise<PremiumGrantEndingNotice[]> {
     const rows = await this.#db
-      .select({ grantId: grantOf.id, userId: grantOf.userId, endsAt: grantOf.endsAt })
+      .select({ id: grantOf.id, userId: grantOf.userId, endsAt: grantOf.endsAt })
       .from(grantOf)
       .where(
         and(
@@ -78,14 +77,14 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
             ? undefined
             : tupleGreaterThan(
                 [grantOf.endsAt, grantOf.id],
-                [params.after.endsAt, params.after.grantId],
+                [params.after.endsAt, params.after.id.value],
               ),
         ),
       )
       .orderBy(grantOf.endsAt, grantOf.id)
       .limit(params.limit);
     return rows.flatMap((row) =>
-      row.endsAt == null ? [] : [{ grantId: row.grantId, userId: row.userId, endsAt: row.endsAt }],
+      row.endsAt == null ? [] : [toPremiumGrantEndingNotice({ ...row, endsAt: row.endsAt })],
     );
   }
 
@@ -103,7 +102,7 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
         and(
           inArray(
             premiumGrant.id,
-            notices.map((notice) => notice.grantId),
+            notices.map((notice) => notice.id.value),
           ),
           isNull(premiumGrant.endingNotifiedAt),
           eq(premiumGrant.status, "ACTIVE"),
@@ -111,6 +110,6 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
       )
       .returning({ id: premiumGrant.id });
     const claimedIds = new Set(claimed.map((row) => row.id));
-    return notices.filter((notice) => claimedIds.has(notice.grantId));
+    return notices.filter((notice) => claimedIds.has(notice.id.value));
   }
 }

@@ -51,7 +51,7 @@ export function describeTrialEndingNoticeRepositoryContract(
       const due = await repository.listDue({ now: NOW, endsBefore: ENDS_BEFORE, limit: 10 });
 
       // Then
-      expect(due.map((notice) => notice.subscriptionId)).toEqual([sooner, later]);
+      expect(due.map((notice) => notice.id.value)).toEqual([sooner, later]);
     });
 
     it("체험이 아니거나 이미 끝났거나 안내 기간 밖이면 고르지 않는다", async () => {
@@ -117,8 +117,8 @@ export function describeTrialEndingNoticeRepositoryContract(
       const [notice] = await repository.listDue({ now: NOW, endsBefore: ENDS_BEFORE, limit: 10 });
 
       // Then
-      expect(notice?.userId).toBe(SUBSCRIPTION_FIXTURE_OTHER_USER_ID);
-      expect(notice?.startedAt.equals(NOW)).toBe(true);
+      expect(notice?.userId.value).toBe(SUBSCRIPTION_FIXTURE_OTHER_USER_ID);
+      expect(notice?.toPrimitives().startedAt.equals(NOW)).toBe(true);
       expect(notice?.expiresAt.equals(NOW.add({ hours: 24 }))).toBe(true);
     });
 
@@ -141,10 +141,7 @@ export function describeTrialEndingNoticeRepositoryContract(
       });
 
       // Then
-      expect([first?.subscriptionId, next.map((notice) => notice.subscriptionId)]).toEqual([
-        ids[0],
-        [ids[1]],
-      ]);
+      expect([first?.id.value, next.map((notice) => notice.id.value)]).toEqual([ids[0], [ids[1]]]);
     });
 
     it("claim한 안내만 돌려주고 다시 claim하면 비어 있다", async () => {
@@ -187,8 +184,8 @@ export function describeTrialEndingNoticeRepositoryContract(
       const claimed = await repository.claim(due, NOW);
 
       // Then
-      expect(claimed.map((notice) => notice.subscriptionId)).toEqual(
-        due.slice(1).map((notice) => notice.subscriptionId),
+      expect(claimed.map((notice) => notice.id.value)).toEqual(
+        due.slice(1).map((notice) => notice.id.value),
       );
     });
 

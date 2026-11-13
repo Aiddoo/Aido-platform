@@ -6,19 +6,14 @@ import type {
   BillingNoticeSweepResult,
   SweepBillingNoticesUseCase,
 } from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
-import type {
-  PremiumGrantEndingNotice,
-  PremiumGrantEndingNoticeRepositoryPort,
-} from "../ports/premium-grant-ending-notice.repository.port.js";
+import type { PremiumGrantEndingNoticeRepositoryPort } from "../ports/premium-grant-ending-notice.repository.port.js";
 import type { PremiumGrantNotifierPort } from "../ports/premium-grant-notifier.port.js";
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
 
 const PREMIUM_GRANT_ENDING_NOTICE = {
   noticeDays: PREMIUM_GRANT_ENDING_NOTICE_DAYS,
-  // 보상은 받은 날 시작하므로 하루짜리 보상도 끝나기 전에 알린다
-  isNoticeable: () => true,
   logEvent: PremiumGrantLogEvent.PREMIUM_GRANT_ENDING_NOTIFIED,
-} as const satisfies BillingNoticeSettings<PremiumGrantEndingNotice>;
+} as const satisfies BillingNoticeSettings;
 
 export interface NotifyEndingPremiumGrantsDependencies {
   readonly sweepBillingNotices: Pick<SweepBillingNoticesUseCase, "execute">;

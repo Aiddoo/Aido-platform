@@ -21,19 +21,15 @@ export const BILLING_NOTICE_SWEEP = {
 } as const;
 
 /** 무엇을 언제 안내할지. 안내 UseCase 파일이 상수로 갖는다. */
-export interface BillingNoticeSettings<TNotice extends BillingNotice> {
-  /** 끝나기 이 일수 전부터 안내한다. */
+export interface BillingNoticeSettings {
+  /** 끝나기 이 일수 전부터 안내한다. 고른 후보 중 보낼 것은 안내 Entity의 isNoticeable이 정한다. */
   readonly noticeDays: number;
-  /** 고른 후보 중 보낼 것 */
-  readonly isNoticeable: (notice: TNotice) => boolean;
   /** sweep 한 번에 남기는 요약 로그 이벤트 */
   readonly logEvent: string;
 }
 
 /** sweep 한 번의 대상. 설정과 그 안내의 저장소·발송을 함께 넘긴다. */
-export interface BillingNoticeTask<
-  TNotice extends BillingNotice,
-> extends BillingNoticeSettings<TNotice> {
+export interface BillingNoticeTask<TNotice extends BillingNotice> extends BillingNoticeSettings {
   readonly source: Pick<BillingNoticeRepositoryPort<TNotice>, "listDue" | "claim">;
   readonly notifier: Pick<BillingNoticeNotifierPort<TNotice>, "notify">;
 }
@@ -123,12 +119,12 @@ export class SweepBillingNoticesUseCase {
     candidates: readonly TNotice[],
     now: Temporal.Instant,
   ): Promise<BillingNoticeBatchResult> {
-    const noticeable = candidates.filter(task.isNoticeable);
+    const noticeable = candidates.filter((notice) => notice.isNoticeable());
     const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
       noticeable.map((notice) => notice.userId),
       now,
     );
-    const due = noticeable.filter((notice) => !quietUserIds.has(notice.userId));
+    const due = noticeable.filter((notice) => !quietUserIds.has(notice.userId.value));
     const notifiedCounts: number[] = [];
     for (const notices of chunk(due, BILLING_NOTICE_SWEEP.CLAIM_CHUNK_SIZE)) {
       notifiedCounts.push(await this.#claimAndNotify(task, notices, now));

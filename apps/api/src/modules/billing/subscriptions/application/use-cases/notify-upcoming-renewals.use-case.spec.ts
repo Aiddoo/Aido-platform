@@ -12,7 +12,7 @@ import {
 
 import { SweepBillingNoticesUseCase } from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import type { Subscription, SubscriptionPrimitives } from "../../domain/subscription.aggregate.js";
-import type { UpcomingRenewalNotice } from "../ports/upcoming-renewal-notice.repository.port.js";
+import type { UpcomingRenewalNotice } from "../../domain/upcoming-renewal-notice.entity.js";
 import { NotifyUpcomingRenewalsUseCase } from "./notify-upcoming-renewals.use-case.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
@@ -56,7 +56,7 @@ describe("NotifyUpcomingRenewalsUseCase — 갱신 예정 안내", () => {
 
     // Then
     expect(result.notifiedCount).toBe(1);
-    expect(notifier.notified.map((notice) => notice.subscriptionId)).toEqual([1]);
+    expect(notifier.notified.map((notice) => notice.id.value)).toEqual([1]);
   });
 
   it("요금제를 바꾸고 남은 옛 체인은 다음 결제를 정하지 않아 건너뛴다", async () => {
@@ -74,7 +74,7 @@ describe("NotifyUpcomingRenewalsUseCase — 갱신 예정 안내", () => {
 
     // Then
     expect(result).toMatchObject({ notifiedCount: 1, skippedCount: 1 });
-    expect(notifier.notified.map((notice) => notice.subscriptionId)).toEqual([2]);
+    expect(notifier.notified.map((notice) => notice.id.value)).toEqual([2]);
   });
 
   it("같은 기간은 한 번만 안내하고 갱신돼 새 기간이 되면 다시 안내한다", async () => {

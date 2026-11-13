@@ -1,7 +1,5 @@
-import {
-  type PremiumGrantEndingNotice,
-  PremiumGrantEndingNoticeRepositoryPort,
-} from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
+import { PremiumGrantEndingNoticeRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
+import { PremiumGrantEndingNotice } from "#api/modules/billing/premium-grants/domain/premium-grant-ending-notice.entity";
 import type { PremiumGrantPrimitives } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
 import type { ListDueBillingNoticesParams } from "#api/modules/billing/shared/application/ports/billing-notice.repository.port";
 
@@ -58,7 +56,13 @@ export class InMemoryPremiumGrantEndingNoticeRepository extends PremiumGrantEndi
           Temporal.Instant.compare(left.endsAt, right.endsAt) || (left.id < right.id ? -1 : 1),
       )
       .slice(0, limit)
-      .map((grant) => ({ grantId: grant.id, userId: grant.userId, endsAt: grant.endsAt }));
+      .map((grant) =>
+        PremiumGrantEndingNotice.reconstitute({
+          id: grant.id,
+          userId: grant.userId,
+          endsAt: grant.endsAt,
+        }),
+      );
   }
 
   async claim(notices: readonly PremiumGrantEndingNotice[]): Promise<PremiumGrantEndingNotice[]> {
@@ -66,16 +70,16 @@ export class InMemoryPremiumGrantEndingNoticeRepository extends PremiumGrantEndi
       this.#grants.all.map((grant) => [grant.toPrimitives().id, grant.toPrimitives()]),
     );
     const claimed = notices.filter((notice) => {
-      const stored = active.get(notice.grantId);
+      const stored = active.get(notice.id.value);
       return (
         stored != null &&
         stored.status === "ACTIVE" &&
         stored.endingNotifiedAt == null &&
-        !this.#notifiedGrantIds.has(notice.grantId)
+        !this.#notifiedGrantIds.has(notice.id.value)
       );
     });
     for (const notice of claimed) {
-      this.#notifiedGrantIds.add(notice.grantId);
+      this.#notifiedGrantIds.add(notice.id.value);
     }
     return claimed;
   }
@@ -100,5 +104,5 @@ function isAfterCursor(
   after: PremiumGrantEndingNotice,
 ): boolean {
   const byEnd = Temporal.Instant.compare(endsAt, after.endsAt);
-  return byEnd > 0 || (byEnd === 0 && id > after.grantId);
+  return byEnd > 0 || (byEnd === 0 && id > after.id.value);
 }

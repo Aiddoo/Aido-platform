@@ -1,6 +1,12 @@
-/** 며칠 전 결제·보상 안내 한 건. 야간 미루기는 받는 사람으로 판단한다. */
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+/**
+ * 며칠 전 결제·보상 안내 한 건(slice의 작업 원장 행 Entity). 야간 미루기는 받는 사람으로, 보낼지는 안내가
+ * 스스로 판단한다.
+ */
 export interface BillingNotice {
-  readonly userId: string;
+  readonly userId: UserId;
+  isNoticeable(): boolean;
 }
 
 export interface ListDueBillingNoticesParams<TNotice extends BillingNotice> {

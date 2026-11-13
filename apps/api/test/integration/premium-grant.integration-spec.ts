@@ -958,7 +958,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // Then
     expect(first).toHaveLength(1);
     expect(rest).toHaveLength(2);
-    expect(new Set([...first, ...rest].map((notice) => notice.userId))).toEqual(new Set(userIds));
+    expect(new Set([...first, ...rest].map((notice) => notice.userId.value))).toEqual(
+      new Set(userIds),
+    );
   });
   it("만료 웹훅을 잃은 자동 갱신 구독자는 유예 안에서는 그대로 두고 유예가 지나면 sweep이 FREE로 정리한다", async () => {
     // Given
