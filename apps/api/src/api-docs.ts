@@ -1,3 +1,4 @@
+import { ErrorCode, Errors } from "@aido/api/errors";
 import type { INestApplication } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
@@ -15,6 +16,22 @@ import { convertStandardSchema } from "./platform/http/swagger/standard-schema.c
 
 const APP_DOCS_PATH = "api/docs";
 const ADMIN_DOCS_PATH = "api/admin/docs";
+
+const ADMIN_DOC_ERROR_CODES = [
+  ErrorCode.ADMIN_1401,
+  ErrorCode.ADMIN_1402,
+  ErrorCode.ADMIN_1403,
+  ErrorCode.ADMIN_1404,
+  ErrorCode.ADMIN_1405,
+  ErrorCode.REPORT_2255,
+] as const;
+
+function adminErrorCodeTable(): string {
+  const rows = ADMIN_DOC_ERROR_CODES.map(
+    (code) => `| ${code} | ${Errors[code].httpStatus} | ${Errors[code].message} |`,
+  );
+  return ["| 코드 | HTTP | 설명 |", "|------|------|------|", ...rows].join("\n");
+}
 
 /**
  * 앱·관리자 Swagger UI를 연다. 개발 도구(devTools.swaggerUi)가 꺼진 환경에서는 아무 경로도 열지 않는다.
@@ -141,14 +158,7 @@ export function setupApiDocs(app: INestApplication): string | undefined {
 - 헤더: \`Authorization: Bearer {token}\`
 
 ## 에러 코드
-| 코드 | HTTP | 설명 |
-|------|------|------|
-| ADMIN_1401 | 403 | 관리자 권한이 필요합니다 |
-| ADMIN_1402 | 404 | 알림 대상 사용자가 없습니다 |
-| ADMIN_1403 | 400 | 유효하지 않은 필터 조건입니다 |
-| ADMIN_1404 | 404 | 브로드캐스트 캠페인을 찾을 수 없습니다 |
-| ADMIN_1405 | 409 | 같은 요청 ID로 다른 브로드캐스트가 이미 접수되었습니다 |
-| REPORT_2255 | 404 | 신고를 찾을 수 없습니다 |
+${adminErrorCodeTable()}
 `)
     .setVersion(apiVersion)
     .addServer("http://localhost:8080", "Local Development")
