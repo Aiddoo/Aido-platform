@@ -11,12 +11,10 @@ import {
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import {
-  PUSH_ASK_MOMENT,
-  PUSH_ONBOARDING_WINDOW_DAYS,
-  PUSH_PERMISSION_STEP,
-  PUSH_PROMPT_SNOOZE_DAYS,
-} from '../constants/notification.constants';
+/** 홈 알림 안내를 닫으면 이 날수 동안 다시 보이지 않는다 */
+const PUSH_PROMPT_SNOOZE_DAYS = 14;
+/** 가입 뒤 이 날수 안에만 알림 화면을 보여 준다. 그 뒤에는 할 일 시간을 정할 때 묻는다 */
+const PUSH_ONBOARDING_WINDOW_DAYS = 1;
 
 const pushPermissionSchema = z.object({
   status: z.enum(PUSH_PERMISSION_STATUS),
@@ -38,8 +36,16 @@ const pushPermissionPromptSchema = z.object({
 });
 type PushPermissionPrompt = z.infer<typeof pushPermissionPromptSchema>;
 
-export type PushPermissionStep = (typeof PUSH_PERMISSION_STEP)[keyof typeof PUSH_PERMISSION_STEP];
-type PushAskMoment = (typeof PUSH_ASK_MOMENT)[keyof typeof PUSH_ASK_MOMENT];
+/** 알림을 받으려면 사용자가 다음에 할 일. 코드에서 부르는 이름은 constants의 PUSH_PERMISSION_STEP */
+export type PushPermissionStep =
+  | 'ASK'
+  | 'REQUEST_SYSTEM'
+  | 'OPEN_SETTINGS'
+  | 'ENABLE_IN_APP'
+  | 'NONE';
+type PushDeviceStep = Exclude<PushPermissionStep, 'ENABLE_IN_APP'>;
+/** 알림을 어떻게 물을지. 코드에서 부르는 이름은 constants의 PUSH_ASK_MOMENT */
+export type PushAskMoment = 'ONBOARDING_SCREEN' | 'SYSTEM_DIALOG' | 'DENIED_NOTICE';
 
 type PushAskContext =
   | {
@@ -64,7 +70,7 @@ function isPushDeliverable(permission: PushPermission): boolean {
   );
 }
 
-function isNotDetermined(permission: PushPermission): boolean {
+function isUndecided(permission: PushPermission): boolean {
   return permission.status === PUSH_PERMISSION_STATUS.NOT_DETERMINED;
 }
 
@@ -84,7 +90,7 @@ function isPromptSnoozed(dismissedAt: Instant | null, now: Instant): boolean {
 }
 
 /** 가입 직후 알림 화면을 보여 줄 수 있는 마지막 순간. 이 시각부터는 할 일 시간을 정할 때 묻는다 */
-function getOnboardingWindowEndsAt(signedUpAt: Instant): Instant {
+export function getOnboardingWindowEndsAt(signedUpAt: Instant): Instant {
   return fromEpochMs(toEpochMs(signedUpAt) + PUSH_ONBOARDING_WINDOW_DAYS * DAY_MS);
 }
 
@@ -95,7 +101,7 @@ function isRecentSignup(signedUpAt: Instant, now: Instant): boolean {
 }
 
 function isDenied(permission: PushPermission): boolean {
-  return !isPushDeliverable(permission) && !isNotDetermined(permission);
+  return !isPushDeliverable(permission) && !isUndecided(permission);
 }
 
 /**
@@ -109,18 +115,18 @@ function getAskMoment(permission: PushPermission, context: PushAskContext): Push
 
   return match(context)
     .with({ surface: 'onboarding' }, ({ signedUpAt, prompt, now }) =>
-      isNotDetermined(permission) && prompt.deferredAt == null && isRecentSignup(signedUpAt, now)
-        ? PUSH_ASK_MOMENT.ONBOARDING_SCREEN
+      isUndecided(permission) && prompt.deferredAt == null && isRecentSignup(signedUpAt, now)
+        ? 'ONBOARDING_SCREEN'
         : null,
     )
     .with({ surface: 'todo-time' }, () =>
-      isNotDetermined(permission) ? PUSH_ASK_MOMENT.SYSTEM_DIALOG : PUSH_ASK_MOMENT.DENIED_NOTICE,
+      isUndecided(permission) ? 'SYSTEM_DIALOG' : 'DENIED_NOTICE',
     )
     .with({ surface: 'feed' }, ({ hasUpcomingTimedTodo, prompt, now }) =>
       isDenied(permission) &&
       hasUpcomingTimedTodo &&
       !isPromptSnoozed(prompt.noticeDismissedAt, now)
-        ? PUSH_ASK_MOMENT.DENIED_NOTICE
+        ? 'DENIED_NOTICE'
         : null,
     )
     .exhaustive();
@@ -131,26 +137,34 @@ function canReceivePush(permission: PushPermission, { pushEnabled }: { pushEnabl
   return isPushDeliverable(permission) && pushEnabled;
 }
 
+/** 기기 권한만 본 다음 단계. 앱 안 푸시 설정은 보지 않는다 */
+function getDeviceStep(permission: PushPermission): PushDeviceStep {
+  return match(permission)
+    .returnType<PushDeviceStep>()
+    .when(isPushDeliverable, () => 'NONE')
+    .when(isSettingsRequired, () => 'OPEN_SETTINGS')
+    .when(isUndecided, () => 'ASK')
+    .otherwise(() => 'REQUEST_SYSTEM');
+}
+
 /** 알림을 받으려면 사용자가 다음에 무엇을 해야 하는지 정한다. 문구·화면은 컴포넌트가 정한다 */
 function getNextStep(
   permission: PushPermission,
   { pushEnabled }: { pushEnabled: boolean },
 ): PushPermissionStep {
-  return match(permission)
-    .when(isPushDeliverable, () =>
-      pushEnabled ? PUSH_PERMISSION_STEP.NONE : PUSH_PERMISSION_STEP.ENABLE_IN_APP,
-    )
-    .when(isSettingsRequired, () => PUSH_PERMISSION_STEP.OPEN_SETTINGS)
-    .when(isNotDetermined, () => PUSH_PERMISSION_STEP.ASK)
-    .otherwise(() => PUSH_PERMISSION_STEP.REQUEST_SYSTEM);
+  const deviceStep = getDeviceStep(permission);
+  if (deviceStep === 'NONE' && !pushEnabled) {
+    return 'ENABLE_IN_APP';
+  }
+  return deviceStep;
 }
 
 export const PushPermissionPolicy = {
   isPushDeliverable,
-  isNotDetermined,
+  isUndecided,
   canRequestSystemDialog,
   canReceivePush,
   getAskMoment,
-  getOnboardingWindowEndsAt,
+  getDeviceStep,
   getNextStep,
 } as const;

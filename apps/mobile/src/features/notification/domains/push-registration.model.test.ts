@@ -56,45 +56,47 @@ describe('getReleaseTokens', () => {
   });
 });
 
-describe('해제 요청의 생애', () => {
-  it('세션이 끝나 해제를 요청하면 보낼 해제가 남는다', () => {
-    // Given
-    const registration = createPushRegistration({ reportedToken: REPORTED_TOKEN });
+describe('PushRegistrationPolicy', () => {
+  describe('해제 요청의 생애', () => {
+    it('세션이 끝나 해제를 요청하면 보낼 해제가 남는다', () => {
+      // Given
+      const registration = createPushRegistration({ reportedToken: REPORTED_TOKEN });
 
-    // When
-    const requested = PushRegistrationPolicy.requestRelease(registration, REQUESTED_AT);
+      // When
+      const requested = PushRegistrationPolicy.requestRelease(registration, REQUESTED_AT);
 
-    // Then
-    expect(PushRegistrationPolicy.hasPendingRelease(requested)).toBe(true);
-    expect(requested.reportedToken).toBe(REPORTED_TOKEN);
-  });
-
-  it('새 세션의 보고가 성공하면 끝난 세션의 해제를 버리고 새 토큰을 기억한다', () => {
-    // Given
-    const registration = createPushRegistration({
-      reportedToken: REPORTED_TOKEN,
-      releaseRequestedAt: REQUESTED_AT,
+      // Then
+      expect(PushRegistrationPolicy.hasPendingRelease(requested)).toBe(true);
+      expect(requested.reportedToken).toBe(REPORTED_TOKEN);
     });
 
-    // When
-    const reported = PushRegistrationPolicy.recordReported(registration, CURRENT_TOKEN);
+    it('새 세션의 보고가 성공하면 끝난 세션의 해제를 버리고 새 토큰을 기억한다', () => {
+      // Given
+      const registration = createPushRegistration({
+        reportedToken: REPORTED_TOKEN,
+        releaseRequestedAt: REQUESTED_AT,
+      });
 
-    // Then
-    expect(reported).toEqual({ reportedToken: CURRENT_TOKEN, releaseRequestedAt: null });
-  });
+      // When
+      const reported = PushRegistrationPolicy.recordReported(registration, CURRENT_TOKEN);
 
-  it('해제가 끝나면 서버에 남은 토큰이 없다', () => {
-    // Given
-    const registration = createPushRegistration({
-      reportedToken: REPORTED_TOKEN,
-      releaseRequestedAt: REQUESTED_AT,
+      // Then
+      expect(reported).toEqual({ reportedToken: CURRENT_TOKEN, releaseRequestedAt: null });
     });
 
-    // When
-    const released = PushRegistrationPolicy.recordReleased(registration);
+    it('해제가 끝나면 서버에 남은 토큰이 없다', () => {
+      // Given
+      const registration = createPushRegistration({
+        reportedToken: REPORTED_TOKEN,
+        releaseRequestedAt: REQUESTED_AT,
+      });
 
-    // Then
-    expect(released).toEqual({ reportedToken: null, releaseRequestedAt: null });
-    expect(PushRegistrationPolicy.hasPendingRelease(released)).toBe(false);
+      // When
+      const released = PushRegistrationPolicy.recordReleased(registration);
+
+      // Then
+      expect(released).toEqual({ reportedToken: null, releaseRequestedAt: null });
+      expect(PushRegistrationPolicy.hasPendingRelease(released)).toBe(false);
+    });
   });
 });

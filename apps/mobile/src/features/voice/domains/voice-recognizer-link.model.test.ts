@@ -1,13 +1,20 @@
 import { createCaptureState } from '../__tests__/voice.fixtures';
-import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
-import { type VoiceStallWatch, VoiceRecognizerLinkPolicy } from './voice-recognizer-link.model';
+import {
+  type VoiceStallWatch,
+  VoiceRecognizerLinkPolicy,
+  createVoiceStallWatch,
+  createVoiceRecognizerLink,
+} from './voice-recognizer-link.model';
+
+/** 모델이 말소리로 보는 음량 기준보다 크다 */
+const SPEAKING_LEVEL = 0.5;
 
 const NOW = 100_000;
 
 describe('shouldRestartStalledRecognizer', () => {
   const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
   const watch = (overrides: Partial<VoiceStallWatch> = {}): VoiceStallWatch => ({
-    ...VoiceRecognizerLinkPolicy.createVoiceStallWatch(NOW),
+    ...createVoiceStallWatch(NOW),
     voicedMs: 3_000,
     isVoiceAudible: true,
     ...overrides,
@@ -38,7 +45,7 @@ describe('shouldRestartStalledRecognizer', () => {
   ])('$why → $expected', ({ at, overrides, expected }) => {
     // Given
     const link = {
-      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      ...createVoiceRecognizerLink(),
       isStopRequested: false,
       stallWatch: watch(overrides),
     };
@@ -57,7 +64,7 @@ describe('shouldRestartStalledRecognizer', () => {
   it('앱이 이미 stop을 부른 구간은 멈춘 것처럼 보여도 다시 열지 않는다', () => {
     // Given
     const link = {
-      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      ...createVoiceRecognizerLink(),
       isStopRequested: true,
       stallWatch: watch(),
     };
@@ -84,7 +91,7 @@ describe('shouldRestartStalledRecognizer', () => {
       // When
       const result = VoiceRecognizerLinkPolicy.shouldRestartStalledRecognizer(
         {
-          ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+          ...createVoiceRecognizerLink(),
           isStopRequested: false,
           stallWatch: watch(),
         },
@@ -102,21 +109,21 @@ describe('withVolumeSample', () => {
   it.each([
     {
       why: '말소리 샘플 사이 시간을 더한다',
-      level: SPEAKING_VOLUME_THRESHOLD,
+      level: SPEAKING_LEVEL,
       gapMs: 50,
       expected: 50,
     },
     { why: '조용한 샘플은 더하지 않는다', level: 0, gapMs: 50, expected: 0 },
     {
       why: '샘플이 끊긴 틈은 더하지 않는다',
-      level: SPEAKING_VOLUME_THRESHOLD,
+      level: SPEAKING_LEVEL,
       gapMs: 251,
       expected: 0,
     },
   ])('$why', ({ level, gapMs, expected }) => {
     // Given
     const stallWatch = VoiceRecognizerLinkPolicy.withVolumeSample(
-      VoiceRecognizerLinkPolicy.createVoiceStallWatch(NOW),
+      createVoiceStallWatch(NOW),
       0,
       NOW,
     );
@@ -133,8 +140,8 @@ describe('withTextHeard', () => {
   it('글자가 오면 들은 시간과 다시 연 시각을 지운다', () => {
     // Given
     const stallWatch = VoiceRecognizerLinkPolicy.withVolumeSample(
-      VoiceRecognizerLinkPolicy.createVoiceStallWatch(NOW, NOW),
-      SPEAKING_VOLUME_THRESHOLD,
+      createVoiceStallWatch(NOW, NOW),
+      SPEAKING_LEVEL,
       NOW,
     );
 
@@ -158,7 +165,7 @@ describe('reduceRecognizerLink', () => {
   it('시작을 맡기면 달리는 중이 되고 앞 구간의 멈춤 요청과 재시작 횟수를 지운다', () => {
     // Given
     const link = {
-      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      ...createVoiceRecognizerLink(),
       isStopRequested: true,
       quickEndCount: 3,
     };
@@ -181,10 +188,10 @@ describe('reduceRecognizerLink', () => {
   it('end를 받으면 달리지 않고 멈춤 요청도 지운다', () => {
     // Given
     const link = VoiceRecognizerLinkPolicy.reduceRecognizerLink(
-      VoiceRecognizerLinkPolicy.reduceRecognizerLink(
-        VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
-        { type: 'start-requested', at: NOW },
-      ),
+      VoiceRecognizerLinkPolicy.reduceRecognizerLink(createVoiceRecognizerLink(), {
+        type: 'start-requested',
+        at: NOW,
+      }),
       { type: 'stop-requested' },
     );
 
@@ -197,14 +204,11 @@ describe('reduceRecognizerLink', () => {
 
   it('같은 글자가 다시 오면 마지막 글자 시각을 옮기지 않는다', () => {
     // Given
-    const heard = VoiceRecognizerLinkPolicy.reduceRecognizerLink(
-      VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
-      {
-        type: 'text-heard',
-        transcript: '장보기',
-        at: NOW,
-      },
-    );
+    const heard = VoiceRecognizerLinkPolicy.reduceRecognizerLink(createVoiceRecognizerLink(), {
+      type: 'text-heard',
+      transcript: '장보기',
+      at: NOW,
+    });
 
     // When
     const repeated = VoiceRecognizerLinkPolicy.reduceRecognizerLink(heard, {
@@ -220,10 +224,10 @@ describe('reduceRecognizerLink', () => {
   it('stop 뒤의 마지막 글자는 다시 연 간격을 지우지 않는다', () => {
     // Given
     const link = VoiceRecognizerLinkPolicy.reduceRecognizerLink(
-      VoiceRecognizerLinkPolicy.reduceRecognizerLink(
-        VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
-        { type: 'stall-restarted', at: NOW },
-      ),
+      VoiceRecognizerLinkPolicy.reduceRecognizerLink(createVoiceRecognizerLink(), {
+        type: 'stall-restarted',
+        at: NOW,
+      }),
       { type: 'stop-requested' },
     );
 
@@ -240,13 +244,10 @@ describe('reduceRecognizerLink', () => {
 
   it('인식기 시작 신호는 다시 연 간격을 남기고 감시를 새로 센다', () => {
     // Given
-    const link = VoiceRecognizerLinkPolicy.reduceRecognizerLink(
-      VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
-      {
-        type: 'stall-restarted',
-        at: NOW,
-      },
-    );
+    const link = VoiceRecognizerLinkPolicy.reduceRecognizerLink(createVoiceRecognizerLink(), {
+      type: 'stall-restarted',
+      at: NOW,
+    });
 
     // When
     const next = VoiceRecognizerLinkPolicy.reduceRecognizerLink(link, {
@@ -263,7 +264,7 @@ describe('isRestartLooping', () => {
   it('400ms 안에 네 번째로 끝나면 다시 열어도 소용없다고 본다', () => {
     // Given
     const link = {
-      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      ...createVoiceRecognizerLink(),
       lastStartedAt: NOW,
       quickEndCount: 3,
     };
@@ -278,7 +279,7 @@ describe('isRestartLooping', () => {
   it('간격이 벌어지면 횟수와 상관없이 다시 연다', () => {
     // Given
     const link = {
-      ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+      ...createVoiceRecognizerLink(),
       lastStartedAt: NOW,
       quickEndCount: 3,
     };
@@ -293,7 +294,7 @@ describe('isRestartLooping', () => {
 
 describe('isSpeaking', () => {
   const link = (lastTextAt: number | null) => ({
-    ...VoiceRecognizerLinkPolicy.createVoiceRecognizerLink(),
+    ...createVoiceRecognizerLink(),
     lastTextAt,
   });
 

@@ -7,6 +7,7 @@ import {
   createHapticsGatewayStub,
   createSocialShareGatewayStub,
   createSystemShareGatewayStub,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
@@ -29,8 +30,8 @@ const content = {
 describe('useShareInviteMutationOptions', () => {
   it('공유 시트와 복사가 모두 실패하면 SDK 영문 문구 대신 다시 시도 안내를 한 번 보이고 예측 못한 실패로 보고한다', async () => {
     // Given
-    const socialShareGateway = createSocialShareGatewayStub();
-    socialShareGateway.isAvailable.mockReturnValue(false);
+    const socialShare = createSocialShareGatewayStub();
+    socialShare.isAvailable.mockReturnValue(false);
     const systemShare = createSystemShareGatewayStub();
     systemShare.share.mockRejectedValue(new Error('share sheet unavailable'));
     const sdkError = Object.assign(new Error('ExpoClipboard.setStringAsync has been rejected'), {
@@ -41,7 +42,7 @@ describe('useShareInviteMutationOptions', () => {
     const haptics = createHapticsGatewayStub();
     const errorReporter = createErrorReporterStub();
     const { result } = await renderScreenHook(() => useMutation(useShareInviteMutationOptions()), {
-      di: { socialShareGateway, systemShare, clipboard, haptics, errorReporter },
+      di: createTestDi({ ports: { socialShare, systemShare, clipboard, haptics, errorReporter } }),
     });
 
     // When

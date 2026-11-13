@@ -214,32 +214,6 @@ export const pushToken = pgTable(
   ],
 );
 
-// 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
-export const pushDailyBudget = pgTable(
-  "PushDailyBudget",
-  {
-    automatedCount: integer().default(0).notNull(),
-    createdAt: instant()
-      .default(sql`now()`)
-      .notNull(),
-    id: serial().primaryKey(),
-    lastSentAt: instant(),
-    localDate: plainDate().notNull(),
-    updatedAt: instant().notNull(),
-    userId: text().notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [user.id],
-      name: "PushDailyBudget_userId_fkey",
-    })
-      .onUpdate("cascade")
-      .onDelete("cascade"),
-    unique("PushDailyBudget_userId_localDate_key").on(table.userId, table.localDate),
-  ],
-);
-
 export const pushDeliveryAttempt = pgTable(
   "PushDeliveryAttempt",
   {
@@ -442,7 +416,7 @@ export const pushRateLimitReservation = pgTable(
 export const retentionExperimentAssignment = pgTable(
   "RetentionExperimentAssignment",
   {
-    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
+    // 코드는 읽지 않지만 DB 기본값으로만 남는 배정 시각이고 다른 칸에 없어(실험 분석 자료) 지우지 않는다
     assignedAt: instant()
       .default(sql`now()`)
       .notNull(),

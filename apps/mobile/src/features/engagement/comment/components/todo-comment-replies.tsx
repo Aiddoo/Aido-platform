@@ -1,4 +1,3 @@
-import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -15,6 +14,7 @@ import {
   type TodoCommentThread,
   type TodoCommentThreadAnchor,
 } from '../domains/todo-comment.model';
+import { ensureTodoCommentReplies } from '../queries/todo-comment-cache';
 import { useGetTodoCommentRepliesInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import { getReplyFooter } from '../utils/todo-comment-replies.view-model';
 import { useThreadExpansion } from './todo-comment-expansion';
@@ -33,7 +33,7 @@ interface TodoCommentRepliesProps {
  * 이어 붙인다. 위 행은 움직이지 않고 아래로만 늘어난다.
  */
 export function TodoCommentReplies({ thread, anchor, isHighlightActive }: TodoCommentRepliesProps) {
-  const [todoId] = useTodoId();
+  const { todoId } = thread.comment;
   const { trackEvent } = useTrack();
   const anchoredReplyId = anchor?.threadCommentId === thread.comment.id ? anchor.replyId : null;
   // 알림으로 연 답글은 사용자가 보려고 고른 것이라 직접 펼친 것으로 본다
@@ -69,9 +69,7 @@ export function TodoCommentReplies({ thread, anchor, isHighlightActive }: TodoCo
             label={{ kind: preview == null ? 'view' : 'viewMore', count: hiddenCount }}
             onPress={() => {
               setExpansion({ isExpanded: true, source: 'user' });
-              // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-              queryClient
-                .infiniteQuery({ ...repliesOptions, staleTime: 'static' })
+              ensureTodoCommentReplies(queryClient, repliesOptions)
                 .then((replies) => trackLoadedCount(replies.length))
                 .catch(noop);
             }}

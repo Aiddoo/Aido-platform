@@ -1,3 +1,5 @@
+import { createDateKey } from '@src/testing/date-key';
+
 import { type SubTodo, subTodoSchema } from '../domains/sub-todo.model';
 import { type Todo, todoSchema } from '../domains/todo.model';
 
@@ -21,7 +23,7 @@ function generateParentTodo(): Todo {
   return {
     id: 1,
     title: '테스트 할일',
-    startDate: '2026-03-08',
+    startDate: createDateKey('2026-03-08'),
     endDate: null,
     category: { id: 1, name: '기본', color: '#3B82F6' },
     completed: false,

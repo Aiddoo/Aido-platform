@@ -16,6 +16,12 @@ import {
 } from "../../../vocabulary/weather.constants.js";
 
 const percentSchema = z.number().int().min(0).max(100);
+
+// 앞으로 더할 열거 값은 출시된 앱이 리포트를 버리지 않게 그 칸만 대체값으로 읽는다(compatibility.md). 서버 응답 값은 같다
+/** 흐림: 아이콘·장면이 있고 비·눈·더위·서리 효과나 경고를 만들지 않는다 */
+const weatherConditionSchema = z.enum(WEATHER_CONDITIONS).catch("CLOUDY");
+/** 섞임: 강수 확률이 높은 시간에만 "비나 눈"으로 말하고 마른 시간에는 보이지 않는다 */
+const weatherPrecipitationTypeSchema = z.enum(WEATHER_PRECIPITATION_TYPES).catch("MIXED");
 const timezoneSchema = z.string().min(1).max(50).describe("IANA 시간대 (예: Asia/Seoul)");
 
 export const weatherLocationSchema = z.object({
@@ -28,7 +34,7 @@ export type WeatherLocationResponse = z.infer<typeof weatherLocationSchema>;
 
 export const weatherCurrentConditionsSchema = z.object({
   observedAt: datetimeSchema.describe("관측 시각"),
-  condition: z.enum(WEATHER_CONDITIONS).describe("날씨 상태"),
+  condition: weatherConditionSchema.describe("날씨 상태"),
   isDaylight: z.boolean().describe("관측 시각이 낮인지 여부"),
   temperature: z.number().describe("기온 (°C)"),
   apparentTemperature: z.number().describe("체감 온도 (°C)"),
@@ -41,7 +47,7 @@ export const weatherCurrentConditionsSchema = z.object({
   windDirection: z.number().int().min(0).max(359).nullable().describe("풍향 (도, 북=0)"),
   visibility: z.number().min(0).describe("가시거리 (m)"),
   pressure: z.number().min(0).describe("해면기압 (hPa)"),
-  pressureTrend: z.enum(WEATHER_PRESSURE_TRENDS).describe("기압 추세"),
+  pressureTrend: z.enum(WEATHER_PRESSURE_TRENDS).catch("STEADY").describe("기압 추세"),
   precipitationIntensity: z.number().min(0).describe("강수 강도 (mm/h)"),
 });
 
@@ -60,6 +66,7 @@ export const weatherNextHourPeriodSchema = z.object({
   precipitationType: z
     .enum(WEATHER_PRECIPITATION_TYPES)
     .nullable()
+    .catch(null)
     .describe("강수 형태. 맑음 구간은 NONE, 공급자가 형태 없이 '강수'로만 알리면 null"),
   startsAt: datetimeSchema.describe("구간 시작 시각"),
   endsAt: nullableDatetimeSchema.describe("구간 끝 시각. 예보 범위 끝까지 이어지면 null"),
@@ -80,7 +87,7 @@ export type WeatherNextHour = z.infer<typeof weatherNextHourSchema>;
 
 export const weatherHourlyForecastSchema = z.object({
   startsAt: datetimeSchema.describe("시간 구간 시작 시각"),
-  condition: z.enum(WEATHER_CONDITIONS).describe("날씨 상태"),
+  condition: weatherConditionSchema.describe("날씨 상태"),
   isDaylight: z.boolean().describe("낮인지 여부"),
   temperature: z.number().describe("기온 (°C)"),
   apparentTemperature: z.number().describe("체감 온도 (°C)"),
@@ -90,37 +97,37 @@ export const weatherHourlyForecastSchema = z.object({
   windDirection: z.number().int().min(0).max(359).nullable().describe("풍향 (도, 북=0)"),
   precipitationChance: percentSchema.describe("강수 확률 (%)"),
   precipitationAmount: z.number().min(0).describe("강수량 (mm)"),
-  precipitationType: z.enum(WEATHER_PRECIPITATION_TYPES).describe("강수 형태"),
+  precipitationType: weatherPrecipitationTypeSchema.describe("강수 형태"),
 });
 
 export type WeatherHourlyForecast = z.infer<typeof weatherHourlyForecastSchema>;
 
 export const weatherDayPartForecastSchema = z.object({
-  condition: z.enum(WEATHER_CONDITIONS).describe("날씨 상태"),
+  condition: weatherConditionSchema.describe("날씨 상태"),
   temperatureMin: z.number().nullable().describe("최저 기온 (°C)"),
   temperatureMax: z.number().nullable().describe("최고 기온 (°C)"),
   precipitationChance: percentSchema.describe("강수 확률 (%)"),
   precipitationAmount: z.number().min(0).describe("강수량 (mm)"),
-  precipitationType: z.enum(WEATHER_PRECIPITATION_TYPES).describe("강수 형태"),
+  precipitationType: weatherPrecipitationTypeSchema.describe("강수 형태"),
 });
 
 export type WeatherDayPartForecast = z.infer<typeof weatherDayPartForecastSchema>;
 
 export const weatherDailyForecastSchema = z.object({
   date: dateSchema.describe("위치 시간대 기준 날짜"),
-  condition: z.enum(WEATHER_CONDITIONS).describe("날씨 상태"),
+  condition: weatherConditionSchema.describe("날씨 상태"),
   temperatureMin: z.number().describe("최저 기온 (°C)"),
   temperatureMax: z.number().describe("최고 기온 (°C)"),
   precipitationChance: percentSchema.describe("강수 확률 (%)"),
   precipitationAmount: z.number().min(0).describe("강수량 (mm)"),
-  precipitationType: z.enum(WEATHER_PRECIPITATION_TYPES).describe("강수 형태"),
+  precipitationType: weatherPrecipitationTypeSchema.describe("강수 형태"),
   snowfallAmount: z.number().min(0).describe("적설량 (mm, 물 환산 전 눈 깊이)"),
   uvIndexMax: z.number().int().min(0).describe("최고 자외선 지수"),
   windSpeedMax: z.number().min(0).nullable().describe("최대 풍속 (m/s)"),
   windGustMax: z.number().min(0).nullable().describe("최대 돌풍 (m/s)"),
   sunrise: nullableDatetimeSchema.describe("일출 시각 (극야면 null)"),
   sunset: nullableDatetimeSchema.describe("일몰 시각 (백야면 null)"),
-  moonPhase: z.enum(WEATHER_MOON_PHASES).describe("달 위상"),
+  moonPhase: z.enum(WEATHER_MOON_PHASES).catch("NEW").describe("달 위상"),
   moonrise: nullableDatetimeSchema.describe("월출 시각 (그날 뜨지 않으면 null)"),
   moonset: nullableDatetimeSchema.describe("월몰 시각 (그날 지지 않으면 null)"),
   restOfDay: weatherDayPartForecastSchema
@@ -143,7 +150,7 @@ export type WeatherAirQuality = z.infer<typeof weatherAirQualitySchema>;
 export const weatherAlertSchema = z.object({
   id: z.string().describe("공급자 특보 ID"),
   title: z.string().describe("특보 이름 (요청 언어로 번역됨)"),
-  severity: z.enum(WEATHER_ALERT_SEVERITIES).describe("심각도"),
+  severity: z.enum(WEATHER_ALERT_SEVERITIES).catch("UNKNOWN").describe("심각도"),
   source: z.string().describe("발표 기관"),
   areaName: z.string().nullable().describe("대상 지역 이름"),
   effectiveAt: datetimeSchema.describe("발효 시각"),
@@ -191,6 +198,7 @@ export const weatherBriefingSchema = z.object({
   reason: z
     .enum(WEATHER_RESCHEDULE_REASONS)
     .nullable()
+    .catch(null)
     .describe("영향받는 할 일이 있을 때 무엇을 피해 옮길지. 비·눈(rain)이 더위(heat)보다 먼저다"),
   affectedTodoIds: z
     .array(z.number().int().positive())
@@ -226,7 +234,11 @@ export const weatherReportSchema = z
       .max(WEATHER_REPORT_LIMITS.DAILY_FORECAST_DAYS)
       .describe("오늘부터 최대 10일"),
     alerts: z.array(weatherAlertSchema).describe("발효 중인 기상 특보. 심각도 높은 순"),
-    airQuality: weatherAirQualitySchema.nullable().describe("대기질. 제공하지 않는 지역은 null"),
+    // 모르는 출처를 다른 기관 이름으로 표기하지 않도록 대기질 칸째 없는 지역처럼 읽는다
+    airQuality: weatherAirQualitySchema
+      .nullable()
+      .catch(null)
+      .describe("대기질. 제공하지 않는 지역은 null"),
     attribution: weatherAttributionSchema,
     fetchedAt: datetimeSchema.describe(
       "공급자에서 데이터를 받은 시각. 공급자 장애 때는 마지막 성공 시각",

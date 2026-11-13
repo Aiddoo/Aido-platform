@@ -44,8 +44,8 @@ onFlowStart:
     file: subflows/open.yaml
     env:
       ROUTE: friends/search
-- tapOn:
-    id: friend-search-input
+# 네이티브 헤더 검색창이라 testID가 없다. 열릴 때 포커스를 받으므로 문구로 한 번 더 눌러 확실히 한다
+- tapOn: '이름 또는 해시태그로 검색|Search by name or hashtag'
 - inputText: ${MAESTRO_SHOT_STRANGER_NAME}
 - hideKeyboard
 - extendedWaitUntil:

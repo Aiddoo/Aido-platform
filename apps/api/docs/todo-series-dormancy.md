@@ -27,7 +27,7 @@
 
 복귀 감지는 활동 기록이 아니라 **규칙 커서**로 한다. 인터셉터가 먼저(응답을 기다리지 않고) `lastActiveAt`을 갱신하므로 UseCase 시점에는 휴면이었는지 알 수 없다. 반면 커서는 평소 오늘보다 90일 앞서 있어서, 커서가 오늘을 넘지 못했다는 것 자체가 "오늘 회차가 없다"는 사실이다.
 
-- 진입점: `ListTodosUseCase`·`GetTodoSummaryUseCase` 시작에서 `CatchUpTodoSeriesUseCase.execute(userId)`를 기다린다. 요약은 앱이 목록과 나란히 부르기 때문이다.
+- 진입점: `ListTodosUseCase`·`GetTodoSummaryUseCase`·`GetTodoOverviewUseCase` 시작에서 `CatchUpTodoSeriesUseCase.execute(userId)`를 기다린다. 요약·개요는 앱이 목록과 나란히 부르고, 개요의 `hasActiveRepeat`이 휴면 중 끝난 규칙을 진행 중으로 답하지 않아야 하기 때문이다.
 - 일반 요청 비용: 사용자·UTC 날짜마다 조회 1번(`findIdsBehind`, `(userId, nextOccurrenceDate)` 인덱스), 그 뒤 메모리만 본다(쿼리 0번). 조회 상한은 UTC 내일이라 어떤 시간대의 오늘도 포함한다. 메모리는 UTC 날짜가 바뀌면 비운다.
 - 60~150일 사이에 돌아오면 커서가 아직 오늘보다 앞이다. 오늘 회차가 이미 있으므로 요청에서는 쓰지 않고, `lastActiveAt`이 갱신돼 다음 밤 작업이 이어서 채운다.
 - 뒤처진 규칙은 규칙마다 트랜잭션: 잠금(`todoSortOrder`) → 규칙 행 → 커서를 오늘 이후 첫 회차로 옮김 → 90일 채움·알림 등록(같은 트랜잭션). 잠금 순서·저장은 밤 작업과 `TodoSeriesDueRun` 하나를 공유한다. 복귀는 다른 트랜잭션이 잡은 규칙을 기다리고(이 요청의 목록에 오늘 회차가 있어야 하므로), 밤 작업은 `SKIP LOCKED`로 건너뛴다.

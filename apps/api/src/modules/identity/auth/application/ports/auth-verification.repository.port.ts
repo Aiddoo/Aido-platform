@@ -21,11 +21,12 @@ export abstract class AuthVerificationRepositoryPort {
     type: VerificationType,
     now: Temporal.Instant,
   ): Promise<AuthVerification | null>;
-  abstract countRecentByUserIdAndType(
+  /** since와 같거나 뒤에 만든 같은 종류 코드 중 가장 최근 발급 시각. 없으면 null */
+  abstract findLatestIssuedAtByUserIdAndType(
     userId: UserId,
     type: VerificationType,
     since: Temporal.Instant,
-  ): Promise<number>;
+  ): Promise<Temporal.Instant | null>;
   abstract save(verification: AuthVerification): Promise<void>;
   /** 남은 같은 종류 코드를 지금 만료시키고 만료시킨 수를 준다 */
   abstract invalidateAllByUserIdAndType(

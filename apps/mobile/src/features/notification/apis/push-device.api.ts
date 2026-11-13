@@ -13,23 +13,23 @@ import type { PushPermission } from '../domains/push-permission.model';
 import { toPushDevice, toReportPushDeviceRequest } from './push-device.mapper';
 
 interface PushDeviceApiPorts {
-  httpClient: HttpClient;
+  authHttpClient: HttpClient;
   /** 끝난 세션의 해제는 인증 없이 보낸다. 인증 클라이언트는 401에 지금 세션을 끝낸다 */
   publicHttpClient: Pick<HttpClient, 'post'>;
 }
 
 export class PushDeviceApi {
-  readonly #httpClient: HttpClient;
+  readonly #authHttpClient: HttpClient;
   readonly #publicHttpClient: Pick<HttpClient, 'post'>;
 
-  constructor({ httpClient, publicHttpClient }: PushDeviceApiPorts) {
-    this.#httpClient = httpClient;
+  constructor({ authHttpClient, publicHttpClient }: PushDeviceApiPorts) {
+    this.#authHttpClient = authHttpClient;
     this.#publicHttpClient = publicHttpClient;
   }
 
   report = async (deviceId: string, values: { permission: PushPermission; token: string | null }) =>
     parseApiResponse(
-      await this.#httpClient.put(
+      await this.#authHttpClient.put(
         `v1/notifications/push-devices/${deviceId}`,
         toReportPushDeviceRequest(values),
       ),
@@ -42,7 +42,7 @@ export class PushDeviceApi {
     deviceId: string,
     config?: Pick<RequestConfig, 'timeout'>,
   ): Promise<Result<void, ApiError>> => {
-    const result = await this.#httpClient.delete('v1/notifications/token', {
+    const result = await this.#authHttpClient.delete('v1/notifications/token', {
       ...config,
       params: { deviceId },
     });

@@ -8,14 +8,12 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse as OsPushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
-import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
-import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { type Instant } from '@src/shared/date/instant';
-import { getErrorMessage, unwrap } from '@src/shared/errors';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { useIsRestoring, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getNowInstant } from '@src/shared/date/clock';
+import { getErrorMessage } from '@src/shared/errors';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { openEntryHref } from '@src/shared/navigation/open-entry-href';
+import { useIsRestoring, useMutation } from '@tanstack/react-query';
 import {
   useCallback,
   useEffect,
@@ -36,10 +34,15 @@ import {
   createUnreadablePushNotification,
   PushNotificationPolicy,
 } from '../domains/push-notification.model';
-import { useRecordPushOpenedMutationOptions } from '../queries/notification.mutations';
+import {
+  useOptOutMarketingPushMutationOptions,
+  useRecordPushOpenedMutationOptions,
+} from '../queries/notification.mutations';
 import type { ReadyPushNotificationEntry } from '../stores/push-notification-entry.store';
-import { toNotificationDestination } from '../utils/notification-destination';
-import { useNotificationNavigation } from './use-notification-navigation';
+import {
+  useOpenNotificationDestination,
+  useResolveNotificationDestination,
+} from './use-notification-destination';
 import { usePushNotificationEntry } from './use-push-notification-entry';
 
 /** 푸시 응답의 입구 하나. 마지막 응답과 응답 리스너를 슬롯 하나로 모은다 */
@@ -68,9 +71,9 @@ export function usePushNotificationResponse(): void {
   );
 
   useLayoutEffect(() => {
-    let activeSince = appLifecycle.getCurrentState() === 'active' ? Date.now() : null;
+    let activeSince = appLifecycle.getCurrentState() === 'active' ? getNowInstant() : null;
     const removeAppStateListener = appLifecycle.subscribe((state) => {
-      activeSince = state === 'active' ? Date.now() : null;
+      activeSince = state === 'active' ? getNowInstant() : null;
     });
     const receive = (
       response: OsPushNotificationResponse,
@@ -81,7 +84,7 @@ export function usePushNotificationResponse(): void {
         logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PAYLOAD_DROPPED, {
           source: 'response',
           responseId: response.id,
-          droppedPaths,
+          droppedPaths: droppedPaths.join(','),
           isReadable: notification != null,
         });
       }
@@ -89,7 +92,7 @@ export function usePushNotificationResponse(): void {
         id: response.id,
         actionIdentifier: response.actionIdentifier,
         notification: notification ?? createUnreadablePushNotification(),
-        receivedAt: Date.now(),
+        receivedAt: getNowInstant(),
         isLaunchResponse,
         appState: appLifecycle.getCurrentState(),
         activeSince,
@@ -129,12 +132,11 @@ function useMarketingOptOut(
   finishResponse: (responseId: string) => void,
 ) {
   const status = useAuthStatus();
-  const notificationApi = useNotificationApi();
   const appLifecycle = useAppLifecycle();
   const logger = useLogger();
-  const { trackEvent } = useTrack();
-  const queryClient = useQueryClient();
-  const showConsentResult = useConsentResultToast();
+  const reportUnexpectedError = useReportUnexpectedError('notification');
+  const { mutateAsync: optOut } = useMutation(useOptOutMarketingPushMutationOptions());
+  // 앞에 온 순간과 응답이 같은 틱에 두 번 부를 수 있어 응답 id로 한 번만 보낸다
   const inFlightIdRef = useRef<string | null>(null);
 
   const send = useEffectEvent(async (target: PushNotificationResponse, signal: AbortSignal) => {
@@ -143,38 +145,29 @@ function useMarketingOptOut(
     }
     const action = PushNotificationResponsePolicy.getResponseAction(target, {
       authStatus: status,
-      now: Date.now(),
+      now: getNowInstant(),
     });
     const token = target.notification.marketingOptOutToken;
-    if (action.type === 'drop' || !token) {
+    // 계약이 빈 토큰을 막지 않아 빈 값도 끌 대상이 없다고 본다
+    if (action.type === 'drop' || token == null || token === '') {
       finishResponse(target.id);
       return;
     }
     inFlightIdRef.current = target.id;
-    let withdrawnAt: Instant;
     try {
-      ({ withdrawnAt } = unwrap(await notificationApi.optOutMarketingPush(token)));
+      await optOut(token);
     } catch (error) {
+      // 응답을 남겨 앞에 오면 다시 보낸다. 연결 끊김·4xx는 다시 보내면 되고 5xx·파싱 실패만 이슈로 남긴다
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, { error: getErrorMessage(error) });
+      reportUnexpectedError(error);
       return;
     } finally {
       inFlightIdRef.current = null;
     }
-    // 보내는 사이 로그아웃으로 슬롯이 비었거나 훅이 내려갔으면 끝난 화면·캐시에 안내와 무효화를 남기지 않는다
-    if (signal.aborted) {
-      return;
+    // 보내는 사이 로그아웃으로 슬롯이 비었으면 새 세션의 응답을 지우지 않는다
+    if (!signal.aborted) {
+      finishResponse(target.id);
     }
-    try {
-      trackEvent('marketing_push_opted_out', { source: 'push_action' });
-    } catch (error) {
-      logger.warn(NOTIFICATION_LOG_EVENT.OPT_OUT_ANALYTICS_FAILED, {
-        error: getErrorMessage(error),
-      });
-    }
-    finishResponse(target.id);
-    // 설정 토글과 같은 결과 안내(처리 일시는 서버 값)를 띄우고, 설정 화면의 토글도 서버 값으로 맞춘다
-    showConsentResult('marketingPush', { type: 'withdrawn', at: withdrawnAt });
-    invalidateConsent(queryClient);
   });
 
   useEffect(() => {
@@ -206,8 +199,7 @@ function useResolveResponse(
   const notificationApi = useNotificationApi();
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
-  const queryClient = useQueryClient();
-  const windowSizeClass = useWindowSizeClass();
+  const resolveDestination = useResolveNotificationDestination();
   const inFlightIdRef = useRef<string | null>(null);
 
   const resolve = useEffectEvent(async (target: PushNotificationResponse) => {
@@ -230,13 +222,7 @@ function useResolveResponse(
         finishResponse(target.id);
         return;
       }
-      store.markReady(
-        target.id,
-        toNotificationDestination(notification.target, {
-          windowSizeClass,
-          viewerId: getCachedMe(queryClient)?.id,
-        }),
-      );
+      store.markReady(target.id, resolveDestination(notification.target));
     } catch (error) {
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
       // 끝난 세션이나 밀려난 탭의 실패로 새 탭의 마지막 응답을 지우지 않는다
@@ -253,7 +239,7 @@ function useResolveResponse(
   const decide = useEffectEvent((target: PushNotificationResponse) => {
     const action = PushNotificationResponsePolicy.getResponseAction(target, {
       authStatus: status,
-      now: Date.now(),
+      now: getNowInstant(),
     });
     if (action.type === 'drop') {
       finishResponse(target.id);
@@ -278,7 +264,8 @@ function useOpenReadyEntry(
 ) {
   const { isEnteringApp } = usePushNotificationEntry();
   const logger = useLogger();
-  const navigate = useNotificationNavigation();
+  // 앱이 켜져 있을 때 누른 푸시도 OS 링크처럼 연다. 탭 위 화면에서 열어도 탭 묶음·첫 화면이 두 번 쌓이지 않는다
+  const openDestination = useOpenNotificationDestination({ openRoute: openEntryHref });
   const { trackEvent } = useTrack();
   const { mutate: recordOpened } = useMutation(useRecordPushOpenedMutationOptions());
   const openedByIndexIdRef = useRef<string | null>(null);
@@ -292,7 +279,7 @@ function useOpenReadyEntry(
     const { notification } = response;
     try {
       if (destination.kind !== 'route' || openedByIndexIdRef.current !== response.id) {
-        await navigate(destination);
+        await openDestination(destination);
       }
       try {
         trackEvent('push_notification_opened', {

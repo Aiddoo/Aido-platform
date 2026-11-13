@@ -5,14 +5,7 @@
   "type": "module",
   "main": "./vitest.preset.ts",
   "exports": {
-    ".": "./vitest.preset.ts",
-    "./test-workers": {
-      "types": "./test-workers.d.mts",
-      "default": "./test-workers.mjs"
-    }
-  },
-  "scripts": {
-    "test": "node --test test-workers.test.mjs"
+    ".": "./vitest.preset.ts"
   },
   "devDependencies": {
     "vitest": "catalog:"

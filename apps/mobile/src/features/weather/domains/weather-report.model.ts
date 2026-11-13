@@ -13,6 +13,7 @@ import {
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { dateKeySchema, type DateKey } from '@src/shared/date/date-key';
 import { type Instant, fromEpochMs, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { toDateKey } from '@src/shared/date/zoned';
 import { z } from 'zod';
@@ -95,7 +96,7 @@ const dayPartForecastSchema = z.object({
 });
 
 const dailyForecastSchema = z.object({
-  date: z.string(),
+  date: dateKeySchema,
   condition: weatherConditionSchema,
   temperatureMin: z.number(),
   temperatureMax: z.number(),
@@ -348,7 +349,7 @@ export function isNowcastExpired(report: Pick<WeatherReport, 'fetchedAt'>, now: 
 }
 
 /** 예보 위치 시간대의 오늘 날짜(YYYY-MM-DD). 일별 예보의 날짜가 이 시간대를 따른다. */
-export function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): string {
+export function getTodayKey(report: Pick<WeatherReport, 'location'>, now: Instant): DateKey {
   return toDateKey(now, report.location.timezone);
 }
 

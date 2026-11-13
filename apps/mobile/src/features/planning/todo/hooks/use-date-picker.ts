@@ -1,59 +1,69 @@
-import { addLocalMonths } from '@src/shared/date/zoned';
+import { addMonthsToDateKey, getMonthStartDateKey, type DateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMemo, useReducer } from 'react';
 import { match } from 'ts-pattern';
 
-import { getMonthWeeks } from '../utils/calendar-grid';
+import { type CalendarDayCell, getPickerMonthWeeks } from '../utils/calendar-month.view-model';
 
 interface DatePickerState {
-  selectedDate: Date;
-  displayMonth: Date;
+  selectedDateKey: DateKey;
+  /** 보이는 달의 1일 */
+  displayMonthKey: DateKey;
 }
 
 type DatePickerAction =
-  | { type: 'selectDate'; date: Date }
-  | { type: 'prevMonth'; timeZone: string }
-  | { type: 'nextMonth'; timeZone: string };
+  | { type: 'selectDate'; dateKey: DateKey }
+  | { type: 'prevMonth' }
+  | { type: 'nextMonth' };
 
 function datePickerReducer(state: DatePickerState, action: DatePickerAction): DatePickerState {
   return match(action)
-    .with({ type: 'selectDate' }, ({ date }) => ({ ...state, selectedDate: date }))
-    .with({ type: 'prevMonth' }, ({ timeZone }) => ({
+    .with({ type: 'selectDate' }, ({ dateKey }) => ({ ...state, selectedDateKey: dateKey }))
+    .with({ type: 'prevMonth' }, () => ({
       ...state,
-      displayMonth: addLocalMonths(state.displayMonth, -1, timeZone),
+      displayMonthKey: addMonthsToDateKey(state.displayMonthKey, -1),
     }))
-    .with({ type: 'nextMonth' }, ({ timeZone }) => ({
+    .with({ type: 'nextMonth' }, () => ({
       ...state,
-      displayMonth: addLocalMonths(state.displayMonth, 1, timeZone),
+      displayMonthKey: addMonthsToDateKey(state.displayMonthKey, 1),
     }))
     .exhaustive();
 }
 
+/** 날짜 피커의 고른 날·보이는 달과 동작. 반복 시트가 폼 달력에 통째로 넘긴다 */
+export interface DatePicker {
+  selectedDateKey: DateKey;
+  /** 보이는 달의 1일 */
+  displayMonthKey: DateKey;
+  weeks: CalendarDayCell[][];
+  selectDate: (dateKey: DateKey) => void;
+  goToPrevMonth: () => void;
+  goToNextMonth: () => void;
+}
+
 interface UseDatePickerOptions {
   /** 처음 선택된 날짜이자 처음 보이는 달 */
-  initialDate: Date;
+  initialDateKey: DateKey;
 }
 
-export function useDatePicker({ initialDate }: UseDatePickerOptions) {
-  const { timeZone } = useDateFormatContext();
+export function useDatePicker({ initialDateKey }: UseDatePickerOptions): DatePicker {
+  const { locale, timeZone } = useDateFormatContext();
   const [state, dispatch] = useReducer(datePickerReducer, {
-    selectedDate: initialDate,
-    displayMonth: initialDate,
+    selectedDateKey: initialDateKey,
+    displayMonthKey: getMonthStartDateKey(initialDateKey),
   });
 
+  // 달·언어가 같으면 칸 글자를 다시 만들지 않아 날짜를 눌러도 Intl을 부르지 않는다
   const weeks = useMemo(
-    () => getMonthWeeks(state.displayMonth, timeZone),
-    [state.displayMonth, timeZone],
+    () => getPickerMonthWeeks(state.displayMonthKey, { locale, timeZone }),
+    [state.displayMonthKey, locale, timeZone],
   );
-
   return {
-    selectedDate: state.selectedDate,
-    displayMonth: state.displayMonth,
+    selectedDateKey: state.selectedDateKey,
+    displayMonthKey: state.displayMonthKey,
     weeks,
-    selectDate: (date: Date) => dispatch({ type: 'selectDate', date }),
-    goToPrevMonth: () => dispatch({ type: 'prevMonth', timeZone }),
-    goToNextMonth: () => dispatch({ type: 'nextMonth', timeZone }),
+    selectDate: (dateKey: DateKey) => dispatch({ type: 'selectDate', dateKey }),
+    goToPrevMonth: () => dispatch({ type: 'prevMonth' }),
+    goToNextMonth: () => dispatch({ type: 'nextMonth' }),
   };
 }
-
-export type DatePicker = ReturnType<typeof useDatePicker>;

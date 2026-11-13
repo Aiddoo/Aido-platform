@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, gt, gte, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, lt, sql } from "drizzle-orm";
 
 import {
   AuthVerificationRepositoryPort,
@@ -55,19 +55,17 @@ export class DrizzleVerificationRepository extends AuthVerificationRepositoryPor
     return row == null ? null : toAuthVerification(row);
   }
 
-  async countRecentByUserIdAndType(
+  async findLatestIssuedAtByUserIdAndType(
     userId: UserId,
     type: VerificationType,
     since: Temporal.Instant,
-  ): Promise<number> {
-    return this.#db.$count(
-      verification,
-      and(
-        eq(verification.userId, userId.value),
-        eq(verification.type, type),
-        gte(verification.createdAt, since),
-      ),
-    );
+  ): Promise<Temporal.Instant | null> {
+    const row = await this.#db.query.verification.findFirst({
+      columns: { createdAt: true },
+      where: { userId: userId.value, type, createdAt: { gte: since } },
+      orderBy: { createdAt: "desc" },
+    });
+    return row?.createdAt ?? null;
   }
 
   async save(authVerification: AuthVerification): Promise<void> {
