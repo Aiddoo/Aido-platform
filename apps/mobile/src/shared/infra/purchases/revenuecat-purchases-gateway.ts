@@ -1,4 +1,4 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import {
   type PurchaseStatus,
   type PurchaseFailureKind,
@@ -146,7 +146,7 @@ function hasAppStoreFreeTrialOffer(product: PurchasesStoreProduct) {
 /** SDK 안내대로 ELIGIBLE만 체험을 보이고, UNKNOWN·INELIGIBLE·확인 실패는 일반 가격만 보인다 */
 async function findIntroEligibleProductIds(
   products: readonly PurchasesStoreProduct[],
-  logger: Pick<Logger, 'warn'>,
+  logger: Pick<AppLogger, 'warn'>,
 ): Promise<ReadonlySet<string>> {
   const productIds = products.filter(hasAppStoreFreeTrialOffer).map(({ identifier }) => identifier);
   if (productIds.length === 0) {
@@ -203,7 +203,7 @@ function toPurchasePackage(
 
 interface RevenueCatPurchasesGatewayOptions {
   isLogEnabled: boolean;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 export function createRevenueCatPurchasesGateway({

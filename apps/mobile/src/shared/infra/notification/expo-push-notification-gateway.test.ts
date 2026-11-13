@@ -1,4 +1,4 @@
-import { createLoggerStub } from '@src/testing/ports/logger.stub';
+import { createAppLoggerStub } from '@src/testing/ports/app-logger.stub';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { TimeoutError } from 'es-toolkit';
 import { PermissionStatus } from 'expo';
@@ -7,7 +7,6 @@ import * as Notifications from 'expo-notifications';
 import {
   createExpoPushNotificationGateway,
   PUSH_TOKEN_ISSUE_TIMEOUT_MS,
-  registerForegroundNotificationPresentation,
 } from './expo-push-notification-gateway';
 
 jest.mock('expo-notifications', () => ({
@@ -41,7 +40,7 @@ const setNotificationChannelAsync = jest.mocked(Notifications.setNotificationCha
 const setNotificationHandler = jest.mocked(Notifications.setNotificationHandler);
 
 describe('createExpoPushNotificationGateway', () => {
-  const gateway = createExpoPushNotificationGateway(createLoggerStub());
+  const gateway = createExpoPushNotificationGateway(createAppLoggerStub());
 
   afterEach(() => {
     jest.resetAllMocks();
@@ -241,7 +240,7 @@ describe('createExpoPushNotificationGateway', () => {
 
   it('채널을 만들지 못해도 토큰은 받고 실패를 기록한다', async () => {
     // Given
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const gatewayWithLogger = createExpoPushNotificationGateway(logger);
     setNotificationChannelAsync.mockRejectedValue(new Error('channel unavailable'));
     getExpoPushTokenAsync.mockResolvedValue({ type: 'expo', data: 'ExponentPushToken[abc]' });
@@ -285,8 +284,7 @@ function createSdkResponse({
   };
 }
 
-describe('registerForegroundNotificationPresentation', () => {
-  const gateway = createExpoPushNotificationGateway(createLoggerStub());
+describe('createExpoPushNotificationGateway 앞 알림 표시', () => {
   const { notification } = createSdkResponse({ id: 'notification-1' });
 
   afterEach(() => {
@@ -295,7 +293,7 @@ describe('registerForegroundNotificationPresentation', () => {
 
   it('화면이 조용히를 고르면 배너·소리 없이 알림 센터에만 남기고, 판단을 거두면 배너로 돌아간다', async () => {
     // Given
-    registerForegroundNotificationPresentation();
+    const gateway = createExpoPushNotificationGateway(createAppLoggerStub());
     const handler = setNotificationHandler.mock.calls[0]?.[0];
     const decide = jest.fn(() => 'quiet' as const);
 
@@ -323,7 +321,7 @@ describe('registerForegroundNotificationPresentation', () => {
 
   it('화면의 판단이 실패해도 알림을 놓치지 않게 배너로 보인다', async () => {
     // Given
-    registerForegroundNotificationPresentation();
+    const gateway = createExpoPushNotificationGateway(createAppLoggerStub());
     const handler = setNotificationHandler.mock.calls[0]?.[0];
     const stopDeciding = gateway.setForegroundPresentation(() => {
       throw new Error('route unavailable');

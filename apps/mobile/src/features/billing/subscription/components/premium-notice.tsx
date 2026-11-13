@@ -19,11 +19,11 @@ type PremiumNoticeProps = Pick<ComponentProps<typeof Text>, 'className'>;
 
 /** 체험은 끝나기 며칠 전부터, 그 밖의 프리미엄은 이어질 길이 없을 때 하루 안에 끝나면 알린다 */
 export function PremiumNotice({ className }: PremiumNoticeProps) {
-  const { t } = useTranslation('subscription');
+  const { t } = useTranslation(['subscription', 'common']);
   const receipt = useSubscriptionReceipt();
   const toDaysLeftBadge = (daysLeft: number) =>
     match(daysLeft)
-      .with(0, () => t('endingNotice.badgeToday'))
+      .with(0, () => t('common:relativeDay.today'))
       .with(1, () => t('endingNotice.badgeTomorrow'))
       .otherwise((days) => t('endingNotice.badgeDaysLeft', { days }));
 
@@ -48,7 +48,7 @@ export function PremiumNotice({ className }: PremiumNoticeProps) {
       }),
     )
     .with({ variant: 'paid', endingNotice: 'today' }, () => ({
-      badge: t('endingNotice.badgeToday'),
+      badge: t('common:relativeDay.today'),
       message: t('endingNotice.paidToday'),
     }))
     .with({ variant: 'paid', endingNotice: 'tomorrow' }, () => ({
@@ -56,7 +56,7 @@ export function PremiumNotice({ className }: PremiumNoticeProps) {
       message: t('endingNotice.paidTomorrow'),
     }))
     .with({ variant: 'reward', endingNotice: 'today' }, () => ({
-      badge: t('endingNotice.badgeToday'),
+      badge: t('common:relativeDay.today'),
       message: t('endingNotice.today'),
     }))
     .with({ variant: 'reward', endingNotice: 'tomorrow' }, () => ({

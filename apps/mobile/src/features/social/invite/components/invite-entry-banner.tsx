@@ -1,7 +1,7 @@
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { useTranslation } from '@src/shared/i18n';
+import { Trans, useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, InlineAlert, Text, Mascot } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -42,12 +42,11 @@ export function InviteEntryBanner({
       className={className}
       image={<Mascot name="catHi" size={72} />}
       title={
-        <>
-          {t('entry.allDoneTitlePrefix')}{' '}
-          <Text size="b3" weight="bold" className="text-main">
-            {t('entry.allDoneTitleHighlight')}
-          </Text>
-        </>
+        <Trans
+          t={t}
+          i18nKey="entry.allDoneTitle"
+          components={{ highlight: <Text size="b3" weight="bold" className="text-main" /> }}
+        />
       }
       description={t('entry.allDoneDescription')}
       action={

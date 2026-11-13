@@ -1,6 +1,6 @@
 import { PREMIUM_TRIAL_ENDING_NOTICE_DAYS } from '@aido/api/vocabulary';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { useTrack } from '@src/shared/analytics';
+import { useTrackView } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
@@ -38,10 +38,10 @@ import {
 } from '../utils/trial-schedule.view-model';
 
 /** 요금제를 바꿔 일정이 나타나고 사라질 때 아래 내용이 툭 밀리지 않게 짧게 비친다 */
-const TIMELINE_ENTERING = FadeIn.duration(ANIMATION.duration.fast).reduceMotion(
+const TIMELINE_ENTERING = FadeIn.duration(ANIMATION.durationMs.fast).reduceMotion(
   ReduceMotion.System,
 );
-const TIMELINE_EXITING = FadeOut.duration(ANIMATION.duration.fast).reduceMotion(
+const TIMELINE_EXITING = FadeOut.duration(ANIMATION.durationMs.fast).reduceMotion(
   ReduceMotion.System,
 );
 
@@ -54,14 +54,12 @@ interface TrialTimelineProps extends Omit<ComponentProps<typeof VStack>, 'childr
 
 /** 체험 요금제를 골랐을 때 결제까지의 예상 날짜를 도장으로 보여 준다(App Store 3.1.2: 체험 기간·뒤 금액·해지). 실제 날짜는 결제 뒤 서버 영수증이 보여 준다 */
 export function TrialTimeline({ reminder: Reminder, className, ...props }: TrialTimelineProps) {
-  const { t } = useTranslation('subscription');
+  const { t } = useTranslation(['subscription', 'common']);
   const [planId] = useSelectedPlanId();
   const { data: availability } = useSuspenseQuery(useGetOfferingsQueryOptions());
   const { currentLocalDateKey } = useLocalDate();
   const dateFormatContext = useDateFormatContext();
-  const { trackEvent } = useTrack();
   const haptics = useHaptics();
-  const hasTrackedRef = useRef(false);
   const wasVisibleRef = useRef<boolean | null>(null);
   const plan =
     availability.status === 'available'
@@ -70,14 +68,11 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
   const steps = plan == null ? null : toTrialScheduleSteps(plan, currentLocalDateKey);
   const visiblePlanType = steps == null ? null : (plan?.planType ?? null);
 
-  // 요금제를 오가며 다시 보여도 페이월을 본 한 번만 센다
-  useEffect(() => {
-    if (visiblePlanType == null || hasTrackedRef.current) {
-      return;
-    }
-    hasTrackedRef.current = true;
-    trackEvent('trial_timeline_viewed', { plan_type: visiblePlanType });
-  }, [trackEvent, visiblePlanType]);
+  // 요금제를 오가며 다시 보여도 페이월을 본 한 번만 센다. 처음 보인 요금제를 남긴다
+  useTrackView(
+    'trial_timeline_viewed',
+    visiblePlanType == null ? null : { key: 'paywall', params: { plan_type: visiblePlanType } },
+  );
 
   useEffect(() => {
     const isVisible = visiblePlanType != null;
@@ -116,7 +111,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
               hasLineBefore={index > 0}
               hasLineAfter={index < steps.length - 1}
               label={match(step)
-                .with({ kind: 'start' }, () => t('trialTimeline.today'))
+                .with({ kind: 'start' }, () => t('common:relativeDay.today'))
                 .with({ kind: 'reminder' }, { kind: 'charge' }, ({ dateKey }) =>
                   formatDate(dateKey),
                 )

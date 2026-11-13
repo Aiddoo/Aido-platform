@@ -18,6 +18,11 @@ export function toTimeOfDay(time: string): TimeOfDay {
   return { hour: Number(hour), minute: Number(minute) };
 }
 
+/** `toTimeOfDay`의 반대. 서버로 보내는 `HH:mm` */
+export function timeOfDayToHHmm({ hour, minute }: TimeOfDay): string {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
 function toMinutesOfDay({ hour, minute }: TimeOfDay): number {
   return hour * MINUTES_PER_HOUR + minute;
 }

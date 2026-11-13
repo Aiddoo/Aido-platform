@@ -1,9 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import type {
-  TodoCategoriesResult,
-  TodoCategoryDeletionPreview,
-} from '../domains/todo-category.model';
+import type { TodoCategoryDeletionPreview } from '../domains/todo-category-deletion.model';
+import type { TodoCategoriesResult } from '../domains/todo-category.model';
 
 export const TODO_CATEGORY_QUERY_KEYS = {
   all: ['todo-category'] as const,

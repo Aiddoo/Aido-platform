@@ -59,7 +59,7 @@ function withRequest(state: StoreReviewState, at: Instant): StoreReviewState {
 }
 
 function hasEnoughActiveDays(state: Pick<StoreReviewState, 'activeDays'>) {
-  return new Set(state.activeDays).size >= STORE_REVIEW_MIN_ACTIVE_DAYS;
+  return uniq(state.activeDays).length >= STORE_REVIEW_MIN_ACTIVE_DAYS;
 }
 
 function getLastRequestedAt(state: Pick<StoreReviewState, 'requestedAt'>) {

@@ -1,5 +1,6 @@
 import {
   useIdGenerator,
+  useSignOutEpoch,
   useSpeechRecognizer,
   useVoiceNoteDraftRepository,
   useVoiceNoteStorageService,
@@ -46,6 +47,7 @@ export function useVoiceNoteRecording({
   const draftRepository = useVoiceNoteDraftRepository();
   const recordingRepository = useVoiceRecordingRepository();
   const idGenerator = useIdGenerator();
+  const signOutEpoch = useSignOutEpoch();
   const offerOnDeviceModel = useOfferOnDeviceModel({ accountId, entry });
 
   const [seedNote] = useState(() =>
@@ -68,6 +70,7 @@ export function useVoiceNoteRecording({
         draftRepository,
         recordingRepository,
         discard: storage.discard,
+        signOutEpoch,
         // persist는 아래에 선언한 함수지만 녹음 조각이 저장된 뒤에만 불린다
         // oxlint-disable-next-line react/immutability -- 위 이유로 초기화 전에 접근하지 않는다
         onRecordingSaved: () => persist('later'),

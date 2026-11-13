@@ -2,6 +2,7 @@ import type { MutationErrorFeedbackMeta } from '@src/shared/constants/query-meta
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { MutationCache, type MutationMeta } from '@tanstack/react-query';
 
+import { createCacheListeners } from './cache-listeners';
 import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
 
 export interface MutationErrorFeedbackEvent {
@@ -9,10 +10,7 @@ export interface MutationErrorFeedbackEvent {
   feedback: MutationErrorFeedbackMeta;
 }
 
-type MutationErrorFeedbackListener = (event: MutationErrorFeedbackEvent) => void;
-
-/** 캐시가 사라지면 함께 사라지고, 구독을 풀면 Set에서 빠진다 */
-const listenersByCache = new WeakMap<MutationCache, Set<MutationErrorFeedbackListener>>();
+const feedbackListeners = createCacheListeners<MutationCache, MutationErrorFeedbackEvent>();
 
 /** 전역에서 알릴 실패면 그 설정을, 기능이 직접 보이거나 알리지 않는 실패면 null을 돌려준다 */
 function findMutationErrorFeedback(
@@ -40,11 +38,8 @@ export function createAppMutationCache(): MutationCache {
         });
       }
       const feedback = findMutationErrorFeedback(mutation.meta, error);
-      if (feedback == null) {
-        return;
-      }
-      for (const listener of listenersByCache.get(cache) ?? []) {
-        listener({ error, feedback });
+      if (feedback != null) {
+        feedbackListeners.notify(cache, { error, feedback });
       }
     },
   });
@@ -54,12 +49,7 @@ export function createAppMutationCache(): MutationCache {
 /** 해제 함수를 돌려준다. `createAppMutationCache`로 만들지 않은 캐시는 알리지 않는다 */
 export function subscribeMutationErrorFeedback(
   cache: MutationCache,
-  listener: MutationErrorFeedbackListener,
+  listener: (event: MutationErrorFeedbackEvent) => void,
 ): () => void {
-  const listeners = listenersByCache.get(cache) ?? new Set<MutationErrorFeedbackListener>();
-  listenersByCache.set(cache, listeners);
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+  return feedbackListeners.subscribe(cache, listener);
 }

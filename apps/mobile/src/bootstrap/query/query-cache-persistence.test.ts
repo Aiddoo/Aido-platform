@@ -90,6 +90,27 @@ describe('createQueryCacheStorage', () => {
     // Then
     expect(storage.getItem(QUERY_CACHE_STORAGE_KEY)).toBeNull();
   });
+
+  it.each([
+    ['비우면', (storage: ReturnType<typeof createQueryCacheStorage>) => storage.clear()],
+    [
+      '주인이 바뀌면',
+      (storage: ReturnType<typeof createQueryCacheStorage>) => storage.setOwner('user-2'),
+    ],
+  ])('%s 이전 주인이 남긴 다른 키까지 인스턴스를 통째로 비운다', (_case, act) => {
+    // Given
+    const backing = createMemorySyncStorage();
+    const storage = createQueryCacheStorage(backing);
+    storage.setOwner('user-1');
+    storage.setItem(QUERY_CACHE_STORAGE_KEY, '내 캐시');
+    backing.set('aido.query-cache.legacy:user-1', '옛 키로 남은 캐시');
+
+    // When
+    act(storage);
+
+    // Then
+    expect(backing.keys().filter((key) => key.includes('user-1'))).toEqual([]);
+  });
 });
 
 describe('removePlaintextQueryCache', () => {

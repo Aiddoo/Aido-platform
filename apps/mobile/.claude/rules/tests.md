@@ -20,10 +20,10 @@ paths:
 **도구**
 
 - fixture는 `__tests__/{entity}.fixtures.ts`에 `defineFixture(schema, defaults)`로 만든다.
-- 공용 도구는 `src/testing/`(`ports/*.stub.ts`, `render.tsx`, `di.ts`의 `createTestPorts`·`createTestDi`, `query-client.ts`, `timers.ts`)다.
+- 공용 도구는 `src/testing/`(`ports/*.stub.ts`, `render.tsx`, `render-route-hook.tsx`의 `renderAppRoute`, `di.ts`의 `createTestPorts`·`createTestDi({ ports, seeds })`, `query-client.ts`, `timers.ts`)다. 늦게 끝나는 Promise는 `Promise.withResolvers()`다. DI에는 포트와 상태 store만 넣고 Service를 손으로 조립하지 않는다.
 - mock보다 포트 stub이다. 모듈 `jest.mock`은 `shared/infra` 어댑터 테스트의 SDK에만 쓴다. 외부 API를 부르지 않는다.
 - 타이머는 `setupFakeTimersPerTest`만 쓴다. `jest.useFakeTimers`를 직접 부르지 않는다.
 - 금지: 실제 sleep, `Date.now`·`AppState`·`queryClient.invalidateQueries` spy. 시간은 주입한 `now`와 fake timer로 다룬다.
 - 누름 동작은 RNTL 통과 뒤 기기에서도 확인한다.
 
-자세히: [테스트](../../docs/testing.md)
+자세히: [테스트 범위·격리](../../docs/testing.md) · [테스트 도구](../../docs/testing-tools.md)

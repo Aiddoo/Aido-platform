@@ -45,16 +45,14 @@ export function AccountActionButtons() {
       return;
     }
 
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('withdraw.confirmTitle'),
       description: t('withdraw.confirmDescription'),
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('withdraw.confirmAction'),
       confirmColor: 'danger',
+      onConfirm: () => deleteAccount.mutateAsync({}),
     });
-    if (isConfirmed) {
-      deleteAccount.mutate({});
-    }
   };
 
   return (

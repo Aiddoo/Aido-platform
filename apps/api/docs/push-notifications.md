@@ -152,7 +152,7 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 4. 판단(weather Context의 `weather-notification-briefing.domain-service.ts`. 할 일과 겹친 날씨는 날씨 화면 브리핑과 같은 `planWeatherBriefing`이 정하고, 기준값은 `@aido/api/vocabulary`의 `WEATHER_BRIEFING_RULES`): 시간별 강수 확률 50% 이상 = 비, 낮 체감 33°C 이상 = 더위, `THUNDERSTORMS` = 뇌우, 눈·진눈깨비·우박 = 눈, 최저 10°C 이하 = 쌀쌀. 아침은 할 일과 겹친 비·뇌우·눈 → 할 일과 겹친 더위 → 오늘 늦게 오는 비·눈 → 오늘 요약(상태·최고/최저·강수 확률) 순, 저녁은 내일 비·눈이 시작하는 때(새벽·오전·오후·저녁) 또는 내일 요약에 쌀쌀함을 더한다. 시각과 오늘·내일은 알림 시간대(기기), 일별 예보는 위치 시간대 날짜로 찾는다.
 5. 폴백: 캐시·latest 스냅샷까지 없으면 틀린 날씨 대신 "앱에서 확인" 안내(`weather.*.unavailable`)를 보낸다. KMA로 다시 읽지 않는다.
 
-비·뇌우·더위와 겹친 할 일 알림은 `action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12,15&reason=rain|heat" }`를 싣는다. url은 `@aido/api/vocabulary`의 `buildWeatherRescheduleDeepLink`(경로 `WEATHER_RESCHEDULE_DEEP_LINK`, 이유 `WEATHER_RESCHEDULE_REASONS`)로 만든다. 1.13.x 이하 앱은 날씨 알림을 종류로만 이동하므로 url을 무시하고 지금처럼 `/weather`를 연다. 1.14.0 앱은 `notification-destination.ts`가 이 url을 읽어 옮기기 화면을 바로 연다.
+비·뇌우·더위와 겹친 할 일 알림은 `action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12,15&reason=rain|heat" }`를 싣는다. url은 `@aido/api/vocabulary`의 `buildWeatherRescheduleDeepLink`(경로 `WEATHER_RESCHEDULE_DEEP_LINK`, 이유 `WEATHER_RESCHEDULE_REASONS`)로 만든다. 1.13.x 이하 앱은 날씨 알림을 종류로만 이동하므로 url을 무시하고 지금처럼 `/weather`를 연다. 1.14.0 앱은 이 url을 읽어 옮기기 화면을 바로 열고, 1.15.2 앱은 같은 대상을 `navigation`(`WEATHER_RESCHEDULE`)으로 읽는다.
 
 ## 문구와 변형 선택
 

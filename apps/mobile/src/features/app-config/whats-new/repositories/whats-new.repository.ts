@@ -2,7 +2,7 @@ import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-stor
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { type Instant, instantSchema } from '@src/shared/date/instant';
 
-import { WhatsNewPolicy } from '../domains/whats-new.model';
+import { shouldShowReentry } from '../domains/whats-new.model';
 
 const SEEN_KEY_PREFIX = 'aido_feature_discovery_seen_v1';
 const REENTRY_KEY_PREFIX = 'aido_feature_discovery_reentry_v1';
@@ -92,7 +92,7 @@ export function createWhatsNewRepository(
           }
           return (
             key.startsWith(`${REENTRY_KEY_PREFIX}:`) &&
-            !WhatsNewPolicy.shouldShowReentry(parseSavedInstant(storage.get(key)), now)
+            !shouldShowReentry(parseSavedInstant(storage.get(key)), now)
           );
         })
         .forEach((key) => storage.remove(key));

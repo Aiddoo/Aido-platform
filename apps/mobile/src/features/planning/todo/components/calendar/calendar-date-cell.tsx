@@ -5,7 +5,7 @@ import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
 
 import type { DailyCompletionSummary } from '../../domains/daily-completion.model';
-import { type CalendarDayType, DAY_TYPE_TONE } from '../../utils/calendar-day';
+import { type CalendarDayType, DAY_TYPE_TONE } from '../../utils/calendar-day.view-model';
 
 export const CALENDAR_DATE_CELL_HEIGHT = 56;
 const MAX_CATEGORY_INDICATOR_COUNT = 3;
@@ -67,14 +67,14 @@ interface CompletionIndicatorProps {
 }
 
 function CompletionIndicator({ completion }: CompletionIndicatorProps) {
-  if (!completion) {
+  if (completion == null) {
     return null;
   }
   if (completion.isComplete) {
     return <FishIcon width={16} height={12} colorClassName="text-fish" />;
   }
   if (completion.totalTodos > 0) {
-    return <CategoryIndicator colors={completion.categoryColors ?? []} />;
+    return <CategoryIndicator colors={completion.categoryColors} />;
   }
 
   return null;
@@ -90,8 +90,8 @@ function CategoryIndicator({ colors }: CategoryIndicatorProps) {
   if (colors.length <= 1) {
     return (
       <Box
-        className={cn('size-1.5 rounded-2xl', !firstColor && 'bg-gray-5')}
-        style={firstColor ? { backgroundColor: firstColor } : undefined}
+        className={cn('size-1.5 rounded-2xl', firstColor == null && 'bg-gray-5')}
+        style={firstColor == null ? undefined : { backgroundColor: firstColor }}
       />
     );
   }

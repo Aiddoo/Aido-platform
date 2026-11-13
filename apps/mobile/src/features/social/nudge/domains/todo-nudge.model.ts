@@ -68,7 +68,3 @@ export const TodoNudgePolicy = {
   canNudgeTodoOnDate,
   canNudgeTodoInRange,
 } as const;
-
-export const NudgeLimitPolicy = {
-  isLimitReached,
-} as const;

@@ -2,21 +2,22 @@ import '@src/shared/i18n/init';
 import { INQUIRY_CATEGORY } from '@aido/api';
 import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { createHapticsGatewayStub, createHttpClientStub } from '@src/testing/core';
+import { createHapticsGatewayStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import InquiryRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/inquiry';
+import InquiryRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/inquiry';
 import { createInquiryResponseDto } from './inquiry.fixtures';
 
 const CONTENT = '앱에서 할 일 추가 시 오류가 발생합니다.';
 
 async function renderInquiry(httpClient: ReturnType<typeof createHttpClientStub>) {
   await renderScreen(<InquiryRoute />, {
+    di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
     withLocalDate: true,
     withOverlay: true,
-    di: { httpClient, haptics: createHapticsGatewayStub() },
   });
 }
 
@@ -87,6 +88,29 @@ describe('문의 화면', () => {
     expect(httpClient.post).toHaveBeenCalledWith('v1/inquiries', {
       category: INQUIRY_CATEGORY.BUG_REPORT,
       content: CONTENT,
+    });
+  });
+
+  describe('접수 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('접수해 화면이 내려가는 동안 다시 눌러도 문의는 한 번만 보낸다', async () => {
+      // Given
+      httpClient.post.mockResolvedValue(ok(createInquiryResponseDto()));
+      await renderInquiry(httpClient);
+      await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), CONTENT);
+      await waitFor(() => expect(screen.getByTestId('inquiry-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('inquiry-submit'));
+      // 연타 가드(600ms)가 지난 뒤다. 화면은 뒤로 가는 전환이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.back).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(screen.getByTestId('inquiry-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -38,11 +38,11 @@ import { useNotificationCategory } from '../hooks/use-notification-params';
 import { refreshNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
-import type { DateSectionKey } from '../utils/date-section';
 import {
   findRootStackDetailHref,
   type NotificationDestination,
-} from '../utils/notification-destination';
+} from '../utils/notification-destination.view-model';
+import type { DateSectionKey } from '../utils/notification-section.view-model';
 import { getNotificationLabelKey } from '../utils/notification.view-model';
 import { NotificationListRow } from './notification-list-row';
 
@@ -110,7 +110,10 @@ export function NotificationList() {
       }
       ListEmptyComponent={<NotificationList.Empty />}
       ItemSeparatorComponent={() => <Separator className="mx-4" />}
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+      // 화면이 아래 safe area를 빼지 않아 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 행은 유리 밑으로 스크롤된다
+      contentInsetAdjustmentBehavior="automatic"
+      // 빈 안내만 칸을 채운다. 행이 있을 때도 채우면 짧은 목록이 iOS 자동 inset만큼 끌려 올라간 채 머문다
+      contentContainerStyle={{ flexGrow: listItems.length === 0 ? 1 : 0, paddingBottom: 24 }}
     />
   );
 }
@@ -130,8 +133,9 @@ NotificationList.Item = function Item({ notification, href, onOpen }: Notificati
         isUnread={NotificationPolicy.isUnread(notification)}
         testID={`notification-item-${notification.type}`}
         onPress={handlePress}
-        // 받은 응원은 길게 눌러(스크린리더는 동작 메뉴로) 신고한다. 응원은 피드 탭으로 가 Link 행이 아니다
-        onLongPress={reportCheer ?? undefined}
+        // 받은 응원은 길게 눌러(스크린리더는 동작 메뉴로) 신고한다. 응원은 피드 탭으로 가 미리보기가 탭에
+        // params를 남기고 Android에는 Link.Menu가 없어, 상세 route 없는 댓글 행처럼 Link.Menu 대신 길게 누르기다
+        onLongPress={reportCheer}
         accessibilityActions={
           reportCheer == null
             ? undefined
@@ -149,11 +153,18 @@ NotificationList.Item = function Item({ notification, href, onOpen }: Notificati
 
 NotificationList.SectionHeader = function SectionHeader({ section }: { section: DateSectionKey }) {
   const { t } = useTranslation('common');
+  const labelKeys = {
+    today: 'relativeDay.today',
+    yesterday: 'relativeDay.yesterday',
+    thisWeek: 'dateSections.thisWeek',
+    thisMonth: 'dateSections.thisMonth',
+    earlier: 'dateSections.earlier',
+  } as const satisfies Record<DateSectionKey, string>;
 
   return (
     <Box className="bg-white px-4 py-2">
       <Text size="b3" shade={5} weight="semibold">
-        {t(`dateSections.${section}`)}
+        {t(labelKeys[section])}
       </Text>
     </Box>
   );
@@ -200,7 +211,7 @@ NotificationList.Empty = function Empty() {
 function useOpenNotification() {
   const { t } = useTranslation('notification');
   const resolveInboxDestination = useResolveInboxDestination();
-  const openDestination = useOpenNotificationDestination();
+  const openDestination = useOpenNotificationDestination({ openRoute: router.navigate });
   const logger = useLogger();
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
   const { trackEvent } = useTrack();
@@ -258,13 +269,13 @@ function useResolveInboxDestination() {
       : resolveDestination(notification.target);
 }
 
-/** 받은 응원이면 그 메시지를 신고하는 화면을 연다. 응원이 아니면 없다 */
+/** 받은 응원이면 그 메시지를 신고하는 화면을 연다. 응원이 아니면 행에 길게 누르기를 달지 않는다 */
 function useReportCheer({ receivedCheer }: Notification) {
   const { t } = useTranslation('moderation');
   const push = useSingleTap(router.push);
 
   if (receivedCheer == null) {
-    return null;
+    return undefined;
   }
 
   return () => {

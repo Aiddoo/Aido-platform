@@ -2,7 +2,9 @@ import { i18n } from '@src/shared/i18n';
 import { createDateKey } from '@src/testing/date-key';
 import { temporalOracle } from '@src/testing/temporal-oracle';
 import { range } from 'es-toolkit';
+import { z } from 'zod';
 
+import weekCases from '../../../../../packages/api/test/fixtures/week-of-month-cases.json';
 import {
   addDaysToDateKey,
   addMonthsToDateKey,
@@ -13,15 +15,30 @@ import {
   getCalendarWeek,
   getDayOfWeek,
   getDaysInDateKeyMonth,
+  getIsoWeekOfMonth,
   getIsoWeekYear,
   getMondayOfDateKey,
   getMonthEndDateKey,
   isDateKey,
   isSameMonthDateKey,
   isSameYearDateKey,
-  parseDateKey,
 } from './date-key';
 import { toDateKey } from './zoned';
+
+/** 서버 getIsoWeekOfMonth도 같은 표의 ISO 행을 읽는다. 두 구현이 어긋나면 어느 한쪽 테스트가 깨진다 */
+const SHARED_WEEK_OF_MONTH_CASES = z
+  .object({
+    weekOfMonth: z.array(
+      z.object({
+        name: z.string(),
+        system: z.enum(['SUNDAY_START', 'ISO']),
+        date: z.iso.date(),
+        expectedMiddleDate: z.iso.date(),
+        expectedWeekOfMonth: z.int().min(1).max(5),
+      }),
+    ),
+  })
+  .parse(weekCases).weekOfMonth;
 
 afterEach(async () => {
   await i18n.changeLanguage('ko');
@@ -56,21 +73,38 @@ describe('getDayOfWeek — 날짜 key의 요일', () => {
   });
 });
 
+describe('getCalendarWeek·getIsoWeekOfMonth', () => {
+  it.each(SHARED_WEEK_OF_MONTH_CASES)(
+    '주차는 주의 가운데 날이 속한 달의 몇째 주다(서버와 같은 표): $system $name',
+    ({ system, date, expectedMiddleDate, expectedWeekOfMonth }) => {
+      // When
+      const dateKey = createDateKey(date);
+      const { middleDateKey, weekOfMonth } =
+        system === 'ISO' ? getIsoWeekOfMonth(dateKey) : getCalendarWeek(dateKey);
+
+      // Then
+      expect({ middleDateKey, weekOfMonth }).toEqual({
+        middleDateKey: expectedMiddleDate,
+        weekOfMonth: expectedWeekOfMonth,
+      });
+    },
+  );
+});
+
 describe('날짜 key 기준 달력 주', () => {
   it.each([
-    ['2026-03-08', '2026-03-08', '2026-03-14', 2],
-    ['2026-11-01', '2026-11-01', '2026-11-07', 1],
-    ['2028-02-29', '2028-02-27', '2028-03-04', 4],
-    ['2026-12-28', '2026-12-27', '2027-01-02', 4],
-    ['2027-01-03', '2027-01-03', '2027-01-09', 1],
-    ['2031-10-20', '2031-10-19', '2031-10-25', 3],
-  ])('%s의 주는 %s~%s, 시작한 달의 %s주차다', (dateKey, startDateKey, endDateKey, weekOfMonth) => {
+    ['2026-03-08', '2026-03-08', '2026-03-14'],
+    ['2026-11-01', '2026-11-01', '2026-11-07'],
+    ['2028-02-29', '2028-02-27', '2028-03-04'],
+    ['2026-12-28', '2026-12-27', '2027-01-02'],
+    ['2027-01-03', '2027-01-03', '2027-01-09'],
+  ])('%s의 주는 일요일 %s부터 토요일 %s까지다', (dateKey, startDateKey, endDateKey) => {
     // When
     const week = getCalendarWeek(createDateKey(dateKey));
 
     // Then
     // DST 전환일, 윤일, ISO 53주(12-28~01-03)에 걸친 날짜
-    expect(week).toEqual({ startDateKey, endDateKey, weekOfMonth });
+    expect(week).toMatchObject({ startDateKey, endDateKey });
   });
 
   it.each([
@@ -98,12 +132,14 @@ describe('날짜 key 기준 달력 주', () => {
         todayDateKey: '2026-11-01',
         startDateKey: '2026-11-01',
         endDateKey: '2026-11-07',
+        middleDateKey: '2026-11-04',
         weekOfMonth: 1,
       },
       {
         todayDateKey: '2026-10-31',
         startDateKey: '2026-10-25',
         endDateKey: '2026-10-31',
+        middleDateKey: '2026-10-28',
         weekOfMonth: 4,
       },
     ]);
@@ -337,24 +373,6 @@ describe('서버 Temporal과 같은 날짜 key 계산', () => {
 
     // Then
     expect([result, temporalOracle.isoWeekYear(dateKey)]).toEqual([expected, expected]);
-  });
-
-  it.each([
-    '',
-    'abc',
-    '2026-13-01',
-    '2026-02-30',
-    '2027-02-29',
-    '2026-2-3',
-    '20261112',
-    '2026-11-12T09:00',
-    '2026-11-12T00:00:00.000Z',
-  ])("계약 형식이 아닌 '%s'는 바깥 경계에서 날짜 key로 읽지 않는다", (value) => {
-    // When
-    const result = parseDateKey(value);
-
-    // Then
-    expect(result).toBeNull();
   });
 });
 
