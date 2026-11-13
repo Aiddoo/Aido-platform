@@ -1,8 +1,8 @@
 import request from "supertest";
 import { vi } from "vitest";
 
-import { AppReleaseReaderPort } from "#api/modules/app-config/app-versions/application/ports/app-release.reader.port";
-import { FeatureDiscoveryCampaignReaderPort } from "#api/modules/app-config/feature-discovery/application/ports/feature-discovery-campaign.reader.port";
+import { AppReleaseRepositoryPort } from "#api/modules/app-config/app-versions/application/ports/app-release.repository.port";
+import { FeatureDiscoveryCampaignRepositoryPort } from "#api/modules/app-config/feature-discovery/application/ports/feature-discovery-campaign.repository.port";
 
 import {
   releasedAppVersionResponseSchema,
@@ -56,7 +56,9 @@ describe("출시 앱이 strict로 읽는 app-config 응답 (E2E)", () => {
 
   it("꺼진 앱 버전 응답도 1.10.0 이후 출시 앱이 읽는다", async () => {
     // Given
-    vi.spyOn(ctx.module.get(AppReleaseReaderPort), "listLatestReleases").mockReturnValueOnce([]);
+    vi.spyOn(ctx.module.get(AppReleaseRepositoryPort), "listLatestReleases").mockReturnValueOnce(
+      [],
+    );
 
     // When
     const response = await server().get("/v1/app-config/app-version").expect(200);
@@ -88,7 +90,7 @@ describe("출시 앱이 strict로 읽는 app-config 응답 (E2E)", () => {
   it("꺼진 기능 발견 응답도 1.8.0 이후 출시 앱이 읽는다", async () => {
     // Given
     vi.spyOn(
-      ctx.module.get(FeatureDiscoveryCampaignReaderPort),
+      ctx.module.get(FeatureDiscoveryCampaignRepositoryPort),
       "findActiveCampaign",
     ).mockReturnValueOnce(null);
 

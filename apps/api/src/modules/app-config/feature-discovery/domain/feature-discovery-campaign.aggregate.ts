@@ -1,6 +1,6 @@
-import { Entity } from "#api/shared/domain/model/entity";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { AppVersion } from "../../shared/app-version.vo.js";
+import { AppVersion } from "../../shared/domain/app-version.vo.js";
 import { FeatureDiscoveryCampaignId } from "./feature-discovery-campaign-id.vo.js";
 
 export interface FeatureDiscoveryCampaignPrimitives {
@@ -17,7 +17,7 @@ interface FeatureDiscoveryCampaignProps {
 }
 
 // 운영 kill switch로 켠 기능 소개 캠페인. 문구와 사용자 데이터는 앱이 갖고 서버는 메타데이터만 가진다
-export class FeatureDiscoveryCampaign extends Entity<
+export class FeatureDiscoveryCampaign extends AggregateRoot<
   FeatureDiscoveryCampaignId,
   FeatureDiscoveryCampaignProps
 > {
@@ -42,14 +42,6 @@ export class FeatureDiscoveryCampaign extends Entity<
 
   get autoOpen(): boolean {
     return this.props.autoOpen;
-  }
-
-  // 최소 버전보다 낮거나 SemVer가 아닌 앱에는 소개를 보이지 않는다
-  isAvailableTo(clientVersion: string | null): boolean {
-    if (clientVersion == null) {
-      return false;
-    }
-    return AppVersion.reconstitute(clientVersion).isAtLeast(this.props.minAppVersion);
   }
 
   toPrimitives(): FeatureDiscoveryCampaignPrimitives {

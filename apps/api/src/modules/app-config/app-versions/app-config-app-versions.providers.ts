@@ -2,11 +2,11 @@ import type { Provider } from "@nestjs/common";
 
 import { provideUseCase } from "#api/platform/di/provide-use-case";
 
-import { AppReleaseReaderPort } from "./application/ports/app-release.reader.port.js";
-import { GetAppVersionUseCase } from "./application/use-cases/get-app-version.use-case.js";
-import { EnvironmentAppReleaseAdapter } from "./infrastructure/adapters/environment-app-release.adapter.js";
+import { AppReleaseRepositoryPort } from "./application/ports/app-release.repository.port.js";
+import { ListAppReleasesUseCase } from "./application/use-cases/list-app-releases.use-case.js";
+import { EnvironmentAppReleaseRepository } from "./infrastructure/persistence/environment-app-release.repository.js";
 
 export const APP_CONFIG_APP_VERSIONS_PROVIDERS = [
-  { provide: AppReleaseReaderPort, useClass: EnvironmentAppReleaseAdapter },
-  provideUseCase(GetAppVersionUseCase, { appReleaseReader: AppReleaseReaderPort }),
+  { provide: AppReleaseRepositoryPort, useClass: EnvironmentAppReleaseRepository },
+  provideUseCase(ListAppReleasesUseCase, { appReleaseRepository: AppReleaseRepositoryPort }),
 ] satisfies Provider[];
