@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { uniq } from "es-toolkit";
 import { z } from "zod";
 
@@ -25,7 +25,6 @@ import type {
 import type { PushDeliveryPublication } from "../../application/read-models/push-delivery.read-model.js";
 import { toAttemptOutcome } from "./push-delivery-attempt.mapper.js";
 import {
-  lockPublicationGenerations,
   matchesPublicationGeneration,
   type OutboxStatus,
 } from "./push-outbox-generation.mapper.js";
@@ -75,7 +74,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
     if (input.publications.length === 0) {
       return [];
     }
-    await lockPublicationGenerations(this.#db, input.publications, CLAIMED_OUTBOX_STATUSES);
+    await this.#lockClaimedGenerations(input.publications);
     const values = input.publications.map(
       (publication) =>
         sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
@@ -684,6 +683,21 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
     );
   }
 
+  /** claim과 같은 (availableAt, dispatchId) 순서로 잠가 동시 정리 사이의 deadlock을 막는다. */
+  async #lockClaimedGenerations(publications: readonly PushDeliveryPublication[]): Promise<void> {
+    await this.#db
+      .select({ dispatchId: pushDispatchOutbox.dispatchId })
+      .from(pushDispatchOutbox)
+      .where(
+        and(
+          matchesPublicationGeneration(publications),
+          inArray(pushDispatchOutbox.status, [...CLAIMED_OUTBOX_STATUSES]),
+        ),
+      )
+      .orderBy(asc(pushDispatchOutbox.availableAt), asc(pushDispatchOutbox.dispatchId))
+      .for("update");
+  }
+
   async #markOutboxesTerminal(publications: readonly PushDeliveryPublication[]): Promise<void> {
     if (publications.length === 0) {
       return;
@@ -724,7 +738,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
     if (input.publications.length === 0) {
       return 0;
     }
-    await lockPublicationGenerations(this.#db, input.publications, CLAIMED_OUTBOX_STATUSES);
+    await this.#lockClaimedGenerations(input.publications);
     // dispatch가 아직 PENDING인 세대만 다시 연다. 이미 claim된 dispatch의 outbox를 되돌리지 않는다.
     const reopened = await this.#db
       .update(pushDispatchOutbox)

@@ -1,7 +1,5 @@
-import type { TransactionHost } from "@nestjs-cls/transactional";
-import { and, asc, eq, inArray, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 
-import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushDispatchOutbox, pushDispatchOutboxStatus } from "#api/platform/database/schema/index";
 
 import type { PushDeliveryPublication } from "../../application/read-models/push-delivery.read-model.js";
@@ -18,23 +16,4 @@ export function matchesPublicationGeneration(publications: readonly PushDelivery
       ),
     ),
   );
-}
-
-/** claim과 같은 (availableAt, dispatchId) 순서로 잠가 동시 정리 사이의 deadlock을 막는다. */
-export async function lockPublicationGenerations(
-  db: TransactionHost<DrizzleTransactionalAdapter>["tx"],
-  publications: readonly PushDeliveryPublication[],
-  statuses: readonly OutboxStatus[],
-): Promise<void> {
-  await db
-    .select({ dispatchId: pushDispatchOutbox.dispatchId })
-    .from(pushDispatchOutbox)
-    .where(
-      and(
-        matchesPublicationGeneration(publications),
-        inArray(pushDispatchOutbox.status, [...statuses]),
-      ),
-    )
-    .orderBy(asc(pushDispatchOutbox.availableAt), asc(pushDispatchOutbox.dispatchId))
-    .for("update");
 }

@@ -20,10 +20,7 @@ import type {
   PushDeliveryPublication,
 } from "../../application/read-models/push-delivery.read-model.js";
 import { pushDeliveryLaneOf } from "../../domain/push-delivery-lane.domain-service.js";
-import {
-  lockPublicationGenerations,
-  matchesPublicationGeneration,
-} from "./push-outbox-generation.mapper.js";
+import { matchesPublicationGeneration } from "./push-outbox-generation.mapper.js";
 
 const candidate = alias(pushDispatchOutbox, "candidate");
 
@@ -69,7 +66,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     if (publications.length === 0) {
       return 0;
     }
-    await lockPublicationGenerations(this.#db, publications, ["PROCESSING"]);
+    await this.#lockProcessingGenerations(publications);
     const updated = await this.#db
       .update(pushDispatchOutbox)
       .set({
@@ -88,7 +85,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     if (input.publications.length === 0) {
       return 0;
     }
-    await lockPublicationGenerations(this.#db, input.publications, ["PROCESSING"]);
+    await this.#lockProcessingGenerations(input.publications);
     const updated = await this.#db
       .update(pushDispatchOutbox)
       .set({
@@ -102,6 +99,18 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
       .where(this.#processingGenerations(input.publications))
       .returning({ dispatchId: pushDispatchOutbox.dispatchId });
     return updated.length;
+  }
+
+  /** claim과 같은 (availableAt, dispatchId) 순서로 잠가 동시 정리 사이의 deadlock을 막는다. */
+  async #lockProcessingGenerations(
+    publications: readonly PushDeliveryPublication[],
+  ): Promise<void> {
+    await this.#db
+      .select({ dispatchId: pushDispatchOutbox.dispatchId })
+      .from(pushDispatchOutbox)
+      .where(this.#processingGenerations(publications))
+      .orderBy(asc(pushDispatchOutbox.availableAt), asc(pushDispatchOutbox.dispatchId))
+      .for("update");
   }
 
   /** 발행 세대와 PROCESSING 상태를 UPDATE 술어에 남겨 다른 worker가 재claim한 행을 덮어쓰지 않는다. */
