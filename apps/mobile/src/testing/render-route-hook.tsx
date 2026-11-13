@@ -1,8 +1,18 @@
+import { ThemeProvider } from '@src/shared/providers/theme-provider';
+import type { QueryClient } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 import { router, Stack } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 import type { ComponentType, PropsWithChildren } from 'react';
 import { Fragment } from 'react';
+
+import type { TestDi } from './di';
+import { createTestProviders, type TestProviderOptions } from './render';
+
+// expo-router 시험 도구가 불릴 때 expo-linking을 다시 mock해 jest.setup의 `useLinkingURL` mock이 빠진다. 링크를 정하는 테스트가 쓰도록 다시 붙인다
+Object.assign(jest.requireMock<Record<string, unknown>>('expo-linking'), {
+  useLinkingURL: jest.fn(() => null),
+});
 
 function EmptyScreen() {
   return null;
@@ -67,13 +77,52 @@ export async function renderRouteHook<T>(
   return {
     hook,
     /** 값을 지우면 라우터 안에는 `undefined`가 남으므로, 밖에서 보는 URL처럼 그 키를 뺀다 */
-    url() {
+    url: () => {
       const [path, query = ''] = rendered.getPathnameWithParams().split('?');
       const pairs = query.split('&').filter((pair) => pair !== '' && !pair.endsWith('=undefined'));
       return pairs.length === 0 ? path : `${path}?${pairs.join('&')}`;
     },
-    run(step: (current: T) => void) {
+    run: (step: (current: T) => void) => {
       return act(async () => step(hook()));
     },
   };
+}
+
+type RenderAppRouteResult = Awaited<ReturnType<typeof renderRouter>> & {
+  queryClient: QueryClient;
+  di: TestDi;
+};
+
+/**
+ * Provider 없이 route 파일 표만 진짜 Expo Router에 올린다. 루트 `_layout`이 앱 Provider 트리(`AppProviders`)를
+ * 그 자체로 그려 그 트리를 시험할 때 쓴다. 화면·레이아웃 테스트는 `renderAppRoute`다
+ */
+export function renderRoutes(routes: Parameters<typeof renderRouter>[0], { url }: { url: string }) {
+  return renderRouter(routes, { initialUrl: url });
+}
+
+interface RenderAppRouteOptions extends TestProviderOptions {
+  /** 처음 여는 URL */
+  url: string;
+}
+
+/**
+ * 진짜 Expo Router에 route 파일 표를 올리고 `renderScreen`과 같은 Provider(DI·조회 캐시·UI)와
+ * 레이아웃이 읽는 테마를 둔다. 쓰는 테스트 파일은 `jest.unmock('expo-router')`를 부른다
+ */
+export async function renderAppRoute(
+  routes: Parameters<typeof renderRouter>[0],
+  { url, ...options }: RenderAppRouteOptions,
+): Promise<RenderAppRouteResult> {
+  const { TestProviders, di } = createTestProviders(options);
+  function AppRouteProviders({ children }: PropsWithChildren) {
+    return (
+      <TestProviders>
+        <ThemeProvider syncStorage={di.syncStorage}>{children}</ThemeProvider>
+      </TestProviders>
+    );
+  }
+
+  const rendered = await renderRouter(routes, { initialUrl: url, wrapper: AppRouteProviders });
+  return Object.assign(rendered, { queryClient: di.queryClient, di });
 }

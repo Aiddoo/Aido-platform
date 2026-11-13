@@ -1,10 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
+import { invalidCredentials, unsupportedOAuthProvider } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
 import type { OAuthIdentityProviderRegistryPort } from "../ports/oauth-identity-provider.port.js";
@@ -50,10 +49,7 @@ export class CompleteOAuthAuthorizationUseCase {
     const { provider, code, state, metadata } = input;
     const strategy = this.#dependencies.registry.get(provider);
     if (strategy == null) {
-      throw new ApplicationException(ErrorCode.SOCIAL_0204, {
-        provider,
-        reason: `Unsupported provider: ${provider}`,
-      });
+      throw unsupportedOAuthProvider(provider);
     }
     const authorization = await this.#dependencies.oauthStateRepository.findByState(
       state,
@@ -61,13 +57,13 @@ export class CompleteOAuthAuthorizationUseCase {
     );
     if (authorization == null) {
       this.#dependencies.logger.warn({ event: AuthLogEvent.OAUTH_STATE_REJECTED });
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
     const redirectUri =
       authorization.redirectUri === "" ? "aido://auth/callback" : authorization.redirectUri;
     const exchanged = await strategy.exchangeCode(code, state);
     if (exchanged == null) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
     if (authorization.mode === "link") {
       const profile = await strategy.verifyToken(exchanged.token);

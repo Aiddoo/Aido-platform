@@ -1,10 +1,13 @@
 import { NUDGE_REPLY_LABEL_KEYS } from '@src/features/social/nudge/constants/nudge-interaction-labels';
 import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import type { NudgeInteraction } from '@src/features/social/nudge/domains/nudge-interaction.model';
-import { isSentNudgeListDisabledError } from '@src/features/social/nudge/domains/todo-nudge.error';
+import { isNudgeUnavailableError } from '@src/features/social/nudge/domains/todo-nudge.error';
+import { refreshNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
+import { selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
@@ -15,20 +18,37 @@ import {
   Result,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { type Href, router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { toDateSectionedListItems } from '../utils/date-section';
+import { toDateSectionedListItems } from '../utils/notification-section.view-model';
+import { NotificationList } from './notification-list';
 import { NotificationListRow } from './notification-list-row';
 
 export function SentNudgeList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
-    useSuspenseInfiniteQuery(useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }));
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
-  const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
-  const [isRefreshing, handleRefresh] = useRefresh(refetch);
+  const {
+    data: listItems,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useSuspenseInfiniteQuery({
+    ...useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }),
+    // 날짜가 바뀌면 다시 받지 않고 구역만 다시 나눈다
+    select: (infinitePages) =>
+      toDateSectionedListItems(
+        selectPageItems(infinitePages),
+        currentLocalDateKey,
+        currentTimeZone,
+      ),
+  });
+  const queryClient = useQueryClient();
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshNudges(queryClient));
+  // 알림 행과 같이 좁은 화면에서만 길게 눌러 미리본다
+  const hasPreview = useWindowSizeClass() === 'compact';
 
   return (
     <InfiniteList
@@ -42,9 +62,11 @@ export function SentNudgeList() {
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
-            <NotificationListRow.SectionHeader section={section} />
+            <NotificationList.SectionHeader section={section} />
           ))
-          .with({ type: 'item' }, ({ entry }) => <SentNudgeList.Item nudge={entry} />)
+          .with({ type: 'item' }, ({ entry }) => (
+            <SentNudgeList.Item nudge={entry} hasPreview={hasPreview} />
+          ))
           .exhaustive()
       }
       getItemType={(item) => item.type}
@@ -56,16 +78,56 @@ export function SentNudgeList() {
       }
       ListEmptyComponent={<SentNudgeList.Empty />}
       ItemSeparatorComponent={() => <Separator className="mx-4" />}
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+      // 화면이 아래 safe area를 빼지 않아 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 행은 유리 밑으로 스크롤된다
+      contentInsetAdjustmentBehavior="automatic"
+      // 빈 안내만 칸을 채운다. 행이 있을 때도 채우면 짧은 목록이 iOS 자동 inset만큼 끌려 올라간 채 머문다
+      contentContainerStyle={{ flexGrow: listItems.length === 0 ? 1 : 0, paddingBottom: 24 }}
     />
   );
 }
 
-SentNudgeList.Loading = NotificationListRow.Loading;
+SentNudgeList.Item = function Item({
+  nudge,
+  hasPreview,
+}: {
+  nudge: NudgeInteraction;
+  hasPreview: boolean;
+}) {
+  const { t } = useTranslation('todo');
+  const detailHref: Href = { pathname: '/nudges/[nudgeId]', params: { nudgeId: nudge.id } };
+  const openDetail = useSingleTap(() => router.navigate(detailHref));
+  const status = match(NudgeInteractionPolicy.getNudgeInteractionStatus(nudge))
+    .with('UNAVAILABLE', () => t('interaction.unavailable'))
+    .with('THANKED', () => t('interaction.thanked'))
+    .with('COMPLETED', () => t('interaction.completed'))
+    .with('REPLIED', () =>
+      nudge.replyKind == null
+        ? ''
+        : t('interaction.replyStatus', { reply: t(NUDGE_REPLY_LABEL_KEYS[nudge.replyKind]) }),
+    )
+    .with('WAITING', () => t('interaction.waiting'))
+    .exhaustive();
+
+  return (
+    <NotificationListRow.Link href={hasPreview ? detailHref : null}>
+      <NotificationListRow
+        label={nudge.receiverName}
+        title={nudge.todoTitle ?? t('interaction.unavailableTodo')}
+        body={status}
+        createdAt={nudge.createdAt}
+        onPress={openDetail}
+      />
+    </NotificationListRow.Link>
+  );
+};
+
+SentNudgeList.Loading = NotificationList.Loading;
 
 SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
-  const isListDisabled = isSentNudgeListDisabledError(error);
+  // 목록 API의 NUDGE_1105·1111은 꺼짐 뜻뿐이다. 1105도 받아 1.15.2 서버가 먼저 나가지 않았거나 되돌려져도 꺼진 상태로 보인다.
+  // 1105 수용은 서버 롤백 바닥이 1.15.2가 된 뒤 1.16.0에서 지운다(compatibility.md)
+  const isListDisabled = isNudgeUnavailableError(error);
 
   return (
     <VStack flex={1} p={24}>
@@ -86,33 +148,5 @@ SentNudgeList.Empty = function Empty() {
     <VStack flex={1} p={24}>
       <Result icon={<NotificationIllustration />} title={t('sentNudges.empty')} />
     </VStack>
-  );
-};
-
-SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
-  const { t } = useTranslation('todo');
-  const openDetail = useSingleTap(() =>
-    router.navigate({ pathname: '/nudges/[nudgeId]', params: { nudgeId: nudge.id } }),
-  );
-  const status = match(NudgeInteractionPolicy.getNudgeInteractionStatus(nudge))
-    .with('UNAVAILABLE', () => t('interaction.unavailable'))
-    .with('THANKED', () => t('interaction.thanked'))
-    .with('COMPLETED', () => t('interaction.completed'))
-    .with('REPLIED', () =>
-      nudge.replyKind == null
-        ? ''
-        : t('interaction.replyStatus', { reply: t(NUDGE_REPLY_LABEL_KEYS[nudge.replyKind]) }),
-    )
-    .with('WAITING', () => t('interaction.waiting'))
-    .exhaustive();
-
-  return (
-    <NotificationListRow
-      label={nudge.receiverName}
-      title={nudge.todoTitle ?? t('interaction.unavailableTodo')}
-      body={status}
-      createdAt={nudge.createdAt}
-      onPress={openDetail}
-    />
   );
 };

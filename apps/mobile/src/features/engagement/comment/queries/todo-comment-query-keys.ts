@@ -1,10 +1,7 @@
 import type { TodoCommentSort } from '@aido/api/vocabulary';
 import { queryOptions } from '@tanstack/react-query';
 
-import type {
-  TodoCommentReplyPages,
-  TodoCommentThreadPages,
-} from '../utils/todo-comment-cache-pages';
+import type { TodoCommentReplyPages, TodoCommentThreadPages } from './todo-comment-pages-cache';
 
 export const TODO_COMMENT_QUERY_KEYS = {
   all: ['todo-comment'] as const,

@@ -1,18 +1,16 @@
 import { subscribeNotificationsChanged } from '@src/core/events/notifications-changed';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import type { NotificationType } from '@src/features/notification/domains/notification.model';
-import { useForegroundNotificationListener } from '@src/features/notification/hooks/use-foreground-notification-listener';
-import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
 import { useForegroundPushPresentation } from '@src/features/notification/hooks/use-foreground-push-presentation';
+import { useForegroundPushSync } from '@src/features/notification/hooks/use-foreground-push-sync';
 import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-notification-badge-sync';
-import { usePushDeviceReleaseFlush } from '@src/features/notification/hooks/use-push-device-release-flush';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
 import { useRegisterMarketingNotificationCategory } from '@src/features/notification/hooks/use-register-marketing-notification-category';
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
 import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { type PropsWithChildren, useCallback, useEffect, useReducer } from 'react';
 
 import { invalidateOnNotificationReceived } from '../query/notification-received-invalidation';
@@ -25,17 +23,11 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     (type: NotificationType) => invalidateOnNotificationReceived(queryClient, type),
     [queryClient],
   );
-  const handleForegroundNotification = useForegroundNotificationSync({
-    isAuthenticated,
-    invalidateByType,
-  });
-  const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
-  const accountId = isAuthenticated ? (me?.id ?? null) : null;
+  const accountId = useMyAccountId({ isEnabled: isAuthenticated });
   const { currentTimeZone } = useLocalDate();
   const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);
 
-  useForegroundPushPresentation();
-  useForegroundNotificationListener(handleForegroundNotification);
+  useForegroundPushSync({ authStatus: status, invalidateByType });
   useEffect(
     () => subscribeNotificationsChanged(() => invalidateNotifications(queryClient)),
     [queryClient],
@@ -46,9 +38,20 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     deviceTimeZone: currentTimeZone,
     onReported: markReported,
   });
-  usePushDeviceReleaseFlush(status);
   useTimezoneChangeNotice({ accountId, reportCount });
-  useNotificationBadgeSync(status);
+  useNotificationBadgeSync({ authStatus: status });
 
-  return children;
+  return (
+    <>
+      <ForegroundPushPresentation />
+      {children}
+    </>
+  );
+}
+
+/** 지금 경로와 params를 읽어 URL이 바뀔 때마다 다시 그려지므로 Provider와 나눈 null 자식이다 */
+function ForegroundPushPresentation() {
+  useForegroundPushPresentation();
+
+  return null;
 }

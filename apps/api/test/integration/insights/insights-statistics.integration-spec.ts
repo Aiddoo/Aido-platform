@@ -199,7 +199,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
       achievedAt: AT_INSTANT,
     });
   });
-  it("주간 목록은 summary와 함께 두 번, cursor가 있으면 기준 행 조회까지 세 번 조회한다", async () => {
+  it("주간 목록은 summary·저장 시간대와 함께 세 번, 시간대가 캐시된 뒤 cursor가 있으면 기준 행까지 세 번 조회한다", async () => {
     // Given
     await weekly.saveAll([snapshot(1), snapshot(2), snapshot(3)]);
     const useCase = context.module.get(ListWeeklyAchievementsUseCase);
@@ -213,7 +213,8 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     );
 
     // Then
-    expect(first.count).toBe(2);
+    // 라벨의 올해를 정할 저장 시간대는 설정 캐시를 거쳐 처음 한 번만 읽는다
+    expect(first.count).toBe(3);
     expect(first.result.page.items.map((row) => row.isoWeek.week)).toEqual([3, 2]);
     expect(first.result.summary.totalWeeks).toBe(3);
     expect(next.count).toBe(3);
@@ -271,9 +272,9 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     const get = context.module.get(GetWeeklyAchievementUseCase);
 
     // When
-    const found = await get.execute({ userId, year: 2027, week: 1 });
-    const ko = toWeeklyAchievementResponse(found, "ko");
-    const en = toWeeklyAchievementResponse(found, "en");
+    const { achievement: found, localToday } = await get.execute({ userId, year: 2027, week: 1 });
+    const ko = toWeeklyAchievementResponse(found, "ko", localToday);
+    const en = toWeeklyAchievementResponse(found, "en", localToday);
 
     // Then
     expect(ko.achievedAt).toBe(AT.toISOString());

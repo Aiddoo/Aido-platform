@@ -1,3 +1,4 @@
+import { MemoIdempotencyKeyTakenError } from "#api/modules/notes/memos/application/memos.errors";
 import { MemoRepositoryPort } from "#api/modules/notes/memos/application/ports/memo.repository.port";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
 import type { SortOrderShift } from "#api/modules/notes/memos/domain/memo-ordering.domain-service";
@@ -42,6 +43,15 @@ export class InMemoryMemoRepository extends MemoRepositoryPort {
   async findByIdAndUserId(memoId: MemoId, userId: UserId): Promise<Memo | null> {
     const memo = this.#memos.get(memoId.value);
     return memo != null && memo.userId.equals(userId) ? copyOf(memo) : null;
+  }
+
+  async findByIdempotencyKey(userId: UserId, idempotencyKey: string): Promise<Memo | null> {
+    const memo = [...this.#memos.values()].find(
+      (candidate) =>
+        candidate.userId.equals(userId) &&
+        candidate.toPrimitives().idempotencyKey === idempotencyKey,
+    );
+    return memo == null ? null : copyOf(memo);
   }
 
   async listByUserId(params: {
@@ -89,6 +99,19 @@ export class InMemoryMemoRepository extends MemoRepositoryPort {
   }
 
   async save(memo: Memo): Promise<void> {
+    // Drizzle의 (userId, idempotencyKey) 부분 unique 제약과 같다
+    const { idempotencyKey } = memo.toPrimitives();
+    const isKeyTaken =
+      idempotencyKey != null &&
+      [...this.#memos.values()].some(
+        (other) =>
+          !other.id.equals(memo.id) &&
+          other.userId.equals(memo.userId) &&
+          other.toPrimitives().idempotencyKey === idempotencyKey,
+      );
+    if (isKeyTaken) {
+      throw new MemoIdempotencyKeyTakenError();
+    }
     this.#memos.set(memo.id.value, copyOf(memo));
   }
 

@@ -3,7 +3,6 @@ import type { PlanType } from '@src/shared/domains/plan-type.model';
 import { match, P } from 'ts-pattern';
 
 import {
-  type SubscriptionReceiptRow,
   type SubscriptionReceiptViewModel,
   toReceiptDateLabel,
 } from './subscription-receipt.view-model';
@@ -31,28 +30,48 @@ interface PlanSummary {
   note: PlanSummaryNote | null;
 }
 
-function findPlanType(rows: readonly SubscriptionReceiptRow[]) {
-  return match(rows.find((row) => row.type === 'plan'))
-    .with({ type: 'plan' }, ({ planType }) => planType)
+function findPlanType(receipt: SubscriptionReceiptViewModel) {
+  return match(receipt)
+    .with({ variant: 'paid', details: P.nonNullable }, ({ details }) => details.planType)
     .otherwise(() => null);
 }
 
 /** 영수증 줄 가운데 다음에 일어날 일 하나. 결제일이 먼저고 없으면 끝나는 날이다 */
-function findPeriod(rows: readonly SubscriptionReceiptRow[]): PlanSummaryPeriod | null {
-  for (const row of rows) {
-    const period = match(row)
-      .returnType<PlanSummaryPeriod | null>()
-      .with({ type: 'renewalPending' }, () => ({ type: 'renewalPending' }))
-      .with({ type: 'nextBillingDate' }, ({ date }) => ({ type: 'nextBilling', date }))
-      .with({ type: 'firstBillingDate' }, ({ date }) => ({ type: 'firstBilling', date }))
-      .with({ type: 'subscriptionEndsOn' }, ({ date }) => ({ type: 'endsOn', date }))
-      .with({ type: 'rewardPeriod' }, ({ endsAt }) => ({ type: 'endsOn', date: endsAt }))
-      .otherwise(() => null);
-    if (period != null) {
-      return period;
-    }
-  }
-  return null;
+function findPeriod(receipt: SubscriptionReceiptViewModel): PlanSummaryPeriod | null {
+  return match(receipt)
+    .returnType<PlanSummaryPeriod | null>()
+    .with({ variant: 'paid', details: { billing: { type: 'renewalPending' } } }, () => ({
+      type: 'renewalPending',
+    }))
+    .with(
+      { variant: 'paid', details: { billing: { type: 'nextBillingDate' } } },
+      ({ details }) => ({
+        type: 'nextBilling',
+        date: details.billing.date,
+      }),
+    )
+    .with(
+      { variant: 'paid', details: { billing: { type: 'subscriptionEndsOn' } } },
+      ({ details }) => ({
+        type: 'endsOn',
+        date: details.billing.date,
+      }),
+    )
+    .with({ variant: 'trial', details: { billing: { type: 'renewalPending' } } }, () => ({
+      type: 'renewalPending',
+    }))
+    .with(
+      { variant: 'trial', details: { billing: { type: 'firstBillingDate' } } },
+      ({ details }) => ({
+        type: 'firstBilling',
+        date: details.billing.date,
+      }),
+    )
+    .with({ variant: 'reward', details: P.nonNullable }, ({ details }) => ({
+      type: 'endsOn',
+      date: details.periodEndsAt,
+    }))
+    .otherwise(() => null);
 }
 
 /** 마이 탭 요금제 요약. 새 규칙 없이 영수증 view-model 결과에서 제목·다음 날짜·보상 안내만 고른다 */
@@ -60,16 +79,21 @@ export function toPlanSummary(receipt: SubscriptionReceiptViewModel): PlanSummar
   return {
     headline: match(receipt.variant)
       .returnType<PlanSummaryHeadline>()
-      .with('paid', () => ({ type: 'subscription', planType: findPlanType(receipt.rows) }))
+      .with('paid', () => ({ type: 'subscription', planType: findPlanType(receipt) }))
       .with('trial', () => ({ type: 'trial' }))
       .with('reward', () => ({ type: 'reward' }))
       .with('admin', () => ({ type: 'admin' }))
       .exhaustive(),
     dateLabel: toReceiptDateLabel(receipt.variant),
-    period: findPeriod(receipt.rows),
+    period: findPeriod(receipt),
     note: match(receipt.footnote)
       .returnType<PlanSummaryNote | null>()
       .with({ type: P.union('rewardStartsAfterSubscription', 'rewardStartsOn') }, (note) => note)
       .otherwise(() => null),
   };
+}
+
+/** 서버가 한도보다 많이 센 기록이 와도 한도를 넘는 숫자는 보여 주지 않는다 */
+export function toDisplayedUsedCount(used: number, limit: number): number {
+  return Math.min(used, limit);
 }

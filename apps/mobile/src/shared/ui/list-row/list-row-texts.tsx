@@ -1,6 +1,9 @@
-import { Text, TextSkeleton, type TextProps, type TextSkeletonProps } from '@src/shared/ui/text';
-import { VStack } from '@src/shared/ui/v-stack';
 import type { ReactNode } from 'react';
+
+import { Text } from '../text/text';
+import { TextSkeleton, type TextSkeletonProps } from '../text/text-skeleton';
+import { type TextProps } from '../text/text.types';
+import { VStack } from '../v-stack/v-stack';
 
 interface ListRowTexts1RowType {
   top: ReactNode;

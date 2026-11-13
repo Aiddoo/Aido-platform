@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger } from "@nestjs/common";
@@ -24,13 +23,13 @@ import {
   userPreference,
   userProfile,
 } from "#api/platform/database/schema/index";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import type { UserStatus } from "../../../auth/domain/auth.constants.js";
 import { toIdentityUser } from "../../../auth/infrastructure/persistence/auth-row.mapper.js";
+import { userTagCollided, userTagGenerationFailed } from "../../application/users.errors.js";
 import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
 import { generateUserTag } from "./user-tag.adapter.js";
 
@@ -127,7 +126,7 @@ export class DrizzleUserRepository
       }
       // 확인 뒤 다른 가입이 같은 태그를 먼저 넣었다. 1.15.0 필터가 이 제약에 주던 500 응답을 유지한다
       if (targets?.includes("userTag")) {
-        throw new ApplicationException(ErrorCode.SYS_0001, { detail: "userTag collision" });
+        throw userTagCollided(error);
       }
       throw error;
     }
@@ -148,9 +147,7 @@ export class DrizzleUserRepository
       this.#logger.warn({ event: AuthLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
     }
 
-    throw new ApplicationException(ErrorCode.USER_0611, {
-      attempts: MAX_USER_TAG_RETRIES,
-    });
+    throw userTagGenerationFailed(MAX_USER_TAG_RETRIES);
   }
 
   async markEmailVerified(id: UserId, now: Temporal.Instant): Promise<void> {

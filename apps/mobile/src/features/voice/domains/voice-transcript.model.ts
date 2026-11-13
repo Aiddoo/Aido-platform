@@ -2,7 +2,7 @@ import type { SpeechSegment } from '@src/core/ports/speech-recognizer';
 import { compact } from 'es-toolkit';
 import { z } from 'zod';
 
-import { LOW_CONFIDENCE_THRESHOLD } from '../constants/voice.constants';
+const LOW_CONFIDENCE_THRESHOLD = 0.5;
 
 // Android는 문장마다 final, iOS는 interim이 쌓이다 끝에 final 하나. interim은 꼬리를 바꾸고 final은 문장으로 확정한다
 export const voiceTranscriptSchema = z.object({
@@ -73,13 +73,10 @@ export function withInterimFinalized(transcript: VoiceTranscript): VoiceTranscri
 }
 
 // 신뢰도를 주지 않는 기기는 0 이하(Android -1, iOS 중간 결과 0)라 고르지 않는다
-export function getLowConfidenceWords(
-  segments: readonly SpeechSegment[],
-  threshold: number = LOW_CONFIDENCE_THRESHOLD,
-): string[] {
+export function getLowConfidenceWords(segments: readonly SpeechSegment[]): string[] {
   return compact(
     segments
-      .filter(({ confidence }) => 0 < confidence && confidence < threshold)
+      .filter(({ confidence }) => 0 < confidence && confidence < LOW_CONFIDENCE_THRESHOLD)
       .map(({ text }) => text.trim()),
   );
 }

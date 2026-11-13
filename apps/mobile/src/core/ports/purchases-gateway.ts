@@ -1,4 +1,5 @@
 import type { SubscriptionPlanType } from '@aido/api/vocabulary';
+import { AppError, type AppErrorOptions } from '@src/core/errors/app-error';
 
 export type PurchaseStore = 'APP_STORE' | 'PLAY_STORE' | 'PROMOTIONAL' | 'OTHER';
 
@@ -9,6 +10,8 @@ interface PurchaseEntitlement {
 
 export interface PurchaseStatus {
   activeEntitlements: readonly PurchaseEntitlement[];
+  /** 스토어가 알려 준 구독 관리 주소. 스토어 구독이 없으면 null */
+  managementUrl: string | null;
 }
 
 export type PurchasePackageType = SubscriptionPlanType | 'OTHER';
@@ -59,15 +62,20 @@ export type PurchaseFailureKind =
   | 'other';
 
 /** 스토어 SDK 오류를 SDK 코드 없이 넘긴다. 원래 코드는 문의·진단에만 쓴다 */
-export class PurchasesGatewayError extends Error {
+export class PurchasesGatewayError extends AppError {
   override readonly name = 'PurchasesGatewayError';
+  readonly kind: PurchaseFailureKind;
+  readonly storeErrorCode: string | null;
 
   constructor(
-    readonly kind: PurchaseFailureKind,
-    readonly storeErrorCode: string | null,
+    kind: PurchaseFailureKind,
+    storeErrorCode: string | null,
     message: string,
+    options?: AppErrorOptions,
   ) {
-    super(message);
+    super(message, options);
+    this.kind = kind;
+    this.storeErrorCode = storeErrorCode;
   }
 }
 

@@ -1,20 +1,18 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
-import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
+import { useTodoCommentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { toRepliesQuery, toThreadsQuery } from '../apis/todo-comment.mapper';
 import { TODO_COMMENT_QUERY_TIMING } from '../constants/todo-comment.constants';
 import { TodoCommentPolicy } from '../domains/todo-comment.model';
-import type {
-  TodoCommentReplyPages,
-  TodoCommentThreadPages,
-} from '../utils/todo-comment-cache-pages';
 import {
-  INITIAL_TODO_COMMENT_PAGE_PARAM,
   getNextTodoCommentPageParam,
   getPreviousTodoCommentPageParam,
-} from '../utils/todo-comment-page-params';
+  INITIAL_TODO_COMMENT_PAGE_PARAM,
+  type TodoCommentReplyPages,
+  type TodoCommentThreadPages,
+} from './todo-comment-pages-cache';
 import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
 
 interface TodoCommentThreadsQueryInput {
@@ -47,14 +45,14 @@ export function useGetTodoCommentThreadsInfiniteQueryOptions({
   sort,
   anchorCommentId,
 }: TodoCommentThreadsQueryInput) {
-  const todoCommentService = useTodoCommentService();
+  const todoCommentApi = useTodoCommentApi();
 
   return infiniteQueryOptions({
     queryKey: TODO_COMMENT_QUERY_KEYS.threads({ todoId, sort, anchorCommentId }),
     initialPageParam: INITIAL_TODO_COMMENT_PAGE_PARAM,
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await todoCommentService.getThreads(
+        await todoCommentApi.getThreads(
           todoId,
           toThreadsQuery(pageParam, { sort, anchorCommentId }),
           signal,
@@ -64,9 +62,9 @@ export function useGetTodoCommentThreadsInfiniteQueryOptions({
     getPreviousPageParam: (firstPage) => getPreviousTodoCommentPageParam(firstPage.pagination),
     staleTime:
       sort === TODO_COMMENT_SORT.POPULAR
-        ? TODO_COMMENT_QUERY_TIMING.popularStaleTime
-        : TODO_COMMENT_QUERY_TIMING.latestStaleTime,
-    gcTime: TODO_COMMENT_QUERY_TIMING.gcTime,
+        ? TODO_COMMENT_QUERY_TIMING.popularStaleTimeMs
+        : TODO_COMMENT_QUERY_TIMING.latestStaleTimeMs,
+    gcTime: TODO_COMMENT_QUERY_TIMING.gcTimeMs,
     select: selectTodoCommentThreads,
     meta: { refreshOnBlockChange: true },
   });
@@ -78,14 +76,14 @@ export function useGetTodoCommentRepliesInfiniteQueryOptions({
   aroundReplyId,
   isEnabled,
 }: TodoCommentRepliesQueryInput) {
-  const todoCommentService = useTodoCommentService();
+  const todoCommentApi = useTodoCommentApi();
 
   return infiniteQueryOptions({
     queryKey: TODO_COMMENT_QUERY_KEYS.replies({ todoId, commentId, aroundReplyId }),
     initialPageParam: INITIAL_TODO_COMMENT_PAGE_PARAM,
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await todoCommentService.getReplies(
+        await todoCommentApi.getReplies(
           todoId,
           commentId,
           toRepliesQuery(pageParam, { aroundReplyId }),
@@ -95,8 +93,8 @@ export function useGetTodoCommentRepliesInfiniteQueryOptions({
     getNextPageParam: (lastPage) => getNextTodoCommentPageParam(lastPage.pagination),
     getPreviousPageParam: (firstPage) => getPreviousTodoCommentPageParam(firstPage.pagination),
     enabled: isEnabled,
-    staleTime: TODO_COMMENT_QUERY_TIMING.latestStaleTime,
-    gcTime: TODO_COMMENT_QUERY_TIMING.gcTime,
+    staleTime: TODO_COMMENT_QUERY_TIMING.latestStaleTimeMs,
+    gcTime: TODO_COMMENT_QUERY_TIMING.gcTimeMs,
     select: selectTodoCommentReplies,
     meta: { refreshOnBlockChange: true },
   });

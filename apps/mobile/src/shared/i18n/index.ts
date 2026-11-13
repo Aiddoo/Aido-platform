@@ -4,7 +4,7 @@ import i18n, { type ParseKeys } from 'i18next';
 
 import type { Namespace } from './resources';
 
-export { useTranslation } from 'react-i18next';
+export { Trans, useTranslation } from 'react-i18next';
 export type { Namespace } from './resources';
 export { i18n };
 

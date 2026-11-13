@@ -1,6 +1,6 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
-import { createStyledIcon } from '@src/shared/ui/icon/create-styled-icon';
+import { createStyledIcon } from '@src/shared/ui';
 import { round } from 'es-toolkit';
 import type { ComponentProps } from 'react';
 import Svg, { Path } from 'react-native-svg';
@@ -308,14 +308,19 @@ function GlyphIcon({
   colorClassName = 'text-on-sky',
   ...props
 }: GlyphIconProps & { glyph: Glyph }) {
+  // 단색은 부르는 쪽 색을 따르고, 색 글리프의 흰 면은 하늘 위 흰색으로 고정한다
+  const glyphColorClassName = {
+    mono: colorClassName,
+    color: 'text-on-sky/[0.96]',
+  } satisfies Record<WeatherIconVariant, string>;
+
   return (
     <StyledSvg
       width={width}
       height={height}
       viewBox="0 0 24 24"
       fill="none"
-      // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-      colorClassName={variant === 'mono' ? colorClassName : 'text-on-sky/[0.96]'}
+      colorClassName={glyphColorClassName[variant]}
       accessible={false}
       importantForAccessibility="no"
       {...props}

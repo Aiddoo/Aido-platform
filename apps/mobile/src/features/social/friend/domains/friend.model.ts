@@ -83,12 +83,11 @@ export function getRequestState(user: SearchedUser): RequestState {
   return 'none';
 }
 
-// 초대로 늘어난 자리는 서버 오류가 알려 주고, 없으면 내 정보, 그것도 없으면 카탈로그의 무료 한도다
+// 초대로 늘어난 자리는 서버 오류가 알려 주고, 없으면 내 정보, 그것도 없으면 카탈로그의 무료 한도다. 모델이 아닌 값만 받아 Policy 밖에 둔다
 export function getFriendLimit({ serverLimit, knownLimit }: FriendLimitInput) {
   return serverLimit ?? knownLimit ?? PREMIUM_FEATURES.FRIEND.free;
 }
 
 export const FriendPolicy = {
   getRequestState,
-  getFriendLimit,
 } as const;

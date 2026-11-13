@@ -22,12 +22,3 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 ## Props
 
 없음.
-
-## 파일 구조
-
-```
-offline-banner/
-├── offline-banner.tsx # 컴포넌트
-├── offline-banner.md  # 이 문서
-└── index.ts           # 배럴
-```

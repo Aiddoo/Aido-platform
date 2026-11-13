@@ -226,7 +226,7 @@ describe("ReplyToNudgeUseCase — 받은 콕에 답장", () => {
     expect((await nudgeRepository.findById(NUDGE_ID))?.replyKind).toBeNull();
   });
 
-  it("기능이 꺼져 있으면 콕을 읽기 전에 NUDGE_1105로 거절한다", async () => {
+  it("기능이 꺼져 있으면 콕을 읽기 전에 NUDGE_1111로 거절한다", async () => {
     // Given
     const nudgeRepository = await seedReceivedNudge();
     const useCase = createReplyToNudgeUseCase(nudgeRepository, {
@@ -237,7 +237,7 @@ describe("ReplyToNudgeUseCase — 받은 콕에 답장", () => {
     const result = useCase.execute(COMMAND);
 
     // Then
-    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1105 });
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1111 });
     expect(nudgeRepository.interactionReadCount).toBe(0);
   });
 

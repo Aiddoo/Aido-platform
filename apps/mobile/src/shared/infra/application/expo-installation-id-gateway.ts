@@ -1,11 +1,11 @@
 import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import { SECURE_STORE_OPTIONS } from '@src/shared/infra/storage/secure-store-options';
+import { DEVICE_SECURE_STORAGE_KEYS } from '@src/shared/storage/secure-storage-keys';
 import { noop } from 'es-toolkit';
 import * as Application from 'expo-application';
 import * as SecureStore from 'expo-secure-store';
 
-// oxlint-disable-next-line aido/storage-key-location -- 1.15.2 전환 #1400
-const IOS_INSTALLATION_ID_KEY = 'aido_installation_id';
+const IOS_INSTALLATION_ID_KEY = DEVICE_SECURE_STORAGE_KEYS.INSTALLATION_ID;
 
 /** iOS IDFV는 같은 회사 앱이 모두 지워지면 재설치 때 바뀌므로 처음 읽은 값을 키체인에 남기고, 키체인을 못 읽으면 지금 IDFV로 대신한다 */
 async function getIosInstallationId() {
@@ -29,7 +29,7 @@ async function getIosInstallationId() {
 }
 
 export const expoInstallationIdGateway: InstallationIdGateway = {
-  async get() {
+  get: async () => {
     if (process.env.EXPO_OS === 'ios') {
       return getIosInstallationId();
     }

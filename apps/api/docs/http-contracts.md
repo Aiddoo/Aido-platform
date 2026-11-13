@@ -46,7 +46,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 - 서버가 계산한 값을 싣는다. AI 응답과 한도 오류는 `featureQuota`를 준다. 앱이 읽지 않는 값은 새 응답에 넣지 않는다(출시 뒤에는 뺄 수 없다). 그런 값은 서버 로그에 남긴다.
 - 날짜는 `YYYY-MM-DD`, 순간은 ISO datetime(ms 3자리, `toIsoString`), 벽시계는 `HH:mm`이다. 변환은 응답 매퍼 한 곳이다.
 - 변경 응답의 `message`는 출시 계약이라 유지하되 문구는 presentation 매퍼 상수(`MEMO_RESPONSE_MESSAGES`)에 둔다. 새 응답에는 넣지 않는다.
-- 운영 응답에 실을 details는 `PUBLIC_ERROR_DETAILS`에 코드별 Zod로 등록한다.
+- 운영 응답에 실을 details는 `PUBLIC_ERROR_DETAILS`에 코드별 Zod로 등록하고, 그 코드의 오류는 slice `*.errors.ts` 생성 함수 하나가 같은 모양으로 만든다(`verificationResendCooldown(remainingSeconds)`). 앱이 details를 읽는 코드는 앱 계약 테스트(`apps/mobile/src/shared/errors/error-details-contract.test.ts`)가 등록을 확인한다. 등록이 빠지면 개발·테스트에서는 보이던 값이 운영에서만 사라진다.
 
 ## 응답 계약 검사
 

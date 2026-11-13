@@ -8,6 +8,7 @@ import {
   PLAN_FEATURE_KEYS,
   type PlanFeature,
 } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { match } from 'ts-pattern';
 
@@ -120,7 +121,7 @@ export function createEntitlementSnapshot(
 
 /** 서버 한도 오류. details는 운영 응답처럼 공개 상세 스키마 모양이다 */
 export function createLimitApiError(
-  code: string,
+  code: ErrorCodeType,
   details?: Record<string, unknown>,
   status = 429,
 ): ApiError {

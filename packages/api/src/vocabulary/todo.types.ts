@@ -7,6 +7,7 @@ export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
 export const TODO_REPEAT_FREQUENCIES = ["DAILY", "WEEKLY", "MONTHLY"] as const;
 export type TodoRepeatFrequency = (typeof TODO_REPEAT_FREQUENCIES)[number];
 
+// oxlint-disable-next-line aido/time-constant-unit -- 시간 길이가 아니라 반복 주기 배수(1주·2주마다)다
 export const TODO_REPEAT_INTERVALS = [1, 2] as const;
 export type TodoRepeatInterval = (typeof TODO_REPEAT_INTERVALS)[number];
 
