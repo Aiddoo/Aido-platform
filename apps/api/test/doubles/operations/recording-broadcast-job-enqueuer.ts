@@ -1,4 +1,7 @@
-import { BroadcastJobEnqueuerPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-job-enqueuer.port";
+import {
+  type BroadcastDeliveryGroup,
+  BroadcastJobEnqueuerPort,
+} from "#api/modules/operations/broadcasts/application/ports/broadcast-job-enqueuer.port";
 import type { BroadcastCampaignId } from "#api/modules/operations/broadcasts/domain/broadcast-campaign-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -16,6 +19,7 @@ export interface RecordedDelivery {
 export class RecordingBroadcastJobEnqueuer extends BroadcastJobEnqueuerPort {
   readonly fanOuts: RecordedFanOut[] = [];
   readonly deliveries: RecordedDelivery[] = [];
+  deliveryCalls = 0;
 
   async enqueueFanOut(input: {
     readonly campaignId: BroadcastCampaignId;
@@ -27,15 +31,17 @@ export class RecordingBroadcastJobEnqueuer extends BroadcastJobEnqueuerPort {
     });
   }
 
-  async enqueueDelivery(input: {
-    readonly campaignId: BroadcastCampaignId;
-    readonly startAfter: Temporal.Instant;
-    readonly userIds: readonly UserId[];
-  }): Promise<void> {
-    this.deliveries.push({
-      campaignId: input.campaignId.value,
-      startAfter: input.startAfter,
-      userIds: input.userIds.map(({ value }) => value),
-    });
+  async enqueueDeliveries(
+    campaignId: BroadcastCampaignId,
+    groups: readonly BroadcastDeliveryGroup[],
+  ): Promise<void> {
+    this.deliveryCalls += 1;
+    this.deliveries.push(
+      ...groups.map((group) => ({
+        campaignId: campaignId.value,
+        startAfter: group.startAfter,
+        userIds: group.userIds.map(({ value }) => value),
+      })),
+    );
   }
 }

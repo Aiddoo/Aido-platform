@@ -34,7 +34,7 @@ export interface FanOutBroadcastCampaignDependencies {
   readonly userDirectory: Pick<AdminUserDirectoryReaderPort, "listTargetUserIdsAfter">;
   readonly recipientReader: Pick<BroadcastRecipientReaderPort, "listRecipients">;
   readonly notifier: Pick<AdminBroadcastNotifierPort, "sendBatch">;
-  readonly jobEnqueuer: Pick<BroadcastJobEnqueuerPort, "enqueueFanOut" | "enqueueDelivery">;
+  readonly jobEnqueuer: Pick<BroadcastJobEnqueuerPort, "enqueueFanOut" | "enqueueDeliveries">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -143,12 +143,8 @@ export class FanOutBroadcastCampaignUseCase {
         userIds: groupUserIds,
       }))
       .toSorted((left, right) => Temporal.Instant.compare(left.startAfter, right.startAfter));
+    await this.#dependencies.jobEnqueuer.enqueueDeliveries(campaign.id, schedules);
     for (const schedule of schedules) {
-      await this.#dependencies.jobEnqueuer.enqueueDelivery({
-        campaignId: campaign.id,
-        startAfter: schedule.startAfter,
-        userIds: schedule.userIds,
-      });
       this.#dependencies.logger.log({
         event: BroadcastLogEvent.DELIVERY_SCHEDULED,
         campaignId: campaign.id.value,

@@ -3,7 +3,10 @@ import { Injectable } from "@nestjs/common";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { BroadcastJobEnqueuerPort } from "../../application/ports/broadcast-job-enqueuer.port.js";
+import {
+  type BroadcastDeliveryGroup,
+  BroadcastJobEnqueuerPort,
+} from "../../application/ports/broadcast-job-enqueuer.port.js";
 import type { BroadcastCampaignId } from "../../domain/broadcast-campaign-id.vo.js";
 import { BROADCAST_JOB_PRIORITY } from "../../domain/broadcasts.constants.js";
 import {
@@ -43,33 +46,36 @@ export class BroadcastJobEnqueuerAdapter extends BroadcastJobEnqueuerPort {
     );
   }
 
-  async enqueueDelivery(input: {
-    readonly campaignId: BroadcastCampaignId;
-    readonly startAfter: Temporal.Instant;
-    readonly userIds: readonly UserId[];
-  }): Promise<void> {
-    const [firstUserId] = input.userIds;
-    if (firstUserId == null) {
-      return;
-    }
-    await this.#jobQueue.enqueue(
+  async enqueueDeliveries(
+    campaignId: BroadcastCampaignId,
+    groups: readonly BroadcastDeliveryGroup[],
+  ): Promise<void> {
+    await this.#jobQueue.enqueueMany(
       BROADCAST_DELIVERY_QUEUE,
-      {
-        name: BroadcastDeliveryJobName.DELIVER_GROUP,
-        data: {
-          campaignId: input.campaignId.value,
-          userIds: input.userIds.map((userId) => userId.value),
-        },
-      },
-      {
-        idempotencyKey: broadcastDeliveryJobKey(
-          input.campaignId.value,
-          input.startAfter.toString(),
-          firstUserId.value,
-        ),
-        startAfter: input.startAfter,
-        priority: BROADCAST_JOB_PRIORITY,
-      },
+      groups.flatMap(({ startAfter, userIds }) => {
+        const [firstUserId] = userIds;
+        if (firstUserId == null) {
+          return [];
+        }
+        return [
+          {
+            payload: {
+              name: BroadcastDeliveryJobName.DELIVER_GROUP,
+              data: {
+                campaignId: campaignId.value,
+                userIds: userIds.map((userId) => userId.value),
+              },
+            },
+            idempotencyKey: broadcastDeliveryJobKey(
+              campaignId.value,
+              startAfter.toString(),
+              firstUserId.value,
+            ),
+            startAfter,
+            priority: BROADCAST_JOB_PRIORITY,
+          },
+        ];
+      }),
     );
   }
 }
