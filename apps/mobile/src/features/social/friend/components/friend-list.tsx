@@ -64,10 +64,15 @@ interface FriendListProps {
   inviteWelcomeDays?: number;
 }
 
+interface FriendRemovalTarget {
+  userId: string;
+  displayName: string;
+}
+
 export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
   const { t } = useTranslation('friend');
   const {
-    data,
+    data: friendList,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -81,11 +86,12 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
     fetchNextPage,
   });
   const reorderMutation = useMutation(useReorderFriendMutationOptions());
+  const confirmRemoveFriend = useConfirmRemoveFriend();
   const [isEditing] = useFriendListIsEditing();
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => refreshFriends(queryClient));
 
-  const { items: friends, totalCount } = data;
+  const { items: friends, totalCount } = friendList;
 
   const reorderableList = useReorderableList({
     items: friends,
@@ -114,7 +120,9 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
         </HStack>
       }
       extraData={isEditing}
-      renderItem={({ item }) => <FriendList.Item friend={item} isEditing={isEditing} />}
+      renderItem={({ item }) => (
+        <FriendList.Item friend={item} isEditing={isEditing} onDelete={confirmRemoveFriend} />
+      )}
       ListEmptyComponent={
         <FriendList.Empty onInvite={onInvite} inviteWelcomeDays={inviteWelcomeDays} />
       }
@@ -137,29 +145,15 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
 interface FriendListItemProps {
   friend: FriendUser;
   isEditing: boolean;
+  onDelete: (target: FriendRemovalTarget) => void;
 }
 
-FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
+FriendList.Item = function Item({ friend, isEditing, onDelete }: FriendListItemProps) {
   const drag = useReorderableDrag();
   const isActive = useIsActive();
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation(['common', 'friend']);
   const displayName = friend.name ?? t('friend:fallbackName');
-  const removeMutation = useMutation(useRemoveFriendMutationOptions());
-  const confirmDialog = useConfirmDialog();
-
-  // 행은 낙관적 갱신으로 바로 빠지고, 실패하면 제자리로 돌아오며 다이얼로그가 남는다
-  const openDeleteConfirmDialog = async () => {
-    await confirmDialog.openAsync({
-      title: t('friend:deleteDialog.title', { name: displayName }),
-      description: t('friend:deleteDialog.description'),
-      confirmLabel: t('common:actions.delete'),
-      confirmColor: 'danger',
-      confirmTestID: 'friend-delete-confirm',
-      cancelLabel: t('common:actions.cancel'),
-      onConfirm: () => removeMutation.mutateAsync(friend.id),
-    });
-  };
 
   // 행 모양을 편집과 상관없이 고정해 편집을 켜고 끌 때 손잡이·내용·삭제 버튼이 미끄러지고 사라지게 둔다.
   // 끌기는 바깥 행이, 평소 누름은 안쪽 Link가 받는다. 편집 중이 아니면 바깥은 Link를 스크린리더에서 가리지 않는다
@@ -168,14 +162,14 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
       onLongPress={isEditing ? drag : undefined}
       isDisabled={isActive}
       accessible={isEditing}
-      className={cn(isActive && 'bg-gray-1 rounded-xl')}
+      className={cn(isActive && 'rounded-xl bg-gray-1')}
     >
       <HStack align="center">
         {isEditing && (
           <Animated.View
             entering={FadeInLeft.duration(ANIMATION.durationMs.normal)}
             exiting={FadeOutLeft.duration(ANIMATION.durationMs.fast)}
-            className="pr-3 justify-center"
+            className="justify-center pr-3"
           >
             <MenuIcon
               width={fontScaledSize(18)}
@@ -213,8 +207,7 @@ FriendList.Item = function Item({ friend, isEditing }: FriendListItemProps) {
                       color="danger"
                       size="small"
                       display="inline"
-                      onPress={openDeleteConfirmDialog}
-                      isDisabled={removeMutation.isPending}
+                      onPress={() => onDelete({ userId: friend.id, displayName })}
                     >
                       {t('actions.delete')}
                     </Button>
@@ -427,7 +420,7 @@ function EditModeGuideTooltip() {
               colorClassName="text-gray-5"
             />
           }
-          className="min-h-0 min-w-0"
+          className="size-4 min-h-0 min-w-0"
           hitSlop={8}
           onPress={() => setIsOpen(true)}
         />
@@ -435,4 +428,26 @@ function EditModeGuideTooltip() {
       <HintPopoverContent placement="bottom" description={t('list.editHint')} />
     </Popover>
   );
+}
+
+/**
+ * 끊은 친구 행은 낙관적 갱신으로 바로 빠진다. 행이 띄운 다이얼로그는 행과 함께 내려가므로 행보다 오래 사는
+ * 목록이 띄워, 요청하는 동안 진행 중으로 남고 실패하면 행이 돌아온 뒤에도 남는다
+ */
+function useConfirmRemoveFriend() {
+  const { t } = useTranslation(['common', 'friend']);
+  const confirmDialog = useConfirmDialog();
+  const { mutateAsync: removeFriend } = useMutation(useRemoveFriendMutationOptions());
+
+  return async ({ userId, displayName }: FriendRemovalTarget) => {
+    await confirmDialog.openAsync({
+      title: t('friend:deleteDialog.title', { name: displayName }),
+      description: t('friend:deleteDialog.description'),
+      confirmLabel: t('common:actions.delete'),
+      confirmColor: 'danger',
+      confirmTestID: 'friend-delete-confirm',
+      cancelLabel: t('common:actions.cancel'),
+      onConfirm: () => removeFriend(userId),
+    });
+  };
 }

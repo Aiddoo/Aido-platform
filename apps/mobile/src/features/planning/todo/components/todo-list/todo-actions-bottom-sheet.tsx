@@ -107,8 +107,9 @@ TodoActionsBottomSheet.ActionList = function ActionList({
     );
   };
 
-  const confirmDeleteMultiDayTodo = () =>
-    confirmDialog.openAsync({
+  // 할 일은 낙관적으로 빠져도 시트가 마지막 값을 들고 남아(useSheetTodo) 다이얼로그가 진행 중·실패 뒤에도 남는다
+  const deleteMultiDayTodo = async () => {
+    const isDeleted = await confirmDialog.openAsync({
       title: t('multiDayDelete.title'),
       description: t('multiDayDelete.description', {
         period: formatTodoPeriod(todo, todayKey, dateFormatContext),
@@ -116,11 +117,17 @@ TodoActionsBottomSheet.ActionList = function ActionList({
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('multiDayDelete.confirm'),
       confirmColor: 'danger',
+      onConfirm: () => deleteMutation.mutateAsync({ todoId: todo.id, date }),
     });
+    if (isDeleted) {
+      onClose();
+    }
+  };
 
   const handleDelete = async () => {
     if (!TodoPolicy.isRecurringTodo(todo)) {
-      if (TodoPolicy.isMultiDayTodo(todo) && !(await confirmDeleteMultiDayTodo())) {
+      if (TodoPolicy.isMultiDayTodo(todo)) {
+        await deleteMultiDayTodo();
         return;
       }
       deleteMutation.mutate({ todoId: todo.id, date }, { onSuccess: () => onClose() });

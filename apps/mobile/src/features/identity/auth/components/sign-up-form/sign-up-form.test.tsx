@@ -38,6 +38,15 @@ async function fillName(name: string) {
   await fireEvent.press(screen.getByText('다음'));
 }
 
+async function goToPasswordStep() {
+  await fillName('아이두');
+  await fireEvent.changeText(await screen.findByPlaceholderText('example@email.com'), 'a@aido.app');
+  await fireEvent.press(screen.getByText('다음'));
+  return screen.findByPlaceholderText('비밀번호를 입력해주세요');
+}
+
+const DISALLOWED_CHARACTER_NOTICE = '쓸 수 없는 문자가 있어요. 특수문자는 @$!%*#?&만 쓸 수 있어요';
+
 describe('SignUpForm', () => {
   describe('회원가입 폼', () => {
     afterEach(() => {
@@ -218,6 +227,57 @@ describe('SignUpForm', () => {
 
       // Then
       expect(dismiss).not.toHaveBeenCalled();
+    });
+
+    it('비밀번호 확인을 다르게 적으면 칸을 벗어나기 전에도 일치하지 않는다는 이유를 보인다', async () => {
+      // Given
+      const session = createAuthSession();
+      await render(<SignUpHarness />, { wrapper: session.Wrapper });
+      const passwordInput = await goToPasswordStep();
+      await fireEvent.changeText(passwordInput, 'Password123');
+      await fireEvent.press(screen.getByText('다음'));
+      expect(screen.queryByText('비밀번호가 일치하지 않아요')).toBeNull();
+
+      // When
+      await fireEvent.changeText(
+        await screen.findByPlaceholderText('비밀번호를 다시 입력해주세요'),
+        'Mismatch99x',
+      );
+
+      // Then
+      expect(await screen.findByText('비밀번호가 일치하지 않아요')).toBeTruthy();
+      expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+    });
+
+    it.each(['abcd1234.', 'abcd 1234', '비밀번호abcd1234'])(
+      '비밀번호 %j처럼 쓸 수 없는 문자가 있으면 규칙 아래에 이유를 보이고 다음으로 가지 않는다',
+      async (password) => {
+        // Given
+        const session = createAuthSession();
+        await render(<SignUpHarness />, { wrapper: session.Wrapper });
+        const passwordInput = await goToPasswordStep();
+
+        // When
+        await fireEvent.changeText(passwordInput, password);
+
+        // Then
+        expect(screen.getByText(DISALLOWED_CHARACTER_NOTICE)).toBeTruthy();
+        expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+      },
+    );
+
+    it('허용한 특수문자만 쓴 비밀번호는 이유 없이 다음으로 갈 수 있다', async () => {
+      // Given
+      const session = createAuthSession();
+      await render(<SignUpHarness />, { wrapper: session.Wrapper });
+      const passwordInput = await goToPasswordStep();
+
+      // When
+      await fireEvent.changeText(passwordInput, 'abcd1234!');
+
+      // Then
+      expect(screen.queryByText(DISALLOWED_CHARACTER_NOTICE)).toBeNull();
+      expect(screen.getByRole('button', { name: '다음' })).toBeEnabled();
     });
   });
 });

@@ -17,12 +17,3 @@ import { DashedDivider } from '@src/shared/ui';
 | Prop      | 타입     | 설명                                           |
 | --------- | -------- | ---------------------------------------------- |
 | className | `string` | 여백 등 배치만 조정한다. 선 스타일은 고정이다. |
-
-## 파일 구조
-
-```
-dashed-divider/
-├── dashed-divider.tsx
-├── dashed-divider.md
-└── index.ts
-```

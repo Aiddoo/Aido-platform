@@ -17,6 +17,7 @@ export function QuickVoiceButton(pressableProps: QuickVoiceButtonProps) {
     <PressableFeedback
       accessibilityRole="button"
       accessibilityLabel={t('button.label')}
+      hitSlop={4}
       {...pressableProps}
       className="size-9 items-center justify-center rounded-full bg-main/10"
     >

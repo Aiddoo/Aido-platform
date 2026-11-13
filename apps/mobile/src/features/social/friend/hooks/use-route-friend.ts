@@ -1,9 +1,12 @@
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
+import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 
 import type { FriendUser } from '../domains/friend.model';
-import { useFriendQuery } from './use-friend-query';
-import { useRouteFriendId } from './use-route-friend-id';
+import { useGetFriendInfiniteQueryOptions } from '../queries/friend.queries';
+import { friendParamsSchema } from '../schemas/friend-params.schema';
 
 /** route의 친구를 친구 목록에서 찾은 결과. 아직 읽지 않은 쪽을 읽는 중·그 쪽을 읽지 못함·찾음·더는 친구가 아님이다 */
 export type RouteFriend =
@@ -33,4 +36,26 @@ export function useRouteFriend(): RouteFriend {
     }))
     .with({ hasNextPage: true }, () => ({ status: 'loading' }))
     .otherwise(() => ({ status: 'missing' }));
+}
+
+function useRouteFriendId() {
+  const [{ friendId }] = useRouteParams(friendParamsSchema);
+
+  return [friendId] as const;
+}
+
+/** 친구를 읽고, 아직 불러오지 않은 페이지에 있으면 다음 페이지를 이어 불러온다. */
+function useFriendQuery(friendId: string) {
+  const query = useSuspenseInfiniteQuery(useGetFriendInfiniteQueryOptions({ friendId }));
+  const { data: friend, hasNextPage, isFetching, isFetchNextPageError, fetchNextPage } = query;
+
+  const shouldFetchNextPage = !friend && hasNextPage && !isFetching && !isFetchNextPageError;
+
+  useEffect(() => {
+    if (shouldFetchNextPage) {
+      fetchNextPage({ cancelRefetch: false }).catch(noop);
+    }
+  }, [shouldFetchNextPage, fetchNextPage]);
+
+  return query;
 }

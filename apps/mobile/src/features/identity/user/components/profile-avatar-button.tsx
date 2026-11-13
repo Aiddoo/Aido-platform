@@ -29,7 +29,7 @@ export function ProfileAvatarButton({ onPress }: ProfileAvatarButtonProps) {
             profileImage={user.profileImage}
           />
 
-          <Box className="absolute bottom-0 right-0 size-7 rounded-full bg-white dark:bg-gray-8 border border-gray-3 dark:border-gray-6 items-center justify-center z-10">
+          <Box className="absolute right-0 bottom-0 z-10 size-7 items-center justify-center rounded-full border border-gray-3 bg-white dark:border-gray-6 dark:bg-gray-8">
             <EditIcon
               width={fontScaledSize(14)}
               height={fontScaledSize(14)}

@@ -41,8 +41,8 @@ const DEDUP_STRATEGIES: Partial<Record<NotificationType, DedupStrategy>> = {
   FOLLOW_ACCEPTED: { windowMs: DEDUP_WINDOW.FOLLOW, keys: ["friendId"] },
 };
 
-/** dedup 잠금 TTL (밀리초) — DB 조회 + 생성에 충분한 시간 */
-export const DEDUP_LOCK_TTL = 5000;
+/** dedup 잠금 TTL — DB 조회 + 생성에 충분한 시간 */
+export const DEDUP_LOCK_TTL_MS = 5000;
 
 /** 타입별 dedup 전략 조회 (없으면 서비스 레이어 dedup 미적용) */
 export function resolveDedupStrategy(type: NotificationType): DedupStrategy | undefined {

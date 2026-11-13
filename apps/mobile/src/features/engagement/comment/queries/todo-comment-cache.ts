@@ -33,7 +33,7 @@ import {
 } from './todo-comment-pages-cache';
 import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
 
-/** 묶음 목록 조회 옵션. 조회 함수가 DI Api를 써서 `useGetTodoCommentThreadsInfiniteQueryOptions`가 만든다 */
+/** 조회 함수가 DI Api를 써서 `useGetTodoCommentThreadsInfiniteQueryOptions`가 만든다 */
 type TodoCommentThreadsQueryOptions<TData> = InfiniteQueryExecuteOptions<
   TodoCommentThreadPage,
   DefaultError,
@@ -42,7 +42,7 @@ type TodoCommentThreadsQueryOptions<TData> = InfiniteQueryExecuteOptions<
   TodoCommentPageParam
 >;
 
-/** 답글 목록 조회 옵션. 조회 함수가 DI Api를 써서 `useGetTodoCommentRepliesInfiniteQueryOptions`가 만든다 */
+/** 조회 함수가 DI Api를 써서 `useGetTodoCommentRepliesInfiniteQueryOptions`가 만든다 */
 type TodoCommentRepliesQueryOptions<TData> = InfiniteQueryExecuteOptions<
   TodoCommentReplyPage,
   DefaultError,

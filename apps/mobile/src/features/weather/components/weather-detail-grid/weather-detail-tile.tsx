@@ -129,7 +129,7 @@ export function WeatherTextTile({
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={valueMinScale}
-          className="text-[32px] leading-[38px] font-normal tracking-[-1px] tabular-nums"
+          className="font-normal text-[32px] leading-[38px] tracking-[-1px] tabular-nums"
         >
           {value}
         </Text>

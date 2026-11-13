@@ -3,7 +3,7 @@ import type { DefaultError, EnsureQueryDataOptions, QueryClient } from '@tanstac
 import type { Preference } from '../domains/preference.model';
 import { PREFERENCE_QUERY_KEYS } from './preference-query-keys';
 
-/** 설정 조회 옵션. 조회 함수가 DI Api를 써서 `useGetPreferenceQueryOptions`가 만든다 */
+/** 조회 함수가 DI Api를 써서 `useGetPreferenceQueryOptions`가 만든다 */
 type PreferenceQueryOptions = EnsureQueryDataOptions<
   Preference,
   DefaultError,

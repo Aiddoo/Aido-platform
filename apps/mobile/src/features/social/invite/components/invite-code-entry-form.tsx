@@ -13,7 +13,7 @@ import {
   StyledSafeAreaView,
   Text,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import type { InputOTPRef } from 'heroui-native';

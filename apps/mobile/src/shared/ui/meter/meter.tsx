@@ -3,7 +3,7 @@ import { clamp } from 'es-toolkit';
 import type { ViewProps } from 'react-native';
 import type { VariantProps } from 'tailwind-variants';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 
 const meter = tv({
   slots: { track: 'overflow-hidden rounded-full', indicator: 'h-full rounded-full bg-main' },

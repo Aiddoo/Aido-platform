@@ -28,6 +28,7 @@ export function useIsCoachmarkSettled({ isVisible, restartKey }: UseIsCoachmarkS
       return;
     }
     const subscriptions = KEYBOARD_MOVE_EVENTS.map((event) =>
+      // oxlint-disable-next-line no-restricted-properties -- 위치를 흉내 내지 않고 키보드가 움직인 횟수만 세어 말풍선 열기를 미룬다
       Keyboard.addListener(event, () => setKeyboardMoveCount((count) => count + 1)),
     );
 

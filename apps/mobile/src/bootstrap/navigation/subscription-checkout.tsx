@@ -167,7 +167,7 @@ SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
 
       <Spacing size={24} />
 
-      <VStack className="gap-2 items-center">
+      <VStack className="items-center gap-2">
         <Paywall.RenewalNotice />
         <Paywall.Terms />
         <RestorePurchaseButton size="small" />
@@ -208,7 +208,7 @@ SubscriptionScreen.Welcome = function Welcome({
         </StyledSafeAreaView>
       </ScrollView>
 
-      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pt-2 pb-4">
         <ReadableContent>
           <Button onPress={onDone} testID="subscription-welcome-done">
             {t('welcome.done')}
@@ -262,7 +262,7 @@ SubscriptionScreen.Receipt = function Receipt() {
 
           <Spacing size={16} />
 
-          <VStack className="gap-2 items-center">
+          <VStack className="items-center gap-2">
             <RestorePurchaseButton size="medium" />
             {!isOnline && <SubscriptionOfflineActionsNotice />}
           </VStack>
@@ -379,7 +379,7 @@ function PlansScaffold({ children, footer, isScrollEnabled = true, testID }: Pla
         </StyledSafeAreaView>
       </ScrollView>
 
-      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pt-2 pb-4">
         <ReadableContent>{footer}</ReadableContent>
       </StyledSafeAreaView>
     </Box>

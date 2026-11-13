@@ -26,7 +26,6 @@ import {
   Text,
   TextSkeleton,
   TrashIcon,
-  useConfirmDialog,
   VStack,
   MenuContent,
 } from '@src/shared/ui';
@@ -52,19 +51,11 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
-import { isTodoCommentUnavailableError } from '../domains/todo-comment.error';
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
+import { useConfirmTodoCommentDelete } from '../hooks/use-confirm-todo-comment-delete';
 import { useTodoCommentForm } from '../hooks/use-todo-comment-form';
-import {
-  useDeleteTodoCommentMutationOptions,
-  useSetTodoCommentLikeMutationOptions,
-} from '../queries/todo-comment.mutations';
-import {
-  EMPTY_TODO_COMMENT_FORM_VALUES,
-  toEditFormValues,
-  toReplyFormValues,
-} from '../schemas/todo-comment-form.schema';
-import { findComposerTarget } from '../utils/todo-comment-form.view-model';
+import { useSetTodoCommentLikeMutationOptions } from '../queries/todo-comment.mutations';
+import { toEditFormValues, toReplyFormValues } from '../schemas/todo-comment-form.schema';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import {
   playTodoCommentHeartBurst,
@@ -428,12 +419,9 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
   const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
   const { copy } = useCopyToClipboard();
-  const confirmDialog = useConfirmDialog();
-  const { reset, getValues } = useTodoCommentForm();
+  const confirmDelete = useConfirmTodoCommentDelete();
+  const { reset } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();
-  const deleteComment = useMutation(
-    useDeleteTodoCommentMutationOptions({ todoId: comment.todoId }),
-  );
   const author = comment.author;
   const authorName = author?.name ?? t('moderation:fallbackName');
   const hasPrimaryActions =
@@ -454,47 +442,16 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
       failureLogEvent: TODO_COMMENT_LOG_EVENT.COPY_FAILED,
     });
 
-  const confirmDelete = async () => {
-    await confirmDialog.openAsync({
-      title: t('deleteConfirm.title'),
-      description: match(comment)
-        .when(TodoCommentPolicy.canDeleteOnlyAsTodoOwner, () =>
-          t('deleteConfirm.othersDescription'),
-        )
-        .when(TodoCommentPolicy.isTombstonedOnDelete, () => t('deleteConfirm.tombstoneDescription'))
-        .otherwise(() => t('deleteConfirm.description')),
-      confirmLabel: t('deleteConfirm.confirm'),
-      confirmColor: 'danger',
-      cancelLabel: t('actions.cancel'),
-      // 행은 낙관적 갱신으로 바로 빠지고, 실패하면 제자리로 돌아오며 다이얼로그가 남는다
-      onConfirm: async () => {
-        // 답글이나 수정 대상으로 고른 글을 지우면 작성기가 지운 글에 보내지 않게 비운다
-        if (findComposerTarget(getValues('mode'))?.id === comment.id) {
-          reset(EMPTY_TODO_COMMENT_FORM_VALUES);
-        }
-        try {
-          await deleteComment.mutateAsync({ comment });
-        } catch (error) {
-          // 이미 지워졌으면 지운 것과 같아 다이얼로그를 닫는다. 안내는 mutation이 했다
-          if (!isTodoCommentUnavailableError(error)) {
-            throw error;
-          }
-        }
-      },
-    });
-  };
-
   return (
     <Menu isOpen={isOpen} onOpenChange={onOpenChange}>
       <Menu.Trigger asChild>
         <PressableFeedback
           hitSlop={MORE_HIT_SLOP}
           className="min-h-6 min-w-8 items-center justify-center"
-          isDisabled={deleteComment.isPending}
           testID={`todo-comment-more-${comment.id}`}
           accessibilityRole="button"
           accessibilityLabel={t('actions.more')}
-          accessibilityState={{ expanded: isOpen, busy: deleteComment.isPending }}
+          accessibilityState={{ expanded: isOpen }}
         >
           <MoreIcon
             width={fontScaledSize(MENU_TRIGGER_ICON_SIZE)}
@@ -530,7 +487,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
             title={t('actions.delete')}
             variant="danger"
             testID="todo-comment-delete"
-            onPress={confirmDelete}
+            onPress={() => confirmDelete(comment)}
           />
         )}
         {TodoCommentPolicy.canReportComment(comment) && (
