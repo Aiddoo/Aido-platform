@@ -30,32 +30,74 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
     AccountFixture.reset();
   });
 
-  it("한국 날짜의 시작은 포함하고 끝은 제외하며 인증 계정 없는 내부 사용자는 전체 가입자에서 제외한다", async () => {
+  it("한국 날짜에 가입한 사용자를 첫 계정 공급자로 세고 경계는 시작 포함·끝 제외다", async () => {
     // Given
-    const accounts = [
+    const signups = [
       { provider: "CREDENTIAL", createdAt: START.subtract({ milliseconds: 1 }) },
       { provider: "CREDENTIAL", createdAt: START },
       { provider: "GOOGLE", createdAt: START.add({ milliseconds: 1 }) },
       { provider: "GOOGLE", createdAt: END },
     ] as const;
-    for (const item of accounts) {
-      const created = UserFixture.create();
+    for (const signup of signups) {
+      const created = UserFixture.create({ createdAt: signup.createdAt });
       await client.insert(user).values(created);
-      await client.insert(account).values(AccountFixture.create({ ...item, userId: created.id }));
+      await client.insert(account).values(AccountFixture.create({ ...signup, userId: created.id }));
     }
-    await client.insert(user).values(UserFixture.create());
 
     // When
     const stats = await signupStats.getSignupStats(START, END);
 
     // Then
-    expect(stats.totalUsers).toBe(4);
     expect(
       stats.signupsByProvider.toSorted((a, b) => a.provider.localeCompare(b.provider)),
     ).toEqual([
       { provider: "CREDENTIAL", count: 1 },
       { provider: "GOOGLE", count: 1 },
     ]);
+  });
+
+  it("기존 사용자가 그날 다른 공급자를 연동해도 가입으로 세지 않는다", async () => {
+    // Given
+    const existing = UserFixture.create({ createdAt: START.subtract({ hours: 24 }) });
+    await client.insert(user).values(existing);
+    await client.insert(account).values([
+      AccountFixture.create({
+        userId: existing.id,
+        provider: "KAKAO",
+        createdAt: existing.createdAt,
+      }),
+      AccountFixture.create({
+        userId: existing.id,
+        provider: "GOOGLE",
+        createdAt: START.add({ hours: 1 }),
+      }),
+    ]);
+
+    // When
+    const stats = await signupStats.getSignupStats(START, END);
+
+    // Then
+    expect(stats.signupsByProvider).toEqual([]);
+    expect(stats.totalUsers).toBe(1);
+  });
+
+  it("전체 사용자에서 인증 계정 없는 내부 사용자와 탈퇴한 사용자를 뺀다", async () => {
+    // Given
+    const active = UserFixture.create();
+    const deleted = UserFixture.create({ deletedAt: START });
+    await client.insert(user).values([active, deleted, UserFixture.create()]);
+    await client
+      .insert(account)
+      .values([
+        AccountFixture.create({ userId: active.id, provider: "KAKAO" }),
+        AccountFixture.create({ userId: deleted.id, provider: "GOOGLE" }),
+      ]);
+
+    // When
+    const stats = await signupStats.getSignupStats(START, END);
+
+    // Then
+    expect(stats.totalUsers).toBe(1);
   });
 
   it("500명 경계를 넘는 전체 대상은 cursor로 활성 사용자만 ID 순서대로 누락과 중복 없이 나눈다", async () => {

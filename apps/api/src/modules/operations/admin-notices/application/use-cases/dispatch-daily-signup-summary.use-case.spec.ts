@@ -73,7 +73,7 @@ describe("DispatchDailySignupSummaryUseCase — 일일 가입 요약", () => {
     );
   });
 
-  it("집계 조회가 실패해도 예외를 전파하지 않고 원문 오류를 로그에 남기지 않는다", async () => {
+  it("집계 조회가 실패해도 예외를 전파하지 않고 오류 종류만 남기며 원문 메시지는 남기지 않는다", async () => {
     // Given
     const { useCase, statsReader, queue, logger } = setup();
     statsReader.result = new Error("synthetic-private-db-connection");
@@ -85,7 +85,7 @@ describe("DispatchDailySignupSummaryUseCase — 일일 가입 요약", () => {
     expect(queue.sent).toEqual([]);
     expect(logger.messages).toContainEqual({
       event: "operations.notifications.summary.failed",
-      errorType: "summary-dispatch",
+      errorType: "Error",
     });
     expect(JSON.stringify(logger.messages)).not.toContain("synthetic-private-db-connection");
   });

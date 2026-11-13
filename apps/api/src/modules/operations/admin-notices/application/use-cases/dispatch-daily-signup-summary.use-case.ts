@@ -2,6 +2,7 @@ import { sumBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { computePreviousKstDayRange } from "../../domain/signup-report-period.domain-service.js";
 import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
@@ -48,8 +49,8 @@ export class DispatchDailySignupSummaryUseCase {
         previousDayTotal: sumBy(signupsByProvider, (group) => group.count),
         totalUsers,
       });
-    } catch {
-      logger.error({ event: AdminNoticeLogEvent.SUMMARY_FAILED, errorType: "summary-dispatch" });
+    } catch (error) {
+      logger.error({ event: AdminNoticeLogEvent.SUMMARY_FAILED, errorType: toErrorType(error) });
     }
   }
 }
