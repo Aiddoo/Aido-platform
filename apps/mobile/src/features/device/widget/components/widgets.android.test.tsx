@@ -43,10 +43,16 @@ function collect(node: ReactNode, result: WidgetNode[] = []): WidgetNode[] {
   return result;
 }
 
+function getWidgetName(maxRows: number) {
+  if (maxRows === 0) {
+    return 'AidoTodaySummary';
+  }
+  return maxRows > 3 ? 'AidoTodayLarge' : 'AidoTodayList';
+}
+
 function createWidgetInfo(maxRows: number, overrides: Partial<WidgetInfo> = {}): WidgetInfo {
   return {
-    widgetName:
-      maxRows === 0 ? 'AidoTodaySummary' : maxRows > 3 ? 'AidoTodayLarge' : 'AidoTodayList',
+    widgetName: getWidgetName(maxRows),
     widgetId: 42,
     width: maxRows === 0 ? 178 : 374,
     height: maxRows > 3 ? 420 : 210,

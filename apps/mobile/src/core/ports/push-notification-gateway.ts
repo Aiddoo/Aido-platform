@@ -1,3 +1,5 @@
+import type { OsPermission } from './os-permission';
+
 export type IosPushAuthorizationStatus =
   | 'NOT_DETERMINED'
   | 'DENIED'
@@ -6,9 +8,7 @@ export type IosPushAuthorizationStatus =
   | 'EPHEMERAL';
 
 /** OS가 알려 준 알림 권한 원본 값. 발송 허용·다시 묻기 판정은 피처 모델이 한다 */
-export interface PushPermissionResponse {
-  status: 'granted' | 'denied' | 'undetermined';
-  canAskAgain: boolean;
+export interface PushPermissionResponse extends OsPermission {
   /** iOS만 주는 세부 허용 상태. 다른 플랫폼은 null */
   iosStatus: IosPushAuthorizationStatus | null;
 }

@@ -8,8 +8,8 @@ import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestDi,
+  createTestQueryClient,
 } from '@src/testing/core';
-import { createTestQueryClient } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -79,8 +79,9 @@ describe('RepeatHorizonHint', () => {
     });
   });
 
+  // measure는 이미 jest.fn이라 restoreMocks가 되돌리지 못한다
   afterEach(() => {
-    jest.restoreAllMocks();
+    jest.mocked(View.prototype.measure).mockReset();
   });
 
   it('반복 할 일이 있으면 설명을 처음 한 번 자동으로 연다', async () => {

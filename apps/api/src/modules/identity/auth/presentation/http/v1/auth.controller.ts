@@ -231,7 +231,7 @@ export class AuthController {
 | 코드 | 상황 |
 |------|------|
 | USER_0604 | 이미 인증 완료된 사용자 |
-| VERIFY_0753 | 재발송 쿨다운 (1분) |
+| VERIFY_0753 | 재발송 쿨다운 (1분). \`error.details.remainingSeconds\`(정수 1~60)에 다시 보낼 수 있을 때까지 남은 초 |
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
@@ -543,7 +543,7 @@ IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 | 코드 | 상황 | 클라이언트 처리 |
 |------|------|----------------|
 | USER_0614 | 이미 비밀번호가 설정된 계정 | 비밀번호 변경 화면으로 안내 |
-| VERIFY_0753 | 재발송 쿨다운 (1분) | 대기 안내 |
+| VERIFY_0753 | 재발송 쿨다운 (1분). \`error.details.remainingSeconds\`(정수 1~60)에 남은 초 | 남은 초만큼 대기 안내 |
 
 ### 💡 참고
 - 이미 비밀번호가 있는 사용자가 비밀번호를 **변경**하려면 → \`PATCH /auth/password\` (로그인 필요)

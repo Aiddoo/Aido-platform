@@ -18,8 +18,7 @@ import { isNotNil } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
-import { isRecurring } from '../domains/todo.model';
-import { type Todo } from '../domains/todo.model';
+import { isRecurring, type Todo } from '../domains/todo.model';
 import {
   formatRepeatCadence,
   formatRepeatRuleLabel,
@@ -30,7 +29,6 @@ const TITLE_LINE_HEIGHT = 20;
 const REPEAT_ICON_SIZE = 13;
 const SPOKEN_WEEKDAY_SEPARATOR = ', ';
 
-/** 행 안쪽 컨트롤을 스크린리더 동작으로 제공할 때 쓰는 이름. */
 export const TODO_ROW_ACCESSIBILITY_ACTION = {
   toggleCompleted: 'toggleCompleted',
   comments: 'comments',
@@ -97,7 +95,7 @@ export function TodoRow({
         {...pressableProps}
         onPress={onPress}
         onLongPress={onLongPress}
-        isDisabled={isActive || isDisabled || (!onPress && !onLongPress)}
+        isDisabled={isActive || isDisabled || (onPress == null && onLongPress == null)}
         className={cn(
           'rounded-xl py-2',
           isActive && 'bg-gray-1',
@@ -161,7 +159,11 @@ TodoRow.TitleLine = function TitleLine({ label, isPrivate }: TodoTitleLineProps)
       {label}
       {isPrivate && (
         <Box className="justify-center" style={{ height: fontScaledSize(TITLE_LINE_HEIGHT) }}>
-          <LockIcon width={14} height={14} colorClassName="text-gray-5" />
+          <LockIcon
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+            colorClassName="text-gray-5"
+          />
         </Box>
       )}
     </HStack>

@@ -5,6 +5,7 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -25,7 +26,9 @@ import { cn } from '@src/shared/utils/cn';
 import { useIsMutating, useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import type { Href } from 'expo-router';
 import { type ComponentProps, type ReactNode, useEffect, useRef } from 'react';
+import type { ViewStyle } from 'react-native';
 import Animated, {
+  type AnimatedStyle,
   FadeIn,
   useAnimatedStyle,
   useSharedValue,
@@ -69,10 +72,11 @@ export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
 
 ThanksSummaryRow.Preview = function Preview({ todoId, onOpenThanks }: ThanksSummaryRowProps) {
   const { t } = useTranslation('todo');
-  const { data } = useSuspenseInfiniteQuery(
+  const fontScaledSize = useFontScaledSize();
+  const { data: thanksPreviewPages } = useSuspenseInfiniteQuery(
     useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),
   );
-  const preview = data.pages[0];
+  const preview = thanksPreviewPages.pages[0];
   const heartStyle = useThanksCelebration(preview?.thankedRecipientCount ?? 0);
 
   if (preview == null) {
@@ -104,8 +108,8 @@ ThanksSummaryRow.Preview = function Preview({ todoId, onOpenThanks }: ThanksSumm
           >
             <HStack align="center" gap={6}>
               <HeartFilledIcon
-                width={16}
-                height={16}
+                width={fontScaledSize(16)}
+                height={fontScaledSize(16)}
                 colorClassName="text-white dark:text-gray-9"
               />
               <Text size="b4" weight="semibold" className="text-white dark:text-gray-9">
@@ -228,7 +232,7 @@ function ThanksSummaryCard({ tone, left, title, description, action }: ThanksSum
         gap={12}
         wrap={isActionStacked ? 'wrap' : 'nowrap'}
         className={cn(
-          'min-h-16 rounded-2xl py-3 pl-4 pr-3',
+          'min-h-16 rounded-2xl py-3 pr-3 pl-4',
           tone === 'highlighted' ? 'bg-main/8 dark:bg-main/20' : 'bg-gray-2',
         )}
       >
@@ -304,7 +308,9 @@ function RecipientAvatars({ recipients }: { recipients: NudgeThanksRecipient[] }
   );
 }
 
-function SentHeart({ style }: { style: ReturnType<typeof useAnimatedStyle> }) {
+function SentHeart({ style }: { style: AnimatedStyle<ViewStyle> }) {
+  const fontScaledSize = useFontScaledSize();
+
   return (
     <Box
       className="size-8 items-center justify-center rounded-full bg-white"
@@ -312,7 +318,11 @@ function SentHeart({ style }: { style: ReturnType<typeof useAnimatedStyle> }) {
       importantForAccessibility="no-hide-descendants"
     >
       <Animated.View style={style}>
-        <HeartFilledIcon width={18} height={18} colorClassName="text-main" />
+        <HeartFilledIcon
+          width={fontScaledSize(18)}
+          height={fontScaledSize(18)}
+          colorClassName="text-main"
+        />
       </Animated.View>
     </Box>
   );

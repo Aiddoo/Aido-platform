@@ -177,7 +177,7 @@ function NudgeMessageSheet({
                 placeholder={placeholder}
                 value={field.value ?? ''}
                 onChange={field.onChange}
-                className="z-10 min-h-0 h-[80px]"
+                className="z-10 h-[80px] min-h-0"
                 errorMessage={
                   fieldState.error == null
                     ? undefined

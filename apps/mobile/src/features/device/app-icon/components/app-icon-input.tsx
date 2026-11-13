@@ -52,13 +52,13 @@ AppIconInput.Item = function Item({ icon, ...props }: AppIconInputItemProps) {
   return (
     <RadioGroup.Item
       value={icon.key}
-      className="rounded-2xl overflow-visible active:opacity-70"
+      className="overflow-visible rounded-2xl active:opacity-70"
       accessibilityLabel={label}
       {...props}
     >
       {({ isSelected }) => (
         <VStack align="center" gap={8} className="overflow-visible p-2">
-          <Avatar isSelected={isSelected} alt={label} className="w-20 h-20 rounded-2xl">
+          <Avatar isSelected={isSelected} alt={label} className="h-20 w-20 rounded-2xl">
             <Avatar.Image source={icon.preview} />
           </Avatar>
           <Text

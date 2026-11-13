@@ -18,9 +18,7 @@ describe('useFriendCalendarCompletions', () => {
   it('볼 수 없는 친구면 고른 달 하나만 실패하고 앞뒤 달은 묻지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    httpClient.get.mockResolvedValue(
-      err(createTodoApiError({ code: ErrorCode.FOLLOW_0906, status: 403 })),
-    );
+    httpClient.get.mockResolvedValue(err(createTodoApiError({ code: ErrorCode.FOLLOW_0906 })));
 
     // When
     const { result } = await renderScreenHook(

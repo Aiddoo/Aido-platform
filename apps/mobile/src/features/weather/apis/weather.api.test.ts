@@ -43,7 +43,7 @@ describe('WeatherApi.getReport', () => {
     expect(result.ok && result.value.airQuality).toBeNull();
     expect(logger.warn).toHaveBeenCalledTimes(1);
     expect(logger.warn).toHaveBeenCalledWith('weather.report.enum-fallback', {
-      fields: ['current.condition', 'hourly[].precipitationType', 'airQuality'],
+      fields: 'current.condition,hourly[].precipitationType,airQuality',
     });
   });
 });

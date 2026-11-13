@@ -16,7 +16,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { isEqual } from 'es-toolkit';
 import { useEffect, useEffectEvent, useState } from 'react';

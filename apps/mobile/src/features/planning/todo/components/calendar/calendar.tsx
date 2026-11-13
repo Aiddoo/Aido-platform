@@ -108,7 +108,8 @@ interface CalendarHeightTransitionProps {
   children: ReactNode;
 }
 
-/** 주↔월 높이를 UI 스레드에서 이어 바꿔 아래 피드가 한 프레임에 밀리지 않게 한다. 동작 줄이기면 바로 바뀐다 */
+// 주↔월 높이를 UI 스레드에서 이어 바꿔 아래 피드가 한 프레임에 밀리지 않게 한다. 아래 피드가 따라와야 해 transform 대신
+// 높이를 움직이는 모션 규칙의 예외다(ui.md 모션). 동작 줄이기면 바로 바뀐다
 function CalendarHeightTransition({ height, children }: CalendarHeightTransitionProps) {
   const animatedHeight = useSharedValue(height);
 
@@ -304,7 +305,7 @@ Calendar.Error = function ErrorFallback({ onRetry }: { onRetry: () => void }) {
       message={t('todo:calendar.loadFailed')}
       messageProps={{ size: 'e1' }}
       reset={onRetry}
-      py={4}
+      className="py-1"
     />
   );
 };

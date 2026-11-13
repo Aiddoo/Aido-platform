@@ -214,4 +214,21 @@ describe('todo-comment-pages-cache', () => {
       repliedThread.replySummary.totalCount,
     );
   });
+
+  it('지우는 사이 다시 받은 묶음의 대표 답글이 지운 답글이 아니어도 답글 수를 두 번 늘리지 않는다', () => {
+    // Given
+    const head = createTodoComment({ id: 'two-replies', replyCount: 2 });
+    const twoReplies = createTodoCommentThread({ comment: head });
+    const removed = createTodoCommentReply(head, { id: 'hidden-reply' });
+    const placement = findThreadPlacement(threadPages([twoReplies]), removed);
+    // 지우기가 실패하기 전에 다른 조회가 서버 값(두 답글이 그대로인 묶음)으로 캐시를 바꿨다
+    const refetched = threadPages([twoReplies]);
+
+    // When
+    const next =
+      placement == null ? null : restoreCommentInThreadPages(refetched, removed, placement);
+
+    // Then
+    expect(next?.pages[0]?.items[0]?.replySummary.totalCount).toBe(2);
+  });
 });

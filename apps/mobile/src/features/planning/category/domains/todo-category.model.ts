@@ -20,6 +20,8 @@ export const todoCategoriesResultSchema = z.object({
 });
 export type TodoCategoriesResult = z.infer<typeof todoCategoriesResultSchema>;
 
+export type FilterTodoCategory = (category: TodoCategoryWithCount) => boolean;
+
 const MIN_REORDERABLE_COUNT = 2;
 
 // 화면은 TodoCategoryPolicy만 쓴다. 카테고리와 목록은 모델 전체를 받는다
@@ -58,12 +60,9 @@ export function canReorder(categories: readonly TodoCategory[]) {
   return categories.length >= MIN_REORDERABLE_COUNT;
 }
 
-// 지우는 카테고리로는 옮길 수 없다. 서버 id가 없는 임시 행은 부르는 쪽이 먼저 뺀다
-export function getMoveTargets<T extends TodoCategory>(
-  category: TodoCategory,
-  categories: readonly T[],
-): T[] {
-  return excludeCategory(categories, category.id);
+// 지우는 카테고리 자신과 서버 id가 없는 임시 행으로는 할 일을 옮길 수 없다
+export function isMoveTarget(category: TodoCategory, deletingCategory: TodoCategory) {
+  return category.id !== deletingCategory.id && !isOptimisticCategory(category);
 }
 
 /** 할 일을 옮길 곳. 고른 곳이 아직 옮길 수 있으면 그것을, 아니면 정렬 순서가 가장 앞인 카테고리를 쓴다 */
@@ -72,7 +71,7 @@ export function findMoveTarget<T extends TodoCategory>(
   categories: readonly T[],
   pickedCategoryId: number | null,
 ): T | null {
-  const moveTargets = getMoveTargets(category, categories);
+  const moveTargets = categories.filter((target) => isMoveTarget(target, category));
   const pickedMoveTarget =
     pickedCategoryId == null ? null : findCategory(moveTargets, pickedCategoryId);
 
@@ -85,18 +84,9 @@ export const TodoCategoryPolicy = {
   hasChanges,
   isOptimisticCategory,
   canReorder,
-  getMoveTargets,
+  isMoveTarget,
   findMoveTarget,
 } as const;
-
-// 정책이 조합하는 순수 함수. 필요한 값만 받는다
-
-export function excludeCategory<T extends Pick<TodoCategory, 'id'>>(
-  categories: readonly T[],
-  categoryId: number,
-): T[] {
-  return categories.filter((category) => category.id !== categoryId);
-}
 
 export function findFirstInSortOrder<T extends Pick<TodoCategory, 'sortOrder'>>(
   categories: readonly T[],

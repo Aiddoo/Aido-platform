@@ -77,9 +77,12 @@ export async function optimisticallyMarkNotificationsRead(
           { isRead: true },
         ),
     );
-    queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), (old) =>
-      notificationId == null ? 0 : old == null ? old : Math.max(0, old - readCount),
-    );
+    queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), (old) => {
+      if (notificationId == null) {
+        return 0;
+      }
+      return old == null ? old : Math.max(0, old - readCount);
+    });
   });
   return { notificationIds, readCount };
 }

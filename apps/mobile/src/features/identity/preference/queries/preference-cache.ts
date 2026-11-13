@@ -1,14 +1,18 @@
-import type { QueryClient } from '@tanstack/react-query';
+import type { DefaultError, EnsureQueryDataOptions, QueryClient } from '@tanstack/react-query';
 
 import type { Preference } from '../domains/preference.model';
 import { PREFERENCE_QUERY_KEYS } from './preference-query-keys';
-import type { useGetPreferenceQueryOptions } from './preference.queries';
+
+/** 조회 함수가 DI Api를 써서 `useGetPreferenceQueryOptions`가 만든다 */
+type PreferenceQueryOptions = EnsureQueryDataOptions<
+  Preference,
+  DefaultError,
+  Preference,
+  ReturnType<typeof PREFERENCE_QUERY_KEYS.current>
+>;
 
 /** 받은 설정이 있으면 그대로, 없으면 받는다 */
-export function ensurePreference(
-  queryClient: QueryClient,
-  options: ReturnType<typeof useGetPreferenceQueryOptions>,
-) {
+export function ensurePreference(queryClient: QueryClient, options: PreferenceQueryOptions) {
   return queryClient.ensureQueryData(options);
 }
 

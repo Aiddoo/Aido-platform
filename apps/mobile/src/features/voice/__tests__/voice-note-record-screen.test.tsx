@@ -319,7 +319,7 @@ describe('VoiceNoteRecordScreen', () => {
     it('언어를 바꿀 때 그 언어에 필요한 권한을 거절하면 듣던 언어로 이어 간다', async () => {
       // Given
       const { speechRecognizer } = await renderRecordScreen();
-      const denied = { isGranted: false, canAskAgain: true, missing: 'microphone' } as const;
+      const denied = { status: 'denied', canAskAgain: true, missing: 'microphone' } as const;
       speechRecognizer.getPermission.mockResolvedValue(denied);
       speechRecognizer.requestPermission.mockResolvedValue(denied);
 

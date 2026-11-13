@@ -9,7 +9,6 @@ import {
   type TodoFieldChanges,
 } from '@src/features/planning/todo/domains/todo.model';
 
-/** 수정 폼에서 바뀐 칸과 반복 규칙 */
 export interface TodoUpdateChanges {
   fields: TodoFieldChanges;
   /** 생략은 규칙 유지, null은 반복 끝내기 */
@@ -18,7 +17,7 @@ export interface TodoUpdateChanges {
 
 type TodoEditValues = TodoEditableFields & { repeat: TodoRepeat | null };
 
-/** 수정 폼에서 바뀐 칸만 고른다. 종일로 바꾸면 시각은 비운다 */
+// 종일로 바꾸면 남아 있던 시각은 비운다
 export function getTodoUpdateChanges(
   edited: TodoEditValues,
   saved: TodoEditValues,

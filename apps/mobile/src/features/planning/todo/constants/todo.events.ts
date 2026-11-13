@@ -1,9 +1,21 @@
-import type { TodoFieldChanges } from '../domains/todo.model';
+import type {
+  TODO_REPEAT_END_TYPES,
+  TodoEditScope,
+  TodoRepeatFrequency,
+  TodoVisibility,
+} from '@aido/api/vocabulary';
 
 type TodoCreationEntry = 'manual' | 'recurring';
-type SeriesScope = 'THIS_ONLY' | 'THIS_AND_FOLLOWING' | 'ALL';
-/** 반복만 바꾼 수정(단일 → 반복 포함)은 repeat 한 칸으로 남긴다 */
-type TodoEditedField = keyof TodoFieldChanges | 'repeat';
+// 대시보드가 읽는 값이라 모델 칸 이름이 바뀌어도 그대로 둔다. 반복만 바꾼 수정은 repeat 한 칸이다
+type TodoEditedField =
+  | 'title'
+  | 'categoryId'
+  | 'startDate'
+  | 'endDate'
+  | 'scheduledTime'
+  | 'isAllDay'
+  | 'visibility'
+  | 'repeat';
 /** 고친 칸 이름을 고친 순서대로 쉼표로 이은 값(`title,startDate`). 다중 칸 버킷은 대시보드를 확인한 뒤 정한다 */
 export type TodoEditedFields = TodoEditedField | `${TodoEditedField},${string}`;
 
@@ -15,15 +27,15 @@ declare module '@src/shared/analytics/event-map' {
       is_recurring: boolean;
       has_scheduled_time: boolean;
       is_all_day: boolean;
-      visibility: 'PUBLIC' | 'PRIVATE';
-      repeat_frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
-      repeat_end?: 'NEVER' | 'UNTIL' | 'COUNT';
+      visibility: TodoVisibility;
+      repeat_frequency?: TodoRepeatFrequency;
+      repeat_end?: (typeof TODO_REPEAT_END_TYPES)[number];
     };
     todo_completed: { todo_id: number; is_completed: boolean };
     todo_deleted: { todo_id: number };
     todo_edited: { todo_id: number; field?: TodoEditedFields };
-    todo_series_edited: { scope: SeriesScope };
-    todo_series_deleted: { scope: SeriesScope };
+    todo_series_edited: { scope: TodoEditScope };
+    todo_series_deleted: { scope: TodoEditScope };
     todo_series_stopped: undefined;
     todo_item_added: { todo_id: number };
     todo_item_completed: { todo_id: number; item_id: number; is_completed: boolean };
