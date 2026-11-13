@@ -1,3 +1,5 @@
+import { createDateKey } from '@src/testing/date-key';
+
 import {
   createWidgetSnapshotContext,
   createWidgetSummary,
@@ -29,8 +31,12 @@ describe('toWidgetSnapshot', () => {
   it('내일 요약을 받으면 오늘 다음 day로 함께 담고 각 날짜의 주간 달력을 만든다', () => {
     // Given
     // 토요일 다음 날은 새 주의 일요일이다
-    const today = createWidgetSummary({ date: '2026-07-18', totalTodos: 2 });
-    const tomorrow = createWidgetSummary({ date: '2026-07-19', totalTodos: 0, topTodos: [] });
+    const today = createWidgetSummary({ date: createDateKey('2026-07-18'), totalTodos: 2 });
+    const tomorrow = createWidgetSummary({
+      date: createDateKey('2026-07-19'),
+      totalTodos: 0,
+      topTodos: [],
+    });
 
     // When
     const { days } = toWidgetSnapshot({ today, tomorrow }, createWidgetSnapshotContext());
@@ -48,7 +54,7 @@ describe('toLoggedOutWidgetSnapshot', () => {
   it('비로그인 스냅샷을 만든다 (카운트 0, loggedOut 상태)', () => {
     // When
     const [snapshot] = toLoggedOutWidgetSnapshot(
-      '2026-07-12',
+      createDateKey('2026-07-12'),
       createWidgetSnapshotContext({ locale: 'en' }),
     ).days;
 

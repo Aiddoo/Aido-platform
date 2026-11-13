@@ -1,4 +1,4 @@
-import { formatDateKeyRange } from '@src/shared/date/format/date-format';
+import { formatDateKeyRange } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -25,7 +25,8 @@ import { match } from 'ts-pattern';
 
 import { REPORT_TYPE_LABEL_KEYS } from '../constants/report-labels';
 import { getSampleReport, SAMPLE_REPORT_IDS } from '../constants/sample-reports.constants';
-import { type AiReport, ReportStatusPolicy } from '../domains/report.model';
+import { ReportStatusPolicy } from '../domains/report-status.model';
+import type { AiReport } from '../domains/report.model';
 import { useReportType } from '../hooks/use-report-type';
 import {
   useGetReportsQueryOptions,
@@ -96,7 +97,7 @@ ReportList.Item = function Item({ report, isSample = false, isLast = false }: Re
 
                 <VStack align="end">
                   <Text size="b4" shade={7}>
-                    {formatReportPeriodLabel(report, dateFormatContext)}
+                    {formatReportPeriodLabel(report, todayKey, dateFormatContext)}
                   </Text>
                   <Text size="e1" shade={7} className="tabular-nums">
                     {formatDateKeyRange(
@@ -112,7 +113,7 @@ ReportList.Item = function Item({ report, isSample = false, isLast = false }: Re
               <HStack gap={20}>
                 <Stat
                   label={t('report.card.completionRate')}
-                  value={`${formatPercent(report.stats.completionRate)}%`}
+                  value={formatPercent(report.stats.completionRate, dateFormatContext.locale)}
                 />
                 <Stat
                   label={t('report.card.completed')}

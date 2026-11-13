@@ -1,4 +1,5 @@
 import { useErrorReporter, useLogger } from '@src/bootstrap/providers/di-context';
+import type { TelemetryData } from '@src/core/observability/telemetry-keys';
 import type {
   OfflineModelResult,
   SpeechErrorCode,
@@ -6,7 +7,7 @@ import type {
   SpeechMode,
 } from '@src/core/ports/speech-recognizer';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage } from '@src/shared/errors';
+import { toError } from '@src/shared/errors';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import type { VoiceCaptureEntry, VoiceCaptureOutcome } from '../constants/voice.events';
@@ -36,7 +37,7 @@ export function useVoiceCaptureTelemetry({ entry, mode }: UseVoiceCaptureTelemet
   const errorReporter = useErrorReporter();
   const { trackEvent } = useTrack();
 
-  const addBreadcrumb = (message: string, data?: Record<string, unknown>) => {
+  const addBreadcrumb = (message: string, data?: TelemetryData) => {
     errorReporter.addBreadcrumb({ category: 'voice', message, data });
   };
 
@@ -95,7 +96,7 @@ export function useVoiceCaptureTelemetry({ entry, mode }: UseVoiceCaptureTelemet
       addBreadcrumb('offline-model.requested', { locale, result });
     },
     capabilityCheckFailed: (error: unknown) => {
-      logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(getErrorMessage(error)), {
+      logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, toError(error), {
         speech_error: 'unknown',
       });
     },

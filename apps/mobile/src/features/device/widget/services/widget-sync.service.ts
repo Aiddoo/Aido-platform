@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import type { DateKey } from '@src/shared/date/date-key';
 import { toError } from '@src/shared/errors';
 import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
 
@@ -60,7 +61,7 @@ export class WidgetSyncService {
   ): Promise<WidgetSyncResult> =>
     this.#scheduleWrite(() => toWidgetSnapshot(summaries, context), userId, context.timeZone);
 
-  syncLoggedOut = (localDate: string, context: WidgetSnapshotContext): Promise<WidgetSyncResult> =>
+  syncLoggedOut = (localDate: DateKey, context: WidgetSnapshotContext): Promise<WidgetSyncResult> =>
     this.#scheduleWrite(
       () => toLoggedOutWidgetSnapshot(localDate, context),
       null,

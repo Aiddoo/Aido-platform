@@ -1,8 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
+import { scheduleEndsBeforeStart } from "./planning.errors.js";
 import { localTimeIn, resolveScheduledInstant } from "./todo-calendar.domain-service.js";
 
 export interface TodoScheduleProps {
@@ -57,11 +55,7 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     endDate,
   }: Pick<TodoScheduleProps, "startDate" | "endDate">): void {
     if (endDate != null && Temporal.PlainDate.compare(endDate, startDate) < 0) {
-      throw new DomainException(
-        ErrorCode.SYS_0002,
-        { startDate: startDate.toString(), endDate: endDate.toString() },
-        "종료 날짜는 시작 날짜보다 빠를 수 없습니다.",
-      );
+      throw scheduleEndsBeforeStart(startDate, endDate);
     }
   }
 

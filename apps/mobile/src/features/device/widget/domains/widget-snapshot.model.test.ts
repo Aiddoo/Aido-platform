@@ -1,4 +1,5 @@
 import { toDateKey } from '@src/shared/date/zoned';
+import { createDateKey } from '@src/testing/date-key';
 
 import { createWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
 import { widgetSnapshotStorageSchema } from '../schemas/widget-snapshot-storage.schema';
@@ -45,7 +46,7 @@ describe('getDay', () => {
     const snapshot = createWidgetSnapshot({}, { state: 'empty', totalTodos: 0 });
 
     // When
-    const { day, renderState } = WidgetSnapshotPolicy.getDay(snapshot, '2026-07-12');
+    const { day, renderState } = WidgetSnapshotPolicy.getDay(snapshot, createDateKey('2026-07-12'));
 
     // Then
     expect(day.date).toBe('2026-07-12');
@@ -72,7 +73,7 @@ describe('getDay', () => {
     const snapshot = createWidgetSnapshot({}, {});
 
     // When
-    const { renderState } = WidgetSnapshotPolicy.getDay(snapshot, '2026-07-14');
+    const { renderState } = WidgetSnapshotPolicy.getDay(snapshot, createDateKey('2026-07-14'));
 
     // Then
     expect(renderState).toBe('stale');
@@ -80,10 +81,13 @@ describe('getDay', () => {
 
   it('loggedOut 스냅샷은 날짜가 지나도 loggedOut을 유지한다', () => {
     // Given
-    const snapshot = createWidgetSnapshot({ state: 'loggedOut', date: '2026-07-01' });
+    const snapshot = createWidgetSnapshot({
+      state: 'loggedOut',
+      date: createDateKey('2026-07-01'),
+    });
 
     // When
-    const { renderState } = WidgetSnapshotPolicy.getDay(snapshot, '2026-07-12');
+    const { renderState } = WidgetSnapshotPolicy.getDay(snapshot, createDateKey('2026-07-12'));
 
     // Then
     expect(renderState).toBe('loggedOut');
@@ -96,7 +100,11 @@ describe('getDayForOwner', () => {
     const snapshot = createWidgetSnapshot({});
 
     // When
-    const { renderState } = WidgetSnapshotPolicy.getDayForOwner(snapshot, '2026-07-12', null);
+    const { renderState } = WidgetSnapshotPolicy.getDayForOwner(
+      snapshot,
+      createDateKey('2026-07-12'),
+      null,
+    );
 
     // Then
     expect(renderState).toBe('stale');
@@ -107,7 +115,11 @@ describe('getDayForOwner', () => {
     const snapshot = createWidgetSnapshot({ state: 'loggedOut' });
 
     // When
-    const { renderState } = WidgetSnapshotPolicy.getDayForOwner(snapshot, '2026-07-12', null);
+    const { renderState } = WidgetSnapshotPolicy.getDayForOwner(
+      snapshot,
+      createDateKey('2026-07-12'),
+      null,
+    );
 
     // Then
     expect(renderState).toBe('loggedOut');
@@ -120,7 +132,7 @@ describe('getDayForOwner', () => {
     // When
     const { day, renderState } = WidgetSnapshotPolicy.getDayForOwner(
       snapshot,
-      '2026-07-12',
+      createDateKey('2026-07-12'),
       'user-1',
     );
 

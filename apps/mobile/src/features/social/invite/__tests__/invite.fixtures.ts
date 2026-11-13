@@ -8,6 +8,7 @@ import {
   type RedeemInviteResponse,
   redeemInviteResponseSchema,
 } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
 import { type RedemptionResult, redemptionResultSchema } from '../domains/invite-redemption.model';
@@ -39,7 +40,7 @@ export function createInvitePreviewDto(
 export function createInviteApiError({
   code = 'INVITE_2101',
   status = 404,
-}: { code?: string; status?: number } = {}) {
+}: { code?: ErrorCodeType; status?: number } = {}) {
   return new ApiError(code, '초대 코드를 찾을 수 없어요', status);
 }
 

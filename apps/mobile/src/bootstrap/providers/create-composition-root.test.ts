@@ -1,15 +1,15 @@
 import { KeychainLockedError } from '@src/shared/errors';
-import {
-  disabledDraftStorage,
-  type EncryptedStorageBootstrap,
-} from '@src/shared/infra/storage/encrypted-draft-storage';
+import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createErrorReporterStub,
+  createMemoryObservableSyncStorage,
   createMemorySyncStorage,
   createTestPorts,
   createTestQueryClient,
 } from '@src/testing/core';
 
+import { pendingStorageCleanupStoredValue } from '../schemas/pending-storage-cleanup-storage.schema';
 import { createCompositionRoot } from './create-composition-root';
 
 function opened(): EncryptedStorageBootstrap {
@@ -17,32 +17,34 @@ function opened(): EncryptedStorageBootstrap {
 }
 
 function failed(failure: unknown = new Error('keychain read failed')): EncryptedStorageBootstrap {
-  return { draftStorage: disabledDraftStorage, queryCacheStorage: null, failure };
+  return { draftStorage: createMemorySyncStorage(), queryCacheStorage: null, failure };
 }
 
 /** 저장소 열기는 `results`를 차례로 돌려주고 마지막 것을 되풀이한다 */
 function createRoot(results: EncryptedStorageBootstrap[]) {
   const errorReporter = createErrorReporterStub();
+  const syncStorage = createMemoryObservableSyncStorage();
   const created = { devicePorts: 0, queryClients: 0, storageOpens: 0 };
+  const openEncryptedStorage = jest.fn(async () => {
+    const result = results[Math.min(created.storageOpens, results.length - 1)];
+    if (result == null) {
+      throw new Error('저장소 열기 결과를 정하지 않았습니다');
+    }
+    created.storageOpens += 1;
+    return result;
+  });
   const root = createCompositionRoot({
     createDevicePorts: () => {
       created.devicePorts += 1;
-      return createTestPorts({ errorReporter });
+      return createTestPorts({ errorReporter, syncStorage });
     },
-    openEncryptedStorage: async () => {
-      const result = results[Math.min(created.storageOpens, results.length - 1)];
-      if (result == null) {
-        throw new Error('저장소 열기 결과를 정하지 않았습니다');
-      }
-      created.storageOpens += 1;
-      return result;
-    },
+    openEncryptedStorage,
     createQueryClient: () => {
       created.queryClients += 1;
       return createTestQueryClient();
     },
   });
-  return { root, created, errorReporter };
+  return { root, created, errorReporter, syncStorage, openEncryptedStorage };
 }
 
 describe('createCompositionRoot', () => {
@@ -72,10 +74,11 @@ describe('createCompositionRoot', () => {
     expect(created.storageOpens).toBe(1);
   });
 
-  it('저장소를 열지 못하면 저장을 끈 포트로 열고 다음에 다시 열며 같은 실패는 한 번만 보고한다', async () => {
+  it('저장소를 열지 못하면 기기에 저장하지 않는 포트로 열고 다음에 다시 열며 같은 실패는 한 번만 보고한다', async () => {
     // Given
+    const unavailable = failed();
     const storage = opened();
-    const { root, created, errorReporter } = createRoot([failed(), failed(), storage]);
+    const { root, created, errorReporter } = createRoot([unavailable, failed(), storage]);
     const withoutStorage = await root.openPorts();
     expect(root.getOpenedPorts()).toBeNull();
     await root.openPorts();
@@ -84,7 +87,8 @@ describe('createCompositionRoot', () => {
     const reopened = await root.openPorts();
 
     // Then
-    expect(withoutStorage.draftStorage).toBe(disabledDraftStorage);
+    expect(withoutStorage.draftStorage).toBe(unavailable.draftStorage);
+    expect(withoutStorage.queryCacheStorage).toBeNull();
     expect(reopened.draftStorage).toBe(storage.draftStorage);
     expect(root.getOpenedPorts()).toBe(reopened);
     expect(reopened.tokenStore).toBe(withoutStorage.tokenStore);
@@ -104,5 +108,26 @@ describe('createCompositionRoot', () => {
 
     // Then
     expect(errorReporter.captureException).not.toHaveBeenCalled();
+  });
+
+  it('저장소를 열지 못한 실행이 남긴 정리 표시를 열 때 넘기고, 연 뒤에만 지운다', async () => {
+    // Given
+    const { root, syncStorage, openEncryptedStorage } = createRoot([failed(), opened()]);
+    const pending = { queryCache: true, drafts: true };
+    writeStoredValue(syncStorage, pendingStorageCleanupStoredValue, pending);
+
+    // When
+    await root.openPorts();
+
+    // Then
+    expect(openEncryptedStorage).toHaveBeenLastCalledWith(expect.anything(), pending);
+    expect(readStoredValue(syncStorage, pendingStorageCleanupStoredValue)).toEqual(pending);
+
+    // When
+    await root.openPorts();
+
+    // Then
+    expect(openEncryptedStorage).toHaveBeenLastCalledWith(expect.anything(), pending);
+    expect(readStoredValue(syncStorage, pendingStorageCleanupStoredValue)).toBeNull();
   });
 });

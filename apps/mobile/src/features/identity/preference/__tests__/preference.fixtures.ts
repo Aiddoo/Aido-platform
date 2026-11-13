@@ -1,4 +1,5 @@
 import type { PreferenceResponse } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
 import { type Preference, preferenceSchema } from '../domains/preference.model';
@@ -37,7 +38,7 @@ export function createPreference(overrides?: Partial<Preference>): Preference {
 }
 
 export function createPreferenceApiError(
-  overrides?: Partial<{ code: string; message: string; status: number }>,
+  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
   return new ApiError(
     overrides?.code ?? 'PREFERENCE_1702',
@@ -45,5 +46,3 @@ export function createPreferenceApiError(
     overrides?.status ?? 400,
   );
 }
-
-export const INVALID_DTO = { invalid: 'data' };

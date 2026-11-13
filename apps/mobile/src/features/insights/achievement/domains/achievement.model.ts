@@ -1,3 +1,4 @@
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { z } from 'zod';
@@ -6,7 +7,7 @@ export const weeklyAchievementSchema = z.object({
   id: z.int(),
   year: z.int(),
   week: z.int().min(1).max(53),
-  dateRange: z.object({ startDate: z.iso.date(), endDate: z.iso.date() }),
+  dateRange: z.object({ startDate: dateKeySchema, endDate: dateKeySchema }),
   totalTodos: z.int().nonnegative(),
   completedTodos: z.int().nonnegative(),
   completionRate: z.number().min(0).max(100),

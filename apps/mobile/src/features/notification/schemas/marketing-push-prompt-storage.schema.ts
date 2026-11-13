@@ -8,7 +8,7 @@ export const marketingPushPromptStorageSchema = marketingPushPromptStateSchema.e
   dismissedAt: instantSchema.nullable().catch(null),
 });
 
-/** 1.14.x까지 기기 하나에 남긴 JSON. 로그인한 계정으로 한 번 옮기고 지운다 */
+/** 1.14.x까지 기기 하나에 남긴 JSON. 로그인한 계정으로 한 번 옮기고 지운다. 1.16.0에서 지운다(compatibility.md) */
 export const legacyMarketingPushPromptStorageSchema = z.object({
   lastPromptedAt: instantSchema.nullable().catch(null),
 });

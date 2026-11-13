@@ -105,12 +105,16 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
   });
 
   it.each([
-    { language: "ko", label: "3월 1주차" },
-    { language: "en", label: "Week 1 of Mar" },
+    { language: "ko", now: "2026-11-12T03:00:00Z", label: "3월 1주차" },
+    { language: "en", now: "2026-11-12T03:00:00Z", label: "Week 1 of Mar" },
+    // 다른 해에 보면 주차 달의 연도를 붙인다(라벨의 올해는 저장 시간대, 테스트 사용자는 UTC)
+    { language: "ko", now: DAILY_COMPLETION_FIXTURE_NOW.toString(), label: "2026년 3월 1주차" },
+    { language: "en", now: DAILY_COMPLETION_FIXTURE_NOW.toString(), label: "Week 1 of Mar 2026" },
   ])(
-    "$language 헤더는 주차 라벨을 바꾸고 저장된 완료율·날짜는 유지한다",
-    async ({ language, label }) => {
+    "$language 헤더·$now에는 주차 라벨이 $label이고 저장된 완료율·날짜는 유지한다",
+    async ({ language, now, label }) => {
       // Given
+      vi.setSystemTime(Temporal.Instant.from(now).epochMilliseconds);
       const user = await context.helpers.createVerifiedUser(
         `weekly-detail-${language}@example.com`,
         "Test1234!",

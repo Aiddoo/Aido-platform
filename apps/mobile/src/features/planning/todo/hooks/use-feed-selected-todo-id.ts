@@ -17,8 +17,9 @@ export function useFeedSelectedTodoId() {
     (todoId: number | undefined) => {
       match({ paneSizeClass, todoId })
         .with({ paneSizeClass: 'compact', todoId: P.nullish }, noop)
+        // 상세 행의 Link가 navigate로 열어 같은 상세가 겹쳐 쌓이지 않게 같은 동사를 쓴다
         .with({ paneSizeClass: 'compact', todoId: P.number }, ({ todoId: selected }) =>
-          router.push({ pathname: '/todo/[todoId]', params: { todoId: selected } }),
+          router.navigate({ pathname: '/todo/[todoId]', params: { todoId: selected } }),
         )
         .with({ paneSizeClass: P.union('medium', 'expanded') }, () => {
           if (todoId !== selectedTodoId) {

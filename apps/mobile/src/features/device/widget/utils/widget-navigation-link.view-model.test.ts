@@ -1,0 +1,102 @@
+import { findWidgetEntry } from './widget-navigation-link.view-model';
+
+describe('위젯 앱 진입 경로 검증', () => {
+  it.each(['aido', 'aido-dev', 'aido-preview'])('%s 위젯의 오늘 생성 요청을 유지한다', (scheme) => {
+    // Given
+    const url = `${scheme}://feed?date=today&action=add-todo`;
+
+    // When
+    const entry = findWidgetEntry(url);
+
+    // Then
+    expect(entry?.href).toEqual({
+      pathname: '/feed',
+      params: { date: 'today', action: 'add-todo' },
+    });
+    expect(entry?.openedDestination).toBe('add_todo');
+  });
+
+  it('주간 달력에서 선택한 고정 날짜를 유지한다', () => {
+    // Given
+    const url = 'aido://feed?date=2026-10-05';
+
+    // When
+    const entry = findWidgetEntry(url);
+
+    // Then
+    expect(entry?.href).toEqual({ pathname: '/feed', params: { date: '2026-10-05' } });
+    expect(entry?.openedDestination).toBe('feed');
+  });
+
+  it('할 일 식별자를 실제 Expo Router 파일명에 맞게 전달한다', () => {
+    // Given
+    const url = 'aido://todo/123';
+
+    // When
+    const entry = findWidgetEntry(url);
+
+    // Then
+    expect(entry?.href).toEqual({ pathname: '/todo/[todoId]', params: { todoId: '123' } });
+    expect(entry?.openedDestination).toBe('todo');
+  });
+
+  it.each([
+    null,
+    'invalid',
+    'https://aido.kr/feed?date=today',
+    'aido://settings',
+    'aido://feed?date=2026-02-30',
+    'aido://feed?date=today&action=delete',
+    'aido://feed?date=today&friendId=other',
+    'aido://todo/0',
+    'aido://todo/-1',
+    'aido://todo/9007199254740992',
+    'aido://todo/1?extra=true',
+    'aido://user:password@todo/1',
+    'aido://todo/1#fragment',
+  ])('허용되지 않거나 손상된 초기 URL %s는 다시 이동하지 않는다', (url) => {
+    // Given
+    const initialUrl = url;
+
+    // When
+    const entry = findWidgetEntry(initialUrl);
+
+    // Then
+    expect(entry).toBeNull();
+  });
+});
+
+describe('위젯 목적지가 이미 보이는지 판단', () => {
+  it('같은 날짜의 내 피드가 보이면 다시 이동하지 않는다', () => {
+    // When
+    const isShown = findWidgetEntry('aido://feed?date=today')?.isShown({
+      pathname: '/feed',
+      params: {},
+    });
+
+    // Then
+    expect(isShown).toBe(true);
+  });
+
+  it('같은 피드 화면이라도 친구 피드가 보이면 내 피드로 이동한다', () => {
+    // When
+    const isShown = findWidgetEntry('aido://feed?date=today')?.isShown({
+      pathname: '/feed',
+      params: { friendId: 'friend-1' },
+    });
+
+    // Then
+    expect(isShown).toBe(false);
+  });
+
+  it('할 일 상세는 pathname으로 판단한다', () => {
+    // When
+    const isShown = findWidgetEntry('aido://todo/123')?.isShown({
+      pathname: '/todo/123',
+      params: {},
+    });
+
+    // Then
+    expect(isShown).toBe(true);
+  });
+});

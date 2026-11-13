@@ -1,27 +1,20 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
-import { createTestDi } from '@src/testing/core';
-import { act, renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { fromEpochMs } from '@src/shared/date/instant';
+import { renderScreenHook } from '@src/testing/render';
+import { act } from '@testing-library/react-native';
 
 import { createPushNotificationResponse } from '../__tests__/notification.fixtures';
-import { createPushNotificationEntryStore } from '../stores/push-notification-entry.store';
 import { useHasPendingPushNotificationEntry } from './use-push-notification-entry';
 
 const RESPONSE = createPushNotificationResponse({
   id: 'response-1',
   isLaunchResponse: true,
   appState: 'active',
-  activeSince: 0,
+  activeSince: fromEpochMs(0),
 });
 
 async function setup() {
-  const store = createPushNotificationEntryStore();
-  const container = createTestDi({ pushNotificationEntryStore: store });
-  const wrapper = ({ children }: PropsWithChildren) => (
-    <StaticDIProvider container={container}>{children}</StaticDIProvider>
-  );
-  const hook = await renderHook(() => useHasPendingPushNotificationEntry(), { wrapper });
-  return { store, ...hook };
+  const hook = await renderScreenHook(() => useHasPendingPushNotificationEntry());
+  return { store: hook.di.pushNotificationEntryStore, ...hook };
 }
 
 describe('useHasPendingPushNotificationEntry', () => {

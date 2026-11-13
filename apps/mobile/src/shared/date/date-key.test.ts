@@ -1,25 +1,44 @@
 import { i18n } from '@src/shared/i18n';
+import { createDateKey } from '@src/testing/date-key';
 import { temporalOracle } from '@src/testing/temporal-oracle';
 import { range } from 'es-toolkit';
+import { z } from 'zod';
 
+import weekCases from '../../../../../packages/api/test/fixtures/week-of-month-cases.json';
 import {
   addDaysToDateKey,
   addMonthsToDateKey,
+  dateKeySchema,
   diffDateKeysInMonths,
   getMonthStartDateKey,
   diffDateKeysInDays,
   getCalendarWeek,
   getDayOfWeek,
   getDaysInDateKeyMonth,
+  getIsoWeekOfMonth,
   getIsoWeekYear,
   getMondayOfDateKey,
   getMonthEndDateKey,
-  getYearOfDateKey,
-  getDayOfMonth,
+  isDateKey,
   isSameMonthDateKey,
   isSameYearDateKey,
 } from './date-key';
 import { toDateKey } from './zoned';
+
+/** 서버 getIsoWeekOfMonth도 같은 표의 ISO 행을 읽는다. 두 구현이 어긋나면 어느 한쪽 테스트가 깨진다 */
+const SHARED_WEEK_OF_MONTH_CASES = z
+  .object({
+    weekOfMonth: z.array(
+      z.object({
+        name: z.string(),
+        system: z.enum(['SUNDAY_START', 'ISO']),
+        date: z.iso.date(),
+        expectedMiddleDate: z.iso.date(),
+        expectedWeekOfMonth: z.int().min(1).max(5),
+      }),
+    ),
+  })
+  .parse(weekCases).weekOfMonth;
 
 afterEach(async () => {
   await i18n.changeLanguage('ko');
@@ -33,7 +52,7 @@ describe('diffDateKeysInDays — 두 날짜 key 사이의 달력 일수', () => 
     ['2026-10-05', '2026-10-01', -4],
   ])('%s부터 %s까지는 %s일이다', (from, to, expected) => {
     // When
-    const days = diffDateKeysInDays(from, to);
+    const days = diffDateKeysInDays(createDateKey(from), createDateKey(to));
 
     // Then
     expect(days).toBe(expected);
@@ -47,28 +66,45 @@ describe('getDayOfWeek — 날짜 key의 요일', () => {
     ['2026-10-31', 6],
   ])('%s의 요일 인덱스는 %s다', (dateKey, expected) => {
     // When
-    const weekday = getDayOfWeek(dateKey);
+    const weekday = getDayOfWeek(createDateKey(dateKey));
 
     // Then
     expect(weekday).toBe(expected);
   });
 });
 
+describe('getCalendarWeek·getIsoWeekOfMonth', () => {
+  it.each(SHARED_WEEK_OF_MONTH_CASES)(
+    '주차는 주의 가운데 날이 속한 달의 몇째 주다(서버와 같은 표): $system $name',
+    ({ system, date, expectedMiddleDate, expectedWeekOfMonth }) => {
+      // When
+      const dateKey = createDateKey(date);
+      const { middleDateKey, weekOfMonth } =
+        system === 'ISO' ? getIsoWeekOfMonth(dateKey) : getCalendarWeek(dateKey);
+
+      // Then
+      expect({ middleDateKey, weekOfMonth }).toEqual({
+        middleDateKey: expectedMiddleDate,
+        weekOfMonth: expectedWeekOfMonth,
+      });
+    },
+  );
+});
+
 describe('날짜 key 기준 달력 주', () => {
   it.each([
-    ['2026-03-08', '2026-03-08', '2026-03-14', 2],
-    ['2026-11-01', '2026-11-01', '2026-11-07', 1],
-    ['2028-02-29', '2028-02-27', '2028-03-04', 4],
-    ['2026-12-28', '2026-12-27', '2027-01-02', 4],
-    ['2027-01-03', '2027-01-03', '2027-01-09', 1],
-    ['2031-10-20', '2031-10-19', '2031-10-25', 3],
-  ])('%s의 주는 %s~%s, 시작한 달의 %s주차다', (dateKey, startDateKey, endDateKey, weekOfMonth) => {
+    ['2026-03-08', '2026-03-08', '2026-03-14'],
+    ['2026-11-01', '2026-11-01', '2026-11-07'],
+    ['2028-02-29', '2028-02-27', '2028-03-04'],
+    ['2026-12-28', '2026-12-27', '2027-01-02'],
+    ['2027-01-03', '2027-01-03', '2027-01-09'],
+  ])('%s의 주는 일요일 %s부터 토요일 %s까지다', (dateKey, startDateKey, endDateKey) => {
     // When
-    const week = getCalendarWeek(dateKey);
+    const week = getCalendarWeek(createDateKey(dateKey));
 
     // Then
     // DST 전환일, 윤일, ISO 53주(12-28~01-03)에 걸친 날짜
-    expect(week).toEqual({ startDateKey, endDateKey, weekOfMonth });
+    expect(week).toMatchObject({ startDateKey, endDateKey });
   });
 
   it.each([
@@ -96,12 +132,14 @@ describe('날짜 key 기준 달력 주', () => {
         todayDateKey: '2026-11-01',
         startDateKey: '2026-11-01',
         endDateKey: '2026-11-07',
+        middleDateKey: '2026-11-04',
         weekOfMonth: 1,
       },
       {
         todayDateKey: '2026-10-31',
         startDateKey: '2026-10-25',
         endDateKey: '2026-10-31',
+        middleDateKey: '2026-10-28',
         weekOfMonth: 4,
       },
     ]);
@@ -137,7 +175,7 @@ describe('addDaysToDateKey — 날짜 key에 달력 일수 더하기', () => {
     ['2026-11-01', 365, '2027-11-01'],
   ])('%s에 %s일을 더하면 %s다', (dateKey, days, expected) => {
     // When
-    const result = addDaysToDateKey(dateKey, days);
+    const result = addDaysToDateKey(createDateKey(dateKey), days);
 
     // Then
     expect(result).toBe(expected);
@@ -146,7 +184,7 @@ describe('addDaysToDateKey — 날짜 key에 달력 일수 더하기', () => {
   it('DST 전환일을 지나도 하루씩 늘고 줄어든다', () => {
     // Given
     // 미국·유럽 DST 전환(3월, 10~11월)을 모두 지나는 두 해
-    const start = '2026-01-01';
+    const start = createDateKey('2026-01-01');
 
     // When
     const keys = range(800).map((offset) => addDaysToDateKey(start, offset));
@@ -168,7 +206,7 @@ describe('getMondayOfDateKey — 월요일 시작 주의 월요일', () => {
     ['2028-03-01', '2028-02-28'],
   ])('%s가 속한 주의 월요일은 %s다', (dateKey, expected) => {
     // When
-    const monday = getMondayOfDateKey(dateKey);
+    const monday = getMondayOfDateKey(createDateKey(dateKey));
 
     // Then
     expect(monday).toBe(expected);
@@ -183,7 +221,10 @@ describe('날짜 key의 달 계산', () => {
     ['2026-04-30', 30, '2026-04-30'],
   ])('%s의 달은 %s일이고 말일은 %s다', (dateKey, days, monthEnd) => {
     // When
-    const result = { days: getDaysInDateKeyMonth(dateKey), monthEnd: getMonthEndDateKey(dateKey) };
+    const result = {
+      days: getDaysInDateKeyMonth(createDateKey(dateKey)),
+      monthEnd: getMonthEndDateKey(createDateKey(dateKey)),
+    };
 
     // Then
     expect(result).toEqual({ days, monthEnd });
@@ -195,7 +236,7 @@ describe('날짜 key의 달 계산', () => {
     ['2025-10-31', '2026-10-31', false],
   ])('%s와 %s의 같은 달 여부는 %s다', (first, second, expected) => {
     // When
-    const result = isSameMonthDateKey(first, second);
+    const result = isSameMonthDateKey(createDateKey(first), createDateKey(second));
 
     // Then
     expect(result).toBe(expected);
@@ -206,7 +247,7 @@ describe('날짜 key의 달 계산', () => {
     ['2026-12-31', '2027-01-01', false],
   ])('%s와 %s의 같은 해 여부는 %s다', (first, second, expected) => {
     // When
-    const result = isSameYearDateKey(first, second);
+    const result = isSameYearDateKey(createDateKey(first), createDateKey(second));
 
     // Then
     expect(result).toBe(expected);
@@ -224,7 +265,7 @@ describe('getIsoWeekYear', () => {
     const key = dateKey;
 
     // When
-    const year = getIsoWeekYear(key);
+    const year = getIsoWeekYear(createDateKey(key));
 
     // Then
     expect(year).toBe(expected);
@@ -234,10 +275,10 @@ describe('getIsoWeekYear', () => {
 describe('달 단위 key 계산', () => {
   it('말일을 넘기면 그 달의 마지막 날로 맞춰 달을 더한다', () => {
     // When
-    const common = addMonthsToDateKey('2026-01-31', 1);
-    const leap = addMonthsToDateKey('2028-01-31', 1);
-    const nextYear = addMonthsToDateKey('2026-12-15', 1);
-    const previousYear = addMonthsToDateKey('2026-01-15', -1);
+    const common = addMonthsToDateKey(createDateKey('2026-01-31'), 1);
+    const leap = addMonthsToDateKey(createDateKey('2028-01-31'), 1);
+    const nextYear = addMonthsToDateKey(createDateKey('2026-12-15'), 1);
+    const previousYear = addMonthsToDateKey(createDateKey('2026-01-15'), -1);
 
     // Then
     expect(common).toBe('2026-02-28');
@@ -248,7 +289,7 @@ describe('달 단위 key 계산', () => {
 
   it('달의 첫날을 구한다', () => {
     // When
-    const monthStart = getMonthStartDateKey('2026-06-15');
+    const monthStart = getMonthStartDateKey(createDateKey('2026-06-15'));
 
     // Then
     expect(monthStart).toBe('2026-06-01');
@@ -256,9 +297,18 @@ describe('달 단위 key 계산', () => {
 
   it('일은 보지 않고 달 차이만 센다', () => {
     // When
-    const acrossMonth = diffDateKeysInMonths('2026-01-31', '2026-02-01');
-    const sameMonth = diffDateKeysInMonths('2026-04-15', '2026-04-01');
-    const backwards = diffDateKeysInMonths('2026-04-15', '2026-03-15');
+    const acrossMonth = diffDateKeysInMonths(
+      createDateKey('2026-01-31'),
+      createDateKey('2026-02-01'),
+    );
+    const sameMonth = diffDateKeysInMonths(
+      createDateKey('2026-04-15'),
+      createDateKey('2026-04-01'),
+    );
+    const backwards = diffDateKeysInMonths(
+      createDateKey('2026-04-15'),
+      createDateKey('2026-03-15'),
+    );
 
     // Then
     expect(acrossMonth).toBe(1);
@@ -269,7 +319,9 @@ describe('달 단위 key 계산', () => {
 
 describe('서버 Temporal과 같은 날짜 key 계산', () => {
   // 1900-01-01부터 2200-12-31까지 사흘마다. 월말·윤일·ISO 53주 해가 모두 들어간다
-  const dateKeys = range(0, 109_938, 3).map((days) => addDaysToDateKey('1900-01-01', days));
+  const dateKeys = range(0, 109_938, 3).map((days) =>
+    addDaysToDateKey(createDateKey('1900-01-01'), days),
+  );
 
   it('1900~2200년 날짜 key의 더하기·차이·요일·달 길이·ISO 주 연도가 Node 26 Temporal과 같다', () => {
     // When
@@ -279,7 +331,7 @@ describe('서버 Temporal과 같은 날짜 key 계산', () => {
         addDaysToDateKey(dateKey, -31) !== temporalOracle.addDays(dateKey, -31) ||
         addMonthsToDateKey(dateKey, 1) !== temporalOracle.addMonths(dateKey, 1) ||
         addMonthsToDateKey(dateKey, -13) !== temporalOracle.addMonths(dateKey, -13) ||
-        diffDateKeysInDays('2026-11-12', dateKey) !==
+        diffDateKeysInDays(createDateKey('2026-11-12'), dateKey) !==
           temporalOracle.diffDays('2026-11-12', dateKey) ||
         getDayOfWeek(dateKey) !== temporalOracle.dayOfWeek(dateKey) ||
         getDaysInDateKeyMonth(dateKey) !== temporalOracle.daysInMonth(dateKey) ||
@@ -302,7 +354,7 @@ describe('서버 Temporal과 같은 날짜 key 계산', () => {
     ['2000년은 윤년이다', '2000-01-31', 1, '2000-02-29'],
   ])('%s는 그 달의 마지막 날로 맞춘다', (_name, dateKey, months, expected) => {
     // When
-    const result = addMonthsToDateKey(dateKey, months);
+    const result = addMonthsToDateKey(createDateKey(dateKey), months);
 
     // Then
     expect([result, temporalOracle.addMonths(dateKey, months)]).toEqual([expected, expected]);
@@ -317,40 +369,32 @@ describe('서버 Temporal과 같은 날짜 key 계산', () => {
     ['2027-12-31', 2027],
   ])('%s의 ISO 주 연도는 %s다(2026·2032는 53주)', (dateKey, expected) => {
     // When
-    const result = getIsoWeekYear(dateKey);
+    const result = getIsoWeekYear(createDateKey(dateKey));
 
     // Then
     expect([result, temporalOracle.isoWeekYear(dateKey)]).toEqual([expected, expected]);
   });
+});
 
+describe('isDateKey — 계산 결과를 날짜 key로 좁히는 판정', () => {
   it.each([
+    '2026-11-12',
+    '2028-02-29',
+    '2000-02-29',
+    '0000-01-01',
+    '9999-12-31',
     '',
-    'abc',
     '2026-13-01',
     '2026-02-30',
-    '2027-02-29',
+    '2100-02-29',
     '2026-2-3',
-    '20261112',
-    '2026-11-12T09:00',
+    '10000-01-01',
     '2026-11-12T00:00:00.000Z',
-  ])("계약 형식이 아닌 '%s'는 빈 key와 NaN이다", (dateKey) => {
+  ])("'%s'를 계약 스키마와 같게 판정한다", (value) => {
     // When
-    const results = [
-      addDaysToDateKey(dateKey, 1),
-      addMonthsToDateKey(dateKey, 1),
-      getMonthStartDateKey(dateKey),
-      getMonthEndDateKey(dateKey),
-      getMondayOfDateKey(dateKey),
-      diffDateKeysInDays(dateKey, '2026-01-01'),
-      diffDateKeysInMonths(dateKey, '2026-01-01'),
-      getDayOfWeek(dateKey),
-      getDayOfMonth(dateKey),
-      getYearOfDateKey(dateKey),
-      isSameMonthDateKey(dateKey, dateKey),
-      isSameYearDateKey(dateKey, dateKey),
-    ];
+    const result = isDateKey(value);
 
     // Then
-    expect(results).toEqual(['', '', '', '', '', NaN, NaN, NaN, NaN, NaN, false, false]);
+    expect(result).toBe(dateKeySchema.safeParse(value).success);
   });
 });

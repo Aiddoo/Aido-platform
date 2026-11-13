@@ -1,11 +1,11 @@
-import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
 import type { CreateTodoData } from "#api/modules/planning/todos/planning-todos.public";
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
+
+import { planCategoriesNotOwned } from "./action-plans.errors.js";
 
 export interface PlannedTodo {
   readonly type: "CREATE_TODO";
@@ -62,7 +62,7 @@ export class ActionPlan extends ValueObject<ActionPlanValue> {
       (categoryId) => !owned.has(categoryId),
     );
     if (categoryIds.length > 0) {
-      throw new DomainException(ErrorCode.AI_1315, { reason: "CATEGORY_NOT_OWNED", categoryIds });
+      throw planCategoriesNotOwned(categoryIds);
     }
   }
 

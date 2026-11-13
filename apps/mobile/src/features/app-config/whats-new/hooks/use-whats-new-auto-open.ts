@@ -3,7 +3,7 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useMemo } from 'react';
 
 import { WhatsNewPolicy } from '../domains/whats-new.model';
-import { shouldShowCoachmarks } from '../utils/should-show-coachmarks';
+import { shouldShowCoachmarks } from '../utils/whats-new-coachmarks.view-model';
 import { useWhatsNewCampaign } from './use-whats-new-campaign';
 
 interface WhatsNewAutoOpenInput {
@@ -17,7 +17,7 @@ export function useWhatsNewAutoOpen({ isOnboardingSettled }: WhatsNewAutoOpenInp
   const { config, isConfigLoading, release, identity, hasSeen } = useWhatsNewCampaign();
   const applicationMetadata = useApplicationMetadata();
   const appVersion = useMemo(
-    () => applicationMetadata.getInstallation()?.currentVersion,
+    () => applicationMetadata.getInstallation()?.currentVersion ?? null,
     [applicationMetadata],
   );
   const shouldAutoOpen =
