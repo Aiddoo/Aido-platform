@@ -16,9 +16,9 @@ export const TODO_QUERY_KEYS = {
 
   // 홈 위젯 요약. completions() 하위라 토글·생성·삭제의 invalidation을 그대로 상속한다
   widgetSummary: () => [...TODO_QUERY_KEYS.completions(), 'widget-summary'] as const,
-  widgetSummaryByDate: ({ date, userId }: { date: string; userId?: string | null }) =>
+  widgetSummaryByDate: ({ date, userId }: { date: string; userId: string | null }) =>
     queryOptions<TodoSummary>({
-      queryKey: [...TODO_QUERY_KEYS.widgetSummary(), { date, userId: userId ?? null }],
+      queryKey: [...TODO_QUERY_KEYS.widgetSummary(), { date, userId }],
     }).queryKey,
 
   // 할 일·완료한 할 일·진행 중 반복이 있는지(시작 체크리스트, 3개월 안내) — completions() 하위라 생성·토글·삭제 invalidation을 상속한다

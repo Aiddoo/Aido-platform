@@ -3,14 +3,24 @@ import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { queryOptions } from '@tanstack/react-query';
 
+import type { FilterTodoCategory, TodoCategoriesResult } from '../domains/todo-category.model';
 import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 
-export function useGetTodoCategoriesQueryOptions() {
+export function useGetTodoCategoriesQueryOptions({
+  filters,
+}: { filters?: FilterTodoCategory } = {}) {
   const todoCategoryApi = useTodoCategoryApi();
 
   return queryOptions({
     queryKey: TODO_CATEGORY_QUERY_KEYS.list(),
     queryFn: async ({ signal }) => unwrap(await todoCategoryApi.getCategories(signal)),
+    select:
+      filters == null
+        ? undefined
+        : (result: TodoCategoriesResult) => ({
+            ...result,
+            categories: result.categories.filter(filters),
+          }),
     ...PERSISTED_QUERY_OPTIONS,
   });
 }

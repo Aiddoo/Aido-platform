@@ -1,7 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { invalidIsoWeek } from "./weekly-achievements.errors.js";
 
 const MAX_ISO_WEEK = 53;
 
@@ -19,7 +18,7 @@ function weeksInIsoYear(year: number): number {
 export class IsoWeek extends ValueObject<IsoWeekValue> {
   static create(year: number, week: number): IsoWeek {
     if (!Number.isSafeInteger(week) || week < 1 || week > MAX_ISO_WEEK) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "week", value: week });
+      throw invalidIsoWeek(week);
     }
     return new IsoWeek({ year, week });
   }

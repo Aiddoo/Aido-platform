@@ -1,3 +1,4 @@
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { defineStoredValue, storedJsonSchema } from '@src/shared/storage/define-stored-value';
 import { z } from 'zod';
 
@@ -7,6 +8,6 @@ import { z } from 'zod';
  */
 export const upsellDismissalStoredValue = defineStoredValue({
   key: (userId: string) => `aido_upsell_dismissed_v1:${userId}`,
-  schema: storedJsonSchema(z.record(z.string(), z.iso.date())),
+  schema: storedJsonSchema(z.record(z.string(), dateKeySchema)),
   fallback: {},
 });

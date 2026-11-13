@@ -1,7 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
 import { ACCOUNT_DELETION, REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -22,6 +20,7 @@ import type {
   RequestMetadata,
 } from "../../../auth/application/read-models/auth-result.read-model.js";
 import { AUTH_DEFAULTS } from "../../../auth/domain/auth.constants.js";
+import { deletionPasswordRequired, invalidCredentials, userNotFound } from "../users.errors.js";
 
 export interface DeleteAccountCommand {
   readonly userId: string;
@@ -54,7 +53,7 @@ export class DeleteAccountUseCase {
     const userId = UserId.reconstitute(input.userId);
     const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
+      throw userNotFound(input.userId);
     }
     if (user.isDeleted) {
       throw accountDeleted(user.id.value);
@@ -64,17 +63,17 @@ export class DeleteAccountUseCase {
     const credentialAccount = accounts.find((account) => account.provider === "CREDENTIAL");
     if (credentialAccount != null) {
       if (!input.password) {
-        throw new ApplicationException(ErrorCode.USER_0612);
+        throw deletionPasswordRequired();
       }
       if (!credentialAccount.password) {
-        throw new ApplicationException(ErrorCode.USER_0602);
+        throw invalidCredentials();
       }
       const isValid = await this.#dependencies.passwordService.verify(
         credentialAccount.password,
         input.password,
       );
       if (!isValid) {
-        throw new ApplicationException(ErrorCode.USER_0602);
+        throw invalidCredentials();
       }
     }
 

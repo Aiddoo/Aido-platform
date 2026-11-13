@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
-import { RELEASES } from '../constants/releases';
-import { WhatsNewPolicy } from '../domains/whats-new.model';
+import { RELEASES } from '../constants/releases.constants';
+import { findReleaseByCampaign } from '../domains/whats-new.model';
 import { useGetWhatsNewCampaignQueryOptions } from '../queries/whats-new-campaign.queries';
 
 /**
@@ -23,8 +23,7 @@ export function useWhatsNewCampaign() {
   });
   const userId = useMyAccountId({ isEnabled: isAuthenticated });
   const campaignId = config?.enabled ? config.campaignId : null;
-  const release =
-    campaignId == null ? null : WhatsNewPolicy.findReleaseByCampaign(RELEASES, campaignId);
+  const release = campaignId == null ? null : findReleaseByCampaign(RELEASES, campaignId);
   const identity = useMemo(
     () => (userId == null || campaignId == null || release == null ? null : { userId, campaignId }),
     [userId, campaignId, release],

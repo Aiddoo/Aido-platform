@@ -8,7 +8,6 @@ import {
   TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
-import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
   addMonthsToDateKey,
@@ -17,6 +16,8 @@ import {
   getMondayOfDateKey,
   getMonthEndDateKey,
   getMonthStartDateKey,
+  dateKeyFieldSchema,
+  type DateKey,
 } from '@src/shared/date/date-key';
 import {
   getDateKeyDayOfWeek,
@@ -47,9 +48,10 @@ export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
 const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
 export type TodoUpdateScope = z.infer<typeof todoUpdateScopeSchema>;
 
+// 할 일·음성 계획 폼이 이 규칙을 그대로 쓰므로 폼 입력도 날짜 key다
 const todoRepeatEndSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('NEVER') }),
-  z.object({ type: z.literal('UNTIL'), date: z.iso.date() }),
+  z.object({ type: z.literal('UNTIL'), date: dateKeyFieldSchema }),
   z.object({
     type: z.literal('COUNT'),
     count: todoRepeatCountSchema,
@@ -119,8 +121,8 @@ export function isRepeatMonthDayClamped(repeat: TodoRepeat): boolean {
 
 export function withRepeatStartDate(
   repeat: TodoRepeat,
-  previousStartDate: string,
-  nextStartDate: string,
+  previousStartDate: DateKey,
+  nextStartDate: DateKey,
 ): TodoRepeat {
   const adjusted = match(repeat)
     .returnType<TodoRepeat>()
@@ -180,39 +182,16 @@ export function getTodoEditScopeDecision({
   return isDateOnly ? 'this-only' : 'ask';
 }
 
-interface RepeatOccurrence {
-  recurrenceGroupId: string | null;
-  repeat: TodoRepeat | null;
-}
-
-// 규칙 없는 묶음(이관에서 패턴을 잃음)은 서버가 범위 수정·끝내기를 받지 않아 "이 할 일만"으로 다룬다
-export function hasRepeatRule({ recurrenceGroupId, repeat }: RepeatOccurrence): boolean {
-  return recurrenceGroupId != null && repeat != null;
-}
-
-// 반복 칩으로 규칙을 고칠 수 있는지. 규칙 없는 묶음의 회차는 서버가 전환을 받지 않는다(TODO_0845)
-export function canChangeRepeat(occurrence: RepeatOccurrence): boolean {
-  return occurrence.recurrenceGroupId == null || hasRepeatRule(occurrence);
-}
-
-// 삭제 때 고를 수 있는 범위. 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다
-export function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEditScope[] {
-  if (occurrence.recurrenceGroupId == null) {
-    return [];
-  }
-  return hasRepeatRule(occurrence) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
-}
-
 // 서버 RepeatRule과 같은 걷기: 하루씩 보지 않고 규칙이 맞는 날로 건너뛴다. 격주는 시작일이 속한 월요일 시작 주 기준이다
-function* walkDailyDateKeys(startDate: string, upper: string): Generator<string> {
+function* walkDailyDateKeys(startDate: DateKey, upper: DateKey): Generator<DateKey> {
   for (let date = startDate; date <= upper; date = addDaysToDateKey(date, 1)) {
     yield date;
   }
 }
 
 interface WeeklyWalk {
-  startDate: string;
-  upper: string;
+  startDate: DateKey;
+  upper: DateKey;
   interval: number;
   weekdays: readonly DayOfWeek[];
 }
@@ -222,12 +201,12 @@ function* walkWeeklyDateKeys({
   upper,
   interval,
   weekdays,
-}: WeeklyWalk): Generator<string> {
+}: WeeklyWalk): Generator<DateKey> {
   const offsets = sortDaysOfWeek(weekdays).map((weekday) => DAYS_OF_WEEK.indexOf(weekday));
   for (
     let monday = getMondayOfDateKey(startDate);
     monday <= upper;
-    monday = addDaysToDateKey(monday, interval * DAYS_PER_WEEK)
+    monday = addDaysToDateKey(monday, interval * DAYS_OF_WEEK.length)
   ) {
     for (const offset of offsets) {
       const date = addDaysToDateKey(monday, offset);
@@ -243,10 +222,10 @@ function* walkWeeklyDateKeys({
 
 // 매월 n일은 그날이 없는 달이면 말일이다
 function* walkMonthlyDateKeys(
-  startDate: string,
-  upper: string,
+  startDate: DateKey,
+  upper: DateKey,
   monthDay: number,
-): Generator<string> {
+): Generator<DateKey> {
   for (
     let monthStart = getMonthStartDateKey(startDate);
     monthStart <= upper;
@@ -265,7 +244,11 @@ function* walkMonthlyDateKeys(
   }
 }
 
-function walkRuleDateKeys(repeat: TodoRepeat, startDate: string, upper: string): Generator<string> {
+function walkRuleDateKeys(
+  repeat: TodoRepeat,
+  startDate: DateKey,
+  upper: DateKey,
+): Generator<DateKey> {
   return match(repeat)
     .with({ frequency: 'DAILY' }, () => walkDailyDateKeys(startDate, upper))
     .with({ frequency: 'WEEKLY' }, ({ interval, weekdays }) =>
@@ -280,9 +263,9 @@ function walkRuleDateKeys(repeat: TodoRepeat, startDate: string, upper: string):
 // 횟수 종료는 시작일부터 센다
 function* walkOccurrenceDateKeys(
   repeat: TodoRepeat,
-  startDate: string,
-  limit: string,
-): Generator<string> {
+  startDate: DateKey,
+  limit: DateKey,
+): Generator<DateKey> {
   const last = repeat.end.type === 'UNTIL' && repeat.end.date < limit ? repeat.end.date : limit;
   const maxCount = repeat.end.type === 'COUNT' ? repeat.end.count : Number.POSITIVE_INFINITY;
   let count = 0;
@@ -301,17 +284,17 @@ const OCCURRENCE_SEARCH_DAYS = 62;
 // from~to(포함) 안의 회차 날짜. 시작일 전이거나 종료 조건 뒤는 포함하지 않는다
 export function getRepeatOccurrenceDateKeys(
   repeat: TodoRepeat,
-  startDate: string,
-  { from, to }: { from: string; to: string },
-): string[] {
+  startDate: DateKey,
+  { from, to }: { from: DateKey; to: DateKey },
+): DateKey[] {
   return [...walkOccurrenceDateKeys(repeat, startDate, to)].filter((date) => date >= from);
 }
 
 // 시작일 이후 첫 회차(서버가 처음 만드는 할 일 날짜). 종료 조건 안에 회차가 없으면 null
 export function findFirstRepeatOccurrenceDateKey(
   repeat: TodoRepeat,
-  startDate: string,
-): string | null {
+  startDate: DateKey,
+): DateKey | null {
   const [first] = walkOccurrenceDateKeys(
     repeat,
     startDate,
@@ -322,8 +305,8 @@ export function findFirstRepeatOccurrenceDateKey(
 
 export function findLastRepeatOccurrenceDateKey(
   repeat: TodoRepeat,
-  startDate: string,
-): string | null {
+  startDate: DateKey,
+): DateKey | null {
   const limit = match(repeat.end)
     .with({ type: 'NEVER' }, () => null)
     .with({ type: 'UNTIL' }, ({ date }) => date)
@@ -338,24 +321,18 @@ export function findLastRepeatOccurrenceDateKey(
 }
 
 // 서버가 반복 회차를 미리 만드는 범위(오늘 + VISIBLE_AHEAD_DAYS, 그 날 포함)를 넘어간 날짜인지
-export function isBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
+export function isBeyondRepeatHorizon(dateKey: DateKey, todayKey: DateKey): boolean {
   return dateKey > addDaysToDateKey(todayKey, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS);
 }
 
 // 그 날짜가 속한 달의 마지막 날이 미리 만드는 범위를 넘어가는지. 달력에서 일부라도 비어 보일 수 있는 달이다
-export function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
+export function isMonthBeyondRepeatHorizon(dateKey: DateKey, todayKey: DateKey): boolean {
   return isBeyondRepeatHorizon(getMonthEndDateKey(dateKey), todayKey);
 }
 
 export const TodoRepeatPolicy = {
   getRepeatKind,
   hasSameRepeat,
-  isBeyondRepeatHorizon,
-  isMonthBeyondRepeatHorizon,
-  getTodoEditScopeDecision,
-  hasRepeatRule,
-  canChangeRepeat,
-  getDeleteScopes,
   withRepeatStartDate,
   isRepeatMonthDayClamped,
   getRepeatOccurrenceDateKeys,

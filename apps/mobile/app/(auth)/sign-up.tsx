@@ -2,7 +2,7 @@ import ConfirmationNumber from '@expo/material-symbols/confirmation_number.xml';
 import {
   SignUpForm,
   type SignUpStepContexts,
-} from '@src/features/identity/auth/components/sign-up-form';
+} from '@src/features/identity/auth/components/sign-up-form/sign-up-form';
 import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';

@@ -30,19 +30,14 @@ describe('위치 구독의 종료와 복구', () => {
     // Given
     const controller = new AbortController();
     const remove = jest.fn();
-    let resolveWatch: ((value: Location.LocationSubscription) => void) | undefined;
-    watchLocation.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveWatch = resolve;
-        }),
-    );
+    const watch = Promise.withResolvers<Location.LocationSubscription>();
+    watchLocation.mockReturnValue(watch.promise);
     const result = expoLocationGateway.getCoordinates(controller.signal);
     await jest.advanceTimersByTimeAsync(0);
 
     // When
     controller.abort();
-    resolveWatch?.({ remove });
+    watch.resolve({ remove });
     const settling = jest.advanceTimersByTimeAsync(0);
 
     // Then

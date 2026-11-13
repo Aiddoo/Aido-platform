@@ -1,5 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 import { createMemorySyncStorage } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 
 import { StoreReviewPolicy } from '../domains/store-review.model';
 import { createStoreReviewRepository } from './store-review.repository';
@@ -13,7 +14,9 @@ describe('StoreReviewRepository', () => {
     const repository = createStoreReviewRepository(storage);
 
     // When
-    repository.update('account-a', (state) => StoreReviewPolicy.withActiveDay(state, '2026-10-27'));
+    repository.update('account-a', (state) =>
+      StoreReviewPolicy.withActiveDay(state, createDateKey('2026-10-27')),
+    );
     repository.update('account-a', (state) =>
       StoreReviewPolicy.withRequest(state, toInstant('2026-10-27T12:00:00.000Z')),
     );
@@ -58,7 +61,7 @@ describe('StoreReviewRepository', () => {
     // When
     repository.update('account-a', (current) => ({
       ...current,
-      activeDays: [...current.activeDays, '2026-08-12'],
+      activeDays: [...current.activeDays, createDateKey('2026-08-12')],
     }));
 
     // Then

@@ -1,3 +1,4 @@
+import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import {
@@ -152,8 +153,8 @@ describe('다음 로컬 자정 계산', () => {
     // Then
     expect(afterFebruary28).toBe('2028-02-28T15:00:00.000Z');
     expect(afterFebruary29).toBe('2028-02-29T15:00:00.000Z');
-    expect(addDaysToDateKey('2028-02-28', 1)).toBe('2028-02-29');
-    expect(addDaysToDateKey('2028-02-29', 1)).toBe('2028-03-01');
+    expect(addDaysToDateKey(createDateKey('2028-02-28'), 1)).toBe('2028-02-29');
+    expect(addDaysToDateKey(createDateKey('2028-02-29'), 1)).toBe('2028-03-01');
   });
 });
 

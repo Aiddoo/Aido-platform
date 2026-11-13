@@ -1,6 +1,5 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
-import { Box, Image } from '@src/shared/ui';
-import type { ImageSource } from 'expo-image';
+import { Box, Mascot } from '@src/shared/ui';
 import { type ComponentProps, useState } from 'react';
 
 import { WeatherIcon } from './weather-icon';
@@ -8,17 +7,17 @@ import { WeatherIcon } from './weather-icon';
 const FALLBACK_ICON_SIZE = 40;
 
 interface WeatherMascotProps extends Omit<
-  ComponentProps<typeof Image>,
-  'source' | 'onError' | 'accessible'
+  ComponentProps<typeof Mascot>,
+  'name' | 'onError' | 'accessible'
 > {
-  source: ImageSource | number;
+  name: 'weatherAnchor' | 'weatherSuggestion';
   /** 이미지를 불러오지 못했을 때 대신 그릴 날씨 아이콘 */
   fallbackCondition: WeatherCondition;
 }
 
 /** 고양이 이미지는 장식이다. 불러오지 못하면 같은 자리에 날씨 아이콘을 그려 빈칸을 남기지 않는다. */
 export function WeatherMascot({
-  source,
+  name,
   fallbackCondition,
   className,
   ...props
@@ -40,12 +39,10 @@ export function WeatherMascot({
     );
   }
   return (
-    <Image
-      source={source}
+    <Mascot
+      name={name}
       className={className}
-      contentFit="contain"
       accessible={false}
-      accessibilityIgnoresInvertColors
       onError={() => setHasFailed(true)}
       {...props}
     />

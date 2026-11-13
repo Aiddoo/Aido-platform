@@ -3,7 +3,7 @@ import {
   ERROR_REPORT_FEATURES,
   type ErrorReportFeature,
 } from '@src/core/observability/telemetry-keys';
-import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
+import type { AppLogger, DebugLogContext, LogContext, LogLevel } from '@src/core/ports/app-logger';
 import { captureError } from '@src/shared/infra/observability/capture-error';
 
 import { SENTRY_TAGS } from '../error-reporter/sentry-tags';
@@ -27,7 +27,7 @@ export function logEventFeature(message: string): ErrorReportFeature | undefined
 }
 
 /** 카테고리가 있는 도메인 breadcrumb은 로거가 아니라 `ErrorReporter.addBreadcrumb`로 남긴다 */
-export function createSentryLogger(): Logger {
+export function createSentryLogger(): AppLogger {
   const breadcrumb = (level: LogLevel, message: string, context?: LogContext): void => {
     const crumb: Sentry.Breadcrumb = {
       level: toSentryLevel[level],
@@ -38,16 +38,16 @@ export function createSentryLogger(): Logger {
   };
 
   return {
-    debug(_message: string, _context?: LogContext): void {
+    debug: (_message: string, _context?: DebugLogContext): void => {
       // debug는 Sentry에 남기지 않음(노이즈 억제).
     },
-    info(message: string, context?: LogContext): void {
+    info: (message: string, context?: LogContext): void => {
       breadcrumb('info', message, context);
     },
-    warn(message: string, context?: LogContext): void {
+    warn: (message: string, context?: LogContext): void => {
       breadcrumb('warn', message, context);
     },
-    error(message: string, error?: Error, context?: LogContext): void {
+    error: (message: string, error?: Error, context?: LogContext): void => {
       breadcrumb('error', message, context);
       if (error) {
         const feature = logEventFeature(message);

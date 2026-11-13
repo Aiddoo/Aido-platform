@@ -1,11 +1,11 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { UserReportTargetType } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 import { z } from "zod";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { isEntityId } from "#api/shared/domain/model/entity-id";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { invalidReportTarget } from "./reports.errors.js";
 
 const positiveIntegerIdSchema = z.string().regex(/^[1-9]\d{0,15}$/);
 
@@ -29,7 +29,7 @@ export class UserReportTarget extends ValueObject<UserReportTargetValue> {
       .with("COMMENT", () => isEntityId(contentId))
       .exhaustive();
     if (!isValid) {
-      throw new DomainException(ErrorCode.REPORT_2253, { targetType: type });
+      throw invalidReportTarget(type);
     }
     return new UserReportTarget({ type, contentId });
   }

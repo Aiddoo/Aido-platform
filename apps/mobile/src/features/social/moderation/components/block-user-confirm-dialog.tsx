@@ -6,10 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useBlockUserMutationOptions } from '../queries/moderation.mutations';
 import { blockUserParamsSchema } from '../schemas/moderation-params.schema';
 
-/**
- * 차단 확인. 차단하는 동안 다이얼로그를 그대로 두고 확인 버튼만 불러오는 중으로 바꾼다.
- * 끝나면(성공·실패 모두) 닫고, 결과 안내는 mutation이 토스트로 한 번 띄운다.
- */
+/** 차단 확인. 차단하는 동안 다이얼로그를 남기고, 실패하면 mutation이 토스트로 한 번 알린 뒤 다시 누를 수 있다 */
 export function BlockUserConfirmDialog() {
   const { t } = useTranslation(['moderation', 'common']);
   const [{ userId, name }] = useRouteParams(blockUserParamsSchema);
@@ -19,38 +16,14 @@ export function BlockUserConfirmDialog() {
   return (
     <ConfirmDialog
       isOpen={dialog.isOpen}
-      onOpenChange={(isOpen) => {
-        if (!isOpen && !blockUser.isPending) {
-          dialog.onOpenChange(false);
-        }
-      }}
-      title={<ConfirmDialog.Title>{t('block.confirmTitle', { name })}</ConfirmDialog.Title>}
-      description={
-        <ConfirmDialog.Description>{t('block.confirmDescription')}</ConfirmDialog.Description>
-      }
-      cancelButton={
-        <ConfirmDialog.CancelButton
-          isDisabled={blockUser.isPending}
-          onPress={() => dialog.onOpenChange(false)}
-        >
-          {t('common:actions.cancel')}
-        </ConfirmDialog.CancelButton>
-      }
-      confirmButton={
-        <ConfirmDialog.ConfirmButton
-          testID="block-user-confirm"
-          color="danger"
-          isLoading={blockUser.isPending}
-          onPress={() =>
-            blockUser.mutate(
-              { userId, displayName: name },
-              { onSettled: () => dialog.onOpenChange(false) },
-            )
-          }
-        >
-          {t('block.confirm')}
-        </ConfirmDialog.ConfirmButton>
-      }
+      title={t('block.confirmTitle', { name })}
+      description={t('block.confirmDescription')}
+      cancelLabel={t('common:actions.cancel')}
+      confirmLabel={t('block.confirm')}
+      confirmColor="danger"
+      confirmTestID="block-user-confirm"
+      onConfirm={() => blockUser.mutateAsync({ userId, displayName: name })}
+      onFinish={() => dialog.exit()}
     />
   );
 }

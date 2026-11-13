@@ -1,15 +1,8 @@
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import {
-  BottomSheet,
-  INQUIRY_SHEET_EXIT,
-  QueryErrorBoundary,
-  QueryErrorFallback,
-  type QueryErrorFallbackProps,
-  useSheetRoute,
-} from '@src/shared/ui';
+import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, Suspense } from 'react';
+import type { ComponentProps } from 'react';
 
 import { getShiftedEndDate, TodoPolicy } from '../../domains/todo.model';
 import { useSheetTodo } from '../../hooks/use-sheet-todo';
@@ -17,28 +10,15 @@ import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutatio
 import { TodoDatePicker } from '../todo-date-picker';
 
 type TodoDateBottomSheetProps = Omit<
-  ComponentProps<typeof BottomSheet>,
-  'children' | 'isOpen' | 'onOpenChange'
+  ComponentProps<typeof RouteBottomSheet>,
+  'fallbackHref' | 'loading' | 'children'
 >;
 
 export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
-  const sheet = useSheetRoute('/feed');
-
   return (
-    <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary
-        fallback={(fallbackProps) => (
-          <TodoDateBottomSheet.Error
-            {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-          />
-        )}
-      >
-        <Suspense fallback={<TodoDateBottomSheet.Loading />}>
-          <TodoDateBottomSheet.DateForm onClose={() => sheet.close()} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </BottomSheet>
+    <RouteBottomSheet {...props} fallbackHref="/feed" loading={<TodoDateBottomSheet.Loading />}>
+      {(sheet) => <TodoDateBottomSheet.DateForm onClose={() => sheet.close()} />}
+    </RouteBottomSheet>
   );
 }
 
@@ -87,11 +67,4 @@ TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => v
 
 TodoDateBottomSheet.Loading = function Loading() {
   return <Skeleton className="h-96 w-full rounded-xl" />;
-};
-
-TodoDateBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };

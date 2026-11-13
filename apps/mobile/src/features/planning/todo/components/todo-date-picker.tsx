@@ -1,4 +1,4 @@
-import { addDaysToDateKey, getDayOfWeek } from '@src/shared/date/date-key';
+import { addDaysToDateKey, getDayOfWeek, type DateKey } from '@src/shared/date/date-key';
 import { getWeekdayLabels } from '@src/shared/date/format/date-labels';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -7,17 +7,17 @@ import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 
 import { PICKER_MONTH_HEIGHT } from '../constants/todo.constants';
-import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
-import { getPickerDayType } from '../utils/calendar-day';
-import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
+import { useDatePicker } from '../hooks/use-date-picker';
+import { getPickerDayType } from '../utils/calendar-day.view-model';
+import type { CalendarDayCell } from '../utils/calendar-month.view-model';
+import { WeekdayRow } from './calendar/weekday-row';
 import { PickerDateCell } from './picker-date-cell';
-import { PickerHeader } from './picker-header';
-import { PickerMonthHeader } from './picker-month-header';
+import { PickerMonthBar } from './picker-month-bar';
+import { PickerTitleBar } from './picker-title-bar';
 
 interface TodoDatePickerProps {
-  /** 고른 날짜(YYYY-MM-DD) */
-  value: string;
-  onChange: (dateKey: string) => void;
+  value: DateKey;
+  onChange: (dateKey: DateKey) => void;
   onCancel: () => void;
   /** 고른 날짜를 저장하는 동안 확인을 막는다 */
   isConfirmDisabled?: boolean;
@@ -40,7 +40,7 @@ export function TodoDatePicker({
     <SheetHeaderLayout
       gap={20}
       header={
-        <PickerHeader
+        <PickerTitleBar
           title={t('picker.dateTitle')}
           onCancel={onCancel}
           onConfirm={handleConfirm}
@@ -49,37 +49,44 @@ export function TodoDatePicker({
       }
     >
       <VStack gap={20}>
-        <QuickDateOptions picker={picker} onChange={onChange} />
+        <QuickDateOptions selectedDateKey={picker.selectedDateKey} onSelect={onChange} />
 
-        <DatePickerCalendar picker={picker} onValueChange={picker.selectDate} />
+        <DatePickerCalendar
+          displayMonthKey={picker.displayMonthKey}
+          weeks={picker.weeks}
+          selectedDateKey={picker.selectedDateKey}
+          onPreviousMonth={picker.goToPrevMonth}
+          onNextMonth={picker.goToNextMonth}
+          onSelect={picker.selectDate}
+        />
       </VStack>
     </SheetHeaderLayout>
   );
 }
 
 interface QuickDateOptionsProps {
-  picker: DatePicker;
-  onChange: (dateKey: string) => void;
+  selectedDateKey: DateKey;
+  onSelect: (dateKey: DateKey) => void;
 }
 
-function QuickDateOptions({ picker, onChange }: QuickDateOptionsProps) {
-  const { t } = useTranslation('todo');
+function QuickDateOptions({ selectedDateKey, onSelect }: QuickDateOptionsProps) {
+  const { t } = useTranslation('common');
   const todayKey = useTodayKey();
   const tomorrowKey = addDaysToDateKey(todayKey, 1);
 
   return (
     <VStack gap={4}>
       <QuickDateRow
-        label={t('picker.today')}
+        label={t('relativeDay.today')}
         dateKey={todayKey}
-        isSelected={picker.selectedDateKey === todayKey}
-        onChange={onChange}
+        isSelected={selectedDateKey === todayKey}
+        onPress={onSelect}
       />
       <QuickDateRow
-        label={t('picker.tomorrow')}
+        label={t('relativeDay.tomorrow')}
         dateKey={tomorrowKey}
-        isSelected={picker.selectedDateKey === tomorrowKey}
-        onChange={onChange}
+        isSelected={selectedDateKey === tomorrowKey}
+        onPress={onSelect}
       />
     </VStack>
   );
@@ -87,19 +94,19 @@ function QuickDateOptions({ picker, onChange }: QuickDateOptionsProps) {
 
 interface QuickDateRowProps {
   label: string;
-  dateKey: string;
+  dateKey: DateKey;
   isSelected: boolean;
-  onChange: (dateKey: string) => void;
+  onPress: (dateKey: DateKey) => void;
 }
 
-function QuickDateRow({ label, dateKey, isSelected, onChange }: QuickDateRowProps) {
+function QuickDateRow({ label, dateKey, isSelected, onPress }: QuickDateRowProps) {
   const { i18n } = useTranslation();
   const weekdayLabels = getWeekdayLabels(i18n.language);
   const tone = isSelected ? 'brand' : 'neutral';
 
   return (
     <PressableFeedback
-      onPress={() => onChange(dateKey)}
+      onPress={() => onPress(dateKey)}
       className={cn('rounded-lg', isSelected && 'bg-main/5')}
     >
       <ListRow
@@ -128,23 +135,34 @@ function QuickDateRow({ label, dateKey, isSelected, onChange }: QuickDateRowProp
 }
 
 interface DatePickerCalendarProps {
-  picker: DatePicker;
-  onValueChange: (dateKey: string) => void;
+  /** 보이는 달의 1일 */
+  displayMonthKey: DateKey;
+  weeks: readonly (readonly CalendarDayCell[])[];
+  selectedDateKey: DateKey;
+  onPreviousMonth: () => void;
+  onNextMonth: () => void;
+  onSelect: (dateKey: DateKey) => void;
 }
 
-function DatePickerCalendar({ picker, onValueChange }: DatePickerCalendarProps) {
-  const { displayMonthKey, weeks, selectedDateKey, goToPrevMonth, goToNextMonth } = picker;
+function DatePickerCalendar({
+  displayMonthKey,
+  weeks,
+  selectedDateKey,
+  onPreviousMonth,
+  onNextMonth,
+  onSelect,
+}: DatePickerCalendarProps) {
   const todayKey = useTodayKey();
 
   return (
     <VStack gap={16}>
-      <PickerMonthHeader
+      <PickerMonthBar
         displayMonthKey={displayMonthKey}
-        onPreviousMonth={goToPrevMonth}
-        onNextMonth={goToNextMonth}
+        onPreviousMonth={onPreviousMonth}
+        onNextMonth={onNextMonth}
       />
 
-      <CalendarWeekdayHeader />
+      <WeekdayRow />
 
       <VStack style={{ height: PICKER_MONTH_HEIGHT }}>
         {weeks.map((week, weekIndex) => (
@@ -166,7 +184,7 @@ function DatePickerCalendar({ picker, onValueChange }: DatePickerCalendarProps) 
                   dayType={getPickerDayType({ dayOfWeek, isSelected, isToday })}
                   isSelected={isSelected}
                   isTodayHighlighted={!isSelected && isToday}
-                  onPress={onValueChange}
+                  onPress={onSelect}
                 />
               );
             })}

@@ -1,11 +1,11 @@
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import {
   type LocationCoordinates,
   type LocationGateway,
   LocationUnavailableError,
 } from '@src/core/ports/location-gateway';
-import type { Logger } from '@src/core/ports/logger';
 
 import type { WeatherApi } from '../apis/weather.api';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
@@ -33,13 +33,13 @@ interface WeatherLocationServicePorts {
     'getPermission' | 'recheckPermission' | 'getCoordinates' | 'getPlace'
   >;
   weatherApi: Pick<WeatherApi, 'updateLocation'>;
-  logger: Logger;
+  logger: AppLogger;
 }
 
 export class WeatherLocationService {
   readonly #gateway: WeatherLocationServicePorts['gateway'];
   readonly #weatherApi: Pick<WeatherApi, 'updateLocation'>;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
 
   constructor({ gateway, weatherApi, logger }: WeatherLocationServicePorts) {
     this.#gateway = gateway;
@@ -73,12 +73,13 @@ export class WeatherLocationService {
           : { ...previousLocated, isLastKnown: false },
       );
     }
-    const place = await this.#gateway.getPlace(coordinates, signal);
+    const placeRead = this.#gateway.getPlace(coordinates, signal);
 
     if (
       previousLocated != null &&
       !WeatherLocationPolicy.shouldRelocate(coordinates, previousLocated.registered)
     ) {
+      const place = await placeRead;
       return ok({
         ...previousLocated,
         place: place.name ?? previousLocated.place,
@@ -87,7 +88,11 @@ export class WeatherLocationService {
       });
     }
 
-    const registration = await this.#registerLocation(coordinates, signal, onUnexpectedFailure);
+    // getPlace는 실패 대신 빈 이름으로 끝나 등록 결과만 흐름을 정한다
+    const [place, registration] = await Promise.all([
+      placeRead,
+      this.#registerLocation(coordinates, signal, onUnexpectedFailure),
+    ]);
     if (!registration.ok) {
       return err(registration.error);
     }

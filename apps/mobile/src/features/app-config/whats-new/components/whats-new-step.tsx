@@ -38,7 +38,7 @@ export function WhatsNewStep({
 
   return (
     <Animated.View
-      entering={isReducedMotion ? undefined : FadeIn.duration(ANIMATION.duration.normal)}
+      entering={isReducedMotion ? undefined : FadeIn.duration(ANIMATION.durationMs.normal)}
       style={{ flex: 1 }}
     >
       <ScrollView

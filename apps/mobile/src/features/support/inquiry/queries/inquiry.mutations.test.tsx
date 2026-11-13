@@ -2,7 +2,7 @@ import { INQUIRY_CATEGORY } from '@aido/api';
 import { ApiError } from '@src/core/errors/api-error';
 import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { createHapticsGatewayStub, createHttpClientStub } from '@src/testing/core';
+import { createHapticsGatewayStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager, useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
@@ -23,8 +23,8 @@ async function renderSubmit(httpClient: ReturnType<typeof createHttpClientStub>)
     return null;
   }
   await renderScreen(<Capture />, {
+    di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
     withOverlay: true,
-    di: { httpClient, haptics: createHapticsGatewayStub() },
   });
   if (submit == null) {
     throw new Error('mutation을 받지 못했다');

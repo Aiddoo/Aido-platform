@@ -102,11 +102,53 @@ export function patchSearchedUser(
 ) {
   queryClient.setQueriesData<InfiniteData<SearchedUserPage, string | undefined>>(
     { queryKey: FRIEND_QUERY_KEYS.searches() },
-    (old) =>
-      old && mapInfiniteItems(old, (user) => (isTarget(user) ? { ...user, ...patch } : user)),
+    (pages) =>
+      pages == null
+        ? pages
+        : mapInfiniteItems(pages, (user) => (isTarget(user) ? { ...user, ...patch } : user)),
   );
 }
 
+export function cancelFriendList(queryClient: QueryClient) {
+  return queryClient.cancelQueries({ queryKey: FRIEND_QUERY_KEYS.friends(), exact: true });
+}
+
+export function getCachedFriendList(queryClient: QueryClient) {
+  return queryClient.getQueryData(FRIEND_QUERY_KEYS.friends());
+}
+
+/** 받은 친구 목록이 있을 때만 바꾼다 */
+export function updateFriendListInCache(
+  queryClient: QueryClient,
+  update: (pages: FriendPages) => FriendPages,
+) {
+  queryClient.setQueryData(FRIEND_QUERY_KEYS.friends(), (pages) =>
+    pages == null ? pages : update(pages),
+  );
+}
+
+export function invalidateFriendList(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends(), exact: true });
+}
+
+export function invalidateFriendSearches(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.searches() });
+}
+
+export function invalidateSentFriendRequests(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
+}
+
+export function invalidateReceivedFriendRequests(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
+}
+
+/** 친구·요청·검색 전부. 친구 알림처럼 무엇이 바뀌었는지 모를 때 쓴다 */
 export function invalidateFriends(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.all });
+}
+
+/** 당겨서 새로고침. 화면에 붙은 친구·요청 조회만 다시 받는다 */
+export function refreshFriends(queryClient: QueryClient) {
+  return queryClient.refetchQueries({ queryKey: FRIEND_QUERY_KEYS.all, type: 'active' });
 }

@@ -15,6 +15,11 @@ function toMe(user: User, { defaultName }: { defaultName: string }) {
   };
 }
 
+/** 고른 id가 같으면 내 정보의 다른 칸이 바뀌어도 쓰는 쪽이 다시 그리지 않는다 */
+export function selectAccountId(user: User) {
+  return user.id;
+}
+
 export function useGetMeQueryOptions() {
   const userApi = useUserApi();
   const { t } = useTranslation('user');

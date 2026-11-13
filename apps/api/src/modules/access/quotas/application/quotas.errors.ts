@@ -11,6 +11,10 @@ const QUOTA_EXHAUSTED_ERROR = {
   VOICE_NOTE: ErrorCode.AI_1313,
 } as const satisfies Record<MeteredFeatureKey, ErrorCodeType>;
 
+export function authenticationRequired(): ApplicationException {
+  return new ApplicationException(ErrorCode.AUTH_0107);
+}
+
 /** 한도에 닿아 차감하지 않았다. 앱은 서버가 계산한 현재 한도를 그대로 보여 준다. */
 export function quotaExhausted(
   feature: MeteredFeatureKey,

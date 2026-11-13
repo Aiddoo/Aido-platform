@@ -6,8 +6,8 @@ interface SubscriptionInquiryDraftInput {
   /** 무엇이 실패했는지. 화면에 보인 제목을 쓰되 줄바꿈은 한 칸 띄어 한 줄로 적는다 */
   subject: string;
   diagnosticCode: string;
-  /** Expo Go·웹처럼 설치 정보를 모르면 undefined다 */
-  installation: NativeApplicationMetadata | undefined;
+  /** Expo Go·웹처럼 설치 정보를 모르면 null이다 */
+  installation: NativeApplicationMetadata | null;
 }
 
 function toPlatformLabel(platform: string) {

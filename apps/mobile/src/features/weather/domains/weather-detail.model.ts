@@ -1,4 +1,5 @@
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import type { DateKey } from '@src/shared/date/date-key';
 import { type Instant, fromEpochMs, toEpochMs } from '@src/shared/date/instant';
 import { toDateKey } from '@src/shared/date/zoned';
 import { round, sumBy } from 'es-toolkit';
@@ -96,13 +97,13 @@ function findDaylightDuration(day: DailyForecastEntry): Duration | null {
 /** 오늘 다음 날짜(YYYY-MM-DD)의 예보. 예보 범위를 넘으면 null이다. */
 function findDayAfter(
   daily: readonly DailyForecastEntry[],
-  dateKey: string,
+  dateKey: DateKey,
 ): DailyForecastEntry | null {
   return daily.find((day) => day.date > dateKey) ?? null;
 }
 
 /** 오늘 뒤로 처음 오는 보름달 날짜(YYYY-MM-DD). 예보 범위(최대 10일) 안에 없으면 null이다. */
-function findNextFullMoon(daily: readonly DailyForecastEntry[], dateKey: string): string | null {
+function findNextFullMoon(daily: readonly DailyForecastEntry[], dateKey: DateKey): DateKey | null {
   return daily.find((day) => day.date > dateKey && day.moonPhase === 'FULL')?.date ?? null;
 }
 

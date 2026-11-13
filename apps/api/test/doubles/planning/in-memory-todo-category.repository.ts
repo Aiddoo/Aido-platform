@@ -1,5 +1,4 @@
-import { ErrorCode } from "@aido/api/errors";
-
+import { duplicateCategoryName } from "#api/modules/planning/categories/application/categories.errors";
 import {
   type CategoryTodoCount,
   TodoCategoryRepositoryPort,
@@ -10,7 +9,6 @@ import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-cat
 import { TodoCategory } from "#api/modules/planning/categories/domain/todo-category.aggregate";
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
@@ -202,7 +200,7 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
         category.id.value !== excludeId,
     );
     if (duplicate) {
-      throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, { name });
+      throw duplicateCategoryName(name);
     }
   }
 

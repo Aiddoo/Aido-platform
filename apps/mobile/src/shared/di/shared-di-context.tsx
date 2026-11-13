@@ -1,11 +1,11 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { AppLifecycleGateway } from '@src/core/ports/app-lifecycle-gateway';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { ExternalLinkGateway } from '@src/core/ports/external-link-gateway';
 import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
 import type { IncomingLinkGateway } from '@src/core/ports/incoming-link-gateway';
-import type { Logger } from '@src/core/ports/logger';
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
@@ -15,7 +15,7 @@ import type { MinuteClockStore } from '@src/shared/stores/minute-clock-store';
 import { createContext, use } from 'react';
 
 export interface SharedDependencies {
-  logger: Logger;
+  logger: AppLogger;
   analytics: Analytics;
   errorReporter: ErrorReporter;
   haptics: HapticsGateway;

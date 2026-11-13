@@ -1,4 +1,4 @@
-import type { Storage } from '@src/core/ports/storage';
+import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 
 import {
   type PendingRevocation,
@@ -15,7 +15,9 @@ export interface PendingRevocationRepository {
   clear(): Promise<void>;
 }
 
-export function createPendingRevocationRepository(storage: Storage): PendingRevocationRepository {
+export function createPendingRevocationRepository(
+  storage: KeyValueStorage,
+): PendingRevocationRepository {
   return {
     find: () => storage.get(PENDING_REVOCATION_KEY, pendingRevocationSchema),
     save: (pending) => storage.set(PENDING_REVOCATION_KEY, pending),

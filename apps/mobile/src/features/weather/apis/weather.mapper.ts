@@ -1,4 +1,5 @@
 import type { WeatherBriefing, WeatherLocationResponse, WeatherReportResponse } from '@aido/api';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 import { isPlainObject, uniq } from 'es-toolkit';
 
@@ -48,6 +49,7 @@ export function toWeatherReport(dto: WeatherReportResponse): WeatherReport {
     hourly: dto.hourly.map((hour) => ({ ...hour, startsAt: toInstant(hour.startsAt) })),
     daily: dto.daily.map((day) => ({
       ...day,
+      date: dateKeySchema.parse(day.date),
       sunrise: toNullableInstant(day.sunrise),
       sunset: toNullableInstant(day.sunset),
       moonrise: toNullableInstant(day.moonrise),
