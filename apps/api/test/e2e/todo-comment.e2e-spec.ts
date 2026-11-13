@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import {
   createTodoResponseSchema,
+  notificationInboxResponseSchema,
   todoCommentChainResponseSchema,
   todoCommentOverviewResponseSchema,
   todoCommentRepliesResponseSchema,
@@ -699,6 +700,46 @@ describe("할 일 댓글 E2E", () => {
       },
       { comment: { parentId: rootId, isDeleted: false } },
     ]);
+  });
+
+  it("이름이 없는 작성자는 댓글 작성자·답글 대상·알림 보낸 사람이 Aido ID로 보인다", async () => {
+    // Given
+    const owner = await ctx.helpers.createVerifiedUser("nameless-owner@example.com", "Test1234!", {
+      name: "할 일 주인",
+    });
+    const nameless = await ctx.helpers.createVerifiedUser(
+      "nameless-friend@example.com",
+      "Test1234!",
+    );
+    await ctx.helpers.createFriendship(owner, nameless);
+    const todoId = await createTodo(owner.accessToken, "PUBLIC");
+    const ownerCommentId = await writeComment(owner.accessToken, todoId, "주인 댓글");
+    const namelessCommentId = await writeComment(nameless.accessToken, todoId, "이름 없는 댓글");
+    await writeComment(owner.accessToken, todoId, "이름 없는 친구에게 답글", namelessCommentId);
+
+    // When
+    await request(ctx.app.getHttpServer())
+      .put(`/v1/todos/${todoId}/comments/${ownerCommentId}/likes`)
+      .set("Authorization", `Bearer ${nameless.accessToken}`)
+      .expect(200);
+    const conversation = await getConversation(owner.accessToken, todoId);
+    const inbox = await request(ctx.app.getHttpServer())
+      .get("/v1/notifications/inbox")
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .expect(200);
+
+    // Then
+    const comments = conversation.items.map((item) => item.comment);
+    expect(comments.find((comment) => comment.id === namelessCommentId)?.author?.name).toBe(
+      nameless.userTag,
+    );
+    expect(
+      comments.find((comment) => comment.replyTo?.commentId === namelessCommentId)?.replyTo,
+    ).toEqual({ commentId: namelessCommentId, authorName: nameless.userTag });
+    const notificationTexts = notificationInboxResponseSchema
+      .parse(inbox.body.data)
+      .notifications.map((notification) => `${notification.title} ${notification.body}`);
+    expect(notificationTexts.filter((text) => text.includes(nameless.userTag))).toHaveLength(2);
   });
 
   it("공개 할 일도 친구만 대화 조회·작성할 수 있고 비공개·비친구 접근은 숨긴다", async () => {
