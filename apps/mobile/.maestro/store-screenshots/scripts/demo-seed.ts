@@ -1,5 +1,5 @@
 /**
- * 1.13.0 화면 캡처용 데모 데이터. 로컬 개발 서버(Docker API + PostgreSQL) 전용이다.
+ * 화면 캡처용 데모 데이터. 로컬 개발 서버(Docker API + PostgreSQL) 전용이다.
  *
  * 사용: node demo-seed.ts <seed|ai|reset|reset-newbie|status> [ko|en|all]
  *

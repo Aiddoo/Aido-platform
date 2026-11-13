@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 1.13.0 스토어 아트 생성기. storyboard.mjs를 읽어 스크린샷·배너·이벤트 이미지를 만든다.
+// 스토어 아트 생성기. storyboard.mjs를 읽어 스크린샷·배너·이벤트 이미지를 만든다.
 //
 //   node store-metadata/art/render.mjs --out <폴더>                       # 최종본(캡처가 모두 있어야 함)
 //   node store-metadata/art/render.mjs --out <폴더> --preview              # 없는 캡처는 자리표시로 미리보기
@@ -8,7 +8,7 @@
 //   node store-metadata/art/render.mjs asset-names --out <파일.md>             # App Store 에셋 라이브러리 이름표
 //   node store-metadata/art/render.mjs todo --out <폴더>                   # 캡처 전 업로드 폴더에 장별 TODO.md
 //
-// 옵션: --captures <캡처 루트>(기본 ~/Desktop/Aido-Screens-1.13.0), --only <scenes|screenshots|세트 id|대상 id>,
+// 옵션: --captures <캡처 루트>(기본 ~/Desktop/Aido-Screens-<앱 버전>), --only <scenes|screenshots|세트 id|대상 id>,
 //       --locales ko,en. 결과 폴더에 index.html(스토리보드 갤러리)과 manifest.json을 쓴다.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -522,7 +522,7 @@ code { font-size: 12px; }
 </style></head><body>
 <header><h1>아이두 ${RELEASE_VERSION} 스토어 아트 ${preview ? '미리보기' : '최종본'}</h1>
 <p>생성: apps/mobile/store-metadata/art/render.mjs · 캡처 루트: ${escape(captureRoot)}</p>
-${preview ? '<p>PREVIEW 표시가 있는 장은 실제 1.13.0 캡처가 아니라 자리표시·이전 화면이에요. 캡처 후 같은 명령에서 --preview를 빼면 최종본이 나와요.</p>' : ''}
+${preview ? '<p>PREVIEW 표시가 있는 장은 실제 캡처가 아니라 자리표시·이전 화면이에요. 캡처 후 같은 명령에서 --preview를 빼면 최종본이 나와요.</p>' : ''}
 </header>
 <section><h2>스토리보드</h2>${storyboard}</section>
 ${sections}
@@ -727,7 +727,7 @@ function writeTodos({ out, captureRoot, locales }) {
   console.log(`TODO.md ${folders.size}개 → ${out}`);
 }
 
-// App Store 에셋 라이브러리 이름: 1.13.0_<세트 또는 자리>_<언어>_<대상>_<번호>
+// App Store 에셋 라이브러리 이름: <RELEASE_VERSION>_<세트 또는 자리>_<언어>_<대상>_<번호>
 export function assetNames({ locales }) {
   return plan({ only: undefined, locales })
     .filter((job) => job.output.startsWith('app-store/'))
