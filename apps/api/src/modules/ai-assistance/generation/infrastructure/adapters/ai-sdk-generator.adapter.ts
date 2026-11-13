@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { AI_PROVIDER_IDS, type AiProviderId } from "@aido/api/vocabulary";
+import { AI_DATA_SHARING_CONSENT, AI_PROVIDER_IDS, type AiProviderId } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { generateText, Output } from "ai";
 
@@ -311,13 +311,22 @@ export class AiSdkGeneratorAdapter extends AiGeneratorPort {
     if (last == null) {
       const hasEligibleProvider =
         planAiRoute({ ...routeInput, openCircuits: new Set() }).length > 0;
+      // 최신 동의 버전은 모든 업체를 허용해 동의와 무관하게 키가 설정된 업체가 있는지 본다
+      const hasConfiguredProvider =
+        planAiRoute({
+          ...routeInput,
+          agreedVersion: AI_DATA_SHARING_CONSENT.VERSION,
+          openCircuits: new Set(),
+        }).length > 0;
+      const tags = { task: request.task, taskClass: request.taskClass };
       // 업체별 회로 경보와 따로, AI 기능 전체가 멈춘 것은 이 경보 하나로 본다
-      this.#alert.raise({
-        ...(hasEligibleProvider
-          ? AiAlerts.ALL_PROVIDERS_CIRCUIT_OPEN
-          : AiAlerts.NO_PROVIDER_AVAILABLE),
-        tags: { task: request.task, taskClass: request.taskClass },
-      });
+      if (hasEligibleProvider) {
+        this.#alert.raise({ ...AiAlerts.ALL_PROVIDERS_CIRCUIT_OPEN, tags });
+      }
+      // 동의 범위 때문에 업체가 없는 것은 사용자 상태라 경보하지 않고 설정 누락만 올린다
+      if (!hasConfiguredProvider) {
+        this.#alert.raise({ ...AiAlerts.NO_PROVIDER_AVAILABLE, tags });
+      }
       throw new AiGenerationError(hasEligibleProvider ? "CIRCUIT_OPEN" : "UNAVAILABLE", {
         provider: null,
         attempts,

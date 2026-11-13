@@ -32,9 +32,9 @@ export const AiAlerts = defineAlerts("ai", {
   NO_PROVIDER_AVAILABLE: {
     key: "ai.provider.none-available",
     severity: "error",
-    summary: "동의 범위 안에 키가 설정된 AI 업체가 없어 AI 기능이 실패한다",
+    summary: "키·모델이 설정된 AI 업체가 하나도 없어 AI 기능이 실패한다",
     runbook:
-      "태그 task의 업체 키·모델 설정을 확인한다. 동의 전 앱(1.13 미만)은 Google만 쓰므로 Google 키가 빠졌는지 먼저 보고 키를 넣어 재배포한다.",
+      "태그 task의 업체 API 키·모델 설정과 AI_PROVIDER_ORDER를 확인하고 키를 넣어 재배포한다. 동의 범위 때문에 업체가 없는 사용자는 이 경보 없이 AI_1301로 끝난다.",
   },
   ALL_PROVIDERS_CIRCUIT_OPEN: {
     key: "ai.provider.all-circuits-open",
