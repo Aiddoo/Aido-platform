@@ -15,6 +15,7 @@ import { Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
+import { isMemoUnavailableError } from '../domains/memo.error';
 import type { Memo } from '../domains/memo.model';
 import { useConvertMemoToTodosMutationOptions } from '../queries/memo.mutations';
 
@@ -27,6 +28,8 @@ interface MemoConvertBottomSheetProps extends Pick<
   categoryId: number;
   onClose: () => void;
   onConverted: () => void;
+  /** 메모가 이미 없어 옮기지 못했다. 시트는 닫혔고 안내는 mutation이 한 번 띄웠다 */
+  onUnavailable: () => void;
 }
 
 /** 메모를 할 일 하나로 옮긴다. 제목은 메모 내용으로 채워 두고, 입력칸과 칩은 할 일 작성과 같다 */
@@ -50,6 +53,7 @@ MemoConvertBottomSheet.Form = function Form({
   categoryId,
   onClose,
   onConverted,
+  onUnavailable,
 }: Omit<MemoConvertBottomSheetProps, 'isOpen' | 'onOpenChange'>) {
   const { t } = useTranslation('todo');
   const reportUnexpectedError = useReportUnexpectedError('todo');
@@ -83,6 +87,12 @@ MemoConvertBottomSheet.Form = function Form({
   // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 할 일을 하나 더 만든다
   const handleSavePress = useSingleTap(() => {
     saveTodo().catch((error: unknown) => {
+      // 없는 메모는 다시 보내도 소용없어 시트를 닫고 떠난다
+      if (isMemoUnavailableError(error)) {
+        onClose();
+        onUnavailable();
+        return;
+      }
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
       if (shouldReopenRepeatPicker(error)) {
         reopenRepeatPicker().catch(reportUnexpectedError);

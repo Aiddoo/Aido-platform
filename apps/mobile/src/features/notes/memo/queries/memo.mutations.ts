@@ -35,7 +35,10 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
-import { isMemoParseRejectionHandledByFeature } from '../domains/memo.error';
+import {
+  isMemoParseRejectionHandledByFeature,
+  isMemoUnavailableError,
+} from '../domains/memo.error';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
 import {
   createMemoCreateRequestDraftKey,
@@ -231,12 +234,25 @@ export function useConvertMemoToTodosMutationOptions() {
       toast.success(t('memo:toasts.convertedOne'));
       trackEvent('memo_converted_to_todo', { memo_id: memoId });
     },
+    // 다른 기기에서 지웠거나 이미 할 일로 바꾼 메모는 다시 보내도 없다. 시트를 연 쪽이 메모를 떠난다
+    onError: (error, { memoId }) => {
+      if (isMemoUnavailableError(error)) {
+        removeMemo(queryClient, { memoId });
+        toast.warning(t('memo:toasts.unavailable'));
+      }
+    },
     onSettled: () => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
       invalidateTodos(queryClient);
     },
-    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'memo:toasts.retryLater' } },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'memo:toasts.retryLater',
+        isHandledByFeature: isMemoUnavailableError,
+      },
+    },
   });
 }
 

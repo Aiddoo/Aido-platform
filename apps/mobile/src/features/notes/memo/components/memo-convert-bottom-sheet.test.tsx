@@ -17,6 +17,7 @@ async function renderSheet() {
   httpClient.get.mockResolvedValue(ok({ categories: [] }));
   const onClose = jest.fn();
   const onConverted = jest.fn();
+  const onUnavailable = jest.fn();
   await renderScreen(
     <MemoConvertBottomSheet
       memo={MEMO}
@@ -26,6 +27,7 @@ async function renderSheet() {
       onOpenChange={jest.fn()}
       onClose={onClose}
       onConverted={onConverted}
+      onUnavailable={onUnavailable}
     />,
     {
       di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
@@ -34,7 +36,7 @@ async function renderSheet() {
     },
   );
 
-  return { httpClient, onClose, onConverted };
+  return { httpClient, onClose, onConverted, onUnavailable };
 }
 
 async function submit() {
@@ -67,7 +69,7 @@ describe('MemoConvertBottomSheet', () => {
     // Given
     const { httpClient, onClose, onConverted } = await renderSheet();
     httpClient.post.mockResolvedValue(
-      err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+      err(new ApiError(ErrorCode.MEMO_2004, '거절', HttpStatus.BAD_REQUEST)),
     );
 
     // When
@@ -78,6 +80,27 @@ describe('MemoConvertBottomSheet', () => {
     expect(onClose).not.toHaveBeenCalled();
     expect(onConverted).not.toHaveBeenCalled();
     expect(screen.getByDisplayValue('장보기')).toBeTruthy();
+  });
+
+  it('이미 없는 메모라 거절하면 다시 보내라 하지 않고 시트를 닫아 메모를 떠난다', async () => {
+    // Given
+    // 다른 기기에서 지웠거나 이미 할 일로 바꾼 메모
+    const { httpClient, onClose, onConverted, onUnavailable } = await renderSheet();
+    httpClient.post.mockResolvedValue(
+      err(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
+    );
+
+    // When
+    await submit();
+
+    // Then
+    await waitFor(() => expect(onUnavailable).toHaveBeenCalledTimes(1));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onConverted).not.toHaveBeenCalled();
+    expect(await screen.findAllByText('이미 없는 메모예요')).not.toHaveLength(0);
+    // 다시 보내라는 일반 실패 안내는 띄우지 않는다
+    expect(screen.queryByText('메모를 찾을 수 없어요')).toBeNull();
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 
   describe('다른 메모로 다시 쓰기', () => {
@@ -97,6 +120,7 @@ describe('MemoConvertBottomSheet', () => {
           onOpenChange={jest.fn()}
           onClose={jest.fn()}
           onConverted={jest.fn()}
+          onUnavailable={jest.fn()}
         />
       );
       const { rerender } = await renderScreen(sheetFor(MEMO), {
@@ -168,7 +192,7 @@ describe('MemoConvertBottomSheet', () => {
       const { httpClient } = await renderSheet();
       httpClient.post
         .mockResolvedValueOnce(
-          err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+          err(new ApiError(ErrorCode.MEMO_2004, '거절', HttpStatus.BAD_REQUEST)),
         )
         .mockResolvedValueOnce(ok({ message: 'converted', todos: [] }));
       const save = await screen.findByLabelText('저장하기');
