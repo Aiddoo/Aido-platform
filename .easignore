@@ -1,7 +1,7 @@
 # EAS Build upload — .easignore
 # - 이 파일이 있으면 EAS는 .gitignore 대신 이 파일로 업로드 대상을 고른다.
 #   그래서 비밀값·네이티브 생성물 규칙을 여기에도 다시 적는다.
-# - 빌드에 필요한 비밀값(Firebase 설정 등)은 EAS Secrets로 넣는다(apps/mobile/docs/EAS_SECRETS.md).
+# - 빌드에 필요한 비밀값(Firebase 설정 등)은 EAS Secrets로 넣는다(apps/mobile/docs/build-and-release.md).
 
 # Dependencies
 node_modules/
@@ -12,10 +12,19 @@ dist/
 .expo/
 *.tsbuildinfo
 
-# Tests & coverage
+# Tests & coverage (번들은 Metro blockList가 따로 뺀다)
 coverage/
+**/__tests__/
+*.test.*
+*.spec.*
+*.fixtures.ts
+/apps/mobile/src/testing/
+/apps/mobile/jest.*
 /apps/mobile/.maestro/
 /apps/mobile/maestro-output/
+
+# Mobile: 스토어 문구·그림은 빌드에 들어가지 않는다
+/apps/mobile/store-metadata/
 
 # Environment & secrets
 .env*

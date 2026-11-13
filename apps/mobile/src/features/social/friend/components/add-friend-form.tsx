@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input-props';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -26,7 +25,6 @@ interface AddFriendFormProps extends PropsWithChildren {
 export function AddFriendForm({ children, onFriendLimitInvite }: AddFriendFormProps) {
   const goBack = useSingleTap(router.back);
   const { t } = useTranslation('friend');
-  const reportUnexpectedError = useReportUnexpectedError('friend');
   const sendRequest = useMutation(useSendRequestByTagMutationOptions({ onFriendLimitInvite }));
 
   const form = useForm({
@@ -40,8 +38,8 @@ export function AddFriendForm({ children, onFriendLimitInvite }: AddFriendFormPr
     try {
       await sendRequest.mutateAsync(userTag);
       goBack();
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   });
 

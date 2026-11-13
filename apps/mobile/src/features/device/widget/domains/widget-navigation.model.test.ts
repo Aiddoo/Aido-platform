@@ -1,23 +1,29 @@
+import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
+
 import { createWidgetNavigationCommand } from '../__tests__/widget-navigation.fixtures';
-import { WIDGET_NAVIGATION_COMMAND_TTL_MS } from '../constants/widget.constants';
 import { parseWidgetNavigationUri, WidgetNavigationPolicy } from './widget-navigation.model';
+
+/** 위젯을 누른 뒤 5분 안에 앱이 열려야 저장된 목적지로 옮긴다 */
+const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * 60_000;
+const CREATED_AT = toInstant('2026-11-05T00:00:00.000Z');
+const afterCreation = (elapsedMs: number) => fromEpochMs(toEpochMs(CREATED_AT) + elapsedMs);
 
 describe('isFresh', () => {
   it('만료 직전 명령만 허용하고 만료 시점과 미래 명령은 거절한다', () => {
     // Given
-    const command = createWidgetNavigationCommand({ createdAt: 1000 });
+    const command = createWidgetNavigationCommand({ createdAt: CREATED_AT });
 
     // When
-    const atCreation = WidgetNavigationPolicy.isFresh(command, 1000);
+    const atCreation = WidgetNavigationPolicy.isFresh(command, CREATED_AT);
     const justBeforeExpiry = WidgetNavigationPolicy.isFresh(
       command,
-      1000 + WIDGET_NAVIGATION_COMMAND_TTL_MS - 1,
+      afterCreation(WIDGET_NAVIGATION_COMMAND_TTL_MS - 1),
     );
     const atExpiry = WidgetNavigationPolicy.isFresh(
       command,
-      1000 + WIDGET_NAVIGATION_COMMAND_TTL_MS,
+      afterCreation(WIDGET_NAVIGATION_COMMAND_TTL_MS),
     );
-    const beforeCreation = WidgetNavigationPolicy.isFresh(command, 999);
+    const beforeCreation = WidgetNavigationPolicy.isFresh(command, afterCreation(-1));
 
     // Then
     expect(atCreation).toBe(true);
@@ -70,13 +76,16 @@ describe('parseWidgetNavigationUri', () => {
 });
 
 describe('getCommandState', () => {
-  const command = createWidgetNavigationCommand({ createdAt: 1000, userId: 'original-account' });
+  const command = createWidgetNavigationCommand({
+    createdAt: CREATED_AT,
+    userId: 'original-account',
+  });
 
   it('만료된 명령은 계정을 몰라도 지울 명령이다', () => {
     // When
     const result = WidgetNavigationPolicy.getCommandState(command, {
       userId: null,
-      now: 1000 + WIDGET_NAVIGATION_COMMAND_TTL_MS,
+      now: afterCreation(WIDGET_NAVIGATION_COMMAND_TTL_MS),
     });
 
     // Then
@@ -85,14 +94,17 @@ describe('getCommandState', () => {
 
   it('살아 있는 명령은 계정을 알 때까지 기다리고 다른 계정이면 지운다', () => {
     // When
-    const unknown = WidgetNavigationPolicy.getCommandState(command, { userId: null, now: 1000 });
+    const unknown = WidgetNavigationPolicy.getCommandState(command, {
+      userId: null,
+      now: CREATED_AT,
+    });
     const foreign = WidgetNavigationPolicy.getCommandState(command, {
       userId: 'other-account',
-      now: 1000,
+      now: CREATED_AT,
     });
     const valid = WidgetNavigationPolicy.getCommandState(command, {
       userId: 'original-account',
-      now: 1000,
+      now: CREATED_AT,
     });
 
     // Then
@@ -135,7 +147,7 @@ describe('isSameCommand', () => {
     { field: 'id', overrides: { id: 'command-2' } },
     { field: '주소', overrides: { uri: 'aido://feed?date=2026-10-05&action=add-todo' } },
     { field: '계정', overrides: { userId: 'user-2' } },
-    { field: '만든 시각', overrides: { createdAt: 1001 } },
+    { field: '만든 시각', overrides: { createdAt: afterCreation(1) } },
   ])('$field만 달라도 다른 명령이라 지우지 않는다', ({ overrides }) => {
     // Given
     const stored = createWidgetNavigationCommand();

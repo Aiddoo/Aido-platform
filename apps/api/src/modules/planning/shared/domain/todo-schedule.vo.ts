@@ -1,8 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
+import { scheduleEndsBeforeStart } from "./planning.errors.js";
 import { localTimeIn, resolveScheduledInstant } from "./todo-calendar.domain-service.js";
 
 export interface TodoScheduleProps {
@@ -57,17 +55,13 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     endDate,
   }: Pick<TodoScheduleProps, "startDate" | "endDate">): void {
     if (endDate != null && Temporal.PlainDate.compare(endDate, startDate) < 0) {
-      throw new DomainException(
-        ErrorCode.SYS_0002,
-        { startDate: startDate.toString(), endDate: endDate.toString() },
-        "종료 날짜는 시작 날짜보다 빠를 수 없습니다.",
-      );
+      throw scheduleEndsBeforeStart(startDate, endDate);
     }
   }
 
   /** 날짜나 시각을 건드리면 벽시계에서 순간을 다시 만든다. 다른 값만 고치면 순간은 그대로다. */
   patch(partial: TodoSchedulePatch, timezone: string): TodoSchedule {
-    // nullish-strict: PATCH라 undefined는 기존 값 유지, null은 지우기다
+    // oxlint-disable-next-line aido/no-strict-nullish -- PATCH라 undefined는 기존 값 유지, null은 지우기다
     const keepsTime = partial.scheduledLocalTime === undefined;
     const clearsTime = keepsTime && partial.isAllDay === true;
     const scheduledLocalTime = !keepsTime
@@ -79,7 +73,7 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     const rederives = !keepsTime || clearsTime || partial.startDate != null;
     const merged: TodoScheduleProps = {
       startDate,
-      // nullish-strict: PATCH라 undefined는 기존 값 유지, null은 지우기다
+      // oxlint-disable-next-line aido/no-strict-nullish -- PATCH라 undefined는 기존 값 유지, null은 지우기다
       endDate: partial.endDate !== undefined ? partial.endDate : this.endDate,
       scheduledLocalTime: rederives ? scheduledLocalTime : this.value.scheduledLocalTime,
       scheduledTime: rederives
@@ -90,7 +84,7 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
         keepsTime && partial.isAllDay == null ? this.value.isAllDay : scheduledLocalTime == null,
     };
 
-    // nullish-strict: endDate null은 종료일 지우기라 날짜 변경이다
+    // oxlint-disable-next-line aido/no-strict-nullish -- endDate null은 종료일 지우기라 날짜 변경이다
     if (partial.startDate != null || partial.endDate !== undefined) {
       TodoSchedule.#assertDateOrder(merged);
     }

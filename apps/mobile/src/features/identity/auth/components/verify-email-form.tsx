@@ -20,8 +20,8 @@ export function VerifyEmailForm() {
       email={email}
       isVerifying={verify.isPending}
       isResending={resend.isPending}
-      onComplete={(code) => verify.mutateAsync({ email, code })}
-      onResend={() => resend.mutateAsync({ email })}
+      onComplete={(code) => verify.mutateAsync({ email, code, source: 'login' })}
+      onResend={() => resend.mutateAsync({ email, source: 'login' })}
     />
   );
 }

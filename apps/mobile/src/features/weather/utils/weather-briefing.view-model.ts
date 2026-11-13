@@ -3,12 +3,11 @@ import type {
   WeatherPrecipitationType,
   WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant } from '@src/shared/date/instant';
 import type { ParseKeys } from 'i18next';
 import { match } from 'ts-pattern';
 
 import type { BriefingRowTone } from '../constants/weather-colors.constants';
-import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import {
   type AffectedTodo,
   type BriefingResult,
@@ -18,6 +17,7 @@ import {
 } from '../domains/weather-briefing.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { WeatherReschedulePolicy } from '../domains/weather-reschedule.model';
+import { getWeatherConditionLabelKey } from './weather-labels.view-model';
 
 /** 강수 형태를 아이콘이 그릴 상태로 바꾼다. 얼어 내리면 눈, 그 밖에는 비로 그린다. */
 function toPrecipitationCondition(type: WeatherPrecipitationType): WeatherCondition {
@@ -63,7 +63,7 @@ export interface BriefingView {
 }
 
 /** 시각·기온 글자는 화면의 시간 형식·온도 단위를 따르므로 바깥에서 받는다. 시각은 할 일과 같은 기기 시간대다. */
-export interface BriefingViewDeps {
+export interface BriefingViewPorts {
   hourly: readonly HourlyForecastEntry[];
   now: Instant;
   formatClock: (date: Instant) => string;
@@ -72,7 +72,7 @@ export interface BriefingViewDeps {
   formatChance: (percent: number) => string;
 }
 
-export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps): BriefingView {
+export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts): BriefingView {
   const { hourly, now, formatClock, formatHour, formatTemperature, formatChance } = deps;
   const range = (hours: HourRange): BriefingCopy => ({
     key: 'briefing.range',
@@ -284,7 +284,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps)
       body: { key: 'briefing.dryBody' },
       rows: todos.map((todo): BriefingRow => ({
         todo,
-        advice: { key: WEATHER_CONDITION_LABEL_KEYS[todo.hour.condition] },
+        advice: { key: getWeatherConditionLabelKey(todo.hour.condition) },
         tone: 'neutral',
         chipCondition: todo.hour.condition,
         chipLabel: formatTemperature(todo.hour.temperature),

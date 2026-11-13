@@ -1,7 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { TodoUpdateScope } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -15,6 +13,7 @@ import type { UpdateFollowingTodosUseCase } from "../../../todo-series/applicati
 import type { RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { invalidRepeatRule, todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
@@ -71,19 +70,19 @@ export class EditTodoUseCase {
     const input = { ...request, timezone };
     const { scope, repeat, checklist } = input;
     if (checklist != null && scope !== "THIS_AND_FOLLOWING") {
-      throw new ApplicationException(ErrorCode.TODO_0845, { field: "checklist" });
+      throw invalidRepeatRule("checklist");
     }
-    // nullish-strict: repeat null은 반복 끝내기라 범위를 고른 수정이 아니다
+    // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 범위를 고른 수정이 아니다
     if (scope === "THIS_AND_FOLLOWING" && repeat !== null) {
       return this.#editFollowing(input, repeat);
     }
     if (repeat != null) {
       if (scope != null) {
-        throw new ApplicationException(ErrorCode.TODO_0845, { field: "scope" });
+        throw invalidRepeatRule("scope");
       }
       return this.#startSeries(input, repeat);
     }
-    // nullish-strict: repeat null은 반복 끝내기, undefined는 변경 없음이다
+    // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기, undefined는 변경 없음이다
     if (repeat === null) {
       return this.#stopSeries(input);
     }
@@ -107,7 +106,7 @@ export class EditTodoUseCase {
       checklist,
     };
     const { startDate, endDate, completed } = data;
-    // nullish-strict: endDate null도 이 회차의 변경이다
+    // oxlint-disable-next-line aido/no-strict-nullish -- endDate null도 이 회차의 변경이다
     if (startDate == null && endDate === undefined && completed == null) {
       return updateFollowingTodos.execute(followingInput);
     }
@@ -178,7 +177,7 @@ export class EditTodoUseCase {
       UserId.reconstitute(userId),
     );
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      throw todoNotFound(id);
     }
     return response;
   }

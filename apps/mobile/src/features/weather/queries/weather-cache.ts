@@ -1,10 +1,10 @@
-import type { QueryClient } from '@tanstack/react-query';
+import type { QueryClient, QueryExecuteOptions, QueryKey } from '@tanstack/react-query';
 import { last } from 'es-toolkit';
 
-import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import type { RegisteredLocation } from '../domains/weather-report.model';
+import type { RegisteredLocation, WeatherReport } from '../domains/weather-report.model';
 import { weatherReportQueryKeySchema } from '../schemas/weather-report-query-key.schema';
+import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 
 /** 리포트 쿼리 키의 인자는 객체 하나이고 항상 마지막에 둔다 */
 function getReportKeyParams(queryKey: readonly unknown[]) {
@@ -12,8 +12,16 @@ function getReportKeyParams(queryKey: readonly unknown[]) {
   return parsed.success ? parsed.data : null;
 }
 
+/** 개발용 덮어쓰기가 실제 리포트를 캐시에서 읽고, 없을 때만 한 번 받는다 */
+export function queryCachedWeatherReport<TError, TQueryKey extends QueryKey>(
+  queryClient: QueryClient,
+  options: QueryExecuteOptions<WeatherReport, TError, WeatherReport, WeatherReport, TQueryKey>,
+) {
+  return queryClient.query({ ...options, staleTime: 'static' });
+}
+
 /** 위치를 먼저 읽어 이전 위치의 리포트를 한 번 더 받지 않고, 연달아 불리면 진행 중인 요청을 기다린다 */
-export async function refetchWeather(queryClient: QueryClient) {
+export async function refreshWeather(queryClient: QueryClient) {
   const getRevision = () =>
     WeatherLocationPolicy.getReadingRevision(
       queryClient.getQueryData(WEATHER_QUERY_KEYS.location()),
@@ -46,10 +54,6 @@ export function removeOutdatedWeatherReports(
   });
 }
 
-export function invalidateWeather(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: WEATHER_QUERY_KEYS.all });
-}
-
 export function refetchWeatherLocation(queryClient: QueryClient) {
   return queryClient.refetchQueries({ queryKey: WEATHER_QUERY_KEYS.location() });
 }
@@ -70,4 +74,35 @@ export function setRegisteredWeatherLocation(
   queryClient.setQueryData(WEATHER_QUERY_KEYS.location(), (reading) =>
     reading?.status === 'located' ? { ...reading, registered } : reading,
   );
+}
+
+export function getCachedWeatherLocation(queryClient: QueryClient) {
+  return queryClient.getQueryData(WEATHER_QUERY_KEYS.location());
+}
+
+export function getCachedWeatherReport(
+  queryClient: QueryClient,
+  { locationRevision }: { locationRevision: number },
+) {
+  return queryClient.getQueryData<WeatherReport>(WEATHER_QUERY_KEYS.report({ locationRevision }));
+}
+
+/** 그 리비전의 리포트가 받는 중이면 끝나기를 기다려 위치를 읽는다. 실패는 비교할 위치가 없는 것으로 본다 */
+export async function findCachedReportLocation(
+  queryClient: QueryClient,
+  {
+    locationRevision,
+    onReadFailed,
+  }: { locationRevision: number; onReadFailed: (error: unknown) => void },
+) {
+  const queryKey = WEATHER_QUERY_KEYS.report({ locationRevision });
+  const state = queryClient.getQueryState<WeatherReport>(queryKey);
+  if (state?.data == null && state?.fetchStatus === 'fetching') {
+    const report = await queryClient.query<WeatherReport>({ queryKey }).catch((error: unknown) => {
+      onReadFailed(error);
+      return null;
+    });
+    return report?.location ?? null;
+  }
+  return state?.data?.location ?? null;
 }

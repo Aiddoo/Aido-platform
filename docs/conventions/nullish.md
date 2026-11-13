@@ -22,7 +22,7 @@ Oxlint `eslint/eqeqeq: ["error", "always", { "null": "ignore" }]`가 root `.oxli
 
 ## 2. `=== null` / `=== undefined`는 뜻이 다를 때만
 
-둘을 구분해야 할 때만 엄격하게 비교하고, 비교가 있는 문장 바로 위(또는 같은 줄)에 `// nullish-strict: <이유>` 주석을 남긴다. 표시가 없는 `=== null`·`!== null`·`=== undefined`·`!== undefined`는 `pnpm --filter @aido/mobile check:conventions`가 위 경로에서 거부한다. 표시는 그 문장 안에서만 유효하므로 한 객체 리터럴의 여러 PATCH 필드는 표시 하나로 설명할 수 있지만, 다음 문장에는 다시 남겨야 한다. 테스트 디렉터리(`apps/api/test`)와 스크립트는 검사하지 않는다.
+둘을 구분해야 할 때만 엄격하게 비교하고, 비교가 있는 줄 바로 위에 `// oxlint-disable-next-line aido/no-strict-nullish -- <이유>`를 남긴다. 지시문이 없는 `=== null`·`!== null`·`=== undefined`·`!== undefined`는 Oxlint `aido/no-strict-nullish`가 위 경로에서 거부한다. 지시문은 다음 줄 하나에만 걸리므로 비교가 여러 줄에 있으면 줄마다 남기고, 비교가 없는 지시문은 Oxlint가 실패시킨다(`reportUnusedDisableDirectives`). 테스트 디렉터리(`apps/api/test`)와 스크립트는 검사하지 않는다.
 
 - PATCH 입력: 생략(`undefined`) = 바꾸지 않음, `null` = 비우기
 - `Map.get`·배열 조회의 미존재(`undefined`)와 저장된 `null` 구분
@@ -30,9 +30,10 @@ Oxlint `eslint/eqeqeq: ["error", "always", { "null": "ignore" }]`가 root `.oxli
 
 ```ts
 // ✅ PATCH: 세 상태를 구분한다
-// nullish-strict: 생략은 유지, null은 비우기다
+// oxlint-disable-next-line aido/no-strict-nullish -- 생략은 유지, null은 비우기다
 if (input.memo === undefined) {
   // 미제공: 기존 값 유지
+  // oxlint-disable-next-line aido/no-strict-nullish -- 생략은 유지, null은 비우기다
 } else if (input.memo === null) {
   todo.clearMemo();
 } else {
@@ -64,20 +65,20 @@ const limit = query.limit || 20;
 
 ## 4. 계약 (`@aido/api` Zod)
 
-| 위치                  | 형태                                | Zod                                   |
-| --------------------- | ----------------------------------- | ------------------------------------- |
-| 응답의 "값 없음"      | 키를 유지하고 `null`                | `.nullable()`                         |
-| 요청의 선택 입력      | 생략 = `undefined`                  | `.optional()`                         |
-| PATCH의 비우기        | 생략 = 유지, `null` = 비우기        | `.nullable().optional()`              |
-| 새로 추가한 응답 필드 | 구버전 서버·클라와 섞여도 파싱 가능 | `.optional()` + 필요 시 `.nullable()` |
-| 구버전 호환 파싱 경계 | 구 앱이 `null`·생략을 섞어 보냄     | `.nullish()`                          |
+| 위치                  | 형태                                 | Zod                                   |
+| --------------------- | ------------------------------------ | ------------------------------------- |
+| 응답의 "값 없음"      | 키를 유지하고 `null`                 | `.nullable()`                         |
+| 요청의 선택 입력      | 생략 = `undefined`                   | `.optional()`                         |
+| PATCH의 비우기        | 생략 = 유지, `null` = 비우기         | `.nullable().optional()`              |
+| 새로 추가한 응답 필드 | REST는 추가만 하므로 optional로 더함 | `.optional()` + 필요 시 `.nullable()` |
+| 구버전 호환 파싱 경계 | 구 앱이 `null`·생략을 섞어 보냄      | `.nullish()`                          |
 
 ```ts
 // ✅ 응답: 키는 항상 있고 값이 없으면 null
 endDate: z.iso.date().nullable(),
 // ✅ PATCH: 생략과 비우기를 구분
 memo: z.string().max(500).nullable().optional(),
-// ✅ 새 응답 필드: 구버전 서버 응답에는 키가 없다
+// ✅ 새 응답 필드: 추가만 하는 계약이라 optional로 더한다. 앱 mapper가 null로 바꾼다
 premiumSource: premiumSourceSchema.nullable().optional(),
 
 // ❌ 기존 응답의 nullable 필드를 optional로 바꾸면 구 앱 파싱이 깨진다
@@ -103,9 +104,22 @@ endDate: todo.endDate == null ? null : formatDateOnly(todo.endDate),
 
 ## 6. 클라이언트 (모바일)
 
-- 서버 DTO의 `null`은 클라이언트 모델에서도 그대로 `null`이다. mapper에서 `undefined`로 바꾸지 않는다.
-- 선택 props·함수 인자는 `?:`(`undefined`)다. props에 `null`을 기본 "없음"으로 쓰지 않는다.
+- 서버 DTO의 `null`은 클라이언트 모델에서도 그대로 `null`이다. mapper에서 `undefined`로 바꾸지 않는다(출처를 잃는 `?? undefined`도 쓰지 않는다).
+- 선택 props·함수 인자는 `?:`(`undefined`)다. props에 `| null`을 기본 "없음"으로 쓰지 않는다.
 - 판단은 `== null`로 하고 조기 반환한다.
+
+| 곳                                  | "없음"                                             | 표기                                 |
+| ----------------------------------- | -------------------------------------------------- | ------------------------------------ |
+| 응답 DTO, 모델, Policy, `find*`     | `null`                                             | `.nullable()`, `T \| null`           |
+| 계약이 `.optional()`로 더한 응답 칸 | mapper가 `null`로 바꾼다                           | DTO 경계에서만 `.optional()`         |
+| 요청의 선택 입력                    | 생략(`undefined`)                                  | `.optional()`                        |
+| PATCH                               | 생략 = 그대로, `null` = 지우기                     | `.nullable().optional()` + 이유 주석 |
+| props·함수의 선택 옵션              | `?:`(`undefined`). `\| null`을 겹치지 않는다       |                                      |
+| 값이 없을 수 있는 필수 입력         | `null`                                             | `T \| null`(`?:`와 겹쳐 쓰지 않는다) |
+| TanStack `data`를 받는 Policy 인자  | `undefined`(조회 전)                               | `T \| undefined`                     |
+| TanStack·RN 콜백, `getCached*`      | `undefined`(라이브러리 계약)                       |                                      |
+| 포트                                | 포트마다 하나로 정하고 문서화한다(`null` 권장)     |                                      |
+| 세 갈래 결과                        | 판별 유니온. `null` 대 `undefined`로 가르지 않는다 | `{ status: 'cancelled' } \| …`       |
 
 ```tsx
 // ✅

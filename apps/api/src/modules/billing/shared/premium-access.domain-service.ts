@@ -154,12 +154,12 @@ export function applyStoreEventChain(
     if (subscription.storeSubscriptionId !== eventChain?.storeSubscriptionId) {
       return [subscription];
     }
-    // nullish-strict: null은 엔타이틀먼트 없음, 생략(만료 시각 없는 UNCANCELLED·PRODUCT_CHANGE_SCHEDULED·EXTENDED)은 행의 만료 시각 유지
+    // oxlint-disable-next-line aido/no-strict-nullish -- null은 엔타이틀먼트 없음, 생략(만료 시각 없는 UNCANCELLED·PRODUCT_CHANGE_SCHEDULED·EXTENDED)은 행의 만료 시각 유지
     if (eventChain.expiresAt === null) {
       return [];
     }
-    // nullish-strict: 생략은 행의 결제 유예 유지, null은 유예 없음
     const gracePeriodEndsAt =
+      // oxlint-disable-next-line aido/no-strict-nullish -- 생략은 행의 결제 유예 유지, null은 유예 없음
       eventChain.gracePeriodEndsAt === undefined
         ? (subscription.gracePeriodEndsAt ?? null)
         : eventChain.gracePeriodEndsAt;

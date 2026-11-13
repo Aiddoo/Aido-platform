@@ -1,7 +1,5 @@
 # @aido/mobile
 
-> **Version**: 1.8.0 · **Last Updated**: 2026-11-07 · **Owner**: Aido Mobile Team
-
 메모가 할 일이 되고, 친구와 함께 끝내는 투두. Expo SDK 58 기반 React Native
 모바일 앱입니다.
 
@@ -76,20 +74,7 @@ pnpm update:production "메시지"
 
 ## 스크립트
 
-| 명령어                    | 설명                                     |
-| ------------------------- | ---------------------------------------- |
-| `pnpm dev`                | 개발 서버                                |
-| `pnpm dev:android`        | Android 실행                             |
-| `pnpm dev:ios`            | iOS 실행                                 |
-| `pnpm test`               | 테스트                                   |
-| `pnpm typecheck`          | 타입 검사                                |
-| `pnpm check`              | 린트·포맷·컨벤션 검사                    |
-| `pnpm check:conventions`  | 구조 규칙 검사                           |
-| `pnpm check:unused`       | 안 쓰는 파일·export·의존성 검사          |
-| `pnpm check:ipa-linkage`  | 빌드한 IPA가 expo 모듈과 연결됐는지 검사 |
-| `pnpm check:native-icons` | 네이티브 아이콘 자산 검사                |
-| `pnpm build:development`  | 개발 빌드                                |
-| `pnpm build:production`   | 프로덕션 빌드                            |
+명령 전체는 `package.json`의 `scripts`가 원본입니다. 앱의 `pnpm check`는 lint·format·`lint:deps`만 돌고, 커밋 전 전체 검사는 루트 `pnpm check`입니다([루트 AGENTS](../../AGENTS.md#명령)).
 
 ## 환경별 API URL
 
@@ -101,10 +86,9 @@ pnpm update:production "메시지"
 
 ## 배포
 
-자세한 내용은 [DEPLOYMENT.md](./DEPLOYMENT.md) 참고.
+자세한 내용은 [build-and-release.md](./docs/build-and-release.md) 참고.
 
-스토어 문구·스크린샷 순서·릴리스 체크리스트의 단일 준비본은
-[`store-metadata/1.8.0/release.json`](./store-metadata/1.8.0/release.json)을
-참고합니다. 이 파일을 변경해도 외부 스토어에 자동 게시되지는 않습니다.
+스토어 문구·스크린샷 순서·릴리스 체크리스트의 단일 준비본은 버전마다
+`store-metadata/{버전}/release.json`을 참고합니다(앱 버전은 `package.json`이 정본). 이 파일을 변경해도 외부 스토어에 자동 게시되지는 않습니다.
 한·영 스토어 등록 정보(이름·부제·설명·키워드·업데이트 내용)는
 [`store-metadata/listing/`](./store-metadata/listing/README.md)에 있고 `pnpm store:check`로 검사합니다.

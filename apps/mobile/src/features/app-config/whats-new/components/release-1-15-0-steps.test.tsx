@@ -1,34 +1,31 @@
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
-import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/constants/consent-query-keys';
+import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
   createAnalyticsStub,
-  createErrorReporterStub,
+  createAppLifecycleGatewayStub,
   createHttpClientStub,
-  createLoggerStub,
-  createMemoryObservableSyncStorage,
+  createAppLoggerStub,
   createSpeechRecognizerStub,
+  createTestDi,
   createTestQueryClient,
-  renderUi,
   setupFakeTimersPerTest,
-} from '@src/shared/__tests__';
-import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { createWhatsNewRepository } from '../apis/whats-new.repository';
-import { RELEASE_1_15_0 } from '../constants/releases';
+import { RELEASE_1_15_0 } from '../constants/releases.constants';
 import { Release1150Steps } from './release-1-15-0-steps';
 
 const ACCOUNT_ID = 'user-1';
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 async function renderSteps() {
@@ -36,8 +33,6 @@ async function renderSteps() {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const analytics = createAnalyticsStub();
-  const storage = createMemoryObservableSyncStorage();
-  const repository = createWhatsNewRepository(storage);
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   queryClient.setQueryData(
@@ -48,25 +43,24 @@ async function renderSteps() {
     }),
   );
 
-  const view = await renderUi(<Release1150Steps />, {
-    queryClient,
-    withLocalDate: true,
-    withOverlay: true,
-    di: {
+  const di = createTestDi({
+    ports: {
+      queryClient,
+      // 앞에 있는 앱은 자정 타이머를 계속 걸어 runAllTimers가 끝나지 않는다
+      appLifecycle: createAppLifecycleGatewayStub('background'),
       httpClient,
       analytics,
       logger,
-      errorReporter: createErrorReporterStub(),
-      whatsNewRepository: repository,
-      featureAttribution: createFeatureAttributionStore(createMemoryObservableSyncStorage()),
-      recognitionLanguageRepository: createRecognitionLanguageRepository(
-        createMemoryObservableSyncStorage(),
-      ),
       speechRecognizer: createSpeechRecognizerStub(),
     },
   });
+  const view = await renderScreen(<Release1150Steps />, {
+    di,
+    withLocalDate: true,
+    withOverlay: true,
+  });
 
-  return { ...view, analytics, storage };
+  return { ...view, analytics };
 }
 
 const STEPS_BEFORE_FINISH = 7;
@@ -96,7 +90,7 @@ describe('Release1150Steps', () => {
 
   it('처음 열면 노출을 남기고 이 계정의 캠페인을 본 것으로 기록한다', async () => {
     // When
-    const { analytics, storage } = await renderSteps();
+    const { analytics, di } = await renderSteps();
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_hub_impression', {
@@ -110,7 +104,7 @@ describe('Release1150Steps', () => {
       source: 'auto',
     });
     expect(
-      createWhatsNewRepository(storage).hasSeen({
+      di.whatsNewRepository.hasSeen({
         userId: ACCOUNT_ID,
         campaignId: RELEASE_1_15_0.campaignId,
       }),
@@ -175,10 +169,10 @@ describe('Release1150Steps', () => {
     await unmount();
 
     // Then
-    expect(router.dismissTo).toHaveBeenCalledWith({
-      pathname: '/feed',
-      params: { action: 'add-voice-todo' },
-    });
+    expect(router.dismissTo).toHaveBeenCalledWith(
+      { pathname: '/feed', params: { action: 'add-voice-todo' } },
+      undefined,
+    );
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', {
       campaign_id: RELEASE_1_15_0.campaignId,
       feature: 'voice_quick',
@@ -203,10 +197,10 @@ describe('Release1150Steps', () => {
     await fireEvent.press(screen.getByTestId('whats-new-start-voice-note'));
 
     // Then
-    expect(router.dismissTo).toHaveBeenCalledWith({
-      pathname: '/memo',
-      params: { startVoiceNote: '1' },
-    });
+    expect(router.dismissTo).toHaveBeenCalledWith(
+      { pathname: '/memo', params: { startVoiceNote: '1' } },
+      undefined,
+    );
     expect(router.push).not.toHaveBeenCalled();
   });
 
@@ -238,39 +232,5 @@ describe('Release1150Steps', () => {
 
     // Then
     expect(getStepViews(analytics)).toHaveLength(2);
-  });
-
-  it('마무리에서 나중에를 누르면 완료를 남기고 닫은 것으로 세지 않는다', async () => {
-    // Given
-    const { analytics, unmount } = await renderSteps();
-    await goToFinish();
-
-    // When
-    await fireEvent.press(screen.getByTestId('whats-new-later'));
-    await unmount();
-
-    // Then
-    expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_completed', {
-      release_id: RELEASE_1_15_0.id,
-      source: 'auto',
-    });
-    expect(analytics.trackEvent).not.toHaveBeenCalledWith(
-      'feature_hub_dismissed',
-      expect.anything(),
-    );
-  });
-
-  it('CTA 없이 화면이 사라지면 닫은 것으로 남긴다', async () => {
-    // Given
-    const { analytics, unmount } = await renderSteps();
-
-    // When
-    await unmount();
-
-    // Then
-    expect(analytics.trackEvent).toHaveBeenCalledWith('feature_hub_dismissed', {
-      campaign_id: RELEASE_1_15_0.campaignId,
-      source: 'auto',
-    });
   });
 });

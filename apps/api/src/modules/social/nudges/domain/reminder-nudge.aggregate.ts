@@ -1,10 +1,8 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { NudgeMessage } from "./nudge-message.vo.js";
+import { cannotNudgeSelf } from "./nudges.errors.js";
 import { ReminderNudgeId } from "./reminder-nudge-id.vo.js";
 
 export interface ReminderNudgePrimitives {
@@ -34,7 +32,7 @@ interface CreateReminderNudgeParams {
 export class ReminderNudge extends AggregateRoot<ReminderNudgeId, ReminderNudgeProps> {
   static create(params: CreateReminderNudgeParams): ReminderNudge {
     if (params.senderId.equals(params.receiverId)) {
-      throw new DomainException(ErrorCode.NUDGE_1104);
+      throw cannotNudgeSelf();
     }
     return new ReminderNudge(params.id, {
       senderId: params.senderId,

@@ -1,22 +1,23 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useVoiceNoteDraftRepository } from '@src/bootstrap/providers/di-context';
+import { useSyncExternalStore } from 'react';
 
-import { voiceNoteParamsSchema } from '../schemas/voice-note-params.schema';
-import { useVoiceNote } from './use-voice-notes';
+import type { VoiceNote } from '../domains/voice-note.model';
+import { useVoiceNoteDraftId } from './use-voice-note-params';
 
-/** 초안 저장소를 구독하지 않아 녹음·정리로 초안이 바뀌어도 id만 쓰는 컴포넌트는 다시 그려지지 않는다 */
-export function useVoiceNoteRoute() {
-  const [{ draftId }] = useRouteParams(voiceNoteParamsSchema);
-  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+/**
+ * 지금 화면의 초안. 화면이 초안이 있는 단계에서만 그리는 조각이 부르고, 내용이 바뀔 때마다 다시 그려진다.
+ * 지우면 화면이 먼저 'missing'으로 바꿔 이 조각을 내리므로 없는 초안을 읽지 않는다
+ */
+export function useCurrentVoiceNote(accountId: string): VoiceNote {
+  const [draftId] = useVoiceNoteDraftId();
+  const drafts = useVoiceNoteDraftRepository();
+  const note = useSyncExternalStore(
+    drafts.subscribe,
+    () => drafts.getSnapshot(accountId).find((draft) => draft.draftId === draftId) ?? null,
+  );
+  if (note == null) {
+    throw new Error('[useCurrentVoiceNote] 초안이 없는 단계에서 그렸다');
+  }
 
-  return [{ accountId: me.id, draftId }] as const;
-}
-
-/** 지금 화면의 말로 메모 초안과 그 내용. 내용이 바뀔 때마다 다시 그려진다 */
-export function useCurrentVoiceNote() {
-  const [{ accountId, draftId }] = useVoiceNoteRoute();
-  const [note] = useVoiceNote(accountId, draftId);
-
-  return [{ accountId, draftId, note }] as const;
+  return note;
 }

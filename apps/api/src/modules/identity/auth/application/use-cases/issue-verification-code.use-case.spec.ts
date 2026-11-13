@@ -29,28 +29,61 @@ describe("IssueVerificationCode — 재발송 대기와 이전 코드 만료", (
   }
 
   function issuedSecondsAgo(seconds: number) {
-    const createdAt = AUTH_FIXTURE_NOW.subtract({ seconds });
+    const createdAt = AUTH_FIXTURE_NOW.subtract({ milliseconds: seconds * 1000 });
     return createAuthVerificationFixture({
       createdAt,
       expiresAt: createdAt.add({ minutes: 10 }),
     });
   }
 
-  it("같은 종류 코드를 59초 전에 발급했으면 VERIFY_0753과 대기 60초로 거부하고 이전 코드를 그대로 둔다", async () => {
+  it.each([
+    { secondsAgo: 0, remainingSeconds: 60 },
+    { secondsAgo: 20.5, remainingSeconds: 40 },
+    { secondsAgo: 59, remainingSeconds: 1 },
+    { secondsAgo: 60, remainingSeconds: 1 },
+  ])(
+    "같은 종류 코드를 $secondsAgo초 전에 발급했으면 VERIFY_0753과 남은 $remainingSeconds초로 거부하고 이전 코드를 그대로 둔다",
+    async ({ secondsAgo, remainingSeconds }) => {
+      // Given
+      const previous = issuedSecondsAgo(secondsAgo);
+      const fixture = given([previous]);
+
+      // When
+      const pending = fixture.useCase.execute({
+        userId: AUTH_FIXTURE_USER_ID,
+        type: "EMAIL_VERIFY",
+      });
+
+      // Then
+      await expect(pending).rejects.toBeInstanceOf(ApplicationException);
+      await expect(pending).rejects.toMatchObject({
+        errorCode: ErrorCode.VERIFY_0753,
+        details: { remainingSeconds },
+      });
+      expect(fixture.verificationRepository.all).toEqual([previous.toPrimitives()]);
+    },
+  );
+
+  it("같은 종류 코드가 여럿이면 가장 최근 발급부터 남은 초를 센다", async () => {
     // Given
-    const previous = issuedSecondsAgo(59);
-    const fixture = given([previous]);
+    const older = createAuthVerificationFixture({
+      id: 1,
+      createdAt: AUTH_FIXTURE_NOW.subtract({ seconds: 50 }),
+    });
+    const latest = createAuthVerificationFixture({
+      id: 2,
+      createdAt: AUTH_FIXTURE_NOW.subtract({ seconds: 10 }),
+    });
+    const fixture = given([older, latest]);
 
     // When
     const pending = fixture.useCase.execute({ userId: AUTH_FIXTURE_USER_ID, type: "EMAIL_VERIFY" });
 
     // Then
-    await expect(pending).rejects.toBeInstanceOf(ApplicationException);
     await expect(pending).rejects.toMatchObject({
       errorCode: ErrorCode.VERIFY_0753,
-      details: { remainingSeconds: 60 },
+      details: { remainingSeconds: 50 },
     });
-    expect(fixture.verificationRepository.all).toEqual([previous.toPrimitives()]);
   });
 
   it("61초 전에 발급한 같은 종류 코드는 지금 만료시키고 새 코드를 발급한다", async () => {

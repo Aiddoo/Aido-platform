@@ -1,8 +1,8 @@
 import { NUDGE_LIMITS } from '@aido/api/vocabulary';
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheetTextArea,
@@ -108,7 +108,6 @@ function NudgeMessageSheet({
   onOpenChange,
   ...sheetProps
 }: NudgeMessageSheetProps) {
-  const reportUnexpectedError = useReportUnexpectedError('todo_nudge');
   const { t } = useTranslation('todo');
   const form = useForm({
     resolver: zodResolver(nudgeFormSchema),
@@ -128,10 +127,13 @@ function NudgeMessageSheet({
     try {
       await onSend(message);
       handleOpenChange(false);
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   };
+
+  // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 콕을 한 번 더 보낸다
+  const submitNudge = useSingleTap(() => form.handleSubmit(handleSubmitNudge)());
 
   return (
     <KeyboardBottomSheet
@@ -142,7 +144,7 @@ function NudgeMessageSheet({
           color="primary"
           size="large"
           display="block"
-          onPress={() => form.handleSubmit(handleSubmitNudge)()}
+          onPress={submitNudge}
           isDisabled={!isValid}
           isLoading={isSubmitting}
         >
@@ -175,7 +177,7 @@ function NudgeMessageSheet({
                 placeholder={placeholder}
                 value={field.value ?? ''}
                 onChange={field.onChange}
-                className="z-10 min-h-0 h-[80px]"
+                className="z-10 h-[80px] min-h-0"
                 errorMessage={
                   fieldState.error == null
                     ? undefined

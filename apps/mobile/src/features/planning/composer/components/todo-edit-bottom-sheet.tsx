@@ -1,49 +1,50 @@
 import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TodoScopeSelectContent } from '@src/features/planning/todo/components/todo-scope-select-content';
-import { TodoRepeatPolicy } from '@src/features/planning/todo/domains/todo-repeat.model';
-import { type TodoUpdateScope } from '@src/features/planning/todo/domains/todo-repeat.model';
+import { toTodoFormValues } from '@src/features/planning/todo/apis/todo.mapper';
+import { TodoScopeSelect } from '@src/features/planning/todo/components/todo-scope-select';
+import {
+  getTodoEditScopeDecision,
+  type TodoUpdateScope,
+} from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { type Todo } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
-import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
-import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { useSheetTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
+import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
+import type { DateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
   BottomSheetInput,
   HStack,
-  INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
-  ModalBottomSheet,
   QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Result,
-  useOverlay,
+  useOpenSheet,
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
-import { TodoChangePolicy } from '../domains/todo-change.model';
+import { getTodoUpdateChanges, TodoChangePolicy } from '../domains/todo-change.model';
+import { useFocusTodoTitle } from '../hooks/use-focus-todo-title';
+import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
 import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
-import { addTodoFormSchema } from '../schemas/add-todo-form.schema';
-import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
-import { toTodoUpdateChanges } from '../utils/to-todo-update-changes';
-import {
-  openTodoRepeatPicker,
-  TodoComposerChips,
-  TodoComposerSubmitButton,
-} from './todo-composer-fields';
+import { TodoComposerChips } from './todo-composer-chips';
+import { TodoComposerSubmitButton } from './todo-composer-submit-button';
+
+type EditScopeChoice =
+  | { kind: 'unscoped' }
+  | { kind: 'scoped'; scope: TodoUpdateScope }
+  | { kind: 'cancelled' };
 
 /** 키보드 시트가 폼 기본값을 할 일로 정하므로, 할 일을 읽는 동안에는 시트를 띄우지 않는다. */
 export function TodoEditBottomSheet() {
@@ -58,16 +59,7 @@ export function TodoEditBottomSheet() {
 
 TodoEditBottomSheet.Form = function Form() {
   const sheet = useSheetRoute('/feed');
-  const [todoId] = useTodoId();
-  const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
-
-  useEffect(() => {
-    if (todo == null) {
-      sheet.exit();
-    }
-  }, [todo, sheet]);
+  const todo = useSheetTodo({ onMissing: () => sheet.exit() });
 
   if (todo == null) {
     return null;
@@ -92,7 +84,10 @@ TodoEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallback
       <Result
         title={t('errorBoundary.title')}
         button={
-          <QueryErrorActions onRetry={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+          <QueryErrorActions
+            onRetry={reset}
+            onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
+          />
         }
       />
     </BottomSheet>
@@ -109,85 +104,78 @@ interface TodoEditFormProps {
 function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps) {
   const { t } = useTranslation('todo');
   const { timeZone } = useDateFormatContext();
+  const openSheet = useOpenSheet();
   const reportUnexpectedError = useReportUnexpectedError('todo');
-  const overlay = useOverlay();
 
-  // 서버 재조회로 할 일이 바뀌어도 고치기 시작한 값과 비교한다. 사용자가 안 고친 칸을 덮어쓰지 않는다
-  const [initialValues] = useState(() => toTodoEditFormValues(todo, timeZone));
-  const canChangeRepeat = TodoRepeatPolicy.canChangeRepeat({
-    ...todo,
-    repeat: initialValues.repeat,
-  });
+  // 다시 받은 할 일로 비교 기준을 맞춘다. 고치지 않은 칸은 새 값을 보이고 고치던 칸은 남아 고친 칸만 보낸다
+  const savedValues = toTodoFormValues(todo, timeZone);
+  const canChangeRepeat = TodoPolicy.canChangeRepeat(todo);
 
   const form = useForm({
-    resolver: zodResolver(addTodoFormSchema),
-    defaultValues: initialValues,
+    resolver: zodResolver(todoFormSchema),
+    values: savedValues,
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
   const { isSubmitting, isValid } = useFormState({ control: form.control });
   const updateTodo = useMutation(useUpdateTodoMutationOptions());
+  const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
 
-  const focusTitle = () => requestAnimationFrame(() => form.setFocus('title'));
+  const focusTitle = useFocusTodoTitle(form);
 
   // 입력 시트 안에서 내용을 갈아 끼우면 키보드가 내려가는 동안 높이가 튀어 떠 있는 시트로 묻는다
   const selectEditScope = async (
-    date: string,
+    date: DateKey,
     { isFollowingOnly = false }: { isFollowingOnly?: boolean } = {},
-  ) => {
-    const scope = await overlay.openAsync<TodoUpdateScope | null>(
-      ({ isOpen: isScopeOpen, close, unmount }) => (
-        <ModalBottomSheet isOpen={isScopeOpen} onOpenChange={() => close(null)} onExit={unmount}>
-          <TodoScopeSelectContent
-            action="edit"
-            date={date}
-            scopes={isFollowingOnly ? ['THIS_AND_FOLLOWING'] : TODO_UPDATE_SCOPES}
-            onChange={(selected) => close(selected === 'ALL' ? null : selected)}
-            onBack={() => close(null)}
-          />
-        </ModalBottomSheet>
-      ),
-      { dismissedValue: null },
-    );
+  ): Promise<EditScopeChoice> => {
+    const scope = await openSheet<TodoUpdateScope>((close) => (
+      <TodoScopeSelect
+        action="edit"
+        date={date}
+        scopes={isFollowingOnly ? ['THIS_AND_FOLLOWING'] : TODO_UPDATE_SCOPES}
+        onChange={(selected) => close(selected)}
+        onBack={() => close()}
+      />
+    ));
     if (scope == null) {
       focusTitle();
+      return { kind: 'cancelled' };
     }
-
-    return scope;
+    return { kind: 'scoped', scope };
   };
 
   const submitTodo = form.handleSubmit(async (values) => {
     try {
-      const changes = toTodoUpdateChanges(values, initialValues, timeZone);
+      const changes = getTodoUpdateChanges(values, savedValues);
       if (!TodoChangePolicy.hasTodoUpdateChanges(changes)) {
         onClose();
 
         return;
       }
-      const scope = await match(
-        TodoRepeatPolicy.getTodoEditScopeDecision({
-          isSeries: TodoRepeatPolicy.hasRepeatRule({ ...todo, repeat: initialValues.repeat }),
+      const choice = await match(
+        getTodoEditScopeDecision({
+          isSeries: TodoPolicy.hasRepeatRule(todo),
           repeat: changes.repeat,
           isDateOnly: TodoChangePolicy.hasOnlyDateChanges(changes),
         }),
       )
-        .returnType<Promise<TodoUpdateScope | null | undefined>>()
-        .with('no-scope', async () => undefined)
-        .with('this-only', async () => 'THIS_ONLY')
+        .returnType<Promise<EditScopeChoice>>()
+        .with('no-scope', async () => ({ kind: 'unscoped' }))
+        .with('this-only', async () => ({ kind: 'scoped', scope: 'THIS_ONLY' }))
         .with('ask', () => selectEditScope(todo.startDate))
         .with('ask-following-only', () =>
           selectEditScope(todo.startDate, { isFollowingOnly: true }),
         )
         .exhaustive();
-      // nullish-strict: 생략은 범위가 없는 수정, null은 범위 선택에서 뒤로 간 취소다
-      if (scope === null) {
+      if (choice.kind === 'cancelled') {
         return;
       }
       await updateTodo.mutateAsync(
         {
           todoId: todo.id,
-          input: changes.input,
+          fields: changes.fields,
           options: {
-            ...(scope != null && { scope }),
-            // nullish-strict: repeat null은 반복 끝내기라 보낸다
+            ...(choice.kind === 'scoped' && { scope: choice.scope }),
+            // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 보낸다
             ...(changes.repeat !== undefined && { repeat: changes.repeat }),
           },
         },
@@ -195,9 +183,8 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
       );
     } catch (error) {
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
-      reportUnexpectedError(error);
       if (shouldReopenRepeatPicker(error)) {
-        openTodoRepeatPicker(overlay, form);
+        reopenRepeatPicker().catch(reportUnexpectedError);
       }
     }
   });

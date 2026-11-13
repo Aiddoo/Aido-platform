@@ -1,9 +1,8 @@
 import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useTrack } from '@src/shared/analytics';
-import { formatDateKeyRange } from '@src/shared/date/date-format';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
-import { formatIsoWeekOfMonthLabel } from '@src/shared/date/date-labels';
+import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -32,9 +31,9 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
 import { AchievementPolicy } from '../domains/achievement.model';
@@ -53,6 +52,7 @@ export function AchievementSummary() {
     useGetWeeklyAchievementsInfiniteQueryOptions({ year: getIsoWeekYear(todayKey) }),
   );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const isFocused = useIsFocused();
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
@@ -61,19 +61,22 @@ export function AchievementSummary() {
   const { shareCapture, isSharing } = useShareViewCapture(viewShotRef);
   const latest = weeklyAchievements.items[0];
   const latestBadgeType = latest == null ? null : AchievementPolicy.getBadgeType(latest);
-  const latestCompletionRate = latest?.completionRate;
-  const latestWeekKey = latest == null ? null : `${latest.year}-W${latest.week}`;
+  const latestWeekKey = latest == null ? null : (`${latest.year}-W${latest.week}` as const);
 
-  useEffect(() => {
-    if (latestBadgeType == null || latestCompletionRate == null || latestWeekKey == null) {
-      return;
-    }
-    trackEvent('badge_summary_viewed', {
-      badge_type: latestBadgeType,
-      completion_rate: latestCompletionRate,
-      week_label: latestWeekKey,
-    });
-  }, [trackEvent, latestBadgeType, latestCompletionRate, latestWeekKey]);
+  // 탭 Stack에 남은 화면은 뒤 탭에서도 다시 조회한다. 보이는 동안 주마다 한 번 센다
+  useTrackView(
+    'badge_summary_viewed',
+    isFocused && latest != null && latestBadgeType != null && latestWeekKey != null
+      ? {
+          key: latestWeekKey,
+          params: {
+            badge_type: latestBadgeType,
+            completion_rate: latest.completionRate,
+            week_label: latestWeekKey,
+          },
+        }
+      : null,
+  );
 
   if (latest == null || latestBadgeType == null || weeklyAchievements.summary == null) {
     return <AchievementSummary.Empty />;
@@ -110,7 +113,7 @@ export function AchievementSummary() {
             <Text size="e1" shade={5}>
               {t('card.nameLabel')}
             </Text>
-            <Box className="border-b border-gray-3 pb-1 px-8">
+            <Box className="border-b border-gray-3 px-8 pb-1">
               <H4
                 weight="bold"
                 align="center"
@@ -134,7 +137,11 @@ export function AchievementSummary() {
           >
             {t('card.certificate', {
               weekLabel: t('card.weekWithPeriod', {
-                weekLabel: formatIsoWeekOfMonthLabel(latest.dateRange.startDate, dateFormatContext),
+                weekLabel: formatIsoWeekLabel(
+                  latest.dateRange.startDate,
+                  todayKey,
+                  dateFormatContext,
+                ),
                 period: formatDateKeyRange(
                   latest.dateRange.startDate,
                   latest.dateRange.endDate,
@@ -144,7 +151,7 @@ export function AchievementSummary() {
               }),
               total: latest.totalTodos,
               completed: latest.completedTodos,
-              rate: latest.completionRate,
+              rate: formatPercent(latest.completionRate, dateFormatContext.locale),
             })}
           </Text>
 
@@ -164,7 +171,10 @@ export function AchievementSummary() {
               label={t('card.statStreak')}
               value={t('card.streakWeeks', { count: summary.currentStreak })}
             />
-            <Stat label={t('card.statAverage')} value={`${formatPercent(summary.averageRate)}%`} />
+            <Stat
+              label={t('card.statAverage')}
+              value={formatPercent(summary.averageRate, dateFormatContext.locale)}
+            />
           </HStack>
         </Certificate>
       </CapturableView>
@@ -256,7 +266,7 @@ AchievementSummary.Loading = function Loading() {
 
         <VStack align="center" gap={4}>
           <TextSkeleton size="e1" className="w-10" />
-          <Box className="border-b border-transparent pb-1 px-8">
+          <Box className="border-b border-transparent px-8 pb-1">
             <TextSkeleton size="t3" className="w-32" />
           </Box>
         </VStack>

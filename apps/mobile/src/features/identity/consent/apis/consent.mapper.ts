@@ -1,8 +1,4 @@
-import type {
-  UpdateAiDataSharingConsentResponse,
-  UpdateMarketingConsentResponse,
-  UpdateMarketingPushConsentResponse,
-} from '@aido/api';
+import type { UpdateAiDataSharingConsentResponse } from '@aido/api';
 import { toNullableInstant } from '@src/shared/date/instant';
 
 import {
@@ -11,7 +7,11 @@ import {
   type UpdateMarketingConsentResult,
   type UpdateMarketingPushConsentResult,
 } from '../domains/consent.model';
-import { type ConsentEnvelope } from '../schemas/consent-response.schema';
+import {
+  type ConsentEnvelope,
+  type UpdateMarketingConsentEnvelope,
+  type UpdateMarketingPushConsentEnvelope,
+} from '../schemas/consent-response.schema';
 
 export function toConsent(dto: ConsentEnvelope): Consent {
   return {
@@ -27,20 +27,20 @@ export function toConsent(dto: ConsentEnvelope): Consent {
 }
 
 export function toUpdateMarketingConsentResult(
-  dto: UpdateMarketingConsentResponse,
+  dto: UpdateMarketingConsentEnvelope,
 ): UpdateMarketingConsentResult {
   return {
     marketingAgreedAt: toNullableInstant(dto.marketingAgreedAt),
-    marketingWithdrawnAt: toNullableInstant(dto.marketingWithdrawnAt ?? null),
+    marketingWithdrawnAt: toNullableInstant(dto.marketingWithdrawnAt),
   };
 }
 
 export function toUpdateMarketingPushConsentResult(
-  dto: UpdateMarketingPushConsentResponse,
+  dto: UpdateMarketingPushConsentEnvelope,
 ): UpdateMarketingPushConsentResult {
   return {
     marketingPushAgreedAt: toNullableInstant(dto.marketingPushAgreedAt),
-    marketingPushWithdrawnAt: toNullableInstant(dto.marketingPushWithdrawnAt ?? null),
+    marketingPushWithdrawnAt: toNullableInstant(dto.marketingPushWithdrawnAt),
   };
 }
 

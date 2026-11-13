@@ -488,7 +488,7 @@ describe("GenerateReportUseCase", () => {
       expect(f.reportRepository.saved[0]).toMatchObject({
         contentSource: "FALLBACK",
         promptVersion: null,
-        aiSummary: "2026년 11주차에는 할 일 4개 중 3개를 완료해 달성률 75%였어요.",
+        aiSummary: "3월 2주차에는 할 일 4개 중 3개를 완료해 달성률 75%였어요.",
       });
       expect(f.logger.error).toHaveBeenCalledWith(
         expect.objectContaining({

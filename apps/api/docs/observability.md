@@ -13,7 +13,7 @@
 
 - 형식은 `<context>.<subject>[.<detail>].<outcome>`다. 소문자, 단어는 하이픈, 마디는 점이다(`identity.oauth.token-exchange.failed`, 앱 `todo-comment.submit.failed`).
 - 첫 마디는 Bounded Context, platform은 기술 영역(`http`·`redis`·`cache`·`jobs`·`database`·`events`)이다. 마지막은 결과(`failed`·`completed`·`skipped` …)다.
-- Sentry `feature` 태그는 첫 마디의 하이픈을 밑줄로 바꾼 값이다(앱 [observability](../../mobile/.claude/observability.md)와 같은 축).
+- Sentry `feature` 태그는 첫 마디의 하이픈을 밑줄로 바꾼 값이다(앱 [observability](../../mobile/docs/observability.md)와 같은 축).
 - `errorType`은 분류 또는 예외 클래스 이름(`toErrorType`), `errorCode`는 공유 `ErrorCode` 값만이다. 공급자 기호는 `providerError`, 공급자 HTTP 상태는 `statusCode`, Node 네트워크 code는 `networkCode`다.
 - 메시지 자리에 template literal·문자열 연결을 쓰지 않는다. `logger.warn({ event, ...fields })` 한 객체로 남긴다.
 - 기존 snake_case 키(`weather.*`·`ai.job.*`·`social.*`·`notification.*` 일부)는 저장된 조회 호환으로 유지한다. 새 키만 이 형식이다.
@@ -26,7 +26,7 @@
 
 - 공급자 실패는 공급자 이름·HTTP 상태·짧은 오류 코드만 남긴다. 외부 `error.message`·stack을 logger에 그대로 넘기지 않는다.
 - 로그 정리와 호출자의 오류 계약은 별개다. 로그를 가리려고 sender result·queue throw·재시도 여부를 바꾸지 않는다.
-- Sentry SDK 11은 기본으로 요청·응답 본문, DB 바인딩 값, 스택 지역 변수, 쿠키·쿼리를 모은다. [sentry-options](../src/platform/config/utils/sentry-options.ts)의 `SENTRY_DATA_COLLECTION`이 모두 끄고(헤더는 `user-agent`·`x-app-version`·`x-device-type`만), `scrubErrorEvent`가 보내기 직전 인증 헤더·IP·본문·이메일을 한 번 더 지운다. AI span 입출력도 끈다([보안](security.md#ai)).
+- Sentry SDK 11은 기본으로 요청·응답 본문, DB 바인딩 값, 스택 지역 변수, 쿠키·쿼리를 모은다. [sentry-options](../src/platform/config/utils/sentry-options.ts)의 `SENTRY_DATA_COLLECTION`이 모두 끄고(헤더는 `user-agent`·`x-app-version`·`x-device-type`만), `scrubErrorEvent`가 보내기 직전 인증 헤더·IP·본문·이메일을 한 번 더 지운다. 예외 메시지(`cause`로 이은 linked exception 포함)·메시지 이벤트·breadcrumb 글의 `DrizzleQueryError` 바인딩 값(`params:` 뒤)과 이메일 모양도 `[FILTERED]`로 바꾼다(끝 칸이 숫자인 패키지 버전 `x@5.1.0`은 남긴다). AI span 입출력도 끈다([보안](security.md#ai)).
 
 ## HTTP 로그와 요청 ID
 

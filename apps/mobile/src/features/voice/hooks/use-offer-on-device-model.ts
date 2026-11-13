@@ -1,13 +1,13 @@
-import {
-  useOfflineModelPromptRepository,
-  useSpeechRecognizer,
-} from '@src/bootstrap/providers/di-context';
+import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { t } from '@src/shared/i18n';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { useConfirmDialog } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 
 import type { VoiceCaptureEntry } from '../constants/voice.events';
+import { offlineModelDeclinedStoredValue } from '../schemas/offline-model-declined-storage.schema';
 import { useVoiceCaptureTelemetry } from './use-voice-capture-telemetry';
 
 interface UseOfferOnDeviceModelOptions {
@@ -23,7 +23,8 @@ interface OfferOnDeviceModelOptions {
 /** Android에 언어 모델이 없으면 한 번만 묻는다. 거절·시스템 창 취소·받을 수 없음이면 다시 묻지 않는다 */
 export function useOfferOnDeviceModel({ accountId, entry }: UseOfferOnDeviceModelOptions) {
   const speechRecognizer = useSpeechRecognizer();
-  const offlineModelPrompt = useOfflineModelPromptRepository();
+  // 계정 범위 저장소라 로그아웃 때 지워지고, 읽지 못하면 한 번 더 묻는다
+  const storage = useStoredValueStorage(offlineModelDeclinedStoredValue);
   const confirmDialog = useConfirmDialog();
   const toast = useAppToast();
   const telemetry = useVoiceCaptureTelemetry({ entry, mode: 'note' });
@@ -33,7 +34,11 @@ export function useOfferOnDeviceModel({ accountId, entry }: UseOfferOnDeviceMode
     if (isAbandoned()) {
       return;
     }
-    if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, locale)) {
+    const scope = { accountId, locale };
+    if (
+      !canDownloadOnDeviceModel ||
+      readStoredValue(storage, offlineModelDeclinedStoredValue, scope) != null
+    ) {
       return;
     }
     const shouldDownload = await confirmDialog.openAsync({
@@ -46,13 +51,13 @@ export function useOfferOnDeviceModel({ accountId, entry }: UseOfferOnDeviceMode
       return;
     }
     if (!shouldDownload) {
-      offlineModelPrompt.saveDeclined(accountId, locale);
+      writeStoredValue(storage, offlineModelDeclinedStoredValue, 'declined', scope);
       telemetry.offlineModelDeclined(locale);
       return;
     }
     const result = await speechRecognizer.requestOfflineModel(locale);
     if (result !== 'downloaded') {
-      offlineModelPrompt.saveDeclined(accountId, locale);
+      writeStoredValue(storage, offlineModelDeclinedStoredValue, 'declined', scope);
     }
     telemetry.offlineModelRequested(locale, result);
     if (result === 'scheduled') {

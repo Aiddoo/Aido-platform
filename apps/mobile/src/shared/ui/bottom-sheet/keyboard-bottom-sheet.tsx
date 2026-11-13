@@ -5,6 +5,8 @@ import GorhomBottomSheet, {
   BottomSheetScrollView,
   useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
+import { useAppLifecycle } from '@src/shared/di/shared-di-context';
+import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useTranslation } from '@src/shared/i18n';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
 import {
@@ -18,14 +20,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  AppState,
-  type AppStateStatus,
-  Keyboard,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { GestureDetector, useTapGesture } from 'react-native-gesture-handler';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
 import Animated, {
@@ -41,10 +36,11 @@ import { useResolveClassNames } from 'uniwind';
 
 import { FocusedFieldContext } from '../input/focused-field';
 import { FieldMaxHeightContext } from '../text-area/field-max-height';
+import { ToastLayerClosingContext } from '../toast/toast-layer';
 import {
   HANDLE_HEIGHT,
   SHARED_SHEET_STYLES,
-  SHEET_ANIMATION_DURATION,
+  SHEET_ANIMATION_DURATION_MS,
   SHEET_CONTENT_PADDING,
   SHEET_FOOTER_PADDING_TOP,
   SHEET_INDEX,
@@ -60,7 +56,6 @@ import {
 } from './keyboard-bottom-sheet.geometry';
 import { usePortalTarget } from './portal-target';
 import { SheetFooterContext, SheetFooterSlot } from './sheet-footer-slot';
-import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 import { useScrollFocusedInputIntoView } from './use-scroll-focused-input-into-view';
 import { useSheetLayout } from './use-sheet-layout';
 
@@ -95,17 +90,19 @@ export function KeyboardBottomSheet({
 }: KeyboardBottomSheetProps) {
   const { setEnabled } = useKeyboardContext();
   const portalTarget = usePortalTarget();
+  const startToastLayerClosing = use(ToastLayerClosingContext);
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
   const animatedPosition = useSharedValue(0);
   const animatedIndex = useSharedValue<number>(SHEET_INDEX.CLOSED);
   const isBackdropTouchable = useSharedValue(false);
+  const appLifecycle = useAppLifecycle();
   const isClosingRef = useRef(false);
   const hasNotifiedCloseRef = useRef(false);
   const prevIsOpenRef = useRef(isOpen);
   const closeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizeFrameRef = useRef<number | undefined>(undefined);
   const insets = useSafeAreaInsets();
-  const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION });
+  const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION_MS });
   const { margins, topInset } = useSheetLayout({ minMargin: 0 });
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -129,7 +126,7 @@ export function KeyboardBottomSheet({
   // 스크롤 영역 아래 끝을 키보드 위에 맞춰야 footer 뒤로 들어간 내용(카테고리 색)까지 스크롤된다
   const scrollAnimatedStyle = useAnimatedStyle(() => ({
     marginBottom: withTiming(keyboardHiddenHeight.get() ?? 0, {
-      duration: SHEET_ANIMATION_DURATION,
+      duration: SHEET_ANIMATION_DURATION_MS,
     }),
   }));
   const footerAnimatedStyle = useAnimatedStyle(() => {
@@ -139,12 +136,12 @@ export function KeyboardBottomSheet({
     return {
       // 키보드 위로 시트가 끝까지 올라가는 작은 화면(접은 Duo·SE)에서만 footer 아래 safe area 여백을 줄인다
       paddingBottom: withTiming(isSheetAtTop ? FOOTER_KEYBOARD_GAP : bottomPadding, {
-        duration: SHEET_ANIMATION_DURATION,
+        duration: SHEET_ANIMATION_DURATION_MS,
       }),
       transform: [
         {
           translateY: withTiming(-(hiddenHeight ?? 0), {
-            duration: SHEET_ANIMATION_DURATION,
+            duration: SHEET_ANIMATION_DURATION_MS,
           }),
         },
       ],
@@ -210,7 +207,14 @@ export function KeyboardBottomSheet({
     (onDismissRequestRef.current ?? closeSheet)();
   }, [closeSheet]);
 
-  useAndroidSheetBackHandler(isOpen, requestDismiss);
+  // 닫힌 시트는 듣지 않고, 뒤에 열린 시트의 구독이 먼저 불려 마지막 시트부터 닫힌다
+  useAndroidBackHandler({
+    isEnabled: isOpen,
+    onBack: () => {
+      requestDismiss();
+      return true;
+    },
+  });
 
   const resizeSheet = useCallback(() => {
     if (isClosingRef.current) {
@@ -274,22 +278,19 @@ export function KeyboardBottomSheet({
       resizeSheet();
     });
 
-    const appStateSubscription = AppState.addEventListener(
-      'change',
-      (nextState: AppStateStatus) => {
-        if (nextState === 'background' && !isClosingRef.current) {
-          Keyboard.dismiss();
-        }
-      },
-    );
+    const unsubscribeLifecycle = appLifecycle.subscribe((nextState) => {
+      if (nextState === 'background' && !isClosingRef.current) {
+        Keyboard.dismiss();
+      }
+    });
 
     return () => {
       showSubscription.remove();
       didShowSubscription.remove();
       hideSubscription.remove();
-      appStateSubscription.remove();
+      unsubscribeLifecycle();
     };
-  }, [isOpen, keyboardHeight, resizeSheet, scrollViewRef]);
+  }, [appLifecycle, isOpen, keyboardHeight, resizeSheet, scrollViewRef]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -333,6 +334,7 @@ export function KeyboardBottomSheet({
     if (toIndex === SHEET_INDEX.CLOSED) {
       isClosingRef.current = true;
       Keyboard.dismiss();
+      startToastLayerClosing?.();
       onCloseStart?.();
     }
   };

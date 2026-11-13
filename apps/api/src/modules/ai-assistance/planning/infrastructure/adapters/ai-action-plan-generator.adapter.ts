@@ -1,11 +1,11 @@
 import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { describeGenerationFailure } from "../../../generation/application/ai-generation-failure.mapper.js";
+import { generationFailed } from "../../../generation/application/ai-generation.errors.js";
 import {
   buildGenerationCompletedLog,
   buildGenerationFailedLog,
@@ -158,8 +158,7 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
           quotaCharged: false,
         }),
       );
-      // 호출부가 예약을 환불하므로 차감 없음을 담는다. 환불에 실패하면 호출부가 뗀다.
-      throw new ApplicationException(failure.errorCode, { charged: false });
+      throw generationFailed(failure.errorCode, error);
     }
   }
 }

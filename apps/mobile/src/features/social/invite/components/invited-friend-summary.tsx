@@ -5,6 +5,8 @@ import {
   FriendIllustration,
   H4,
   HStack,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Result,
   TextButton,
   TextSkeleton,
@@ -14,6 +16,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 
+import { isInviteDisabledError } from '../domains/invite.error';
 import { useGetInvitedFriendSummaryInfiniteQueryOptions } from '../queries/invite.queries';
 import type { InvitedFriendsView } from '../schemas/invite-params.schema';
 import { InvitedFriendRow } from './invited-friend-row';
@@ -24,7 +27,9 @@ import { InvitedFriendRow } from './invited-friend-row';
  */
 export function InvitedFriendSummary() {
   const { t } = useTranslation('invite');
-  const { data } = useSuspenseInfiniteQuery(useGetInvitedFriendSummaryInfiniteQueryOptions());
+  const { data: invitedFriendSummary } = useSuspenseInfiniteQuery(
+    useGetInvitedFriendSummaryInfiniteQueryOptions(),
+  );
   const openInvitedFriends = useSingleTap(() =>
     router.push({
       pathname: '/friends/invite/invitees',
@@ -36,23 +41,23 @@ export function InvitedFriendSummary() {
     <VStack gap={8}>
       <HStack align="center" justify="between" className="min-h-8">
         <H4>{t('friendList.title')}</H4>
-        {data.hasMore && (
+        {invitedFriendSummary.hasMore && (
           <TextButton
             testID="invitees-see-all"
             variant="arrow"
             size="small"
             onPress={openInvitedFriends}
           >
-            {t('friendList.seeAll', { count: data.totalCount })}
+            {t('friendList.seeAll', { count: invitedFriendSummary.totalCount })}
           </TextButton>
         )}
       </HStack>
 
-      {data.invitedFriends.length === 0 ? (
+      {invitedFriendSummary.invitedFriends.length === 0 ? (
         <InvitedFriendSummary.Empty />
       ) : (
         <VStack accessibilityRole="list">
-          {data.invitedFriends.map((friend) => (
+          {invitedFriendSummary.invitedFriends.map((friend) => (
             <InvitedFriendRow key={friend.userId} friend={friend} horizontalPadding="none" />
           ))}
         </VStack>
@@ -71,6 +76,19 @@ InvitedFriendSummary.Loading = function Loading() {
         <InvitedFriendRow.Loading key={index} horizontalPadding="none" />
       ))}
     </VStack>
+  );
+};
+
+/** 초대가 꺼졌으면 쓸 수 없음 안내를, 그 밖의 실패는 이 블록 안에서 다시 시도를 보인다 */
+InvitedFriendSummary.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('invite');
+
+  if (isInviteDisabledError(error)) {
+    return <InvitedFriendSummary.Unavailable />;
+  }
+
+  return (
+    <QueryErrorFallback title={t('friendList.loadFailed')} reset={reset} illustrationSize="block" />
   );
 };
 

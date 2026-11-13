@@ -1,7 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -17,6 +15,12 @@ import { TodoSeries } from "../../../todo-series/domain/todo-series.aggregate.js
 import type { CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import type { ResolvedCreateTodoData } from "../ports/staged-todo-creator.port.js";
 import type { CreatedOccurrence, TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import {
+  categoryTodoLimitReached,
+  invalidRepeatRule,
+  recurringTodoCategoryLimitReached,
+  todoSeriesLimitReached,
+} from "../todos.errors.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 /** 잠금 전에 검증을 마친 단일 할 일 입력. 제목·일정 오류가 소유·한도 오류보다 먼저다. */
@@ -85,10 +89,7 @@ export class WriteTodoCreationUseCase {
     await this.#dependencies.categoryOwnership.validateOwnership(spec.categoryId, spec.userId);
     const activeCount = await todoRepository.countCategoryUsage(spec.userId, spec.categoryId);
     if (activeCount >= TODO_LIMITS.MAX_PER_CATEGORY) {
-      throw new ApplicationException(ErrorCode.TODO_0811, {
-        activeCount,
-        maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
-      });
+      throw categoryTodoLimitReached(activeCount);
     }
     const maxSortOrder = await todoRepository.getMaxSortOrder(spec.userId);
     const todo = Todo.create({
@@ -115,7 +116,7 @@ export class WriteTodoCreationUseCase {
   async startSeries(input: ResolvedCreateTodoData, repeat: RepeatSpec): Promise<StartedSeries> {
     const { userId, categoryId } = input;
     if (input.endDate != null) {
-      throw new ApplicationException(ErrorCode.TODO_0845, { field: "endDate" });
+      throw invalidRepeatRule("endDate");
     }
     const now = this.#dependencies.clock.now();
     // 옛 순서 그대로 규칙 → 제목 → 체크리스트 순으로 검증한다
@@ -142,11 +143,7 @@ export class WriteTodoCreationUseCase {
       categoryId,
     );
     if (activeInCategory >= TODO_LIMITS.MAX_PER_CATEGORY) {
-      throw new ApplicationException(ErrorCode.TODO_0813, {
-        activeInCategory,
-        batchSize: 1,
-        maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
-      });
+      throw recurringTodoCategoryLimitReached(activeInCategory, TODO_LIMITS.MAX_PER_CATEGORY);
     }
     const drafts = this.#dependencies.occurrenceMaterializer.planFirstRun(series, now);
     await this.#dependencies.todoSeriesRepository.insert(series);
@@ -164,12 +161,8 @@ export class WriteTodoCreationUseCase {
     }
     if (usesLegacyLimit) {
       // 출시 앱은 TODO_0842를 몰라 SYS_0001로 보인다. 이 경로에서 이미 받는 한도 거절로 돌려준다.
-      throw new ApplicationException(ErrorCode.TODO_0813, {
-        activeInCategory: activeCount,
-        batchSize: 1,
-        maxPerCategory: limit,
-      });
+      throw recurringTodoCategoryLimitReached(activeCount, limit);
     }
-    throw new ApplicationException(ErrorCode.TODO_0842, { limit, activeCount });
+    throw todoSeriesLimitReached(limit, activeCount);
   }
 }

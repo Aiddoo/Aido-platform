@@ -1,9 +1,7 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { PushDevicePlatform, PushPermissionStatus } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -23,6 +21,7 @@ import {
   type PushTokenRepositoryPort,
 } from "../ports/push-token.repository.port.js";
 import type { UserNotificationSettingsPort } from "../ports/user-notification-settings.port.js";
+import { invalidPushToken } from "../push.errors.js";
 
 export interface ReportPushDeviceCommand {
   readonly userId: string;
@@ -92,7 +91,7 @@ export class ReportPushDeviceUseCase {
 
   async execute(command: ReportPushDeviceCommand): Promise<PushDeviceReport> {
     if (command.token != null && !this.#dependencies.pushProvider.validateToken(command.token)) {
-      throw new ApplicationException(ErrorCode.NOTIFICATION_1001);
+      throw invalidPushToken();
     }
 
     const device = PushDevice.create({

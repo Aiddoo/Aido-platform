@@ -199,7 +199,7 @@ export class OAuthController {
 \`expo-apple-authentication\`으로 Apple Sign In 후 Identity Token을 전송합니다.
 시스템 인증 다이얼로그를 사용하므로 Redirect URI가 불필요합니다.
 
-> 📖 상세 구현 가이드: \`apps/mobile/.claude/oauth-client-guide.md\`
+> 📖 상세 구현 가이드: \`apps/mobile/docs/auth.md\`
 
 ### 🔄 플로우
 1. 클라이언트: \`AppleAuthentication.signInAsync()\` 호출
@@ -267,7 +267,7 @@ export class OAuthController {
 \`expo-auth-session\`의 Google OAuth 제공자를 통해 ID Token을 받은 후 백엔드로 전송합니다.
 시스템 브라우저를 사용하여 보안 인증 UI를 제공합니다.
 
-> 📖 상세 구현 가이드: \`apps/mobile/.claude/oauth-client-guide.md\`
+> 📖 상세 구현 가이드: \`apps/mobile/docs/auth.md\`
 
 ### 🔄 플로우
 1. 클라이언트: \`Google.useAuthRequest()\`로 인증 요청
@@ -459,7 +459,7 @@ export class OAuthController {
 \`expo-auth-session\`을 사용하여 Kakao OAuth 인증 후 Access Token으로 사용자 정보를 조회하고 전송합니다.
 서버는 Access Token으로 Kakao API를 직접 호출하여 프로필을 검증합니다.
 
-> 📖 상세 구현 가이드: \`apps/mobile/.claude/oauth-client-guide.md\`
+> 📖 상세 구현 가이드: \`apps/mobile/docs/auth.md\`
 
 ### 🔄 플로우
 1. 클라이언트: \`expo-auth-session\`으로 Authorization Code → Access Token 교환
@@ -659,7 +659,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 \`expo-auth-session\`을 사용하여 Naver OAuth 인증 후 Access Token으로 사용자 정보를 조회하고 전송합니다.
 서버는 Access Token으로 Naver API를 직접 호출하여 프로필을 검증합니다.
 
-> 📖 상세 구현 가이드: \`apps/mobile/.claude/oauth-client-guide.md\`
+> 📖 상세 구현 가이드: \`apps/mobile/docs/auth.md\`
 
 ### 🔄 플로우
 1. 클라이언트: \`expo-auth-session\`으로 Authorization Code 획득

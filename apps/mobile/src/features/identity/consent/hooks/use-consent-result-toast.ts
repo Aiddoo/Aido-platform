@@ -1,7 +1,7 @@
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useCallback } from 'react';
 
 import { type ConsentResult } from '../domains/consent.model';
@@ -29,7 +29,7 @@ export function useConsentResultToast() {
     (consent: keyof typeof CONSENT_RESULT_KEYS, result: ConsentResult) => {
       toast.success(
         t(CONSENT_RESULT_KEYS[consent][result.type], {
-          date: formatDateLabel(result.at, 'fullDate', dateFormatContext),
+          date: formatDateLabel(result.at, 'monthDayYear', dateFormatContext),
         }),
       );
     },

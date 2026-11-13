@@ -71,8 +71,8 @@ export function createTodoCommentReply(
 
 export function createTodoCommentThread(overrides?: Partial<TodoCommentThread>): TodoCommentThread {
   const comment = overrides?.comment ?? createTodoComment({ replyCount: 1 });
-  // nullish-strict: null은 대표 답글이 없는 묶음, undefined는 기본 대표 답글이다
   const previewReply =
+    // oxlint-disable-next-line aido/no-strict-nullish -- null은 대표 답글이 없는 묶음, undefined는 기본 대표 답글이다
     overrides?.previewReply === undefined
       ? createTodoCommentReply(comment)
       : overrides.previewReply;

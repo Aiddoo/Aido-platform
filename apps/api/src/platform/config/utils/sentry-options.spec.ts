@@ -273,6 +273,29 @@ describe("Sentry 수집 범위 — 사용자 원문이 나가지 않게", () => 
     });
     expect(scrubbed.user).toEqual({ id: "user-1" });
   });
+
+  it("메시지 이벤트와 breadcrumb 글의 이메일도 지우고 패키지 버전은 남긴다", () => {
+    // Given
+    const event: Sentry.ErrorEvent = {
+      type: undefined,
+      message: "a@example.com 로그인 실패",
+      breadcrumbs: [{ message: "메일 보냄 b@example.co.kr" }, { category: "http" }],
+      exception: { values: [{ value: "@tanstack/query-core@5.105.3 실패: c@example.com" }] },
+    };
+
+    // When
+    const scrubbed = scrubErrorEvent(event);
+
+    // Then
+    expect(scrubbed.message).toBe("[FILTERED] 로그인 실패");
+    expect(scrubbed.breadcrumbs).toEqual([
+      { message: "메일 보냄 [FILTERED]" },
+      { category: "http" },
+    ]);
+    expect(scrubbed.exception?.values?.[0]?.value).toBe(
+      "@tanstack/query-core@5.105.3 실패: [FILTERED]",
+    );
+  });
 });
 
 describe("beforeSendError — 업무 거부는 어느 경로에서도 오류로 보내지 않는다", () => {
@@ -305,5 +328,37 @@ describe("beforeSendError — 업무 거부는 어느 경로에서도 오류로 
     // Then - 이벤트 처리는 비동기라 순서는 보지 않는다
     expect(passed).toHaveLength(2);
     expect(passed).toEqual(expect.arrayContaining([outage, bug]));
+  });
+
+  it("cause로 이어 보낸 DB 오류의 바인딩 값과 이메일은 예외 메시지에서 지운다", async () => {
+    // Given - userTagCollided처럼 DrizzleQueryError를 cause로 실은 장애다
+    const events: Sentry.ErrorEvent[] = [];
+    Sentry.init({
+      dsn: "https://public@o0.ingest.sentry.io/0",
+      beforeSend: (event, hint) => {
+        const scrubbed = beforeSendError(event, hint);
+        if (scrubbed != null) {
+          events.push(scrubbed);
+        }
+        return null;
+      },
+    });
+    const dbError = new Error(
+      'Failed query: insert into "users" ("email", "user_tag") values ($1, $2)\nparams: a@b.com,TAG2025',
+    );
+    const outage = new ApplicationException(ErrorCode.SYS_0001, undefined, { cause: dbError });
+
+    // When
+    Sentry.captureException(outage);
+    Sentry.captureException(new Error("user a@b.com failed"));
+    await Sentry.flush(1000);
+
+    // Then
+    const values = events.flatMap((event) => event.exception?.values ?? []).map((v) => v.value);
+    expect(values).toContain(
+      'Failed query: insert into "users" ("email", "user_tag") values ($1, $2)\nparams: [FILTERED]',
+    );
+    expect(values).toContain("user [FILTERED] failed");
+    expect(values.join("\n")).not.toContain("a@b.com");
   });
 });

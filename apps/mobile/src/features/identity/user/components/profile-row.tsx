@@ -1,5 +1,4 @@
-import { useClipboard, useLogger } from '@src/bootstrap/providers/di-context';
-import { getErrorMessage } from '@src/shared/errors';
+import { useCopyToClipboard } from '@src/shared/hooks/use-copy-to-clipboard';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -13,7 +12,6 @@ import {
   VStack,
   SettingsListGroup,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -25,7 +23,7 @@ import {
   useMyPageMenuNavigate,
 } from '../hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/user.queries';
-import { formatUserHashtag } from '../utils/user-hashtag';
+import { formatUserHashtag } from '../utils/user-tag.view-model';
 import { UserAvatar } from './user-avatar';
 
 interface ProfileRowProps {
@@ -38,20 +36,16 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
   const navigate = useMyPageMenuNavigate();
   const isSelected = useIsMyPageMenuItemSelected('/settings/profile');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const toast = useAppToast();
   const { t } = useTranslation('user');
-  const clipboard = useClipboard();
-  const logger = useLogger();
+  const { copy } = useCopyToClipboard();
 
-  const handleCopyUserTag = async () => {
-    try {
-      await clipboard.copy(user.userTag);
-      toast.success(t('profile.tagCopied'), { description: t('profile.tagCopiedDescription') });
-    } catch (error) {
-      logger.warn(USER_LOG_EVENT.TAG_COPY_FAILED, { error: getErrorMessage(error) });
-      toast.error(t('profile.tagCopyFailed'));
-    }
-  };
+  const handleCopyUserTag = () =>
+    copy(user.userTag, {
+      successMessage: t('profile.tagCopied'),
+      successDescription: t('profile.tagCopiedDescription'),
+      failureMessage: t('profile.tagCopyFailed'),
+      failureLogEvent: USER_LOG_EVENT.TAG_COPY_FAILED,
+    });
 
   return (
     <PressableFeedback
@@ -87,7 +81,7 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
                   colorClassName="text-gray-5"
                 />
               }
-              className="min-h-0 min-w-0 p-1"
+              className="size-5 min-h-0 min-w-0"
               hitSlop={8}
               onPress={(event) => {
                 event.stopPropagation();

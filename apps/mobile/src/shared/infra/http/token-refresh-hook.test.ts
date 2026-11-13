@@ -1,21 +1,33 @@
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type { RefreshOutcome } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, type SessionEpoch } from '@src/core/session/session-epoch';
+import { NetworkError, TimeoutError } from '@src/shared/errors';
 import {
   createErrorReporterStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemoryTokenStore,
+  observeSettlement,
   runKyAfterResponseHook,
-} from '@src/shared/__tests__';
-import { NetworkError } from '@src/shared/errors';
+  setupFakeTimersPerTest,
+} from '@src/testing/core';
 
-import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
+import {
+  createTokenRefreshHook,
+  RETRY_MARKER_HEADER,
+  UNAUTHORIZED_RECOVERY_TIMEOUT_MS,
+} from './token-refresh-hook';
 
 // ky v2 훅은 `new Request(request, ...)`로 재시도 요청을 재구성하므로 실제 Request/Response를 쓴다.
 const createFakeRequest = (headers: Record<string, string> = {}): Request =>
   new Request('https://api.test/v1/todos', { headers });
 
 const createFakeResponse = (status: number): Response => new Response(null, { status });
+
+const createErrorResponse = (status: number, code: string): Response =>
+  new Response(JSON.stringify({ error: { code, message: 'error' } }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 
 /** `ky.retry({ request })` 마커에서 재시도 요청을 꺼낸다. 마커가 아니면 undefined다. */
 const readRetriedRequest = (result: unknown): Request | undefined => {
@@ -34,7 +46,7 @@ describe('createTokenRefreshHook', () => {
   let refresh: jest.MockedFunction<() => Promise<RefreshOutcome>>;
   let endSession: jest.MockedFunction<(details: SessionExpiredDetails) => Promise<void>>;
   let errorReporter: ReturnType<typeof createErrorReporterStub>;
-  let logger: ReturnType<typeof createLoggerStub>;
+  let logger: ReturnType<typeof createAppLoggerStub>;
   let hook: ReturnType<typeof createTokenRefreshHook>;
   let sessionEpoch: SessionEpoch;
 
@@ -44,7 +56,7 @@ describe('createTokenRefreshHook', () => {
     refresh = jest.fn();
     endSession = jest.fn().mockResolvedValue(undefined);
     errorReporter = createErrorReporterStub();
-    logger = createLoggerStub();
+    logger = createAppLoggerStub();
     hook = createTokenRefreshHook({
       tokenStore,
       refresh,
@@ -85,6 +97,34 @@ describe('createTokenRefreshHook', () => {
     // Then
     expect(result).toBe(response);
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('비밀번호가 틀린 업무 401(USER_0602)은 갱신·재시도 없이 그대로 돌려주고 Sentry에 남기지 않는다', async () => {
+    // Given
+    const response = createErrorResponse(401, 'USER_0602');
+
+    // When
+    const result = await invokeHook(createFakeRequest(), response);
+
+    // Then
+    expect(result).toBe(response);
+    expect(refresh).not.toHaveBeenCalled();
+    expect(endSession).not.toHaveBeenCalled();
+    expect(errorReporter.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('JWT 가드의 토큰 거부(AUTH_0101)는 전처럼 갱신해 재시도한다', async () => {
+    // Given
+    tokenStore.getAccessToken.mockResolvedValue('current-token');
+    refresh.mockResolvedValue({ kind: 'refreshed', accessToken: 'new-token' });
+    const request = createFakeRequest({ Authorization: 'Bearer current-token' });
+
+    // When
+    const result = await invokeHook(request, createErrorResponse(401, 'AUTH_0101'));
+
+    // Then
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expectForcedRetry(result, 'new-token');
   });
 
   it('재시도 마커가 있으면 갱신 없이 응답을 반환하고, 즉시 Sentry warning을 남긴다', async () => {
@@ -223,5 +263,24 @@ describe('createTokenRefreshHook', () => {
     // Then
     expect(result).toBe(response);
     expect(endSession).not.toHaveBeenCalled();
+  });
+
+  describe('갱신이 끝나지 않을 때', () => {
+    setupFakeTimersPerTest();
+
+    it('401 요청은 갱신을 끝없이 기다리지 않고 제한 시간에 TimeoutError로 끝나며 세션은 유지한다', async () => {
+      // Given
+      tokenStore.getAccessToken.mockResolvedValue('current-token');
+      refresh.mockReturnValue(new Promise<RefreshOutcome>(() => undefined));
+      const request = createFakeRequest({ Authorization: 'Bearer current-token' });
+
+      // When
+      const result = observeSettlement(invokeHook(request, createErrorResponse(401, 'AUTH_0101')));
+      await jest.advanceTimersByTimeAsync(UNAUTHORIZED_RECOVERY_TIMEOUT_MS);
+
+      // Then
+      expect(result.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      expect(endSession).not.toHaveBeenCalled();
+    });
   });
 });

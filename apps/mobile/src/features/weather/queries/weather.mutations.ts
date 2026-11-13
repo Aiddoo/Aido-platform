@@ -1,8 +1,6 @@
-import { useHaptics, useWeatherService } from '@src/bootstrap/providers/di-context';
+import { useWeatherApi } from '@src/bootstrap/providers/di-context';
 import { useUpdateTodoScheduleMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
-import { getUserFacingMessage, unwrap } from '@src/shared/errors';
-import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { unwrap } from '@src/shared/errors';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { type Coordinates } from '../domains/weather-location.model';
@@ -10,25 +8,24 @@ import { invalidateWeatherReports, setRegisteredWeatherLocation } from './weathe
 
 /** 서버에 위치가 없다고 응답했을 때(WEATHER_1902) 마지막으로 읽은 위치를 다시 등록한다. */
 export function useUpdateWeatherLocationMutationOptions() {
-  const weatherService = useWeatherService();
+  const weatherApi = useWeatherApi();
   const queryClient = useQueryClient();
-  const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 등록 버튼이 응답까지 돈다. 오프라인에 멈춰 두면 연결될 때까지 도니 바로 실패해 알린다
     networkMode: 'always',
     mutationFn: async (coordinates: Coordinates) =>
-      unwrap(await weatherService.updateLocation(coordinates)),
+      unwrap(await weatherApi.updateLocation(coordinates)),
     onSuccess: (registered) => {
       setRegisteredWeatherLocation(queryClient, registered);
-      return invalidateWeatherReports(queryClient);
     },
-    onError: (error) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('weather:toasts.locationUpdateFailed'),
-      });
+    // 응답을 놓친 실패도 서버에는 위치가 바뀌었을 수 있다
+    onSettled: () => invalidateWeatherReports(queryClient),
+    meta: {
+      errorFeedback: {
+        feature: 'weather_location',
+        fallbackKey: 'weather:toasts.locationUpdateFailed',
+      },
     },
   });
 }
@@ -37,5 +34,5 @@ export function useUpdateWeatherLocationMutationOptions() {
 export function useRescheduleTodoMutationOptions() {
   const { mutationFn } = useUpdateTodoScheduleMutationOptions();
 
-  return mutationOptions({ networkMode: 'always', mutationFn });
+  return mutationOptions({ networkMode: 'always', mutationFn, meta: { errorFeedback: false } });
 }

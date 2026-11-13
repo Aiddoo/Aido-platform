@@ -1,4 +1,3 @@
-import { PM10_UPPER_BOUNDS, PM25_UPPER_BOUNDS } from '../constants/weather.constants';
 import type { AirQuality, CurrentWeather } from './weather-report.model';
 
 function getGradeIndex(value: number, upperBounds: readonly number[]): number {
@@ -17,10 +16,19 @@ const AIR_QUALITY_GRADES = [
   'veryBad',
 ] as const satisfies readonly AirQualityGrade[];
 
+/** 좋음·보통·나쁨의 상한. 넘으면 매우 나쁨이다 */
+type PollutantUpperBounds = readonly [good: number, moderate: number, bad: number];
+
+/** 환경부 통합 예보 기준 (μg/m³). 각 값 이하가 해당 등급이다 */
 const POLLUTANT_UPPER_BOUNDS = {
-  pm10: PM10_UPPER_BOUNDS,
-  pm25: PM25_UPPER_BOUNDS,
-} as const satisfies Record<AirPollutant, readonly number[]>;
+  pm10: [30, 80, 150],
+  pm25: [15, 35, 75],
+} as const satisfies Record<AirPollutant, PollutantUpperBounds>;
+
+/** 등급을 나누는 경계. 대기질 막대 눈금도 같은 경계로 나눈다 */
+export function getPollutantUpperBounds(pollutant: AirPollutant): PollutantUpperBounds {
+  return POLLUTANT_UPPER_BOUNDS[pollutant];
+}
 
 /** 오염 물질 하나의 등급. 그 물질의 값이 없으면 null이다. */
 function getPollutantGrade(

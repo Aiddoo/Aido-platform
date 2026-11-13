@@ -1,34 +1,27 @@
 import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import { useConsentService, useHaptics } from '@src/bootstrap/providers/di-context';
+import { useConsentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
-import { getUserFacingMessage } from '@src/shared/errors';
-import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
-import {
-  type MutationKey,
-  mutationOptions,
-  type QueryClient,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { getNowInstant } from '@src/shared/date/clock';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
+import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
+import { match } from 'ts-pattern';
 
-import { CONSENT_MUTATION_KEYS } from '../constants/consent-mutation-keys';
-import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
 import { type Consent, getConsentResult } from '../domains/consent.model';
 import { useConsentResultToast } from '../hooks/use-consent-result-toast';
 import { type ConsentAgreement } from '../schemas/consent-request.schema';
-import { invalidateConsent } from './consent-cache';
-
-/** 지금 끝나는 저장이 마지막이면 true. 앞 응답이 뒤에 바꾼 토글을 덮지 않게 마지막만 응답을 캐시에 쓴다 */
-function isLastConsentWrite(queryClient: QueryClient, mutationKey: MutationKey) {
-  return queryClient.isMutating({ mutationKey }) === 1;
-}
+import {
+  cancelConsent,
+  getCachedConsent,
+  invalidateConsent,
+  updateConsentInCache,
+} from './consent-cache';
+import { CONSENT_MUTATION_KEYS } from './consent-mutation-keys';
 
 /** 실패가 섞이면 되돌린 값이 서버와 다를 수 있다. 마지막 저장이 끝날 때 서버 값으로 맞춘다 */
 function settleConsentWrite(queryClient: QueryClient, error: unknown) {
-  if (error == null || !isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.writes())) {
+  if (error == null || !isLastMutation(queryClient, CONSENT_MUTATION_KEYS.writes())) {
     return;
   }
   invalidateConsent(queryClient);
@@ -43,9 +36,7 @@ function revertConsentFields(
   if (previousData == null) {
     return;
   }
-  queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
-    consent == null ? consent : { ...consent, ...pick(previousData, fields) },
-  );
+  updateConsentInCache(queryClient, (consent) => ({ ...consent, ...pick(previousData, fields) }));
 }
 
 const AI_DATA_SHARING_FIELDS = [
@@ -56,9 +47,7 @@ const AI_DATA_SHARING_FIELDS = [
 
 /** 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 안내 버전이다 */
 export function useUpdateAiDataSharingConsentMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
-  const consentService = useConsentService();
+  const consentApi = useConsentApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
@@ -67,7 +56,7 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
     networkMode: 'always',
     mutationKey: CONSENT_MUTATION_KEYS.aiDataSharing(),
     mutationFn: async ({ agreed }: ConsentAgreement) => {
-      const result = await consentService.updateAiDataSharingConsent({
+      const result = await consentApi.updateAiDataSharingConsent({
         agreed,
         version: AI_DATA_SHARING_CONSENT.VERSION,
       });
@@ -75,70 +64,66 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
     },
 
     onMutate: async ({ agreed }) => {
-      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
-      const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
-
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
-        consent == null
-          ? consent
-          : {
-              ...consent,
-              aiDataSharingDecision: agreed
-                ? AI_DATA_SHARING_DECISION.AGREED
-                : AI_DATA_SHARING_DECISION.DECLINED,
-              aiDataSharingAgreedAt: agreed ? getNowInstant() : null,
-              aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
-            },
-      );
-
+      await cancelConsent(queryClient);
+      const previousData = getCachedConsent(queryClient);
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        aiDataSharingDecision: agreed
+          ? AI_DATA_SHARING_DECISION.AGREED
+          : AI_DATA_SHARING_DECISION.DECLINED,
+        aiDataSharingAgreedAt: agreed ? getNowInstant() : null,
+        aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
+      }));
       return { previousData };
     },
 
     onSuccess: (result, { agreed }) => {
       trackEvent('ai_data_sharing_consent_changed', { agreed });
-      if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.aiDataSharing())) {
+      if (!isLastMutation(queryClient, CONSENT_MUTATION_KEYS.aiDataSharing())) {
         return;
       }
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (consent) =>
-        consent == null ? consent : { ...consent, ...result },
-      );
+      updateConsentInCache(queryClient, (consent) => ({ ...consent, ...result }));
     },
 
-    onError: (error, _input, context) => {
+    onError: (_error, _input, context) => {
       revertConsentFields(queryClient, context?.previousData, AI_DATA_SHARING_FIELDS);
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('ai:consent.saveFailed') });
     },
 
     onSettled: (_data, error) => {
       settleConsentWrite(queryClient, error);
     },
+    meta: { errorFeedback: { feature: 'ai', fallbackKey: 'ai:consent.saveFailed' } },
   });
 }
 
+/** 광고성 푸시 동의는 설정 토글과 첫 완료 뒤 시트가 함께 쓰고, 끄는 것은 설정에서만 한다 */
+type MarketingPushConsentVariables =
+  | { agreed: true; source: 'settings' | 'completion_sheet' }
+  | { agreed: false; source: 'settings' };
+
 export function useUpdateMarketingConsentMutationOptions() {
   const showConsentResult = useConsentResultToast();
-  const haptics = useHaptics();
-  const toast = useAppToast();
-  const consentService = useConsentService();
+  const consentApi = useConsentApi();
   const queryClient = useQueryClient();
+  const { trackEvent } = useTrack();
 
   return mutationOptions({
     // 오프라인에 멈춰 있으면 낙관적으로 바꾼 토글이 잠긴 채 남는다. 바로 실패해 되돌린다
     networkMode: 'always',
     mutationKey: CONSENT_MUTATION_KEYS.marketing(),
     mutationFn: async (input: ConsentAgreement) =>
-      unwrap(await consentService.updateMarketingConsent(input)),
-    onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
-      const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
-        old == null ? old : { ...old, marketingAgreedAt: input.agreed ? getNowInstant() : null },
-      );
+      unwrap(await consentApi.updateMarketingConsent(input)),
+    onMutate: async ({ agreed }) => {
+      await cancelConsent(queryClient);
+      const previousData = getCachedConsent(queryClient);
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        marketingAgreedAt: agreed ? getNowInstant() : null,
+      }));
       return { previousData };
     },
-    onSuccess: (data) => {
-      // 구 서버가 처리 일시를 주지 않으면 알리지 않는다
+    onSuccess: (data, { agreed }) => {
+      trackEvent(agreed ? 'marketing_opted_in' : 'marketing_opted_out', { source: 'settings' });
       const result = getConsentResult({
         agreedAt: data.marketingAgreedAt,
         withdrawnAt: data.marketingWithdrawnAt,
@@ -146,52 +131,51 @@ export function useUpdateMarketingConsentMutationOptions() {
       if (result != null) {
         showConsentResult('marketing', result);
       }
-      if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.marketing())) {
+      if (!isLastMutation(queryClient, CONSENT_MUTATION_KEYS.marketing())) {
         return;
       }
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
-        old == null ? old : { ...old, marketingAgreedAt: data.marketingAgreedAt },
-      );
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        marketingAgreedAt: data.marketingAgreedAt,
+      }));
     },
 
-    onError: (error, _input, context) => {
+    onError: (_error, _input, context) => {
       revertConsentFields(queryClient, context?.previousData, ['marketingAgreedAt']);
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.settingsChangeFailed') });
     },
 
     onSettled: (_data, error) => {
       settleConsentWrite(queryClient, error);
     },
+    meta: { errorFeedback: { feature: 'user', fallbackKey: 'auth:toasts.settingsChangeFailed' } },
   });
 }
 
 export function useUpdateMarketingPushConsentMutationOptions() {
   const showConsentResult = useConsentResultToast();
-  const haptics = useHaptics();
-  const toast = useAppToast();
-  const consentService = useConsentService();
+  const consentApi = useConsentApi();
   const queryClient = useQueryClient();
+  const { trackEvent } = useTrack();
 
   return mutationOptions({
     networkMode: 'always',
     mutationKey: CONSENT_MUTATION_KEYS.marketingPush(),
-    mutationFn: async (input: ConsentAgreement) =>
-      unwrap(await consentService.updateMarketingPushConsent(input)),
-    onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
-      const previousData = queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
-        old
-          ? {
-              ...old,
-              marketingPushAgreedAt: input.agreed ? getNowInstant() : null,
-            }
-          : old,
-      );
+    mutationFn: async ({ agreed }: MarketingPushConsentVariables) =>
+      unwrap(await consentApi.updateMarketingPushConsent({ agreed })),
+    onMutate: async ({ agreed }) => {
+      await cancelConsent(queryClient);
+      const previousData = getCachedConsent(queryClient);
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        marketingPushAgreedAt: agreed ? getNowInstant() : null,
+      }));
       return { previousData };
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      match(variables)
+        .with({ agreed: true }, ({ source }) => trackEvent('marketing_push_opted_in', { source }))
+        .with({ agreed: false }, ({ source }) => trackEvent('marketing_push_opted_out', { source }))
+        .exhaustive();
       const result = getConsentResult({
         agreedAt: data.marketingPushAgreedAt,
         withdrawnAt: data.marketingPushWithdrawnAt,
@@ -199,20 +183,20 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       if (result != null) {
         showConsentResult('marketingPush', result);
       }
-      if (!isLastConsentWrite(queryClient, CONSENT_MUTATION_KEYS.marketingPush())) {
+      if (!isLastMutation(queryClient, CONSENT_MUTATION_KEYS.marketingPush())) {
         return;
       }
-      queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), (old) =>
-        old == null ? old : { ...old, marketingPushAgreedAt: data.marketingPushAgreedAt },
-      );
+      updateConsentInCache(queryClient, (consent) => ({
+        ...consent,
+        marketingPushAgreedAt: data.marketingPushAgreedAt,
+      }));
     },
-    onError: (error, _input, context) => {
+    onError: (_error, _input, context) => {
       revertConsentFields(queryClient, context?.previousData, ['marketingPushAgreedAt']);
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('auth:toasts.settingsChangeFailed') });
     },
     onSettled: (_data, error) => {
       settleConsentWrite(queryClient, error);
     },
+    meta: { errorFeedback: { feature: 'user', fallbackKey: 'auth:toasts.settingsChangeFailed' } },
   });
 }

@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
@@ -7,8 +6,12 @@ import { OAuth2Client } from "google-auth-library";
 import { readJson } from "#api/platform/http/read-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { ApplicationException } from "#api/shared/application/application.exception";
 
+import {
+  expiredSocialToken,
+  invalidCredentials,
+  invalidSocialToken,
+} from "../../application/auth.errors.js";
 import { AuthLogEvent } from "../../application/auth.log-events.js";
 import {
   type ExchangedToken,
@@ -53,7 +56,7 @@ export class GoogleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
   async generateAuthUrl(params: GenerateAuthUrlParams): Promise<string> {
     const { clientId, callbackUrl, isConfigured } = this.#config;
     if (!isConfigured || !clientId || !callbackUrl) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     await params.persistState("GOOGLE", params.validatedRedirectUri, {
@@ -76,7 +79,7 @@ export class GoogleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
   async exchangeCode(code: string): Promise<ExchangedToken> {
     const { clientId, clientSecret, callbackUrl, isConfigured } = this.#config;
     if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const { data: tokenResponse } = await this.#policy.execute((signal) =>
@@ -104,7 +107,7 @@ export class GoogleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         statusCode: tokenResponse.status,
         providerError: await readOAuthProviderError(tokenResponse),
       });
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const tokenData = await readJson(tokenResponse, googleTokenResponseSchema);
@@ -113,7 +116,7 @@ export class GoogleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         event: AuthLogEvent.OAUTH_TOKEN_EXCHANGE_INVALID,
         provider: this.provider,
       });
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
     return { token: tokenData.data.id_token };
   }
@@ -126,7 +129,7 @@ export class GoogleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
       });
       const payload = googleIdTokenPayloadSchema.optional().parse(ticket.getPayload());
       if (payload == null) {
-        throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "GOOGLE" });
+        throw invalidSocialToken("GOOGLE");
       }
       return {
         id: payload.sub ?? "",
@@ -142,9 +145,9 @@ export class GoogleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         errorMessage.includes("expired") || errorMessage.includes("token used too late");
       logOAuthTokenVerifyFailed(this.#logger, "GOOGLE", error, isExpired ? "expired" : "invalid");
       if (isExpired) {
-        throw new ApplicationException(ErrorCode.SOCIAL_0203, { provider: "GOOGLE" });
+        throw expiredSocialToken("GOOGLE");
       }
-      throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "GOOGLE" });
+      throw invalidSocialToken("GOOGLE");
     }
   }
 

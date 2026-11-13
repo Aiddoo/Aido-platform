@@ -1,4 +1,4 @@
-import { createMemoryTokenStore } from '@src/shared/__tests__';
+import { createMemoryTokenStore } from '@src/testing/core';
 
 import { createSessionEpoch, withSessionEpoch } from './session-epoch';
 

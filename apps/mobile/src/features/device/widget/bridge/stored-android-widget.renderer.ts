@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import type { WidgetInfo } from 'react-native-android-widget';
 
@@ -6,14 +7,14 @@ import { ANDROID_WIDGET_DEFINITIONS } from '../constants/widget.constants';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
 import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
-import { createInitialWidgetProps } from '../utils/widget-initial-props';
+import { createInitialWidgetProps } from '../utils/widget-initial-props.view-model';
 
-interface StoredAndroidWidgetRendererDependencies<Rendered> {
+interface StoredAndroidWidgetRendererPorts<Rendered> {
   snapshotRepository: {
     findSnapshot: () => WidgetSnapshot | null;
     findUserId: () => string | null;
   };
-  readLocalDateKey: () => string;
+  readLocalDateKey: () => DateKey;
   readDeviceLanguage: () => string | null;
   readAppScheme: () => string;
   renderWidget: (props: WidgetProps, widgetInfo: WidgetInfo, userId: string | null) => Rendered;
@@ -25,7 +26,7 @@ export function createStoredAndroidWidgetRenderer<Rendered>({
   readDeviceLanguage,
   readAppScheme,
   renderWidget,
-}: StoredAndroidWidgetRendererDependencies<Rendered>) {
+}: StoredAndroidWidgetRendererPorts<Rendered>) {
   return (widgetInfo: WidgetInfo): Rendered => {
     const definition = ANDROID_WIDGET_DEFINITIONS.find(
       (widget) => widget.name === widgetInfo.widgetName,
@@ -50,7 +51,7 @@ function toStoredWidgetProps(
   snapshot: WidgetSnapshot,
   userId: string | null,
   appScheme: string,
-  localDateKey: string,
+  localDateKey: DateKey,
 ) {
   const { day, renderState } = WidgetSnapshotPolicy.getDayForOwner(snapshot, localDateKey, userId);
   return toWidgetProps(day, renderState, appScheme);

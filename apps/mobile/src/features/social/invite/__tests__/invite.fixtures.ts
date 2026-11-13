@@ -8,16 +8,16 @@ import {
   type RedeemInviteResponse,
   redeemInviteResponseSchema,
 } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
+import { type RedemptionResult, redemptionResultSchema } from '../domains/invite-redemption.model';
+import { type Invite, inviteSchema } from '../domains/invite.model';
+import { type InvitedFriend, invitedFriendSchema } from '../domains/invited-friend.model';
 import {
   type PendingRedemption,
   pendingRedemptionSchema,
-  type RedemptionResult,
-  redemptionResultSchema,
-} from '../domains/invite-redemption.model';
-import { type Invite, inviteSchema } from '../domains/invite.model';
-import { type InvitedFriend, invitedFriendSchema } from '../domains/invited-friend.model';
+} from '../domains/pending-redemption.model';
 
 export function createPendingRedemption(overrides?: Partial<PendingRedemption>): PendingRedemption {
   return pendingRedemptionSchema.parse({
@@ -40,7 +40,7 @@ export function createInvitePreviewDto(
 export function createInviteApiError({
   code = 'INVITE_2101',
   status = 404,
-}: { code?: string; status?: number } = {}) {
+}: { code?: ErrorCodeType; status?: number } = {}) {
   return new ApiError(code, '초대 코드를 찾을 수 없어요', status);
 }
 
@@ -105,6 +105,7 @@ export function createInvitedFriendDto(
     activeDayCount: 1,
     joinedAt: '2026-11-02T10:30:00.000Z',
     qualifiedAt: null,
+    rejectionReason: null,
     ...overrides,
   });
 }
@@ -151,6 +152,7 @@ export function createRedeemResponseDto(overrides?: object): RedeemInviteRespons
     inviter: INVITER,
     friendship: 'FRIENDS',
     rewards: [{ rewardType: 'PREMIUM_DAYS', quantity: 7 }],
+    isReplay: false,
     ...overrides,
   });
 }

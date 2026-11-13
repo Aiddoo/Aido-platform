@@ -22,7 +22,7 @@
 - 키보드 높이가 뒤늦게 바뀌면(암호 자동 완성 줄, Writing Tools 줄, 병음 후보 줄, 이모지 자판) 새 높이로 다시 맞춘다
 - 이미 보이는 칸은 스크롤하지 않는다. 칸이 보이는 곳보다 크면 커서 줄을 지키며 칸 아래(입력 끝·글자 수)나 칸 위를 맞춘다
 - 키보드가 내려가면 키보드 전 스크롤로 돌아가고, 키보드 높이만큼 둔 내용 아래 여백을 지운다
-- 다음 칸을 미리 보이려고 여백을 더 두지 않는다. 다음 칸 이동은 [키보드 규칙](../../../../.claude/ui-components.md#키보드)을 따른다
+- 다음 칸을 미리 보이려고 여백을 더 두지 않는다. 다음 칸 이동은 [키보드 규칙](../../../../docs/architecture/ui.md)을 따른다
 
 ## 사용법
 
@@ -58,17 +58,3 @@ import { FormStepLayout, KeyboardAdaptiveButton } from '@src/shared/ui';
 `FormScrollView`는 `title` 없이 `footer`와 `ScrollView` props를 받는다.
 
 기본값: `flex: 1`, 좌우 16·위 24·아래 24 여백, `keyboardShouldPersistTaps="handled"`, 스크롤 표시줄 숨김.
-
-## 파일 구조
-
-```
-form-step-layout/
-├── form-scroll-view.tsx
-├── form-step-layout.tsx
-├── form-step-layout.md
-├── focused-field-scroll.geometry.ts         # 칸 전체·커서 줄이 보이는 스크롤 위치, 키보드 비율 보간(순수 worklet)
-├── focused-field-scroll.geometry.test.ts
-├── keyboard-footer-height.ts                # 버튼이 제 높이를 알리는 Context
-├── use-focused-field-keyboard-scroll.ts     # 키보드·포커스·커서 이벤트를 받아 UI 스레드에서 스크롤
-└── index.ts
-```

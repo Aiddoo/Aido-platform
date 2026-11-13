@@ -1,12 +1,10 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { invalidUserId } from "#api/shared/domain/exceptions/shared-domain.errors";
 import { EntityId } from "#api/shared/domain/model/entity-id";
 
 export class UserId extends EntityId<string> {
   static create(raw: string): UserId {
     if (raw.length === 0) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "userId" });
+      throw invalidUserId();
     }
     return new UserId(raw);
   }

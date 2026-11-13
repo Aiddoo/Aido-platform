@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { dateSchema, nullableDateSchema, timeOfDaySchema } from "../../../common/datetime.js";
 import { AI_PARSE_LIMITS } from "../../../vocabulary/ai.constants.js";
+import { TODO_LIMITS } from "../../../vocabulary/todo.constants.js";
 import { featureQuotaSchema } from "../../entitlement/v1/entitlement.response.js";
 import { dayOfWeekSchema, todoRepeatSchema } from "../../todo/v1/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
@@ -22,7 +23,7 @@ export const parsedMemoTodoSchema = z.object({
   title: z
     .string()
     .min(1, "제목을 추출하지 못했습니다")
-    .max(200, "제목은 200자 이하여야 합니다")
+    .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하여야 합니다")
     .describe("AI가 추출한 할 일 제목"),
   startDate: dateSchema.describe("시작 날짜 (YYYY-MM-DD)"),
   endDate: nullableDateSchema.describe("종료 날짜 (YYYY-MM-DD, 단일 날짜는 null)"),
