@@ -2,10 +2,8 @@ import { DEFAULT_LOCALE, type SupportedLocale } from "@aido/api/vocabulary";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  BroadcastAction,
-  BroadcastCampaign,
-} from "../../domain/broadcast-campaign.aggregate.js";
+import type { BroadcastAction } from "../../domain/broadcast-action.vo.js";
+import type { BroadcastCampaign } from "../../domain/broadcast-campaign.aggregate.js";
 import type { BroadcastContent } from "../../domain/broadcast-content.vo.js";
 import type {
   AdminBroadcastMessage,
@@ -28,7 +26,7 @@ function toMessage(source: MessageSource, userId: UserId): AdminBroadcastMessage
     type: source.type,
     title: content.title,
     body: content.body,
-    action: action == null ? undefined : { ...action },
+    action: action?.toPrimitives(),
     metadata: action?.url ? { externalUrl: action.url } : undefined,
     force: source.force,
     ...(source.campaignKey != null && { campaignKey: source.campaignKey }),

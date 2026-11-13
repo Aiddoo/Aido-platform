@@ -1,7 +1,10 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { BroadcastAction } from "../../domain/broadcast-campaign.aggregate.js";
+import {
+  BroadcastAction,
+  type BroadcastActionPrimitives,
+} from "../../domain/broadcast-action.vo.js";
 import { BroadcastContent } from "../../domain/broadcast-content.vo.js";
 import { targetedUsersNotFound } from "../broadcasts.errors.js";
 import { BroadcastLogEvent } from "../broadcasts.log-events.js";
@@ -13,7 +16,7 @@ export interface SendTargetedNotificationCommand {
   readonly title: string;
   readonly body: string;
   readonly userIds: readonly string[];
-  readonly action?: BroadcastAction;
+  readonly action?: BroadcastActionPrimitives;
   readonly force: boolean;
 }
 
@@ -47,7 +50,11 @@ export class SendTargetedNotificationUseCase {
 
     const { count } = await notifier.sendBatch(
       buildTargetedMessages(
-        { content, action: command.action ?? null, force: command.force },
+        {
+          content,
+          action: command.action == null ? null : BroadcastAction.create(command.action),
+          force: command.force,
+        },
         existingUserIds,
       ),
     );

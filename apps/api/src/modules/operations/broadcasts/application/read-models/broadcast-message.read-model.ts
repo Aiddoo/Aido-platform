@@ -1,6 +1,6 @@
 import type { NotificationType } from "@aido/api/vocabulary";
 
-import type { BroadcastAction } from "../../domain/broadcast-campaign.aggregate.js";
+import type { BroadcastActionPrimitives } from "../../domain/broadcast-action.vo.js";
 
 export type AdminBroadcastType = Extract<NotificationType, "ADMIN_BROADCAST" | "ADMIN_TARGETED">;
 
@@ -9,7 +9,7 @@ export interface AdminBroadcastMessage {
   readonly type: AdminBroadcastType;
   readonly title: string;
   readonly body: string;
-  readonly action?: BroadcastAction;
+  readonly action?: BroadcastActionPrimitives;
   readonly metadata?: { readonly externalUrl: string };
   readonly force: boolean;
   readonly campaignKey?: string;
