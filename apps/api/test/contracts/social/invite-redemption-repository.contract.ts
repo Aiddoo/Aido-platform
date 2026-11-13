@@ -1,8 +1,12 @@
-import type { InviteRedemptionRepositoryPort } from "#api/modules/social/invites/application/ports/invite-redemption.repository.port";
+import { ErrorCode } from "@aido/api/errors";
+
+import type { InviteRedemptionReaderPort } from "#api/modules/social/invite-redemptions/application/ports/invite-redemption.reader.port";
+import type { InviteRedemptionRepositoryPort } from "#api/modules/social/invite-redemptions/application/ports/invite-redemption.repository.port";
+import { InviteRedemptionId } from "#api/modules/social/invite-redemptions/domain/invite-redemption-id.vo";
 import type {
   InviteRedemption,
   InviteRedemptionPrimitives,
-} from "#api/modules/social/invites/domain/invite-redemption.aggregate";
+} from "#api/modules/social/invite-redemptions/domain/invite-redemption.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   activeDaysOf,
@@ -28,51 +32,44 @@ async function addRedemption(
   overrides: Partial<InviteRedemptionPrimitives> = {},
 ): Promise<InviteRedemption> {
   const redemption = createInviteRedemptionFixture({
-    id: (await repository.nextId()).value,
+    id: InviteRedemptionId.generate().value,
     ...overrides,
   });
-  if (!(await repository.add(redemption))) {
-    throw new Error("수락을 저장하지 못했습니다");
-  }
+  await repository.save(redemption);
   return redemption;
 }
 
+// 같은 수락 상태를 저장소로 쓰고 조회로 읽는다
+export interface InviteRedemptionRepositoryContractSubject {
+  readonly repository: InviteRedemptionRepositoryPort;
+  readonly reader: InviteRedemptionReaderPort;
+}
+
 export function describeInviteRedemptionRepositoryContract(
-  createRepository: () => Promise<InviteRedemptionRepositoryPort>,
+  createSubject: () => Promise<InviteRedemptionRepositoryContractSubject>,
 ): void {
   describe("초대 수락 저장소 계약", () => {
-    it("nextId는 부를 때마다 다른 id를 준다", async () => {
+    it("같은 초대받은 사람의 두 번째 수락은 INVITE_2104로 거절하고 처음 수락을 둔다", async () => {
       // Given
-      const repository = await createRepository();
-
-      // When
-      const ids = [await repository.nextId(), await repository.nextId()];
-
-      // Then
-      expect(ids[0]?.equals(ids[1] ?? ids[0])).toBe(false);
-    });
-
-    it("같은 초대받은 사람의 두 번째 수락은 저장하지 않고 false를 반환한다", async () => {
-      // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const first = await addRedemption(repository);
       const second = createInviteRedemptionFixture({
-        id: (await repository.nextId()).value,
+        id: InviteRedemptionId.generate().value,
         inviterId: INVITE_FIXTURE_OTHER_INVITER_ID,
       });
 
       // When
-      const added = await repository.add(second);
+      const saving = repository.save(second);
 
       // Then
-      expect(added).toBe(false);
+      await expect(saving).rejects.toMatchObject({ errorCode: ErrorCode.INVITE_2104 });
       const found = await repository.findByInviteeIdForUpdate(first.inviteeId);
       expect(found?.toPrimitives()).toEqual(first.toPrimitives());
     });
 
     it("활동일과 상태를 저장하면 같은 Aggregate로 다시 읽고 같은 날짜를 두 번 남기지 않는다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const redemption = await addRedemption(repository);
       redemption.recordActivity(Temporal.Instant.from("2028-02-28T14:59:00Z"));
       await repository.save(redemption);
@@ -90,7 +87,7 @@ export function describeInviteRedemptionRepositoryContract(
 
     it("사용 시작 전인 수락만 JOINED로 있다고 본다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const joined = await addRedemption(repository, { inviteeId: inviteFixtureInviteeId(0) });
       const qualified = await addRedemption(repository, {
         inviteeId: inviteFixtureInviteeId(1),
@@ -111,7 +108,7 @@ export function describeInviteRedemptionRepositoryContract(
 
     it("상태별 수는 그 초대한 사람의 수락만 센다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository, reader } = await createSubject();
       await addRedemption(repository, { inviteeId: inviteFixtureInviteeId(0) });
       await addRedemption(repository, {
         inviteeId: inviteFixtureInviteeId(1),
@@ -131,7 +128,7 @@ export function describeInviteRedemptionRepositoryContract(
       });
 
       // When
-      const summary = await repository.summarizeByInviterId(INVITER_ID);
+      const summary = await reader.summarizeByInviterId(INVITER_ID);
 
       // Then
       expect(summary).toEqual({
@@ -144,7 +141,7 @@ export function describeInviteRedemptionRepositoryContract(
 
     it("초대한 친구는 수락 시각·id 내림차순으로 프로필·활동일 수와 함께 나열하고 마지막 친구 뒤부터 이어 준다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository, reader } = await createSubject();
       const tiedOlder = await addRedemption(repository, {
         id: "c0000000000000000000rdm0a",
         inviteeId: inviteFixtureInviteeId(0),
@@ -167,13 +164,13 @@ export function describeInviteRedemptionRepositoryContract(
       await repository.save(active);
 
       // When
-      const firstPage = await repository.listInvitedFriends({
+      const firstPage = await reader.listInvitedFriends({
         inviterId: INVITER_ID,
         afterInviteeId: null,
         status: null,
         limit: 3,
       });
-      const nextPage = await repository.listInvitedFriends({
+      const nextPage = await reader.listInvitedFriends({
         inviterId: INVITER_ID,
         afterInviteeId: tiedNewer.inviteeId,
         status: null,
@@ -203,7 +200,7 @@ export function describeInviteRedemptionRepositoryContract(
 
     it("상태로 거르면 그 상태만 주고, 이어 읽을 친구가 없거나 다른 사람이 초대한 친구면 빈 목록이다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository, reader } = await createSubject();
       const joined = await addRedemption(repository, { inviteeId: inviteFixtureInviteeId(0) });
       await addRedemption(repository, {
         inviteeId: inviteFixtureInviteeId(1),
@@ -216,19 +213,19 @@ export function describeInviteRedemptionRepositoryContract(
       });
 
       // When
-      const waiting = await repository.listInvitedFriends({
+      const waiting = await reader.listInvitedFriends({
         inviterId: INVITER_ID,
         afterInviteeId: null,
         status: "JOINED",
         limit: 10,
       });
-      const afterUnknown = await repository.listInvitedFriends({
+      const afterUnknown = await reader.listInvitedFriends({
         inviterId: INVITER_ID,
         afterInviteeId: UserId.reconstitute(inviteFixtureInviteeId(3)),
         status: null,
         limit: 10,
       });
-      const afterForeign = await repository.listInvitedFriends({
+      const afterForeign = await reader.listInvitedFriends({
         inviterId: INVITER_ID,
         afterInviteeId: foreign.inviteeId,
         status: null,
@@ -242,7 +239,7 @@ export function describeInviteRedemptionRepositoryContract(
 
     it("마감 정비는 마감이 at 이하인 JOINED만 마감 순서로 limit만큼 거절한다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository } = await createSubject();
       const later = await addRedemption(repository, {
         inviteeId: inviteFixtureInviteeId(0),
         expiresAt: minutesAfter(2),
@@ -284,7 +281,7 @@ export function describeInviteRedemptionRepositoryContract(
 
     it("알림 후보는 아직 알리지 않은 보상 대상 JOINED 중 기간 안에 마감되는 수락을 마감·id 순서로 이어 준다", async () => {
       // Given
-      const repository = await createRepository();
+      const { repository, reader } = await createSubject();
       const expiresBefore = minutesAfter(60);
       const first = await addRedemption(repository, {
         inviteeId: inviteFixtureInviteeId(0),
@@ -308,19 +305,19 @@ export function describeInviteRedemptionRepositoryContract(
       });
 
       // When
-      const firstPage = await repository.listQualifyReminderCandidates({
+      const firstPage = await reader.listQualifyReminderCandidates({
         now: NOW,
         expiresBefore,
         after: null,
         limit: 1,
       });
-      const nextPage = await repository.listQualifyReminderCandidates({
+      const nextPage = await reader.listQualifyReminderCandidates({
         now: NOW,
         expiresBefore,
         after: firstPage[0] ?? null,
         limit: 5,
       });
-      const afterExpiry = await repository.listQualifyReminderCandidates({
+      const afterExpiry = await reader.listQualifyReminderCandidates({
         now: minutesAfter(10),
         expiresBefore,
         after: null,

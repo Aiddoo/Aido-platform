@@ -1,14 +1,14 @@
 import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
-import { hasPaidAccess } from "#api/modules/access/entitlements/domain/paid-access.domain-service";
 import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
 import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import { activeSubscriptionCondition } from "#api/modules/access/entitlements/infrastructure/persistence/premium-access-condition.reader";
+import { hasPaidAccess } from "#api/modules/access/shared/domain/paid-access.domain-service";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
@@ -108,7 +108,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       gracePeriodEndsAt: Date | null = null,
     ) => ({
       userId,
-      revenueCatId: `store-${userId}`,
+      storeSubscriptionId: `store-${userId}`,
       productId: "premium_monthly",
       status,
       startedAt: instantFromDate(at(-30 * 24 * HOUR_MS)),

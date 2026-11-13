@@ -9,17 +9,17 @@ import {
 } from "#api/modules/access/quotas/access-quotas.public";
 import { QuotaUsageRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-usage.repository.port";
 import { RefundAbandonedQuotaReservationsUseCase } from "#api/modules/access/quotas/application/use-cases/refund-abandoned-quota-reservations.use-case";
-import { QuotaWindow } from "#api/modules/access/quotas/domain/quota-window.vo";
 import {
   QUOTA_REQUEST_HASH_RETENTION_MS,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
 } from "#api/modules/access/quotas/domain/quotas.constants";
+import { QuotaWindow } from "#api/modules/access/shared/domain/quota-window.vo";
 import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge, quotaUsage, user as userTable } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
@@ -34,7 +34,7 @@ import {
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 function periodKeyOf(at: Date): string {
-  return QuotaWindow.monthOf(instantFromDate(at)).periodKey;
+  return QuotaWindow.create(instantFromDate(at)).periodKey;
 }
 const FREE_VOICE_LIMIT = PLAN_CATALOG.VOICE_NOTE.free;
 
@@ -750,7 +750,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
 
     it("QuotaUsage 원자적 증가는 DB 조건으로도 한도를 넘지 않는다", async () => {
       // Given
-      const window = QuotaWindow.monthOf(instantFromDate(newMonthAt));
+      const window = QuotaWindow.create(instantFromDate(newMonthAt));
       const add = () =>
         usageRepository.addUsageWithinLimit({
           userId: UserId.reconstitute(userId),

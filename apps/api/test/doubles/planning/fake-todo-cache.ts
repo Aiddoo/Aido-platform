@@ -1,11 +1,11 @@
 import { TodoCachePort } from "#api/modules/planning/todos/application/ports/todo-cache.port";
 import type { FriendTodoReadModel } from "#api/modules/planning/todos/application/read-models/todo.read-model";
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
+import type { CursorPage } from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class FakeTodoCache extends TodoCachePort {
   readonly categoryUsers = new Set<string>();
-  readonly pages = new Map<string, CursorPaginatedResponse<FriendTodoReadModel, number>>();
+  readonly pages = new Map<string, CursorPage<FriendTodoReadModel, number>>();
   readonly generations = new Map<string, number>();
   async invalidateTodoCategories(userId: UserId): Promise<void> {
     this.categoryUsers.delete(userId.value);
@@ -23,7 +23,7 @@ export class FakeTodoCache extends TodoCachePort {
     end: string,
     size: number,
     generation: string,
-    page: CursorPaginatedResponse<FriendTodoReadModel, number>,
+    page: CursorPage<FriendTodoReadModel, number>,
   ): Promise<void> {
     if (generation === String(this.generations.get(owner.value) ?? 0)) {
       this.pages.set(this.#key(owner.value, start, end, size), structuredClone(page));

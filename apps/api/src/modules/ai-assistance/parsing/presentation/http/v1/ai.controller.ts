@@ -14,6 +14,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
 import { Locale } from "#api/platform/http/decorators/locale.decorator";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
@@ -27,6 +28,7 @@ import {
   ApiUnauthorizedError,
   ApiUnprocessableError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
@@ -57,7 +59,7 @@ const AI_PARSE_THROTTLE = {
 
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
-@Controller("ai")
+@Controller({ path: "ai", version: API_VERSION.V1 })
 export class AiController {
   readonly #parseTodoUseCase: ParseTodoUseCase;
   readonly #parseMemoUseCase: ParseMemoUseCase;
@@ -107,11 +109,7 @@ export class AiController {
   // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
   @ThrottleByUser()
   @Throttle({ default: AI_PARSE_THROTTLE.TODO })
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
-  })
+  @ApiAppVersionHeader("설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.")
   @ApiHeader({
     name: "X-Timezone",
     required: false,
@@ -321,11 +319,7 @@ if (confirmed) {
   // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
   @ThrottleByUser()
   @Throttle({ default: AI_PARSE_THROTTLE.MEMO })
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
-  })
+  @ApiAppVersionHeader("설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.")
   @ApiHeader({
     name: "X-Timezone",
     required: false,

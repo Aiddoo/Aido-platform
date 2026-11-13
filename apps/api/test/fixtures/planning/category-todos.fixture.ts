@@ -4,7 +4,6 @@ import { inArray } from "drizzle-orm";
 import { chunk } from "es-toolkit";
 
 import type { Database } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   nudge,
   todo,
@@ -14,6 +13,7 @@ import {
   todoSeries,
   todoView,
 } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 // 한 문장의 바인딩 값은 65,535개까지라 묶어서 넣는다
 const INSERT_BATCH_SIZE = 1000;

@@ -16,8 +16,8 @@ import type { Friendship } from "../../domain/friendship.aggregate.js";
 import { reorderFriendNotFound } from "../friends.errors.js";
 import { FriendLockKeys } from "../friends.lock-keys.js";
 import { FriendLogEvent } from "../friends.log-events.js";
-import type { FollowRepositoryPort } from "../ports/follow.repository.port.js";
-import type { FriendshipReaderPort } from "../ports/friendship.reader.port.js";
+import type { FriendReaderPort } from "../ports/friend.reader.port.js";
+import type { FriendshipRepositoryPort } from "../ports/friendship.repository.port.js";
 import type { FriendReadModel } from "../read-models/friend.read-model.js";
 
 export interface ReorderFriendCommand {
@@ -31,11 +31,11 @@ export interface ReorderFriendCommand {
 export interface ReorderFriendDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly followRepository: Pick<
-    FollowRepositoryPort,
+  readonly friendshipRepository: Pick<
+    FriendshipRepositoryPort,
     "findAcceptedByIdAndFollowerId" | "findMaxFriendSortOrder" | "shiftFriendSortOrders" | "save"
   >;
-  readonly friendshipReader: Pick<FriendshipReaderPort, "findFriendById">;
+  readonly friendReader: Pick<FriendReaderPort, "findFriendById">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -48,7 +48,7 @@ export class ReorderFriendUseCase {
   }
 
   async execute(command: ReorderFriendCommand): Promise<FriendReadModel> {
-    const { unitOfWork, mutationLock, followRepository, friendshipReader, clock, logger } =
+    const { unitOfWork, mutationLock, friendshipRepository, friendReader, clock, logger } =
       this.#dependencies;
     const userId = UserId.reconstitute(command.userId);
     const friendshipId = FriendshipId.reconstitute(command.friendshipId);
@@ -56,7 +56,10 @@ export class ReorderFriendUseCase {
     const { friend, movedSortOrder } = await unitOfWork.run(async () => {
       await mutationLock.acquire([FriendLockKeys.list(userId)]);
       // 옮길 친구가 없으면 기준 친구보다 먼저 거절한다(출시 앱이 받는 오류 우선순위)
-      const friendship = await followRepository.findAcceptedByIdAndFollowerId(friendshipId, userId);
+      const friendship = await friendshipRepository.findAcceptedByIdAndFollowerId(
+        friendshipId,
+        userId,
+      );
       if (friendship == null) {
         throw reorderFriendNotFound(friendshipId);
       }
@@ -65,14 +68,14 @@ export class ReorderFriendUseCase {
       if (command.targetFriendshipId !== command.friendshipId) {
         const plan = await this.#planMove(friendship, userId, command);
         const now = clock.now();
-        await followRepository.shiftFriendSortOrders(userId, plan.shift, now);
+        await friendshipRepository.shiftFriendSortOrders(userId, plan.shift, now);
         hasMoved = friendship.moveTo(plan.sortOrder, now);
         if (hasMoved) {
-          await followRepository.save(friendship);
+          await friendshipRepository.save(friendship);
         }
       }
 
-      const found = await friendshipReader.findFriendById(friendshipId);
+      const found = await friendReader.findFriendById(friendshipId);
       if (found == null) {
         throw reorderFriendNotFound(friendshipId);
       }
@@ -95,12 +98,12 @@ export class ReorderFriendUseCase {
     userId: UserId,
     command: ReorderFriendCommand,
   ): Promise<FriendMovePlan> {
-    const { followRepository } = this.#dependencies;
+    const { friendshipRepository } = this.#dependencies;
     const currentSortOrder = friendship.sortOrder;
 
     if (command.targetFriendshipId != null) {
       const targetFriendshipId = FriendshipId.reconstitute(command.targetFriendshipId);
-      const target = await followRepository.findAcceptedByIdAndFollowerId(
+      const target = await friendshipRepository.findAcceptedByIdAndFollowerId(
         targetFriendshipId,
         userId,
       );
@@ -116,7 +119,7 @@ export class ReorderFriendUseCase {
 
     // 옮길 친구도 목록에 있어 최대 순서는 항상 있다
     const maxSortOrder =
-      (await followRepository.findMaxFriendSortOrder(userId)) ?? currentSortOrder;
+      (await friendshipRepository.findMaxFriendSortOrder(userId)) ?? currentSortOrder;
     return planFriendMoveToEdge({ currentSortOrder, position: command.position, maxSortOrder });
   }
 }

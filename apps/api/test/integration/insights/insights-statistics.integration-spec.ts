@@ -2,7 +2,7 @@ import { count } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
 import { DateRange } from "#api/modules/insights/daily-completions/domain/date-range.vo";
-import { DailyCompletionRepositoryAdapter } from "#api/modules/insights/daily-completions/infrastructure/adapters/daily-completion-repository.adapter";
+import { PlanningDailyCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/planning-daily-completion.repository";
 import { WeeklyAchievementRepositoryPort } from "#api/modules/insights/weekly-achievements/application/ports/weekly-achievement.repository.port";
 import { GetWeeklyAchievementUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/get-weekly-achievement.use-case";
 import { ListWeeklyAchievementsUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/list-weekly-achievements.use-case";
@@ -10,7 +10,7 @@ import { IsoWeek } from "#api/modules/insights/weekly-achievements/domain/iso-we
 import {
   WeeklyAchievement,
   type WeeklyAchievementPrimitives,
-} from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.entity";
+} from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.aggregate";
 import { toWeeklyAchievementResponse } from "#api/modules/insights/weekly-achievements/presentation/http/v1/weekly-achievement-response.mapper";
 import { DrizzleTodoCompletionGroupReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-completion-group.reader";
 import {
@@ -37,7 +37,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let userId: string;
-  let daily: DailyCompletionRepositoryAdapter;
+  let daily: PlanningDailyCompletionRepository;
   let weekly: WeeklyAchievementRepositoryPort;
   beforeAll(async () => {
     db = new TestDatabase({
@@ -51,7 +51,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     client = await db.start();
     context = await createE2eApp({ testDatabase: db });
     weekly = context.module.get(WeeklyAchievementRepositoryPort);
-    daily = new DailyCompletionRepositoryAdapter(
+    daily = new PlanningDailyCompletionRepository(
       new DrizzleTodoCompletionGroupReader(createDatabaseTransactionFixture(client).txHost),
     );
   });

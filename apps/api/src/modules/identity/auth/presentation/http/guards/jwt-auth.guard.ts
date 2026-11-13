@@ -18,7 +18,7 @@ import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.e
 import { invalidAccessToken } from "../../../application/auth.errors.js";
 import { AuthenticateSessionUseCase } from "../../../application/use-cases/authenticate-session.use-case.js";
 import { JWT_ALGORITHM } from "../../../infrastructure/adapters/jwt-token-issuer.adapter.js";
-import { IS_PUBLIC_KEY } from "../decorators/public.decorator.js";
+import { Public } from "../decorators/public.decorator.js";
 import { readBearerToken } from "../v1/auth-request.mapper.js";
 
 const INVALID_ACCESS_TOKEN_REASON = "Access token is missing or invalid";
@@ -52,11 +52,11 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.#reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+    const isPublic = this.#reflector.getAllAndOverride(Public, [
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) {
+    if (isPublic === true) {
       return true;
     }
 

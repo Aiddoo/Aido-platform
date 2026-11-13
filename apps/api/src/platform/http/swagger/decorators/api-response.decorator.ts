@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { SWAGGER_DESCRIPTION } from "../constants/swagger.constant.js";
 import type {
-  ApiCreatedResponseOptions,
+  ApiCreatedSuccessResponseOptions,
   ApiSuccessResponseOptions,
 } from "../interfaces/swagger.interface.js";
 
@@ -56,7 +56,9 @@ export function ApiSuccessResponse<T>(options: ApiSuccessResponseOptions<T>): Me
   return describeSuccess(status, description, type, isArray);
 }
 
-export function ApiCreatedResponse<T>(options: ApiCreatedResponseOptions<T>): MethodDecorator {
+export function ApiCreatedSuccessResponse<T>(
+  options: ApiCreatedSuccessResponseOptions<T>,
+): MethodDecorator {
   return describeSuccess(
     HttpStatus.CREATED,
     options.description ?? SWAGGER_DESCRIPTION.CREATED_201,

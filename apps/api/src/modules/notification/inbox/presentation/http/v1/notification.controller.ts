@@ -7,6 +7,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { type RequestClient } from "#api/platform/http/request-client/request-client";
 import { CurrentRequestClient } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -38,7 +39,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
 @ApiBearerAuth()
-@Controller("notifications")
+@Controller({ path: "notifications", version: API_VERSION.V1 })
 export class NotificationController {
   readonly #listNotifications: ListNotificationsUseCase;
   readonly #getUnreadNotificationCount: GetUnreadNotificationCountUseCase;

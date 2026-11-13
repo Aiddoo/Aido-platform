@@ -6,6 +6,7 @@ import type { MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { UserReportId } from "../../domain/user-report-id.vo.js";
 import {
   dailyReportWindowStart,
   duplicateReportWindowStart,
@@ -15,7 +16,7 @@ import { UserReportTarget } from "../../domain/user-report-target.vo.js";
 import { UserReport } from "../../domain/user-report.aggregate.js";
 import type { UserReportNotifierPort } from "../ports/user-report-notifier.port.js";
 import type { UserReportRepositoryPort } from "../ports/user-report.repository.port.js";
-import { toUserReportSubmission } from "../read-models/user-report-submission.read-model.js";
+import type { UserReportSubmissionReadModel } from "../read-models/user-report-submission.read-model.js";
 import { dailyReportLimitReached, reportTargetUserNotFound } from "../reports.errors.js";
 import { UserReportLockKeys } from "../reports.lock-keys.js";
 import { UserReportLogEvent } from "../reports.log-events.js";
@@ -34,12 +35,7 @@ export interface ReportContentDependencies {
   readonly mutationLock: MutationLockPort;
   readonly userReportRepository: Pick<
     UserReportRepositoryPort,
-    | "nextId"
-    | "existsActiveUser"
-    | "findRecentByTarget"
-    | "countByReporterSince"
-    | "save"
-    | "findUserTags"
+    "existsActiveUser" | "findRecentByTarget" | "countByReporterSince" | "save" | "findUserTags"
   >;
   readonly notifier: Pick<UserReportNotifierPort, "notifyOperators">;
   readonly clock: ClockPort;
@@ -49,6 +45,26 @@ export interface ReportContentDependencies {
 interface Submission {
   readonly report: UserReport;
   readonly isDuplicate: boolean;
+}
+
+function toSubmission(
+  report: UserReport,
+  userTags: ReadonlyMap<string, string>,
+): UserReportSubmissionReadModel {
+  const reporterId = report.reporterId.value;
+  const targetUserId = report.targetUserId.value;
+  return {
+    reportId: report.id.value,
+    reporterId,
+    reporterTag: userTags.get(reporterId) ?? null,
+    targetUserId,
+    targetUserTag: userTags.get(targetUserId) ?? null,
+    targetType: report.target.type,
+    targetId: report.target.contentId,
+    reason: report.reason,
+    detail: report.detail.value,
+    submittedAt: report.createdAt,
+  };
 }
 
 // 같은 대상을 24시간 안에 다시 신고하면 기존 접수를 돌려줘 운영자 알림이 쌓이지 않게 한다.
@@ -61,14 +77,14 @@ export class ReportContentUseCase {
   }
 
   async execute(command: ReportContentCommand): Promise<UserReport> {
-    const { unitOfWork, userReportRepository, clock, logger } = this.#dependencies;
+    const { unitOfWork, clock, logger } = this.#dependencies;
     // 대상 형식을 자기 신고보다 먼저 거부한다(출시 앱이 받는 오류 우선순위)
     const target = UserReportTarget.create({
       type: command.targetType,
       contentId: command.targetId ?? null,
     });
     const created = UserReport.create({
-      id: await userReportRepository.nextId(),
+      id: UserReportId.generate(),
       reporterId: UserId.reconstitute(command.reporterId),
       targetUserId: UserId.reconstitute(command.targetUserId),
       target,
@@ -138,7 +154,7 @@ export class ReportContentUseCase {
         report.reporterId,
         report.targetUserId,
       ]);
-      const delivery = await notifier.notifyOperators(toUserReportSubmission(report, userTags));
+      const delivery = await notifier.notifyOperators(toSubmission(report, userTags));
       if (delivery.status === "rejected") {
         logger.warn({
           event: UserReportLogEvent.OPERATOR_NOTIFY_FAILED,

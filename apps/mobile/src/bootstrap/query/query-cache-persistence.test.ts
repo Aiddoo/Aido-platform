@@ -138,9 +138,11 @@ describe('shouldPersistQuery', () => {
     client.setQueryData(['opted'], { value: 1 });
     client.setQueryData(['plain'], { value: 1 });
 
-    // When · Then
-    expect(shouldPersistQuery(queryOf(client, ['opted']))).toBe(true);
-    expect(shouldPersistQuery(queryOf(client, ['plain']))).toBe(false);
+    // When
+    const decisions = [['opted'], ['plain']].map((key) => shouldPersistQuery(queryOf(client, key)));
+
+    // Then
+    expect(decisions).toEqual([true, false]);
   });
 
   it('opt-in했어도 실패했거나 아직 받는 중인 조회는 저장하지 않는다', async () => {
@@ -155,9 +157,13 @@ describe('shouldPersistQuery', () => {
       .catch(() => undefined);
     client.getQueryCache().build(client, { queryKey: ['pending'], ...PERSISTED_QUERY_OPTIONS });
 
-    // When · Then
-    expect(shouldPersistQuery(queryOf(client, ['failed']))).toBe(false);
-    expect(shouldPersistQuery(queryOf(client, ['pending']))).toBe(false);
+    // When
+    const decisions = [['failed'], ['pending']].map((key) =>
+      shouldPersistQuery(queryOf(client, key)),
+    );
+
+    // Then
+    expect(decisions).toEqual([false, false]);
   });
 });
 
@@ -185,8 +191,10 @@ describe('createQueryPersistOptions', () => {
   };
 
   it('같은 앱 버전이면 저장한 조회를 Instant 문자열 그대로 복원한다', async () => {
-    // Given · When
+    // Given
     const buster = createQueryCacheBuster({ appVersion: '1.14.0', language: 'ko' });
+
+    // When
     const restored = await saveAndRestore(buster, buster);
 
     // Then
@@ -258,7 +266,7 @@ describe('createQueryPersistOptions', () => {
   });
 
   it('앱 버전이 바뀌면 이전 캐시를 복원하지 않는다', async () => {
-    // Given · When
+    // When
     const restored = await saveAndRestore(
       createQueryCacheBuster({ appVersion: '1.14.0', language: 'ko' }),
       createQueryCacheBuster({ appVersion: '1.15.0', language: 'ko' }),
@@ -269,7 +277,7 @@ describe('createQueryPersistOptions', () => {
   });
 
   it('표시 언어가 바뀌면 이전 언어로 받은 캐시를 복원하지 않는다', async () => {
-    // Given · When
+    // When
     const restored = await saveAndRestore(
       createQueryCacheBuster({ appVersion: '1.14.0', language: 'ko' }),
       createQueryCacheBuster({ appVersion: '1.14.0', language: 'en' }),

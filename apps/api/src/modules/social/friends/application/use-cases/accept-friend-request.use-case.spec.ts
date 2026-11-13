@@ -6,11 +6,11 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { FakeFollowCache } from "#test/doubles/social/fake-follow-cache";
-import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
+import { FakeFriendshipCache } from "#test/doubles/social/fake-friendship-cache";
 import { InMemoryFriendProfileReader } from "#test/doubles/social/in-memory-friend-profile.reader";
-import { InMemoryFriendshipReader } from "#test/doubles/social/in-memory-friendship.reader";
-import { RecordingFollowNotifier } from "#test/doubles/social/recording-follow-notifier";
+import { InMemoryFriendReader } from "#test/doubles/social/in-memory-friend.reader";
+import { InMemoryFriendshipRepository } from "#test/doubles/social/in-memory-friendship.repository";
+import { RecordingFriendshipNotifier } from "#test/doubles/social/recording-friendship-notifier";
 import {
   createFriendshipFixture,
   createMutualFriendshipFixtures,
@@ -22,7 +22,7 @@ import {
 
 import type { Friendship } from "../../domain/friendship.aggregate.js";
 import { AcceptFriendRequestUseCase } from "./accept-friend-request.use-case.js";
-import { CheckFirstFriendMilestoneUseCase } from "./check-first-friend-milestone.use-case.js";
+import { NotifyFirstFriendMilestoneUseCase } from "./notify-first-friend-milestone.use-case.js";
 
 const ME = FRIENDSHIP_FIXTURE_USER_ID;
 const REQUESTER = FRIENDSHIP_FIXTURE_FRIEND_ID;
@@ -46,33 +46,32 @@ function setup(
   friendships: readonly Friendship[],
   options: { unitOfWork?: UnitOfWorkPort; hasRequesterProfile?: boolean } = {},
 ) {
-  const followRepository = new InMemoryFollowRepository(friendships);
+  const friendshipRepository = new InMemoryFriendshipRepository(friendships);
   const profileReader = new InMemoryFriendProfileReader();
   profileReader.addUser({ id: ME, userTag: "MEME0001", name: "나" });
   profileReader.addUser({ id: EXISTING_FRIEND, userTag: "OTHR0003" });
   if (options.hasRequesterProfile !== false) {
     profileReader.addUser({ id: REQUESTER, userTag: "FRND0002", profileImage: "avatar.png" });
   }
-  const cache = new FakeFollowCache();
-  const notifier = new RecordingFollowNotifier();
+  const cache = new FakeFriendshipCache();
+  const notifier = new RecordingFriendshipNotifier();
   const logger = new SilentLogger();
   const useCase = new AcceptFriendRequestUseCase({
     unitOfWork: options.unitOfWork ?? new ImmediateUnitOfWork(),
     mutationLock: new RecordingMutationLock(),
-    followRepository,
-    friendshipReader: new InMemoryFriendshipReader(followRepository, profileReader),
+    friendshipRepository,
+    friendReader: new InMemoryFriendReader(friendshipRepository, profileReader),
     profileReader,
     cache,
     notifier,
-    checkFirstFriendMilestone: new CheckFirstFriendMilestoneUseCase({
-      followRepository,
+    notifyFirstFriendMilestone: new NotifyFirstFriendMilestoneUseCase({
+      friendshipRepository,
       notifier,
-      logger,
     }),
     clock: new FixedClock(NOW),
     logger,
   });
-  return { useCase, followRepository, cache, notifier };
+  return { useCase, friendshipRepository, cache, notifier };
 }
 
 describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
@@ -84,8 +83,8 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
     },
   ])("$name FOLLOW_0903으로 거절하고 관계·알림을 그대로 둔다", async ({ friendships }) => {
     // Given
-    const { useCase, followRepository, notifier } = setup(friendships);
-    const before = followRepository.listAll().map((friendship) => friendship.toPrimitives());
+    const { useCase, friendshipRepository, notifier } = setup(friendships);
+    const before = friendshipRepository.listAll().map((friendship) => friendship.toPrimitives());
 
     // When
     const result = useCase.execute({ userId: ME, requesterUserId: REQUESTER });
@@ -95,7 +94,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
       errorCode: ErrorCode.FOLLOW_0903,
       details: { targetUserId: REQUESTER },
     });
-    expect(followRepository.listAll().map((friendship) => friendship.toPrimitives())).toEqual(
+    expect(friendshipRepository.listAll().map((friendship) => friendship.toPrimitives())).toEqual(
       before,
     );
     expect(notifier.mutual).toEqual([]);
@@ -105,7 +104,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
     "내 쪽 대기 요청 있음=%s이어도 두 방향을 각자 목록 맨 뒤에 수락하고 요청한 사람에게만 알린다",
     async (hasMyRequest) => {
       // Given
-      const { useCase, followRepository, notifier } = setup([
+      const { useCase, friendshipRepository, notifier } = setup([
         ...createMutualFriendshipFixtures({
           userId: ME,
           friendId: EXISTING_FRIEND,
@@ -122,11 +121,11 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
 
       // Then
       const [mine, theirs] = await Promise.all([
-        followRepository.findByFollowerAndFollowing(
+        friendshipRepository.findByFollowerAndFollowing(
           UserId.reconstitute(ME),
           UserId.reconstitute(REQUESTER),
         ),
-        followRepository.findByFollowerAndFollowing(
+        friendshipRepository.findByFollowerAndFollowing(
           UserId.reconstitute(REQUESTER),
           UserId.reconstitute(ME),
         ),
@@ -152,7 +151,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
     },
   );
 
-  it("UoW가 끝나기 전에는 친구 캐시와 알림을 건드리지 않는다", async () => {
+  it("알림 작업은 수락과 같은 트랜잭션에 넣고 친구 캐시는 커밋 뒤에 비운다", async () => {
     // Given
     const unitOfWork = new GatedUnitOfWork();
     const { useCase, cache, notifier } = setup(
@@ -169,7 +168,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
     await execution;
 
     // Then
-    expect(beforeCommit).toEqual({ friendCount: 0, mutual: [] });
+    expect(beforeCommit).toEqual({ friendCount: 0, mutual: [expect.anything()] });
     expect(cache.friendCounts.has(ME)).toBe(false);
     expect(notifier.mutual).toHaveLength(1);
   });

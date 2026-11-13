@@ -51,7 +51,7 @@ export class AddTodoItemUseCase {
     const targetTodoId = TodoId.reconstitute(todoId);
     const ownerId = UserId.reconstitute(userId);
 
-    const events = await this.#dependencies.unitOfWork.run(async () => {
+    await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(targetTodoId, ownerId);
       if (todo == null) {
@@ -79,12 +79,10 @@ export class AddTodoItemUseCase {
       });
       const events = todo.pullDomainEvents();
       await this.#dependencies.applyTodoEvents.execute(events);
-      return events;
+      await this.#dependencies.completionEffects.execute(events);
     });
 
     this.#dependencies.logger.log({ event: TodoLogEvent.ITEM_ADDED, todoId, userId });
-
-    await this.#dependencies.completionEffects.execute(events);
 
     await this.#dependencies.todoCache.invalidateFriendTodos(ownerId);
 

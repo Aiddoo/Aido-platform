@@ -2,8 +2,8 @@ import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FriendshipId } from "../../domain/friendship-id.vo.js";
-import type { FollowReaderPort } from "../ports/follow.reader.port.js";
-import type { FriendshipReaderPort } from "../ports/friendship.reader.port.js";
+import type { FriendReaderPort } from "../ports/friend.reader.port.js";
+import type { MutualFriendReaderPort } from "../ports/mutual-friend.reader.port.js";
 import type { FriendReadModel } from "../read-models/friend.read-model.js";
 
 export interface GetFriendsQuery {
@@ -19,9 +19,9 @@ export interface GetFriendsResult {
 }
 
 export interface GetFriendsDependencies {
-  readonly friendshipReader: Pick<FriendshipReaderPort, "listFriends">;
+  readonly friendReader: Pick<FriendReaderPort, "listFriends">;
   // 전체 친구 수는 검색어와 상관없이 캐시한 친구 수다
-  readonly followReader: Pick<FollowReaderPort, "countFriends">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "countFriends">;
 }
 
 export class GetFriendsUseCase {
@@ -32,17 +32,17 @@ export class GetFriendsUseCase {
   }
 
   async execute(query: GetFriendsQuery): Promise<GetFriendsResult> {
-    const { friendshipReader, followReader } = this.#dependencies;
+    const { friendReader, mutualFriendReader } = this.#dependencies;
     const size = clampPageSize(query.size);
     const userId = UserId.reconstitute(query.userId);
     const [friends, totalCount] = await Promise.all([
-      friendshipReader.listFriends({
+      friendReader.listFriends({
         userId,
         afterFriendshipId: query.cursor == null ? null : FriendshipId.reconstitute(query.cursor),
         tagSearch: query.search ?? null,
         limit: size + 1,
       }),
-      followReader.countFriends(userId),
+      mutualFriendReader.countFriends(userId),
     ]);
     return {
       page: toCursorPage({ rows: friends, size, toCursor: (friend) => friend.friendshipId }),

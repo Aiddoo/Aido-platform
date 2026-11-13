@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { WeatherForecastReader } from "#api/modules/weather/forecasts/application/weather-forecast.reader";
 import { WeatherForecastCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-forecast.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
@@ -14,7 +13,9 @@ import { weatherConditionsFixture } from "#test/fixtures/weather.fixture";
 import { weatherLocationFixture } from "#test/fixtures/weather/user-location.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
 import { GetWeatherConditionsUseCase } from "./get-weather-conditions.use-case.js";
+import { ReadWeatherForecastUseCase } from "./read-weather-forecast.use-case.js";
 
 describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실패", () => {
   let memory: InMemoryCacheStore;
@@ -25,12 +26,12 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
   let lifestyleIndexProvider: StubLifestyleIndexProvider;
   let sunTimeProvider: StubSunTimeProvider;
   let conditions: GetWeatherConditionsUseCase;
-  const date = new Date("2026-07-23T00:00:00.000Z");
+  const date = Temporal.Instant.from("2026-07-23T00:00:00.000Z");
 
   beforeEach(() => {
     suppressLogger();
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(date);
+    vi.setSystemTime(date.epochMilliseconds);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherForecastCache(memory);
     repository = new InMemoryUserLocationRepository([weatherLocationFixture()]);
@@ -39,7 +40,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     lifestyleIndexProvider = new StubLifestyleIndexProvider();
     sunTimeProvider = new StubSunTimeProvider();
     const logger = new SilentLogger();
-    const forecastReader = new WeatherForecastReader({
+    const readWeatherForecast = new ReadWeatherForecastUseCase({
       weatherProvider,
       weatherCache: cache,
       logger,
@@ -51,7 +52,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
       airQualityProvider,
       lifestyleIndexProvider,
       sunTimeProvider,
-      forecastReader,
+      readWeatherForecast,
       weatherCache: cache,
       logger,
     });
@@ -65,7 +66,9 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     // Given
     repository.clear();
     // When & Then
-    await expect(conditions.execute({ userId: "weather-user", date })).rejects.toMatchObject({
+    await expect(
+      conditions.execute({ userId: "weather-user", target: date }),
+    ).rejects.toMatchObject({
       errorCode: ErrorCode.WEATHER_1902,
     });
     expect(weatherProvider.calls).toEqual([]);
@@ -76,7 +79,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     // Given
     repository.set(weatherLocationFixture("weather-user", "도쿄"));
     // When
-    const result = conditions.execute({ userId: "weather-user", date });
+    const result = conditions.execute({ userId: "weather-user", target: date });
     // Then
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1902 });
     expect(weatherProvider.calls).toEqual([]);
@@ -86,11 +89,11 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
   it("같은 날짜 캐시가 있으면 공급자 장애에도 저장된 결과를 반환한다", async () => {
     // Given
     const saved = weatherConditionsFixture();
-    await cache.setConditions(60, 127, date, saved);
+    await cache.setConditions(GridCoordinate.create(60, 127), date, saved);
     weatherProvider.failure = new Error("forecast down");
     sunTimeProvider.failure = new Error("sun down");
     // When
-    const result = await conditions.execute({ userId: "weather-user", date });
+    const result = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(result).toEqual(saved);
     expect(weatherProvider.calls).toEqual([]);
@@ -101,28 +104,25 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
 
   it("같은 격자라도 날짜가 다르면 해당 날짜 일출입을 읽고 재조회는 캐시한다", async () => {
     // Given
-    const tomorrow = new Date("2026-07-24T00:00:00.000Z");
+    const tomorrow = Temporal.Instant.from("2026-07-24T00:00:00.000Z");
     sunTimeProvider.dates.set("2026-07-23", { sunrise: "05:23", sunset: "19:00" });
     sunTimeProvider.dates.set("2026-07-24", { sunrise: "05:24", sunset: "19:01" });
     // When
-    const today = await conditions.execute({ userId: "weather-user", date });
-    const next = await conditions.execute({ userId: "weather-user", date: tomorrow });
-    const again = await conditions.execute({ userId: "weather-user", date });
+    const today = await conditions.execute({ userId: "weather-user", target: date });
+    const next = await conditions.execute({ userId: "weather-user", target: tomorrow });
+    const again = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(today.sunrise).toBe("05:23");
     expect(next.sunrise).toBe("05:24");
     expect(next.sunset).toBe("19:01");
     expect(again).toEqual(today);
-    expect(sunTimeProvider.calls.map((call) => call.date.toISOString())).toEqual([
-      date.toISOString(),
-      tomorrow.toISOString(),
-    ]);
+    expect(sunTimeProvider.calls.map((call) => call.at)).toEqual([date, tomorrow]);
   });
 
   it("동일 instant의 한국 예보 09시 기온을 체감 계산에 전달한다", async () => {
     // Given - UTC 00시=1, 한국 09시=25, LA 17시=15인 고정 예보
     // When
-    const result = await conditions.execute({ userId: "weather-user", date });
+    const result = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(result.feelsLikeTemperature).toBe(25);
     expect(
@@ -140,7 +140,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     // Given - 공급자 metadata는 서버 host TZ와 독립이다.
     const provider = new StubWeatherForecastProvider(String(timeZone));
     const logger = new SilentLogger();
-    const forecastReader = new WeatherForecastReader({
+    const readWeatherForecast = new ReadWeatherForecastUseCase({
       weatherProvider: provider,
       weatherCache: cache,
       logger,
@@ -152,12 +152,12 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
       airQualityProvider,
       lifestyleIndexProvider,
       sunTimeProvider,
-      forecastReader,
+      readWeatherForecast,
       weatherCache: cache,
       logger,
     });
     // When
-    const result = await localConditions.execute({ userId: "weather-user", date });
+    const result = await localConditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(result.feelsLikeTemperature).toBe(expectedTemperature);
   });
@@ -166,7 +166,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     // Given
     weatherProvider.forecast = { ...weatherProvider.forecast, hourlyForecasts: [] };
     // When
-    const result = await conditions.execute({ userId: "weather-user", date });
+    const result = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(result.feelsLikeTemperature).toBe(30);
     expect(lifestyleIndexProvider.calls[0]?.currentTemp).toBe(30);
@@ -177,8 +177,8 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     airQualityProvider.failure = new Error("air down");
     lifestyleIndexProvider.result = { feelsLikeTemperature: 0, uvIndex: 0 };
     // When
-    const result = await conditions.execute({ userId: "weather-user", date });
-    const cached = await conditions.execute({ userId: "weather-user", date });
+    const result = await conditions.execute({ userId: "weather-user", target: date });
+    const cached = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(result).toEqual(
       weatherConditionsFixture({ feelsLikeTemperature: 0, pm10: null, pm25: null }),
@@ -194,7 +194,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     lifestyleIndexProvider.failure = new Error("lifestyle down");
     sunTimeProvider.failure = new Error("sun down");
     // When
-    const result = await conditions.execute({ userId: "weather-user", date });
+    const result = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(result).toEqual(
       weatherConditionsFixture({
@@ -212,7 +212,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     // Given
     weatherProvider.failure = new Error("forecast down");
     // When
-    const result = await conditions.execute({ userId: "weather-user", date });
+    const result = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(lifestyleIndexProvider.calls[0]).toMatchObject({ currentTemp: 0, windSpeed: 0 });
     expect(result).toEqual(weatherConditionsFixture({ feelsLikeTemperature: 0 }));

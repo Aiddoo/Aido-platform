@@ -1,4 +1,4 @@
-import { WeeklyAchievement } from "../../../domain/weekly-achievement.entity.js";
+import { WeeklyAchievement } from "../../../domain/weekly-achievement.aggregate.js";
 import { toWeeklyAchievementResponse } from "./weekly-achievement-response.mapper.js";
 
 const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];

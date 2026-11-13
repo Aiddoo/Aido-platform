@@ -20,7 +20,6 @@ export function createSubscriptionFixture(
   return Subscription.reconstitute({
     id: 1,
     userId: SUBSCRIPTION_FIXTURE_USER_ID,
-    provider: "REVENUECAT",
     storeSubscriptionId: SUBSCRIPTION_FIXTURE_CHAIN_ID,
     productId: "premium_monthly",
     status: "ACTIVE",

@@ -132,4 +132,7 @@ export type ProfileIconKey = (typeof PROFILE_ICON_KEYS)[number];
 
 export const OAUTH_PROVIDERS = ["APPLE", "GOOGLE", "KAKAO", "NAVER"] as const;
 
+/** 웹 OAuth 시작 목적. login은 로그인, link는 로그인한 계정에 소셜 계정을 연동한다 */
+export const OAUTH_MODES = ["login", "link"] as const;
+
 export const ACCOUNT_PROVIDERS = ["CREDENTIAL", "APPLE", "GOOGLE", "KAKAO", "NAVER"] as const;

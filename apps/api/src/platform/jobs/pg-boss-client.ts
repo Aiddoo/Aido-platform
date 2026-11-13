@@ -21,9 +21,13 @@ import {
 
 import { databaseConfig } from "#api/platform/config/database.config";
 import { jobConfig } from "#api/platform/config/job.config";
+import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
 
 // 업무 포트가 아니라 pg-boss 클라이언트 인스턴스라 Symbol 토큰으로 둔다(platform/jobs 어댑터만 주입받는다)
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
+
+// 앱 풀(DATABASE_POOL_MAX)과 따로 잡는 연결이다. RDS 연결 예산 때문에 늘리지 않는다(jobs-and-events.md)
+const PG_BOSS_POOL_MAX = 3;
 
 /** health가 읽는 큐 수만 받는다. */
 export type PgBossQueueCounts = Pick<
@@ -180,14 +184,17 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
   provide: PG_BOSS_CLIENT,
   inject: [databaseConfig.KEY, jobConfig.KEY],
   useFactory: (database: ConfigType<typeof databaseConfig>, job: ConfigType<typeof jobConfig>) => {
-    // pg-boss는 이 설정을 pg Pool에 그대로 넘긴다. query_timeout은 pg-boss 타입에 없어 pg 타입으로 더한다
-    const options: ConstructorOptions & Pick<PoolConfig, "query_timeout"> = {
-      connectionString: database.url,
+    // pg-boss가 이 설정을 pg Pool에 그대로 넘겨 앱 풀과 같은 세션 옵션·TLS·유휴 정리를 쓴다(pg 전용 칸은 PoolConfig 타입으로 받는다)
+    const options: ConstructorOptions & PoolConfig = {
+      ...createPostgresPoolConfig(database.url, {
+        applicationName: "aido-pg-boss",
+        max: PG_BOSS_POOL_MAX,
+        idleTimeoutMs: database.idleTimeoutMs,
+        connectionTimeoutMs: database.connectionTimeoutMs,
+        queryTimeoutMs: database.queryTimeoutMs,
+        allowUnverifiedTls: database.allowUnverifiedTls,
+      }),
       schema: job.schema,
-      application_name: "aido-pg-boss",
-      max: 3,
-      connectionTimeoutMillis: database.connectionTimeoutMs,
-      query_timeout: database.queryTimeoutMs,
       migrate: false,
       createSchema: false,
       useListenNotify: false,

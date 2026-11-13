@@ -37,8 +37,8 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
     this.#notificationRecipientLocaleReader = notificationRecipientLocaleReader;
   }
 
-  notifyNudgeSent(notification: NudgeSentNotification): void {
-    this.#notificationQueue.enqueueNudgeSent(notification);
+  notifyNudgeSent(notification: NudgeSentNotification): Promise<void> {
+    return this.#notificationQueue.enqueueNudgeSent(notification);
   }
 
   async recordInteraction(notification: NudgeInteractionNotification): Promise<void> {

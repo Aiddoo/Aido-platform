@@ -24,7 +24,7 @@ const RESERVATION_TTL_MS = ENGAGEMENT.RETENTION_MS;
  * ARGV[2] = 윈도우 시작 시각 (ms)
  * ARGV[3] = 최대 허용 횟수
  * ARGV[4] = 윈도우 TTL (ms)
- * ARGV[5] = idempotent reservation ID (legacy 호출은 빈 문자열)
+ * ARGV[5] = idempotent reservation ID (발송 ID마다 하나)
  * ARGV[6] = reservation marker TTL (ms)
  *
  * Returns: 1 = rate limited, 0 = allowed
@@ -42,9 +42,7 @@ const SLIDING_WINDOW_SCRIPT = `
   -- 윈도우 밖 엔트리 제거
   redis.call("ZREMRANGEBYSCORE", key, "-inf", windowStart)
 
-  if reservationId ~= "" and (
-    redis.call("EXISTS", reservationKey) == 1 or redis.call("ZSCORE", key, reservationId)
-  ) then
+  if redis.call("EXISTS", reservationKey) == 1 or redis.call("ZSCORE", key, reservationId) then
     return 0
   end
 
@@ -55,13 +53,9 @@ const SLIDING_WINDOW_SCRIPT = `
     return 1
   end
 
-  -- 새 엔트리 추가 (member를 고유하게 만들기 위해 now + random)
-  local member = reservationId ~= "" and reservationId or now .. ":" .. math.random(1, 1000000)
-  redis.call("ZADD", key, now, member)
+  redis.call("ZADD", key, now, reservationId)
   redis.call("PEXPIRE", key, windowMs)
-  if reservationId ~= "" then
-    redis.call("SET", reservationKey, "1", "PX", reservationTtl)
-  end
+  redis.call("SET", reservationKey, "1", "PX", reservationTtl)
 
   return 0
 `;
@@ -77,10 +71,8 @@ const ENGAGEMENT_LIMIT_SCRIPT = `
   local reservationTtl = tonumber(ARGV[6])
   local reservationField = "reservation:" .. reservationId
 
-  if reservationId ~= "" and (
-    redis.call("EXISTS", reservationKey) == 1 or
-    redis.call("HEXISTS", key, reservationField) == 1
-  ) then
+  if redis.call("EXISTS", reservationKey) == 1 or
+    redis.call("HEXISTS", key, reservationField) == 1 then
     return 0
   end
   local count = tonumber(redis.call("HGET", key, "count") or "0")
@@ -91,10 +83,8 @@ const ENGAGEMENT_LIMIT_SCRIPT = `
   end
 
   redis.call("HSET", key, "count", count + 1, "lastSentAt", now)
-  if reservationId ~= "" then
-    redis.call("HSET", key, reservationField, now)
-    redis.call("SET", reservationKey, "1", "PX", reservationTtl)
-  end
+  redis.call("HSET", key, reservationField, now)
+  redis.call("SET", reservationKey, "1", "PX", reservationTtl)
   redis.call("EXPIRE", key, ttlSeconds)
   return 0
 `;
@@ -126,13 +116,11 @@ const BATCH_LIMIT_SCRIPT = `
     local engagementCount = 0
 
     redis.call("ZREMRANGEBYSCORE", generalKey, "-inf", windowStart)
-    if reservationId ~= "" and (
-      redis.call("EXISTS", generalReservationKey) == 1 or
-      redis.call("ZSCORE", generalKey, reservationId)
-    ) then
+    if redis.call("EXISTS", generalReservationKey) == 1 or
+      redis.call("ZSCORE", generalKey, reservationId) then
       generalReserved = true
     end
-    if isEngagement and reservationId ~= "" and (
+    if isEngagement and (
       redis.call("EXISTS", engagementReservationKey) == 1 or
       redis.call("HEXISTS", engagementKey, reservationField) == 1
     ) then
@@ -152,19 +140,14 @@ const BATCH_LIMIT_SCRIPT = `
 
     if not limited then
       if not generalReserved then
-        local member = reservationId ~= "" and reservationId or now .. ":" .. i .. ":" .. math.random(1, 1000000)
-        redis.call("ZADD", generalKey, now, member)
+        redis.call("ZADD", generalKey, now, reservationId)
         redis.call("PEXPIRE", generalKey, windowMs)
-        if reservationId ~= "" then
-          redis.call("SET", generalReservationKey, "1", "PX", reservationTtl)
-        end
+        redis.call("SET", generalReservationKey, "1", "PX", reservationTtl)
       end
       if isEngagement and not engagementReserved then
         redis.call("HSET", engagementKey, "count", engagementCount + 1, "lastSentAt", now)
-        if reservationId ~= "" then
-          redis.call("HSET", engagementKey, reservationField, now)
-          redis.call("SET", engagementReservationKey, "1", "PX", reservationTtl)
-        end
+        redis.call("HSET", engagementKey, reservationField, now)
+        redis.call("SET", engagementReservationKey, "1", "PX", reservationTtl)
         redis.call("EXPIRE", engagementKey, engagementTtl)
       end
     end

@@ -14,6 +14,7 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createTransactionHost } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -92,11 +93,11 @@ function staging(host: DatabaseTransactionHost): DrizzlePushDispatchStagingRepos
 }
 
 function outbox(host: DatabaseTransactionHost): DrizzlePushDeliveryOutboxRepository {
-  return new DrizzlePushDeliveryOutboxRepository(host);
+  return new DrizzlePushDeliveryOutboxRepository(host, new DateClock());
 }
 
 function lifecycle(host: DatabaseTransactionHost): DrizzlePushDeliveryLifecycleRepository {
-  return new DrizzlePushDeliveryLifecycleRepository(host);
+  return new DrizzlePushDeliveryLifecycleRepository(host, new DateClock());
 }
 
 describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
@@ -846,9 +847,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     ).resolves.toBe(0);
 
     await expect(
-      inTransaction(() =>
-        lifecycle(host).markRateLimitReserved([{ fence: retry.fence, reservedAt: nowInstant() }]),
-      ),
+      inTransaction(() => lifecycle(host).markRateLimitReserved([retry.fence], nowInstant())),
     ).resolves.toEqual([staged.dispatchId]);
     await expect(
       inTransaction(() =>
@@ -885,7 +884,8 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     expect(nextGenerationClaim[0]?.rateLimitReservation).toEqual({ status: "reserved" });
   });
 
-  it("release DB 실패로 남은 stale delivery lease는 dispatch와 일반 outbox를 함께 reopen한다", async () => {
+  it("release DB 실패로 남은 stale delivery lease는 서버 시계가 DB보다 앞서도 dispatch와 outbox를 함께 다시 열어 바로 claim한다", async () => {
+    // Given
     const user = await createUser("STALE001");
     const staged = await stageNotification({ userId: user.id, suffix: "stale" });
     const publication = await inTransaction(() =>
@@ -906,11 +906,18 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       }),
     );
 
-    await expect(
-      inTransaction(() =>
-        lifecycle(host).recoverStaleProcessing(Temporal.Instant.from("2026-08-29T00:15:03Z")),
-      ),
-    ).resolves.toBe(1);
+    const aheadOfDatabase = new DrizzlePushDeliveryLifecycleRepository(
+      host,
+      new FixedClock(nowInstant().add({ minutes: 1 })),
+    );
+
+    // When
+    const recovered = await inTransaction(() =>
+      aheadOfDatabase.recoverStaleProcessing(Temporal.Instant.from("2026-08-29T00:15:03Z")),
+    );
+
+    // Then
+    expect(recovered).toBe(1);
     await expect(
       db.query.pushDispatch
         .findFirst({ where: { id: staged.dispatchId } })

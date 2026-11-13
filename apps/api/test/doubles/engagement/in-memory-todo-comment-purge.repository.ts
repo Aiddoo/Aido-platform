@@ -61,7 +61,7 @@ export class InMemoryTodoCommentPurgeRepository extends TodoCommentPurgeReposito
     this.#likes.removeByUserId(userId.value);
     for (const comment of this.#comments.list()) {
       if (comment.isAuthoredBy(userId)) {
-        await this.#likes.deactivateAllByCommentId(comment.id, now);
+        await this.#likes.unlikeAllByCommentId(comment.id, now);
       }
     }
     for (const comment of this.#comments.list()) {

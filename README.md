@@ -38,7 +38,7 @@
 
 | 영역        | 기술                                                                                     | 고른 이유                                                                                   |
 | ----------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 런타임      | Node.js 26.13.0 LTS (EAS 모바일 빌드는 24.22.2)                                          | 기본 탑재된 `Temporal`로 서버 날짜 계산을 통일한다                                          |
+| 런타임      | Node.js 26.13.1 LTS (EAS 모바일 빌드는 24.22.3)                                          | 기본 탑재된 `Temporal`로 서버 날짜 계산을 통일한다                                          |
 | API 서버    | NestJS 12.4.2 (ESM, SWC)                                                                 | slice 하나를 Module 하나로 두고 abstract class 포트를 그대로 DI 토큰으로 쓴다               |
 | DB·ORM      | PostgreSQL 16, Drizzle ORM 1.0.0-rc.5, `@nestjs/drizzle`                                 | SQL에 가까운 쿼리와 행 타입 추론, `customType`으로 Temporal 칸을 둔다                       |
 | 작업·이벤트 | pg-boss 12.38.1                                                                          | 브로커 없이 큐·크론·이벤트 전달을 업무 데이터와 같은 트랜잭션에 쓴다                        |
@@ -51,7 +51,7 @@
 | 모바일      | Expo SDK 58, React Native 0.88.1, React 19.3.0, Expo Router, TanStack Query 5            | iOS·Android·위젯을 한 코드베이스로, 서버 상태는 Query 캐시가 소유한다                       |
 | 테스트      | Vitest 5.1.0 + Testcontainers 12.2.1 (서버), Jest 30.5.2 + jest-expo (모바일)            | SQL·트랜잭션 의미는 실제 PostgreSQL로 검증한다                                              |
 | 품질 도구   | TypeScript 6.0.3, Oxlint 1.93.0, Oxfmt 0.78.0, dependency-cruiser, ls-lint, knip         | 구조 규칙을 리뷰 대신 도구로 막는다                                                         |
-| 빌드·인프라 | pnpm 12.15.0, Turborepo 2.11.10, Changesets, Docker Compose, GitHub Actions, AWS EC2·RDS | 버전은 catalog 한 곳, 테스트 결과는 원격 캐시로 로컬과 CI가 공유한다. 인스턴스 하나·DB 하나 |
+| 빌드·인프라 | pnpm 12.18.0, Turborepo 2.11.11, Changesets, Docker Compose, GitHub Actions, AWS EC2·RDS | 버전은 catalog 한 곳, 테스트 결과는 원격 캐시로 로컬과 CI가 공유한다. 인스턴스 하나·DB 하나 |
 
 ## 아키텍처
 
@@ -186,34 +186,36 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  subgraph Stack["stack:&lt;release&gt; 라벨"]
-    P1["PR 01"] --> P2["PR 02"] --> P3["…"] --> Tip["tip PR<br/>ci:stack-tip"]
+  subgraph Stack["gh stack · stack:&lt;release&gt; 라벨"]
+    P1["PR 01 → main"] --> P2["PR 02"] --> P3["…"] --> Tip["tip PR"]
   end
-  Push["로컬 pre-push<br/>typecheck · unit · integration · contract"] -- Turbo 원격 캐시 --> CI
-  Tip --> CI["tip CI 한 번<br/>누적 diff · lint · 캐시 재사용 테스트 · build"]
-  CI --> Merge["위에서부터 merge → main"]
-  Merge --> Image["같은 tree 결과 재사용<br/>ARM64 이미지 · Trivy · GHCR"]
+  P1 --> PRCI["PR CI<br/>맨 아래 PR diff"]
+  Tip --> Push["로컬 pre-push<br/>누적 tree · typecheck · unit · integration · contract · build"]
+  Stack --> Merge["gh stack merge 한 번 → main"]
+  Push -- Turbo 원격 캐시 --> MainCI
+  Merge --> MainCI["main CI<br/>lint · 캐시 재사용 테스트 · build"]
+  MainCI --> Image["ARM64 이미지 · Trivy · GHCR"]
   Image --> Deploy["migrate → API 교체 → health gate"]
 ```
 
-중간 PR은 CI를 돌리지 않고 tip 하나가 누적 diff를 검증한다. 각 PR은 혼자 빌드·테스트를 통과하도록 나눈다.
+위층 PR은 CI를 돌리지 않는다. tip의 pre-push가 누적 tree를 검증하고, 합친 뒤 main CI가 배포 전에 한 번 더 확인한다. 각 PR은 혼자 빌드·테스트를 통과하도록 나눈다.
 
 ## 설계에서 고민한 점
 
-| 문제                                                                                                    | 고려한 선택지                                                               | 고른 것                                                                                                                                                                     | 감수한 것                                                                                                     |
-| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 15개 Context가 같은 역할을 다른 폴더·이름으로 표현해 사람도 AI 에이전트도 "어디에 무엇을" 매번 추측했다 | 레이어 우선 폴더 유지, 기능(slice) 우선                                     | **slice 우선**: `<context>/<slice>/{domain,…}`, slice = Module = Aggregate Root, 이름 사전 한 벌과 생성기                                                                   | 파일이 많이 옮겨졌다. 기준 구현(notes)을 먼저 맞추고 나머지는 같은 모양인지만 보게 했다                       |
-| Symbol 토큰 + interface 짝은 inject 순서·토큰 타입이 어긋나도 컴파일러가 못 잡았다                      | Symbol 유지, interface + token, abstract class                              | **abstract class를 포트이자 DI 토큰**으로, `provideUseCase`가 키·타입을 검사                                                                                                | 포트가 런타임 import가 되어 순환이 부팅 실패로 드러난다. depcruise와 부팅 E2E로 막는다                        |
-| 커밋 직후 프로세스가 죽으면 메모리 이벤트로 바꾸던 상태(리마인더 예약·초대 활동)가 사라졌다             | EventEmitter 유지, Kafka/SQS 브로커, `@nestjs/outbox`, pg-boss 내장 pub/sub | **pg-boss를 트랜잭셔널 아웃박스로**: 구독자별 작업을 같은 트랜잭션에 enqueue, 커밋 뒤 in-process는 캐시 정리만                                                              | 처리량이 PostgreSQL에 묶인다. 포트 뒤라 나중에 아웃박스 릴레이 + 브로커로 어댑터만 바꾼다                     |
-| 날짜 계산이 dayjs 래퍼와 "UTC 자정 Date" 칸에 흩어져 하루 어긋남이 생기기 쉬웠다                        | dayjs 유지, date-fns-tz, Temporal                                           | **Node 26 LTS의 Temporal**, `ClockPort` 하나, `instant`·`plainDate` customType, 할 일은 떠 있는 시각                                                                        | 런타임을 올렸다(모바일 EAS는 그대로). 직렬화가 `Date#toISOString`과 바이트 단위로 같은지 테스트한다           |
-| 배포 중 놓친 크론과 "정확히 그 분"만 보는 리마인더 sweep이 알림을 잃었다                                | 무중단 배포 먼저, 크론 주기 단축                                            | 스케줄마다 **`missed` 정책 필수**, sweep은 **워터마크로 놓친 분(최대 15분)까지 따라잡기**, 15분 넘게 늦으면 사유와 함께 건너뜀                                              | 블루그린이 없어 배포 중 잠깐 늦는다. 유실 대신 지연을 택했다                                                  |
-| 스토어에 남은 옛 앱 버전이 바뀐 응답에 깨질 수 있다                                                     | `/v2`로 자주 올리기, 강제 업데이트                                          | **외부 계약은 추가만**: released OpenAPI 지문을 fixture로 고정하고 `test:contract`가 비교, 운영 밖에서는 응답을 선언 schema로 대조                                          | 쓰지 않는 응답 필드(`message`·라벨)도 출시 계약이라 남는다. 새 응답에는 넣지 않는다                           |
-| ADMIN만 무제한이라 판단 경로가 둘이고 관리자 화면이 실제 사용자 경험과 달랐다                           | ADMIN 예외 유지, 역할별 표                                                  | **주체(tier)와 요금제(plan)를 나누고 ADMIN은 premium 값**을 받는다. 판단은 access 도메인 서비스 한 곳                                                                       | 관리자도 프리미엄 한도에 걸린다(의도). 표시용 tier는 `ADMIN`으로 남겨 출시 앱 표시는 그대로다                 |
-| 유료 APM 없이 장애를 알아야 하고 개발에서는 경보가 어디에도 안 보였다                                   | 상용 APM, 모든 곳에 Sentry                                                  | **환경별 어댑터**(운영 Sentry, 그 밖 pino), slice 경보 카탈로그 + key dedup, `tracesSampler`, heartbeat 하나로 **무료 플랜 안에서**                                         | 큐마다 monitor를 두지 않는다. 스케줄 감시 작업이 대신 예정 지남·연속 실패·DLQ 증가를 본다                     |
-| mock 위주 테스트가 구현을 복사하고 SQL 의미를 증명하지 못했다                                           | mock 라이브러리, 커버리지 목표                                              | 행동 하나를 **가장 싼 층에서 한 번**: InMemory·Fake 더블, 같은 **포트 계약 suite를 InMemory와 Drizzle이 함께**, 실제 PostgreSQL(Testcontainers)                             | 통합 테스트가 Docker를 요구한다. Non-Durable PG·worker env·`retry` 금지·seed 재현으로 flake를 원인에서 막는다 |
-| 문서로만 둔 규칙은 사람·에이전트가 쉽게 어긴다                                                          | 리뷰 체크리스트                                                             | **가드레일을 코드로**: oxlint 레이어 import·관례 규칙(aido 플러그인), dependency-cruiser 경계·순환, ls-lint 접미사, knip 미사용 코드, slice 생성기, 편집 직후 에이전트 hook | 도구 설정이 늘었다. 규칙은 문서 한 곳에 쓰고 도구가 같은 목록을 본다                                          |
-| 릴리스 하나에 PR이 많아 PR마다 CI를 돌리면 비용·대기가 크다                                             | PR별 CI, 큰 PR 하나                                                         | **Stack PR + tip CI 한 번**, pre-push가 올린 **Turbo 원격 캐시**를 tip이 재사용                                                                                             | 중간 PR은 CI 녹색 표시가 없다. 각 PR이 혼자 통과하도록 나누고 로컬 결과를 PR에 적는다                         |
-| LLM에 날짜를 맡기면 시간대·요일 계산이 틀리고 공급자 장애·비용이 그대로 사용자에게 간다                 | 단일 공급자, 모델이 날짜 계산                                               | 모델은 **일정 표현만** 내고 서버 순수 함수가 날짜를 계산, **공급자 체인 + 회로 + 예산·킬 스위치**, 출력은 Zod 구조만                                                        | 프롬프트·평가 관리가 늘었다. golden과 유료 live eval(수동)로 바꿀 때만 확인한다                               |
+| 문제                                                                                                    | 고려한 선택지                                                                                               | 고른 것                                                                                                                                                                     | 감수한 것                                                                                                         |
+| ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 15개 Context가 같은 역할을 다른 폴더·이름으로 표현해 사람도 AI 에이전트도 "어디에 무엇을" 매번 추측했다 | 레이어 우선 폴더 유지, 기능(slice) 우선                                                                     | **slice 우선**: `<context>/<slice>/{domain,…}`, slice = Module = Aggregate Root, 이름 사전 한 벌과 생성기                                                                   | 파일이 많이 옮겨졌다. 기준 구현(notes)을 먼저 맞추고 나머지는 같은 모양인지만 보게 했다                           |
+| Symbol 토큰 + interface 짝은 inject 순서·토큰 타입이 어긋나도 컴파일러가 못 잡았다                      | Symbol 유지, interface + token, abstract class                                                              | **abstract class를 포트이자 DI 토큰**으로, `provideUseCase`가 키·타입을 검사                                                                                                | 포트가 런타임 import가 되어 순환이 부팅 실패로 드러난다. depcruise와 부팅 E2E로 막는다                            |
+| 커밋 직후 프로세스가 죽으면 메모리 이벤트로 바꾸던 상태(리마인더 예약·초대 활동)가 사라졌다             | EventEmitter 유지, Kafka/SQS 브로커, `@nestjs/outbox`, pg-boss 내장 pub/sub                                 | **pg-boss를 트랜잭셔널 아웃박스로**: 구독자별 작업을 같은 트랜잭션에 enqueue, 커밋 뒤 in-process는 캐시 정리만                                                              | 처리량이 PostgreSQL에 묶인다. 포트 뒤라 나중에 아웃박스 릴레이 + 브로커로 어댑터만 바꾼다                         |
+| 날짜 계산이 dayjs 래퍼와 "UTC 자정 Date" 칸에 흩어져 하루 어긋남이 생기기 쉬웠다                        | dayjs 유지, date-fns-tz, Temporal                                                                           | **Node 26 LTS의 Temporal**, `ClockPort` 하나, `instant`·`plainDate` customType, 할 일은 떠 있는 시각                                                                        | 런타임을 올렸다(모바일 EAS는 그대로). 직렬화가 `Date#toISOString`과 바이트 단위로 같은지 테스트한다               |
+| 배포 중 놓친 크론과 "정확히 그 분"만 보는 리마인더 sweep이 알림을 잃었다                                | 무중단 배포 먼저, 크론 주기 단축                                                                            | 스케줄마다 **`missed` 정책 필수**, sweep은 **워터마크로 놓친 분(최대 15분)까지 따라잡기**, 15분 넘게 늦으면 사유와 함께 건너뜀                                              | 블루그린이 없어 배포 중 잠깐 늦는다. 유실 대신 지연을 택했다                                                      |
+| 스토어에 남은 옛 앱 버전이 바뀐 응답에 깨질 수 있다                                                     | `/v2`로 자주 올리기, 강제 업데이트                                                                          | **외부 계약은 추가만**: released OpenAPI 지문을 fixture로 고정하고 `test:contract`가 비교, 운영 밖에서는 응답을 선언 schema로 대조                                          | 쓰지 않는 응답 필드(`message`·라벨)도 출시 계약이라 남는다. 새 응답에는 넣지 않는다                               |
+| ADMIN만 무제한이라 판단 경로가 둘이고 관리자 화면이 실제 사용자 경험과 달랐다                           | ADMIN 예외 유지, 역할별 표                                                                                  | **주체(tier)와 요금제(plan)를 나누고 ADMIN은 premium 값**을 받는다. 판단은 access 도메인 서비스 한 곳                                                                       | 관리자도 프리미엄 한도에 걸린다(의도). 표시용 tier는 `ADMIN`으로 남겨 출시 앱 표시는 그대로다                     |
+| 유료 APM 없이 장애를 알아야 하고 개발에서는 경보가 어디에도 안 보였다                                   | 상용 APM, 모든 곳에 Sentry                                                                                  | **환경별 어댑터**(운영 Sentry, 그 밖 pino), slice 경보 카탈로그 + key dedup, `tracesSampler`, heartbeat 하나로 **무료 플랜 안에서**                                         | 큐마다 monitor를 두지 않는다. 스케줄 감시 작업이 대신 예정 지남·연속 실패·DLQ 증가를 본다                         |
+| mock 위주 테스트가 구현을 복사하고 SQL 의미를 증명하지 못했다                                           | mock 라이브러리, 커버리지 목표                                                                              | 행동 하나를 **가장 싼 층에서 한 번**: InMemory·Fake 더블, 같은 **포트 계약 suite를 InMemory와 Drizzle이 함께**, 실제 PostgreSQL(Testcontainers)                             | 통합 테스트가 Docker를 요구한다. Non-Durable PG·worker env·`retry` 금지·seed 재현으로 flake를 원인에서 막는다     |
+| 문서로만 둔 규칙은 사람·에이전트가 쉽게 어긴다                                                          | 리뷰 체크리스트                                                                                             | **가드레일을 코드로**: oxlint 레이어 import·관례 규칙(aido 플러그인), dependency-cruiser 경계·순환, ls-lint 접미사, knip 미사용 코드, slice 생성기, 편집 직후 에이전트 hook | 도구 설정이 늘었다. 규칙은 문서 한 곳에 쓰고 도구가 같은 목록을 본다                                              |
+| 릴리스 하나에 PR이 많아 PR마다 CI를 돌리면 비용·대기가 크다                                             | PR별 CI, 큰 PR 하나, tip PR이 누적 diff를 검증하고 main이 같은 tree 증거를 재사용(직접 만든 정책·증명 코드) | **Stack PR은 main을 향한 맨 아래만 CI**, 누적 tree는 pre-push가 **Turbo 원격 캐시**와 함께 검증하고 `gh stack merge` 뒤 main CI가 배포 전에 다시 본다                       | 위층 PR은 CI 녹색 표시가 없고 깨끗한 러너의 누적 검증이 합친 뒤로 밀린다. main CI가 실패하면 이미지·배포가 멈춘다 |
+| LLM에 날짜를 맡기면 시간대·요일 계산이 틀리고 공급자 장애·비용이 그대로 사용자에게 간다                 | 단일 공급자, 모델이 날짜 계산                                                                               | 모델은 **일정 표현만** 내고 서버 순수 함수가 날짜를 계산, **공급자 체인 + 회로 + 예산·킬 스위치**, 출력은 Zod 구조만                                                        | 프롬프트·평가 관리가 늘었다. golden과 유료 live eval(수동)로 바꿀 때만 확인한다                                   |
 
 ## 모노레포 구조
 
@@ -238,18 +240,18 @@ flowchart LR
 
 ## 시작하기
 
-- Node.js `26.13.0` LTS([`.nvmrc`](./.nvmrc)), pnpm `12.15.0`(`packageManager`, `npm i -g corepack && corepack enable`), Docker 호환 런타임(로컬 DB와 Testcontainers).
+- Node.js `26.13.1` LTS([`.nvmrc`](./.nvmrc)), pnpm `12.18.0`(`packageManager`, `npm i -g corepack && corepack enable`), Docker 호환 런타임(로컬 DB와 Testcontainers).
 
 ```sh
 pnpm install                                   # postinstall이 packages/*를 빌드한다
-pnpm docker:up                                 # PostgreSQL 16(5432)·Redis(6379)
-cp .env.example apps/api/.env.development       # DATABASE_URL 포트를 5432로 맞춘다
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm db:migrate
+pnpm docker:up                                 # PostgreSQL 16(5433)
+cp apps/api/.env.example apps/api/.env.development
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/aido pnpm db:migrate
 pnpm dev                                       # API + Expo Metro
 ```
 
 - API는 `http://localhost:8080`, Swagger UI는 `http://localhost:8080/api/docs`(로컬 `pnpm dev` 실행에서만)다. 서버만은 `pnpm --filter @aido/server dev`.
-- API까지 Docker로 띄우려면 `.env.docker.dev.example`을 `.env.docker.dev`로 복사하고 `pnpm docker:dev:up`(DB → migrate → API)을 쓴다. 모바일 실행은 [apps/mobile/README.md](./apps/mobile/README.md)를 따른다.
+- env 파일은 앱마다 `.env`(운영) · `.env.development`(개발) · `.env.example`(예시)이고 도커도 같은 파일을 읽는다. API까지 Docker로 띄우려면 `pnpm docker:dev:up`(DB → migrate → API)을 쓴다. 모바일 실행은 [apps/mobile/README.md](./apps/mobile/README.md)를 따른다.
 
 | 명령어                                                  | 설명                                                                       |
 | ------------------------------------------------------- | -------------------------------------------------------------------------- |
@@ -272,8 +274,8 @@ pnpm dev                                       # API + Expo Metro
 - 실행마다 `aido_test_<run-id>` DB에 마이그레이션을 한 번 적용하고 worker별로 나눈다. 순서를 섞어 순서 의존을 드러내고, 여러 러너가 함께 돌면 `AIDO_TEST_WORKERS`·`AIDO_TEST_DB_WORKERS`로 줄인다.
 - 푸시·메일·AI·날씨는 Fake나 고정 원문으로 격리한다. 유료 AI 평가(`ai:eval`)와 `test:performance`는 CI 밖이다.
 - lefthook: pre-commit은 staged 파일 lint·format·이름 검사와 문서 검사(`pnpm docs:check`), pre-push는 `turbo run typecheck test build` → 통합 → 계약(결과는 원격 캐시로), 전체 E2E는 직접 실행해 PR에 적는다.
-- tip CI는 lint·typecheck·build와 함께 단위·통합 테스트를 같은 원격 캐시로 다시 확인하고, 캐시에 없는 작업만 러너에서 한 번에 하나씩 돈다.
-- `main`은 같은 Git tree의 성공 결과를 재사용해 ARM64 이미지를 만들고 Trivy 검사 뒤 GHCR에 올린다. 배포는 migrate가 먼저 끝난 뒤 API를 바꾸고 health gate가 실패하면 이전 이미지로 돌린다.
+- CI(main을 향한 PR·main push)는 lint·typecheck·build와 함께 단위·통합·계약 테스트를 같은 원격 캐시로 다시 확인하고, 캐시에 없는 작업만 러너에서 한 번에 하나씩 돈다.
+- `main`은 같은 run의 검증이 성공하면 ARM64 이미지를 만들고 Trivy 검사 뒤 GHCR에 올린다. 배포는 migrate가 먼저 끝난 뒤 API를 바꾸고 health gate가 실패하면 이전 이미지로 돌린다.
 
 ## 문서
 

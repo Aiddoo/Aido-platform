@@ -2,7 +2,7 @@ import { uniq } from "es-toolkit";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { DailyCompletion } from "./daily-completion.entity.js";
+import { DailyCompletion } from "./daily-completion.aggregate.js";
 import type { DateRange } from "./date-range.vo.js";
 
 /** 같은 기간·완료 여부·카테고리 색으로 묶은 할 일 수. endDate가 없으면 하루짜리다 */
@@ -83,5 +83,5 @@ export function tallyDailyCompletions(params: {
 
 /** 할 일을 모두 끝낸 날 수(달력의 물고기 개수) */
 export function countCompleteDays(completions: readonly DailyCompletion[]): number {
-  return completions.filter((completion) => completion.isComplete).length;
+  return completions.filter((completion) => completion.isComplete()).length;
 }

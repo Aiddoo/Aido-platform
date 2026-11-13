@@ -1,9 +1,9 @@
 import type { DailyCompletionRange } from "#api/modules/insights/daily-completions/application/read-models/daily-completion-range.read-model";
-import { countCompleteDays } from "#api/modules/insights/daily-completions/domain/daily-completion.domain-service";
 import {
   DailyCompletion,
   type DailyCompletionPrimitives,
-} from "#api/modules/insights/daily-completions/domain/daily-completion.entity";
+} from "#api/modules/insights/daily-completions/domain/daily-completion.aggregate";
+import { countCompleteDays } from "#api/modules/insights/daily-completions/domain/daily-completion.domain-service";
 import { DateRange } from "#api/modules/insights/daily-completions/domain/date-range.vo";
 
 export const DAILY_COMPLETION_FIXTURE_NOW = Temporal.Instant.from("2028-02-29T12:00:00Z");

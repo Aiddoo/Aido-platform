@@ -150,7 +150,8 @@ describe('AuthBootProvider', () => {
     });
 
     it('기기 잠금으로 읽지 못하면 locked이며 로그인 화면으로 내려보내지 않는다', async () => {
-      // Given — 기기 잠금 중 콜드 스타트
+      // 기기 잠금 중 콜드 스타트
+      // Given
       tokenStore.getRefreshToken.mockRejectedValue(
         new KeychainLockedError(new Error('User interaction is not allowed.')),
       );
@@ -176,7 +177,8 @@ describe('AuthBootProvider', () => {
     });
 
     it('잠금이 아닌 판정 실패는 리포팅하고 미인증으로 폴백한다 (무한 로딩 금지)', async () => {
-      // Given — 키체인 손상 등 영구 오류. locked로 두면 재판정도 실패해 앱이 조용히 갇힌다.
+      // 키체인 손상 등 영구 오류. locked로 두면 재판정도 실패해 앱이 조용히 갇힌다.
+      // Given
       tokenStore.getRefreshToken.mockRejectedValue(new Error('Could not decrypt the value'));
 
       // When
@@ -192,14 +194,16 @@ describe('AuthBootProvider', () => {
     });
 
     it('Error가 아닌 값이 던져져도 메시지를 잃지 않고 리포팅한다', async () => {
-      // Given — String(value)로 감싸면 "[object Object]"가 되어 원인을 알 수 없다
+      // String(value)로 감싸면 "[object Object]"가 되어 원인을 알 수 없다
+      // Given
       tokenStore.getRefreshToken.mockRejectedValue({ message: 'native bridge failure' });
 
       // When
       await renderProvider();
       await expectStatus('unauthenticated');
 
-      // Then — String(value)였다면 message가 "[object Object]"가 된다
+      // String(value)였다면 message가 "[object Object]"가 된다
+      // Then
       expect(errorReporter.captureException).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'native bridge failure' }),
         expect.objectContaining({ feature: 'auth' }),
@@ -207,7 +211,8 @@ describe('AuthBootProvider', () => {
     });
 
     it('판정 실패로 폴백해도 토큰을 지우지 않는다', async () => {
-      // Given — 원인이 해소되면 다음 실행에 회복되어야 한다
+      // 원인이 해소되면 다음 실행에 회복되어야 한다
+      // Given
       tokenStore.getRefreshToken.mockRejectedValue(new Error('boom'));
 
       // When
@@ -474,7 +479,8 @@ describe('AuthBootProvider', () => {
     });
 
     it('이미 로그아웃된 상태의 만료 이벤트는 잡음이므로 리포팅하지 않는다', async () => {
-      // Given — 로그인 화면에서도 인증 요청은 나가고 401을 받는다
+      // 로그인 화면에서도 인증 요청은 나가고 401을 받는다
+      // Given
       tokenStore.getRefreshToken.mockResolvedValue(null);
       await renderProvider();
       await expectStatus('unauthenticated');
@@ -488,7 +494,8 @@ describe('AuthBootProvider', () => {
     });
 
     it('만료 이벤트가 연달아 와도 한 번만 리포팅한다', async () => {
-      // Given — 세션 종료 후 도착한 다른 요청들이 각자 401 → 만료를 발행한다
+      // 세션 종료 후 도착한 다른 요청들이 각자 401 → 만료를 발행한다
+      // Given
       tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();
       await expectStatus('authenticated');
@@ -508,7 +515,8 @@ describe('AuthBootProvider', () => {
 
   describe('캐시 정리 시점', () => {
     it('만료 리스너 실행 중에는 캐시를 비우지 않고, 커밋 이후에 비운다', async () => {
-      // Given — 리스너에서 곧바로 clear()하면 아직 마운트된 인증 화면의 suspense 쿼리가
+      // 리스너에서 곧바로 clear()하면 아직 마운트된 인증 화면의 suspense 쿼리가
+      // Given
       // 즉시 재요청 → 401 → 다시 만료 → ErrorBoundary("재시도/로그아웃") 루프를 돈다.
       tokenStore.getRefreshToken.mockResolvedValue('valid-refresh-token');
       await renderProvider();

@@ -8,7 +8,6 @@ import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.p
 import { ApplyActionPlanUseCase } from "#api/modules/voice/action-plans/application/use-cases/apply-action-plan.use-case";
 import { CreateQuickPlanUseCase } from "#api/modules/voice/action-plans/application/use-cases/create-quick-plan.use-case";
 import { DigestVoiceNoteUseCase } from "#api/modules/voice/voice-notes/application/use-cases/digest-voice-note.use-case";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   memo as memoTable,
   planApplication,
@@ -20,6 +19,7 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { UserFixture } from "#test/fixtures/index";
@@ -206,10 +206,12 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       for (let index = 0; index < 6; index += 1) {
         aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
       }
+
       // When
       const results = await Promise.allSettled(
         Array.from({ length: 6 }, (_, index) => runQuickPlan(`key-${index}`)),
       );
+
       // Then
       const succeeded = results.filter((result) => result.status === "fulfilled");
       const rejected = results.filter((result) => result.status === "rejected");
@@ -225,10 +227,12 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       // Given
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
       aiGenerator.setDelay(50);
+
       // When
       const results = await Promise.allSettled(
         Array.from({ length: 4 }, () => runQuickPlan("same-key")),
       );
+
       // Then
       const rejected = results.filter((result) => result.status === "rejected");
       expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
@@ -242,8 +246,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("AI 실패는 정확히 한 번 환불하고 원장에 사유를 남긴다", async () => {
       // Given
       aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
+
       // When
       const failure = runQuickPlan("key-1");
+
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1301,
@@ -281,9 +287,11 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("할 일이 0개여도 요약을 돌려준 녹음 정리는 VOICE_NOTE 1회를 확정하고 재요청도 같다", async () => {
       // Given
       aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+
       // When
       const first = await runDigest("digest-1");
       const second = await runDigest("digest-1");
+
       // Then
       expect([first.charged, second.charged]).toEqual([true, true]);
       expect(second.summary).toBe(first.summary);
@@ -298,8 +306,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("돌려줄 내용이 전혀 없는 녹음 정리는 한 번 환불하고 AI_1302다", async () => {
       // Given
       aiGenerator.setRawResponse(digestDraft({ title: "", summary: "", keyPoints: [], todos: [] }));
+
       // When
       const failure = runDigest("digest-1");
+
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1302,
@@ -315,8 +325,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("AI 실패한 녹음 정리는 한 번 환불하고 charged:false다", async () => {
       // Given
       aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
+
       // When
       const failure = runDigest("digest-1");
+
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1301,
@@ -328,8 +340,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("원장에는 말한 내용 없이 지문 해시만 남는다", async () => {
       // Given
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+
       // When
       await runQuickPlan("key-1", "비밀스러운 내용");
+
       // Then
       const [charge] = await client
         .select()
@@ -343,8 +357,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       // Given
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
       await runQuickPlan("key-1");
+
       // When
       const reused = runQuickPlan("key-1", "다른 내용");
+
       // Then
       await expect(reused).rejects.toMatchObject({ errorCode: ErrorCode.AI_1318 });
       expect(await usedAiCount()).toBe(1);
@@ -360,8 +376,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
         title: "제목",
         content: "내용",
       };
+
       // When
       const result = await runApply([todoAction(), memoAction]);
+
       // Then
       expect(result.todos[0]).toMatchObject({ title: "회의록 보내기", isAllDay: false });
       expect(result.todos[0]?.items).toHaveLength(1);
@@ -380,8 +398,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("같은 키가 동시에 와도 한 번만 만들고 같은 결과를 돌려준다", async () => {
       // Given
       const actions = [todoAction()];
+
       // When
       const results = await Promise.all(Array.from({ length: 5 }, () => runApply(actions)));
+
       // Then
       const todos = await userTodos();
       expect(todos).toHaveLength(1);
@@ -393,8 +413,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("같은 키로 고친 내용을 보내면 AI_1318이고 새로 만들지 않는다", async () => {
       // Given
       await runApply([todoAction()]);
+
       // When
       const reused = runApply([todoAction("todo-0", "고친 제목")]);
+
       // Then
       await expect(reused).rejects.toMatchObject({ errorCode: ErrorCode.AI_1318 });
       expect(await userTodos()).toHaveLength(1);
@@ -404,8 +426,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       // Given
       const first = await runApply([todoAction()]);
       await client.delete(todoTable).where(eq(todoTable.id, first.todos[0]?.id ?? 0));
+
       // When
       const second = await runApply([todoAction()]);
+
       // Then
       expect(second.todos).toEqual([]);
       expect(await userTodos()).toHaveLength(0);
@@ -427,8 +451,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
         title: "",
         content: "내용",
       };
+
       // When
       const failure = runApply([todoAction(), memoAction]);
+
       // Then
       await expect(failure).rejects.toMatchObject({ errorCode: ErrorCode.MEMO_2003 });
       expect(await userTodos()).toHaveLength(0);
@@ -452,8 +478,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     ])("$name 반복은 규칙과 회차를 만들고 응답에는 첫 회차만 담는다", async ({ repeat }) => {
       // Given
       const action = { ...todoAction(), repeat };
+
       // When
       const result = await runApply([action]);
+
       // Then
       const [series] = await client.select().from(todoSeries).where(eq(todoSeries.userId, userId));
       const occurrences = await userTodos();
@@ -469,8 +497,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("다른 사용자의 카테고리는 AI_1315로 거절한다", async () => {
       // Given
       const action = { ...todoAction(), categoryId: categoryId + 1000 };
+
       // When
       const failure = runApply([action]);
+
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1315,
@@ -484,8 +514,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("저장에 성공하면 원본 메모를 지운다", async () => {
       // Given
       const memoId = await insertMemo(userId);
+
       // When
       const result = await runApplyFromMemo(memoId, [todoAction()]);
+
       // Then
       expect(result.todos).toHaveLength(1);
       expect(await memoExists(memoId)).toBe(false);
@@ -504,8 +536,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
           updatedAt: instantFromDate(AT),
         })),
       );
+
       // When
       const failure = runApplyFromMemo(memoId, [todoAction("todo-0"), todoAction("todo-1")]);
+
       // Then
       await expect(failure).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
       expect(await userTodos()).toHaveLength(TODO_LIMITS.MAX_PER_CATEGORY - 1);
@@ -521,8 +555,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       // Given
       const memoId = await insertMemo(userId);
       const first = await runApplyFromMemo(memoId, [todoAction()]);
+
       // When
       const second = await runApplyFromMemo(memoId, [todoAction()]);
+
       // Then
       expect(second.todos.map((todo) => todo.id)).toEqual(first.todos.map((todo) => todo.id));
       expect(await userTodos()).toHaveLength(1);
@@ -531,10 +567,12 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     it("같은 키가 동시에 와도 메모를 한 번만 지우고 모두 성공한다", async () => {
       // Given
       const memoId = await insertMemo(userId);
+
       // When
       const results = await Promise.all(
         Array.from({ length: 4 }, () => runApplyFromMemo(memoId, [todoAction()])),
       );
+
       // Then
       expect(results.map((result) => result.todos.length)).toEqual([1, 1, 1, 1]);
       expect(await userTodos()).toHaveLength(1);
@@ -552,8 +590,10 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       });
       await client.insert(userTable).values(other);
       const memoId = await insertMemo(other.id);
+
       // When
       const failure = runApplyFromMemo(memoId, [todoAction()]);
+
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.MEMO_2001,
@@ -591,11 +631,13 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
           occurrenceDate: Temporal.PlainDate.from("2027-01-06"),
         }),
       ]);
+
       // When
       const upcoming = await todoPlanReader.findUpcoming(UserId.reconstitute(userId), {
         fromDate: Temporal.PlainDate.from("2027-01-04"),
         limit: 3,
       });
+
       // Then
       expect(
         upcoming.map(({ title, startDate, isRepeating }) => [title, startDate, isRepeating]),

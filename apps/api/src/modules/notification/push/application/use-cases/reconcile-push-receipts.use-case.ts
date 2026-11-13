@@ -31,7 +31,7 @@ interface ReconcilePushReceiptsDependencies {
     "expireUnreceipted" | "findPendingTicketIds" | "recordPushReceipts"
   >;
   readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "deactivateInvalidTokens">;
-  readonly pushProvider: Pick<PushProviderPort, "getReceipts">;
+  readonly pushProvider: Pick<PushProviderPort, "getReceipts" | "timing">;
   readonly cache: Pick<NotificationCachePort, "invalidatePushTokens">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly clock: ClockPort;
@@ -49,9 +49,10 @@ export class ReconcilePushReceiptsUseCase {
 
   async execute(): Promise<void> {
     const startedAt = this.#dependencies.clock.now();
+    const receiptTiming = this.#dependencies.pushProvider.timing.receipt;
     const expired = await this.#dependencies.unitOfWork.run(() =>
       this.#dependencies.pushReceiptRepository.expireUnreceipted(
-        pushReceiptCheckWindow(startedAt).acceptedAfter,
+        pushReceiptCheckWindow(startedAt, receiptTiming).acceptedAfter,
         PUSH_RECEIPT_POLICY.expireBatchSize,
       ),
     );
@@ -59,7 +60,7 @@ export class ReconcilePushReceiptsUseCase {
     const providerFailures: PushFailureKind[] = [];
     for (;;) {
       const ticketIds = await this.#dependencies.pushReceiptRepository.findPendingTicketIds(
-        pushReceiptCheckWindow(this.#dependencies.clock.now()),
+        pushReceiptCheckWindow(this.#dependencies.clock.now(), receiptTiming),
         PUSH_RECEIPT_POLICY.batchSize,
       );
       if (ticketIds.length === 0) {

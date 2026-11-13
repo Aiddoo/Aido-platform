@@ -2,7 +2,7 @@ import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 
 import type { AccessStateReaderPort } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
 import type { FeatureGrantRepositoryPort } from "#api/modules/access/entitlements/application/ports/feature-grant.repository.port";
-import type { FeatureGrantId } from "#api/modules/access/entitlements/domain/feature-grant-id.vo";
+import { FeatureGrantId } from "#api/modules/access/entitlements/domain/feature-grant-id.vo";
 import { FeatureGrant } from "#api/modules/access/entitlements/domain/feature-grant.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
@@ -33,12 +33,16 @@ export interface AccessStateReaderHarness {
 }
 
 function friendGrant(params: {
-  readonly id: FeatureGrantId;
   readonly userId: UserId;
   readonly quantity: number;
   readonly sourceKey: string;
 }): FeatureGrant {
-  return FeatureGrant.create({ ...params, feature: "FRIEND", now: ACCESS_FIXTURE_NOW });
+  return FeatureGrant.create({
+    ...params,
+    id: FeatureGrantId.generate(),
+    feature: "FRIEND",
+    now: ACCESS_FIXTURE_NOW,
+  });
 }
 
 export function describeAccessStateReaderContract(
@@ -107,35 +111,24 @@ export function describeAccessStateReaderContract(
       const { featureGrantRepository } = harness;
 
       // When
-      const saved = [
-        await featureGrantRepository.saveIfAbsent(
-          friendGrant({
-            id: await featureGrantRepository.nextId(),
-            userId: USER_ID,
-            quantity: 1,
-            sourceKey: "invite:1",
-          }),
-        ),
-        await featureGrantRepository.saveIfAbsent(
-          friendGrant({
-            id: await featureGrantRepository.nextId(),
-            userId: USER_ID,
-            quantity: 2,
-            sourceKey: "invite:2",
-          }),
-        ),
-        await featureGrantRepository.saveIfAbsent(
-          friendGrant({
-            id: await featureGrantRepository.nextId(),
-            userId: USER_ID,
-            quantity: 5,
-            sourceKey: "invite:1",
-          }),
-        ),
-      ];
+      await featureGrantRepository.save(
+        friendGrant({ userId: USER_ID, quantity: 1, sourceKey: "invite:1" }),
+      );
+      await featureGrantRepository.save(
+        friendGrant({ userId: USER_ID, quantity: 2, sourceKey: "invite:2" }),
+      );
+      await featureGrantRepository.save(
+        friendGrant({ userId: USER_ID, quantity: 5, sourceKey: "invite:1" }),
+      );
 
       // Then
-      expect(saved).toEqual([true, true, false]);
+      expect(
+        await Promise.all(
+          ["invite:1", "invite:2", "invite:3"].map((sourceKey) =>
+            featureGrantRepository.existsBySourceKey(sourceKey),
+          ),
+        ),
+      ).toEqual([true, true, false]);
       expect(await harness.reader.findFeatureGrants(USER_ID)).toEqual({ FRIEND: 3 });
       expect(await harness.reader.findFeatureGrants(OTHER_USER_ID)).toEqual({});
     });

@@ -4,16 +4,16 @@
 
 ## 로컬 실행
 
-`.nvmrc`의 Node.js와 루트 `packageManager`의 pnpm과 Docker Compose V2를 사용한다. DB·Redis만 띄우는 `pnpm docker:up`과 API까지 띄우는 `pnpm docker:dev:up`은 별도 구성이다. 전자는 `docker-compose.yml`의 DB5432, 후자는 `docker-compose.dev.yml`의 기본 host DB5433을 사용하므로 연결을 혼동하지 않는다.
+`.nvmrc`의 Node.js와 루트 `packageManager`의 pnpm과 Docker Compose V2를 사용한다. 개발 compose는 [`docker-compose.yml`](../../../docker-compose.yml) 하나다. `pnpm docker:up`은 DB(host 5433)만, `pnpm docker:dev:up`은 같은 DB에 migrate → API까지 띄운다(profile `api`). migrate·API 컨테이너는 `apps/api/.env.development`를 읽고 DB 주소만 compose 네트워크의 `db`로 덮는다. 포트(`DB_PORT`·`API_HOST_PORT`)는 셸 env로 바꾼다.
 
 ```sh
-cp .env.docker.dev.example .env.docker.dev
+cp apps/api/.env.example apps/api/.env.development
 pnpm docker:dev:build
 pnpm docker:dev:up
 pnpm docker:dev:logs
 ```
 
-개발 compose는 DB health→migrate 완료→API 순서이고 source volume으로 재시작을 지원한다. 운영 이미지를 로컬에서 시험하려면 `.env.docker.prod.example`을 별도 환경에 맞춰 준비한 뒤 `docker:prod:build`/`docker:prod:up`을 사용한다. production compose는 원격 migration 허용을 명시하므로 실제 운영 연결을 로컬 시험에 재사용하지 않는다.
+개발 compose는 DB health→migrate 완료→API 순서이고 source volume으로 재시작을 지원한다. 운영 compose는 서버에서 `scripts/deploy.sh`만 실행한다. production compose는 원격 migration을 허용하므로 로컬에서 띄우지 않는다(로컬 `apps/api/.env`는 운영 값 사본이다).
 
 ## 동일 SHA의 배포 흐름
 
@@ -24,9 +24,9 @@ CI 검증 → 같은 SHA의 API/migrate 이미지 → Deploy to EC2
   → 배포 락·SHA 확인 → migration/verify → API 교체 → health 확인
 ```
 
-deploy workflow는 같은 저장소의 main push/dispatch로 끝난 CI run만 배포한다. SSH host key는 `EC2_SSH_HOST_FINGERPRINT` secret(`ssh-keygen -lf`의 `SHA256:…` 값)이 있을 때만 검증하므로 등록해 둔다.
+deploy workflow는 같은 저장소의 main push/dispatch로 끝난 CI run만 배포한다. 접속은 러너의 OpenSSH이고 host key는 `EC2_SSH_HOST_KEYS` secret(서버 `/etc/ssh/ssh_host_*_key.pub`의 `종류 키` 줄)으로 고정한다. 없으면 배포가 시작되지 않는다. 서버를 새로 만들어 host key가 바뀌면 `ssh <서버> 'for f in /etc/ssh/ssh_host_*_key.pub; do cut -d" " -f1,2 "$f"; done' | gh secret set EC2_SSH_HOST_KEYS`로 다시 넣는다. 토큰은 stdin 스크립트로만 넘긴다.
 
-서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·최소 3GB 디스크 여유를 확인하고 현재 이미지를 rollback 태그로 보존한다. 이미지는 GHCR에서 pull만 한다. 토큰이 없으면 서버에서 빌드하지 않고 중단하며, 서버 빌드는 `--build`를 준 비상 폴백뿐이다.
+서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·최소 3GB 디스크 여유를 확인하고 운영 env(`apps/api/.env`, 600)를 확인하고, 지금 돌고 있는 컨테이너의 이미지를 rollback 태그로 보존한다. 이미지는 GHCR에서 pull만 하고 기동은 `--no-build --pull never`로 준비된 이미지만 쓴다. 토큰이 없으면 서버에서 빌드하지 않고 중단하며, 서버 빌드는 `--build`를 준 비상 폴백뿐이다.
 
 production compose는 host API 포트를 `127.0.0.1:${PORT:-8080}`에만 bind한다. 공개 경로는 host Nginx→loopback API 한 홉이며 서버는 이 proxy 경계를 따른다. API container 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB는 현재 구성값이다.
 
@@ -36,11 +36,11 @@ migrate 서비스 성공 뒤 API를 교체한다. script의 90초 health gate는
 
 서버(t4g.small, 메모리 2GB)에서 이미지를 빌드하면 swap을 쓰고 BuildKit cache가 5GB까지 쌓여 dockerd 메모리도 커졌다. 그래서 수동 배포도 Mac에서 CI image job과 같은 설정(Dockerfile·target·linux/arm64·SHA 태그)으로 빌드해 GHCR에 올리고, 서버는 pull만 한다.
 
-1. Mac: `origin/main`에 있는 커밋을 변경 없는 tree로 checkout하고 `docker login ghcr.io`(write:packages)를 해 둔다. [build script](../../../scripts/release/build-push-api-images.sh)는 trivy 검사(CI와 같은 기준)를 통과한 이미지만 올리고, GHCR에 이미 있는 SHA 태그는 덮어쓰지 않는다.
+1. Mac: `origin/main`에 있는 커밋을 변경 없는 tree로 checkout하고 `docker login ghcr.io`(write:packages)를 해 둔다. [build script](../../../scripts/ops/build-push-api-images.sh)는 trivy 검사(CI와 같은 기준)를 통과한 이미지만 올리고, GHCR에 이미 있는 SHA 태그는 덮어쓰지 않는다.
 
    ```sh
    git switch main && git pull --ff-only
-   bash scripts/release/build-push-api-images.sh --push   # 끝에 서버 명령을 출력한다
+   bash scripts/ops/build-push-api-images.sh --push   # 끝에 서버 명령을 출력한다
    ```
 
 2. 서버: script가 출력한 명령을 실행한다.
@@ -92,6 +92,24 @@ workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `script
 
 새 cursor를 발급한 API를 이전 형식으로 되돌리면 클라이언트가 첫 페이지부터 다시 조회해야 할 수 있다. 공개 routing/payload·개인정보 보정처럼 API와 스키마가 함께 바뀌는 릴리스는 그 릴리스 노트(`docs/releases`)의 제한을 함께 확인한다.
 
+## 서버 관리 (보안 패치·재부팅·Docker)
+
+`/var/run/reboot-required`가 생기거나 한 달이 지나면 사용이 적은 시간(KST 새벽)에 한다. 야간 백업 cron(`~/apps/backup.sh`, 03:00 UTC)과 겹치지 않게 한다. 재부팅은 1분 안팎 멈추고, 컨테이너는 `restart: unless-stopped`로 다시 뜬다. 멈춘 동안의 리마인더는 sweep이 따라잡는다([Job과 종료](#job과-종료)).
+
+```sh
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get -y \
+  -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade --with-new-pkgs
+docker image prune -f && docker builder prune -af   # :latest·:rollback 두 세대만 남긴다(deploy.sh와 같은 모델)
+sudo systemctl reboot
+```
+
+- 확인: `uname -r`(새 커널), `docker ps`(healthy), `curl -s 127.0.0.1:8080/health`, 5분 안에 큐 작업이 completed로 쌓이는지, `free -m`(스왑), `crontab -l`(백업).
+- Docker 데몬 설정은 [docker-daemon.json](../../../scripts/ops/docker-daemon.json)이 정본이다. `/etc/docker/daemon.json`에 두고 `sudo dockerd --validate --config-file /etc/docker/daemon.json`으로 확인한다. `live-restore`가 켜져 있으면 데몬을 재시작해도 컨테이너가 계속 돈다.
+- 손으로 만든 이미지 태그(`pre-<버전>` 등)는 그 버전 롤백이 필요 없어지면 지운다. 롤백은 `:rollback` 한 세대다.
+- DB 백업은 [backup-database.sh](../../../scripts/ops/backup-database.sh)가 정본이고, 서버 cron(03:00 UTC)이 사본 `~/apps/backup.sh`를 실행한다. 바꾸면 `install -m 700`으로 사본을 덮고, 접속 주소·S3 경로는 `~/apps/backup.env`(권한 600), 비밀번호는 `~/.pgpass`에 둔다. 로그는 `~/backups/backup.log`다.
+- `REDIS_URL`은 `CACHE_TYPE=redis`로 여러 대를 운영할 때만 둔다([확장](scaling.md#인스턴스를-2대-이상으로-늘릴-때)). 큐는 pg-boss라 Redis가 필요 없다.
+
 ## 공개 버전과 env 반영
 
 env 목록과 규칙은 [설정](configuration.md), 운영 경보를 사람에게 보내는 Sentry 규칙은 [관측](observability.md#sentry-무료-플랜-운영)에 있다.
@@ -104,10 +122,23 @@ Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/adm
   - Android: 100% 출시하고 Play 화면에 업데이트가 보인 뒤. 단계 출시 대상이 아닌 기기는 업데이트를 받을 수 없다.
   - iOS: 공개(Ready for Sale) 뒤. 단계적 출시 중에도 App Store에서 직접 업데이트할 수 있다.
   - 두 값은 따로 정한다. 한쪽만 공개됐으면 다른 쪽은 이전 공개값을 둔다.
-- **반영**: `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
+- **반영**: `scripts/ops/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
 - **되돌리기**: 이전 공개값으로 다시 실행하거나 backup을 복원한다. `--enabled false`로 끄지 않는다. 1.10.0~1.15.0 앱은 꺼진 응답을 실패로 보고 "버전 정보를 확인하지 못했어요"를 띄운다.
 - **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
 
+운영 env는 서버의 `~/apps/Aido-platform/apps/api/.env`(권한 600, git이 무시함) 하나다. 루트 `.env.docker.prod`는 이 파일을 가리키는 링크로, env 경로를 옮기기 전 커밋을 다시 배포할 때만 쓴다. 값은 화면에 찍지 않는다: 바꿀 때는 위 script나 편집기로 고치고, 비교는 키 이름과 해시로 한다.
+
 env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
+
+```sh
+cd ~/apps/Aido-platform
+flock -n ~/apps/deploy-state/deploy.lock python3 scripts/ops/update-app-version-env.py \
+  --ios <iOS 공개 버전> --android <Android 공개 버전> --enabled true --published \
+  --backup-dir ~/apps/deploy-state/backups apps/api/.env
+flock -n ~/apps/deploy-state/deploy.lock docker compose --env-file apps/api/.env -f docker-compose.prod.yml \
+  up -d --no-deps --no-build --pull never --force-recreate api
+```
+
+script는 링크를 거부하므로 옛 경로 `.env.docker.prod`가 아니라 `apps/api/.env`를 넘긴다. `docker compose config`로 확인할 때는 값이 찍히지 않게 `--quiet`를 붙인다.
 
 PR·stack 규칙은 [Git](../../../docs/conventions/git.md)에 있다. 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.

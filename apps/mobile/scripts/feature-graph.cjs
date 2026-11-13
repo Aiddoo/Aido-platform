@@ -296,6 +296,5 @@ function report(result) {
 }
 
 module.exports = report;
-module.exports.FEATURE_AREAS = FEATURE_AREAS;
 module.exports.FEATURE_LAYERS = FEATURE_LAYERS;
 module.exports.FEATURE_PATTERN = FEATURE_PATTERN;

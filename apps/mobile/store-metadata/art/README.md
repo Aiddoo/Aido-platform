@@ -10,10 +10,10 @@ pnpm --filter @aido/mobile store:art --out <폴더>                      # 최�
 pnpm --filter @aido/mobile store:art --out <폴더> --only scenes        # 캡처가 필요 없는 배너·이벤트만
 pnpm --filter @aido/mobile store:art todo --out <업로드 폴더>          # 캡처 전 폴더별 TODO.md
 pnpm --filter @aido/mobile store:art asset-names --out <파일.md>      # App Store 에셋 라이브러리 이름표
-pnpm --filter @aido/mobile test:store-art
+pnpm --filter @aido/mobile test:node
 ```
 
-옵션: `--captures <캡처 루트>`(기본 `~/Desktop/Aido-Screens-1.13.0`), `--only <scenes|screenshots|세트 id|대상 id|세트/대상>`(쉼표로 여러 개),
+옵션: `--captures <캡처 루트>`(기본 `~/Desktop/Aido-Screens-<앱 버전>`), `--only <scenes|screenshots|세트 id|대상 id|세트/대상>`(쉼표로 여러 개),
 `--locales ko,en`. 결과 폴더에 `index.html`(스토리보드 + 갤러리, 360px 썸네일)과 `manifest.json`을 써요.
 
 필요한 것: Google Chrome(또는 `CHROME_PATH`), Node 24. 브라우저 자동화는 Node 내장 WebSocket으로 DevTools

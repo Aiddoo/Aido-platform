@@ -1,8 +1,22 @@
+import type { SubscriptionEnvironment } from "@aido/api/vocabulary";
+
 import type { SubscriptionEventReceiptRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-receipt.repository.port";
+import { ProviderEventId } from "#api/modules/billing/subscriptions/domain/provider-event-id.vo";
+import { SubscriptionEventReceipt } from "#api/modules/billing/subscriptions/domain/subscription-event-receipt.entity";
 import { SUBSCRIPTION_FIXTURE_NOW } from "#test/fixtures/billing/subscription.fixture";
 
-function receipt(eventId: string) {
-  return { eventId, eventType: "INITIAL_PURCHASE", processedAt: SUBSCRIPTION_FIXTURE_NOW };
+function receipt(
+  eventId: string,
+  overrides: { readonly eventType?: string; readonly environment?: SubscriptionEnvironment } = {},
+) {
+  return SubscriptionEventReceipt.create({
+    provider: "REVENUECAT",
+    eventId: ProviderEventId.reconstitute(eventId),
+    eventType: "INITIAL_PURCHASE",
+    environment: null,
+    now: SUBSCRIPTION_FIXTURE_NOW,
+    ...overrides,
+  });
 }
 
 export function describeSubscriptionEventReceiptRepositoryContract(
@@ -38,7 +52,7 @@ export function describeSubscriptionEventReceiptRepositoryContract(
       await repository.claim(receipt("event-1"));
 
       // When
-      const claimedAgain = await repository.claim({ ...receipt("event-1"), eventType: "RENEWAL" });
+      const claimedAgain = await repository.claim(receipt("event-1", { eventType: "RENEWAL" }));
 
       // Then
       expect(claimedAgain).toBe(false);
@@ -56,19 +70,18 @@ export function describeSubscriptionEventReceiptRepositoryContract(
       expect([first, second]).toEqual([true, true]);
     });
 
-    it("환경은 생략하거나 null이거나 값이 있어도 기록한다", async () => {
+    it("환경은 null이거나 값이 있어도 기록한다", async () => {
       // Given
       const repository = await createRepository();
 
       // When
       const results = [
-        await repository.claim(receipt("event-omitted")),
-        await repository.claim({ ...receipt("event-null"), environment: null }),
-        await repository.claim({ ...receipt("event-sandbox"), environment: "SANDBOX" }),
+        await repository.claim(receipt("event-null")),
+        await repository.claim(receipt("event-sandbox", { environment: "SANDBOX" })),
       ];
 
       // Then
-      expect(results).toEqual([true, true, true]);
+      expect(results).toEqual([true, true]);
     });
   });
 }

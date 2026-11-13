@@ -6,11 +6,11 @@ import { Pool } from "pg";
 
 import { MemoLockKeys } from "#api/modules/notes/memos/application/memos.lock-keys";
 import { MemoRepositoryPort } from "#api/modules/notes/memos/application/ports/memo.repository.port";
+import { ChangeMemoPinnedUseCase } from "#api/modules/notes/memos/application/use-cases/change-memo-pinned.use-case";
 import { ConvertMemoToTodosUseCase } from "#api/modules/notes/memos/application/use-cases/convert-memo-to-todos.use-case";
 import { CreateMemoUseCase } from "#api/modules/notes/memos/application/use-cases/create-memo.use-case";
 import { ReorderMemoUseCase } from "#api/modules/notes/memos/application/use-cases/reorder-memo.use-case";
-import { SetMemoPinnedUseCase } from "#api/modules/notes/memos/application/use-cases/set-memo-pinned.use-case";
-import { UpdateMemoUseCase } from "#api/modules/notes/memos/application/use-cases/update-memo.use-case";
+import { RewriteMemoUseCase } from "#api/modules/notes/memos/application/use-cases/rewrite-memo.use-case";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
 import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import {
@@ -292,10 +292,10 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
         .get(ReorderMemoUseCase)
         .execute({ userId, memoId: source.id, targetMemoId: target.id, position: "after" }),
       context.module
-        .get(UpdateMemoUseCase)
+        .get(RewriteMemoUseCase)
         .execute({ userId, memoId: source.id, content: "동시에 고친 내용" }),
       context.module
-        .get(SetMemoPinnedUseCase)
+        .get(ChangeMemoPinnedUseCase)
         .execute({ userId, memoId: source.id, isPinned: true }),
     ]);
     const saved = await client.query.memo.findMany({
@@ -368,20 +368,22 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     const own = await seedMemo();
     const foreign = await seedMemo(1, otherUserId);
 
-    // When & Then: 거부 처리기를 만들 때 바로 걸어 먼저 끝난 거부가 처리되지 않은 채 남지 않게 한다
-    await expect(
-      context.module
-        .get(UpdateMemoUseCase)
-        .execute({ userId, memoId: foreign.id, content: "덮어쓰기" }),
-    ).rejects.toMatchObject({
+    // When
+    const rewriteFailure = await context.module
+      .get(RewriteMemoUseCase)
+      .execute({ userId, memoId: foreign.id, content: "덮어쓰기" })
+      .catch((error: unknown) => error);
+    const reorderFailure = await context.module
+      .get(ReorderMemoUseCase)
+      .execute({ userId, memoId: own.id, targetMemoId: foreign.id, position: "after" })
+      .catch((error: unknown) => error);
+
+    // Then
+    expect(rewriteFailure).toMatchObject({
       errorCode: ErrorCode.MEMO_2001,
       details: { memoId: foreign.id },
     });
-    await expect(
-      context.module
-        .get(ReorderMemoUseCase)
-        .execute({ userId, memoId: own.id, targetMemoId: foreign.id, position: "after" }),
-    ).rejects.toMatchObject({
+    expect(reorderFailure).toMatchObject({
       errorCode: ErrorCode.MEMO_2002,
       details: { targetMemoId: foreign.id },
     });
@@ -439,7 +441,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
         name: "update-content",
         run: () =>
           context.module
-            .get(UpdateMemoUseCase)
+            .get(RewriteMemoUseCase)
             .execute({ userId, memoId: source.id, content: "변경된 내용" }),
         expected: { total: 3, queries: 2, mutationLocks: 1, rangeUpdates: 0 },
       },

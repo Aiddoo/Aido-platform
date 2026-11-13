@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Controller, Get, Header, HttpStatus, Param, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
   CurrentUser,
@@ -14,6 +14,7 @@ import {
   ApiNotFoundError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
@@ -63,11 +64,7 @@ export class TodoCommentV2Controller {
 
   @Get()
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "할 일 댓글 묶음 목록 조회",
     operationId: "getTodoCommentThreads",
@@ -103,11 +100,7 @@ export class TodoCommentV2Controller {
 
   @Get(":commentId/replies")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "댓글 묶음의 답글 목록 조회",
     operationId: "getTodoCommentReplies",

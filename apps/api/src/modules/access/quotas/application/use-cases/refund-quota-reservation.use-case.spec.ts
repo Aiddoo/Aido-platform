@@ -44,14 +44,14 @@ describe("RefundQuotaReservationUseCase·CommitQuotaReservationUseCase — 확�
     expect([first, second]).toEqual([true, false]);
     expect(await fixture.used()).toBe(2);
     expect(reservation).toEqual({
-      chargeId: "charge-1",
+      chargeId: expect.any(String),
       userId: fixture.userId,
       feature: "AI_PARSE",
       attempt: 1,
       isAlreadyCommitted: false,
     });
     expect(Object.isFrozen(reservation)).toBe(true);
-    expect(fixture.chargeOf("charge-1")).toMatchObject({
+    expect(fixture.chargeOf(reservation.chargeId)).toMatchObject({
       meter: "AI_PLAN",
       idempotencyKey: null,
       status: "REFUNDED",
@@ -161,25 +161,25 @@ describe("RefundQuotaReservationUseCase·CommitQuotaReservationUseCase — 확�
     expect(fixture.logger.messages).toEqual([
       {
         event: "access.quota.reserved",
-        chargeId: "charge-1",
+        chargeId: committed.chargeId,
         meter: "AI_PLAN",
         reason: "parse-todo",
       },
       {
         event: "access.quota.committed",
-        chargeId: "charge-1",
+        chargeId: committed.chargeId,
         meter: "AI_PLAN",
         reason: "parse-todo",
       },
       {
         event: "access.quota.reserved",
-        chargeId: "charge-2",
+        chargeId: refunded.chargeId,
         meter: "AI_PLAN",
         reason: "parse-todo",
       },
       {
         event: "access.quota.refunded",
-        chargeId: "charge-2",
+        chargeId: refunded.chargeId,
         meter: "AI_PLAN",
         reason: "NO_ACTION",
       },

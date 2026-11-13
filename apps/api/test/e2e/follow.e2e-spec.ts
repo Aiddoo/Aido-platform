@@ -14,6 +14,15 @@
  */
 
 import request from "supertest";
+import { match } from "ts-pattern";
+
+import {
+  NOTIFICATION_QUEUE,
+  NotificationJobName,
+  NotificationRuntimeJobSchema,
+} from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
 import {
   createE2eApp,
@@ -577,6 +586,47 @@ describe("팔로우 E2E", () => {
       // Then - 검색과 페이지네이션 함께 동작 검증
       expect(response.body.success).toBe(true);
       expect(response.body.data.friends.length).toBeLessThanOrEqual(5);
+    });
+  });
+
+  describe("알림 보낸 사람 표시 이름", () => {
+    it("이름이 없는 사용자가 보낸 친구 요청·응원 알림 작업은 보낸 사람 이름이 Aido ID다", async () => {
+      // Given
+      const nameless = await ctx.helpers.createVerifiedUser(
+        "nameless-sender@example.com",
+        "Test1234!",
+      );
+      const receiver = await ctx.helpers.createVerifiedUser(
+        "named-receiver@example.com",
+        "Test1234!",
+        { name: "받는 사람" },
+      );
+      await request(ctx.app.getHttpServer())
+        .post(`/v1/follows/${receiver.userTag}`)
+        .set("Authorization", `Bearer ${nameless.accessToken}`)
+        .expect(201);
+      await request(ctx.app.getHttpServer())
+        .patch(`/v1/follows/${nameless.userId}/accept`)
+        .set("Authorization", `Bearer ${receiver.accessToken}`)
+        .expect(200);
+
+      // When
+      await request(ctx.app.getHttpServer())
+        .post("/v1/cheers")
+        .set("Authorization", `Bearer ${nameless.accessToken}`)
+        .send({ receiverId: receiver.userId })
+        .expect(201);
+      const jobQueue = ctx.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
+
+      // Then
+      const senderNames = jobQueue.jobsIn(NOTIFICATION_QUEUE).flatMap((job) => {
+        const notification = NotificationRuntimeJobSchema.parse(job.payload);
+        return match(notification)
+          .with({ name: NotificationJobName.FOLLOW_NEW }, ({ data }) => [data.followerName])
+          .with({ name: NotificationJobName.CHEER_SENT }, ({ data }) => [data.senderName])
+          .otherwise(() => []);
+      });
+      expect(senderNames).toEqual([nameless.userTag, nameless.userTag]);
     });
   });
 });

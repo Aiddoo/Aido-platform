@@ -13,13 +13,14 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -30,9 +31,10 @@ import {
   ApiNotFoundError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
@@ -73,6 +75,7 @@ import {
   SendFriendRequestResponseDto,
   SentRequestsResponseDto,
   UserTagParamDto,
+  FollowIdParamDto,
 } from "./follow.dto.js";
 
 /**
@@ -90,7 +93,7 @@ const FRIEND_REQUEST_THROTTLE = { ttl: 60_000, limit: 30 } as const;
 
 @ApiTags(SWAGGER_TAGS.FOLLOWS)
 @ApiBearerAuth()
-@Controller("follows")
+@Controller({ path: "follows", version: API_VERSION.V1 })
 export class FollowController {
   readonly #sendFriendRequestByTagUseCase: SendFriendRequestByTagUseCase;
   readonly #acceptFriendRequestUseCase: AcceptFriendRequestUseCase;
@@ -147,7 +150,7 @@ export class FollowController {
 
 사용자마다 분당 30회까지 보낼 수 있고, 넘으면 429(SYS_0001)를 돌려줍니다.`,
   })
-  @ApiCreatedResponse({ type: SendFriendRequestResponseDto })
+  @ApiCreatedSuccessResponse({ type: SendFriendRequestResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.FOLLOW_0904)
   @ApiNotFoundError(ErrorCode.FOLLOW_0905)
@@ -168,11 +171,7 @@ export class FollowController {
   @Patch(":userId/accept")
   @HttpCode(HttpStatus.OK)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiParam({
     name: "userId",
     description: "수락할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
@@ -261,16 +260,7 @@ export class FollowController {
   @Patch("friends/:followId/reorder")
   @HttpCode(HttpStatus.OK)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
-  @ApiParam({
-    name: "followId",
-    description: "순서를 변경할 친구의 팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)",
-    example: "clz7x5p8k0010qz0z8z8z8z8z",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "친구 순서 변경",
     operationId: "reorderFriend",
@@ -285,13 +275,13 @@ export class FollowController {
   @ApiNotFoundError(ErrorCode.FOLLOW_0910)
   async reorderFriend(
     @CurrentUser() user: CurrentUserPayload,
-    @Param("followId") followId: string,
+    @Param({ schema: FollowIdParamDto }) params: FollowIdParamDto,
     @Body({ schema: ReorderFriendDto }) dto: ReorderFriendDto,
     @AppVersion() appVersion?: string,
   ): Promise<ReorderFriendResponseDto> {
     const friend = await this.#reorderFriendUseCase.execute({
       userId: user.userId,
-      friendshipId: followId,
+      friendshipId: params.followId,
       targetFriendshipId: dto.targetFollowId,
       position: dto.position,
     });
@@ -318,11 +308,7 @@ export class FollowController {
 
   @Get("friends")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "친구 목록 조회",
     operationId: "getFriends",
@@ -356,11 +342,7 @@ export class FollowController {
 
   @Get("search")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "사용자 검색 (이름 또는 Aido ID)",
     operationId: "searchUsers",
@@ -394,11 +376,7 @@ export class FollowController {
 
   @Get("requests/received")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "받은 친구 요청 목록",
     operationId: "getReceivedFriendRequests",
@@ -426,11 +404,7 @@ export class FollowController {
 
   @Get("requests/sent")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "보낸 친구 요청 목록",
     operationId: "getSentFriendRequests",

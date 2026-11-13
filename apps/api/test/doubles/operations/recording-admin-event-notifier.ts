@@ -1,19 +1,19 @@
-import type { UserRegisteredEventPayload } from "#api/modules/operations/admin-notices/application/read-models/user-registered.read-model";
 import {
   AdminEventNotifierPort,
-  type SubscriptionAlertInput,
-} from "#api/modules/operations/admin-notices/operations-admin-notices.public";
+  type SubscriptionNoticeInput,
+  type UserRegisteredNoticeInput,
+} from "#api/modules/operations/admin-notices/application/ports/admin-event-notifier.port";
 
 // 큐에 올리지 않고 받은 관리자 알림 요청만 기록한다
 export class RecordingAdminEventNotifier extends AdminEventNotifierPort {
-  readonly userRegistrations: UserRegisteredEventPayload[] = [];
-  readonly subscriptionEvents: SubscriptionAlertInput[] = [];
+  readonly userRegistrations: UserRegisteredNoticeInput[] = [];
+  readonly subscriptionEvents: SubscriptionNoticeInput[] = [];
 
-  notifyUserRegistered(payload: UserRegisteredEventPayload): void {
+  notifyUserRegistered(payload: UserRegisteredNoticeInput): void {
     this.userRegistrations.push(payload);
   }
 
-  notifySubscriptionEvent(payload: SubscriptionAlertInput): void {
+  notifySubscriptionEvent(payload: SubscriptionNoticeInput): void {
     this.subscriptionEvents.push(payload);
   }
 }

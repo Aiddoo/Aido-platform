@@ -10,7 +10,7 @@ import {
   Query,
   UseInterceptors,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import {
@@ -26,6 +26,7 @@ import {
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
@@ -58,12 +59,6 @@ import {
 import { NudgeIdParamDto } from "./nudge.dto.js";
 
 const NUDGE_INTERACTION_THROTTLE = { ttl: 60_000, limit: 30 } as const;
-
-const APP_VERSION_HEADER = {
-  name: "x-app-version",
-  required: false,
-  description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-} as const;
 
 const DISABLED_NOT_FOUND_CODES = [ErrorCode.NUDGE_1105, ErrorCode.NUDGE_1111] as const;
 
@@ -110,7 +105,7 @@ export class NudgeInteractionController {
 
   @Get("interactions")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader(APP_VERSION_HEADER)
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "주고받은 콕 목록 조회",
     operationId: "getNudgeInteractions",
@@ -136,7 +131,7 @@ export class NudgeInteractionController {
 
   @Get(":id/interaction")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader(APP_VERSION_HEADER)
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "콕 답장·감사 상태 조회",
     operationId: "getNudgeInteraction",
@@ -162,7 +157,7 @@ export class NudgeInteractionController {
   @ThrottleByUser()
   @Throttle({ default: NUDGE_INTERACTION_THROTTLE })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader(APP_VERSION_HEADER)
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "받은 콕에 답장",
     operationId: "replyToNudge",
@@ -190,7 +185,7 @@ export class NudgeInteractionController {
 
   @Get("todos/:todoId/thanks")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader(APP_VERSION_HEADER)
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "감사를 받을 친구 미리보기",
     operationId: "getNudgeThanksPreview",

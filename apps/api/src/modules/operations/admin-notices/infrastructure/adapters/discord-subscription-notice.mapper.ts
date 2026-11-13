@@ -3,10 +3,10 @@ import type { StorePeriodType, SubscriptionPlanType } from "@aido/api/vocabulary
 import type {
   AdminNoticeUser,
   SubscriptionNotice,
-  SubscriptionNoticeEvent,
   SubscriptionNoticePremium,
   SubscriptionNoticePrice,
 } from "../../application/read-models/admin-notice.read-model.js";
+import type { SubscriptionNoticeEvent } from "../../domain/admin-notices.constants.js";
 import {
   daysUntil,
   type DiscordEmbed,

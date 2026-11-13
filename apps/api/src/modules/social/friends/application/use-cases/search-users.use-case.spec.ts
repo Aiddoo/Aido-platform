@@ -4,8 +4,8 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { StubFriendSearchReader } from "#test/doubles/social/stub-friend-search-reader";
 import { FRIENDSHIP_FIXTURE_USER_ID } from "#test/fixtures/social/friendship.fixture";
 
+import { UserSearchCursor } from "../../domain/user-search-cursor.vo.js";
 import type { UserSearchResultReadModel } from "../read-models/user-search-result.read-model.js";
-import { encodeUserSearchCursor } from "../user-search-cursor.mapper.js";
 import { SearchUsersUseCase } from "./search-users.use-case.js";
 
 const VIEWER = FRIENDSHIP_FIXTURE_USER_ID;
@@ -64,7 +64,10 @@ describe("SearchUsersUseCase — 사용자 검색", () => {
     expect(first.page.items.map((item) => item.user.id)).toEqual(["first", "second"]);
     expect(first.page.pagination).toMatchObject({
       hasNext: true,
-      nextCursor: encodeUserSearchCursor({ position: { rank: 2, id: "second" }, totalCount: 3 }),
+      nextCursor: UserSearchCursor.reconstitute({
+        position: { rank: 2, id: "second" },
+        totalCount: 3,
+      }).toString(),
     });
     expect(searchReader.searches[1]?.after).toEqual({ rank: 2, id: "second" });
   });
@@ -82,14 +85,14 @@ describe("SearchUsersUseCase — 사용자 검색", () => {
       viewerId: VIEWER,
       query: "존",
       size: 1,
-      cursor: encodeUserSearchCursor({ position, totalCount: 7 }),
+      cursor: UserSearchCursor.reconstitute({ position, totalCount: 7 }).toString(),
     });
     const countsBeforeLegacy = searchReader.countCalls;
     const legacy = await useCase.execute({
       viewerId: VIEWER,
       query: "존",
       size: 1,
-      cursor: encodeUserSearchCursor({ position, totalCount: null }),
+      cursor: UserSearchCursor.reconstitute({ position, totalCount: null }).toString(),
     });
 
     // Then
@@ -102,7 +105,10 @@ describe("SearchUsersUseCase — 사용자 검색", () => {
       counts: 1,
     });
     expect(legacy.page.pagination.nextCursor).toBe(
-      encodeUserSearchCursor({ position: { rank: 0, id: "first" }, totalCount: 9 }),
+      UserSearchCursor.reconstitute({
+        position: { rank: 0, id: "first" },
+        totalCount: 9,
+      }).toString(),
     );
   });
 

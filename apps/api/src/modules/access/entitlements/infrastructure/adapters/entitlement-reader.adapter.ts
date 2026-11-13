@@ -5,6 +5,12 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import {
+  resolveFeatureEntitlement,
+  resolveFeatureEntitlements,
+  resolveFeatureQuota,
+  type FeatureEntitlement,
+} from "../../../shared/domain/entitlement.domain-service.js";
+import {
   EntitlementReaderPort,
   type ReportedFeatureUsage,
   type UnmeteredLimitFeatureKey,
@@ -19,20 +25,13 @@ import type {
   ResolvedAccess,
 } from "../../application/read-models/resolved-access.read-model.js";
 import { GetResolvedAccessUseCase } from "../../application/use-cases/get-resolved-access.use-case.js";
-import {
-  resolveFeatureEntitlement,
-  resolveFeatureEntitlements,
-  resolveFeatureQuota,
-  type FeatureEntitlement,
-} from "../../domain/entitlement.domain-service.js";
 
 // 다른 Context에 여는 문. 판단은 도메인 서비스가 하고 다른 Context가 아직 쓰는 Date는 이 경계에서 바꾼다
 @Injectable()
-export class EntitlementReaderAdapter extends EntitlementReaderPort {
+export class EntitlementReaderAdapter implements EntitlementReaderPort {
   readonly #getResolvedAccess: Pick<GetResolvedAccessUseCase, "execute">;
 
   constructor(getResolvedAccess: GetResolvedAccessUseCase) {
-    super();
     this.#getResolvedAccess = getResolvedAccess;
   }
 

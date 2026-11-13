@@ -1,24 +1,23 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { subscription } from "#api/platform/database/schema/billing.schema";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { SubscriptionRepositoryPort } from "../../application/ports/subscription.repository.port.js";
+import type { SubscriptionRepositoryPort } from "../../application/ports/subscription.repository.port.js";
 import type { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
 import { SubscriptionId } from "../../domain/subscription-id.vo.js";
 import type { Subscription } from "../../domain/subscription.aggregate.js";
 import { toSubscription, toSubscriptionRow } from "./subscription-row.mapper.js";
 
 @Injectable()
-export class DrizzleSubscriptionRepository extends SubscriptionRepositoryPort {
+export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 
@@ -34,7 +33,7 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepositoryPort {
     storeSubscriptionId: StoreSubscriptionId,
   ): Promise<Subscription | null> {
     const row = await this.#db.query.subscription.findFirst({
-      where: { revenueCatId: storeSubscriptionId.value },
+      where: { storeSubscriptionId: storeSubscriptionId.value },
     });
     return row == null ? null : toSubscription(row);
   }
@@ -59,24 +58,6 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepositoryPort {
     return count > 0;
   }
 
-  async claimChain(
-    storeSubscriptionId: StoreSubscriptionId,
-    userId: UserId,
-    now: Temporal.Instant,
-  ): Promise<boolean> {
-    const claimed = await this.#db
-      .update(subscription)
-      .set({ userId: userId.value, updatedAt: now })
-      .where(
-        and(
-          eq(subscription.revenueCatId, storeSubscriptionId.value),
-          ne(subscription.userId, userId.value),
-        ),
-      )
-      .returning({ id: subscription.id });
-    return claimed.length > 0;
-  }
-
   async takeOverChains(
     fromUserId: UserId,
     toUserId: UserId,
@@ -97,8 +78,9 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepositoryPort {
       .values(row)
       .onConflictDoUpdate({
         target: subscription.id,
-        // 소유자·시작 시각·결제 환경·안내 표시는 바꾸지 않는다. 소유자는 claimChain이 옮긴다
+        // 시작 시각·결제 환경·안내 표시는 바꾸지 않는다
         set: {
+          userId: row.userId,
           productId: row.productId,
           status: row.status,
           expiresAt: row.expiresAt,

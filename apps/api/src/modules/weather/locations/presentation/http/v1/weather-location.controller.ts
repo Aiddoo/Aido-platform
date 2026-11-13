@@ -10,17 +10,17 @@ import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.const
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
-import { UpsertUserLocationUseCase } from "../../../application/use-cases/upsert-user-location.use-case.js";
+import { RegisterUserLocationUseCase } from "../../../application/use-cases/register-user-location.use-case.js";
 import { LocationResponseDto, UpdateLocationDto } from "./weather-location.dto.js";
 
 @ApiTags(SWAGGER_TAGS.WEATHER_V1)
 @ApiBearerAuth()
 @Controller({ path: "weather", version: API_VERSION.V1 })
 export class WeatherLocationController {
-  readonly #upsertLocation: UpsertUserLocationUseCase;
+  readonly #registerLocation: RegisterUserLocationUseCase;
 
-  constructor(upsertLocation: UpsertUserLocationUseCase) {
-    this.#upsertLocation = upsertLocation;
+  constructor(registerLocation: RegisterUserLocationUseCase) {
+    this.#registerLocation = registerLocation;
   }
 
   @Put("location")
@@ -51,13 +51,13 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: UpdateLocationDto }) dto: UpdateLocationDto,
   ) {
-    const { location } = await this.#upsertLocation.execute({
+    const { location } = await this.#registerLocation.execute({
       userId: user.userId,
       latitude: dto.latitude,
       longitude: dto.longitude,
     });
     // DTO가 한국 범위만 받으므로 격자는 항상 있다.
-    const grid = location.requireKmaGrid();
+    const grid = location.requireForecastGrid();
     return {
       latitude: location.latitude,
       longitude: location.longitude,

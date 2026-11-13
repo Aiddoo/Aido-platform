@@ -1,7 +1,7 @@
 import { DrizzleTodoScheduleReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-schedule.reader";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoCategoryFixture, TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";

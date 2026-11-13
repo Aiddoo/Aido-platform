@@ -1,11 +1,11 @@
+import type { CheerCountCachePort } from "#api/modules/social/cheers/social-cheers.public";
+import { FriendLockKeys } from "#api/modules/social/friends/social-friends.public";
+import type { NudgeCountCachePort } from "#api/modules/social/nudges/social-nudges.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { CheerCountCachePort } from "../../../cheers/application/ports/cheer-count-cache.port.js";
-import { FriendLockKeys } from "../../../friends/application/friends.lock-keys.js";
-import type { NudgeCountCachePort } from "../../../nudges/application/ports/nudge-count-cache.port.js";
 import { BlockLogEvent } from "../blocks.log-events.js";
 import type { UserBlockRepositoryPort } from "../ports/user-block.repository.port.js";
 

@@ -1,18 +1,11 @@
-import { type ExecutionContext, SetMetadata } from "@nestjs/common";
-import type { Reflector } from "@nestjs/core";
+import type { ExecutionContext } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 
-const RAW_RESPONSE_KEY = "rawResponse";
-
-/**
- * Excludes a narrowly scoped endpoint from the global success-response wrapper.
- */
-export const RawResponse = () => SetMetadata(RAW_RESPONSE_KEY, true);
+/** 성공 envelope로 감싸지 않는 endpoint. 출시 계약 두 곳만 쓰고 새 raw 응답은 만들지 않는다. */
+export const RawResponse = Reflector.createDecorator<void, true>({ transform: () => true });
 
 export function isRawResponse(reflector: Reflector, context: ExecutionContext): boolean {
   return (
-    reflector.getAllAndOverride<boolean | undefined>(RAW_RESPONSE_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]) === true
+    reflector.getAllAndOverride(RawResponse, [context.getHandler(), context.getClass()]) === true
   );
 }

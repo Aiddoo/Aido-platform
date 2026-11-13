@@ -8,13 +8,12 @@ import {
   isUniqueConstraintViolation,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge } from "#api/platform/database/schema/access.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { QuotaChargeRepositoryPort } from "../../application/ports/quota-charge.repository.port.js";
+import type { QuotaChargeRepositoryPort } from "../../application/ports/quota-charge.repository.port.js";
 import { quotaChargeConflict } from "../../application/quotas.errors.js";
-import { QuotaChargeId } from "../../domain/quota-charge-id.vo.js";
+import type { QuotaChargeId } from "../../domain/quota-charge-id.vo.js";
 import type { QuotaCharge, QuotaChargeVersion } from "../../domain/quota-charge.aggregate.js";
 import { toQuotaCharge, toQuotaChargeRow } from "./quota-charge-row.mapper.js";
 
@@ -22,20 +21,15 @@ const IDEMPOTENCY_KEY_CONSTRAINT = "QuotaCharge_userId_meter_idempotencyKey_key"
 
 /** 예약·환불은 Application이 잡은 사용자 행 잠금 안에서 실행된다. */
 @Injectable()
-export class DrizzleQuotaChargeRepository extends QuotaChargeRepositoryPort {
+export class DrizzleQuotaChargeRepository implements QuotaChargeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 
   get #db() {
     return this.#txHost.tx;
-  }
-
-  async nextId(): Promise<QuotaChargeId> {
-    return QuotaChargeId.reconstitute(createEntityId());
   }
 
   async findById(chargeId: QuotaChargeId): Promise<QuotaCharge | null> {

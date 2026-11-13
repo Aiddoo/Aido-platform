@@ -12,13 +12,14 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -29,15 +30,17 @@ import {
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { DeleteTodoCommentUseCase } from "../../../application/use-cases/delete-todo-comment.use-case.js";
+import { EditTodoCommentUseCase } from "../../../application/use-cases/edit-todo-comment.use-case.js";
 import { GetTodoConversationUseCase } from "../../../application/use-cases/get-todo-conversation.use-case.js";
 import { GetTodoDetailsUseCase } from "../../../application/use-cases/get-todo-details.use-case.js";
 import { LikeTodoCommentUseCase } from "../../../application/use-cases/like-todo-comment.use-case.js";
@@ -46,7 +49,6 @@ import {
   type TodoCommentThreadsPageRequest,
 } from "../../../application/use-cases/list-todo-comment-threads.use-case.js";
 import { UnlikeTodoCommentUseCase } from "../../../application/use-cases/unlike-todo-comment.use-case.js";
-import { UpdateTodoCommentUseCase } from "../../../application/use-cases/update-todo-comment.use-case.js";
 import { WriteTodoCommentChainUseCase } from "../../../application/use-cases/write-todo-comment-chain.use-case.js";
 import {
   toTodoCommentChainResponse,
@@ -83,13 +85,13 @@ const DEPRECATED_READ_DESCRIPTION =
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
-@Controller("todos/:todoId")
+@Controller({ path: "todos/:todoId", version: API_VERSION.V1 })
 export class TodoCommentController {
   readonly #getTodoDetails: GetTodoDetailsUseCase;
   readonly #getTodoCommentThreads: ListTodoCommentThreadsUseCase;
   readonly #getTodoConversation: GetTodoConversationUseCase;
   readonly #writeTodoCommentChain: WriteTodoCommentChainUseCase;
-  readonly #updateTodoComment: UpdateTodoCommentUseCase;
+  readonly #editTodoComment: EditTodoCommentUseCase;
   readonly #deleteTodoComment: DeleteTodoCommentUseCase;
   readonly #likeTodoComment: LikeTodoCommentUseCase;
   readonly #unlikeTodoComment: UnlikeTodoCommentUseCase;
@@ -99,7 +101,7 @@ export class TodoCommentController {
     getTodoCommentThreads: ListTodoCommentThreadsUseCase,
     getTodoConversation: GetTodoConversationUseCase,
     writeTodoCommentChain: WriteTodoCommentChainUseCase,
-    updateTodoComment: UpdateTodoCommentUseCase,
+    editTodoComment: EditTodoCommentUseCase,
     deleteTodoComment: DeleteTodoCommentUseCase,
     likeTodoComment: LikeTodoCommentUseCase,
     unlikeTodoComment: UnlikeTodoCommentUseCase,
@@ -108,7 +110,7 @@ export class TodoCommentController {
     this.#getTodoCommentThreads = getTodoCommentThreads;
     this.#getTodoConversation = getTodoConversation;
     this.#writeTodoCommentChain = writeTodoCommentChain;
-    this.#updateTodoComment = updateTodoComment;
+    this.#editTodoComment = editTodoComment;
     this.#deleteTodoComment = deleteTodoComment;
     this.#likeTodoComment = likeTodoComment;
     this.#unlikeTodoComment = unlikeTodoComment;
@@ -116,11 +118,7 @@ export class TodoCommentController {
 
   @Get("details")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "댓글 화면용 할 일 상세 조회",
     operationId: "getTodoDetails",
@@ -145,11 +143,7 @@ export class TodoCommentController {
 
   @Get("comments/overview")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "할 일 댓글 개요 조회",
     operationId: "getTodoCommentOverview",
@@ -178,11 +172,7 @@ export class TodoCommentController {
 
   @Get("conversation")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "할 일 댓글 대화 조회",
     operationId: "getTodoConversation",
@@ -215,18 +205,14 @@ export class TodoCommentController {
   @ThrottleByUser()
   @Throttle(TODO_COMMENT_THROTTLE.WRITE)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "할 일 댓글 작성 (한 번에 이어 쓰기 가능)",
     operationId: "createTodoComment",
     description:
       "parentId가 없으면 새 댓글, 있으면 그 글이 속한 묶음 끝에 답글로 붙습니다(답글에 답해도 2단계). 이어 쓴 글은 같은 묶음에 각자 앞 글에 답하며 붙습니다. 사용자마다 분당 30회까지입니다.",
   })
-  @ApiCreatedResponse({ type: TodoCommentChainResponseDto })
+  @ApiCreatedSuccessResponse({ type: TodoCommentChainResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.BLOCK_2204)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])
@@ -252,11 +238,7 @@ export class TodoCommentController {
   @ThrottleByUser()
   @Throttle(TODO_COMMENT_THROTTLE.WRITE)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "본인 댓글 수정",
     operationId: "updateTodoComment",
@@ -276,7 +258,7 @@ export class TodoCommentController {
 
     @AppVersion() appVersion?: string,
   ): Promise<TodoCommentMutationResponseDto> {
-    const result = await this.#updateTodoComment.execute({
+    const result = await this.#editTodoComment.execute({
       todoId: params.todoId,
       commentId: params.commentId,
       userId: user.userId,

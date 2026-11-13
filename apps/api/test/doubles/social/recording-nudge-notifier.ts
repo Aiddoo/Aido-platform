@@ -10,7 +10,7 @@ export class RecordingNudgeNotifier extends NudgeNotifierPort {
   readonly interactions: NudgeInteractionNotification[] = [];
   readonly interactionBatchSizes: number[] = [];
 
-  notifyNudgeSent(notification: NudgeSentNotification): void {
+  async notifyNudgeSent(notification: NudgeSentNotification): Promise<void> {
     this.sent.push(notification);
   }
 

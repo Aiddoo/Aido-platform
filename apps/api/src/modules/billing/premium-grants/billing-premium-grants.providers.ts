@@ -6,23 +6,22 @@ import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { BillingUserLockPort } from "./application/ports/billing-user-lock.port.js";
+import { QuietHoursReaderPort } from "../shared/application/ports/quiet-hours.reader.port.js";
+import { SweepBillingNoticesUseCase } from "../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import { PremiumAccessCachePort } from "./application/ports/premium-access-cache.port.js";
 import { PremiumAccessReaderPort } from "./application/ports/premium-access.reader.port.js";
 import { PremiumGrantEndingNoticeRepositoryPort } from "./application/ports/premium-grant-ending-notice.repository.port.js";
 import { PremiumGrantNotifierPort } from "./application/ports/premium-grant-notifier.port.js";
 import { PremiumGrantRepositoryPort } from "./application/ports/premium-grant.repository.port.js";
 import { PremiumGranterPort } from "./application/ports/premium-granter.port.js";
-import { QuietHoursReaderPort } from "./application/ports/quiet-hours.reader.port.js";
 import { StoreEntitlementReaderPort } from "./application/ports/store-entitlement.reader.port.js";
 import { UserSubscriptionProjectionRepositoryPort } from "./application/ports/user-subscription-projection.repository.port.js";
 import { GetPremiumAccessUseCase } from "./application/use-cases/get-premium-access.use-case.js";
+import { GetPremiumEntitlementsUseCase } from "./application/use-cases/get-premium-entitlements.use-case.js";
 import { GrantPremiumUseCase } from "./application/use-cases/grant-premium.use-case.js";
-import { LoadPremiumEntitlementsUseCase } from "./application/use-cases/load-premium-entitlements.use-case.js";
 import { NotifyEndingPremiumGrantsUseCase } from "./application/use-cases/notify-ending-premium-grants.use-case.js";
 import { ProjectPremiumAccessUseCase } from "./application/use-cases/project-premium-access.use-case.js";
 import { RevokePremiumGrantUseCase } from "./application/use-cases/revoke-premium-grant.use-case.js";
-import { SweepBillingNoticesUseCase } from "./application/use-cases/sweep-billing-notices.use-case.js";
 import { SweepPremiumGrantsUseCase } from "./application/use-cases/sweep-premium-grants.use-case.js";
 import { PremiumAccessCacheAdapter } from "./infrastructure/adapters/premium-access-cache.adapter.js";
 import { PremiumAccessReaderAdapter } from "./infrastructure/adapters/premium-access-reader.adapter.js";
@@ -48,29 +47,27 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
   { provide: PremiumAccessCachePort, useClass: PremiumAccessCacheAdapter },
   { provide: PremiumGrantNotifierPort, useClass: PremiumGrantNotifierAdapter },
   { provide: QuietHoursReaderPort, useClass: QuietHoursReaderAdapter },
-  // 사용자 행 잠금은 identity가 소유한다
-  { provide: BillingUserLockPort, useExisting: UserMutationLockPort },
   { provide: PremiumGranterPort, useClass: PremiumGranterAdapter },
   { provide: PremiumAccessReaderPort, useClass: PremiumAccessReaderAdapter },
-  provideUseCase(LoadPremiumEntitlementsUseCase, {
+  provideUseCase(GetPremiumEntitlementsUseCase, {
     storeEntitlementReader: StoreEntitlementReaderPort,
     premiumGrantRepository: PremiumGrantRepositoryPort,
   }),
   provideUseCase(ProjectPremiumAccessUseCase, {
-    loadPremiumEntitlements: LoadPremiumEntitlementsUseCase,
+    getPremiumEntitlements: GetPremiumEntitlementsUseCase,
     premiumGrantRepository: PremiumGrantRepositoryPort,
     userSubscriptionProjection: UserSubscriptionProjectionRepositoryPort,
   }),
   provideUseCase(GetPremiumAccessUseCase, {
-    loadPremiumEntitlements: LoadPremiumEntitlementsUseCase,
+    getPremiumEntitlements: GetPremiumEntitlementsUseCase,
     premiumGrantRepository: PremiumGrantRepositoryPort,
     clock: ClockPort,
   }),
   provideUseCase(GrantPremiumUseCase, {
     premiumGrantRepository: PremiumGrantRepositoryPort,
-    loadPremiumEntitlements: LoadPremiumEntitlementsUseCase,
+    getPremiumEntitlements: GetPremiumEntitlementsUseCase,
     projectPremiumAccess: ProjectPremiumAccessUseCase,
-    userLock: BillingUserLockPort,
+    userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,
     afterCommit: AfterCommitTaskRegistryPort,
     cache: PremiumAccessCachePort,
@@ -81,7 +78,7 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
     premiumGrantRepository: PremiumGrantRepositoryPort,
     userSubscriptionProjection: UserSubscriptionProjectionRepositoryPort,
     projectPremiumAccess: ProjectPremiumAccessUseCase,
-    userLock: BillingUserLockPort,
+    userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,
     cache: PremiumAccessCachePort,
     logger: loggerFor(SweepPremiumGrantsUseCase),
@@ -89,7 +86,7 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
   provideUseCase(RevokePremiumGrantUseCase, {
     premiumGrantRepository: PremiumGrantRepositoryPort,
     projectPremiumAccess: ProjectPremiumAccessUseCase,
-    userLock: BillingUserLockPort,
+    userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,
     cache: PremiumAccessCachePort,
     logger: loggerFor(RevokePremiumGrantUseCase),

@@ -13,9 +13,9 @@ import {
 import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import {
@@ -360,11 +360,11 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const receiverId = await createUser("PGRANT0T");
     await client
       .update(userTable)
-      .set({ revenueCatUserId: giverAppUserId })
+      .set({ storeAppUserId: giverAppUserId })
       .where(eq(userTable.id, userId));
     await client
       .update(userTable)
-      .set({ revenueCatUserId: receiverAppUserId })
+      .set({ storeAppUserId: receiverAppUserId })
       .where(eq(userTable.id, receiverId));
     await givenStoreSubscription();
 
@@ -389,7 +389,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(
       await client.query.subscription.findMany({
         columns: { userId: true },
-        where: { revenueCatId: TRANSACTION_ID },
+        where: { storeSubscriptionId: TRANSACTION_ID },
       }),
     ).toEqual([{ userId: receiverId }]);
     expect(await entitlement.canInTx(UserId.reconstitute(receiverId), "AI_REPORT")).toBe(true);
@@ -958,7 +958,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // Then
     expect(first).toHaveLength(1);
     expect(rest).toHaveLength(2);
-    expect(new Set([...first, ...rest].map((notice) => notice.userId))).toEqual(new Set(userIds));
+    expect(new Set([...first, ...rest].map((notice) => notice.userId.value))).toEqual(
+      new Set(userIds),
+    );
   });
   it("만료 웹훅을 잃은 자동 갱신 구독자는 유예 안에서는 그대로 두고 유예가 지나면 sweep이 FREE로 정리한다", async () => {
     // Given

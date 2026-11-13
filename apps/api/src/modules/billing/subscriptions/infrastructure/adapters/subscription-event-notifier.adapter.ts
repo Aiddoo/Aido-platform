@@ -1,25 +1,22 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
 import {
   AdminEventNotifierPort,
-  type SubscriptionAlertInput,
+  type SubscriptionNoticeInput,
 } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import {
-  type StoreSubscriptionEventFailureContext,
+import { StoreCustomerConsolePort } from "../../application/ports/store-customer-console.port.js";
+import type {
+  StoreSubscriptionEventFailureContext,
   SubscriptionEventNotifierPort,
 } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
-import {
-  type BillingSubscriptionsConfig,
-  billingSubscriptionsConfig,
-} from "../../billing-subscriptions.config.js";
 
 /**
  * 구독 이벤트 알림 어댑터.
@@ -28,28 +25,27 @@ import {
  * notification 큐에 기록해 처리 원장과 함께 커밋한다. 웹훅 처리 실패는 운영 경보로 올린다.
  */
 @Injectable()
-export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierPort {
+export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifierPort {
   readonly #adminEventNotifier: AdminEventNotifierPort;
   readonly #notificationQueueService: NotificationQueueAdapter;
   readonly #alert: OperationalAlertPort;
-  readonly #config: Pick<BillingSubscriptionsConfig, "revenuecat">;
+  readonly #customerConsole: StoreCustomerConsolePort;
 
   constructor(
     adminEventNotifier: AdminEventNotifierPort,
     notificationQueueService: NotificationQueueAdapter,
     alert: OperationalAlertPort,
-    @Inject(billingSubscriptionsConfig.KEY) config: Pick<BillingSubscriptionsConfig, "revenuecat">,
+    customerConsole: StoreCustomerConsolePort,
   ) {
-    super();
     this.#adminEventNotifier = adminEventNotifier;
     this.#notificationQueueService = notificationQueueService;
     this.#alert = alert;
-    this.#config = config;
+    this.#customerConsole = customerConsole;
   }
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
     this.#adminEventNotifier.notifySubscriptionEvent(
-      toSubscriptionAlertInput(payload, this.#providerCustomerUrl(payload.appUserId)),
+      toSubscriptionNoticeInput(payload, this.#providerCustomerUrl(payload.appUserId)),
     );
   }
 
@@ -77,16 +73,15 @@ export class SubscriptionEventNotifierAdapter extends SubscriptionEventNotifierP
   }
 
   #providerCustomerUrl(appUserId: string | undefined): string | undefined {
-    const projectId = this.#config.revenuecat.projectId;
-    if (projectId == null || appUserId == null) {
+    if (appUserId == null) {
       return undefined;
     }
-    return `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(appUserId)}`;
+    return this.#customerConsole.customerUrlOf(appUserId) ?? undefined;
   }
 }
 
 // operations가 소유한 입력 모양으로 한 필드씩 옮긴다. 앱 사용자 ID 같은 billing 내부 값은 넘기지 않는다
-function toSubscriptionAlertInput(
+function toSubscriptionNoticeInput(
   payload: SubscriptionEventPayload,
   providerCustomerUrl: string | undefined,
 ) {
@@ -120,5 +115,5 @@ function toSubscriptionAlertInput(
     lifecycle: payload.lifecycle,
     isFirstPurchase: payload.isFirstPurchase,
     premium: payload.premium,
-  } satisfies SubscriptionAlertInput;
+  } satisfies SubscriptionNoticeInput;
 }

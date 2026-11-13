@@ -1,4 +1,4 @@
-// 문서 검사: 깨진 상대 링크·앵커, 없는 저장소 경로, 길이 한도, 에이전트 파일 모양, shared/ui 부품 문서.
+// 문서 검사: 깨진 상대 링크·앵커(remark-validate-links), 없는 저장소 경로, 길이 한도, 에이전트 파일 모양, shared/ui 부품 문서.
 // 규칙과 허용 목록은 docs/conventions/docs.md와 docs-check.config.json에 있다.
 // 사용: node scripts/docs/docs-check.mjs [--idents]
 import { execFileSync } from 'node:child_process';
@@ -16,8 +16,9 @@ const EXCLUDED = [
   /^apps\/mobile\/store-metadata\//,
   /(^|\/)node_modules\//,
 ];
-// 출시 기록은 그때 상태로 얼려 둔다. 링크한 파일이 있는지만 본다.
+// 출시 기록은 그때 상태로 얼려 둔다. 링크·길이·경로를 보지 않는다.
 const FROZEN = [/^docs\/releases\//, /^apps\/mobile\/docs\/releases\//];
+const REMARK_CLI = resolve(repoRoot, 'node_modules/remark-cli/cli.js');
 
 const PATH_PREFIXES = [
   'apps/',
@@ -41,6 +42,14 @@ const PATH_PREFIXES = [
 const PLACEHOLDER = /[{}<>*|$…\s]|\.\.\.|x-y-z|xxx/i;
 const CODE_EXTENSIONS = ['', '.ts', '.tsx', '.js'];
 const URL_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+export function documentsOf(files) {
+  return files.filter((file) => file.endsWith('.md') && !EXCLUDED.some((r) => r.test(file)));
+}
+
+function isFrozen(doc) {
+  return FROZEN.some((r) => r.test(doc));
+}
 
 export function countLines(text) {
   if (text === '') {
@@ -67,88 +76,6 @@ export function stripFences(text) {
     }
     return fence == null ? line : '';
   });
-}
-
-// GitHub(github-slugger)와 같은 규칙: 소문자, 글자·숫자·밑줄·하이픈·공백만 남기고 공백은 하이픈.
-export function slugify(heading) {
-  return heading
-    .replace(/`([^`]*)`/g, '$1')
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/<[^>]+>/g, '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, '')
-    .replace(/ /g, '-');
-}
-
-export function anchorsOf(text) {
-  const anchors = new Set();
-  const seen = new Map();
-  const lines = stripFences(text);
-  for (const line of lines) {
-    const heading = /^(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line);
-    if (heading != null) {
-      const base = slugify(heading[2]);
-      const count = seen.get(base) ?? 0;
-      seen.set(base, count + 1);
-      anchors.add(count === 0 ? base : `${base}-${count}`);
-    }
-    for (const match of line.matchAll(/<a\s+(?:name|id)="([^"]+)"/g)) {
-      anchors.add(match[1]);
-    }
-  }
-  return anchors;
-}
-
-function withoutCodeSpans(line) {
-  return line.replace(/`[^`\n]*`/g, (span) => ' '.repeat(span.length));
-}
-
-// `](` 뒤의 대상을 괄호 짝을 맞춰 읽는다. route 경로 `app/(app)/x.tsx`가 링크에 들어간다.
-export function extractLinks(line) {
-  const text = withoutCodeSpans(line);
-  const targets = [];
-  const reference = /^\s*\[[^\]]+\]:\s*<?([^\s>]+)>?/.exec(text);
-  if (reference != null) {
-    targets.push(reference[1]);
-  }
-  let from = 0;
-  for (;;) {
-    const start = text.indexOf('](', from);
-    if (start === -1) {
-      break;
-    }
-    let index = start + 2;
-    let depth = 0;
-    let target = '';
-    const angled = text[index] === '<';
-    if (angled) {
-      const end = text.indexOf('>', index);
-      target = end === -1 ? '' : text.slice(index + 1, end);
-      index = end === -1 ? text.length : end + 1;
-    } else {
-      while (index < text.length) {
-        const char = text[index];
-        if (char === '(') {
-          depth += 1;
-        } else if (char === ')') {
-          if (depth === 0) {
-            break;
-          }
-          depth -= 1;
-        } else if (char === ' ') {
-          break;
-        }
-        target += char;
-        index += 1;
-      }
-    }
-    if (target !== '') {
-      targets.push(target);
-    }
-    from = index;
-  }
-  return targets;
 }
 
 export function extractCodeSpans(line) {
@@ -242,17 +169,6 @@ export function pathExists(tree, doc, code) {
   );
 }
 
-function resolveLink(doc, target) {
-  const [rawPath, rawAnchor] = target.split('#');
-  const path = decodeURIComponent(rawPath);
-  const anchor = rawAnchor == null ? null : decodeURIComponent(rawAnchor);
-  if (path === '') {
-    return { path: doc, anchor };
-  }
-  const joined = path.startsWith('/') ? path.slice(1) : posix.join(posix.dirname(doc), path);
-  return { path: posix.normalize(joined).replace(/\/$/, ''), anchor };
-}
-
 function parseFrontmatter(text) {
   const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
   if (match == null) {
@@ -283,9 +199,9 @@ function checkAgentFile(doc, text, config, report) {
     }
   }
   if (base === 'SKILL.md') {
-    const skill = /(^|\/)\.claude\/skills\/([^/]+)\/SKILL\.md$/.exec(doc);
+    const skill = /(^|\/)\.(?:agents|claude)\/skills\/([^/]+)\/SKILL\.md$/.exec(doc);
     if (skill == null) {
-      report(doc, 1, 'agent-files', 'SKILL.md는 `.claude/skills/<이름>/SKILL.md`에 둔다');
+      report(doc, 1, 'agent-files', 'SKILL.md는 `.agents/skills/<이름>/SKILL.md`에 둔다');
       return;
     }
     const fields = parseFrontmatter(text);
@@ -294,6 +210,20 @@ function checkAgentFile(doc, text, config, report) {
     }
     if (fields == null || (fields.get('description') ?? '') === '') {
       report(doc, 1, 'agent-files', '스킬 frontmatter에 `description`이 있어야 한다');
+    }
+  }
+}
+
+// Codex는 `.agents/skills`, Claude Code는 `.claude/skills`만 읽어 정본 옆에 Claude용 링크가 있어야 한다.
+function checkSkillLinks(docs, tree, report) {
+  for (const doc of docs) {
+    const skill = /^(.*\/)?\.agents\/skills\/([^/]+)\/SKILL\.md$/.exec(doc);
+    if (skill == null) {
+      continue;
+    }
+    const link = `${skill[1] ?? ''}.claude/skills/${skill[2]}`;
+    if (!tree.has(link)) {
+      report(doc, 1, 'agent-files', `Claude가 읽도록 \`${link}\` 링크를 둔다`);
     }
   }
 }
@@ -338,7 +268,7 @@ function lineLimitOf(doc, config) {
  */
 export function checkDocs({ files, read, isIgnored = () => false, config }) {
   const tree = createTree(files);
-  const docs = files.filter((file) => file.endsWith('.md') && !EXCLUDED.some((r) => r.test(file)));
+  const docs = documentsOf(files);
   const failures = [];
   const allowUsed = new Set();
   const allowed = (doc, check, match) => {
@@ -358,38 +288,14 @@ export function checkDocs({ files, read, isIgnored = () => false, config }) {
       failures.push({ doc, line, check, message });
     }
   };
-  const anchorCache = new Map();
-  const anchorsFor = (path) => {
-    if (!anchorCache.has(path)) {
-      anchorCache.set(path, anchorsOf(read(path) ?? ''));
-    }
-    return anchorCache.get(path);
-  };
-
   for (const doc of docs) {
     const text = read(doc);
     if (text == null) {
       continue;
     }
-    const frozen = FROZEN.some((r) => r.test(doc));
+    const frozen = isFrozen(doc);
     const lines = stripFences(text);
     lines.forEach((line, index) => {
-      for (const target of extractLinks(line)) {
-        if (URL_SCHEME.test(target) || target.startsWith('//')) {
-          continue;
-        }
-        const link = resolveLink(doc, target);
-        if (link.path !== doc && !tree.has(link.path)) {
-          report(doc, index + 1, 'link', `없는 파일: ${target}`, target);
-          continue;
-        }
-        if (frozen || link.anchor == null || link.anchor === '' || !link.path.endsWith('.md')) {
-          continue;
-        }
-        if (!anchorsFor(link.path).has(link.anchor)) {
-          report(doc, index + 1, 'anchor', `없는 제목: ${target}`, target);
-        }
-      }
       if (frozen) {
         return;
       }
@@ -413,6 +319,7 @@ export function checkDocs({ files, read, isIgnored = () => false, config }) {
     checkAgentFile(doc, text, config, report);
   }
   checkAgentsSize(docs, read, config, report);
+  checkSkillLinks(docs, tree, report);
   checkUiDocs(tree, report);
 
   config.allow.forEach((entry, index) => {
@@ -512,6 +419,30 @@ function readRepoFile(path) {
   }
 }
 
+// 링크·앵커(GitHub 제목 slug)는 remark-validate-links가 본다.
+function validateLinks(docs) {
+  try {
+    execFileSync(
+      process.execPath,
+      [
+        REMARK_CLI,
+        '--quiet',
+        '--frail',
+        '--no-stdout',
+        '--no-config',
+        '--no-ignore',
+        '--use',
+        'remark-validate-links',
+        ...docs,
+      ],
+      { cwd: repoRoot, stdio: ['ignore', 'inherit', 'inherit'] },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function main() {
   const config = JSON.parse(
     readFileSync(resolve(repoRoot, 'scripts/docs/docs-check.config.json'), 'utf8'),
@@ -536,8 +467,11 @@ function main() {
   for (const failure of failures) {
     process.stderr.write(`${failure.doc}:${failure.line} ${failure.check} ${failure.message}\n`);
   }
-  process.stdout.write(`docs-check: 문서 ${docs}개, 실패 ${failures.length}개\n`);
-  if (failures.length > 0) {
+  const linksValid = validateLinks(documentsOf(files).filter((doc) => !isFrozen(doc)));
+  process.stdout.write(
+    `docs-check: 문서 ${docs}개, 실패 ${failures.length}개${linksValid ? '' : ', 링크 실패(위 remark 출력)'}\n`,
+  );
+  if (failures.length > 0 || !linksValid) {
     process.exitCode = 1;
   }
 }

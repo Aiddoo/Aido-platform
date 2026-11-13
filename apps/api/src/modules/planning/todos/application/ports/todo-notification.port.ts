@@ -26,13 +26,8 @@ export interface MilestoneReachedPayload {
   milestone: TodoCompletionMilestone;
 }
 
-/**
- * Todo 관련 알림 큐 등록 포트 (notification 컨텍스트 경계)
- *
- * 페이로드 계약은 이 포트가 소유하며, notification의 JobData와의
- * 구조 매핑은 인프라 어댑터가 담당합니다.
- */
+// 페이로드 계약은 이 포트가 소유하고 notification 작업 데이터로의 변환은 어댑터가 한다
 export abstract class TodoNotificationPort {
-  abstract enqueueFriendCompleted(payload: FriendCompletedPayload): void;
-  abstract enqueueMilestoneReached(payload: MilestoneReachedPayload): void;
+  abstract enqueueFriendCompleted(payload: FriendCompletedPayload): Promise<void>;
+  abstract enqueueMilestoneReached(payload: MilestoneReachedPayload): Promise<void>;
 }

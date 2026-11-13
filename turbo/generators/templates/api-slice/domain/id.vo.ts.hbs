@@ -1,6 +1,16 @@
+{{#if isSerial}}
 import { EntityId } from "#api/shared/domain/model/entity-id";
+{{else}}
+import { createEntityId, EntityId } from "#api/shared/domain/model/entity-id";
+{{/if}}
 
 export class {{pascalCase aggregate}}Id extends EntityId<{{idTsType}}> {
+{{#unless isSerial}}
+  static generate(): {{pascalCase aggregate}}Id {
+    return new {{pascalCase aggregate}}Id(createEntityId());
+  }
+
+{{/unless}}
   static reconstitute(value: {{idTsType}}): {{pascalCase aggregate}}Id {
     return new {{pascalCase aggregate}}Id(value);
   }

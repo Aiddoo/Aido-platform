@@ -6,7 +6,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { InquiryContent } from "../../domain/inquiry-content.vo.js";
 import { InquiryId } from "../../domain/inquiry-id.vo.js";
-import { Inquiry } from "../../domain/inquiry.entity.js";
+import { Inquiry } from "../../domain/inquiry.aggregate.js";
 import { inquiryDeliveryFailed } from "../inquiries.errors.js";
 import { InquiryLogEvent } from "../inquiries.log-events.js";
 import { toInquirySubmission } from "../messages/inquiry-submission.messages.js";

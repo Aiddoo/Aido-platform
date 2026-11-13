@@ -16,7 +16,7 @@ import {
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
-import { ApiCreatedResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ApiCreatedSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { ResolveUserReportUseCase } from "../../../application/use-cases/resolve-user-report.use-case.js";
 import { RESOLVE_USER_REPORT_OPERATION_ID } from "./admin-user-report.constants.js";
@@ -51,7 +51,7 @@ export class AdminUserReportController {
 
 이미 처리한 신고를 다시 처리하면 첫 처리 기록을 그대로 돌려줍니다. 조치 내용은 신고자·신고된 사용자에게 보이지 않습니다.`,
   })
-  @ApiCreatedResponse({ type: ResolveUserReportResponseDto })
+  @ApiCreatedSuccessResponse({ type: ResolveUserReportResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiForbiddenError(ErrorCode.ADMIN_1401)

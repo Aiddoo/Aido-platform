@@ -1,7 +1,7 @@
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -17,7 +17,7 @@ import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-conf
 import type { NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
 import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
-import type { NudgeInteraction } from "../read-models/nudge-interaction.read-model.js";
+import type { NudgeInteractionReadModel } from "../read-models/nudge-interaction.read-model.js";
 
 export interface ReplyToNudgeCommand {
   readonly userId: string;
@@ -30,7 +30,7 @@ export interface ReplyToNudgeDependencies {
   readonly nudgeRepository: Pick<NudgeRepositoryPort, "findById" | "lockInteractionTodo" | "save">;
   readonly nudgeReader: Pick<NudgeReaderPort, "findInteraction">;
   readonly interactionConfig: NudgeInteractionConfigPort;
-  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "getCurrentMutualFriendIds">;
   readonly notifier: Pick<NudgeNotifierPort, "recordInteraction">;
   readonly clock: ClockPort;
 }
@@ -42,13 +42,13 @@ export class ReplyToNudgeUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(command: ReplyToNudgeCommand): Promise<NudgeInteraction> {
+  async execute(command: ReplyToNudgeCommand): Promise<NudgeInteractionReadModel> {
     const {
       unitOfWork,
       nudgeRepository,
       nudgeReader,
       interactionConfig,
-      followReader,
+      mutualFriendReader,
       notifier,
       clock,
     } = this.#dependencies;
@@ -76,7 +76,7 @@ export class ReplyToNudgeUseCase {
       if (nudge == null || !nudge.isReceivedBy(userId)) {
         throw nudgeInteractionNotFound();
       }
-      const friendIds = await followReader.getCurrentMutualFriendIds(userId);
+      const friendIds = await mutualFriendReader.getCurrentMutualFriendIds(userId);
       const isAvailable = isNudgeInteractionAvailable({
         receiverId: command.userId,
         isMutualFriend: friendIds.includes(nudge.senderId.value),

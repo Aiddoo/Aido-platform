@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { userLocationNotFound } from "../../../locations/application/locations.errors.js";
 import type { TimezoneResolverPort } from "../../../locations/application/ports/timezone-resolver.port.js";
@@ -10,26 +10,19 @@ import type { UserLocationRepositoryPort } from "../../../locations/application/
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import { isKoreanWeatherCovered } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
 import {
-  localDateAt,
-  startOfLocalDate,
-} from "../../../shared/domain/weather-calendar.domain-service.js";
-import {
   planWeatherBriefing,
   type WeatherBriefing,
   type WeatherBriefingTodo,
 } from "../../domain/weather-briefing.domain-service.js";
 import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
-import { windowWeatherReport } from "../../domain/weather-report-window.domain-service.js";
-import {
-  type WeatherReport,
-  type WeatherReportAttribution,
-} from "../../domain/weather-report.vo.js";
+import type { WeatherReport } from "../../domain/weather-report.vo.js";
 import { ForecastLogEvent } from "../forecasts.log-events.js";
 import type { AirQuality, AirQualityProviderPort } from "../ports/air-quality-provider.port.js";
 import type { ScheduledTodoReaderPort } from "../ports/scheduled-todo.reader.port.js";
 import type { WeatherReportCachePort } from "../ports/weather-report-cache.port.js";
 import type { WeatherReportProviderPort } from "../ports/weather-report-provider.port.js";
-import type { WeatherReportReaderPort } from "../ports/weather-report.reader.port.js";
+import type { WeatherReportAttribution } from "../read-models/weather-report-attribution.read-model.js";
+import type { ReadWeatherReportUseCase } from "./read-weather-report.use-case.js";
 
 const KOREA_COUNTRY_CODE = "KR";
 
@@ -55,7 +48,7 @@ export interface WeatherReportResult {
 
 export interface GetWeatherReportDependencies {
   readonly userLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
-  readonly weatherReportReader: Pick<WeatherReportReaderPort, "readReport">;
+  readonly readWeatherReport: Pick<ReadWeatherReportUseCase, "execute">;
   readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getAttribution">;
   readonly weatherReportCache: Pick<WeatherReportCachePort, "getOrLoadAirQuality">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
@@ -87,13 +80,12 @@ export class GetWeatherReportUseCase {
       region.countryCode === KOREA_COUNTRY_CODE && isKoreanWeatherCovered(cell.center);
 
     const now = this.#dependencies.clock.now();
-    const nowDate = instantToDate(now);
     const timezone = query.timezone ?? region.timezone;
 
     // 리포트는 언어 공유 캐시일 수 있으므로 공급자 표기는 요청 언어로 따로 받는다.
     const [reportResult, airQualityResult, attributionResult, todosResult] =
       await Promise.allSettled([
-        this.#dependencies.weatherReportReader.readReport(cell, region, query.language),
+        this.#dependencies.readWeatherReport.execute({ cell, region, language: query.language }),
         isKorea ? this.#loadAirQuality(cell) : Promise.resolve(null),
         this.#dependencies.weatherReportProvider.getAttribution(query.language),
         this.#listTodayTodos(UserId.reconstitute(query.userId), now, timezone),
@@ -119,7 +111,7 @@ export class GetWeatherReportUseCase {
       });
     }
 
-    const report = windowWeatherReport(reportResult.value, nowDate, region.timezone);
+    const report = reportResult.value.windowAt(now, region.timezone);
     return {
       location: {
         latitude: location.latitude,
@@ -134,7 +126,7 @@ export class GetWeatherReportUseCase {
           ? planWeatherBriefing({
               hourly: report.hourly,
               todos: todosResult.value,
-              now: nowDate,
+              now,
               timezone,
             })
           : null,
@@ -147,15 +139,16 @@ export class GetWeatherReportUseCase {
     now: Temporal.Instant,
     timezone: string,
   ): Promise<WeatherBriefingTodo[]> {
-    const today = localDateAt(instantToDate(now), timezone);
-    const todos = await this.#dependencies.scheduledTodoReader.listPendingTimedTodos({
+    const today = localDateIn(now, timezone);
+    // 서머타임으로 자정이 없는 날은 그날 첫 순간이다
+    const tomorrowStart = today.add({ days: 1 }).toZonedDateTime(resolveTimezone(timezone));
+    return this.#dependencies.scheduledTodoReader.listPendingTimedTodos({
       userId,
       date: today,
       timezone,
       from: now,
-      until: instantFromDate(startOfLocalDate(today.add({ days: 1 }), timezone)),
+      until: tomorrowStart.toInstant(),
     });
-    return todos.map((todo) => ({ id: todo.id, scheduledAt: instantToDate(todo.scheduledAt) }));
   }
 
   #loadAirQuality(cell: GeoCell): Promise<AirQuality | null> {

@@ -81,5 +81,6 @@ export abstract class TodoCommentReaderPort {
     commentIds: readonly TodoCommentId[],
     viewerId: UserId,
   ): Promise<ReadonlySet<string>>;
+  /** 이름이 없으면 Aido ID(userTag)다. 사용자가 없으면 null이다 */
   abstract findUserDisplayName(userId: UserId): Promise<string | null>;
 }

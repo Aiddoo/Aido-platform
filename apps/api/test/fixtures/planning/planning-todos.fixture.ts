@@ -5,7 +5,6 @@ import { PublishTodoSeriesEditUseCase } from "#api/modules/planning/todo-series/
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
-import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TodoBuilder } from "#test/builders/index";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
@@ -79,7 +78,6 @@ export function createPlanningTodoFixture(
   const unitOfWork = new ImmediateUnitOfWork();
   const ownerTimezone = new StubTodoOwnerTimezone(new Map([[userId, "Asia/Seoul"]]));
   const timezoneResolver = new ResolveTodoTimezoneUseCase({ ownerTimezone });
-  const paginationService = new PaginationService();
   const seriesCatchUp = { execute: async (_userId: string) => undefined };
   const friendIds = new Set<string>();
   const friendPort = {
@@ -121,7 +119,6 @@ export function createPlanningTodoFixture(
     ownerTimezone,
     timezoneResolver,
     logger,
-    paginationService,
     seriesCatchUp,
     friendIds,
     friendPort,

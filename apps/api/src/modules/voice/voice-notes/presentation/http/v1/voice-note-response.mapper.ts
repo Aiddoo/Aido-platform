@@ -1,4 +1,4 @@
-import type { VoiceNoteDigestResponse } from "@aido/api";
+import type { VoiceNoteDigestResponse } from "@aido/api/contracts/voice";
 
 import { toActionPlanResponse } from "../../../../action-plans/presentation/http/v1/action-plan-response.mapper.js";
 import type { DigestedVoiceNote } from "../../../application/use-cases/digest-voice-note.use-case.js";

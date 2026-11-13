@@ -7,7 +7,7 @@ export class StubLifestyleIndexProvider extends LifestyleIndexProviderPort {
   readonly calls: {
     lat: number;
     lon: number;
-    date: Date;
+    at: Temporal.Instant;
     currentTemp: number;
     windSpeed: number;
   }[] = [];
@@ -17,11 +17,11 @@ export class StubLifestyleIndexProvider extends LifestyleIndexProviderPort {
   async getIndex(
     lat: number,
     lon: number,
-    date: Date,
+    at: Temporal.Instant,
     currentTemp: number,
     windSpeed: number,
   ): Promise<LifestyleIndex> {
-    this.calls.push({ lat, lon, date: new Date(date), currentTemp, windSpeed });
+    this.calls.push({ lat, lon, at, currentTemp, windSpeed });
     if (this.failure !== null) {
       throw this.failure;
     }

@@ -16,7 +16,7 @@ EAS 빌드·로컬 빌드, 환경 변수와 Secrets, 스토어 제출, 배포 �
 | `production-device` | production  | 위와 같음                     | 실기기 Release 검증              | Ad Hoc         | APK     |
 
 - `--profile`을 생략하면 `production`이다. `production-device`는 `production` EAS environment를 명시적으로 상속한다(내부 배포의 기본 environment인 preview로 production 설정이 바뀌지 않게 한다).
-- 개발 API URL은 자동 감지한다. Android 에뮬레이터는 `localhost → 10.0.2.2`, iOS 시뮬레이터는 `localhost` 유지, 실기기는 개발 머신 IP이며 같은 Wi-Fi여야 한다. 환경 변수 파일은 `.env` + `.env.development`(개발), `.env.preview`, `.env.production`이고 필수 값은 `APP_ENV`·`EXPO_PUBLIC_API_URL`이다.
+- 개발 API URL은 자동 감지한다. Android 에뮬레이터는 `localhost → 10.0.2.2`, iOS 시뮬레이터는 `localhost` 유지, 실기기는 개발 머신 IP이며 같은 Wi-Fi여야 한다. 로컬 환경 변수 파일은 `.env`(운영 로컬 빌드) · `.env.development`(개발) · `.env.example`(예시)이고 필수 값은 `APP_ENV`·`EXPO_PUBLIC_API_URL`이다. Expo는 개발에서도 `.env`를 읽으므로 두 파일의 키를 같게 둔다. EAS 빌드는 EAS 환경변수를 쓴다.
 - 번들 ID는 환경마다 다르다(`com.aido.mobile` · `.preview` · `.dev`). 한 기기에 함께 설치되고 키체인·App Group·푸시 토큰도 분리된다.
 
 ## 환경 변수
@@ -40,7 +40,7 @@ OAuth 클라이언트 ID·시크릿은 앱에 두지 않고 **API 서버 환경 
 
 ## EAS Secrets
 
-`eas-build-pre-install.sh`가 빌드 전에 환경 변수를 Base64 디코딩해 `google-services.json`을 복원하고, `app.config.ts`의 `googleServicesFile`이 그 파일을 참조한다.
+`app.config.ts`가 설정을 읽을 때 환경 변수를 Base64 디코딩해 Firebase 파일(`google-services.json`, 환경별 `GoogleService-Info*.plist`)을 복원하고(`restoreBase64File`), `googleServicesFile`이 그 파일을 참조한다.
 
 ```bash
 # Android: 모든 환경이 같은 파일을 쓴다
@@ -77,11 +77,9 @@ eas env:create --name SENTRY_AUTH_TOKEN --value "<TOKEN>" --environment producti
 | EAS Submit·EAS Update(OTA) | `eas submit`, `eas update`                     | 차감 안 됨                      | 빌드 시간과 별개                                     |
 
 ```bash
-pnpm build:development[:android|:ios]   # dev client
-pnpm build:preview[:android|:ios]
-pnpm build:production[:android|:ios]
-pnpm build:production:local:android     # = eas build --local --platform android --profile production
-pnpm build:production:local:ios
+eas build --profile development --platform <ios|android|all>   # dev client
+eas build --profile preview --platform <ios|android|all>
+eas build --local --profile production --platform <ios|android>
 pnpm update:preview "메시지"            # OTA
 pnpm update:production "메시지"
 ```
@@ -140,12 +138,21 @@ pnpm check:native-icons
 
 `check:ipa-linkage`의 범위는 arm64 앱과 번들된 Expo framework의 강한 two-level 심볼 참조다. 시스템 framework, 실제 기기 실행, Firebase 초기화, 화면 회귀를 대신하지 않는다. 서명된 최종 IPA/AAB는 TestFlight·Play 내부 테스트에서 시작·재시작·로그인·주요 기능을 확인한 뒤 심사에 제출한다.
 
+### production OTA
+
+JS만 바뀐 핫픽스는 OTA로 낸다. runtime이 fingerprint라 운영 빌드와 fingerprint가 같아야 사용자에게 간다.
+
+- 머지된 `main`의 독립 clone(위 1단계)에서 Node 24.22.2로 `eas fingerprint:generate --environment production`이 운영 빌드와 같은지 먼저 본다. 작업 중인 checkout은 git 제외 파일 때문에 값이 달라 OTA가 아무에게도 가지 않는다.
+- `pnpm update:production "메시지"`로 보낸다. `--environment production`이 빠지면 `extra`(API·Sentry·RevenueCat·카카오 키)가 비어 결제가 깨진다.
+- 보낸 뒤 업데이트 manifest의 runtime과 `extra`를 확인하고, 소스맵은 `eas env:exec production`으로 올린다. OTA는 다음 콜드 스타트에 적용된다.
+
 ## 스토어 제출
 
-- **iOS**: production 빌드 → `eas submit --platform ios --path ./build.ipa`(또는 `pnpm submit:production:ios`) 또는 Transporter(Mac App Store, `mas install 1450874784`)로 올린다 → TestFlight 확인 → App Store Connect에서 정보·가격·지역을 입력하고 심사 제출한다.
-- **Android**: production AAB → `eas submit --platform android --path ./build.aab`(또는 `pnpm submit:production:android`) 또는 Play Console(프로덕션 → .aab 업로드) → 앱 콘텐츠·배포 국가를 입력하고 프로덕션 트랙으로 출시한다.
+- **iOS**: production 빌드 → `eas submit --platform ios --path ./build.ipa` 또는 Transporter(Mac App Store, `mas install 1450874784`)로 올린다 → TestFlight 확인 → App Store Connect에서 정보·가격·지역을 입력하고 심사 제출한다.
+- **Android**: production AAB → `eas submit --platform android --path ./build.aab` 또는 Play Console(프로덕션 → .aab 업로드) → 앱 콘텐츠·배포 국가를 입력하고 프로덕션 트랙으로 출시한다.
 - 스토어 문구·스크린샷 순서·체크리스트의 준비본은 `store-metadata/{버전}/release.json`이고 변경해도 외부 스토어에 자동 게시되지 않는다. 한·영 등록 정보는 `store-metadata/listing/`에 있고 `pnpm store:check`로 검사한다(`store:export`, `store:art`, `store:screens`).
 - API URL이 프로덕션 서버인지, 버전 번호(`app.config.ts`), 앱 아이콘·스플래시를 제출 전에 확인한다.
+- **Android 데이터 보안**: 앱은 대략적 위치만 받는다(`app.config.ts`의 `blockedPermissions`가 `ACCESS_FINE_LOCATION`을 뺀다). 제출 전에 데이터 보안 신고(위치·음성 녹음·사용자 콘텐츠)를 코드의 실제 전송 경로와 대조한다. 정확한 위치가 필요한 기능은 Play 권한 신고부터 검토한다.
 
 ## Play Console: Android 15 edge-to-edge deprecated API 경고
 
@@ -165,7 +172,7 @@ Play Console은 AAB에서 Android 15(API 35)가 지원 중단한 시스템 바 �
 ## 배포 전 체크리스트
 
 - [ ] 서버: 프로덕션 DB·환경 변수(OAuth 키 포함)·HTTPS, `pnpm db:migrate`, `curl https://api.aido.kr/health`
-- [ ] 앱: `.env.production`(`APP_ENV`, `EXPO_PUBLIC_API_URL`), Google Services Secrets, 버전 번호
+- [ ] 앱: EAS `production` 환경변수(`APP_ENV`, `EXPO_PUBLIC_API_URL`), Google Services Secrets, 버전 번호
 - [ ] 실기기: 소셜 로그인(Google·Apple·Kakao·Naver), API 호출, 푸시 알림, 오류 처리
 - [ ] 보안: 민감 정보는 환경 변수, OAuth 콜백 URL은 프로덕션 도메인(API 서버 설정), HTTPS
 

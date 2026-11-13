@@ -2,7 +2,7 @@ import type { FeatureDiscoveryResponse } from "@aido/api/contracts/app-config";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { FeatureDiscoveryCampaign } from "../../../domain/feature-discovery-campaign.entity.js";
+import type { FeatureDiscoveryCampaign } from "../../../domain/feature-discovery-campaign.aggregate.js";
 
 export function toFeatureDiscoveryResponse(
   campaign: FeatureDiscoveryCampaign | null,

@@ -1,11 +1,9 @@
-import type { FindDueBillingNoticesParams } from "#api/modules/billing/premium-grants/application/ports/billing-notice.port";
-import { currentStoreChainOf } from "#api/modules/billing/shared/premium-access.domain-service";
-import { storeProductIdsOfPlan } from "#api/modules/billing/shared/subscription-plan.domain-service";
-import {
-  type UpcomingRenewalNotice,
-  UpcomingRenewalNoticeRepositoryPort,
-} from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notice.repository.port";
+import type { ListDueBillingNoticesParams } from "#api/modules/billing/shared/application/ports/billing-notice.repository.port";
+import { currentStoreChainOf } from "#api/modules/billing/shared/domain/premium-access.domain-service";
+import { storeProductIdsOfPlan } from "#api/modules/billing/shared/domain/subscription-plan.domain-service";
+import { UpcomingRenewalNoticeRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notice.repository.port";
 import type { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
+import { UpcomingRenewalNotice } from "#api/modules/billing/subscriptions/domain/upcoming-renewal-notice.entity";
 
 import type { InMemorySubscriptionRepository } from "./in-memory-subscription.repository.js";
 
@@ -26,7 +24,7 @@ export class InMemoryUpcomingRenewalNoticeRepository extends UpcomingRenewalNoti
   }
 
   async listDue(
-    params: FindDueBillingNoticesParams<UpcomingRenewalNotice>,
+    params: ListDueBillingNoticesParams<UpcomingRenewalNotice>,
   ): Promise<UpcomingRenewalNotice[]> {
     const { now, endsBefore, after, limit } = params;
     const all = this.#subscriptions.all;
@@ -47,12 +45,14 @@ export class InMemoryUpcomingRenewalNoticeRepository extends UpcomingRenewalNoti
           Temporal.Instant.compare(left.expiresAt, right.expiresAt) || left.id - right.id,
       )
       .slice(0, limit)
-      .map((row) => ({
-        subscriptionId: row.id,
-        userId: row.userId,
-        expiresAt: row.expiresAt,
-        isCurrentChain: currentChainIdOf(all, row.userId, now) === row.storeSubscriptionId,
-      }));
+      .map((row) =>
+        UpcomingRenewalNotice.reconstitute({
+          id: row.id,
+          userId: row.userId,
+          expiresAt: row.expiresAt,
+          isCurrentChain: currentChainIdOf(all, row.userId, now) === row.storeSubscriptionId,
+        }),
+      );
   }
 
   async claim(notices: readonly UpcomingRenewalNotice[]): Promise<UpcomingRenewalNotice[]> {
@@ -60,16 +60,16 @@ export class InMemoryUpcomingRenewalNoticeRepository extends UpcomingRenewalNoti
       this.#subscriptions.all.map((subscription) => [subscription.id.value, subscription]),
     );
     const claimed = notices.filter((notice) => {
-      const stored = current.get(notice.subscriptionId);
+      const stored = current.get(notice.id.value);
       return (
         stored != null &&
         stored.status === "ACTIVE" &&
         stored.expiresAt.equals(notice.expiresAt) &&
-        !this.#isNoticed(notice.subscriptionId, stored.expiresAt)
+        !this.#isNoticed(notice.id.value, stored.expiresAt)
       );
     });
     for (const notice of claimed) {
-      this.#noticedExpiresAtBySubscriptionId.set(notice.subscriptionId, notice.expiresAt);
+      this.#noticedExpiresAtBySubscriptionId.set(notice.id.value, notice.expiresAt);
     }
     return claimed;
   }
@@ -96,5 +96,5 @@ function isAfterCursor(
   after: UpcomingRenewalNotice,
 ): boolean {
   const byExpiry = Temporal.Instant.compare(expiresAt, after.expiresAt);
-  return byExpiry > 0 || (byExpiry === 0 && id > after.subscriptionId);
+  return byExpiry > 0 || (byExpiry === 0 && id > after.id.value);
 }

@@ -4,10 +4,10 @@ import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlement
 import { UserProfileInvalidatorPort } from "#api/modules/identity/users/identity-users.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { PremiumAccessCachePort } from "../../application/ports/premium-access-cache.port.js";
+import type { PremiumAccessCachePort } from "../../application/ports/premium-access-cache.port.js";
 
 @Injectable()
-export class PremiumAccessCacheAdapter extends PremiumAccessCachePort {
+export class PremiumAccessCacheAdapter implements PremiumAccessCachePort {
   readonly #entitlementCache: Pick<EntitlementCacheInvalidatorPort, "invalidateEntitlements">;
   readonly #profileCache: UserProfileInvalidatorPort;
 
@@ -16,7 +16,6 @@ export class PremiumAccessCacheAdapter extends PremiumAccessCachePort {
     entitlementCache: Pick<EntitlementCacheInvalidatorPort, "invalidateEntitlements">,
     @Inject(UserProfileInvalidatorPort) profileCache: UserProfileInvalidatorPort,
   ) {
-    super();
     this.#entitlementCache = entitlementCache;
     this.#profileCache = profileCache;
   }

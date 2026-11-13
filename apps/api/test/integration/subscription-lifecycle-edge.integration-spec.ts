@@ -4,11 +4,11 @@ import {
   PremiumAccessReaderPort,
   PremiumGranterPort,
 } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/domain/store-renewal-grace.domain-service";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
@@ -110,7 +110,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
 
   async function storeRowsOf() {
     const rows = await client.query.subscription.findMany({
-      columns: { revenueCatId: true, productId: true, status: true, expiresAt: true },
+      columns: { storeSubscriptionId: true, productId: true, status: true, expiresAt: true },
       where: { userId },
       orderBy: { id: "asc" },
     });
@@ -159,7 +159,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
         });
         expect(await storeRowsOf()).toEqual([
           {
-            revenueCatId: CHAIN,
+            storeSubscriptionId: CHAIN,
             productId: "premium_monthly",
             status: "ACTIVE",
             expiresAt: NEXT_EXPIRY,

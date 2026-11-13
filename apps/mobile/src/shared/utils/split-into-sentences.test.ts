@@ -40,7 +40,8 @@ describe('splitIntoSentences', () => {
   });
 
   it('띄어쓰기가 없는 긴 말은 최대 길이에서 자른다', () => {
-    // Given: 25자 = 10 + 10 + 5
+    // 25자 = 10 + 10 + 5
+    // Given
     const text = '가'.repeat(25);
 
     // When

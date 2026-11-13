@@ -11,7 +11,6 @@ import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastruc
 import { DrizzleTodoBulkRemoverAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-bulk-remover.adapter";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
   todoCategory,
@@ -22,6 +21,7 @@ import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";

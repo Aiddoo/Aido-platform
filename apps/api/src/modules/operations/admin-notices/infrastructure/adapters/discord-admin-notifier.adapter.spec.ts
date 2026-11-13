@@ -2,6 +2,7 @@ import { Logger } from "@nestjs/common";
 import { HttpClient } from "@nestjs/http-client";
 
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import {
@@ -9,7 +10,7 @@ import {
   CONTRACT_NOTICE,
   describeAdminNotifierContract,
 } from "../../../../../../test/contracts/operations/admin-notifier.contract.js";
-import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
+import { AdminNotifierProviderLogEvent } from "./admin-notifier-provider.log-events.js";
 import {
   DISCORD_WEBHOOK_TIMEOUT_MS,
   DiscordAdminNotifierAdapter,
@@ -18,6 +19,7 @@ import {
 const ADMIN_WEBHOOK = "https://discord.com/api/webhooks/synthetic-id/synthetic-admin-token";
 const PAYMENT_WEBHOOK = "https://discord.com/api/webhooks/synthetic-id/synthetic-payment-token";
 const PRIVATE_BODY = "synthetic-private-notification-body";
+const NOW = Temporal.Instant.from("2026-10-08T00:00:00.000Z");
 
 function adapter(
   webhooks: { admin?: string; payment?: string } = {
@@ -29,6 +31,7 @@ function adapter(
     { admin: webhooks.admin, payment: webhooks.payment },
     new HttpClient({ retry: { attempts: 3, methods: ["POST"] }, throwOnHttpError: true }),
     new OutboundPolicyRegistry(new RecordingOperationalAlert()),
+    new FixedClock(NOW),
   );
 }
 
@@ -43,8 +46,6 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     nativeFetch = vi
       .spyOn(globalThis, "fetch")
       .mockRejectedValue(new Error("Live network blocked"));
-    vi.useFakeTimers({ toFake: ["Date", "Temporal"] });
-    vi.setSystemTime(new Date("2026-10-08T00:00:00.000Z"));
   });
 
   afterEach(() => {
@@ -143,7 +144,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     // Then
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(errorLog).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNoticeInfraLogEvent.HTTP_FAILED,
+      event: AdminNotifierProviderLogEvent.HTTP_FAILED,
       provider: "discord",
       channel: "admin",
       statusCode: 429,
@@ -153,7 +154,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
 
   it("응답이 없는 webhook은 제한 시간 뒤 재시도 가능한 실패로 끊는다", async () => {
     // Given
-    vi.useFakeTimers({ toFake: ["Date", "Temporal", "setTimeout", "clearTimeout"] });
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     nativeFetch.mockImplementation(
       (_url: string | URL | Request, init?: RequestInit) =>
         new Promise<Response>((_resolve, reject) => {
@@ -169,7 +170,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     // Then
     expect(outcome).toEqual({ status: "failed", retryable: true });
     expect(errorLog).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNoticeInfraLogEvent.REQUEST_FAILED,
+      event: AdminNotifierProviderLogEvent.REQUEST_FAILED,
       provider: "discord",
       channel: "admin",
       errorType: "transport",
@@ -184,7 +185,7 @@ describe("DiscordAdminNotifierAdapter 실제 HTTP wire와 로그 경계", () => 
     expect(outcome).toEqual({ status: "skipped", reason: "not_configured" });
     expect(nativeFetch).not.toHaveBeenCalled();
     expect(debugLog).toHaveBeenCalledExactlyOnceWith({
-      event: AdminNoticeInfraLogEvent.PROVIDER_NOT_CONFIGURED,
+      event: AdminNotifierProviderLogEvent.PROVIDER_NOT_CONFIGURED,
       provider: "discord",
       channel: "admin",
     });

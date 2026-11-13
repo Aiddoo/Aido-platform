@@ -1,7 +1,7 @@
 import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import { DrizzleFeatureGrantRepository } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-feature-grant.repository";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { resourceBonus, user } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeAccessStateReaderContract } from "#test/contracts/access/access-state-reader.contract";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";

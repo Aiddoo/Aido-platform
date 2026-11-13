@@ -7,7 +7,7 @@ import {
   weatherForecastsConfig,
   type WeatherForecastsConfig,
 } from "../../weather-forecasts.config.js";
-import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
+import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 
 const TOKEN_LIFETIME_SECONDS = 60 * 60;
 /** 만료 직전 토큰이 요청 도중 만료되지 않도록 5분 일찍 새로 서명한다. */

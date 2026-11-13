@@ -2,7 +2,6 @@ import { decideEveningWeatherBriefing } from "#api/modules/weather/forecasts/wea
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
 import {
@@ -95,7 +94,6 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
     }
 
     const now = this.#dependencies.clock.now();
-    const at = instantToDate(now);
     const reports = await this.#dependencies.weatherReportReader.readReports(
       targets.map((user) => ({
         key: user.id,
@@ -115,7 +113,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
         located == null
           ? null
           : decideEveningWeatherBriefing(located.report, {
-              now: at,
+              now,
               timezone: user.timezone,
               locationTimezone: located.timezone,
             });

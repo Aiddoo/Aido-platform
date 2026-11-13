@@ -17,6 +17,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiConflictError,
@@ -27,7 +28,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
@@ -58,7 +59,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.TODO_CATEGORIES)
 @ApiBearerAuth()
-@Controller("todo-categories")
+@Controller({ path: "todo-categories", version: API_VERSION.V1 })
 export class TodoCategoryController {
   readonly #getTodoCategoriesUseCase: ListTodoCategoriesUseCase;
   readonly #getTodoCategoryUseCase: GetTodoCategoryUseCase;
@@ -123,7 +124,7 @@ export class TodoCategoryController {
 - 새 카테고리는 목록 맨 끝에 추가됩니다 (sortOrder 자동 부여)
 - 같은 이름의 카테고리가 이미 존재하면 \`409 Conflict\` 에러 반환`,
   })
-  @ApiCreatedResponse({ type: CreateTodoCategoryResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateTodoCategoryResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
   @ApiForbiddenError(ErrorCode.TODO_CATEGORY_0857)

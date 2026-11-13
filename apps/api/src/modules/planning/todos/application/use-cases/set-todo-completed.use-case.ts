@@ -47,7 +47,7 @@ export class SetTodoCompletedUseCase {
     const todoId = TodoId.reconstitute(id);
     const ownerId = UserId.reconstitute(userId);
 
-    const events = await this.#dependencies.unitOfWork.run(async () => {
+    await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(id)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
       if (todo == null) {
@@ -56,7 +56,7 @@ export class SetTodoCompletedUseCase {
 
       const changed = todo.toggleComplete(completed, timezone, this.#dependencies.clock.now());
       if (!changed) {
-        return [];
+        return;
       }
 
       await this.#dependencies.todoRepository.updateDetails(todoId, {
@@ -72,10 +72,8 @@ export class SetTodoCompletedUseCase {
       });
       const events = todo.pullDomainEvents();
       await this.#dependencies.applyTodoEvents.execute(events);
-      return events;
+      await this.#dependencies.completionEffects.execute(events);
     });
-
-    await this.#dependencies.completionEffects.execute(events);
 
     await this.#dependencies.todoCache.invalidateFriendTodos(ownerId);
 

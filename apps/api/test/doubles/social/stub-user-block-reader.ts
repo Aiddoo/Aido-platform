@@ -1,7 +1,7 @@
 import {
   UserBlockReaderPort,
   type UserBlockRelation,
-} from "#api/modules/social/blocks/social-blocks.public";
+} from "#api/modules/social/blocks/social-block-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // blockerId가 blockedId를 차단한 방향 있는 쌍만 들고 차단 관계를 돌려준다

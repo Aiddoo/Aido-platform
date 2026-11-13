@@ -1,6 +1,6 @@
 import type { userLocation } from "#api/platform/database/schema/weather.schema";
 
-import { UserLocation } from "../../domain/user-location.entity.js";
+import { UserLocation } from "../../domain/user-location.aggregate.js";
 
 /** row id는 도메인이 모르므로 조회에서 고르지 않는다. */
 type UserLocationRow = Omit<typeof userLocation.$inferSelect, "id">;

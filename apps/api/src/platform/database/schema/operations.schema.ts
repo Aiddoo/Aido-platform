@@ -17,8 +17,8 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import { createEntityId } from "../../../shared/domain/model/entity-id.js";
 import { instant } from "../columns/temporal-columns.js";
-import { createEntityId } from "../entity-id.js";
 import { notificationActionType } from "./enums.schema.js";
 
 /** 언어별 문구. 수신자 언어에 항목이 없으면 title·body를 쓴다 */

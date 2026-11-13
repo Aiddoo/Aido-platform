@@ -23,9 +23,9 @@ import {
   IDENTITY_CACHE_TTL_MS,
 } from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
 import {
-  FollowCacheKey,
-  FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
+  FriendshipCacheKey,
+  FRIENDSHIP_CACHE_TTL_MS,
+} from "#api/modules/social/friends/infrastructure/cache/friendship-cache.keyspace";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
@@ -235,44 +235,44 @@ describe("CacheModule 통합 테스트", () => {
 
         // When
         await cacheService.set(
-          FollowCacheKey.mutual(userId, "user_2"),
+          FriendshipCacheKey.mutual(userId, "user_2"),
           true,
-          FOLLOW_CACHE_TTL_MS.MUTUAL,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
         );
         await cacheService.set(
-          FollowCacheKey.mutual(userId, "user_3"),
+          FriendshipCacheKey.mutual(userId, "user_3"),
           false,
-          FOLLOW_CACHE_TTL_MS.MUTUAL,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
         );
 
         // Then
-        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_2"), z.unknown())).toBe(
-          true,
-        );
-        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_3"), z.unknown())).toBe(
-          false,
-        );
         expect(
-          await cacheService.get(FollowCacheKey.mutual(userId, "user_4"), z.unknown()),
+          await cacheService.get(FriendshipCacheKey.mutual(userId, "user_2"), z.unknown()),
+        ).toBe(true);
+        expect(
+          await cacheService.get(FriendshipCacheKey.mutual(userId, "user_3"), z.unknown()),
+        ).toBe(false);
+        expect(
+          await cacheService.get(FriendshipCacheKey.mutual(userId, "user_4"), z.unknown()),
         ).toBeUndefined();
       });
 
       it("패턴으로 친구 관계를 일괄 무효화할 수 있다", async () => {
         // Given
         await cacheService.set(
-          FollowCacheKey.mutual("user_1", "user_2"),
+          FriendshipCacheKey.mutual("user_1", "user_2"),
           true,
-          FOLLOW_CACHE_TTL_MS.MUTUAL,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
         );
         await cacheService.set(
-          FollowCacheKey.mutual("user_1", "user_3"),
+          FriendshipCacheKey.mutual("user_1", "user_3"),
           true,
-          FOLLOW_CACHE_TTL_MS.MUTUAL,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
         );
         await cacheService.set(
-          FollowCacheKey.mutual("user_2", "user_3"),
+          FriendshipCacheKey.mutual("user_2", "user_3"),
           true,
-          FOLLOW_CACHE_TTL_MS.MUTUAL,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
         );
 
         // When
@@ -281,14 +281,14 @@ describe("CacheModule 통합 테스트", () => {
         // Then
         expect(count).toBe(2);
         expect(
-          await cacheService.get(FollowCacheKey.mutual("user_1", "user_2"), z.unknown()),
+          await cacheService.get(FriendshipCacheKey.mutual("user_1", "user_2"), z.unknown()),
         ).toBeUndefined();
         expect(
-          await cacheService.get(FollowCacheKey.mutual("user_1", "user_3"), z.unknown()),
+          await cacheService.get(FriendshipCacheKey.mutual("user_1", "user_3"), z.unknown()),
         ).toBeUndefined();
-        expect(await cacheService.get(FollowCacheKey.mutual("user_2", "user_3"), z.unknown())).toBe(
-          true,
-        );
+        expect(
+          await cacheService.get(FriendshipCacheKey.mutual("user_2", "user_3"), z.unknown()),
+        ).toBe(true);
       });
     });
 
@@ -457,10 +457,10 @@ describe("CacheModule 통합 테스트", () => {
 
         // When
         const result = await cacheService.wrap(
-          FollowCacheKey.mutual(userId, targetUserId),
+          FriendshipCacheKey.mutual(userId, targetUserId),
           z.unknown(),
           factory,
-          FOLLOW_CACHE_TTL_MS.MUTUAL,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
         );
 
         // Then
@@ -469,7 +469,7 @@ describe("CacheModule 통합 테스트", () => {
 
         // 캐시에서 직접 조회
         const cached = await cacheService.get(
-          FollowCacheKey.mutual(userId, targetUserId),
+          FriendshipCacheKey.mutual(userId, targetUserId),
           z.unknown(),
         );
         expect(cached).toBe(true);

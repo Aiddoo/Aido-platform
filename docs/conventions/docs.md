@@ -18,21 +18,21 @@
 - `CLAUDE.md`는 `@AGENTS.md` 한 줄이다. 지침은 Claude·Codex가 함께 읽는 `AGENTS.md`에 쓴다.
 - `AGENTS.md`는 입구다. 명령, 꼭 지키는 규칙(끝에 주인 문서 링크), "무엇을 할 때 무엇을 읽나" 표만 둔다. 루트는 100줄, `apps/mobile`은 150줄 이하다.
 - `.claude/rules/*.md`는 `paths:` frontmatter와 40줄 이하다. Codex는 rules를 읽지 않으므로 같은 규칙이 `AGENTS.md` 링크로도 닿아야 한다.
-- 스킬은 `.claude/skills/<이름>/SKILL.md`이고 frontmatter `name`은 폴더 이름, `description`이 있다. 절차만 쓰고 규칙은 문서에 링크한다.
+- 스킬 정본은 Codex가 읽는 `.agents/skills/<이름>/SKILL.md`이고 Claude용으로 `.claude/skills/<이름>` 심볼릭 링크를 둔다. frontmatter `name`은 폴더 이름, `description`이 있다. 절차만 쓰고 규칙은 문서에 링크한다.
+- 팀 규칙·운영 절차는 저장소 문서에 쓴다. 에이전트 개인 메모리(Claude auto memory, Codex memories)에는 개인 선호만 두고 저장소 규칙을 옮겨 적지 않는다.
 - `apps/mobile/src/shared/ui/<이름>/`마다 `<이름>.md`를 둔다([틀](../../apps/mobile/docs/architecture/ui-catalog.md#새-부품-추가)).
 
 ## docs-check
 
-| 검사          | 실패 조건                                                                           |
-| ------------- | ----------------------------------------------------------------------------------- |
-| `link`        | 상대 링크의 파일·폴더가 없다                                                        |
-| `anchor`      | `#제목`이 대상 문서의 GitHub 제목 slug에 없다                                       |
-| `path`        | 백틱 안 저장소 경로(`apps/`·`features/`·`app/`… 또는 `*.md`)가 없다(무시 파일 제외) |
-| `limit`       | 줄 수 한도를 넘는다                                                                 |
-| `agent-files` | 위 에이전트 파일 모양과 다르거나 루트+앱 `AGENTS.md`가 24KB를 넘는다                |
-| `ui-doc`      | shared/ui 부품 문서가 없다                                                          |
-| `allow-stale` | 허용 항목이 더는 걸리지 않는다                                                      |
+| 검사          | 실패 조건                                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 링크(remark)  | 상대 링크의 파일·폴더나 `#제목`(GitHub slug)이 없다([remark-validate-links](https://github.com/remarkjs/remark-validate-links)) |
+| `path`        | 백틱 안 저장소 경로(`apps/`·`features/`·`app/`… 또는 `*.md`)가 없다(무시 파일 제외)                                             |
+| `limit`       | 줄 수 한도를 넘는다                                                                                                             |
+| `agent-files` | 위 에이전트 파일 모양과 다르거나 루트+앱 `AGENTS.md`가 24KB를 넘는다                                                            |
+| `ui-doc`      | shared/ui 부품 문서가 없다                                                                                                      |
+| `allow-stale` | 허용 항목이 더는 걸리지 않는다                                                                                                  |
 
-- 출시 기록은 링크한 파일만 본다. changesets·`CHANGELOG.md`·heroui 스킬·스토어 메타데이터는 보지 않는다.
+- 출시 기록은 그때 상태로 두어 보지 않는다. changesets·`CHANGELOG.md`·heroui 스킬·스토어 메타데이터는 보지 않는다.
 - 예외는 [docs-check.config.json](../../scripts/docs/docs-check.config.json)의 `allow`에 `reason`과 함께 둔다.
 - 백틱 식별자가 코드에 있는지는 `node scripts/docs/docs-check.mjs --idents`로 릴리스 끝에 한 번 사람이 읽는다. 반례·외부 API가 섞여 실패로 보지 않는다.

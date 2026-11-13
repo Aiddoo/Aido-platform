@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { LoadPremiumEntitlementsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/load-premium-entitlements.use-case";
+import { GetPremiumEntitlementsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/get-premium-entitlements.use-case";
 import { ProjectPremiumAccessUseCase } from "#api/modules/billing/premium-grants/application/use-cases/project-premium-access.use-case";
 import type { PremiumGrant } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
-import { FakeBillingUserLock } from "#test/doubles/billing/fake-billing-user-lock";
 import { FakeSubscriptionWebhookLock } from "#test/doubles/billing/fake-subscription-webhook-lock";
+import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionEventReceiptRepository } from "#test/doubles/billing/in-memory-subscription-event-receipt.repository";
@@ -144,7 +144,7 @@ function setup(
     users.map((user) => user.id),
   );
   const projectPremiumAccess = new ProjectPremiumAccessUseCase({
-    loadPremiumEntitlements: new LoadPremiumEntitlementsUseCase({
+    getPremiumEntitlements: new GetPremiumEntitlementsUseCase({
       storeEntitlementReader: new InMemoryStoreEntitlementReader(subscriptionRepository),
       premiumGrantRepository,
     }),
@@ -156,7 +156,7 @@ function setup(
   const notifier = new RecordingSubscriptionEventNotifier();
   const webhookLock = new FakeSubscriptionWebhookLock();
   const reconcileScheduler = new RecordingStoreSubscriptionReconcileScheduler();
-  const userLock = new FakeBillingUserLock(users.map((user) => user.id));
+  const userLock = new FakeUserMutationLock(users.map((user) => user.id));
   const useCase = new ApplyStoreSubscriptionEventUseCase({
     subscriptionRepository,
     subscriptionUserReader: new InMemorySubscriptionUserReader(users),

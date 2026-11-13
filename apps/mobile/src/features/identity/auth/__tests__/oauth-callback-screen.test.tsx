@@ -182,7 +182,7 @@ describe('OAuthCallbackScreen', () => {
   it.each(['loading', 'locked'] as const)(
     '%s 상태에서 열리면 로그인 화면 대신 판정을 기다린다',
     async (status) => {
-      // Given·When
+      // When
       const { route, socialAuth } = await renderOAuthCallback(status);
 
       // Then
@@ -207,7 +207,7 @@ describe('OAuthCallbackScreen', () => {
     ['authenticated', '/feed'],
     ['unauthenticated', '/login'],
   ] as const)('%s 상태에서 열리면 %s로 간다', async (status, pathname) => {
-    // Given·When
+    // When
     const { route } = await renderOAuthCallback(status);
 
     // Then

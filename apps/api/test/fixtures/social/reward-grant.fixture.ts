@@ -1,7 +1,7 @@
 import {
   RewardGrant,
   type RewardGrantPrimitives,
-} from "#api/modules/social/invites/domain/reward-grant.entity";
+} from "#api/modules/social/invite-redemptions/domain/reward-grant.entity";
 
 import { INVITE_REDEMPTION_FIXTURE_ID } from "./invite-redemption.fixture.js";
 import { INVITE_FIXTURE_INVITER_ID, INVITE_FIXTURE_NOW } from "./invite.fixture.js";

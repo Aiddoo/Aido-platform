@@ -1,5 +1,6 @@
 import { TodoCommentIdempotencyRace } from "#api/modules/engagement/comments/application/comments.errors";
 import type { TodoCommentRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
+import { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
 import type {
   TodoComment,
   TodoCommentPrimitives,
@@ -23,7 +24,7 @@ async function saveComment(
   repository: TodoCommentRepositoryPort,
   overrides: Partial<TodoCommentPrimitives> = {},
 ): Promise<TodoComment> {
-  const comment = createTodoCommentFixture({ id: (await repository.nextId()).value, ...overrides });
+  const comment = createTodoCommentFixture({ id: TodoCommentId.generate().value, ...overrides });
   await repository.save(comment);
   return comment;
 }
@@ -33,17 +34,6 @@ export function describeTodoCommentRepositoryContract(
   createRepository: () => Promise<TodoCommentRepositoryPort>,
 ): void {
   describe("댓글 저장소 계약", () => {
-    it("nextId는 부를 때마다 다른 id를 준다", async () => {
-      // Given
-      const repository = await createRepository();
-
-      // When
-      const ids = [await repository.nextId(), await repository.nextId()];
-
-      // Then
-      expect(ids[0]?.equals(ids[1] ?? ids[0])).toBe(false);
-    });
-
     it("저장한 글은 같은 할 일에서만 찾고 다른 할 일 id로는 찾지 못한다", async () => {
       // Given
       const repository = await createRepository();
@@ -118,12 +108,12 @@ export function describeTodoCommentRepositoryContract(
       // Given
       const repository = await createRepository();
       const head = createTodoCommentFixture({
-        id: (await repository.nextId()).value,
+        id: TodoCommentId.generate().value,
         authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
         replyCount: 1,
       });
       const reply = createTodoCommentFixture({
-        id: (await repository.nextId()).value,
+        id: TodoCommentId.generate().value,
         authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
         parentId: head.id.value,
         replyToCommentId: head.id.value,
@@ -132,18 +122,18 @@ export function describeTodoCommentRepositoryContract(
       const todoId = TodoId.reconstitute(TODO_COMMENT_FIXTURE_TODO_ID);
 
       const fresh = createTodoCommentFixture({
-        id: (await repository.nextId()).value,
+        id: TodoCommentId.generate().value,
         authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
       });
       const replayed = createTodoCommentFixture({
-        id: (await repository.nextId()).value,
+        id: TodoCommentId.generate().value,
         authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
         clientRequestId: head.clientRequestId,
       });
 
       // When
-      await repository.insertMany([head, reply]);
-      const duplicating = await repository.insertMany([fresh, replayed]).then(
+      await repository.saveAll([head, reply]);
+      const duplicating = await repository.saveAll([fresh, replayed]).then(
         () => null,
         (error: unknown) => error,
       );

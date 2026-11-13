@@ -127,6 +127,10 @@ describe('getWidgetDayState', () => {
     [0, 'empty'],
     [1, 'data'],
   ] as const)('할 일 %i개면 %s 상태다', (totalTodos, expected) => {
-    expect(getWidgetDayState({ totalTodos })).toBe(expected);
+    // When
+    const state = getWidgetDayState({ totalTodos });
+
+    // Then
+    expect(state).toBe(expected);
   });
 });

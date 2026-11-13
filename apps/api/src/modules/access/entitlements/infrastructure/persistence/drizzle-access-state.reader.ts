@@ -6,18 +6,17 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { resourceBonus } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { AccessStateReaderPort } from "../../application/ports/access-state.reader.port.js";
-import type { AccessState } from "../../domain/entitlement.domain-service.js";
-import type { FeatureGrants } from "../../domain/entitlements.constants.js";
-import { resolvePaidAccessDeadline } from "../../domain/paid-access.domain-service.js";
+import type { FeatureGrants } from "../../../shared/domain/access.constants.js";
+import type { AccessState } from "../../../shared/domain/entitlement.domain-service.js";
+import { resolvePaidAccessDeadline } from "../../../shared/domain/paid-access.domain-service.js";
+import type { AccessStateReaderPort } from "../../application/ports/access-state.reader.port.js";
 
 /** 권한 판단 조회는 호출자의 CLS 트랜잭션에 참여한다. */
 @Injectable()
-export class DrizzleAccessStateReader extends AccessStateReaderPort {
+export class DrizzleAccessStateReader implements AccessStateReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 

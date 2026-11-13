@@ -1,4 +1,4 @@
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -9,8 +9,8 @@ import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.doma
 import { evaluateCheerCooldown } from "../../domain/cheer-cooldown.domain-service.js";
 import { CheerMessage } from "../../domain/cheer-message.vo.js";
 import { Cheer } from "../../domain/cheer.aggregate.js";
+import { cannotCheerSelf } from "../../domain/cheers.errors.js";
 import {
-  cannotCheerSelf,
   cheerCooldownActive,
   cheerDailyLimitReached,
   cheerTargetNotFriend,
@@ -37,7 +37,10 @@ export interface SendCheerDependencies {
     "nextId" | "countSentBetween" | "findLastSent" | "save"
   >;
   readonly limitReader: Pick<CheerLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
-  readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
+  readonly mutualFriendReader: Pick<
+    MutualFriendReaderPort,
+    "isMutualFriend" | "getUserDisplayName"
+  >;
   readonly notifier: CheerNotifierPort;
   readonly countCache: Pick<CheerCountCachePort, "invalidate">;
   readonly clock: ClockPort;
@@ -57,7 +60,7 @@ export class SendCheerUseCase {
       mutationLock,
       cheerRepository,
       limitReader,
-      followReader,
+      mutualFriendReader,
       notifier,
       clock,
       logger,
@@ -69,7 +72,7 @@ export class SendCheerUseCase {
     if (senderId.equals(receiverId)) {
       throw cannotCheerSelf();
     }
-    if (!(await followReader.isMutualFriend(senderId, receiverId))) {
+    if (!(await mutualFriendReader.isMutualFriend(senderId, receiverId))) {
       throw cheerTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : CheerMessage.create(command.message);
@@ -77,7 +80,7 @@ export class SendCheerUseCase {
     const requestedAt = clock.now();
     const window = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone });
 
-    const { cheer, senderName } = await unitOfWork.run(async () => {
+    const cheer = await unitOfWork.run(async () => {
       await mutationLock.acquire([
         CheerLockKeys.dailyQuota(senderId),
         CheerLockKeys.cooldown(senderId, receiverId),
@@ -108,7 +111,14 @@ export class SendCheerUseCase {
         now: requestedAt,
       });
       await cheerRepository.save(created);
-      return { cheer: created, senderName: await followReader.getUserDisplayName(senderId) };
+      await notifier.notifyCheerSent({
+        cheerId: created.id.value,
+        senderId: senderId.value,
+        receiverId: receiverId.value,
+        senderName: await mutualFriendReader.getUserDisplayName(senderId),
+        message: message?.value,
+      });
+      return created;
     });
 
     await this.#dependencies.countCache.invalidate([senderId, receiverId]);
@@ -117,13 +127,6 @@ export class SendCheerUseCase {
       cheerId: cheer.id.value,
       senderId: senderId.value,
       receiverId: receiverId.value,
-    });
-    notifier.notifyCheerSent({
-      cheerId: cheer.id.value,
-      senderId: senderId.value,
-      receiverId: receiverId.value,
-      senderName,
-      message: message?.value,
     });
     return cheer;
   }

@@ -8,15 +8,15 @@ Aido의 NestJS REST API 서버다. 기술 스택, 레이어 구조, 테스트 �
 
 ```sh
 pnpm install
-pnpm docker:up                                  # PostgreSQL 5432, Redis 6379
-cp .env.example apps/api/.env.development       # DATABASE_URL 포트를 5432로 맞춘다
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm db:migrate
+pnpm docker:up                                  # PostgreSQL 5433
+cp apps/api/.env.example apps/api/.env.development
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/aido pnpm db:migrate
 pnpm --filter @aido/server dev
 ```
 
-- 서버는 `NODE_ENV`에 따라 `apps/api`의 `.env.development` · `.env`(production) · `.env.test`를 읽는다. 설정 스키마는 `src/platform/config/schemas`다.
+- 서버는 `NODE_ENV`에 따라 `apps/api`의 `.env`(운영) · `.env.development`(개발) · `.env.test`(테스트, 커밋됨)를 읽고, 예시는 `.env.example` 하나다. 도커 compose도 같은 파일을 읽는다. 설정 스키마는 `src/platform/config/schemas`다.
 - `pnpm db:migrate`는 [`tooling/database-migrate`](../../tooling/database-migrate/migrate.mjs)로 pg-boss 마이그레이션 후 Drizzle 마이그레이션(`drizzle/`)을 적용한다. 원격 DB는 `AIDO_ALLOW_REMOTE_DB=1` 없이 거부된다.
-- API까지 Docker로 띄우려면 `.env.docker.dev.example`을 `.env.docker.dev`로 복사하고 `pnpm docker:dev:up`을 쓴다. 이 구성의 DB는 host 5433 포트다.
+- API까지 Docker로 띄우려면 `pnpm docker:dev:up`을 쓴다. 같은 DB(host 5433)에 migrate → API 순서로 붙는다.
 
 ## 구조
 

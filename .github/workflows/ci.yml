@@ -1,242 +1,82 @@
 name: CI
 
+# main을 향한 PR과 main push에서만 돈다. stack은 맨 아래 PR만 main을 향하고, 위층의 누적 tree는
+# tip push의 pre-push가 검증한다. 합친 뒤 main push가 이미지 발행 전에 다시 검증한다(docs/conventions/git.md#stack).
 on:
   workflow_dispatch:
-  # PR은 main을 향한다. main push는 이미지 발행·배포를 위해 돌고, 같은 tree의 성공한 PR 검증이 있으면 재사용한다.
   push:
     branches: [main]
   pull_request:
-    types:
-      [
-        opened,
-        synchronize,
-        reopened,
-        ready_for_review,
-        converted_to_draft,
-        labeled,
-        unlabeled,
-        edited,
-      ]
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
 
+# PR은 새 push가 옛 run을 취소한다. main은 진행 중인 run을 끝까지 돌려 이미지 발행이 끊기지 않게 한다.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: >-
-    ${{ github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  gate:
+  scope:
     name: CI Scope
-    if: >-
-      ${{ (github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (!contains(format(',{0}', join(github.event.pull_request.labels.*.name, ',')), ',stack:') || contains(github.event.pull_request.labels.*.name, 'ci:stack-tip')))) }}
+    if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
-      pull-requests: read
-      actions: read
+      actions: read # 마지막으로 이미지를 발행한 CI run 조회
     outputs:
-      run: ${{ steps.policy.outputs.run == 'true' && steps.validation.outputs.validation_reused != 'true' }}
-      validation_reused: ${{ steps.validation.outputs.validation_reused }}
-      api: ${{ steps.policy.outputs.api }}
-      mobile: ${{ steps.policy.outputs.mobile }}
-      shared: ${{ steps.policy.outputs.shared }}
-      docs: ${{ steps.policy.outputs.docs }}
-      base_sha: ${{ steps.policy.outputs.base_sha }}
-      head_sha: ${{ steps.policy.outputs.head_sha }}
+      api: ${{ steps.scope.outputs.api }}
+      mobile: ${{ steps.scope.outputs.mobile }}
+      shared: ${{ steps.scope.outputs.shared }}
+      docs: ${{ steps.scope.outputs.docs }}
     steps:
       # 변경 파일 목록만 필요하므로 blob 없이 이력과 tree만 받는다.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           filter: blob:none
-      # GitHub 공식 Octokit 클라이언트가 인증·pagination을 맡는다.
-      # 저장소 고유의 스택/의존성 정책만 별도 모듈로 유지한다.
-      - name: Resolve cumulative CI scope
-        id: policy
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0 (Node 24)
+
+      # main push는 직전 push(event.before)가 아니라 마지막으로 이미지를 발행한 CI 커밋부터 비교한다.
+      # 앞선 run이 대기 중 밀려 취소되거나 실패해 이미지를 못 만들었으면 그 API 변경을 이번 run이 다시 담는다.
+      - name: Resolve last image commit
+        id: base
+        if: github.event_name == 'push'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const { execFileSync } = require('node:child_process');
-            const { mkdirSync, writeFileSync } = require('node:fs');
-            const { join } = require('node:path');
-            const { planPullRequestCI, validationProofName } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
-            const { dependencyScope, touchesDocumentation } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/dependency-scope.mjs`);
             const { owner, repo } = context.repo;
-            const event = context.payload;
-            let plan = { run: true, base: 'main', reason: 'push-or-dispatch', ancestors: [] };
-            let baseSha = '';
-            let headSha = context.sha;
-            let currentPull;
-            if (event.pull_request !== undefined) {
-              const { data: current } = await github.rest.pulls.get({ owner, repo, pull_number: event.pull_request.number });
-              currentPull = current;
-              headSha = current.head.sha;
-              if (headSha !== event.pull_request.head.sha) throw new Error('The workflow head is stale; rerun for the current commit.');
-              const openPulls = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
-              plan = planPullRequestCI(current, openPulls, `${owner}/${repo}`);
-              const verifyAncestor = async (base) => {
-                const { data } = await github.rest.repos.compareCommits({ owner, repo, base, head: headSha });
-                if (!['ahead', 'identical'].includes(data.status)) throw new Error('Rebase the CI tip to include the current base and all stack ancestors.');
-              };
-              if (plan.run) {
-                const { data: branch } = await github.rest.repos.getBranch({ owner, repo, branch: plan.base });
-                baseSha = branch.commit.sha;
-                if (plan.reason === 'cumulative-stack-tip') await verifyAncestor(baseSha);
-              }
-              for (const ancestor of plan.ancestors) await verifyAncestor(ancestor);
-            }
-            let paths = null;
-            if (plan.run && context.eventName !== 'workflow_dispatch') {
-              try {
-                const baseline = baseSha || event.before;
-                if (baseline === undefined || baseline === '' || /^0+$/.test(baseline)) throw new Error('No complete diff baseline');
-                const range = event.pull_request !== undefined ? `${baseline}...${headSha}` : `${baseline}..${headSha}`;
-                paths = execFileSync('git', ['diff', '--name-only', '-z', range], { encoding: 'utf8' }).split('\0').filter((path) => path !== '');
-              } catch (error) {
-                core.warning(`Unable to scope changed files; running all checks: ${error.message}`);
-              }
-            }
-            const scope = dependencyScope(paths);
-            core.setOutput('run', plan.run);
-            core.setOutput('api', scope.api);
-            core.setOutput('mobile', scope.mobile);
-            core.setOutput('shared', scope.shared);
-            core.setOutput('docs', touchesDocumentation(paths));
-            core.setOutput('base_sha', baseSha);
-            core.setOutput('head_sha', headSha);
-            await core.summary.addRaw(`CI policy: **${plan.reason}**. API=${scope.api}, mobile=${scope.mobile}, shared=${scope.shared}. Heavy checks: **${plan.run ? 'run' : 'deferred'}**. Base: ${plan.base} (${baseSha}). Head: ${headSha}. Ancestors: ${plan.ancestors.join(', ') || 'none'}.`).write();
-            const testedCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-            const tree = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim();
-            if (testedCommit !== context.sha) throw new Error('Unexpected checkout commit.');
-            core.setOutput('tree', tree);
-            core.setOutput('tested_commit', testedCommit);
-            core.setOutput('scope', JSON.stringify(scope));
-            const attempt = Number(process.env.GITHUB_RUN_ATTEMPT);
-            const proofDirectory = join(process.env.RUNNER_TEMP, 'ci-tree-proof');
-            const reusableSource = plan.reason === 'cumulative-stack-tip' || (plan.reason === 'regular' && plan.base === 'main');
-            if (context.eventName === 'pull_request' && reusableSource && Object.values(scope).some(Boolean)) {
-              const headTree = execFileSync('git', ['rev-parse', `${headSha}^{tree}`], { encoding: 'utf8' }).trim();
-              if (headTree === tree) {
-                mkdirSync(proofDirectory, { recursive: true });
-                writeFileSync(join(proofDirectory, 'proof.json'), JSON.stringify({
-                  version: 1, repository: `${owner}/${repo}`, runId: context.runId, attempt,
-                  pullNumber: currentPull.number, reason: plan.reason,
-                  stackLabel: currentPull.labels.find((label) => label.name.startsWith('stack:'))?.name,
-                  headSha, testedCommit, tree, baseSha, ancestors: plan.ancestors, scopes: scope,
-                }));
-                core.setOutput('proof_created', 'true');
-                core.setOutput('proof_name', validationProofName(context.runId, attempt));
-              }
-            }
-            if (context.eventName !== 'push' || context.ref !== 'refs/heads/main') return;
-            try {
-              const { data: activeRun } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: context.runId });
-              const { data: candidates } = await github.rest.actions.listWorkflowRuns({
-                owner, repo, workflow_id: activeRun.workflow_id, event: 'pull_request', status: 'success', per_page: 100,
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'ci.yml', branch: 'main', status: 'success', per_page: 100,
+            });
+            for (const run of data.workflow_runs) {
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                owner, repo, run_id: run.id, per_page: 100,
               });
-              for (const run of candidates.workflow_runs.slice(0, 20)) {
-                if (run.path !== '.github/workflows/ci.yml' || run.repository.full_name !== `${owner}/${repo}` || run.head_repository?.full_name !== `${owner}/${repo}`) continue;
-                const { data: head } = await github.rest.repos.getCommit({ owner, repo, ref: run.head_sha });
-                if (head.commit.tree.sha !== tree) continue;
-                const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, { owner, repo, run_id: run.id, per_page: 100 });
-                const matches = artifacts.filter((artifact) => artifact.name === validationProofName(run.id, run.run_attempt) && !artifact.expired);
-                if (matches.length !== 1) continue;
-                core.setOutput('candidate_run', run.id);
-                core.setOutput('candidate_artifact', matches[0].id);
-                core.setOutput('workflow_id', activeRun.workflow_id);
-                break;
-              }
-            } catch {
-              core.warning('No usable CI proof candidate; current scope will be validated.');
-            }
-
-      - name: Upload candidate checkout proof
-        if: steps.policy.outputs.proof_created == 'true'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ${{ steps.policy.outputs.proof_name }}
-          path: ${{ runner.temp }}/ci-tree-proof/proof.json
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Download candidate proof from its run
-        id: download-proof
-        if: steps.policy.outputs.candidate_run != ''
-        continue-on-error: true
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2 (Node 24)
-        with:
-          artifact-ids: ${{ steps.policy.outputs.candidate_artifact }}
-          run-id: ${{ steps.policy.outputs.candidate_run }}
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          path: ${{ runner.temp }}/ci-proof-reuse
-          digest-mismatch: error
-
-      - name: Verify source run and required jobs
-        id: validation
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0 (Node 24)
-        env:
-          CANDIDATE_RUN: ${{ steps.policy.outputs.candidate_run }}
-          CANDIDATE_ARTIFACT: ${{ steps.policy.outputs.candidate_artifact }}
-          WORKFLOW_ID: ${{ steps.policy.outputs.workflow_id }}
-          CHECKOUT_TREE: ${{ steps.policy.outputs.tree }}
-          CHECKOUT_COMMIT: ${{ steps.policy.outputs.tested_commit }}
-          REQUIRED_SCOPE: ${{ steps.policy.outputs.scope }}
-          DOWNLOAD_OUTCOME: ${{ steps.download-proof.outcome }}
-        with:
-          script: |
-            const { readFileSync, statSync } = require('node:fs');
-            const { join } = require('node:path');
-            const { validateTreeProof } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
-            const { owner, repo } = context.repo;
-            core.setOutput('validation_reused', 'false');
-            if (context.eventName !== 'push' || process.env.CANDIDATE_RUN === '' || process.env.DOWNLOAD_OUTCOME !== 'success') return;
-            try {
-              const file = join(process.env.RUNNER_TEMP, 'ci-proof-reuse', 'proof.json');
-              if (statSync(file).size > 65536) throw new Error('Oversized proof.');
-              const proof = JSON.parse(readFileSync(file, 'utf8'));
-              const runId = Number(process.env.CANDIDATE_RUN);
-              const { data: candidateRun } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
-              if (!Number.isSafeInteger(proof?.pullNumber) || !/^[0-9a-f]{40}$/.test(proof?.testedCommit) || !/^[0-9a-f]{40}$/.test(proof?.headSha)) throw new Error('Invalid proof identifiers.');
-              const { data: artifact } = await github.rest.actions.getArtifact({ owner, repo, artifact_id: Number(process.env.CANDIDATE_ARTIFACT) });
-              const { data: pull } = await github.rest.pulls.get({ owner, repo, pull_number: proof.pullNumber });
-              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, { owner, repo, run_id: runId, attempt_number: candidateRun.run_attempt, per_page: 100 });
-              const { data: testedCommit } = await github.rest.repos.getCommit({ owner, repo, ref: proof.testedCommit });
-              const { data: headCommit } = await github.rest.repos.getCommit({ owner, repo, ref: proof.headSha });
-              const { data: ancestry } = await github.rest.repos.compareCommits({ owner, repo, base: proof.headSha, head: process.env.CHECKOUT_COMMIT });
-              const { data: run } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
-              const decision = validateTreeProof({
-                proof, run, artifact, pull, jobs, jobsAttempt: candidateRun.run_attempt, repository: `${owner}/${repo}`,
-                workflowId: Number(process.env.WORKFLOW_ID), currentTree: process.env.CHECKOUT_TREE,
-                requiredScope: JSON.parse(process.env.REQUIRED_SCOPE),
-                testedCommitTree: testedCommit.commit.tree.sha, headCommitTree: headCommit.commit.tree.sha,
-                headIncluded: ['ahead', 'identical'].includes(ancestry.status),
-              });
-              if (!decision.reusable) {
-                await core.summary.addRaw(`CI proof not reused: **${decision.reason}**. Validate the current scope.`).write();
+              if (jobs.some((job) => job.name === 'Build & Push Image' && job.conclusion === 'success')) {
+                core.setOutput('sha', run.head_sha);
                 return;
               }
-              core.setOutput('validation_reused', 'true');
-              await core.summary.addRaw(`Validation reused from [run ${run.id}, attempt ${run.run_attempt}](${run.html_url}). Head H=${proof.headSha}; tested checkout P=${proof.testedCommit}; tree=${proof.tree}. Current commit=${process.env.CHECKOUT_COMMIT}. Required jobs succeeded; current heavy jobs are deferred.`).write();
-            } catch {
-              core.warning('CI proof unavailable or invalid; current scope will be validated.');
             }
+            core.warning('최근 main CI 100회에 이미지 발행이 없어 전체 범위로 검증한다');
 
-  # stack은 tip의 누적 범위(base~head)를 한 번만 검토한다. 중간 PR·docs-only PR에서는 돌지 않는다.
+      - name: Resolve changed scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || steps.base.outputs.sha }}
+        run: node scripts/ci/dependency-scope.mjs "$BASE_SHA" "$GITHUB_SHA" | tee -a "$GITHUB_OUTPUT"
+
   dependency-review:
     name: Dependency Review
-    needs: gate
-    if: github.event_name == 'pull_request' && needs.gate.outputs.run == 'true' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true' || needs.gate.outputs.shared == 'true')
+    needs: scope
+    if: github.event_name == 'pull_request' && (needs.scope.outputs.api == 'true' || needs.scope.outputs.mobile == 'true' || needs.scope.outputs.shared == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
-          base-ref: ${{ needs.gate.outputs.base_sha }}
-          head-ref: ${{ needs.gate.outputs.head_sha }}
           fail-on-severity: high
 
   # 로컬 pre-push가 같은 팀 Turbo 원격 캐시에 올린 단위·통합 테스트 결과를 재사용하고, 놓친 작업만 러너에서 실제로 돈다.
@@ -244,15 +84,15 @@ jobs:
   # 정적 검사·테스트·API 빌드를 한 job에 두어 checkout·의존성 설치를 한 번만 한다.
   verify:
     name: Lint, Test & Build
-    needs: gate
-    if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true' || needs.gate.outputs.shared == 'true')
+    needs: scope
+    if: needs.scope.outputs.api == 'true' || needs.scope.outputs.mobile == 'true' || needs.scope.outputs.shared == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       # --affected의 비교 기준은 PR base다. main push는 얕은 checkout이라 전체를 변경으로 보고 캐시가 걸러 준다.
-      TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && needs.gate.outputs.base_sha || '' }}
+      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -263,7 +103,7 @@ jobs:
 
       - uses: ./.github/actions/setup
         with:
-          install-scope: ${{ needs.gate.outputs.mobile == 'true' && 'all' || 'api' }}
+          install-scope: ${{ needs.scope.outputs.mobile == 'true' && 'all' || 'api' }}
 
       # Oxc는 전체 저장소를 한 번 스캔한다. 패키지별 프로세스를 반복하지 않아 로컬·CI 결과가 같다.
       - name: Oxlint
@@ -284,9 +124,9 @@ jobs:
       # 모바일은 스토어 버전이라 Changesets에서 제외되어 있어 이 검사에 걸리지 않는다.
       # 릴리스 PR은 `pnpm version-packages`가 변경 파일을 CHANGELOG로 소비하므로 CHANGELOG 변경으로 대신 확인한다.
       - name: Changeset
-        if: github.event_name == 'pull_request' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.shared == 'true')
+        if: github.event_name == 'pull_request' && (needs.scope.outputs.api == 'true' || needs.scope.outputs.shared == 'true')
         env:
-          BASE_SHA: ${{ needs.gate.outputs.base_sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           if git diff --name-only "$BASE_SHA" HEAD | grep -q 'CHANGELOG\.md$'; then
             echo "버전을 확정한 릴리스 PR이다. 변경 파일은 CHANGELOG로 반영됐다."
@@ -297,46 +137,47 @@ jobs:
       # 코드 관례는 Oxlint 단계(aido JS 플러그인)가 본다. 여기서는 파일 이름(ls-lint)과 import 경계(dependency-cruiser)를 본다.
       # 모바일 의존성이 없는 API 범위에서는 서버만 돈다.
       - name: Names & Dependencies
-        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
-        run: pnpm lint:names && pnpm turbo run lint:deps --affected ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+        if: needs.scope.outputs.api == 'true' || needs.scope.outputs.mobile == 'true'
+        run: pnpm lint:names && pnpm turbo run lint:deps --affected ${{ needs.scope.outputs.mobile != 'true' && '--filter=@aido/server' || needs.scope.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       - name: Type Check
-        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
-        run: pnpm turbo run typecheck --affected ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+        if: needs.scope.outputs.api == 'true' || needs.scope.outputs.mobile == 'true'
+        run: pnpm turbo run typecheck --affected ${{ needs.scope.outputs.mobile != 'true' && '--filter=@aido/server' || needs.scope.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       # 테스트 러너마다 코어 비율로 worker를 잡아 겹치면 4 vCPU 러너를 과포화시키므로 테스트 작업은 한 번에 하나씩 돈다.
+      # 계약 테스트(출시 앱 OpenAPI 지문)는 배포 전 하위 호환 확인이라 main에서도 돈다. pre-push가 올린 캐시가 있으면 재사용한다.
       - name: Test
-        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
-        run: pnpm turbo run test test:node test:integration --affected --concurrency=1 ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+        if: needs.scope.outputs.api == 'true' || needs.scope.outputs.mobile == 'true'
+        run: pnpm turbo run test test:node test:integration test:contract --affected --concurrency=1 ${{ needs.scope.outputs.mobile != 'true' && '--filter=@aido/server' || needs.scope.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       - name: Build API and dependency closure
-        if: needs.gate.outputs.api == 'true'
+        if: needs.scope.outputs.api == 'true'
         run: pnpm turbo run build --affected --filter='!@aido/mobile'
 
-  # 문서만 바뀐 diff는 verify 범위가 비어 건너뛰므로 문서 검사만 의존성 설치 없이 돈다(docs-check는 Node 내장 모듈만 쓴다).
+  # 문서만 바뀐 diff는 verify 범위가 비어 건너뛰므로 루트 도구(remark)만 설치해 문서 검사만 돈다.
   docs:
     name: Docs Check
-    needs: gate
-    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.docs == 'true' && needs.gate.outputs.api != 'true' && needs.gate.outputs.mobile != 'true' && needs.gate.outputs.shared != 'true'
+    needs: scope
+    if: needs.scope.outputs.docs == 'true' && needs.scope.outputs.api != 'true' && needs.scope.outputs.mobile != 'true' && needs.scope.outputs.shared != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: ./.github/actions/setup
         with:
-          node-version-file: .nvmrc
+          install-scope: root
 
       - name: Docs check
-        run: node scripts/docs/docs-check.mjs
+        run: pnpm docs:check
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
-  # 직접 검증 또는 같은 tree의 신뢰된 tip 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
+  # 같은 run의 검증이 성공한 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
+  # job 이름 'Build & Push Image'는 deploy.yml과 위 scope가 이미지 발행 여부를 찾는 기준이다. 바꾸면 함께 바꾼다.
   docker:
     name: Build & Push Image
-    needs: [gate, verify]
-    if: >-
-      ${{ !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.api == 'true' && ((needs.gate.outputs.validation_reused == 'true' && needs.verify.result == 'skipped') || (needs.gate.outputs.validation_reused != 'true' && needs.verify.result == 'success')) && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    needs: [scope, verify]
+    if: needs.scope.outputs.api == 'true' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04-arm # arm64 표준 러너 (private 레포 지원, 플랜 무료 분수 사용)
     timeout-minutes: 25
     permissions:
@@ -349,12 +190,6 @@ jobs:
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       # 검사를 통과한 이미지만 GHCR에 올린다. deploy는 두 이미지가 모두 있는 SHA만 배포한다.
       - name: Build api image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -365,7 +200,7 @@ jobs:
           platforms: linux/arm64
           load: true
           push: false
-          pull: true # node:26.13.0-alpine3.24의 최신 base 보안 digest 수급
+          pull: true # node:26.13.1-alpine3.24의 최신 base 보안 digest 수급
           provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
           tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
           cache-from: type=gha,scope=api
@@ -388,7 +223,7 @@ jobs:
           platforms: linux/arm64
           load: true
           push: false
-          pull: true # node:26.13.0-alpine3.24의 최신 base 보안 digest 수급
+          pull: true # node:26.13.1-alpine3.24의 최신 base 보안 digest 수급
           provenance: false
           tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
           cache-from: type=gha,scope=migrate
@@ -401,6 +236,13 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '1'
+
+      # GHCR 쓰기 로그인은 서드파티 스캔이 끝난 뒤 push 바로 앞에서만 한다(빌드·스캔에는 필요 없다).
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push images
         id: push

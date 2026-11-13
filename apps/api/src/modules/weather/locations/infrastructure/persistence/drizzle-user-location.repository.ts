@@ -6,7 +6,7 @@ import { userLocation } from "#api/platform/database/schema/weather.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { UserLocationRepositoryPort } from "../../application/ports/user-location.repository.port.js";
-import type { UserLocation } from "../../domain/user-location.entity.js";
+import type { UserLocation } from "../../domain/user-location.aggregate.js";
 import { toUserLocation, toUserLocationRow } from "./user-location-row.mapper.js";
 
 @Injectable()

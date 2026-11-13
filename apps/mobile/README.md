@@ -44,25 +44,11 @@ pnpm dev:android  # QR 코드 스캔
 
 ## 빌드
 
-### 개발 빌드 (Dev Client)
+EAS CLI를 그대로 쓴다(`apps/mobile`에서 실행). 스토어 빌드 절차는 [빌드와 배포](docs/build-and-release.md)다.
 
 ```bash
-pnpm build:development           # 전체
-pnpm build:development:android   # Android
-pnpm build:development:ios       # iOS
-```
-
-### 프리뷰 빌드 (내부 테스트)
-
-```bash
-pnpm build:preview
-```
-
-### 프로덕션 빌드
-
-```bash
-pnpm build:production            # 빌드
-pnpm submit:production           # 스토어 제출
+eas build --profile development --platform <ios|android|all>   # 개발 빌드(dev client)
+eas build --profile preview --platform <ios|android|all>       # 내부 테스트
 ```
 
 ### OTA 업데이트

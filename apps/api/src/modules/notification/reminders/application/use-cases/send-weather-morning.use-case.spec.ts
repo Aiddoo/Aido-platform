@@ -1,9 +1,10 @@
 import type { ReminderWeatherReport } from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
-import { WeatherReportReader } from "#api/modules/weather/forecasts/application/weather-report.reader";
+import { ReadWeatherReportUseCase } from "#api/modules/weather/forecasts/application/use-cases/read-weather-report.use-case";
+import { ReadWeatherReportsUseCase } from "#api/modules/weather/forecasts/application/use-cases/read-weather-reports.use-case";
 import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReminderWeatherReportReader } from "#test/doubles/notification/stub-reminder-weather-report.reader";
@@ -46,16 +47,16 @@ function seoulReport(
   },
   timezone = "Asia/Seoul",
 ): ReminderWeatherReport {
-  const report = weatherReportFixture(NOW);
+  const report = weatherReportFixture(instantFromDate(NOW));
   return {
     timezone,
     report: {
       daily: report.daily.map((day, index) => ({
         ...day,
-        date: index === 0 ? "2026-11-02" : day.date,
+        date: index === 0 ? Temporal.PlainDate.from("2026-11-02") : day.date,
       })),
       hourly: report.hourly.map((hour) =>
-        change != null && hour.startsAt.getTime() === atKst(change.hour).getTime()
+        change != null && hour.startsAt.epochMilliseconds === atKst(change.hour).getTime()
           ? { ...hour, ...change }
           : hour,
       ),
@@ -248,9 +249,9 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   });
 });
 
-// weather 조회 포트는 아직 Date를 받아 알림 경계(providers)와 같은 변환을 거친다
-function weatherReportReaderAt(reader: WeatherReportReader): ReminderWeatherReportReaderPort {
-  return { readReports: (requests, now) => reader.readReports(requests, instantToDate(now)) };
+// 알림 경계(providers)와 같은 방식으로 weather 공개 포트를 잇는다
+function weatherReportReaderAt(reader: ReadWeatherReportsUseCase): ReminderWeatherReportReaderPort {
+  return { readReports: (requests, now) => reader.execute({ requests, now }) };
 }
 
 describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 예산", () => {
@@ -269,7 +270,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     clock = new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime()));
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     provider = new StubWeatherReportProvider();
-    provider.report = weatherReportFixture(NOW);
+    provider.report = weatherReportFixture(instantFromDate(NOW));
     reader = new StubWeatherReminderReader();
     todoReader = new StubWeatherBriefingTodoReader();
     publisher = new RecordingNotificationPublisher();
@@ -279,12 +280,15 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
       notificationPublisher: publisher,
       notificationHistoryReader: new StubNotificationHistoryReader(),
       weatherReportReader: weatherReportReaderAt(
-        new WeatherReportReader({
-          weatherReportProvider: provider,
-          weatherReportCache: new WeatherReportCache(
-            memory,
-            new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
-          ),
+        new ReadWeatherReportsUseCase({
+          readWeatherReport: new ReadWeatherReportUseCase({
+            weatherReportProvider: provider,
+            weatherReportCache: new WeatherReportCache(
+              memory,
+              new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
+            ),
+            logger: new SilentLogger(),
+          }),
           timezoneResolver: new StubTimezoneResolver(),
           logger: new SilentLogger(),
         }),

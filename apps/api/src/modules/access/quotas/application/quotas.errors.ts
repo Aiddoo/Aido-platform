@@ -1,9 +1,8 @@
 import { ErrorCode, type ErrorCodeType } from "@aido/api/errors";
 import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 
+import type { FeatureQuotaDetails } from "#api/modules/access/entitlements/access-entitlements.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
-
-import type { FeatureQuotaDetails } from "../../entitlements/application/read-models/feature-quota.read-model.js";
 
 /** 기능별 한도 초과 코드. 출시 앱은 AI_PARSE의 AI_1303을 안다. */
 const QUOTA_EXHAUSTED_ERROR = {

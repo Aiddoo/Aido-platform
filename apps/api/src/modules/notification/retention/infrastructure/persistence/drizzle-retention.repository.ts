@@ -6,7 +6,6 @@ import { z } from "zod";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   nullableRawTimestamptzSchema,
   rawTimestamptzSchema,
@@ -24,6 +23,7 @@ import {
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toSupportedLocale } from "#api/shared/domain/locale";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 

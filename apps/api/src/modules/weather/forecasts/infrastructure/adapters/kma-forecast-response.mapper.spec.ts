@@ -1,9 +1,9 @@
 import { parseKmaResponse } from "./kma-forecast-response.mapper.js";
 
 describe("KMA 응답 날짜 선택", () => {
-  it("서버 TZ와 무관하게 KST 대상일·다음 날을 선택하고 반환 Date는 원 instant를 유지한다", () => {
+  it("서버 TZ와 무관하게 KST 대상일·다음 날을 선택하고 대상 순간을 그대로 싣는다", () => {
     // Given
-    const date = new Date("2026-07-23T16:00:00Z");
+    const date = Temporal.Instant.from("2026-07-23T16:00:00Z");
     const response = {
       response: {
         header: { resultCode: "00", resultMsg: "NORMAL_SERVICE" },

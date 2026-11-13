@@ -6,7 +6,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
-import { TodoCommentLike } from "../../domain/todo-comment-like.entity.js";
+import { TodoCommentLike } from "../../domain/todo-comment-like.aggregate.js";
 import {
   blockedCounterpart,
   commentNotFound,
@@ -103,12 +103,16 @@ export class LikeTodoCommentUseCase {
     }
 
     const now = clock.now();
-    const like = existing ?? TodoCommentLike.create({ commentId, userId, now });
-    like.activate(now);
-    await likeRepository.save(like);
+    const commentLike = existing ?? TodoCommentLike.create({ commentId, userId, now });
+    commentLike.like(now);
+    await likeRepository.save(commentLike);
     comment.addLike(now);
     await repository.save(comment);
-    return { likeCount: comment.likeCount, wasEverNotified: like.wasEverNotified, senderName };
+    return {
+      likeCount: comment.likeCount,
+      wasEverNotified: commentLike.wasEverNotified,
+      senderName,
+    };
   }
 
   /** 알림과 발송 outbox를 저장하는 동안 취소·재설정이 끼어들지 않도록 같은 댓글 잠금 안에서 다시 확인한다 */

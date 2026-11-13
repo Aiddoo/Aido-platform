@@ -6,7 +6,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { friendRequestNotFound } from "../friends.errors.js";
 import { FriendLockKeys } from "../friends.lock-keys.js";
 import { FriendLogEvent } from "../friends.log-events.js";
-import type { FollowRepositoryPort } from "../ports/follow.repository.port.js";
+import type { FriendshipRepositoryPort } from "../ports/friendship.repository.port.js";
 
 export interface RejectFriendRequestCommand {
   readonly userId: string;
@@ -16,7 +16,10 @@ export interface RejectFriendRequestCommand {
 export interface RejectFriendRequestDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly followRepository: Pick<FollowRepositoryPort, "findByFollowerAndFollowing" | "delete">;
+  readonly friendshipRepository: Pick<
+    FriendshipRepositoryPort,
+    "findByFollowerAndFollowing" | "delete"
+  >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -28,17 +31,20 @@ export class RejectFriendRequestUseCase {
   }
 
   async execute(command: RejectFriendRequestCommand): Promise<void> {
-    const { unitOfWork, mutationLock, followRepository, logger } = this.#dependencies;
+    const { unitOfWork, mutationLock, friendshipRepository, logger } = this.#dependencies;
     const userId = UserId.reconstitute(command.userId);
     const requesterUserId = UserId.reconstitute(command.requesterUserId);
 
     await unitOfWork.run(async () => {
       await mutationLock.acquire([FriendLockKeys.pair(userId, requesterUserId)]);
-      const request = await followRepository.findByFollowerAndFollowing(requesterUserId, userId);
+      const request = await friendshipRepository.findByFollowerAndFollowing(
+        requesterUserId,
+        userId,
+      );
       if (request == null || !request.isPending()) {
         throw friendRequestNotFound(requesterUserId);
       }
-      await followRepository.delete(request);
+      await friendshipRepository.delete(request);
     });
 
     logger.log({

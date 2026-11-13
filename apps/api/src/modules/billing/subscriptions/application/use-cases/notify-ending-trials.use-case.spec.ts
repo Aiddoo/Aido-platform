@@ -11,9 +11,9 @@ import {
   SUBSCRIPTION_FIXTURE_USER_ID,
 } from "#test/fixtures/billing/subscription.fixture";
 
-import { SweepBillingNoticesUseCase } from "../../../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
+import { SweepBillingNoticesUseCase } from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import type { Subscription, SubscriptionPrimitives } from "../../domain/subscription.aggregate.js";
-import type { TrialEndingNotice } from "../ports/trial-ending-notice.repository.port.js";
+import type { TrialEndingNotice } from "../../domain/trial-ending-notice.entity.js";
 import { NotifyEndingTrialsUseCase } from "./notify-ending-trials.use-case.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
@@ -68,7 +68,7 @@ describe("NotifyEndingTrialsUseCase — 체험 종료 안내", () => {
 
     // Then
     expect(result).toMatchObject({ notifiedCount: 2, skippedCount: 0 });
-    expect(notifier.notified.map((notice) => notice.subscriptionId)).toEqual([2, 1]);
+    expect(notifier.notified.map((notice) => notice.id.value)).toEqual([2, 1]);
   });
 
   it("시작할 때 이미 3일 이하로 남았던 짧은 체험은 안내하지 않고 건너뛴 수로 센다", async () => {

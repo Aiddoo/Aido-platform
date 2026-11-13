@@ -28,6 +28,11 @@ export interface UserReportPrimitives {
   readonly resolutionNote: string | null;
 }
 
+// 조건부 저장(saveIfUnchanged)이 비교하는 읽은 때의 상태
+export interface UserReportVersion {
+  readonly status: UserReportStatus;
+}
+
 interface UserReportProps {
   readonly reporterId: UserId;
   readonly targetUserId: UserId;
@@ -138,6 +143,10 @@ export class UserReport extends AggregateRoot<UserReportId, UserReportProps> {
 
   get resolutionNote(): UserReportResolutionNote | null {
     return this.props.resolutionNote;
+  }
+
+  get version(): UserReportVersion {
+    return { status: this.props.status };
   }
 
   // 이미 처리한 신고는 첫 처리 기록을 그대로 둔다

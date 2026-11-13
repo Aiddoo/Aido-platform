@@ -1,4 +1,7 @@
-import { voiceNoteDigestRequestSchema, voiceNoteDigestResponseSchema } from "@aido/api";
+import {
+  voiceNoteDigestRequestSchema,
+  voiceNoteDigestResponseSchema,
+} from "@aido/api/contracts/voice";
 import type { z } from "zod";
 
 export const VoiceNoteDigestRequestDto = voiceNoteDigestRequestSchema.meta({

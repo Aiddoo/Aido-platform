@@ -30,23 +30,21 @@ import {
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { GetNudgeCooldownUseCase } from "../../../application/use-cases/get-nudge-cooldown.use-case.js";
 import { GetNudgeLimitUseCase } from "../../../application/use-cases/get-nudge-limit.use-case.js";
 import { GetReceivedNudgesUseCase } from "../../../application/use-cases/get-received-nudges.use-case.js";
-import { GetRemindNudgeCooldownUseCase } from "../../../application/use-cases/get-remind-nudge-cooldown.use-case.js";
 import { GetSentNudgesUseCase } from "../../../application/use-cases/get-sent-nudges.use-case.js";
 import { MarkNudgeReadUseCase } from "../../../application/use-cases/mark-nudge-read.use-case.js";
 import { SendNudgeUseCase } from "../../../application/use-cases/send-nudge.use-case.js";
-import { SendRemindNudgeUseCase } from "../../../application/use-cases/send-remind-nudge.use-case.js";
 import {
   toCreateNudgeResponse,
-  toCreateRemindNudgeResponse,
   toMarkNudgeReadResponse,
   toNudgeCooldownResponse,
   toNudgeLimitInfoResponse,
@@ -55,7 +53,6 @@ import {
 } from "./nudge-response.mapper.js";
 import {
   CreateNudgeResponseDto,
-  CreateRemindNudgeResponseDto,
   GetNudgesQueryDto,
   MarkNudgeReadResponseDto,
   NudgeCooldownResponseDto,
@@ -63,7 +60,6 @@ import {
   NudgeLimitInfoDto,
   ReceivedNudgesResponseDto,
   SendNudgeDto,
-  SendRemindNudgeDto,
   SentNudgesResponseDto,
 } from "./nudge.dto.js";
 
@@ -75,9 +71,7 @@ export class NudgeController {
   readonly #getSentNudgesUseCase: GetSentNudgesUseCase;
   readonly #getNudgeLimitUseCase: GetNudgeLimitUseCase;
   readonly #getNudgeCooldownUseCase: GetNudgeCooldownUseCase;
-  readonly #getRemindNudgeCooldownUseCase: GetRemindNudgeCooldownUseCase;
   readonly #sendNudgeUseCase: SendNudgeUseCase;
-  readonly #sendRemindNudgeUseCase: SendRemindNudgeUseCase;
   readonly #markNudgeReadUseCase: MarkNudgeReadUseCase;
 
   constructor(
@@ -85,18 +79,14 @@ export class NudgeController {
     getSentNudgesUseCase: GetSentNudgesUseCase,
     getNudgeLimitUseCase: GetNudgeLimitUseCase,
     getNudgeCooldownUseCase: GetNudgeCooldownUseCase,
-    getRemindNudgeCooldownUseCase: GetRemindNudgeCooldownUseCase,
     sendNudgeUseCase: SendNudgeUseCase,
-    sendRemindNudgeUseCase: SendRemindNudgeUseCase,
     markNudgeReadUseCase: MarkNudgeReadUseCase,
   ) {
     this.#getReceivedNudgesUseCase = getReceivedNudgesUseCase;
     this.#getSentNudgesUseCase = getSentNudgesUseCase;
     this.#getNudgeLimitUseCase = getNudgeLimitUseCase;
     this.#getNudgeCooldownUseCase = getNudgeCooldownUseCase;
-    this.#getRemindNudgeCooldownUseCase = getRemindNudgeCooldownUseCase;
     this.#sendNudgeUseCase = sendNudgeUseCase;
-    this.#sendRemindNudgeUseCase = sendRemindNudgeUseCase;
     this.#markNudgeReadUseCase = markNudgeReadUseCase;
   }
 
@@ -122,7 +112,7 @@ export class NudgeController {
 - FREE: 일 3회, ACTIVE: 무제한
 - 동일 Todo에 24시간 쿨다운`,
   })
-  @ApiCreatedResponse({ type: CreateNudgeResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateNudgeResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.NUDGE_1104, ErrorCode.NUDGE_1106])
   @ApiForbiddenError(ErrorCode.NUDGE_1103)
@@ -147,11 +137,7 @@ export class NudgeController {
 
   @Get("received")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "받은 콕 찌름 목록 조회",
     operationId: "getReceivedNudges",
@@ -179,11 +165,7 @@ export class NudgeController {
 
   @Get("sent")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "보낸 콕 찌름 목록 조회",
     operationId: "getSentNudges",
@@ -253,69 +235,6 @@ export class NudgeController {
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
   ): Promise<NudgeCooldownResponseDto> {
     const cooldownInfo = await this.#getNudgeCooldownUseCase.execute({
-      senderId: user.userId,
-      receiverId: params.userId,
-    });
-
-    return toNudgeCooldownResponse(cooldownInfo);
-  }
-
-  @Post("remind")
-  @ApiHeader({
-    name: "X-Timezone",
-    required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
-    example: "Asia/Seoul",
-  })
-  @ApiDoc({
-    summary: "리마인드 콕 찌르기",
-    operationId: "sendRemindNudge",
-    description: `친구가 오늘 할일을 만들지 않았을 때 독촉 콕 찌르기를 보냅니다.
-
-**요청 필드**
-- \`receiverId\` (필수): 콕 찌를 친구 ID
-- \`message\` (선택): 독촉 메시지 (최대 200자)
-
-**제한**
-- 친구가 오늘 할일이 있으면 전송 불가
-- 같은 친구에게 1시간 쿨다운
-- 일일 제한 없음`,
-  })
-  @ApiCreatedResponse({ type: CreateRemindNudgeResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.NUDGE_1104, ErrorCode.NUDGE_1107])
-  @ApiForbiddenError(ErrorCode.NUDGE_1103)
-  @ApiTooManyRequestsError(ErrorCode.NUDGE_1108)
-  async sendRemindNudge(
-    @CurrentUser() user: CurrentUserPayload,
-    @Body({ schema: SendRemindNudgeDto }) dto: SendRemindNudgeDto,
-    @Timezone() tz: string,
-  ): Promise<CreateRemindNudgeResponseDto> {
-    const remindNudge = await this.#sendRemindNudgeUseCase.execute({
-      senderId: user.userId,
-      receiverId: dto.receiverId,
-      message: dto.message,
-      timezone: tz,
-    });
-
-    return toCreateRemindNudgeResponse(remindNudge);
-  }
-
-  @Get("remind/cooldown/:userId")
-  @ApiDoc({
-    summary: "리마인드 콕 찌르기 쿨다운 상태 조회",
-    operationId: "getRemindNudgeCooldownInfo",
-    description: `특정 친구에게 리마인드 콕 찌르기 가능 여부와 남은 쿨다운 시간을 확인합니다.
-
-**쿨다운 정책**: 동일 친구에게 1시간 내 재전송 불가`,
-  })
-  @ApiSuccessResponse({ type: NudgeCooldownResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  async getRemindCooldownInfo(
-    @CurrentUser() user: CurrentUserPayload,
-    @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
-  ): Promise<NudgeCooldownResponseDto> {
-    const cooldownInfo = await this.#getRemindNudgeCooldownUseCase.execute({
       senderId: user.userId,
       receiverId: params.userId,
     });

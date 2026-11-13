@@ -1,4 +1,4 @@
-# 테스트는 이 훅에서 turbo로 실행해 결과를 팀 원격 캐시에 올리고, tip CI가 그 캐시를 재사용한다(docs/conventions/git.md#커밋).
+# 테스트는 이 훅에서 turbo로 실행해 결과를 팀 원격 캐시에 올리고, CI가 그 캐시를 재사용한다(docs/conventions/git.md#커밋).
 # https://lefthook.dev/configuration/
 
 glob_matcher: doublestar
@@ -30,16 +30,29 @@ pre-commit:
       run: pnpm exec ls-lint
 
 # 커밋마다 전체 검사를 돌리면 작은 커밋이 수 분씩 걸려 push 때 한 번 모아 돌린다.
-# 통합·계약 테스트는 로컬 Docker가 필요하다(Testcontainers).
+# 코드가 바뀐 push만 돈다(문서만 바뀌면 건너뜀). 동시 실행 2가 속도와 CPU 부하의 균형점이다(2026-11 측정).
+# 통합·계약 테스트는 DB 컨테이너를 하나씩 띄우고 로컬 Docker가 필요하다(Testcontainers).
 pre-push:
   piped: true
+  skip:
+    - merge
+    - rebase
   jobs:
-    # 한 번의 turbo 실행이 공통 ^build를 한 번만 수행하고 변경 없는 패키지는 캐시를 쓴다.
     - name: typecheck-test-build
-      run: pnpm turbo run typecheck test test:node build
-    # DB 컨테이너가 동시에 여러 개 뜨지 않게 통합·계약 테스트는 한 번에 하나씩 돈다.
+      glob: &code-files
+        - '{apps,packages,tooling,turbo}/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json,jsonc,sql}'
+        - '{package.json,pnpm-lock.yaml,pnpm-workspace.yaml,turbo.json,.nvmrc}'
+        - 'patches/**'
+        - 'apps/api/docs/alerts.md'
+        - 'apps/api/.env.{example,test}'
+      run: pnpm turbo run typecheck test test:node build --concurrency=2
     - name: integration-contract
-      run: pnpm test:integration && pnpm test:contract
+      glob: *code-files
+      run: pnpm turbo run test:integration test:contract --filter=@aido/server --concurrency=1
+    # 생성 결과는 커밋된 HEAD를 임시 worktree에 만들어 본다(약 1분). 템플릿을 바꾼 push만 돈다.
+    - name: generator-smoke
+      glob: 'turbo/generators/**'
+      run: pnpm test:generator
 
 commit-msg:
   jobs:

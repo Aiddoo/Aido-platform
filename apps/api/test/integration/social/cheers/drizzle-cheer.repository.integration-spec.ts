@@ -1,3 +1,4 @@
+import { DrizzleCheerReader } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.reader";
 import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
 import { user, userBlock, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -44,7 +45,15 @@ describe("DrizzleCheerRepository (실제 PostgreSQL)", () => {
     return new DrizzleCheerRepository(txHost);
   }
 
-  describeCheerRepositoryContract(async () => createRepository());
+  function createReader(): DrizzleCheerReader {
+    const { txHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleCheerReader(txHost);
+  }
+
+  describeCheerRepositoryContract(async () => ({
+    repository: createRepository(),
+    reader: createReader(),
+  }));
 
   it("목록의 사용자 요약은 프로필 이름·이미지를 싣고 프로필이 없으면 null이다", async () => {
     // Given
@@ -55,7 +64,7 @@ describe("DrizzleCheerRepository (실제 PostgreSQL)", () => {
     await repository.save(createCheerFixture({ id: (await repository.nextId()).value }));
 
     // When
-    const [item] = await repository.listReceived({
+    const [item] = await createReader().listReceived({
       userId: RECEIVER_ID,
       afterCheerId: null,
       limit: 1,
@@ -91,16 +100,16 @@ describe("DrizzleCheerRepository (실제 PostgreSQL)", () => {
       .values({ blockerId: CHEER_FIXTURE_SENDER_ID, blockedId: CHEER_FIXTURE_RECEIVER_ID });
 
     // When
-    const received = await repository.listReceived({
+    const received = await createReader().listReceived({
       userId: RECEIVER_ID,
       afterCheerId: null,
       limit: 5,
     });
-    const sent = await repository.listSent({ userId: SENDER_ID, afterCheerId: null, limit: 5 });
+    const sent = await createReader().listSent({ userId: SENDER_ID, afterCheerId: null, limit: 5 });
     const counts = {
-      received: await repository.countReceived(RECEIVER_ID),
-      unread: await repository.countUnreadReceived(RECEIVER_ID),
-      sent: await repository.countSent(SENDER_ID),
+      received: await createReader().countReceived(RECEIVER_ID),
+      unread: await createReader().countUnreadReceived(RECEIVER_ID),
+      sent: await createReader().countSent(SENDER_ID),
     };
 
     // Then

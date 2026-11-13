@@ -5,11 +5,11 @@ import {
 } from "@aido/api/contracts/subscription";
 import { match } from "ts-pattern";
 
+import { toStorePeriodType } from "../../../../shared/domain/store-period-type.domain-service.js";
 import type {
   StoreSubscriptionEvent,
   StoreSubscriptionEventDetails,
 } from "../../../domain/store-subscription.event.js";
-import { toStorePeriodType } from "../../../domain/subscription-lifecycle.domain-service.js";
 import {
   SUBSCRIPTION_END_REASONS,
   type SubscriptionEndReason,

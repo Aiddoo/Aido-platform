@@ -28,15 +28,15 @@ import {
 @ApiBearerAuth()
 @Controller({ path: "daily-completions", version: API_VERSION.V1 })
 export class DailyCompletionController {
-  readonly #readDailyCompletions: GetDailyCompletionsUseCase;
-  readonly #readFriendDailyCompletions: GetFriendDailyCompletionsUseCase;
+  readonly #getDailyCompletions: GetDailyCompletionsUseCase;
+  readonly #getFriendDailyCompletions: GetFriendDailyCompletionsUseCase;
 
   constructor(
-    readDailyCompletions: GetDailyCompletionsUseCase,
-    readFriendDailyCompletions: GetFriendDailyCompletionsUseCase,
+    getDailyCompletions: GetDailyCompletionsUseCase,
+    getFriendDailyCompletions: GetFriendDailyCompletionsUseCase,
   ) {
-    this.#readDailyCompletions = readDailyCompletions;
-    this.#readFriendDailyCompletions = readFriendDailyCompletions;
+    this.#getDailyCompletions = getDailyCompletions;
+    this.#getFriendDailyCompletions = getFriendDailyCompletions;
   }
 
   @Get()
@@ -132,7 +132,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
   ): Promise<DailyCompletionsRangeResponseDto> {
-    const result = await this.#readDailyCompletions.execute({
+    const result = await this.#getDailyCompletions.execute({
       userId: user.userId,
       startDate: Temporal.PlainDate.from(query.startDate),
       endDate: Temporal.PlainDate.from(query.endDate),
@@ -194,7 +194,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
     @Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
   ): Promise<DailyCompletionsRangeResponseDto> {
-    const result = await this.#readFriendDailyCompletions.execute({
+    const result = await this.#getFriendDailyCompletions.execute({
       userId: user.userId,
       friendUserId: params.userId,
       startDate: Temporal.PlainDate.from(query.startDate),

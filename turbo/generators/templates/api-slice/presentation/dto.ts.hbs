@@ -1,8 +1,8 @@
 import {
   create{{pascalCase aggregate}}Schema,
   get{{pascalCase slice}}QuerySchema,
+  {{camelCase aggregate}}DetailResponseSchema,
   {{camelCase aggregate}}ListResponseSchema,
-  {{camelCase aggregate}}MutationResponseSchema,
 } from "@aido/api/contracts/{{aggregate}}";
 import type { z } from "zod";
 
@@ -17,7 +17,7 @@ export const {{pascalCase aggregate}}ListResponseDto = {{camelCase aggregate}}Li
 });
 export type {{pascalCase aggregate}}ListResponseDto = z.infer<typeof {{pascalCase aggregate}}ListResponseDto>;
 
-export const {{pascalCase aggregate}}MutationResponseDto = {{camelCase aggregate}}MutationResponseSchema.meta({
-  id: "{{pascalCase aggregate}}MutationResponseDto",
+export const {{pascalCase aggregate}}DetailResponseDto = {{camelCase aggregate}}DetailResponseSchema.meta({
+  id: "{{pascalCase aggregate}}DetailResponseDto",
 });
-export type {{pascalCase aggregate}}MutationResponseDto = z.infer<typeof {{pascalCase aggregate}}MutationResponseDto>;
+export type {{pascalCase aggregate}}DetailResponseDto = z.infer<typeof {{pascalCase aggregate}}DetailResponseDto>;

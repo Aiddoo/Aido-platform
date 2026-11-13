@@ -20,9 +20,9 @@ import {
   IDENTITY_CACHE_TTL_MS,
 } from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
 import {
-  FollowCacheKey,
-  FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
+  FriendshipCacheKey,
+  FRIENDSHIP_CACHE_TTL_MS,
+} from "#api/modules/social/friends/infrastructure/cache/friendship-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
@@ -256,31 +256,31 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       // Given - 친구 관계 캐시
       const userId = "user_friend_integration";
       await cacheService.set(
-        FollowCacheKey.mutual(userId, "friend_1"),
+        FriendshipCacheKey.mutual(userId, "friend_1"),
         true,
-        FOLLOW_CACHE_TTL_MS.MUTUAL,
+        FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
       );
       await cacheService.set(
-        FollowCacheKey.mutual(userId, "friend_2"),
+        FriendshipCacheKey.mutual(userId, "friend_2"),
         true,
-        FOLLOW_CACHE_TTL_MS.MUTUAL,
+        FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
       );
       await cacheService.set(
-        FollowCacheKey.mutual(userId, "friend_3"),
+        FriendshipCacheKey.mutual(userId, "friend_3"),
         false,
-        FOLLOW_CACHE_TTL_MS.MUTUAL,
+        FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
       );
 
       // Then - 친구 관계 조회 가능
-      expect(await cacheService.get(FollowCacheKey.mutual(userId, "friend_1"), z.unknown())).toBe(
-        true,
-      );
-      expect(await cacheService.get(FollowCacheKey.mutual(userId, "friend_2"), z.unknown())).toBe(
-        true,
-      );
-      expect(await cacheService.get(FollowCacheKey.mutual(userId, "friend_3"), z.unknown())).toBe(
-        false,
-      );
+      expect(
+        await cacheService.get(FriendshipCacheKey.mutual(userId, "friend_1"), z.unknown()),
+      ).toBe(true);
+      expect(
+        await cacheService.get(FriendshipCacheKey.mutual(userId, "friend_2"), z.unknown()),
+      ).toBe(true);
+      expect(
+        await cacheService.get(FriendshipCacheKey.mutual(userId, "friend_3"), z.unknown()),
+      ).toBe(false);
 
       // When - 친구 관계 변경으로 인한 일괄 무효화
       const deletedCount = await cacheService.delByPattern(
@@ -290,27 +290,27 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       // Then - 모든 친구 관계 캐시 삭제
       expect(deletedCount).toBe(3);
       expect(
-        await cacheService.get(FollowCacheKey.mutual(userId, "friend_1"), z.unknown()),
+        await cacheService.get(FriendshipCacheKey.mutual(userId, "friend_1"), z.unknown()),
       ).toBeUndefined();
       expect(
-        await cacheService.get(FollowCacheKey.mutual(userId, "friend_2"), z.unknown()),
+        await cacheService.get(FriendshipCacheKey.mutual(userId, "friend_2"), z.unknown()),
       ).toBeUndefined();
       expect(
-        await cacheService.get(FollowCacheKey.mutual(userId, "friend_3"), z.unknown()),
+        await cacheService.get(FriendshipCacheKey.mutual(userId, "friend_3"), z.unknown()),
       ).toBeUndefined();
     });
 
     it("양방향 친구 관계가 독립적으로 캐시된다", async () => {
       // Given - 양방향 친구 관계 캐시
       await cacheService.set(
-        FollowCacheKey.mutual("user_a", "user_b"),
+        FriendshipCacheKey.mutual("user_a", "user_b"),
         true,
-        FOLLOW_CACHE_TTL_MS.MUTUAL,
+        FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
       );
       await cacheService.set(
-        FollowCacheKey.mutual("user_b", "user_a"),
+        FriendshipCacheKey.mutual("user_b", "user_a"),
         true,
-        FOLLOW_CACHE_TTL_MS.MUTUAL,
+        FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
       );
 
       // When - user_a의 친구 관계만 무효화
@@ -318,11 +318,11 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
       // Then - user_a→user_b는 삭제, user_b→user_a는 유지
       expect(
-        await cacheService.get(FollowCacheKey.mutual("user_a", "user_b"), z.unknown()),
+        await cacheService.get(FriendshipCacheKey.mutual("user_a", "user_b"), z.unknown()),
       ).toBeUndefined();
-      expect(await cacheService.get(FollowCacheKey.mutual("user_b", "user_a"), z.unknown())).toBe(
-        true,
-      );
+      expect(
+        await cacheService.get(FriendshipCacheKey.mutual("user_b", "user_a"), z.unknown()),
+      ).toBe(true);
     });
   });
 
@@ -430,7 +430,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       expect(EntitlementCacheKey.subscription(userId)).toBe(
         `aido:v1:subscription:status:v2:${userId}`,
       );
-      expect(FollowCacheKey.mutual(userId, targetId)).toBe(
+      expect(FriendshipCacheKey.mutual(userId, targetId)).toBe(
         `aido:v1:follow:mutual:${userId}:${targetId}`,
       );
     });

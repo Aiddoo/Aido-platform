@@ -11,6 +11,7 @@ import type {
   PushFailure,
   PushPayload,
   PushProviderPort,
+  PushProviderTiming,
   PushReceiptResult,
   PushResult,
 } from "../../application/ports/push-provider.port.js";
@@ -27,6 +28,17 @@ import {
   pushTransportStatusCode,
 } from "./notification-provider.log-events.js";
 import { PushThroughputLimiterAdapter } from "./push-throughput-limiter.adapter.js";
+
+const MINUTE_MS = 60_000;
+
+/**
+ * Expo는 수락 15분 뒤부터 receipt를 물으라고 권하고 receipt를 약 24시간 보관한다.
+ * SDK 전송은 abort signal을 받지 않아 정책 timeout 뒤에도 요청이 이어질 수 있어 lease 여유를 둔다.
+ */
+export const EXPO_PUSH_TIMING = {
+  receipt: { readyAfterMs: 15 * MINUTE_MS, retentionMs: 24 * 60 * MINUTE_MS },
+  unabortableSendGraceMs: 10 * MINUTE_MS,
+} as const satisfies PushProviderTiming;
 
 /** Expo 프로젝트 한도(초당 600건)보다 여유를 둔다. 운영 API는 단일 프로세스다. */
 const EXPO_PUSH_MESSAGES_PER_SECOND = 500;
@@ -56,6 +68,7 @@ interface SendableMessage {
 @Injectable()
 export class ExpoPushSenderAdapter implements PushProviderPort {
   readonly name = "expo";
+  readonly timing = EXPO_PUSH_TIMING;
   readonly #logger = new Logger(ExpoPushSenderAdapter.name);
   readonly #expo: Expo;
   readonly #throughput = new PushThroughputLimiterAdapter({

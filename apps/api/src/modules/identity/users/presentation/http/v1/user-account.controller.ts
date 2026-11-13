@@ -1,22 +1,15 @@
+import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
-import {
-  Header,
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Patch,
-  Req,
-} from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Header, Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch } from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
-import type { Request } from "express";
 
-import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
-import { extractMetadata } from "#api/modules/identity/auth/presentation/http/v1/auth-request.mapper";
+import {
+  CurrentRequestSource,
+  type RequestSource,
+} from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
+import { toRequestMetadata } from "#api/modules/identity/auth/presentation/http/v1/auth-request.mapper";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
 import { AUTH_THROTTLE } from "#api/modules/identity/auth/presentation/http/v1/auth-throttle.constants";
 import {
@@ -26,17 +19,15 @@ import {
   UpdateProfileDto,
   UpdateProfileResponseDto,
 } from "#api/modules/identity/auth/presentation/http/v1/auth.dto";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
-import { type RequestClient } from "#api/platform/http/request-client/request-client";
-import {
-  AppVersion,
-  CurrentRequestClient,
-} from "#api/platform/http/request-client/request-client.decorator";
+import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiErrorResponse,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
@@ -48,7 +39,7 @@ import { UpdateProfileUseCase } from "../../../application/use-cases/update-prof
 // 출시 경로 /auth/me·/auth/profile·/auth/account를 그대로 두고 사용자 slice가 맡는다
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @ApiBearerAuth()
-@Controller("auth")
+@Controller({ path: "auth", version: API_VERSION.V1 })
 export class UserAccountController {
   readonly #getCurrentUserQuery: GetCurrentUserUseCase;
   readonly #updateProfileUseCase: UpdateProfileUseCase;
@@ -66,11 +57,7 @@ export class UserAccountController {
 
   @Get("me")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "내 정보 조회",
     operationId: "getCurrentUser",
@@ -108,11 +95,7 @@ export class UserAccountController {
   @Patch("profile")
   @HttpCode(HttpStatus.OK)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "프로필 수정",
     operationId: "updateProfile",
@@ -182,10 +165,9 @@ export class UserAccountController {
   async deleteAccount(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: DeleteAccountDto }) dto: DeleteAccountDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     return this.#deleteAccountUseCase.execute({
       userId: user.userId,
       password: dto.password,

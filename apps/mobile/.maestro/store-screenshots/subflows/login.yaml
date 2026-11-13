@@ -41,4 +41,4 @@ name: 첫 진입에서 이메일 로그인 후 홈으로 이동한다
 - extendedWaitUntil:
     visible: 'To-dos|할 일|Register your location to see the weather|위치를 등록하면 날씨를 볼 수 있어요'
     timeout: 20000
-- takeScreenshot: 1.13.0-first-home
+- takeScreenshot: first-home

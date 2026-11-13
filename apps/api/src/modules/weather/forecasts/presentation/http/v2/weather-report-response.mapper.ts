@@ -4,7 +4,7 @@ import type {
   WeatherReportResponse,
 } from "@aido/api/contracts/weather";
 
-import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { WeatherReportResult } from "../../../application/use-cases/get-weather-report.use-case.js";
 import type { WeatherBriefing } from "../../../domain/weather-briefing.domain-service.js";
@@ -13,12 +13,8 @@ import type { WeatherReportDayPart } from "../../../domain/weather-report.vo.js"
 /** v2 대기질은 한국 위치에서 에어코리아로만 채운다. */
 const AIR_QUALITY_SOURCE = "AIRKOREA";
 
-function toISOString(date: Date): string {
-  return toIsoString(instantFromDate(date));
-}
-
-function toISOStringOrNull(date: Date | null): string | null {
-  return date == null ? null : toISOString(date);
+function toIsoStringOrNull(instant: Temporal.Instant | null): string | null {
+  return instant == null ? null : toIsoString(instant);
 }
 
 function toDayPartResponse(part: WeatherReportDayPart | null): WeatherDayPartForecast | null {
@@ -31,7 +27,7 @@ function toBriefingResponse(briefing: WeatherBriefing): WeatherBriefingResponse 
     affectedTodoIds: [...briefing.affectedTodoIds],
     rescheduleOptions: briefing.rescheduleOptions.map(({ todoId, options }) => ({
       todoId,
-      options: options.map((option) => ({ ...option, startsAt: toISOString(option.startsAt) })),
+      options: options.map((option) => ({ ...option, startsAt: toIsoString(option.startsAt) })),
     })),
   };
 }
@@ -41,36 +37,37 @@ export function toWeatherReportResponse(result: WeatherReportResult): WeatherRep
   const { location, report, airQuality, attribution, briefing } = result;
   return {
     location: { ...location },
-    current: { ...report.current, observedAt: toISOString(report.current.observedAt) },
+    current: { ...report.current, observedAt: toIsoString(report.current.observedAt) },
     nextHour:
       report.nextHour == null
         ? null
         : {
             periods: report.nextHour.periods.map((period) => ({
               ...period,
-              startsAt: toISOString(period.startsAt),
-              endsAt: toISOStringOrNull(period.endsAt),
+              startsAt: toIsoString(period.startsAt),
+              endsAt: toIsoStringOrNull(period.endsAt),
             })),
             minutes: report.nextHour.minutes.map((minute) => ({
               ...minute,
-              startsAt: toISOString(minute.startsAt),
+              startsAt: toIsoString(minute.startsAt),
             })),
           },
-    hourly: report.hourly.map((hour) => ({ ...hour, startsAt: toISOString(hour.startsAt) })),
+    hourly: report.hourly.map((hour) => ({ ...hour, startsAt: toIsoString(hour.startsAt) })),
     daily: report.daily.map((day) => ({
       ...day,
-      sunrise: toISOStringOrNull(day.sunrise),
-      sunset: toISOStringOrNull(day.sunset),
-      moonrise: toISOStringOrNull(day.moonrise),
-      moonset: toISOStringOrNull(day.moonset),
+      date: day.date.toString(),
+      sunrise: toIsoStringOrNull(day.sunrise),
+      sunset: toIsoStringOrNull(day.sunset),
+      moonrise: toIsoStringOrNull(day.moonrise),
+      moonset: toIsoStringOrNull(day.moonset),
       restOfDay: toDayPartResponse(day.restOfDay),
       daytime: toDayPartResponse(day.daytime),
       overnight: toDayPartResponse(day.overnight),
     })),
     alerts: report.alerts.map((alert) => ({
       ...alert,
-      effectiveAt: toISOString(alert.effectiveAt),
-      expiresAt: toISOString(alert.expiresAt),
+      effectiveAt: toIsoString(alert.effectiveAt),
+      expiresAt: toIsoString(alert.expiresAt),
     })),
     airQuality:
       airQuality == null
@@ -86,7 +83,7 @@ export function toWeatherReportResponse(result: WeatherReportResult): WeatherRep
               dark: { ...attribution.logo.dark },
             },
     },
-    fetchedAt: toISOString(report.fetchedAt),
+    fetchedAt: toIsoString(report.fetchedAt),
     briefing: briefing == null ? undefined : toBriefingResponse(briefing),
   };
 }

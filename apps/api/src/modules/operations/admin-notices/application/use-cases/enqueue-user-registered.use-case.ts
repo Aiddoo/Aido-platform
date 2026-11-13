@@ -2,8 +2,8 @@ import {
   buildUserRegisteredNotice,
   registeredNoticeUserOf,
 } from "../messages/admin-notice.messages.js";
+import type { UserRegisteredNoticeInput } from "../ports/admin-event-notifier.port.js";
 import type { AdminNotificationQueuePort } from "../ports/admin-notification-queue.port.js";
-import type { UserRegisteredEventPayload } from "../read-models/user-registered.read-model.js";
 import type { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
 export interface EnqueueUserRegisteredDependencies {
@@ -19,7 +19,7 @@ export class EnqueueUserRegisteredUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(payload: UserRegisteredEventPayload): Promise<void> {
+  async execute(payload: UserRegisteredNoticeInput): Promise<void> {
     const { queue, resolveUser } = this.#dependencies;
     const user = await resolveUser.execute(registeredNoticeUserOf(payload));
     await queue.enqueueSend("admin", buildUserRegisteredNotice(payload, user));

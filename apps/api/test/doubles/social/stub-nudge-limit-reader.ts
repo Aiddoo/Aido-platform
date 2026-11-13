@@ -1,8 +1,8 @@
+import { NudgeLimitReaderPort } from "#api/modules/social/nudges/application/ports/nudge-limit.reader.port";
 import type {
   DailySendFeatureQuota,
   DailySendQuotaUsage,
-} from "#api/modules/social/cheers/application/ports/daily-send-usage.reader.port";
-import { NudgeLimitReaderPort } from "#api/modules/social/nudges/application/ports/nudge-limit.reader.port";
+} from "#api/modules/social/shared/application/ports/daily-send-usage.reader.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { toStubDailyQuota } from "./stub-cheer-limit-reader.js";

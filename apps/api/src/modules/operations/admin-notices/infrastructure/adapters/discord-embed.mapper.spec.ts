@@ -1,4 +1,4 @@
-import type { AdminNotificationSeverity } from "../../application/read-models/admin-notification.read-model.js";
+import type { AdminNotificationSeverity } from "../../domain/admin-notices.constants.js";
 import { renderDiscordEmbed } from "./discord-embed.mapper.js";
 
 const AT = "2026-10-08T00:00:00.000Z";

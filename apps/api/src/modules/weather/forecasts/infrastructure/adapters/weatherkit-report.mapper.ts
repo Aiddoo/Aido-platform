@@ -8,15 +8,16 @@ import type {
 import { clamp, round, sortBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import { localDateAt } from "../../../shared/domain/weather-calendar.domain-service.js";
-import type {
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+
+import {
   WeatherReport,
-  WeatherReportAlert,
-  WeatherReportCurrent,
-  WeatherReportDay,
-  WeatherReportDayPart,
-  WeatherReportHour,
-  WeatherReportNextHour,
+  type WeatherReportAlert,
+  type WeatherReportCurrent,
+  type WeatherReportDay,
+  type WeatherReportDayPart,
+  type WeatherReportHour,
+  type WeatherReportNextHour,
 } from "../../domain/weather-report.vo.js";
 import type {
   WeatherKitAlert,
@@ -276,7 +277,7 @@ function toDayPart(part: WeatherKitDayPart | null | undefined): WeatherReportDay
 
 function toDay(day: WeatherKitDay, timezone: string): WeatherReportDay {
   return {
-    date: localDateAt(day.forecastStart, timezone).toString(),
+    date: localDateIn(day.forecastStart, timezone),
     condition: toWeatherCondition(day.conditionCode),
     temperatureMin: day.temperatureMin,
     temperatureMax: day.temperatureMax,
@@ -315,13 +316,13 @@ function toAlert(alert: WeatherKitAlert): WeatherReportAlert {
   };
 }
 
-/** WeatherKit 응답(km/h·0~1 비율)을 공급자 중립 스냅샷(m/s·0~100)으로 바꾼다. 창 자르기는 읽을 때 한다. */
+/** WeatherKit 응답(km/h·0~1 비율)을 공급자 중립 리포트(m/s·0~100)로 바꾼다. 창 자르기는 읽을 때 한다. */
 export function toWeatherReport(
   weather: WeatherKitWeather & { readonly currentWeather: WeatherKitCurrentWeather },
   timezone: string,
-  requestedAt: Date,
+  requestedAt: Temporal.Instant,
 ): WeatherReport {
-  return {
+  return WeatherReport.create({
     current: toCurrent(weather.currentWeather),
     nextHour: toNextHour(weather.forecastNextHour),
     hourly: (weather.forecastHourly?.hours ?? []).map(toHour),
@@ -331,5 +332,5 @@ export function toWeatherReport(
     ]),
     // 공급자가 데이터를 읽은 시각이 있으면 그것을, 없으면 요청 시각을 쓴다.
     fetchedAt: weather.currentWeather.metadata?.readTime ?? requestedAt,
-  };
+  });
 }

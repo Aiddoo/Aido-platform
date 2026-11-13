@@ -10,11 +10,13 @@ import { GetWeeklyAchievementUseCase } from "./application/use-cases/get-weekly-
 import { ListWeeklyAchievementsUseCase } from "./application/use-cases/list-weekly-achievements.use-case.js";
 import { RecordWeeklyAchievementsUseCase } from "./application/use-cases/record-weekly-achievements.use-case.js";
 import { AchievementOwnerTimezoneReaderAdapter } from "./infrastructure/adapters/achievement-owner-timezone-reader.adapter.js";
+import { WeeklyAchievementWriterAdapter } from "./infrastructure/adapters/weekly-achievement-writer.adapter.js";
 import { DrizzleWeeklyAchievementRepository } from "./infrastructure/persistence/drizzle-weekly-achievement.repository.js";
 
 export const INSIGHTS_WEEKLY_ACHIEVEMENTS_PROVIDERS = [
   { provide: WeeklyAchievementRepositoryPort, useClass: DrizzleWeeklyAchievementRepository },
   { provide: AchievementOwnerTimezoneReaderPort, useClass: AchievementOwnerTimezoneReaderAdapter },
+  { provide: WeeklyAchievementWriterPort, useClass: WeeklyAchievementWriterAdapter },
   provideUseCase(GetWeeklyAchievementUseCase, {
     weeklyAchievementRepository: WeeklyAchievementRepositoryPort,
     ownerTimezoneReader: AchievementOwnerTimezoneReaderPort,
@@ -28,5 +30,4 @@ export const INSIGHTS_WEEKLY_ACHIEVEMENTS_PROVIDERS = [
   provideUseCase(RecordWeeklyAchievementsUseCase, {
     weeklyAchievementRepository: WeeklyAchievementRepositoryPort,
   }),
-  { provide: WeeklyAchievementWriterPort, useExisting: RecordWeeklyAchievementsUseCase },
 ] satisfies Provider[];

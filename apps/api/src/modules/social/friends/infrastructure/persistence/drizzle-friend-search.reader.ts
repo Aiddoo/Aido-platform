@@ -3,15 +3,15 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, eq, exists, gt, ilike, isNull, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
+import { hasNoBlockWith } from "#api/modules/social/blocks/social-block-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userProfile } from "#api/platform/database/schema/identity.schema";
 import { follow } from "#api/platform/database/schema/social.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { hasNoBlockWith } from "../../../blocks/infrastructure/persistence/drizzle-user-block.repository.js";
 import { FriendSearchReaderPort } from "../../application/ports/friend-search.reader.port.js";
 import type { UserSearchResultReadModel } from "../../application/read-models/user-search-result.read-model.js";
-import type { UserSearchCursor } from "../../application/user-search-cursor.mapper.js";
+import type { UserSearchPosition } from "../../domain/user-search-cursor.vo.js";
 import type { UserSearchTerm } from "../../domain/user-search-term.vo.js";
 
 @Injectable()
@@ -29,7 +29,7 @@ export class DrizzleFriendSearchReader implements FriendSearchReaderPort {
   async searchUsers(params: {
     readonly viewerId: UserId;
     readonly term: UserSearchTerm;
-    readonly after: UserSearchCursor | null;
+    readonly after: UserSearchPosition | null;
     readonly limit: number;
   }): Promise<UserSearchResultReadModel[]> {
     const { viewerId, term, after, limit } = params;

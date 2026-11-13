@@ -315,7 +315,7 @@ describe('useOpenPushOnboarding', () => {
     );
 
     it('이미 답한 사용자가 앱을 새로 열며 알림 화면 링크로 들어와도 피드가 열린다', async () => {
-      // Given
+      // When
       const { route } = await renderAppRoutes({
         permission: createPushPermissionResponse({ status: 'granted' }),
         initialUrl: '/onboarding/notifications',

@@ -21,7 +21,6 @@ import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification
 import { PublishPushDeliveryOutboxUseCase } from "#api/modules/notification/push/application/use-cases/publish-push-delivery-outbox.use-case";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   follow,
   notification,
@@ -33,6 +32,7 @@ import {
   todoCommentLike,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import {
   createE2eApp,
   destroyE2eApp,

@@ -95,23 +95,33 @@ jobs:
           docker buildx imagetools inspect "ghcr.io/aiddoo/aido-platform-api:$DEPLOY_SHA" >/dev/null
           docker buildx imagetools inspect "ghcr.io/aiddoo/aido-platform-migrate:$DEPLOY_SHA" >/dev/null
 
+      # 러너에 기본으로 있는 OpenSSH로 접속한다. host key는 서버 공개 키(EC2_SSH_HOST_KEYS)로 고정해 가짜 서버를 막고,
+      # 토큰은 ssh 명령 인자가 아니라 stdin 스크립트로만 넘겨 서버 프로세스 목록에 보이지 않게 한다.
       - name: Deploy via SSH
         if: steps.sha.outputs.sha != ''
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        timeout-minutes: 20
+        shell: bash
         env:
           DEPLOY_SHA: ${{ steps.sha.outputs.sha }}
           FORCE_DEPLOY: ${{ (github.event_name == 'workflow_dispatch' && inputs.force) && '1' || '0' }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          # 비어 있으면 host key를 검증하지 않는다. 서버 SHA256 fingerprint를 secret으로 등록하면 MITM을 막는다.
-          fingerprint: ${{ secrets.EC2_SSH_HOST_FINGERPRINT }}
-          command_timeout: 20m
-          envs: DEPLOY_SHA,FORCE_DEPLOY,GHCR_TOKEN
-          script: |
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          EC2_SSH_HOST_KEYS: ${{ secrets.EC2_SSH_HOST_KEYS }}
+        run: |
+          [[ -n "$EC2_SSH_HOST_KEYS" ]] \
+            || { echo "::error::EC2_SSH_HOST_KEYS secret이 없다(apps/api/docs/deployment.md)"; exit 1; }
+          ssh_dir="$RUNNER_TEMP/ssh"
+          install -m 700 -d "$ssh_dir"
+          (umask 077 && printf '%s\n' "$EC2_SSH_PRIVATE_KEY" > "$ssh_dir/key")
+          printf '%s\n' "$EC2_SSH_HOST_KEYS" | sed "s|^|$EC2_HOST |" > "$ssh_dir/known_hosts"
+          {
+            printf 'DEPLOY_SHA=%q FORCE_DEPLOY=%q GHCR_TOKEN=%q\n' "$DEPLOY_SHA" "$FORCE_DEPLOY" "$GHCR_TOKEN"
+            cat <<'REMOTE'
+          deploy() {
             set -euo pipefail
+            export DEPLOY_SHA FORCE_DEPLOY GHCR_TOKEN
             mkdir -p "$HOME/apps/deploy-state"
             exec 9>"$HOME/apps/deploy-state/deploy.lock"
             flock -n 9 || { echo "다른 배포가 진행 중 — 중단"; exit 1; }
@@ -125,6 +135,14 @@ jobs:
             [[ -f scripts/deploy.sh ]] \
               || { echo "::error::scripts/deploy.sh 없음 — 스크립트 포함 커밋 이후로만 배포 가능"; exit 1; }
             bash scripts/deploy.sh
+          }
+          # 함수를 다 읽은 뒤 stdin을 끊고 실행한다. 배포 중 명령이 남은 스크립트를 읽어 가지 않게 한다
+          deploy </dev/null
+          REMOTE
+          } | ssh -T -i "$ssh_dir/key" -o IdentitiesOnly=yes -o BatchMode=yes \
+                -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+                -o ServerAliveInterval=30 -o ServerAliveCountMax=4 \
+                "$EC2_USER@$EC2_HOST" 'bash -s'
 
       - name: Verify public health endpoint
         if: steps.sha.outputs.sha != ''

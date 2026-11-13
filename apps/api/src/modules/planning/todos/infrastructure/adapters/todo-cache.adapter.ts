@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { TodoCategoryCacheKey } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import type { CursorPaginatedResponse } from "#api/shared/application/pagination/interfaces/pagination.interface";
+import type { CursorPage } from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
@@ -32,7 +32,7 @@ const FRIEND_TODOS_PAGE_SCHEMA = z.object({
     hasNext: z.boolean(),
     size: z.number(),
   }),
-}) satisfies z.ZodType<CursorPaginatedResponse<FriendTodoReadModel, number>>;
+}) satisfies z.ZodType<CursorPage<FriendTodoReadModel, number>>;
 
 /**
  * Todo 캐시 포트 어댑터 — CacheStorePort에 위임
@@ -83,7 +83,7 @@ export class TodoCacheAdapter implements TodoCachePort {
     endDate: string,
     size: number,
     generation: string,
-    page: CursorPaginatedResponse<FriendTodoReadModel, number>,
+    page: CursorPage<FriendTodoReadModel, number>,
   ): Promise<void> {
     const currentGeneration = await this.#getFriendTodosGeneration(ownerUserId);
     if (currentGeneration !== generation) {

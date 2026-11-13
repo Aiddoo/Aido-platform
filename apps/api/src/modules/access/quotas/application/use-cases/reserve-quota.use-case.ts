@@ -1,15 +1,18 @@
 import { match } from "ts-pattern";
 
+import {
+  accessUserNotFound,
+  toFeatureQuotaDetails,
+  type AccessStateReaderPort,
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { accessUserNotFound } from "../../../entitlements/application/entitlements.errors.js";
-import type { AccessStateReaderPort } from "../../../entitlements/application/ports/access-state.reader.port.js";
-import { toFeatureQuotaDetails } from "../../../entitlements/application/read-models/feature-quota.read-model.js";
 import { QuotaAllowance } from "../../domain/quota-allowance.vo.js";
+import { QuotaChargeId } from "../../domain/quota-charge-id.vo.js";
 import { QuotaCharge } from "../../domain/quota-charge.aggregate.js";
 import { QUOTA_CHARGE_AMOUNT } from "../../domain/quotas.constants.js";
 import type { QuotaChargeRepositoryPort } from "../ports/quota-charge.repository.port.js";
@@ -27,7 +30,7 @@ export interface ReserveQuotaDependencies {
   readonly accessStateReader: Pick<AccessStateReaderPort, "findAccessState">;
   readonly quotaChargeRepository: Pick<
     QuotaChargeRepositoryPort,
-    "nextId" | "findByIdempotencyKey" | "save" | "saveIfUnchanged"
+    "findByIdempotencyKey" | "save" | "saveIfUnchanged"
   >;
   readonly quotaUsageRepository: QuotaUsageRepositoryPort;
   readonly clock: ClockPort;
@@ -79,7 +82,7 @@ export class ReserveQuotaUseCase {
       if (existing == null) {
         await this.#addUsage(decision);
         const charge = QuotaCharge.create({
-          id: await quotaChargeRepository.nextId(),
+          id: QuotaChargeId.generate(),
           userId,
           meter: decision.allowance.meter,
           idempotencyKey: command.idempotencyKey,

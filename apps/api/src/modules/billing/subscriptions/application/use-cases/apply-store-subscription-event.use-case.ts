@@ -2,6 +2,12 @@ import { ErrorCode } from "@aido/api/errors";
 import { sortBy, uniq, uniqBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
+import type {
+  PremiumAccessCachePort,
+  ProjectPremiumAccessUseCase,
+  UserSubscriptionProjection,
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -11,15 +17,12 @@ import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.e
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { BillingUserLockPort } from "../../../premium-grants/application/ports/billing-user-lock.port.js";
-import type { PremiumAccessCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
-import type { UserSubscriptionProjection } from "../../../premium-grants/application/ports/user-subscription-projection.repository.port.js";
-import type { ProjectPremiumAccessUseCase } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
 import type {
   PremiumAccess,
   StoreEventChainState,
-} from "../../../shared/premium-access.domain-service.js";
+} from "../../../shared/domain/premium-access.domain-service.js";
 import { resolveCancellationUserStatus } from "../../domain/cancellation-user-status.domain-service.js";
+import { ProviderEventId } from "../../domain/provider-event-id.vo.js";
 import { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
 import type {
   StoreSubscriptionChainEvent,
@@ -29,6 +32,8 @@ import type {
   SubscriptionStartedEvent,
   SubscriptionTransferredEvent,
 } from "../../domain/store-subscription.event.js";
+import { SubscriptionEventReceipt } from "../../domain/subscription-event-receipt.entity.js";
+import { periodTypeAfter } from "../../domain/subscription-lifecycle.domain-service.js";
 import { Subscription } from "../../domain/subscription.aggregate.js";
 import type { StoreSubscriptionEventKind } from "../../domain/subscriptions.constants.js";
 import type { StoreSubscriptionReconcileSchedulerPort } from "../ports/store-subscription-reconcile-scheduler.port.js";
@@ -43,13 +48,12 @@ import type {
 } from "../ports/subscription-user.reader.port.js";
 import type { SubscriptionWebhookLockPort } from "../ports/subscription-webhook-lock.port.js";
 import type { SubscriptionRepositoryPort } from "../ports/subscription.repository.port.js";
-import type { SubscriptionEventPayload } from "../read-models/subscription-event-payload.read-model.js";
 import {
   baseEventPayload,
-  periodTypeAfter,
   premiumAccessSummaryOf,
+  type SubscriptionEventPayload,
   transferEventPayload,
-} from "../subscription-event-payload.mapper.js";
+} from "../read-models/subscription-event-payload.read-model.js";
 import {
   subscriptionChainUnresolved,
   subscriptionUserNotFound,
@@ -66,7 +70,7 @@ export interface ApplyStoreSubscriptionEventDependencies {
   readonly subscriptionRepository: SubscriptionRepositoryPort;
   readonly subscriptionUserReader: Pick<SubscriptionUserReaderPort, "findByAppUserId">;
   readonly receiptRepository: SubscriptionEventReceiptRepositoryPort;
-  readonly userLock: BillingUserLockPort;
+  readonly userLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: PremiumAccessCachePort;
   readonly notifier: SubscriptionEventNotifierPort;
@@ -230,7 +234,7 @@ export class ApplyStoreSubscriptionEventUseCase {
 
   /**
    * 이전: 넘겨받은 사용자에게 넘겨준 사용자의 체인 행을 옮기고 둘 다 다시 계산한다. 이전 이벤트에는 체인 ID가
-   * 없어 넘겨준 사용자의 행 전체를 옮기고, 같은 체인의 이벤트가 다시 그 사용자로 오면 claimChain이 되돌린다.
+   * 없어 넘겨준 사용자의 행 전체를 옮기고, 같은 체인의 이벤트가 다시 그 사용자로 오면 transferTo가 되돌린다.
    * 행이 없으면(탈퇴로 지워짐) 다음 갱신이 체인을 이어 받는다.
    */
   async #processTransfer(event: SubscriptionTransferredEvent): Promise<void> {
@@ -391,7 +395,10 @@ export class ApplyStoreSubscriptionEventUseCase {
             )
           : null;
       // 배포 이전 마지막 이벤트 ID도 중복 처리하지 않는다
-      if (event.providerEventId != null && subscription?.wasProcessedWith(event.providerEventId)) {
+      if (
+        event.providerEventId != null &&
+        subscription?.isAlreadyProcessed(event.providerEventId)
+      ) {
         return null;
       }
       const payload = await this.#applyEvent(user, event, subscription);
@@ -406,12 +413,15 @@ export class ApplyStoreSubscriptionEventUseCase {
     if (event.providerEventId == null) {
       return true;
     }
-    return this.#dependencies.receiptRepository.claim({
-      eventId: event.providerEventId,
-      eventType: event.providerEventType,
-      processedAt: this.#dependencies.clock.now(),
-      environment: event.environment,
-    });
+    return this.#dependencies.receiptRepository.claim(
+      SubscriptionEventReceipt.create({
+        provider: event.provider,
+        eventId: ProviderEventId.reconstitute(event.providerEventId),
+        eventType: event.providerEventType,
+        environment: event.environment,
+        now: this.#dependencies.clock.now(),
+      }),
+    );
   }
 
   async #applyEvent(
@@ -451,7 +461,7 @@ export class ApplyStoreSubscriptionEventUseCase {
     // 프리미엄 판단이 User projection 대신 행 자체를 믿을 수 있게 한다
     const userId = UserId.reconstitute(user.id);
     const now = clock.now();
-    await subscriptionRepository.claimChain(storeSubscriptionId, userId, now);
+    const isTransferred = subscription.transferTo(userId, now);
     const transition = this.#planTransition({
       user,
       event,
@@ -461,6 +471,10 @@ export class ApplyStoreSubscriptionEventUseCase {
       now,
     });
     if (transition == null) {
+      // 상태가 그대로인 늦은 이벤트여도 옮겨 간 소유자는 남긴다
+      if (isTransferred) {
+        await subscriptionRepository.save(subscription);
+      }
       return null;
     }
     await subscriptionRepository.save(subscription);
@@ -496,7 +510,7 @@ export class ApplyStoreSubscriptionEventUseCase {
     }
     const { subscriptionRepository } = this.#dependencies;
     const userId = UserId.reconstitute(user.id);
-    await subscriptionRepository.claimChain(storeSubscriptionId, userId, now);
+    subscription.transferTo(userId, now);
     await subscriptionRepository.save(subscription);
     const access = await this.#projectUser(
       userId,
@@ -524,7 +538,6 @@ export class ApplyStoreSubscriptionEventUseCase {
       Subscription.create({
         id: await subscriptionRepository.nextId(),
         userId,
-        provider: event.provider,
         storeSubscriptionId,
         productId: event.productId,
         startedAt: event.startedAt ?? now,
@@ -598,7 +611,6 @@ export class ApplyStoreSubscriptionEventUseCase {
       Subscription.create({
         id: await subscriptionRepository.nextId(),
         userId,
-        provider: event.provider,
         storeSubscriptionId,
         productId: event.productId,
         startedAt,

@@ -1,5 +1,6 @@
 import type { PremiumGrantEndingNoticeRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
 import type { PremiumGrantRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant.repository.port";
+import { PremiumGrantId } from "#api/modules/billing/premium-grants/domain/premium-grant-id.vo";
 import type { PremiumGrantPrimitives } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
 import type { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import type { SubscriptionPrimitives } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
@@ -31,9 +32,9 @@ async function saveGrant(
 ): Promise<string> {
   sequence += 1;
   const { banked = false, ...rest } = overrides;
-  const id = (await grants.nextId()).value;
+  const id = PremiumGrantId.generate().value;
   const create = banked ? createBankedPremiumGrantFixture : createPremiumGrantFixture;
-  await grants.saveIfAbsent(create({ id, sourceKey: `invite:ending-${sequence}`, ...rest }));
+  await grants.save(create({ id, sourceKey: `invite:ending-${sequence}`, ...rest }));
   return id;
 }
 
@@ -75,7 +76,7 @@ export function describePremiumGrantEndingNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => notice.grantId)).toEqual([sooner, later]);
+      expect(due.map((notice) => notice.id.value)).toEqual([sooner, later]);
     });
 
     it("이미 끝났거나 안내 기간 밖이거나 진행 중이 아닌 기간은 고르지 않는다", async () => {
@@ -128,7 +129,7 @@ export function describePremiumGrantEndingNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => notice.grantId)).toEqual([last]);
+      expect(due.map((notice) => notice.id.value)).toEqual([last]);
     });
 
     it("다른 사용자의 쌓아 둔 기간은 이어지는 것으로 보지 않는다", async () => {
@@ -141,7 +142,7 @@ export function describePremiumGrantEndingNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => notice.grantId)).toEqual([ending]);
+      expect(due.map((notice) => notice.id.value)).toEqual([ending]);
     });
 
     it("보상 기간 끝까지 이어지는 스토어 구독이 있으면 고르지 않는다", async () => {
@@ -175,7 +176,7 @@ export function describePremiumGrantEndingNoticeRepositoryContract(
       const due = await repository.listDue(window);
 
       // Then
-      expect(due.map((notice) => notice.grantId)).toEqual([ending]);
+      expect(due.map((notice) => notice.id.value)).toEqual([ending]);
     });
 
     it("결제 유예가 보상 기간 끝까지 이어지면 고르지 않는다", async () => {
@@ -213,7 +214,7 @@ export function describePremiumGrantEndingNoticeRepositoryContract(
       });
 
       // Then
-      expect([head?.grantId, next.map((notice) => notice.grantId)]).toEqual([first, [second]]);
+      expect([head?.id.value, next.map((notice) => notice.id.value)]).toEqual([first, [second]]);
     });
 
     it("claim한 안내만 돌려주고 다시 claim하면 비어 있다", async () => {

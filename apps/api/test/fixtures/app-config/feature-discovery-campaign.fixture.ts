@@ -1,7 +1,7 @@
 import {
   FeatureDiscoveryCampaign,
   type FeatureDiscoveryCampaignPrimitives,
-} from "#api/modules/app-config/feature-discovery/domain/feature-discovery-campaign.entity";
+} from "#api/modules/app-config/feature-discovery/domain/feature-discovery-campaign.aggregate";
 
 export function createFeatureDiscoveryCampaignFixture(
   overrides: Partial<FeatureDiscoveryCampaignPrimitives> = {},

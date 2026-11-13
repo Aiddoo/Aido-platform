@@ -2,6 +2,7 @@ import { omit } from "es-toolkit";
 
 import { MarkNudgeReadUseCase } from "#api/modules/social/nudges/application/use-cases/mark-nudge-read.use-case";
 import { ReplyToNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/reply-to-nudge.use-case";
+import { DrizzleNudgeReader } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.reader";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user, userBlock } from "#api/platform/database/schema/index";
@@ -11,7 +12,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import {
@@ -23,7 +24,6 @@ import {
   NUDGE_FIXTURE_SENDER_ID,
   type NudgeTodoSeed,
 } from "#test/fixtures/social/nudge.fixture";
-import { createReminderNudgeFixture } from "#test/fixtures/social/reminder-nudge.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -31,7 +31,7 @@ const RECEIVER_ID = UserId.reconstitute(NUDGE_FIXTURE_RECEIVER_ID);
 const SENDER_ID = UserId.reconstitute(NUDGE_FIXTURE_SENDER_ID);
 const REPLIED_AT = NUDGE_FIXTURE_NOW.add({ minutes: 5 });
 
-describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
+describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
 
@@ -58,6 +58,11 @@ describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
   function createRepository(): DrizzleNudgeRepository {
     const { txHost } = createDatabaseTransactionFixture(client);
     return new DrizzleNudgeRepository(txHost);
+  }
+
+  function createReader(): DrizzleNudgeReader {
+    const { txHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleNudgeReader(txHost);
   }
 
   // DATE 컬럼은 UTC 자정 Date로 넣는다
@@ -88,11 +93,16 @@ describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
     return requireRecord(created).id;
   }
 
-  describeNudgeRepositoryContract(async () => ({ repository: createRepository(), addTodo }));
+  describeNudgeRepositoryContract(async () => ({
+    repository: createRepository(),
+    reader: createReader(),
+    addTodo,
+  }));
 
   it("어느 쪽이든 차단한 상대의 콕은 목록·개수·단건 조회에서 빠진다", async () => {
     // Given
     const repository = createRepository();
+    const reader = createReader();
     const todoId = await addTodo(createNudgeTodoSeed());
     const nudge = createNudgeFixture({ id: (await repository.nextId()).value, todoId });
     await repository.save(nudge);
@@ -101,22 +111,22 @@ describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
       .values({ blockerId: NUDGE_FIXTURE_RECEIVER_ID, blockedId: NUDGE_FIXTURE_SENDER_ID });
 
     // When
-    const received = await repository.listReceived({
+    const received = await reader.listReceived({
       userId: RECEIVER_ID,
       afterNudgeId: null,
       limit: 5,
     });
-    const interactions = await repository.listInteractions({
+    const interactions = await reader.listInteractions({
       viewerId: SENDER_ID,
       direction: "sent",
       afterNudgeId: null,
       limit: 5,
     });
-    const single = await repository.findInteraction(nudge.id, RECEIVER_ID);
+    const single = await reader.findInteraction(nudge.id, RECEIVER_ID);
     const counts = {
-      received: await repository.countReceived(RECEIVER_ID),
-      unread: await repository.countUnreadReceived(RECEIVER_ID),
-      sent: await repository.countSent(SENDER_ID),
+      received: await reader.countReceived(RECEIVER_ID),
+      unread: await reader.countUnreadReceived(RECEIVER_ID),
+      sent: await reader.countSent(SENDER_ID),
     };
 
     // Then
@@ -143,20 +153,13 @@ describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
       replyUpdatedAt: createdAt.add({ seconds: 3 }),
       thankedAt: createdAt.add({ seconds: 4 }),
     });
-    const reminder = createReminderNudgeFixture({
-      id: (await repository.nextReminderId()).value,
-      createdAt,
-    });
 
     // When
     await repository.save(nudge);
-    await repository.saveReminder(reminder);
     const found = await repository.findById(nudge.id);
-    const foundReminder = await repository.findLastReminderSentTo(SENDER_ID, RECEIVER_ID);
 
     // Then
     expect(found?.toPrimitives()).toEqual(nudge.toPrimitives());
-    expect(foundReminder?.toPrimitives()).toEqual(reminder.toPrimitives());
   });
 
   it("답장 전에 읽기 시작한 읽음 처리가 답장 뒤에 끝나도 답장을 지우지 않는다", async () => {
@@ -167,14 +170,14 @@ describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
     const nudge = createNudgeFixture({ id: (await repository.nextId()).value, todoId });
     await repository.save(nudge);
     const clock = new FixedClock(REPLIED_AT);
-    const followReader = new StubFollowReader();
-    followReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+    const mutualFriendReader = new StubMutualFriendReader();
+    mutualFriendReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
     const reply = new ReplyToNudgeUseCase({
       unitOfWork: uow,
       nudgeRepository: repository,
-      nudgeReader: repository,
+      nudgeReader: new DrizzleNudgeReader(txHost),
       interactionConfig: { isEnabled: true },
-      followReader,
+      mutualFriendReader,
       notifier: new RecordingNudgeNotifier(),
       clock,
     });

@@ -5,16 +5,15 @@ import { alias } from "drizzle-orm/pg-core";
 
 import { validStoreEntitlementCondition } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
+import { premiumGrantStatus } from "#api/platform/database/schema/enums.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import {
-  type ListPremiumGrantUsersToReconcileParams,
+import type {
+  ListPremiumGrantUsersToReconcileParams,
   PremiumGrantRepositoryPort,
 } from "../../application/ports/premium-grant.repository.port.js";
-import { PremiumGrantId } from "../../domain/premium-grant-id.vo.js";
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import { toPremiumGrant, toPremiumGrantRow } from "./premium-grant-row.mapper.js";
 
@@ -23,11 +22,10 @@ const currentOf = alias(premiumGrant, "current");
 const storeOf = alias(subscription, "store");
 
 @Injectable()
-export class DrizzlePremiumGrantRepository extends PremiumGrantRepositoryPort {
+export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 
@@ -48,10 +46,6 @@ export class DrizzlePremiumGrantRepository extends PremiumGrantRepositoryPort {
       .where(
         and(this.#storeOfGrantUser(), validStoreEntitlementCondition(storeOf, instantToDate(at))),
       );
-  }
-
-  async nextId(): Promise<PremiumGrantId> {
-    return PremiumGrantId.reconstitute(createEntityId());
   }
 
   async listOpenByUserId(userId: UserId): Promise<PremiumGrant[]> {
@@ -76,33 +70,52 @@ export class DrizzlePremiumGrantRepository extends PremiumGrantRepositoryPort {
     return row?.endsAt ?? null;
   }
 
-  async saveIfAbsent(grant: PremiumGrant): Promise<boolean> {
-    const inserted = await this.#db
+  async existsBySourceKey(sourceKey: string): Promise<boolean> {
+    const row = await this.#db.query.premiumGrant.findFirst({
+      columns: { id: true },
+      where: { sourceKey },
+    });
+    return row != null;
+  }
+
+  async save(grant: PremiumGrant): Promise<void> {
+    const row = toPremiumGrantRow(grant);
+    await this.#db
       .insert(premiumGrant)
-      .values(toPremiumGrantRow(grant))
-      .onConflictDoNothing({ target: premiumGrant.sourceKey })
-      .returning({ id: premiumGrant.id });
-    return inserted.length === 1;
+      .values(row)
+      .onConflictDoUpdate({
+        target: premiumGrant.id,
+        // 종료 안내 시각은 안내 작업의 조건부 표시(claim)만 쓴다
+        set: {
+          status: row.status,
+          startsAt: row.startsAt,
+          endsAt: row.endsAt,
+          updatedAt: row.updatedAt,
+        },
+      });
   }
 
   async saveAll(grants: readonly PremiumGrant[]): Promise<void> {
     if (grants.length === 0) {
       return;
     }
-    // 행마다 다른 기간은 UPDATE … FROM (VALUES …) 한 문장으로 바꾼다
-    const values = grants.map((grant) => {
+    const changes = grants.map((grant) => {
       const { id, status, startsAt, endsAt, updatedAt } = grant.toPrimitives();
-      return sql`(${id}, ${status}, ${sql.param(startsAt, premiumGrant.startsAt)}::timestamp(3), ${sql.param(endsAt, premiumGrant.endsAt)}::timestamp(3), ${sql.param(updatedAt, premiumGrant.updatedAt)}::timestamp(3))`;
+      return sql`(${id}, ${status}::${premiumGrantStatus}, ${sql.param(startsAt, premiumGrant.startsAt)}::timestamp(3), ${sql.param(endsAt, premiumGrant.endsAt)}::timestamp(3), ${sql.param(updatedAt, premiumGrant.updatedAt)}::timestamp(3))`;
     });
-    await this.#db.execute(sql`
-      UPDATE ${premiumGrant}
-      SET ${sql.identifier(premiumGrant.status.name)} = changed."status"::"PremiumGrantStatus",
-          ${sql.identifier(premiumGrant.startsAt.name)} = changed."startsAt",
-          ${sql.identifier(premiumGrant.endsAt.name)} = changed."endsAt",
-          ${sql.identifier(premiumGrant.updatedAt.name)} = changed."updatedAt"
-      FROM (VALUES ${sql.join(values, sql`, `)}) AS changed("id", "status", "startsAt", "endsAt", "updatedAt")
-      WHERE ${premiumGrant.id} = changed."id"
-    `);
+    // 행마다 다른 기간을 UPDATE … FROM (VALUES …) 한 문장으로 바꾼다
+    await this.#db
+      .update(premiumGrant)
+      .set({
+        status: sql`changed."status"`,
+        startsAt: sql`changed."startsAt"`,
+        endsAt: sql`changed."endsAt"`,
+        updatedAt: sql`changed."updatedAt"`,
+      })
+      .from(
+        sql`(VALUES ${sql.join(changes, sql`, `)}) AS changed("id", "status", "startsAt", "endsAt", "updatedAt")`,
+      )
+      .where(eq(premiumGrant.id, sql`changed."id"`));
   }
 
   async listUserIdsToReconcile(params: ListPremiumGrantUsersToReconcileParams): Promise<UserId[]> {

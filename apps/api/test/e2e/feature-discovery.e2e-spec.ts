@@ -2,7 +2,7 @@ import { featureDiscoveryResponseSchema } from "@aido/api";
 import request from "supertest";
 import { vi } from "vitest";
 
-import { GetFeatureDiscoveryUseCase } from "#api/modules/app-config/feature-discovery/application/use-cases/get-feature-discovery.use-case";
+import { GetFeatureDiscoveryCampaignUseCase } from "#api/modules/app-config/feature-discovery/application/use-cases/get-feature-discovery-campaign.use-case";
 import { createFeatureDiscoveryCampaignFixture } from "#test/fixtures/app-config/feature-discovery-campaign.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -27,23 +27,20 @@ describe("기능 발견 설정 (E2E)", () => {
     const featureDiscovery = await request(ctx.app.getHttpServer())
       .get("/v1/app-config/feature-discovery")
       .expect(200);
-    const root = await request(ctx.app.getHttpServer()).get("/v1").expect(200);
+    const root = await request(ctx.app.getHttpServer()).get("/v1/invites/availability").expect(200);
 
     // Then - kill switch는 중간 캐시 없이 다음 조회부터 즉시 반영된다
     expect(featureDiscovery.headers["cache-control"]).toBe("private, no-store");
     expect(featureDiscovery.body).toEqual({ enabled: false });
 
     // Then - the global response contract remains unchanged elsewhere
-    expect(root.body).toMatchObject({
-      success: true,
-      data: "Hello World!",
-    });
+    expect(root.body).toMatchObject({ success: true, data: { enabled: expect.any(Boolean) } });
     expect(root.body.timestamp).toEqual(expect.any(Number));
   });
 
   it("모바일 Zod 계약으로 검증 가능한 활성 응답을 반환한다", async () => {
     // Given - use the real HTTP/interceptor path with an enabled rollout result
-    const getFeatureDiscoveryUseCase = ctx.module.get(GetFeatureDiscoveryUseCase);
+    const getFeatureDiscoveryCampaign = ctx.module.get(GetFeatureDiscoveryCampaignUseCase);
     const response = {
       enabled: true as const,
       campaignId: "feature-discovery-2026-08",
@@ -51,7 +48,7 @@ describe("기능 발견 설정 (E2E)", () => {
       launchedAt: "2026-08-01T00:00:00.000Z",
       autoOpen: true,
     };
-    vi.spyOn(getFeatureDiscoveryUseCase, "execute").mockReturnValueOnce(
+    vi.spyOn(getFeatureDiscoveryCampaign, "execute").mockReturnValueOnce(
       createFeatureDiscoveryCampaignFixture({
         campaignId: response.campaignId,
         minAppVersion: response.minAppVersion,

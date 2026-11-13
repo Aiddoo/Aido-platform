@@ -10,9 +10,9 @@ import {
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { EntitlementCacheInvalidatorPort } from "../../application/ports/entitlement-cache-invalidator.port.js";
-import {
+import type {
+  CachedAccessState,
   EntitlementCachePort,
-  type CachedAccessState,
 } from "../../application/ports/entitlement-cache.port.js";
 import {
   ENTITLEMENT_CACHE_TTL_MS,
@@ -36,13 +36,11 @@ function subscriptionKey(userId: UserId): GenerationGuardedCacheKey {
 // 다른 Context(billing)가 비우는 문도 같은 key를 쓰므로 한 어댑터가 두 포트를 맡는다
 @Injectable()
 export class EntitlementCacheAdapter
-  extends EntitlementCachePort
-  implements EntitlementCacheInvalidatorPort
+  implements EntitlementCachePort, EntitlementCacheInvalidatorPort
 {
   readonly #cache: GenerationGuardedCache;
 
   constructor(cacheService: CacheStorePort) {
-    super();
     this.#cache = new GenerationGuardedCache(cacheService, ENTITLEMENT_CACHE_TTL_MS);
   }
 

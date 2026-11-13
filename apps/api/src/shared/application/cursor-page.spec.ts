@@ -1,7 +1,6 @@
 import { times } from "es-toolkit/compat";
 
 import { clampPageSize, toCursorPage } from "./cursor-page.js";
-import { PaginationService } from "./pagination/services/pagination.service.js";
 
 interface Row {
   readonly id: number;
@@ -44,20 +43,6 @@ describe("toCursorPage — 커서 페이지 만들기", () => {
     // Then
     expect(page.items.map((row) => row.id)).toEqual(expectedIds);
     expect(page.pagination).toEqual({ nextCursor, hasNext, size: 3 });
-  });
-
-  it("기존 PaginationService와 같은 입력에 같은 결과를 낸다", () => {
-    // Given
-    const rows = createRows(21);
-    const size = 20;
-
-    // When
-    const page = toCursorPage({ rows, size, toCursor: (row) => row.id });
-
-    // Then
-    expect(page).toEqual(
-      new PaginationService().createCursorPaginatedResponse<Row, number>({ items: rows, size }),
-    );
   });
 });
 

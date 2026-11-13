@@ -8,16 +8,15 @@ import {
   NotificationRecipientTimezoneReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
-import type { TrialEndingNotice } from "../../application/ports/trial-ending-notice.repository.port.js";
-import { TrialEndingNotifierPort } from "../../application/ports/trial-ending-notifier.port.js";
+import type { TrialEndingNotifierPort } from "../../application/ports/trial-ending-notifier.port.js";
+import type { TrialEndingNotice } from "../../domain/trial-ending-notice.entity.js";
 
 @Injectable()
-export class TrialEndingNotifierAdapter extends TrialEndingNotifierPort {
+export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
   readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
@@ -29,7 +28,6 @@ export class TrialEndingNotifierAdapter extends TrialEndingNotifierPort {
     @Inject(NotificationRecipientTimezoneReaderPort)
     timezoneReader: NotificationRecipientTimezoneReaderPort,
   ) {
-    super();
     this.#notificationPublisher = notificationPublisher;
     this.#localeReader = localeReader;
     this.#timezoneReader = timezoneReader;
@@ -41,26 +39,26 @@ export class TrialEndingNotifierAdapter extends TrialEndingNotifierPort {
     }
     const userIds = notices.map((notice) => notice.userId);
     const [locales, timezones] = await Promise.all([
-      this.#localeReader.getLocales(userIds.map((userId) => UserId.reconstitute(userId))),
-      this.#timezoneReader.getTimezones(userIds),
+      this.#localeReader.getLocales(userIds),
+      this.#timezoneReader.getTimezones(userIds.map((userId) => userId.value)),
     ]);
     await this.#notificationPublisher.publishBatch(
       notices.map((notice) => {
         const message = createPremiumTrialEndingNotificationMessage({
-          locale: locales.get(notice.userId) ?? DEFAULT_LOCALE,
-          timezone: timezones.get(notice.userId) ?? DEFAULT_DELIVERY_TIMEZONE,
+          locale: locales.get(notice.userId.value) ?? DEFAULT_LOCALE,
+          timezone: timezones.get(notice.userId.value) ?? DEFAULT_DELIVERY_TIMEZONE,
           endsAt: instantToDate(notice.expiresAt),
           now: instantToDate(now),
           willRenew: notice.willRenew,
           planType: notice.planType,
           variantContext: {
             campaignKey: SCHEDULER_CAMPAIGN_KEY.PREMIUM_TRIAL_ENDING,
-            recipientId: notice.userId,
-            occurrenceKey: String(notice.subscriptionId),
+            recipientId: notice.userId.value,
+            occurrenceKey: String(notice.id.value),
           },
         });
         return {
-          userId: notice.userId,
+          userId: notice.userId.value,
           type: "PREMIUM_TRIAL_ENDING",
           title: message.title,
           body: message.body,
@@ -73,7 +71,7 @@ export class TrialEndingNotifierAdapter extends TrialEndingNotifierPort {
             type: NOTIFICATION_ACTION_TYPE.DEEP_LINK,
             url: NOTICE_DEEP_LINK_PATH.SUBSCRIPTION,
           },
-          metadata: { subscriptionId: notice.subscriptionId, willRenew: notice.willRenew },
+          metadata: { subscriptionId: notice.id.value, willRenew: notice.willRenew },
         };
       }),
     );

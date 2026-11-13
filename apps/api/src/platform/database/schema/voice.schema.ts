@@ -10,8 +10,8 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import { createEntityId } from "../../../shared/domain/model/entity-id.js";
 import { instant } from "../columns/temporal-columns.js";
-import { createEntityId } from "../entity-id.js";
 import { user } from "./identity.schema.js";
 
 /**

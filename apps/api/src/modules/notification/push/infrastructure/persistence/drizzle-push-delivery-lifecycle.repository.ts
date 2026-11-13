@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, exists, inArray, isNull, lt, or, type SQL, sql } from "drizzle-orm";
 import { uniq } from "es-toolkit";
 import { z } from "zod";
 
@@ -9,23 +9,25 @@ import {
   pushDeliveryAttempt,
   pushDispatch,
   pushDispatchOutbox,
+  pushDispatchOutboxStatus,
+  pushDispatchStatus,
   pushToken,
 } from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type {
   ClaimedPushDelivery,
   ClaimPushDeliveriesInput,
   FinalizePushDeliveryResultsInput,
   FinalizeSkippedPushDeliveryInput,
+  PushDeliveryFence,
   PushDeliveryLifecycleRepositoryPort,
   ReleasePushDeliveryInput,
   ReopenPushDeliveriesAfterClaimFailureInput,
-  ReservePushDeliveryRateLimitInput,
 } from "../../application/ports/push-delivery-lifecycle.repository.port.js";
 import type { PushDeliveryPublication } from "../../application/read-models/push-delivery.read-model.js";
 import { toAttemptOutcome } from "./push-delivery-attempt.mapper.js";
 import {
-  lockPublicationGenerations,
   matchesPublicationGeneration,
   type OutboxStatus,
 } from "./push-outbox-generation.mapper.js";
@@ -40,6 +42,7 @@ function toNotificationMetadata(value: unknown): Record<string, unknown> | null 
 
 /** claim된 발행 세대는 처리 중이거나 이미 발행 표시된 상태다. */
 const CLAIMED_OUTBOX_STATUSES: readonly OutboxStatus[] = ["PROCESSING", "PUBLISHED"];
+const STALE_PROCESSING_LEASE_ERROR = "STALE_PROCESSING_LEASE";
 
 const claimRowSchema = z.object({
   dispatchId: z.number().nullable(),
@@ -47,7 +50,6 @@ const claimRowSchema = z.object({
   publishAttempt: z.number().nullable(),
   ownedOutboxCount: z.number(),
 });
-const dispatchRowsSchema = z.array(z.object({ dispatchId: z.number() }));
 const publicationRowsSchema = z.array(
   z.object({ dispatchId: z.number(), publishAttempt: z.number() }),
 );
@@ -59,12 +61,67 @@ function excluded(column: { readonly name: string }) {
   return sql`excluded.${sql.identifier(column.name)}`;
 }
 
+// UPDATE의 SET 대상은 테이블 이름을 붙이지 않은 칼럼 이름이어야 한다
+function setColumn(column: { readonly name: string }) {
+  return sql.identifier(column.name);
+}
+
+function claimedOutboxStatus() {
+  return inArray(pushDispatchOutbox.status, [...CLAIMED_OUTBOX_STATUSES]);
+}
+
+// 요청한 세대의 outbox 행을 claim과 같은 (availableAt, dispatchId) 순서로 잠그고 남은 요청만 넘긴다
+function lockedRequests(columns: readonly string[], rows: readonly SQL[]): SQL {
+  return sql`
+    requested(${sql.join(
+      columns.map((column) => sql.identifier(column)),
+      sql`, `,
+    )}) AS (
+      VALUES ${sql.join([...rows], sql`, `)}
+    ),
+    locked_outboxes AS MATERIALIZED (
+      SELECT requested.*
+      FROM requested
+      INNER JOIN ${pushDispatchOutbox}
+        ON ${and(
+          eq(pushDispatchOutbox.dispatchId, sql`requested."dispatchId"`),
+          eq(pushDispatchOutbox.publishAttempts, sql`requested."publishAttempt"`),
+          claimedOutboxStatus(),
+        )}
+      ORDER BY ${pushDispatchOutbox.availableAt} ASC, ${pushDispatchOutbox.dispatchId} ASC
+      FOR UPDATE OF ${pushDispatchOutbox}
+    )`;
+}
+
+// 요청한 job과 delivery attempt가 아직 lease를 쥔 dispatch만 바꾼다
+function heldLease(): SQL | undefined {
+  return and(
+    eq(pushDispatch.id, sql`requested."dispatchId"`),
+    eq(pushDispatch.status, "PROCESSING"),
+    eq(pushDispatch.processingJobId, sql`requested."processingJobId"`),
+    eq(pushDispatch.deliveryAttemptCount, sql`requested."deliveryAttemptCount"`),
+  );
+}
+
+function fenceValues(fence: PushDeliveryFence): SQL {
+  return sql`${fence.dispatchId}::INTEGER, ${fence.publishAttempt}::INTEGER, ${fence.processingJobId}::VARCHAR(255), ${fence.deliveryAttemptCount}::INTEGER`;
+}
+
+const FENCE_COLUMNS = [
+  "dispatchId",
+  "publishAttempt",
+  "processingJobId",
+  "deliveryAttemptCount",
+] as const;
+
 @Injectable()
 export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifecycleRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -75,90 +132,78 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
     if (input.publications.length === 0) {
       return [];
     }
-    await lockPublicationGenerations(this.#db, input.publications, CLAIMED_OUTBOX_STATUSES);
+    await this.#lockClaimedGenerations(input.publications);
     const values = input.publications.map(
       (publication) =>
         sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
     );
+    const startedAt = sql.param(input.startedAt, pushDispatch.processingStartedAt);
+    // raw SQL: outbox 소유와 dispatch lease를 데이터 변경 CTE 두 개로 한 문장에서 옮겨 소유 수와 claim 수를 같은 스냅샷으로 맞춘다
     const ownershipRows = z.array(claimRowSchema).parse(
       (
         await this.#db.execute<Record<string, unknown>>(sql`
-			WITH requested("dispatchId", "publishAttempt") AS (
-				VALUES ${sql.join(values, sql`, `)}
-			),
-			locked_outboxes AS MATERIALIZED (
-				UPDATE ${pushDispatchOutbox} AS outbox
-				SET
-					"status" = 'PUBLISHED'::"PushDispatchOutboxStatus",
-					"lockedAt" = NULL,
-					"publishedAt" = COALESCE(outbox."publishedAt", CURRENT_TIMESTAMP),
-					"lastError" = NULL,
-					"updatedAt" = CURRENT_TIMESTAMP
-				FROM requested
-				WHERE outbox."dispatchId" = requested."dispatchId"
-					AND outbox."publishAttempts" = requested."publishAttempt"
-					AND outbox."status" IN (
-						'PROCESSING'::"PushDispatchOutboxStatus",
-						'PUBLISHED'::"PushDispatchOutboxStatus"
-					)
-					AND EXISTS (
-						SELECT 1
-						FROM ${pushDispatch} AS dispatch
-						WHERE dispatch."id" = requested."dispatchId"
-							AND (
-								dispatch."status" = 'PENDING'::"PushDispatchStatus"
-								OR (
-									dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-									AND dispatch."processingJobId" = ${input.processingJobId}
-									AND COALESCE(dispatch."processingJobAttempt", 0) < ${input.processingJobAttempt}
-								)
-							)
-					)
-				RETURNING outbox."dispatchId", outbox."publishAttempts" AS "publishAttempt"
-			),
-			claimed_dispatches AS MATERIALIZED (
-				UPDATE ${pushDispatch} AS dispatch
-				SET
-					"status" = 'PROCESSING'::"PushDispatchStatus",
-					"processingJobId" = ${input.processingJobId},
-					"processingJobAttempt" = ${input.processingJobAttempt},
-					"processingStartedAt" = ${sql.param(input.startedAt, pushDispatch.processingStartedAt)},
-					"deliveryAttemptCount" = dispatch."deliveryAttemptCount" + 1,
-					"skipReason" = NULL,
-					"lastError" = NULL,
-					"updatedAt" = CURRENT_TIMESTAMP
-				FROM locked_outboxes AS outbox
-				WHERE dispatch."id" = outbox."dispatchId"
-					AND (
-						dispatch."status" = 'PENDING'::"PushDispatchStatus"
-						OR (
-							dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-							AND dispatch."processingJobId" = ${input.processingJobId}
-							AND COALESCE(dispatch."processingJobAttempt", 0) < ${input.processingJobAttempt}
-						)
-					)
-				RETURNING
-					dispatch."id" AS "dispatchId",
-					dispatch."deliveryAttemptCount",
-					outbox."publishAttempt"
-			),
-			ownership AS (
-				SELECT COUNT(*)::INTEGER AS "ownedOutboxCount"
-				FROM locked_outboxes
-			)
-			SELECT
-				claimed."dispatchId",
-				claimed."deliveryAttemptCount",
-				claimed."publishAttempt",
-				ownership."ownedOutboxCount"
-			FROM claimed_dispatches AS claimed
-			CROSS JOIN ownership
-			UNION ALL
-			SELECT NULL, NULL, NULL, ownership."ownedOutboxCount"
-			FROM ownership
-			WHERE ownership."ownedOutboxCount" > 0
-				AND NOT EXISTS (SELECT 1 FROM claimed_dispatches)
-		`)
+          WITH requested("dispatchId", "publishAttempt") AS (
+            VALUES ${sql.join(values, sql`, `)}
+          ),
+          locked_outboxes AS MATERIALIZED (
+            UPDATE ${pushDispatchOutbox}
+            SET
+              ${setColumn(pushDispatchOutbox.status)} = ${"PUBLISHED"}::${pushDispatchOutboxStatus},
+              ${setColumn(pushDispatchOutbox.lockedAt)} = NULL,
+              ${setColumn(pushDispatchOutbox.publishedAt)} = COALESCE(${pushDispatchOutbox.publishedAt}, ${startedAt}),
+              ${setColumn(pushDispatchOutbox.lastError)} = NULL,
+              ${setColumn(pushDispatchOutbox.updatedAt)} = ${startedAt}
+            FROM requested
+            WHERE ${and(
+              eq(pushDispatchOutbox.dispatchId, sql`requested."dispatchId"`),
+              eq(pushDispatchOutbox.publishAttempts, sql`requested."publishAttempt"`),
+              claimedOutboxStatus(),
+              exists(
+                this.#db
+                  .select({ one: sql`1` })
+                  .from(pushDispatch)
+                  .where(
+                    and(eq(pushDispatch.id, sql`requested."dispatchId"`), this.#claimableBy(input)),
+                  ),
+              ),
+            )}
+            RETURNING ${pushDispatchOutbox.dispatchId}, ${pushDispatchOutbox.publishAttempts} AS "publishAttempt"
+          ),
+          claimed_dispatches AS MATERIALIZED (
+            UPDATE ${pushDispatch}
+            SET
+              ${setColumn(pushDispatch.status)} = ${"PROCESSING"}::${pushDispatchStatus},
+              ${setColumn(pushDispatch.processingJobId)} = ${input.processingJobId},
+              ${setColumn(pushDispatch.processingJobAttempt)} = ${input.processingJobAttempt},
+              ${setColumn(pushDispatch.processingStartedAt)} = ${startedAt},
+              ${setColumn(pushDispatch.deliveryAttemptCount)} = ${pushDispatch.deliveryAttemptCount} + 1,
+              ${setColumn(pushDispatch.skipReason)} = NULL,
+              ${setColumn(pushDispatch.lastError)} = NULL,
+              ${setColumn(pushDispatch.updatedAt)} = ${startedAt}
+            FROM locked_outboxes AS outbox
+            WHERE ${and(eq(pushDispatch.id, sql`outbox."dispatchId"`), this.#claimableBy(input))}
+            RETURNING
+              ${pushDispatch.id} AS "dispatchId",
+              ${pushDispatch.deliveryAttemptCount},
+              outbox."publishAttempt"
+          ),
+          ownership AS (
+            SELECT COUNT(*)::INTEGER AS "ownedOutboxCount"
+            FROM locked_outboxes
+          )
+          SELECT
+            claimed."dispatchId",
+            claimed."deliveryAttemptCount",
+            claimed."publishAttempt",
+            ownership."ownedOutboxCount"
+          FROM claimed_dispatches AS claimed
+          CROSS JOIN ownership
+          UNION ALL
+          SELECT NULL, NULL, NULL, ownership."ownedOutboxCount"
+          FROM ownership
+          WHERE ownership."ownedOutboxCount" > 0
+            AND NOT EXISTS (SELECT 1 FROM claimed_dispatches)
+        `)
       ).rows,
     );
     const ownedOutboxCount = ownershipRows[0]?.ownedOutboxCount ?? 0;
@@ -291,41 +336,31 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
   }
 
   async markRateLimitReserved(
-    inputs: readonly ReservePushDeliveryRateLimitInput[],
+    fences: readonly PushDeliveryFence[],
+    reservedAt: Temporal.Instant,
   ): Promise<readonly number[]> {
-    if (inputs.length === 0) {
+    if (fences.length === 0) {
       return [];
     }
-    const values = inputs.map(
-      (input) => sql`(
-				${input.fence.dispatchId}::INTEGER,
-				${input.fence.processingJobId}::VARCHAR(255),
-				${input.fence.deliveryAttemptCount}::INTEGER,
-				${sql.param(input.reservedAt, pushDispatch.rateLimitReservedAt)}::TIMESTAMP(3)
-			)`,
-    );
-    const reserved = dispatchRowsSchema.parse(
-      (
-        await this.#db.execute<Record<string, unknown>>(sql`
-			UPDATE ${pushDispatch} AS dispatch
-			SET
-				"rateLimitReservedAt" = requested."reservedAt",
-				"updatedAt" = CURRENT_TIMESTAMP
-			FROM (VALUES ${sql.join(values, sql`, `)}) AS requested(
-				"dispatchId",
-				"processingJobId",
-				"deliveryAttemptCount",
-				"reservedAt"
-			)
-			WHERE dispatch."id" = requested."dispatchId"
-				AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-				AND dispatch."processingJobId" = requested."processingJobId"
-				AND dispatch."deliveryAttemptCount" = requested."deliveryAttemptCount"
-				AND dispatch."rateLimitReservedAt" IS NULL
-			RETURNING dispatch."id" AS "dispatchId"
-		`)
-      ).rows,
-    );
+    const reserved = await this.#db
+      .update(pushDispatch)
+      .set({ rateLimitReservedAt: reservedAt, updatedAt: reservedAt })
+      .where(
+        and(
+          or(
+            ...fences.map((fence) =>
+              and(
+                eq(pushDispatch.id, fence.dispatchId),
+                eq(pushDispatch.processingJobId, fence.processingJobId),
+                eq(pushDispatch.deliveryAttemptCount, fence.deliveryAttemptCount),
+              ),
+            ),
+          ),
+          eq(pushDispatch.status, "PROCESSING"),
+          isNull(pushDispatch.rateLimitReservedAt),
+        ),
+      )
+      .returning({ dispatchId: pushDispatch.id });
     return reserved.map((item) => item.dispatchId);
   }
 
@@ -341,65 +376,38 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
     if (inputs.length === 0) {
       return 0;
     }
+    const now = this.#clock.now();
     const values = inputs.map(
       (input) => sql`(
-				${input.fence.dispatchId}::INTEGER,
-				${input.fence.publishAttempt}::INTEGER,
-				${input.fence.processingJobId}::VARCHAR(255),
-				${input.fence.deliveryAttemptCount}::INTEGER,
-				${input.context.timezone}::VARCHAR(50),
-				${input.context.localDate.toString()}::DATE,
-				${input.reason}::VARCHAR(100)
-			)`,
+        ${fenceValues(input.fence)},
+        ${input.context.timezone}::VARCHAR(50),
+        ${input.context.localDate.toString()}::DATE,
+        ${input.reason}::VARCHAR(100)
+      )`,
     );
+    // raw SQL: 행마다 다른 사유·시간대(VALUES CTE)를 FOR UPDATE OF로 잠근 outbox와 한 문장에서 이어 쓴다. query builder는 VALUES CTE를 만들지 못한다
     const finalized = publicationRowsSchema.parse(
       (
         await this.#db.execute<Record<string, unknown>>(sql`
-			WITH requested(
-				"dispatchId",
-				"publishAttempt",
-				"processingJobId",
-				"deliveryAttemptCount",
-				"timezone",
-				"localDate",
-				"reason"
-			) AS (
-				VALUES ${sql.join(values, sql`, `)}
-			),
-			locked_outboxes AS MATERIALIZED (
-				SELECT requested.*
-				FROM requested
-				INNER JOIN ${pushDispatchOutbox} AS outbox
-					ON outbox."dispatchId" = requested."dispatchId"
-					AND outbox."publishAttempts" = requested."publishAttempt"
-					AND outbox."status" IN (
-						'PROCESSING'::"PushDispatchOutboxStatus",
-						'PUBLISHED'::"PushDispatchOutboxStatus"
-					)
-					ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
-				FOR UPDATE OF outbox
-			)
-			UPDATE ${pushDispatch} AS dispatch
-			SET
-				"status" = 'SKIPPED'::"PushDispatchStatus",
-				"skipReason" = requested."reason",
-				"timezone" = requested."timezone",
-				"localDate" = requested."localDate",
-				"processingJobId" = NULL,
-				"processingJobAttempt" = NULL,
-				"processingStartedAt" = NULL,
-				"lastError" = NULL,
-				"updatedAt" = CURRENT_TIMESTAMP
-			FROM locked_outboxes AS requested
-			WHERE dispatch."id" = requested."dispatchId"
-				AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-				AND dispatch."processingJobId" = requested."processingJobId"
-				AND dispatch."deliveryAttemptCount" = requested."deliveryAttemptCount"
-			RETURNING dispatch."id" AS "dispatchId", requested."publishAttempt"
-		`)
+          WITH ${lockedRequests([...FENCE_COLUMNS, "timezone", "localDate", "reason"], values)}
+          UPDATE ${pushDispatch}
+          SET
+            ${setColumn(pushDispatch.status)} = ${"SKIPPED"}::${pushDispatchStatus},
+            ${setColumn(pushDispatch.skipReason)} = requested."reason",
+            ${setColumn(pushDispatch.timezone)} = requested."timezone",
+            ${setColumn(pushDispatch.localDate)} = requested."localDate",
+            ${setColumn(pushDispatch.processingJobId)} = NULL,
+            ${setColumn(pushDispatch.processingJobAttempt)} = NULL,
+            ${setColumn(pushDispatch.processingStartedAt)} = NULL,
+            ${setColumn(pushDispatch.lastError)} = NULL,
+            ${setColumn(pushDispatch.updatedAt)} = ${sql.param(now, pushDispatch.updatedAt)}
+          FROM locked_outboxes AS requested
+          WHERE ${heldLease()}
+          RETURNING ${pushDispatch.id} AS "dispatchId", requested."publishAttempt"
+        `)
       ).rows,
     );
-    await this.#markOutboxesTerminal(finalized);
+    await this.#markOutboxesTerminal(finalized, now);
     return finalized.length;
   }
 
@@ -407,6 +415,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
     if (inputs.length === 0) {
       return 0;
     }
+    const now = this.#clock.now();
     const allTokens = uniq(inputs.flatMap((input) => input.results.map((result) => result.token)));
     const tokens =
       allTokens.length === 0
@@ -420,66 +429,40 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
       const sent = input.results.some((result) => result.status === "accepted");
       const firstFailure = input.results.find((result) => result.status === "rejected");
       return sql`(
-				${input.fence.dispatchId}::INTEGER,
-				${input.fence.publishAttempt}::INTEGER,
-				${input.fence.processingJobId}::VARCHAR(255),
-				${input.fence.deliveryAttemptCount}::INTEGER,
-				${input.context.timezone}::VARCHAR(50),
-				${input.context.localDate.toString()}::DATE,
-				${sent ? "SENT" : "FAILED"}::"PushDispatchStatus",
-				${sent || firstFailure?.status !== "rejected" ? null : firstFailure.failure.kind}::VARCHAR(500)
-			)`;
+        ${fenceValues(input.fence)},
+        ${input.context.timezone}::VARCHAR(50),
+        ${input.context.localDate.toString()}::DATE,
+        ${sent ? "SENT" : "FAILED"}::${pushDispatchStatus},
+        ${sent || firstFailure?.status !== "rejected" ? null : firstFailure.failure.kind}::VARCHAR(500)
+      )`;
     });
+    // raw SQL: 행마다 다른 결과(VALUES CTE)를 FOR UPDATE OF로 잠근 outbox와 한 문장에서 이어 쓴다. query builder는 VALUES CTE를 만들지 못한다
     const finalized = publicationRowsSchema.parse(
       (
         await this.#db.execute<Record<string, unknown>>(sql`
-			WITH requested(
-				"dispatchId",
-				"publishAttempt",
-				"processingJobId",
-				"deliveryAttemptCount",
-				"timezone",
-				"localDate",
-				"nextStatus",
-				"lastError"
-			) AS (
-				VALUES ${sql.join(finalizationValues, sql`, `)}
-			),
-			locked_outboxes AS MATERIALIZED (
-				SELECT requested.*
-				FROM requested
-				INNER JOIN ${pushDispatchOutbox} AS outbox
-					ON outbox."dispatchId" = requested."dispatchId"
-					AND outbox."publishAttempts" = requested."publishAttempt"
-					AND outbox."status" IN (
-						'PROCESSING'::"PushDispatchOutboxStatus",
-						'PUBLISHED'::"PushDispatchOutboxStatus"
-					)
-					ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
-				FOR UPDATE OF outbox
-			)
-			UPDATE ${pushDispatch} AS dispatch
-			SET
-				"status" = requested."nextStatus",
-				"sentAt" = CASE
-					WHEN requested."nextStatus" = 'SENT'::"PushDispatchStatus"
-					THEN CURRENT_TIMESTAMP
-					ELSE NULL
-				END,
-				"timezone" = requested."timezone",
-				"localDate" = requested."localDate",
-				"processingJobId" = NULL,
-				"processingJobAttempt" = NULL,
-				"processingStartedAt" = NULL,
-				"lastError" = requested."lastError",
-				"updatedAt" = CURRENT_TIMESTAMP
-			FROM locked_outboxes AS requested
-			WHERE dispatch."id" = requested."dispatchId"
-				AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-				AND dispatch."processingJobId" = requested."processingJobId"
-				AND dispatch."deliveryAttemptCount" = requested."deliveryAttemptCount"
-			RETURNING dispatch."id" AS "dispatchId", requested."publishAttempt"
-		`)
+          WITH ${lockedRequests(
+            [...FENCE_COLUMNS, "timezone", "localDate", "nextStatus", "lastError"],
+            finalizationValues,
+          )}
+          UPDATE ${pushDispatch}
+          SET
+            ${setColumn(pushDispatch.status)} = requested."nextStatus",
+            ${setColumn(pushDispatch.sentAt)} = CASE
+              WHEN requested."nextStatus" = ${"SENT"}::${pushDispatchStatus}
+              THEN ${sql.param(now, pushDispatch.sentAt)}::TIMESTAMP(3)
+              ELSE NULL
+            END,
+            ${setColumn(pushDispatch.timezone)} = requested."timezone",
+            ${setColumn(pushDispatch.localDate)} = requested."localDate",
+            ${setColumn(pushDispatch.processingJobId)} = NULL,
+            ${setColumn(pushDispatch.processingJobAttempt)} = NULL,
+            ${setColumn(pushDispatch.processingStartedAt)} = NULL,
+            ${setColumn(pushDispatch.lastError)} = requested."lastError",
+            ${setColumn(pushDispatch.updatedAt)} = ${sql.param(now, pushDispatch.updatedAt)}
+          FROM locked_outboxes AS requested
+          WHERE ${heldLease()}
+          RETURNING ${pushDispatch.id} AS "dispatchId", requested."publishAttempt"
+        `)
       ).rows,
     );
     const finalizedDispatchIds = new Set(finalized.map((item) => item.dispatchId));
@@ -498,7 +481,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
             pushTokenId,
             tokenFingerprint: pushTokenFingerprint(result.token),
             ...toAttemptOutcome(result),
-            updatedAt: sql`CURRENT_TIMESTAMP`,
+            updatedAt: now,
           },
         ];
       });
@@ -517,12 +500,12 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
             errorCode: excluded(pushDeliveryAttempt.errorCode),
             errorMessage: excluded(pushDeliveryAttempt.errorMessage),
             receiptCheckedAt: null,
-            updatedAt: sql`CURRENT_TIMESTAMP`,
+            updatedAt: now,
           },
         });
     }
 
-    await this.#markOutboxesTerminal(finalized);
+    await this.#markOutboxesTerminal(finalized, now);
     return finalized.length;
   }
 
@@ -530,106 +513,77 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
     if (inputs.length === 0) {
       return 0;
     }
+    const now = this.#clock.now();
     const values = inputs.map(
       (input) => sql`(
-				${input.fence.dispatchId}::INTEGER,
-				${input.fence.publishAttempt}::INTEGER,
-				${input.fence.processingJobId}::VARCHAR(255),
-				${input.fence.deliveryAttemptCount}::INTEGER,
-				${input.error.slice(0, 500)}::VARCHAR(500),
-				${input.reopenOutbox}::BOOLEAN,
-				${sql.param(input.availableAt, pushDispatchOutbox.availableAt)}::TIMESTAMP(3)
-			)`,
+        ${fenceValues(input.fence)},
+        ${input.error.slice(0, 500)}::VARCHAR(500),
+        ${input.reopenOutbox}::BOOLEAN
+      )`,
     );
+    // raw SQL: 행마다 다른 오류(VALUES CTE)를 FOR UPDATE OF로 잠근 outbox와 한 문장에서 이어 쓴다. query builder는 VALUES CTE를 만들지 못한다
     const released = releaseRowsSchema.parse(
       (
         await this.#db.execute<Record<string, unknown>>(sql`
-			WITH requested(
-				"dispatchId",
-				"publishAttempt",
-				"processingJobId",
-				"deliveryAttemptCount",
-				"lastError",
-				"reopenOutbox",
-				"availableAt"
-			) AS (
-				VALUES ${sql.join(values, sql`, `)}
-			),
-			locked_outboxes AS MATERIALIZED (
-				SELECT requested.*
-				FROM requested
-				INNER JOIN ${pushDispatchOutbox} AS outbox
-					ON outbox."dispatchId" = requested."dispatchId"
-					AND outbox."publishAttempts" = requested."publishAttempt"
-					AND outbox."status" IN (
-						'PROCESSING'::"PushDispatchOutboxStatus",
-						'PUBLISHED'::"PushDispatchOutboxStatus"
-					)
-					ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
-				FOR UPDATE OF outbox
-			)
-			UPDATE ${pushDispatch} AS dispatch
-			SET
-				"status" = 'PENDING'::"PushDispatchStatus",
-				"processingJobId" = NULL,
-				"processingJobAttempt" = NULL,
-				"processingStartedAt" = NULL,
-				"lastError" = requested."lastError",
-				"updatedAt" = CURRENT_TIMESTAMP
-			FROM locked_outboxes AS requested
-			WHERE dispatch."id" = requested."dispatchId"
-				AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-				AND dispatch."processingJobId" = requested."processingJobId"
-				AND dispatch."deliveryAttemptCount" = requested."deliveryAttemptCount"
-			RETURNING
-				dispatch."id" AS "dispatchId",
-				requested."publishAttempt",
-				requested."reopenOutbox"
-		`)
+          WITH ${lockedRequests([...FENCE_COLUMNS, "lastError", "reopenOutbox"], values)}
+          UPDATE ${pushDispatch}
+          SET
+            ${setColumn(pushDispatch.status)} = ${"PENDING"}::${pushDispatchStatus},
+            ${setColumn(pushDispatch.processingJobId)} = NULL,
+            ${setColumn(pushDispatch.processingJobAttempt)} = NULL,
+            ${setColumn(pushDispatch.processingStartedAt)} = NULL,
+            ${setColumn(pushDispatch.lastError)} = requested."lastError",
+            ${setColumn(pushDispatch.updatedAt)} = ${sql.param(now, pushDispatch.updatedAt)}
+          FROM locked_outboxes AS requested
+          WHERE ${heldLease()}
+          RETURNING
+            ${pushDispatch.id} AS "dispatchId",
+            requested."publishAttempt",
+            requested."reopenOutbox"
+        `)
       ).rows,
     );
     const inputByDispatchId = new Map(inputs.map((input) => [input.fence.dispatchId, input]));
-    const reopen = released.filter((item) => item.reopenOutbox);
-    if (reopen.length > 0) {
-      const reopenValues = reopen.flatMap((item) => {
-        const input = inputByDispatchId.get(item.dispatchId);
-        if (!input) {
-          return [];
-        }
-        return [
-          sql`(
-            ${item.dispatchId}::INTEGER,
-            ${item.publishAttempt}::INTEGER,
-            ${sql.param(input.availableAt, pushDispatchOutbox.availableAt)}::TIMESTAMP(3),
-            ${input.error.slice(0, 500)}::VARCHAR(500)
-          )`,
-        ];
-      });
-      const reopened =
-        (await (
-          await this.#db.execute<Record<string, unknown>>(sql`
-				UPDATE ${pushDispatchOutbox} AS outbox
-				SET
-					"status" = 'PENDING'::"PushDispatchOutboxStatus",
-					"availableAt" = requested."availableAt",
-					"lockedAt" = NULL,
-					"publishedAt" = NULL,
-					"lastError" = requested."lastError",
-					"updatedAt" = CURRENT_TIMESTAMP
-				FROM (VALUES ${sql.join(reopenValues, sql`, `)}) AS requested(
-					"dispatchId", "publishAttempt", "availableAt", "lastError"
-				)
-				WHERE outbox."dispatchId" = requested."dispatchId"
-					AND outbox."publishAttempts" = requested."publishAttempt"
-					AND outbox."status" IN (
-						'PROCESSING'::"PushDispatchOutboxStatus",
-						'PUBLISHED'::"PushDispatchOutboxStatus"
-					)
-			`)
-        ).rowCount) ?? 0;
-      if (reopened !== reopen.length) {
+    const reopenValues = released.flatMap((item) => {
+      const input = inputByDispatchId.get(item.dispatchId);
+      if (!item.reopenOutbox || !input) {
+        return [];
+      }
+      return [
+        sql`(
+          ${item.dispatchId}::INTEGER,
+          ${item.publishAttempt}::INTEGER,
+          ${sql.param(input.availableAt, pushDispatchOutbox.availableAt)}::TIMESTAMP(3),
+          ${input.error.slice(0, 500)}::VARCHAR(500)
+        )`,
+      ];
+    });
+    if (reopenValues.length > 0) {
+      // 마지막 attempt가 남긴 세대만 세대마다 다른 재시도 시각으로 다시 연다
+      const reopened = await this.#db
+        .update(pushDispatchOutbox)
+        .set({
+          status: "PENDING",
+          availableAt: sql`reopened."availableAt"`,
+          lockedAt: null,
+          publishedAt: null,
+          lastError: sql`reopened."lastError"`,
+          updatedAt: now,
+        })
+        .from(
+          sql`(VALUES ${sql.join(reopenValues, sql`, `)}) AS reopened("dispatchId", "publishAttempt", "availableAt", "lastError")`,
+        )
+        .where(
+          and(
+            eq(pushDispatchOutbox.dispatchId, sql`reopened."dispatchId"`),
+            eq(pushDispatchOutbox.publishAttempts, sql`reopened."publishAttempt"`),
+            claimedOutboxStatus(),
+          ),
+        )
+        .returning({ dispatchId: pushDispatchOutbox.dispatchId });
+      if (reopened.length !== reopenValues.length) {
         throw new Error(
-          `Push delivery outbox reopen fence mismatch: expected=${reopen.length}, actual=${reopened}`,
+          `Push delivery outbox reopen fence mismatch: expected=${reopenValues.length}, actual=${reopened.length}`,
         );
       }
     }
@@ -637,83 +591,107 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
   }
 
   async recoverStaleProcessing(startedBefore: Temporal.Instant): Promise<number> {
-    return (
-      (
-        await this.#db.execute<Record<string, unknown>>(sql`
-			WITH locked_outboxes AS MATERIALIZED (
-				SELECT outbox."dispatchId"
-				FROM ${pushDispatchOutbox} AS outbox
-				INNER JOIN ${pushDispatch} AS dispatch
-					ON dispatch."id" = outbox."dispatchId"
-				WHERE dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-					AND dispatch."processingStartedAt" < ${sql.param(startedBefore, pushDispatch.processingStartedAt)}
-					ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
-				FOR UPDATE OF outbox SKIP LOCKED
-			),
-			recovered AS (
-				UPDATE ${pushDispatch} AS dispatch
-				SET
-					"status" = 'PENDING'::"PushDispatchStatus",
-					"processingJobId" = NULL,
-					"processingJobAttempt" = NULL,
-					"processingStartedAt" = NULL,
-					"lastError" = 'STALE_PROCESSING_LEASE',
-					"updatedAt" = CURRENT_TIMESTAMP
-				FROM locked_outboxes
-				WHERE dispatch."id" = locked_outboxes."dispatchId"
-					AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-					AND dispatch."processingStartedAt" < ${sql.param(startedBefore, pushDispatch.processingStartedAt)}
-				RETURNING dispatch."id"
-			)
-			UPDATE ${pushDispatchOutbox} AS outbox
-			SET
-				"status" = 'PENDING'::"PushDispatchOutboxStatus",
-				"availableAt" = CURRENT_TIMESTAMP,
-				"lockedAt" = NULL,
-				"publishedAt" = NULL,
-				"lastError" = 'STALE_PROCESSING_LEASE',
-				"updatedAt" = CURRENT_TIMESTAMP
-			FROM recovered
-			WHERE outbox."dispatchId" = recovered."id"
-				AND outbox."status" IN (
-					'PROCESSING'::"PushDispatchOutboxStatus",
-					'PUBLISHED'::"PushDispatchOutboxStatus"
-				)
-		`)
-      ).rowCount ?? 0
+    const now = this.#clock.now();
+    const staleLeases = this.#db
+      .select({ dispatchId: pushDispatchOutbox.dispatchId })
+      .from(pushDispatchOutbox)
+      .innerJoin(pushDispatch, eq(pushDispatch.id, pushDispatchOutbox.dispatchId))
+      .where(
+        and(
+          eq(pushDispatch.status, "PROCESSING"),
+          lt(pushDispatch.processingStartedAt, startedBefore),
+        ),
+      )
+      .orderBy(asc(pushDispatchOutbox.availableAt), asc(pushDispatchOutbox.dispatchId))
+      .for("update", { of: pushDispatchOutbox, skipLocked: true });
+    const recovered = await this.#db
+      .update(pushDispatch)
+      .set({
+        status: "PENDING",
+        processingJobId: null,
+        processingJobAttempt: null,
+        processingStartedAt: null,
+        lastError: STALE_PROCESSING_LEASE_ERROR,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          inArray(pushDispatch.id, staleLeases),
+          eq(pushDispatch.status, "PROCESSING"),
+          lt(pushDispatch.processingStartedAt, startedBefore),
+        ),
+      )
+      .returning({ dispatchId: pushDispatch.id });
+    if (recovered.length === 0) {
+      return 0;
+    }
+    const reopened = await this.#db
+      .update(pushDispatchOutbox)
+      .set({
+        status: "PENDING",
+        // claim이 DB 시계(LOCALTIMESTAMP(3))로 비교하므로 같은 시계로 열어야 서버 시계가 앞서도 이번 relay가 바로 잡는다
+        availableAt: sql`LOCALTIMESTAMP(3)`,
+        lockedAt: null,
+        publishedAt: null,
+        lastError: STALE_PROCESSING_LEASE_ERROR,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          inArray(
+            pushDispatchOutbox.dispatchId,
+            recovered.map(({ dispatchId }) => dispatchId),
+          ),
+          claimedOutboxStatus(),
+        ),
+      )
+      .returning({ dispatchId: pushDispatchOutbox.dispatchId });
+    return reopened.length;
+  }
+
+  // 새 dispatch이거나 같은 runtime job의 더 높은 attempt가 이어 받는 lease다
+  #claimableBy(input: ClaimPushDeliveriesInput): SQL | undefined {
+    return or(
+      eq(pushDispatch.status, "PENDING"),
+      and(
+        eq(pushDispatch.status, "PROCESSING"),
+        eq(pushDispatch.processingJobId, input.processingJobId),
+        lt(sql`COALESCE(${pushDispatch.processingJobAttempt}, 0)`, input.processingJobAttempt),
+      ),
     );
   }
 
-  async #markOutboxesTerminal(publications: readonly PushDeliveryPublication[]): Promise<void> {
+  /** claim과 같은 (availableAt, dispatchId) 순서로 잠가 동시 정리 사이의 deadlock을 막는다. */
+  async #lockClaimedGenerations(publications: readonly PushDeliveryPublication[]): Promise<void> {
+    await this.#db
+      .select({ dispatchId: pushDispatchOutbox.dispatchId })
+      .from(pushDispatchOutbox)
+      .where(and(matchesPublicationGeneration(publications), claimedOutboxStatus()))
+      .orderBy(asc(pushDispatchOutbox.availableAt), asc(pushDispatchOutbox.dispatchId))
+      .for("update");
+  }
+
+  async #markOutboxesTerminal(
+    publications: readonly PushDeliveryPublication[],
+    now: Temporal.Instant,
+  ): Promise<void> {
     if (publications.length === 0) {
       return;
     }
-    const values = publications.map(
-      (publication) =>
-        sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
-    );
-    const terminal =
-      (await (
-        await this.#db.execute<Record<string, unknown>>(sql`
-			UPDATE ${pushDispatchOutbox} AS outbox
-			SET
-				"status" = 'PUBLISHED'::"PushDispatchOutboxStatus",
-				"lockedAt" = NULL,
-				"publishedAt" = COALESCE(outbox."publishedAt", CURRENT_TIMESTAMP),
-				"lastError" = NULL,
-				"updatedAt" = CURRENT_TIMESTAMP
-			FROM (VALUES ${sql.join(values, sql`, `)}) AS terminal("dispatchId", "publishAttempt")
-			WHERE outbox."dispatchId" = terminal."dispatchId"
-				AND outbox."publishAttempts" = terminal."publishAttempt"
-				AND outbox."status" IN (
-					'PROCESSING'::"PushDispatchOutboxStatus",
-					'PUBLISHED'::"PushDispatchOutboxStatus"
-				)
-		`)
-      ).rowCount) ?? 0;
-    if (terminal !== publications.length) {
+    const terminal = await this.#db
+      .update(pushDispatchOutbox)
+      .set({
+        status: "PUBLISHED",
+        lockedAt: null,
+        publishedAt: sql`COALESCE(${pushDispatchOutbox.publishedAt}, ${sql.param(now, pushDispatchOutbox.publishedAt)})`,
+        lastError: null,
+        updatedAt: now,
+      })
+      .where(and(matchesPublicationGeneration(publications), claimedOutboxStatus()))
+      .returning({ dispatchId: pushDispatchOutbox.dispatchId });
+    if (terminal.length !== publications.length) {
       throw new Error(
-        `Push delivery terminal outbox fence mismatch: expected=${publications.length}, actual=${terminal}`,
+        `Push delivery terminal outbox fence mismatch: expected=${publications.length}, actual=${terminal.length}`,
       );
     }
   }
@@ -724,7 +702,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
     if (input.publications.length === 0) {
       return 0;
     }
-    await lockPublicationGenerations(this.#db, input.publications, CLAIMED_OUTBOX_STATUSES);
+    await this.#lockClaimedGenerations(input.publications);
     // dispatch가 아직 PENDING인 세대만 다시 연다. 이미 claim된 dispatch의 outbox를 되돌리지 않는다.
     const reopened = await this.#db
       .update(pushDispatchOutbox)
@@ -734,12 +712,12 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
         lockedAt: null,
         publishedAt: null,
         lastError: input.error.slice(0, 500),
-        updatedAt: sql`CURRENT_TIMESTAMP`,
+        updatedAt: this.#clock.now(),
       })
       .where(
         and(
           matchesPublicationGeneration(input.publications),
-          inArray(pushDispatchOutbox.status, [...CLAIMED_OUTBOX_STATUSES]),
+          claimedOutboxStatus(),
           inArray(
             pushDispatchOutbox.dispatchId,
             this.#db

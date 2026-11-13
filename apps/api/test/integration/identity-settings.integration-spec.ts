@@ -14,7 +14,6 @@ import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
   todoCategory,
@@ -25,6 +24,7 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
@@ -251,7 +251,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       .where(eq(userPreference.userId, userId));
     await givenCompletedTodos();
     const notifier = context.module.get<StreakMilestoneNotifierPort>(StreakMilestoneNotifierPort);
-    const notification = vi.spyOn(notifier, "notifyStreak3Reached").mockImplementation(() => {});
+    const notification = vi.spyOn(notifier, "notifyStreak3Reached").mockResolvedValue();
     const lock = await holdRowLock((transaction) =>
       transaction
         .select({ id: userPreference.id })

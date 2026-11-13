@@ -1,16 +1,21 @@
-import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
+import {
+  type ForecastAvailability,
+  type ForecastTiming,
+  WeatherForecastProviderPort,
+} from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
 import type { WeatherForecast } from "#api/modules/weather/forecasts/application/read-models/weather-forecast.read-model";
-import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/kma-forecast-availability.domain-service";
+import { resolveKmaForecastAvailability } from "#api/modules/weather/forecasts/infrastructure/adapters/kma-issuance.mapper";
+import type { GridCoordinate } from "#api/modules/weather/shared/domain/grid-coordinate.vo";
 import { weatherForecastFixture } from "#test/fixtures/weather.fixture";
 
 export interface RecordedForecastCall {
-  readonly lat: number;
-  readonly lon: number;
-  readonly date: Date;
-  readonly issuance: Date;
+  readonly gridX: number;
+  readonly gridY: number;
+  readonly target: Temporal.Instant;
+  readonly issuance: Temporal.Instant;
 }
 
-/** 기본 예보를 돌려주고 호출을 기록한다. 좌표별 결과나 실패를 미리 정할 수 있다. */
+/** 기본 예보를 돌려주고 호출을 기록한다. 격자(`gridX:gridY`)별 결과나 실패를 미리 정할 수 있다. 제공 범위는 실제 기상청 규칙이다. */
 export class StubWeatherForecastProvider extends WeatherForecastProviderPort {
   readonly name = "fixture";
   readonly timeZone: string;
@@ -24,21 +29,23 @@ export class StubWeatherForecastProvider extends WeatherForecastProviderPort {
     this.timeZone = timeZone;
   }
 
+  resolveAvailability(params: {
+    readonly target: Temporal.Instant;
+    readonly now: Temporal.Instant;
+  }): ForecastAvailability {
+    return resolveKmaForecastAvailability(params);
+  }
+
   async getForecast(
-    lat: number,
-    lon: number,
-    { target, issuance }: KmaForecastTiming,
+    grid: GridCoordinate,
+    { target, issuance }: ForecastTiming,
   ): Promise<WeatherForecast> {
-    this.calls.push({ lat, lon, date: new Date(target), issuance: new Date(issuance) });
-    const result = this.results.get(`${lat}:${lon}`) ?? this.failure ?? this.forecast;
+    this.calls.push({ gridX: grid.gridX, gridY: grid.gridY, target, issuance });
+    const result = this.results.get(`${grid.gridX}:${grid.gridY}`) ?? this.failure ?? this.forecast;
     if (result instanceof Error) {
       throw result;
     }
-    return weatherForecastFixture({ ...result, date: new Date(target) });
-  }
-
-  isConfigured(): boolean {
-    return true;
+    return weatherForecastFixture({ ...result, date: target });
   }
 
   clear(): void {

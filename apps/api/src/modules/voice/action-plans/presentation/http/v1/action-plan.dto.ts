@@ -3,7 +3,7 @@ import {
   applyActionPlanResponseSchema,
   quickPlanRequestSchema,
   quickPlanResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/voice";
 import type { z } from "zod";
 
 export const QuickPlanRequestDto = quickPlanRequestSchema.meta({ id: "QuickPlanRequestDto" });

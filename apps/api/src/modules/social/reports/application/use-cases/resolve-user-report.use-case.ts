@@ -16,7 +16,7 @@ export interface ResolveUserReportCommand {
 
 export interface ResolveUserReportDependencies {
   readonly unitOfWork: UnitOfWorkPort;
-  readonly userReportRepository: Pick<UserReportRepositoryPort, "findById" | "saveResolution">;
+  readonly userReportRepository: Pick<UserReportRepositoryPort, "findById" | "saveIfUnchanged">;
   readonly clock: ClockPort;
 }
 
@@ -34,13 +34,14 @@ export class ResolveUserReportUseCase {
 
     return unitOfWork.run(async () => {
       const report = await this.#findReport(reportId);
+      const expected = report.version;
       const note = UserReportResolutionNote.create(command.note);
       const isResolved = report.resolve({
         resolvedById: UserId.reconstitute(command.adminId),
         note,
         now: clock.now(),
       });
-      if (!isResolved || (await userReportRepository.saveResolution(report))) {
+      if (!isResolved || (await userReportRepository.saveIfUnchanged(report, expected))) {
         return report;
       }
       // 읽은 뒤 다른 운영자가 먼저 처리했다. 저장된 첫 처리 기록을 돌려준다

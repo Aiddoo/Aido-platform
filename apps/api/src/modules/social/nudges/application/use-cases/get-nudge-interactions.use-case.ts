@@ -1,4 +1,4 @@
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -8,7 +8,7 @@ import type { NudgeDirection } from "../../domain/nudges.constants.js";
 import { nudgeInteractionDisabled } from "../nudges.errors.js";
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
-import type { NudgeInteraction } from "../read-models/nudge-interaction.read-model.js";
+import type { NudgeInteractionReadModel } from "../read-models/nudge-interaction.read-model.js";
 
 export interface GetNudgeInteractionsQuery {
   readonly userId: string;
@@ -20,7 +20,7 @@ export interface GetNudgeInteractionsQuery {
 export interface GetNudgeInteractionsDependencies {
   readonly nudgeReader: Pick<NudgeReaderPort, "listInteractions">;
   readonly interactionConfig: NudgeInteractionConfigPort;
-  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "getCurrentMutualFriendIds">;
 }
 
 export class GetNudgeInteractionsUseCase {
@@ -30,8 +30,10 @@ export class GetNudgeInteractionsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetNudgeInteractionsQuery): Promise<CursorPage<NudgeInteraction, number>> {
-    const { nudgeReader, interactionConfig, followReader } = this.#dependencies;
+  async execute(
+    query: GetNudgeInteractionsQuery,
+  ): Promise<CursorPage<NudgeInteractionReadModel, number>> {
+    const { nudgeReader, interactionConfig, mutualFriendReader } = this.#dependencies;
     if (!interactionConfig.isEnabled) {
       throw nudgeInteractionDisabled();
     }
@@ -45,7 +47,7 @@ export class GetNudgeInteractionsUseCase {
         afterNudgeId: query.cursor == null ? null : NudgeId.reconstitute(query.cursor),
         limit: size + 1,
       }),
-      followReader.getCurrentMutualFriendIds(viewerId),
+      mutualFriendReader.getCurrentMutualFriendIds(viewerId),
     ]);
     const friends = new Set(friendIds);
     const page = toCursorPage({ rows, size, toCursor: (nudge) => nudge.id });

@@ -12,8 +12,8 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import { createEntityId } from "../../../shared/domain/model/entity-id.js";
 import { instant } from "../columns/temporal-columns.js";
-import { createEntityId } from "../entity-id.js";
 import {
   subscriptionEnvironment,
   subscriptionStatus,
@@ -45,9 +45,10 @@ export const subscription = pgTable(
     productId: varchar({ length: 100 }).notNull(),
     /** 연간 갱신 7일 전 안내를 보낸 기간의 expiresAt. 갱신으로 expiresAt이 바뀌면 다음 기간에 다시 보낸다. */
     renewalNoticeExpiresAt: instant(),
-    revenueCatId: varchar({ length: 255 }).notNull(),
     startedAt: instant().notNull(),
     status: subscriptionStatus().notNull(),
+    /** 스토어 체인 키(원 거래 ID). 공급자 중립 이름이고 칼럼은 운영 데이터 호환을 위해 기존 이름을 유지한다. */
+    storeSubscriptionId: varchar("revenueCatId", { length: 255 }).notNull(),
     /** 무료 체험 종료 3일 전 안내를 보낸 시각. 조건부 UPDATE로 체인마다 한 번만 보낸다. */
     trialEndingNotifiedAt: instant({ withTimezone: true }),
     // 도메인이 ClockPort 값으로 채운다. 집합 update도 저장소가 명시한다
@@ -73,7 +74,7 @@ export const subscription = pgTable(
     index("Subscription_trial_ending_notice_idx")
       .using("btree", table.expiresAt.asc().nullsLast(), table.id.asc().nullsLast())
       .where(sql`${table.periodType} = 'TRIAL' AND ${table.trialEndingNotifiedAt} IS NULL`),
-    unique("Subscription_revenueCatId_key").on(table.revenueCatId),
+    unique("Subscription_revenueCatId_key").on(table.storeSubscriptionId),
   ],
 );
 

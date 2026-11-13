@@ -12,12 +12,13 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -31,7 +32,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -97,7 +98,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
-@Controller("todos")
+@Controller({ path: "todos", version: API_VERSION.V1 })
 export class TodoController {
   readonly #getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase;
   readonly #getTodoSummaryUseCase: GetTodoSummaryUseCase;
@@ -298,7 +299,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - **진행률 바**: \`itemStats.completed / itemStats.total * 100\` (예: 33%)
 - **펼침/접힘 토글**: \`itemStats.total > 0\`이면 토글 버튼 표시`,
   })
-  @ApiCreatedResponse({ type: CreateTodoResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
   @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [
@@ -368,7 +369,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - 카테고리 한도를 초과하면 전체 요청 거부
 - 진행 중인 반복이 ${TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY}개면 \`TODO_0813\`으로 거부`,
   })
-  @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateRecurringTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.TODO_0812)
   @ApiForbiddenError(ErrorCode.TODO_0813)
@@ -412,49 +413,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   }
 
   @Get()
-  @ApiQuery({
-    name: "cursor",
-    required: false,
-    description: "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
-    schema: { type: "number" },
-    example: 123,
-  })
-  @ApiQuery({
-    name: "size",
-    required: false,
-    description: "페이지 크기 (1-200)",
-    schema: { type: "number", minimum: 1, maximum: 200, default: 20 },
-    example: 20,
-  })
-  @ApiQuery({
-    name: "completed",
-    required: false,
-    description: "완료 상태 필터 (true: 완료만, false: 미완료만, 미지정: 전체)",
-    schema: { type: "boolean" },
-  })
-  @ApiQuery({
-    name: "categoryId",
-    required: false,
-    description: "카테고리 ID 필터 (특정 카테고리의 할 일만 조회)",
-    schema: { type: "number" },
-    example: 1,
-  })
-  @ApiQuery({
-    name: "startDate",
-    required: false,
-    description:
-      "시작일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. endDate와 함께 사용 시 범위 조회합니다.",
-    schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
-    example: "2026-01-01",
-  })
-  @ApiQuery({
-    name: "endDate",
-    required: false,
-    description:
-      "종료일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. startDate와 함께 사용 시 범위 조회합니다. startDate보다 이전 날짜를 지정하면 400 에러가 발생합니다.",
-    schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
-    example: "2026-01-31",
-  })
   @ApiDoc({
     summary: "할 일 목록 조회",
     operationId: "getTodos",
@@ -992,7 +950,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 | 하위 항목 한도 초과 (${TODO_ITEM_LIMITS.MAX_PER_TODO}개) | TODO_0821 | 403 |
 | 유효성 검증 실패 | SYS_0002 | 400 |`,
   })
-  @ApiCreatedResponse({ type: UpdateTodoResponseDto })
+  @ApiCreatedSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
   @ApiForbiddenError(ErrorCode.TODO_0821)

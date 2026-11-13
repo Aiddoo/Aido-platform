@@ -1,3 +1,4 @@
+import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
@@ -7,14 +8,11 @@ import {
   HttpStatus,
   Patch,
   Post,
-  Req,
   UseGuards,
 } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
-import type { Request } from "express";
 
-import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { ChangePasswordUseCase } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
 import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
 import { LogoutAllUseCase } from "#api/modules/identity/auth/application/use-cases/logout-all.use-case";
@@ -27,31 +25,33 @@ import { ResendVerificationUseCase } from "#api/modules/identity/auth/applicatio
 import { ResetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
 import { SetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/set-password.use-case";
 import { VerifyEmailUseCase } from "#api/modules/identity/auth/application/use-cases/verify-email.use-case";
-import { refreshTokenUserSchema } from "#api/modules/identity/auth/presentation/http/decorators/authenticated-user.dto";
+import type { RefreshTokenUser } from "#api/modules/identity/auth/presentation/http/decorators/authenticated-user.dto";
+import { CurrentRefreshUser } from "#api/modules/identity/auth/presentation/http/decorators/current-refresh-user.decorator";
 import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { Public } from "#api/modules/identity/auth/presentation/http/decorators/public.decorator";
+import {
+  CurrentRequestSource,
+  type RequestSource,
+} from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
 import { JwtRefreshGuard } from "#api/modules/identity/auth/presentation/http/guards/jwt-refresh.guard";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
-import { type RequestClient } from "#api/platform/http/request-client/request-client";
-import {
-  AppVersion,
-  CurrentRequestClient,
-} from "#api/platform/http/request-client/request-client.decorator";
+import { API_VERSION } from "#api/platform/http/api-versioning";
+import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiErrorCodesResponse,
   ApiErrorResponse,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
-import { invalidRefreshToken } from "../../../application/auth.errors.js";
-import { extractMetadata } from "./auth-request.mapper.js";
+import { toRequestMetadata } from "./auth-request.mapper.js";
 import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
   AuthTokensDto,
@@ -68,7 +68,7 @@ import {
 } from "./auth.dto.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
-@Controller("auth")
+@Controller({ path: "auth", version: API_VERSION.V1 })
 export class AuthController {
   readonly #registerUseCase: RegisterUseCase;
   readonly #verifyEmailUseCase: VerifyEmailUseCase;
@@ -141,16 +141,15 @@ export class AuthController {
 - IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		`,
   })
-  @ApiCreatedResponse({ type: MessageResponseDto })
+  @ApiCreatedSuccessResponse({ type: MessageResponseDto })
   @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
   async register(
     @Body({ schema: RegisterDto }) dto: RegisterDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
     const result = await this.#registerUseCase.execute({
       ...dto,
-      metadata: extractMetadata(req, client),
+      metadata: toRequestMetadata(source),
     });
     return AuthMapper.toRegisterResponse(result);
   }
@@ -160,11 +159,7 @@ export class AuthController {
   @Public()
   @Throttle({ default: AUTH_THROTTLE.VERIFY_EMAIL })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "이메일 인증 코드 확인",
     operationId: "verifyEmail",
@@ -200,11 +195,10 @@ export class AuthController {
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
   async verifyEmail(
     @Body({ schema: VerifyEmailDto }) dto: VerifyEmailDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
     @AppVersion() appVersion?: string,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     const result = await this.#verifyEmailUseCase.execute({ ...dto, metadata });
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
@@ -247,11 +241,7 @@ export class AuthController {
   @Public()
   @Throttle({ default: AUTH_THROTTLE.LOGIN })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "이메일 로그인",
     operationId: "login",
@@ -297,11 +287,10 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0607 })
   async login(
     @Body({ schema: LoginDto }) dto: LoginDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
     @AppVersion() appVersion?: string,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     const result = await this.#loginWithPasswordUseCase.execute({ ...dto, metadata });
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
@@ -334,10 +323,9 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async logout(
     @CurrentUser() user: CurrentUserPayload,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     await this.#logoutUseCase.execute({ userId: user.userId, sessionId: user.sessionId, metadata });
     return AuthMapper.toMessageResponse("로그아웃되었습니다.");
   }
@@ -371,12 +359,11 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async logoutAll(
     @CurrentUser() user: CurrentUserPayload,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
     await this.#logoutAllUseCase.execute({
       userId: user.userId,
-      metadata: extractMetadata(req, client),
+      metadata: toRequestMetadata(source),
     });
     return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
   }
@@ -412,12 +399,10 @@ IP당 분당 20회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   })
   @ApiSuccessResponse({ type: RefreshTokensDto })
   @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.AUTH_0104, ErrorCode.SESSION_0704])
-  async refresh(@Req() req: Request, @CurrentRequestClient() client: RequestClient) {
-    const parsedUser = refreshTokenUserSchema.safeParse(req.user);
-    if (!parsedUser.success) {
-      throw invalidRefreshToken();
-    }
-    const payload = parsedUser.data;
+  async refresh(
+    @CurrentRefreshUser() payload: RefreshTokenUser,
+    @CurrentRequestSource() source: RequestSource,
+  ) {
     const result = await this.#refreshTokensUseCase.execute({
       refreshToken: payload.refreshToken,
       verifiedPayload: {
@@ -426,7 +411,7 @@ IP당 분당 20회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
         sessionId: payload.sessionId,
         role: payload.role,
       },
-      metadata: extractMetadata(req, client),
+      metadata: toRequestMetadata(source),
     });
     return AuthMapper.toRefreshTokensResponse(result);
   }
@@ -460,12 +445,11 @@ IP당 분당 20회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @ApiSuccessResponse({ type: MessageResponseDto })
   async forgotPassword(
     @Body({ schema: ForgotPasswordDto }) dto: ForgotPasswordDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
     const result = await this.#requestPasswordResetUseCase.execute({
       email: dto.email,
-      metadata: extractMetadata(req, client),
+      metadata: toRequestMetadata(source),
     });
     return result;
   }
@@ -603,10 +587,9 @@ IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async setPassword(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: SetPasswordDto }) dto: SetPasswordDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     return this.#setPasswordUseCase.execute({
       userId: user.userId,
       code: dto.code,
@@ -655,10 +638,9 @@ IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async changePassword(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ChangePasswordDto }) dto: ChangePasswordDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     const result = await this.#changePasswordUseCase.execute({
       userId: user.userId,
       currentPassword: dto.currentPassword,

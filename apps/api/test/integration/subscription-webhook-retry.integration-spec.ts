@@ -2,9 +2,9 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
@@ -114,7 +114,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
       }),
       chain: await client.query.subscription.findFirst({
         columns: { gracePeriodEndsAt: true },
-        where: { revenueCatId: CHAIN },
+        where: { storeSubscriptionId: CHAIN },
       }),
     };
     await receiver.receive({ body: billingIssue });
@@ -130,7 +130,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
     expect(
       await client.query.subscription.findFirst({
         columns: { gracePeriodEndsAt: true },
-        where: { revenueCatId: CHAIN },
+        where: { storeSubscriptionId: CHAIN },
       }),
     ).toEqual({ gracePeriodEndsAt: Temporal.Instant.fromEpochMilliseconds(graceEndsAt.getTime()) });
     expect(notifier.billingIssueUserIds).toEqual([user.id]);

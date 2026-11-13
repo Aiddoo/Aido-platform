@@ -4,7 +4,9 @@ import type { {{pascalCase aggregate}} } from "../../domain/{{aggregate}}.aggreg
 import type { {{pascalCase aggregate}}Id } from "../../domain/{{aggregate}}-id.vo.js";
 
 export abstract class {{pascalCase aggregate}}RepositoryPort {
+{{#if isSerial}}
   abstract nextId(): Promise<{{pascalCase aggregate}}Id>;
+{{/if}}
   abstract findByIdAndUserId(
     {{camelCase aggregate}}Id: {{pascalCase aggregate}}Id,
     userId: UserId,

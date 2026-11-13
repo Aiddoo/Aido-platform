@@ -7,7 +7,7 @@ services:
     image: aido-platform-migrate:latest
     container_name: aido-prod-migrate
     env_file:
-      - .env.docker.prod
+      - apps/api/.env
     environment:
       # 프로덕션 DB로 마이그레이션하는 것이 이 서비스의 목적이다.
       # 문지기(apps/api/scripts/guard-database-url.cjs)는 원격을 기본 거절하므로,
@@ -35,7 +35,7 @@ services:
       # (env_file의 PORT 정의가 컨테이너에 주입되어 미스매치 나는 것을 차단)
       PORT: '8080'
     env_file:
-      - .env.docker.prod
+      - apps/api/.env
     depends_on:
       migrate:
         condition: service_completed_successfully

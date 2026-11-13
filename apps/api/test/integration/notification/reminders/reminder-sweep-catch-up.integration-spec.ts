@@ -22,7 +22,6 @@ import type { TimezoneContext } from "#api/modules/notification/reminders/domain
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,
   todo,
@@ -32,6 +31,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { DrizzleSweepCursorAdapter } from "#api/platform/jobs/drizzle-sweep-cursor.adapter";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
 import { DateClock } from "#test/doubles/platform/date-clock";

@@ -5,7 +5,7 @@ import type {
 import {
   TodoCommentLike,
   type TodoCommentLikePrimitives,
-} from "#api/modules/engagement/comments/domain/todo-comment-like.entity";
+} from "#api/modules/engagement/comments/domain/todo-comment-like.aggregate";
 import {
   TodoComment,
   type TodoCommentPrimitives,

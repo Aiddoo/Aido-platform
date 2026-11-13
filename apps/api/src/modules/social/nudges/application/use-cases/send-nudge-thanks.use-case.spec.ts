@@ -4,9 +4,10 @@ import { NudgeId } from "#api/modules/social/nudges/domain/nudge-id.vo";
 import type { Nudge } from "#api/modules/social/nudges/domain/nudge.aggregate";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { InMemoryNudgeReader } from "#test/doubles/social/in-memory-nudge.reader";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
@@ -26,7 +27,7 @@ const THANKED_AT = NUDGE_FIXTURE_NOW.add({ hours: 3 });
 class FailingThanksRepository extends InMemoryNudgeRepository {
   readonly error = new Error("배치 저장 실패");
 
-  override async saveThanks(_nudges: readonly Nudge[]): Promise<void> {
+  override async saveAll(_nudges: readonly Nudge[]): Promise<void> {
     throw this.error;
   }
 }
@@ -43,12 +44,12 @@ async function seedCompletedTodo(
   return todoId;
 }
 
-function createFollowReader(friendIds: readonly string[]): StubFollowReader {
-  const followReader = new StubFollowReader();
+function createFollowReader(friendIds: readonly string[]): StubMutualFriendReader {
+  const mutualFriendReader = new StubMutualFriendReader();
   for (const friendId of friendIds) {
-    followReader.addMutual(friendId, NUDGE_FIXTURE_RECEIVER_ID);
+    mutualFriendReader.addMutual(friendId, NUDGE_FIXTURE_RECEIVER_ID);
   }
-  return followReader;
+  return mutualFriendReader;
 }
 
 function createSendNudgeThanksUseCase(
@@ -58,9 +59,9 @@ function createSendNudgeThanksUseCase(
   return new SendNudgeThanksUseCase({
     unitOfWork: new ImmediateUnitOfWork(),
     nudgeRepository,
-    nudgeReader: nudgeRepository,
+    nudgeReader: new InMemoryNudgeReader(nudgeRepository),
     interactionConfig: { isEnabled: true },
-    followReader: createFollowReader([NUDGE_FIXTURE_SENDER_ID]),
+    mutualFriendReader: createFollowReader([NUDGE_FIXTURE_SENDER_ID]),
     notifier: new RecordingNudgeNotifier(),
     clock: new FixedClock(THANKED_AT),
     ...overrides,
@@ -75,7 +76,7 @@ describe("SendNudgeThanksUseCase — 완료한 할 일의 콕에 감사", () => 
     const todoId = await seedCompletedTodo(nudgeRepository, friendIds);
     const notifier = new RecordingNudgeNotifier();
     const useCase = createSendNudgeThanksUseCase(nudgeRepository, {
-      followReader: createFollowReader(friendIds),
+      mutualFriendReader: createFollowReader(friendIds),
       notifier,
     });
 
@@ -88,7 +89,7 @@ describe("SendNudgeThanksUseCase — 완료한 할 일의 콕에 감사", () => 
 
     // Then
     expect(result).toEqual({ sentCount: 1000 });
-    expect(nudgeRepository.thanksBatchSizes).toEqual(Array(10).fill(100));
+    expect(nudgeRepository.saveAllBatchSizes).toEqual(Array(10).fill(100));
     expect(notifier.interactionBatchSizes).toEqual(Array(10).fill(100));
     expect((await nudgeRepository.findById(NudgeId.reconstitute(1)))?.thankedAt).toEqual(
       THANKED_AT,
@@ -121,7 +122,7 @@ describe("SendNudgeThanksUseCase — 완료한 할 일의 콕에 감사", () => 
 
     // Then
     expect(result).toEqual({ sentCount: 0 });
-    expect(nudgeRepository.thanksBatchSizes).toEqual([]);
+    expect(nudgeRepository.saveAllBatchSizes).toEqual([]);
     expect(notifier.interactions).toEqual([]);
   });
 

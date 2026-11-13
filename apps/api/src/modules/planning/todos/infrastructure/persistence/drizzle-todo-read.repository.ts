@@ -18,6 +18,7 @@ import { sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -159,7 +160,10 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
         return [];
       }
       const categoryOrder = requireRecord(anchor.category).sortOrder;
-      anchorCondition = sql`(${todoCategory.sortOrder}, ${todo.sortOrder}, ${todo.id}) > (${categoryOrder}, ${anchor.sortOrder}, ${anchor.id})`;
+      anchorCondition = tupleGreaterThan(
+        [todoCategory.sortOrder, todo.sortOrder, todo.id],
+        [categoryOrder, anchor.sortOrder, anchor.id],
+      );
     }
 
     const ids = await this.#db

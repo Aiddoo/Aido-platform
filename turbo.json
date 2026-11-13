@@ -1,37 +1,85 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "agentGuidance": false,
-  "globalDependencies": [
-    "package.json",
-    "pnpm-workspace.yaml",
-    "pnpm-lock.yaml",
-    "patches/**",
-    ".nvmrc",
-    "tooling/typescript/**",
-    "tooling/vitest/**"
-  ],
+  "globalDependencies": [".nvmrc", "patches/**", "tooling/typescript/**"],
   "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$"],
+      "dependsOn": ["^build", "transit"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!docs/**",
+        "!test/**",
+        "!**/*.test.*",
+        "!**/*.spec.ts",
+        "!**/__tests__/**",
+        "!**/__snapshots__/**"
+      ],
       "outputs": ["dist/**"]
     },
-    "dev": {
-      "cache": false,
-      "persistent": true
+    "typecheck": {
+      "dependsOn": ["^build", "transit"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!docs/**"]
+    },
+    "lint:deps": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!docs/**"]
     },
     "test": {
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": [],
-      "passThroughEnv": ["AIDO_TEST_WORKERS"],
+      "dependsOn": ["^build", "transit"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!docs/**"],
       "env": ["TZ"],
-      "dependsOn": ["^build"]
+      "passThroughEnv": ["AIDO_TEST_WORKERS"]
+    },
+    "test:node": {
+      "dependsOn": ["transit"],
+      "inputs": ["$TURBO_DEFAULT$", "!docs/**"]
+    },
+    "test:cov": {
+      "dependsOn": ["^build", "transit"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!docs/**"],
+      "outputs": ["coverage/**"],
+      "env": ["TZ"],
+      "passThroughEnv": ["AIDO_TEST_WORKERS"]
+    },
+    "test:integration": {
+      "dependsOn": ["^build", "transit"],
+      "env": ["TZ", "BROADCAST_RECIPIENT_COUNT"],
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "JWT_REFRESH_SECRET",
+        "TOKEN_ENCRYPTION_KEY",
+        "NODE_ENV",
+        "AIDO_TEST_POSTGRES_URL",
+        "DOCKER_HOST",
+        "TESTCONTAINERS_HOST_OVERRIDE",
+        "TESTCONTAINERS_RYUK_DISABLED",
+        "AIDO_TEST_DB_WORKERS"
+      ]
+    },
+    "test:contract": {
+      "dependsOn": ["^build", "transit"],
+      "env": ["TZ"],
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "JWT_REFRESH_SECRET",
+        "TOKEN_ENCRYPTION_KEY",
+        "NODE_ENV",
+        "AIDO_TEST_POSTGRES_URL",
+        "DOCKER_HOST",
+        "TESTCONTAINERS_HOST_OVERRIDE",
+        "TESTCONTAINERS_RYUK_DISABLED",
+        "AIDO_TEST_DB_WORKERS"
+      ]
     },
     "test:e2e": {
       "dependsOn": ["^build"],
       "cache": false,
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": [],
+      "env": ["TZ"],
       "passThroughEnv": [
         "DATABASE_URL",
         "REDIS_URL",
@@ -45,91 +93,41 @@
         "TOKEN_ENCRYPTION_KEY",
         "NODE_ENV",
         "AIDO_TEST_POSTGRES_URL"
-      ],
-      "env": ["TZ"]
+      ]
     },
-    "test:integration": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": [],
-      "passThroughEnv": [
-        "DATABASE_URL",
-        "JWT_SECRET",
-        "JWT_REFRESH_SECRET",
-        "TOKEN_ENCRYPTION_KEY",
-        "NODE_ENV",
-        "AIDO_TEST_POSTGRES_URL",
-        "DOCKER_HOST",
-        "TESTCONTAINERS_HOST_OVERRIDE",
-        "TESTCONTAINERS_RYUK_DISABLED",
-        "AIDO_TEST_DB_WORKERS"
-      ],
-      "env": ["TZ", "BROADCAST_RECIPIENT_COUNT"]
+    "check:unused": {
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!docs/**"]
     },
-    "test:contract": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": [],
-      "passThroughEnv": [
-        "DATABASE_URL",
-        "JWT_SECRET",
-        "JWT_REFRESH_SECRET",
-        "TOKEN_ENCRYPTION_KEY",
-        "NODE_ENV",
-        "AIDO_TEST_POSTGRES_URL",
-        "DOCKER_HOST",
-        "TESTCONTAINERS_HOST_OVERRIDE",
-        "TESTCONTAINERS_RYUK_DISABLED",
-        "AIDO_TEST_DB_WORKERS"
-      ],
-      "env": ["TZ"]
-    },
-    "test:node": {
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": []
-    },
-    "test:cov": {
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": ["coverage/**"],
-      "passThroughEnv": ["AIDO_TEST_WORKERS"],
-      "env": ["TZ"],
-      "dependsOn": ["^build"]
-    },
-    "lint": {
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.oxlintrc.json"],
-      "outputs": []
-    },
-    "lint:deps": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": []
-    },
-    "lint:fix": {
-      "cache": false
-    },
-    "format": {
-      "cache": false
-    },
-    "format:check": {
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.oxfmtrc.json"],
-      "outputs": []
-    },
-    "typecheck": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": []
+    "dev": {
+      "cache": false,
+      "persistent": true
     },
     "clean": {
       "cache": false
     },
-    "db:generate": {
+    "//#lint": {
       "cache": false
     },
-    "db:deploy": {
+    "//#format:check": {
       "cache": false
     },
-    "db:migrate": {
+    "//#docs:check": {
       "cache": false
+    },
+    "//#lint:names": {
+      "cache": false
+    },
+    "//#check:unused": {
+      "inputs": [
+        "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}",
+        "**/package.json",
+        "knip.jsonc",
+        "pnpm-workspace.yaml",
+        ".github/workflows/**",
+        "lefthook.yml",
+        "!**/node_modules/**",
+        "!**/dist/**"
+      ]
     }
   }
 }

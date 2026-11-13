@@ -10,22 +10,21 @@ import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ApiUnauthorizedError } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { Create{{pascalCase aggregate}}UseCase } from "../../../application/use-cases/create-{{aggregate}}.use-case.js";
 import { List{{pascalCase slice}}UseCase } from "../../../application/use-cases/list-{{slice}}.use-case.js";
 import {
-  {{constantCase aggregate}}_RESPONSE_MESSAGES,
+  to{{pascalCase aggregate}}DetailResponse,
   to{{pascalCase aggregate}}ListResponse,
-  to{{pascalCase aggregate}}MutationResponse,
 } from "./{{aggregate}}-response.mapper.js";
 import {
   Create{{pascalCase aggregate}}Dto,
   Get{{pascalCase slice}}QueryDto,
+  {{pascalCase aggregate}}DetailResponseDto,
   {{pascalCase aggregate}}ListResponseDto,
-  {{pascalCase aggregate}}MutationResponseDto,
 } from "./{{aggregate}}.dto.js";
 
 @ApiTags("{{titleCase slice}}")
@@ -42,14 +41,14 @@ export class {{pascalCase aggregate}}Controller {
 
   @Post()
   @ApiDoc({ summary: "{{aggregate}} 만들기", operationId: "create{{pascalCase aggregate}}" })
-  @ApiCreatedResponse({ type: {{pascalCase aggregate}}MutationResponseDto })
+  @ApiCreatedSuccessResponse({ type: {{pascalCase aggregate}}DetailResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async create(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: Create{{pascalCase aggregate}}Dto }) dto: Create{{pascalCase aggregate}}Dto,
-  ): Promise<{{pascalCase aggregate}}MutationResponseDto> {
+  ): Promise<{{pascalCase aggregate}}DetailResponseDto> {
     const {{camelCase aggregate}} = await this.#create{{pascalCase aggregate}}.execute({ userId: user.userId, name: dto.name });
-    return to{{pascalCase aggregate}}MutationResponse({{camelCase aggregate}}, {{constantCase aggregate}}_RESPONSE_MESSAGES.CREATED);
+    return to{{pascalCase aggregate}}DetailResponse({{camelCase aggregate}});
   }
 
   @Get()

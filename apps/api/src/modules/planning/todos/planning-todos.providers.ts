@@ -1,7 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
-import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -230,12 +229,10 @@ export const PLANNING_TODOS_PROVIDERS = [
   provideUseCase(GetTodoUseCase, { todoReadRepository: TodoReadRepositoryPort }),
   provideUseCase(ListTodosUseCase, {
     todoReadRepository: TodoReadRepositoryPort,
-    paginationService: PaginationService,
     seriesCatchUp: CatchUpTodoSeriesUseCase,
   }),
   provideUseCase(ListFriendTodosUseCase, {
     todoReadRepository: TodoReadRepositoryPort,
-    paginationService: PaginationService,
     friendPort: FriendPort,
     todoCache: TodoCachePort,
   }),

@@ -1,5 +1,5 @@
-import type { AccessSubject } from "../../domain/entitlement.domain-service.js";
-import type { FeatureGrants } from "../../domain/entitlements.constants.js";
+import type { FeatureGrants } from "../../../shared/domain/access.constants.js";
+import type { AccessSubject } from "../../../shared/domain/entitlement.domain-service.js";
 
 const ACCESS_READ_CONSISTENCIES = ["cached", "latest"] as const;
 

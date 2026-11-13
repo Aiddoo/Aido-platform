@@ -22,7 +22,7 @@ name: 앱 데이터를 비우고 지정한 계정으로 로그인한다
           stopApp: true
           permissions:
             notifications: allow
-# 로그인 절차는 1.13.0 릴리스 흐름의 이메일 로그인을 그대로 쓴다
+# 로그인 절차는 릴리스 흐름의 이메일 로그인을 그대로 쓴다
 - runFlow:
     file: login.yaml
     env:

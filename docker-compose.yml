@@ -1,31 +1,81 @@
-# 로컬 개발용 인프라 (DB + Redis)
-# API는 네이티브 실행: pnpm dev
+# 로컬 개발. env는 API와 같은 apps/api/.env.development를 읽는다
+# DB만: pnpm docker:up (API는 pnpm dev) · DB → migrate → API 모두: pnpm docker:dev:up
+# Redis는 CACHE_TYPE=redis를 시험할 때만: docker compose --profile redis up -d
+# 서버의 운영 compose(같은 폴더)와 프로젝트가 섞이지 않게 이름을 따로 둔다
+name: aido-dev
 
 services:
   db:
     image: postgres:16.15-alpine
-    container_name: aido-db
     ports:
-      - '5432:5432'
+      - '${DB_PORT:-5433}:5432'
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: aido
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - dev_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d aido']
       interval: 5s
       timeout: 5s
       retries: 5
 
+  migrate:
+    profiles: [api]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: migrate
+    env_file:
+      - apps/api/.env.development
+    environment:
+      # 컨테이너 안에서는 compose 네트워크의 db로 붙는다(.env.development는 호스트 기준 localhost)
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/aido
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+    logging:
+      driver: json-file
+      options:
+        max-size: '20m'
+        max-file: '5'
+
+  api:
+    profiles: [api]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: development
+    ports:
+      - '${API_HOST_PORT:-8080}:8080'
+    env_file:
+      - apps/api/.env.development
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/aido
+      # .env.development의 REDIS_URL은 호스트 기준이라 컨테이너에서는 memory로 고정한다
+      CACHE_TYPE: memory
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./apps/api/drizzle:/app/apps/api/drizzle
+      - ./packages/api/src:/app/packages/api/src
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   redis:
+    profiles: [redis]
     image: redis:7.4-alpine
-    container_name: aido-redis
     ports:
       - '6379:6379'
-    volumes:
-      - redis_data:/data
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -33,5 +83,6 @@ services:
       retries: 5
 
 volumes:
-  postgres_data:
-  redis_data:
+  dev_postgres_data:
+    # 프로젝트 이름을 바꾸기 전에 만든 로컬 DB 볼륨을 그대로 쓴다
+    name: aido-platform_dev_postgres_data

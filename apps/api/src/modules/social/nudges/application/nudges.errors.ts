@@ -4,13 +4,9 @@ import { match } from "ts-pattern";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { DailySendFeatureQuota } from "../../cheers/application/ports/daily-send-usage.reader.port.js";
+import type { DailySendFeatureQuota } from "../../shared/application/ports/daily-send-usage.reader.port.js";
 import type { NudgeId } from "../domain/nudge-id.vo.js";
 import type { NudgeThanksRejection } from "../domain/nudge-interaction.domain-service.js";
-
-export function cannotNudgeSelf(): ApplicationException {
-  return new ApplicationException(ErrorCode.NUDGE_1104);
-}
 
 export function nudgeTargetNotFriend(targetUserId: UserId): ApplicationException {
   return new ApplicationException(ErrorCode.NUDGE_1103, { targetUserId: targetUserId.value });
@@ -34,20 +30,6 @@ export function nudgeCooldownActive(
   remainingSeconds: number,
 ): ApplicationException {
   return new ApplicationException(ErrorCode.NUDGE_1102, {
-    targetUserId: targetUserId.value,
-    remainingSeconds,
-  });
-}
-
-export function remindTargetHasTodayTodos(receiverId: UserId): ApplicationException {
-  return new ApplicationException(ErrorCode.NUDGE_1107, { receiverId: receiverId.value });
-}
-
-export function remindNudgeCooldownActive(
-  targetUserId: UserId,
-  remainingSeconds: number,
-): ApplicationException {
-  return new ApplicationException(ErrorCode.NUDGE_1108, {
     targetUserId: targetUserId.value,
     remainingSeconds,
   });

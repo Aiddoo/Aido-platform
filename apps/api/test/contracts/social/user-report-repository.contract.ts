@@ -1,4 +1,5 @@
 import type { UserReportRepositoryPort } from "#api/modules/social/reports/application/ports/user-report.repository.port";
+import { UserReportId } from "#api/modules/social/reports/domain/user-report-id.vo";
 import { UserReportResolutionNote } from "#api/modules/social/reports/domain/user-report-resolution-note.vo";
 import { UserReportTarget } from "#api/modules/social/reports/domain/user-report-target.vo";
 import type {
@@ -30,7 +31,7 @@ async function saveReport(
   repository: UserReportRepositoryPort,
   overrides: Partial<UserReportPrimitives> = {},
 ): Promise<UserReport> {
-  const report = createUserReportFixture({ id: (await repository.nextId()).value, ...overrides });
+  const report = createUserReportFixture({ id: UserReportId.generate().value, ...overrides });
   await repository.save(report);
   return report;
 }
@@ -50,17 +51,6 @@ export function describeUserReportRepositoryContract(
   createRepository: () => Promise<UserReportRepositoryPort>,
 ): void {
   describe("사용자 신고 저장소 계약", () => {
-    it("nextId는 부를 때마다 다른 id를 준다", async () => {
-      // Given
-      const repository = await createRepository();
-
-      // When
-      const ids = [await repository.nextId(), await repository.nextId()];
-
-      // Then
-      expect(ids[0]?.equals(ids[1] ?? ids[0])).toBe(false);
-    });
-
     it("저장한 신고를 id로 그대로 읽고 없는 id는 null이다", async () => {
       // Given
       const repository = await createRepository();
@@ -73,7 +63,7 @@ export function describeUserReportRepositoryContract(
 
       // When
       const found = await repository.findById(report.id);
-      const missing = await repository.findById(await repository.nextId());
+      const missing = await repository.findById(UserReportId.generate());
 
       // Then
       expect(found?.toPrimitives()).toEqual(report.toPrimitives());
@@ -151,7 +141,7 @@ export function describeUserReportRepositoryContract(
       expect(count).toBe(2);
     });
 
-    it("처리 기록은 접수 상태의 신고에만 저장하고, 먼저 처리된 신고의 기록은 덮지 않는다", async () => {
+    it("읽은 때의 상태 그대로일 때만 저장하고, 먼저 처리된 신고의 기록은 덮지 않는다", async () => {
       // Given
       const repository = await createRepository();
       const report = await saveReport(repository);
@@ -160,14 +150,13 @@ export function describeUserReportRepositoryContract(
 
       // When
       const saved = [
-        await repository.saveResolution(report),
-        await repository.saveResolution(first),
-        await repository.saveResolution(late),
+        await repository.saveIfUnchanged(first, report.version),
+        await repository.saveIfUnchanged(late, report.version),
       ];
       const stored = await repository.findById(report.id);
 
       // Then
-      expect(saved).toEqual([false, true, false]);
+      expect(saved).toEqual([true, false]);
       expect(stored?.toPrimitives()).toEqual(first.toPrimitives());
     });
 

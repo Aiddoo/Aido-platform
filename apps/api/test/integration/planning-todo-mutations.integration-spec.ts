@@ -18,7 +18,6 @@ import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-c
 import { ReorderTodoItemsUseCase } from "#api/modules/planning/todos/application/use-cases/reorder-todo-items.use-case";
 import { SetTodoCompletedUseCase } from "#api/modules/planning/todos/application/use-cases/set-todo-completed.use-case";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
   todoCategory,
@@ -30,6 +29,7 @@ import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { nowInstant } from "#test/fixtures/clock.fixture";

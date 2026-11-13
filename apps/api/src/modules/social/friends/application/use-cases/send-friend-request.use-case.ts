@@ -1,12 +1,13 @@
+import type { UserBlockReaderPort } from "#api/modules/social/blocks/social-block-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { UserBlockReaderPort } from "../../../blocks/application/ports/user-block.reader.port.js";
 import { hasReachedFriendLimit } from "../../domain/friend-limit.domain-service.js";
 import { nextFriendSortOrder } from "../../domain/friend-ordering.domain-service.js";
+import { FriendshipId } from "../../domain/friendship-id.vo.js";
 import { Friendship } from "../../domain/friendship.aggregate.js";
 import {
   alreadyFriends,
@@ -18,15 +19,18 @@ import {
 } from "../friends.errors.js";
 import { FriendLockKeys } from "../friends.lock-keys.js";
 import { FriendLogEvent } from "../friends.log-events.js";
+import type { FriendLimitReaderPort } from "../ports/friend-limit.reader.port.js";
+import {
+  type FriendProfileReaderPort,
+  readDisplayName,
+} from "../ports/friend-profile.reader.port.js";
 import {
   type FriendshipCacheInvalidator,
   invalidateFriendshipCaches,
-} from "../ports/follow-cache.port.js";
-import type { FollowNotifierPort } from "../ports/follow-notifier.port.js";
-import type { FollowRepositoryPort } from "../ports/follow.repository.port.js";
-import type { FriendLimitReaderPort } from "../ports/friend-limit.reader.port.js";
-import type { FriendProfileReaderPort } from "../ports/friend-profile.reader.port.js";
-import type { CheckFirstFriendMilestoneUseCase } from "./check-first-friend-milestone.use-case.js";
+} from "../ports/friendship-cache.port.js";
+import type { FriendshipNotifierPort } from "../ports/friendship-notifier.port.js";
+import type { FriendshipRepositoryPort } from "../ports/friendship.repository.port.js";
+import type { NotifyFirstFriendMilestoneUseCase } from "./notify-first-friend-milestone.use-case.js";
 
 export interface SendFriendRequestCommand {
   readonly userId: string;
@@ -42,20 +46,16 @@ export interface SendFriendRequestResult {
 export interface SendFriendRequestDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly followRepository: Pick<
-    FollowRepositoryPort,
-    | "nextId"
-    | "countMutualFriends"
-    | "findByFollowerAndFollowing"
-    | "findMaxFriendSortOrder"
-    | "save"
+  readonly friendshipRepository: Pick<
+    FriendshipRepositoryPort,
+    "countMutualFriends" | "findByFollowerAndFollowing" | "findMaxFriendSortOrder" | "save"
   >;
   readonly profileReader: Pick<FriendProfileReaderPort, "existsActiveUser" | "findDisplayName">;
   readonly limitReader: Pick<FriendLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
   readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly cache: FriendshipCacheInvalidator;
-  readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew" | "notifyFollowMutual">;
-  readonly checkFirstFriendMilestone: Pick<CheckFirstFriendMilestoneUseCase, "execute">;
+  readonly notifier: Pick<FriendshipNotifierPort, "notifyFollowNew" | "notifyFollowMutual">;
+  readonly notifyFirstFriendMilestone: Pick<NotifyFirstFriendMilestoneUseCase, "execute">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -84,23 +84,19 @@ export class SendFriendRequestUseCase {
       // 한도를 대상 확인보다 먼저 본다(출시 앱이 받는 오류 우선순위)
       await this.#assertBelowFriendLimit(userId);
       await this.#assertRequestable(userId, targetUserId);
-      return this.#request(userId, targetUserId);
+      const requested = await this.#request(userId, targetUserId);
+      await this.#notify(userId, targetUserId, requested.isAutoAccepted);
+      return requested;
     });
 
-    if (result.isAutoAccepted) {
-      await this.#afterAutoAccepted(userId, targetUserId);
-    } else {
-      await this.#afterRequested(userId, targetUserId);
-    }
+    await this.#afterCommit(userId, targetUserId, result.isAutoAccepted);
     return result;
   }
 
   async #assertBelowFriendLimit(userId: UserId): Promise<void> {
-    const { followRepository, limitReader } = this.#dependencies;
-    const [maxFriendCount, friendCount] = await Promise.all([
-      limitReader.readLimitInTx(userId),
-      followRepository.countMutualFriends(userId),
-    ]);
+    const { friendshipRepository, limitReader } = this.#dependencies;
+    const maxFriendCount = await limitReader.readLimitInTx(userId);
+    const friendCount = await friendshipRepository.countMutualFriends(userId);
     if (hasReachedFriendLimit({ maxFriendCount, friendCount })) {
       throw friendLimitReached({
         friendCount,
@@ -111,7 +107,7 @@ export class SendFriendRequestUseCase {
   }
 
   async #assertRequestable(userId: UserId, targetUserId: UserId): Promise<void> {
-    const { followRepository, profileReader, blockReader } = this.#dependencies;
+    const { friendshipRepository, profileReader, blockReader } = this.#dependencies;
     if (!(await profileReader.existsActiveUser(targetUserId))) {
       throw friendTargetNotFound(targetUserId);
     }
@@ -124,7 +120,7 @@ export class SendFriendRequestUseCase {
     if (blockRelation.isBlockedBy) {
       throw friendTargetNotFound(targetUserId);
     }
-    const existing = await followRepository.findByFollowerAndFollowing(userId, targetUserId);
+    const existing = await friendshipRepository.findByFollowerAndFollowing(userId, targetUserId);
     if (existing?.isAccepted()) {
       throw alreadyFriends(targetUserId);
     }
@@ -134,63 +130,62 @@ export class SendFriendRequestUseCase {
   }
 
   async #request(userId: UserId, targetUserId: UserId): Promise<SendFriendRequestResult> {
-    const { followRepository, clock } = this.#dependencies;
-    const reverse = await followRepository.findByFollowerAndFollowing(targetUserId, userId);
+    const { friendshipRepository, clock } = this.#dependencies;
+    const reverse = await friendshipRepository.findByFollowerAndFollowing(targetUserId, userId);
     if (reverse?.isAccepted()) {
       throw alreadyFriends(targetUserId);
     }
 
     const now = clock.now();
     const friendship = Friendship.create({
-      id: await followRepository.nextId(),
+      id: FriendshipId.generate(),
       followerId: userId,
       followingId: targetUserId,
       now,
     });
     if (reverse == null) {
-      await followRepository.save(friendship);
+      await friendshipRepository.save(friendship);
       return { friendship, isAutoAccepted: false };
     }
 
-    const [userMaxSortOrder, targetMaxSortOrder] = await Promise.all([
-      followRepository.findMaxFriendSortOrder(userId),
-      followRepository.findMaxFriendSortOrder(targetUserId),
-    ]);
+    const userMaxSortOrder = await friendshipRepository.findMaxFriendSortOrder(userId);
+    const targetMaxSortOrder = await friendshipRepository.findMaxFriendSortOrder(targetUserId);
     reverse.accept(nextFriendSortOrder(targetMaxSortOrder), now);
-    await followRepository.save(reverse);
+    await friendshipRepository.save(reverse);
     friendship.accept(nextFriendSortOrder(userMaxSortOrder), now);
-    await followRepository.save(friendship);
+    await friendshipRepository.save(friendship);
     return { friendship, isAutoAccepted: true };
   }
 
-  async #afterRequested(userId: UserId, targetUserId: UserId): Promise<void> {
-    const { profileReader, notifier, logger } = this.#dependencies;
-    logger.log({
-      event: FriendLogEvent.REQUEST_SENT,
-      userId: userId.value,
-      targetUserId: targetUserId.value,
-    });
-    notifier.notifyFollowNew({
-      followerId: userId.value,
-      followingId: targetUserId.value,
-      followerName: (await profileReader.findDisplayName(userId)) ?? userId.value,
-    });
-  }
-
-  async #afterAutoAccepted(userId: UserId, targetUserId: UserId): Promise<void> {
-    const { profileReader, cache, notifier, checkFirstFriendMilestone, logger } =
-      this.#dependencies;
-    logger.log({
-      event: FriendLogEvent.REQUEST_AUTO_ACCEPTED,
-      userId: userId.value,
-      targetUserId: targetUserId.value,
-    });
-    notifier.notifyFollowMutual({
+  // 알림 작업은 친구 관계 변경과 같은 트랜잭션에 넣어 커밋 직후 프로세스가 멈춰도 잃지 않는다
+  async #notify(userId: UserId, targetUserId: UserId, isAutoAccepted: boolean): Promise<void> {
+    const { profileReader, notifier, notifyFirstFriendMilestone } = this.#dependencies;
+    const userName = await readDisplayName(profileReader, userId);
+    if (!isAutoAccepted) {
+      await notifier.notifyFollowNew({
+        followerId: userId.value,
+        followingId: targetUserId.value,
+        followerName: userName,
+      });
+      return;
+    }
+    await notifier.notifyFollowMutual({
       userId: targetUserId.value,
       friendId: userId.value,
-      friendName: (await profileReader.findDisplayName(userId)) ?? userId.value,
+      friendName: userName,
     });
-    await checkFirstFriendMilestone.execute({ userIds: [userId.value, targetUserId.value] });
-    await invalidateFriendshipCaches(cache, userId, targetUserId);
+    await notifyFirstFriendMilestone.execute({ userIds: [userId.value, targetUserId.value] });
+  }
+
+  async #afterCommit(userId: UserId, targetUserId: UserId, isAutoAccepted: boolean): Promise<void> {
+    const { cache, logger } = this.#dependencies;
+    logger.log({
+      event: isAutoAccepted ? FriendLogEvent.REQUEST_AUTO_ACCEPTED : FriendLogEvent.REQUEST_SENT,
+      userId: userId.value,
+      targetUserId: targetUserId.value,
+    });
+    if (isAutoAccepted) {
+      await invalidateFriendshipCaches(cache, userId, targetUserId);
+    }
   }
 }

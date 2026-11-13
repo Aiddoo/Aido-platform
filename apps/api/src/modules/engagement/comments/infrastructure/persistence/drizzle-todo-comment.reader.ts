@@ -46,6 +46,7 @@ import type {
 } from "../../application/read-models/todo-comment.read-model.js";
 import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import {
+  toDisplayName,
   toRootPosition,
   toTodoCommentParticipantAuthor,
   toTodoCommentReadModel,
@@ -58,6 +59,7 @@ const authorProfile = alias(userProfile, "author_profile");
 const authorUser = alias(user, "author_user");
 const replyTarget = alias(todoComment, "reply_target");
 const replyTargetProfile = alias(userProfile, "reply_target_profile");
+const replyTargetUser = alias(user, "reply_target_user");
 const candidateComment = alias(todoComment, "candidate");
 const anchorComment = alias(todoComment, "anchor_comment");
 const headComment = alias(todoComment, "head");
@@ -110,6 +112,7 @@ type CommentProjection<TSource extends CommentSource> = {
   readonly authorProfileImage: typeof authorProfile.profileImage;
   readonly replyToAuthorId: typeof replyTarget.authorId;
   readonly replyToAuthorName: typeof replyTargetProfile.name;
+  readonly replyToAuthorUserTag: typeof replyTargetUser.userTag;
   readonly todoOwnerId: typeof commentTodo.userId;
   readonly content: TSource["content"];
   readonly likeCount: TSource["likeCount"];
@@ -138,7 +141,7 @@ function columnsOf<TSource extends CommentSource>(
   };
 }
 
-/** 작성자·답글 대상·할 일 주인을 붙인 응답 칸. 쿼리마다 같은 LEFT JOIN 다섯 개로 붙인다 */
+/** 작성자·답글 대상·할 일 주인을 붙인 응답 칸. 쿼리마다 같은 LEFT JOIN 여섯 개로 붙인다 */
 function projectionOf<TSource extends CommentSource>(source: TSource): CommentProjection<TSource> {
   return {
     commentId: source.id,
@@ -151,6 +154,7 @@ function projectionOf<TSource extends CommentSource>(source: TSource): CommentPr
     authorProfileImage: authorProfile.profileImage,
     replyToAuthorId: replyTarget.authorId,
     replyToAuthorName: replyTargetProfile.name,
+    replyToAuthorUserTag: replyTargetUser.userTag,
     todoOwnerId: commentTodo.userId,
     content: source.content,
     likeCount: source.likeCount,
@@ -286,6 +290,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       .leftJoin(authorUser, eq(authorUser.id, source.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, source.replyToCommentId))
       .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
+      .leftJoin(replyTargetUser, eq(replyTargetUser.id, replyTarget.authorId))
       .where(and(eq(anchorComment.todoId, todoId.value), inArray(anchorComment.id, ids)));
     const commentsById = new Map(rows.map((row) => [row.commentId, requireReadModel(row)]));
     return ids.flatMap((commentId) => {
@@ -404,6 +409,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       .leftJoin(authorUser, eq(authorUser.id, source.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, source.replyToCommentId))
       .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
+      .leftJoin(replyTargetUser, eq(replyTargetUser.id, replyTarget.authorId))
       .orderBy(...rootSortColumns(selected, params.sort).map((column) => desc(column)));
     if (params.mode !== "INITIAL" && rows.length === 0) {
       return null;
@@ -488,6 +494,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       .leftJoin(authorUser, eq(authorUser.id, previewSource.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, previewSource.replyToCommentId))
       .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
+      .leftJoin(replyTargetUser, eq(replyTargetUser.id, replyTarget.authorId))
       .leftJoinLateral(participant, isNotNull(participant.authorId))
       .leftJoin(participantProfile, eq(participantProfile.userId, participant.authorId))
       .leftJoin(participantUser, eq(participantUser.id, participant.authorId))
@@ -594,6 +601,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       .leftJoin(authorUser, eq(authorUser.id, source.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, source.replyToCommentId))
       .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
+      .leftJoin(replyTargetUser, eq(replyTargetUser.id, replyTarget.authorId))
       .orderBy(asc(selected.createdAt), asc(selected.id));
     if (params.mode !== "INITIAL" && rows.length === 0) {
       return null;
@@ -626,7 +634,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     const db = this.#db;
     const isLatest = params.sort === TODO_COMMENT_SORT.LATEST;
     // 다음·이전 페이지는 cursor에 담긴 묶음 머리 점수를 경계로 쓴다. 그 묶음의 행은 점수가 바뀌어도 경계 자리에 둔다
-    const snapshot =
+    const cursorRoot =
       params.anchorPosition == null || params.anchorThreadId == null
         ? null
         : { threadId: params.anchorThreadId.value, position: params.anchorPosition };
@@ -699,8 +707,8 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     const rootBoundary = isLatest
       ? [anchor.rootCreatedAt, anchor.threadId]
       : [
-          snapshot?.position.rootLikeCount ?? anchor.rootLikeCount,
-          snapshot?.position.rootReplyCount ?? anchor.rootReplyCount,
+          cursorRoot?.position.rootLikeCount ?? anchor.rootLikeCount,
+          cursorRoot?.position.rootReplyCount ?? anchor.rootReplyCount,
           anchor.rootCreatedAt,
           anchor.threadId,
         ];
@@ -716,12 +724,12 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     const visible = or(isNull(tree.deletedAt), gt(tree.replyCount, 0));
     // 경계 묶음의 행은 cursor의 점수로 경계에 놓이므로, 인기순 다음 페이지는 그 행이 먼저, 이전 페이지는 나중에 온다
     const boundaryThreadFirst = (source: TreeSource, isBoundaryFirst: boolean) =>
-      snapshot == null || isLatest
+      cursorRoot == null || isLatest
         ? []
         : [
             isBoundaryFirst
-              ? desc(eq(source.threadId, snapshot.threadId))
-              : asc(eq(source.threadId, snapshot.threadId)),
+              ? desc(eq(source.threadId, cursorRoot.threadId))
+              : asc(eq(source.threadId, cursorRoot.threadId)),
           ];
     const displayOrder = (source: TreeSource, isBoundaryFirst: boolean) => [
       ...boundaryThreadFirst(source, isBoundaryFirst),
@@ -791,6 +799,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       .leftJoin(authorUser, eq(authorUser.id, source.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, source.replyToCommentId))
       .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
+      .leftJoin(replyTargetUser, eq(replyTargetUser.id, replyTarget.authorId))
       .orderBy(...displayOrder(selected, params.mode !== "BEFORE"));
     if (params.mode !== "INITIAL" && rows.length === 0) {
       return null;
@@ -799,7 +808,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       const comment = requireReadModel(row);
       return {
         ...comment,
-        conversationPosition: this.#rootPositionAt(row, snapshot),
+        conversationPosition: this.#rootPositionAt(row, cursorRoot),
       };
     });
     const window = toTodoCommentKeysetWindow({
@@ -811,8 +820,8 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     return {
       items: window.items,
       anchorIndex: window.anchorIndex,
-      previousItem: window.previousRecord,
-      nextItem: window.nextRecord,
+      previousItem: window.previousItem,
+      nextItem: window.nextItem,
       hasPrevious: window.hasPrevious,
       hasNext: window.hasNext,
     };
@@ -849,10 +858,10 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       readonly rootLikeCount: number;
       readonly rootReplyCount: number;
     },
-    snapshot: { readonly threadId: string; readonly position: TodoCommentRootPosition } | null,
+    cursorRoot: { readonly threadId: string; readonly position: TodoCommentRootPosition } | null,
   ): TodoCommentRootPosition {
-    return snapshot != null && row.threadId === snapshot.threadId
-      ? snapshot.position
+    return cursorRoot != null && row.threadId === cursorRoot.threadId
+      ? cursorRoot.position
       : toRootPosition(row);
   }
 
@@ -875,10 +884,17 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   }
 
   async findUserDisplayName(userId: UserId): Promise<string | null> {
-    const profile = await this.#db.query.userProfile.findFirst({
-      columns: { name: true },
-      where: { userId: userId.value },
+    const found = await this.#db.query.user.findFirst({
+      columns: { id: true, userTag: true },
+      with: { profile: { columns: { name: true } } },
+      where: { id: userId.value },
     });
-    return profile?.name ?? null;
+    return found == null
+      ? null
+      : toDisplayName({
+          userId: found.id,
+          name: found.profile?.name ?? null,
+          userTag: found.userTag,
+        });
   }
 }

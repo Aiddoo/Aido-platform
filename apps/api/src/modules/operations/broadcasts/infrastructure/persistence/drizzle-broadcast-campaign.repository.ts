@@ -4,8 +4,8 @@ import { eq } from "drizzle-orm";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { broadcastCampaign } from "#api/platform/database/schema/operations.schema";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import { BroadcastCampaignRepositoryPort } from "../../application/ports/broadcast-campaign.repository.port.js";
 import { BroadcastCampaignId } from "../../domain/broadcast-campaign-id.vo.js";

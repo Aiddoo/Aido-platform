@@ -5,8 +5,8 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
 
-import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WeatherKitAttributionAdapter } from "./weatherkit-attribution.adapter.js";
+import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 
 const OBSERVED_KO_ATTRIBUTION = {
   "logoDark@3x": "/assets/branding/ko/Apple_Weather_wht_ko_3X_090122.png",

@@ -1,4 +1,4 @@
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
@@ -6,7 +6,7 @@ import { isNudgeInteractionAvailable } from "../../domain/nudge-interaction.doma
 import { nudgeInteractionDisabled, nudgeInteractionNotFound } from "../nudges.errors.js";
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
-import type { NudgeInteraction } from "../read-models/nudge-interaction.read-model.js";
+import type { NudgeInteractionReadModel } from "../read-models/nudge-interaction.read-model.js";
 
 export interface GetNudgeInteractionQuery {
   readonly userId: string;
@@ -16,7 +16,7 @@ export interface GetNudgeInteractionQuery {
 export interface GetNudgeInteractionDependencies {
   readonly nudgeReader: Pick<NudgeReaderPort, "findInteraction">;
   readonly interactionConfig: NudgeInteractionConfigPort;
-  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "getCurrentMutualFriendIds">;
 }
 
 export class GetNudgeInteractionUseCase {
@@ -26,8 +26,8 @@ export class GetNudgeInteractionUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetNudgeInteractionQuery): Promise<NudgeInteraction> {
-    const { nudgeReader, interactionConfig, followReader } = this.#dependencies;
+  async execute(query: GetNudgeInteractionQuery): Promise<NudgeInteractionReadModel> {
+    const { nudgeReader, interactionConfig, mutualFriendReader } = this.#dependencies;
     if (!interactionConfig.isEnabled) {
       throw nudgeInteractionDisabled();
     }
@@ -35,7 +35,7 @@ export class GetNudgeInteractionUseCase {
     const viewerId = UserId.reconstitute(query.userId);
     const [nudge, friendIds] = await Promise.all([
       nudgeReader.findInteraction(NudgeId.reconstitute(query.nudgeId), viewerId),
-      followReader.getCurrentMutualFriendIds(viewerId),
+      mutualFriendReader.getCurrentMutualFriendIds(viewerId),
     ]);
     if (nudge == null) {
       throw nudgeInteractionNotFound();

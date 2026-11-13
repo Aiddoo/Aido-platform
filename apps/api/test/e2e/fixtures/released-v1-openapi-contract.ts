@@ -379,6 +379,12 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.1: DELETE /todo-categories/{id}에 선택 query todoHandling(move·delete)만 추가. 생략하면 할 일이 있을 때 moveToCategoryId가 필요한 지금 규칙과 응답(0855 details 포함) 그대로다. 상태 코드·오류 코드는 같고, 새 400은 todoHandling을 보낸 요청에서만 닿는다. test/e2e/todo-category-deletion.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
 	preCategoryDeletionChoicePathsFingerprint:
 		"0cd87a71195aea7edbb8f2e16bd449f40fbea6d519947fa076dde204d6698622",
-	pathsFingerprint:
+	/** 1.16.0: 웹 OAuth start·web-callback query와 PATCH /follows/friends/{followId}/reorder path를 @aido/api schema로 검증한다. start의 state, web-callback의 code·state는 원래 생략해도 받던 값이라 required: false로 문서를 고쳤고(취소한 공급자 redirect는 code가 없다), mode는 login·link, user_hint·followId는 ENTITY_ID_PATTERN이다. 출시 앱은 redirect_uri·mode(login·link)와 서버가 준 followId만 보내 같은 응답을 받고, web-callback 실패는 그대로 앱 딥링크 error로 돌아간다. 형식이 틀린 mode·user_hint·followId만 400 SYS_0002가 된다. test/e2e/auth.e2e-spec.ts·social-friend-state.e2e-spec.ts가 출시 앱 요청 모양으로 증명한다. */
+	preOAuthQueryValidationPathsFingerprint:
 		"a6928801cfc6cd81229c68710fde31c4bcb7d6bfed5ad417e85904028bedc087",
+	/** 1.16.0: GET /todos(cursor·size·completed·categoryId·startDate·endDate)와 GET /weekly-achievements(year·cursor·size)·/{year}/{week}의 손으로 쓴 @ApiQuery·@ApiParam을 지우고 이미 검증에 쓰던 @aido/api query·path schema에서 문서를 유도한다. 정수 칸이 number에서 integer와 실제 min·max로, 날짜 칸이 format date로 바뀌는 문서 정정이다. 검증 schema·응답·상태 코드는 같다. */
+	preDerivedQueryDocsPathsFingerprint:
+		"0ea756610b110b255efc1c4c024efc93fd71221dc5b62150bf6106cb0397038e",
+	pathsFingerprint:
+		"4d7ebfd99319fa90300e0c2bc3a8b81f60afd85c9235975e645ca6cd1ffdeb47",
 } as const;

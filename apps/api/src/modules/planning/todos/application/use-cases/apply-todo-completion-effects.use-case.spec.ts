@@ -11,7 +11,6 @@ import type {
   TodoNotificationPort,
 } from "../ports/todo-notification.port.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
-import { TodoLogEvent } from "../todos.log-events.js";
 import { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";
 
 function setUp(options: {
@@ -53,10 +52,10 @@ function setUp(options: {
     getUserDisplayName: async () => "홍길동",
   };
   const notification: TodoNotificationPort = {
-    enqueueFriendCompleted: (payload) => {
+    enqueueFriendCompleted: async (payload) => {
       friendCompleted.push(payload);
     },
-    enqueueMilestoneReached: (payload) => {
+    enqueueMilestoneReached: async (payload) => {
       milestones.push(payload);
     },
   };
@@ -86,7 +85,7 @@ function setUp(options: {
   };
 }
 
-describe("ApplyTodoCompletionEffectsUseCase — 완료 토글 뒤 다른 Context 효과", () => {
+describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context에 미치는 효과", () => {
   it("완료하면 스트릭을 기록하고 리마인더는 건드리지 않는다(취소는 UseCase 트랜잭션 몫)", async () => {
     // Given
     const { useCase, streakRecords } = setUp({
@@ -155,26 +154,22 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글 뒤 다른 Context
     expect(friendCompleted).toHaveLength(1);
   });
 
-  it("오늘 현황을 읽지 못하면 스트릭은 현황 없이 기록하고 친구 완료 알림은 넣지 않는다", async () => {
+  it("오늘 현황을 읽지 못하면 오류를 던져 토글과 함께 되돌리고 스트릭·알림을 남기지 않는다", async () => {
     // Given
-    const { useCase, streakTodayStats, friendCompleted, milestones, logger } = setUp({
+    const { useCase, streakRecords, friendCompleted, milestones } = setUp({
       todayStats: new Error("DB 연결 끊김"),
       completedCount: 10,
       friendIds: ["friend-1"],
     });
 
     // When
-    await useCase.execute([new TodoToggledEvent(1, "user-1", true, "UTC")]);
+    const result = useCase.execute([new TodoToggledEvent(1, "user-1", true, "UTC")]);
 
     // Then
-    expect(streakTodayStats).toEqual([null]);
+    await expect(result).rejects.toThrow("DB 연결 끊김");
+    expect(streakRecords).toEqual([]);
     expect(friendCompleted).toEqual([]);
-    expect(milestones).toEqual([{ userId: "user-1", milestone: "COUNT_10" }]);
-    expect(logger.messages).toContainEqual({
-      event: TodoLogEvent.TODAY_STATS_FAILED,
-      userId: "user-1",
-      errorType: "Error",
-    });
+    expect(milestones).toEqual([]);
   });
 
   it.each([

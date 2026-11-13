@@ -47,6 +47,13 @@ function httpExceptionErrorCode(statusCode: number): ErrorCodeType {
     : ErrorCode.SYS_0002;
 }
 
+function httpExceptionMessage(message: unknown): string {
+  if (Array.isArray(message)) {
+    return message.join(", ");
+  }
+  return String(message);
+}
+
 function isDatabaseFailure(exception: unknown): boolean {
   return (
     databaseSqlState(exception) != null ||
@@ -180,11 +187,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         success: false,
         error: {
           code: httpExceptionErrorCode(statusCode),
-          message: hasMessage
-            ? Array.isArray(exceptionResponse.message)
-              ? exceptionResponse.message.join(", ")
-              : String(exceptionResponse.message)
-            : exception.message,
+          message: hasMessage ? httpExceptionMessage(exceptionResponse.message) : exception.message,
           ...(hasMessage && this.#exposeErrorDetails && { details: exceptionResponse }),
         },
         timestamp: Date.now(),

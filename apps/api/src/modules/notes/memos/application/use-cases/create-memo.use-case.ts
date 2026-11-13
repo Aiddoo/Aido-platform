@@ -7,8 +7,8 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { MemoContent } from "../../domain/memo-content.vo.js";
-import { fingerprintMemoCreation } from "../../domain/memo-creation-request.domain-service.js";
-import { Memo, type MemoCreationRequest } from "../../domain/memo.aggregate.js";
+import { MemoCreationRequest } from "../../domain/memo-creation-request.vo.js";
+import { Memo } from "../../domain/memo.aggregate.js";
 import {
   MemoIdempotencyKeyTakenError,
   memoLimitReached,
@@ -54,10 +54,11 @@ export class CreateMemoUseCase {
     const creationRequest =
       command.idempotencyKey == null
         ? null
-        : {
+        : MemoCreationRequest.create({
+            userId,
             idempotencyKey: command.idempotencyKey,
-            requestHash: fingerprintMemoCreation(userId, command.content),
-          };
+            content: command.content,
+          });
 
     const { memo, isReplayed } = await this.#createOrReplay(
       userId,
@@ -126,7 +127,7 @@ export class CreateMemoUseCase {
       userId,
       creationRequest.idempotencyKey,
     );
-    if (replayed != null && !replayed.isSameCreationRequest(creationRequest.requestHash)) {
+    if (replayed != null && !replayed.isSameCreationRequest(creationRequest)) {
       throw memoRequestMismatch();
     }
     return replayed;

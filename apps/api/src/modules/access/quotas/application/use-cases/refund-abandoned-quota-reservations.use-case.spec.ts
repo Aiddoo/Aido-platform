@@ -37,9 +37,9 @@ describe("RefundAbandonedQuotaReservationsUseCase — 멈춘 예약 정리", () 
   it("이어받을 시간이 지난 예약만 돌려주고 완료 수를 남긴다", async () => {
     // Given
     const fixture = setup();
-    await fixture.reserve();
+    const stale = await fixture.reserve();
     fixture.clock.advanceBy({ milliseconds: QUOTA_RESERVATION_TAKEOVER_AFTER_MS - 1 });
-    await fixture.reserve();
+    const fresh = await fixture.reserve();
     fixture.clock.advanceBy({ milliseconds: 1 });
 
     // When
@@ -47,11 +47,11 @@ describe("RefundAbandonedQuotaReservationsUseCase — 멈춘 예약 정리", () 
 
     // Then
     expect(await fixture.used()).toBe(1);
-    expect(fixture.chargeOf("charge-1")).toMatchObject({
+    expect(fixture.chargeOf(stale.chargeId)).toMatchObject({
       status: "REFUNDED",
       refundReason: "ABANDONED",
     });
-    expect(fixture.chargeOf("charge-2")).toMatchObject({ status: "RESERVED" });
+    expect(fixture.chargeOf(fresh.chargeId)).toMatchObject({ status: "RESERVED" });
     expect(fixture.logger.messages).toContainEqual({
       event: "access.quota.abandoned-refund.completed",
       candidateCount: 1,
@@ -104,8 +104,8 @@ describe("RefundAbandonedQuotaReservationsUseCase — 멈춘 예약 정리", () 
   it("한 건의 저장 오류는 기록만 하고 다음 건을 계속 돌려준다", async () => {
     // Given
     const fixture = setup();
-    await fixture.reserve();
-    await fixture.reserve();
+    const failing = await fixture.reserve();
+    const next = await fixture.reserve();
     fixture.clock.advanceBy({ milliseconds: QUOTA_RESERVATION_TAKEOVER_AFTER_MS });
     vi.spyOn(fixture.quotaChargeRepository, "saveIfUnchanged").mockRejectedValueOnce(
       new TypeError("db down"),
@@ -115,10 +115,10 @@ describe("RefundAbandonedQuotaReservationsUseCase — 멈춘 예약 정리", () 
     await fixture.refundAbandonedReservations.execute();
 
     // Then
-    expect(fixture.chargeOf("charge-2")).toMatchObject({ status: "REFUNDED" });
+    expect(fixture.chargeOf(next.chargeId)).toMatchObject({ status: "REFUNDED" });
     expect(fixture.logger.messages).toContainEqual({
       event: "access.quota.refund-failed",
-      chargeId: "charge-1",
+      chargeId: failing.chargeId,
       meter: "AI_PLAN",
       errorType: "TypeError",
     });

@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, count, eq, exists, gte, lt, sql } from "drizzle-orm";
+import { and, asc, count, eq, exists, gte, isNull, lt, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { account, user } from "#api/platform/database/schema/index";
@@ -10,11 +10,6 @@ import {
   SignupStatsReaderPort,
 } from "../../application/ports/signup-stats.reader.port.js";
 
-/**
- * Drizzle 가입 통계 리더.
- *
- * Account.provider별 가입자 수와 총 사용자 수를 조회한다.
- */
 @Injectable()
 export class DrizzleSignupStatsReader extends SignupStatsReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
@@ -28,21 +23,33 @@ export class DrizzleSignupStatsReader extends SignupStatsReaderPort {
     return this.#txHost.tx;
   }
 
+  // 가입은 그날 만들어진 사용자이고 가입 방식은 그 사용자의 첫 계정이다(가입 알림과 같은 기준).
+  // 기존 사용자가 다른 공급자를 연동해 생긴 계정은 가입으로 세지 않는다.
   async getSignupStats(start: Temporal.Instant, end: Temporal.Instant): Promise<SignupStats> {
-    const signupsByProvider = await this.#db
-      .select({ provider: account.provider, count: count() })
+    const firstAccount = this.#db
+      .selectDistinctOn([account.userId], { userId: account.userId, provider: account.provider })
       .from(account)
-      .where(and(gte(account.createdAt, start), lt(account.createdAt, end)))
-      .groupBy(account.provider);
+      .orderBy(account.userId, asc(account.createdAt), asc(account.id))
+      .as("first_account");
 
-    // 플랫폼 내부 FK용 사용자는 가입자가 아니다. 실제 인증 계정이 생긴 사용자만 센다.
+    const signupsByProvider = await this.#db
+      .select({ provider: firstAccount.provider, count: count() })
+      .from(user)
+      .innerJoin(firstAccount, eq(firstAccount.userId, user.id))
+      .where(and(gte(user.createdAt, start), lt(user.createdAt, end)))
+      .groupBy(firstAccount.provider);
+
+    // 플랫폼 내부 FK용 사용자(인증 계정 없음)와 탈퇴한 사용자는 전체 사용자에서 뺀다
     const totalUsers = await this.#db.$count(
       user,
-      exists(
-        this.#db
-          .select({ one: sql`1` })
-          .from(account)
-          .where(eq(account.userId, user.id)),
+      and(
+        isNull(user.deletedAt),
+        exists(
+          this.#db
+            .select({ one: sql`1` })
+            .from(account)
+            .where(eq(account.userId, user.id)),
+        ),
       ),
     );
 

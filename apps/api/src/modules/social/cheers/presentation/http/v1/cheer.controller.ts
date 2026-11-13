@@ -30,9 +30,10 @@ import {
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
@@ -115,7 +116,7 @@ export class CheerController {
 - FREE: 일 3회, ACTIVE: 무제한
 - 동일 친구에게 24시간 쿨다운`,
   })
-  @ApiCreatedResponse({ type: CreateCheerResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateCheerResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.CHEER_1204)
   @ApiForbiddenError(ErrorCode.CHEER_1203)
@@ -138,11 +139,7 @@ export class CheerController {
 
   @Get("received")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "받은 응원 목록 조회",
     operationId: "getReceivedCheers",
@@ -170,11 +167,7 @@ export class CheerController {
 
   @Get("sent")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "보낸 응원 목록 조회",
     operationId: "getSentCheers",

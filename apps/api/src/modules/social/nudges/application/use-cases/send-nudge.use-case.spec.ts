@@ -11,7 +11,7 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import { StubNudgeLimitReader } from "#test/doubles/social/stub-nudge-limit-reader";
 import {
   createNudgeFixture,
@@ -61,11 +61,11 @@ class OrderedNudgeRepository extends InMemoryNudgeRepository {
   }
 }
 
-function createFollowReader(): StubFollowReader {
-  const followReader = new StubFollowReader();
-  followReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
-  followReader.setDisplayName(NUDGE_FIXTURE_SENDER_ID, "보낸이");
-  return followReader;
+function createFollowReader(): StubMutualFriendReader {
+  const mutualFriendReader = new StubMutualFriendReader();
+  mutualFriendReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+  mutualFriendReader.setDisplayName(NUDGE_FIXTURE_SENDER_ID, "보낸이");
+  return mutualFriendReader;
 }
 
 async function repositoryWithTodo(
@@ -83,7 +83,7 @@ function createSendNudgeUseCase(overrides: Partial<SendNudgeDependencies> = {}) 
     mutationLock: new RecordingMutationLock(),
     nudgeRepository: new InMemoryNudgeRepository(),
     limitReader: new StubNudgeLimitReader(DAILY_LIMIT),
-    followReader: createFollowReader(),
+    mutualFriendReader: createFollowReader(),
     notifier: new RecordingNudgeNotifier(),
     clock: new FixedClock(NUDGE_FIXTURE_NOW),
     logger: new SilentLogger(),

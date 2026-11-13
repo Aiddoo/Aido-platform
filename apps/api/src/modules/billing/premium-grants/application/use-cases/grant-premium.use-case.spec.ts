@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { FakeBillingUserLock } from "#test/doubles/billing/fake-billing-user-lock";
+import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
@@ -20,8 +20,8 @@ import {
 } from "#test/fixtures/billing/subscription.fixture";
 
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
+import { GetPremiumEntitlementsUseCase } from "./get-premium-entitlements.use-case.js";
 import { GrantPremiumUseCase } from "./grant-premium.use-case.js";
-import { LoadPremiumEntitlementsUseCase } from "./load-premium-entitlements.use-case.js";
 import { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
@@ -38,7 +38,7 @@ function setup(
   const subscriptionRepository = new InMemorySubscriptionRepository(options.subscriptions ?? []);
   const premiumGrantRepository = new InMemoryPremiumGrantRepository(options.grants ?? []);
   const projection = new InMemoryUserSubscriptionProjectionRepository(knownUserIds);
-  const loadPremiumEntitlements = new LoadPremiumEntitlementsUseCase({
+  const getPremiumEntitlements = new GetPremiumEntitlementsUseCase({
     storeEntitlementReader: new InMemoryStoreEntitlementReader(subscriptionRepository),
     premiumGrantRepository,
   });
@@ -47,13 +47,13 @@ function setup(
   const logger = new SilentLogger();
   const useCase = new GrantPremiumUseCase({
     premiumGrantRepository,
-    loadPremiumEntitlements,
+    getPremiumEntitlements,
     projectPremiumAccess: new ProjectPremiumAccessUseCase({
-      loadPremiumEntitlements,
+      getPremiumEntitlements,
       premiumGrantRepository,
       userSubscriptionProjection: projection,
     }),
-    userLock: new FakeBillingUserLock(knownUserIds),
+    userLock: new FakeUserMutationLock(knownUserIds),
     unitOfWork: new ImmediateUnitOfWork(),
     afterCommit,
     cache,

@@ -35,7 +35,6 @@ import { DrizzleClientAppVersionReader } from "#api/modules/notification/push/in
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   aiReport,
   dailyCompletion,
@@ -46,6 +45,7 @@ import {
 } from "#api/platform/database/schema/index";
 import type { AfterCommitTask } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -174,7 +174,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     });
     const contextBuilder = new SuggestionContextReader({
       activityReader: activity,
-      weatherForecastReader: { getForecastsByGridBatch: async () => new Map() },
+      weatherForecastReader: { readForecasts: async () => new Map() },
       latestReportStats: { findLatestWeekly: async () => null },
       clock,
       logger,

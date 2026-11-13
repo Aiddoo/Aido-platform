@@ -1,11 +1,13 @@
-import { localDateAt } from "../../../shared/domain/weather-calendar.domain-service.js";
+import type { SkyCondition } from "@aido/api/vocabulary";
+
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+
 import type {
   DailyForecast,
   HourlyForecast,
   WeatherForecast,
 } from "../../application/read-models/weather-forecast.read-model.js";
-import { KMA_TIMEZONE } from "../../domain/kma-forecast-availability.domain-service.js";
-import { KMA_CATEGORY, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
+import { KMA_CATEGORY, KMA_TIMEZONE, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
 import type { KmaApiResponse, KmaResponseItem } from "./kma.wire.js";
 
 /**
@@ -99,9 +101,9 @@ function buildDailyForecast(dateStr: string, dateItems: KmaResponseItem[]): Dail
 /**
  * 기상청 단기예보 응답을 WeatherForecast로 변환
  */
-export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): WeatherForecast {
+export function parseKmaResponse(data: KmaApiResponse, target: Temporal.Instant): WeatherForecast {
   const allItems = data.response.body?.items?.item ?? [];
-  const localDate = localDateAt(targetDate, KMA_TIMEZONE);
+  const localDate = localDateIn(target, KMA_TIMEZONE);
   const targetDateStr = localDate.toString().replaceAll("-", "");
   const nextDateStr = localDate.add({ days: 1 }).toString().replaceAll("-", "");
 
@@ -110,7 +112,7 @@ export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): Weathe
     number,
     {
       temperature: number;
-      skyCondition: string;
+      skyCondition: SkyCondition;
       precipitationProbability: number;
       precipitationAmount: number;
       snowAmount: number;
@@ -270,7 +272,7 @@ export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): Weathe
     .map(([dateStr, items]) => buildDailyForecast(dateStr, items));
 
   return {
-    date: targetDate,
+    date: target,
     skyCondition: SKY_CODE_MAP[dominantSky] ?? "CLEAR",
     precipitationType: PTY_CODE_MAP[mostFrequentCode(ptyCounts, "0")] ?? "NONE",
     precipitationProbability: maxPrecipProb,

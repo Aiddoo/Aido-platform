@@ -95,6 +95,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       todos: [todoActionDraft({ time: { hour: 15, minute: 0, meridiem: "NONE" } })],
       memo: memoActionDraft(),
     });
+
     // When
     const planned = await quickPlan(accessToken).expect(200);
     const parsed = quickPlanResponseSchema.parse(planned.body.data);
@@ -106,6 +107,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       source: "QUICK_VOICE",
       actions,
     }).expect(200);
+
     // Then
     const result = applyActionPlanResponseSchema.parse(applied.body.data);
     expect(parsed.charged).toBe(true);
@@ -122,9 +124,11 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
   it("Idempotency-Key가 없거나 형식이 틀리면 처리 전에 AI_1316이다", async () => {
     // Given
     const { accessToken } = await createUser("voice-key@test.com");
+
     // When
     const missing = await quickPlan(accessToken, null).expect(400);
     const invalid = await quickPlan(accessToken, "a b").expect(400);
+
     // Then
     expect(missing.body.error.code).toBe(ErrorCode.AI_1316);
     expect(invalid.body.error.code).toBe(ErrorCode.AI_1316);
@@ -136,6 +140,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
     const { accessToken } = await createUser("voice-replay@test.com");
     aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
     const first = await quickPlan(accessToken, "same-key").expect(200);
+
     // When
     const second = await quickPlan(accessToken, "same-key").expect(200);
     const reused = await post(
@@ -144,6 +149,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       { text: "다른 내용", source: "TEXT" },
       "same-key",
     ).expect(422);
+
     // Then
     expect(second.body.data.plan).toEqual(first.body.data.plan);
     expect(second.body.data.featureQuota.used).toBe(1);
@@ -155,8 +161,10 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
     // Given
     const { accessToken } = await createUser("voice-fail@test.com");
     aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
+
     // When
     const response = await quickPlan(accessToken).expect(503);
+
     // Then
     expect(response.body.error.code).toBe(ErrorCode.AI_1301);
     expect(response.body.error.details).toEqual({ charged: false });
@@ -165,8 +173,10 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
   it("1.15 앱이 AI 처리에 동의하지 않았으면 AI_1311이고 AI를 부르지 않는다", async () => {
     // Given
     const { accessToken } = await createUser("voice-consent@test.com");
+
     // When
     const response = await quickPlan(accessToken).set("X-App-Version", "1.15.0").expect(403);
+
     // Then
     expect(response.body.error.code).toBe(ErrorCode.AI_1311);
     expect(aiGenerator.getCallCount()).toBe(0);
@@ -177,8 +187,10 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       // Given
       const { accessToken } = await createUser("voice-digest@test.com");
       aiGenerator.setRawResponse(digestDraft());
+
       // When
       const response = await post("/v1/voice-notes/digest", accessToken, digestBody()).expect(200);
+
       // Then
       const parsed = voiceNoteDigestResponseSchema.parse(response.body.data);
       expect(response.body.data).not.toHaveProperty("meta");
@@ -213,6 +225,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         );
         aiGenerator.setRawResponse(digestDraft({ todos: [] }));
         const key = nextKey();
+
         // When
         const first = await post("/v1/voice-notes/digest", accessToken, digestBody(), key).expect(
           200,
@@ -220,6 +233,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         const second = await post("/v1/voice-notes/digest", accessToken, digestBody(), key).expect(
           200,
         );
+
         // Then
         const parsedFirst = voiceNoteDigestResponseSchema.parse(first.body.data);
         const parsedSecond = voiceNoteDigestResponseSchema.parse(second.body.data);
@@ -237,12 +251,14 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       // Given
       const { accessToken } = await createUser("voice-empty@test.com");
       aiGenerator.setRawResponse(digestDraft({ title: "", summary: "", keyPoints: [], todos: [] }));
+
       // When
       const response = await post("/v1/voice-notes/digest", accessToken, digestBody()).expect(422);
       const entitlements = await request(ctx.app.getHttpServer())
         .get("/v1/entitlements")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
+
       // Then
       expect(response.body.error.code).toBe(ErrorCode.AI_1302);
       expect(response.body.error.details).toEqual({ charged: false });
@@ -266,8 +282,10 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
           values,
         );
         const body = { text: "a".repeat(maxLength + 1), durationSeconds: 60, segments: [] };
+
         // When
         const response = await post("/v1/voice-notes/digest", accessToken, body).expect(422);
+
         // Then
         expect(response.body.error.code).toBe(ErrorCode.AI_1312);
         expect(response.body.error.details).toMatchObject({
@@ -286,8 +304,10 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         aiGenerator.setRawResponse(digestDraft());
         await post("/v1/voice-notes/digest", accessToken, digestBody()).expect(200);
       }
+
       // When
       const response = await post("/v1/voice-notes/digest", accessToken, digestBody()).expect(429);
+
       // Then
       expect(response.body.error.code).toBe(ErrorCode.AI_1313);
       expect(response.body.error.details).toMatchObject({
@@ -304,12 +324,15 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       aiGenerator.setRawResponse(digestDraft());
       const within = { text: "가".repeat(39_000), durationSeconds: 60, segments: [] };
       const tooLarge = { text: "a".repeat(257 * 1024), durationSeconds: 60, segments: [] };
+
       // When
       const accepted = await post("/v1/voice-notes/digest", accessToken, within);
       const rejected = await post("/v1/voice-notes/digest", accessToken, tooLarge);
+
       // Then
       expect(accepted.status).toBe(200);
       expect(rejected.status).toBe(413);
+      expect(rejected.body.error.code).toBe(ErrorCode.SYS_0002);
       expect(aiGenerator.getCallCount()).toBe(1);
     });
   });
@@ -336,8 +359,10 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
           values,
         );
         aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+
         // When
         const response = await quickPlan(accessToken).expect(200);
+
         // Then
         const { featureQuota } = quickPlanResponseSchema.parse(response.body.data);
         expect(featureQuota).toMatchObject({ limit, used: 1 });
@@ -364,6 +389,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         visibility: null,
         items: [],
       };
+
       // When
       const missing = await post("/v1/action-plans/apply", accessToken, {
         source: "MEMO",
@@ -377,6 +403,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       const afterApply = await request(ctx.app.getHttpServer())
         .get(`/v1/memos/${memoId}`)
         .set("Authorization", `Bearer ${accessToken}`);
+
       // Then
       expect(missing.status).toBe(400);
       expect(applied.status).toBe(200);
@@ -398,6 +425,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         visibility: null,
         items: [],
       };
+
       // When
       const withoutCategory = await post("/v1/action-plans/apply", accessToken, {
         source: "VOICE_NOTE",
@@ -407,6 +435,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         source: "VOICE_NOTE",
         actions: [{ ...action, categoryId: categoryId + 1000 }],
       });
+
       // Then
       expect(withoutCategory.status).toBe(400);
       expect(notOwned.status).toBe(422);
@@ -452,12 +481,14 @@ describe("녹음 정리 요청 제한 E2E (실제 throttler, 직렬 실행)", ()
     for (let index = 0; index < VOICE_NOTE_THROTTLE.MINUTE.default.limit; index += 1) {
       allowed.push(await digest(index));
     }
+
     // When
     const throttled = await digest(99);
     const quick = await request(ctx.app.getHttpServer())
       .post("/v1/quick-plans")
       .set("Authorization", `Bearer ${accessToken}`)
       .send({ text: "", source: "TEXT" });
+
     // Then
     expect(allowed.map((response) => response.status)).toEqual(allowed.map(() => 422));
     expect(allowed[0]?.headers["x-ratelimit-limit-daily"]).toBe(

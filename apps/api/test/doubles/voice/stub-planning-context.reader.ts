@@ -1,22 +1,20 @@
-import {
-  type PlanningContext,
-  PlanningContextReaderPort,
-} from "#api/modules/voice/action-plans/application/ports/planning-context.reader.port";
+import { PlanningContextReaderPort } from "#api/modules/voice/action-plans/application/ports/planning-context.reader.port";
+import type { PlanningContextReadModel } from "#api/modules/voice/action-plans/application/read-models/planning-context.read-model";
 
-const STUB_PLANNING_CONTEXT: PlanningContext = {
+const STUB_PLANNING_CONTEXT: PlanningContextReadModel = {
   categories: [{ id: 1, name: "업무" }],
   upcomingTodos: [],
 };
 
 export class StubPlanningContextReader extends PlanningContextReaderPort {
-  readonly #context: PlanningContext;
+  readonly #context: PlanningContextReadModel;
 
-  constructor(context: PlanningContext = STUB_PLANNING_CONTEXT) {
+  constructor(context: PlanningContextReadModel = STUB_PLANNING_CONTEXT) {
     super();
     this.#context = context;
   }
 
-  async read(): Promise<PlanningContext> {
+  async read(): Promise<PlanningContextReadModel> {
     return this.#context;
   }
 

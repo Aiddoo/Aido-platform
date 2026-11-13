@@ -1,7 +1,5 @@
 import { clamp } from "es-toolkit";
 
-import { PAGINATION_DEFAULT } from "./pagination/constants/pagination.constant.js";
-
 export interface CursorPage<TItem, TCursor extends string | number> {
   readonly items: readonly TItem[];
   readonly pagination: {
@@ -11,12 +9,10 @@ export interface CursorPage<TItem, TCursor extends string | number> {
   };
 }
 
+// 계약의 size 범위(1-200, 기본 20)와 같다
 export function clampPageSize(size: number | undefined): number {
-  return clamp(
-    size ?? PAGINATION_DEFAULT.SIZE,
-    PAGINATION_DEFAULT.MIN_SIZE,
-    PAGINATION_DEFAULT.MAX_SIZE,
-  );
+  const PAGE_SIZE = { DEFAULT: 20, MIN: 1, MAX: 200 } as const;
+  return clamp(size ?? PAGE_SIZE.DEFAULT, PAGE_SIZE.MIN, PAGE_SIZE.MAX);
 }
 
 // rows는 다음 페이지가 있는지 보려고 size+1개까지 읽은 결과다

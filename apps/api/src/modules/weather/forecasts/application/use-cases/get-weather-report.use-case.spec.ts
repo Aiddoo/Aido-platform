@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { WeatherReportReader } from "#api/modules/weather/forecasts/application/weather-report.reader";
 import { WeatherKitNotConfiguredError } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-token.adapter";
 import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { toIsoString } from "#api/shared/domain/time/instant";
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryScheduledTodoReader } from "#test/doubles/weather/in-memory-scheduled-todo.reader";
@@ -18,9 +18,10 @@ import {
 } from "#test/fixtures/weather/user-location.fixture";
 
 import { GetWeatherReportUseCase } from "./get-weather-report.use-case.js";
+import { ReadWeatherReportUseCase } from "./read-weather-report.use-case.js";
 
 describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기질", () => {
-  const now = new Date("2026-11-02T06:20:00.000Z");
+  const now = Temporal.Instant.from("2026-11-02T06:20:00.000Z");
   let memory: InMemoryCacheStore;
   let cache: WeatherReportCache;
   let repository: InMemoryUserLocationRepository;
@@ -33,16 +34,15 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
 
   /** 캐시 TTL과 응답 시각이 같은 시계를 보도록 Date만 고정·이동한다. */
   function moveClockTo(iso: string): void {
-    vi.setSystemTime(new Date(iso));
+    vi.setSystemTime(Temporal.Instant.from(iso).epochMilliseconds);
   }
 
   function rebuild(): GetWeatherReportUseCase {
     return new GetWeatherReportUseCase({
       userLocationRepository: repository,
-      weatherReportReader: new WeatherReportReader({
+      readWeatherReport: new ReadWeatherReportUseCase({
         weatherReportProvider: provider,
         weatherReportCache: cache,
-        timezoneResolver,
         logger,
       }),
       weatherReportProvider: provider,
@@ -57,7 +57,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(now);
+    vi.setSystemTime(now.epochMilliseconds);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherReportCache(memory, new FakeTimerClock());
     repository = new InMemoryUserLocationRepository([weatherLocationFixture()]);
@@ -129,12 +129,11 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   it("2시간 안에 강수 확률 50% 이상이면 10분만 캐시를 쓴다", async () => {
     // Given 1시간 뒤 강수 확률 70%
     const rainy = weatherReportFixture(now);
-    provider.report = {
-      ...rainy,
+    provider.report = weatherReportFixture(now, {
       hourly: rainy.hourly.map((hour, index) =>
         index === 1 ? { ...hour, precipitationChance: 70, precipitationType: "RAIN" } : hour,
       ),
-    };
+    });
     await useCase.execute({ userId: "weather-user", language: "ko" });
     // When
     moveClockTo("2026-11-02T06:30:01.000Z");
@@ -175,7 +174,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     expect(provider.calls.map((call) => call.request.language)).toEqual(["ko", "en"]);
   });
 
-  it("캐시가 지나 공급자가 실패하면 6시간 안의 마지막 스냅샷을 응답 시각 기준으로 잘라 돌려준다", async () => {
+  it("캐시가 지나 공급자가 실패하면 6시간 안의 마지막 리포트를 응답 시각 기준으로 잘라 돌려준다", async () => {
     // Given
     provider.report = weatherReportFixture(now);
     await useCase.execute({ userId: "weather-user", language: "ko" });
@@ -185,13 +184,15 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     const result = await useCase.execute({ userId: "weather-user", language: "ko" });
     // Then
     expect(result.report.fetchedAt).toEqual(now);
-    expect(result.report.hourly[0]?.startsAt).toEqual(new Date("2026-11-02T10:00:00.000Z"));
+    expect(result.report.hourly[0]?.startsAt).toEqual(
+      Temporal.Instant.from("2026-11-02T10:00:00.000Z"),
+    );
     expect(provider.calls).toHaveLength(2);
     expect(logger.messages).toContainEqual({
       event: "weather.report.fallback_used",
       cellKey: "wydm9",
       fallback: true,
-      fetchedAt: now.toISOString(),
+      fetchedAt: toIsoString(now),
     });
     expect(JSON.stringify(logger.messages)).not.toContain("37.5665");
   });
@@ -207,7 +208,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1901 });
   });
 
-  it("공급자가 실패하고 마지막 스냅샷도 없으면 WEATHER_1901이다", async () => {
+  it("공급자가 실패하고 마지막 리포트도 없으면 WEATHER_1901이다", async () => {
     // Given
     provider.failure = new Error("weatherkit down");
     // When
@@ -300,10 +301,9 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
 
     function rainyReport() {
       const base = weatherReportFixture(now);
-      return {
-        ...base,
+      return weatherReportFixture(now, {
         hourly: base.hourly.map((hour) => ({ ...hour, precipitationChance: 80 })),
-      };
+      });
     }
 
     it("남은 오늘 할 일 중 비 오는 시간에 걸린 것을 영향받는 할 일로 담는다", async () => {

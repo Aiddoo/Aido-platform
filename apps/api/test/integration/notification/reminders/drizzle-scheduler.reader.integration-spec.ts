@@ -2,7 +2,6 @@ import { omit } from "es-toolkit";
 
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
   todoCategory,
@@ -10,6 +9,7 @@ import {
   userLocation,
   userPreference,
 } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeSchedulerPreferenceReaderContract } from "#test/contracts/notification/scheduler-preference-reader.contract";
 import {
   describeWeeklyAchievementStatsReaderContract,

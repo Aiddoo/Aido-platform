@@ -3,10 +3,11 @@ import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { RawResponse } from "#api/platform/http/decorators/raw-response.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 
-import { GetAppVersionUseCase } from "../../../application/use-cases/get-app-version.use-case.js";
+import { ListAppReleasesUseCase } from "../../../application/use-cases/list-app-releases.use-case.js";
 import { toAppVersionResponse } from "./app-version-response.mapper.js";
 import {
   AppVersionDisabledResponseDto,
@@ -15,12 +16,12 @@ import {
 } from "./app-version.dto.js";
 
 @ApiTags("App Config")
-@Controller("app-config")
+@Controller({ path: "app-config", version: API_VERSION.V1 })
 export class AppVersionController {
-  readonly #getAppVersion: GetAppVersionUseCase;
+  readonly #listAppReleases: ListAppReleasesUseCase;
 
-  constructor(getAppVersion: GetAppVersionUseCase) {
-    this.#getAppVersion = getAppVersion;
+  constructor(listAppReleases: ListAppReleasesUseCase) {
+    this.#listAppReleases = listAppReleases;
   }
 
   @Get("app-version")
@@ -40,6 +41,6 @@ export class AppVersionController {
     schema: appVersionResponseOpenApiSchema,
   })
   getAppVersion(): AppVersionResponse {
-    return toAppVersionResponse(this.#getAppVersion.execute());
+    return toAppVersionResponse(this.#listAppReleases.execute());
   }
 }

@@ -1,5 +1,5 @@
 import type { DailyCompletionRepositoryPort } from "#api/modules/insights/daily-completions/application/ports/daily-completion.repository.port";
-import type { DailyCompletion } from "#api/modules/insights/daily-completions/domain/daily-completion.entity";
+import type { DailyCompletion } from "#api/modules/insights/daily-completions/domain/daily-completion.aggregate";
 import { DateRange } from "#api/modules/insights/daily-completions/domain/date-range.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";

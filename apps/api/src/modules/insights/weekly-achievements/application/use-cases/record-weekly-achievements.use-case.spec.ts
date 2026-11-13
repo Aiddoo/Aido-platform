@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryWeeklyAchievementRepository } from "#test/doubles/insights/in-memory-weekly-achievement.repository";
 import {
-  createWeeklyAchievementRecordInputFixture,
+  createWeeklyAchievementTallyFixture,
   WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID,
   WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
 } from "#test/fixtures/insights/weekly-achievement.fixture";
@@ -17,11 +17,8 @@ function setup() {
   return { weeklyAchievementRepository, useCase };
 }
 
-function findWeek(repository: InMemoryWeeklyAchievementRepository, userId: string, week: number) {
-  return repository.findByWeek({
-    userId: UserId.reconstitute(userId),
-    isoWeek: IsoWeek.reconstitute(2026, week),
-  });
+function findWeek(repository: InMemoryWeeklyAchievementRepository, userId: UserId, week: number) {
+  return repository.findByWeek({ userId, isoWeek: IsoWeek.reconstitute(2026, week) });
 }
 
 describe("RecordWeeklyAchievementsUseCase", () => {
@@ -30,7 +27,7 @@ describe("RecordWeeklyAchievementsUseCase", () => {
     const { weeklyAchievementRepository, useCase } = setup();
 
     // When
-    await useCase.execute({ records: [] });
+    await useCase.execute({ tallies: [] });
 
     // Then
     expect(weeklyAchievementRepository.size).toBe(0);
@@ -39,28 +36,24 @@ describe("RecordWeeklyAchievementsUseCase", () => {
   it("여러 사용자·주를 저장하고 같은 주를 다시 집계하면 처음 id를 둔 채 갱신한다", async () => {
     // Given
     const { weeklyAchievementRepository, useCase } = setup();
-    const first = createWeeklyAchievementRecordInputFixture();
-    const second = createWeeklyAchievementRecordInputFixture({
-      userId: WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID,
+    const first = createWeeklyAchievementTallyFixture();
+    const second = createWeeklyAchievementTallyFixture({
+      userId: UserId.reconstitute(WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID),
       week: 11,
     });
-    await useCase.execute({ records: [first, second] });
+    await useCase.execute({ tallies: [first, second] });
     const before = await findWeek(weeklyAchievementRepository, first.userId, 10);
     const laterAt = Temporal.Instant.from("2026-03-16T00:00:00Z");
 
     // When
-    await useCase.execute({ records: [{ ...first, completedTodos: 5, achievedAt: laterAt }] });
+    await useCase.execute({ tallies: [{ ...first, completedTodos: 5, achievedAt: laterAt }] });
 
     // Then
-    const after = await findWeek(
-      weeklyAchievementRepository,
-      WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
-      10,
-    );
+    const after = await findWeek(weeklyAchievementRepository, first.userId, 10);
     expect(weeklyAchievementRepository.size).toBe(2);
     expect(after?.toPrimitives()).toEqual({
       id: before?.id.value,
-      userId: first.userId,
+      userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
       year: 2026,
       week: 10,
       totalTodos: 5,
@@ -75,13 +68,13 @@ describe("RecordWeeklyAchievementsUseCase", () => {
   it("배치 뒤쪽의 완료 수가 전체보다 많으면 SYS_0002로 거절하고 앞쪽 기록도 남기지 않는다", async () => {
     // Given
     const { weeklyAchievementRepository, useCase } = setup();
-    const records = [
-      createWeeklyAchievementRecordInputFixture(),
-      createWeeklyAchievementRecordInputFixture({ week: 11, totalTodos: 2, completedTodos: 5 }),
+    const tallies = [
+      createWeeklyAchievementTallyFixture(),
+      createWeeklyAchievementTallyFixture({ week: 11, totalTodos: 2, completedTodos: 5 }),
     ];
 
     // When
-    const execution = useCase.execute({ records });
+    const execution = useCase.execute({ tallies });
 
     // Then
     await expect(execution).rejects.toMatchObject({

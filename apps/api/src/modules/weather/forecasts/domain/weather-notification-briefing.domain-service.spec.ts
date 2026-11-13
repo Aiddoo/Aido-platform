@@ -6,9 +6,8 @@ import {
   type WeatherBriefingReportHour,
 } from "./weather-notification-briefing.domain-service.js";
 
-const HOUR_MS = 60 * 60_000;
 /** 서울 2026-07-16 07:00 */
-const NOW = new Date("2026-07-15T22:00:00.000Z");
+const NOW = Temporal.Instant.from("2026-07-15T22:00:00.000Z");
 const SEOUL = { now: NOW, timezone: "Asia/Seoul", locationTimezone: "Asia/Seoul" };
 
 function hourAt(
@@ -16,7 +15,7 @@ function hourAt(
   overrides: Partial<WeatherBriefingReportHour> = {},
 ): WeatherBriefingReportHour {
   return {
-    startsAt: new Date(NOW.getTime() + (kstHour - 7) * HOUR_MS),
+    startsAt: NOW.add({ hours: kstHour - 7 }),
     condition: "CLEAR",
     isDaylight: kstHour >= 6 && kstHour < 20,
     apparentTemperature: 25,
@@ -28,7 +27,7 @@ function hourAt(
 
 function day(date: string, overrides: Partial<WeatherBriefingDay> = {}): WeatherBriefingDay {
   return {
-    date,
+    date: Temporal.PlainDate.from(date),
     condition: "PARTLY_CLOUDY",
     temperatureMin: 21,
     temperatureMax: 29,
@@ -49,7 +48,7 @@ function forecast(
 }
 
 function todoAt(id: number, kstHour: number, title = `할 일 ${id}`) {
-  return { id, title, scheduledAt: new Date(NOW.getTime() + (kstHour - 7) * HOUR_MS) };
+  return { id, title, scheduledAt: NOW.add({ hours: kstHour - 7 }) };
 }
 
 describe("날씨 브리핑 정책 — 아침", () => {
@@ -162,7 +161,7 @@ describe("날씨 브리핑 정책 — 아침", () => {
   it("지난 할 일과 예보 범위 밖 할 일은 판단에서 뺀다", () => {
     // Given 06시(지난)·비 오는 시간
     const report = forecast();
-    const past = { id: 1, title: "지난 일", scheduledAt: new Date(NOW.getTime() - HOUR_MS) };
+    const past = { id: 1, title: "지난 일", scheduledAt: NOW.subtract({ hours: 1 }) };
     // When
     const result = decideMorningWeatherBriefing(report, [past], SEOUL);
     // Then
@@ -191,20 +190,19 @@ describe("날씨 브리핑 정책 — 아침", () => {
 
 describe("날씨 브리핑 정책 — 저녁", () => {
   /** 서울 2026-07-16 21:00 */
-  const EVENING = { ...SEOUL, now: new Date("2026-07-16T12:00:00.000Z") };
+  const EVENING = { ...SEOUL, now: Temporal.Instant.from("2026-07-16T12:00:00.000Z") };
 
   function eveningForecast(
     changes: Record<number, Partial<WeatherBriefingReportHour>> = {},
     tomorrow: Partial<WeatherBriefingDay> = {},
   ): WeatherBriefingForecast {
     // 서울 21시부터 24시간
-    const startsAtMs = EVENING.now.getTime();
     return {
       hourly: Array.from({ length: 24 }, (_, index) => {
         const kstHour = 21 + index;
         return {
           ...hourAt(kstHour),
-          startsAt: new Date(startsAtMs + index * HOUR_MS),
+          startsAt: EVENING.now.add({ hours: index }),
           ...changes[kstHour],
         };
       }),

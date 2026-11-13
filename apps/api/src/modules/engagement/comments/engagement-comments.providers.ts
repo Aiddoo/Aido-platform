@@ -19,6 +19,7 @@ import { TodoCommentReaderPort } from "./application/ports/todo-comment.reader.p
 import { TodoCommentRepositoryPort } from "./application/ports/todo-comment.repository.port.js";
 import { CleanUpAccountTodoCommentsUseCase } from "./application/use-cases/clean-up-account-todo-comments.use-case.js";
 import { DeleteTodoCommentUseCase } from "./application/use-cases/delete-todo-comment.use-case.js";
+import { EditTodoCommentUseCase } from "./application/use-cases/edit-todo-comment.use-case.js";
 import { GetTodoConversationUseCase } from "./application/use-cases/get-todo-conversation.use-case.js";
 import { GetTodoDetailsUseCase } from "./application/use-cases/get-todo-details.use-case.js";
 import { InvalidateCleanedTodoCachesUseCase } from "./application/use-cases/invalidate-cleaned-todo-caches.use-case.js";
@@ -26,7 +27,6 @@ import { LikeTodoCommentUseCase } from "./application/use-cases/like-todo-commen
 import { ListTodoCommentRepliesUseCase } from "./application/use-cases/list-todo-comment-replies.use-case.js";
 import { ListTodoCommentThreadsUseCase } from "./application/use-cases/list-todo-comment-threads.use-case.js";
 import { UnlikeTodoCommentUseCase } from "./application/use-cases/unlike-todo-comment.use-case.js";
-import { UpdateTodoCommentUseCase } from "./application/use-cases/update-todo-comment.use-case.js";
 import { WriteTodoCommentChainUseCase } from "./application/use-cases/write-todo-comment-chain.use-case.js";
 import { HmacTodoCommentCursorCodecAdapter } from "./infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter.js";
 import { TodoCommentAccountCleanupAdapter } from "./infrastructure/adapters/todo-comment-account-cleanup.adapter.js";
@@ -78,7 +78,7 @@ export const ENGAGEMENT_COMMENTS_PROVIDERS = [
     todoViewCache: TodoViewCacheInvalidatorPort,
     logger: loggerFor(WriteTodoCommentChainUseCase),
   }),
-  provideUseCase(UpdateTodoCommentUseCase, {
+  provideUseCase(EditTodoCommentUseCase, {
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
     clock: ClockPort,

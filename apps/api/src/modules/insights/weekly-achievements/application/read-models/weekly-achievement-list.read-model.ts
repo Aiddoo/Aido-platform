@@ -1,7 +1,7 @@
 import type { CursorPage } from "#api/shared/application/cursor-page";
 
+import type { WeeklyAchievement } from "../../domain/weekly-achievement.aggregate.js";
 import type { WeeklyAchievementSummary } from "../../domain/weekly-achievement.domain-service.js";
-import type { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
 
 export interface WeeklyAchievementList {
   /** 커서는 마지막 항목의 주 번호다 */

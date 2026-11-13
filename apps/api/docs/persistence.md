@@ -32,19 +32,35 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 - Reader 사례: [DrizzleTodoCommentReader](../src/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.reader.ts)는 댓글 overview·대화를 root keyset으로 읽고 page 단위 좋아요를 합친다(viewer 상태·cursor 문맥이 있어 공유 캐시를 쓰지 않는다).
 - 다른 Context의 테이블은 읽지도 쓰지도 않는다. 필요한 projection은 소유 Context가 public 조회 포트로 열고 그 Context의 Reader가 SQL을 가진다([아키텍처](architecture.md#의존-규칙과-강제)).
 
+**작업 원장(work ledger) 저장소**: Aggregate 없이 작업 행을 집합으로 옮기는 저장소다. 푸시 발송(`DrizzlePushDeliveryOutboxRepository`·`DrizzlePushDeliveryLifecycleRepository`·`DrizzlePushReceiptRepository`), 리텐션(`DrizzleRetentionRepository`), 결제 안내(`DrizzleTrialEndingNoticeRepository`·`DrizzleUpcomingRenewalNoticeRepository`·`DrizzlePremiumGrantEndingNoticeRepository`), 구독 처리 원장(`DrizzleSubscriptionEventReceiptRepository`), 지운 계정의 댓글 정리(`DrizzleTodoCommentPurgeRepository`), 초대 보상 지급·이력(`DrizzleRewardGrantRepository`·`DrizzleRewardClaimRepository`)이 그렇다. Aggregate 저장소도 많은 행을 한 문장으로 바꾸는 경로만 같은 묶음 메서드를 둔다(지운 글의 좋아요를 모두 끄는 `unlikeAllByCommentId`, 이전한 사용자의 구독 체인을 모두 옮기는 `takeOverChains`). 여기서는 `find*`·`save` 대신 업무 이름의 집합 연산(`claim`·`finalizeResults`·`expireUnreceipted`)을 둔다(소유자 결정, [이름 사전](conventions.md#repository-메서드)). 경합은 조건부 UPDATE·세대 fence·정렬된 행 잠금이 막고, 로그·발송·enqueue는 그대로 UseCase가 한다.
+
 ## 저장과 잠금
 
 `save(aggregate)`는 읽어 온 Aggregate의 바뀔 수 있는 칸을 모두 쓴다. 그래서 같은 Aggregate를 바꾸는 UseCase는 모두 하나의 공통 잠금을 UoW 안에서 읽기 전에 잡는다. 잡지 않으면 동시에 읽은 두 요청 중 나중 `save`가 앞 요청의 변경을 덮는다(lost update). 다른 행을 미는 집합 update(순서 밀기)도 같은 잠금 아래에서 한다.
 
-- 사례: 메모 수정(`UpdateMemoUseCase`)·고정(`SetMemoPinnedUseCase`)·순서 이동(`ReorderMemoUseCase`)은 같은 메모 행을 `save`하고 순서 이동은 다른 메모의 `sortOrder`도 `shiftSortOrders`로 민다. 셋은 같은 잠금 키([memos.lock-keys.ts](../src/modules/notes/memos/application/memos.lock-keys.ts))를 잡는다.
+- 사례: 메모 수정(`RewriteMemoUseCase`)·고정(`ChangeMemoPinnedUseCase`)·순서 이동(`ReorderMemoUseCase`)은 같은 메모 행을 `save`하고 순서 이동은 다른 메모의 `sortOrder`도 `shiftSortOrders`로 민다. 셋은 같은 잠금 키([memos.lock-keys.ts](../src/modules/notes/memos/application/memos.lock-keys.ts))를 잡는다.
 - 할 일 순서는 사이를 띄운 정수(간격 1024, [todo-sort-order.domain-service.ts](../src/modules/planning/shared/domain/todo-sort-order.domain-service.ts))다. 새 할 일·순서 바꾸기는 이웃 사이 값 한 행만 쓰고, 사이가 없을 때만 그 사용자 할 일을 지금 순서대로 다시 번호 매긴다. 둘 다 사용자 순서 잠금(`TodoLockKeys.sortOrder`) 아래에서 한다.
 - 예외: 한 칸만 조건부로 바꾸는 갱신(`readAt`을 `WHERE "readAt" IS NULL`일 때만 채우기)은 잠금 없이 저장소의 전용 메서드로 둔다. 조건이 경합을 막고 다른 칸을 덮지 않기 때문이다.
 
 ## raw SQL
 
-기본은 ORM API다: `leftJoinLateral`, `$with`(CTE), `.for("update", { skipLocked: true })`, `$count`, `exists`. 튜플 keyset 비교는 `platform/database/keyset.ts`의 `tupleLessThan(columns, values)` 하나다.
+기본은 ORM API다: `leftJoinLateral`, `$with`(CTE. `update … returning`을 받는 데이터 변경 CTE도 된다), `.for("update", { of, skipLocked: true })`, `$count`, `exists`. 튜플 keyset 비교는 `platform/database/keyset.ts`의 `tupleLessThan(columns, values)` 하나다.
 
-raw SQL은 ORM으로 쓸 수 없을 때만 Drizzle `sql` 템플릿에 테이블·칼럼을 참조로 넘겨(`${todo.id}`, `sql.identifier(col.name)`) 쓰고 이유를 한 줄 남긴다. 지금 쓰는 경우는 `pg_advisory_xact_lock`(`PostgresMutationLockAdapter`), 시퀀스 `nextval`(`sequence.ts`), `UPDATE … FROM (VALUES …)`(푸시 receipt·보상 기간 묶음 갱신), pg-boss SQL 브리지(`platform/jobs/drizzle-pg-boss.database.ts`)다.
+- 행마다 값이 다른 묶음 갱신은 query builder ``update(table).set({ col: sql`v."col"` }).from(sql`(VALUES …) AS v(…)`)``다. 사례: 보상 기간 `DrizzlePremiumGrantRepository.saveAll`, 댓글 수 정리, 푸시 receipt 종결·세대 재개방.
+- `GREATEST`·`COALESCE`·`CASE` 같은 값 식은 `set`·`select` 안의 `sql` 조각으로 쓰고 칼럼은 참조로 넘긴다. 사례: 마지막 활동 기록(`DrizzleUserRepository.updateLastActiveAt`, `$with` + `insert().select()`).
+
+`db.execute(sql…)`는 ORM으로 쓸 수 없을 때만 테이블·칼럼·enum을 참조로 넘겨(`${todo.id}`, `sql.identifier(col.name)`, `::${pushDispatchStatus}`) 쓰고 이유를 한 줄 남긴다. 지금 쓰는 곳은 다음뿐이다.
+
+| 경우                                                                   | 위치                                                            |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `pg_advisory_xact_lock`                                                | `PostgresMutationLockAdapter`                                   |
+| 시퀀스 `nextval`                                                       | `sequence.ts`                                                   |
+| 트랜잭션 한정 `set_config('statement_timeout', …)`                     | `ClsUnitOfWork`                                                 |
+| VALUES CTE + `FOR UPDATE OF` + 데이터 변경 CTE(claim·finalize·release) | `DrizzlePushDeliveryLifecycleRepository`                        |
+| 리텐션 단계 후보 CTE, 시스템 뷰 `pg_timezone_names`                    | `DrizzleRetentionRepository`                                    |
+| 성장 지표 요약 CTE                                                     | `DrizzleGrowthMetricsReader`                                    |
+| pg-boss 테이블 조회·SQL 브리지                                         | `pg-boss-schedule-run.reader.ts`, `drizzle-pg-boss.database.ts` |
+| 연결 확인 `SELECT 1`                                                   | `DatabaseHealthIndicator`                                       |
 
 ## 시간 칼럼
 
@@ -61,16 +77,16 @@ raw SQL은 ORM으로 쓸 수 없을 때만 Drizzle `sql` 템플릿에 테이블�
 
 ## 풀 설정
 
-[postgres-pool.ts](../src/platform/database/postgres-pool.ts)가 세션 옵션을 고정하고 값은 env([설정](configuration.md))다.
+[postgres-pool.ts](../src/platform/database/postgres-pool.ts)가 세션 옵션을 고정하고 값은 env([설정](configuration.md))다. pg-boss 풀도 같은 `createPostgresPoolConfig`로 만들어 크기·연결 이름만 다르다.
 
 | 설정                                  | 값                                                                                                                                           |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `application_name`                    | `aido-api`                                                                                                                                   |
+| `application_name`                    | `aido-api`(pg-boss 풀은 `aido-pg-boss`)                                                                                                      |
 | `statement_timeout`·`lock_timeout`    | 15s · 5s (배치는 `unitOfWork.run(work, { statementTimeoutMs })`가 그 트랜잭션에만 `set_config(…, true)`로 늘린다)                            |
 | `idle_in_transaction_session_timeout` | 60s                                                                                                                                          |
 | 연결 대기                             | `DATABASE_POOL_CONNECTION_TIMEOUT_MS` 5s, 넘으면 503으로 빨리 실패                                                                           |
 | `query_timeout`(클라이언트)           | 20s. 서버 `statement_timeout`보다 길어 평소에는 서버가 먼저 취소하고, DB가 답하지 않을 때만 끊는다                                           |
-| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3(연결·쿼리 상한은 앱 풀과 같다). 메모리 때문에 늘리지 않는다                                            |
+| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3(세션 옵션·TLS·유휴·연결·쿼리 상한은 앱 풀과 같다). 메모리 때문에 늘리지 않는다                         |
 | TLS                                   | URL에 `sslmode`(운영 `require`)가 있으면 TLS로 연결하고 인증서를 검증한다(이미지의 RDS CA `NODE_EXTRA_CA_CERTS`). 규칙은 [보안](security.md) |
 
 ## DB 오류 번역

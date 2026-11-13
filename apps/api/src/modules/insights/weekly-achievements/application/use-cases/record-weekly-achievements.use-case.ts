@@ -1,13 +1,12 @@
 import { zip } from "es-toolkit";
 
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-
-import { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
-import type {
-  RecordWeeklyAchievementsCommand,
-  WeeklyAchievementWriterPort,
-} from "../ports/weekly-achievement-writer.port.js";
+import { WeeklyAchievement } from "../../domain/weekly-achievement.aggregate.js";
+import type { WeeklyAchievementTally } from "../ports/weekly-achievement-writer.port.js";
 import type { WeeklyAchievementRepositoryPort } from "../ports/weekly-achievement.repository.port.js";
+
+export interface RecordWeeklyAchievementsCommand {
+  readonly tallies: readonly WeeklyAchievementTally[];
+}
 
 export interface RecordWeeklyAchievementsDependencies {
   readonly weeklyAchievementRepository: Pick<
@@ -16,7 +15,7 @@ export interface RecordWeeklyAchievementsDependencies {
   >;
 }
 
-export class RecordWeeklyAchievementsUseCase implements WeeklyAchievementWriterPort {
+export class RecordWeeklyAchievementsUseCase {
   readonly #dependencies: RecordWeeklyAchievementsDependencies;
 
   constructor(dependencies: RecordWeeklyAchievementsDependencies) {
@@ -25,25 +24,18 @@ export class RecordWeeklyAchievementsUseCase implements WeeklyAchievementWriterP
 
   async execute(command: RecordWeeklyAchievementsCommand): Promise<void> {
     const { weeklyAchievementRepository } = this.#dependencies;
-    if (command.records.length === 0) {
+    if (command.tallies.length === 0) {
       return;
     }
 
-    const ids = await weeklyAchievementRepository.nextIds(command.records.length);
-    const achievements = zip(command.records, ids).map(([record, id]) => {
-      if (record == null || id == null) {
-        throw new Error("weekly achievement id count must match record count");
+    const ids = await weeklyAchievementRepository.nextIds(command.tallies.length);
+    const achievements = zip(command.tallies, ids).map(([tally, id]) => {
+      if (tally == null || id == null) {
+        throw new Error("weekly achievement id count must match tally count");
       }
-      return WeeklyAchievement.create({
-        id,
-        userId: UserId.reconstitute(record.userId),
-        year: record.year,
-        week: record.week,
-        totalTodos: record.totalTodos,
-        completedTodos: record.completedTodos,
-        achievedAt: record.achievedAt,
-      });
+      return WeeklyAchievement.create({ id, ...tally });
     });
+
     await weeklyAchievementRepository.saveAll(achievements);
   }
 }

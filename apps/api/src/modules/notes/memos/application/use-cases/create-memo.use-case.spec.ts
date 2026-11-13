@@ -14,12 +14,17 @@ import {
   MEMO_FIXTURE_USER_ID,
 } from "#test/fixtures/notes/memo.fixture";
 
-import { fingerprintMemoCreation } from "../../domain/memo-creation-request.domain-service.js";
+import { MemoCreationRequest } from "../../domain/memo-creation-request.vo.js";
 import { MemoLockKeys } from "../memos.lock-keys.js";
 import { type CreateMemoDependencies, CreateMemoUseCase } from "./create-memo.use-case.js";
 
 const USER_ID = UserId.reconstitute(MEMO_FIXTURE_USER_ID);
 const NOW = MEMO_FIXTURE_NOW.add({ hours: 1 });
+const SHOPPING_LIST_REQUEST_HASH = MemoCreationRequest.create({
+  userId: USER_ID,
+  idempotencyKey: "memo-create-1",
+  content: "장보기: 우유, 계란, 빵",
+}).requestHash;
 
 function createCreateMemoUseCase(overrides: Partial<CreateMemoDependencies> = {}) {
   return new CreateMemoUseCase({
@@ -152,7 +157,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
         id: MEMO_LIMITS.MAX_PER_USER,
         sortOrder: MEMO_LIMITS.MAX_PER_USER - 1,
         idempotencyKey: "memo-create-1",
-        requestHash: fingerprintMemoCreation(USER_ID, "장보기: 우유, 계란, 빵"),
+        requestHash: SHOPPING_LIST_REQUEST_HASH,
       }),
     ]);
     const useCase = createCreateMemoUseCase({ memoRepository });
@@ -175,7 +180,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
       createMemoFixture({
         id: 1,
         idempotencyKey: "memo-create-1",
-        requestHash: fingerprintMemoCreation(USER_ID, "장보기: 우유, 계란, 빵"),
+        requestHash: SHOPPING_LIST_REQUEST_HASH,
       }),
     ]);
     const useCase = createCreateMemoUseCase({ memoRepository });
@@ -227,7 +232,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
       createMemoFixture({
         id: 1,
         idempotencyKey: "memo-create-1",
-        requestHash: fingerprintMemoCreation(USER_ID, "장보기: 우유, 계란, 빵"),
+        requestHash: SHOPPING_LIST_REQUEST_HASH,
       }),
     ]);
     const useCase = createCreateMemoUseCase({ memoRepository });

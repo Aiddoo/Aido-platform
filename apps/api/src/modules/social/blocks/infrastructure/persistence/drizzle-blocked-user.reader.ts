@@ -1,12 +1,13 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, count, eq, isNull, sql } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 
+import { USER_BRIEF_RELATION } from "#api/modules/social/friends/social-friends.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleLessThan } from "#api/platform/database/keyset";
 import { user, userBlock } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { USER_BRIEF_RELATION } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
 import type { BlockedUserReaderPort } from "../../application/ports/blocked-user.reader.port.js";
 import type { BlockedUserReadModel } from "../../application/read-models/blocked-user.read-model.js";
 import type { UserBlockId } from "../../domain/user-block-id.vo.js";
@@ -45,8 +46,7 @@ export class DrizzleBlockedUserReader implements BlockedUserReaderPort {
         blockerId: blockerId.value,
         blocked: { deletedAt: { isNull: true } },
         ...(anchor != null && {
-          RAW: (block) =>
-            sql`(${block.createdAt}, ${block.id}) < (${sql.param(anchor.createdAt, block.createdAt)}, ${anchor.id})`,
+          RAW: (block) => tupleLessThan([block.createdAt, block.id], [anchor.createdAt, anchor.id]),
         }),
       },
       with: { blocked: USER_BRIEF_RELATION },

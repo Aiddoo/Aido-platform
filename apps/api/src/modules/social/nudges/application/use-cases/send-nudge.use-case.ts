@@ -1,5 +1,5 @@
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -7,11 +7,11 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
+import { NudgeMessage } from "../../../shared/domain/nudge-message.vo.js";
+import { cannotNudgeSelf } from "../../../shared/domain/social.errors.js";
 import { evaluateNudgeCooldown } from "../../domain/nudge-cooldown.domain-service.js";
-import { NudgeMessage } from "../../domain/nudge-message.vo.js";
 import { Nudge } from "../../domain/nudge.aggregate.js";
 import {
-  cannotNudgeSelf,
   nudgeCooldownActive,
   nudgeDailyLimitReached,
   nudgeTargetNotFriend,
@@ -41,7 +41,10 @@ export interface SendNudgeDependencies {
     "nextId" | "countSentBetween" | "findLastSentForTodo" | "findTargetTodo" | "save"
   >;
   readonly limitReader: Pick<NudgeLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
-  readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
+  readonly mutualFriendReader: Pick<
+    MutualFriendReaderPort,
+    "isMutualFriend" | "getUserDisplayName"
+  >;
   readonly notifier: Pick<NudgeNotifierPort, "notifyNudgeSent">;
   readonly countCache: Pick<NudgeCountCachePort, "invalidate">;
   readonly clock: ClockPort;
@@ -61,7 +64,7 @@ export class SendNudgeUseCase {
       mutationLock,
       nudgeRepository,
       limitReader,
-      followReader,
+      mutualFriendReader,
       notifier,
       clock,
       logger,
@@ -75,7 +78,7 @@ export class SendNudgeUseCase {
     if (senderId.equals(receiverId)) {
       throw cannotNudgeSelf();
     }
-    if (!(await followReader.isMutualFriend(senderId, receiverId))) {
+    if (!(await mutualFriendReader.isMutualFriend(senderId, receiverId))) {
       throw nudgeTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : NudgeMessage.create(command.message);
@@ -83,7 +86,7 @@ export class SendNudgeUseCase {
     const requestedAt = clock.now();
     const window = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone });
 
-    const { nudge, todoTitle, senderName } = await unitOfWork.run(async () => {
+    const nudge = await unitOfWork.run(async () => {
       await mutationLock.acquire([
         NudgeLockKeys.dailyQuota(senderId),
         NudgeLockKeys.cooldown(senderId, todoId),
@@ -123,11 +126,17 @@ export class SendNudgeUseCase {
         now: requestedAt,
       });
       await nudgeRepository.save(created);
-      return {
-        nudge: created,
+      // 알림 작업은 콕 저장과 같은 트랜잭션에 넣어 커밋 직후 프로세스가 멈춰도 잃지 않는다
+      await notifier.notifyNudgeSent({
+        nudgeId: created.id.value,
+        senderId: senderId.value,
+        receiverId: receiverId.value,
+        senderName: await mutualFriendReader.getUserDisplayName(senderId),
+        todoId,
         todoTitle: target.title,
-        senderName: await followReader.getUserDisplayName(senderId),
-      };
+        message: message?.value,
+      });
+      return created;
     });
 
     await this.#dependencies.countCache.invalidate([senderId, receiverId]);
@@ -137,15 +146,6 @@ export class SendNudgeUseCase {
       todoId,
       senderId: senderId.value,
       receiverId: receiverId.value,
-    });
-    notifier.notifyNudgeSent({
-      nudgeId: nudge.id.value,
-      senderId: senderId.value,
-      receiverId: receiverId.value,
-      senderName,
-      todoId,
-      todoTitle,
-      message: message?.value,
     });
     return nudge;
   }

@@ -7,14 +7,12 @@ import {
   NUDGE_FIXTURE_RECEIVER_ID,
   NUDGE_FIXTURE_SENDER_ID,
 } from "#test/fixtures/social/nudge.fixture";
-import { createReminderNudgeFixture } from "#test/fixtures/social/reminder-nudge.fixture";
 
 import { GetNudgeCooldownUseCase } from "./get-nudge-cooldown.use-case.js";
-import { GetRemindNudgeCooldownUseCase } from "./get-remind-nudge-cooldown.use-case.js";
 
 const QUERY = { senderId: NUDGE_FIXTURE_SENDER_ID, receiverId: NUDGE_FIXTURE_RECEIVER_ID };
 
-describe("콕 쿨다운 조회", () => {
+describe("GetNudgeCooldownUseCase", () => {
   it("다른 친구에게 보낸 콕은 이 친구의 쿨다운을 만들지 않는다", async () => {
     // Given
     const useCase = new GetNudgeCooldownUseCase({
@@ -57,26 +55,4 @@ describe("콕 쿨다운 조회", () => {
       });
     },
   );
-
-  it("리마인드 콕은 그 친구에게 마지막으로 보낸 리마인드부터 1시간이다", async () => {
-    // Given
-    const nudgeRepository = new InMemoryNudgeRepository();
-    await nudgeRepository.saveReminder(
-      createReminderNudgeFixture({ createdAt: NUDGE_FIXTURE_NOW.subtract({ minutes: 59 }) }),
-    );
-    const useCase = new GetRemindNudgeCooldownUseCase({
-      nudgeRepository,
-      clock: new FixedClock(NUDGE_FIXTURE_NOW),
-    });
-
-    // When
-    const cooldown = await useCase.execute(QUERY);
-
-    // Then
-    expect(cooldown).toEqual({
-      isActive: true,
-      remainingSeconds: 60,
-      endsAt: NUDGE_FIXTURE_NOW.add({ minutes: 1 }),
-    });
-  });
 });

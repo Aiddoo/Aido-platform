@@ -4,24 +4,23 @@ import { and, eq, gt, gte, inArray, isNull, lte, ne, notExists, or, sql } from "
 import { alias } from "drizzle-orm/pg-core";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 
-import type { FindDueBillingNoticesParams } from "../../application/ports/billing-notice.port.js";
-import {
-  type PremiumGrantEndingNotice,
-  PremiumGrantEndingNoticeRepositoryPort,
-} from "../../application/ports/premium-grant-ending-notice.repository.port.js";
+import type { ListDueBillingNoticesParams } from "../../../shared/application/ports/billing-notice.repository.port.js";
+import type { PremiumGrantEndingNoticeRepositoryPort } from "../../application/ports/premium-grant-ending-notice.repository.port.js";
+import type { PremiumGrantEndingNotice } from "../../domain/premium-grant-ending-notice.entity.js";
+import { toPremiumGrantEndingNotice } from "./premium-grant-ending-notice-row.mapper.js";
 
 const grantOf = alias(premiumGrant, "grant");
 const nextOf = alias(premiumGrant, "next");
 const storeOf = alias(subscription, "store");
 
 @Injectable()
-export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndingNoticeRepositoryPort {
+export class DrizzlePremiumGrantEndingNoticeRepository implements PremiumGrantEndingNoticeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 
@@ -31,10 +30,10 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
 
   // 뒤에 다른 보상 기간이나 스토어 구독이 이어지면 프리미엄이 끝나지 않으므로 마지막 기간만 고른다
   async listDue(
-    params: FindDueBillingNoticesParams<PremiumGrantEndingNotice>,
+    params: ListDueBillingNoticesParams<PremiumGrantEndingNotice>,
   ): Promise<PremiumGrantEndingNotice[]> {
     const rows = await this.#db
-      .select({ grantId: grantOf.id, userId: grantOf.userId, endsAt: grantOf.endsAt })
+      .select({ id: grantOf.id, userId: grantOf.userId, endsAt: grantOf.endsAt })
       .from(grantOf)
       .where(
         and(
@@ -75,13 +74,16 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
           ),
           params.after == null
             ? undefined
-            : sql`(${grantOf.endsAt}, ${grantOf.id}) > (${sql.param(params.after.endsAt, grantOf.endsAt)}, ${params.after.grantId})`,
+            : tupleGreaterThan(
+                [grantOf.endsAt, grantOf.id],
+                [params.after.endsAt, params.after.id.value],
+              ),
         ),
       )
       .orderBy(grantOf.endsAt, grantOf.id)
       .limit(params.limit);
     return rows.flatMap((row) =>
-      row.endsAt == null ? [] : [{ grantId: row.grantId, userId: row.userId, endsAt: row.endsAt }],
+      row.endsAt == null ? [] : [toPremiumGrantEndingNotice({ ...row, endsAt: row.endsAt })],
     );
   }
 
@@ -99,7 +101,7 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
         and(
           inArray(
             premiumGrant.id,
-            notices.map((notice) => notice.grantId),
+            notices.map((notice) => notice.id.value),
           ),
           isNull(premiumGrant.endingNotifiedAt),
           eq(premiumGrant.status, "ACTIVE"),
@@ -107,6 +109,6 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
       )
       .returning({ id: premiumGrant.id });
     const claimedIds = new Set(claimed.map((row) => row.id));
-    return notices.filter((notice) => claimedIds.has(notice.grantId));
+    return notices.filter((notice) => claimedIds.has(notice.id.value));
   }
 }

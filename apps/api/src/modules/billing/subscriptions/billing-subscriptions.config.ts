@@ -53,6 +53,9 @@ export const billingSubscriptionsConfig = defineConfig(
         }),
         // 웹훅 연동이 하나라 Test Store 구매도 운영으로 온다. 운영은 결제 없는 구매에 프리미엄을 주지 않는다
         acceptsTestStorePurchases: environment !== "production",
+        // 스토어 상태 읽기 설정이 모두 있어야 웹훅 뒤 대조를 예약한다
+        reconcilesStoreStatus:
+          env.REVENUECAT_PROJECT_ID != null && env.REVENUECAT_API_V2_SECRET_KEY != null,
       };
     }),
   (env) => ({

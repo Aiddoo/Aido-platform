@@ -6,7 +6,7 @@ import { CheerId } from "../../domain/cheer-id.vo.js";
 import { CheerLogEvent } from "../cheers.log-events.js";
 import type { CheerCountCachePort } from "../ports/cheer-count-cache.port.js";
 import type { CheerReaderPort } from "../ports/cheer.reader.port.js";
-import type { SentCheers } from "../read-models/cheer.read-model.js";
+import type { SentCheersReadModel } from "../read-models/cheer.read-model.js";
 
 export interface GetSentCheersQuery {
   readonly userId: string;
@@ -27,7 +27,7 @@ export class GetSentCheersUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetSentCheersQuery): Promise<SentCheers> {
+  async execute(query: GetSentCheersQuery): Promise<SentCheersReadModel> {
     const { cheerReader, countCache, logger } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);

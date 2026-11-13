@@ -20,7 +20,7 @@ describe("toTodoCommentV2 — v1·v2 공통 댓글 표현", () => {
     });
 
     // When
-    const view = toTodoCommentV2(
+    const v2Comment = toTodoCommentV2(
       record,
       createViewerContextFixture({
         likedCommentIds: new Set([record.id]),
@@ -29,7 +29,7 @@ describe("toTodoCommentV2 — v1·v2 공통 댓글 표현", () => {
     );
 
     // Then
-    expect(view).toMatchObject({
+    expect(v2Comment).toMatchObject({
       author: null,
       content: null,
       isDeleted: true,
@@ -51,13 +51,13 @@ describe("toTodoCommentV2 — v1·v2 공통 댓글 표현", () => {
     });
 
     // When
-    const view = toTodoCommentV2(
+    const v2Comment = toTodoCommentV2(
       record,
       createViewerContextFixture({ blockedAuthorIds: new Set([BLOCKED_AUTHOR_ID]) }),
     );
 
     // Then
-    expect(view).toMatchObject({
+    expect(v2Comment).toMatchObject({
       isDeleted: false,
       isAuthorBlocked: false,
       threadCommentId: COMMENT_ID,

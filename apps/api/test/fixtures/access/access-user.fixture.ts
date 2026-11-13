@@ -5,12 +5,12 @@ import {
   type PlanFeature,
 } from "@aido/api/vocabulary";
 
+import { NO_FEATURE_GRANTS } from "#api/modules/access/shared/domain/access.constants";
 import {
   planOfTier,
   resolveFeatureEntitlements,
   type FeatureEntitlement,
-} from "#api/modules/access/entitlements/domain/entitlement.domain-service";
-import { NO_FEATURE_GRANTS } from "#api/modules/access/entitlements/domain/entitlements.constants";
+} from "#api/modules/access/shared/domain/entitlement.domain-service";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import type { InMemoryAccessUser } from "#test/doubles/access/in-memory-access-state.reader";
 

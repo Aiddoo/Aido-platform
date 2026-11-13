@@ -2,8 +2,8 @@ import type {
   AdminNotice,
   AdminNoticeUser,
   SubscriptionNotice,
-  SubscriptionNoticeEvent,
 } from "../../application/read-models/admin-notice.read-model.js";
+import type { SubscriptionNoticeEvent } from "../../domain/admin-notices.constants.js";
 import { renderDiscordEmbed } from "./discord-embed.mapper.js";
 import type { DiscordEmbed } from "./discord-notice-format.mapper.js";
 

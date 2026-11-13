@@ -5,8 +5,8 @@ import {
   INVITE_FIXTURE_NOW,
 } from "#test/fixtures/social/invite.fixture";
 
-import { InviteCode } from "./invite-code.vo.js";
-import { InviteId } from "./invite-id.vo.js";
+import { InviteCode } from "../../shared/domain/invite-code.vo.js";
+import { InviteId } from "../../shared/domain/invite-id.vo.js";
 import { Invite } from "./invite.aggregate.js";
 
 describe("Invite — 초대", () => {

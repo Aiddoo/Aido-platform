@@ -6,6 +6,7 @@ import type { PushReceiptResult } from "#api/modules/notification/push/applicati
 import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case";
 import { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
 import { pushReceiptCheckWindow } from "#api/modules/notification/push/domain/push-receipt.domain-service";
+import { EXPO_PUSH_TIMING } from "#api/modules/notification/push/infrastructure/adapters/expo-push-sender.adapter";
 import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-lifecycle.repository";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
 import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
@@ -69,7 +70,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     await client.insert(userTable).values(user);
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     const tokens = new DrizzlePushTokenRepository(txHost);
-    const receipts = new DrizzlePushReceiptRepository(txHost);
+    const receipts = new DrizzlePushReceiptRepository(txHost, new DateClock());
     const token = await tokens.registerPushToken({
       userId: UserId.reconstitute(user.id),
       token: `ExponentPushToken[${suffix}-old]`,
@@ -279,7 +280,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const recent = await fixture("recent");
 
     // When
-    const pending = await old.receipts.findPendingTicketIds(pushReceiptCheckWindow(AT_INSTANT), 1);
+    const pending = await old.receipts.findPendingTicketIds(
+      pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_TIMING.receipt),
+      1,
+    );
 
     // Then
     expect(pending).toEqual([recent.ticketId]);
@@ -296,7 +300,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // When
     const pending = await waiting.receipts.findPendingTicketIds(
-      pushReceiptCheckWindow(AT_INSTANT),
+      pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_TIMING.receipt),
       900,
     );
 
@@ -315,6 +319,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       pushReceiptRepository: f.receipts,
       pushTokenRepository: f.tokens,
       pushProvider: {
+        timing: EXPO_PUSH_TIMING,
         async getReceipts(ticketIds) {
           requests.push([...ticketIds]);
           return ticketIds.map(delivered);
@@ -353,7 +358,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       checkedAt: AT_INSTANT,
     });
     const pending = await stuck.receipts.findPendingTicketIds(
-      pushReceiptCheckWindow(AT_INSTANT),
+      pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_TIMING.receipt),
       1,
     );
 
@@ -374,7 +379,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // When
     const closed = await expired.receipts.expireUnreceipted(
-      pushReceiptCheckWindow(AT_INSTANT).acceptedAfter,
+      pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_TIMING.receipt).acceptedAfter,
       100,
     );
 
@@ -396,8 +401,8 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       .returning();
     const notification = requireRecord(created);
     const staging = new DrizzlePushDispatchStagingRepository(f.txHost, new DateClock());
-    const outbox = new DrizzlePushDeliveryOutboxRepository(f.txHost);
-    const lifecycle = new DrizzlePushDeliveryLifecycleRepository(f.txHost);
+    const outbox = new DrizzlePushDeliveryOutboxRepository(f.txHost, new DateClock());
+    const lifecycle = new DrizzlePushDeliveryLifecycleRepository(f.txHost, new DateClock());
     const staged = await f.uow.run(() =>
       staging.stage({
         notificationId: notification.id,
@@ -461,6 +466,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
         },
       },
       pushProvider: {
+        timing: EXPO_PUSH_TIMING,
         async getReceipts(ticketIds) {
           requests.push([...ticketIds]);
           return ticketIds.map(unregistered);

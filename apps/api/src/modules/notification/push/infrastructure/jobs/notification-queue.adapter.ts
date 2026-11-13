@@ -1,5 +1,4 @@
-import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
-import { retry } from "es-toolkit";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
@@ -14,7 +13,6 @@ import {
   type FollowNewJobData,
   type FriendCompletedJobData,
   type MilestoneReachedJobData,
-  NOTIFICATION_ENQUEUE_RETRY,
   NOTIFICATION_QUEUE,
   NotificationJobName,
   type NotificationRuntimeJob,
@@ -27,13 +25,12 @@ type NotificationEventJob = Exclude<
 >;
 
 /**
- * 다른 Context가 커밋 뒤 알림 이벤트를 넘기는 입구다. 호출자를 막지 않도록 결과를 기다리지 않는 대신
- * 같은 이벤트는 key로 한 번만 저장하고, 일시적인 저장 실패는 다시 시도한 뒤 오류로 남긴다.
+ * 다른 Context가 알림 이벤트를 넘기는 입구다. 활성 트랜잭션이 있으면 호출자의 변경과 함께 커밋되고(같은 DB의
+ * 작업 표가 아웃박스다), 실패는 호출자에게 던진다. 같은 이벤트는 key로 한 번만 저장한다.
  */
 @Injectable()
-export class NotificationQueueAdapter implements OnModuleDestroy {
+export class NotificationQueueAdapter {
   readonly #logger = new Logger(NotificationQueueAdapter.name);
-  readonly #inFlight = new Set<Promise<void>>();
 
   readonly #jobQueue: JobQueuePort;
   readonly #clock: ClockPort;
@@ -43,23 +40,22 @@ export class NotificationQueueAdapter implements OnModuleDestroy {
     this.#clock = clock;
   }
 
-  enqueueFollowNew(data: FollowNewJobData): void {
-    this.#enqueueDetached({ name: NotificationJobName.FOLLOW_NEW, data });
+  enqueueFollowNew(data: FollowNewJobData): Promise<void> {
+    return this.#enqueueNow({ name: NotificationJobName.FOLLOW_NEW, data });
   }
 
-  enqueueFollowMutual(data: FollowMutualJobData): void {
-    this.#enqueueDetached({ name: NotificationJobName.FOLLOW_MUTUAL, data });
+  enqueueFollowMutual(data: FollowMutualJobData): Promise<void> {
+    return this.#enqueueNow({ name: NotificationJobName.FOLLOW_MUTUAL, data });
   }
 
-  enqueueNudgeSent(data: NudgeSentJobData): void {
-    this.#enqueueDetached({ name: NotificationJobName.NUDGE_SENT, data });
+  enqueueNudgeSent(data: NudgeSentJobData): Promise<void> {
+    return this.#enqueueNow({ name: NotificationJobName.NUDGE_SENT, data });
   }
 
-  enqueueCheerSent(data: CheerSentJobData): void {
-    this.#enqueueDetached({ name: NotificationJobName.CHEER_SENT, data });
+  enqueueCheerSent(data: CheerSentJobData): Promise<void> {
+    return this.#enqueueNow({ name: NotificationJobName.CHEER_SENT, data });
   }
 
-  /** 활성 트랜잭션이 있으면 호출자의 변경과 함께 커밋된다. 실패는 호출자에게 던진다. */
   enqueueBillingIssue(data: BillingIssueJobData, occurredAt: Temporal.Instant): Promise<void> {
     return this.#enqueue(
       { name: NotificationJobName.BILLING_ISSUE, data },
@@ -67,17 +63,16 @@ export class NotificationQueueAdapter implements OnModuleDestroy {
     );
   }
 
-  enqueueFriendCompleted(data: FriendCompletedJobData): void {
-    this.#enqueueDetached({ name: NotificationJobName.FRIEND_COMPLETED, data });
+  enqueueFriendCompleted(data: FriendCompletedJobData): Promise<void> {
+    return this.#enqueueNow({ name: NotificationJobName.FRIEND_COMPLETED, data });
   }
 
-  enqueueMilestoneReached(data: MilestoneReachedJobData): void {
-    this.#enqueueDetached({ name: NotificationJobName.MILESTONE_REACHED, data });
+  enqueueMilestoneReached(data: MilestoneReachedJobData): Promise<void> {
+    return this.#enqueueNow({ name: NotificationJobName.MILESTONE_REACHED, data });
   }
 
-  /** job runtime이 멈추기 전에 아직 저장 중인 이벤트를 끝낸다. */
-  async onModuleDestroy(): Promise<void> {
-    await Promise.allSettled(this.#inFlight);
+  #enqueueNow(job: NotificationEventJob): Promise<void> {
+    return this.#enqueue(job, instantToDate(this.#clock.now()));
   }
 
   async #enqueue(job: NotificationEventJob, occurredAt: Date): Promise<void> {
@@ -85,24 +80,5 @@ export class NotificationQueueAdapter implements OnModuleDestroy {
       idempotencyKey: notificationEventJobKey(job, occurredAt),
     });
     this.#logger.debug({ event: NotificationProviderLogEvent.JOB_ENQUEUED, jobName: job.name });
-  }
-
-  #enqueueDetached(job: NotificationEventJob): void {
-    const occurredAt = instantToDate(this.#clock.now());
-    const pending = retry(() => this.#enqueue(job, occurredAt), {
-      retries: NOTIFICATION_ENQUEUE_RETRY.retries,
-      delay: NOTIFICATION_ENQUEUE_RETRY.delayMs,
-    })
-      .catch((error: unknown) => {
-        this.#logger.error({
-          event: NotificationProviderLogEvent.ENQUEUE_FAILED,
-          jobName: job.name,
-          errorType: error instanceof Error ? error.name : "UnknownError",
-        });
-      })
-      .finally(() => {
-        this.#inFlight.delete(pending);
-      });
-    this.#inFlight.add(pending);
   }
 }

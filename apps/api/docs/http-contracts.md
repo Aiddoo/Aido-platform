@@ -30,6 +30,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 | Controller 밖(guard 등)       | `RequestClientReader.current()`                                                       |
 
 - `X-Request-Id`는 UUID면 그대로, 아니면 새 UUID를 쓰고 응답 헤더로 돌려준다([관측](observability.md#http-로그와-요청-id)).
+- 헤더 Swagger 문서는 `platform/http/swagger/decorators/api-header.decorator.ts`의 `@ApiAppVersionHeader()`·`@ApiIdempotencyKeyHeader()`를 쓴다. query·path는 `@Query/@Param({ schema })`가 문서를 만든다. `@ApiQuery`·`@ApiParam`을 겹쳐 쓰면 그쪽이 이겨 문서가 검증과 달라지므로 새로 쓰지 않는다(남은 곳은 출시 지문을 갱신하며 옮긴다).
 - throttle은 전역 `UserAwareThrottlerGuard`다. 한도는 Controller 옆 이름 있는 상수(`AUTH_THROTTLE.LOGIN`처럼 `{ ttl, limit }`)이고, 인증 전은 IP, 사용자별은 `@ThrottleByUser()` + `@Throttle`이다. 출시된 endpoint의 새 한도는 `@ApiDoc` description 문장으로 적는다.
 
 ## Schema와 DTO
@@ -52,7 +53,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 
 배포 환경이 운영이 아니면(로컬 실행·테스트·개발서버·staging, `appConfig`의 `responseContractCheck`) [configureApplication](../src/platform/http/configure-application.ts)이 [`ResponseContractInterceptor`](../src/platform/http/interceptors/response-contract.interceptor.ts)를 전역으로 더한다. 운영에는 요청마다 parse하는 비용을 피하려고 등록하지 않는다([설정](configuration.md#배포-환경)).
 
-- `@ApiSuccessResponse`·`@ApiCreatedResponse`가 Swagger에 등록한 바로 그 Zod schema로, 실제 상태 코드의 body를 JSON으로 바꾼 뒤(`@RawResponse`가 아니면 envelope 포함) `safeParse`한다. 응답 값은 바꾸지 않는다.
+- `@ApiSuccessResponse`·`@ApiCreatedSuccessResponse`가 Swagger에 등록한 바로 그 Zod schema로, 실제 상태 코드의 body를 JSON으로 바꾼 뒤(`@RawResponse`가 아니면 envelope 포함) `safeParse`한다. 응답 값은 바꾸지 않는다.
 - 다르거나 선언한 성공 상태와 다른 상태로 응답하면 `http.response-contract.violated` 로그(handler·path·Zod issues)를 남기고 500(`SYS_0001`)으로 실패한다. 그래서 E2E가 선언과 다른 응답을 바로 잡는다.
 - Zod가 아닌 선언(class `type`, OpenAPI `schema` 객체)과 `@Res()`로 직접 보낸 응답은 검사하지 않는다. 친구·카테고리 한도 응답의 class DTO는 Zod로 옮기면 제약 없는 nullable 숫자가 `nullable: true` 대신 `type: ["number", "null"]`이 되어 released 지문이 달라지므로 그대로 둔다.
 - 실패는 서버 응답을 출시 계약에 맞추거나, 선언이 틀렸으면 선언을 고쳐서 없앤다. 출시 계약과 released fixture는 바꾸지 않는다.

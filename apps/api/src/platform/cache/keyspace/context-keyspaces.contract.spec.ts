@@ -40,9 +40,9 @@ import {
   CheerCountCacheKey,
 } from "#api/modules/social/cheers/infrastructure/cache/cheer-count-cache.keyspace";
 import {
-  FollowCacheKey,
-  FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
+  FriendshipCacheKey,
+  FRIENDSHIP_CACHE_TTL_MS,
+} from "#api/modules/social/friends/infrastructure/cache/friendship-cache.keyspace";
 import {
   NUDGE_COUNT_CACHE_TTL_MS,
   NudgeCountCacheKey,
@@ -58,8 +58,8 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       "aido:v1:user-settings:preference:user-1",
     );
     expect(TodoCategoryCacheKey.list("user-1")).toBe("aido:v1:todo-category:list:user-1");
-    expect(FollowCacheKey.ids("user-1")).toBe("aido:v1:follow:ids:user-1");
-    expect(FollowCacheKey.count("user-1")).toBe("aido:v1:follow:count:user-1");
+    expect(FriendshipCacheKey.ids("user-1")).toBe("aido:v1:follow:ids:user-1");
+    expect(FriendshipCacheKey.count("user-1")).toBe("aido:v1:follow:count:user-1");
     expect(ReminderCacheKey.activeTimezones()).toBe("aido:v1:scheduler:active-timezones");
     expect(NotificationCacheKey.unreadCount("user-1")).toBe(
       "aido:v1:notification:unread-count:user-1",
@@ -103,7 +103,7 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(USER_SETTINGS_CACHE_TTL_MS).toBe(600_000);
     expect(TODO_CATEGORY_CACHE_TTL_MS).toBe(300_000);
     expect(REMINDER_CACHE_TTL_MS).toBe(300_000);
-    expect(FOLLOW_CACHE_TTL_MS).toEqual({ MUTUAL: 60_000, IDS: 300_000, COUNT: 300_000 });
+    expect(FRIENDSHIP_CACHE_TTL_MS).toEqual({ MUTUAL: 60_000, IDS: 300_000, COUNT: 300_000 });
     expect(NOTIFICATION_CACHE_TTL_MS.UNREAD_COUNT).toBe(120_000);
     expect(WEATHER_CACHE_TTL_MS).toEqual({
       FORECAST: 10_800_000,

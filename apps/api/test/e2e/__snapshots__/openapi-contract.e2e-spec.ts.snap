@@ -32362,12 +32362,6 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
 
 🔄 **플로우**: \`GET /google/start\` → 구글 로그인 → \`GET /google/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
 
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
-| \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
-
 ✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\`
 
 ### 📝 mode 파라미터
@@ -32376,11 +32370,24 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
       "operationId": "googleOAuthStart",
       "parameters": [
         {
-          "description": "계정 연동 시 사용자 이메일 힌트",
+          "description": "CSRF 방지용 상태 값 (생략하면 서버가 만든다)",
           "in": "query",
-          "name": "user_hint",
+          "name": "state",
           "required": false,
-          "schema": {},
+          "schema": {
+            "description": "CSRF 방지용 상태 값 (생략하면 서버가 만든다)",
+            "type": "string",
+          },
+        },
+        {
+          "description": "인증 완료 후 리다이렉트될 URI (허용 목록 밖이면 aido://auth/callback)",
+          "in": "query",
+          "name": "redirect_uri",
+          "required": false,
+          "schema": {
+            "description": "인증 완료 후 리다이렉트될 URI (허용 목록 밖이면 aido://auth/callback)",
+            "type": "string",
+          },
         },
         {
           "description": "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
@@ -32388,30 +32395,23 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
           "name": "mode",
           "required": false,
           "schema": {
+            "description": "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
             "enum": [
               "login",
               "link",
             ],
-            "example": "link",
             "type": "string",
           },
         },
         {
-          "description": "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
+          "description": "계정 연동을 시작한 사용자 ID",
           "in": "query",
-          "name": "redirect_uri",
+          "name": "user_hint",
           "required": false,
           "schema": {
-            "example": "aido://auth/callback",
-          },
-        },
-        {
-          "description": "CSRF 방지용 상태 값",
-          "in": "query",
-          "name": "state",
-          "required": true,
-          "schema": {
-            "example": "a1b2c3d4e5f6",
+            "description": "계정 연동을 시작한 사용자 ID",
+            "pattern": "^c[0-9a-z]{8,63}$",
+            "type": "string",
           },
         },
       ],
@@ -32420,11 +32420,48 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "500": {
           "content": {
@@ -32449,34 +32486,28 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
 
 🔄 **플로우**: \`GET /google/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
 
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`code\` | ✅ | 구글 authorization code |
-| \`state\` | ✅ | CSRF 검증용 state |
-
 ⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
 
 💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.",
       "operationId": "googleOAuthCallback",
       "parameters": [
         {
-          "description": "구글 Authorization Code (인증 완료 후 발급)",
+          "description": "공급자 authorization code (취소하면 없다)",
           "in": "query",
           "name": "code",
-          "required": true,
+          "required": false,
           "schema": {
-            "example": "4/0AbcDefGhiJkl",
+            "description": "공급자 authorization code (취소하면 없다)",
             "type": "string",
           },
         },
         {
-          "description": "CSRF 방지용 상태 값",
+          "description": "시작할 때 보낸 CSRF 검증용 state",
           "in": "query",
           "name": "state",
-          "required": true,
+          "required": false,
           "schema": {
-            "example": "550e8400-e29b-41d4-a716-446655440000",
+            "description": "시작할 때 보낸 CSRF 검증용 state",
             "type": "string",
           },
         },
@@ -32486,11 +32517,48 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "500": {
           "content": {
@@ -32719,12 +32787,6 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 🔄 **플로우**: \`GET /kakao/start\` → 카카오 로그인 → \`GET /kakao/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
 
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
-| \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
-
 ✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\`
 
 ### 📝 mode 파라미터
@@ -32733,11 +32795,24 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
       "operationId": "kakaoOAuthStart",
       "parameters": [
         {
-          "description": "계정 연동 시 사용자 이메일 힌트",
+          "description": "CSRF 방지용 상태 값 (생략하면 서버가 만든다)",
           "in": "query",
-          "name": "user_hint",
+          "name": "state",
           "required": false,
-          "schema": {},
+          "schema": {
+            "description": "CSRF 방지용 상태 값 (생략하면 서버가 만든다)",
+            "type": "string",
+          },
+        },
+        {
+          "description": "인증 완료 후 리다이렉트될 URI (허용 목록 밖이면 aido://auth/callback)",
+          "in": "query",
+          "name": "redirect_uri",
+          "required": false,
+          "schema": {
+            "description": "인증 완료 후 리다이렉트될 URI (허용 목록 밖이면 aido://auth/callback)",
+            "type": "string",
+          },
         },
         {
           "description": "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
@@ -32745,30 +32820,23 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
           "name": "mode",
           "required": false,
           "schema": {
+            "description": "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
             "enum": [
               "login",
               "link",
             ],
-            "example": "link",
             "type": "string",
           },
         },
         {
-          "description": "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
+          "description": "계정 연동을 시작한 사용자 ID",
           "in": "query",
-          "name": "redirect_uri",
+          "name": "user_hint",
           "required": false,
           "schema": {
-            "example": "aido://auth/callback",
-          },
-        },
-        {
-          "description": "CSRF 방지용 상태 값",
-          "in": "query",
-          "name": "state",
-          "required": true,
-          "schema": {
-            "example": "a1b2c3d4e5f6",
+            "description": "계정 연동을 시작한 사용자 ID",
+            "pattern": "^c[0-9a-z]{8,63}$",
+            "type": "string",
           },
         },
       ],
@@ -32777,11 +32845,48 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "500": {
           "content": {
@@ -32806,32 +32911,28 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 🔄 **플로우**: \`GET /kakao/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
 
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`code\` | ✅ | 카카오 authorization code |
-| \`state\` | ✅ | CSRF 검증용 state |
-
 ⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
 
 💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.",
       "operationId": "kakaoOAuthCallback",
       "parameters": [
         {
-          "description": "카카오 authorization code",
+          "description": "공급자 authorization code (취소하면 없다)",
           "in": "query",
           "name": "code",
-          "required": true,
+          "required": false,
           "schema": {
+            "description": "공급자 authorization code (취소하면 없다)",
             "type": "string",
           },
         },
         {
-          "description": "CSRF 방지용 상태 값",
+          "description": "시작할 때 보낸 CSRF 검증용 state",
           "in": "query",
           "name": "state",
-          "required": true,
+          "required": false,
           "schema": {
+            "description": "시작할 때 보낸 CSRF 검증용 state",
             "type": "string",
           },
         },
@@ -32841,11 +32942,48 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "500": {
           "content": {
@@ -34924,12 +35062,6 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 🔄 **플로우**: \`GET /naver/start\` → 네이버 로그인 → \`GET /naver/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
 
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
-| \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
-
 ✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\`
 
 ### 📝 mode 파라미터
@@ -34938,11 +35070,24 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
       "operationId": "naverOAuthStart",
       "parameters": [
         {
-          "description": "계정 연동 시 사용자 이메일 힌트",
+          "description": "CSRF 방지용 상태 값 (생략하면 서버가 만든다)",
           "in": "query",
-          "name": "user_hint",
+          "name": "state",
           "required": false,
-          "schema": {},
+          "schema": {
+            "description": "CSRF 방지용 상태 값 (생략하면 서버가 만든다)",
+            "type": "string",
+          },
+        },
+        {
+          "description": "인증 완료 후 리다이렉트될 URI (허용 목록 밖이면 aido://auth/callback)",
+          "in": "query",
+          "name": "redirect_uri",
+          "required": false,
+          "schema": {
+            "description": "인증 완료 후 리다이렉트될 URI (허용 목록 밖이면 aido://auth/callback)",
+            "type": "string",
+          },
         },
         {
           "description": "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
@@ -34950,30 +35095,23 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
           "name": "mode",
           "required": false,
           "schema": {
+            "description": "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
             "enum": [
               "login",
               "link",
             ],
-            "example": "link",
             "type": "string",
           },
         },
         {
-          "description": "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
+          "description": "계정 연동을 시작한 사용자 ID",
           "in": "query",
-          "name": "redirect_uri",
+          "name": "user_hint",
           "required": false,
           "schema": {
-            "example": "aido://auth/callback",
-          },
-        },
-        {
-          "description": "CSRF 방지용 상태 값",
-          "in": "query",
-          "name": "state",
-          "required": true,
-          "schema": {
-            "example": "a1b2c3d4e5f6",
+            "description": "계정 연동을 시작한 사용자 ID",
+            "pattern": "^c[0-9a-z]{8,63}$",
+            "type": "string",
           },
         },
       ],
@@ -34982,11 +35120,48 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "500": {
           "content": {
@@ -35011,34 +35186,28 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 🔄 **플로우**: \`GET /naver/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
 
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`code\` | ✅ | 네이버 authorization code |
-| \`state\` | ✅ | CSRF 검증용 state |
-
 ⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
 
 💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.",
       "operationId": "naverOAuthCallback",
       "parameters": [
         {
-          "description": "네이버 Authorization Code (인증 완료 후 발급)",
+          "description": "공급자 authorization code (취소하면 없다)",
           "in": "query",
           "name": "code",
-          "required": true,
+          "required": false,
           "schema": {
-            "example": "AbCdEfGh",
+            "description": "공급자 authorization code (취소하면 없다)",
             "type": "string",
           },
         },
         {
-          "description": "CSRF 방지용 상태 값",
+          "description": "시작할 때 보낸 CSRF 검증용 state",
           "in": "query",
           "name": "state",
-          "required": true,
+          "required": false,
           "schema": {
-            "example": "550e8400-e29b-41d4-a716-446655440000",
+            "description": "시작할 때 보낸 CSRF 검증용 state",
             "type": "string",
           },
         },
@@ -35048,11 +35217,48 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "500": {
           "content": {
@@ -40958,12 +41164,13 @@ ADMIN 주체도 프리미엄 열의 값을 받습니다.
       "operationId": "reorderFriend",
       "parameters": [
         {
-          "description": "순서를 변경할 친구의 팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)",
+          "description": "순서를 변경할 친구의 팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)",
           "in": "path",
           "name": "followId",
           "required": true,
           "schema": {
-            "example": "clz7x5p8k0010qz0z8z8z8z8z",
+            "description": "순서를 변경할 친구의 팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)",
+            "pattern": "^c[0-9a-z]{8,63}$",
             "type": "string",
           },
         },
@@ -55634,66 +55841,74 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
       "operationId": "getTodos",
       "parameters": [
         {
-          "description": "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
+          "description": "페이지네이션 커서 (마지막 조회 Todo ID, 0 이상)",
           "in": "query",
           "name": "cursor",
           "required": false,
           "schema": {
-            "example": 123,
-            "type": "number",
+            "description": "페이지네이션 커서 (마지막 조회 Todo ID, 0 이상)",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
           },
         },
         {
-          "description": "페이지 크기 (1-200)",
+          "description": "페이지 크기 (1-200, 기본값: 20)",
           "in": "query",
           "name": "size",
           "required": false,
           "schema": {
             "default": 20,
-            "example": 20,
+            "description": "페이지 크기 (1-200, 기본값: 20)",
             "maximum": 200,
             "minimum": 1,
-            "type": "number",
+            "type": "integer",
           },
         },
         {
-          "description": "완료 상태 필터 (true: 완료만, false: 미완료만, 미지정: 전체)",
+          "description": "완료 상태 필터 (선택, true/false)",
           "in": "query",
           "name": "completed",
           "required": false,
           "schema": {
+            "description": "완료 상태 필터 (선택, true/false)",
             "type": "boolean",
           },
         },
         {
-          "description": "카테고리 ID 필터 (특정 카테고리의 할 일만 조회)",
+          "description": "카테고리 ID 필터 (선택, 양의 정수)",
           "in": "query",
           "name": "categoryId",
           "required": false,
           "schema": {
-            "example": 1,
-            "type": "number",
+            "description": "카테고리 ID 필터 (선택, 양의 정수)",
+            "exclusiveMinimum": true,
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
           },
         },
         {
-          "description": "시작일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. endDate와 함께 사용 시 범위 조회합니다.",
+          "description": "시작 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만, endDate와 함께면 범위를 조회한다",
           "in": "query",
           "name": "startDate",
           "required": false,
           "schema": {
-            "example": "2026-01-01",
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "시작 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만, endDate와 함께면 범위를 조회한다",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
           },
         },
         {
-          "description": "종료일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. startDate와 함께 사용 시 범위 조회합니다. startDate보다 이전 날짜를 지정하면 400 에러가 발생합니다.",
+          "description": "종료 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만 조회하고 startDate보다 이르면 400이다",
           "in": "query",
           "name": "endDate",
           "required": false,
           "schema": {
-            "example": "2026-01-31",
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "종료 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만 조회하고 startDate보다 이르면 400이다",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
           },
         },
@@ -56313,24 +56528,24 @@ TODO_0842: 반복 할 일은 최대 30개까지 만들 수 있습니다.",
           },
         },
         {
-          "description": "시작 날짜 필터 (선택, YYYY-MM-DD)",
+          "description": "시작 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만, endDate와 함께면 범위를 조회한다",
           "in": "query",
           "name": "startDate",
           "required": false,
           "schema": {
-            "description": "시작 날짜 필터 (선택, YYYY-MM-DD)",
+            "description": "시작 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만, endDate와 함께면 범위를 조회한다",
             "format": "date",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
           },
         },
         {
-          "description": "종료 날짜 필터 (선택, YYYY-MM-DD)",
+          "description": "종료 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만 조회하고 startDate보다 이르면 400이다",
           "in": "query",
           "name": "endDate",
           "required": false,
           "schema": {
-            "description": "종료 날짜 필터 (선택, YYYY-MM-DD)",
+            "description": "종료 날짜 필터 (선택, YYYY-MM-DD). 단독이면 그 날짜의 할 일만 조회하고 startDate보다 이르면 400이다",
             "format": "date",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
             "type": "string",
@@ -64656,37 +64871,40 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
       "operationId": "getWeeklyAchievements",
       "parameters": [
         {
-          "description": "조회할 연도 (2024-2100)",
+          "description": "조회할 연도 (예: 2026)",
           "in": "query",
           "name": "year",
           "required": true,
           "schema": {
-            "example": 2026,
+            "description": "조회할 연도 (예: 2026)",
             "maximum": 2100,
             "minimum": 2024,
-            "type": "number",
+            "type": "integer",
           },
         },
         {
-          "description": "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
+          "description": "페이지네이션 커서 (마지막 조회 ID, 0 이상)",
           "in": "query",
           "name": "cursor",
           "required": false,
           "schema": {
-            "type": "number",
+            "description": "페이지네이션 커서 (마지막 조회 ID, 0 이상)",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
           },
         },
         {
-          "description": "페이지 크기 (1-200)",
+          "description": "페이지 크기 (1-200, 기본값: 20)",
           "in": "query",
           "name": "size",
           "required": false,
           "schema": {
             "default": 20,
-            "example": 20,
+            "description": "페이지 크기 (1-200, 기본값: 20)",
             "maximum": 200,
             "minimum": 1,
-            "type": "number",
+            "type": "integer",
           },
         },
         {
@@ -64863,13 +65081,12 @@ GET /weekly-achievements/2026/10
       "operationId": "getWeeklyAchievement",
       "parameters": [
         {
-          "description": "ISO 연도",
+          "description": "ISO 연도 (양의 정수, 예: 2026)",
           "in": "path",
           "name": "year",
           "required": true,
           "schema": {
-            "description": "연도 (양의 정수, 예: 2026)",
-            "example": 2026,
+            "description": "ISO 연도 (양의 정수, 예: 2026)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -64877,13 +65094,12 @@ GET /weekly-achievements/2026/10
           },
         },
         {
-          "description": "ISO 주차 (1-53)",
+          "description": "ISO 주차 (1-53, 예: 12)",
           "in": "path",
           "name": "week",
           "required": true,
           "schema": {
-            "description": "주차 (1-53, 예: 12)",
-            "example": 10,
+            "description": "ISO 주차 (1-53, 예: 12)",
             "maximum": 53,
             "minimum": 1,
             "type": "integer",

@@ -96,7 +96,9 @@ function knownValue<const T extends readonly [string, ...string[]]>(values: T) {
 const conditionCodeSchema = knownValue(CONDITION_CODES);
 const precipitationTypeSchema = knownValue(PRECIPITATION_TYPES);
 
-const instantSchema = z.iso.datetime({ offset: true }).transform((value) => new Date(value));
+const instantSchema = z.iso
+  .datetime({ offset: true })
+  .transform((value) => Temporal.Instant.from(value));
 
 const currentWeatherSchema = z.looseObject({
   metadata: z.looseObject({ readTime: instantSchema.nullish() }).optional().catch(undefined),

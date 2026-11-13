@@ -1,4 +1,4 @@
-import type { DailyCompletion } from "../../domain/daily-completion.entity.js";
+import type { DailyCompletion } from "../../domain/daily-completion.aggregate.js";
 import type { DateRange } from "../../domain/date-range.vo.js";
 
 export interface DailyCompletionRange {

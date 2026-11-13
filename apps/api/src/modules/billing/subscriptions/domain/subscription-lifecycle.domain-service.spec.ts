@@ -4,7 +4,6 @@ import {
   type StoreLifecycleEvent,
   classifySubscriptionLifecycle,
   periodTypeAfterEvent,
-  toStorePeriodType,
 } from "./subscription-lifecycle.domain-service.js";
 import type { StoreSubscriptionEventKind } from "./subscriptions.constants.js";
 
@@ -127,24 +126,5 @@ describe("SubscriptionLifecycleDomainService", () => {
         expect(periodTypeAfter).toBe(expected);
       },
     );
-  });
-
-  describe("toStorePeriodType", () => {
-    it.each([
-      { value: "TRIAL", expected: "TRIAL" },
-      { value: "PREPAID", expected: "PREPAID" },
-      { value: "trial", expected: null },
-      { value: "", expected: null },
-      { value: undefined, expected: null },
-    ])("$value → $expected", ({ value, expected }) => {
-      // Given
-      const raw = value;
-
-      // When
-      const periodType = toStorePeriodType(raw);
-
-      // Then
-      expect(periodType).toBe(expected);
-    });
   });
 });

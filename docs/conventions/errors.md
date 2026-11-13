@@ -7,7 +7,7 @@
 | 경우 | 형태                                                                | 정본                                                                                                                                |
 | ---- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | 성공 | `{ success: true, data, timestamp }`                                | `successEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts)) + 기능별 `contracts/<feature>/v{n}/*.response.ts` |
-| 목록 | `data` 안의 기능별 schema + 공용 cursor 정보                        | [pagination.ts](../../packages/api/src/common/pagination.ts), [query.ts](../../packages/api/src/common/query.ts)                    |
+| 목록 | `data` 안의 `{ items, pagination: { nextCursor, hasNext, size } }`  | `cursorPageSchema`([pagination.ts](../../packages/api/src/common/pagination.ts)), 서버는 `toCursorPage`                             |
 | 실패 | `{ success: false, error: { code, message, details? }, timestamp }` | `errorEnvelopeSchema`([response.ts](../../packages/api/src/common/response.ts))                                                     |
 
 - 실패의 의미는 `error.code`로 정한다. 앱은 `message`로 분기하지 않는다. HTTP 상태로 분기하는 곳은 아래 `ErrorCode`가 없는 경우(검증·없는 route·429)뿐이고, 상태 값은 `@aido/api/errors`의 `HttpStatus`를 쓴다. 앱·서버에 상태 상수를 따로 만들지 않는다.

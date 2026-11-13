@@ -2,8 +2,10 @@ import type {
   ConvertMemoToTodoResponse,
   ConvertMemoToTodosResponse,
   Memo as MemoResponse,
+  MemoDetailResponse,
   MemoListResponse,
   MemoMutationResponse,
+  MemoResourceLimitResponse,
 } from "@aido/api/contracts/memo";
 import { pick } from "es-toolkit";
 
@@ -14,6 +16,7 @@ import {
 import type { CursorPage } from "#api/shared/application/cursor-page";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
+import type { MemoResourceLimit } from "../../../application/use-cases/get-memo-resource-limit.use-case.js";
 import type { Memo } from "../../../domain/memo.aggregate.js";
 
 // 출시 앱은 변경 응답의 message를 표시하지 않지만 계약 필드라 문구를 그대로 둔다
@@ -27,7 +30,7 @@ export const MEMO_RESPONSE_MESSAGES = {
   CONVERTED_TO_TODO: "메모가 할 일로 변환되었습니다.",
 } as const;
 
-export function toMemoResponse(memo: Memo): MemoResponse {
+function toMemoResponse(memo: Memo): MemoResponse {
   const primitives = memo.toPrimitives();
   return {
     ...pick(primitives, ["id", "userId", "content", "isPinned", "sortOrder"]),
@@ -36,12 +39,20 @@ export function toMemoResponse(memo: Memo): MemoResponse {
   };
 }
 
+export function toMemoDetailResponse(memo: Memo): MemoDetailResponse {
+  return { memo: toMemoResponse(memo) };
+}
+
 export function toMemoMutationResponse(memo: Memo, message: string): MemoMutationResponse {
   return { message, memo: toMemoResponse(memo) };
 }
 
 export function toMemoListResponse(page: CursorPage<Memo, number>): MemoListResponse {
   return { items: page.items.map(toMemoResponse), pagination: page.pagination };
+}
+
+export function toMemoResourceLimitResponse(limit: MemoResourceLimit): MemoResourceLimitResponse {
+  return { currentCount: limit.currentCount, maxPerUser: limit.maxPerUser };
 }
 
 export function toConvertMemoToTodoResponse(todo: TodoReadModel): ConvertMemoToTodoResponse {

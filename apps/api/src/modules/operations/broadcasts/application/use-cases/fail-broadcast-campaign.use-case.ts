@@ -31,9 +31,11 @@ export class FailBroadcastCampaignUseCase {
     const { unitOfWork, campaignRepository, clock, logger } = this.#dependencies;
     const failed = await unitOfWork.run(async () => {
       const campaign = await campaignRepository.findByIdForUpdate(command.campaignId);
-      if (campaign == null || !campaign.fail(BROADCAST_FAN_OUT_EXHAUSTED_REASON, clock.now())) {
+      if (campaign == null || campaign.isTerminal()) {
         return false;
       }
+
+      campaign.fail(BROADCAST_FAN_OUT_EXHAUSTED_REASON, clock.now());
       await campaignRepository.save(campaign);
       return true;
     });

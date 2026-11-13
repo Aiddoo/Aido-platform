@@ -1,5 +1,5 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { FakeBillingUserLock } from "#test/doubles/billing/fake-billing-user-lock";
+import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
@@ -18,7 +18,7 @@ import {
 } from "#test/fixtures/billing/subscription.fixture";
 
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
-import { LoadPremiumEntitlementsUseCase } from "./load-premium-entitlements.use-case.js";
+import { GetPremiumEntitlementsUseCase } from "./get-premium-entitlements.use-case.js";
 import { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 import { SweepPremiumGrantsUseCase } from "./sweep-premium-grants.use-case.js";
 
@@ -30,7 +30,7 @@ function setup(grants: PremiumGrant[], knownUserIds = [SUBSCRIPTION_FIXTURE_USER
   const premiumGrantRepository = new InMemoryPremiumGrantRepository(grants);
   const projection = new InMemoryUserSubscriptionProjectionRepository(knownUserIds);
   const cache = new RecordingPremiumAccessCache();
-  const loadPremiumEntitlements = new LoadPremiumEntitlementsUseCase({
+  const getPremiumEntitlements = new GetPremiumEntitlementsUseCase({
     storeEntitlementReader: new InMemoryStoreEntitlementReader(
       new InMemorySubscriptionRepository(),
     ),
@@ -40,11 +40,11 @@ function setup(grants: PremiumGrant[], knownUserIds = [SUBSCRIPTION_FIXTURE_USER
     premiumGrantRepository,
     userSubscriptionProjection: projection,
     projectPremiumAccess: new ProjectPremiumAccessUseCase({
-      loadPremiumEntitlements,
+      getPremiumEntitlements,
       premiumGrantRepository,
       userSubscriptionProjection: projection,
     }),
-    userLock: new FakeBillingUserLock(knownUserIds),
+    userLock: new FakeUserMutationLock(knownUserIds),
     unitOfWork: new ImmediateUnitOfWork(),
     cache,
     logger: new SilentLogger(),

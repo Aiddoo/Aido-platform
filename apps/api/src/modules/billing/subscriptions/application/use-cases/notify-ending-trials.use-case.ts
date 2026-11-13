@@ -5,21 +5,15 @@ import type {
   BillingNoticeSweepInput,
   BillingNoticeSweepResult,
   SweepBillingNoticesUseCase,
-} from "../../../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
-import { isBillingNoticeable } from "../../../shared/billing-notice-window.domain-service.js";
-import type {
-  TrialEndingNotice,
-  TrialEndingNoticeRepositoryPort,
-} from "../ports/trial-ending-notice.repository.port.js";
+} from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
+import type { TrialEndingNoticeRepositoryPort } from "../ports/trial-ending-notice.repository.port.js";
 import type { TrialEndingNotifierPort } from "../ports/trial-ending-notifier.port.js";
 import { SubscriptionLogEvent } from "../subscriptions.log-events.js";
 
 const TRIAL_ENDING_NOTICE = {
   noticeDays: PREMIUM_TRIAL_ENDING_NOTICE_DAYS,
-  isNoticeable: (notice) =>
-    isBillingNoticeable(notice.startedAt, notice.expiresAt, PREMIUM_TRIAL_ENDING_NOTICE_DAYS),
   logEvent: SubscriptionLogEvent.TRIAL_ENDING_NOTIFIED,
-} as const satisfies BillingNoticeSettings<TrialEndingNotice>;
+} as const satisfies BillingNoticeSettings;
 
 export interface NotifyEndingTrialsDependencies {
   readonly sweepBillingNotices: Pick<SweepBillingNoticesUseCase, "execute">;

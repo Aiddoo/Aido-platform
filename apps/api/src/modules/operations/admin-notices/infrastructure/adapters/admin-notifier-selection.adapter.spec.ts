@@ -2,6 +2,7 @@ import { HttpClient } from "@nestjs/http-client";
 
 import type { AdminNotifierProviderId } from "#api/platform/config/schemas/webhook.schema";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import { selectAdminNotifier } from "./admin-notifier-selection.adapter.js";
@@ -26,6 +27,7 @@ describe("selectAdminNotifier", () => {
         config,
         new HttpClient(),
         new OutboundPolicyRegistry(new RecordingOperationalAlert()),
+        new FixedClock(Temporal.Instant.from("2026-10-08T00:00:00Z")),
       );
 
       // Then

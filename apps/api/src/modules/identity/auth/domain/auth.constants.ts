@@ -1,4 +1,9 @@
-import type { ACCOUNT_PROVIDERS, USER_STATUS, VERIFICATION_TYPE } from "@aido/api/vocabulary";
+import type {
+  ACCOUNT_PROVIDERS,
+  OAUTH_MODES,
+  USER_STATUS,
+  VERIFICATION_TYPE,
+} from "@aido/api/vocabulary";
 
 export type AccountProvider = (typeof ACCOUNT_PROVIDERS)[number];
 
@@ -51,8 +56,10 @@ export const VERIFICATION_REJECTIONS = [
   "mismatch",
 ] as const;
 export const AUTH_OAUTH_STATE_VALIDITIES = ["valid", "expired", "exchanged"] as const;
-const OAUTH_MODES = ["login", "link"] as const;
 export type OAuthMode = (typeof OAUTH_MODES)[number];
+
+/** 웹 OAuth가 앱으로 돌아가는 기본 딥링크. 출시 앱이 등록한 scheme이라 바꾸지 않는다 */
+export const DEFAULT_OAUTH_REDIRECT_URI = "aido://auth/callback";
 
 /** 웹 OAuth state가 콜백을 기다리는 시간 */
 export const OAUTH_STATE_EXPIRY_MINUTES = 10;

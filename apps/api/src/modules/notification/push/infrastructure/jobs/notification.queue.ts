@@ -38,12 +38,6 @@ const NOTIFICATION_DEAD_LETTER_RETRY = {
   deleteAfterSeconds: 14 * DAY_SECONDS,
 } as const satisfies JobRetryPolicy;
 
-// 호출자는 커밋 뒤 결과를 기다리지 않으므로 일시적인 DB 오류만 짧게 다시 시도한다
-export const NOTIFICATION_ENQUEUE_RETRY = {
-  retries: 3,
-  delayMs: 200,
-} as const;
-
 // Expo는 발송 약 15분 뒤 receipt 확인을 권하고 조회 대상도 수락 15분 뒤부터라, 매분 돌면 할 일 없이 작업 행만 쌓인다.
 // 한 실행이 45초 예산 안에서 남은 ticket을 모두 이어 처리하므로 놓친 실행은 다음 실행이 받는다
 const PUSH_RECEIPT_SCHEDULE = {

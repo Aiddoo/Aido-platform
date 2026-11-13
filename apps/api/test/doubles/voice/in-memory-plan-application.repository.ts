@@ -37,14 +37,14 @@ export class InMemoryPlanApplicationRepository extends PlanApplicationRepository
     this.#applications.set(primitives.id, copyOf(application));
   }
 
-  async deleteCreatedBefore(cutoff: Temporal.Instant): Promise<number> {
-    let deleted = 0;
+  async purgeCreatedBefore(cutoff: Temporal.Instant): Promise<number> {
+    let purged = 0;
     for (const [id, application] of this.#applications) {
       if (Temporal.Instant.compare(application.toPrimitives().createdAt, cutoff) < 0) {
         this.#applications.delete(id);
-        deleted += 1;
+        purged += 1;
       }
     }
-    return deleted;
+    return purged;
   }
 }

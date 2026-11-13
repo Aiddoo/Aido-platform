@@ -4,23 +4,22 @@ import { Injectable } from "@nestjs/common";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { StoreSubscriptionEntitlement } from "../../../shared/premium-access.domain-service.js";
-import { toStorePeriodType } from "../../../subscriptions/domain/subscription-lifecycle.domain-service.js";
-import { StoreEntitlementReaderPort } from "../../application/ports/store-entitlement.reader.port.js";
+import type { StoreSubscriptionEntitlement } from "../../../shared/domain/premium-access.domain-service.js";
+import { toStorePeriodType } from "../../../shared/domain/store-period-type.domain-service.js";
+import type { StoreEntitlementReaderPort } from "../../application/ports/store-entitlement.reader.port.js";
 
 @Injectable()
-export class DrizzleStoreEntitlementReader extends StoreEntitlementReaderPort {
+export class DrizzleStoreEntitlementReader implements StoreEntitlementReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 
   async listByUserId(userId: UserId): Promise<StoreSubscriptionEntitlement[]> {
     const rows = await this.#txHost.tx.query.subscription.findMany({
       columns: {
-        revenueCatId: true,
+        storeSubscriptionId: true,
         productId: true,
         startedAt: true,
         status: true,
@@ -30,9 +29,8 @@ export class DrizzleStoreEntitlementReader extends StoreEntitlementReaderPort {
       },
       where: { userId: userId.value, deletedAt: { isNull: true } },
     });
-    return rows.map(({ revenueCatId, periodType, ...row }) => ({
+    return rows.map(({ periodType, ...row }) => ({
       ...row,
-      storeSubscriptionId: revenueCatId,
       periodType: toStorePeriodType(periodType),
     }));
   }

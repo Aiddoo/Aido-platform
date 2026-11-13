@@ -50,23 +50,23 @@ export function toTodoCommentResponse(
   viewer: TodoCommentViewer,
   appVersion?: string,
 ): TodoComment {
-  const view = toTodoCommentV2(comment, viewer, appVersion);
+  const v2Comment = toTodoCommentV2(comment, viewer, appVersion);
   return {
-    id: view.id,
-    threadId: view.threadCommentId ?? view.id,
-    parentId: view.threadCommentId,
-    depth: view.threadCommentId == null ? 0 : 1,
-    author: view.author == null ? null : toTodoCommentAuthorResponse(view.author),
-    content: view.content,
-    isDeleted: view.isDeleted,
-    isAuthorBlocked: view.isAuthorBlocked,
-    isEdited: view.isEdited,
-    likeCount: view.likeCount,
-    replyCount: view.replyCount,
-    replyTo: view.replyTo,
-    viewer: view.viewer,
-    createdAt: view.createdAt,
-    editedAt: view.editedAt,
+    id: v2Comment.id,
+    threadId: v2Comment.threadCommentId ?? v2Comment.id,
+    parentId: v2Comment.threadCommentId,
+    depth: v2Comment.threadCommentId == null ? 0 : 1,
+    author: v2Comment.author == null ? null : toTodoCommentAuthorResponse(v2Comment.author),
+    content: v2Comment.content,
+    isDeleted: v2Comment.isDeleted,
+    isAuthorBlocked: v2Comment.isAuthorBlocked,
+    isEdited: v2Comment.isEdited,
+    likeCount: v2Comment.likeCount,
+    replyCount: v2Comment.replyCount,
+    replyTo: v2Comment.replyTo,
+    viewer: v2Comment.viewer,
+    createdAt: v2Comment.createdAt,
+    editedAt: v2Comment.editedAt,
   };
 }
 

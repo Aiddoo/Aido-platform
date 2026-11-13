@@ -8,16 +8,15 @@ import {
   NotificationRecipientTimezoneReaderPort,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
-import type { UpcomingRenewalNotice } from "../../application/ports/upcoming-renewal-notice.repository.port.js";
-import { UpcomingRenewalNotifierPort } from "../../application/ports/upcoming-renewal-notifier.port.js";
+import type { UpcomingRenewalNotifierPort } from "../../application/ports/upcoming-renewal-notifier.port.js";
+import type { UpcomingRenewalNotice } from "../../domain/upcoming-renewal-notice.entity.js";
 
 @Injectable()
-export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort {
+export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPort {
   readonly #notificationPublisher: PublishNotificationUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
@@ -29,7 +28,6 @@ export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort 
     @Inject(NotificationRecipientTimezoneReaderPort)
     timezoneReader: NotificationRecipientTimezoneReaderPort,
   ) {
-    super();
     this.#notificationPublisher = notificationPublisher;
     this.#localeReader = localeReader;
     this.#timezoneReader = timezoneReader;
@@ -41,25 +39,25 @@ export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort 
     }
     const userIds = notices.map((notice) => notice.userId);
     const [locales, timezones] = await Promise.all([
-      this.#localeReader.getLocales(userIds.map((userId) => UserId.reconstitute(userId))),
-      this.#timezoneReader.getTimezones(userIds),
+      this.#localeReader.getLocales(userIds),
+      this.#timezoneReader.getTimezones(userIds.map((userId) => userId.value)),
     ]);
     await this.#notificationPublisher.publishBatch(
       notices.map((notice) => {
         const message = createPremiumRenewalUpcomingNotificationMessage({
-          locale: locales.get(notice.userId) ?? DEFAULT_LOCALE,
-          timezone: timezones.get(notice.userId) ?? DEFAULT_DELIVERY_TIMEZONE,
+          locale: locales.get(notice.userId.value) ?? DEFAULT_LOCALE,
+          timezone: timezones.get(notice.userId.value) ?? DEFAULT_DELIVERY_TIMEZONE,
           renewsAt: instantToDate(notice.expiresAt),
           now: instantToDate(now),
           variantContext: {
             campaignKey: SCHEDULER_CAMPAIGN_KEY.PREMIUM_RENEWAL_UPCOMING,
-            recipientId: notice.userId,
+            recipientId: notice.userId.value,
             // 문자열은 배포 전 안내와 같은 변형 배정을 유지하려고 만료 시각 ms를 쓴다
-            occurrenceKey: `${notice.subscriptionId}:${notice.expiresAt.epochMilliseconds}`,
+            occurrenceKey: `${notice.id.value}:${notice.expiresAt.epochMilliseconds}`,
           },
         });
         return {
-          userId: notice.userId,
+          userId: notice.userId.value,
           type: "PREMIUM_RENEWAL_UPCOMING",
           title: message.title,
           body: message.body,
@@ -72,7 +70,7 @@ export class UpcomingRenewalNotifierAdapter extends UpcomingRenewalNotifierPort 
             type: NOTIFICATION_ACTION_TYPE.DEEP_LINK,
             url: NOTICE_DEEP_LINK_PATH.SUBSCRIPTION,
           },
-          metadata: { subscriptionId: notice.subscriptionId },
+          metadata: { subscriptionId: notice.id.value },
         };
       }),
     );

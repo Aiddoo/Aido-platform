@@ -1,23 +1,21 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, lte } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { subscription } from "#api/platform/database/schema/billing.schema";
 
-import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
-import { planTypeOfProduct } from "../../../shared/subscription-plan.domain-service.js";
-import {
-  type TrialEndingNotice,
-  TrialEndingNoticeRepositoryPort,
-} from "../../application/ports/trial-ending-notice.repository.port.js";
+import type { ListDueBillingNoticesParams } from "../../../shared/application/ports/billing-notice.repository.port.js";
+import type { TrialEndingNoticeRepositoryPort } from "../../application/ports/trial-ending-notice.repository.port.js";
+import type { TrialEndingNotice } from "../../domain/trial-ending-notice.entity.js";
+import { toTrialEndingNotice } from "./trial-ending-notice-row.mapper.js";
 
 @Injectable()
-export class DrizzleTrialEndingNoticeRepository extends TrialEndingNoticeRepositoryPort {
+export class DrizzleTrialEndingNoticeRepository implements TrialEndingNoticeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 
@@ -26,11 +24,11 @@ export class DrizzleTrialEndingNoticeRepository extends TrialEndingNoticeReposit
   }
 
   async listDue(
-    params: FindDueBillingNoticesParams<TrialEndingNotice>,
+    params: ListDueBillingNoticesParams<TrialEndingNotice>,
   ): Promise<TrialEndingNotice[]> {
     const rows = await this.#db
       .select({
-        subscriptionId: subscription.id,
+        id: subscription.id,
         userId: subscription.userId,
         startedAt: subscription.startedAt,
         expiresAt: subscription.expiresAt,
@@ -48,16 +46,15 @@ export class DrizzleTrialEndingNoticeRepository extends TrialEndingNoticeReposit
           lte(subscription.expiresAt, params.endsBefore),
           params.after == null
             ? undefined
-            : sql`(${subscription.expiresAt}, ${subscription.id}) > (${sql.param(params.after.expiresAt, subscription.expiresAt)}, ${params.after.subscriptionId})`,
+            : tupleGreaterThan(
+                [subscription.expiresAt, subscription.id],
+                [params.after.expiresAt, params.after.id.value],
+              ),
         ),
       )
       .orderBy(asc(subscription.expiresAt), asc(subscription.id))
       .limit(params.limit);
-    return rows.map(({ status, productId, ...row }) => ({
-      ...row,
-      willRenew: status === "ACTIVE",
-      planType: planTypeOfProduct(productId),
-    }));
+    return rows.map(toTrialEndingNotice);
   }
 
   async claim(
@@ -74,7 +71,7 @@ export class DrizzleTrialEndingNoticeRepository extends TrialEndingNoticeReposit
         and(
           inArray(
             subscription.id,
-            notices.map((notice) => notice.subscriptionId),
+            notices.map((notice) => notice.id.value),
           ),
           isNull(subscription.trialEndingNotifiedAt),
           eq(subscription.periodType, "TRIAL"),
@@ -82,6 +79,6 @@ export class DrizzleTrialEndingNoticeRepository extends TrialEndingNoticeReposit
       )
       .returning({ id: subscription.id });
     const claimedIds = new Set(claimed.map((row) => row.id));
-    return notices.filter((notice) => claimedIds.has(notice.subscriptionId));
+    return notices.filter((notice) => claimedIds.has(notice.id.value));
   }
 }

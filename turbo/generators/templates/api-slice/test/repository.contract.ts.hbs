@@ -1,4 +1,7 @@
 import type { {{pascalCase aggregate}}RepositoryPort } from "#api/modules/{{context}}/{{slice}}/application/ports/{{aggregate}}.repository.port";
+{{#unless isSerial}}
+import { {{pascalCase aggregate}}Id } from "#api/modules/{{context}}/{{slice}}/domain/{{aggregate}}-id.vo";
+{{/unless}}
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   create{{pascalCase aggregate}}Fixture,
@@ -14,6 +17,7 @@ export function describe{{pascalCase aggregate}}RepositoryContract(
   createRepository: () => Promise<{{pascalCase aggregate}}RepositoryPort>,
 ): void {
   describe("{{aggregate}} 저장소 계약", () => {
+{{#if isSerial}}
     it("nextId는 부를 때마다 다른 id를 준다", async () => {
       // Given
       const repository = await createRepository();
@@ -26,10 +30,11 @@ export function describe{{pascalCase aggregate}}RepositoryContract(
       expect(first.equals(second)).toBe(false);
     });
 
+{{/if}}
     it("저장한 항목은 주인에게만 보인다", async () => {
       // Given
       const repository = await createRepository();
-      const {{camelCase aggregate}} = create{{pascalCase aggregate}}Fixture({ id: (await repository.nextId()).value });
+      const {{camelCase aggregate}} = create{{pascalCase aggregate}}Fixture({ id: {{#if isSerial}}(await repository.nextId()).value{{else}}{{pascalCase aggregate}}Id.generate().value{{/if}} });
       await repository.save({{camelCase aggregate}});
 
       // When
@@ -49,7 +54,7 @@ export function describe{{pascalCase aggregate}}RepositoryContract(
       const saved: {{idTsType}}[] = [];
       for (const seconds of [0, 1, 2]) {
         const {{camelCase aggregate}} = create{{pascalCase aggregate}}Fixture({
-          id: (await repository.nextId()).value,
+          id: {{#if isSerial}}(await repository.nextId()).value{{else}}{{pascalCase aggregate}}Id.generate().value{{/if}},
           createdAt: {{constantCase aggregate}}_FIXTURE_NOW.add({ seconds }),
         });
         await repository.save({{camelCase aggregate}});

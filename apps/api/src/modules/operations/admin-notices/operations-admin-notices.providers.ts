@@ -39,6 +39,7 @@ export const OPERATIONS_ADMIN_NOTICES_PROVIDERS = [
       operationsAdminNoticesConfig.KEY,
       getHttpClientToken(DISCORD_HTTP_CLIENT_NAME),
       OutboundPolicyRegistry,
+      ClockPort,
     ],
   },
   provideUseCase(ResolveAdminNoticeUserUseCase, {

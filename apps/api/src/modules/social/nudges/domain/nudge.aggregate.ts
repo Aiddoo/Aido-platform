@@ -3,9 +3,9 @@ import type { NudgeReplyKind } from "@aido/api/vocabulary";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { NudgeMessage } from "../../shared/domain/nudge-message.vo.js";
+import { cannotNudgeSelf } from "../../shared/domain/social.errors.js";
 import { NudgeId } from "./nudge-id.vo.js";
-import { NudgeMessage } from "./nudge-message.vo.js";
-import { cannotNudgeSelf } from "./nudges.errors.js";
 
 export interface NudgePrimitives {
   readonly id: number;

@@ -46,11 +46,11 @@ import {
   RETENTION_VARIANTS,
 } from "../../../modules/notification/retention/domain/retention.constants.js";
 import {
-  INVITE_STATUSES,
   REWARD_CLAIM_KINDS,
   REWARD_GRANT_STATUSES,
   REWARD_SOURCE_TYPES,
-} from "../../../modules/social/invites/domain/invites.constants.js";
+} from "../../../modules/social/invite-redemptions/domain/invite-redemptions.constants.js";
+import { INVITE_STATUSES } from "../../../modules/social/invites/domain/invites.constants.js";
 
 export const accountProvider = pgEnum("AccountProvider", ACCOUNT_PROVIDERS_IN_DB_ORDER);
 export const followStatus = pgEnum("FollowStatus", FOLLOW_STATUSES);

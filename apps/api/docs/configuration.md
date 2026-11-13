@@ -68,7 +68,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 
 ## 운영 env
 
-설정 정본은 `src/platform/config/schemas`와 루트 `.env*.example`이다. 운영 필수 값은 위 [운영 시작 검증](#운영-시작-검증)이다.
+설정 정본은 `src/platform/config/schemas`와 `apps/api/.env.example`이다. 운영에서 바꾸는 값은 예시 주석의 "운영"과 [production-env.spec.ts](../src/platform/config/production-env.spec.ts)의 `PRODUCTION_VALUES`가 같게 둔다. 운영 필수 값은 위 [운영 시작 검증](#운영-시작-검증)이다.
 
 | 설정                                                                    | 기본/용도                                                                                                                                      |
 | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -99,7 +99,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 
 ## 새 기능 소개 값
 
-릴리스마다 맞춘다. `.env*.example`의 값은 옛 예시이므로 복사하지 않는다.
+릴리스마다 맞춘다. `.env.example`의 값은 옛 예시이므로 복사하지 않는다.
 
 - `FEATURE_DISCOVERY_CAMPAIGN_ID`: 그 릴리스 앱에 번들된 id다(모바일 `features/app-config/whats-new/constants/releases.constants.ts`의 `campaignId`). 앱은 자기가 모르는 id면 소개를 띄우지 않는다.
 - `FEATURE_DISCOVERY_MIN_APP_VERSION`: 그 캠페인을 번들한 앱 버전이다.

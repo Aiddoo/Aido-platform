@@ -212,6 +212,7 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     lifecycle: PushDeliveryLifecycleRepositoryPort,
     unitOfWork: UnitOfWorkPort,
     publishOutbox: PublishPushDeliveryOutboxUseCase,
+    pushProvider: PushProviderPort,
     clock: ClockPort,
   }),
   provideUseCase(ReconcilePushReceiptsUseCase, {

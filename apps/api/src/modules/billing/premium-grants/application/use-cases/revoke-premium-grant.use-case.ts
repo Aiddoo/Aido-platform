@@ -1,9 +1,9 @@
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { bankedRemainderSourceKey } from "../../domain/premium-grant.aggregate.js";
-import type { BillingUserLockPort } from "../ports/billing-user-lock.port.js";
 import type { PremiumAccessCachePort } from "../ports/premium-access-cache.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
@@ -23,7 +23,7 @@ export type RevokePremiumGrantResult =
 export interface RevokePremiumGrantDependencies {
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findBySourceKey" | "saveAll">;
   readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;
-  readonly userLock: BillingUserLockPort;
+  readonly userLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: PremiumAccessCachePort;
   readonly logger: ApplicationLoggerPort;

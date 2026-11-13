@@ -13,12 +13,10 @@ import {
   NUDGE_FIXTURE_TODAY,
   type NudgeTodoSeed,
 } from "#test/fixtures/social/nudge.fixture";
-import { createReminderNudgeFixture } from "#test/fixtures/social/reminder-nudge.fixture";
-
-type NudgeStore = NudgeRepositoryPort & NudgeReaderPort;
 
 export interface NudgeRepositoryContractSubject {
-  readonly repository: NudgeStore;
+  readonly repository: NudgeRepositoryPort;
+  readonly reader: NudgeReaderPort;
   // 콕 대상 할 일은 planning이 쓰는 행이라 저장소 밖에서 넣는다
   addTodo(seed: NudgeTodoSeed): Promise<number>;
 }
@@ -29,7 +27,7 @@ const OTHER_USER_ID = UserId.reconstitute(NUDGE_FIXTURE_OTHER_USER_ID);
 const LATER = NUDGE_FIXTURE_NOW.add({ minutes: 1 });
 
 async function saveNudge(
-  repository: NudgeStore,
+  repository: NudgeRepositoryPort,
   overrides: Partial<NudgePrimitives> & { readonly todoId: number },
 ): Promise<Nudge> {
   const nudge = createNudgeFixture({ id: (await repository.nextId()).value, ...overrides });
@@ -44,18 +42,16 @@ function idsOf(items: readonly { readonly id: number }[]): number[] {
 export function describeNudgeRepositoryContract(
   createSubject: () => Promise<NudgeRepositoryContractSubject>,
 ): void {
-  describe("콕 저장소 계약", () => {
-    it("nextId·nextReminderId는 부를 때마다 다른 id를 준다", async () => {
+  describe("콕 저장소·조회 계약", () => {
+    it("nextId는 부를 때마다 다른 id를 준다", async () => {
       // Given
       const { repository } = await createSubject();
 
       // When
       const nudgeIds = [await repository.nextId(), await repository.nextId()];
-      const reminderIds = [await repository.nextReminderId(), await repository.nextReminderId()];
 
       // Then
       expect(nudgeIds[0]?.equals(nudgeIds[1] ?? nudgeIds[0])).toBe(false);
-      expect(reminderIds[0]?.equals(reminderIds[1] ?? reminderIds[0])).toBe(false);
     });
 
     it("다시 저장하면 답장은 덮어쓰고 이미 저장된 읽음·감사 시각은 남긴다", async () => {
@@ -171,7 +167,7 @@ export function describeNudgeRepositoryContract(
 
     it("답장·감사 할 일은 소유자에게만 준다(잠금 조회와 일반 조회가 같다)", async () => {
       // Given
-      const { repository, addTodo } = await createSubject();
+      const { repository, reader, addTodo } = await createSubject();
       const todoId = await addTodo(createNudgeTodoSeed({ completed: true }));
       const expected = {
         id: todoId,
@@ -183,8 +179,8 @@ export function describeNudgeRepositoryContract(
 
       // When
       const locked = await repository.lockInteractionTodo(TodoId.reconstitute(todoId), RECEIVER_ID);
-      const found = await repository.findInteractionTodo(TodoId.reconstitute(todoId), RECEIVER_ID);
-      const foreign = await repository.findInteractionTodo(TodoId.reconstitute(todoId), SENDER_ID);
+      const found = await reader.findInteractionTodo(TodoId.reconstitute(todoId), RECEIVER_ID);
+      const foreign = await reader.findInteractionTodo(TodoId.reconstitute(todoId), SENDER_ID);
 
       // Then
       expect({ locked, found, foreign }).toEqual({
@@ -194,60 +190,9 @@ export function describeNudgeRepositoryContract(
       });
     });
 
-    it("그 날짜의 할 일 수는 기간 할 일과 그날 시작한 하루 할 일을 센다", async () => {
-      // Given
-      const { repository, addTodo } = await createSubject();
-      const today = NUDGE_FIXTURE_TODAY;
-      await addTodo(createNudgeTodoSeed({ startDate: today }));
-      await addTodo(
-        createNudgeTodoSeed({
-          startDate: today.subtract({ days: 2 }),
-          endDate: today.add({ days: 1 }),
-        }),
-      );
-      await addTodo(createNudgeTodoSeed({ startDate: today.subtract({ days: 1 }) }));
-      await addTodo(
-        createNudgeTodoSeed({
-          startDate: today.subtract({ days: 3 }),
-          endDate: today.subtract({ days: 1 }),
-        }),
-      );
-      await addTodo(
-        createNudgeTodoSeed({ ownerId: NUDGE_FIXTURE_OTHER_USER_ID, startDate: today }),
-      );
-
-      // When
-      const count = await repository.countTodosOn(RECEIVER_ID, today);
-      const tomorrow = await repository.countTodosOn(RECEIVER_ID, today.add({ days: 1 }));
-
-      // Then
-      expect({ count, tomorrow }).toEqual({ count: 2, tomorrow: 1 });
-    });
-
-    it("리마인드 콕은 그 친구에게 가장 늦게 보낸 것을 찾는다", async () => {
-      // Given
-      const { repository } = await createSubject();
-      const older = createReminderNudgeFixture({ id: (await repository.nextReminderId()).value });
-      const latest = createReminderNudgeFixture({
-        id: (await repository.nextReminderId()).value,
-        message: "할 일 만들자",
-        createdAt: LATER,
-      });
-      await repository.saveReminder(older);
-      await repository.saveReminder(latest);
-
-      // When
-      const last = await repository.findLastReminderSentTo(SENDER_ID, RECEIVER_ID);
-      const none = await repository.findLastReminderSentTo(RECEIVER_ID, SENDER_ID);
-
-      // Then
-      expect(last?.toPrimitives()).toEqual(latest.toPrimitives());
-      expect(none).toBeNull();
-    });
-
     it("받은·보낸 콕은 생성 시각·id 내림차순으로 after 콕 뒤부터 주고 개수를 센다", async () => {
       // Given
-      const { repository, addTodo } = await createSubject();
+      const { repository, reader, addTodo } = await createSubject();
       const todoId = await addTodo(createNudgeTodoSeed());
       const oldest = await saveNudge(repository, { todoId, createdAt: NUDGE_FIXTURE_NOW });
       const tiedOlder = await saveNudge(repository, { todoId, createdAt: LATER, readAt: LATER });
@@ -260,18 +205,18 @@ export function describeNudgeRepositoryContract(
       });
 
       // When
-      const firstPage = await repository.listReceived({
+      const firstPage = await reader.listReceived({
         userId: RECEIVER_ID,
         afterNudgeId: null,
         limit: 2,
       });
-      const nextPage = await repository.listReceived({
+      const nextPage = await reader.listReceived({
         userId: RECEIVER_ID,
         afterNudgeId: tiedOlder.id,
         limit: 5,
       });
-      const sent = await repository.listSent({ userId: SENDER_ID, afterNudgeId: null, limit: 5 });
-      const afterMissing = await repository.listSent({
+      const sent = await reader.listSent({ userId: SENDER_ID, afterNudgeId: null, limit: 5 });
+      const afterMissing = await reader.listSent({
         userId: SENDER_ID,
         afterNudgeId: await repository.nextId(),
         limit: 5,
@@ -293,15 +238,15 @@ export function describeNudgeRepositoryContract(
         },
       });
       expect({
-        received: await repository.countReceived(RECEIVER_ID),
-        unread: await repository.countUnreadReceived(RECEIVER_ID),
-        sent: await repository.countSent(SENDER_ID),
+        received: await reader.countReceived(RECEIVER_ID),
+        unread: await reader.countUnreadReceived(RECEIVER_ID),
+        sent: await reader.countSent(SENDER_ID),
       }).toEqual({ received: 3, unread: 2, sent: 3 });
     });
 
     it("주고받은 콕 하나는 보낸 사람·받은 사람에게만 보이고 목록은 방향별 id 내림차순이다", async () => {
       // Given
-      const { repository, addTodo } = await createSubject();
+      const { repository, reader, addTodo } = await createSubject();
       const todoId = await addTodo(createNudgeTodoSeed());
       const first = await saveNudge(repository, { todoId });
       const second = await saveNudge(repository, {
@@ -312,16 +257,16 @@ export function describeNudgeRepositoryContract(
       const third = await saveNudge(repository, { todoId });
 
       // When
-      const asReceiver = await repository.findInteraction(second.id, RECEIVER_ID);
-      const asSender = await repository.findInteraction(second.id, SENDER_ID);
-      const asStranger = await repository.findInteraction(second.id, OTHER_USER_ID);
-      const received = await repository.listInteractions({
+      const asReceiver = await reader.findInteraction(second.id, RECEIVER_ID);
+      const asSender = await reader.findInteraction(second.id, SENDER_ID);
+      const asStranger = await reader.findInteraction(second.id, OTHER_USER_ID);
+      const received = await reader.listInteractions({
         viewerId: RECEIVER_ID,
         direction: "received",
         afterNudgeId: third.id,
         limit: 5,
       });
-      const sentByReceiver = await repository.listInteractions({
+      const sentByReceiver = await reader.listInteractions({
         viewerId: RECEIVER_ID,
         direction: "sent",
         afterNudgeId: null,
@@ -342,12 +287,9 @@ export function describeNudgeRepositoryContract(
 
     it("감사 요약은 감사한 친구 수와 마지막 감사 시각, 마지막으로 받은 콕 id를 준다", async () => {
       // Given
-      const { repository, addTodo } = await createSubject();
+      const { repository, reader, addTodo } = await createSubject();
       const todoId = await addTodo(createNudgeTodoSeed({ completed: true }));
-      const emptyLast = await repository.findLastThankedAt(
-        TodoId.reconstitute(todoId),
-        RECEIVER_ID,
-      );
+      const emptyLast = await reader.findLastThankedAt(TodoId.reconstitute(todoId), RECEIVER_ID);
       await saveNudge(repository, { todoId, thankedAt: NUDGE_FIXTURE_NOW });
       await saveNudge(repository, {
         todoId,
@@ -357,19 +299,19 @@ export function describeNudgeRepositoryContract(
       const lastReceived = await saveNudge(repository, { todoId });
 
       // When
-      const thankedCount = await repository.countThankedRecipients(
+      const thankedCount = await reader.countThankedRecipients(
         TodoId.reconstitute(todoId),
         RECEIVER_ID,
       );
-      const lastThankedAt = await repository.findLastThankedAt(
+      const lastThankedAt = await reader.findLastThankedAt(
         TodoId.reconstitute(todoId),
         RECEIVER_ID,
       );
-      const lastReceivedId = await repository.findLastReceivedNudgeId(
+      const lastReceivedId = await reader.findLastReceivedNudgeId(
         TodoId.reconstitute(todoId),
         RECEIVER_ID,
       );
-      const noneReceived = await repository.findLastReceivedNudgeId(
+      const noneReceived = await reader.findLastReceivedNudgeId(
         TodoId.reconstitute(todoId),
         SENDER_ID,
       );
@@ -384,7 +326,7 @@ export function describeNudgeRepositoryContract(
 
     it("감사 대상은 친구마다 throughNudgeId까지 받은 아직 감사하지 않은 가장 최근 콕 하나다", async () => {
       // Given
-      const { repository, addTodo } = await createSubject();
+      const { repository, reader, addTodo } = await createSubject();
       const todoId = await addTodo(createNudgeTodoSeed({ completed: true }));
       await saveNudge(repository, { todoId });
       const senderLatest = await saveNudge(repository, { todoId });
@@ -402,18 +344,18 @@ export function describeNudgeRepositoryContract(
 
       // When
       const candidates = await repository.listThanksCandidates(query);
-      const firstPage = await repository.listThanksRecipients({
+      const firstPage = await reader.listThanksRecipients({
         ...query,
         afterNudgeId: null,
         limit: 1,
       });
-      const nextPage = await repository.listThanksRecipients({
+      const nextPage = await reader.listThanksRecipients({
         ...query,
         afterNudgeId: otherNudge.id,
         limit: 1,
       });
-      const total = await repository.countThanksRecipients(query);
-      const notFriends = await repository.countThanksRecipients({ ...query, friendIds: [] });
+      const total = await reader.countThanksRecipients(query);
+      const notFriends = await reader.countThanksRecipients({ ...query, friendIds: [] });
 
       // Then
       expect(candidates.map((nudge) => nudge.id.value)).toEqual([
@@ -459,7 +401,7 @@ export function describeNudgeRepositoryContract(
       expect({ thanked, privateCandidates }).toEqual({ thanked: [], privateCandidates: [] });
     });
 
-    it("감사 저장은 아직 감사하지 않은 콕에만 감사 시각을 남긴다", async () => {
+    it("여러 콕을 한 번에 저장해도 이미 남은 감사 시각은 덮어쓰지 않는다", async () => {
       // Given
       const { repository, addTodo } = await createSubject();
       const todoId = await addTodo(createNudgeTodoSeed({ completed: true }));
@@ -469,7 +411,7 @@ export function describeNudgeRepositoryContract(
       const staleThanked = createNudgeFixture({ ...stale.toPrimitives(), thankedAt: LATER });
 
       // When
-      await repository.saveThanks([freshThanked, staleThanked]);
+      await repository.saveAll([freshThanked, staleThanked]);
 
       // Then
       expect((await repository.findById(fresh.id))?.thankedAt).toEqual(LATER);

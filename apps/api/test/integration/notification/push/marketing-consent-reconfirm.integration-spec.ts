@@ -2,7 +2,6 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
 import { ReconfirmMarketingConsentsUseCase } from "#api/modules/notification/push/application/use-cases/reconfirm-marketing-consents.use-case";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,
   user as userTable,
@@ -11,6 +10,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import {
   createE2eApp,

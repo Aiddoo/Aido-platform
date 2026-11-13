@@ -165,4 +165,7 @@ export async function launchChrome() {
   };
 }
 
-export const defaultCaptureRoot = join(homedir(), 'Desktop/Aido-Screens-1.13.0');
+const { version: appVersion } = JSON.parse(
+  readFileSync(new URL('../../../package.json', import.meta.url), 'utf8'),
+);
+export const defaultCaptureRoot = join(homedir(), `Desktop/Aido-Screens-${appVersion}`);

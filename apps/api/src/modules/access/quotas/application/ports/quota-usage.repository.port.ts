@@ -2,7 +2,7 @@ import type { QuotaMeter } from "@aido/api/vocabulary";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { QuotaWindow } from "../../domain/quota-window.vo.js";
+import type { QuotaWindow } from "../../../shared/domain/quota-window.vo.js";
 
 /**
  * 계량기별 기간 사용량 카운터. AI_PLAN은 출시 앱 /v1/ai/usage·/me와 같은 User.aiUsageCount·aiUsageResetAt을,

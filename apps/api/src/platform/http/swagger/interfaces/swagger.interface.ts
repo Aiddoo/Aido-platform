@@ -32,10 +32,7 @@ export interface ApiSuccessResponseOptions<T = unknown> {
   isArray?: boolean;
 }
 
-/**
- * @ApiCreatedResponse 데코레이터 옵션
- */
-export interface ApiCreatedResponseOptions<T = unknown> {
+export interface ApiCreatedSuccessResponseOptions<T = unknown> {
   /** 응답 설명 */
   description?: string;
   /** 응답 데이터 스키마 */

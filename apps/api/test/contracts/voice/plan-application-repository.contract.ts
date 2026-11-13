@@ -113,11 +113,11 @@ export function describePlanApplicationRepositoryContract(
       );
 
       // When
-      const deletedCount = await repository.deleteCreatedBefore(cutoff);
-      const deletedAgain = await repository.deleteCreatedBefore(cutoff);
+      const purgedCount = await repository.purgeCreatedBefore(cutoff);
+      const purgedAgain = await repository.purgeCreatedBefore(cutoff);
 
       // Then
-      expect([deletedCount, deletedAgain]).toEqual([2, 0]);
+      expect([purgedCount, purgedAgain]).toEqual([2, 0]);
       expect(await repository.findByIdempotencyKey(USER_ID, "older")).toBeNull();
       expect(await repository.findByIdempotencyKey(USER_ID, "at-cutoff")).not.toBeNull();
     });

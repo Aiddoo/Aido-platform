@@ -1,7 +1,7 @@
 import { sortBy, sumBy } from "es-toolkit";
 
 import type { IsoWeek } from "./iso-week.vo.js";
-import type { WeeklyAchievement } from "./weekly-achievement.entity.js";
+import type { WeeklyAchievement } from "./weekly-achievement.aggregate.js";
 
 export interface WeeklyStreak {
   /** 가장 최근 기록에서 거슬러 올라간 연속 주 수 */
@@ -49,7 +49,7 @@ export function summarizeWeeklyAchievements(
   );
   return {
     totalWeeks,
-    perfectWeeks: achievements.filter((achievement) => achievement.isPerfect).length,
+    perfectWeeks: achievements.filter((achievement) => achievement.isPerfect()).length,
     ...computeWeeklyStreak(weeks),
     averageRate: Math.round(
       sumBy(achievements, (achievement) => achievement.completionRate) / totalWeeks,

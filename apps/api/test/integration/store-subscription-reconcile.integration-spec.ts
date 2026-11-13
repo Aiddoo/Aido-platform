@@ -5,10 +5,10 @@ import { StoreSubscriptionStatusReaderPort } from "#api/modules/billing/subscrip
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/subscriptions/infrastructure/jobs/store-subscription-reconcile.queue";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { StubStoreSubscriptionStatusReader } from "#test/doubles/billing/stub-store-subscription-status.reader";
@@ -128,7 +128,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
     await jobs.drain(STORE_SUBSCRIPTION_RECONCILE_QUEUE);
     const afterFirstRun = await client.query.subscription.findFirst({
       columns: { status: true, expiresAt: true, updatedAt: true },
-      where: { revenueCatId: CHAIN },
+      where: { storeSubscriptionId: CHAIN },
     });
     await jobs.enqueue(STORE_SUBSCRIPTION_RECONCILE_QUEUE, {
       name: "reconcile-store-subscriptions",
@@ -149,7 +149,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
     expect(
       await client.query.subscription.findFirst({
         columns: { status: true, expiresAt: true, updatedAt: true },
-        where: { revenueCatId: CHAIN },
+        where: { storeSubscriptionId: CHAIN },
       }),
     ).toEqual(afterFirstRun);
     expect(await premiumAccess.getPremiumAccess(UserId.reconstitute(user.id))).toMatchObject({

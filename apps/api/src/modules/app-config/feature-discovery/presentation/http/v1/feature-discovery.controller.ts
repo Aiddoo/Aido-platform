@@ -3,10 +3,11 @@ import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { RawResponse } from "#api/platform/http/decorators/raw-response.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 
-import { GetFeatureDiscoveryUseCase } from "../../../application/use-cases/get-feature-discovery.use-case.js";
+import { GetFeatureDiscoveryCampaignUseCase } from "../../../application/use-cases/get-feature-discovery-campaign.use-case.js";
 import { toFeatureDiscoveryResponse } from "./feature-discovery-response.mapper.js";
 import {
   FeatureDiscoveryDisabledResponseDto,
@@ -15,12 +16,12 @@ import {
 } from "./feature-discovery.dto.js";
 
 @ApiTags("App Config")
-@Controller("app-config")
+@Controller({ path: "app-config", version: API_VERSION.V1 })
 export class FeatureDiscoveryController {
-  readonly #getFeatureDiscovery: GetFeatureDiscoveryUseCase;
+  readonly #getFeatureDiscoveryCampaign: GetFeatureDiscoveryCampaignUseCase;
 
-  constructor(getFeatureDiscovery: GetFeatureDiscoveryUseCase) {
-    this.#getFeatureDiscovery = getFeatureDiscovery;
+  constructor(getFeatureDiscoveryCampaign: GetFeatureDiscoveryCampaignUseCase) {
+    this.#getFeatureDiscoveryCampaign = getFeatureDiscoveryCampaign;
   }
 
   @Get("feature-discovery")
@@ -49,6 +50,6 @@ export class FeatureDiscoveryController {
     schema: featureDiscoveryResponseOpenApiSchema,
   })
   getFeatureDiscovery(): FeatureDiscoveryResponse {
-    return toFeatureDiscoveryResponse(this.#getFeatureDiscovery.execute());
+    return toFeatureDiscoveryResponse(this.#getFeatureDiscoveryCampaign.execute());
   }
 }

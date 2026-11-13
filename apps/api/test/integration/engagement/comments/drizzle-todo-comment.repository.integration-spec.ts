@@ -1,4 +1,5 @@
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
+import { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
 import { DrizzleTodoCommentLikeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-like.repository";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/infrastructure/persistence/drizzle-todo-comment.repository";
@@ -95,7 +96,7 @@ describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {
     // Given
     const { comments } = repositories();
     const createdAt = Temporal.Instant.from("2027-01-08T12:00:00.123Z");
-    const comment = createTodoCommentFixture({ id: (await comments.nextId()).value, createdAt });
+    const comment = createTodoCommentFixture({ id: TodoCommentId.generate().value, createdAt });
 
     // When
     await comments.save(comment);

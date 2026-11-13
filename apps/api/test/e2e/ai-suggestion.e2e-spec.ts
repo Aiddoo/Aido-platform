@@ -19,12 +19,12 @@ import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/p
  * - 인증 에러 (401)
  */
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   recurringSuggestion,
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";

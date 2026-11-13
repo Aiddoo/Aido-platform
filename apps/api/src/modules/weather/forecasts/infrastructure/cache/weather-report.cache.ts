@@ -11,18 +11,18 @@ import { z } from "zod";
 
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type { AirQuality } from "../../application/ports/air-quality-provider.port.js";
 import type { WeatherReportCachePort } from "../../application/ports/weather-report-cache.port.js";
-import { weatherReportTtlMs } from "../../domain/weather-report-freshness.domain-service.js";
 import type { WeatherReportCacheScope } from "../../domain/weather-report-language.domain-service.js";
-import type { WeatherReport } from "../../domain/weather-report.vo.js";
+import { WeatherReport } from "../../domain/weather-report.vo.js";
 import { WEATHER_REPORT_CACHE_TTL_MS, WeatherReportCacheKey } from "./weather-report.keyspace.js";
 
 const conditionSchema = z.enum(WEATHER_CONDITIONS);
 const precipitationTypeSchema = z.enum(WEATHER_PRECIPITATION_TYPES);
+const instantSchema = z.iso.datetime();
 
 const dayPartSchema = z.object({
   condition: conditionSchema,
@@ -33,10 +33,10 @@ const dayPartSchema = z.object({
   precipitationType: precipitationTypeSchema,
 });
 
-/** Redis JSON에서 문자열이 된 시각을 Date로 복원한다. 형태가 다르면 캐시 미스다. */
-const WEATHER_REPORT_SCHEMA = z.object({
+// 배포 사이 이전·다음 버전이 같은 키를 읽으므로 시각은 Date JSON과 같은 ISO 문자열(ms 3자리)로 둔다. 형태가 다르면 미스다
+const CACHED_REPORT_SCHEMA = z.object({
   current: z.object({
-    observedAt: z.coerce.date(),
+    observedAt: instantSchema,
     condition: conditionSchema,
     isDaylight: z.boolean(),
     temperature: z.number(),
@@ -59,15 +59,15 @@ const WEATHER_REPORT_SCHEMA = z.object({
         z.object({
           condition: z.enum(WEATHER_NEXT_HOUR_CONDITIONS),
           precipitationType: precipitationTypeSchema.nullable(),
-          startsAt: z.coerce.date(),
-          endsAt: z.coerce.date().nullable(),
+          startsAt: instantSchema,
+          endsAt: instantSchema.nullable(),
           precipitationChance: z.number(),
           precipitationIntensity: z.number(),
         }),
       ),
       minutes: z.array(
         z.object({
-          startsAt: z.coerce.date(),
+          startsAt: instantSchema,
           precipitationChance: z.number(),
           precipitationIntensity: z.number(),
         }),
@@ -76,7 +76,7 @@ const WEATHER_REPORT_SCHEMA = z.object({
     .nullable(),
   hourly: z.array(
     z.object({
-      startsAt: z.coerce.date(),
+      startsAt: instantSchema,
       condition: conditionSchema,
       isDaylight: z.boolean(),
       temperature: z.number(),
@@ -103,11 +103,11 @@ const WEATHER_REPORT_SCHEMA = z.object({
       uvIndexMax: z.number(),
       windSpeedMax: z.number().nullable(),
       windGustMax: z.number().nullable(),
-      sunrise: z.coerce.date().nullable(),
-      sunset: z.coerce.date().nullable(),
+      sunrise: instantSchema.nullable(),
+      sunset: instantSchema.nullable(),
       moonPhase: z.enum(WEATHER_MOON_PHASES),
-      moonrise: z.coerce.date().nullable(),
-      moonset: z.coerce.date().nullable(),
+      moonrise: instantSchema.nullable(),
+      moonset: instantSchema.nullable(),
       restOfDay: dayPartSchema.nullable(),
       daytime: dayPartSchema.nullable(),
       overnight: dayPartSchema.nullable(),
@@ -120,13 +120,15 @@ const WEATHER_REPORT_SCHEMA = z.object({
       severity: z.enum(WEATHER_ALERT_SEVERITIES),
       source: z.string(),
       areaName: z.string().nullable(),
-      effectiveAt: z.coerce.date(),
-      expiresAt: z.coerce.date(),
+      effectiveAt: instantSchema,
+      expiresAt: instantSchema,
       detailsUrl: z.string(),
     }),
   ),
-  fetchedAt: z.coerce.date(),
-}) satisfies z.ZodType<WeatherReport>;
+  fetchedAt: instantSchema,
+});
+
+type CachedWeatherReport = z.infer<typeof CACHED_REPORT_SCHEMA>;
 
 const AIR_QUALITY_SCHEMA = z
   .object({
@@ -134,6 +136,88 @@ const AIR_QUALITY_SCHEMA = z
     pm25: z.number().nullable(),
   })
   .nullable() satisfies z.ZodType<AirQuality | null>;
+
+function toIsoStringOrNull(instant: Temporal.Instant | null): string | null {
+  return instant == null ? null : toIsoString(instant);
+}
+
+function toInstant(text: string): Temporal.Instant {
+  return Temporal.Instant.from(text);
+}
+
+function toInstantOrNull(text: string | null): Temporal.Instant | null {
+  return text == null ? null : toInstant(text);
+}
+
+function toCachedWeatherReport({ value }: WeatherReport): CachedWeatherReport {
+  return {
+    current: { ...value.current, observedAt: toIsoString(value.current.observedAt) },
+    nextHour:
+      value.nextHour == null
+        ? null
+        : {
+            periods: value.nextHour.periods.map((period) => ({
+              ...period,
+              startsAt: toIsoString(period.startsAt),
+              endsAt: toIsoStringOrNull(period.endsAt),
+            })),
+            minutes: value.nextHour.minutes.map((minute) => ({
+              ...minute,
+              startsAt: toIsoString(minute.startsAt),
+            })),
+          },
+    hourly: value.hourly.map((hour) => ({ ...hour, startsAt: toIsoString(hour.startsAt) })),
+    daily: value.daily.map((day) => ({
+      ...day,
+      date: day.date.toString(),
+      sunrise: toIsoStringOrNull(day.sunrise),
+      sunset: toIsoStringOrNull(day.sunset),
+      moonrise: toIsoStringOrNull(day.moonrise),
+      moonset: toIsoStringOrNull(day.moonset),
+    })),
+    alerts: value.alerts.map((alert) => ({
+      ...alert,
+      effectiveAt: toIsoString(alert.effectiveAt),
+      expiresAt: toIsoString(alert.expiresAt),
+    })),
+    fetchedAt: toIsoString(value.fetchedAt),
+  };
+}
+
+function toWeatherReport(cached: CachedWeatherReport): WeatherReport {
+  return WeatherReport.reconstitute({
+    current: { ...cached.current, observedAt: toInstant(cached.current.observedAt) },
+    nextHour:
+      cached.nextHour == null
+        ? null
+        : {
+            periods: cached.nextHour.periods.map((period) => ({
+              ...period,
+              startsAt: toInstant(period.startsAt),
+              endsAt: toInstantOrNull(period.endsAt),
+            })),
+            minutes: cached.nextHour.minutes.map((minute) => ({
+              ...minute,
+              startsAt: toInstant(minute.startsAt),
+            })),
+          },
+    hourly: cached.hourly.map((hour) => ({ ...hour, startsAt: toInstant(hour.startsAt) })),
+    daily: cached.daily.map((day) => ({
+      ...day,
+      date: Temporal.PlainDate.from(day.date),
+      sunrise: toInstantOrNull(day.sunrise),
+      sunset: toInstantOrNull(day.sunset),
+      moonrise: toInstantOrNull(day.moonrise),
+      moonset: toInstantOrNull(day.moonset),
+    })),
+    alerts: cached.alerts.map((alert) => ({
+      ...alert,
+      effectiveAt: toInstant(alert.effectiveAt),
+      expiresAt: toInstant(alert.expiresAt),
+    })),
+    fetchedAt: toInstant(cached.fetchedAt),
+  });
+}
 
 @Injectable()
 export class WeatherReportCache implements WeatherReportCachePort {
@@ -145,16 +229,16 @@ export class WeatherReportCache implements WeatherReportCachePort {
     this.#clock = clock;
   }
 
-  getOrLoadReport(
+  async getOrLoadReport(
     cell: GeoCell,
     scope: WeatherReportCacheScope,
     load: () => Promise<WeatherReport>,
   ): Promise<WeatherReport> {
-    return this.#cache.wrap(
+    const cached = await this.#cache.wrap(
       WeatherReportCacheKey.report(cell.key, scope),
-      WEATHER_REPORT_SCHEMA,
+      CACHED_REPORT_SCHEMA,
       async () => {
-        const report = await load();
+        const report = toCachedWeatherReport(await load());
         await this.#cache.set(
           WeatherReportCacheKey.latestReport(cell.key, scope),
           report,
@@ -162,18 +246,20 @@ export class WeatherReportCache implements WeatherReportCachePort {
         );
         return report;
       },
-      (report) => weatherReportTtlMs(report, instantToDate(this.#clock.now())),
+      (report) => this.#reportTtlMs(toWeatherReport(report)),
     );
+    return toWeatherReport(cached);
   }
 
-  getLatestReport(
+  async getLatestReport(
     cell: GeoCell,
     scope: WeatherReportCacheScope,
   ): Promise<WeatherReport | undefined> {
-    return this.#cache.get(
+    const cached = await this.#cache.get(
       WeatherReportCacheKey.latestReport(cell.key, scope),
-      WEATHER_REPORT_SCHEMA,
+      CACHED_REPORT_SCHEMA,
     );
+    return cached == null ? undefined : toWeatherReport(cached);
   }
 
   getOrLoadAirQuality(
@@ -186,5 +272,11 @@ export class WeatherReportCache implements WeatherReportCachePort {
       load,
       WEATHER_REPORT_CACHE_TTL_MS.AIR_QUALITY,
     );
+  }
+
+  #reportTtlMs(report: WeatherReport): number {
+    return report.isPrecipitationSoon(this.#clock.now())
+      ? WEATHER_REPORT_CACHE_TTL_MS.REPORT_PRECIPITATION_SOON
+      : WEATHER_REPORT_CACHE_TTL_MS.REPORT_CALM;
   }
 }

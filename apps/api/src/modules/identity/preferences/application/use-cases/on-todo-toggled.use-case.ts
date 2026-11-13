@@ -76,7 +76,7 @@ export class OnTodoToggledUseCase {
         }
 
         if (plan.reachedStreak3) {
-          this.#dependencies.milestoneNotifier.notifyStreak3Reached(userId);
+          await this.#dependencies.milestoneNotifier.notifyStreak3Reached(userId);
         }
         this.#dependencies.logger.log({
           event: allCompleted

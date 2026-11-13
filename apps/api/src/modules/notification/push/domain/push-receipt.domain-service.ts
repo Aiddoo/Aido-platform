@@ -1,10 +1,16 @@
 const MINUTE_MS = 60_000;
 
-/** Expo는 ticket 수락 뒤 receipt를 약 24시간 보관한다. 그 뒤에는 결과를 알 수 없다. */
+/** 공급자가 정하는 receipt 대기·보관 시간. 값은 푸시 공급자 어댑터가 준다. */
+export interface PushReceiptTiming {
+  /** 수락한 ticket의 receipt를 처음 물어도 되는 시간 */
+  readonly readyAfterMs: number;
+  /** 공급자가 receipt를 보관하는 시간. 지나면 결과를 알 수 없다 */
+  readonly retentionMs: number;
+}
+
+/** 우리가 정하는 확인 주기와 실행 한도다. 공급자 시간은 PushReceiptTiming으로 받는다. */
 export const PUSH_RECEIPT_POLICY = {
-  firstCheckDelayMs: 15 * MINUTE_MS,
   recheckIntervalMs: 15 * MINUTE_MS,
-  availabilityWindowMs: 24 * 60 * MINUTE_MS,
   batchSize: 900,
   expireBatchSize: 5000,
   runBudgetMs: 45_000,
@@ -35,10 +41,13 @@ export interface PushReceiptCheckWindow {
   readonly checkedBefore: Temporal.Instant;
 }
 
-export function pushReceiptCheckWindow(now: Temporal.Instant): PushReceiptCheckWindow {
+export function pushReceiptCheckWindow(
+  now: Temporal.Instant,
+  timing: PushReceiptTiming,
+): PushReceiptCheckWindow {
   return {
-    acceptedAfter: now.subtract({ milliseconds: PUSH_RECEIPT_POLICY.availabilityWindowMs }),
-    acceptedBefore: now.subtract({ milliseconds: PUSH_RECEIPT_POLICY.firstCheckDelayMs }),
+    acceptedAfter: now.subtract({ milliseconds: timing.retentionMs }),
+    acceptedBefore: now.subtract({ milliseconds: timing.readyAfterMs }),
     checkedBefore: now.subtract({ milliseconds: PUSH_RECEIPT_POLICY.recheckIntervalMs }),
   };
 }

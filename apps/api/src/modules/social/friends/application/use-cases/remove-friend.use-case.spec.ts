@@ -4,8 +4,8 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { FakeFollowCache } from "#test/doubles/social/fake-follow-cache";
-import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
+import { FakeFriendshipCache } from "#test/doubles/social/fake-friendship-cache";
+import { InMemoryFriendshipRepository } from "#test/doubles/social/in-memory-friendship.repository";
 import {
   createFriendshipFixture,
   createMutualFriendshipFixtures,
@@ -36,22 +36,22 @@ function setup(
   friendships: readonly Friendship[],
   unitOfWork: UnitOfWorkPort = new ImmediateUnitOfWork(),
 ) {
-  const followRepository = new InMemoryFollowRepository(friendships);
-  const cache = new FakeFollowCache();
+  const friendshipRepository = new InMemoryFriendshipRepository(friendships);
+  const cache = new FakeFriendshipCache();
   const useCase = new RemoveFriendUseCase({
     unitOfWork,
     mutationLock: new RecordingMutationLock(),
-    followRepository,
+    friendshipRepository,
     cache,
     logger: new SilentLogger(),
   });
-  return { useCase, followRepository, cache };
+  return { useCase, friendshipRepository, cache };
 }
 
 describe("RemoveFriendUseCase — 친구 삭제·요청 철회", () => {
   it("내 방향 관계가 없으면 FOLLOW_0907로 거절하고 상대가 보낸 요청은 둔다", async () => {
     // Given
-    const { useCase, followRepository } = setup([
+    const { useCase, friendshipRepository } = setup([
       createFriendshipFixture({ followerId: FRIEND, followingId: ME }),
     ]);
 
@@ -63,7 +63,7 @@ describe("RemoveFriendUseCase — 친구 삭제·요청 철회", () => {
       errorCode: ErrorCode.FOLLOW_0907,
       details: { targetUserId: FRIEND },
     });
-    expect(followRepository.size).toBe(1);
+    expect(friendshipRepository.size).toBe(1);
   });
 
   it.each([
@@ -74,7 +74,7 @@ describe("RemoveFriendUseCase — 친구 삭제·요청 철회", () => {
     },
   ])("$name 관계를 두 방향 모두 지우고 두 사람의 친구 캐시를 비운다", async ({ friendships }) => {
     // Given
-    const { useCase, followRepository, cache } = setup(friendships);
+    const { useCase, friendshipRepository, cache } = setup(friendships);
     cache.mutual.set(`${ME}:${FRIEND}`, true);
     cache.friendCounts.set(ME, 1);
     cache.friendIds.set(FRIEND, [ME]);
@@ -83,7 +83,7 @@ describe("RemoveFriendUseCase — 친구 삭제·요청 철회", () => {
     await useCase.execute({ userId: ME, targetUserId: FRIEND });
 
     // Then
-    expect(followRepository.size).toBe(0);
+    expect(friendshipRepository.size).toBe(0);
     expect(cache.mutual.size).toBe(0);
     expect(cache.friendCounts.size).toBe(0);
     expect(cache.friendIds.size).toBe(0);

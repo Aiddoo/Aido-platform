@@ -1,4 +1,4 @@
-import { FakeBillingUserLock } from "#test/doubles/billing/fake-billing-user-lock";
+import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
@@ -17,7 +17,7 @@ import {
 
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import { bankedRemainderSourceKey } from "../../domain/premium-grant.aggregate.js";
-import { LoadPremiumEntitlementsUseCase } from "./load-premium-entitlements.use-case.js";
+import { GetPremiumEntitlementsUseCase } from "./get-premium-entitlements.use-case.js";
 import { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 import { RevokePremiumGrantUseCase } from "./revoke-premium-grant.use-case.js";
 
@@ -30,7 +30,7 @@ function setup(grants: PremiumGrant[]) {
     SUBSCRIPTION_FIXTURE_USER_ID,
   ]);
   const cache = new RecordingPremiumAccessCache();
-  const loadPremiumEntitlements = new LoadPremiumEntitlementsUseCase({
+  const getPremiumEntitlements = new GetPremiumEntitlementsUseCase({
     storeEntitlementReader: new InMemoryStoreEntitlementReader(
       new InMemorySubscriptionRepository(),
     ),
@@ -39,11 +39,11 @@ function setup(grants: PremiumGrant[]) {
   const useCase = new RevokePremiumGrantUseCase({
     premiumGrantRepository,
     projectPremiumAccess: new ProjectPremiumAccessUseCase({
-      loadPremiumEntitlements,
+      getPremiumEntitlements,
       premiumGrantRepository,
       userSubscriptionProjection: projection,
     }),
-    userLock: new FakeBillingUserLock([SUBSCRIPTION_FIXTURE_USER_ID]),
+    userLock: new FakeUserMutationLock([SUBSCRIPTION_FIXTURE_USER_ID]),
     unitOfWork: new ImmediateUnitOfWork(),
     cache,
     logger: new SilentLogger(),

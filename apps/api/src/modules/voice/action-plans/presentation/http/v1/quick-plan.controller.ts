@@ -9,6 +9,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
 import { IdempotencyKey } from "#api/platform/http/decorators/idempotency-key.decorator";
 import { Locale } from "#api/platform/http/decorators/locale.decorator";
@@ -22,13 +23,14 @@ import {
   ApiServiceUnavailableError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiIdempotencyKeyHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { CreateQuickPlanUseCase } from "../../../application/use-cases/create-quick-plan.use-case.js";
-import { ApiIdempotencyKeyHeader, ApiPlanningLocaleHeaders } from "../plan-request.decorator.js";
+import { ApiPlanningLocaleHeaders } from "../plan-request.decorator.js";
 import { toQuickPlanResponse } from "./action-plan-response.mapper.js";
 import { QuickPlanRequestDto, QuickPlanResponseDto } from "./action-plan.dto.js";
 
@@ -36,7 +38,7 @@ const QUICK_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 20 } } as const;
 
 @ApiTags(SWAGGER_TAGS.VOICE)
 @ApiBearerAuth()
-@Controller("quick-plans")
+@Controller({ path: "quick-plans", version: API_VERSION.V1 })
 export class QuickPlanController {
   readonly #createQuickPlan: CreateQuickPlanUseCase;
 

@@ -3,8 +3,11 @@ import { SUBSCRIPTION_STATUS, USER_ROLE, type SubscriptionStatus } from "@aido/a
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { resolveAccessSubject, type AccessState } from "../../domain/entitlement.domain-service.js";
-import { NO_FEATURE_GRANTS, type FeatureGrants } from "../../domain/entitlements.constants.js";
+import { NO_FEATURE_GRANTS, type FeatureGrants } from "../../../shared/domain/access.constants.js";
+import {
+  resolveAccessSubject,
+  type AccessState,
+} from "../../../shared/domain/entitlement.domain-service.js";
 import type { AccessStateReaderPort } from "../ports/access-state.reader.port.js";
 import type { CachedAccessState, EntitlementCachePort } from "../ports/entitlement-cache.port.js";
 import type {

@@ -24,7 +24,7 @@ function isSuccessStatus(statusCode: number): boolean {
   return statusCode >= 200 && statusCode < 300;
 }
 
-/** `@ApiSuccessResponse`·`@ApiCreatedResponse`가 Swagger에 등록한 상태별 Zod schema */
+/** `@ApiSuccessResponse`·`@ApiCreatedSuccessResponse`가 Swagger에 등록한 상태별 Zod schema */
 function declaredSuccessSchemas(declared: unknown): ReadonlyMap<number, z.ZodType> {
   const schemas = new Map<number, z.ZodType>();
   if (typeof declared !== "object" || declared == null) {

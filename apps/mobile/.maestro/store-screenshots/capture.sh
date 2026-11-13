@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 1.13.0 전체 화면 캡처 오케스트레이터. 로컬 Docker API + 로컬 빌드 앱 전용이다.
+# 전체 화면 캡처 오케스트레이터. 로컬 Docker API + 로컬 빌드 앱 전용이다.
 #
 # 사용: capture.sh [--devices iphone17pro,iphonese,duo,android,fold,flip] [--roles free,premium]
 #                  [--themes light,dark] [--skip-seed] [--build <빌드 설명>]
@@ -8,7 +8,7 @@
 #  1) 기기를 부팅하고 상태 표시줄(9:41, 배터리 100%)과 테마·언어를 맞춘다
 #  2) .env.screens의 데모 계정·화면 ID를 MAESTRO_SHOT_* shell 변수로 올린다(비밀번호를 argv에 싣지 않는다)
 #  3) 이 폴더를 maestro test로 돌리고 NN_*.png만
-#     ~/Desktop/Aido-Screens-1.13.0/<기기>/<일반|프리미엄>/<라이트|다크>[/en]/ 로 복사한다
+#     ~/Desktop/Aido-Screens-<앱 버전>/<기기>/<일반|프리미엄>/<라이트|다크>[/en]/ 로 복사한다
 #  4) 프리미엄 실행은 새 계정의 초대 수락을 소비하므로 끝나면 demo-seed reset-newbie로 되돌린다
 # iPhone Duo 펼침은 simctl로 바꿀 수 없어(DeviceHub 자세 슬라이더) 중간에 멈추고 Enter를 기다린다.
 set -euo pipefail
@@ -16,7 +16,8 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE"
 
-OUT_ROOT="${SCREENS_OUT:-$HOME/Desktop/Aido-Screens-1.13.0}"
+app_version="$(node -p "require('$HERE/../../package.json').version")"
+OUT_ROOT="${SCREENS_OUT:-$HOME/Desktop/Aido-Screens-$app_version}"
 APP_ID="com.aido.mobile"
 QA_SCHEME="${QA_SCHEME:-aido-dev}"
 QA_API_BASE_URL="${QA_API_BASE_URL:-http://localhost:8080}"
@@ -340,10 +341,9 @@ done
 
 # ---------- 목차 ----------
 
-app_version="$(node -p "require('$HERE/../../package.json').version")"
 git_sha="$(git -C "$HERE" rev-parse --short HEAD)"
 {
-  echo "# Aido 1.13.0 화면 모음"
+  echo "# Aido $app_version 화면 모음"
   echo
   echo "- 캡처: $(date '+%Y-%m-%d %H:%M %Z')"
   echo "- 앱 버전: $app_version (package.json) · 빌드: ${build_label:-미기재} · 커밋: $git_sha"

@@ -2,8 +2,8 @@ import {
   type DailyCompletionRangeQuery,
   DailyCompletionRepositoryPort,
 } from "#api/modules/insights/daily-completions/application/ports/daily-completion.repository.port";
+import type { DailyCompletion } from "#api/modules/insights/daily-completions/domain/daily-completion.aggregate";
 import { tallyDailyCompletions } from "#api/modules/insights/daily-completions/domain/daily-completion.domain-service";
-import type { DailyCompletion } from "#api/modules/insights/daily-completions/domain/daily-completion.entity";
 import type { TodoSeed } from "#test/fixtures/insights/daily-completion.fixture";
 
 // Drizzle 저장소처럼 심은 할 일을 같은 도메인 규칙(tallyDailyCompletions)으로 센다

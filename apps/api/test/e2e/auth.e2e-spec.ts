@@ -1063,6 +1063,57 @@ describe("인증 E2E", () => {
       expect(response.headers.location).toContain("aido://auth/callback");
       expect(response.headers.location).toContain("error=");
     });
+
+    it.each(["login", "link"])(
+      "GET /auth/{provider}/start - 출시 앱이 보내는 redirect_uri와 mode=%s를 받아 공급자로 보낸다",
+      async (mode) => {
+        // Given
+        const query = { redirect_uri: "aido://auth/kakao", mode };
+
+        // When
+        const responses = await Promise.all(
+          ["kakao", "google", "naver"].map((provider) =>
+            request(ctx.app.getHttpServer()).get(`/v1/auth/${provider}/start`).query(query),
+          ),
+        );
+
+        // Then
+        expect(responses.map((response) => response.status)).toEqual([302, 302, 302]);
+      },
+    );
+
+    it("GET /auth/kakao/start - 정하지 않은 mode는 400 SYS_0002다", async () => {
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get("/v1/auth/kakao/start")
+        .query({ redirect_uri: "aido://auth/kakao", mode: "signup" })
+        .expect(400);
+
+      // Then
+      expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
+    });
+
+    it("GET /auth/kakao/web-callback - 사용자가 공급자 화면에서 취소하면 저장한 딥링크로 USER_0602를 돌려준다", async () => {
+      // Given
+      const state = "kakao-cancel-state";
+      const redirectUri = "aido://auth/kakao";
+      await request(ctx.app.getHttpServer())
+        .get("/v1/auth/kakao/start")
+        .query({ state, redirect_uri: redirectUri, mode: "login" })
+        .expect(302);
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get("/v1/auth/kakao/web-callback")
+        .query({ error: "access_denied", error_description: "User denied access", state })
+        .expect(302);
+
+      // Then
+      const location = new URL(response.headers.location ?? "");
+      expect(`${location.protocol}//${location.host}${location.pathname}`).toBe(redirectUri);
+      expect(location.searchParams.get("error")).toBe(ErrorCode.USER_0602);
+      expect(location.searchParams.get("state")).toBe(state);
+    });
   });
 
   describe("웹 OAuth 콜백 실패 시 state 기반 redirect_uri 복원", () => {

@@ -1,11 +1,11 @@
 import { mapAsync, sum } from "es-toolkit";
 
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { BillingUserLockPort } from "../ports/billing-user-lock.port.js";
 import type { PremiumAccessCachePort } from "../ports/premium-access-cache.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
 import type { UserSubscriptionProjectionRepositoryPort } from "../ports/user-subscription-projection.repository.port.js";
@@ -59,7 +59,7 @@ export interface SweepPremiumGrantsDependencies {
     "listLapsedPremiumUserIds"
   >;
   readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;
-  readonly userLock: BillingUserLockPort;
+  readonly userLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: PremiumAccessCachePort;
   readonly logger: ApplicationLoggerPort;

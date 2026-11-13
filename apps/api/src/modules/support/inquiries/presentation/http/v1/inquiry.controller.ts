@@ -7,13 +7,14 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiErrorResponse,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
-import { ApiCreatedResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ApiCreatedSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { CreateInquiryUseCase } from "../../../application/use-cases/create-inquiry.use-case.js";
@@ -24,7 +25,7 @@ const INQUIRY_THROTTLE = { ttl: 60_000, limit: 5 } as const;
 
 @ApiTags(SWAGGER_TAGS.INQUIRIES)
 @ApiBearerAuth()
-@Controller("inquiries")
+@Controller({ path: "inquiries", version: API_VERSION.V1 })
 export class InquiryController {
   readonly #createInquiry: CreateInquiryUseCase;
 
@@ -51,7 +52,7 @@ export class InquiryController {
 
 사용자마다 분당 5회까지 접수하며, 넘으면 429(SYS_0001)를 돌려줍니다.`,
   })
-  @ApiCreatedResponse({ type: CreateInquiryResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateInquiryResponseDto })
   @ApiErrorResponse({ errorCode: ErrorCode.INQUIRY_1501 })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async createInquiry(

@@ -56,19 +56,6 @@ export class InMemorySubscriptionRepository extends SubscriptionRepositoryPort {
     );
   }
 
-  async claimChain(
-    storeSubscriptionId: StoreSubscriptionId,
-    userId: UserId,
-    now: Temporal.Instant,
-  ): Promise<boolean> {
-    const found = await this.findByStoreSubscriptionId(storeSubscriptionId);
-    if (found == null || found.userId.equals(userId)) {
-      return false;
-    }
-    this.#subscriptions.set(found.id.value, this.#withOwner(found, userId, now));
-    return true;
-  }
-
   async takeOverChains(
     fromUserId: UserId,
     toUserId: UserId,
@@ -85,14 +72,13 @@ export class InMemorySubscriptionRepository extends SubscriptionRepositoryPort {
 
   async save(subscription: Subscription): Promise<void> {
     const existing = this.#subscriptions.get(subscription.id.value);
-    // 소유자는 claimChain·takeOverChains가 옮기고, 시작 시각·결제 환경은 처음 저장한 값을 둔다
+    // 시작 시각·결제 환경은 처음 저장한 값을 둔다
     this.#subscriptions.set(
       subscription.id.value,
       existing == null
         ? copyOf(subscription)
         : Subscription.reconstitute({
             ...subscription.toPrimitives(),
-            userId: existing.userId.value,
             startedAt: existing.toPrimitives().startedAt,
             environment: existing.toPrimitives().environment,
           }),

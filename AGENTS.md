@@ -4,14 +4,16 @@ Turborepo + pnpm 모노레포. AI 할 일 관리 서비스의 API 서버와 모�
 
 ## 작업 진입점
 
+서버·앱 파일을 고치기 전에 그 앱의 `AGENTS.md`를 먼저 읽는다(Codex는 실행 위치 아래 `AGENTS.md`를 자동으로 읽지 않는다).
+
 - API: [`apps/api/AGENTS.md`](apps/api/AGENTS.md) → 필요한 문서만 [서버 문서 안내](apps/api/docs/README.md)에서 고른다. 새 서버 기능은 [새 기능 추가](apps/api/docs/new-feature.md) 순서를 따른다.
 - Mobile: [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md).
-- 앱·서버 공통: [오류](docs/conventions/errors.md) · [날짜·언어](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md) · [nullish](docs/conventions/nullish.md) · [테스트 파일](docs/conventions/testing.md) · [Git](docs/conventions/git.md).
+- 앱·서버 공통: [오류](docs/conventions/errors.md) · [날짜·언어](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md) · [nullish](docs/conventions/nullish.md) · [테스트 파일](docs/conventions/testing.md) · [Git](docs/conventions/git.md) · [스크립트](docs/conventions/scripts.md).
 - 문서·`AGENTS.md`·rules·스킬을 고칠 때는 [문서 규칙](docs/conventions/docs.md)을 읽는다.
 
 ## 스택
 
-Node 26.13.0 LTS(EAS 모바일 빌드는 24.22.2) · NestJS 12.4.2 ESM · Drizzle ORM 1.0.0-rc.5 · PostgreSQL 16 · pg-boss 12.38.1 · Expo SDK 58 · React Native 0.88 · React 19 · TypeScript 6.0.3 · Zod 4.6.7 · Oxlint 1.93.0 · Oxfmt 0.78.0 · Turbo 2.11 · pnpm 12.15. 정확한 버전은 `pnpm-workspace.yaml` catalog와 `.nvmrc`가 정본이다. 상세: [README](README.md).
+Node 26(EAS 모바일 빌드 24) · NestJS 12 ESM · Drizzle ORM 1.0 RC · PostgreSQL 16 · pg-boss 12 · Expo SDK 58 · React Native 0.88 · React 19 · TypeScript 6 · Zod 4 · Oxlint·Oxfmt · Turbo 2 · pnpm 12. 정확한 버전은 `pnpm-workspace.yaml` catalog와 `.nvmrc`가 정본이다. 상세: [README](README.md).
 
 ## 모노레포
 
@@ -26,9 +28,9 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 ## 명령
 
 - `pnpm install` · `pnpm docker:up`(PostgreSQL) · `pnpm dev` · `pnpm build`
-- `pnpm check`: lint(관례 포함) → format:check → docs:check → 이름(ls-lint) → 경계(dependency-cruiser) → 미사용(knip) → typecheck(커밋 전 한 번)
+- `pnpm check`: lint(관례 포함)·format:check·docs:check·이름(ls-lint)·경계(dependency-cruiser)·미사용(knip)·typecheck를 turbo 한 번으로 돌린다(커밋 전 한 번, 바뀐 패키지만)
 - 가드레일: `pnpm lint`(Oxlint, 관례 규칙은 `tooling/oxlint-plugin-aido`의 `aido/*`) · `pnpm docs:check`(문서 링크·경로·길이·에이전트 파일) · `pnpm lint:names`(ls-lint) · `turbo run lint:deps`(dependency-cruiser, 서버·모바일) · `pnpm check:unused`(knip: 모바일을 뺀 모든 workspace의 파일·export·의존성·catalog) · `pnpm --filter @aido/mobile check:unused`(모바일 knip)
-- `pnpm lint` · `pnpm format` · `pnpm format:check` · `pnpm typecheck`
+- `pnpm lint` · `pnpm lint:fix` · `pnpm format` · `pnpm format:check` · `pnpm typecheck`
 - `pnpm test` · `pnpm test:integration` · `pnpm test:e2e` · `pnpm test:contract`. 여러 러너가 함께 돌면 `AIDO_TEST_WORKERS`·`AIDO_TEST_DB_WORKERS`로 worker를 줄인다
 - `pnpm db:generate` · `pnpm db:migrate` · `pnpm commit`
 - Swagger UI: `http://localhost:8080/api/docs`(로컬 `pnpm dev` 실행에서만)
@@ -81,7 +83,7 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 - 요청·응답 계약은 `@aido/api`, 앱 모델은 앱이 소유한다. 오류는 `@aido/api/errors`의 `ErrorCode`를 쓰고 문자열을 하드코딩하지 않는다.
 - 서버 Controller에서 `@Headers("x-…")`를 쓰지 않는다. `RequestClient`(`@CurrentRequestClient()`·`@AppVersion()`)로 읽는다.
 - 출시 앱이 보는 외부 계약(HTTP·푸시 payload·딥링크·기기 저장 key·DB·큐 이름)은 추가만 한다.
-- 커밋·PR은 한국어 Conventional Commits(`refactor(server): …`), 본문 줄 100자 이하(commitlint), `--no-verify` 금지. PR에는 실제 검증과 측정한 숫자만 쓴다. stack 라벨·tip CI·머지 순서는 [Git](docs/conventions/git.md)이다.
+- 커밋·PR은 한국어 Conventional Commits(`refactor(server): …`), 본문 줄 100자 이하(commitlint), `Co-Authored-By` 트레일러 없음, `--no-verify` 금지. PR에는 실제 검증과 측정한 숫자만 쓴다. stack·CI 범위·머지 방법은 [Git](docs/conventions/git.md#stack)이다.
 
 ## 검증
 

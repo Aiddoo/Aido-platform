@@ -1,4 +1,5 @@
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { InMemoryNudgeReader } from "#test/doubles/social/in-memory-nudge.reader";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
@@ -11,11 +12,11 @@ import {
 
 import { GetReceivedNudgesUseCase } from "./get-received-nudges.use-case.js";
 
-async function seedReceived(): Promise<InMemoryNudgeRepository> {
-  const nudgeReader = new InMemoryNudgeRepository();
-  const todoId = await nudgeReader.addTodo(createNudgeTodoSeed());
+async function seedReceived(): Promise<InMemoryNudgeReader> {
+  const nudgeRepository = new InMemoryNudgeRepository();
+  const todoId = await nudgeRepository.addTodo(createNudgeTodoSeed());
   for (const index of [0, 1, 2]) {
-    await nudgeReader.save(
+    await nudgeRepository.save(
       createNudgeFixture({
         id: index + 1,
         todoId,
@@ -24,7 +25,7 @@ async function seedReceived(): Promise<InMemoryNudgeRepository> {
       }),
     );
   }
-  return nudgeReader;
+  return new InMemoryNudgeReader(nudgeRepository);
 }
 
 describe("GetReceivedNudgesUseCase — 받은 콕 목록", () => {

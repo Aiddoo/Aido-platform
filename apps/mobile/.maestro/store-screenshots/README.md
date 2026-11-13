@@ -1,4 +1,4 @@
-# 1.13.0 전체 화면 캡처
+# 전체 화면 캡처
 
 랜딩·스토어 이미지에도 쓰는 화면 모음을 기기 × 계정(일반/프리미엄) × 테마(라이트/다크) × 언어로 찍는다.
 로컬 Docker API와 로컬 빌드 앱에서만 실행한다. 데모 데이터 스크립트와 흐름의 API 호출은 localhost 계열이 아니면
@@ -11,21 +11,21 @@
 ```sh
 pnpm --filter mobile store:screens seed all      # 데모 계정 + AI 생성(약 10~15분). ko만이면 seed ko
 pnpm --filter mobile store:screens status all    # 계정·리포트·제안이 AI로 만들어졌는지 확인
-pnpm --filter mobile store:screens:capture -- --skip-seed --build "1.13.0 (local release)"
+pnpm --filter mobile store:screens:capture -- --skip-seed --build "<앱 버전> (local release)"
 pnpm --filter mobile store:screens reset all     # 끝나면 데모 계정 삭제
 ```
 
 - `capture.sh`는 `--skip-seed`가 없으면 `seed ko`(iPhone 17 Pro가 포함되면 `seed en`도)를 먼저 돌린다.
 - 일부만: `--devices iphone17pro,android --roles premium --themes dark`. 기기 키: `iphone17pro`, `iphonese`, `duo`(접힘·펼침),
   `android`(Medium_Phone_API_36.1), `fold`(7.6" Fold-in 접힘·펼침), `flip`(6.7" 플립, 기본 목록 밖).
-- 결과: `~/Desktop/Aido-Screens-1.13.0/<기기>/<일반|프리미엄>/<라이트|다크>[/en]/NN_화면명.png`와 같은 폴더의
+- 결과: `~/Desktop/Aido-Screens-<앱 버전>/<기기>/<일반|프리미엄>/<라이트|다크>[/en]/NN_화면명.png`와 같은 폴더의
   `README.md`(날짜, 앱 버전, 빌드, 폴더별 장수, AI 생성 여부). `SCREENS_OUT`으로 바꿀 수 있다.
 - 한 flow만 직접 돌리려면 `capture.sh`가 내보내는 `MAESTRO_SHOT_*` 변수를 같은 이름으로 shell에 올린 뒤
   `maestro test --include-tags premium 30-ai.yaml`.
 
 ## 준비
 
-1. 1.13.0 스택이 합쳐진 앱과 서버. 서버는 `INVITE_ENABLED=true`, job worker(pg-boss) 동작, AI 키는 로컬 API 환경 변수에만
+1. 같은 커밋의 앱과 서버. 서버는 `INVITE_ENABLED=true`, job worker(pg-boss) 동작, AI 키는 로컬 API 환경 변수에만
    둔다(스크립트는 키를 읽지도 출력하지도 않는다). 기능 소개(05·72)는 서버 캠페인 설정이 켜져 있어야 보인다.
 2. 앱은 개발 메뉴가 찍히지 않게 **Release 구성 로컬 빌드**를 쓴다(`EXPO_PUBLIC_API_URL=http://localhost:8080`, 스킴 `aido-dev`).
    설치돼 있지 않은 기기에는 `SCREENS_IOS_APP=<.app>`, `SCREENS_ANDROID_APK=<.apk>`로 넣는다. Android는 `adb reverse 8080`을 스크립트가 건다.

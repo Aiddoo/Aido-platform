@@ -44,7 +44,7 @@
 | `save(aggregate)`   | `void`      | insert-or-update                |
 | `delete(aggregate)` | `void`      |                                 |
 
-집합 원자 연산은 업무 이름(`shiftSortOrders`)으로 짓는다. `-1` 같은 sentinel 대신 `null`을 쓴다. Repository는 로그·enqueue·캐시 정리를 하지 않는다(부수효과는 UseCase에 보이게).
+집합 원자 연산은 업무 이름(`shiftSortOrders`)으로 짓는다. Aggregate 없이 작업 행을 옮기는 작업 원장 저장소도 같다([영속성](persistence.md#repository와-reader)). `-1` 같은 sentinel 대신 `null`을 쓴다. Repository는 로그·enqueue·캐시 정리를 하지 않는다(부수효과는 UseCase에 보이게).
 
 ## 용어
 

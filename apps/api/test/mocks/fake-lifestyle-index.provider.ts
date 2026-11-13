@@ -12,7 +12,7 @@ export class FakeLifestyleIndexProvider implements LifestyleIndexProviderPort {
   #calls: Array<{
     lat: number;
     lon: number;
-    date: Date;
+    at: Temporal.Instant;
     currentTemp: number;
     windSpeed: number;
   }> = [];
@@ -20,18 +20,18 @@ export class FakeLifestyleIndexProvider implements LifestyleIndexProviderPort {
   async getIndex(
     lat: number,
     lon: number,
-    date: Date,
+    at: Temporal.Instant,
     currentTemp: number,
     windSpeed: number,
   ): Promise<LifestyleIndex> {
-    this.#calls.push({ lat, lon, date, currentTemp, windSpeed });
+    this.#calls.push({ lat, lon, at, currentTemp, windSpeed });
     return { feelsLikeTemperature: 12, uvIndex: 5 };
   }
 
   getCalls(): Array<{
     lat: number;
     lon: number;
-    date: Date;
+    at: Temporal.Instant;
     currentTemp: number;
     windSpeed: number;
   }> {

@@ -1,4 +1,4 @@
-// 1.13.0 스토어 아트의 단일 원본: 출력 규격(targets), 장면(slots), 세트(sets), 배너(scenes).
+// 스토어 아트의 단일 원본: 출력 규격(targets), 장면(slots), 세트(sets), 배너(scenes).
 // 캡처 파일은 .maestro/store-screenshots/capture.sh 결과 폴더 규칙을 따른다:
 //   <captures>/<기기>/<일반|프리미엄>/<라이트|다크>[/en]/<NN_화면명>.png
 // 문구 규칙: 태그라인은 짧게(ko 14자 안팎), 헤드라인은 두 줄(\n), 해요체. 영어는 sentence case.

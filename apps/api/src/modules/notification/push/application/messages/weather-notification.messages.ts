@@ -10,6 +10,7 @@ import type {
   MorningWeatherBriefing,
 } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
 import type {
@@ -54,8 +55,8 @@ export function createWeatherMorningNotificationMessage({
   variantContext,
 }: WeatherBriefingMessageInput<MorningWeatherBriefing>): NotificationMessage {
   const options = { locale, variantContext, overrides: { formatTime } };
-  const todoFacts = (todo: { readonly title: string; readonly scheduledAt: Date }) => ({
-    scheduledAt: todo.scheduledAt.toISOString(),
+  const todoFacts = (todo: { readonly title: string; readonly scheduledAt: Temporal.Instant }) => ({
+    scheduledAt: toIsoString(todo.scheduledAt),
     timezone: timezone ?? null,
     todoTitle: todo.title,
   });
@@ -98,7 +99,7 @@ export function createWeatherMorningNotificationMessage({
         isSnow ? WEATHER_COPY.MORNING_SNOW_LATER : WEATHER_COPY.MORNING_RAIN_LATER,
         {
           ...options,
-          facts: { startsAt: startsAt.toISOString(), timezone: timezone ?? null },
+          facts: { startsAt: toIsoString(startsAt), timezone: timezone ?? null },
           templateKey: isSnow ? "weather.morning.snow_later" : "weather.morning.rain_later",
         },
       ),

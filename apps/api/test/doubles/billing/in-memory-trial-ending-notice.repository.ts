@@ -1,9 +1,6 @@
-import type { FindDueBillingNoticesParams } from "#api/modules/billing/premium-grants/application/ports/billing-notice.port";
-import { planTypeOfProduct } from "#api/modules/billing/shared/subscription-plan.domain-service";
-import {
-  type TrialEndingNotice,
-  TrialEndingNoticeRepositoryPort,
-} from "#api/modules/billing/subscriptions/application/ports/trial-ending-notice.repository.port";
+import type { ListDueBillingNoticesParams } from "#api/modules/billing/shared/application/ports/billing-notice.repository.port";
+import { TrialEndingNoticeRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/trial-ending-notice.repository.port";
+import { TrialEndingNotice } from "#api/modules/billing/subscriptions/domain/trial-ending-notice.entity";
 
 import type { InMemorySubscriptionRepository } from "./in-memory-subscription.repository.js";
 
@@ -18,7 +15,7 @@ export class InMemoryTrialEndingNoticeRepository extends TrialEndingNoticeReposi
   }
 
   async listDue(
-    params: FindDueBillingNoticesParams<TrialEndingNotice>,
+    params: ListDueBillingNoticesParams<TrialEndingNotice>,
   ): Promise<TrialEndingNotice[]> {
     const { now, endsBefore, after, limit } = params;
     return this.#subscriptions.all
@@ -37,22 +34,22 @@ export class InMemoryTrialEndingNoticeRepository extends TrialEndingNoticeReposi
           Temporal.Instant.compare(left.expiresAt, right.expiresAt) || left.id - right.id,
       )
       .slice(0, limit)
-      .map((row) => ({
-        subscriptionId: row.id,
-        userId: row.userId,
-        startedAt: row.startedAt,
-        expiresAt: row.expiresAt,
-        willRenew: row.status === "ACTIVE",
-        planType: planTypeOfProduct(row.productId),
-      }));
+      .map((row) =>
+        TrialEndingNotice.reconstitute({
+          id: row.id,
+          userId: row.userId,
+          status: row.status,
+          productId: row.productId,
+          startedAt: row.startedAt,
+          expiresAt: row.expiresAt,
+        }),
+      );
   }
 
   async claim(notices: readonly TrialEndingNotice[]): Promise<TrialEndingNotice[]> {
-    const claimed = notices.filter(
-      (notice) => !this.#notifiedSubscriptionIds.has(notice.subscriptionId),
-    );
+    const claimed = notices.filter((notice) => !this.#notifiedSubscriptionIds.has(notice.id.value));
     for (const notice of claimed) {
-      this.#notifiedSubscriptionIds.add(notice.subscriptionId);
+      this.#notifiedSubscriptionIds.add(notice.id.value);
     }
     return claimed;
   }
@@ -60,5 +57,5 @@ export class InMemoryTrialEndingNoticeRepository extends TrialEndingNoticeReposi
 
 function isAfterCursor(expiresAt: Temporal.Instant, id: number, after: TrialEndingNotice): boolean {
   const byExpiry = Temporal.Instant.compare(expiresAt, after.expiresAt);
-  return byExpiry > 0 || (byExpiry === 0 && id > after.subscriptionId);
+  return byExpiry > 0 || (byExpiry === 0 && id > after.id.value);
 }

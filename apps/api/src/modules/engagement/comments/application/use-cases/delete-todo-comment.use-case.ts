@@ -31,7 +31,7 @@ interface DeleteTodoCommentDependencies {
   readonly clock: ClockPort;
   readonly reader: Pick<TodoCommentReaderPort, "findAccessibleTodoOwnerId">;
   readonly repository: Pick<TodoCommentRepositoryPort, "findByIdAndTodoId" | "save">;
-  readonly likeRepository: Pick<TodoCommentLikeRepositoryPort, "deactivateAllByCommentId">;
+  readonly likeRepository: Pick<TodoCommentLikeRepositoryPort, "unlikeAllByCommentId">;
   readonly engagementCounter: Pick<TodoEngagementCounterPort, "decrementCommentCount">;
   readonly todoViewCache: Pick<TodoViewCacheInvalidatorPort, "invalidateForTodo">;
   readonly logger: ApplicationLoggerPort;
@@ -98,7 +98,7 @@ export class DeleteTodoCommentUseCase {
       throw commentStateConflict(command.commentId);
     }
     await repository.save(comment);
-    await likeRepository.deactivateAllByCommentId(commentId, now);
+    await likeRepository.unlikeAllByCommentId(commentId, now);
     if (comment.isReply) {
       const thread = await repository.findByIdAndTodoId(comment.threadCommentId, todoId);
       if (thread == null) {

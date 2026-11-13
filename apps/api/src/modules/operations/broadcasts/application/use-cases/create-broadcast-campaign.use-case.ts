@@ -5,9 +5,10 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import {
-  type BroadcastAction,
-  BroadcastCampaign,
-} from "../../domain/broadcast-campaign.aggregate.js";
+  BroadcastAction,
+  type BroadcastActionPrimitives,
+} from "../../domain/broadcast-action.vo.js";
+import { BroadcastCampaign } from "../../domain/broadcast-campaign.aggregate.js";
 import { BroadcastContent } from "../../domain/broadcast-content.vo.js";
 import {
   BroadcastDelivery,
@@ -29,7 +30,7 @@ export interface CreateBroadcastCampaignCommand {
   readonly body: string;
   readonly localizedContent?: BroadcastLocalizedCopy;
   readonly targetFilter: BroadcastTargetFilter;
-  readonly action?: BroadcastAction;
+  readonly action?: BroadcastActionPrimitives;
   readonly force: boolean;
   readonly delivery?: BroadcastDeliveryPrimitives;
 }
@@ -71,7 +72,7 @@ export class CreateBroadcastCampaignUseCase {
       content: BroadcastContent.create({ title: command.title, body: command.body }),
       localizedContent: BroadcastLocalizedContent.create(command.localizedContent),
       targetFilter: command.targetFilter,
-      action: command.action ?? null,
+      action: command.action == null ? null : BroadcastAction.create(command.action),
       force: command.force,
       delivery: BroadcastDelivery.create(command.delivery ?? { mode: "NOW" }),
       now: clock.now(),

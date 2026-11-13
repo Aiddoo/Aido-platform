@@ -14,15 +14,17 @@
 pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종류(serial|cuid)
 ```
 
-| 생성 위치                                                   | 내용                                                                                                                                                                                   |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/api/src/modules/<context>/<slice>/`                   | Aggregate·id VO·이름 VO, Repository Port, Create·List UseCase, Drizzle 저장소·행 매퍼, v1 Controller·DTO·응답 매퍼, `*.module.ts`·`*.providers.ts`·`*.public.ts`, lock-keys·log-events |
-| `apps/api/test/`                                            | fixture, InMemory 저장소, 저장소 계약 suite, Drizzle integration spec                                                                                                                  |
-| `packages/api/src/contracts/<aggregate>/v1/`, `vocabulary/` | 요청·응답 Zod schema와 공유 상수                                                                                                                                                       |
-| `apps/api/src/platform/database/schema/<context>.schema.ts` | 테이블(없을 때만). `tables.schema.ts`에 한 줄 더한다                                                                                                                                   |
-| `<context>.module.ts`                                       | slice Module을 imports·exports에 더한다                                                                                                                                                |
+| 생성 위치                                                   | 내용                                                                                                                                                                                                                    |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api/src/modules/<context>/<slice>/`                   | Aggregate·id VO·이름 VO·도메인 오류(`<slice>.errors.ts`), Repository Port, Create·List UseCase, Drizzle 저장소·행 매퍼, v1 Controller·DTO·응답 매퍼, `*.module.ts`·`*.providers.ts`·`*.public.ts`, lock-keys·log-events |
+| `apps/api/test/`                                            | fixture, InMemory 저장소, 저장소 계약 suite, Drizzle integration spec                                                                                                                                                   |
+| `packages/api/src/contracts/<aggregate>/v1/`, `vocabulary/` | 요청·응답 Zod schema와 공유 상수                                                                                                                                                                                        |
+| `apps/api/src/platform/database/schema/<context>.schema.ts` | 테이블. 파일이 있으면 끝에 더하고 import를 합치며, 없으면 만들고 `tables.schema.ts`에 한 줄 더한다                                                                                                                      |
+| `<context>.module.ts`                                       | slice Module을 imports·exports에 더한다                                                                                                                                                                                 |
 
 생성기가 출력하는 마무리(`db:generate`, AppModule은 Context Module만, `@aido/api` build → `pnpm check`)를 따른다. 쓰지 않는 생성 파일은 지운다. 빈 폴더를 남기지 않는다.
+
+생성 응답은 표준 모양(`{ <aggregate> }`, 목록은 `cursorPageSchema`, 문자열 ID는 `entityIdSchema`)이고 `message`를 넣지 않는다. 템플릿이나 템플릿이 import하는 공용 코드를 바꾸면 `pnpm test:generator`가 임시 worktree에 serial·cuid slice를 만들어 lint·이름·typecheck·경계·단위 테스트를 돈다(생성기를 바꾼 push는 pre-push가 돌린다).
 
 ## 2. 도메인을 채운다
 
@@ -75,7 +77,7 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 - 규칙을 새로 만들었으면 그 주제 문서 한 곳에 쓰고 링크한다. 기능 문서가 필요하면 `apps/api/docs/<feature>.md`(200줄 이하)를 만들고 [서버 문서 안내](README.md)에 한 줄 더한다.
 - `pnpm check` → 변경한 범위의 unit·integration → 계약이 바뀌면 `test:contract`·관련 E2E 순서로 확인하고, 실행한 명령과 결과를 PR에 적는다.
 - 서버·계약을 바꾸면 `pnpm changeset`을 함께 올린다. 커밋은 한국어 Conventional Commits다([Git](../../../docs/conventions/git.md)).
-- 릴리스 묶음은 stack PR이다. 각 PR은 `stack:<release>` 라벨을 달고 혼자 빌드·테스트를 통과해야 한다. 맨 위 tip 하나만 `ci:stack-tip`을 달아 CI가 누적 diff를 한 번 검증하고, 머지는 위에서부터 한다.
+- 릴리스 묶음은 stack PR이다. 각 PR은 `stack:<release>` 라벨을 달고 혼자 빌드·테스트를 통과해야 한다. CI·머지 방법은 [Git](../../../docs/conventions/git.md#stack)이다.
 
 ## 예시: 메모 고정
 
@@ -85,14 +87,14 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 domain/memo.aggregate.ts                         changePinned(isPinned, now): boolean   # 같은 값이면 false
 application/memos.errors.ts                      memoNotFound(memoId)
 application/memos.lock-keys.ts                   MemoLockKeys.existingMemo(memoId, userId)   # 메모·순서 두 키
-application/use-cases/set-memo-pinned.use-case.ts
+application/use-cases/change-memo-pinned.use-case.ts
   unitOfWork.run → mutationLock.acquire(MemoLockKeys.existingMemo(memoId, userId))
   → findByIdAndUserId ?? throw memoNotFound → memo.changePinned(…) false면 저장 생략 → save
 presentation/http/v1/memo.dto.ts                 ToggleMemoPinDto = toggleMemoPinSchema.meta({ id })
 presentation/http/v1/memo-response.mapper.ts     응답 문구·toIsoString
-notes-memos.providers.ts                         provideUseCase(SetMemoPinnedUseCase, { … })
+notes-memos.providers.ts                         provideUseCase(ChangeMemoPinnedUseCase, { … })
 test/fixtures/notes/memo.fixture.ts · test/doubles/notes/in-memory-memo.repository.ts
-src/modules/notes/memos/application/use-cases/set-memo-pinned.use-case.spec.ts
+src/modules/notes/memos/application/use-cases/change-memo-pinned.use-case.spec.ts
 ```
 
-파일: [set-memo-pinned.use-case.ts](../src/modules/notes/memos/application/use-cases/set-memo-pinned.use-case.ts), [memo.aggregate.ts](../src/modules/notes/memos/domain/memo.aggregate.ts), [notes-memos.providers.ts](../src/modules/notes/memos/notes-memos.providers.ts), [memo-repository.contract.ts](../test/contracts/notes/memo-repository.contract.ts).
+파일: [change-memo-pinned.use-case.ts](../src/modules/notes/memos/application/use-cases/change-memo-pinned.use-case.ts), [memo.aggregate.ts](../src/modules/notes/memos/domain/memo.aggregate.ts), [notes-memos.providers.ts](../src/modules/notes/memos/notes-memos.providers.ts), [memo-repository.contract.ts](../test/contracts/notes/memo-repository.contract.ts).

@@ -60,7 +60,7 @@ export function describeSubscriptionRepositoryContract(
       expect(found?.toPrimitives()).toEqual(saved.toPrimitives());
     });
 
-    it("다시 저장하면 상태·만료·유예·해지·이벤트·예약 상품·기간 유형만 덮어쓰고 시작 시각·소유자·결제 환경은 둔다", async () => {
+    it("다시 저장하면 소유자·상태·만료·유예·해지·이벤트·예약 상품·기간 유형만 덮어쓰고 시작 시각·결제 환경은 둔다", async () => {
       // Given
       const repository = await createRepository();
       const saved = await saveSubscription(repository, { environment: "PRODUCTION" });
@@ -87,7 +87,6 @@ export function describeSubscriptionRepositoryContract(
       // Then
       expect(found?.toPrimitives()).toEqual({
         ...changed.toPrimitives(),
-        userId: SUBSCRIPTION_FIXTURE_USER_ID,
         startedAt: saved.toPrimitives().startedAt,
         environment: "PRODUCTION",
       });
@@ -124,21 +123,21 @@ export function describeSubscriptionRepositoryContract(
       expect({ owner, other }).toEqual({ owner: true, other: false });
     });
 
-    it("claimChain은 다른 사용자의 체인만 옮기고 이미 소유자면 false다", async () => {
+    it("save는 다른 사용자에게 옮긴 체인의 소유자를 저장한다", async () => {
       // Given
       const repository = await createRepository();
       const saved = await saveSubscription(repository);
+      saved.transferTo(OTHER_USER_ID, LATER);
 
       // When
-      const unchanged = await repository.claimChain(saved.storeSubscriptionId, USER_ID, LATER);
-      const moved = await repository.claimChain(saved.storeSubscriptionId, OTHER_USER_ID, LATER);
+      await repository.save(saved);
       const found = await repository.findByStoreSubscriptionId(saved.storeSubscriptionId);
+      const remaining = await repository.existsByUserId(USER_ID);
 
       // Then
-      expect({ unchanged, moved, owner: found?.userId.value }).toEqual({
-        unchanged: false,
-        moved: true,
+      expect({ owner: found?.userId.value, remaining }).toEqual({
         owner: SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
+        remaining: false,
       });
     });
 

@@ -37,7 +37,8 @@ describe('복원한 캐시를 다시 조회할 때의 구조 공유', () => {
   setupFakeTimersPerTest();
 
   it('같은 값의 메모 18개를 다시 조회해도 항목을 다시 그리지 않는다', async () => {
-    // Given 저장했다가 복원한 캐시
+    // 저장했다가 복원한 캐시
+    // Given
     const storage = createQueryCacheStorage(createMemorySyncStorage());
     storage.setOwner('user-1');
     const options = createQueryPersistOptions({
@@ -74,7 +75,8 @@ describe('복원한 캐시를 다시 조회할 때의 구조 공유', () => {
     );
     const restored = queryClient.getQueryData<MemoItem[]>(QUERY_KEY) ?? [];
 
-    // When 서버가 같은 값을 새 객체로 돌려준다
+    // 서버가 같은 값을 새 객체로 돌려준다
+    // When
     await act(async () => {
       await queryClient.refetchQueries({ queryKey: QUERY_KEY });
     });

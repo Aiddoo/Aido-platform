@@ -5,10 +5,10 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { FakeFollowCache } from "#test/doubles/social/fake-follow-cache";
-import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
+import { FakeFriendshipCache } from "#test/doubles/social/fake-friendship-cache";
 import { InMemoryFriendProfileReader } from "#test/doubles/social/in-memory-friend-profile.reader";
-import { RecordingFollowNotifier } from "#test/doubles/social/recording-follow-notifier";
+import { InMemoryFriendshipRepository } from "#test/doubles/social/in-memory-friendship.repository";
+import { RecordingFriendshipNotifier } from "#test/doubles/social/recording-friendship-notifier";
 import { StubFriendLimitReader } from "#test/doubles/social/stub-friend-limit-reader";
 import { StubUserBlockReader } from "#test/doubles/social/stub-user-block-reader";
 import {
@@ -22,7 +22,7 @@ import {
 
 import type { Friendship } from "../../domain/friendship.aggregate.js";
 import { FriendLockKeys } from "../friends.lock-keys.js";
-import { CheckFirstFriendMilestoneUseCase } from "./check-first-friend-milestone.use-case.js";
+import { NotifyFirstFriendMilestoneUseCase } from "./notify-first-friend-milestone.use-case.js";
 import { SendFriendRequestUseCase } from "./send-friend-request.use-case.js";
 
 const ME = FRIENDSHIP_FIXTURE_USER_ID;
@@ -31,37 +31,36 @@ const OTHER = FRIENDSHIP_FIXTURE_OTHER_USER_ID;
 const NOW = FRIENDSHIP_FIXTURE_NOW.add({ hours: 1 });
 
 function setup(friendships: readonly Friendship[] = []) {
-  const followRepository = new InMemoryFollowRepository(friendships);
+  const friendshipRepository = new InMemoryFriendshipRepository(friendships);
   const profileReader = new InMemoryFriendProfileReader();
   profileReader.addUser({ id: ME, userTag: "MEME0001" });
   profileReader.addUser({ id: FRIEND, userTag: "FRND0002", name: "친구" });
   profileReader.addUser({ id: OTHER, userTag: "OTHR0003", name: "다른 사람" });
   const limitReader = new StubFriendLimitReader();
   const blockReader = new StubUserBlockReader();
-  const cache = new FakeFollowCache();
-  const notifier = new RecordingFollowNotifier();
+  const cache = new FakeFriendshipCache();
+  const notifier = new RecordingFriendshipNotifier();
   const mutationLock = new RecordingMutationLock();
   const logger = new SilentLogger();
   const useCase = new SendFriendRequestUseCase({
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock,
-    followRepository,
+    friendshipRepository,
     profileReader,
     limitReader,
     blockReader,
     cache,
     notifier,
-    checkFirstFriendMilestone: new CheckFirstFriendMilestoneUseCase({
-      followRepository,
+    notifyFirstFriendMilestone: new NotifyFirstFriendMilestoneUseCase({
+      friendshipRepository,
       notifier,
-      logger,
     }),
     clock: new FixedClock(NOW),
     logger,
   });
   return {
     useCase,
-    followRepository,
+    friendshipRepository,
     profileReader,
     limitReader,
     blockReader,
@@ -112,15 +111,15 @@ describe("SendFriendRequestUseCase — 친구 요청 보내기", () => {
     "$name에게 보내면 $code로 거절하고 관계·알림을 두지 않는다",
     async ({ targetUserId, seeds, code, details }) => {
       // Given
-      const { useCase, followRepository, notifier } = setup(seeds);
-      const before = followRepository.listAll().map((friendship) => friendship.toPrimitives());
+      const { useCase, friendshipRepository, notifier } = setup(seeds);
+      const before = friendshipRepository.listAll().map((friendship) => friendship.toPrimitives());
 
       // When
       const result = useCase.execute({ userId: ME, targetUserId });
 
       // Then
       await expect(result).rejects.toMatchObject({ errorCode: code, details });
-      expect(followRepository.listAll().map((friendship) => friendship.toPrimitives())).toEqual(
+      expect(friendshipRepository.listAll().map((friendship) => friendship.toPrimitives())).toEqual(
         before,
       );
       expect(notifier.newRequests).toEqual([]);
@@ -130,7 +129,7 @@ describe("SendFriendRequestUseCase — 친구 요청 보내기", () => {
 
   it("내가 차단한 사람에게는 BLOCK_2203, 나를 차단한 사람에게는 없는 사용자 오류로 답한다", async () => {
     // Given
-    const { useCase, blockReader, followRepository } = setup();
+    const { useCase, blockReader, friendshipRepository } = setup();
     blockReader.block(ME, FRIEND);
     blockReader.block(OTHER, ME);
 
@@ -149,12 +148,12 @@ describe("SendFriendRequestUseCase — 친구 요청 보내기", () => {
       status: "rejected",
       reason: { errorCode: ErrorCode.FOLLOW_0905, details: { targetUserId: OTHER } },
     });
-    expect(followRepository.size).toBe(0);
+    expect(friendshipRepository.size).toBe(0);
   });
 
   it("친구 한도에 닿으면 대상이 없어도 한도 오류 FOLLOW_0909를 먼저 준다", async () => {
     // Given
-    const { useCase, limitReader, followRepository } = setup(
+    const { useCase, limitReader, friendshipRepository } = setup(
       createMutualFriendshipFixtures({ userId: ME, friendId: FRIEND }),
     );
     limitReader.setMaxFriendCount(ME, 1);
@@ -172,12 +171,12 @@ describe("SendFriendRequestUseCase — 친구 요청 보내기", () => {
         featureQuota: { feature: "FRIEND", userId: ME, limit: 1, used: 1 },
       },
     });
-    expect(followRepository.size).toBe(2);
+    expect(friendshipRepository.size).toBe(2);
   });
 
   it("새 요청은 대기 관계로 저장하고 프로필 이름이 없는 보낸 사람은 태그로 알린다", async () => {
     // Given
-    const { useCase, followRepository, notifier, mutationLock } = setup();
+    const { useCase, friendshipRepository, notifier, mutationLock } = setup();
 
     // When
     const result = await useCase.execute({ userId: ME, targetUserId: FRIEND });
@@ -193,7 +192,7 @@ describe("SendFriendRequestUseCase — 친구 요청 보내기", () => {
     });
     expect(
       (
-        await followRepository.findByFollowerAndFollowing(
+        await friendshipRepository.findByFollowerAndFollowing(
           UserId.reconstitute(ME),
           UserId.reconstitute(FRIEND),
         )
@@ -213,7 +212,7 @@ describe("SendFriendRequestUseCase — 친구 요청 보내기", () => {
 
   it("상대가 먼저 보낸 요청이 있으면 두 방향을 각자 목록 맨 뒤에 수락하고 친구 캐시를 비운다", async () => {
     // Given
-    const { useCase, followRepository, cache, notifier } = setup([
+    const { useCase, friendshipRepository, cache, notifier } = setup([
       createFriendshipFixture({ followerId: FRIEND, followingId: ME }),
       ...createMutualFriendshipFixtures({ userId: FRIEND, friendId: OTHER, userSortOrder: 4 }),
     ]);
@@ -226,11 +225,11 @@ describe("SendFriendRequestUseCase — 친구 요청 보내기", () => {
     // Then
     expect(result.isAutoAccepted).toBe(true);
     const [mine, theirs] = await Promise.all([
-      followRepository.findByFollowerAndFollowing(
+      friendshipRepository.findByFollowerAndFollowing(
         UserId.reconstitute(ME),
         UserId.reconstitute(FRIEND),
       ),
-      followRepository.findByFollowerAndFollowing(
+      friendshipRepository.findByFollowerAndFollowing(
         UserId.reconstitute(FRIEND),
         UserId.reconstitute(ME),
       ),

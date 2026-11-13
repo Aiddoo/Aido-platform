@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Controller, Get, Param, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import {
   CurrentUser,
@@ -31,38 +31,18 @@ import {
 @ApiBearerAuth()
 @Controller({ path: "weekly-achievements", version: API_VERSION.V1 })
 export class WeeklyAchievementController {
-  readonly #readWeeklyAchievements: ListWeeklyAchievementsUseCase;
-  readonly #readWeeklyAchievement: GetWeeklyAchievementUseCase;
+  readonly #listWeeklyAchievements: ListWeeklyAchievementsUseCase;
+  readonly #getWeeklyAchievement: GetWeeklyAchievementUseCase;
 
   constructor(
-    readWeeklyAchievements: ListWeeklyAchievementsUseCase,
-    readWeeklyAchievement: GetWeeklyAchievementUseCase,
+    listWeeklyAchievements: ListWeeklyAchievementsUseCase,
+    getWeeklyAchievement: GetWeeklyAchievementUseCase,
   ) {
-    this.#readWeeklyAchievements = readWeeklyAchievements;
-    this.#readWeeklyAchievement = readWeeklyAchievement;
+    this.#listWeeklyAchievements = listWeeklyAchievements;
+    this.#getWeeklyAchievement = getWeeklyAchievement;
   }
 
   @Get()
-  @ApiQuery({
-    name: "year",
-    required: true,
-    description: "조회할 연도 (2024-2100)",
-    schema: { type: "number", minimum: 2024, maximum: 2100 },
-    example: 2026,
-  })
-  @ApiQuery({
-    name: "cursor",
-    required: false,
-    description: "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
-    schema: { type: "number" },
-  })
-  @ApiQuery({
-    name: "size",
-    required: false,
-    description: "페이지 크기 (1-200)",
-    schema: { type: "number", minimum: 1, maximum: 200, default: 20 },
-    example: 20,
-  })
   @ApiHeader({
     name: "Accept-Language",
     description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
@@ -104,7 +84,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
     @Query({ schema: GetWeeklyAchievementsQueryDto }) query: GetWeeklyAchievementsQueryDto,
     @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementListResponseDto> {
-    const list = await this.#readWeeklyAchievements.execute({
+    const list = await this.#listWeeklyAchievements.execute({
       userId: user.userId,
       year: query.year,
       cursor: query.cursor,
@@ -114,16 +94,6 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
   }
 
   @Get(":year/:week")
-  @ApiParam({
-    name: "year",
-    description: "ISO 연도",
-    example: 2026,
-  })
-  @ApiParam({
-    name: "week",
-    description: "ISO 주차 (1-53)",
-    example: 10,
-  })
   @ApiHeader({
     name: "Accept-Language",
     description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
@@ -154,7 +124,7 @@ GET /weekly-achievements/2026/10
     @Param({ schema: WeeklyAchievementParamDto }) params: WeeklyAchievementParamDto,
     @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementDetailResponseDto> {
-    const { achievement, localToday } = await this.#readWeeklyAchievement.execute({
+    const { achievement, localToday } = await this.#getWeeklyAchievement.execute({
       userId: user.userId,
       year: params.year,
       week: params.week,

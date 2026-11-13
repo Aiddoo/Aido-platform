@@ -1,7 +1,8 @@
 import type { PremiumGrantRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant.repository.port";
-import type {
+import { PremiumGrantId } from "#api/modules/billing/premium-grants/domain/premium-grant-id.vo";
+import {
   PremiumGrant,
-  PremiumGrantPrimitives,
+  type PremiumGrantPrimitives,
 } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
@@ -23,10 +24,10 @@ async function saveGrant(
   overrides: Partial<PremiumGrantPrimitives> & { readonly banked?: boolean } = {},
 ): Promise<PremiumGrant> {
   const { banked = false, ...rest } = overrides;
-  const id = (await repository.nextId()).value;
+  const id = PremiumGrantId.generate().value;
   const create = banked ? createBankedPremiumGrantFixture : createPremiumGrantFixture;
   const grant = create({ id, sourceKey: `invite:${id}`, ...rest });
-  await repository.saveIfAbsent(grant);
+  await repository.save(grant);
   return grant;
 }
 
@@ -34,36 +35,34 @@ export function describePremiumGrantRepositoryContract(
   createRepository: () => Promise<PremiumGrantRepositoryPort>,
 ): void {
   describe("보상 기간 저장소 계약", () => {
-    it("nextId는 부를 때마다 다른 id를 준다", async () => {
+    it("저장한 출처 키만 있다고 답한다", async () => {
       // Given
       const repository = await createRepository();
+      await saveGrant(repository, { sourceKey: "invite:same" });
 
       // When
-      const ids = [await repository.nextId(), await repository.nextId()];
+      const exists = await Promise.all([
+        repository.existsBySourceKey("invite:same"),
+        repository.existsBySourceKey("invite:other"),
+      ]);
 
       // Then
-      expect(ids[0]?.equals(ids[1] ?? ids[0])).toBe(false);
+      expect(exists).toEqual([true, false]);
     });
 
-    it("같은 sourceKey는 한 번만 저장하고 두 번째는 false다", async () => {
+    it("save는 있는 기간의 상태·시작·끝·갱신 시각을 바꾸고 출처·길이는 둔다", async () => {
       // Given
       const repository = await createRepository();
-      const first = await saveGrant(repository, { sourceKey: "invite:same" });
-      const duplicate = createPremiumGrantFixture({
-        id: (await repository.nextId()).value,
-        sourceKey: "invite:same",
-        durationDays: 30,
-      });
+      const banked = await saveGrant(repository, { banked: true, durationDays: 3 });
+      const activated = PremiumGrant.reconstitute(banked.toPrimitives());
+      activated.activate(NOW, NOW.add({ minutes: 1 }));
 
       // When
-      const saved = await repository.saveIfAbsent(duplicate);
-      const found = await repository.findBySourceKey("invite:same");
+      await repository.save(activated);
+      const found = await repository.findBySourceKey(banked.sourceKey);
 
       // Then
-      expect({ saved, stored: found?.toPrimitives() }).toEqual({
-        saved: false,
-        stored: first.toPrimitives(),
-      });
+      expect(found?.toPrimitives()).toEqual(activated.toPrimitives());
     });
 
     it("끝나지 않은 BANKED·ACTIVE만 그 사용자 것으로 받은 순서대로 읽는다", async () => {

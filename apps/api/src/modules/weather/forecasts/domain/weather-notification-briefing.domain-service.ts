@@ -5,10 +5,9 @@ import {
 } from "@aido/api/vocabulary";
 import { maxBy } from "es-toolkit";
 
-import {
-  localDateAt,
-  localDateTimeAt,
-} from "../../shared/domain/weather-calendar.domain-service.js";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+
+import type { WEATHER_DAY_PARTS, WEATHER_WET_HAZARDS } from "./forecasts.constants.js";
 import {
   findHourIndexAt,
   type ForecastTodo,
@@ -56,17 +55,15 @@ export interface TitledWeatherBriefingTodo extends WeatherBriefingTodo {
 }
 
 export interface WeatherBriefingClock {
-  readonly now: Date;
+  readonly now: Temporal.Instant;
   /** 알림·할 일 시간대 */
   readonly timezone: string;
   /** 위치(예보) 시간대 */
   readonly locationTimezone: string;
 }
 
-const HOUR_MS = 60 * 60_000;
-
-type WetHazard = "rain" | "storm" | "snow";
-export type WeatherDayPart = "dawn" | "morning" | "afternoon" | "evening";
+type WetHazard = (typeof WEATHER_WET_HAZARDS)[number];
+export type WeatherDayPart = (typeof WEATHER_DAY_PARTS)[number];
 
 export type MorningWeatherBriefing =
   | {
@@ -84,7 +81,7 @@ export type MorningWeatherBriefing =
       /** 그 할 일이 걸린 더운 시간대의 가장 높은 체감 온도 */
       readonly peakApparentTemperature: number;
     }
-  | { readonly kind: "wetLater"; readonly startsAt: Date; readonly isSnow: boolean }
+  | { readonly kind: "wetLater"; readonly startsAt: Temporal.Instant; readonly isSnow: boolean }
   | { readonly kind: "summary"; readonly day: WeatherBriefingDay };
 
 export type EveningWeatherBriefing =
@@ -116,12 +113,12 @@ function isChilly(day: WeatherBriefingDay): boolean {
   return day.temperatureMin <= WEATHER_BRIEFING_RULES.CHILLY_TEMPERATURE;
 }
 
-function toDayPart(instant: Date, timezone: string): WeatherDayPart {
-  const { hour } = localDateTimeAt(instant, timezone);
-  if (hour < 6) {
+function toDayPart(instant: Temporal.Instant, timezone: string): WeatherDayPart {
+  const { hour } = instant.toZonedDateTimeISO(resolveTimezone(timezone));
+  if (hour < WEATHER_BRIEFING_RULES.MORNING_START_HOUR) {
     return "dawn";
   }
-  if (hour < 12) {
+  if (hour < WEATHER_BRIEFING_RULES.AFTERNOON_START_HOUR) {
     return "morning";
   }
   return hour < WEATHER_BRIEFING_RULES.EVENING_HOUR ? "afternoon" : "evening";
@@ -151,22 +148,24 @@ function contiguousHours(
   return hourly.slice(first, last + 1);
 }
 
+/** 뇌우와 겹친 할 일이 있으면 뇌우, 모두 눈이면 눈, 그 밖은 비다 */
+function toWetHazard(wetTodos: readonly AffectedTodo[], isStormy: boolean): WetHazard {
+  if (isStormy) {
+    return "storm";
+  }
+  return wetTodos.every(({ hour }) => isFrozen(hour.precipitationType)) ? "snow" : "rain";
+}
+
 function toWetBriefing(wetTodos: readonly AffectedTodo[]): MorningWeatherBriefing | null {
   const [earliest] = wetTodos;
   if (earliest == null) {
     return null;
   }
   const stormy = wetTodos.find(({ hour }) => isThunderHour(hour));
-  const hazard: WetHazard =
-    stormy != null
-      ? "storm"
-      : wetTodos.every(({ hour }) => isFrozen(hour.precipitationType))
-        ? "snow"
-        : "rain";
   const target = stormy ?? earliest;
   return {
     kind: "todoWet",
-    hazard,
+    hazard: toWetHazard(wetTodos, stormy != null),
     todo: target.todo,
     todoIds: wetTodos.map(({ todo }) => todo.id),
     precipitationChance: target.hour.precipitationChance,
@@ -200,17 +199,17 @@ function toWetLaterBriefing(
   hourly: readonly WeatherBriefingReportHour[],
   { now, timezone }: WeatherBriefingClock,
 ): MorningWeatherBriefing | null {
-  const today = localDateAt(now, timezone);
+  const today = localDateIn(now, timezone);
   const wetHour = hourly.find(
     (hour) =>
-      hour.startsAt.getTime() + HOUR_MS > now.getTime() &&
-      localDateAt(hour.startsAt, timezone).equals(today) &&
+      Temporal.Instant.compare(hour.startsAt.add({ hours: 1 }), now) > 0 &&
+      localDateIn(hour.startsAt, timezone).equals(today) &&
       isWetHour(hour),
   );
   if (wetHour == null) {
     return null;
   }
-  const startsAt = wetHour.startsAt.getTime() < now.getTime() ? now : wetHour.startsAt;
+  const startsAt = Temporal.Instant.compare(wetHour.startsAt, now) < 0 ? now : wetHour.startsAt;
   return { kind: "wetLater", startsAt, isSnow: isFrozen(wetHour.precipitationType) };
 }
 
@@ -223,8 +222,8 @@ export function decideMorningWeatherBriefing(
   todos: readonly TitledWeatherBriefingTodo[],
   clock: WeatherBriefingClock,
 ): MorningWeatherBriefing | null {
-  const locationToday = localDateAt(clock.now, clock.locationTimezone).toString();
-  const today = forecast.daily.find((day) => day.date === locationToday);
+  const locationToday = localDateIn(clock.now, clock.locationTimezone);
+  const today = forecast.daily.find((day) => day.date.equals(locationToday));
   if (today == null) {
     return null;
   }
@@ -251,14 +250,14 @@ export function decideEveningWeatherBriefing(
   forecast: WeatherBriefingForecast,
   clock: WeatherBriefingClock,
 ): EveningWeatherBriefing | null {
-  const tomorrowKey = localDateAt(clock.now, clock.locationTimezone).add({ days: 1 }).toString();
-  const tomorrow = forecast.daily.find((day) => day.date === tomorrowKey);
+  const locationTomorrow = localDateIn(clock.now, clock.locationTimezone).add({ days: 1 });
+  const tomorrow = forecast.daily.find((day) => day.date.equals(locationTomorrow));
   if (tomorrow == null) {
     return null;
   }
-  const deviceTomorrow = localDateAt(clock.now, clock.timezone).add({ days: 1 });
+  const deviceTomorrow = localDateIn(clock.now, clock.timezone).add({ days: 1 });
   const wetHour = forecast.hourly.find(
-    (hour) => localDateAt(hour.startsAt, clock.timezone).equals(deviceTomorrow) && isWetHour(hour),
+    (hour) => localDateIn(hour.startsAt, clock.timezone).equals(deviceTomorrow) && isWetHour(hour),
   );
   if (wetHour != null) {
     return {

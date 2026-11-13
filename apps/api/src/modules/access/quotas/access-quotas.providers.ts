@@ -1,12 +1,12 @@
 import type { Provider } from "@nestjs/common";
 
+import { AccessStateReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { AccessStateReaderPort } from "../entitlements/application/ports/access-state.reader.port.js";
 import { QuotaChargeRepositoryPort } from "./application/ports/quota-charge.repository.port.js";
 import { QuotaLedgerPort } from "./application/ports/quota-ledger.port.js";
 import { QuotaUsageRepositoryPort } from "./application/ports/quota-usage.repository.port.js";

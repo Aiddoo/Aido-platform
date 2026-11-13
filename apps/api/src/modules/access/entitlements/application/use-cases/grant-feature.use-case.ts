@@ -1,6 +1,7 @@
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
+import { FeatureGrantId } from "../../domain/feature-grant-id.vo.js";
 import { FeatureGrant } from "../../domain/feature-grant.aggregate.js";
 import type { EntitlementCachePort } from "../ports/entitlement-cache.port.js";
 import type { FeatureGrantRepositoryPort } from "../ports/feature-grant.repository.port.js";
@@ -9,7 +10,7 @@ import type { FeatureGrantInput, FeatureGrantResult } from "../ports/feature-gra
 export type GrantFeatureCommand = FeatureGrantInput;
 
 export interface GrantFeatureDependencies {
-  readonly featureGrantRepository: Pick<FeatureGrantRepositoryPort, "nextId" | "saveIfAbsent">;
+  readonly featureGrantRepository: Pick<FeatureGrantRepositoryPort, "existsBySourceKey" | "save">;
   readonly entitlementCache: Pick<EntitlementCachePort, "invalidate">;
   readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly clock: ClockPort;
@@ -27,16 +28,18 @@ export class GrantFeatureUseCase {
     const { featureGrantRepository, entitlementCache, afterCommit, clock } = this.#dependencies;
     const { userId } = command;
     const grant = FeatureGrant.create({
-      id: await featureGrantRepository.nextId(),
+      id: FeatureGrantId.generate(),
       userId,
       feature: command.feature,
       quantity: command.quantity,
       sourceKey: command.sourceKey,
       now: clock.now(),
     });
-    if (!(await featureGrantRepository.saveIfAbsent(grant))) {
+    if (await featureGrantRepository.existsBySourceKey(command.sourceKey)) {
       return { status: "duplicate" };
     }
+
+    await featureGrantRepository.save(grant);
     // 늘어난 자리가 커밋된 뒤에만 캐시에 보이도록 한다
     afterCommit.register(() => entitlementCache.invalidate(userId));
     return { status: "granted" };

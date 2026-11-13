@@ -1,12 +1,12 @@
-import type { SubscriptionNoticeEvent } from "../read-models/admin-notice.read-model.js";
-import type { SubscriptionAlertInput } from "../read-models/subscription-alert.read-model.js";
+import type { SubscriptionNoticeEvent } from "../../domain/admin-notices.constants.js";
+import type { SubscriptionNoticeInput } from "../ports/admin-event-notifier.port.js";
 import {
   buildSubscriptionNotice,
   registeredNoticeUserOf,
   subscriptionNoticeEventOf,
 } from "./admin-notice.messages.js";
 
-const base: SubscriptionAlertInput = {
+const base: SubscriptionNoticeInput = {
   userId: "user-1",
   email: "user@example.com",
   kind: "STARTED",
@@ -17,7 +17,7 @@ const base: SubscriptionAlertInput = {
 describe("subscriptionNoticeEventOf — 운영자가 구분할 구독 이벤트", () => {
   it.each<{
     readonly label: string;
-    readonly payload: Partial<SubscriptionAlertInput>;
+    readonly payload: Partial<SubscriptionNoticeInput>;
     readonly expected: SubscriptionNoticeEvent;
   }>([
     { label: "새 구독", payload: { kind: "STARTED" }, expected: "purchased" },
@@ -73,7 +73,7 @@ describe("subscriptionNoticeEventOf — 운영자가 구분할 구독 이벤트"
 describe("buildSubscriptionNotice — 결제 블록", () => {
   it("웹훅이 준 해지 사유·만료·유예·바뀔 상품·이전 계정을 공급자 중립 이름으로 옮긴다", () => {
     // Given
-    const payload: SubscriptionAlertInput = {
+    const payload: SubscriptionNoticeInput = {
       ...base,
       kind: "BILLING_ISSUE",
       endReason: "BILLING_ERROR",

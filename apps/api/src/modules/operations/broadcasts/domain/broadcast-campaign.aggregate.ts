@@ -2,13 +2,13 @@ import {
   BROADCAST_CAMPAIGN_STATUS,
   type BroadcastCampaignStatus,
   type BroadcastTargetFilter,
-  type NotificationActionType,
   type SupportedLocale,
 } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { BroadcastAction, type BroadcastActionPrimitives } from "./broadcast-action.vo.js";
 import { BroadcastCampaignId } from "./broadcast-campaign-id.vo.js";
 import { BroadcastContent } from "./broadcast-content.vo.js";
 import { BroadcastDelivery, type BroadcastDeliveryPrimitives } from "./broadcast-delivery.vo.js";
@@ -16,12 +16,7 @@ import {
   BroadcastLocalizedContent,
   type BroadcastLocalizedCopy,
 } from "./broadcast-localized-content.vo.js";
-import { broadcastNotDistributing } from "./broadcasts.errors.js";
-
-export interface BroadcastAction {
-  readonly type: NotificationActionType;
-  readonly url?: string;
-}
+import { broadcastCampaignFinished, broadcastNotDistributing } from "./broadcasts.errors.js";
 
 /** 접수한 요청 내용 */
 interface BroadcastCampaignRequest {
@@ -40,7 +35,7 @@ export interface BroadcastCampaignPrimitives {
   readonly body: string;
   readonly localizedContent: BroadcastLocalizedCopy | null;
   readonly targetFilter: BroadcastTargetFilter;
-  readonly action: BroadcastAction | null;
+  readonly action: BroadcastActionPrimitives | null;
   readonly force: boolean;
   readonly delivery: BroadcastDeliveryPrimitives;
   readonly status: BroadcastCampaignStatus;
@@ -92,7 +87,7 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
       content: params.content,
       localizedContent: params.localizedContent,
       targetFilter: params.targetFilter,
-      action: params.action == null ? null : { ...params.action },
+      action: params.action,
       force: params.force,
       delivery: params.delivery,
       status: BROADCAST_CAMPAIGN_STATUS.QUEUED,
@@ -113,7 +108,7 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
       content: BroadcastContent.reconstitute({ title: primitives.title, body: primitives.body }),
       localizedContent: BroadcastLocalizedContent.reconstitute(primitives.localizedContent),
       targetFilter: primitives.targetFilter,
-      action: primitives.action == null ? null : { ...primitives.action },
+      action: primitives.action == null ? null : BroadcastAction.reconstitute(primitives.action),
       force: primitives.force,
       delivery: BroadcastDelivery.reconstitute(primitives.delivery),
       status: primitives.status,
@@ -163,7 +158,7 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
   }
 
   get action(): BroadcastAction | null {
-    return this.props.action == null ? null : { ...this.props.action };
+    return this.props.action;
   }
 
   get force(): boolean {
@@ -208,14 +203,16 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
       this.props.targetFilter === props.targetFilter &&
       this.props.force === props.force &&
       this.props.delivery.equals(props.delivery) &&
-      this.props.action?.type === props.action?.type &&
-      this.props.action?.url === props.action?.url
+      isSameAction(this.props.action, props.action)
     );
   }
 
   start(now: Temporal.Instant): boolean {
-    if (this.props.status !== BROADCAST_CAMPAIGN_STATUS.QUEUED) {
+    if (this.props.status === BROADCAST_CAMPAIGN_STATUS.FANNING_OUT) {
       return false;
+    }
+    if (this.isTerminal()) {
+      throw broadcastCampaignFinished(this.props.status);
     }
     this.props.status = BROADCAST_CAMPAIGN_STATUS.FANNING_OUT;
     this.props.startedAt = now;
@@ -234,8 +231,11 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
   }
 
   complete(now: Temporal.Instant): boolean {
-    if (this.isTerminal()) {
+    if (this.props.status === BROADCAST_CAMPAIGN_STATUS.COMPLETED) {
       return false;
+    }
+    if (this.isTerminal()) {
+      throw broadcastCampaignFinished(this.props.status);
     }
     this.props.status = BROADCAST_CAMPAIGN_STATUS.COMPLETED;
     this.props.startedAt ??= now;
@@ -245,8 +245,11 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
   }
 
   fail(reason: string, now: Temporal.Instant): boolean {
-    if (this.isTerminal()) {
+    if (this.props.status === BROADCAST_CAMPAIGN_STATUS.FAILED) {
       return false;
+    }
+    if (this.isTerminal()) {
+      throw broadcastCampaignFinished(this.props.status);
     }
     this.props.status = BROADCAST_CAMPAIGN_STATUS.FAILED;
     this.props.failureReason = reason;
@@ -264,7 +267,7 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
       body: this.props.content.body,
       localizedContent: localizedContent.isEmpty ? null : localizedContent.value,
       targetFilter: this.props.targetFilter,
-      action: this.action,
+      action: this.props.action?.toPrimitives() ?? null,
       force: this.props.force,
       delivery: this.props.delivery.toPrimitives(),
       status: this.props.status,
@@ -278,4 +281,11 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
       completedAt: this.props.completedAt,
     };
   }
+}
+
+function isSameAction(left: BroadcastAction | null, right: BroadcastAction | null): boolean {
+  if (left == null || right == null) {
+    return left === right;
+  }
+  return left.equals(right);
 }

@@ -7,15 +7,15 @@ import {
 
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
+import { NO_FEATURE_GRANTS } from "../../shared/domain/access.constants.js";
 import {
   resolveAccessSubject,
   resolveFeatureQuota,
   resolveQuotaLimit,
   type AccessState,
   type FeatureQuotaState,
-} from "../../entitlements/domain/entitlement.domain-service.js";
-import { NO_FEATURE_GRANTS } from "../../entitlements/domain/entitlements.constants.js";
-import { QuotaWindow } from "./quota-window.vo.js";
+} from "../../shared/domain/entitlement.domain-service.js";
+import { QuotaWindow } from "../../shared/domain/quota-window.vo.js";
 
 interface QuotaAllowanceValue {
   readonly feature: MeteredFeatureKey;
@@ -39,7 +39,7 @@ export class QuotaAllowance extends ValueObject<QuotaAllowanceValue> {
     return new QuotaAllowance({
       feature: params.feature,
       plan: resolveAccessSubject(params).plan,
-      window: QuotaWindow.monthOf(params.now),
+      window: QuotaWindow.create(params.now),
     });
   }
 

@@ -4,7 +4,7 @@
 
 ## 시작
 
-- 새 기능은 [새 기능 추가](docs/new-feature.md) 순서를 따른다(Claude Code 스킬 `/api-module <기능>`). 뼈대는 `pnpm gen:api-slice`(slice·계약·fixture·InMemory·계약 테스트)다.
+- 새 기능은 [새 기능 추가](docs/new-feature.md) 순서를 따른다(스킬 `api-feature`, Claude Code는 `/api-feature <기능>`). 뼈대는 `pnpm gen:api-slice`(slice·계약·fixture·InMemory·계약 테스트)다.
 - 기준 구현은 notes/memos다([도메인 모델](docs/domain-modeling.md#기준-구현-notesmemos)). 모든 Context가 slice 구조이고 규칙은 모든 Context에 같다.
 - 검사: `pnpm lint`(Oxlint와 `aido/*` 관례 규칙), `pnpm lint:names`(ls-lint), `pnpm --filter @aido/server lint:deps`(dependency-cruiser), `pnpm check:unused`(knip, 설정은 루트 `knip.jsonc`). 모두 `pnpm check`에 있고 `apps/api/src` 전체에 걸린다. Claude Code는 서버 파일을 고친 직후 `scripts/agent-hooks/lint-edited-file.mjs` hook이 Oxlint를 돌린다.
 

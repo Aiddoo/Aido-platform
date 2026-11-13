@@ -4,23 +4,22 @@ import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { groupBy, uniq } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { subscription } from "#api/platform/database/schema/billing.schema";
 
-import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
-import { currentStoreChainOf } from "../../../shared/premium-access.domain-service.js";
-import { storeProductIdsOfPlan } from "../../../shared/subscription-plan.domain-service.js";
-import {
-  type UpcomingRenewalNotice,
-  UpcomingRenewalNoticeRepositoryPort,
-} from "../../application/ports/upcoming-renewal-notice.repository.port.js";
-import { toStorePeriodType } from "../../domain/subscription-lifecycle.domain-service.js";
+import type { ListDueBillingNoticesParams } from "../../../shared/application/ports/billing-notice.repository.port.js";
+import { currentStoreChainOf } from "../../../shared/domain/premium-access.domain-service.js";
+import { toStorePeriodType } from "../../../shared/domain/store-period-type.domain-service.js";
+import { storeProductIdsOfPlan } from "../../../shared/domain/subscription-plan.domain-service.js";
+import type { UpcomingRenewalNoticeRepositoryPort } from "../../application/ports/upcoming-renewal-notice.repository.port.js";
+import type { UpcomingRenewalNotice } from "../../domain/upcoming-renewal-notice.entity.js";
+import { toUpcomingRenewalNotice } from "./upcoming-renewal-notice-row.mapper.js";
 
 @Injectable()
-export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNoticeRepositoryPort {
+export class DrizzleUpcomingRenewalNoticeRepository implements UpcomingRenewalNoticeRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 
@@ -29,12 +28,12 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
   }
 
   async listDue(
-    params: FindDueBillingNoticesParams<UpcomingRenewalNotice>,
+    params: ListDueBillingNoticesParams<UpcomingRenewalNotice>,
   ): Promise<UpcomingRenewalNotice[]> {
     const rows = await this.#db
       .select({
-        subscriptionId: subscription.id,
-        storeSubscriptionId: subscription.revenueCatId,
+        id: subscription.id,
+        storeSubscriptionId: subscription.storeSubscriptionId,
         userId: subscription.userId,
         expiresAt: subscription.expiresAt,
       })
@@ -54,7 +53,10 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
           ),
           params.after == null
             ? undefined
-            : sql`(${subscription.expiresAt}, ${subscription.id}) > (${sql.param(params.after.expiresAt, subscription.expiresAt)}, ${params.after.subscriptionId})`,
+            : tupleGreaterThan(
+                [subscription.expiresAt, subscription.id],
+                [params.after.expiresAt, params.after.id.value],
+              ),
         ),
       )
       .orderBy(asc(subscription.expiresAt), asc(subscription.id))
@@ -63,10 +65,9 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
       rows.map((row) => row.userId),
       params.now,
     );
-    return rows.map(({ storeSubscriptionId, ...row }) => ({
-      ...row,
-      isCurrentChain: currentChains.get(row.userId) === storeSubscriptionId,
-    }));
+    return rows.map(({ storeSubscriptionId, ...row }) =>
+      toUpcomingRenewalNotice(row, currentChains.get(row.userId) === storeSubscriptionId),
+    );
   }
 
   // 현재 체인은 /me와 같은 도메인 규칙으로 고른다. 사용자 묶음을 한 번에 읽는다
@@ -80,7 +81,7 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
     const rows = await this.#db
       .select({
         userId: subscription.userId,
-        storeSubscriptionId: subscription.revenueCatId,
+        storeSubscriptionId: subscription.storeSubscriptionId,
         productId: subscription.productId,
         startedAt: subscription.startedAt,
         status: subscription.status,
@@ -118,7 +119,7 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
           or(
             ...notices.map((notice) =>
               and(
-                eq(subscription.id, notice.subscriptionId),
+                eq(subscription.id, notice.id.value),
                 eq(subscription.expiresAt, notice.expiresAt),
               ),
             ),
@@ -129,6 +130,6 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
       )
       .returning({ id: subscription.id });
     const claimedIds = new Set(claimed.map((row) => row.id));
-    return notices.filter((notice) => claimedIds.has(notice.subscriptionId));
+    return notices.filter((notice) => claimedIds.has(notice.id.value));
   }
 }

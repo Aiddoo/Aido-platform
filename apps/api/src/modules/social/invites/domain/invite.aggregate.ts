@@ -1,8 +1,8 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { InviteCode } from "./invite-code.vo.js";
-import { InviteId } from "./invite-id.vo.js";
+import { InviteCode } from "../../shared/domain/invite-code.vo.js";
+import { InviteId } from "../../shared/domain/invite-id.vo.js";
 import type { InviteStatus } from "./invites.constants.js";
 
 export interface InvitePrimitives {

@@ -23,7 +23,6 @@ import {
   TODO_TIMEZONE_REBASE_WINDOW_MS,
 } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase.queue";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
   notification,
@@ -37,6 +36,7 @@ import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { nowInstant, shiftDateKey, todayIn, wallClockInstant } from "#test/fixtures/clock.fixture";

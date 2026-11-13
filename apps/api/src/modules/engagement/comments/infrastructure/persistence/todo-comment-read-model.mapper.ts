@@ -3,6 +3,7 @@ import type {
   TodoCommentReadModel,
   TodoCommentRootPosition,
 } from "../../application/read-models/todo-comment.read-model.js";
+import { DELETED_COMMENT_AUTHOR } from "../../domain/comments.constants.js";
 
 /** 조회가 돌려주는 댓글 한 행. LEFT JOIN LATERAL로 비어 있을 수 있어 모든 칸이 null일 수 있다 */
 export interface TodoCommentProjectionRow {
@@ -16,6 +17,7 @@ export interface TodoCommentProjectionRow {
   readonly authorProfileImage: string | null;
   readonly replyToAuthorId: string | null;
   readonly replyToAuthorName: string | null;
+  readonly replyToAuthorUserTag: string | null;
   readonly todoOwnerId: string | null;
   readonly content: string | null;
   readonly likeCount: number | null;
@@ -31,6 +33,18 @@ export interface TodoCommentParticipantRow {
   readonly participantAuthorUserTag: string | null;
   readonly participantAuthorProfileImage: string | null;
   readonly todoOwnerId: string | null;
+}
+
+/** 이름이 없는 사용자는 Aido ID(userTag)로 보인다. 지운 계정의 글을 넘겨받은 시스템 작성자는 표시 이름이 없다 */
+export function toDisplayName(author: {
+  readonly userId: string | null;
+  readonly name: string | null;
+  readonly userTag: string | null;
+}): string | null {
+  if (author.userId == null || author.userId === DELETED_COMMENT_AUTHOR.id) {
+    return null;
+  }
+  return author.name ?? author.userTag;
 }
 
 function requireValue<TValue>(value: TValue | null, field: string): TValue {
@@ -51,9 +65,17 @@ export function toTodoCommentReadModel(row: TodoCommentProjectionRow): TodoComme
     threadCommentId: row.threadCommentId,
     replyToCommentId: row.replyToCommentId,
     replyToAuthorId: row.replyToAuthorId,
-    replyToAuthorName: row.replyToAuthorName,
+    replyToAuthorName: toDisplayName({
+      userId: row.replyToAuthorId,
+      name: row.replyToAuthorName,
+      userTag: row.replyToAuthorUserTag,
+    }),
     authorId: requireValue(row.authorId, "authorId"),
-    authorName: row.authorName,
+    authorName: toDisplayName({
+      userId: row.authorId,
+      name: row.authorName,
+      userTag: row.authorUserTag,
+    }),
     authorUserTag: row.authorUserTag,
     authorProfileImage: row.authorProfileImage,
     todoOwnerId: requireValue(row.todoOwnerId, "todoOwnerId"),
@@ -74,7 +96,11 @@ export function toTodoCommentParticipantAuthor(
   }
   return {
     id: row.participantAuthorId,
-    name: row.participantAuthorName,
+    name: toDisplayName({
+      userId: row.participantAuthorId,
+      name: row.participantAuthorName,
+      userTag: row.participantAuthorUserTag,
+    }),
     userTag: row.participantAuthorUserTag,
     profileImage: row.participantAuthorProfileImage,
     isTodoOwner: row.participantAuthorId === row.todoOwnerId,

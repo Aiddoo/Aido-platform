@@ -6,7 +6,10 @@ import {
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
 
-import { PUSH_DELIVERY_JOB_MAX_PUBLICATIONS } from "../../application/read-models/push-delivery.read-model.js";
+import {
+  PUSH_DELIVERY_JOB_EXPIRE_SECONDS,
+  PUSH_DELIVERY_JOB_MAX_PUBLICATIONS,
+} from "../../application/read-models/push-delivery.read-model.js";
 import type { PushDeliveryLane } from "../../domain/push-delivery-lane.domain-service.js";
 
 const PUSH_DELIVERY_RELAY_SCHEDULE = {
@@ -68,7 +71,7 @@ const PUSH_DELIVERY_RETRY = {
   retryLimit: 5,
   retryDelaySeconds: 1,
   retryBackoff: true,
-  expireInSeconds: 5 * 60,
+  expireInSeconds: PUSH_DELIVERY_JOB_EXPIRE_SECONDS,
   retentionSeconds: 7 * 24 * 60 * 60,
   deleteAfterSeconds: 24 * 60 * 60,
 } as const satisfies JobRetryPolicy;

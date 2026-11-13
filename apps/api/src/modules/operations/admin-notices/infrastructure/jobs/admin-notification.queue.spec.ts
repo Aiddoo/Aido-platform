@@ -82,6 +82,75 @@ describe("관리자 알림 큐 정의", () => {
     });
   });
 
+  it("이미 쌓인 잡이 싣는 구독 이벤트·스토어·종료 이유·가입 방식·심각도 값을 모두 받는다", () => {
+    // Given
+    const events = [
+      "purchased",
+      "one_time_purchased",
+      "trial_started",
+      "trial_converted",
+      "renewed",
+      "cancellation_scheduled",
+      "trial_cancelled",
+      "uncancelled",
+      "expired",
+      "trial_expired",
+      "billing_issue",
+      "refunded",
+      "product_change_scheduled",
+      "transferred",
+      "extended",
+    ];
+    const stores = [
+      "APP_STORE",
+      "MAC_APP_STORE",
+      "PLAY_STORE",
+      "STRIPE",
+      "WEB_BILLING",
+      "AMAZON",
+      "PROMOTIONAL",
+    ];
+    const endReasons = [
+      "UNSUBSCRIBE",
+      "BILLING_ERROR",
+      "DEVELOPER_INITIATED",
+      "PRICE_INCREASE",
+      "CUSTOMER_SUPPORT",
+      "SUBSCRIPTION_PAUSED",
+      "UNKNOWN",
+    ];
+    const signupMethods = ["CREDENTIAL", "APPLE", "GOOGLE", "KAKAO", "NAVER"];
+    const subscriptionJob = (subscription: object, signupMethod = "APPLE") => ({
+      name: AdminNotificationJobName.SEND,
+      data: {
+        channel: "payment",
+        notice: {
+          type: "subscription_event",
+          user: { userId: "user-1", email: "user@example.com", signupMethod },
+          subscription: { event: "renewed", price: {}, ...subscription },
+        },
+      },
+    });
+    const messageJob = (severity: string) => ({
+      name: AdminNotificationJobName.SEND,
+      data: {
+        channel: "admin",
+        notice: { type: "message", message: { title: "요약", body: "본문", severity } },
+      },
+    });
+
+    // Then
+    for (const job of [
+      ...events.map((event) => subscriptionJob({ event })),
+      ...stores.map((store) => subscriptionJob({ store })),
+      ...endReasons.map((endReason) => subscriptionJob({ endReason })),
+      ...signupMethods.map((signupMethod) => subscriptionJob({}, signupMethod)),
+      ...["info", "success", "warning", "critical"].map(messageJob),
+    ]) {
+      expect(parse(job)).toEqual(job);
+    }
+  });
+
   it("모르는 채널·알림 종류·이벤트는 받지 않는다", () => {
     for (const data of [
       { channel: "unknown", notice: { type: "message", message: {} } },
@@ -97,59 +166,5 @@ describe("관리자 알림 큐 정의", () => {
     ]) {
       expect(safeParse({ name: AdminNotificationJobName.SEND, data }).success).toBe(false);
     }
-  });
-
-  it("배포 직전 큐에 남은 1.15 조립 메시지 잡(notification)은 그 모양 그대로 일반 메시지로 보낸다", () => {
-    // Given
-    const notification = {
-      title: "[샌드박스] 🎉 새로운 구독 구매",
-      body: "**매튜** 님의 구독 이벤트 (STARTED)",
-      severity: "info",
-      fields: [{ label: "금액", value: { kind: "text", text: "₩3,900" }, inline: true }],
-      link: "https://app.revenuecat.com/projects/p/customers/u",
-    };
-
-    // Then
-    expect(
-      parse({ name: AdminNotificationJobName.SEND, data: { channel: "payment", notification } }),
-    ).toEqual({
-      name: AdminNotificationJobName.SEND,
-      data: { channel: "payment", notice: { type: "message", message: notification } },
-    });
-  });
-
-  it("배포 중 큐에 남은 1.14 형식 알림은 info 일반 메시지로 바꿔 받아들인다", () => {
-    // Given
-    const legacy = {
-      name: AdminNotificationJobName.SEND,
-      data: {
-        channel: "admin",
-        notification: {
-          title: "가입",
-          body: "새 회원",
-          color: 0x57f287,
-          fields: [{ name: "이메일", value: "user@example.com", inline: true }],
-        },
-      },
-    };
-
-    // Then
-    expect(parse(legacy)).toEqual({
-      name: AdminNotificationJobName.SEND,
-      data: {
-        channel: "admin",
-        notice: {
-          type: "message",
-          message: {
-            title: "가입",
-            body: "새 회원",
-            severity: "info",
-            fields: [
-              { label: "이메일", value: { kind: "text", text: "user@example.com" }, inline: true },
-            ],
-          },
-        },
-      },
-    });
   });
 });

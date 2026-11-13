@@ -18,7 +18,7 @@ import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-re
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
-import { UpsertUserLocationUseCase } from "../../../application/use-cases/upsert-user-location.use-case.js";
+import { RegisterUserLocationUseCase } from "../../../application/use-cases/register-user-location.use-case.js";
 import { toWeatherLocationResponse } from "./weather-location-response.mapper.js";
 import { UpdateWeatherLocationDto, WeatherLocationResponseDto } from "./weather-location.dto.js";
 
@@ -34,10 +34,10 @@ export const WEATHER_LOCATION_V2_THROTTLE = {
 @ApiBearerAuth()
 @Controller({ path: "weather", version: API_VERSION.V2 })
 export class WeatherLocationV2Controller {
-  readonly #upsertLocation: UpsertUserLocationUseCase;
+  readonly #registerLocation: RegisterUserLocationUseCase;
 
-  constructor(upsertLocation: UpsertUserLocationUseCase) {
-    this.#upsertLocation = upsertLocation;
+  constructor(registerLocation: RegisterUserLocationUseCase) {
+    this.#registerLocation = registerLocation;
   }
 
   @Put("location")
@@ -76,7 +76,7 @@ export class WeatherLocationV2Controller {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: UpdateWeatherLocationDto }) dto: UpdateWeatherLocationDto,
   ) {
-    const result = await this.#upsertLocation.execute({
+    const result = await this.#registerLocation.execute({
       userId: user.userId,
       latitude: dto.latitude,
       longitude: dto.longitude,

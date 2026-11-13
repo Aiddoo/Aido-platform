@@ -2,16 +2,17 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { NudgeInteractionNotification } from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
-import type { NudgeInteractionTodo } from "#api/modules/social/nudges/application/read-models/nudge-interaction.read-model";
-import type { NudgeListItem } from "#api/modules/social/nudges/application/read-models/nudge.read-model";
+import type { NudgeInteractionTodoReadModel } from "#api/modules/social/nudges/application/read-models/nudge-interaction.read-model";
+import type { NudgeReadModel } from "#api/modules/social/nudges/application/read-models/nudge.read-model";
 import { NudgeId } from "#api/modules/social/nudges/domain/nudge-id.vo";
 import type { Nudge } from "#api/modules/social/nudges/domain/nudge.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { InMemoryNudgeReader } from "#test/doubles/social/in-memory-nudge.reader";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
@@ -33,12 +34,22 @@ class CountingNudgeRepository extends InMemoryNudgeRepository {
     this.saveCount += 1;
     await super.save(nudge);
   }
+}
+
+// 콕을 읽은 횟수를 저장소에 남겨 기능이 꺼졌을 때 읽지 않았는지 본다
+class CountingNudgeReader extends InMemoryNudgeReader {
+  readonly #repository: CountingNudgeRepository;
+
+  constructor(repository: CountingNudgeRepository) {
+    super(repository);
+    this.#repository = repository;
+  }
 
   override async findInteraction(
     nudgeId: NudgeId,
     viewerId: UserId,
-  ): Promise<NudgeListItem | null> {
-    this.interactionReadCount += 1;
+  ): Promise<NudgeReadModel | null> {
+    this.#repository.interactionReadCount += 1;
     return super.findInteraction(nudgeId, viewerId);
   }
 }
@@ -48,7 +59,7 @@ class TurnsPrivateWhileLockingRepository extends CountingNudgeRepository {
   override async lockInteractionTodo(
     todoId: TodoId,
     ownerId: UserId,
-  ): Promise<NudgeInteractionTodo | null> {
+  ): Promise<NudgeInteractionTodoReadModel | null> {
     this.updateTodo(todoId.value, { visibility: "PRIVATE" });
     return super.lockInteractionTodo(todoId, ownerId);
   }
@@ -76,10 +87,10 @@ async function seedReceivedNudge(
   return repository;
 }
 
-function createFollowReader(): StubFollowReader {
-  const followReader = new StubFollowReader();
-  followReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
-  return followReader;
+function createFollowReader(): StubMutualFriendReader {
+  const mutualFriendReader = new StubMutualFriendReader();
+  mutualFriendReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+  return mutualFriendReader;
 }
 
 function createReplyToNudgeUseCase(
@@ -89,9 +100,9 @@ function createReplyToNudgeUseCase(
   return new ReplyToNudgeUseCase({
     unitOfWork: new ImmediateUnitOfWork(),
     nudgeRepository,
-    nudgeReader: nudgeRepository,
+    nudgeReader: new CountingNudgeReader(nudgeRepository),
     interactionConfig: { isEnabled: true },
-    followReader: createFollowReader(),
+    mutualFriendReader: createFollowReader(),
     notifier: new RecordingNudgeNotifier(),
     clock: new FixedClock(NUDGE_FIXTURE_NOW),
     ...overrides,
@@ -186,11 +197,11 @@ describe("ReplyToNudgeUseCase — 받은 콕에 답장", () => {
   ])("$state이면 $code로 거절하고 답장을 저장하지 않는다", async ({ state, code }) => {
     // Given
     const nudgeRepository = await seedReceivedNudge();
-    const followReader = createFollowReader();
+    const mutualFriendReader = createFollowReader();
     const notifier = new RecordingNudgeNotifier();
     const todoId = (await nudgeRepository.findById(NUDGE_ID))?.todoId ?? 0;
     if (state === "친구 관계 해제") {
-      followReader.removeMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+      mutualFriendReader.removeMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
     }
     if (state === "비공개 할 일") {
       nudgeRepository.updateTodo(todoId, { visibility: "PRIVATE" });
@@ -198,7 +209,7 @@ describe("ReplyToNudgeUseCase — 받은 콕에 답장", () => {
     if (state === "지운 할 일") {
       nudgeRepository.deleteTodo(todoId);
     }
-    const useCase = createReplyToNudgeUseCase(nudgeRepository, { followReader, notifier });
+    const useCase = createReplyToNudgeUseCase(nudgeRepository, { mutualFriendReader, notifier });
 
     // When
     const result = useCase.execute({

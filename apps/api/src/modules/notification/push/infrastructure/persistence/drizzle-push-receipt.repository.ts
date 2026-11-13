@@ -1,10 +1,14 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
-import { z } from "zod";
+import { and, asc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { pushDeliveryAttempt, pushToken } from "#api/platform/database/schema/index";
+import {
+  pushDeliveryAttempt,
+  pushDeliveryStatus,
+  pushToken,
+} from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type { PushReceiptResult } from "../../application/ports/push-provider.port.js";
 import type {
@@ -15,20 +19,18 @@ import { PUSH_FAILURE_KIND, revokesPushToken } from "../../domain/push-failure-k
 import type { PushReceiptCheckWindow } from "../../domain/push-receipt.domain-service.js";
 import { pushTokenFingerprint } from "./push-token-fingerprint.mapper.js";
 
-const TOKEN_REVOKING_FAILURE_KINDS = Object.values(PUSH_FAILURE_KIND).filter(revokesPushToken);
-
-const invalidAttemptSchema = z.object({
-  userId: z.string(),
-  token: z.string(),
-  tokenFingerprint: z.string().nullable(),
-});
+const TOKEN_REVOKING_FAILURE_KINDS: ReadonlySet<string> = new Set(
+  Object.values(PUSH_FAILURE_KIND).filter(revokesPushToken),
+);
 
 @Injectable()
 export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#txHost = txHost;
+    this.#clock = clock;
   }
 
   get #db() {
@@ -83,23 +85,30 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
   }
 
   async expireUnreceipted(acceptedBefore: Temporal.Instant, limit: number): Promise<number> {
-    const { rows } = await this.#db.execute<Record<string, unknown>>(sql`
-      UPDATE ${pushDeliveryAttempt}
-      SET "status" = 'UNKNOWN'::"PushDeliveryStatus",
-          "failureKind" = ${PUSH_FAILURE_KIND.RECEIPT_EXPIRED},
-          "receiptCheckedAt" = CURRENT_TIMESTAMP,
-          "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "id" IN (
-        SELECT "id" FROM ${pushDeliveryAttempt}
-        WHERE "status" = 'TICKET_ACCEPTED'::"PushDeliveryStatus"
-          AND "createdAt" < ${sql.param(acceptedBefore, pushDeliveryAttempt.createdAt)}
-        ORDER BY "createdAt" ASC, "id" ASC
-        LIMIT ${limit}
-        FOR UPDATE SKIP LOCKED
+    const now = this.#clock.now();
+    const unreceipted = this.#db
+      .select({ id: pushDeliveryAttempt.id })
+      .from(pushDeliveryAttempt)
+      .where(
+        and(
+          eq(pushDeliveryAttempt.status, "TICKET_ACCEPTED"),
+          lt(pushDeliveryAttempt.createdAt, acceptedBefore),
+        ),
       )
-      RETURNING "id"
-    `);
-    return rows.length;
+      .orderBy(asc(pushDeliveryAttempt.createdAt), asc(pushDeliveryAttempt.id))
+      .limit(limit)
+      .for("update", { skipLocked: true });
+    const expired = await this.#db
+      .update(pushDeliveryAttempt)
+      .set({
+        status: "UNKNOWN",
+        failureKind: PUSH_FAILURE_KIND.RECEIPT_EXPIRED,
+        receiptCheckedAt: now,
+        updatedAt: now,
+      })
+      .where(inArray(pushDeliveryAttempt.id, unreceipted))
+      .returning({ id: pushDeliveryAttempt.id });
+    return expired.length;
   }
 
   async #recordTerminalReceipts(
@@ -113,42 +122,61 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
       const failure = result.status === "failed" ? result.failure : undefined;
       return sql`(
         ${result.ticketId}::VARCHAR(100),
-        ${result.status === "delivered" ? "DELIVERED" : "FAILED"}::"PushDeliveryStatus",
+        ${result.status === "delivered" ? "DELIVERED" : "FAILED"}::${pushDeliveryStatus},
         ${failure?.kind ?? null}::VARCHAR(40),
         ${failure?.providerCode ?? null}::VARCHAR(100),
         ${failure?.message?.slice(0, 500) ?? null}::VARCHAR(500)
       )`;
     });
-    const { rows } = await this.#db.execute<Record<string, unknown>>(sql`
-      WITH updated AS (
-        UPDATE ${pushDeliveryAttempt} AS attempt
-        SET "status" = receipt."status",
-            "failureKind" = receipt."failureKind",
-            "errorCode" = receipt."errorCode",
-            "errorMessage" = receipt."errorMessage",
-            "receiptCheckedAt" = ${sql.param(checkedAt, pushDeliveryAttempt.receiptCheckedAt)},
-            "updatedAt" = ${sql.param(checkedAt, pushDeliveryAttempt.updatedAt)}
-        FROM (VALUES ${sql.join(values, sql`, `)}) AS receipt("ticketId", "status", "failureKind", "errorCode", "errorMessage")
-        WHERE attempt."expoTicketId" = receipt."ticketId"
-          AND attempt."status" = 'TICKET_ACCEPTED'
-        RETURNING attempt."pushTokenId", attempt."tokenFingerprint", attempt."failureKind"
+    // 이미 끝난 ticket의 중복 응답은 되돌리지 않도록 TICKET_ACCEPTED인 행만 ticket마다 다른 결과로 닫는다
+    const closed = await this.#db
+      .update(pushDeliveryAttempt)
+      .set({
+        status: sql`receipt."status"`,
+        failureKind: sql`receipt."failureKind"`,
+        errorCode: sql`receipt."errorCode"`,
+        errorMessage: sql`receipt."errorMessage"`,
+        receiptCheckedAt: checkedAt,
+        updatedAt: checkedAt,
+      })
+      .from(
+        sql`(VALUES ${sql.join(values, sql`, `)}) AS receipt("ticketId", "status", "failureKind", "errorCode", "errorMessage")`,
       )
-      SELECT token."userId", token."token", updated."tokenFingerprint"
-      FROM updated
-      JOIN ${pushToken} AS token ON token."id" = updated."pushTokenId"
-      WHERE updated."failureKind" IN (${sql.join(
-        TOKEN_REVOKING_FAILURE_KINDS.map((kind) => sql`${kind}`),
-        sql`, `,
-      )})
-    `);
-    return z
-      .array(invalidAttemptSchema)
-      .parse(rows)
-      .flatMap((attempt) =>
-        attempt.tokenFingerprint != null &&
-        attempt.tokenFingerprint === pushTokenFingerprint(attempt.token)
-          ? [{ userId: attempt.userId, token: attempt.token }]
-          : [],
+      .where(
+        and(
+          eq(pushDeliveryAttempt.providerTicketId, sql`receipt."ticketId"`),
+          eq(pushDeliveryAttempt.status, "TICKET_ACCEPTED"),
+        ),
+      )
+      .returning({
+        pushTokenId: pushDeliveryAttempt.pushTokenId,
+        tokenFingerprint: pushDeliveryAttempt.tokenFingerprint,
+        failureKind: pushDeliveryAttempt.failureKind,
+      });
+    const revoking = closed.filter(
+      (attempt) =>
+        attempt.failureKind != null && TOKEN_REVOKING_FAILURE_KINDS.has(attempt.failureKind),
+    );
+    if (revoking.length === 0) {
+      return [];
+    }
+    const tokens = await this.#db
+      .select({ id: pushToken.id, userId: pushToken.userId, token: pushToken.token })
+      .from(pushToken)
+      .where(
+        inArray(
+          pushToken.id,
+          revoking.map(({ pushTokenId }) => pushTokenId),
+        ),
       );
+    const tokenById = new Map(tokens.map((token) => [token.id, token]));
+    return revoking.flatMap((attempt) => {
+      const token = tokenById.get(attempt.pushTokenId);
+      return token != null &&
+        attempt.tokenFingerprint != null &&
+        attempt.tokenFingerprint === pushTokenFingerprint(token.token)
+        ? [{ userId: token.userId, token: token.token }]
+        : [];
+    });
   }
 }

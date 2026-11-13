@@ -1,4 +1,5 @@
-import type { CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+
 import { ListActiveSessionsUseCase } from "#api/modules/identity/auth/application/use-cases/list-active-sessions.use-case";
 import { RevokeSessionUseCase } from "#api/modules/identity/auth/application/use-cases/revoke-session.use-case";
 import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";

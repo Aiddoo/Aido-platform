@@ -8,9 +8,9 @@ import {
 } from "#api/modules/notification/retention/infrastructure/cache/retention-cache.keyspace";
 import { DrizzleRetentionRepository } from "#api/modules/notification/retention/infrastructure/persistence/drizzle-retention.repository";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, todoCategory, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { describeRetentionRepositoryContract } from "#test/contracts/notification/retention-repository.contract";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";

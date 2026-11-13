@@ -60,7 +60,7 @@ export class StubReminderScheduleEnqueuer implements ReminderScheduleEnqueuerPor
 }
 export class StubStreakMilestoneNotifier implements StreakMilestoneNotifierPort {
   readonly userIds: string[] = [];
-  notifyStreak3Reached(userId: UserId): void {
+  async notifyStreak3Reached(userId: UserId): Promise<void> {
     this.userIds.push(userId.value);
   }
 }

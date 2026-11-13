@@ -3,19 +3,24 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 
 import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
 import { type PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
+import type { PushProviderPort, PushProviderTiming } from "../ports/push-provider.port.js";
+import { PUSH_DELIVERY_JOB_EXPIRE_SECONDS } from "../read-models/push-delivery.read-model.js";
 import type { PublishPushDeliveryOutboxUseCase } from "./publish-push-delivery-outbox.use-case.js";
 
 const RELAY_BATCH_SIZE = 100;
 const MAX_BATCHES_PER_TRIGGER = 10;
-// Expo SDK 6.x 전송은 AbortSignal timeout을 제공하지 않는다. 정상적인 외부 요청을
-// queue job 만료(5분) 전에 회수하지 않도록 lease를 그보다 넉넉하게 유지한다.
-const PROCESSING_LEASE_MS = 15 * 60_000;
+
+// lease가 작업 만료보다 짧으면 실행 중인 작업을 되돌려 두 번 보내고, 공급자 전송은 만료 뒤에도 이어질 수 있어 그 여유를 더한다
+function processingLeaseMs(timing: PushProviderTiming): number {
+  return PUSH_DELIVERY_JOB_EXPIRE_SECONDS * 1000 + timing.unabortableSendGraceMs;
+}
 
 interface RelayPushDeliveryOutboxDependencies {
   readonly outbox: Pick<PushDeliveryOutboxRepositoryPort, "recoverStaleProcessing">;
   readonly lifecycle: Pick<PushDeliveryLifecycleRepositoryPort, "recoverStaleProcessing">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly publishOutbox: Pick<PublishPushDeliveryOutboxUseCase, "execute">;
+  readonly pushProvider: Pick<PushProviderPort, "timing">;
   readonly clock: ClockPort;
 }
 
@@ -29,7 +34,7 @@ export class RelayPushDeliveryOutboxUseCase {
   async execute(): Promise<void> {
     const processingCutoff = this.#dependencies.clock
       .now()
-      .subtract({ milliseconds: PROCESSING_LEASE_MS });
+      .subtract({ milliseconds: processingLeaseMs(this.#dependencies.pushProvider.timing) });
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.lifecycle.recoverStaleProcessing(processingCutoff);
       await this.#dependencies.outbox.recoverStaleProcessing(processingCutoff);

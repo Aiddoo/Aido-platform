@@ -74,7 +74,8 @@ describe('connectOnlineManager', () => {
   });
 
   it('오프라인 구간마다 오프라인 배너 노출을 한 번만 센다', () => {
-    // Given 연결된 기기
+    // 연결된 기기
+    // Given
     const network = createStubNetworkStatus();
     const analytics = createAnalyticsStub();
     disconnect = connectOnlineManager({
@@ -83,14 +84,16 @@ describe('connectOnlineManager', () => {
       analytics,
     });
 
-    // When 두 번 끊겼다 돌아오고, 끊긴 동안 같은 상태가 반복된다
+    // 두 번 끊겼다 돌아오고, 끊긴 동안 같은 상태가 반복된다
+    // When
     network.emit(false);
     network.emit(false);
     network.emit(true);
     network.emit(false);
     network.emit(true);
 
-    // Then 오프라인 구간 수만큼만 남는다
+    // 오프라인 구간 수만큼만 남는다
+    // Then
     expect(analytics.trackEvent).toHaveBeenCalledTimes(2);
     expect(analytics.trackEvent).toHaveBeenCalledWith('offline_banner_shown', undefined);
   });

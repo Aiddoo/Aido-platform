@@ -8,7 +8,6 @@ import { tupleLessThan } from "#api/platform/database/keyset";
 import { {{camelCase aggregate}} as {{camelCase aggregate}}Table } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 {{else}}
-import { createEntityId } from "#api/platform/database/entity-id";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import { {{camelCase aggregate}} as {{camelCase aggregate}}Table } from "#api/platform/database/schema/index";
 {{/if}}
@@ -31,14 +30,12 @@ export class Drizzle{{pascalCase aggregate}}Repository implements {{pascalCase a
     return this.#txHost.tx;
   }
 
-  async nextId(): Promise<{{pascalCase aggregate}}Id> {
 {{#if isSerial}}
+  async nextId(): Promise<{{pascalCase aggregate}}Id> {
     return {{pascalCase aggregate}}Id.reconstitute(await nextSequenceValue(this.#db, {{camelCase aggregate}}Table.id));
-{{else}}
-    return {{pascalCase aggregate}}Id.reconstitute(createEntityId());
-{{/if}}
   }
 
+{{/if}}
   async findByIdAndUserId(
     {{camelCase aggregate}}Id: {{pascalCase aggregate}}Id,
     userId: UserId,

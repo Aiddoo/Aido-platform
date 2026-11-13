@@ -3,7 +3,7 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
-import { PremiumGrantLogEvent } from "../../../premium-grants/application/premium-grants.log-events.js";
+import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
 import { PREMIUM_GRANT_SWEEP_QUEUE } from "./premium-grant-sweep.queue.js";
 
 @Injectable()
@@ -23,7 +23,7 @@ export class PremiumGrantSweepScheduler implements OnModuleInit {
       "Premium grant sweep scheduler registration",
       async () => {
         await this.#jobQueue.registerSchedules(PREMIUM_GRANT_SWEEP_QUEUE);
-        this.#logger.log({ event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEEP_SCHEDULER_REGISTERED });
+        this.#logger.log({ event: SubscriptionLogEvent.PREMIUM_GRANT_SWEEP_SCHEDULER_REGISTERED });
       },
     );
   }

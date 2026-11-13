@@ -15,10 +15,10 @@ import {
   SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
 } from "#test/fixtures/billing/subscription.fixture";
 
+import { SweepBillingNoticesUseCase } from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
+import type { PremiumGrantEndingNotice } from "../../domain/premium-grant-ending-notice.entity.js";
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
-import type { PremiumGrantEndingNotice } from "../ports/premium-grant-ending-notice.repository.port.js";
 import { NotifyEndingPremiumGrantsUseCase } from "./notify-ending-premium-grants.use-case.js";
-import { SweepBillingNoticesUseCase } from "./sweep-billing-notices.use-case.js";
 
 const NOW = PREMIUM_GRANT_FIXTURE_NOW;
 
@@ -62,7 +62,7 @@ describe("NotifyEndingPremiumGrantsUseCase — 보상 기간 종료 안내", () 
 
     // Then
     expect(result.notifiedCount).toBe(1);
-    expect(notifier.notified.map((notice) => notice.grantId)).toEqual(["grant-soon"]);
+    expect(notifier.notified.map((notice) => notice.id.value)).toEqual(["grant-soon"]);
   });
 
   it("하루짜리 보상도 시작 직후 끝나기 전에 안내한다", async () => {

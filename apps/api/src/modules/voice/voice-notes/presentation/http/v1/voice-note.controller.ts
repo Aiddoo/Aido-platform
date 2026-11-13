@@ -9,6 +9,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
 import { IdempotencyKey } from "#api/platform/http/decorators/idempotency-key.decorator";
 import { Locale } from "#api/platform/http/decorators/locale.decorator";
@@ -22,15 +23,13 @@ import {
   ApiServiceUnavailableError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiIdempotencyKeyHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser, ThrottleDaily } from "#api/platform/throttle/user-aware-throttler.guard";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import {
-  ApiIdempotencyKeyHeader,
-  ApiPlanningLocaleHeaders,
-} from "../../../../action-plans/presentation/http/plan-request.decorator.js";
+import { ApiPlanningLocaleHeaders } from "../../../../action-plans/presentation/http/plan-request.decorator.js";
 import { DigestVoiceNoteUseCase } from "../../../application/use-cases/digest-voice-note.use-case.js";
 import { toVoiceNoteDigestResponse } from "./voice-note-response.mapper.js";
 import { VoiceNoteDigestRequestDto, VoiceNoteDigestResponseDto } from "./voice-note.dto.js";
@@ -44,7 +43,7 @@ const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
 
 @ApiTags(SWAGGER_TAGS.VOICE)
 @ApiBearerAuth()
-@Controller("voice-notes")
+@Controller({ path: "voice-notes", version: API_VERSION.V1 })
 export class VoiceNoteController {
   readonly #digestVoiceNote: DigestVoiceNoteUseCase;
 

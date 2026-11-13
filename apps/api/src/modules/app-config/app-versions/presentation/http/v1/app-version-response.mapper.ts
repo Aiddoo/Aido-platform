@@ -1,6 +1,6 @@
 import type { AppVersionResponse } from "@aido/api/contracts/app-config";
 
-import type { AppRelease } from "../../../domain/app-release.entity.js";
+import type { AppRelease } from "../../../domain/app-release.aggregate.js";
 
 export function toAppVersionResponse(releases: readonly AppRelease[]): AppVersionResponse {
   const ios = releases.find((release) => release.platform === "ios");

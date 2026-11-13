@@ -1,5 +1,4 @@
-import type { RewardClaimRepositoryPort } from "#api/modules/social/invites/application/ports/reward-claim.repository.port";
-import { INVITE_FIXTURE_NOW } from "#test/fixtures/social/invite.fixture";
+import type { RewardClaimRepositoryPort } from "#api/modules/social/invite-redemptions/application/ports/reward-claim.repository.port";
 import {
   createRewardClaimFixture,
   rewardClaimHashOf,
@@ -24,10 +23,7 @@ export function describeRewardClaimRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const results = [
-        await repository.claimAll([], INVITE_FIXTURE_NOW),
-        await repository.existsAny([]),
-      ];
+      const results = [await repository.claimAll([]), await repository.existsAnyOf([])];
 
       // Then
       expect(results).toEqual([false, false]);
@@ -38,26 +34,26 @@ export function describeRewardClaimRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const claimed = await repository.claimAll([INSTALLATION, IDENTITY], INVITE_FIXTURE_NOW);
-      const reclaimed = await repository.claimAll([IDENTITY], INVITE_FIXTURE_NOW);
+      const claimed = await repository.claimAll([INSTALLATION, IDENTITY]);
+      const reclaimed = await repository.claimAll([IDENTITY]);
 
       // Then
       expect([claimed, reclaimed]).toEqual([true, false]);
-      expect(await repository.existsAny([OTHER_IDENTITY, IDENTITY])).toBe(true);
-      expect(await repository.existsAny([OTHER_IDENTITY])).toBe(false);
+      expect(await repository.existsAnyOf([OTHER_IDENTITY, IDENTITY])).toBe(true);
+      expect(await repository.existsAnyOf([OTHER_IDENTITY])).toBe(false);
     });
 
     it("하나라도 이미 있으면 이번 신원도 남기지 않는다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.claimAll([INSTALLATION], INVITE_FIXTURE_NOW);
+      await repository.claimAll([INSTALLATION]);
 
       // When
-      const claimed = await repository.claimAll([INSTALLATION, OTHER_IDENTITY], INVITE_FIXTURE_NOW);
+      const claimed = await repository.claimAll([INSTALLATION, OTHER_IDENTITY]);
 
       // Then
       expect(claimed).toBe(false);
-      expect(await repository.existsAny([OTHER_IDENTITY])).toBe(false);
+      expect(await repository.existsAnyOf([OTHER_IDENTITY])).toBe(false);
     });
   });
 }

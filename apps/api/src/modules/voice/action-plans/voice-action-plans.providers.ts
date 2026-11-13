@@ -1,4 +1,4 @@
-import { quickPlanResponseSchema } from "@aido/api";
+import { quickPlanResponseSchema } from "@aido/api/contracts/voice";
 import type { FactoryProvider, Provider } from "@nestjs/common";
 import { z } from "zod";
 
@@ -71,7 +71,7 @@ export const VOICE_ACTION_PLANS_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
     afterCommit: AfterCommitTaskRegistryPort,
-    repository: PlanApplicationRepositoryPort,
+    planApplicationRepository: PlanApplicationRepositoryPort,
     contextReader: PlanningContextReaderPort,
     todoCreator: StagedTodoCreatorPort,
     todoReader: TodoPlanReaderPort,
@@ -80,7 +80,7 @@ export const VOICE_ACTION_PLANS_PROVIDERS = [
     logger: loggerFor(ApplyActionPlanUseCase),
   }),
   provideUseCase(PurgePlanApplicationsUseCase, {
-    repository: PlanApplicationRepositoryPort,
+    planApplicationRepository: PlanApplicationRepositoryPort,
     clock: ClockPort,
     logger: loggerFor(PurgePlanApplicationsUseCase),
   }),

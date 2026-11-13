@@ -1,7 +1,7 @@
 import { chunk } from "es-toolkit";
 
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -37,11 +37,11 @@ export interface SendNudgeThanksDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly nudgeRepository: Pick<
     NudgeRepositoryPort,
-    "listThanksCandidates" | "lockInteractionTodo" | "saveThanks"
+    "listThanksCandidates" | "lockInteractionTodo" | "saveAll"
   >;
   readonly nudgeReader: Pick<NudgeReaderPort, "findInteraction">;
   readonly interactionConfig: NudgeInteractionConfigPort;
-  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "getCurrentMutualFriendIds">;
   readonly notifier: Pick<NudgeNotifierPort, "recordInteractions">;
   readonly clock: ClockPort;
 }
@@ -59,7 +59,7 @@ export class SendNudgeThanksUseCase {
       nudgeRepository,
       nudgeReader,
       interactionConfig,
-      followReader,
+      mutualFriendReader,
       notifier,
       clock,
     } = this.#dependencies;
@@ -91,7 +91,7 @@ export class SendNudgeThanksUseCase {
       ) {
         throw nudgeInteractionNotFound();
       }
-      const friendIds = await followReader.getCurrentMutualFriendIds(ownerId);
+      const friendIds = await mutualFriendReader.getCurrentMutualFriendIds(ownerId);
       const candidates = await nudgeRepository.listThanksCandidates({
         ownerId,
         todoId,
@@ -107,7 +107,7 @@ export class SendNudgeThanksUseCase {
         if (thanked.length === 0) {
           continue;
         }
-        await nudgeRepository.saveThanks(thanked);
+        await nudgeRepository.saveAll(thanked);
         await notifier.recordInteractions(
           thanked.map<NudgeInteractionNotification>((nudge) => ({
             kind: "thanks",

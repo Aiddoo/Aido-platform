@@ -5,12 +5,12 @@ import request from "supertest";
 import type { App } from "supertest/types.js";
 
 import { AppConfigModule } from "#api/modules/app-config/app-config.module";
-import { AppReleaseReaderPort } from "#api/modules/app-config/app-versions/application/ports/app-release.reader.port";
-import { FeatureDiscoveryCampaignReaderPort } from "#api/modules/app-config/feature-discovery/application/ports/feature-discovery-campaign.reader.port";
+import { AppReleaseRepositoryPort } from "#api/modules/app-config/app-versions/application/ports/app-release.repository.port";
+import { FeatureDiscoveryCampaignRepositoryPort } from "#api/modules/app-config/feature-discovery/application/ports/feature-discovery-campaign.repository.port";
 import { API_VERSIONING_OPTIONS } from "#api/platform/http/api-versioning";
 import { ResponseTransformInterceptor } from "#api/platform/http/interceptors/response-transform.interceptor";
-import { InMemoryAppReleaseReader } from "#test/doubles/app-config/in-memory-app-release.reader";
-import { InMemoryFeatureDiscoveryCampaignReader } from "#test/doubles/app-config/in-memory-feature-discovery-campaign.reader";
+import { InMemoryAppReleaseRepository } from "#test/doubles/app-config/in-memory-app-release.repository";
+import { InMemoryFeatureDiscoveryCampaignRepository } from "#test/doubles/app-config/in-memory-feature-discovery-campaign.repository";
 import { createAppReleaseFixture } from "#test/fixtures/app-config/app-release.fixture";
 import { createFeatureDiscoveryCampaignFixture } from "#test/fixtures/app-config/feature-discovery-campaign.fixture";
 
@@ -24,18 +24,18 @@ const enabledCampaign = {
 
 describe("기능 발견 설정 route (Integration)", () => {
   let app: INestApplication<App>;
-  const campaignReader = new InMemoryFeatureDiscoveryCampaignReader();
-  const appReleaseReader = new InMemoryAppReleaseReader();
+  const campaignRepository = new InMemoryFeatureDiscoveryCampaignRepository();
+  const appReleaseRepository = new InMemoryAppReleaseRepository();
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
       imports: [AppConfigModule],
       providers: [ResponseTransformInterceptor],
     })
-      .overrideProvider(FeatureDiscoveryCampaignReaderPort)
-      .useValue(campaignReader)
-      .overrideProvider(AppReleaseReaderPort)
-      .useValue(appReleaseReader)
+      .overrideProvider(FeatureDiscoveryCampaignRepositoryPort)
+      .useValue(campaignRepository)
+      .overrideProvider(AppReleaseRepositoryPort)
+      .useValue(appReleaseRepository)
       .compile();
 
     app = module.createNestApplication();
@@ -45,8 +45,8 @@ describe("기능 발견 설정 route (Integration)", () => {
   });
 
   beforeEach(() => {
-    campaignReader.campaign = null;
-    appReleaseReader.releases = [];
+    campaignRepository.campaign = null;
+    appReleaseRepository.releases = [];
   });
 
   afterAll(async () => {
@@ -66,7 +66,7 @@ describe("기능 발견 설정 route (Integration)", () => {
 
   it("활성 캠페인은 응답 인터셉터가 있어도 래핑 없이 전체 설정을 제공한다", async () => {
     // Given - 실제 모듈에 활성 설정과 전역 응답 인터셉터가 연결되어 있다
-    campaignReader.campaign = createFeatureDiscoveryCampaignFixture({
+    campaignRepository.campaign = createFeatureDiscoveryCampaignFixture({
       campaignId: enabledCampaign.campaignId,
       minAppVersion: enabledCampaign.minAppVersion,
       launchedAt: Temporal.Instant.from(enabledCampaign.launchedAt),
@@ -82,7 +82,7 @@ describe("기능 발견 설정 route (Integration)", () => {
 
   it("운영 중 kill switch가 꺼지면 같은 앱의 다음 요청에 바로 반영된다", async () => {
     // Given - 첫 요청에서 활성 캠페인이 반환된다
-    campaignReader.campaign = createFeatureDiscoveryCampaignFixture({
+    campaignRepository.campaign = createFeatureDiscoveryCampaignFixture({
       campaignId: enabledCampaign.campaignId,
       minAppVersion: enabledCampaign.minAppVersion,
       launchedAt: Temporal.Instant.from(enabledCampaign.launchedAt),
@@ -92,7 +92,7 @@ describe("기능 발견 설정 route (Integration)", () => {
       .expect(200);
     expect(active.body).toEqual(enabledCampaign);
     // When - 설정 Stub의 현재 값만 비활성화한다
-    campaignReader.campaign = null;
+    campaignRepository.campaign = null;
     const disabled = await request(app.getHttpServer())
       .get("/v1/app-config/feature-discovery")
       .expect(200);
@@ -109,7 +109,7 @@ describe("기능 발견 설정 route (Integration)", () => {
     expect(disabled.body).toEqual({ enabled: false });
     expect(disabled.headers["cache-control"]).toBe("private, no-store");
     // When - iOS와 Android의 배포 버전을 각각 설정한다
-    appReleaseReader.releases = [
+    appReleaseRepository.releases = [
       createAppReleaseFixture({ platform: "ios", latestVersion: "1.9.1" }),
       createAppReleaseFixture({ platform: "android", latestVersion: "1.9.2" }),
     ];

@@ -1,3 +1,5 @@
+import { ErrorCode } from "@aido/api/errors";
+
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   BROADCAST_FIXTURE_NOW,
@@ -46,15 +48,35 @@ describe("BroadcastCampaign — 브로드캐스트 분배 진행", () => {
     ).toThrow();
   });
 
-  it("끝난 캠페인은 다시 시작·완료·실패로 바뀌지 않는다", () => {
+  it("이미 그 상태인 캠페인에 같은 전이를 다시 요청하면 바꾸지 않고 false다", () => {
     // Given
-    const campaign = createBroadcastCampaignFixture({ status: "COMPLETED", completedAt: NOW });
+    const fanningOut = createBroadcastCampaignFixture({ status: "FANNING_OUT", startedAt: NOW });
+    const completed = createBroadcastCampaignFixture({ status: "COMPLETED", completedAt: NOW });
+    const failed = createBroadcastCampaignFixture({ status: "FAILED", completedAt: NOW });
 
     // Then
-    expect(campaign.start(NOW)).toBe(false);
-    expect(campaign.complete(NOW)).toBe(false);
-    expect(campaign.fail("late", NOW)).toBe(false);
-    expect(campaign.status).toBe("COMPLETED");
+    expect(fanningOut.start(NOW)).toBe(false);
+    expect(completed.complete(NOW)).toBe(false);
+    expect(failed.fail("late", NOW)).toBe(false);
+    expect([fanningOut.status, completed.status, failed.status]).toEqual([
+      "FANNING_OUT",
+      "COMPLETED",
+      "FAILED",
+    ]);
+  });
+
+  it("끝난 캠페인을 다른 상태로 바꾸려 하면 오류다", () => {
+    // Given
+    const completed = createBroadcastCampaignFixture({ status: "COMPLETED", completedAt: NOW });
+    const failed = createBroadcastCampaignFixture({ status: "FAILED", completedAt: NOW });
+    const finished = expect.objectContaining({ errorCode: ErrorCode.SYS_0002 });
+
+    // Then
+    expect(() => completed.start(NOW)).toThrow(finished);
+    expect(() => completed.fail("late", NOW)).toThrow(finished);
+    expect(() => failed.start(NOW)).toThrow(finished);
+    expect(() => failed.complete(NOW)).toThrow(finished);
+    expect([completed.status, failed.status]).toEqual(["COMPLETED", "FAILED"]);
   });
 
   it("같은 요청 ID의 재요청이 처음과 같은 내용인지 비교한다", () => {

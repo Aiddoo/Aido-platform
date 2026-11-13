@@ -3,7 +3,7 @@ description: pnpm + Node.js + dependencies
 
 inputs:
   install-scope:
-    description: Install API dependency closure or the complete workspace
+    description: Install the root tools only (root), the API dependency closure (api) or the complete workspace (all)
     required: false
     default: all
 
@@ -21,9 +21,12 @@ runs:
     - name: Install dependencies
       env:
         INSTALL_SCOPE: ${{ inputs.install-scope }}
+      # root는 루트 도구(문서 검사)만 쓴다. postinstall이 빌드할 패키지 의존성이 없어 스크립트를 건너뛴다.
       run: |
         if [[ "$INSTALL_SCOPE" == "api" ]]; then
           pnpm install --frozen-lockfile --filter=@aido/server... --filter=@aido/monorepo
+        elif [[ "$INSTALL_SCOPE" == "root" ]]; then
+          pnpm install --frozen-lockfile --filter=@aido/monorepo --ignore-scripts
         else
           pnpm install --frozen-lockfile
         fi

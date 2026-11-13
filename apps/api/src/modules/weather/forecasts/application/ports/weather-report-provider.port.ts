@@ -1,6 +1,7 @@
 import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
-import type { WeatherReport, WeatherReportAttribution } from "../../domain/weather-report.vo.js";
+import type { WeatherReport } from "../../domain/weather-report.vo.js";
+import type { WeatherReportAttribution } from "../read-models/weather-report-attribution.read-model.js";
 
 export interface WeatherReportRequest {
   readonly timezone: string;
@@ -10,7 +11,7 @@ export interface WeatherReportRequest {
   readonly signal?: AbortSignal;
 }
 
-/** 칸 중심 좌표의 날씨 스냅샷을 공급자에서 받는다. 실패는 예외로 알린다. */
+/** 칸 중심 좌표의 날씨 리포트를 공급자에서 받는다. 실패는 예외로 알린다. */
 export abstract class WeatherReportProviderPort {
   abstract getReport(cell: GeoCell, request: WeatherReportRequest): Promise<WeatherReport>;
 

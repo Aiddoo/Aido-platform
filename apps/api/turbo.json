@@ -5,96 +5,30 @@
     "build": {
       "inputs": [
         "src/**",
+        "!src/**/*.spec.ts",
         "drizzle/**",
         "package.json",
         "drizzle.config.ts",
         "tsconfig*.json",
         "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "test": {
-      "inputs": [
-        "src/**",
-        "drizzle/**",
-        "package.json",
-        "drizzle.config.ts",
-        "tsconfig*.json",
-        "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts",
-        "test/**",
-        "$TURBO_ROOT$/apps/*/package.json",
-        "$TURBO_ROOT$/packages/*/package.json"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "test:e2e": {
-      "cache": false,
-      "inputs": [
-        "src/**",
-        "drizzle/**",
-        "package.json",
-        "drizzle.config.ts",
-        "tsconfig*.json",
-        "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts",
-        "test/**"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "test:integration": {
-      "inputs": [
-        "src/**",
-        "drizzle/**",
-        "package.json",
-        "drizzle.config.ts",
-        "tsconfig*.json",
-        "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts",
-        "test/**"
-      ],
-      "dependsOn": ["^build"]
-    },
-    "test:contract": {
-      "dependsOn": ["^build"],
-      "inputs": [
-        "src/**",
-        "drizzle/**",
-        "package.json",
-        "drizzle.config.ts",
-        "tsconfig*.json",
-        "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts",
-        "test/**"
+        ".swcrc"
       ]
     },
     "typecheck": {
       "inputs": [
         "src/**",
+        "test/**",
         "drizzle/**",
         "package.json",
         "drizzle.config.ts",
         "tsconfig*.json",
-        "nest-cli.json",
-        ".swcrc",
-        "vitest.config.ts",
-        "test/**"
-      ],
-      "dependsOn": ["^build"]
+        "vitest.config.ts"
+      ]
     },
-    "db:generate": {
-      "cache": false
-    },
-    "test:cov": {
-      "dependsOn": ["^build"],
+    "test": {
       "inputs": [
         "src/**",
+        "test/**",
         "drizzle/**",
         "package.json",
         "drizzle.config.ts",
@@ -102,7 +36,56 @@
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
-        "test/**"
+        ".env.example",
+        ".env.test",
+        "docs/alerts.md",
+        "$TURBO_ROOT$/apps/*/package.json",
+        "$TURBO_ROOT$/packages/*/package.json",
+        "$TURBO_ROOT$/tooling/*/package.json"
+      ]
+    },
+    "test:integration": {
+      "inputs": [
+        "src/**",
+        "test/**",
+        "drizzle/**",
+        "package.json",
+        "drizzle.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        ".env.test"
+      ]
+    },
+    "test:contract": {
+      "inputs": [
+        "src/**",
+        "test/**",
+        "drizzle/**",
+        "package.json",
+        "drizzle.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        ".env.test"
+      ]
+    },
+    "test:cov": {
+      "inputs": [
+        "src/**",
+        "test/**",
+        "drizzle/**",
+        "package.json",
+        "drizzle.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        ".env.example",
+        ".env.test",
+        "docs/alerts.md"
       ]
     }
   }

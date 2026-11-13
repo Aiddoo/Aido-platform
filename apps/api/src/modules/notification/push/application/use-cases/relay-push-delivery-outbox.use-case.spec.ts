@@ -47,12 +47,18 @@ function createRelayUseCase(steps: RecordingRelaySteps) {
     lifecycle: steps.lifecycle,
     unitOfWork: new ImmediateUnitOfWork(),
     publishOutbox: steps,
+    pushProvider: {
+      timing: {
+        receipt: { readyAfterMs: 15 * 60_000, retentionMs: 24 * 60 * 60_000 },
+        unabortableSendGraceMs: 10 * 60_000,
+      },
+    },
     clock: new FixedClock(NOW),
   });
 }
 
 describe("RelayPushDeliveryOutboxUseCase — stale recovery와 relay", () => {
-  it("stale delivery와 outbox lease를 15분 기준으로 먼저 복구한 뒤 available batch를 발행한다", async () => {
+  it("작업 만료 5분에 공급자 전송 여유 10분을 더한 15분 lease로 먼저 복구한 뒤 available batch를 발행한다", async () => {
     // Given
     const steps = new RecordingRelaySteps();
     const useCase = createRelayUseCase(steps);

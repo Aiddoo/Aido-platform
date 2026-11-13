@@ -1,15 +1,15 @@
-import { ErrorCode } from "@aido/api/errors";
 import { {{constantCase aggregate}}_LIMITS } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { {{camelCase aggregate}}NameLengthOutOfRange } from "./{{slice}}.errors.js";
 
 export class {{pascalCase aggregate}}Name extends ValueObject<string> {
   static create(raw: string): {{pascalCase aggregate}}Name {
     const name = raw.trim();
     const isWithinLimit = 1 <= name.length && name.length <= {{constantCase aggregate}}_LIMITS.NAME_MAX_LENGTH;
     if (!isWithinLimit) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "name", length: name.length });
+      throw {{camelCase aggregate}}NameLengthOutOfRange(name.length);
     }
     return new {{pascalCase aggregate}}Name(name);
   }

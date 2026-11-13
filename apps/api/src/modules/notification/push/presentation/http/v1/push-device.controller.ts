@@ -20,6 +20,7 @@ import {
   type CurrentUserPayload,
   Public,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { type RequestClient } from "#api/platform/http/request-client/request-client";
 import { CurrentRequestClient } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -30,7 +31,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
@@ -77,7 +78,7 @@ function legacyPlatformHint(client: RequestClient) {
 
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
 @ApiBearerAuth()
-@Controller("notifications")
+@Controller({ path: "notifications", version: API_VERSION.V1 })
 export class PushDeviceController {
   readonly #reportPushDevice: ReportPushDeviceUseCase;
   readonly #unregisterPushDevice: UnregisterPushDeviceUseCase;
@@ -220,7 +221,7 @@ export class PushDeviceController {
     required: false,
     example: "ko",
   })
-  @ApiCreatedResponse({ type: RegisterTokenResponseDto })
+  @ApiCreatedSuccessResponse({ type: RegisterTokenResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.NOTIFICATION_1001)
   async registerToken(

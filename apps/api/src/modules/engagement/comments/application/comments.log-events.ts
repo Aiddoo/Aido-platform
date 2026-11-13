@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 export const TodoCommentLogEvent = {
   VIEW_CACHE_INVALIDATION_FAILED: "engagement.comment.view-cache.invalidation.failed",
@@ -37,7 +38,7 @@ export async function settleAfterCommit(
       logger.warn({
         event: task.failureEvent,
         ...task.context,
-        errorType: result.reason instanceof Error ? result.reason.name : "UnknownError",
+        errorType: toErrorType(result.reason),
       });
     }
   }

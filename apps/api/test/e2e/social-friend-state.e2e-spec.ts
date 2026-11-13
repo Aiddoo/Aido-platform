@@ -177,5 +177,11 @@ describe("친구 상태 변경 HTTP 계약", () => {
         expect(response.body.error.code).toBe("FOLLOW_0910");
       });
     expect(await readSecond()).toEqual(beforeNoop);
+    const malformed = await request(context.app.getHttpServer())
+      .patch("/v1/follows/friends/not-a-follow-id/reorder")
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ position: "before" });
+    expect(malformed.status).toBe(400);
+    expect(malformed.body.error.code).toBe("SYS_0002");
   });
 });

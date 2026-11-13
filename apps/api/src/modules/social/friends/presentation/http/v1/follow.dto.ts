@@ -4,6 +4,7 @@ import {
   removeFriendResponseSchema,
   reorderFriendResponseSchema,
   sendFriendRequestResponseSchema,
+  followIdParamSchema,
   friendsListResponseSchema,
   receivedRequestsResponseSchema,
   sentRequestsResponseSchema,
@@ -94,3 +95,8 @@ export const UserTagParamDto = userTagParamSchema.meta({
   apiParameter: true,
 });
 export type UserTagParamDto = z.infer<typeof UserTagParamDto>;
+export const FollowIdParamDto = followIdParamSchema.meta({
+  id: "FollowIdParamDto",
+  apiParameter: true,
+});
+export type FollowIdParamDto = z.infer<typeof FollowIdParamDto>;

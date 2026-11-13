@@ -2,7 +2,7 @@ import type { QuotaMeter } from "@aido/api/vocabulary";
 
 import { QuotaChargeRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-charge.repository.port";
 import { quotaChargeConflict } from "#api/modules/access/quotas/application/quotas.errors";
-import { QuotaChargeId } from "#api/modules/access/quotas/domain/quota-charge-id.vo";
+import type { QuotaChargeId } from "#api/modules/access/quotas/domain/quota-charge-id.vo";
 import {
   QuotaCharge,
   type QuotaChargePrimitives,
@@ -17,16 +17,10 @@ function isReservedBefore(charge: QuotaChargePrimitives, cutoff: Temporal.Instan
 // 저장 사본만 두어 저장하지 않고 바꾼 Aggregate가 저장소 상태로 새지 않게 한다
 export class InMemoryQuotaChargeRepository extends QuotaChargeRepositoryPort {
   readonly #charges = new Map<string, QuotaChargePrimitives>();
-  #sequence = 0;
 
   /** 저장 순서대로의 차감 행 */
   get all(): readonly QuotaChargePrimitives[] {
     return [...this.#charges.values()];
-  }
-
-  async nextId(): Promise<QuotaChargeId> {
-    this.#sequence += 1;
-    return QuotaChargeId.reconstitute(`charge-${this.#sequence}`);
   }
 
   async findById(chargeId: QuotaChargeId): Promise<QuotaCharge | null> {

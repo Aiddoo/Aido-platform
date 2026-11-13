@@ -1,6 +1,6 @@
 import { FriendSearchReaderPort } from "#api/modules/social/friends/application/ports/friend-search.reader.port";
 import type { UserSearchResultReadModel } from "#api/modules/social/friends/application/read-models/user-search-result.read-model";
-import type { UserSearchCursor } from "#api/modules/social/friends/application/user-search-cursor.mapper";
+import type { UserSearchPosition } from "#api/modules/social/friends/domain/user-search-cursor.vo";
 import type { UserSearchTerm } from "#api/modules/social/friends/domain/user-search-term.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -8,7 +8,7 @@ export interface RecordedFriendSearch {
   readonly viewerId: string;
   readonly term: string;
   readonly upperTag: string;
-  readonly after: UserSearchCursor | null;
+  readonly after: UserSearchPosition | null;
   readonly limit: number;
 }
 
@@ -28,7 +28,7 @@ export class StubFriendSearchReader extends FriendSearchReaderPort {
   async searchUsers(params: {
     readonly viewerId: UserId;
     readonly term: UserSearchTerm;
-    readonly after: UserSearchCursor | null;
+    readonly after: UserSearchPosition | null;
     readonly limit: number;
   }): Promise<UserSearchResultReadModel[]> {
     this.searches.push({

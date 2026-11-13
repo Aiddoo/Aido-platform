@@ -1,4 +1,5 @@
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { InMemoryCheerReader } from "#test/doubles/social/in-memory-cheer.reader";
 import { InMemoryCheerRepository } from "#test/doubles/social/in-memory-cheer.repository";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
@@ -13,12 +14,14 @@ import { GetSentCheersUseCase } from "./get-sent-cheers.use-case.js";
 describe("GetSentCheersUseCase — 보낸 응원 목록", () => {
   it("보낸 사람의 응원만 최신순으로 잘라 주고 전체 수를 함께 준다", async () => {
     // Given
-    const cheerReader = new InMemoryCheerRepository([
-      createCheerFixture({ id: 1, createdAt: CHEER_FIXTURE_NOW }),
-      createCheerFixture({ id: 2, createdAt: CHEER_FIXTURE_NOW.add({ minutes: 1 }) }),
-      createCheerFixture({ id: 3, createdAt: CHEER_FIXTURE_NOW.add({ minutes: 2 }) }),
-      createCheerFixture({ id: 4, senderId: CHEER_FIXTURE_OTHER_USER_ID }),
-    ]);
+    const cheerReader = new InMemoryCheerReader(
+      new InMemoryCheerRepository([
+        createCheerFixture({ id: 1, createdAt: CHEER_FIXTURE_NOW }),
+        createCheerFixture({ id: 2, createdAt: CHEER_FIXTURE_NOW.add({ minutes: 1 }) }),
+        createCheerFixture({ id: 3, createdAt: CHEER_FIXTURE_NOW.add({ minutes: 2 }) }),
+        createCheerFixture({ id: 4, senderId: CHEER_FIXTURE_OTHER_USER_ID }),
+      ]),
+    );
     const useCase = new GetSentCheersUseCase({
       countCache: new PassThroughCountCache(),
       cheerReader,

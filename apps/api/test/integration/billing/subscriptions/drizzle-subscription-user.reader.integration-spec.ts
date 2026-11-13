@@ -35,7 +35,7 @@ describe("DrizzleSubscriptionUserReader (실제 PostgreSQL)", () => {
             id,
             email,
             userTag: `SUBU${String(seeded).padStart(4, "0")}`,
-            revenueCatUserId: appUserAlias ?? null,
+            storeAppUserId: appUserAlias ?? null,
           },
           { name },
         );

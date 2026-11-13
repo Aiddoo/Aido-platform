@@ -25,6 +25,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { UpcomingRenewalNotifierPort } from "#api/modules/billing/subscriptions/application/ports/upcoming-renewal-notifier.port";
+import { UpcomingRenewalNotice } from "#api/modules/billing/subscriptions/domain/upcoming-renewal-notice.entity";
 import { createBillingIssueNotificationMessage } from "#api/modules/notification/push/application/messages/system-notification.messages";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
 import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
@@ -1350,12 +1351,12 @@ describe("알림 E2E", () => {
         await ctx.module.get(UnitOfWorkPort).run(() =>
           ctx.module.get(UpcomingRenewalNotifierPort).notify(
             [
-              {
-                subscriptionId: 1,
+              UpcomingRenewalNotice.reconstitute({
+                id: 1,
                 userId: user.userId,
                 expiresAt: instantFromDate(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)),
                 isCurrentChain: true,
-              },
+              }),
             ],
             instantFromDate(now),
           ),

@@ -1,8 +1,9 @@
 import { z } from "zod";
 
-import { entityIdSchemaWithMessage } from "../../../common/entity-id.js";
+import { entityIdSchema, entityIdSchemaWithMessage } from "../../../common/entity-id.js";
 import {
   DEVICE_TYPES,
+  OAUTH_MODES,
   OAUTH_PROVIDERS,
   PASSWORD_RULES,
   VERIFICATION_CODE,
@@ -380,3 +381,34 @@ export const exchangeCodeSchema = z
   .describe("OAuth 토큰 교환 요청");
 
 export type ExchangeCodeInput = z.infer<typeof exchangeCodeSchema>;
+
+/** 브라우저로 여는 웹 OAuth 시작. 앱은 redirect_uri·mode만 보내고 state는 생략하면 서버가 만든다 */
+export const oauthStartQuerySchema = z
+  .object({
+    state: z.string().optional().describe("CSRF 방지용 상태 값 (생략하면 서버가 만든다)"),
+    redirect_uri: z
+      .string()
+      .optional()
+      .describe("인증 완료 후 리다이렉트될 URI (허용 목록 밖이면 aido://auth/callback)"),
+    mode: z
+      .enum(OAUTH_MODES)
+      .optional()
+      .describe("OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login"),
+    user_hint: entityIdSchema.optional().describe("계정 연동을 시작한 사용자 ID"),
+  })
+  .describe("웹 OAuth 시작 요청");
+
+export type OAuthStartQuery = z.infer<typeof oauthStartQuerySchema>;
+
+/**
+ * 공급자가 인증 뒤 붙여 보내는 query. 사용자가 공급자 화면에서 취소하면 code 없이 error만 오므로
+ * 모두 optional로 두고, 실패는 400이 아니라 앱 딥링크의 error로 돌려보낸다.
+ */
+export const oauthWebCallbackQuerySchema = z
+  .object({
+    code: z.string().optional().describe("공급자 authorization code (취소하면 없다)"),
+    state: z.string().optional().describe("시작할 때 보낸 CSRF 검증용 state"),
+  })
+  .describe("웹 OAuth 콜백 요청");
+
+export type OAuthWebCallbackQuery = z.infer<typeof oauthWebCallbackQuerySchema>;

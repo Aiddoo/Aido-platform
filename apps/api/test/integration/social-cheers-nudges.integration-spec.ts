@@ -6,12 +6,11 @@ import { CheerReaderPort } from "#api/modules/social/cheers/application/ports/ch
 import { CheerRepositoryPort } from "#api/modules/social/cheers/application/ports/cheer.repository.port";
 import { MarkCheerReadUseCase } from "#api/modules/social/cheers/application/use-cases/mark-cheer-read.use-case";
 import { SendCheerUseCase } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
-import { FollowRepositoryPort } from "#api/modules/social/friends/application/ports/follow.repository.port";
 import { FriendSearchReaderPort } from "#api/modules/social/friends/application/ports/friend-search.reader.port";
+import { FriendshipRepositoryPort } from "#api/modules/social/friends/application/ports/friendship.repository.port";
 import { UserSearchTerm } from "#api/modules/social/friends/domain/user-search-term.vo";
 import { NudgeRepositoryPort } from "#api/modules/social/nudges/application/ports/nudge.repository.port";
 import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   cheer,
   follow,
@@ -22,6 +21,7 @@ import {
   userProfile,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { dayWindowIn } from "#test/fixtures/clock.fixture";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
@@ -299,7 +299,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     if (receiverId === undefined) {
       throw new Error("receiver fixture 누락");
     }
-    const repository = context.module.get(FollowRepositoryPort);
+    const repository = context.module.get(FriendshipRepositoryPort);
     const isMutualFriend = (userId: string, targetUserId: string) =>
       repository.existsMutualFriendship(
         UserId.reconstitute(userId),

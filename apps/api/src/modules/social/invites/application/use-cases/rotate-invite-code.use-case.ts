@@ -10,7 +10,7 @@ import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteRepositoryPort } from "../ports/invite.repository.port.js";
 import type { MyInvite } from "../read-models/my-invite.read-model.js";
-import type { IssueInviteUseCase } from "./issue-invite.use-case.js";
+import type { IssueInviteCodeUseCase } from "./issue-invite-code.use-case.js";
 import type { SummarizeMyInviteUseCase } from "./summarize-my-invite.use-case.js";
 
 export interface RotateInviteCodeCommand {
@@ -21,14 +21,14 @@ export interface RotateInviteCodeDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly inviteRepository: Pick<InviteRepositoryPort, "findActiveByInviterId" | "save">;
-  readonly issueInvite: Pick<IssueInviteUseCase, "execute">;
+  readonly issueInviteCode: Pick<IssueInviteCodeUseCase, "execute">;
   readonly summarizeMyInvite: Pick<SummarizeMyInviteUseCase, "execute">;
   readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-/** 지금 코드를 폐기하고 새 코드를 발급한다. 폐기한 코드로 들어오면 INVITE_2102가 된다. */
+// 지금 코드를 폐기하고 새 코드를 발급한다. 폐기한 코드로 들어오면 INVITE_2102가 된다
 export class RotateInviteCodeUseCase {
   readonly #dependencies: RotateInviteCodeDependencies;
 
@@ -37,7 +37,7 @@ export class RotateInviteCodeUseCase {
   }
 
   async execute(command: RotateInviteCodeCommand): Promise<MyInvite> {
-    const { unitOfWork, mutationLock, inviteRepository, issueInvite, clock, logger } =
+    const { unitOfWork, mutationLock, inviteRepository, issueInviteCode, clock, logger } =
       this.#dependencies;
     assertInviteEnabled(this.#dependencies.inviteConfig);
 
@@ -50,7 +50,7 @@ export class RotateInviteCodeUseCase {
         await inviteRepository.save(current);
       }
 
-      const issued = await issueInvite.execute({ inviterId, now });
+      const issued = await issueInviteCode.execute({ inviterId, now });
       return { invite: issued, revokedInviteId: current?.id.value ?? null };
     });
 

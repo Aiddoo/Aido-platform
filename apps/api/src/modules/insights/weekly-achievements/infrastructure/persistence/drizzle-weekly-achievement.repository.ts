@@ -10,7 +10,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { WeeklyAchievementRepositoryPort } from "../../application/ports/weekly-achievement.repository.port.js";
 import type { IsoWeek } from "../../domain/iso-week.vo.js";
 import { WeeklyAchievementId } from "../../domain/weekly-achievement-id.vo.js";
-import type { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
+import type { WeeklyAchievement } from "../../domain/weekly-achievement.aggregate.js";
 import { toWeeklyAchievement, toWeeklyAchievementRow } from "./weekly-achievement-row.mapper.js";
 
 const ROW_COLUMNS = {

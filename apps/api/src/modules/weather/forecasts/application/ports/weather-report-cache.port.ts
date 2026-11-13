@@ -5,8 +5,8 @@ import type { AirQuality } from "./air-quality-provider.port.js";
 
 export abstract class WeatherReportCachePort {
   /**
-   * 신선한 스냅샷을 읽고, 없으면 같은 칸의 동시 요청을 한 번의 load로 묶어 저장한다.
-   * 보관 시간은 스냅샷 내용으로 정한다(`weatherReportTtlMs`).
+   * 신선한 리포트를 읽고, 없으면 같은 칸의 동시 요청을 한 번의 load로 묶어 저장한다.
+   * 보관 시간은 리포트 내용으로 정한다(`WeatherReport.isPrecipitationSoon`).
    */
   abstract getOrLoadReport(
     cell: GeoCell,
@@ -14,7 +14,7 @@ export abstract class WeatherReportCachePort {
     load: () => Promise<WeatherReport>,
   ): Promise<WeatherReport>;
 
-  /** 공급자 장애 때 보여 줄 마지막 성공 스냅샷. */
+  /** 공급자 장애 때 보여 줄 마지막 성공 리포트. */
   abstract getLatestReport(
     cell: GeoCell,
     scope: WeatherReportCacheScope,

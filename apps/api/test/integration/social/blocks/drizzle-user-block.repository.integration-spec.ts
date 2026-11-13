@@ -1,10 +1,11 @@
 import { UserBlockId } from "#api/modules/social/blocks/domain/user-block-id.vo";
 import { DrizzleBlockedUserReader } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-blocked-user.reader";
+import { DrizzleUserBlockReader } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
-import { follow, user, userBlock, userProfile } from "#api/platform/database/schema/index";
+import { user, userBlock, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeUserBlockRepositoryContract } from "#test/contracts/social/user-block-repository.contract";
-import { FollowFixture, UserFixture } from "#test/fixtures/index";
+import { UserFixture } from "#test/fixtures/index";
 import {
   createUserBlockFixture,
   USER_BLOCK_FIXTURE_BLOCKED_ID,
@@ -65,12 +66,12 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
     });
   }
 
-  describeUserBlockRepositoryContract(async () => ({
-    repository: createRepository(),
-    seedFollow: async (followerId, followingId) => {
-      await client.insert(follow).values(FollowFixture.create({ followerId, followingId }));
-    },
-  }));
+  function createUserBlockReader(): DrizzleUserBlockReader {
+    const { txHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleUserBlockReader(txHost);
+  }
+
+  describeUserBlockRepositoryContract(async () => createRepository());
 
   it("탈퇴했거나 활성 상태가 아닌 사용자는 차단 대상으로 없다고 본다", async () => {
     // Given
@@ -90,7 +91,7 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
     // Given
     const repository = createRepository();
     const block = createUserBlockFixture({
-      id: (await repository.nextId()).value,
+      id: UserBlockId.generate().value,
       createdAt: Temporal.Instant.from("2027-01-08T12:00:00.123Z"),
     });
 
@@ -104,7 +105,7 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
 
   it("공개 reader는 두 사람 사이 차단 방향과, 후보 중 어느 방향으로든 차단 관계인 사용자를 돌려준다", async () => {
     // Given
-    const repository = createRepository();
+    const reader = createUserBlockReader();
     await insertBlock(
       USER_BLOCK_FIXTURE_BLOCKED_ID,
       USER_BLOCK_FIXTURE_NOW,
@@ -119,11 +120,11 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
     const blockedId = UserId.reconstitute(USER_BLOCK_FIXTURE_BLOCKED_ID);
     const otherUserId = UserId.reconstitute(USER_BLOCK_FIXTURE_OTHER_USER_ID);
     const relations = [
-      await repository.findRelation(BLOCKER_ID, blockedId),
-      await repository.findRelation(BLOCKER_ID, otherUserId),
-      await repository.findRelation(blockedId, otherUserId),
+      await reader.findRelation(BLOCKER_ID, blockedId),
+      await reader.findRelation(BLOCKER_ID, otherUserId),
+      await reader.findRelation(blockedId, otherUserId),
     ];
-    const counterparts = await repository.findBlockedCounterpartIds(BLOCKER_ID, [
+    const counterparts = await reader.findBlockedCounterpartIds(BLOCKER_ID, [
       BLOCKER_ID,
       blockedId,
       otherUserId,

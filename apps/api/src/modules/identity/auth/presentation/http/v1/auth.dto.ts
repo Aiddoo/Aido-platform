@@ -14,6 +14,8 @@ import {
   loginSchema,
   logoutResponseSchema,
   naverMobileCallbackSchema,
+  oauthStartQuerySchema,
+  oauthWebCallbackQuerySchema,
   refreshTokensSchema,
   registerSchema,
   resendVerificationSchema,
@@ -77,6 +79,16 @@ export const UnlinkAccountDto = unlinkAccountSchema.meta({
   apiParameter: true,
 });
 export type UnlinkAccountDto = z.infer<typeof UnlinkAccountDto>;
+export const OAuthStartQueryDto = oauthStartQuerySchema.meta({
+  id: "OAuthStartQueryDto",
+  apiParameter: true,
+});
+export type OAuthStartQueryDto = z.infer<typeof OAuthStartQueryDto>;
+export const OAuthWebCallbackQueryDto = oauthWebCallbackQuerySchema.meta({
+  id: "OAuthWebCallbackQueryDto",
+  apiParameter: true,
+});
+export type OAuthWebCallbackQueryDto = z.infer<typeof OAuthWebCallbackQueryDto>;
 export const DeleteAccountDto = deleteAccountSchema.meta({ id: "DeleteAccountDto" });
 export type DeleteAccountDto = z.infer<typeof DeleteAccountDto>;
 

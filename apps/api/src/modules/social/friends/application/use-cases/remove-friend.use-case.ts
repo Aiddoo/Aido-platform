@@ -9,8 +9,8 @@ import { FriendLogEvent } from "../friends.log-events.js";
 import {
   type FriendshipCacheInvalidator,
   invalidateFriendshipCaches,
-} from "../ports/follow-cache.port.js";
-import type { FollowRepositoryPort } from "../ports/follow.repository.port.js";
+} from "../ports/friendship-cache.port.js";
+import type { FriendshipRepositoryPort } from "../ports/friendship.repository.port.js";
 
 export interface RemoveFriendCommand {
   readonly userId: string;
@@ -20,7 +20,10 @@ export interface RemoveFriendCommand {
 export interface RemoveFriendDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly followRepository: Pick<FollowRepositoryPort, "findByFollowerAndFollowing" | "delete">;
+  readonly friendshipRepository: Pick<
+    FriendshipRepositoryPort,
+    "findByFollowerAndFollowing" | "delete"
+  >;
   readonly cache: FriendshipCacheInvalidator;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -34,7 +37,7 @@ export class RemoveFriendUseCase {
   }
 
   async execute(command: RemoveFriendCommand): Promise<void> {
-    const { unitOfWork, mutationLock, followRepository, cache, logger } = this.#dependencies;
+    const { unitOfWork, mutationLock, friendshipRepository, cache, logger } = this.#dependencies;
     const userId = UserId.reconstitute(command.userId);
     const targetUserId = UserId.reconstitute(command.targetUserId);
 
@@ -44,15 +47,15 @@ export class RemoveFriendUseCase {
         FriendLockKeys.list(userId),
         FriendLockKeys.list(targetUserId),
       ]);
-      const mine = await followRepository.findByFollowerAndFollowing(userId, targetUserId);
+      const mine = await friendshipRepository.findByFollowerAndFollowing(userId, targetUserId);
       if (mine == null) {
         throw friendshipNotFound(targetUserId);
       }
-      await followRepository.delete(mine);
+      await friendshipRepository.delete(mine);
 
-      const theirs = await followRepository.findByFollowerAndFollowing(targetUserId, userId);
+      const theirs = await friendshipRepository.findByFollowerAndFollowing(targetUserId, userId);
       if (theirs != null) {
-        await followRepository.delete(theirs);
+        await friendshipRepository.delete(theirs);
       }
     });
 

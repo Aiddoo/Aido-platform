@@ -8,8 +8,8 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { ForecastAlerts } from "../../application/forecasts.alerts.js";
-import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WEATHERKIT_MONTHLY_CALL_ALERTS } from "./weather-outbound.policy.js";
+import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 
 const WEATHERKIT_CALL_METER = "weatherkit.call";
 

@@ -1,7 +1,7 @@
 import type { QuotaMeter } from "@aido/api/vocabulary";
 
 import { QuotaUsageRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-usage.repository.port";
-import { QuotaWindow } from "#api/modules/access/quotas/domain/quota-window.vo";
+import { QuotaWindow } from "#api/modules/access/shared/domain/quota-window.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InMemoryAccessUser } from "./in-memory-access-state.reader.js";
@@ -81,7 +81,7 @@ export class InMemoryQuotaUsageRepository extends QuotaUsageRepositoryPort {
       const user = this.users.get(userId.value);
       if (
         user == null ||
-        QuotaWindow.monthOf(user.aiUsageResetAt).periodKey !== periodKey ||
+        QuotaWindow.create(user.aiUsageResetAt).periodKey !== periodKey ||
         user.aiUsageCount < amount
       ) {
         return false;

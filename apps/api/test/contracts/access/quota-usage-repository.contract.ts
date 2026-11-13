@@ -1,7 +1,7 @@
 import type { QuotaMeter } from "@aido/api/vocabulary";
 
 import type { QuotaUsageRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-usage.repository.port";
-import { QuotaWindow } from "#api/modules/access/quotas/domain/quota-window.vo";
+import { QuotaWindow } from "#api/modules/access/shared/domain/quota-window.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   ACCESS_FIXTURE_NOW,
@@ -12,10 +12,10 @@ import {
 const NOW = ACCESS_FIXTURE_NOW;
 const USER_ID = UserId.reconstitute(ACCESS_FIXTURE_USER_ID);
 const OTHER_USER_ID = UserId.reconstitute(ACCESS_FIXTURE_OTHER_USER_ID);
-const APRIL = QuotaWindow.monthOf(NOW);
+const APRIL = QuotaWindow.create(NOW);
 // KST 5월 1일 00:00
 const MAY_START = Temporal.Instant.from("2026-04-30T15:00:00Z");
-const MAY = QuotaWindow.monthOf(MAY_START);
+const MAY = QuotaWindow.create(MAY_START);
 
 interface SeedQuotaUserInput {
   readonly id: string;

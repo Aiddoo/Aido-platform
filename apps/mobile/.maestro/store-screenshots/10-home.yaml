@@ -34,7 +34,7 @@ onFlowStart:
     env:
       QA_EMAIL: ${MAESTRO_SHOT_EMAIL}
       QA_PASSWORD: ${MAESTRO_SHOT_PASSWORD}
-# 1.13.0 기능 소개가 처음 로그인에서 자동으로 열리면 그대로 찍는다(서버 캠페인 설정 autoOpen)
+# 기능 소개가 처음 로그인에서 자동으로 열리면 그대로 찍는다(서버 캠페인 설정 autoOpen)
 - runFlow:
     when:
       visible: '새로 생겼어요|What.s new'

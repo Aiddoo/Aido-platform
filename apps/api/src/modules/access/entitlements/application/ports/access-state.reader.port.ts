@@ -1,7 +1,7 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { AccessState } from "../../domain/entitlement.domain-service.js";
-import type { FeatureGrants } from "../../domain/entitlements.constants.js";
+import type { FeatureGrants } from "../../../shared/domain/access.constants.js";
+import type { AccessState } from "../../../shared/domain/entitlement.domain-service.js";
 
 /** 권한 판단에 필요한 사용자 상태. 저장된 구독 projection과 스토어 유예로 끝나는 시각을 함께 읽는다. */
 export abstract class AccessStateReaderPort {
