@@ -1,3 +1,4 @@
+import { UserReportId } from "#api/modules/social/reports/domain/user-report-id.vo";
 import { DrizzleUserReportRepository } from "#api/modules/social/reports/infrastructure/persistence/drizzle-user-report.repository";
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -74,7 +75,7 @@ describe("DrizzleUserReportRepository (실제 PostgreSQL)", () => {
     // Given
     const repository = createRepository();
     const report = createUserReportFixture({
-      id: (await repository.nextId()).value,
+      id: UserReportId.generate().value,
       detail: "계속 욕설을 해요",
       status: "RESOLVED",
       createdAt: Temporal.Instant.from("2027-01-08T12:00:00.123Z"),

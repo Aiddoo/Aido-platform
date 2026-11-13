@@ -100,12 +100,10 @@ describe("ReportContentUseCase — 콘텐츠 신고", () => {
         targetUserId: USER_REPORT_FIXTURE_TARGET_USER_ID,
         targetUserTag: USER_REPORT_FIXTURE_TARGET_USER_TAG,
         targetType: "COMMENT",
-        targetTypeLabel: "댓글",
         targetId: USER_REPORT_FIXTURE_COMMENT_ID,
         reason: "HARASSMENT",
-        reasonLabel: "괴롭힘·혐오",
         detail: "계속 욕설을 해요",
-        submittedAt: "2026-10-26 18:00 (KST)",
+        submittedAt: NOW,
       },
     ]);
     expect(mutationLock.acquiredKeys).toEqual([

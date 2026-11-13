@@ -5,12 +5,11 @@ import { and, eq, gte, inArray } from "drizzle-orm";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userReport } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import type { UserReportRepositoryPort } from "../../application/ports/user-report.repository.port.js";
-import { UserReportId } from "../../domain/user-report-id.vo.js";
+import type { UserReportId } from "../../domain/user-report-id.vo.js";
 import type { UserReportTarget } from "../../domain/user-report-target.vo.js";
-import type { UserReport } from "../../domain/user-report.aggregate.js";
+import type { UserReport, UserReportVersion } from "../../domain/user-report.aggregate.js";
 import { toUserReport, toUserReportRow } from "./user-report-row.mapper.js";
 
 @Injectable()
@@ -23,10 +22,6 @@ export class DrizzleUserReportRepository implements UserReportRepositoryPort {
 
   get #db() {
     return this.#txHost.tx;
-  }
-
-  async nextId(): Promise<UserReportId> {
-    return UserReportId.reconstitute(createEntityId());
   }
 
   async existsActiveUser(userId: UserId): Promise<boolean> {
@@ -98,11 +93,8 @@ export class DrizzleUserReportRepository implements UserReportRepositoryPort {
       });
   }
 
-  async saveResolution(report: UserReport): Promise<boolean> {
+  async saveIfUnchanged(report: UserReport, expected: UserReportVersion): Promise<boolean> {
     const row = toUserReportRow(report);
-    if (row.status !== "RESOLVED") {
-      return false;
-    }
     const updated = await this.#db
       .update(userReport)
       .set({
@@ -111,7 +103,7 @@ export class DrizzleUserReportRepository implements UserReportRepositoryPort {
         resolvedById: row.resolvedById,
         resolutionNote: row.resolutionNote,
       })
-      .where(and(eq(userReport.id, report.id.value), eq(userReport.status, "OPEN")))
+      .where(and(eq(userReport.id, report.id.value), eq(userReport.status, expected.status)))
       .returning({ id: userReport.id });
     return updated.length > 0;
   }

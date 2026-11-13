@@ -7,12 +7,13 @@ import type {
   UserReportDeliveryResult,
   UserReportNotifierPort,
 } from "../../application/ports/user-report-notifier.port.js";
-import type { UserReportSubmission } from "../../application/read-models/user-report-submission.read-model.js";
+import type { UserReportSubmissionReadModel } from "../../application/read-models/user-report-submission.read-model.js";
 import {
   RESOLVE_USER_REPORT_OPERATION_ID,
   resolveUserReportPath,
 } from "../../presentation/http/v1/admin-user-report.constants.js";
 import { type SocialReportsConfig, socialReportsConfig } from "../../social-reports.config.js";
+import { toUserReportEmailContent } from "./user-report-email.mapper.js";
 
 const ADMIN_DOCS_PATH = "/api/admin/docs";
 
@@ -33,10 +34,10 @@ export class EmailUserReportNotifierAdapter implements UserReportNotifierPort {
     this.#config = config;
   }
 
-  notifyOperators(submission: UserReportSubmission): Promise<UserReportDeliveryResult> {
+  notifyOperators(submission: UserReportSubmissionReadModel): Promise<UserReportDeliveryResult> {
     const { apiPublicUrl, supportEmail } = this.#config;
     return this.#emailSender.sendUserReport(supportEmail, {
-      ...submission,
+      ...toUserReportEmailContent(submission),
       resolutionEndpoint: `POST ${resolveUserReportPath(submission.reportId)}`,
       resolutionDocsUrl:
         apiPublicUrl == null

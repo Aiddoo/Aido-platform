@@ -1,7 +1,10 @@
 import { UserReportRepositoryPort } from "#api/modules/social/reports/application/ports/user-report.repository.port";
-import { UserReportId } from "#api/modules/social/reports/domain/user-report-id.vo";
+import type { UserReportId } from "#api/modules/social/reports/domain/user-report-id.vo";
 import type { UserReportTarget } from "#api/modules/social/reports/domain/user-report-target.vo";
-import { UserReport } from "#api/modules/social/reports/domain/user-report.aggregate";
+import {
+  UserReport,
+  type UserReportVersion,
+} from "#api/modules/social/reports/domain/user-report.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 저장 사본을 두어 save 없이 바꾼 Aggregate가 저장소 상태로 새지 않게 한다
@@ -25,7 +28,6 @@ export class InMemoryUserReportRepository extends UserReportRepositoryPort {
   readonly #reports = new Map<string, UserReport>();
   // 활성 사용자 id → 사용자 태그
   readonly #activeUserTags: ReadonlyMap<string, string>;
-  #sequence = 0;
 
   constructor(
     params: {
@@ -42,11 +44,6 @@ export class InMemoryUserReportRepository extends UserReportRepositoryPort {
 
   get size(): number {
     return this.#reports.size;
-  }
-
-  async nextId(): Promise<UserReportId> {
-    this.#sequence += 1;
-    return UserReportId.reconstitute(`cinmem${String(this.#sequence).padStart(19, "0")}`);
   }
 
   async existsActiveUser(userId: UserId): Promise<boolean> {
@@ -102,9 +99,9 @@ export class InMemoryUserReportRepository extends UserReportRepositoryPort {
     );
   }
 
-  async saveResolution(report: UserReport): Promise<boolean> {
+  async saveIfUnchanged(report: UserReport, expected: UserReportVersion): Promise<boolean> {
     const stored = this.#reports.get(report.id.value);
-    if (report.status !== "RESOLVED" || stored == null || stored.status !== "OPEN") {
+    if (stored == null || stored.status !== expected.status) {
       return false;
     }
     this.#reports.set(report.id.value, withResolutionOf(stored, report));
