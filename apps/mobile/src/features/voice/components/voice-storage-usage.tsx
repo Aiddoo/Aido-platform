@@ -8,6 +8,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  Box,
   HStack,
   ReadableContent,
   SettingsListGroup,
@@ -43,10 +44,11 @@ export function VoiceStorageUsage() {
   const refreshUsage = () => setUsage(storage.getRecordingUsage(accountId));
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
+    <Box flex={1} className="bg-white">
       <FlashList
         data={usage.notes}
         keyExtractor={({ note }) => note.draftId}
+        // 화면이 아래 safe area를 빼지 않아 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 행은 유리 밑으로 스크롤된다
         contentInsetAdjustmentBehavior="automatic"
         ListHeaderComponent={
           <StyledSafeAreaView edges={['left', 'right']}>
@@ -125,7 +127,7 @@ export function VoiceStorageUsage() {
           ) : undefined
         }
       />
-    </StyledSafeAreaView>
+    </Box>
   );
 }
 

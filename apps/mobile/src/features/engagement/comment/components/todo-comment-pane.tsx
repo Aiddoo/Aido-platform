@@ -34,17 +34,18 @@ export function TodoCommentPane({ titleBar, onClose, onExit }: TodoCommentPanePr
 
       <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={onClose} />}>
         <TodoCommentKeyboardGesture>
-          <QueryErrorBoundary
-            resetKeys={[todoId, sort, comment]}
-            fallback={TodoCommentThreadList.Error}
-          >
-            <Suspense fallback={<TodoCommentThreadList.Loading />}>
-              <TodoCommentThreadList />
-            </Suspense>
-          </QueryErrorBoundary>
-
+          {/* 본문·댓글·작성 바를 기다리는 경계는 하나다. 여럿이 함께 기다리면 React 19가 서로의 재시도를 번갈아 그려 응답 전까지 렌더가 끝나지 않는다 */}
           <QueryErrorBoundary resetKeys={[todoId]}>
-            <Suspense fallback={<TodoCommentComposerBar.Loading />}>
+            <Suspense fallback={<TodoCommentPane.Loading />}>
+              {/* 목록 머리가 본문(상세)을 함께 그린다. 상세 오류는 이 경계의 fallback 머리가 다시 던져 칸 경계가 받고, 다시 시도 범위는 칸과 함께 쓴다 */}
+              <QueryErrorBoundary
+                resetKeys={[todoId, sort, comment]}
+                resetScope="parent"
+                fallback={TodoCommentThreadList.Error}
+              >
+                <TodoCommentThreadList />
+              </QueryErrorBoundary>
+
               <TodoCommentComposerBar />
             </Suspense>
           </QueryErrorBoundary>
@@ -53,6 +54,15 @@ export function TodoCommentPane({ titleBar, onClose, onExit }: TodoCommentPanePr
     </TodoCommentSession>
   );
 }
+
+TodoCommentPane.Loading = function Loading() {
+  return (
+    <>
+      <TodoCommentThreadList.Loading />
+      <TodoCommentComposerBar.Loading />
+    </>
+  );
+};
 
 /** 목록과 작성 바를 함께 감싸 Android에서 키보드를 손가락으로 끌어 내리게 한다 */
 function TodoCommentKeyboardGesture({ children }: PropsWithChildren) {

@@ -209,7 +209,7 @@ export function PlanReview({
         <Box className="flex-1">
           <Button
             isDisabled={!canApply || !isValid}
-            isLoading={planApply.isPending}
+            isLoading={planApply.isPending || planApply.isApplied}
             onPress={() => planApply.apply()}
             testID="plan-review-apply"
           >
@@ -304,7 +304,8 @@ function usePlanApply({
       );
     })();
 
-  return { apply, isPending: applyMutation.isPending };
+  // 성공하면 키를 잊어 같은 카드를 다시 보내면 또 저장된다. 시트가 내려가거나 화면이 바뀌는 동안 카드가 남아 있으니 그동안 막는다
+  return { apply, isPending: applyMutation.isPending, isApplied: applyMutation.isSuccess };
 }
 
 PlanReview.Loading = function Loading({

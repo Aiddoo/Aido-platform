@@ -85,7 +85,8 @@ export function SignUpPasswordForm({ form, step, onNextStep, onSubmit }: SignUpP
                 control={control}
                 name="passwordConfirm"
                 render={({ field: { ref, onChange, onBlur, value }, fieldState }) => {
-                  const error = fieldState.isTouched ? fieldState.error : undefined;
+                  // 다음 버튼이 꺼진 이유를 칸을 벗어나기 전에 알린다(비밀번호 바꾸기·재설정 확인 칸과 같은 시점)
+                  const error = fieldState.isDirty ? fieldState.error : undefined;
                   return (
                     <PasswordInput
                       ref={ref}

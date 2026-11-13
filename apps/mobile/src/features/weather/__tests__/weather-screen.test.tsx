@@ -75,7 +75,7 @@ describe('WeatherScreen', () => {
         _layout: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
         '(app)/_layout': AppLayoutRoute,
         '(app)/(tabs)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
-        '(app)/(tabs)/feed/index': () => null,
+        '(app)/(tabs)/(todos)/feed/index': () => null,
         '(app)/weather/_layout': WeatherLayout,
         '(app)/weather/index': WeatherScreen,
         '(app)/todo/[todoId]/index': () => null,

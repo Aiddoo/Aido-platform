@@ -23,7 +23,7 @@ interface AppToastProps {
   variant?: AppToastVariant;
   icon?: ReactNode;
   action?: AppToastAction;
-  /** 닫힌 시트에서 아래 면으로 옮겨 온 토스트. 이미 보이던 자리라 다시 내려오지 않는다 */
+  /** 닫히는 시트에서 이미 보이다 아래 면으로 옮겨 온 토스트. 같은 자리라 다시 내려오지 않는다 */
   isMoved?: boolean;
   toastProps: Omit<ToastRootProps, 'children' | 'className'>;
 }

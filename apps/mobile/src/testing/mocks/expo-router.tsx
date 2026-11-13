@@ -15,6 +15,8 @@ export const router = {
 };
 export const useLocalSearchParams = jest.fn();
 export const useGlobalSearchParams = jest.fn();
+/** 화면이 하나뿐이라 focus route의 params는 그 화면의 `useLocalSearchParams` 값이다 */
+export const useRootNavigationState = jest.fn();
 export const useIsFocused = jest.fn();
 export const usePathname = jest.fn();
 export const useSegments = jest.fn();
@@ -42,6 +44,10 @@ export function resetExpoRouterMock() {
   router.canDismiss.mockReturnValue(false);
   useLocalSearchParams.mockReset().mockImplementation(() => ({}));
   useGlobalSearchParams.mockReset().mockImplementation(() => ({}));
+  useRootNavigationState.mockReset().mockImplementation(() => ({
+    index: 0,
+    routes: [{ key: 'screen', name: 'screen', params: useLocalSearchParams() }],
+  }));
   useIsFocused.mockReset().mockReturnValue(true);
   usePathname.mockReset().mockReturnValue('/');
   useSegments.mockReset().mockReturnValue([]);

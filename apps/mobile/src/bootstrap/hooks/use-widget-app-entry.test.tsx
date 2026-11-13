@@ -120,10 +120,10 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).toHaveBeenCalledTimes(1);
-    expect(router.navigate).toHaveBeenCalledWith(
-      { pathname: '/todo/[todoId]', params: { todoId: '12' } },
-      { withAnchor: true },
-    );
+    expect(router.navigate).toHaveBeenCalledWith({
+      pathname: '/todo/[todoId]',
+      params: { todoId: '12' },
+    });
     expect(di.widgetNavigationRepository.findPendingCommand()).toBeNull();
     expect(widgetOpenedCalls()).toEqual([['widget_opened', { destination: 'todo' }]]);
     await hook.rerender(undefined);
@@ -146,10 +146,10 @@ describe('종료된 앱의 위젯 명령 복원', () => {
 
     // Then
     expect(router.navigate).toHaveBeenCalledTimes(1);
-    expect(router.navigate).toHaveBeenCalledWith(
-      { pathname: '/todo/[todoId]', params: { todoId: '13' } },
-      { withAnchor: true },
-    );
+    expect(router.navigate).toHaveBeenCalledWith({
+      pathname: '/todo/[todoId]',
+      params: { todoId: '13' },
+    });
   });
 
   it('warm Linking 이동은 중복하지 않고 뒤로간 뒤 같은 목적지를 다시 누르면 이동한다', async () => {

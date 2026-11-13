@@ -311,6 +311,35 @@ describe('MemoEditor', () => {
     });
   });
 
+  it('할 일로 바꾸기가 이미 없는 메모라 거절되면 시트를 닫고 메모를 떠난다', async () => {
+    // Given
+    const { httpClient, onLeave } = await renderEditor('stack');
+    httpClient.post.mockResolvedValue(
+      err(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
+    );
+    await waitFor(() =>
+      expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
+    );
+    await act(async () => {});
+    await act(async () => {
+      fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+    });
+    const sheet = await screen.findByTestId('memo-convert-sheet');
+
+    // When
+    await act(async () => {
+      fireEvent.press(within(sheet).getByLabelText('저장하기'));
+    });
+
+    // Then
+    await waitFor(() => expect(onLeave).toHaveBeenCalledTimes(1));
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+    expect(httpClient.post).toHaveBeenCalledWith(
+      `v1/memos/${MEMO_ID}/convert-to-todos`,
+      expect.anything(),
+    );
+  });
+
   describe('고치던 글자가 있을 때 메뉴', () => {
     it('할 일로 바꾸기는 고친 글자를 먼저 저장한 뒤 그 글자로 시트를 연다', async () => {
       // Given
