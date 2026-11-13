@@ -5,12 +5,12 @@ import {
 } from "@aido/api/vocabulary";
 import { orderBy } from "es-toolkit";
 
-import { localDateAt } from "../../shared/domain/weather-calendar.domain-service.js";
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+
 import type { WeatherReportHour } from "./weather-report.vo.js";
 
 /** 시트에 보여 줄 옮길 시간 후보 수. 첫 번째가 추천이다. */
 const RESCHEDULE_OPTION_LIMIT = 4;
-const HOUR_MS = 60 * 60_000;
 
 export type WeatherBriefingHour = Pick<
   WeatherReportHour,
@@ -20,11 +20,11 @@ export type WeatherBriefingHour = Pick<
 /** 시각이 정해졌고 아직 하지 않은 할 일 */
 export interface WeatherBriefingTodo {
   readonly id: number;
-  readonly scheduledAt: Date;
+  readonly scheduledAt: Temporal.Instant;
 }
 
 interface WeatherRescheduleOption {
-  readonly startsAt: Date;
+  readonly startsAt: Temporal.Instant;
   readonly precipitationChance: number;
   readonly apparentTemperature: number;
   readonly isRecommended: boolean;
@@ -70,11 +70,12 @@ export function isHotHour(
 /** 그 순간이 든 시간별 예보의 위치. 없으면 -1이다 */
 export function findHourIndexAt(
   hourly: readonly Pick<WeatherBriefingHour, "startsAt">[],
-  at: Date,
+  at: Temporal.Instant,
 ): number {
-  const time = at.getTime();
   return hourly.findIndex(
-    (hour) => hour.startsAt.getTime() <= time && time < hour.startsAt.getTime() + HOUR_MS,
+    (hour) =>
+      Temporal.Instant.compare(hour.startsAt, at) <= 0 &&
+      Temporal.Instant.compare(at, hour.startsAt.add({ hours: 1 })) < 0,
   );
 }
 
@@ -82,11 +83,13 @@ export function findHourIndexAt(
 function toForecastTodos<TTodo extends WeatherBriefingTodo, THour extends WeatherBriefingHour>(
   hourly: readonly THour[],
   todos: readonly TTodo[],
-  now: Date,
+  now: Temporal.Instant,
 ): ForecastTodo<TTodo, THour>[] {
-  const ordered = orderBy([...todos], [(todo) => todo.scheduledAt.getTime()], ["asc"]);
+  const ordered = todos.toSorted((left, right) =>
+    Temporal.Instant.compare(left.scheduledAt, right.scheduledAt),
+  );
   return ordered.flatMap((todo) => {
-    if (todo.scheduledAt.getTime() < now.getTime()) {
+    if (Temporal.Instant.compare(todo.scheduledAt, now) < 0) {
       return [];
     }
     const hour = hourly[findHourIndexAt(hourly, todo.scheduledAt)];
@@ -101,18 +104,18 @@ function toForecastTodos<TTodo extends WeatherBriefingTodo, THour extends Weathe
 function planRescheduleOptions(params: {
   readonly hourly: readonly WeatherBriefingHour[];
   readonly todo: WeatherBriefingTodo;
-  readonly now: Date;
+  readonly now: Temporal.Instant;
   readonly timezone: string;
   readonly reason: WeatherRescheduleReason;
 }): WeatherRescheduleOption[] {
   const { hourly, todo, now, timezone, reason } = params;
-  const todoDay = localDateAt(todo.scheduledAt, timezone);
+  const todoDay = localDateIn(todo.scheduledAt, timezone);
   const distance = (hour: WeatherBriefingHour) =>
-    Math.abs(hour.startsAt.getTime() - todo.scheduledAt.getTime());
+    Math.abs(hour.startsAt.epochMilliseconds - todo.scheduledAt.epochMilliseconds);
   const sameDayHours = hourly.filter(
     (hour) =>
-      hour.startsAt.getTime() > now.getTime() &&
-      localDateAt(hour.startsAt, timezone).equals(todoDay),
+      Temporal.Instant.compare(hour.startsAt, now) > 0 &&
+      localDateIn(hour.startsAt, timezone).equals(todoDay),
   );
   const ordered =
     reason === "rain"
@@ -134,6 +137,21 @@ function planRescheduleOptions(params: {
   }));
 }
 
+/** 비·눈이 오는 시간에 걸린 할 일이 있으면 그것이, 없으면 더운 낮에 걸린 할 일이 영향받는 할 일이다 */
+function pickAffectedTodos<TTodo extends WeatherBriefingTodo, THour extends WeatherBriefingHour>(
+  forecastTodos: readonly ForecastTodo<TTodo, THour>[],
+): { reason: WeatherRescheduleReason; affected: ForecastTodo<TTodo, THour>[] } | null {
+  const wetTodos = forecastTodos.filter(({ hour }) => isWetHour(hour));
+  if (wetTodos.length > 0) {
+    return { reason: "rain", affected: wetTodos };
+  }
+  const hotTodos = forecastTodos.filter(({ hour }) => isHotHour(hour));
+  if (hotTodos.length > 0) {
+    return { reason: "heat", affected: hotTodos };
+  }
+  return null;
+}
+
 /**
  * 오늘 할 일 가운데 날씨와 겹친 것과, 옮길 만한 시간 후보를 고른다. 날씨 화면 브리핑과 아침 날씨 알림이 함께 쓴다.
  * 비·눈이 오는 시간에 걸린 할 일이 있으면 그것이, 없으면 더운 낮에 걸린 할 일이 영향받는 할 일이다.
@@ -145,21 +163,18 @@ export function planWeatherBriefing<
 >(params: {
   readonly hourly: readonly THour[];
   readonly todos: readonly TTodo[];
-  readonly now: Date;
+  readonly now: Temporal.Instant;
   /** 할 일을 저장한 기기 시간대 */
   readonly timezone: string;
 }): WeatherBriefing<TTodo, THour> {
   const { hourly, todos, now, timezone } = params;
   const forecastTodos = toForecastTodos(hourly, todos, now);
-  const wetTodos = forecastTodos.filter(({ hour }) => isWetHour(hour));
-  const hotTodos = forecastTodos.filter(({ hour }) => isHotHour(hour));
-  const reason: WeatherRescheduleReason | null =
-    wetTodos.length > 0 ? "rain" : hotTodos.length > 0 ? "heat" : null;
-  if (reason == null) {
+  const affectedBy = pickAffectedTodos(forecastTodos);
+  if (affectedBy == null) {
     return { reason: null, affected: [], affectedTodoIds: [], rescheduleOptions: [] };
   }
 
-  const affected = reason === "rain" ? wetTodos : hotTodos;
+  const { reason, affected } = affectedBy;
   const shown = affected.slice(0, WEATHER_RESCHEDULE_MAX_TODO_IDS).map(({ todo }) => todo);
   return {
     reason,

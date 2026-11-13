@@ -10,12 +10,12 @@ import {
 } from "./weather-notification.messages.js";
 
 /** 서울 15:00 */
-const AFTERNOON = new Date("2026-07-16T06:00:00.000Z");
+const AFTERNOON = Temporal.Instant.from("2026-07-16T06:00:00.000Z");
 const seoulTime = (locale: "ko" | "en") => (instant: Date) =>
   formatWeatherNotificationTime(instant, { locale, timezone: "Asia/Seoul" });
 
 const DAY: WeatherBriefingDay = {
-  date: "2026-07-16",
+  date: Temporal.PlainDate.from("2026-07-16"),
   condition: "MOSTLY_CLOUDY",
   temperatureMin: 21.4,
   temperatureMax: 28.6,

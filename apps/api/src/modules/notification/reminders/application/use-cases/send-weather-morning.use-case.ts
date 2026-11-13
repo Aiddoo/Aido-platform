@@ -7,7 +7,7 @@ import {
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
@@ -110,7 +110,6 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     }
 
     const now = this.#dependencies.clock.now();
-    const at = instantToDate(now);
     const [todos, reports] = await Promise.all([
       this.#listTodayTodos(targets, now),
       this.#dependencies.weatherReportReader.readReports(
@@ -138,9 +137,9 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
               (todosByUser[user.id] ?? []).map((todo) => ({
                 id: todo.id,
                 title: todo.title,
-                scheduledAt: todo.scheduledTime,
+                scheduledAt: instantFromDate(todo.scheduledTime),
               })),
-              { now: at, timezone: user.timezone, locationTimezone: located.timezone },
+              { now, timezone: user.timezone, locationTimezone: located.timezone },
             );
       if (briefing == null) {
         unavailable += 1;

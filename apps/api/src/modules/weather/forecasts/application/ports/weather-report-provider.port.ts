@@ -1,6 +1,7 @@
 import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
-import type { WeatherReport, WeatherReportAttribution } from "../../domain/weather-report.vo.js";
+import type { WeatherReport } from "../../domain/weather-report.vo.js";
+import type { WeatherReportAttribution } from "../read-models/weather-report-attribution.read-model.js";
 
 export interface WeatherReportRequest {
   readonly timezone: string;

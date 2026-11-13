@@ -152,7 +152,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     // Then
     expect(report.nextHour).toBeNull();
     expect(report.alerts).toEqual([]);
-    expect(report.fetchedAt).toEqual(new Date("2026-11-02T10:36:08Z"));
+    expect(report.fetchedAt).toEqual(Temporal.Instant.from("2026-11-02T10:36:08Z"));
     expect(report.daily[0]?.moonrise).toBeNull();
     expect(report.daily[0]?.restOfDay?.precipitationType).toBe("NONE");
     expect(report.daily[1]?.restOfDay).toBeNull();

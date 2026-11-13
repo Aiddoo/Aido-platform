@@ -3,10 +3,12 @@ import type {
   WeatherConditions,
   WeatherForecast,
 } from "#api/modules/weather/forecasts/application/read-models/weather-forecast.read-model";
-import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/domain/weather-report.vo";
-import type {
+import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/application/read-models/weather-report-attribution.read-model";
+import {
   WeatherReport,
-  WeatherReportHour,
+  type WeatherReportDay,
+  type WeatherReportHour,
+  type WeatherReportValue,
 } from "#api/modules/weather/forecasts/domain/weather-report.vo";
 
 /** WeatherKit attribution API처럼 언어별로 다른 상표 로고 경로를 돌려준다. */
@@ -79,16 +81,14 @@ export function weatherConditionsFixture(
   };
 }
 
-const HOUR_MS = 60 * 60_000;
-
 /** fetchedAt 정각부터 30시간·11일을 담은 서울 기준 공급자 중립 스냅샷 */
 export function weatherReportFixture(
-  fetchedAt = new Date("2026-11-02T06:20:00.000Z"),
-  overrides: Partial<WeatherReport> = {},
+  fetchedAt = Temporal.Instant.from("2026-11-02T06:20:00.000Z"),
+  overrides: Partial<WeatherReportValue> = {},
 ): WeatherReport {
-  const hourStartMs = Math.floor(fetchedAt.getTime() / HOUR_MS) * HOUR_MS;
+  const hourStart = fetchedAt.round({ smallestUnit: "hour", roundingMode: "floor" });
   const hourly = Array.from({ length: 30 }, (_, index): WeatherReportHour => ({
-    startsAt: new Date(hourStartMs + index * HOUR_MS),
+    startsAt: hourStart.add({ hours: index }),
     condition: "CLEAR",
     isDaylight: true,
     temperature: 12 + (index % 5),
@@ -101,33 +101,32 @@ export function weatherReportFixture(
     precipitationAmount: 0,
     precipitationType: "NONE",
   }));
-  const firstDay = Date.UTC(
-    fetchedAt.getUTCFullYear(),
-    fetchedAt.getUTCMonth(),
-    fetchedAt.getUTCDate(),
-  );
-  const daily = Array.from({ length: 11 }, (_, index) => ({
-    date: new Date(firstDay + index * 24 * HOUR_MS).toISOString().slice(0, 10),
-    condition: "PARTLY_CLOUDY" as const,
-    temperatureMin: 8,
-    temperatureMax: 16,
-    precipitationChance: 20,
-    precipitationAmount: 0.4,
-    precipitationType: "RAIN" as const,
-    snowfallAmount: 0,
-    uvIndexMax: 3,
-    windSpeedMax: 5.1,
-    windGustMax: null,
-    sunrise: new Date(firstDay + index * 24 * HOUR_MS - 2 * HOUR_MS),
-    sunset: new Date(firstDay + index * 24 * HOUR_MS + 8 * HOUR_MS),
-    moonPhase: "WANING_CRESCENT" as const,
-    moonrise: null,
-    moonset: new Date(firstDay + index * 24 * HOUR_MS + 5 * HOUR_MS),
-    restOfDay: null,
-    daytime: null,
-    overnight: null,
-  }));
-  return {
+  const firstDay = fetchedAt.toZonedDateTimeISO("UTC").toPlainDate();
+  const daily = Array.from({ length: 11 }, (_, index): WeatherReportDay => {
+    const utcMidnight = firstDay.add({ days: index }).toZonedDateTime("UTC").toInstant();
+    return {
+      date: firstDay.add({ days: index }),
+      condition: "PARTLY_CLOUDY",
+      temperatureMin: 8,
+      temperatureMax: 16,
+      precipitationChance: 20,
+      precipitationAmount: 0.4,
+      precipitationType: "RAIN",
+      snowfallAmount: 0,
+      uvIndexMax: 3,
+      windSpeedMax: 5.1,
+      windGustMax: null,
+      sunrise: utcMidnight.subtract({ hours: 2 }),
+      sunset: utcMidnight.add({ hours: 8 }),
+      moonPhase: "WANING_CRESCENT",
+      moonrise: null,
+      moonset: utcMidnight.add({ hours: 5 }),
+      restOfDay: null,
+      daytime: null,
+      overnight: null,
+    };
+  });
+  return WeatherReport.reconstitute({
     current: {
       observedAt: fetchedAt,
       condition: "CLEAR",
@@ -152,5 +151,5 @@ export function weatherReportFixture(
     alerts: [],
     fetchedAt,
     ...overrides,
-  };
+  });
 }

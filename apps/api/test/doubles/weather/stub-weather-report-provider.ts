@@ -2,11 +2,9 @@ import {
   WeatherReportProviderPort,
   type WeatherReportRequest,
 } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
+import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/application/read-models/weather-report-attribution.read-model";
 import type { WeatherReportLanguage } from "#api/modules/weather/forecasts/domain/weather-report-language.domain-service";
-import type {
-  WeatherReport,
-  WeatherReportAttribution,
-} from "#api/modules/weather/forecasts/domain/weather-report.vo";
+import type { WeatherReport } from "#api/modules/weather/forecasts/domain/weather-report.vo";
 import type { GeoCell } from "#api/modules/weather/shared/domain/geo-cell.vo";
 import { weatherAttributionFixture, weatherReportFixture } from "#test/fixtures/weather.fixture";
 

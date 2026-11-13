@@ -1,18 +1,19 @@
+import { toIsoString } from "#api/shared/domain/time/instant";
+
 import {
   planWeatherBriefing,
   type WeatherBriefingHour,
   type WeatherBriefingTodo,
 } from "./weather-briefing.domain-service.js";
 
-const HOUR_MS = 60 * 60_000;
 // 서울 2026-11-02 09:00 (UTC 00:00)
-const DAY_START = new Date("2026-11-02T00:00:00.000Z");
-const NOW = new Date("2026-11-02T00:20:00.000Z");
+const DAY_START = Temporal.Instant.from("2026-11-02T00:00:00.000Z");
+const NOW = Temporal.Instant.from("2026-11-02T00:20:00.000Z");
 const SEOUL = "Asia/Seoul";
 
 function hour(offset: number, overrides: Partial<WeatherBriefingHour> = {}): WeatherBriefingHour {
   return {
-    startsAt: new Date(DAY_START.getTime() + offset * HOUR_MS),
+    startsAt: DAY_START.add({ hours: offset }),
     isDaylight: true,
     apparentTemperature: 20,
     precipitationChance: 10,
@@ -23,7 +24,7 @@ function hour(offset: number, overrides: Partial<WeatherBriefingHour> = {}): Wea
 function todo(id: number, offsetHours: number, minutes = 0): WeatherBriefingTodo {
   return {
     id,
-    scheduledAt: new Date(DAY_START.getTime() + offsetHours * HOUR_MS + minutes * 60_000),
+    scheduledAt: DAY_START.add({ hours: offsetHours, minutes }),
   };
 }
 
@@ -71,7 +72,7 @@ describe("planWeatherBriefing — 날씨와 겹친 할 일과 옮길 시간", ()
     // Then
     const [entry] = briefing.rescheduleOptions;
     expect(entry?.todoId).toBe(1);
-    expect(entry?.options.map((option) => option.startsAt.toISOString())).toEqual([
+    expect(entry?.options.map((option) => toIsoString(option.startsAt))).toEqual([
       "2026-11-02T03:00:00.000Z",
       "2026-11-02T05:00:00.000Z",
       "2026-11-02T06:00:00.000Z",
@@ -101,7 +102,7 @@ describe("planWeatherBriefing — 날씨와 겹친 할 일과 옮길 시간", ()
     // Then
     expect(briefing.reason).toBe("heat");
     expect(briefing.affectedTodoIds).toEqual([1]);
-    expect(briefing.rescheduleOptions[0]?.options.map((o) => o.startsAt.toISOString())).toEqual([
+    expect(briefing.rescheduleOptions[0]?.options.map((o) => toIsoString(o.startsAt))).toEqual([
       "2026-11-02T02:00:00.000Z",
       "2026-11-02T03:00:00.000Z",
     ]);
@@ -147,22 +148,22 @@ describe("planWeatherBriefing — 날씨와 겹친 할 일과 옮길 시간", ()
 
   it("후보는 할 일과 같은 날(기기 시간대)의 시간만 쓴다", () => {
     // Given - 서울 자정(UTC 15시)을 넘기는 예보에서 서울 기준 같은 날만 후보가 된다
-    const lateStart = new Date("2026-11-02T13:00:00.000Z");
+    const lateStart = Temporal.Instant.from("2026-11-02T13:00:00.000Z");
     const at = (offset: number, chance: number): WeatherBriefingHour => ({
-      startsAt: new Date(lateStart.getTime() + offset * HOUR_MS),
+      startsAt: lateStart.add({ hours: offset }),
       isDaylight: false,
       apparentTemperature: 10,
       precipitationChance: chance,
     });
     const hourly = [at(0, 80), at(1, 0), at(2, 0), at(3, 0)];
-    const now = new Date("2026-11-02T12:30:00.000Z");
-    const todos = [{ id: 1, scheduledAt: new Date("2026-11-02T13:30:00.000Z") }];
+    const now = Temporal.Instant.from("2026-11-02T12:30:00.000Z");
+    const todos = [{ id: 1, scheduledAt: Temporal.Instant.from("2026-11-02T13:30:00.000Z") }];
 
     // When
     const briefing = planWeatherBriefing({ hourly, todos, now, timezone: SEOUL });
 
     // Then
-    expect(briefing.rescheduleOptions[0]?.options.map((o) => o.startsAt.toISOString())).toEqual([
+    expect(briefing.rescheduleOptions[0]?.options.map((o) => toIsoString(o.startsAt))).toEqual([
       "2026-11-02T14:00:00.000Z",
     ]);
   });

@@ -6,6 +6,7 @@ import {
 } from "@aido/api/vocabulary";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { NOTIFICATION_MILESTONES } from "../../domain/notification-milestone.constants.js";
 import type {
@@ -102,13 +103,13 @@ const USER_MESSAGE = "{senderName:이/가} 그대로 {count} {{x}}";
 const COUNTS = [1, 2, 999] as const;
 
 /** 서울 15:00 */
-const AFTERNOON = new Date("2026-07-16T06:00:00.000Z");
+const AFTERNOON = Temporal.Instant.from("2026-07-16T06:00:00.000Z");
 /** 서울 15:30 */
-const HALF_PAST = new Date("2026-07-16T06:30:00.000Z");
+const HALF_PAST = Temporal.Instant.from("2026-07-16T06:30:00.000Z");
 
 function weatherDay(condition: WeatherCondition, temperatureMin = -3.4, temperatureMax = 28.6) {
   return {
-    date: "2026-07-16",
+    date: Temporal.PlainDate.from("2026-07-16"),
     condition,
     temperatureMin,
     temperatureMax,
@@ -258,7 +259,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
     ]),
   ),
   ...[AFTERNOON, HALF_PAST].map((scheduledAt): CopyCase => [
-    `아침 날씨 더위 · ${scheduledAt.toISOString()}`,
+    `아침 날씨 더위 · ${toIsoString(scheduledAt)}`,
     (locale, variantContext) =>
       createWeatherMorningNotificationMessage({
         briefing: {
@@ -275,7 +276,7 @@ const WEATHER_CASES: readonly CopyCase[] = [
   ]),
   ...[true, false].flatMap((isSnow) =>
     [AFTERNOON, HALF_PAST].map((startsAt): CopyCase => [
-      `아침 날씨 나중에 ${isSnow ? "눈" : "비"} · ${startsAt.toISOString()}`,
+      `아침 날씨 나중에 ${isSnow ? "눈" : "비"} · ${toIsoString(startsAt)}`,
       (locale, variantContext) =>
         createWeatherMorningNotificationMessage({
           briefing: { kind: "wetLater", startsAt, isSnow },

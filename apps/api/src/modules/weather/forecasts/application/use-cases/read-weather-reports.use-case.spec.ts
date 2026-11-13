@@ -6,31 +6,35 @@ import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolv
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
 
-import { WeatherReportReader } from "./weather-report.reader.js";
+import { ReadWeatherReportUseCase } from "./read-weather-report.use-case.js";
+import { ReadWeatherReportsUseCase } from "./read-weather-reports.use-case.js";
 
 const SEOUL = { latitude: 37.5665, longitude: 126.978 };
 /** 서울 시청에서 수백 m 떨어진 같은 geohash5 칸 */
 const SEOUL_NEARBY = { latitude: 37.5651, longitude: 126.9895 };
 const TOKYO = { latitude: 35.6762, longitude: 139.6503 };
 
-describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로 읽기", () => {
-  const now = new Date("2026-11-02T06:20:00.000Z");
+describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐시로 읽기", () => {
+  const now = Temporal.Instant.from("2026-11-02T06:20:00.000Z");
   let memory: InMemoryCacheStore;
   let provider: StubWeatherReportProvider;
   let timezoneResolver: StubTimezoneResolver;
   let logger: SilentLogger;
-  let reader: WeatherReportReader;
+  let reader: ReadWeatherReportsUseCase;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(now);
+    vi.setSystemTime(now.epochMilliseconds);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     provider = new StubWeatherReportProvider();
     timezoneResolver = new StubTimezoneResolver();
     logger = new SilentLogger();
-    reader = new WeatherReportReader({
-      weatherReportProvider: provider,
-      weatherReportCache: new WeatherReportCache(memory, new FakeTimerClock()),
+    reader = new ReadWeatherReportsUseCase({
+      readWeatherReport: new ReadWeatherReportUseCase({
+        weatherReportProvider: provider,
+        weatherReportCache: new WeatherReportCache(memory, new FakeTimerClock()),
+        logger,
+      }),
       timezoneResolver,
       logger,
     });
@@ -47,7 +51,7 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
       language: "ko" as const,
     }));
     // When
-    const reports = await reader.readReports(requests, now);
+    const reports = await reader.execute({ requests, now });
     // Then
     expect(provider.calls).toHaveLength(1);
     expect(reports.size).toBe(50);
@@ -59,7 +63,10 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
     const first = [{ key: "a", ...SEOUL, language: "ko" as const }];
     const second = [{ key: "b", ...SEOUL_NEARBY, language: "en" as const }];
     // When
-    await Promise.all([reader.readReports(first, now), reader.readReports(second, now)]);
+    await Promise.all([
+      reader.execute({ requests: first, now }),
+      reader.execute({ requests: second, now }),
+    ]);
     // Then
     expect(provider.calls).toHaveLength(1);
   });
@@ -71,7 +78,7 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
       { key: "tokyo", ...TOKYO, language: "en" as const },
     ];
     // When
-    await reader.readReports(requests, now);
+    await reader.execute({ requests, now });
     // Then
     expect(provider.calls.map((call) => call.cellKey).sort()).toEqual(["wydm9", "xn76c"]);
     expect(timezoneResolver.coordinates.map((c) => c.latitude)).not.toContain(SEOUL.latitude);
@@ -79,18 +86,18 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
 
   it("캐시가 지나 공급자가 실패하면 마지막 스냅샷을, 그것도 없으면 그 키를 결과에서 뺀다", async () => {
     // Given 서울만 한 번 성공해 둔다
-    await reader.readReports([{ key: "seoul", ...SEOUL, language: "ko" }], now);
+    await reader.execute({ requests: [{ key: "seoul", ...SEOUL, language: "ko" }], now });
     provider.failure = new Error("weatherkit 429");
-    const later = new Date("2026-11-02T08:00:00.000Z");
-    vi.setSystemTime(later);
+    const later = Temporal.Instant.from("2026-11-02T08:00:00.000Z");
+    vi.setSystemTime(later.epochMilliseconds);
     // When
-    const reports = await reader.readReports(
-      [
+    const reports = await reader.execute({
+      requests: [
         { key: "seoul", ...SEOUL, language: "ko" },
         { key: "tokyo", ...TOKYO, language: "ko" },
       ],
-      later,
-    );
+      now: later,
+    });
     // Then
     expect(reports.get("seoul")?.report.fetchedAt).toEqual(now);
     expect(reports.get("seoul")?.report.hourly[0]?.startsAt).toEqual(later);
@@ -103,20 +110,23 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
   it("장애로 언어 판단이 실패해 공유 scope가 되어도 언어별로 받아 둔 스냅샷으로 폴백한다", async () => {
     // Given 특보가 있는 칸이라 ko scope로 한 번 받아 두었다
     provider.hasLocalizedContent = true;
-    await reader.readReports([{ key: "seoul", ...SEOUL, language: "ko" }], now);
+    await reader.execute({ requests: [{ key: "seoul", ...SEOUL, language: "ko" }], now });
     provider.localizationFailure = new Error("availability timeout");
     provider.failure = new Error("weatherkit 503");
-    const later = new Date("2026-11-02T08:00:00.000Z");
-    vi.setSystemTime(later);
+    const later = Temporal.Instant.from("2026-11-02T08:00:00.000Z");
+    vi.setSystemTime(later.epochMilliseconds);
     // When
-    const reports = await reader.readReports([{ key: "seoul", ...SEOUL, language: "ko" }], later);
+    const reports = await reader.execute({
+      requests: [{ key: "seoul", ...SEOUL, language: "ko" }],
+      now: later,
+    });
     // Then
     expect(reports.get("seoul")?.report.fetchedAt).toEqual(now);
   });
 
   it("요청이 없으면 공급자를 부르지 않는다", async () => {
     // When
-    const reports = await reader.readReports([], now);
+    const reports = await reader.execute({ requests: [], now });
     // Then
     expect(reports.size).toBe(0);
     expect(provider.calls).toEqual([]);
@@ -124,12 +134,15 @@ describe("WeatherReportReader — 여러 위치의 v2 리포트를 칸 캐시로
 
   it("응답은 읽는 시각 기준으로 지난 시간을 잘라 돌려준다", async () => {
     // Given 두 시간 전 받은 스냅샷이 캐시에 있다
-    provider.report = weatherReportFixture(new Date("2026-11-02T04:20:00.000Z"));
+    provider.report = weatherReportFixture(Temporal.Instant.from("2026-11-02T04:20:00.000Z"));
     // When
-    const reports = await reader.readReports([{ key: "a", ...SEOUL, language: "ko" }], now);
+    const reports = await reader.execute({
+      requests: [{ key: "a", ...SEOUL, language: "ko" }],
+      now,
+    });
     // Then
     expect(reports.get("a")?.report.hourly[0]?.startsAt).toEqual(
-      new Date("2026-11-02T06:00:00.000Z"),
+      Temporal.Instant.from("2026-11-02T06:00:00.000Z"),
     );
   });
 });

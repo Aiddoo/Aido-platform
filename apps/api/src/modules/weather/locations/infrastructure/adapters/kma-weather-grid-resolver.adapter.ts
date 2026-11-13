@@ -19,7 +19,7 @@ const KMA_LAMBERT_GRID = {
 
 const DEG_TO_RAD = Math.PI / 180.0;
 
-export function toKmaGrid(latitude: number, longitude: number): { nx: number; ny: number } {
+function toKmaGrid(latitude: number, longitude: number): { nx: number; ny: number } {
   const re = KMA_LAMBERT_GRID.EARTH_RADIUS_KM / KMA_LAMBERT_GRID.GRID_SPACING_KM;
   const slat1 = KMA_LAMBERT_GRID.STANDARD_LATITUDE_1_DEG * DEG_TO_RAD;
   const slat2 = KMA_LAMBERT_GRID.STANDARD_LATITUDE_2_DEG * DEG_TO_RAD;

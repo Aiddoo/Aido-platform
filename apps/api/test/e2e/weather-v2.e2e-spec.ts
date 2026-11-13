@@ -10,6 +10,7 @@ import { WeatherKitRequestError } from "#api/modules/weather/forecasts/infrastru
 import { WeatherReportCacheKey } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { userLocation } from "#api/platform/database/schema/index";
+import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-provider";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { weatherReportFixture } from "#test/fixtures/weather.fixture";
@@ -82,7 +83,7 @@ describe("날씨 v2 E2E", () => {
     it("시간대 경계 칸은 칸 중심 시간대를 저장·응답해 GET 리포트의 시간대와 같다", async () => {
       // Given - 좌표 자체는 Europe/Madrid, 칸 중심은 Europe/Lisbon
       const user = await ctx.helpers.createVerifiedUser("v2-border@example.com", "Test1234!");
-      reportProvider.report = weatherReportFixture(new Date());
+      reportProvider.report = weatherReportFixture(Temporal.Now.instant());
       // When
       const saved = await registerLocation(user.accessToken, BORDER).expect(200);
       const report = await getReport(user.accessToken).expect(200);
@@ -153,7 +154,7 @@ describe("날씨 v2 E2E", () => {
       // Given
       const user = await ctx.helpers.createVerifiedUser("v2-report@example.com", "Test1234!");
       await registerLocation(user.accessToken, SEOUL).expect(200);
-      reportProvider.report = weatherReportFixture(new Date());
+      reportProvider.report = weatherReportFixture(Temporal.Now.instant());
       airQualityProvider.result = { pm10: 32, pm25: 18 };
       // When
       const response = await getReport(user.accessToken, "ko-KR,ko;q=0.9").expect(200);
@@ -214,14 +215,13 @@ describe("날씨 v2 E2E", () => {
         const user = await ctx.helpers.createVerifiedUser("v2-brief@example.com", "Test1234!");
         await registerLocation(user.accessToken, SEOUL).expect(200);
         const now = new Date();
-        const base = weatherReportFixture(now);
-        reportProvider.report = {
-          ...base,
+        const base = weatherReportFixture(instantFromDate(now));
+        reportProvider.report = weatherReportFixture(base.fetchedAt, {
           hourly: base.hourly.map((hour, index) => ({
             ...hour,
             precipitationChance: index < 2 ? 80 : 10,
           })),
-        };
+        });
         const todo = await createTimedTodo(user.accessToken, {
           at: new Date(now.getTime() + 5 * 60_000),
         });
@@ -251,11 +251,10 @@ describe("날씨 v2 E2E", () => {
           "Test1234!",
         );
         await registerLocation(user.accessToken, SEOUL).expect(200);
-        const base = weatherReportFixture(new Date());
-        reportProvider.report = {
-          ...base,
+        const base = weatherReportFixture(Temporal.Now.instant());
+        reportProvider.report = weatherReportFixture(base.fetchedAt, {
           hourly: base.hourly.map((hour) => ({ ...hour, precipitationChance: 90 })),
-        };
+        });
         await createTimedTodo(user.accessToken, { at: new Date(), isAllDay: true });
         // When - 출시 앱처럼 X-Timezone 없이 조회한다
         const response = await getReport(user.accessToken).expect(200);
@@ -290,7 +289,7 @@ describe("날씨 v2 E2E", () => {
       // Given
       const user = await ctx.helpers.createVerifiedUser("v2-stale@example.com", "Test1234!");
       await registerLocation(user.accessToken, SEOUL).expect(200);
-      const fetchedAt = new Date();
+      const fetchedAt = Temporal.Now.instant();
       reportProvider.report = weatherReportFixture(fetchedAt);
       await getReport(user.accessToken).expect(200);
       await ctx.module
@@ -300,7 +299,7 @@ describe("날씨 v2 E2E", () => {
       // When
       const response = await getReport(user.accessToken).expect(200);
       // Then
-      expect(response.body.data.fetchedAt).toBe(fetchedAt.toISOString());
+      expect(response.body.data.fetchedAt).toBe(toIsoString(fetchedAt));
       expect(reportProvider.calls).toHaveLength(2);
     });
 

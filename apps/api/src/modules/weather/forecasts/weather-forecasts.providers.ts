@@ -20,7 +20,8 @@ import { GetWeatherForecastUseCase } from "./application/use-cases/get-weather-f
 import { GetWeatherReportUseCase } from "./application/use-cases/get-weather-report.use-case.js";
 import { ReadWeatherForecastUseCase } from "./application/use-cases/read-weather-forecast.use-case.js";
 import { ReadWeatherForecastsUseCase } from "./application/use-cases/read-weather-forecasts.use-case.js";
-import { WeatherReportReader } from "./application/weather-report.reader.js";
+import { ReadWeatherReportUseCase } from "./application/use-cases/read-weather-report.use-case.js";
+import { ReadWeatherReportsUseCase } from "./application/use-cases/read-weather-reports.use-case.js";
 import { AirkoreaAirQualityAdapter } from "./infrastructure/adapters/airkorea-air-quality.adapter.js";
 import { KasiSunTimeAdapter } from "./infrastructure/adapters/kasi-sun-time.adapter.js";
 import { KmaLifestyleIndexAdapter } from "./infrastructure/adapters/kma-lifestyle-index.adapter.js";
@@ -58,13 +59,17 @@ export const WEATHER_FORECASTS_PROVIDERS = [
     clock: ClockPort,
   }),
   { provide: WeatherForecastReaderPort, useExisting: ReadWeatherForecastsUseCase },
-  provideUseCase(WeatherReportReader, {
+  provideUseCase(ReadWeatherReportUseCase, {
     weatherReportProvider: WeatherReportProviderPort,
     weatherReportCache: WeatherReportCachePort,
-    timezoneResolver: TimezoneResolverPort,
-    logger: loggerFor(WeatherReportReader),
+    logger: loggerFor(ReadWeatherReportUseCase),
   }),
-  { provide: WeatherReportReaderPort, useExisting: WeatherReportReader },
+  provideUseCase(ReadWeatherReportsUseCase, {
+    readWeatherReport: ReadWeatherReportUseCase,
+    timezoneResolver: TimezoneResolverPort,
+    logger: loggerFor(ReadWeatherReportsUseCase),
+  }),
+  { provide: WeatherReportReaderPort, useExisting: ReadWeatherReportsUseCase },
   provideUseCase(GetWeatherForecastUseCase, {
     userLocationRepository: UserLocationRepositoryPort,
     readWeatherForecast: ReadWeatherForecastUseCase,
@@ -81,7 +86,7 @@ export const WEATHER_FORECASTS_PROVIDERS = [
   }),
   provideUseCase(GetWeatherReportUseCase, {
     userLocationRepository: UserLocationRepositoryPort,
-    weatherReportReader: WeatherReportReaderPort,
+    readWeatherReport: ReadWeatherReportUseCase,
     weatherReportProvider: WeatherReportProviderPort,
     weatherReportCache: WeatherReportCachePort,
     timezoneResolver: TimezoneResolverPort,

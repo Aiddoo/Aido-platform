@@ -1,4 +1,5 @@
 import type { ReminderWeatherReport } from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
+import { instantFromDate } from "#api/shared/domain/time/instant";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReminderWeatherReportReader } from "#test/doubles/notification/stub-reminder-weather-report.reader";
@@ -30,17 +31,17 @@ function report({
   wetKstHourTomorrow,
   temperatureMin = 12,
 }: { wetKstHourTomorrow?: number; temperatureMin?: number } = {}): ReminderWeatherReport {
-  const fixture = weatherReportFixture(NOW);
+  const fixture = weatherReportFixture(instantFromDate(NOW));
   const wetAt =
     wetKstHourTomorrow == null ? null : NOW.getTime() + (wetKstHourTomorrow + 4) * HOUR_MS;
   return {
     timezone: "Asia/Seoul",
     report: {
       hourly: fixture.hourly.map((hour) =>
-        hour.startsAt.getTime() === wetAt ? { ...hour, precipitationChance: 80 } : hour,
+        hour.startsAt.epochMilliseconds === wetAt ? { ...hour, precipitationChance: 80 } : hour,
       ),
       daily: fixture.daily.map((day) =>
-        day.date === "2026-11-03" ? { ...day, temperatureMin } : day,
+        day.date.toString() === "2026-11-03" ? { ...day, temperatureMin } : day,
       ),
     },
   };

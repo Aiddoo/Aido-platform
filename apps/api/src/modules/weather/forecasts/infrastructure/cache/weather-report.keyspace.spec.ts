@@ -28,9 +28,11 @@ describe("날씨 v2 캐시 키와 TTL", () => {
     ]);
   });
 
-  it("최신 폴백 6시간, 대기질 1시간, dataset 가용성 7일, 칸별 장애·가용성·표기 실패 차단 1분, 출처 표기 7일을 유지한다", () => {
+  it("리포트 30분(곧 강수면 10분), 최신 폴백 6시간, 대기질 1시간, dataset 가용성 7일, 칸별 장애·가용성·표기 실패 차단 1분, 출처 표기 7일을 유지한다", () => {
     // Given
     const expected = {
+      REPORT_CALM: 1_800_000,
+      REPORT_PRECIPITATION_SOON: 600_000,
       LATEST_REPORT: 21_600_000,
       AIR_QUALITY: 3_600_000,
       AVAILABILITY: 604_800_000,

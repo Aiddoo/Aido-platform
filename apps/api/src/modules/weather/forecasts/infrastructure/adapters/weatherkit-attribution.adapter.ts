@@ -11,7 +11,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import type {
   WeatherReportAttribution,
   WeatherReportAttributionLogo,
-} from "../../domain/weather-report.vo.js";
+} from "../../application/read-models/weather-report-attribution.read-model.js";
 import {
   WEATHER_REPORT_CACHE_TTL_MS,
   WeatherReportCacheKey,

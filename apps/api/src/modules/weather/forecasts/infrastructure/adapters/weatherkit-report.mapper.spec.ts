@@ -6,7 +6,7 @@ import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixtur
 import { toWeatherReport } from "./weatherkit-report.mapper.js";
 import { weatherKitWeatherSchema } from "./weatherkit.wire.js";
 
-const FETCHED_AT = new Date(WeatherKitReportFixture.fetchedAt);
+const FETCHED_AT = Temporal.Instant.from(WeatherKitReportFixture.fetchedAt);
 
 function mapFixture(body: unknown, timezone: string) {
   const weather = weatherKitWeatherSchema.parse(body);
@@ -25,7 +25,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
     const report = mapFixture(body, "Asia/Seoul");
     // Then
     expect(report.current).toEqual({
-      observedAt: new Date("2026-11-02T06:20:00Z"),
+      observedAt: Temporal.Instant.from("2026-11-02T06:20:00Z"),
       condition: "RAIN",
       isDaylight: true,
       temperature: 12.4,
@@ -65,15 +65,15 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
       {
         condition: "CLEAR",
         precipitationType: "NONE",
-        startsAt: new Date("2026-11-02T06:20:00Z"),
-        endsAt: new Date("2026-11-02T06:43:00Z"),
+        startsAt: Temporal.Instant.from("2026-11-02T06:20:00Z"),
+        endsAt: Temporal.Instant.from("2026-11-02T06:43:00Z"),
         precipitationChance: 0,
         precipitationIntensity: 0,
       },
       {
         condition: "PRECIPITATION",
         precipitationType: "RAIN",
-        startsAt: new Date("2026-11-02T06:43:00Z"),
+        startsAt: Temporal.Instant.from("2026-11-02T06:43:00Z"),
         endsAt: null,
         precipitationChance: 80,
         precipitationIntensity: 2.4,
@@ -81,7 +81,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
     ]);
     expect(nextHour?.minutes).toHaveLength(60);
     expect(nextHour?.minutes[0]).toEqual({
-      startsAt: new Date("2026-11-02T06:20:00Z"),
+      startsAt: Temporal.Instant.from("2026-11-02T06:20:00Z"),
       precipitationChance: 20,
       precipitationIntensity: 0,
     });
@@ -125,7 +125,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
       ["alert-severe", "SEVERE", "Flash Flood Warning", null],
       ["alert-minor", "MINOR", "Air Quality Alert", "New York (Manhattan)"],
     ]);
-    expect(report.daily[0]?.date).toBe("2026-11-02");
+    expect(report.daily[0]?.date.toString()).toBe("2026-11-02");
   });
 
   it("일별 date는 위치 시간대의 달력 날짜이고 풍향 360도는 0도다", () => {
@@ -134,7 +134,10 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
     // When
     const report = mapFixture(body, "Asia/Seoul");
     // Then
-    expect(report.daily.map((day) => day.date).slice(0, 2)).toEqual(["2026-11-02", "2026-11-03"]);
+    expect(report.daily.map((day) => day.date.toString()).slice(0, 2)).toEqual([
+      "2026-11-02",
+      "2026-11-03",
+    ]);
     expect(report.daily[0]?.windSpeedMax).toBe(6.1);
     expect(report.daily[0]?.windGustMax).toBe(11.4);
     expect(report.daily[0]?.daytime?.temperatureMax).toBe(14);
@@ -163,7 +166,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
     expect(report.nextHour).toBeNull();
     expect(report.alerts).toEqual([]);
     expect(report.current.condition).toBe("HAZY");
-    expect(report.daily[0]?.date).toBe("2026-11-02");
+    expect(report.daily[0]?.date.toString()).toBe("2026-11-02");
   });
 
   it("극야의 일출·일몰과 선택 필드가 없으면 0이 아닌 null로 둔다", () => {
@@ -206,7 +209,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
     // When
     const json: unknown = JSON.parse(
       JSON.stringify({
-        ...report,
+        ...report.value,
         hourly: report.hourly.slice(0, 24),
         daily: report.daily.slice(0, 10),
         location: { latitude: 69.65, longitude: 18.96, timezone: "Europe/Oslo" },

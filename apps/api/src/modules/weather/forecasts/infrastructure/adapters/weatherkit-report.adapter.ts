@@ -10,15 +10,16 @@ import { OutboundRejectedError } from "#api/platform/resilience/outbound-policy.
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type {
   WeatherReportProviderPort,
   WeatherReportRequest,
 } from "../../application/ports/weather-report-provider.port.js";
+import type { WeatherReportAttribution } from "../../application/read-models/weather-report-attribution.read-model.js";
 import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
-import type { WeatherReport, WeatherReportAttribution } from "../../domain/weather-report.vo.js";
+import type { WeatherReport } from "../../domain/weather-report.vo.js";
 import {
   WEATHER_REPORT_CACHE_TTL_MS,
   WeatherReportCacheKey,
@@ -166,7 +167,7 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
 
     const startedAtMs = performance.now();
     try {
-      const requestedAt = instantToDate(this.#clock.now());
+      const requestedAt = this.#clock.now();
       const dataSets = await this.#availableDataSets(cell, request);
       const weather = await this.#fetchWeather(cell, request, dataSets, requestedAt);
       const received = receivedDataSets(weather);
@@ -222,9 +223,11 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
     cell: GeoCell,
     request: WeatherReportRequest,
     dataSets: readonly WeatherKitDataSet[],
-    requestedAt: Date,
+    requestedAt: Temporal.Instant,
   ): Promise<WeatherKitWeather> {
-    const hourlyStart = new Date(Math.floor(requestedAt.getTime() / MS_PER_HOUR) * MS_PER_HOUR);
+    const hourlyStart = Temporal.Instant.fromEpochMilliseconds(
+      Math.floor(requestedAt.epochMilliseconds / MS_PER_HOUR) * MS_PER_HOUR,
+    );
     const send = async () => {
       const authorization = `Bearer ${await this.#tokenResolver.resolve()}`;
       return this.#call(
@@ -236,9 +239,9 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
               dataSets: dataSets.join(","),
               timezone: request.timezone,
               countryCode: request.countryCode,
-              hourlyStart: hourlyStart.toISOString(),
-              hourlyEnd: new Date(hourlyStart.getTime() + HOURLY_RANGE_MS).toISOString(),
-              dailyEnd: new Date(requestedAt.getTime() + DAILY_RANGE_MS).toISOString(),
+              hourlyStart: toIsoString(hourlyStart),
+              hourlyEnd: toIsoString(hourlyStart.add({ milliseconds: HOURLY_RANGE_MS })),
+              dailyEnd: toIsoString(requestedAt.add({ milliseconds: DAILY_RANGE_MS })),
             },
             { headers: { authorization }, signal, timeoutMs: WEATHER_TIMEOUT_MS },
           ),
