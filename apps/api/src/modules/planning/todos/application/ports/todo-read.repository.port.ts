@@ -53,7 +53,8 @@ export abstract class TodoReadRepositoryPort {
   /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
   abstract countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number>;
 
-  abstract countCompletedByUser(userId: UserId): Promise<number>;
+  /** 완료한 할 일 수. limit에서 세기를 멈춰 min(실제 수, limit)이다 */
+  abstract countCompletedByUser(userId: UserId, limit: number): Promise<number>;
 
   abstract existsByUserId(userId: UserId): Promise<boolean>;
 

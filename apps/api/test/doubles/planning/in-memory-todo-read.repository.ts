@@ -89,10 +89,11 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
       ).length
     );
   }
-  async countCompletedByUser(userId: UserId): Promise<number> {
-    return [...this.records.values()].filter(
+  async countCompletedByUser(userId: UserId, limit: number): Promise<number> {
+    const completed = [...this.records.values()].filter(
       (record) => record.userId === userId.value && record.completed,
     ).length;
+    return Math.min(completed, limit);
   }
   async existsByUserId(userId: UserId): Promise<boolean> {
     return [...this.records.values()].some((record) => record.userId === userId.value);

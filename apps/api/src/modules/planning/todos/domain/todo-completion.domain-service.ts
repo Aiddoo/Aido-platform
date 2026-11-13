@@ -11,6 +11,9 @@ const COMPLETION_MILESTONES: ReadonlyMap<number, TodoCompletionMilestone> = new 
   [100, "COUNT_100"],
 ]);
 
+/** 마일스톤 판정에 필요한 누적 완료 수 상한. 마지막 마일스톤을 넘은 수는 모두 같은 판정(null)이다 */
+export const MILESTONE_COMPLETION_COUNT_LIMIT = Math.max(...COMPLETION_MILESTONES.keys()) + 1;
+
 /**
  * 누적 완료 개수가 마일스톤에 해당하면 그 유형을, 아니면 null을 반환합니다.
  * (정확 일치 — 지나친 카운트는 재발화하지 않음)

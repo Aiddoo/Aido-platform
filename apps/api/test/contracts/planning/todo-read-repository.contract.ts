@@ -69,5 +69,27 @@ export function describeTodoReadRepositoryContract(
       expect(created).toEqual({ hasTodo: true, hasCompletedTodo: false });
       expect(completed).toEqual({ hasTodo: true, hasCompletedTodo: true });
     });
+
+    it("완료한 할 일 수는 자기 것만 세고 상한에서 멈춘다", async () => {
+      // Given
+      const context = await createContext();
+      const owner = UserId.reconstitute(TODO_FIXTURE_USER_ID);
+      const completed = { completed: true, completedAt: TODO_FIXTURE_NOW };
+      for (let index = 0; index < 4; index += 1) {
+        await insertTodo(context, completed);
+      }
+      await insertTodo(context);
+      await insertTodo(context, { ...completed, userId: TODO_FIXTURE_OTHER_USER_ID });
+
+      // When
+      const counts = await Promise.all(
+        [3, 4, 5, 101].map((limit) =>
+          context.todoReadRepository.countCompletedByUser(owner, limit),
+        ),
+      );
+
+      // Then
+      expect(counts).toEqual([3, 4, 4, 4]);
+    });
   });
 }

@@ -160,8 +160,16 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return ids.map((row) => row.id);
   }
 
-  countCompletedByUser(userId: UserId): Promise<number> {
-    return this.#db.$count(todo, and(eq(todo.userId, userId.value), eq(todo.completed, true)));
+  async countCompletedByUser(userId: UserId, limit: number): Promise<number> {
+    // 전체를 세지 않고 limit행에서 멈춘다. (userId, completed) 인덱스 앞부분만 읽는다
+    const completed = this.#db
+      .select({ id: todo.id })
+      .from(todo)
+      .where(and(eq(todo.userId, userId.value), eq(todo.completed, true)))
+      .limit(limit)
+      .as("completed");
+    const [row] = await this.#db.select({ count: count() }).from(completed);
+    return row?.count ?? 0;
   }
 
   async existsByUserId(userId: UserId): Promise<boolean> {
