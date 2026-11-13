@@ -46,7 +46,6 @@ export function AddFriendForm({ children, onFriendLimitInvite }: AddFriendFormPr
   return (
     <FormScrollView
       contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
-      keyboardShouldPersistTaps="always"
       bounces={false}
       alwaysBounceVertical={false}
       overScrollMode="never"
@@ -79,7 +78,8 @@ export function AddFriendForm({ children, onFriendLimitInvite }: AddFriendFormPr
               autoFocus
               {...ASCII_CODE_TEXT_INPUT_PROPS}
               maxLength={USER_TAG_MAX_LENGTH}
-              submitBehavior="submit"
+              // 요청할 수 없는 태그면 완료 키가 키보드를 내린다. 요청할 때는 실패하면 바로 고쳐 쓰게 키보드를 둔다
+              submitBehavior={isValid ? 'submit' : 'blurAndSubmit'}
               returnKeyType="done"
               isInvalid={error != null}
               errorMessage={resolveValidationMessage(error, {
