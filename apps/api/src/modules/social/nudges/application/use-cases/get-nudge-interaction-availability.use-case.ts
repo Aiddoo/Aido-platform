@@ -1,8 +1,5 @@
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
-
-export interface NudgeInteractionAvailability {
-  readonly enabled: boolean;
-}
+import type { NudgeInteractionAvailabilityReadModel } from "../read-models/nudge-interaction.read-model.js";
 
 export interface GetNudgeInteractionAvailabilityDependencies {
   readonly interactionConfig: NudgeInteractionConfigPort;
@@ -15,7 +12,7 @@ export class GetNudgeInteractionAvailabilityUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(): NudgeInteractionAvailability {
+  execute(): NudgeInteractionAvailabilityReadModel {
     return { enabled: this.#dependencies.interactionConfig.isEnabled };
   }
 }

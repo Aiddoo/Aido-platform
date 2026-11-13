@@ -6,55 +6,58 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
-import { evaluateRemindNudgeCooldown } from "../../domain/nudge-cooldown.domain-service.js";
-import { NudgeMessage } from "../../domain/nudge-message.vo.js";
+import { NudgeMessage } from "../../../shared/domain/nudge-message.vo.js";
+import { cannotNudgeSelf } from "../../../shared/domain/social.errors.js";
+import { evaluateReminderNudgeCooldown } from "../../domain/reminder-nudge-cooldown.domain-service.js";
 import { ReminderNudge } from "../../domain/reminder-nudge.aggregate.js";
+import type { ReminderNudgeNotifierPort } from "../ports/reminder-nudge-notifier.port.js";
+import type { ReminderNudgeRepositoryPort } from "../ports/reminder-nudge.repository.port.js";
+import type { ReminderTargetReaderPort } from "../ports/reminder-target.reader.port.js";
 import {
-  cannotNudgeSelf,
-  nudgeTargetNotFriend,
-  remindNudgeCooldownActive,
-  remindTargetHasTodayTodos,
-} from "../nudges.errors.js";
-import { NudgeLockKeys } from "../nudges.lock-keys.js";
-import { NudgeLogEvent } from "../nudges.log-events.js";
-import type { NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
-import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
+  reminderNudgeCooldownActive,
+  reminderTargetHasTodayTodos,
+  reminderTargetNotFriend,
+} from "../reminder-nudges.errors.js";
+import { ReminderNudgeLockKeys } from "../reminder-nudges.lock-keys.js";
+import { ReminderNudgeLogEvent } from "../reminder-nudges.log-events.js";
 
-export interface SendRemindNudgeCommand {
+export interface SendReminderNudgeCommand {
   readonly senderId: string;
   readonly receiverId: string;
   readonly message?: string;
   readonly timezone: string;
 }
 
-export interface SendRemindNudgeDependencies {
+export interface SendReminderNudgeDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly nudgeRepository: Pick<
-    NudgeRepositoryPort,
-    "countTodosOn" | "findLastReminderSentTo" | "nextReminderId" | "saveReminder"
+  readonly reminderNudgeRepository: Pick<
+    ReminderNudgeRepositoryPort,
+    "nextId" | "findLastSentTo" | "save"
   >;
+  readonly targetReader: Pick<ReminderTargetReaderPort, "countTodosOn">;
   readonly mutualFriendReader: Pick<
     MutualFriendReaderPort,
     "isMutualFriend" | "getUserDisplayName"
   >;
-  readonly notifier: Pick<NudgeNotifierPort, "notifyNudgeSent">;
+  readonly notifier: Pick<ReminderNudgeNotifierPort, "notifyNudgeSent">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class SendRemindNudgeUseCase {
-  readonly #dependencies: SendRemindNudgeDependencies;
+export class SendReminderNudgeUseCase {
+  readonly #dependencies: SendReminderNudgeDependencies;
 
-  constructor(dependencies: SendRemindNudgeDependencies) {
+  constructor(dependencies: SendReminderNudgeDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(command: SendRemindNudgeCommand): Promise<ReminderNudge> {
+  async execute(command: SendReminderNudgeCommand): Promise<ReminderNudge> {
     const {
       unitOfWork,
       mutationLock,
-      nudgeRepository,
+      reminderNudgeRepository,
+      targetReader,
       mutualFriendReader,
       notifier,
       clock,
@@ -63,11 +66,12 @@ export class SendRemindNudgeUseCase {
     const senderId = UserId.reconstitute(command.senderId);
     const receiverId = UserId.reconstitute(command.receiverId);
 
+    // 자기 자신 → 친구 아님 → 메시지 → 오늘 할 일 → 쿨다운 순서는 출시 앱이 받는 오류 우선순위다
     if (senderId.equals(receiverId)) {
       throw cannotNudgeSelf();
     }
     if (!(await mutualFriendReader.isMutualFriend(senderId, receiverId))) {
-      throw nudgeTargetNotFriend(receiverId);
+      throw reminderTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : NudgeMessage.create(command.message);
     // 친구의 "오늘"도 보낸 사람이 요청한 시간대로 본다
@@ -75,29 +79,30 @@ export class SendRemindNudgeUseCase {
     const today = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone }).localDate;
 
     const reminder = await unitOfWork.run(async () => {
-      await mutationLock.acquire([NudgeLockKeys.remindCooldown(senderId, receiverId)]);
+      await mutationLock.acquire([ReminderNudgeLockKeys.cooldown(senderId, receiverId)]);
 
-      if ((await nudgeRepository.countTodosOn(receiverId, today)) > 0) {
-        throw remindTargetHasTodayTodos(receiverId);
+      if ((await targetReader.countTodosOn(receiverId, today)) > 0) {
+        throw reminderTargetHasTodayTodos(receiverId);
       }
 
-      const lastReminder = await nudgeRepository.findLastReminderSentTo(senderId, receiverId);
-      const cooldown = evaluateRemindNudgeCooldown({
+      const lastReminder = await reminderNudgeRepository.findLastSentTo(senderId, receiverId);
+      const cooldown = evaluateReminderNudgeCooldown({
         lastSentAt: lastReminder?.createdAt ?? null,
         now: clock.now(),
       });
       if (cooldown.isActive) {
-        throw remindNudgeCooldownActive(receiverId, cooldown.remainingSeconds);
+        throw reminderNudgeCooldownActive(receiverId, cooldown.remainingSeconds);
       }
 
       const created = ReminderNudge.create({
-        id: await nudgeRepository.nextReminderId(),
+        id: await reminderNudgeRepository.nextId(),
         senderId,
         receiverId,
         message,
         now: requestedAt,
       });
-      await nudgeRepository.saveReminder(created);
+      await reminderNudgeRepository.save(created);
+      // 알림 작업은 리마인드 저장과 같은 트랜잭션에 넣어 커밋 직후 프로세스가 멈춰도 잃지 않는다
       await notifier.notifyNudgeSent({
         nudgeId: created.id.value,
         senderId: senderId.value,
@@ -109,7 +114,7 @@ export class SendRemindNudgeUseCase {
     });
 
     logger.log({
-      event: NudgeLogEvent.REMINDER_SENT,
+      event: ReminderNudgeLogEvent.SENT,
       nudgeId: reminder.id.value,
       senderId: senderId.value,
       receiverId: receiverId.value,

@@ -20,7 +20,7 @@ import { DrizzleFriendSearchReader } from "#api/modules/social/friends/infrastru
 import { DrizzleFriendReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend.reader";
 import { DrizzleFriendshipRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.repository";
 import { NudgeId } from "#api/modules/social/nudges/domain/nudge-id.vo";
-import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
+import { DrizzleNudgeReader } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
@@ -62,7 +62,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
   let sendFriendRequest: SendFriendRequestUseCase;
   let friendSearchReader: DrizzleFriendSearchReader;
   let blockReader: DrizzleUserBlockReader;
-  let nudgeRepository: DrizzleNudgeRepository;
+  let nudgeReader: DrizzleNudgeReader;
   let cheerReader: DrizzleCheerReader;
 
   beforeAll(async () => {
@@ -106,7 +106,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     friendSearchReader = new DrizzleFriendSearchReader(txHost);
     const blockRepository = new DrizzleUserBlockRepository(txHost);
     blockReader = new DrizzleUserBlockReader(txHost);
-    nudgeRepository = new DrizzleNudgeRepository(txHost);
+    nudgeReader = new DrizzleNudgeReader(txHost);
     cheerReader = new DrizzleCheerReader(txHost);
     const clock = new DateClock();
     const notifyFirstFriendMilestone = new NotifyFirstFriendMilestoneUseCase({
@@ -312,12 +312,12 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     // When
     const [receivedNudges, unreadNudges, sentCheers, cheersSeenByBlocked, searchResults] =
       await Promise.all([
-        nudgeRepository.listReceived({
+        nudgeReader.listReceived({
           userId: UserId.reconstitute(meId),
           afterNudgeId: null,
           limit: 10,
         }),
-        nudgeRepository.countUnreadReceived(UserId.reconstitute(meId)),
+        nudgeReader.countUnreadReceived(UserId.reconstitute(meId)),
         cheerReader.listSent({
           userId: UserId.reconstitute(meId),
           afterCheerId: null,
@@ -368,15 +368,15 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       .returning();
     const nudgeId = requireRecord(createdNudge).id;
     const [receivedBeforeBlock, sentBeforeBlock] = await Promise.all([
-      nudgeRepository.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(meId)),
-      nudgeRepository.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(otherId)),
+      nudgeReader.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(meId)),
+      nudgeReader.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(otherId)),
     ]);
     await blockUser.execute({ blockerId: meId, blockedId: otherId });
 
     // When
     const [receivedAfterBlock, sentAfterBlock] = await Promise.all([
-      nudgeRepository.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(meId)),
-      nudgeRepository.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(otherId)),
+      nudgeReader.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(meId)),
+      nudgeReader.findInteraction(NudgeId.reconstitute(nudgeId), UserId.reconstitute(otherId)),
     ]);
 
     // Then

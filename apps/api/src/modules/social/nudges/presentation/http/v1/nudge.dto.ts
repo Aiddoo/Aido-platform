@@ -2,12 +2,10 @@ import {
   getNudgesQuerySchema,
   nudgeIdParamSchema,
   createNudgeSchema,
-  createRemindNudgeSchema,
   nudgeCooldownInfoSchema,
   createNudgeResponseSchema,
   markNudgeReadResponseSchema,
   nudgeLimitInfoSchema,
-  createRemindNudgeResponseSchema,
   receivedNudgesResponseSchema,
   sentNudgesResponseSchema,
 } from "@aido/api";
@@ -27,9 +25,6 @@ export type NudgeIdParamDto = z.infer<typeof NudgeIdParamDto>;
 
 export const SendNudgeDto = createNudgeSchema.meta({ id: "SendNudgeDto" });
 export type SendNudgeDto = z.infer<typeof SendNudgeDto>;
-
-export const SendRemindNudgeDto = createRemindNudgeSchema.meta({ id: "SendRemindNudgeDto" });
-export type SendRemindNudgeDto = z.infer<typeof SendRemindNudgeDto>;
 
 export const NudgeCooldownResponseDto = nudgeCooldownInfoSchema.meta({
   id: "NudgeCooldownResponseDto",
@@ -56,8 +51,3 @@ export type ReceivedNudgesResponseDto = z.infer<typeof ReceivedNudgesResponseDto
 
 export const SentNudgesResponseDto = sentNudgesResponseSchema.meta({ id: "SentNudgesResponseDto" });
 export type SentNudgesResponseDto = z.infer<typeof SentNudgesResponseDto>;
-
-export const CreateRemindNudgeResponseDto = createRemindNudgeResponseSchema.meta({
-  id: "CreateRemindNudgeResponseDto",
-});
-export type CreateRemindNudgeResponseDto = z.infer<typeof CreateRemindNudgeResponseDto>;

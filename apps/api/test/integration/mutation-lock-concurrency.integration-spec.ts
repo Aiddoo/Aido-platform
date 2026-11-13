@@ -33,8 +33,11 @@ import type { NudgeLimitReaderPort } from "#api/modules/social/nudges/applicatio
 import type { NudgeNotifierPort } from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
 import { GetNudgeLimitUseCase } from "#api/modules/social/nudges/application/use-cases/get-nudge-limit.use-case";
 import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
-import { SendRemindNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-remind-nudge.use-case";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
+import type { ReminderNudgeNotifierPort } from "#api/modules/social/reminder-nudges/application/ports/reminder-nudge-notifier.port";
+import { SendReminderNudgeUseCase } from "#api/modules/social/reminder-nudges/application/use-cases/send-reminder-nudge.use-case";
+import { DrizzleReminderNudgeRepository } from "#api/modules/social/reminder-nudges/infrastructure/persistence/drizzle-reminder-nudge.repository";
+import { DrizzleReminderTargetReader } from "#api/modules/social/reminder-nudges/infrastructure/persistence/drizzle-reminder-target.reader";
 import type { DailySendQuotaUsage } from "#api/modules/social/shared/application/ports/daily-send-usage.reader.port";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
@@ -197,18 +200,15 @@ class RacingCheerRepository extends DrizzleCheerRepository {
 class RacingNudgeRepository extends DrizzleNudgeRepository {
   readonly #dailyBarrier?: BestEffortRendezvous;
   readonly #todoCooldownBarrier?: BestEffortRendezvous;
-  readonly #reminderCooldownBarrier?: BestEffortRendezvous;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
     dailyBarrier?: BestEffortRendezvous,
     todoCooldownBarrier?: BestEffortRendezvous,
-    reminderCooldownBarrier?: BestEffortRendezvous,
   ) {
     super(txHost);
     this.#dailyBarrier = dailyBarrier;
     this.#todoCooldownBarrier = todoCooldownBarrier;
-    this.#reminderCooldownBarrier = reminderCooldownBarrier;
   }
 
   override async countSentBetween(
@@ -225,10 +225,22 @@ class RacingNudgeRepository extends DrizzleNudgeRepository {
     await this.#todoCooldownBarrier?.wait();
     return lastNudge;
   }
+}
 
-  override async findLastReminderSentTo(senderId: UserId, receiverId: UserId) {
-    const reminder = await super.findLastReminderSentTo(senderId, receiverId);
-    await this.#reminderCooldownBarrier?.wait();
+class RacingReminderNudgeRepository extends DrizzleReminderNudgeRepository {
+  readonly #cooldownBarrier: BestEffortRendezvous;
+
+  constructor(
+    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    cooldownBarrier: BestEffortRendezvous,
+  ) {
+    super(txHost);
+    this.#cooldownBarrier = cooldownBarrier;
+  }
+
+  override async findLastSentTo(senderId: UserId, receiverId: UserId) {
+    const reminder = await super.findLastSentTo(senderId, receiverId);
+    await this.#cooldownBarrier.wait();
     return reminder;
   }
 }
@@ -999,15 +1011,15 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const senderId = await createUser(client, 0);
     const receiverId = await createUser(client, 1);
     const { txHost, uow } = createTransactionHarness(client);
-    const repository = new RacingNudgeRepository(
+    const reminderNudgeRepository = new RacingReminderNudgeRepository(
       txHost,
-      undefined,
-      undefined,
       new BestEffortRendezvous(CONCURRENCY),
     );
-    const useCase = new SendRemindNudgeUseCase({
-      nudgeRepository: repository,
-      notifier: createNudgeNotifier(),
+    const notifier: ReminderNudgeNotifierPort = { notifyNudgeSent: async () => undefined };
+    const useCase = new SendReminderNudgeUseCase({
+      reminderNudgeRepository,
+      targetReader: new DrizzleReminderTargetReader(txHost),
+      notifier,
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
       mutualFriendReader: createMutualFriendReaderStub(),

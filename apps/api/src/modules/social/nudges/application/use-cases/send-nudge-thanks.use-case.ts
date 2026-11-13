@@ -37,7 +37,7 @@ export interface SendNudgeThanksDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly nudgeRepository: Pick<
     NudgeRepositoryPort,
-    "listThanksCandidates" | "lockInteractionTodo" | "saveThanks"
+    "listThanksCandidates" | "lockInteractionTodo" | "saveAll"
   >;
   readonly nudgeReader: Pick<NudgeReaderPort, "findInteraction">;
   readonly interactionConfig: NudgeInteractionConfigPort;
@@ -107,7 +107,7 @@ export class SendNudgeThanksUseCase {
         if (thanked.length === 0) {
           continue;
         }
-        await nudgeRepository.saveThanks(thanked);
+        await nudgeRepository.saveAll(thanked);
         await notifier.recordInteractions(
           thanked.map<NudgeInteractionNotification>((nudge) => ({
             kind: "thanks",

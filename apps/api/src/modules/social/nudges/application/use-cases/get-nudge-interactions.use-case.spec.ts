@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { InMemoryNudgeReader } from "#test/doubles/social/in-memory-nudge.reader";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import {
@@ -13,16 +14,18 @@ import {
 import { GetNudgeInteractionUseCase } from "./get-nudge-interaction.use-case.js";
 import { GetNudgeInteractionsUseCase } from "./get-nudge-interactions.use-case.js";
 
-async function seedInteractions(): Promise<InMemoryNudgeRepository> {
-  const nudgeReader = new InMemoryNudgeRepository();
-  const publicTodoId = await nudgeReader.addTodo(createNudgeTodoSeed());
-  const privateTodoId = await nudgeReader.addTodo(createNudgeTodoSeed({ visibility: "PRIVATE" }));
-  await nudgeReader.save(createNudgeFixture({ id: 1, todoId: publicTodoId }));
-  await nudgeReader.save(
+async function seedInteractions(): Promise<InMemoryNudgeReader> {
+  const nudgeRepository = new InMemoryNudgeRepository();
+  const publicTodoId = await nudgeRepository.addTodo(createNudgeTodoSeed());
+  const privateTodoId = await nudgeRepository.addTodo(
+    createNudgeTodoSeed({ visibility: "PRIVATE" }),
+  );
+  await nudgeRepository.save(createNudgeFixture({ id: 1, todoId: publicTodoId }));
+  await nudgeRepository.save(
     createNudgeFixture({ id: 2, todoId: publicTodoId, senderId: NUDGE_FIXTURE_OTHER_USER_ID }),
   );
-  await nudgeReader.save(createNudgeFixture({ id: 3, todoId: privateTodoId }));
-  return nudgeReader;
+  await nudgeRepository.save(createNudgeFixture({ id: 3, todoId: privateTodoId }));
+  return new InMemoryNudgeReader(nudgeRepository);
 }
 
 function createFollowReader(): StubMutualFriendReader {

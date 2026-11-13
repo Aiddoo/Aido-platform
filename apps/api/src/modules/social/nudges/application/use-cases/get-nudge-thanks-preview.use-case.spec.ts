@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { InMemoryNudgeReader } from "#test/doubles/social/in-memory-nudge.reader";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import {
@@ -35,7 +36,7 @@ function createUseCase(
     mutualFriendReader.addMutual(friendId, NUDGE_FIXTURE_RECEIVER_ID);
   }
   return new GetNudgeThanksPreviewUseCase({
-    nudgeReader: nudgeRepository,
+    nudgeReader: new InMemoryNudgeReader(nudgeRepository),
     interactionConfig: { isEnabled: true },
     mutualFriendReader,
     ...overrides,

@@ -7,8 +7,8 @@ import type {
 import type { CursorPage } from "#api/shared/application/cursor-page";
 
 import type {
-  NudgeInteraction,
-  NudgeThanksPreview,
+  NudgeInteractionReadModel,
+  NudgeThanksPreviewReadModel,
 } from "../../../application/read-models/nudge-interaction.read-model.js";
 import {
   toNudgeResponse,
@@ -18,7 +18,7 @@ import {
 
 // 할 일 정보는 지금 답장·감사할 수 있거나 내가 받은 콕일 때만 보여 준다(비공개 전환·관계 해제 뒤 노출 방지)
 export function toNudgeInteractionResponse(
-  nudge: NudgeInteraction,
+  nudge: NudgeInteractionReadModel,
   viewerId: string,
   appVersion?: string,
 ): NudgeInteractionResponse {
@@ -39,7 +39,7 @@ export function toNudgeInteractionResponse(
 }
 
 export function toNudgeInteractionsResponse(
-  page: CursorPage<NudgeInteraction, number>,
+  page: CursorPage<NudgeInteractionReadModel, number>,
   viewerId: string,
   appVersion?: string,
 ): NudgeInteractionsResponse {
@@ -50,7 +50,7 @@ export function toNudgeInteractionsResponse(
 }
 
 export function toNudgeThanksPreviewResponse(
-  preview: NudgeThanksPreview,
+  preview: NudgeThanksPreviewReadModel,
   appVersion?: string,
 ): NudgeThanksPreviewResponse {
   return {

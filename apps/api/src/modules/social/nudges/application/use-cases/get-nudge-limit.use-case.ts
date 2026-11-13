@@ -5,7 +5,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
 import type { NudgeLimitReaderPort } from "../ports/nudge-limit.reader.port.js";
 import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
-import type { NudgeDailyLimit } from "../read-models/nudge.read-model.js";
+import type { NudgeDailyLimitReadModel } from "../read-models/nudge.read-model.js";
 
 export interface GetNudgeLimitQuery {
   readonly userId: string;
@@ -25,7 +25,7 @@ export class GetNudgeLimitUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetNudgeLimitQuery): Promise<NudgeDailyLimit> {
+  async execute(query: GetNudgeLimitQuery): Promise<NudgeDailyLimitReadModel> {
     const { nudgeRepository, limitReader, clock } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const window = dailySendWindowAt({ now: clock.now(), timeZone: query.timezone });

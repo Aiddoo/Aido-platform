@@ -6,7 +6,7 @@ import { NudgeId } from "../../domain/nudge-id.vo.js";
 import { NudgeLogEvent } from "../nudges.log-events.js";
 import type { NudgeCountCachePort } from "../ports/nudge-count-cache.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
-import type { ReceivedNudges } from "../read-models/nudge.read-model.js";
+import type { ReceivedNudgesReadModel } from "../read-models/nudge.read-model.js";
 
 export interface GetReceivedNudgesQuery {
   readonly userId: string;
@@ -30,7 +30,7 @@ export class GetReceivedNudgesUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetReceivedNudgesQuery): Promise<ReceivedNudges> {
+  async execute(query: GetReceivedNudgesQuery): Promise<ReceivedNudgesReadModel> {
     const { nudgeReader, countCache, logger } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);

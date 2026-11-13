@@ -1,8 +1,8 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { NudgeMessage } from "./nudge-message.vo.js";
-import { cannotNudgeSelf } from "./nudges.errors.js";
+import { NudgeMessage } from "../../shared/domain/nudge-message.vo.js";
+import { cannotNudgeSelf } from "../../shared/domain/social.errors.js";
 import { ReminderNudgeId } from "./reminder-nudge-id.vo.js";
 
 export interface ReminderNudgePrimitives {

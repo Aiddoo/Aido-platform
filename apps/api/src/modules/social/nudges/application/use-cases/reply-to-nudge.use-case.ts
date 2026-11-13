@@ -17,7 +17,7 @@ import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-conf
 import type { NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
 import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
-import type { NudgeInteraction } from "../read-models/nudge-interaction.read-model.js";
+import type { NudgeInteractionReadModel } from "../read-models/nudge-interaction.read-model.js";
 
 export interface ReplyToNudgeCommand {
   readonly userId: string;
@@ -42,7 +42,7 @@ export class ReplyToNudgeUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(command: ReplyToNudgeCommand): Promise<NudgeInteraction> {
+  async execute(command: ReplyToNudgeCommand): Promise<NudgeInteractionReadModel> {
     const {
       unitOfWork,
       nudgeRepository,

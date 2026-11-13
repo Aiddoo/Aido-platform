@@ -7,6 +7,4 @@ export const NudgeLockKeys = {
     `${MUTATION_KEY_PREFIX}:nudge:daily-quota:${senderId.value}`,
   cooldown: (senderId: UserId, todoId: number): string =>
     `${MUTATION_KEY_PREFIX}:nudge:cooldown:${senderId.value}:${todoId}`,
-  remindCooldown: (senderId: UserId, receiverId: UserId): string =>
-    `${MUTATION_KEY_PREFIX}:remind-nudge:cooldown:${senderId.value}:${receiverId.value}`,
 } as const;

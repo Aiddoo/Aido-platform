@@ -1,4 +1,5 @@
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { InMemoryNudgeReader } from "#test/doubles/social/in-memory-nudge.reader";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
@@ -14,10 +15,10 @@ import { GetSentNudgesUseCase } from "./get-sent-nudges.use-case.js";
 describe("GetSentNudgesUseCase — 보낸 콕 목록", () => {
   it("보낸 사람의 콕만 최신순으로 잘라 주고 전체 수를 함께 준다", async () => {
     // Given
-    const nudgeReader = new InMemoryNudgeRepository();
-    const todoId = await nudgeReader.addTodo(createNudgeTodoSeed());
+    const nudgeRepository = new InMemoryNudgeRepository();
+    const todoId = await nudgeRepository.addTodo(createNudgeTodoSeed());
     for (const index of [0, 1, 2]) {
-      await nudgeReader.save(
+      await nudgeRepository.save(
         createNudgeFixture({
           id: index + 1,
           todoId,
@@ -25,12 +26,12 @@ describe("GetSentNudgesUseCase — 보낸 콕 목록", () => {
         }),
       );
     }
-    await nudgeReader.save(
+    await nudgeRepository.save(
       createNudgeFixture({ id: 4, todoId, senderId: NUDGE_FIXTURE_OTHER_USER_ID }),
     );
     const useCase = new GetSentNudgesUseCase({
       countCache: new PassThroughCountCache(),
-      nudgeReader,
+      nudgeReader: new InMemoryNudgeReader(nudgeRepository),
       logger: new SilentLogger(),
     });
 

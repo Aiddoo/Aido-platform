@@ -14,7 +14,7 @@ import {
 } from "../nudges.errors.js";
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
-import type { NudgeThanksPreview } from "../read-models/nudge-interaction.read-model.js";
+import type { NudgeThanksPreviewReadModel } from "../read-models/nudge-interaction.read-model.js";
 
 const EMPTY_PAGINATION = { totalRecipients: 0, nextCursor: null, hasNext: false } as const;
 
@@ -54,7 +54,7 @@ export class GetNudgeThanksPreviewUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetNudgeThanksPreviewQuery): Promise<NudgeThanksPreview> {
+  async execute(query: GetNudgeThanksPreviewQuery): Promise<NudgeThanksPreviewReadModel> {
     const { nudgeReader, interactionConfig } = this.#dependencies;
     if (!interactionConfig.isEnabled) {
       throw nudgeInteractionDisabled();
@@ -80,7 +80,7 @@ export class GetNudgeThanksPreviewUseCase {
   async #preview(
     query: GetNudgeThanksPreviewQuery,
     { ownerId, todoId, canListRecipients }: ThanksPreviewTarget,
-  ): Promise<NudgeThanksPreview> {
+  ): Promise<NudgeThanksPreviewReadModel> {
     const { nudgeReader, mutualFriendReader } = this.#dependencies;
     // 다음 페이지는 첫 미리보기 시점의 마지막 콕까지만 보여 그 사이 새 콕이 끼어들지 않게 한다
     if (query.throughNudgeId != null) {
@@ -153,7 +153,7 @@ export class GetNudgeThanksPreviewUseCase {
 }
 
 // 응답 모양은 콕을 받지 않은 할 일의 미리보기와 같아 출시 앱이 아무것도 그리지 않는다
-function emptyThanksPreview(todoId: number): NudgeThanksPreview {
+function emptyThanksPreview(todoId: number): NudgeThanksPreviewReadModel {
   return {
     todoId,
     throughNudgeId: null,

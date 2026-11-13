@@ -8,8 +8,8 @@ import {
   NUDGE_FIXTURE_SENDER_ID,
 } from "#test/fixtures/social/nudge.fixture";
 
+import { NudgeMessage } from "../../shared/domain/nudge-message.vo.js";
 import { NudgeId } from "./nudge-id.vo.js";
-import { NudgeMessage } from "./nudge-message.vo.js";
 import { Nudge } from "./nudge.aggregate.js";
 
 const SENDER_ID = UserId.reconstitute(NUDGE_FIXTURE_SENDER_ID);

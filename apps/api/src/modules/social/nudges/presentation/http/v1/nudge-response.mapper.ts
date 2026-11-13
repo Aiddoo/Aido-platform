@@ -1,6 +1,5 @@
 import type {
   CreateNudgeResponse,
-  CreateRemindNudgeResponse,
   MarkNudgeReadResponse,
   Nudge as NudgeResponse,
   NudgeCooldownInfo,
@@ -8,7 +7,6 @@ import type {
   NudgeLimitInfo,
   NudgeSender,
   ReceivedNudgesResponse,
-  RemindNudge,
   SentNudgesResponse,
 } from "@aido/api";
 
@@ -17,18 +15,16 @@ import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { SendCooldown } from "../../../../shared/domain/send-cooldown.domain-service.js";
 import type {
-  NudgeDailyLimit,
-  NudgeListItem,
-  NudgeUserSummary,
-  ReceivedNudges,
-  SentNudges,
+  NudgeDailyLimitReadModel,
+  NudgeReadModel,
+  NudgeUserReadModel,
+  ReceivedNudgesReadModel,
+  SentNudgesReadModel,
 } from "../../../application/read-models/nudge.read-model.js";
 import type { Nudge } from "../../../domain/nudge.aggregate.js";
-import type { ReminderNudge } from "../../../domain/reminder-nudge.aggregate.js";
 
 const NUDGE_RESPONSE_MESSAGES = {
   SENT: "콕! 찔렀습니다 👆",
-  REMINDER_SENT: "할일 좀 만들어! 콕 찔렀습니다 👆",
   READ: "확인했습니다.",
 } as const;
 
@@ -36,7 +32,7 @@ export function toNullableIsoString(instant: Temporal.Instant | null): string | 
   return instant == null ? null : toIsoString(instant);
 }
 
-export function toNudgeUserResponse(user: NudgeUserSummary, appVersion?: string): NudgeSender {
+export function toNudgeUserResponse(user: NudgeUserReadModel, appVersion?: string): NudgeSender {
   return {
     id: user.id,
     userTag: user.userTag,
@@ -47,7 +43,7 @@ export function toNudgeUserResponse(user: NudgeUserSummary, appVersion?: string)
 
 export function toNudgeResponse(
   nudge: Pick<
-    NudgeListItem,
+    NudgeReadModel,
     "id" | "senderId" | "receiverId" | "todoId" | "message" | "readAt" | "createdAt"
   >,
 ): NudgeResponse {
@@ -66,7 +62,7 @@ export function toCreateNudgeResponse(nudge: Nudge): CreateNudgeResponse {
   return { message: NUDGE_RESPONSE_MESSAGES.SENT, nudge: toNudgeResponse(nudge.toPrimitives()) };
 }
 
-function toNudgeDetailResponse(nudge: NudgeListItem, appVersion?: string): NudgeDetail {
+function toNudgeDetailResponse(nudge: NudgeReadModel, appVersion?: string): NudgeDetail {
   return {
     ...toNudgeResponse(nudge),
     sender: toNudgeUserResponse(nudge.sender, appVersion),
@@ -75,7 +71,7 @@ function toNudgeDetailResponse(nudge: NudgeListItem, appVersion?: string): Nudge
 }
 
 export function toReceivedNudgesResponse(
-  received: ReceivedNudges,
+  received: ReceivedNudgesReadModel,
   appVersion?: string,
 ): ReceivedNudgesResponse {
   return {
@@ -86,7 +82,10 @@ export function toReceivedNudgesResponse(
   };
 }
 
-export function toSentNudgesResponse(sent: SentNudges, appVersion?: string): SentNudgesResponse {
+export function toSentNudgesResponse(
+  sent: SentNudgesReadModel,
+  appVersion?: string,
+): SentNudgesResponse {
   return {
     nudges: sent.page.items.map((nudge) => toNudgeDetailResponse(nudge, appVersion)),
     totalCount: sent.totalCount,
@@ -94,25 +93,7 @@ export function toSentNudgesResponse(sent: SentNudges, appVersion?: string): Sen
   };
 }
 
-function toRemindNudgeResponse(reminder: ReminderNudge): RemindNudge {
-  const primitives = reminder.toPrimitives();
-  return {
-    id: primitives.id,
-    senderId: primitives.senderId,
-    receiverId: primitives.receiverId,
-    message: primitives.message,
-    createdAt: toIsoString(primitives.createdAt),
-  };
-}
-
-export function toCreateRemindNudgeResponse(reminder: ReminderNudge): CreateRemindNudgeResponse {
-  return {
-    message: NUDGE_RESPONSE_MESSAGES.REMINDER_SENT,
-    remindNudge: toRemindNudgeResponse(reminder),
-  };
-}
-
-export function toNudgeLimitInfoResponse(limit: NudgeDailyLimit): NudgeLimitInfo {
+export function toNudgeLimitInfoResponse(limit: NudgeDailyLimitReadModel): NudgeLimitInfo {
   return {
     dailyLimit: limit.dailyLimit,
     usedToday: limit.used,

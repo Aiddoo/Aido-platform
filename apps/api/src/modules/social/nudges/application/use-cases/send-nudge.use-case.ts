@@ -7,11 +7,11 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { dailySendWindowAt } from "../../../shared/domain/daily-send-window.domain-service.js";
+import { NudgeMessage } from "../../../shared/domain/nudge-message.vo.js";
+import { cannotNudgeSelf } from "../../../shared/domain/social.errors.js";
 import { evaluateNudgeCooldown } from "../../domain/nudge-cooldown.domain-service.js";
-import { NudgeMessage } from "../../domain/nudge-message.vo.js";
 import { Nudge } from "../../domain/nudge.aggregate.js";
 import {
-  cannotNudgeSelf,
   nudgeCooldownActive,
   nudgeDailyLimitReached,
   nudgeTargetNotFriend,
@@ -126,6 +126,7 @@ export class SendNudgeUseCase {
         now: requestedAt,
       });
       await nudgeRepository.save(created);
+      // 알림 작업은 콕 저장과 같은 트랜잭션에 넣어 커밋 직후 프로세스가 멈춰도 잃지 않는다
       await notifier.notifyNudgeSent({
         nudgeId: created.id.value,
         senderId: senderId.value,
