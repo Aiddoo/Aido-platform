@@ -11,16 +11,12 @@ function text(value: string): AdminNotificationFieldValue {
   return { kind: "text", text: value };
 }
 
-/** 전일 가입 집계 (provider별 count + 총 사용자 수) */
 export interface DailySignupSummary {
   readonly signupsByProvider: readonly { readonly provider: string; readonly count: number }[];
   readonly totalUsers: number;
   readonly reportDateStr: string;
 }
 
-/**
- * 일일 가입 요약 관리자 알림 메시지 조립.
- */
 export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNotification {
   const previousDayTotal = sumBy(summary.signupsByProvider, (group) => group.count);
 

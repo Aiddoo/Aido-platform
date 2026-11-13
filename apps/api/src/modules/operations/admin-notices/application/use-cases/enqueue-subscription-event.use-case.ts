@@ -2,8 +2,8 @@ import {
   buildSubscriptionNotice,
   subscriptionNoticeUserOf,
 } from "../messages/admin-notice.messages.js";
+import type { SubscriptionAlertInput } from "../ports/admin-event-notifier.port.js";
 import type { AdminNotificationQueuePort } from "../ports/admin-notification-queue.port.js";
-import type { SubscriptionAlertInput } from "../read-models/subscription-alert.read-model.js";
 import type { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
 export interface EnqueueSubscriptionEventDependencies {

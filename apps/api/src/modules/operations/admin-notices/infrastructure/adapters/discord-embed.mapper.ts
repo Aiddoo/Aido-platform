@@ -4,8 +4,8 @@ import type { AdminNotice } from "../../application/read-models/admin-notice.rea
 import type {
   AdminNotification,
   AdminNotificationField,
-  AdminNotificationSeverity,
 } from "../../application/read-models/admin-notification.read-model.js";
+import type { AdminNotificationSeverity } from "../../domain/admin-notices.constants.js";
 import {
   type DiscordEmbed,
   type DiscordEmbedField,

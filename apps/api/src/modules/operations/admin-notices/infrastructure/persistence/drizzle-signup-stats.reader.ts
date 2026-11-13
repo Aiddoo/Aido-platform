@@ -10,11 +10,6 @@ import {
   SignupStatsReaderPort,
 } from "../../application/ports/signup-stats.reader.port.js";
 
-/**
- * Drizzle 가입 통계 리더.
- *
- * Account.provider별 가입자 수와 총 사용자 수를 조회한다.
- */
 @Injectable()
 export class DrizzleSignupStatsReader extends SignupStatsReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;

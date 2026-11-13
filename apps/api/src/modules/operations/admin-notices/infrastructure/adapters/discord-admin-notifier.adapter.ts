@@ -3,6 +3,7 @@ import type { HttpClient } from "@nestjs/http-client";
 
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import {
@@ -11,7 +12,7 @@ import {
 } from "../../application/ports/admin-notifier.port.js";
 import type { AdminNotice } from "../../application/read-models/admin-notice.read-model.js";
 import type { AdminNotificationChannel } from "../../domain/admin-notices.constants.js";
-import { AdminNoticeInfraLogEvent } from "../admin-notices-infra.log-events.js";
+import { AdminNotifierProviderLogEvent } from "./admin-notifier-provider.log-events.js";
 import { renderDiscordEmbed } from "./discord-embed.mapper.js";
 import { DISCORD_WEBHOOK_POLICY } from "./discord-outbound.policy.js";
 
@@ -32,23 +33,26 @@ export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
 
   readonly #webhookUrls: Readonly<Record<AdminNotificationChannel, string | undefined>>;
   readonly #http: HttpClient;
+  readonly #clock: ClockPort;
 
   constructor(
     webhookUrls: Readonly<Record<AdminNotificationChannel, string | undefined>>,
     http: HttpClient,
     policies: OutboundPolicyRegistry,
+    clock: ClockPort,
   ) {
     super();
     this.#webhookUrls = webhookUrls;
     this.#http = http;
     this.#policy = policies.get(DISCORD_WEBHOOK_POLICY);
+    this.#clock = clock;
   }
 
   async send(channel: AdminNotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome> {
     const webhookUrl = this.#webhookUrls[channel];
     if (webhookUrl == null || webhookUrl === "") {
       this.#logger.debug({
-        event: AdminNoticeInfraLogEvent.PROVIDER_NOT_CONFIGURED,
+        event: AdminNotifierProviderLogEvent.PROVIDER_NOT_CONFIGURED,
         provider: "discord",
         channel,
       });
@@ -66,7 +70,7 @@ export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
           signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            embeds: [renderDiscordEmbed(notice, toIsoString(Temporal.Now.instant()))],
+            embeds: [renderDiscordEmbed(notice, toIsoString(this.#clock.now()))],
           }),
         }),
       );
@@ -75,7 +79,7 @@ export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
         return { status: "sent" };
       }
       this.#logger.error({
-        event: AdminNoticeInfraLogEvent.HTTP_FAILED,
+        event: AdminNotifierProviderLogEvent.HTTP_FAILED,
         provider: "discord",
         channel,
         statusCode: response.status,
@@ -89,7 +93,7 @@ export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
       };
     } catch {
       this.#logger.error({
-        event: AdminNoticeInfraLogEvent.REQUEST_FAILED,
+        event: AdminNotifierProviderLogEvent.REQUEST_FAILED,
         provider: "discord",
         channel,
         errorType: "transport",

@@ -10,10 +10,6 @@ import {
   type AdminNotificationJob,
 } from "./admin-notification.queue.js";
 
-/**
- * - dispatch-signup-summary: 스케줄 트리거 → DispatchDailySignupSummaryUseCase
- * - send-notification: 관리자 알림 채널 발송 → SendAdminNotificationUseCase
- */
 @Injectable()
 export class AdminNotificationProcessor implements OnModuleInit {
   readonly #jobQueue: JobQueuePort;

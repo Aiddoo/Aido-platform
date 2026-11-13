@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_PROVIDERS,
   DEVICE_TYPES,
   PREMIUM_SOURCE,
   STORE_PERIOD_TYPES,
@@ -10,13 +11,12 @@ import { z } from "zod";
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 import {
-  NOTICE_END_REASON,
-  NOTICE_STORE,
-  SIGNUP_METHOD,
-  SUBSCRIPTION_NOTICE_EVENT,
-} from "../../application/read-models/admin-notice.read-model.js";
-import { ADMIN_NOTIFICATION_SEVERITIES } from "../../application/read-models/admin-notification.read-model.js";
-import { ADMIN_NOTIFICATION_CHANNELS } from "../../domain/admin-notices.constants.js";
+  ADMIN_NOTIFICATION_CHANNELS,
+  ADMIN_NOTIFICATION_SEVERITIES,
+  NOTICE_END_REASONS,
+  NOTICE_STORES,
+  SUBSCRIPTION_NOTICE_EVENTS,
+} from "../../domain/admin-notices.constants.js";
 
 export const AdminNotificationJobName = {
   DISPATCH_SUMMARY: "dispatch-signup-summary",
@@ -56,13 +56,13 @@ const AdminNoticeUserSchema = z.object({
   nickname: optionalDisplay(z.string()),
   userTag: optionalDisplay(z.string()),
   joinedAt: optionalDisplay(z.string()),
-  signupMethod: optionalDisplay(z.enum(SIGNUP_METHOD)),
+  signupMethod: optionalDisplay(z.enum(ACCOUNT_PROVIDERS)),
 });
 
 const SubscriptionNoticeSchema = z.object({
-  event: z.enum(SUBSCRIPTION_NOTICE_EVENT),
+  event: z.enum(SUBSCRIPTION_NOTICE_EVENTS),
   environment: optionalDisplay(z.enum(SUBSCRIPTION_ENVIRONMENTS)),
-  store: optionalDisplay(z.enum(NOTICE_STORE)),
+  store: optionalDisplay(z.enum(NOTICE_STORES)),
   productId: optionalDisplay(z.string()),
   planType: optionalDisplay(z.enum(SUBSCRIPTION_PLAN_TYPES)),
   newProductId: optionalDisplay(z.string()),
@@ -76,7 +76,7 @@ const SubscriptionNoticeSchema = z.object({
   purchasedAt: optionalDisplay(z.string()),
   expiresAt: optionalDisplay(z.string()),
   gracePeriodEndsAt: optionalDisplay(z.string()),
-  endReason: optionalDisplay(z.enum(NOTICE_END_REASON)),
+  endReason: optionalDisplay(z.enum(NOTICE_END_REASONS)),
   countryCode: optionalDisplay(z.string()),
   isFirstPurchase: optionalDisplay(z.boolean()),
   premium: optionalDisplay(

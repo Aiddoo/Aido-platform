@@ -1,6 +1,4 @@
-export const ADMIN_NOTIFICATION_SEVERITIES = ["info", "success", "warning", "critical"] as const;
-
-export type AdminNotificationSeverity = (typeof ADMIN_NOTIFICATION_SEVERITIES)[number];
+import type { AdminNotificationSeverity } from "../../domain/admin-notices.constants.js";
 
 export type AdminNotificationFieldValue =
   | { readonly kind: "text"; readonly text: string }

@@ -6,18 +6,13 @@ import type {
   SubscriptionPlanType,
 } from "@aido/api/vocabulary";
 
+import type {
+  NoticeEndReason,
+  NoticeStore,
+  SignupMethod,
+  SubscriptionNoticeEvent,
+} from "../../domain/admin-notices.constants.js";
 import type { AdminNotification } from "./admin-notification.read-model.js";
-
-/** 가입 방식. 계정 공급자(AccountProvider)와 같은 값이다. */
-export const SIGNUP_METHOD = {
-  CREDENTIAL: "CREDENTIAL",
-  APPLE: "APPLE",
-  GOOGLE: "GOOGLE",
-  KAKAO: "KAKAO",
-  NAVER: "NAVER",
-} as const;
-
-export type SignupMethod = (typeof SIGNUP_METHOD)[keyof typeof SIGNUP_METHOD];
 
 /**
  * 가입·결제 알림이 함께 쓰는 사용자 블록. 같은 조회로 채워 두 알림의 사용자 칸이 같은 값·같은 순서다.
@@ -32,53 +27,6 @@ export interface AdminNoticeUser {
   readonly joinedAt?: string;
   readonly signupMethod?: SignupMethod;
 }
-
-/** 결제 채널에 알릴 구독 이벤트. 공급자 이벤트 이름이 아니라 운영자가 구분할 일의 이름이다. */
-export const SUBSCRIPTION_NOTICE_EVENT = {
-  PURCHASED: "purchased",
-  ONE_TIME_PURCHASED: "one_time_purchased",
-  TRIAL_STARTED: "trial_started",
-  TRIAL_CONVERTED: "trial_converted",
-  RENEWED: "renewed",
-  CANCELLATION_SCHEDULED: "cancellation_scheduled",
-  TRIAL_CANCELLED: "trial_cancelled",
-  UNCANCELLED: "uncancelled",
-  EXPIRED: "expired",
-  TRIAL_EXPIRED: "trial_expired",
-  BILLING_ISSUE: "billing_issue",
-  REFUNDED: "refunded",
-  PRODUCT_CHANGE_SCHEDULED: "product_change_scheduled",
-  TRANSFERRED: "transferred",
-  EXTENDED: "extended",
-} as const;
-
-export type SubscriptionNoticeEvent =
-  (typeof SUBSCRIPTION_NOTICE_EVENT)[keyof typeof SUBSCRIPTION_NOTICE_EVENT];
-
-/** 큐 payload 검증에 쓰는 결제 어휘. billing 값이 늘면 구독 알림 입력을 넘기는 호출 쪽 컴파일이 가리킨다. */
-export const NOTICE_STORE = {
-  APP_STORE: "APP_STORE",
-  MAC_APP_STORE: "MAC_APP_STORE",
-  PLAY_STORE: "PLAY_STORE",
-  STRIPE: "STRIPE",
-  WEB_BILLING: "WEB_BILLING",
-  AMAZON: "AMAZON",
-  PROMOTIONAL: "PROMOTIONAL",
-} as const;
-
-export type NoticeStore = (typeof NOTICE_STORE)[keyof typeof NOTICE_STORE];
-
-export const NOTICE_END_REASON = {
-  UNSUBSCRIBE: "UNSUBSCRIBE",
-  BILLING_ERROR: "BILLING_ERROR",
-  DEVELOPER_INITIATED: "DEVELOPER_INITIATED",
-  PRICE_INCREASE: "PRICE_INCREASE",
-  CUSTOMER_SUPPORT: "CUSTOMER_SUPPORT",
-  SUBSCRIPTION_PAUSED: "SUBSCRIPTION_PAUSED",
-  UNKNOWN: "UNKNOWN",
-} as const;
-
-export type NoticeEndReason = (typeof NOTICE_END_REASON)[keyof typeof NOTICE_END_REASON];
 
 export interface SubscriptionNoticePrice {
   /** 사용자가 낸 통화의 금액 */

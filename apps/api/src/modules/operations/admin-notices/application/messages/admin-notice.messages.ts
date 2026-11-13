@@ -1,58 +1,56 @@
-import {
-  type AdminNotice,
-  type AdminNoticeUser,
-  SIGNUP_METHOD,
-  type SignupMethod,
-  SUBSCRIPTION_NOTICE_EVENT,
-  type SubscriptionNoticeEvent,
-} from "../read-models/admin-notice.read-model.js";
 import type {
-  SubscriptionAlertInput,
+  SignupEventProvider,
+  SignupMethod,
   SubscriptionAlertKind,
   SubscriptionAlertLifecycle,
-} from "../read-models/subscription-alert.read-model.js";
-import type { UserRegisteredEventPayload } from "../read-models/user-registered.read-model.js";
+  SubscriptionNoticeEvent,
+} from "../../domain/admin-notices.constants.js";
+import type {
+  SubscriptionAlertInput,
+  UserRegisteredAlertInput,
+} from "../ports/admin-event-notifier.port.js";
+import type { AdminNotice, AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 
 const KIND_EVENTS = {
-  STARTED: SUBSCRIPTION_NOTICE_EVENT.PURCHASED,
-  RENEWED: SUBSCRIPTION_NOTICE_EVENT.RENEWED,
-  CANCELLED: SUBSCRIPTION_NOTICE_EVENT.CANCELLATION_SCHEDULED,
-  REFUNDED: SUBSCRIPTION_NOTICE_EVENT.REFUNDED,
-  UNCANCELLED: SUBSCRIPTION_NOTICE_EVENT.UNCANCELLED,
-  EXPIRED: SUBSCRIPTION_NOTICE_EVENT.EXPIRED,
-  BILLING_ISSUE: SUBSCRIPTION_NOTICE_EVENT.BILLING_ISSUE,
-  PRODUCT_CHANGE_SCHEDULED: SUBSCRIPTION_NOTICE_EVENT.PRODUCT_CHANGE_SCHEDULED,
-  EXTENDED: SUBSCRIPTION_NOTICE_EVENT.EXTENDED,
-  TRANSFERRED: SUBSCRIPTION_NOTICE_EVENT.TRANSFERRED,
+  STARTED: "purchased",
+  RENEWED: "renewed",
+  CANCELLED: "cancellation_scheduled",
+  REFUNDED: "refunded",
+  UNCANCELLED: "uncancelled",
+  EXPIRED: "expired",
+  BILLING_ISSUE: "billing_issue",
+  PRODUCT_CHANGE_SCHEDULED: "product_change_scheduled",
+  EXTENDED: "extended",
+  TRANSFERRED: "transferred",
 } as const satisfies Record<SubscriptionAlertKind, SubscriptionNoticeEvent>;
 
 const LIFECYCLE_EVENTS = {
-  trial_started: SUBSCRIPTION_NOTICE_EVENT.TRIAL_STARTED,
-  trial_cancelled: SUBSCRIPTION_NOTICE_EVENT.TRIAL_CANCELLED,
-  trial_converted: SUBSCRIPTION_NOTICE_EVENT.TRIAL_CONVERTED,
-  trial_expired: SUBSCRIPTION_NOTICE_EVENT.TRIAL_EXPIRED,
+  trial_started: "trial_started",
+  trial_cancelled: "trial_cancelled",
+  trial_converted: "trial_converted",
+  trial_expired: "trial_expired",
 } as const satisfies Record<SubscriptionAlertLifecycle, SubscriptionNoticeEvent>;
 
 const SIGNUP_METHODS_BY_PROVIDER = {
-  credential: SIGNUP_METHOD.CREDENTIAL,
-  apple: SIGNUP_METHOD.APPLE,
-  google: SIGNUP_METHOD.GOOGLE,
-  kakao: SIGNUP_METHOD.KAKAO,
-  naver: SIGNUP_METHOD.NAVER,
-} as const satisfies Record<UserRegisteredEventPayload["provider"], SignupMethod>;
+  credential: "CREDENTIAL",
+  apple: "APPLE",
+  google: "GOOGLE",
+  kakao: "KAKAO",
+  naver: "NAVER",
+} as const satisfies Record<SignupEventProvider, SignupMethod>;
 
 /** 환불은 체험 중 해지처럼 체험 단계로 분류돼도 환불로 알린다. 그다음 체험 단계, 일회성 구매 순이다. */
 export function subscriptionNoticeEventOf(
   payload: SubscriptionAlertInput,
 ): SubscriptionNoticeEvent {
   if (payload.kind === "REFUNDED") {
-    return SUBSCRIPTION_NOTICE_EVENT.REFUNDED;
+    return "refunded";
   }
   if (payload.lifecycle != null) {
     return LIFECYCLE_EVENTS[payload.lifecycle];
   }
   if (payload.kind === "STARTED" && payload.isOneTime === true) {
-    return SUBSCRIPTION_NOTICE_EVENT.ONE_TIME_PURCHASED;
+    return "one_time_purchased";
   }
   return KIND_EVENTS[payload.kind];
 }
@@ -67,7 +65,7 @@ export function subscriptionNoticeUserOf(payload: SubscriptionAlertInput): Admin
 }
 
 /** 사용자 조회가 실패하거나 사용자가 없을 때 가입 요청 값으로 채우는 사용자 블록 */
-export function registeredNoticeUserOf(payload: UserRegisteredEventPayload): AdminNoticeUser {
+export function registeredNoticeUserOf(payload: UserRegisteredAlertInput): AdminNoticeUser {
   return {
     userId: payload.userId,
     email: payload.email,
@@ -131,7 +129,7 @@ export function buildSubscriptionNotice(
 }
 
 export function buildUserRegisteredNotice(
-  payload: UserRegisteredEventPayload,
+  payload: UserRegisteredAlertInput,
   user: AdminNoticeUser,
 ): AdminNotice {
   return {

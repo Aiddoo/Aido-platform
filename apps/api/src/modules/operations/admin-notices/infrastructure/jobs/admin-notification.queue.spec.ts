@@ -82,6 +82,75 @@ describe("관리자 알림 큐 정의", () => {
     });
   });
 
+  it("이미 쌓인 잡이 싣는 구독 이벤트·스토어·종료 이유·가입 방식·심각도 값을 모두 받는다", () => {
+    // Given
+    const events = [
+      "purchased",
+      "one_time_purchased",
+      "trial_started",
+      "trial_converted",
+      "renewed",
+      "cancellation_scheduled",
+      "trial_cancelled",
+      "uncancelled",
+      "expired",
+      "trial_expired",
+      "billing_issue",
+      "refunded",
+      "product_change_scheduled",
+      "transferred",
+      "extended",
+    ];
+    const stores = [
+      "APP_STORE",
+      "MAC_APP_STORE",
+      "PLAY_STORE",
+      "STRIPE",
+      "WEB_BILLING",
+      "AMAZON",
+      "PROMOTIONAL",
+    ];
+    const endReasons = [
+      "UNSUBSCRIBE",
+      "BILLING_ERROR",
+      "DEVELOPER_INITIATED",
+      "PRICE_INCREASE",
+      "CUSTOMER_SUPPORT",
+      "SUBSCRIPTION_PAUSED",
+      "UNKNOWN",
+    ];
+    const signupMethods = ["CREDENTIAL", "APPLE", "GOOGLE", "KAKAO", "NAVER"];
+    const subscriptionJob = (subscription: object, signupMethod = "APPLE") => ({
+      name: AdminNotificationJobName.SEND,
+      data: {
+        channel: "payment",
+        notice: {
+          type: "subscription_event",
+          user: { userId: "user-1", email: "user@example.com", signupMethod },
+          subscription: { event: "renewed", price: {}, ...subscription },
+        },
+      },
+    });
+    const messageJob = (severity: string) => ({
+      name: AdminNotificationJobName.SEND,
+      data: {
+        channel: "admin",
+        notice: { type: "message", message: { title: "요약", body: "본문", severity } },
+      },
+    });
+
+    // Then
+    for (const job of [
+      ...events.map((event) => subscriptionJob({ event })),
+      ...stores.map((store) => subscriptionJob({ store })),
+      ...endReasons.map((endReason) => subscriptionJob({ endReason })),
+      ...signupMethods.map((signupMethod) => subscriptionJob({}, signupMethod)),
+      ...["info", "success", "warning", "critical"].map(messageJob),
+    ]) {
+      expect(parse(job)).toEqual(job);
+    }
+  });
+
   it("모르는 채널·알림 종류·이벤트는 받지 않는다", () => {
     for (const data of [
       { channel: "unknown", notice: { type: "message", message: {} } },

@@ -1,21 +1,11 @@
-import type {
-  AdminNoticeUser,
-  SignupMethod,
-} from "../../application/read-models/admin-notice.read-model.js";
+import { accountProviderLabel } from "../../application/messages/provider-labels.messages.js";
+import type { AdminNoticeUser } from "../../application/read-models/admin-notice.read-model.js";
 import {
   type DiscordEmbedField,
   field,
   formatCode,
   formatJoined,
 } from "./discord-notice-format.mapper.js";
-
-const SIGNUP_METHOD_LABELS: Record<SignupMethod, string> = {
-  CREDENTIAL: "이메일",
-  APPLE: "Apple",
-  GOOGLE: "Google",
-  KAKAO: "Kakao",
-  NAVER: "Naver",
-};
 
 /** 본문에 부를 이름. 닉네임이 없으면 이메일 앞부분이다. */
 export function displayNameOf(user: AdminNoticeUser): string {
@@ -36,7 +26,7 @@ export function renderUserBlock(user: AdminNoticeUser, at: string): DiscordEmbed
     field("태그", user.userTag == null ? undefined : `#${user.userTag}`),
     field(
       "가입 방식",
-      user.signupMethod == null ? undefined : SIGNUP_METHOD_LABELS[user.signupMethod],
+      user.signupMethod == null ? undefined : accountProviderLabel(user.signupMethod),
     ),
     field("가입일", formatJoined(user.joinedAt, at)),
     field("이메일", user.email),

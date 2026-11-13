@@ -1,5 +1,5 @@
-import type { SubscriptionNoticeEvent } from "../read-models/admin-notice.read-model.js";
-import type { SubscriptionAlertInput } from "../read-models/subscription-alert.read-model.js";
+import type { SubscriptionNoticeEvent } from "../../domain/admin-notices.constants.js";
+import type { SubscriptionAlertInput } from "../ports/admin-event-notifier.port.js";
 import {
   buildSubscriptionNotice,
   registeredNoticeUserOf,
