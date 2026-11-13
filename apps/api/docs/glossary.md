@@ -10,6 +10,6 @@
 
 ## Context별 용어집
 
-[notes](glossary/notes.md) · [voice](glossary/voice.md) · [support](glossary/support.md) · [app-config](glossary/app-config.md) · [operations](glossary/operations.md) · [insights](glossary/insights.md) · [weather](glossary/weather.md) · [access](glossary/access.md) · [engagement](glossary/engagement.md) · [billing](glossary/billing.md)
+[notes](glossary/notes.md) · [voice](glossary/voice.md) · [support](glossary/support.md) · [app-config](glossary/app-config.md) · [operations](glossary/operations.md) · [insights](glossary/insights.md) · [weather](glossary/weather.md) · [access](glossary/access.md) · [engagement](glossary/engagement.md) · [billing](glossary/billing.md) · [social](glossary/social.md)
 
-아직 기준 모양으로 맞추지 않은 Context(ai-assistance · identity · notification · planning · social)는 그 층에서 `glossary/<context>.md`를 만들고 여기에 링크를 더한다.
+아직 기준 모양으로 맞추지 않은 Context(ai-assistance · identity · notification · planning)는 그 층에서 `glossary/<context>.md`를 만들고 여기에 링크를 더한다.

@@ -59,23 +59,23 @@ apps/api/src/
 - AppModule은 `<context>.module.ts`(`<Context>Module`)만 import한다. slice Module을 AppModule에 직접 넣지 않는다.
 - presentation은 계약을 `@aido/api/contracts/<resource>` 하위 경로로 import한다.
 
-| Context       | slice                                                                       |
-| ------------- | --------------------------------------------------------------------------- |
-| identity      | `auth`, `users`, `preferences`                                              |
-| access        | `entitlements`, `quotas`, `entitlement-usage` (+ `shared/`)                 |
-| billing       | `subscriptions`, `premium-grants` (+ `shared/`)                             |
-| planning      | `todos`, `todo-series`, `categories` (+ `shared/`)                          |
-| notes         | `memos`                                                                     |
-| engagement    | `comments`                                                                  |
-| social        | `friends`, `blocks`, `cheers`, `nudges`, `invites`, `reports` (+ `shared/`) |
-| notification  | `inbox`, `push`, `email`, `reminders`, `retention`                          |
-| insights      | `daily-completions`, `weekly-achievements` (+ `shared/`)                    |
-| weather       | `forecasts`, `locations` (+ `shared/`)                                      |
-| ai-assistance | `generation`, `parsing`, `planning`, `reports`, `suggestions` (+ `shared/`) |
-| voice         | `voice-notes`, `action-plans`                                               |
-| operations    | `broadcasts`, `admin-notices`, `metrics`                                    |
-| app-config    | `app-versions`, `feature-discovery` (+ `shared/`)                           |
-| support       | `inquiries`                                                                 |
+| Context       | slice                                                                                                                |
+| ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| identity      | `auth`, `users`, `preferences`                                                                                       |
+| access        | `entitlements`, `quotas`, `entitlement-usage` (+ `shared/`)                                                          |
+| billing       | `subscriptions`, `premium-grants` (+ `shared/`)                                                                      |
+| planning      | `todos`, `todo-series`, `categories` (+ `shared/`)                                                                   |
+| notes         | `memos`                                                                                                              |
+| engagement    | `comments`                                                                                                           |
+| social        | `friends`, `blocks`, `cheers`, `nudges`, `reminder-nudges`, `invites`, `invite-redemptions`, `reports` (+ `shared/`) |
+| notification  | `inbox`, `push`, `email`, `reminders`, `retention`                                                                   |
+| insights      | `daily-completions`, `weekly-achievements` (+ `shared/`)                                                             |
+| weather       | `forecasts`, `locations` (+ `shared/`)                                                                               |
+| ai-assistance | `generation`, `parsing`, `planning`, `reports`, `suggestions` (+ `shared/`)                                          |
+| voice         | `voice-notes`, `action-plans`                                                                                        |
+| operations    | `broadcasts`, `admin-notices`, `metrics`                                                                             |
+| app-config    | `app-versions`, `feature-discovery` (+ `shared/`)                                                                    |
+| support       | `inquiries`                                                                                                          |
 
 ## 의존 규칙과 강제
 

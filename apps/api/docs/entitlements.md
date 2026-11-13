@@ -24,7 +24,7 @@
 1. `@aido/api/vocabulary`의 `PLAN_CATALOG`(plan-catalog.constants.ts)에 kind(quota·resource·flag)와 free/premium 값을 추가한다. 출시 앱 /me가 아는 기능만 `PREMIUM_FEATURES`에 두고, 새 기능은 `PLAN_CATALOG`에만 더해 `GET /v1/entitlements`로 내보낸다. 앱만 막는 기능은 `clientOnly`.
 2. 서버가 막는 flag면 [entitlements.errors](../src/modules/access/entitlements/application/entitlements.errors.ts)에 기존 ErrorCode를 연결하고 UseCase에서 `assertEntitled`를 호출한다. quota·resource는 `getFeatureLimit`로 한도를 읽고 사용량은 소유 Context가 센다.
 3. `/me.entitlements` 계약(`premiumEntitlementsSchema`)에 키를 추가한다. 이전 앱은 모르는 키를 무시한다.
-4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다. 돈이 드는 횟수는 `QUOTA_METERS`에 계량기를 더하고(`QUOTA_METER_FEATURES`에 기능을 잇는다) 원장으로 센다. resource는 소유 Context가 한도 검사와 같은 개수를 읽는 포트(`FriendCountReaderPort`·`TodoCategoryCountReaderPort`)를 내보내고 access의 `OwnedFeatureUsageReaderAdapter`가 모아 `GetEntitlementUsageUseCase`(`entitlement-usage` slice)에 넘긴다.
+4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다. 돈이 드는 횟수는 `QUOTA_METERS`에 계량기를 더하고(`QUOTA_METER_FEATURES`에 기능을 잇는다) 원장으로 센다. resource는 소유 Context가 한도 검사와 같은 개수를 읽는 포트(`MutualFriendReaderPort.countCurrentFriends`·`TodoCategoryCountReaderPort`)를 내보내고 access의 `OwnedFeatureUsageReaderAdapter`가 모아 `GetEntitlementUsageUseCase`(`entitlement-usage` slice)에 넘긴다.
 5. 한도 오류는 기존 ErrorCode와 `details: { charged: false, featureQuota }`를 싣는다. 서버 판단(한도·남은 횟수)은 응답에 실어 앱이 다시 계산하지 않게 한다. 전체 순서는 [새 기능 추가](new-feature.md)다.
 
 ## 받은 자리(grant)와 충전 확장 지점
