@@ -1,5 +1,5 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { Entity } from "#api/shared/domain/model/entity";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { TodoCommentId } from "./todo-comment-id.vo.js";
 import { TodoCommentLikeId } from "./todo-comment-like-id.vo.js";
@@ -23,12 +23,19 @@ interface TodoCommentLikeProps {
   updatedAt: Temporal.Instant;
 }
 
-export class TodoCommentLike extends Entity<TodoCommentLikeId, TodoCommentLikeProps> {
-  static create(params: {
-    readonly commentId: TodoCommentId;
-    readonly userId: UserId;
-    readonly now: Temporal.Instant;
-  }): TodoCommentLike {
+interface CreateTodoCommentLikeParams {
+  readonly commentId: TodoCommentId;
+  readonly userId: UserId;
+  readonly now: Temporal.Instant;
+}
+
+/**
+ * 한 사람이 한 글에 누른 좋아요. 수명주기가 글과 따로라(누르고 끄고 다시 켠다) 자기 저장소를 가진 Root다.
+ * 글의 좋아요 수는 같은 댓글 잠금 안에서 TodoComment가 함께 센다.
+ */
+export class TodoCommentLike extends AggregateRoot<TodoCommentLikeId, TodoCommentLikeProps> {
+  /** 처음 누른 좋아요. 켜진 채로 만들고 아직 알리지 않았다 */
+  static create(params: CreateTodoCommentLikeParams): TodoCommentLike {
     return new TodoCommentLike(
       TodoCommentLikeId.create({ commentId: params.commentId, userId: params.userId.value }),
       {
@@ -75,7 +82,7 @@ export class TodoCommentLike extends Entity<TodoCommentLikeId, TodoCommentLikePr
     return this.props.isActive && this.props.notifiedAt == null;
   }
 
-  activate(now: Temporal.Instant): boolean {
+  like(now: Temporal.Instant): boolean {
     if (this.props.isActive) {
       return false;
     }
@@ -84,7 +91,7 @@ export class TodoCommentLike extends Entity<TodoCommentLikeId, TodoCommentLikePr
     return true;
   }
 
-  deactivate(now: Temporal.Instant): boolean {
+  unlike(now: Temporal.Instant): boolean {
     if (!this.props.isActive) {
       return false;
     }

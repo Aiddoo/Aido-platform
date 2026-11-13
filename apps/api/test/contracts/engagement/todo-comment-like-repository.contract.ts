@@ -33,7 +33,7 @@ export function describeTodoCommentLikeRepositoryContract(
         createdAt: LATER,
       });
       changed.markNotified(LATER);
-      changed.deactivate(LATER);
+      changed.unlike(LATER);
 
       // When
       await repository.save(changed);
@@ -73,7 +73,7 @@ export function describeTodoCommentLikeRepositoryContract(
       await repository.save(createTodoCommentLikeFixture({ commentId: secondCommentId }));
 
       // When
-      await repository.deactivateAllByCommentId(TodoCommentId.reconstitute(firstCommentId), LATER);
+      await repository.unlikeAllByCommentId(TodoCommentId.reconstitute(firstCommentId), LATER);
 
       // Then
       const states = await Promise.all(

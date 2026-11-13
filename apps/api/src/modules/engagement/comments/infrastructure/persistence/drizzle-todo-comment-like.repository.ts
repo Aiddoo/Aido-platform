@@ -8,8 +8,8 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentLikeRepositoryPort } from "../../application/ports/todo-comment-like.repository.port.js";
 import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
-import type { TodoCommentLike } from "../../domain/todo-comment-like.entity.js";
-import { toTodoCommentLike, toTodoCommentLikeRow } from "./todo-comment-row.mapper.js";
+import type { TodoCommentLike } from "../../domain/todo-comment-like.aggregate.js";
+import { toTodoCommentLike, toTodoCommentLikeRow } from "./todo-comment-like-row.mapper.js";
 
 @Injectable()
 export class DrizzleTodoCommentLikeRepository implements TodoCommentLikeRepositoryPort {
@@ -44,7 +44,7 @@ export class DrizzleTodoCommentLikeRepository implements TodoCommentLikeReposito
       });
   }
 
-  async deactivateAllByCommentId(commentId: TodoCommentId, now: Temporal.Instant): Promise<void> {
+  async unlikeAllByCommentId(commentId: TodoCommentId, now: Temporal.Instant): Promise<void> {
     await this.#db
       .update(todoCommentLikeTable)
       .set({ isActive: false, updatedAt: now })

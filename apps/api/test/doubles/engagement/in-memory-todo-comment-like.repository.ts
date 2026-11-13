@@ -1,6 +1,6 @@
 import { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment-like.repository.port";
 import type { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
-import { TodoCommentLike } from "#api/modules/engagement/comments/domain/todo-comment-like.entity";
+import { TodoCommentLike } from "#api/modules/engagement/comments/domain/todo-comment-like.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function copyOf(like: TodoCommentLike): TodoCommentLike {
@@ -42,9 +42,9 @@ export class InMemoryTodoCommentLikeRepository extends TodoCommentLikeRepository
     this.#likes.set(like.id.value, next);
   }
 
-  async deactivateAllByCommentId(commentId: TodoCommentId, now: Temporal.Instant): Promise<void> {
+  async unlikeAllByCommentId(commentId: TodoCommentId, now: Temporal.Instant): Promise<void> {
     for (const like of this.#likes.values()) {
-      if (like.commentId.equals(commentId) && like.deactivate(now)) {
+      if (like.commentId.equals(commentId) && like.unlike(now)) {
         this.#likes.set(like.id.value, copyOf(like));
       }
     }

@@ -53,7 +53,7 @@ export class UnlikeTodoCommentUseCase {
       comment.assertActive();
       const like = await likeRepository.findByCommentIdAndUserId(commentId, userId);
       const now = clock.now();
-      if (like?.deactivate(now) === true) {
+      if (like?.unlike(now) === true) {
         await likeRepository.save(like);
         comment.removeLike(now);
         await repository.save(comment);
