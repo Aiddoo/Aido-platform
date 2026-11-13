@@ -1,17 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { SummarizeInviterProgressUseCase } from "#api/modules/social/invite-redemptions/application/use-cases/summarize-inviter-progress.use-case";
-import { InviterProgressReaderAdapter } from "#api/modules/social/invite-redemptions/infrastructure/adapters/inviter-progress-reader.adapter";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { InMemoryInviteRedemptionReader } from "#test/doubles/social/in-memory-invite-redemption.reader";
-import { InMemoryInviteRedemptionRepository } from "#test/doubles/social/in-memory-invite-redemption.repository";
 import { InMemoryInviteRepository } from "#test/doubles/social/in-memory-invite.repository";
-import { InMemoryRewardGrantRepository } from "#test/doubles/social/in-memory-reward-grant.repository";
 import { StubInviteCodeGenerator } from "#test/doubles/social/stub-invite-code-generator";
+import { StubInviterProgressReader } from "#test/doubles/social/stub-inviter-progress-reader";
 import {
   INVITE_FIXTURE_INVITER_ID,
   INVITE_FIXTURE_NOW,
@@ -30,10 +26,6 @@ function createMyInviteUseCases(
   options: { readonly isEnabled?: boolean; readonly codes?: readonly string[] } = {},
 ) {
   const inviteRepository = new InMemoryInviteRepository();
-  const inviteRedemptionReader = new InMemoryInviteRedemptionReader(
-    new InMemoryInviteRedemptionRepository(),
-    new InMemoryRewardGrantRepository(),
-  );
   const mutationLock = new RecordingMutationLock();
   const logger = new SilentLogger();
   const shared = {
@@ -45,9 +37,7 @@ function createMyInviteUseCases(
       codeGenerator: new StubInviteCodeGenerator(options.codes ?? ["K7M2QX", "B2C3D4"]),
     }),
     summarizeMyInvite: new SummarizeMyInviteUseCase({
-      inviterProgressReader: new InviterProgressReaderAdapter(
-        new SummarizeInviterProgressUseCase({ inviteRedemptionReader }),
-      ),
+      inviterProgressReader: new StubInviterProgressReader(),
     }),
     inviteConfig: { isEnabled: options.isEnabled ?? true },
     clock: new FixedClock(NOW),
