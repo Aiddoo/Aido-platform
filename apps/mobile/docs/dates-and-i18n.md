@@ -6,12 +6,12 @@
 
 ### 값과 도구
 
-| 값        | 앱 표현                                                                                                                                                                                     | 만드는 곳                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                            | `shared/date/instant.ts`     |
-| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `parseDateKey`(`DateKey \| null`), 폼은 `dateKeyFieldSchema`다 | `shared/date/date-key.ts`    |
-| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                                | `shared/date/time-of-day.ts` |
-| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                                     | `shared/date/zoned.ts`(계산) |
+| 값        | 앱 표현                                                                                                                                                                          | 만드는 곳                    |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                 | `shared/date/instant.ts`     |
+| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `isDateKey`(타입 가드), 폼은 `dateKeyFieldSchema`다 | `shared/date/date-key.ts`    |
+| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                     | `shared/date/time-of-day.ts` |
+| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                          | `shared/date/zoned.ts`(계산) |
 
 - 모델·캐시·전송은 문자열 brand다. 문자열은 같은 값이면 같은 참조라 재조회에도 구조 공유가 유지된다. 순간의 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다.
 - 날짜 key 계산(`addDaysToDateKey`·`getMonthStartDateKey`·`toDateKey(instant, timeZone)` 등)은 `DateKey`만 받고 돌려준다. 계산 결과는 `isDateKey`(스키마와 같은 규칙)로 좁혀 칸마다 Zod를 거치지 않고, 0000~9999년을 벗어나면 던진다. 테스트 리터럴은 `src/testing/date-key.ts`의 `createDateKey('2026-11-12')`로 만든다.
@@ -31,25 +31,9 @@ shared/date/
 
 ### Temporal spike
 
-1.15.2 [10/32]에서 잰 값이다. 같은 검사 1,143개를 Node 26.13.0(ICU 78.3, tzdata 2026e)의 네이티브 Temporal과 Hermes(iOS 27.1 시뮬레이터, Hermes 260318099.0.5, Metro dev 번들)의 `temporal-polyfill` 1.0.8로 돌려 비교했다. 네이티브 결과는 서버 `toZonedInstant`·`localDateIn`·`localDateOf`와 2,835건 모두 같았다.
+1.15.2 [10/32]에서 같은 검사 1,143개를 Node 26 네이티브 Temporal과 Hermes iOS의 `temporal-polyfill` 1.0.8로 돌려 비교했다(측정 표는 그 PR에 있다).
 
-| 검사                                                                     | Hermes iOS 결과                                           |
-| ------------------------------------------------------------------------ | --------------------------------------------------------- |
-| 날짜 + 벽시계 → 순간(9개 시간대 × 11개 날 × 9개 시각)                    | 891/891 서버와 같음                                       |
-| 미국·영국 2026 서머타임 틈·겹침(`compatible`·`earlier`·`later`·`reject`) | 16/16                                                     |
-| 다음 시간대 전환 찾기(9곳)                                               | 9/9                                                       |
-| 순간 → 날짜·시각(서울·뉴욕·런던 등 9곳, 전환 전후 매시)                  | 63/63 구간                                                |
-| 하루의 시작·끝·길이(23·25시간, 산티아고 자정 없음)                       | 99/99                                                     |
-| 윤일 2028-02-29, ISO 53주 해(2026·2032), 말일 + 달                       | 9 + 13 + 11 모두 같음                                     |
-| `Instant`·`PlainDate`·`PlainTime` 읽기·쓰기(오류·옛 시각 포함)           | 32/32                                                     |
-| IANA 이름 430개                                                          | 앱을 새로 띄운 뒤 15개 실패(아래)                         |
-| 지금 Intl 구현과 비교(날짜 key·HH:mm 각 15,552, 다음 자정 3,888)         | 모두 같음                                                 |
-| 지금 Intl 구현의 벽시계 → 순간(891)                                      | 10개 다름: 서머타임 틈·겹침 시각을 서버와 반대쪽으로 읽음 |
-
-- **시간대 이름.** 폴리필은 이름을 대문자로 바꿔 `Intl.DateTimeFormat`에 넘긴다. Hermes iOS는 프로세스에서 처음 보는 대문자 이름 15개(`Asia/Kolkata`, `America/Buenos_Aires`, `America/Indianapolis`, `Asia/Saigon`, `US/Eastern`, `Etc/UTC` 등)를 `RangeError`로 거부한다. 원래 표기로 한 번 만든 뒤에는 통과한다. 인도 기기 시간대(`Asia/Kolkata`)에서 날짜 계산이 던지는 경로다.
-- **속도.** 반복 할 일 달력의 최악 경로(365회차까지 하루씩 걷기, `todo-repeat.model.ts`)가 JIT 없는 Node(`--jitless`, Hermes처럼 해석 실행)에서 격주 반복 기준 폴리필 268ms, dayjs 129.8ms, 순수 계산 26ms다(JIT 50.6·36.8·4.7ms). 시간대 변환 2,000번은 Hermes iOS에서 폴리필 79.6ms, Intl 27.1ms다.
-- **크기.** 폴리필 README의 19.2kB는 gzip 크기다. `Temporal`만 묶어도 minify 56,113B, `hermesc -O` 바이트코드 159,974B다. dayjs를 쓰던 `date-key`(dayjs + utc·isoWeek 포함)는 바이트코드 27,099B, 순수 계산 `date-key`는 9,717B다.
-- **콜드 스타트.** 폴리필은 앱 시작 경로(`LocalDateProvider` 첫 상태 → `getNowInstant`)에서 평가돼 12–22ms가 든다(13번, dev 번들). 진입 → 첫 렌더는 부하(load average 40–50) 때문에 흔들려 차이를 가려낼 수 없었다(없음 1,137–1,374ms, 있음 1,081–2,121ms).
+- **버린 이유.** 폴리필은 시간대 이름을 대문자로 바꿔 넘겨, Hermes iOS가 프로세스에서 처음 보는 이름 15개(`Asia/Kolkata`, `US/Eastern`, `Etc/UTC` 등)를 `RangeError`로 거부한다. `Temporal`만 묶어도 `hermesc -O` 바이트코드가 159,974B(순수 계산 `date-key`는 9,717B)이고 앱 시작 경로에서 12–22ms가 든다.
 - **결정.** 폴리필을 쓰지 않는다. 날짜 key 산술은 순수 계산, 순간 직렬화는 `Date#toISOString`, 시간대 변환은 Intl이다. 서버와 같은지는 Node 26 Temporal을 정답으로 테스트한다(1900~2200년 날짜 key 36,646개 × 8개 연산, 서머타임 날 벽시계 320개). Intl 벽시계 변환의 서머타임 틈·겹침은 서버 규칙으로 고쳤다. 출력 글자는 49만 개 조합(7개 시간대 × ko·en)에서 바이트 단위로 같다.
 - **Android.** 개발 빌드 APK가 없어 기기에서 돌리지 못했다. 날짜 key 산술은 Intl을 쓰지 않아 플랫폼과 무관하다. 출시 전에 Android Hermes에서 아래를 확인한다.
   1. `toDateKey`·`toHHmm`·`toZonedInstant`가 Node 결과와 같다: 서울·뉴욕·런던·산티아고·`Asia/Kolkata`, 2026 서머타임 날 전후 매시와 02:30.
@@ -62,6 +46,7 @@ shared/date/
 
 - 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
 - 지금 시각은 둘이다. 분 단위로 여러 화면이 함께 보는 지금(상대 시간 "5분 전", 날짜·마감 판단)은 `useMinuteNow()`로 앱 하나의 분 시계(`minute-clock-store`, 분 경계와 앱 복귀에 갱신)를 구독한다. 화면마다 다른 간격이나 마감까지 다시 읽는 지금(쿨다운 초, 녹음 경과, 갱신 시각)은 `useNow({ tickMs?, until? })`다. 새 지금 시계 훅을 만들지 않는다.
+- 한 실행 안에서 길이만 재는 값(녹음·인식 세션 경과, 프레임·대기 시간)은 `Date.now()` ms를 그대로 쓴다. 저장하거나 모델이 비교하는 시각(푸시 응답을 받은 때, 앱이 앞에 온 때)은 `getNowInstant()`의 `Instant`이고 차이는 `diffMs`다.
 - 앱 달력·위젯의 주는 `getCalendarWeek`(일요일 시작), 주간 성취·리포트는 서버와 같은 ISO 주(`getIsoWeekOfMonth`)다. 한 화면에서 두 주 규칙을 섞지 않는다. 주차는 두 체계 모두 주의 가운데 날(수·목요일)이 속한 달의 몇째 주이고 라벨은 체계마다 하나(`formatCalendarWeekLabel`·`formatIsoWeekLabel`, 위젯 제목은 같은 `formatWeekHeaderLabel`)이고 둘 다 오늘 key를 받아 다른 해의 주에 연도를 붙인다([주차 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)). 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.
 - 지난 기록·결제일처럼 다른 해일 수 있는 날짜는 year-aware helper에 오늘 key를 넘겨 올해면 월·일(ko "11월 12일", en "Nov 12"), 아니면 연도까지(`monthDayYear`, ko "2025년 11월 12일", en "Nov 12, 2025") 보인다. 7일이 지난 상대 시간과 동의일도 같은 형식이다.
 - 언어는 글자만 바꾼다. 오늘·시간대·주 시작·날짜 key에 영향을 주지 않는다.
@@ -81,7 +66,7 @@ shared/date/
 
 ### 숫자
 
-`Intl.NumberFormat` 캐시를 쓴다. `formatPercent`가 `%`까지 붙이므로 뒤에 `%`를 이어 붙이지 않는다. 개수는 `formatCount`·`formatCompactCount`다. 숫자+단위는 포매터가 줄바꿈 없는 공백을 넣는다(`formatFileSize`).
+`Intl.NumberFormat` 캐시를 쓴다. `formatPercent(value, locale, { signDisplay })`가 `%`와 부호까지 붙이므로 뒤에 `%`·`+`를 이어 붙이지 않는다. 정수로 보이는 두 곳(제안 확신도 칩, 위젯 완료율)은 글자 폭 때문에 `Math.round`를 그대로 둔다. 개수는 `formatCount`·`formatCompactCount`다. 숫자+단위는 포매터가 줄바꿈 없는 공백을 넣는다(`formatFileSize`).
 
 ## 언어
 
@@ -99,7 +84,7 @@ src/shared/i18n/
 
 - **언어 레지스트리** `app-locales.ts`: 언어마다 `{ nativeName, intlLocale, speechLocale, pickerLocale }`를 두고 `satisfies Record<SupportedLocale, AppLocaleConfig>`를 건다. 언어 매핑을 다른 곳에 흩어 두지 않는다. 컴포넌트는 `useLocaleContext()`(`shared/hooks`)로 읽고, React 밖은 `APP_LOCALES[language]`·`getTimePickerLocale`·`toLanguageOfIntlLocale`을 쓴다. 카탈로그 묶음 `resources.ts`도 `satisfies Record<SupportedLocale, …>`다.
 - `fallbackLng`는 `@aido/api/vocabulary`의 `FALLBACK_LOCALE`(`'en'`)이다.
-- **언어 선택**: 저장 값(`'system'|'ko'|'en'`, `aido_language`)과 `LanguageProvider`의 `useLanguage()`(`resolvedLanguage`)가 i18n과 단방향으로 동기화한다. `'system'`은 `useLocales()`를 구독해 기기 언어 변경도 반영한다. 기기 언어가 한국어면 `ko`, 그 밖과 감지 실패는 `en`이다(`resolveSupportedLocale`, `@aido/api/vocabulary`). 화면: `app/(app)/(tabs)/(mypage)/settings/language.tsx`.
+- **언어 선택**: 저장 값(`'system'|'ko'|'en'`, `aido_language`)과 `LanguageProvider`의 `useLanguage()`(`resolvedLanguage`)가 i18n과 단방향으로 동기화한다. `'system'`은 `useLocales()`를 구독해 기기 언어 변경도 반영한다. 기기 언어가 한국어면 `ko`, 그 밖과 감지 실패는 `en`이다(`resolveSupportedLocale`, `@aido/api/vocabulary`). 화면: `app/(app)/(tabs)/(me,memos,todos)/settings/language.tsx`.
 - 네임스페이스는 `resources.ts`가 정본이다. 기능별과 횡단 4개(`common`, `errors`, `validation`, `settings`). 파일은 kebab-case(`voice-plan.json`), namespace는 camelCase(`voicePlan`)다.
 
 ### 언어를 추가하려면
@@ -113,7 +98,7 @@ src/shared/i18n/
 ### 새 문자열
 
 1. 하드코딩하지 않는다. 사용자 노출 문자열은 모든 카탈로그에 함께 넣는다(`locale-parity.test.ts`가 en 복수형 접미사를 뗀 키로 비교해 키 집합·보간 변수·빈 값을 막는다). 안 쓰는 키를 찾는 검사는 없으므로 코드를 옮기며 안 쓰게 된 키를 지운다.
-2. 키는 `{screen|section}.{element}` camelCase, 최대 3단계(`todo:detail.deleteConfirm.title`).
+2. 키는 `{screen|section}.{element}` camelCase, 최대 3단계(`todo:repeat.horizonInfo.label`).
 3. 공용 문구(확인·취소·저장)는 `common:actions.*`를 재사용한다.
 
 ```tsx
@@ -125,7 +110,8 @@ toast.error(t('friend:toast.sendFailed'));
 - 모듈 로드 시점에 `const MSG = t('...')`로 평가하지 않는다. 호출 시점에 `t()`한다.
 - ns 바인딩된 `useTranslation('ns')`의 t는 다른 ns 접두사 키를 거부한다. 여러 ns는 `useTranslation(['ns', 'common'])`나 싱글턴을 쓴다.
 - 보간 `t('repeat.weekly', { days })`, 복수형은 ko 단일 키·en `_one`/`_other`(`t('list.count', { count })`).
-- enum 라벨은 값 대신 키를 담는다: `INQUIRY_CATEGORY_LABEL_KEYS = { … } as const satisfies Record<InquiryCategory, string>`. 여러 파일이 쓰면 `utils/{name}.view-model.ts`의 `get{X}LabelKey`, 한 파일만 쓰면 파일 안 지역 상수다. `constants/`와 모델에 두지 않는다.
+- 한 문장 안에 링크·강조 글자가 끼면 문장을 앞·뒤 키로 쪼개지 않고 키 하나에 태그를 두고 `<Trans t={t} i18nKey=… components={{ terms: <Text … /> }} />`로 그린다(언어마다 어순이 다르다: 로그인·결제 약관, 콕·초대 배너 제목). 아이콘이 끼어 줄 배치가 다른 문장은 그대로 둔다.
+- enum 라벨은 값 대신 키를 담는다: `WEATHER_CONDITION_LABEL_KEYS = { … } as const satisfies Record<WeatherCondition, string>`. 여러 파일이 쓰면 `utils/{name}.view-model.ts`의 `get{X}LabelKey`, 한 파일만 쓰면 파일 안 지역 상수다. `constants/`와 모델에 두지 않는다.
 - 런타임 키(오류 코드)는 `tDynamic('errors', code, fallback)`이다. 타입 검증 우회 전용이다.
 
 ### 오류 메시지

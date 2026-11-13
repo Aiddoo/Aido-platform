@@ -7,7 +7,7 @@ import { type ReactNode, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { AspectRatio, type AspectRatioProps } from '../aspect-ratio';
+import { AspectRatio, type AspectRatioProps } from '../aspect-ratio/aspect-ratio';
 
 type MediaStatus = 'loading' | 'loaded' | 'failed';
 

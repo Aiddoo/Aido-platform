@@ -45,6 +45,7 @@ import { upsellDismissalStoredValue } from '@src/features/billing/subscription/s
 import { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';
 import { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
 import { createActivationProgressRepository } from '@src/features/device/activation/repositories/activation-progress.repository';
+import { activationProgressStoredValue } from '@src/features/device/activation/schemas/activation-progress-storage.schema';
 import { ActivationService } from '@src/features/device/activation/services/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/services/app-icon.service';
 import { createCoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
@@ -87,11 +88,13 @@ import { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { FriendApi } from '@src/features/social/friend/apis/friend.api';
 import { InviteApi } from '@src/features/social/invite/apis/invite.api';
+import { allDoneBannerStoredValue } from '@src/features/social/invite/schemas/all-done-banner-storage.schema';
+import { pawPrintCelebrationStoredValue } from '@src/features/social/invite/schemas/paw-print-celebration-storage.schema';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { InviteShareService } from '@src/features/social/invite/services/invite-share.service';
 import { InviteService } from '@src/features/social/invite/services/invite.service';
 import { PendingRedemptionService } from '@src/features/social/invite/services/pending-redemption.service';
-import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
+import type { InviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import { ModerationApi } from '@src/features/social/moderation/apis/moderation.api';
 import { TodoNudgeApi } from '@src/features/social/nudge/apis/todo-nudge.api';
 import { InquiryApi } from '@src/features/support/inquiry/apis/inquiry.api';
@@ -101,7 +104,10 @@ import { createVoiceRecordingRepository } from '@src/features/voice/repositories
 import { VoiceNoteStorageService } from '@src/features/voice/services/voice-note-storage.service';
 import { WeatherApi } from '@src/features/weather/apis/weather.api';
 import { WeatherLocationService } from '@src/features/weather/services/weather-location.service';
-import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
+import {
+  clearFeatureAttributions,
+  createFeatureAttributionStore,
+} from '@src/shared/analytics/feature-attribution';
 import { getNowInstant } from '@src/shared/date/clock';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
@@ -178,6 +184,8 @@ export interface AppContainerPorts {
   getTimeZone: () => string;
   /** 요청 헤더(Accept-Language)와 같은 값 */
   getLanguage: () => string;
+  /** 센 초대 링크 열림. 루트 "다시 시도"로 컨테이너를 새로 만들어도 같은 링크를 다시 세지 않게 프로세스에 하나다 */
+  inviteLinkOpenedStore: InviteLinkOpenedStore;
 }
 
 /** 포트로 Service·저장소를 만들기만 한다. 구독·타이머·저장소 쓰기는 쓰는 Provider·훅의 effect가 맡는다 */
@@ -195,13 +203,13 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     pushNotification,
   } = ports;
   const queryCacheStorage = ports.queryCacheStorage ?? disabledQueryCacheStorage;
-  // 암호화 저장소를 열지 못한 실행은 디스크에 남은 조회 캐시·초안을 지울 수 없어 다음에 열 때 지우도록 표시한다
+  // 암호화 저장소를 열지 못한 실행은 디스크에 남은 조회 캐시·초안을 읽지도 지우지도 못해 다음에 열 때 지우도록 표시한다
   const isEncryptedStorageOpen = ports.queryCacheStorage != null;
 
   const signOutEpoch = createSignOutEpoch();
   const draftService = new DraftService(
     createDraftRepository(draftStorage),
-    Date.now,
+    getNowInstant,
     signOutEpoch.current,
   );
   const authApi = new AuthApi({ publicHttpClient, authHttpClient });
@@ -211,7 +219,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     requestRefresh: ports.requestRefresh,
     authApi,
     logger,
-    now: Date.now,
+    now: getNowInstant,
   });
 
   const activationProgressRepository = createActivationProgressRepository(syncStorage);
@@ -255,11 +263,12 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     getTimeZone: ports.getTimeZone,
   });
   const voiceRecordingRepository = createVoiceRecordingRepository(ports.localFileSystem, logger);
-  const voiceNoteStorageService = new VoiceNoteStorageService(
-    voiceNoteDraftRepository,
-    voiceRecordingRepository,
-    getNowInstant,
-  );
+  const voiceNoteStorageService = new VoiceNoteStorageService({
+    drafts: voiceNoteDraftRepository,
+    recordings: voiceRecordingRepository,
+    now: getNowInstant,
+    isDraftStorageOpen: isEncryptedStorageOpen,
+  });
 
   const weatherApi = new WeatherApi(authHttpClient, logger);
 
@@ -269,14 +278,14 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     analytics,
     errorReporter,
     haptics: ports.haptics,
-    featureAttribution: createFeatureAttributionStore(syncStorage),
+    featureAttribution: createFeatureAttributionStore(syncStorage, getNowInstant),
     draftService,
     externalLink: ports.externalLink,
     incomingLink: ports.incomingLink,
     systemShare: ports.systemShare,
     clipboard: ports.clipboard,
     appLifecycle: ports.appLifecycle,
-    minuteClock: createAppMinuteClock(ports.appLifecycle),
+    minuteClock: createAppMinuteClock({ appLifecycle: ports.appLifecycle, now: getNowInstant }),
     syncStorage,
     accountSyncStorage: draftStorage,
 
@@ -311,13 +320,20 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
         : { clear: () => markPendingStorageCleanup(syncStorage, 'queryCache') },
       drafts: isEncryptedStorageOpen
         ? draftService
-        : { removeAll: () => markPendingStorageCleanup(syncStorage, 'drafts') },
+        : {
+            removeAll: () => {
+              markPendingStorageCleanup(syncStorage, 'drafts');
+              // 이번 실행이 메모리에 들고 있던 초안도 로그아웃과 함께 버린다
+              draftService.removeAll();
+            },
+          },
       voiceNotes: voiceNoteStorageService,
       deviceTimezone: { clear: () => removeStoredValue(syncStorage, deviceTimezoneStoredValue) },
       pendingRedemption: {
         clear: () => removeStoredValue(syncStorage, pendingRedemptionStoredValue),
       },
       pushDevice: pushRegistrationService,
+      pushNotification,
       signOutEpoch,
       userDeviceData: new UserDeviceDataService({
         repositories: {
@@ -334,6 +350,21 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
           'marketing-push-prompt': marketingPushPromptRepository,
           'upsell-dismissal': {
             clear: (userId) => removeStoredValue(syncStorage, upsellDismissalStoredValue, userId),
+          },
+          'store-review': createStoreReviewRepository(syncStorage),
+          activation: {
+            clear: (userId) =>
+              removeStoredValue(syncStorage, activationProgressStoredValue, userId),
+          },
+          'invite-all-done-banner': {
+            clear: (userId) => removeStoredValue(syncStorage, allDoneBannerStoredValue, userId),
+          },
+          'invite-paw-print-celebration': {
+            clear: (userId) =>
+              removeStoredValue(syncStorage, pawPrintCelebrationStoredValue, userId),
+          },
+          'feature-attribution': {
+            clear: (userId) => clearFeatureAttributions(syncStorage, userId),
           },
         },
         logger,
@@ -358,7 +389,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     myPagePaneLayoutStore: createMyPagePaneLayoutStore(),
     myPageDetailRootStore: createMyPageDetailRootStore(),
 
-    entitlementApi: new EntitlementApi(authHttpClient, logger),
+    entitlementApi: new EntitlementApi(authHttpClient),
     purchasesSession,
     subscriptionService: new SubscriptionService(purchasesSession, ports.purchases, logger),
 
@@ -381,7 +412,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       getNowInstant,
     ),
 
-    voiceApi: new VoiceApi(authHttpClient, logger),
+    voiceApi: new VoiceApi(authHttpClient),
     voiceNoteStorageService,
     voiceNoteDraftRepository,
     voiceRecordingRepository,
@@ -394,11 +425,11 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
 
     moderationApi: new ModerationApi(authHttpClient),
 
-    suggestionApi: new SuggestionApi(authHttpClient, logger),
+    suggestionApi: new SuggestionApi(authHttpClient),
 
     achievementApi: new AchievementApi(authHttpClient),
 
-    reportApi: new ReportApi(authHttpClient, logger),
+    reportApi: new ReportApi(authHttpClient),
 
     // 기능 소개 캠페인 설정은 API envelope 없이 원문 JSON이다
     whatsNewCampaignApi: new WhatsNewCampaignApi(ports.jsonFetcher),
@@ -438,9 +469,9 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       socialShare: ports.socialShare,
       systemShare: ports.systemShare,
       clipboard: ports.clipboard,
-      errorReporter,
+      logger,
     }),
-    inviteLinkOpenedStore: createInviteLinkOpenedStore(),
+    inviteLinkOpenedStore: ports.inviteLinkOpenedStore,
 
     activationService: new ActivationService(syncStorage),
     activationProgressRepository,

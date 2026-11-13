@@ -3,7 +3,8 @@ import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
-import type { AiReport, ReportStatus } from '../domains/report.model';
+import type { ReportStatus } from '../domains/report-status.model';
+import type { AiReport } from '../domains/report.model';
 
 export function toAiReport(dto: AiReportDto): AiReport {
   return {

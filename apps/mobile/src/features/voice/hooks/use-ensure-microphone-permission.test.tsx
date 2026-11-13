@@ -24,7 +24,7 @@ function PermissionProbe({ onResult }: { onResult: (isGranted: boolean) => void 
 async function renderBlocked(missing: MissingSpeechPermission) {
   const speechRecognizer = createSpeechRecognizerStub();
   speechRecognizer.getPermission.mockResolvedValue({
-    isGranted: false,
+    status: 'denied',
     canAskAgain: false,
     missing,
   });

@@ -3,7 +3,8 @@ import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { useTranslation } from '@src/shared/i18n';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { Trans, useTranslation } from '@src/shared/i18n';
 import {
   HStack,
   PawIcon,
@@ -23,6 +24,7 @@ import { useGetTodoNudgeLimitQueryOptions } from '../queries/todo-nudge.queries'
 
 export function NudgeLimitBanner() {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
   const isReached = isLimitReached(limitInfo);
 
@@ -33,13 +35,11 @@ export function NudgeLimitBanner() {
   const refill = formatRefillSentence(entitlements, 'NUDGE');
 
   const defaultTitle = (
-    <>
-      {t('nudge.promptPrefix')}{' '}
-      <Text size="b3" weight="bold" className="text-main">
-        {t('nudge.promptHighlight')}
-      </Text>{' '}
-      {t('nudge.promptSuffix')}
-    </>
+    <Trans
+      t={t}
+      i18nKey="nudge.prompt"
+      components={{ highlight: <Text size="b3" weight="bold" className="text-main" /> }}
+    />
   );
 
   const hint = {
@@ -49,7 +49,11 @@ export function NudgeLimitBanner() {
         <Text size="e1" shade={6}>
           {t('nudge.hintPrefix')}
         </Text>
-        <PawIcon width={14} height={14} colorClassName="text-main" />
+        <PawIcon
+          width={fontScaledSize(14)}
+          height={fontScaledSize(14)}
+          colorClassName="text-main"
+        />
         <Text size="e1" shade={6}>
           {t('nudge.hintSuffix')}
         </Text>

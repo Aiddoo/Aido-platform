@@ -1,8 +1,7 @@
 import { createDateKey } from '@src/testing/date-key';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import { type DailyCompletionsResult } from './daily-completion.model';
-import { DailyCompletionPolicy } from './daily-completion.model';
+import { DailyCompletionPolicy, type DailyCompletionsResult } from './daily-completion.model';
 
 describe('withTodoDailyCompletion', () => {
   const DATE = createDateKey('2026-11-05');

@@ -13,7 +13,7 @@ import { getIsoWeekYear, type DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
@@ -33,12 +33,12 @@ import {
   getCachedTodoDateSpan,
   getTodoOverviewFilters,
   invalidateTodoDependentQueries,
-  invalidateTodos,
   removeTodoFromList,
   removeTodoPage,
   restoreTodo,
   settleTodoEdit,
   settleTodoReorder,
+  settleTodoSeriesWrite,
   settleTodoWrite,
   snapshotTodo,
   syncDailyCompletionWithList,
@@ -183,7 +183,7 @@ export function useChangeTodoCategoryMutationOptions() {
       if (scope == null) {
         settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
       } else {
-        invalidateTodos(queryClient);
+        settleTodoSeriesWrite(queryClient);
       }
     },
     meta: {
@@ -245,7 +245,7 @@ export function useDeleteTodoMutationOptions() {
       }
     },
     onError: (error, _variables, context) => {
-      if (context?.snapshot) {
+      if (context?.snapshot != null) {
         restoreTodo(queryClient, context.snapshot);
         syncDailyCompletionWithList(queryClient, { date: context.snapshot.date });
       }
@@ -255,7 +255,7 @@ export function useDeleteTodoMutationOptions() {
     onSettled: (_data, error, { todoId, date, scope }, context) => {
       invalidateTodoDependentQueries(queryClient);
       if (error == null && scope != null) {
-        invalidateTodos(queryClient);
+        settleTodoSeriesWrite(queryClient);
       } else if (error == null && context?.snapshot == null) {
         invalidateTodoCategories(queryClient);
       }
@@ -285,7 +285,7 @@ export function useDeleteTodoMutationOptions() {
 }
 
 interface ReorderTodoVariables {
-  id: number;
+  todoId: number;
   input: TodoReorder;
 }
 
@@ -298,8 +298,8 @@ export function useReorderTodoMutationOptions() {
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ id, input }: ReorderTodoVariables) => {
-      const result = await todoApi.reorderTodo(id, input);
+    mutationFn: async ({ todoId, input }: ReorderTodoVariables) => {
+      const result = await todoApi.reorderTodo(todoId, input);
       return unwrap(result);
     },
     onSuccess: () => {
@@ -309,8 +309,8 @@ export function useReorderTodoMutationOptions() {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_reorder' });
       }
     },
-    onSettled: (_data, _error, { id }) => {
-      settleTodoReorder(queryClient, { todoId: id });
+    onSettled: (_data, _error, { todoId }) => {
+      settleTodoReorder(queryClient, { todoId });
     },
     meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.changeFailedRetry' } },
   });
@@ -360,7 +360,7 @@ export function useUpdateTodoScheduleMutationOptions() {
       if (scope == null) {
         settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
       } else {
-        invalidateTodos(queryClient);
+        settleTodoSeriesWrite(queryClient);
       }
     },
     meta: {

@@ -6,7 +6,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { useOpenSheet } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
@@ -35,6 +35,8 @@ export type EntitlementGatePromptOptions = Partial<
 > & {
   /** 프리미엄 보기를 고르면 페이월로 가기 전에 불린다(아래 시트를 닫는 등) */
   onSubscribe?: () => void;
+  /** 안내를 마치면 한 번 불린다. 시트는 답을 고른 바로 뒤(페이월·대안으로 가기 전), 토스트는 띄운 바로 뒤다(안내만 보이고 떠나는 시트 route) */
+  onFinish?: () => void;
 };
 
 const GATE_TITLE_KEYS = {
@@ -69,7 +71,13 @@ export function useEntitlementGate(
       target: EntitlementFeature,
       decision: BlockedDecision,
       trigger: LimitReachedTrigger,
-      { onSubscribe, title, description, alternativeAction }: EntitlementGatePromptOptions = {},
+      {
+        onSubscribe,
+        onFinish,
+        title,
+        description,
+        alternativeAction,
+      }: EntitlementGatePromptOptions = {},
     ) => {
       const latest = getCachedEntitlements(queryClient) ?? snapshot;
       const promptTitle = title ?? t(GATE_TITLE_KEYS[target]);
@@ -83,6 +91,7 @@ export function useEntitlementGate(
       // 프리미엄·관리자가 공정 사용 한도에 닿으면 구독을 권하지 않고 언제 다시 쓸 수 있는지만 알린다
       if (!EntitlementPolicy.shouldOfferPremium(latest)) {
         toast.warning(promptTitle, { description: refill ?? undefined });
+        onFinish?.();
         return;
       }
 
@@ -113,11 +122,12 @@ export function useEntitlementGate(
           description: refill ?? undefined,
           action: { label: t('upsell.viewPremium'), onPress: () => goToPaywall('toast') },
         });
+        onFinish?.();
         return;
       }
 
       // 버튼을 여러 번 눌러도 답은 처음 고른 하나로 끝나 이동·기록이 한 번만 일어난다. undefined는 답 없이
-      // 사라졌을 때(부른 화면이 떠남)라 닫은 것으로 남기지 않는다
+      // 사라졌을 때(부른 화면이 떠남)라 닫은 것으로 남기지 않고 onFinish도 부르지 않는다
       openSheet<UpsellChoice>(
         () => <PremiumUpsell feature={target} title={promptTitle} description={description} />,
         {
@@ -134,7 +144,10 @@ export function useEntitlementGate(
           ),
           dismissValue: 'dismiss',
         },
-      ).then((choice) =>
+      ).then((choice) => {
+        if (choice != null) {
+          onFinish?.();
+        }
         match(choice)
           .with('subscribe', () => goToPaywall('sheet'))
           .with('alternative', () => alternativeAction?.onPress())
@@ -153,23 +166,31 @@ export function useEntitlementGate(
             );
           })
           .with(undefined, noop)
-          .exhaustive(),
-      );
+          .exhaustive();
+      });
+    };
+
+    const findBlockedDecision = (): BlockedDecision | null => {
+      if (snapshot == null) {
+        return null;
+      }
+      return match(EntitlementPolicy.getAccessDecision(snapshot, feature, getNowInstant()))
+        .with('allow', () => null)
+        .with('limit-reached', 'locked', (decision) => decision)
+        .exhaustive();
     };
 
     return {
+      /** 안내 없이 지금 막혔는지만 본다. 막힌 채 열린 화면이 내용을 그리지 않을 때 쓴다. 스냅샷을 아직 모르면 false다 */
+      isBlocked: (): boolean => findBlockedDecision() != null,
       /** 시작하기 전에 확인한다. 막혔으면 안내를 띄우고 true다(멈춘다). 스냅샷을 아직 모르면 서버에 맡긴다 */
       promptIfBlocked: (options?: EntitlementGatePromptOptions): boolean => {
-        if (snapshot == null) {
+        const decision = findBlockedDecision();
+        if (decision == null) {
           return false;
         }
-        return match(EntitlementPolicy.getAccessDecision(snapshot, feature, getNowInstant()))
-          .with('allow', () => false)
-          .with('limit-reached', 'locked', (decision) => {
-            open(feature, decision, 'precheck', options);
-            return true;
-          })
-          .exhaustive();
+        open(feature, decision, 'precheck', options);
+        return true;
       },
       promptLimit: (options?: EntitlementGatePromptOptions) => {
         open(feature, 'limit-reached', 'precheck', options);

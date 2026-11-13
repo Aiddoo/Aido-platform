@@ -3,6 +3,7 @@ import {
   UserList,
 } from '@src/features/identity/user/components/user-list';
 import { formatUserHashtag } from '@src/features/identity/user/utils/user-tag.view-model';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -125,12 +126,19 @@ FriendSearchList.Action = function Action({
   onFriendLimitInvite?: () => void;
 }) {
   const { t } = useTranslation('friend');
+  const fontScaledSize = useFontScaledSize();
   const sendRequest = useMutation(useSendRequestByTagMutationOptions({ onFriendLimitInvite }));
   const cancelRequest = useMutation(useCancelRequestMutationOptions());
   const isProcessing = sendRequest.isPending || cancelRequest.isPending;
 
   return match(FriendPolicy.getRequestState(user))
-    .with('friend', () => <CheckIcon width={20} height={20} colorClassName="text-gray-4" />)
+    .with('friend', () => (
+      <CheckIcon
+        width={fontScaledSize(20)}
+        height={fontScaledSize(20)}
+        colorClassName="text-gray-4"
+      />
+    ))
     .with('pending', () => (
       <Button
         variant="weak"

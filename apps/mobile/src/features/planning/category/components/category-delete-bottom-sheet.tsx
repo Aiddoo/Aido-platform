@@ -1,6 +1,7 @@
 import { CATEGORY_TODO_HANDLINGS, type CategoryTodoHandling } from '@aido/api/vocabulary';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
@@ -32,10 +33,14 @@ import { type ComponentProps, type ReactNode, Suspense, useEffect, useState } fr
 import Animated from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { TodoCategoryDeletionPolicy, TodoCategoryPolicy } from '../domains/todo-category.model';
-import type {
-  TodoCategoryDeletionPreview,
-  TodoCategoryWithCount,
+import {
+  TodoCategoryDeletionPolicy,
+  type TodoCategoryDeletionPreview,
+} from '../domains/todo-category-deletion.model';
+import {
+  type TodoCategory,
+  TodoCategoryPolicy,
+  type TodoCategoryWithCount,
 } from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
 import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
@@ -139,7 +144,7 @@ CategoryDeleteBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFa
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
       <QueryErrorFallback
         reset={reset}
-        onInquiry={(href) => sheet.close({ type: 'replace', href })}
+        onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
       />
     </BottomSheet>
   );
@@ -210,12 +215,9 @@ function TodoHandlingBottomSheet({
   const isDeletePending = deleteCategory.isPending;
   const [todoHandling, setTodoHandling] = useState<CategoryTodoHandling>('move');
   const [pickedMoveTargetCategoryId, setPickedMoveTargetCategoryId] = useState<number | null>(null);
-  // 서버 id가 없는 임시 행으로는 옮길 수 없다
   const moveTarget = TodoCategoryPolicy.findMoveTarget(
     category,
-    categoriesResult.categories.filter(
-      (candidate) => !TodoCategoryPolicy.isOptimisticCategory(candidate),
-    ),
+    categoriesResult.categories,
     pickedMoveTargetCategoryId,
   );
   const deletionRequest = TodoCategoryDeletionPolicy.toDeletionRequest(preview, {
@@ -226,12 +228,10 @@ function TodoHandlingBottomSheet({
   const todoCountBucket = toTodoCountBucket(preview.todoCount);
   const hasSeries = preview.activeSeriesCount > 0;
 
-  useEffect(() => {
-    trackEvent('category_delete_sheet_viewed', {
-      todo_count_bucket: todoCountBucket,
-      has_series: hasSeries,
-    });
-  }, [trackEvent, todoCountBucket, hasSeries]);
+  useTrackView('category_delete_sheet_viewed', {
+    key: String(category.id),
+    params: { todo_count_bucket: todoCountBucket, has_series: hasSeries },
+  });
 
   // 닫힘 애니메이션이 끝난 뒤에 온다. 지우는 중이거나 지운 뒤 닫힌 것은 취소가 아니다
   const handleOpenChange = (nextIsOpen: boolean) => {
@@ -322,7 +322,7 @@ function TodoHandlingBottomSheet({
             />
             {moveTarget != null && (
               <MoveTargetRow
-                deletingCategoryId={category.id}
+                deletingCategory={category}
                 moveTargetCategoryId={moveTarget.id}
                 onMoveTargetChange={handleMoveTargetChange}
                 isDisabled={isDeletePending}
@@ -459,20 +459,21 @@ interface MoveTargetRowProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
   'children' | 'onPress'
 > {
-  deletingCategoryId: number;
+  deletingCategory: TodoCategory;
   moveTargetCategoryId: number;
   onMoveTargetChange: (categoryId: number) => void;
 }
 
 /** 할 일 작성기의 카테고리 고르기처럼 시트 위 시트에서 바꾼다 */
 function MoveTargetRow({
-  deletingCategoryId,
+  deletingCategory,
   moveTargetCategoryId,
   onMoveTargetChange,
   className,
   ...props
 }: MoveTargetRowProps) {
   const { t } = useTranslation(['todo', 'common']);
+  const fontScaledSize = useFontScaledSize();
   const openSheet = useOpenSheet();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const moveTarget = TodoCategoryPolicy.findCategory(
@@ -490,7 +491,7 @@ function MoveTargetRow({
         <Suspense fallback={<CategoryPickForm.Loading />}>
           <CategoryPickForm
             defaultValue={moveTargetCategoryId}
-            excludedCategoryId={deletingCategoryId}
+            filters={(candidate) => TodoCategoryPolicy.isMoveTarget(candidate, deletingCategory)}
             submitLabel={t('common:actions.confirm')}
             onSubmit={close}
           />
@@ -519,7 +520,13 @@ function MoveTargetRow({
             {moveTarget.name}
           </Text>
         }
-        right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-6" />}
+        right={
+          <ArrowRightIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-6"
+          />
+        }
         horizontalPadding="medium"
         className="rounded-xl bg-gray-1 dark:bg-gray-3"
       />

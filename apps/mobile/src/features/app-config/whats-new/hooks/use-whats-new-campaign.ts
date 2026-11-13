@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
-import { RELEASES } from '../constants/releases';
+import { RELEASES } from '../constants/releases.constants';
 import { findReleaseByCampaign } from '../domains/whats-new.model';
 import { useGetWhatsNewCampaignQueryOptions } from '../queries/whats-new-campaign.queries';
 

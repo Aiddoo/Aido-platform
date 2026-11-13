@@ -21,12 +21,12 @@ import type {
   TodoCommentThread,
   TodoCommentThreadPage,
 } from '../domains/todo-comment.model';
+import type { TodoCommentPageParam } from '../queries/todo-comment-pages-cache';
 import type {
   WrittenTodoCommentChainResponse,
   WrittenTodoCommentMutationResponse,
   WrittenTodoCommentResponse,
 } from '../schemas/todo-comment-response.schema';
-import type { TodoCommentPageParam } from '../utils/todo-comment-cache-pages';
 
 function toTodoComment(dto: TodoCommentV2): TodoComment {
   return {

@@ -14,7 +14,7 @@ export interface ErrorDiagnosis {
 /** 사용자 문구·개인정보 없이 원인을 찾을 값만 꺼낸다. 경계의 breadcrumb와 문의 초안이 쓴다 */
 export function getErrorDiagnosis(error: unknown): ErrorDiagnosis {
   if (isApiError(error)) {
-    return { code: error.code, status: error.status, requestId: null };
+    return { code: error.code, status: error.status, requestId: error.requestId };
   }
   if (error instanceof ServerError) {
     return { code: error.serverCode, status: error.status, requestId: error.requestId };

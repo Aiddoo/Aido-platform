@@ -343,7 +343,7 @@ export function getRemainingCaptureMs(
   return Math.max(0, maxSeconds * SECOND_MS - getElapsedMs(state, now));
 }
 
-// 빠른 말하기의 한 번 길이를 다 써서 멈췄다. 이어 말하려면 말로 메모하기로 넘어간다
+// 빠른 말하기의 한 번 길이를 다 썼다. 멈춘 원인과 무관하게 이어 들을 시간이 없어 말로 메모하기로 넘긴다
 export function shouldOfferVoiceNote(state: VoiceCaptureState, maxSeconds: number): boolean {
   return state.status === 'paused' && state.elapsedMs >= maxSeconds * SECOND_MS;
 }
