@@ -15,7 +15,6 @@ import { onlineManager } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
 import { RELEASE_1_16_0 } from '../constants/releases.constants';
-import { createWhatsNewRepository } from '../repositories/whats-new.repository';
 import { useWhatsNewAutoOpen } from './use-whats-new-auto-open';
 
 const USER_ID = 'user-1';
@@ -48,7 +47,7 @@ async function renderAutoOpen({
     }),
   });
 
-  return { ...hook, repository: createWhatsNewRepository(syncStorage) };
+  return { ...hook, repository: hook.di.whatsNewRepository };
 }
 
 describe('useWhatsNewAutoOpen — 말풍선을 띄울 차례', () => {
