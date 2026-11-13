@@ -8,6 +8,7 @@ import {
   createMemoryObservableSyncStorage,
   createPendingResponse,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
@@ -40,12 +41,10 @@ async function renderAutoOpen({
   );
 
   const hook = await renderScreenHook(() => useWhatsNewAutoOpen({ isOnboardingSettled: true }), {
-    queryClient,
-    di: {
-      authSessionStore: createAuthSessionStoreStub('authenticated'),
-      jsonFetcher,
-      syncStorage,
-    },
+    di: createTestDi({
+      ports: { jsonFetcher, syncStorage, queryClient },
+      seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+    }),
   });
 
   return { ...hook, repository: createWhatsNewRepository(syncStorage) };

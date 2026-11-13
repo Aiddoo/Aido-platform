@@ -9,7 +9,7 @@ import { toWidgetTimelineEntries } from './widget-timeline.mapper';
 export function createExpoWidgetsBridge(): WidgetBridge {
   const appScheme = getAppScheme();
   return {
-    async writeSnapshot(snapshot: WidgetSnapshot): Promise<void> {
+    writeSnapshot: async (snapshot: WidgetSnapshot): Promise<void> => {
       const now = getNowInstant();
       const { currentTimeZone } = readDeviceLocalDateState(now);
       const entries = toWidgetTimelineEntries(snapshot, {

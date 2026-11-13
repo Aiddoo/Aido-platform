@@ -1,10 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
 import { omit } from "es-toolkit";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
 import type { EmailKind } from "./email-delivery.constants.js";
+import { emailRecipientMissing, emailSubjectMissing } from "./email.errors.js";
 
 export interface EmailTag {
   readonly name: string;
@@ -29,10 +28,10 @@ function copyProps(props: EmailMessageProps): EmailMessageProps {
 export class EmailMessage extends ValueObject<EmailMessageProps> {
   static create(props: EmailMessageProps): EmailMessage {
     if (props.to.trim().length === 0) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "to" });
+      throw emailRecipientMissing();
     }
     if (props.subject.trim().length === 0) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "subject" });
+      throw emailSubjectMissing();
     }
     return new EmailMessage(copyProps(props));
   }

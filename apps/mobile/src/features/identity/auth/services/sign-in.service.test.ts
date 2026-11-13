@@ -8,7 +8,7 @@ import {
 } from '@src/shared/errors';
 import {
   createHttpClientStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemoryTokenStore,
   createSocialAuthGatewayStub,
 } from '@src/testing/core';
@@ -42,11 +42,11 @@ function setup({ deviceType = 'IOS' }: { deviceType?: 'IOS' | 'ANDROID' } = {}) 
   const authHttp = createHttpClientStub();
   const tokenStore = createMemoryTokenStore();
   const gateway = createSocialAuthGatewayStub();
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const service = new SignInService({
     authApi: new AuthApi({ publicHttpClient: publicHttp, authHttpClient: authHttp }),
     tokenStore,
-    socialAuthGateway: gateway,
+    socialAuth: gateway,
     deviceType,
     logger,
   });

@@ -1,11 +1,11 @@
 export const ANIMATION = {
-  duration: {
+  durationMs: {
     fast: 150,
     normal: 200,
     slow: 300,
     emphasis: 600,
   },
-  delay: {
+  delayMs: {
     short: 50,
     medium: 100,
     long: 200,

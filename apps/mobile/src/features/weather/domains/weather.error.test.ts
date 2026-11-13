@@ -1,3 +1,4 @@
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { ParseError, ServerError } from '@src/shared/errors/infra-error';
 
@@ -20,18 +21,24 @@ describe('isLocationNotRegisteredError', () => {
 });
 
 describe('isWeatherProviderUnavailableError', () => {
-  it('공급자 장애(WEATHER_1901)는 503 ServerError로 오므로 503만 공급자 장애로 분류한다', () => {
-    // Given
-    const unavailable = new ServerError(503);
-    const internal = new ServerError(500);
+  const serverError = (status: number, serverCode: ErrorCodeType | null) =>
+    new ServerError(status, { serverCode, details: null, requestId: null, request: null });
 
+  it.each([
+    {
+      name: '공급자 장애(503 WEATHER_1901)',
+      error: serverError(503, 'WEATHER_1901'),
+      expected: true,
+    },
+    { name: 'DB 과부하(503 SYS_0005)', error: serverError(503, 'SYS_0005'), expected: false },
+    { name: '코드 없는 503', error: serverError(503, null), expected: false },
+    { name: '서버 오류(500)', error: serverError(500, 'SYS_0001'), expected: false },
+  ] as const)('$name은 공급자 장애인지 $expected', ({ error, expected }) => {
     // When
-    const isUnavailable = isWeatherProviderUnavailableError(unavailable);
-    const isInternalUnavailable = isWeatherProviderUnavailableError(internal);
+    const isUnavailable = isWeatherProviderUnavailableError(error);
 
     // Then
-    expect(isUnavailable).toBe(true);
-    expect(isInternalUnavailable).toBe(false);
+    expect(isUnavailable).toBe(expected);
   });
 
   it('응답 파싱 실패는 공급자 장애가 아닌 일반 오류로 분류한다', () => {

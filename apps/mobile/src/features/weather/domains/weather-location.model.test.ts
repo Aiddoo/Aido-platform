@@ -113,6 +113,7 @@ describe('getLocationStatus', () => {
       place: { city: '서울', district: '중구' },
       countryCode: 'KR',
       revision: 1,
+      isLastKnown: false,
     });
 
     // Then

@@ -1,13 +1,12 @@
-import { ErrorCode } from "@aido/api/errors";
 import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AUTH_DEFAULTS } from "../../domain/auth.constants.js";
 import { SessionId } from "../../domain/session-id.vo.js";
+import { sessionNotFound } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthSecurityLogRepositoryPort } from "../ports/auth-security-log.repository.port.js";
@@ -42,7 +41,7 @@ export class RevokeSessionUseCase {
     const sessionId = SessionId.reconstitute(input.sessionId);
     const authSession = await this.#dependencies.sessionRepository.findById(sessionId);
     if (authSession == null || !authSession.isOwnedBy(userId)) {
-      throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
+      throw sessionNotFound();
     }
 
     await this.#dependencies.sessionRepository.revoke(

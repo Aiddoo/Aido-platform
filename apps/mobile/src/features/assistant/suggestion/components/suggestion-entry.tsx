@@ -1,42 +1,32 @@
-import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import {
+  type EntitlementSnapshot,
+  EntitlementPolicy,
+} from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { AiFilledIcon, ListRow, type QueryErrorFallbackProps, Text } from '@src/shared/ui';
-import { useQuery } from '@tanstack/react-query';
+import { AiFilledIcon, LabelChip, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
+import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Chip, PressableFeedback } from 'heroui-native';
-import type { ComponentProps } from 'react';
+import { PressableFeedback } from 'heroui-native';
+import { type ComponentProps, Suspense } from 'react';
 
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 
-/** 피드의 선택 칸이라 조회 오류를 던지지 않고 칸 안에서 다시 시도한다. 개발 빌드 LogBox가 화면을 덮지 않게 한다 */
 export function SuggestionEntry() {
-  const push = useSingleTap(router.push);
-
   const { t } = useTranslation('todo');
-  const userQuery = useQuery(useGetMeQueryOptions());
-  const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
+  const push = useSingleTap(router.push);
+  const [{ data: me }, { data: canUseSuggestions }] = useSuspenseQueries({
+    queries: [
+      useGetMeQueryOptions(),
+      { ...useGetEntitlementsQueryOptions(), select: selectCanUseSuggestions },
+    ],
+  });
 
-  if (userQuery.isPending || entitlementsQuery.isPending) {
-    return <SuggestionEntry.Loading />;
-  }
-
-  if (userQuery.data == null || entitlementsQuery.data == null) {
-    return (
-      <SuggestionEntry.Error
-        error={userQuery.error ?? entitlementsQuery.error}
-        reset={() => {
-          userQuery.refetch();
-          entitlementsQuery.refetch();
-        }}
-      />
-    );
-  }
-
-  if (!EntitlementPolicy.canUseFeature(entitlementsQuery.data, 'AI_SUGGESTION')) {
+  if (!canUseSuggestions) {
     return (
       <InfoCard
         label={t('feed.routineSuggestion')}
@@ -46,20 +36,25 @@ export function SuggestionEntry() {
     );
   }
 
-  return <PremiumSuggestionEntry name={userQuery.data.name} />;
+  // 제안만 늦게 오면 "불러오는 중" 대신 제안을 기다린다는 문구를 보인다
+  return (
+    <Suspense fallback={<InfoCard label={t('feed.suggestionsLoading')} />}>
+      <PremiumSuggestionEntry name={me.name} />
+    </Suspense>
+  );
 }
 
-interface PremiumSuggestionEntryProps {
-  name: string;
-}
+SuggestionEntry.Loading = function Loading() {
+  const { t } = useTranslation('todo');
+  return <InfoCard label={t('feed.loading')} />;
+};
 
-function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
+SuggestionEntry.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['todo', 'ai']);
   const push = useSingleTap(router.push);
 
-  const { t } = useTranslation(['todo', 'ai']);
-  const suggestionsQuery = useQuery({ ...useGetSuggestionsQueryOptions(), throwOnError: false });
-
-  if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
+  // 한도 스냅샷이 늦어 프리미엄으로 보였지만 서버는 거절했다. 다시 시도 대신 결제 화면으로 보낸다
+  if (isSuggestionsPremiumRequiredError(error)) {
     return (
       <InfoCard
         label={t('ai:suggestions.toasts.premiumOnly')}
@@ -68,23 +63,24 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
     );
   }
 
-  if (suggestionsQuery.isPending) {
-    return <InfoCard label={t('feed.suggestionsLoading')} />;
-  }
+  return <InfoCard label={t('todo:feed.suggestionsRetry')} onPress={reset} />;
+};
 
-  const suggestions = suggestionsQuery.data;
-  if (!suggestions) {
-    return (
-      <SuggestionEntry.Error
-        error={suggestionsQuery.error}
-        reset={() => suggestionsQuery.refetch()}
-      />
-    );
-  }
+interface PremiumSuggestionEntryProps {
+  name: string;
+}
+
+function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
+  const { t } = useTranslation('todo');
+  const push = useSingleTap(router.push);
+  const { data: suggestionCount } = useSuspenseQuery({
+    ...useGetSuggestionsQueryOptions(),
+    select: (suggestions) => suggestions.length,
+  });
 
   const label =
-    suggestions.length > 0
-      ? t('feed.suggestionsArrived', { name, count: suggestions.length })
+    suggestionCount > 0
+      ? t('feed.suggestionsArrived', { name, count: suggestionCount })
       : t('feed.preparing');
 
   return <InfoCard label={label} onPress={() => push('/suggestions')} />;
@@ -98,11 +94,18 @@ interface InfoCardProps extends Omit<ComponentProps<typeof PressableFeedback>, '
 
 function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
   const { t } = useTranslation('subscription');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <PressableFeedback className="rounded-xl bg-gray-1 px-4" {...props}>
       <ListRow
-        left={<AiFilledIcon width={24} height={24} colorClassName="text-main" />}
+        left={
+          <AiFilledIcon
+            width={fontScaledSize(24)}
+            height={fontScaledSize(24)}
+            colorClassName="text-main"
+          />
+        }
         contents={
           <ListRow.Texts
             type="1RowTypeA"
@@ -113,16 +116,12 @@ function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
         right={
           isPremiumOnly && (
             // Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 카드가 눌리지 않는다
-            <Chip size="sm" variant="soft" color="accent" pointerEvents="none">
-              <Text
-                size="e1"
-                weight="semibold"
-                numberOfLines={1}
-                className="text-accent-soft-foreground"
-              >
-                {t('tier.premium')}
-              </Text>
-            </Chip>
+            <LabelChip
+              color="accent"
+              label={t('tier.premium')}
+              labelProps={{ weight: 'semibold', numberOfLines: 1 }}
+              pointerEvents="none"
+            />
           )
         }
       />
@@ -130,12 +129,6 @@ function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
   );
 }
 
-SuggestionEntry.Loading = function Loading() {
-  const { t } = useTranslation('todo');
-  return <InfoCard label={t('feed.loading')} />;
-};
-
-SuggestionEntry.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('todo');
-  return <InfoCard label={t('feed.suggestionsRetry')} onPress={reset} />;
-};
+function selectCanUseSuggestions(snapshot: EntitlementSnapshot) {
+  return EntitlementPolicy.canUseFeature(snapshot, 'AI_SUGGESTION');
+}

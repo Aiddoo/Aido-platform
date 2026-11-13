@@ -5,9 +5,9 @@ import { createDateKey } from '@src/testing/date-key';
 
 import { createNudgeLimitInfo } from '../__tests__/todo-nudge.fixtures';
 import {
+  isLimitReached,
   isMessageTooLong,
   normalizeMessage,
-  NudgeLimitPolicy,
   TodoNudgePolicy,
 } from './todo-nudge.model';
 
@@ -205,7 +205,7 @@ describe('isLimitReached', () => {
     const limitInfo = createNudgeLimitInfo({ remainingToday: 0 });
 
     // When
-    const result = NudgeLimitPolicy.isLimitReached(limitInfo);
+    const result = isLimitReached(limitInfo);
 
     // Then
     expect(result).toBe(true);
@@ -216,7 +216,7 @@ describe('isLimitReached', () => {
     const limitInfo = createNudgeLimitInfo({ remainingToday: 2 });
 
     // When
-    const result = NudgeLimitPolicy.isLimitReached(limitInfo);
+    const result = isLimitReached(limitInfo);
 
     // Then
     expect(result).toBe(false);
@@ -227,7 +227,7 @@ describe('isLimitReached', () => {
     const limitInfo = createNudgeLimitInfo({ remainingToday: 1 });
 
     // When
-    const result = NudgeLimitPolicy.isLimitReached(limitInfo);
+    const result = isLimitReached(limitInfo);
 
     // Then
     expect(result).toBe(false);
@@ -238,7 +238,7 @@ describe('isLimitReached', () => {
     const limitInfo = createNudgeLimitInfo({ remainingToday: null });
 
     // When
-    const result = NudgeLimitPolicy.isLimitReached(limitInfo);
+    const result = isLimitReached(limitInfo);
 
     // Then
     expect(result).toBe(false);

@@ -1,6 +1,7 @@
 import { type InfiniteData, queryOptions } from '@tanstack/react-query';
 
-import type { Memo, MemoPage, MemoResourceLimit } from '../domains/memo.model';
+import type { MemoResourceLimit } from '../domains/memo-resource-limit.model';
+import type { Memo, MemoPage } from '../domains/memo.model';
 
 export const MEMO_QUERY_KEYS = {
   all: ['memo'] as const,

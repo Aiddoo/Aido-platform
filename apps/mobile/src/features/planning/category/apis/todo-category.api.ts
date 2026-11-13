@@ -8,7 +8,7 @@ import {
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { TodoCategoryDeletionRequest } from '../domains/todo-category.model';
+import type { TodoCategoryDeletionRequest } from '../domains/todo-category-deletion.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type {
   TodoCategoryChange,

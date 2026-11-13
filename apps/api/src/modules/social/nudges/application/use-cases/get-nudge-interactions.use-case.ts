@@ -5,7 +5,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { NudgeId } from "../../domain/nudge-id.vo.js";
 import { isNudgeInteractionAvailable } from "../../domain/nudge-interaction.domain-service.js";
 import type { NudgeDirection } from "../../domain/nudges.constants.js";
-import { nudgeInteractionNotFound } from "../nudges.errors.js";
+import { nudgeInteractionDisabled } from "../nudges.errors.js";
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
 import type { NudgeInteraction } from "../read-models/nudge-interaction.read-model.js";
@@ -33,7 +33,7 @@ export class GetNudgeInteractionsUseCase {
   async execute(query: GetNudgeInteractionsQuery): Promise<CursorPage<NudgeInteraction, number>> {
     const { nudgeReader, interactionConfig, followReader } = this.#dependencies;
     if (!interactionConfig.isEnabled) {
-      throw nudgeInteractionNotFound();
+      throw nudgeInteractionDisabled();
     }
 
     const size = clampPageSize(query.size);

@@ -16,6 +16,7 @@ export function useDraftStorage<TValue>(
 ) {
   const draftService = useDraftService();
   const [mountedDraftKey] = useState(draftKey);
+  const [saveInSession] = useState(() => draftService.createSessionSave(mountedDraftKey));
   const [restoreResult] = useState(() =>
     draftService.restore(mountedDraftKey, { sourceUpdatedAt }),
   );
@@ -34,8 +35,8 @@ export function useDraftStorage<TValue>(
   }, [restoreResult]);
 
   const saveDraft = useCallback(
-    (value: TValue) => draftService.save(mountedDraftKey, value, { sourceUpdatedAt }),
-    [draftService, mountedDraftKey, sourceUpdatedAt],
+    (value: TValue) => saveInSession(value, { sourceUpdatedAt }),
+    [saveInSession, sourceUpdatedAt],
   );
 
   const clearDraft = useCallback(

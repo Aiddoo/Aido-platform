@@ -1,5 +1,5 @@
 import type { Analytics } from '@src/core/ports/analytics';
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import { ENV } from '@src/shared/config/env';
 
 import {
@@ -9,7 +9,7 @@ import {
 } from '../analytics';
 
 /** 프로덕션 = Firebase/Sentry, 그 외 = console. 앱 트리와 위젯 headless가 같은 규칙을 공유하며, 오류 보고기는 firebase를 끌어오지 않도록 `error-reporter`에 따로 둔다 */
-export function createEnvironmentAnalytics(logger: Logger): Analytics {
+export function createEnvironmentAnalytics(logger: AppLogger): Analytics {
   if (ENV.IS_PRODUCTION) {
     return createFirebaseAnalytics(logger);
   }

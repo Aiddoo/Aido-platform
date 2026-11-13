@@ -4,13 +4,13 @@ import { useClaimDeviceDataForUser } from '@src/bootstrap/hooks/use-claim-device
 import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
+import { emitSessionConfirmed } from '@src/core/events/session-confirmed';
 import { emitSessionExpired } from '@src/core/events/session-expired';
 import { subscribeTodoCreated } from '@src/core/events/todo-created';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
 import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { UserApi } from '@src/features/identity/user/apis/user.api';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { useUpdateProfileMutationOptions } from '@src/features/identity/user/queries/user.mutations';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -19,7 +19,6 @@ import {
   createTodoDto,
   createTodoFormValues,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { toInstant } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
@@ -31,11 +30,12 @@ import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createErrorReporterStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemoryTokenStore,
   createHttpClientStub,
   createAnalyticsStub,
   createPendingResponse,
+  respondByPath,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -43,13 +43,14 @@ import { onlineManager, useMutation, useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 import { z } from 'zod';
 
-import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';
+import { ACCOUNT_A_TOKENS, createAuthSession, ME_PATH } from '../__tests__/auth-session.test-utils';
 import {
   createAppleSignInSuccess,
   createAuthTokensDto,
   createDeleteAccountDto,
 } from '../__tests__/auth.fixtures';
 import { AuthApi } from '../apis/auth.api';
+import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import { useAuthSession } from '../hooks/use-auth-session';
 import { useAuthStatus } from '../hooks/use-auth-status';
 import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from '../services/log-out-device.service';
@@ -326,6 +327,31 @@ describe('대기 중인 초대', () => {
     expect(readStoredValue(session.syncStorage, pendingRedemptionStoredValue)).toBeNull();
   });
 
+  it('탈퇴하면 지워 다음 계정이 앞사람의 초대를 받지 않는다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account' ? ok(createDeleteAccountDto()) : ok({}),
+    );
+    writeStoredValue(session.syncStorage, pendingRedemptionStoredValue, PENDING_INVITE);
+    const { result } = await session.renderSession(
+      () => ({
+        status: useAuthStatus(),
+        deleteAccount: useMutation(useDeleteAccountMutationOptions()),
+      }),
+      'authenticated',
+    );
+
+    // When
+    await act(async () => {
+      await result.current.deleteAccount.mutateAsync({ password: 'password-1' });
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(readStoredValue(session.syncStorage, pendingRedemptionStoredValue)).toBeNull();
+  });
+
   it('세션이 만료되면 남겨 다시 로그인한 뒤 이어서 받는다', async () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
@@ -360,9 +386,9 @@ describe('대기 중인 초대', () => {
 describe('계정을 떠날 때의 Analytics 정리 순서', () => {
   function givenRecordedAnalytics() {
     const analytics = createAnalyticsStub();
-    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, di: { analytics } });
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, ports: { analytics } });
     const calls: string[] = [];
-    const statusNow = () => session.container.authSessionStore.getState().status;
+    const statusNow = () => session.container.authSessionStore.getSnapshot().status;
     analytics.trackEvent.mockImplementation((name) => calls.push(`${name}:${statusNow()}`));
     analytics.clearUser.mockImplementation(() => calls.push(`clearUser:${statusNow()}`));
     analytics.resetData.mockImplementation(() => calls.push(`resetData:${statusNow()}`));
@@ -389,7 +415,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
 
     // Then
     expect(calls).toEqual(['auth_logout:authenticated', 'clearUser:authenticated']);
-    expect(session.container.authSessionStore.getState().status).toBe('unauthenticated');
+    expect(session.container.authSessionStore.getSnapshot().status).toBe('unauthenticated');
   });
 
   it('오프라인 로그아웃도 같은 순서다', async () => {
@@ -405,7 +431,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
 
     // Then
     expect(calls).toEqual(['auth_logout:authenticated', 'clearUser:authenticated']);
-    expect(session.container.authSessionStore.getState().status).toBe('unauthenticated');
+    expect(session.container.authSessionStore.getSnapshot().status).toBe('unauthenticated');
   });
 
   it('탈퇴는 이벤트, 데이터 초기화, 로그아웃 전환 순서이고 사용자 정리를 따로 부르지 않는다', async () => {
@@ -423,7 +449,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
 
     // Then
     expect(calls).toEqual(['auth_account_deleted:authenticated', 'resetData:authenticated']);
-    expect(session.container.authSessionStore.getState().status).toBe('unauthenticated');
+    expect(session.container.authSessionStore.getSnapshot().status).toBe('unauthenticated');
   });
 
   it('탈퇴가 실패하면 Analytics를 건드리지 않는다', async () => {
@@ -444,11 +470,15 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
 
     // Then
     expect(calls).toEqual([]);
-    expect(session.container.authSessionStore.getState().status).toBe('authenticated');
+    expect(session.container.authSessionStore.getSnapshot().status).toBe('authenticated');
   });
 });
 
 describe('탈퇴', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
   const useDeleteProbe = () => ({
     status: useAuthStatus(),
     deleteAccount: useMutation(useDeleteAccountMutationOptions()),
@@ -481,7 +511,7 @@ describe('탈퇴', () => {
     const coachmarks = createCoachmarkRecords(session.syncStorage);
     coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
     coachmarks.markSeen({ accountId: OTHER_ACCOUNT_ID, kind: 'todo-reorder' });
-    session.userHttp.get.mockResolvedValue(ok(account));
+    session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(account) }));
     session.authHttp.delete.mockImplementation(async (url) =>
       url === 'v1/auth/account' ? ok(createDeleteAccountDto()) : ok({}),
     );
@@ -516,7 +546,7 @@ describe('탈퇴', () => {
     const coachmarks = createCoachmarkRecords(session.syncStorage);
     coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
     const deleteRequest = createPendingResponse(ok(createDeleteAccountDto()));
-    session.userHttp.get.mockResolvedValue(ok(account));
+    session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(account) }));
     session.authHttp.delete.mockImplementation((url) =>
       url === 'v1/auth/account' ? deleteRequest.response : Promise.resolve(ok({})),
     );
@@ -553,6 +583,210 @@ describe('탈퇴', () => {
       expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' }),
     );
     expect(coachmarks.hasSeen({ accountId: account.userId, kind: 'todo-reorder' })).toBe(false);
+  });
+
+  it('내 정보를 받기 전에 탈퇴해도 서버의 내 정보로 그 계정의 안내 기록을 지운다', async () => {
+    // Given
+    const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    const coachmarks = createCoachmarkRecords(session.syncStorage);
+    coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
+    session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(account) }));
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account' ? ok(createDeleteAccountDto()) : ok({}),
+    );
+    const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+    session.queryClient.removeQueries({ queryKey: USER_QUERY_KEYS.me() });
+
+    // When
+    await act(async () => {
+      await result.current.deleteAccount.mutateAsync({ password: 'password-1' });
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(coachmarks.hasSeen({ accountId: account.userId, kind: 'todo-reorder' })).toBe(false);
+  });
+
+  it('내 정보를 받지 못해도 탈퇴는 이어 가고 안내 기록을 지우지 못한 것을 남긴다', async () => {
+    // Given
+    const logger = createAppLoggerStub();
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, ports: { logger } });
+    session.authHttp.get.mockRejectedValue(new ServerError(503));
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account' ? ok(createDeleteAccountDto()) : ok({}),
+    );
+    const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+    session.queryClient.removeQueries({ queryKey: USER_QUERY_KEYS.me() });
+    session.draftService.save(memoDraftKey, { content: '작성 중' });
+
+    // When
+    await act(async () => {
+      await result.current.deleteAccount.mutateAsync({ password: 'password-1' });
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' });
+    expect(logger.warn).toHaveBeenCalledWith(AUTH_LOG_EVENT.ACCOUNT_DELETION_OWNER_UNKNOWN);
+  });
+
+  it.each([
+    ['시간 초과', () => Promise.reject(new TimeoutError())],
+    ['온라인에서 연결 끊김', () => Promise.reject(new NetworkError())],
+  ])(
+    '탈퇴 응답을 받지 못한 채(%s) 세션이 끝나면 로그아웃처럼 초안과 안내 기록을 지운다',
+    async (_name, respond) => {
+      // Given
+      const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
+      const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+      const coachmarks = createCoachmarkRecords(session.syncStorage);
+      coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
+      session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(account) }));
+      session.authHttp.delete.mockImplementation((url) =>
+        url === 'v1/auth/account' ? respond() : Promise.resolve(ok({})),
+      );
+      const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+      session.draftService.save(memoDraftKey, { content: '작성 중' });
+      await act(async () => {
+        await result.current.deleteAccount
+          .mutateAsync({ password: 'password-1' })
+          .catch(() => undefined);
+      });
+
+      // When
+      await act(async () => {
+        emitSessionExpired({ reason: 'refresh-rejected' });
+        await jest.advanceTimersByTimeAsync(0);
+      });
+
+      // Then
+      await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+      expect(session.draftService.restore(memoDraftKey)).toEqual({ status: 'empty' });
+      expect(coachmarks.hasSeen({ accountId: account.userId, kind: 'todo-reorder' })).toBe(false);
+    },
+  );
+
+  it('오프라인이라 보내지 못한 탈퇴 뒤 세션이 만료되면 같은 사람이 이어 쓰도록 초안을 남긴다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.delete.mockImplementation((url) =>
+      url === 'v1/auth/account' ? Promise.reject(new NetworkError()) : Promise.resolve(ok({})),
+    );
+    const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+    session.draftService.save(memoDraftKey, { content: '작성 중' });
+    onlineManager.setOnline(false);
+    await act(async () => {
+      await result.current.deleteAccount
+        .mutateAsync({ password: 'password-1' })
+        .catch(() => undefined);
+    });
+    onlineManager.setOnline(true);
+
+    // When
+    await act(async () => {
+      emitSessionExpired({ reason: 'refresh-rejected' });
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(session.draftService.restore(memoDraftKey)).toEqual({
+      status: 'restored',
+      value: { content: '작성 중' },
+    });
+  });
+
+  it('오프라인이라 보내지 못한 탈퇴 뒤 로그아웃해도 그 계정의 안내 기록을 남긴다', async () => {
+    // Given
+    const account = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    const coachmarks = createCoachmarkRecords(session.syncStorage);
+    coachmarks.markSeen({ accountId: account.userId, kind: 'todo-reorder' });
+    session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(account) }));
+    session.authHttp.delete.mockImplementation((url) =>
+      url === 'v1/auth/account' ? Promise.reject(new NetworkError()) : Promise.resolve(ok({})),
+    );
+    const { result } = await session.renderSession(
+      () => ({
+        status: useAuthStatus(),
+        deleteAccount: useMutation(useDeleteAccountMutationOptions()),
+        logout: useMutation(useLogoutMutationOptions()),
+      }),
+      'authenticated',
+    );
+    onlineManager.setOnline(false);
+    await act(async () => {
+      await result.current.deleteAccount
+        .mutateAsync({ password: 'password-1' })
+        .catch(() => undefined);
+    });
+
+    // When
+    await act(async () => {
+      await result.current.logout.mutateAsync();
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(coachmarks.hasSeen({ accountId: account.userId, kind: 'todo-reorder' })).toBe(true);
+  });
+
+  it('응답 없이 끝난 탈퇴 뒤 인증 요청이 성공하면 이후 만료는 같은 사람이 이어 쓰도록 초안을 남긴다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.delete.mockImplementation((url) =>
+      url === 'v1/auth/account' ? Promise.reject(new TimeoutError()) : Promise.resolve(ok({})),
+    );
+    const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+    session.draftService.save(memoDraftKey, { content: '작성 중' });
+    await act(async () => {
+      await result.current.deleteAccount
+        .mutateAsync({ password: 'password-1' })
+        .catch(() => undefined);
+    });
+    emitSessionConfirmed();
+
+    // When
+    await act(async () => {
+      emitSessionExpired({ reason: 'refresh-rejected' });
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(session.draftService.restore(memoDraftKey)).toEqual({
+      status: 'restored',
+      value: { content: '작성 중' },
+    });
+  });
+
+  it('서버가 탈퇴를 거절한 뒤 세션이 만료되면 같은 사람이 이어 쓰도록 초안을 남긴다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    session.authHttp.delete.mockImplementation(async (url) =>
+      url === 'v1/auth/account'
+        ? err(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
+        : ok({}),
+    );
+    const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
+    session.draftService.save(memoDraftKey, { content: '작성 중' });
+    await act(async () => {
+      await result.current.deleteAccount.mutateAsync({ password: 'wrong' }).catch(() => undefined);
+    });
+
+    // When
+    await act(async () => {
+      emitSessionExpired({ reason: 'refresh-rejected' });
+      await jest.advanceTimersByTimeAsync(0);
+    });
+
+    // Then
+    await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
+    expect(session.draftService.restore(memoDraftKey)).toEqual({
+      status: 'restored',
+      value: { content: '작성 중' },
+    });
   });
 
   it('비밀번호가 틀려 실패하면 토큰과 상태를 유지한다', async () => {
@@ -723,16 +957,18 @@ describe('로그아웃과 늦은 갱신', () => {
     );
     const http = new KyHttpClient(
       createAuthClient({
+        appVersion: null,
+        appBuild: null,
         tokenStore,
         refresh: createTokenRefresher({
           tokenStore,
           requestRefresh: () => lateRefresh.response,
           sessionEpoch,
-          logger: createLoggerStub(),
+          logger: createAppLoggerStub(),
         }),
         endSession: (details) => sessionManager.end(details),
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
         errorReporter: createErrorReporterStub(),
       }),
     );
@@ -747,7 +983,7 @@ describe('로그아웃과 늦은 갱신', () => {
       tokenStore,
       sessionRevocationService: { record: async () => undefined },
       sessionEpoch,
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
     }).logOut({ isOnline: true });
 
     // When
@@ -778,7 +1014,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.delete.mockResolvedValue(ok({}));
     session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
-    session.userHttp.get.mockResolvedValue(ok(ACCOUNT_A));
+    session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(ACCOUNT_A) }));
     // 앱의 기본값. 신선한 값이면 다음 계정이 그대로 읽는다
     session.queryClient.setDefaultOptions({
       queries: { retry: false, gcTime: Infinity, staleTime: 5 * 60 * 1000 },
@@ -791,7 +1027,9 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     // Given
     const session = givenSignedInAccountA();
     const profile = createPendingResponse(REJECTED);
-    session.userHttp.patch.mockReturnValue(profile.response);
+    session.authHttp.patch.mockImplementation(
+      respondByPath({ 'v1/auth/profile': () => profile.response }),
+    );
     const { result } = await session.renderSession(
       () => ({
         status: useAuthStatus(),
@@ -806,7 +1044,9 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
       .build(session.queryClient, result.current.profileOptions)
       .execute({ name: '새 이름' })
       .catch(() => undefined);
-    await waitFor(() => expect(session.userHttp.patch).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(session.authHttp.patch).toHaveBeenCalledWith('v1/auth/profile', expect.anything()),
+    );
 
     // When
     await act(async () => {
@@ -824,21 +1064,20 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
 
   it('A의 늦은 생성 성공이 B에게 이벤트와 활성화 기록을 남기지 않는다', async () => {
     // Given
-    const todoHttp = createHttpClientStub();
     const created = createPendingResponse(ok({ message: '생성됨', todo: createTodoDto() }));
-    todoHttp.post.mockReturnValue(created.response);
-    todoHttp.get.mockRejectedValue(new Error('이 테스트는 조회를 보지 않는다'));
     const analytics = createAnalyticsStub();
     let createdEventCount = 0;
     const unsubscribeCreated = subscribeTodoCreated(() => {
       createdEventCount += 1;
     });
-    const session = createAuthSession({
-      tokens: ACCOUNT_A_TOKENS,
-      di: { todoApi: new TodoApi(todoHttp), analytics },
-    });
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS, ports: { analytics } });
     session.authHttp.delete.mockResolvedValue(ok({}));
-    session.authHttp.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
+    session.authHttp.post.mockImplementation(
+      respondByPath({
+        'v1/todos': () => created.response,
+        'v1/auth/logout': ok({ message: '로그아웃되었습니다.' }),
+      }),
+    );
     const { result } = await session.renderSession(
       () => ({
         status: useAuthStatus(),
@@ -857,7 +1096,9 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
         }),
       })
       .catch(() => undefined);
-    await waitFor(() => expect(todoHttp.post).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(session.authHttp.post).toHaveBeenCalledWith('v1/todos', expect.anything()),
+    );
     await act(async () => {
       await result.current.logout.mutateAsync();
     });
@@ -881,7 +1122,9 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     // Given
     const session = givenSignedInAccountA();
     const profile = createPendingResponse(REJECTED);
-    session.userHttp.patch.mockReturnValue(profile.response);
+    session.authHttp.patch.mockImplementation(
+      respondByPath({ 'v1/auth/profile': () => profile.response }),
+    );
     session.publicHttp.post.mockResolvedValue(ok(createAuthTokensDto()));
     const draftKeyOfB = createDraftKey({
       ownerId: ACCOUNT_B.userId,
@@ -911,7 +1154,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
     // 관찰자가 마운트된 채 다시 그려지면 정리에서 비운 콜백이 복구되어 이 쓰기가 일어날 수 있다
     session.queryClient.setQueryData(ME_KEY, staleMe);
-    session.userHttp.get.mockResolvedValue(ok(ACCOUNT_B));
+    session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(ACCOUNT_B) }));
     session.draftService.save(draftKeyOfB, { content: 'B의 초안' });
 
     // When
@@ -929,7 +1172,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
       status: 'restored',
       value: { content: 'B의 초안' },
     });
-    expect(session.userHttp.get).toHaveBeenCalledTimes(2);
+    expect(session.authHttp.get.mock.calls.filter(([url]) => url === ME_PATH)).toHaveLength(2);
   });
 });
 
@@ -974,22 +1217,24 @@ describe('토큰 만료', () => {
     const tokenStore = withSessionEpoch(createMemoryTokenStore(ACCOUNT_A_TOKENS), sessionEpoch);
     const sessionManager = createSessionManager(tokenStore);
     const client = createAuthClient({
+      appVersion: null,
+      appBuild: null,
       tokenStore,
       refresh: createTokenRefresher({
         tokenStore,
         requestRefresh,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       }),
       endSession: (details) => sessionManager.end(details),
       sessionEpoch,
-      logger: createLoggerStub(),
+      logger: createAppLoggerStub(),
       errorReporter: createErrorReporterStub(),
     });
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
     const session = createAuthSession({
       tokenStore,
-      di: { userApi: new UserApi(new KyHttpClient(client)) },
+      ports: { authHttpClient: new KyHttpClient(client) },
     });
     return { ...session, client };
   }
@@ -1082,24 +1327,26 @@ describe('토큰 만료', () => {
     const sessionManager = createSessionManager(tokenStore);
     const http = new KyHttpClient(
       createAuthClient({
+        appVersion: null,
+        appBuild: null,
         tokenStore,
         refresh: createTokenRefresher({
           tokenStore,
           requestRefresh: async () => new Response(null, { status: 401 }),
           sessionEpoch,
-          logger: createLoggerStub(),
+          logger: createAppLoggerStub(),
         }),
         endSession: (details) => sessionManager.end(details),
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
         errorReporter: createErrorReporterStub(),
       }),
     );
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
-    const session = createAuthSession({
-      tokenStore,
-      di: { authHttpClient: http },
-    });
+    const session = createAuthSession({ tokenStore });
+    // 부팅의 내 정보 조회는 바로 답하고 로그아웃이 보내는 요청만 실제 토큰 파이프라인으로 보낸다
+    session.authHttp.post.mockImplementation((...args) => http.post(...args));
+    session.authHttp.delete.mockImplementation((...args) => http.delete(...args));
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), logout: useMutation(useLogoutMutationOptions()) }),
       'authenticated',
@@ -1160,7 +1407,7 @@ describe('토큰 만료', () => {
     function givenSessionWithEpoch() {
       const sessionEpoch = createSessionEpoch();
       const tokenStore = withSessionEpoch(createMemoryTokenStore(ACCOUNT_A_TOKENS), sessionEpoch);
-      const session = createAuthSession({ tokenStore, di: { sessionEpoch } });
+      const session = createAuthSession({ tokenStore, ports: { sessionEpoch } });
       session.authHttp.delete.mockResolvedValue(ok({}));
       const useSessionProbe = () => ({
         status: useAuthStatus(),
@@ -1322,7 +1569,7 @@ describe('만료 후 다시 로그인', () => {
 
   async function expireThenLogin(nextAccount: typeof ACCOUNT_A) {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
-    session.userHttp.get.mockResolvedValue(ok(ACCOUNT_A));
+    session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(ACCOUNT_A) }));
     session.publicHttp.post.mockResolvedValue(ok(createAuthTokensDto()));
     const { result } = await session.renderSession(useReloginProbe, 'authenticated');
     session.draftService.save(draftKeyOfA, { content: '작성 중' });
@@ -1330,7 +1577,7 @@ describe('만료 후 다시 로그인', () => {
     await act(() => emitSessionExpired({ reason: 'refresh-rejected' }));
     await waitFor(() => expect(result.current.status).toBe('unauthenticated'));
 
-    session.userHttp.get.mockResolvedValue(ok(nextAccount));
+    session.authHttp.get.mockImplementation(respondByPath({ [ME_PATH]: ok(nextAccount) }));
     await act(async () => {
       await result.current.login.mutateAsync({ email: 'a@aido.app', password: 'password-1' });
     });
@@ -1343,7 +1590,9 @@ describe('만료 후 다시 로그인', () => {
     const session = await expireThenLogin(ACCOUNT_A);
 
     // Then
-    await waitFor(() => expect(session.userHttp.get).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(session.authHttp.get.mock.calls.filter(([url]) => url === ME_PATH)).toHaveLength(2),
+    );
     await act(async () => {
       await jest.runOnlyPendingTimersAsync();
     });

@@ -20,13 +20,15 @@ export type AppQueryMeta = {
 export type MutationErrorFeedbackMeta = {
   /** 예측하지 못한 오류를 보고할 때 붙는 기능 */
   feature: ErrorReportFeature;
-  /** 사용자 문구가 없는 오류(파싱·SDK 실패)에 보일 토스트 문구 */
-  fallbackKey: ParseKeysWithoutVariables<AppNamespaces>;
+  /** 사용자 문구가 없는 오류(파싱·SDK 실패)에 보일 토스트 문구. 없으면 `errors:fallback` */
+  fallbackKey?: ParseKeysWithoutVariables<AppNamespaces>;
   /**
    * 기능이 직접 보이는 오류면 true. 옵션 `onError`의 코드별 안내·이동·한도 시트, 호출부 `onError`의 `form.setError`가 그 예다.
    * 캐시 단계 전역 처리가 기능 콜백보다 먼저 돌아 미리 알아야 한다. 이 오류에는 햅틱·토스트·보고를 하지 않는다
    */
   isHandledByFeature?: (error: unknown) => boolean;
+  /** 토스트 둘째 줄에 붙일 기능만의 설명(AI가 차감하지 않았다는 안내 등). 붙일 것이 없으면 undefined */
+  describe?: (error: unknown) => string | undefined;
 };
 
 export type AppMutationMeta = {

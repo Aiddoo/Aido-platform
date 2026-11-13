@@ -86,9 +86,40 @@
       }
     },
     {
+      "files": ["apps/api/src/**/*.ts", "packages/*/src/**/*.ts"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.ts", "packages/*/src/**/*.ts"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts", "**/*.test.ts"],
+      "rules": {
+        "aido/time-constant-unit": "error"
+      }
+    },
+    {
       "files": ["apps/api/src/platform/database/schema/*.ts"],
       "rules": {
         "aido/no-pg-enum-literal": "error"
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.ts"],
+      "excludeFiles": ["**/*.errors.ts", "**/*.spec.ts", "**/*.integration-spec.ts"],
+      "rules": {
+        "aido/no-inline-coded-exception": "error"
       }
     },
     {

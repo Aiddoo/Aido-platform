@@ -1,14 +1,5 @@
-import {
-  createTodoCategoryDeletionPreview,
-  createTodoCategoryWithCount,
-} from '../__tests__/todo-category.fixtures';
-import {
-  excludeCategory,
-  findFirstInSortOrder,
-  hasTodosToHandle,
-  TodoCategoryDeletionPolicy,
-  TodoCategoryPolicy,
-} from './todo-category.model';
+import { createTodoCategoryWithCount } from '../__tests__/todo-category.fixtures';
+import { findFirstInSortOrder, TodoCategoryPolicy } from './todo-category.model';
 
 const PERSONAL = createTodoCategoryWithCount({ id: 1, name: '개인', sortOrder: 0 });
 const WORK = createTodoCategoryWithCount({ id: 3, name: '업무', sortOrder: 2 });
@@ -110,21 +101,21 @@ describe('TodoCategoryPolicy.canReorder', () => {
   });
 });
 
-describe('TodoCategoryPolicy.getMoveTargets', () => {
-  it('지우는 카테고리만 빼고 나머지를 목록 순서대로 남긴다', () => {
+describe('TodoCategoryPolicy.isMoveTarget', () => {
+  it.each([
+    { title: '다른 카테고리는 옮길 곳이다', category: PERSONAL, expected: true },
+    { title: '지우는 카테고리 자신은 옮길 곳이 아니다', category: WORKOUT, expected: false },
+    {
+      title: '저장 중인 임시 행은 서버 id가 없어 옮길 곳이 아니다',
+      category: createTodoCategoryWithCount({ id: -1, name: '새 카테고리' }),
+      expected: false,
+    },
+  ])('$title', ({ category, expected }) => {
     // When
-    const moveTargets = TodoCategoryPolicy.getMoveTargets(WORKOUT, CATEGORIES);
+    const result = TodoCategoryPolicy.isMoveTarget(category, WORKOUT);
 
     // Then
-    expect(moveTargets).toEqual([PERSONAL, WORK]);
-  });
-
-  it('다른 카테고리가 없으면 옮길 곳이 없다', () => {
-    // When
-    const moveTargets = TodoCategoryPolicy.getMoveTargets(WORKOUT, [WORKOUT]);
-
-    // Then
-    expect(moveTargets).toEqual([]);
+    expect(result).toBe(expected);
   });
 });
 
@@ -167,153 +158,27 @@ describe('TodoCategoryPolicy.findMoveTarget', () => {
     expect(moveTarget).toEqual(PERSONAL);
   });
 
+  it('저장 중인 임시 행을 골랐다고 와도 서버 id가 있는 곳으로 옮긴다', () => {
+    // Given
+    const saving = createTodoCategoryWithCount({ id: -1, name: '새 카테고리', sortOrder: -1 });
+
+    // When
+    const moveTarget = TodoCategoryPolicy.findMoveTarget(
+      WORKOUT,
+      [saving, ...CATEGORIES],
+      saving.id,
+    );
+
+    // Then
+    expect(moveTarget).toEqual(PERSONAL);
+  });
+
   it('다른 카테고리가 없으면 옮길 곳이 없다', () => {
     // When
     const moveTarget = TodoCategoryPolicy.findMoveTarget(WORKOUT, [WORKOUT], null);
 
     // Then
     expect(moveTarget).toBeNull();
-  });
-});
-
-describe('TodoCategoryDeletionPolicy.canDelete', () => {
-  it.each([
-    { title: '다른 카테고리가 있으면 지울 수 있다', isLastCategory: false, expected: true },
-    { title: '마지막 카테고리는 지울 수 없다', isLastCategory: true, expected: false },
-  ])('$title', ({ isLastCategory, expected }) => {
-    // Given
-    const preview = createTodoCategoryDeletionPreview({ isLastCategory });
-
-    // When
-    const result = TodoCategoryDeletionPolicy.canDelete(preview);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('TodoCategoryDeletionPolicy.shouldChooseTodoHandling', () => {
-  it.each([
-    {
-      title: '할 일과 반복이 있으면 처리 방식을 묻는다',
-      preview: { todoCount: 12, activeSeriesCount: 2 },
-      expected: true,
-    },
-    {
-      title: '할 일 없이 진행 중 반복만 있어도 묻는다',
-      preview: { todoCount: 0, completedTodoCount: 0, activeSeriesCount: 1 },
-      expected: true,
-    },
-    {
-      title: '할 일이 모두 끝낸 것이어도 지우면 기록이 사라져 묻는다',
-      preview: { todoCount: 3, completedTodoCount: 3, activeSeriesCount: 0 },
-      expected: true,
-    },
-    {
-      title: '할 일과 반복이 모두 없으면 묻지 않고 확인만 받는다',
-      preview: { todoCount: 0, completedTodoCount: 0, activeSeriesCount: 0 },
-      expected: false,
-    },
-    {
-      title: '마지막 카테고리는 할 일이 있어도 묻지 않는다',
-      preview: { todoCount: 5, isLastCategory: true },
-      expected: false,
-    },
-  ])('$title', ({ preview, expected }) => {
-    // Given
-    const deletionPreview = createTodoCategoryDeletionPreview(preview);
-
-    // When
-    const result = TodoCategoryDeletionPolicy.shouldChooseTodoHandling(deletionPreview);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('TodoCategoryDeletionPolicy.shouldWarnHistoryLoss', () => {
-  it.each([
-    {
-      title: '완료한 할 일이 있으면 함께 지울 때 달력의 완료 기록이 사라진다고 알린다',
-      completedTodoCount: 1,
-      expected: true,
-    },
-    { title: '완료한 할 일이 없으면 사라질 기록이 없다', completedTodoCount: 0, expected: false },
-  ])('$title', ({ completedTodoCount, expected }) => {
-    // Given
-    const preview = createTodoCategoryDeletionPreview({ completedTodoCount });
-
-    // When
-    const result = TodoCategoryDeletionPolicy.shouldWarnHistoryLoss(preview);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('TodoCategoryDeletionPolicy.toDeletionRequest', () => {
-  it.each([
-    {
-      title: '옮기기를 고르면 처리 방식과 옮길 곳을 보낸다',
-      preview: {},
-      choice: { todoHandling: 'move', moveToCategoryId: 4 },
-      expected: { todoHandling: 'move', moveToCategoryId: 4 },
-    },
-    {
-      title: '할 일 없이 진행 중 반복만 있어도 처리 방식과 옮길 곳을 보낸다',
-      preview: { todoCount: 0, completedTodoCount: 0, activeSeriesCount: 1 },
-      choice: { todoHandling: 'move', moveToCategoryId: 4 },
-      expected: { todoHandling: 'move', moveToCategoryId: 4 },
-    },
-    {
-      title: '함께 삭제를 고르면 남아 있던 옮길 곳은 빼고 보낸다',
-      preview: {},
-      choice: { todoHandling: 'delete', moveToCategoryId: 4 },
-      expected: { todoHandling: 'delete', moveToCategoryId: null },
-    },
-    {
-      title: '옮길 곳이 없으면 옮기기를 보낼 수 없다',
-      preview: {},
-      choice: { todoHandling: 'move', moveToCategoryId: null },
-      expected: null,
-    },
-    {
-      title: '마지막 카테고리는 무엇을 골라도 보낼 수 없다',
-      preview: { isLastCategory: true },
-      choice: { todoHandling: 'delete', moveToCategoryId: null },
-      expected: null,
-    },
-    {
-      title: '할 일과 반복이 없으면 고르지 않아도 처리 방식 없이 지운다',
-      preview: { todoCount: 0, completedTodoCount: 0, activeSeriesCount: 0 },
-      choice: null,
-      expected: { todoHandling: null, moveToCategoryId: null },
-    },
-    {
-      title: '할 일이 있는데 고르지 않았으면 보낼 수 없다',
-      preview: {},
-      choice: null,
-      expected: null,
-    },
-  ] as const)('$title', ({ preview, choice, expected }) => {
-    // Given
-    const deletionPreview = createTodoCategoryDeletionPreview(preview);
-
-    // When
-    const deletionRequest = TodoCategoryDeletionPolicy.toDeletionRequest(deletionPreview, choice);
-
-    // Then
-    expect(deletionRequest).toEqual(expected);
-  });
-});
-
-describe('excludeCategory', () => {
-  it('그 id만 빼고 순서를 지킨다', () => {
-    // When
-    const remaining = excludeCategory(CATEGORIES, WORK.id);
-
-    // Then
-    expect(remaining).toEqual([PERSONAL, WORKOUT]);
   });
 });
 
@@ -327,21 +192,4 @@ describe('findFirstInSortOrder', () => {
     expect(first).toEqual(PERSONAL);
     expect(none).toBeNull();
   });
-});
-
-describe('hasTodosToHandle', () => {
-  it.each([
-    { todoCount: 1, activeSeriesCount: 0, expected: true },
-    { todoCount: 0, activeSeriesCount: 1, expected: true },
-    { todoCount: 0, activeSeriesCount: 0, expected: false },
-  ])(
-    '할 일 $todoCount개·반복 $activeSeriesCount개면 $expected다',
-    ({ todoCount, activeSeriesCount, expected }) => {
-      // When
-      const result = hasTodosToHandle(todoCount, activeSeriesCount);
-
-      // Then
-      expect(result).toBe(expected);
-    },
-  );
 });

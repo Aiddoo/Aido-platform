@@ -36,12 +36,3 @@ import { Button, InlineAlert } from '@src/shared/ui';
 
 - 글자는 heroui 라벨이 아닌 앱 `<Text>`로 넣는다(앱 글꼴 크기 5단계를 따른다).
 - 바깥 여백과 폭은 부모가 정한다.
-
-## 파일 구조
-
-```
-inline-alert/
-├── inline-alert.tsx
-├── inline-alert.md
-└── index.ts
-```

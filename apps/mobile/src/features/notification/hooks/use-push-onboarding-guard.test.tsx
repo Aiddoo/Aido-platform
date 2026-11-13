@@ -16,6 +16,7 @@ import {
   createPushNotificationGatewayStub,
   createTestQueryClient,
   setupFakeTimersPerTest,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
@@ -44,13 +45,13 @@ async function renderGuardState(getPermission: () => Promise<PushPermissionRespo
       return usePushOnboardingGuardState();
     },
     {
-      queryClient,
-      di: {
-        authSessionStore: createAuthSessionStoreStub('authenticated'),
-        syncStorage: createMemoryObservableSyncStorage(),
-        pushNotification,
-        pushOnboardingGuardStore: guardStore,
-      },
+      di: createTestDi({
+        ports: { syncStorage: createMemoryObservableSyncStorage(), pushNotification, queryClient },
+        seeds: {
+          authSessionStore: createAuthSessionStoreStub('authenticated'),
+          pushOnboardingGuardStore: guardStore,
+        },
+      }),
     },
   );
   return { ...hook, guardStore };
@@ -139,13 +140,15 @@ async function renderGuard() {
       return usePushOnboardingGuard();
     },
     {
-      queryClient,
-      di: {
-        authSessionStore: createAuthSessionStoreStub('authenticated'),
-        syncStorage: createMemoryObservableSyncStorage(),
-        appLifecycle,
-        pushNotification,
-      },
+      di: createTestDi({
+        ports: {
+          syncStorage: createMemoryObservableSyncStorage(),
+          appLifecycle,
+          pushNotification,
+          queryClient,
+        },
+        seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+      }),
     },
   );
   return { ...hook, appLifecycle, getRenderCount: () => renderCount };
@@ -224,12 +227,14 @@ describe('usePushOnboardingGuardState — 알림 권한을 이미 답한 사용�
           return state;
         },
         {
-          di: {
-            httpClient,
-            authSessionStore: createAuthSessionStoreStub('authenticated'),
-            syncStorage: createMemoryObservableSyncStorage(),
-            pushNotification,
-          },
+          di: createTestDi({
+            ports: {
+              httpClient,
+              syncStorage: createMemoryObservableSyncStorage(),
+              pushNotification,
+            },
+            seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+          }),
         },
       );
       await waitFor(() => {

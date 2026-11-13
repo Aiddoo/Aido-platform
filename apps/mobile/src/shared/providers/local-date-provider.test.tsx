@@ -25,8 +25,10 @@ describe('앱 로컬 날짜 Provider', () => {
     const errorReporter = createErrorReporterStub();
     const appLifecycle = createAppLifecycleGatewayStub();
 
+    const di = createTestDi({ ports: { analytics, appLifecycle, errorReporter } });
+    // 시험 대상인 Provider에 기기 달력을 넣어야 해 직접 감싼다
     const wrapper = ({ children }: PropsWithChildren) => (
-      <StaticDIProvider container={createTestDi({ analytics, appLifecycle, errorReporter })}>
+      <StaticDIProvider container={di}>
         <LocalDateProvider useDeviceCalendar={() => ({ timeZone: device.timeZone })}>
           {children}
         </LocalDateProvider>

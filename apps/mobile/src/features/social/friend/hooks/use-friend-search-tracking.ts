@@ -20,6 +20,7 @@ export function useFriendSearchTracking(debouncedQuery: string): void {
     }
 
     lastTrackedQuery.current = trimmed;
+    // oxlint-disable-next-line aido/no-tracking-in-effect -- 보기가 아니라 디바운스된 입력이라 값이 바뀔 때 보낸다
     trackEvent('friend_search_submitted', {
       query_length_bucket: toFriendSearchLengthBucket(trimmed),
     });

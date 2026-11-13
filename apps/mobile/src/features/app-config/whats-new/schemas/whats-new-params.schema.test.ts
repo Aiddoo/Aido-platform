@@ -20,9 +20,17 @@ describe('whatsNewParamsSchema', () => {
 
   it('있는 출시와 들어온 곳은 그대로 읽는다', () => {
     // When
-    const result = whatsNewParamsSchema.parse({ releaseId: '1.14.0', source: 'feed_reentry' });
+    const result = whatsNewParamsSchema.parse({ releaseId: '1.15.0', source: 'feed_reentry' });
 
     // Then
-    expect(result).toEqual({ releaseId: RELEASE_ID.v1_14_0, source: 'feed_reentry' });
+    expect(result).toEqual({ releaseId: RELEASE_ID.v1_15_0, source: 'feed_reentry' });
+  });
+
+  it('지운 1.14.0 소개로 남은 링크는 최신 소개를 연다', () => {
+    // When
+    const result = whatsNewParamsSchema.parse({ releaseId: '1.14.0', source: 'mypage' });
+
+    // Then
+    expect(result.releaseId).toBe(RELEASE_ID.v1_15_0);
   });
 });
