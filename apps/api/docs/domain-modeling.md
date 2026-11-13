@@ -21,7 +21,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 - `planCreation`·`of`·`from` 같은 다른 이름을 쓰지 않는다.
 - DB 시퀀스 id(`serial`)는 Repository `nextId()`로 먼저 받는다(IDDD `nextIdentity()`). 그래서 `create`와 `reconstitute`가 같은 완전한 타입을 돌려주고 "id 없는 Aggregate"가 없다. 묶음은 `nextIds(count)` 한 쿼리다.
-- 복원 위치는 infrastructure의 `*-row.mapper.ts` 한 곳이다. Application이 행을 받아 복원하지 않는다.
+- 복원 위치는 infrastructure의 `*-row.mapper.ts`(env에서 읽으면 `*-env.mapper.ts`) 한 곳이다. Application이 행을 받아 복원하지 않는다.
 
 ## 상태 전이
 
@@ -53,7 +53,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 - 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수(`memoNotFound(memoId)`)로 만든다. 같은 코드·details 모양이 한 곳에서 나온다. 거부는 `application/<slice>.errors.ts`, 불변식은 `domain/<slice>.errors.ts`(Domain은 Application을 import하지 못한다)이고, 같은 Context의 slice가 함께 쓰는 불변식은 `<context>/shared/domain/<context>.errors.ts`(`planning.errors.ts`), 공용 식별자는 `shared/domain/exceptions/shared-domain.errors.ts`다. 이 파일 밖에서 `new ApplicationException`·`new DomainException`·`new ErrorCodedException`(별칭 import 포함)을 쓰지 않고 이 클래스들을 잇는 예외 클래스도 만들지 않는다(Oxlint `aido/no-inline-coded-exception`, spec 제외). port·use-case 파일 안에 오류 클래스를 선언하지 않는다.
 - 여러 Context가 쓰는 `UserId`는 `shared/domain/identifiers/user-id.vo.ts`, Context 고유 id(`TodoId`)는 그 Context의 `shared/domain`에 둔다.
 - 포트 시그니처의 식별자는 원시값(`number`·`string`)이 아니라 id VO다([MemoRepositoryPort](../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation 경계에서 VO로 바꾼다.
-- 상태를 바꾸지 않는 저장 결과(예: 주간 성취 기록)도 Entity로 두되, 표시 라벨·응답은 presentation 매퍼가 만든다.
+- 상태를 바꾸지 않거나 DB에 두지 않는 Root(주간 성취 기록, env의 앱 릴리스, 전달만 하는 문의)도 `AggregateRoot`(`*.aggregate.ts`)이고, 표시 라벨·응답은 presentation 매퍼가 만든다.
 
 ## 기준 구현: notes/memos
 
