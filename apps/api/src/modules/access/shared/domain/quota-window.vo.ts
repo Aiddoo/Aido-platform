@@ -18,7 +18,7 @@ function startOfMonth(month: Temporal.PlainYearMonth): Temporal.Instant {
 
 /** 사용량을 세는 한 기간(KST 달력 월) */
 export class QuotaWindow extends ValueObject<QuotaWindowValue> {
-  static monthOf(now: Temporal.Instant): QuotaWindow {
+  static create(now: Temporal.Instant): QuotaWindow {
     const month = now
       .toZonedDateTimeISO(MONTHLY_QUOTA_TIME_ZONE.value)
       .toPlainDate()

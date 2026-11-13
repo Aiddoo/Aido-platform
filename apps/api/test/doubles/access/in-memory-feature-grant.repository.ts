@@ -1,12 +1,12 @@
 import { GRANTABLE_FEATURE_KEYS, type GrantableFeature } from "@aido/api/vocabulary";
 
 import { FeatureGrantRepositoryPort } from "#api/modules/access/entitlements/application/ports/feature-grant.repository.port";
-import type { FeatureGrants } from "#api/modules/access/entitlements/domain/entitlements.constants";
 import { FeatureGrantId } from "#api/modules/access/entitlements/domain/feature-grant-id.vo";
 import type {
   FeatureGrant,
   FeatureGrantPrimitives,
 } from "#api/modules/access/entitlements/domain/feature-grant.aggregate";
+import type { FeatureGrants } from "#api/modules/access/shared/domain/access.constants";
 
 export class InMemoryFeatureGrantRepository extends FeatureGrantRepositoryPort {
   readonly #grants = new Map<string, FeatureGrantPrimitives>();

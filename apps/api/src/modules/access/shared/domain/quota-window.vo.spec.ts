@@ -16,7 +16,7 @@ describe("QuotaWindow — 월간 quota 기간(KST 달력 월)", () => {
     const now = Temporal.Instant.from(at);
 
     // When
-    const window = QuotaWindow.monthOf(now);
+    const window = QuotaWindow.create(now);
 
     // Then
     expect(window.periodKey).toBe(period);
@@ -64,7 +64,7 @@ describe("QuotaWindow — 월간 quota 기간(KST 달력 월)", () => {
       const now = zoned(local, timeZone);
 
       // When
-      const window = QuotaWindow.monthOf(now);
+      const window = QuotaWindow.create(now);
 
       // Then
       expect(window.periodKey).toBe(period);
@@ -73,7 +73,7 @@ describe("QuotaWindow — 월간 quota 기간(KST 달력 월)", () => {
 
   it("UTC 날짜가 같아도 KST 월 경계 전후는 다른 기간이고 기록이 없으면 0으로 본다", () => {
     // Given
-    const window = QuotaWindow.monthOf(Temporal.Instant.from("2026-04-30T15:00:00Z"));
+    const window = QuotaWindow.create(Temporal.Instant.from("2026-04-30T15:00:00Z"));
 
     // When
     const contained = [
@@ -89,10 +89,10 @@ describe("QuotaWindow — 월간 quota 기간(KST 달력 월)", () => {
 
   it("같은 달의 서로 다른 시각은 같은 기간이다", () => {
     // Given
-    const early = QuotaWindow.monthOf(Temporal.Instant.from("2026-04-01T00:00:00Z"));
+    const early = QuotaWindow.create(Temporal.Instant.from("2026-04-01T00:00:00Z"));
 
     // When
-    const late = QuotaWindow.monthOf(Temporal.Instant.from("2026-04-29T00:00:00Z"));
+    const late = QuotaWindow.create(Temporal.Instant.from("2026-04-29T00:00:00Z"));
 
     // Then
     expect(early.equals(late)).toBe(true);

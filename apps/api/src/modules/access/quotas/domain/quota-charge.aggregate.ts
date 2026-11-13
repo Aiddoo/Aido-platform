@@ -4,8 +4,8 @@ import { match } from "ts-pattern";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import type { QuotaWindow } from "../../shared/domain/quota-window.vo.js";
 import { QuotaChargeId } from "./quota-charge-id.vo.js";
-import type { QuotaWindow } from "./quota-window.vo.js";
 import {
   QUOTA_ABANDONED_REFUND_REASON,
   QUOTA_CHARGE_AMOUNT,

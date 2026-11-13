@@ -62,7 +62,7 @@ apps/api/src/
 | Context       | slice                                                                       |
 | ------------- | --------------------------------------------------------------------------- |
 | identity      | `auth`, `users`, `preferences`                                              |
-| access        | `entitlements`, `quotas`                                                    |
+| access        | `entitlements`, `quotas`, `entitlement-usage` (+ `shared/`)                 |
 | billing       | `subscriptions`, `premium-grants` (+ `shared/`)                             |
 | planning      | `todos`, `todo-series`, `categories` (+ `shared/`)                          |
 | notes         | `memos`                                                                     |

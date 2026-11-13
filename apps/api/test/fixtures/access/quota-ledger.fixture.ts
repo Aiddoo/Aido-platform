@@ -1,7 +1,3 @@
-import {
-  NO_FEATURE_GRANTS,
-  type FeatureGrants,
-} from "#api/modules/access/entitlements/domain/entitlements.constants";
 import { CommitQuotaReservationUseCase } from "#api/modules/access/quotas/application/use-cases/commit-quota-reservation.use-case";
 import { GetMeteredFeatureQuotaUseCase } from "#api/modules/access/quotas/application/use-cases/get-metered-feature-quota.use-case";
 import { RefundAbandonedQuotaReservationsUseCase } from "#api/modules/access/quotas/application/use-cases/refund-abandoned-quota-reservations.use-case";
@@ -9,6 +5,10 @@ import { RefundQuotaReservationUseCase } from "#api/modules/access/quotas/applic
 import { ReopenQuotaReservationUseCase } from "#api/modules/access/quotas/application/use-cases/reopen-quota-reservation.use-case";
 import { ReserveQuotaUseCase } from "#api/modules/access/quotas/application/use-cases/reserve-quota.use-case";
 import { QuotaLedgerAdapter } from "#api/modules/access/quotas/infrastructure/adapters/quota-ledger.adapter";
+import {
+  NO_FEATURE_GRANTS,
+  type FeatureGrants,
+} from "#api/modules/access/shared/domain/access.constants";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   InMemoryAccessStateReader,

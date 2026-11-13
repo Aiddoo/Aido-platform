@@ -1,8 +1,8 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 
 import { AccessStateReaderPort } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
-import type { AccessState } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
-import type { FeatureGrants } from "#api/modules/access/entitlements/domain/entitlements.constants";
+import type { FeatureGrants } from "#api/modules/access/shared/domain/access.constants";
+import type { AccessState } from "#api/modules/access/shared/domain/entitlement.domain-service";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { InMemoryFeatureGrantRepository } from "./in-memory-feature-grant.repository.js";

@@ -5,13 +5,13 @@ import {
 } from "#test/fixtures/access/access-user.fixture";
 import { createQuotaChargeFixture } from "#test/fixtures/access/quota-charge.fixture";
 
+import { QuotaWindow } from "../../shared/domain/quota-window.vo.js";
 import { QuotaChargeId } from "./quota-charge-id.vo.js";
 import { QuotaCharge } from "./quota-charge.aggregate.js";
-import { QuotaWindow } from "./quota-window.vo.js";
 import { QUOTA_RESERVATION_TAKEOVER_AFTER_MS } from "./quotas.constants.js";
 
 const NOW = ACCESS_FIXTURE_NOW;
-const WINDOW = QuotaWindow.monthOf(NOW);
+const WINDOW = QuotaWindow.create(NOW);
 const TAKEOVER_AT = NOW.add({ milliseconds: QUOTA_RESERVATION_TAKEOVER_AFTER_MS });
 
 describe("QuotaCharge — 차감 한 건", () => {

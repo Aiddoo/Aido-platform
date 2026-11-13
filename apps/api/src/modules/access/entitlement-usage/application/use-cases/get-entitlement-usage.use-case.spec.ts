@@ -15,12 +15,12 @@ import {
   type AccessUserInput,
 } from "#test/fixtures/access/access-user.fixture";
 
-import { NO_FEATURE_GRANTS, type FeatureGrants } from "../../domain/entitlements.constants.js";
+import { NO_FEATURE_GRANTS, type FeatureGrants } from "../../../shared/domain/access.constants.js";
 import {
   OwnedFeatureUsageReaderPort,
   type OwnedFeatureUsage,
 } from "../ports/owned-feature-usage.reader.port.js";
-import { GetEntitlementSnapshotUseCase } from "./get-entitlement-snapshot.use-case.js";
+import { GetEntitlementUsageUseCase } from "./get-entitlement-usage.use-case.js";
 
 // 서울 4월 13일 00:00
 const DAILY_RESETS_AT = Temporal.Instant.from("2026-04-12T15:00:00Z");
@@ -60,7 +60,7 @@ function setup(input: {
     },
     resourceCounts: { FRIEND: input.friends ?? 0, TODO_CATEGORY: input.categories ?? 0 },
   });
-  const useCase = new GetEntitlementSnapshotUseCase({
+  const useCase = new GetEntitlementUsageUseCase({
     accessStateReader,
     quotaUsageRepository,
     ownedFeatureUsageReader,
@@ -74,7 +74,7 @@ function setup(input: {
   };
 }
 
-describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
+describe("GetEntitlementUsageUseCase — 권한·한도·사용량", () => {
   it("모든 기능의 한도와 계량기·일간 사용량을 서버가 계산하고 일간 사용량은 요청 시간대로 읽는다", async () => {
     // Given
     const fixture = setup({ user: { aiUsageCount: 3 }, cheerUsed: 2 });
@@ -86,25 +86,25 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
     });
 
     // When
-    const snapshot = await fixture.execute();
+    const usage = await fixture.execute();
 
     // Then
-    expect(snapshot).toMatchObject({ isPremium: false, tier: "FREE", plan: "free" });
-    expect(Object.keys(snapshot.features)).toEqual([...PLAN_FEATURE_KEYS]);
-    expect(snapshot.features.AI_PARSE).toMatchObject({ used: 3, remaining: 7, period: "month" });
-    expect(snapshot.features.AI_PARSE.resetsAt?.toString()).toBe("2026-04-30T15:00:00Z");
-    expect(snapshot.features.VOICE_NOTE).toMatchObject({
+    expect(usage).toMatchObject({ isPremium: false, tier: "FREE", plan: "free" });
+    expect(Object.keys(usage.features)).toEqual([...PLAN_FEATURE_KEYS]);
+    expect(usage.features.AI_PARSE).toMatchObject({ used: 3, remaining: 7, period: "month" });
+    expect(usage.features.AI_PARSE.resetsAt?.toString()).toBe("2026-04-30T15:00:00Z");
+    expect(usage.features.VOICE_NOTE).toMatchObject({
       used: 1,
       remaining: PLAN_CATALOG.VOICE_NOTE.free - 1,
     });
-    expect(snapshot.features.CHEER).toMatchObject({
+    expect(usage.features.CHEER).toMatchObject({
       limit: PLAN_CATALOG.CHEER.free,
       used: 2,
       remaining: PLAN_CATALOG.CHEER.free - 2,
       period: "day",
     });
-    expect(snapshot.features.CHEER.resetsAt?.equals(DAILY_RESETS_AT)).toBe(true);
-    expect(snapshot.features.AI_REPORT).toMatchObject({ allowed: false, used: null });
+    expect(usage.features.CHEER.resetsAt?.equals(DAILY_RESETS_AT)).toBe(true);
+    expect(usage.features.AI_REPORT).toMatchObject({ allowed: false, used: null });
     expect(fixture.ownedFeatureUsageReader.requests.map((request) => request.timeZone)).toEqual([
       "Asia/Seoul",
     ]);
@@ -118,10 +118,10 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
     });
 
     // When
-    const snapshot = await fixture.execute();
+    const usage = await fixture.execute();
 
     // Then
-    expect(snapshot.features.TODO_CATEGORY).toEqual({
+    expect(usage.features.TODO_CATEGORY).toEqual({
       feature: "TODO_CATEGORY",
       allowed: true,
       limit: PLAN_CATALOG.TODO_CATEGORY.free,
@@ -132,7 +132,7 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
       isFairUse: false,
       perUse: null,
     });
-    expect(snapshot.features.FRIEND).toMatchObject({
+    expect(usage.features.FRIEND).toMatchObject({
       limit: PLAN_CATALOG.FRIEND.free,
       used: PLAN_CATALOG.FRIEND.free,
       remaining: 0,
@@ -145,14 +145,14 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
     const fixture = setup({ friends: PLAN_CATALOG.FRIEND.free + 2, categories: 1 });
 
     // When
-    const snapshot = await fixture.execute();
+    const usage = await fixture.execute();
 
     // Then
-    expect(snapshot.features.TODO_CATEGORY).toMatchObject({
+    expect(usage.features.TODO_CATEGORY).toMatchObject({
       used: 1,
       remaining: PLAN_CATALOG.TODO_CATEGORY.free - 1,
     });
-    expect(snapshot.features.FRIEND).toMatchObject({
+    expect(usage.features.FRIEND).toMatchObject({
       used: PLAN_CATALOG.FRIEND.free + 2,
       remaining: 0,
     });
@@ -163,10 +163,10 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
     const fixture = setup({ friends: PLAN_CATALOG.FRIEND.free, grants: { FRIEND: 2 } });
 
     // When
-    const snapshot = await fixture.execute();
+    const usage = await fixture.execute();
 
     // Then
-    expect(snapshot.features.FRIEND).toMatchObject({
+    expect(usage.features.FRIEND).toMatchObject({
       limit: PLAN_CATALOG.FRIEND.free + 2,
       used: PLAN_CATALOG.FRIEND.free,
       remaining: 2,
@@ -182,15 +182,15 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
     });
 
     // When
-    const snapshot = await fixture.execute();
+    const usage = await fixture.execute();
 
     // Then
-    expect(snapshot.features.TODO_CATEGORY).toMatchObject({
+    expect(usage.features.TODO_CATEGORY).toMatchObject({
       limit: PLAN_CATALOG.TODO_CATEGORY.premium,
       used: PLAN_CATALOG.TODO_CATEGORY.premium,
       remaining: 0,
     });
-    expect(snapshot.features.FRIEND).toMatchObject({
+    expect(usage.features.FRIEND).toMatchObject({
       allowed: true,
       limit: null,
       used: null,
@@ -206,22 +206,22 @@ describe("GetEntitlementSnapshotUseCase — 권한 스냅샷", () => {
     const premium = setup({ user: { subscriptionStatus: "ACTIVE" }, ...usage });
 
     // When
-    const adminSnapshot = await admin.execute();
-    const premiumSnapshot = await premium.execute();
+    const adminUsage = await admin.execute();
+    const premiumUsage = await premium.execute();
 
     // Then
-    expect(adminSnapshot).toMatchObject({ tier: "ADMIN", plan: "premium", isPremium: false });
-    expect(adminSnapshot.features).toEqual(premiumSnapshot.features);
-    expect(adminSnapshot.features.TODO_CATEGORY).toMatchObject({
+    expect(adminUsage).toMatchObject({ tier: "ADMIN", plan: "premium", isPremium: false });
+    expect(adminUsage.features).toEqual(premiumUsage.features);
+    expect(adminUsage.features.TODO_CATEGORY).toMatchObject({
       limit: PLAN_CATALOG.TODO_CATEGORY.premium,
       used: PLAN_CATALOG.TODO_CATEGORY.premium + 1,
       remaining: 0,
     });
-    expect(adminSnapshot.features.AI_PARSE).toMatchObject({
+    expect(adminUsage.features.AI_PARSE).toMatchObject({
       limit: PLAN_CATALOG.AI_PARSE.fairUse.premium,
       isFairUse: true,
     });
-    expect(adminSnapshot.features.FRIEND).toMatchObject({ limit: null, used: null });
+    expect(adminUsage.features.FRIEND).toMatchObject({ limit: null, used: null });
   });
 
   it("사용자가 없으면 USER_0601이다", async () => {

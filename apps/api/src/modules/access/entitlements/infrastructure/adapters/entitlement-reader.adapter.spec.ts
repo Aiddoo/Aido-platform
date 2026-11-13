@@ -4,7 +4,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createAccessUserFixture } from "#test/fixtures/access/access-user.fixture";
 import { createEntitlementFixture } from "#test/fixtures/access/entitlement.fixture";
 
-import { NO_FEATURE_GRANTS } from "../../domain/entitlements.constants.js";
+import { NO_FEATURE_GRANTS } from "../../../shared/domain/access.constants.js";
 
 describe("EntitlementReaderAdapter", () => {
   it.each(["CHEER", "NUDGE", "AI_PARSE", "FRIEND", "TODO_CATEGORY"] as const)(

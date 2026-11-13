@@ -1,10 +1,12 @@
 import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 
+import {
+  accessUserNotFound,
+  type AccessStateReaderPort,
+} from "#api/modules/access/entitlements/access-entitlements.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { accessUserNotFound } from "../../../entitlements/application/entitlements.errors.js";
-import type { AccessStateReaderPort } from "../../../entitlements/application/ports/access-state.reader.port.js";
 import { QuotaAllowance, type MeteredQuotaState } from "../../domain/quota-allowance.vo.js";
 import type { QuotaUsageRepositoryPort } from "../ports/quota-usage.repository.port.js";
 

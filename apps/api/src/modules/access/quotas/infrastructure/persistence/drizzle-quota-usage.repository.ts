@@ -10,8 +10,8 @@ import { quotaUsage } from "#api/platform/database/schema/access.schema";
 import { user } from "#api/platform/database/schema/identity.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { QuotaWindow } from "../../../shared/domain/quota-window.vo.js";
 import { QuotaUsageRepositoryPort } from "../../application/ports/quota-usage.repository.port.js";
-import { QuotaWindow } from "../../domain/quota-window.vo.js";
 
 interface AiPlanCounter {
   readonly count: number;
@@ -126,7 +126,7 @@ export class DrizzleQuotaUsageRepository extends QuotaUsageRepositoryPort {
     return match(meter)
       .with("AI_PLAN", async () => {
         const counter = await this.#findAiPlanCounter(userId);
-        if (counter == null || QuotaWindow.monthOf(counter.resetAt).periodKey !== periodKey) {
+        if (counter == null || QuotaWindow.create(counter.resetAt).periodKey !== periodKey) {
           return false;
         }
         const updated = await this.#db

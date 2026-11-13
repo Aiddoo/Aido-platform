@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 
-import { GetEntitlementSnapshotUseCase } from "#api/modules/access/entitlements/application/use-cases/get-entitlement-snapshot.use-case";
+import { GetEntitlementUsageUseCase } from "#api/modules/access/entitlement-usage/application/use-cases/get-entitlement-usage.use-case";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
 import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
 import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
@@ -26,14 +26,14 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
   let context: E2eTestContext;
   let categoryCountReader: TodoCategoryCountReaderPort;
   let friendCountReader: FriendCountReaderPort;
-  let snapshot: GetEntitlementSnapshotUseCase;
+  let getEntitlementUsage: GetEntitlementUsageUseCase;
   let userId: string;
 
   beforeAll(async () => {
     context = await createE2eApp();
     categoryCountReader = context.module.get(TodoCategoryCountReaderPort);
     friendCountReader = context.module.get(FriendCountReaderPort);
-    snapshot = context.module.get(GetEntitlementSnapshotUseCase);
+    getEntitlementUsage = context.module.get(GetEntitlementUsageUseCase);
   });
 
   beforeEach(async () => {
@@ -93,8 +93,8 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     return { target: pendingTarget };
   }
 
-  function readSnapshot() {
-    return snapshot.execute({ userId, timeZone: "Asia/Seoul" });
+  function readEntitlementUsage() {
+    return getEntitlementUsage.execute({ userId, timeZone: "Asia/Seoul" });
   }
 
   it("카테고리 개수는 다른 사용자 카테고리를 세지 않고, 한도에 닿으면 스냅샷과 만들기 거절이 같은 0을 말한다", async () => {
@@ -106,7 +106,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
 
     // When
     const count = await categoryCountReader.countCategories(UserId.reconstitute(userId));
-    const { features } = await readSnapshot();
+    const { features } = await readEntitlementUsage();
     const creation = context.module
       .get(CreateTodoCategoryUseCase)
       .execute({ userId, name: "새 카테고리", color: "#112233" });
@@ -131,7 +131,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
 
     // When
     const count = await friendCountReader.countCurrentFriends(UserId.reconstitute(userId));
-    const { features } = await readSnapshot();
+    const { features } = await readEntitlementUsage();
     const request = context.module
       .get(SendFriendRequestUseCase)
       .execute({ userId, targetUserId: target.id });
@@ -162,7 +162,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
       ]);
 
     // When
-    const { features } = await readSnapshot();
+    const { features } = await readEntitlementUsage();
 
     // Then
     expect(features.FRIEND).toMatchObject({
@@ -183,7 +183,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     await insertCategories(userId, FREE_CATEGORY_LIMIT);
 
     // When
-    const { features } = await readSnapshot();
+    const { features } = await readEntitlementUsage();
 
     // Then
     expect(features.FRIEND).toMatchObject({ limit: null, used: null, remaining: null });

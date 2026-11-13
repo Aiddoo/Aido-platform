@@ -11,11 +11,11 @@ import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.p
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
+import type { QuotaUsageReading } from "../../../shared/domain/entitlement.domain-service.js";
 import {
   OwnedFeatureUsageReaderPort,
   type OwnedFeatureUsage,
 } from "../../application/ports/owned-feature-usage.reader.port.js";
-import type { QuotaUsageReading } from "../../domain/entitlement.domain-service.js";
 
 function toQuotaUsageReading(usage: DailySendUsage): QuotaUsageReading {
   return { used: usage.used, resetsAt: instantFromDate(usage.resetsAt) };

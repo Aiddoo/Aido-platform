@@ -16,7 +16,7 @@ import {
 import { mapValues } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import type { FeatureGrants } from "./entitlements.constants.js";
+import type { FeatureGrants } from "./access.constants.js";
 import { hasPaidAccess, type PaidAccessState } from "./paid-access.domain-service.js";
 
 /** 권한 판단에 쓰는 사용자 상태. 역할(USER·ADMIN)의 출처는 identity다. */

@@ -21,8 +21,8 @@ import { ApiUnauthorizedError } from "#api/platform/http/swagger/decorators/api-
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
-import { GetEntitlementSnapshotUseCase } from "../../../application/use-cases/get-entitlement-snapshot.use-case.js";
-import { toEntitlementSnapshotResponse } from "./entitlement-response.mapper.js";
+import { GetEntitlementUsageUseCase } from "../../../application/use-cases/get-entitlement-usage.use-case.js";
+import { toEntitlementUsageResponse } from "./entitlement-response.mapper.js";
 import { EntitlementSnapshotDto } from "./entitlement.dto.js";
 
 const PERIOD_LABEL = { day: "하루", month: "월" } as const satisfies Record<
@@ -58,10 +58,10 @@ const PLAN_CATALOG_TABLE = PLAN_FEATURE_KEYS.map(
 @ApiBearerAuth()
 @Controller({ path: "entitlements", version: API_VERSION.V1 })
 export class EntitlementController {
-  readonly #getEntitlementSnapshot: GetEntitlementSnapshotUseCase;
+  readonly #getEntitlementUsage: GetEntitlementUsageUseCase;
 
-  constructor(getEntitlementSnapshot: GetEntitlementSnapshotUseCase) {
-    this.#getEntitlementSnapshot = getEntitlementSnapshot;
+  constructor(getEntitlementUsage: GetEntitlementUsageUseCase) {
+    this.#getEntitlementUsage = getEntitlementUsage;
   }
 
   @Get()
@@ -98,10 +98,10 @@ ${PLAN_CATALOG_TABLE}
     @CurrentUser() user: CurrentUserPayload,
     @Timezone() timezone: string,
   ): Promise<EntitlementSnapshotDto> {
-    const snapshot = await this.#getEntitlementSnapshot.execute({
+    const entitlementUsage = await this.#getEntitlementUsage.execute({
       userId: user.userId,
       timeZone: timezone,
     });
-    return toEntitlementSnapshotResponse(snapshot);
+    return toEntitlementUsageResponse(entitlementUsage);
   }
 }

@@ -6,7 +6,7 @@ import type {
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { QuotaUsageReading } from "../../domain/entitlement.domain-service.js";
+import type { QuotaUsageReading } from "../../../shared/domain/entitlement.domain-service.js";
 
 /** 계량기 없이 소유 Context가 세는 일간 quota (CHEER·NUDGE) */
 type UnmeteredQuotaFeatureKey = Exclude<PlanQuotaFeatureKey, MeteredFeatureKey>;

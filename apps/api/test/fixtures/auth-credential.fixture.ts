@@ -4,11 +4,11 @@ import type {
   EntitlementReaderPort,
   UserEntitlements,
 } from "#api/modules/access/entitlements/access-entitlements.public";
-import { planOfTier } from "#api/modules/access/entitlements/domain/entitlement.domain-service";
 import type {
   MeteredFeatureQuota,
   QuotaLedgerPort,
 } from "#api/modules/access/quotas/access-quotas.public";
+import { planOfTier } from "#api/modules/access/shared/domain/entitlement.domain-service";
 import type {
   PremiumAccess,
   PremiumAccessReaderPort,

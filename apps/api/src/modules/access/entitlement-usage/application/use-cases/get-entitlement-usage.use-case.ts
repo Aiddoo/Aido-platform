@@ -1,29 +1,31 @@
 import { PLAN_CATALOG, type PlanFeature } from "@aido/api/vocabulary";
 import { mapValues } from "es-toolkit";
 
+import {
+  accessUserNotFound,
+  type AccessStateReaderPort,
+} from "#api/modules/access/entitlements/access-entitlements.public";
+import type { QuotaUsageRepositoryPort } from "#api/modules/access/quotas/access-quotas.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { QuotaUsageRepositoryPort } from "../../../quotas/application/ports/quota-usage.repository.port.js";
-import { QuotaWindow } from "../../../quotas/domain/quota-window.vo.js";
 import {
   resolveAccessSubject,
   resolveFeatureQuota,
   resolveResourceUsage,
   type FeatureUsageReading,
-} from "../../domain/entitlement.domain-service.js";
-import { accessUserNotFound } from "../entitlements.errors.js";
-import type { AccessStateReaderPort } from "../ports/access-state.reader.port.js";
+} from "../../../shared/domain/entitlement.domain-service.js";
+import { QuotaWindow } from "../../../shared/domain/quota-window.vo.js";
 import type { OwnedFeatureUsageReaderPort } from "../ports/owned-feature-usage.reader.port.js";
-import type { EntitlementSnapshot } from "../read-models/entitlement-snapshot.read-model.js";
+import type { EntitlementUsageReadModel } from "../read-models/entitlement-usage.read-model.js";
 
-export interface GetEntitlementSnapshotQuery {
+export interface GetEntitlementUsageQuery {
   readonly userId: string;
   /** 응원·찌르기 일간 사용량의 하루 기준(X-Timezone) */
   readonly timeZone: string;
 }
 
-export interface GetEntitlementSnapshotDependencies {
+export interface GetEntitlementUsageDependencies {
   readonly accessStateReader: Pick<AccessStateReaderPort, "findAccessState" | "findFeatureGrants">;
   readonly quotaUsageRepository: Pick<QuotaUsageRepositoryPort, "countUsage">;
   readonly ownedFeatureUsageReader: OwnedFeatureUsageReaderPort;
@@ -35,14 +37,14 @@ export interface GetEntitlementSnapshotDependencies {
  * 친구·카테고리 개수는 소유 Context가 센 값을 받는다. 개수는 친구 맺기·카테고리 만들기 한도 검사와 같은 값이라
  * 앱이 한도에 닿은 것을 입력 전에 안다.
  */
-export class GetEntitlementSnapshotUseCase {
-  readonly #dependencies: GetEntitlementSnapshotDependencies;
+export class GetEntitlementUsageUseCase {
+  readonly #dependencies: GetEntitlementUsageDependencies;
 
-  constructor(dependencies: GetEntitlementSnapshotDependencies) {
+  constructor(dependencies: GetEntitlementUsageDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetEntitlementSnapshotQuery): Promise<EntitlementSnapshot> {
+  async execute(query: GetEntitlementUsageQuery): Promise<EntitlementUsageReadModel> {
     const { accessStateReader, quotaUsageRepository, ownedFeatureUsageReader, clock } =
       this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
@@ -54,10 +56,11 @@ export class GetEntitlementSnapshotUseCase {
     if (state == null) {
       throw accessUserNotFound(query.userId);
     }
+
     const now = clock.now();
     const subject = resolveAccessSubject({ state, now });
     const { plan } = subject;
-    const window = QuotaWindow.monthOf(now);
+    const window = QuotaWindow.create(now);
     const [aiPlanUsed, voiceNoteUsed] = await Promise.all([
       quotaUsageRepository.countUsage({ userId, meter: "AI_PLAN", window }),
       quotaUsageRepository.countUsage({ userId, meter: "VOICE_NOTE", window }),
@@ -71,6 +74,7 @@ export class GetEntitlementSnapshotUseCase {
       AI_PARSE: { used: aiPlanUsed, resetsAt: window.resetsAt },
       VOICE_NOTE: { used: voiceNoteUsed, resetsAt: window.resetsAt },
     };
+
     return {
       ...subject,
       features: mapValues(PLAN_CATALOG, (_definition, feature) =>

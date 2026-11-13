@@ -1,5 +1,6 @@
 import { ACCESS_TIERS, PLAN_CATALOG, PLANS } from "@aido/api/vocabulary";
 
+import { NO_FEATURE_GRANTS } from "./access.constants.js";
 import {
   calculateRemainingLimit,
   isExemptFromDormancy,
@@ -13,7 +14,6 @@ import {
   resolveQuotaLimit,
   resolveResourceUsage,
 } from "./entitlement.domain-service.js";
-import { NO_FEATURE_GRANTS } from "./entitlements.constants.js";
 
 const AT = Temporal.Instant.from("2028-03-04T00:00:00.000Z");
 

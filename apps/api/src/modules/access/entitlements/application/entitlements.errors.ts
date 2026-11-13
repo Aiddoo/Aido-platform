@@ -3,7 +3,7 @@ import { ErrorCode, type ErrorCodeType } from "@aido/api/errors";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { ServerFlagFeature } from "../domain/entitlement.domain-service.js";
+import type { ServerFlagFeature } from "../../shared/domain/entitlement.domain-service.js";
 import type { EntitlementReaderPort } from "./ports/entitlement.reader.port.js";
 
 /** 기능마다 앱이 이미 분기하는 기존 거부 코드를 그대로 쓴다. */

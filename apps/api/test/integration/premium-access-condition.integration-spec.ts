@@ -1,8 +1,8 @@
 import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
-import { hasPaidAccess } from "#api/modules/access/entitlements/domain/paid-access.domain-service";
 import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
 import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
 import { activeSubscriptionCondition } from "#api/modules/access/entitlements/infrastructure/persistence/premium-access-condition.reader";
+import { hasPaidAccess } from "#api/modules/access/shared/domain/paid-access.domain-service";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
