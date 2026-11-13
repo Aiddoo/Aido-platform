@@ -1,13 +1,13 @@
 import type {
   SignupEventProvider,
   SignupMethod,
-  SubscriptionAlertKind,
-  SubscriptionAlertLifecycle,
+  SubscriptionNoticeKind,
+  SubscriptionNoticeLifecycle,
   SubscriptionNoticeEvent,
 } from "../../domain/admin-notices.constants.js";
 import type {
   SubscriptionNoticeInput,
-  UserRegisteredAlertInput,
+  UserRegisteredNoticeInput,
 } from "../ports/admin-event-notifier.port.js";
 import type { AdminNotice, AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 
@@ -22,14 +22,14 @@ const KIND_EVENTS = {
   PRODUCT_CHANGE_SCHEDULED: "product_change_scheduled",
   EXTENDED: "extended",
   TRANSFERRED: "transferred",
-} as const satisfies Record<SubscriptionAlertKind, SubscriptionNoticeEvent>;
+} as const satisfies Record<SubscriptionNoticeKind, SubscriptionNoticeEvent>;
 
 const LIFECYCLE_EVENTS = {
   trial_started: "trial_started",
   trial_cancelled: "trial_cancelled",
   trial_converted: "trial_converted",
   trial_expired: "trial_expired",
-} as const satisfies Record<SubscriptionAlertLifecycle, SubscriptionNoticeEvent>;
+} as const satisfies Record<SubscriptionNoticeLifecycle, SubscriptionNoticeEvent>;
 
 const SIGNUP_METHODS_BY_PROVIDER = {
   credential: "CREDENTIAL",
@@ -65,7 +65,7 @@ export function subscriptionNoticeUserOf(payload: SubscriptionNoticeInput): Admi
 }
 
 /** 사용자 조회가 실패하거나 사용자가 없을 때 가입 요청 값으로 채우는 사용자 블록 */
-export function registeredNoticeUserOf(payload: UserRegisteredAlertInput): AdminNoticeUser {
+export function registeredNoticeUserOf(payload: UserRegisteredNoticeInput): AdminNoticeUser {
   return {
     userId: payload.userId,
     email: payload.email,
@@ -129,7 +129,7 @@ export function buildSubscriptionNotice(
 }
 
 export function buildUserRegisteredNotice(
-  payload: UserRegisteredAlertInput,
+  payload: UserRegisteredNoticeInput,
   user: AdminNoticeUser,
 ): AdminNotice {
   return {

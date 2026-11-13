@@ -4,7 +4,7 @@ import { AdminNoticeLogEvent } from "../../application/admin-notices.log-events.
 import {
   AdminEventNotifierPort,
   type SubscriptionNoticeInput,
-  type UserRegisteredAlertInput,
+  type UserRegisteredNoticeInput,
 } from "../../application/ports/admin-event-notifier.port.js";
 import type { EnqueueSubscriptionEventUseCase } from "../../application/use-cases/enqueue-subscription-event.use-case.js";
 import type { EnqueueUserRegisteredUseCase } from "../../application/use-cases/enqueue-user-registered.use-case.js";
@@ -24,7 +24,7 @@ export class AdminEventNotifierAdapter extends AdminEventNotifierPort {
     this.#dependencies = dependencies;
   }
 
-  notifyUserRegistered(payload: UserRegisteredAlertInput): void {
+  notifyUserRegistered(payload: UserRegisteredNoticeInput): void {
     const { enqueueUserRegistered, logger } = this.#dependencies;
     enqueueUserRegistered.execute(payload).catch(() => {
       logger.error({

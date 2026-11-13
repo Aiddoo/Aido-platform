@@ -10,12 +10,12 @@ import type {
   NoticeEndReason,
   NoticeStore,
   SignupEventProvider,
-  SubscriptionAlertKind,
-  SubscriptionAlertLifecycle,
+  SubscriptionNoticeKind,
+  SubscriptionNoticeLifecycle,
 } from "../../domain/admin-notices.constants.js";
 
 /** 가입 알림 입력. 가입을 커밋한 identity가 요청에서 확인한 값을 넘긴다. */
-export interface UserRegisteredAlertInput {
+export interface UserRegisteredNoticeInput {
   readonly userId: string;
   readonly email: string;
   readonly provider: SignupEventProvider;
@@ -41,7 +41,7 @@ export interface SubscriptionNoticeInput {
   readonly userId: string;
   readonly email: string;
   readonly name?: string;
-  readonly kind: SubscriptionAlertKind;
+  readonly kind: SubscriptionNoticeKind;
   /** 기간 없는 일회성 구매(STARTED만) */
   readonly isOneTime?: boolean;
   readonly productId: string;
@@ -68,7 +68,7 @@ export interface SubscriptionNoticeInput {
   readonly appVersion?: string;
   readonly deviceModel?: string;
   /** 무료 체험 단계(시작·해지·전환·종료). 체험과 관계없는 이벤트는 비운다 */
-  readonly lifecycle?: SubscriptionAlertLifecycle;
+  readonly lifecycle?: SubscriptionNoticeLifecycle;
   readonly isFirstPurchase?: boolean;
   /** 이 이벤트를 반영한 뒤의 프리미엄 상태 */
   readonly premium?: {
@@ -84,6 +84,6 @@ export interface SubscriptionNoticeInput {
  * 실패해도 호출한 업무를 되돌리지 않는다.
  */
 export abstract class AdminEventNotifierPort {
-  abstract notifyUserRegistered(input: UserRegisteredAlertInput): void;
+  abstract notifyUserRegistered(input: UserRegisteredNoticeInput): void;
   abstract notifySubscriptionEvent(input: SubscriptionNoticeInput): void;
 }

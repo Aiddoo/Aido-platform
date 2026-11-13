@@ -64,7 +64,7 @@ export const NOTICE_END_REASONS = [
 export type NoticeEndReason = (typeof NOTICE_END_REASONS)[number];
 
 // 관리자 알림이 구독 이벤트에서 읽는 값이다. billing이 같은 모양으로 넘기고, billing의 값이 늘면 호출 쪽 컴파일이 가리킨다
-const SUBSCRIPTION_ALERT_KINDS = [
+const SUBSCRIPTION_NOTICE_KINDS = [
   "STARTED",
   "RENEWED",
   "CANCELLED",
@@ -77,13 +77,13 @@ const SUBSCRIPTION_ALERT_KINDS = [
   "TRANSFERRED",
 ] as const;
 
-export type SubscriptionAlertKind = (typeof SUBSCRIPTION_ALERT_KINDS)[number];
+export type SubscriptionNoticeKind = (typeof SUBSCRIPTION_NOTICE_KINDS)[number];
 
-const SUBSCRIPTION_ALERT_LIFECYCLES = [
+const SUBSCRIPTION_NOTICE_LIFECYCLES = [
   "trial_started",
   "trial_cancelled",
   "trial_converted",
   "trial_expired",
 ] as const;
 
-export type SubscriptionAlertLifecycle = (typeof SUBSCRIPTION_ALERT_LIFECYCLES)[number];
+export type SubscriptionNoticeLifecycle = (typeof SUBSCRIPTION_NOTICE_LIFECYCLES)[number];

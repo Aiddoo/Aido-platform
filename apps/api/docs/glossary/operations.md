@@ -29,17 +29,17 @@
 
 쓰기 상태가 없어 Aggregate가 없다. 알림은 `admin-notification.v1` 큐 잡에 실려 있다가 채널로 나간다.
 
-| 용어             | 코드                                                                            | 뜻                                                                                            |
-| ---------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| 관리자 알림      | `AdminNotice`                                                                   | 운영자 채널로 보내는 알림. `message`(일반)·`user_registered`(가입)·`subscription_event`(결제) |
-| 알림 채널        | `AdminNotificationChannel`                                                      | `admin`(가입·운영), `payment`(결제). 채널마다 Discord webhook이 다르다                        |
-| 일반 알림        | `AdminNotification`, `AdminNotificationMessage`(VO)                             | 제목·본문·심각도·칸으로 조립한 알림. 제목·본문은 비어 있을 수 없다                            |
-| 사용자 블록      | `AdminNoticeUser`, `ResolveAdminNoticeUserUseCase`                              | 가입·결제 알림이 같은 모양으로 싣는 사용자 칸. 조회가 실패하면 호출한 Context가 준 값이다     |
-| 알림 요청        | `AdminEventNotifierPort`, `SubscriptionNoticeInput`, `UserRegisteredAlertInput` | 다른 Context가 기다리지 않고 맡기는 요청. 실패해도 호출한 업무를 되돌리지 않는다              |
-| 구독 알림 이벤트 | `SubscriptionNoticeEvent`, `subscriptionNoticeEventOf`                          | 운영자가 구분할 결제 일. 환불 → 체험 단계 → 일회성 구매 → 구독 종류 순으로 정한다             |
-| 가입 방식        | `SignupMethod`                                                                  | 처음 만든 인증 계정의 공급자(`ACCOUNT_PROVIDERS`)                                             |
-| 일일 가입 요약   | `DispatchDailySignupSummaryUseCase`                                             | KST 00:10에 전일(KST) 가입 수를 공급자별로 모아 `admin` 채널에 보낸다                         |
-| 발송             | `SendAdminNotificationUseCase`                                                  | 미설정 채널은 건너뛰고, 일시 실패는 큐가 다시 시도하고, 거절은 운영 경보를 올린다             |
+| 용어             | 코드                                                                             | 뜻                                                                                            |
+| ---------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 관리자 알림      | `AdminNotice`                                                                    | 운영자 채널로 보내는 알림. `message`(일반)·`user_registered`(가입)·`subscription_event`(결제) |
+| 알림 채널        | `AdminNotificationChannel`                                                       | `admin`(가입·운영), `payment`(결제). 채널마다 Discord webhook이 다르다                        |
+| 일반 알림        | `AdminNotification`, `AdminNotificationMessage`(VO)                              | 제목·본문·심각도·칸으로 조립한 알림. 제목·본문은 비어 있을 수 없다                            |
+| 사용자 블록      | `AdminNoticeUser`, `ResolveAdminNoticeUserUseCase`                               | 가입·결제 알림이 같은 모양으로 싣는 사용자 칸. 조회가 실패하면 호출한 Context가 준 값이다     |
+| 알림 요청        | `AdminEventNotifierPort`, `SubscriptionNoticeInput`, `UserRegisteredNoticeInput` | 다른 Context가 기다리지 않고 맡기는 요청. 실패해도 호출한 업무를 되돌리지 않는다              |
+| 구독 알림 이벤트 | `SubscriptionNoticeEvent`, `subscriptionNoticeEventOf`                           | 운영자가 구분할 결제 일. 환불 → 체험 단계 → 일회성 구매 → 구독 종류 순으로 정한다             |
+| 가입 방식        | `SignupMethod`                                                                   | 처음 만든 인증 계정의 공급자(`ACCOUNT_PROVIDERS`)                                             |
+| 일일 가입 요약   | `DispatchDailySignupSummaryUseCase`                                              | KST 00:10에 전일(KST) 가입 수를 공급자별로 모아 `admin` 채널에 보낸다                         |
+| 발송             | `SendAdminNotificationUseCase`                                                   | 미설정 채널은 건너뛰고, 일시 실패는 큐가 다시 시도하고, 거절은 운영 경보를 올린다             |
 
 ## metrics
 

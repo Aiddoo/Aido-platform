@@ -2,7 +2,7 @@ import {
   buildUserRegisteredNotice,
   registeredNoticeUserOf,
 } from "../messages/admin-notice.messages.js";
-import type { UserRegisteredAlertInput } from "../ports/admin-event-notifier.port.js";
+import type { UserRegisteredNoticeInput } from "../ports/admin-event-notifier.port.js";
 import type { AdminNotificationQueuePort } from "../ports/admin-notification-queue.port.js";
 import type { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
@@ -19,7 +19,7 @@ export class EnqueueUserRegisteredUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(payload: UserRegisteredAlertInput): Promise<void> {
+  async execute(payload: UserRegisteredNoticeInput): Promise<void> {
     const { queue, resolveUser } = this.#dependencies;
     const user = await resolveUser.execute(registeredNoticeUserOf(payload));
     await queue.enqueueSend("admin", buildUserRegisteredNotice(payload, user));
