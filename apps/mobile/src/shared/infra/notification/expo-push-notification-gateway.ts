@@ -167,6 +167,9 @@ export function createExpoPushNotificationGateway(logger: AppLogger): PushNotifi
     setBadgeCount: async (count) => {
       await Notifications.setBadgeCountAsync(count);
     },
+    dismissDelivered: async () => {
+      await Notifications.dismissAllNotificationsAsync();
+    },
     setForegroundPresentation: (decide) => {
       decideForegroundPresentation = decide;
       return () => {

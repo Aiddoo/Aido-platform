@@ -1,6 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -13,6 +10,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";
@@ -57,7 +55,7 @@ export class AddTodoItemUseCase {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(targetTodoId, ownerId);
       if (todo == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
+        throw todoNotFound(todoId);
       }
 
       const { todoRepository, clock } = this.#dependencies;
@@ -95,7 +93,7 @@ export class AddTodoItemUseCase {
       ownerId,
     );
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
+      throw todoNotFound(todoId);
     }
     return response;
   }

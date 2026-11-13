@@ -63,6 +63,9 @@ const SPLASH = './assets/images/splash-icon.png';
 const SPLASH_ANDROID = './assets/images/splash-icon-android.png';
 const NOTIFICATION_ICON = './assets/images/notification-icon.png';
 
+// Android 위젯의 시스템 갱신 주기. Android가 허용하는 최소값(30분)이다
+const ANDROID_WIDGET_UPDATE_PERIOD_MS = 30 * 60 * 1000;
+
 // Environment
 
 const PROJECT_ROOT = __dirname;
@@ -494,7 +497,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
               targetCellWidth: 2,
               targetCellHeight: 2,
               resizeMode: 'none',
-              updatePeriodMillis: 1800000,
+              updatePeriodMillis: ANDROID_WIDGET_UPDATE_PERIOD_MS,
             },
             {
               name: 'AidoTodayList',
@@ -505,7 +508,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
               targetCellWidth: 4,
               targetCellHeight: 2,
               resizeMode: 'none',
-              updatePeriodMillis: 1800000,
+              updatePeriodMillis: ANDROID_WIDGET_UPDATE_PERIOD_MS,
             },
             {
               name: 'AidoTodayLarge',
@@ -516,7 +519,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
               targetCellWidth: 4,
               targetCellHeight: 4,
               resizeMode: 'none',
-              updatePeriodMillis: 1800000,
+              updatePeriodMillis: ANDROID_WIDGET_UPDATE_PERIOD_MS,
             },
           ],
         },

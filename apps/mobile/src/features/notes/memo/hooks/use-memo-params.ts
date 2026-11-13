@@ -24,8 +24,9 @@ export function useSelectedMemoId() {
     (memoId: number | undefined) => {
       match({ paneSizeClass, memoId })
         .with({ paneSizeClass: 'compact', memoId: P.nullish }, noop)
+        // 카드의 Link가 navigate로 열어 같은 상세가 겹쳐 쌓이지 않게 같은 동사를 쓴다
         .with({ paneSizeClass: 'compact', memoId: P.number }, ({ memoId: selected }) =>
-          router.push({ pathname: '/memo/[memoId]', params: { memoId: selected } }),
+          router.navigate({ pathname: '/memo/[memoId]', params: { memoId: selected } }),
         )
         .with({ paneSizeClass: P.union('medium', 'expanded') }, () => setParams({ memoId }))
         .exhaustive();

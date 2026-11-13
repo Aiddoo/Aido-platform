@@ -1,11 +1,5 @@
-import {
-  type PaneAreaMetrics,
-  type PaneColumns,
-  WindowLayoutPolicy,
-} from '@src/shared/domains/window-layout.model';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
-import type { WindowSizeClass } from '@src/shared/utils/get-window-size-class';
 import { createContext, type PropsWithChildren, use } from 'react';
 import { I18nManager } from 'react-native';
 import { useReservedRegions } from 'react-native-reserved-regions';
@@ -14,6 +8,13 @@ import {
   useSafeAreaFrame,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
+
+import {
+  type PaneAreaMetrics,
+  type PaneColumns,
+  WindowLayoutPolicy,
+  type WindowSizeClass,
+} from './window-layout';
 
 const OUTSIDE_PANE_AREA: PaneAreaMetrics = {
   width: null,

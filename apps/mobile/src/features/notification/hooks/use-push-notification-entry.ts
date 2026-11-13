@@ -1,22 +1,16 @@
 import { usePushNotificationEntryStore } from '@src/bootstrap/providers/di-context';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import { useSegments } from 'expo-router';
 import { useSyncExternalStore } from 'react';
 
-/** 앱 화면이 아직 정해지지 않은 자리. `(auth)`는 로그인 직후 Index로 넘어가기 전 한 커밋이다 */
-const APP_ENTRY_SEGMENTS: ReadonlySet<string | undefined> = new Set([
-  undefined,
-  'loading',
-  '(auth)',
-]);
-
-/** Index가 목적지로 바로 가면 피드가 focus되지 않아 피드 안내와 화면 기록이 생기지 않는다 */
+/**
+ * Index가 목적지로 바로 가면 피드가 focus되지 않아 피드 안내와 화면 기록이 생기지 않는다.
+ * 경로는 구독하지 않고 슬롯의 `isAtAppEntry`(`useAppEntrySegmentSync`)를 읽어 루트 레이아웃이 URL마다 다시 그려지지 않는다
+ */
 export function usePushNotificationEntry() {
   const status = useAuthStatus();
   const store = usePushNotificationEntryStore();
-  const { pending, ready } = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const [firstSegment] = useSegments();
-  const isEnteringApp = status === 'authenticated' && APP_ENTRY_SEGMENTS.has(firstSegment);
+  const { pending, ready, isAtAppEntry } = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const isEnteringApp = status === 'authenticated' && isAtAppEntry;
 
   return {
     isEnteringApp,

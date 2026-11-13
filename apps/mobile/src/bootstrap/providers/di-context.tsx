@@ -10,6 +10,7 @@ import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
+import type { SignOutEpoch } from '@src/core/session/sign-out-epoch';
 import type { AppVersionApi } from '@src/features/app-config/app-version/apis/app-version.api';
 import type { WhatsNewCampaignApi } from '@src/features/app-config/whats-new/apis/whats-new-campaign.api';
 import type { WhatsNewRepository } from '@src/features/app-config/whats-new/repositories/whats-new.repository';
@@ -49,6 +50,7 @@ import type { TodoCategoryApi } from '@src/features/planning/category/apis/todo-
 import type { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import type { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import type { FriendApi } from '@src/features/social/friend/apis/friend.api';
+import type { InviteApi } from '@src/features/social/invite/apis/invite.api';
 import type { InviteShareService } from '@src/features/social/invite/services/invite-share.service';
 import type { InviteService } from '@src/features/social/invite/services/invite.service';
 import type { PendingRedemptionService } from '@src/features/social/invite/services/pending-redemption.service';
@@ -86,6 +88,8 @@ export interface DIContainer extends SharedDependencies {
   tokenStore: TokenStore;
   /** 토큰이 지워질 때마다 올라가는 세션 세대 */
   sessionEpoch: SessionEpoch;
+  /** 로그아웃·탈퇴 때만 오르는 세대(세션 만료는 오르지 않는다) */
+  signOutEpoch: SignOutEpoch;
   /** 오프라인 조회 캐시(사용자 범위 로컬 상태) */
   queryCacheStorage: QueryCacheStorage;
 
@@ -167,6 +171,7 @@ export interface DIContainer extends SharedDependencies {
   pushRegistrationService: PushRegistrationService;
   marketingPushPromptRepository: MarketingPushPromptRepository;
 
+  inviteApi: InviteApi;
   inviteService: InviteService;
   pendingRedemptionService: PendingRedemptionService;
   inviteShareService: InviteShareService;
@@ -208,7 +213,7 @@ export {
 function useDI(): DIContainer {
   const context = use(DIContext);
 
-  if (!context) {
+  if (context == null) {
     throw new Error('useDI must be used within DIProvider');
   }
 
@@ -250,6 +255,9 @@ export function useTokenStore() {
 }
 export function useSessionEpoch() {
   return useDI().sessionEpoch;
+}
+export function useSignOutEpoch() {
+  return useDI().signOutEpoch;
 }
 export function useQueryCacheStorage() {
   return useDI().queryCacheStorage;
@@ -412,6 +420,10 @@ export function usePushRegistrationService() {
 }
 export function useMarketingPushPromptRepository() {
   return useDI().marketingPushPromptRepository;
+}
+
+export function useInviteApi() {
+  return useDI().inviteApi;
 }
 
 export function useInviteService() {

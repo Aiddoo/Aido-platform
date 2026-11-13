@@ -24,12 +24,12 @@ interface ManagementSource {
 const NO_MANAGEMENT_SOURCE: ManagementSource = { managementUrl: null, productId: null };
 
 export class SubscriptionService {
-  readonly #session: Pick<PurchasesSession, 'isConfigured'>;
+  readonly #session: Pick<PurchasesSession, 'isConfigured' | 'waitForSignedInUser'>;
   readonly #purchases: PurchasesGateway;
   readonly #logger: AppLogger;
 
   constructor(
-    session: Pick<PurchasesSession, 'isConfigured'>,
+    session: Pick<PurchasesSession, 'isConfigured' | 'waitForSignedInUser'>,
     purchases: PurchasesGateway,
     logger: AppLogger,
   ) {
@@ -60,6 +60,9 @@ export class SubscriptionService {
   purchase = async (identifier: string): Promise<Result<boolean, SubscriptionError>> => {
     if (!this.#session.isConfigured()) {
       return err(SubscriptionErrors.storeUnavailable());
+    }
+    if (!(await this.#hasSignedInUser())) {
+      return err(SubscriptionErrors.storeProblem());
     }
 
     try {
@@ -100,6 +103,9 @@ export class SubscriptionService {
     if (!this.#session.isConfigured()) {
       return err(SubscriptionErrors.storeUnavailable());
     }
+    if (!(await this.#hasSignedInUser())) {
+      return err(SubscriptionErrors.storeProblem());
+    }
 
     try {
       const customerInfo = toCustomerInfo(await this.#purchases.restore());
@@ -107,6 +113,15 @@ export class SubscriptionService {
     } catch (error) {
       return err(toSubscriptionError('restore', error));
     }
+  };
+
+  /** 계정을 바꾼 SDK 로그인이 끝나지 않았거나 실패했으면 결제가 앞 계정·익명에 귀속되므로 막는다 */
+  #hasSignedInUser = async (): Promise<boolean> => {
+    if ((await this.#session.waitForSignedInUser()) != null) {
+      return true;
+    }
+    this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_ACCOUNT_NOT_SIGNED_IN);
+    return false;
   };
 
   subscribeCustomerInfo = (listener: (customerInfo: CustomerInfo) => void): (() => void) => {

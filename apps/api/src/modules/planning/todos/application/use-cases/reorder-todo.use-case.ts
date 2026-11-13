@@ -1,7 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { ReorderPosition } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -17,6 +15,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { reorderTargetTodoNotFound, todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 
@@ -59,7 +58,7 @@ export class ReorderTodoUseCase {
       ]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
       if (todo == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+        throw todoNotFound(id);
       }
 
       if (targetTodoId === id) {
@@ -73,9 +72,7 @@ export class ReorderTodoUseCase {
           ownerId,
         );
         if (targetTodo == null) {
-          throw new ApplicationException(ErrorCode.TODO_0810, {
-            targetTodoId,
-          });
+          throw reorderTargetTodoNotFound(targetTodoId);
         }
         plan = planReorderRelativeTo(todo.sortOrder, targetTodo.sortOrder, position);
       } else {
@@ -103,7 +100,7 @@ export class ReorderTodoUseCase {
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, ownerId);
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      throw todoNotFound(id);
     }
     return response;
   }

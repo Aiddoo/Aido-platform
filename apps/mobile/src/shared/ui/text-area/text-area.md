@@ -127,13 +127,3 @@ import { TextArea } from '@src/shared/ui';
 | 높이                     | 고정 (`h-12`/`h-14`) | 유동적 (`min-h`, `growsWithContent`) |
 | 크기 variant             | `medium` / `large`   | 없음                                 |
 | leftContent/rightContent | 지원                 | 미지원                               |
-
-## 파일 구조
-
-| 파일                         | 역할                                           |
-| ---------------------------- | ---------------------------------------------- |
-| `text-area.tsx`              | 여러 줄 입력 컴포넌트                          |
-| `text-area.types.ts`         | 타입 정의 (`TextAreaProps`, `TextAreaVariant`) |
-| `text-area.variants.ts`      | Tailwind 스타일 (variant/상태)                 |
-| `bottom-sheet-text-area.tsx` | BottomSheet용 TextArea 래퍼                    |
-| `index.ts`                   | Export: `TextArea`, `BottomSheetTextArea`      |

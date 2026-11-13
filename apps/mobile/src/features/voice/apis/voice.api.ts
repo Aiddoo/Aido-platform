@@ -2,13 +2,11 @@ import { applyActionPlanResponseSchema } from '@aido/api';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
-import type { AppLogger } from '@src/core/ports/app-logger';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import type {
   AppliedPlanResult,
@@ -37,11 +35,9 @@ const DIGEST_TIMEOUT_MS = MINUTE_MS;
 
 export class VoiceApi {
   readonly #httpClient: HttpClient;
-  readonly #logger: AppLogger;
 
-  constructor(httpClient: HttpClient, logger: AppLogger) {
+  constructor(httpClient: HttpClient) {
     this.#httpClient = httpClient;
-    this.#logger = logger;
   }
 
   createQuickPlan = async (
@@ -123,13 +119,12 @@ export class VoiceApi {
     );
   };
 
-  /** 제목·내용은 로그에 남기지 않는다. 어느 칸이 계약과 다른지만 남긴다 */
+  /** 너그러운 스키마 뒤 mapper 실패도 응답 계약 위반이라 보고·재시도·문구가 ParseError 하나로 간다 */
   #map = <T>(method: string, map: () => T): T => {
     try {
       return map();
     } catch (error) {
       const zodError = error instanceof Error ? error.message : undefined;
-      this.#logger.error(VOICE_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, { method, zodError });
       throw new ParseError(`[VoiceApi] Invalid ${method} response: ${zodError}`);
     }
   };

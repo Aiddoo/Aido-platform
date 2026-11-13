@@ -9,12 +9,12 @@ import {
   type DateKey,
 } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Box, HStack, usePaneColumns, VStack, QueryErrorFallback } from '@src/shared/ui';
 import { type ReactNode, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing,
   ReduceMotion,
@@ -26,10 +26,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import type { CompletionsByDate } from '../../queries/todo.queries';
 import { calendarViewModeStoredValue } from '../../schemas/calendar-view-mode-storage.schema';
-import { getMonthViewDayState } from '../../utils/calendar-day';
-import { diffCalendarWeeks, getWeekStartKey } from '../../utils/calendar-grid';
+import { getMonthViewDayState } from '../../utils/calendar-day.view-model';
+import {
+  type CompletionsByDate,
+  diffCalendarWeeks,
+  getWeekStartKey,
+} from '../../utils/calendar-grid.view-model';
 import {
   type CalendarDayCell,
   FEED_MONTH_WEEK_COUNT,
@@ -38,9 +41,9 @@ import {
 } from '../../utils/calendar-month.view-model';
 import { clampCalendarPage } from '../../utils/calendar-pager.geometry';
 import { CALENDAR_DATE_CELL_HEIGHT, CalendarDateCell } from './calendar-date-cell';
-import { CalendarHeader } from './calendar-header';
 import { CALENDAR_CENTER_PAGE, CALENDAR_TOTAL_PAGES, CalendarPager } from './calendar-pager';
-import { CalendarWeekdayHeader } from './calendar-weekday-header';
+import { CalendarTitleBar } from './calendar-title-bar';
+import { WeekdayRow } from './weekday-row';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 const PAGER_HEIGHT_TIMING = {
@@ -65,9 +68,9 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
 
   return (
     <VStack className="bg-white" gap={8}>
-      <CalendarHeader />
+      <CalendarTitleBar />
 
-      <CalendarWeekdayHeader />
+      <WeekdayRow />
 
       <CalendarHeightTransition height={pagerHeight}>
         {/* 높이가 바뀌는 바깥이 아니라 내용에서 재어 애니메이션 동안 layout 이벤트가 이어지지 않는다 */}
@@ -91,11 +94,8 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
 function useCalendarPageWidth() {
   const { primaryWidth } = usePaneColumns();
   const insets = useSafeAreaInsets();
-  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
-
-  const handleLayout = (event: LayoutChangeEvent) => {
-    setMeasuredWidth(event.nativeEvent.layout.width);
-  };
+  const [measuredSize, handleLayout] = useLayoutSize();
+  const measuredWidth = measuredSize?.width;
 
   // 창을 끌거나 사이드바를 여닫는 동안 폭이 연달아 바뀐다. 쪽 목록은 폭마다 새로 만들어 무거워 다른 그리기를 막지 않게 미룬다
   const pageWidth = useDeferredValue(measuredWidth ?? primaryWidth - insets.left - insets.right);
@@ -108,7 +108,8 @@ interface CalendarHeightTransitionProps {
   children: ReactNode;
 }
 
-/** 주↔월 높이를 UI 스레드에서 이어 바꿔 아래 피드가 한 프레임에 밀리지 않게 한다. 동작 줄이기면 바로 바뀐다 */
+// 주↔월 높이를 UI 스레드에서 이어 바꿔 아래 피드가 한 프레임에 밀리지 않게 한다. 아래 피드가 따라와야 해 transform 대신
+// 높이를 움직이는 모션 규칙의 예외다(ui.md 모션). 동작 줄이기면 바로 바뀐다
 function CalendarHeightTransition({ height, children }: CalendarHeightTransitionProps) {
   const animatedHeight = useSharedValue(height);
 
@@ -304,7 +305,7 @@ Calendar.Error = function ErrorFallback({ onRetry }: { onRetry: () => void }) {
       message={t('todo:calendar.loadFailed')}
       messageProps={{ size: 'e1' }}
       reset={onRetry}
-      py={4}
+      className="py-1"
     />
   );
 };

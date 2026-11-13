@@ -198,6 +198,16 @@ describe('syncMeUntilStorePremium', () => {
     expect(fetchMe).toHaveBeenCalledTimes(1 + DELAYS_MS.length);
   });
 
+  it('내 정보가 없으면(로그아웃 뒤) 다시 불러오지 않고 바로 false를 반환한다', async () => {
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delaysMs: DELAYS_MS, wait });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(wait).not.toHaveBeenCalled();
+    expect(queryClient.getQueryState(USER_QUERY_KEYS.me())).toBeUndefined();
+  });
+
   it('이미 STORE면 다시 불러오지 않는다', async () => {
     // Given
     const fetchMe = await serveMe(STORE_ME);

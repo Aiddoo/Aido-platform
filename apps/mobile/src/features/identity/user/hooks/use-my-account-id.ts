@@ -1,15 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { type User } from '../domains/user.model';
-import { useGetMeQueryOptions } from '../queries/user.queries';
+import { selectAccountId, useGetMeQueryOptions } from '../queries/user.queries';
 
 interface UseMyAccountIdOptions {
   /** 인증 전에는 끈다. 미인증에서 내 정보를 부르면 401이 세션 만료로 번진다 */
   isEnabled?: boolean;
-}
-
-function selectAccountId(user: User) {
-  return user.id;
 }
 
 /** id만 고르므로 내 정보의 다른 칸이 바뀌어도 다시 그리지 않는다. 읽기 전·실패·꺼짐은 null이고 던지지 않는다 */

@@ -13,6 +13,11 @@ export function isTodoCommentRateLimitedError(error: unknown): error is ApiError
   return isApiError(error) && error.status === HttpStatus.TOO_MANY_REQUESTS;
 }
 
+/** 지워진 댓글과 연타 제한은 mutation onError가 경고 토스트로 알려 전역 피드백에서 뺀다 */
+export function isWarnedTodoCommentError(error: unknown): boolean {
+  return isTodoCommentUnavailableError(error) || isTodoCommentRateLimitedError(error);
+}
+
 /** 같은 글을 다시 보내도 같은 결과인 4xx다 */
 export function isTodoCommentRejectedError(error: unknown): error is ApiError {
   return (

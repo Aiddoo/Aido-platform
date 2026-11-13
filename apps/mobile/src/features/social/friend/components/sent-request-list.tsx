@@ -5,20 +5,27 @@ import {
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, FriendIllustration, InfiniteList, Text, TextSkeleton } from '@src/shared/ui';
-import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
 import type { FriendRequest } from '../domains/friend.model';
+import { refreshFriends } from '../queries/friend-cache';
 import { useCancelRequestMutationOptions } from '../queries/friend.mutations';
 import { useGetSentRequestsInfiniteQueryOptions } from '../queries/friend.queries';
 
 export function SentRequestList() {
   const { t } = useTranslation('friend');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
-    useSuspenseInfiniteQuery(useGetSentRequestsInfiniteQueryOptions());
-  const [isRefreshing, handleRefresh] = useRefresh(refetch);
+  const {
+    data: sentRequests,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useSuspenseInfiniteQuery(useGetSentRequestsInfiniteQueryOptions());
+  const queryClient = useQueryClient();
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshFriends(queryClient));
 
-  const { items: requests, totalCount } = data;
+  const { items: requests, totalCount } = sentRequests;
 
   return (
     <InfiniteList

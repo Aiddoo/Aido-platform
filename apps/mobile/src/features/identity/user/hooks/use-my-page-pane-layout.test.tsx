@@ -1,3 +1,4 @@
+import { createTestDi } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { act } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
@@ -27,7 +28,7 @@ beforeEach(() => {
 
 async function renderPane() {
   const view = await renderScreenHook(() => useMyPagePaneLayout(), {
-    di: { myPagePaneLayoutStore: paneLayoutStore },
+    di: createTestDi({ seeds: { myPagePaneLayoutStore: paneLayoutStore } }),
   });
   let maxOffset = 0;
   let offset = 0;
@@ -58,12 +59,12 @@ async function renderPane() {
 
 async function focus(pane: Awaited<ReturnType<typeof renderPane>>) {
   jest.mocked(useIsFocused).mockReturnValue(true);
-  await act(async () => pane.view.rerender({}));
+  await act(async () => pane.view.rerender(undefined));
 }
 
 async function blur(pane: Awaited<ReturnType<typeof renderPane>>) {
   jest.mocked(useIsFocused).mockReturnValue(false);
-  await act(async () => pane.view.rerender({}));
+  await act(async () => pane.view.rerender(undefined));
 }
 
 describe('useMyPagePaneLayout 스크롤 복원', () => {

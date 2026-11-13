@@ -1,130 +1,26 @@
-# Flex 컴포넌트
+# Flex
 
-`HStack`·`VStack`·`Grid`의 내부 구현입니다. `BoxProps`를 상속받아 spacing props도 지원합니다.
+`Box`에 `direction`·`wrap`·`justify`·`align`을 더한 flex 틀이다. 화면과 기능에서는 `HStack`(가로)·`VStack`(세로)을 쓰고, 방향이 값으로 바뀌어야 하는 곳만 `Flex`를 직접 쓴다. 창 폭에 따라 `HStack`과 `VStack`을 바꿔 끼우면 자식이 다시 마운트되기 때문이다(`voice-note-recorder.tsx`의 파형·자막, `calendar-title-bar.tsx`의 보기 전환 탭).
 
-화면과 feature에서는 `HStack`(가로)·`VStack`(세로)을 씁니다. 공용 export는 남겨 두고, 방향이 값으로 바뀌어야 하는 곳만 `Flex`를 직접 씁니다. 지금은 녹음 화면(`app/(app)/voice-notes/record.tsx`) 하나로, 창이 좁아지고 넓어질 때 `HStack`과 `VStack`을 바꿔 끼우면 파형·자막이 다시 마운트되기 때문입니다.
-
-## 설치
-
-이 컴포넌트는 `@aido/mobile` 앱에 포함되어 있습니다.
+## 사용법
 
 ```tsx
-import { Flex } from '@src/shared/ui';
-```
-
-## 기본 사용법
-
-```tsx
-<Flex>
-  <Text>아이템 1</Text>
-  <Text>아이템 2</Text>
+<Flex direction={isCompact ? 'column' : 'row'} flex={1} gap={isCompact ? 12 : 20}>
+  {children}
 </Flex>
 ```
 
 ## Props
 
-### Flex Props
+[`Box`](../box/box.md) Props를 펼친다.
 
-| Prop        | 타입                                                                | 기본값      | 설명            |
-| ----------- | ------------------------------------------------------------------- | ----------- | --------------- |
-| `direction` | `'row' \| 'column' \| 'row-reverse' \| 'column-reverse'`            | `'row'`     | flex 방향       |
-| `wrap`      | `'wrap' \| 'nowrap' \| 'wrap-reverse'`                              | `'nowrap'`  | flex wrap       |
-| `justify`   | `'start' \| 'center' \| 'end' \| 'between' \| 'around' \| 'evenly'` | `'start'`   | justify-content |
-| `align`     | `'start' \| 'center' \| 'end' \| 'stretch' \| 'baseline'`           | `'stretch'` | align-items     |
+| Prop        | 값                                                           | 기본      |
+| ----------- | ------------------------------------------------------------ | --------- |
+| `direction` | `row` · `column` · `row-reverse` · `column-reverse`          | `row`     |
+| `wrap`      | `wrap` · `nowrap` · `wrap-reverse`                           | `nowrap`  |
+| `justify`   | `start` · `center` · `end` · `between` · `around` · `evenly` | `start`   |
+| `align`     | `start` · `center` · `end` · `stretch` · `baseline`          | `stretch` |
 
-### Spacing Props (BoxProps 상속)
+## 동작
 
-| Prop   | 타입     | 설명                |
-| ------ | -------- | ------------------- |
-| `flex` | `number` | flex 값             |
-| `gap`  | `number` | 자식 요소 간격 (px) |
-| `p`    | `number` | padding 전체        |
-| `px`   | `number` | padding 좌우        |
-| `py`   | `number` | padding 상하        |
-| `pt`   | `number` | padding 상단        |
-| `pb`   | `number` | padding 하단        |
-| `pl`   | `number` | padding 좌측        |
-| `pr`   | `number` | padding 우측        |
-| `m`    | `number` | margin 전체         |
-| `mx`   | `number` | margin 좌우         |
-| `my`   | `number` | margin 상하         |
-| `mt`   | `number` | margin 상단         |
-| `mb`   | `number` | margin 하단         |
-| `ml`   | `number` | margin 좌측         |
-| `mr`   | `number` | margin 우측         |
-
-### 기타 Props
-
-| Prop        | 타입        | 설명                 |
-| ----------- | ----------- | -------------------- |
-| `className` | `string`    | 추가 Tailwind 클래스 |
-| `style`     | `ViewStyle` | 인라인 스타일        |
-
-## 예시
-
-### 방향 (direction)
-
-```tsx
-// 수평 (기본값)
-<Flex direction="row">
-  <Text>왼쪽</Text>
-  <Text>오른쪽</Text>
-</Flex>
-
-// 수직
-<Flex direction="column">
-  <Text>위</Text>
-  <Text>아래</Text>
-</Flex>
-```
-
-### 정렬 (justify + align)
-
-```tsx
-// 중앙 정렬
-<Flex justify="center" align="center">
-  <Text>가운데</Text>
-</Flex>
-
-// 양쪽 끝 배치
-<Flex justify="between" align="center">
-  <Text>왼쪽</Text>
-  <Text>오른쪽</Text>
-</Flex>
-```
-
-### Spacing Props 사용
-
-```tsx
-<Flex flex={1} px={24} py={16} gap={12}>
-  <Text>아이템 1</Text>
-  <Text>아이템 2</Text>
-  <Text>아이템 3</Text>
-</Flex>
-
-<Flex direction="column" p={16} mb={24}>
-  <Text>패딩과 마진이 적용된 Flex</Text>
-</Flex>
-```
-
-### 줄바꿈 (wrap)
-
-```tsx
-<Flex wrap="wrap" gap={8}>
-  <Chip>태그1</Chip>
-  <Chip>태그2</Chip>
-  <Chip>태그3</Chip>
-  <Chip>태그4</Chip>
-</Flex>
-```
-
-## 타입 상속
-
-`FlexProps`는 `BoxProps`를 상속받습니다.
-
-```
-BoxProps (spacing)
-  └─ FlexProps (+ direction, wrap, justify, align)
-       ├─ HStackProps
-       └─ VStackProps
-```
+네 prop은 `flex.variants.ts`의 클래스(`flex-row`, `justify-between` 등)가 되고 `className` 앞에 붙는다.

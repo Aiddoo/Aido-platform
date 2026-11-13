@@ -1,8 +1,9 @@
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import { shouldRetryQuery } from '@src/shared/query/query-retry';
 import { QueryClient } from '@tanstack/react-query';
 
 import { createAppMutationCache } from './mutation-error-feedback-cache';
-import { shouldRetryQuery } from './query-retry';
+import { createAppQueryCache } from './query-error-report-cache';
 
 const MIN_STALE_TIME_MS = 5 * MINUTE_MS;
 const MIN_GC_TIME_MS = 6 * MINUTE_MS;
@@ -17,6 +18,7 @@ function retryDelay(attempt: number): number {
 /** 앱의 조회 캐시. 프로세스에 하나라 `composition-root`만 부른다 */
 export function createAppQueryClient(): QueryClient {
   return new QueryClient({
+    queryCache: createAppQueryCache(),
     mutationCache: createAppMutationCache(),
     defaultOptions: {
       queries: {

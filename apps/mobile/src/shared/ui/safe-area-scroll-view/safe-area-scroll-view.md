@@ -21,14 +21,3 @@ import { SafeAreaScrollView } from '@src/shared/ui';
 ## Props
 
 RN `ScrollView`와 같다(`ref` 포함). `contentContainerStyle`은 inset padding 뒤에 합쳐진다.
-
-## 파일 구조
-
-```
-safe-area-scroll-view/
-├── safe-area-scroll-view.tsx
-├── get-safe-area-padding.ts      # 고른 가장자리의 inset → padding (순수 함수)
-├── get-safe-area-padding.test.ts
-├── index.ts
-└── safe-area-scroll-view.md
-```

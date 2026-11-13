@@ -1,4 +1,5 @@
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
+import type { SignOutEpoch } from '@src/core/session/sign-out-epoch';
 import { orderBy } from 'es-toolkit';
 
 import {
@@ -16,6 +17,8 @@ interface VoiceRecordingIntakeSessionPorts {
   draftRepository: Pick<VoiceNoteDraftRepository, 'find' | 'save'>;
   recordingRepository: Pick<VoiceRecordingRepository, 'remove' | 'removeSource' | 'save'>;
   discard: VoiceNoteStorageService['discard'];
+  /** 로그아웃·탈퇴하면 늦은 파일을 지운 계정 폴더·초안에 쓰지 않는다. 세션 만료는 같은 사람이 돌아오므로 받는다 */
+  signOutEpoch: Pick<SignOutEpoch, 'current' | 'subscribe'>;
   /** 조각 하나를 초안 이름으로 옮겼다 */
   onRecordingSaved: () => void;
 }
@@ -25,6 +28,7 @@ export class VoiceRecordingIntakeSession {
   readonly #deps: VoiceRecordingIntakeSessionPorts;
   readonly #segmentStarts = new Map<string, number>();
   readonly #pendingSaves = new Set<Promise<void>>();
+  readonly #startedEpoch: number;
   #recordings: VoiceNoteRecording[] = [];
   #partCount = 0;
   #notifyArrived: (() => void) | null = null;
@@ -36,6 +40,7 @@ export class VoiceRecordingIntakeSession {
 
   constructor(deps: VoiceRecordingIntakeSessionPorts) {
     this.#deps = deps;
+    this.#startedEpoch = deps.signOutEpoch.current();
   }
 
   segmentStarted = (uri: string, startMs: number): void => {
@@ -45,7 +50,7 @@ export class VoiceRecordingIntakeSession {
   receive = (uri: string, fallbackStartMs: number): void => {
     const startMs = this.#segmentStarts.get(uri) ?? fallbackStartMs;
     this.#segmentStarts.delete(uri);
-    if (this.#hasDiscarded) {
+    if (this.#hasDiscarded || this.#hasSignedOut()) {
       this.#deps.recordingRepository.removeSource(uri);
     } else {
       const saving = this.#save(uri, startMs).finally(() => this.#pendingSaves.delete(saving));
@@ -88,8 +93,9 @@ export class VoiceRecordingIntakeSession {
 
   isDiscarded = (): boolean => this.#hasDiscarded;
 
-  /** 넘기거나 지운 뒤에는 글자를 초안에 쓰지 않는다 */
-  canWriteDraft = (): boolean => !this.#hasHandedOff && !this.#hasDiscarded;
+  /** 넘기거나 지웠거나 로그아웃했으면 글자를 초안에 쓰지 않는다 */
+  canWriteDraft = (): boolean =>
+    !this.#hasHandedOff && !this.#hasDiscarded && !this.#hasSignedOut();
 
   /** 떠나도 녹음을 잃지 않게 화면이 내려간 뒤 온 파일도 받는다. 받으면 끝내고 오지 않아도 잠시 뒤 끝낸다 */
   listenForLate = (subscribe: SpeechRecognizer['subscribe']): void => {
@@ -101,6 +107,7 @@ export class VoiceRecordingIntakeSession {
     const stop = () => {
       clearTimeout(timer);
       unsubscribe();
+      unsubscribeSignOut();
       if (this.#stopLateListening === stop) {
         this.#stopLateListening = null;
       }
@@ -116,6 +123,8 @@ export class VoiceRecordingIntakeSession {
         stop();
       }
     });
+    // 로그아웃하면 그 계정의 늦은 파일을 기다리지 않는다
+    const unsubscribeSignOut = this.#deps.signOutEpoch.subscribe(stop);
     const timer = setTimeout(stop, VOICE_RECORDING_LATE_WAIT_MS);
   };
 
@@ -128,7 +137,7 @@ export class VoiceRecordingIntakeSession {
     if (fileName == null) {
       return;
     }
-    if (this.#hasDiscarded) {
+    if (this.#hasDiscarded || this.#hasSignedOut()) {
       recordingRepository.remove(accountId, fileName);
       return;
     }
@@ -149,4 +158,6 @@ export class VoiceRecordingIntakeSession {
     }
     draftRepository.save(accountId, VoiceNotePolicy.withRecordings(handedOff, this.#recordings));
   };
+
+  #hasSignedOut = (): boolean => this.#deps.signOutEpoch.current() !== this.#startedEpoch;
 }

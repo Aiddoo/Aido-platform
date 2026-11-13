@@ -62,7 +62,12 @@ export async function syncMeUntilStorePremium(
   { delaysMs = STORE_PREMIUM_SYNC_DELAYS_MS, wait = delay }: SyncStorePremiumOptions = {},
 ) {
   const userId = getCachedMe(queryClient)?.id;
+  // 내 정보가 없으면 로그아웃 뒤다. 10초 동안 내 정보를 다시 받으며 401을 내지 않는다
+  if (userId == null) {
+    return false;
+  }
 
+  // 백오프 재조회다. 앞 응답으로 멈출지 정해 한 번에 보내지 않는다
   for (const ms of delaysMs) {
     if (isStorePremiumReflected(queryClient)) {
       return true;

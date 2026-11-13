@@ -57,9 +57,14 @@ export function nudgeNotFound(nudgeId: NudgeId): ApplicationException {
   return new ApplicationException(ErrorCode.NUDGE_1105, { nudgeId: nudgeId.value });
 }
 
-// 답장·감사 기능이 꺼졌거나 보고 있는 사람의 콕이 아니면 같은 오류다
+// 없는 콕과 보고 있는 사람의 콕이 아닌 경우를 구분하지 않는다
 export function nudgeInteractionNotFound(): ApplicationException {
   return new ApplicationException(ErrorCode.NUDGE_1105);
+}
+
+/** 서버 설정으로 답장·감사 기능이 꺼졌다. 1.15.1 이하 앱에는 presentation이 nudgeInteractionNotFound로 바꿔 보낸다 */
+export function nudgeInteractionDisabled(): ApplicationException {
+  return new ApplicationException(ErrorCode.NUDGE_1111);
 }
 
 export function nudgeInteractionClosed(): ApplicationException {

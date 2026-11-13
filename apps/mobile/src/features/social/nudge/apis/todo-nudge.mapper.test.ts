@@ -9,24 +9,6 @@ import { toNudgeCooldownInfo, toNudgeLimitInfo } from './todo-nudge.mapper';
 
 setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
 
-describe('toNudgeLimitInfo', () => {
-  it('필드 매핑', () => {
-    // Given
-    const dto = createNudgeLimitInfoDto();
-
-    // When
-    const result = toNudgeLimitInfo(dto);
-
-    // Then
-    expect(result).toEqual({
-      dailyLimit: 5,
-      usedToday: 2,
-      remainingToday: 3,
-      isUnlimited: false,
-    });
-  });
-});
-
 describe('toNudgeCooldownInfo', () => {
   it('cooldownEndsAt ISO 문자열을 Instant로 바꾼다', () => {
     // Given

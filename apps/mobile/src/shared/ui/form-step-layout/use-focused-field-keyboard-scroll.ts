@@ -73,6 +73,14 @@ export function useFocusedFieldKeyboardScroll() {
     scrollViewTag.set(findNodeHandle(scrollRef.current) ?? -1);
   }, [scrollRef, scrollViewTag]);
 
+  // 칸을 재는 사이 화면이 내려가면 측정 뒤 UI 스레드 스크롤을 건너뛴다
+  useEffect(
+    () => () => {
+      focusedFieldRef.current = null;
+    },
+    [],
+  );
+
   const getFocusedField = useCallback(
     (fromScroll: number, viewportTop: number): FocusedFieldInContent | null => {
       'worklet';

@@ -9,6 +9,7 @@ import {
   createHttpClientStub,
   createPushNotificationGatewayStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
@@ -44,13 +45,9 @@ async function renderAction(source: PushPermissionPromptSource) {
     toPreference(createPreferenceDto({ pushEnabled: false })),
   );
   const { result } = await renderScreenHook(() => usePushPermissionAction({ source }), {
-    queryClient,
-    di: {
-      analytics,
-      httpClient,
-      pushNotification,
-      externalLink,
-    },
+    di: createTestDi({
+      ports: { analytics, httpClient, pushNotification, externalLink, queryClient },
+    }),
   });
   const getPushPermissionEvents = () =>
     analytics.trackEvent.mock.calls.filter(([name]) => name.startsWith('push_permission_'));

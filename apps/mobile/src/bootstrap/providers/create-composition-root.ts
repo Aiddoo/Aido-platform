@@ -1,17 +1,25 @@
 import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
 import { getErrorMessage, isKeychainLockedError, toError } from '@src/shared/errors';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
+import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { QUERY_CACHE_LOG_EVENT } from '../query/query-cache-log-events';
 import { createQueryCacheStorage } from '../query/query-cache-persistence';
+import { pendingStorageCleanupStoredValue } from '../schemas/pending-storage-cleanup-storage.schema';
 import type { AppContainerPorts } from './create-app-container';
 import type { DevicePorts } from './create-device-ports';
 
 interface CompositionRootPorts {
   createDevicePorts: () => DevicePorts;
-  /** SecureStore의 키로 초안·조회 캐시 저장소를 연다. 실패해도 reject하지 않고 `failure`를 돌려준다 */
-  openEncryptedStorage: (secureStorage: KeyValueStorage) => Promise<EncryptedStorageBootstrap>;
+  /**
+   * SecureStore의 키로 초안·조회 캐시 저장소를 연다. 실패해도 reject하지 않고 `failure`를 돌려준다.
+   * `discarded`는 저장소를 열지 못한 지난 실행에서 끝난 세션의 값이라 열기 전에 지운다
+   */
+  openEncryptedStorage: (
+    secureStorage: KeyValueStorage,
+    discarded: { queryCache: boolean; drafts: boolean } | null,
+  ) => Promise<EncryptedStorageBootstrap>;
   createQueryClient: () => QueryClient;
 }
 
@@ -52,7 +60,11 @@ export function createCompositionRoot({
   const open = async (): Promise<AppContainerPorts> => {
     devicePorts ??= createDevicePorts();
     queryClient ??= createQueryClient();
-    const storage = await openEncryptedStorage(devicePorts.storage);
+    const pendingCleanup = readStoredValue(
+      devicePorts.syncStorage,
+      pendingStorageCleanupStoredValue,
+    );
+    const storage = await openEncryptedStorage(devicePorts.storage, pendingCleanup);
     const ports: AppContainerPorts = {
       ...devicePorts,
       draftStorage: storage.draftStorage,
@@ -63,6 +75,7 @@ export function createCompositionRoot({
       queryClient,
     };
     if (storage.failure == null) {
+      removeStoredValue(devicePorts.syncStorage, pendingStorageCleanupStoredValue);
       openedPorts = ports;
     } else {
       reportStorageFailure(storage.failure, devicePorts);

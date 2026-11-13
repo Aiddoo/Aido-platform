@@ -12,6 +12,7 @@ jest.mock('expo-application', () => ({
   get nativeBuildVersion() {
     return mockNativeBuildVersion;
   },
+  applicationId: 'com.aido.mobile',
 }));
 
 describe('expoNativeApplicationMetadataGateway', () => {
@@ -50,7 +51,7 @@ describe('expoNativeApplicationMetadataGateway', () => {
     const installation = expoNativeApplicationMetadataGateway.getInstallation();
 
     // Then
-    expect(installation).toBeUndefined();
+    expect(installation).toBeNull();
   });
 
   it('expoVersion이 없는 SDK58 개발 빌드의 네이티브 버전을 읽는다', () => {
@@ -62,6 +63,7 @@ describe('expoNativeApplicationMetadataGateway', () => {
       platform: 'ios',
       currentVersion: '1.10.0',
       currentBuild: '123',
+      applicationId: 'com.aido.mobile',
     });
   });
 
@@ -76,8 +78,9 @@ describe('expoNativeApplicationMetadataGateway', () => {
     // Then
     expect(installation).toEqual({
       platform: 'ios',
-      currentVersion: undefined,
-      currentBuild: undefined,
+      currentVersion: null,
+      currentBuild: null,
+      applicationId: 'com.aido.mobile',
     });
   });
 });

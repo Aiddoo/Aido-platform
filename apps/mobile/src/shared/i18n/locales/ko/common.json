@@ -27,7 +27,9 @@
   "daysOfWeekSeparator": "·",
   "calendar": {
     "nextMonth": "다음 달",
+    "nextWeek": "다음 주",
     "previousMonth": "이전 달",
+    "previousWeek": "이전 주",
     "weekHeader": "{{month}} {{week}}주차"
   },
   "relativeDay": {
@@ -57,7 +59,13 @@
     "inquiry": "문의하기",
     "restart": "앱 다시 시작",
     "mailSubject": "[아이두] 오류 문의 ({{code}})",
-    "mailBody": "진단 코드: {{code}}\n\n어떤 화면에서 무엇을 하다가 문제가 생겼는지 알려주세요. 빠르게 살펴볼게요.\n"
+    "mailBody": "진단 코드: {{code}}\n\n어떤 화면에서 무엇을 하다가 문제가 생겼는지 알려주세요. 빠르게 살펴볼게요.\n",
+    "inquiryDraft": {
+      "body": "화면을 불러오지 못했어요\n({{details}})\n\n",
+      "diagnosticCode": "진단 코드: {{value}}",
+      "errorCode": "오류 코드: {{value}}",
+      "requestId": "요청 ID: {{value}}"
+    }
   },
   "infiniteList": {
     "loadMoreFailed": "다시 시도",
@@ -68,9 +76,6 @@
   },
   "pushChannel": {
     "default": "기본 알림"
-  },
-  "toast": {
-    "defaultError": "문제가 생겼어요"
   },
   "share": {
     "unsupported": "이 기기에서는 공유할 수 없어요",
