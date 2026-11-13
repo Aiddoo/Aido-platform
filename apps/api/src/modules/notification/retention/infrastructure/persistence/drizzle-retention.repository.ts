@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -24,6 +24,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationId } from "../../../inbox/domain/notification-id.vo.js";
 import type { RetentionRepositoryPort } from "../../application/ports/retention.repository.port.js";
@@ -153,6 +154,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
       params.dueAt.subtract({ milliseconds: RETENTION_STAGE_TIMING.d0MinWaitMs }),
     );
     const { targetDay, sendLocalTime } = RETENTION_STAGE_TIMING;
+    const validTimezones = await this.#scheduledStageTimezones();
     const afterCursor =
       params.after == null
         ? sql`TRUE`
@@ -160,11 +162,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     const rows = z.array(stageRowSchema).parse(
       (
         await this.#db.execute<Record<string, unknown>>(sql`
-			WITH valid_timezones AS MATERIALIZED (
-				SELECT timezone.name
-				FROM pg_timezone_names AS timezone
-			),
-			due_stages AS (
+			WITH due_stages AS (
 				-- isRetentionStageDue와 같은 기준이다. 아직 기다리는 단계가 묶음 자리를 차지하지 않게 한다
 				SELECT
 					stage."id",
@@ -177,7 +175,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 					ON assignment."id" = stage."assignmentId"
 				LEFT JOIN ${userPreference} AS preference
 					ON preference."userId" = assignment."userId"
-				LEFT JOIN valid_timezones AS valid_timezone
+				LEFT JOIN unnest(${sql.param(validTimezones)}::TEXT[]) AS valid_timezone(name)
 					ON valid_timezone.name = preference."timezone"
 				CROSS JOIN LATERAL (
 					SELECT COALESCE(valid_timezone.name, 'UTC') AS timezone
@@ -274,6 +272,29 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
       locale: toSupportedLocale(row.locale),
       incompleteCount: row.todoCount - row.completedCount,
     }));
+  }
+
+  // 매 분 묶음마다 pg_timezone_names(시간대 파일 600여 개)를 읽지 않도록 대기 단계 사용자의 저장값만 앱 규칙
+  // (resolveTimezone과 같은 Intl 판정)으로 고른다. 고르지 못한 값은 SQL에서 UTC가 된다
+  async #scheduledStageTimezones(): Promise<string[]> {
+    const rows = await this.#db
+      .selectDistinct({ timezone: userPreference.timezone })
+      .from(retentionExperimentStage)
+      .innerJoin(
+        retentionExperimentAssignment,
+        eq(retentionExperimentAssignment.id, retentionExperimentStage.assignmentId),
+      )
+      .innerJoin(userPreference, eq(userPreference.userId, retentionExperimentAssignment.userId))
+      .where(
+        and(
+          eq(retentionExperimentStage.status, "SCHEDULED"),
+          eq(retentionExperimentAssignment.experimentKey, RETENTION_EXPERIMENT_KEY),
+          isNotNull(retentionExperimentAssignment.startedAt),
+        ),
+      );
+    return rows.flatMap(({ timezone }) =>
+      normalizeIanaTimezone(timezone) == null ? [] : [timezone],
+    );
   }
 
   async markStageSkipped(
