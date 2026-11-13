@@ -18,8 +18,7 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
 import { toTodoCategoryFormValues } from '../apis/todo-category.mapper';
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import type { TodoCategory } from '../domains/todo-category.model';
+import { type TodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
 import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
@@ -78,7 +77,7 @@ CategoryEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFall
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
       <QueryErrorFallback
         reset={reset}
-        onInquiry={(href) => sheet.close({ type: 'replace', href })}
+        onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
       />
     </BottomSheet>
   );

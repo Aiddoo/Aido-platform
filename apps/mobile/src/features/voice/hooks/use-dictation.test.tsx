@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { Text } from '@src/shared/ui';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import { createAppLoggerStub, createSpeechRecognizerStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';

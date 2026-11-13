@@ -144,25 +144,6 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui';
 <Button isLoading aria-label="데이터 저장 중">저장</Button>
 ```
 
-## 자동 텍스트 스타일링
+## 글자 스타일
 
-`children`이 문자열이면 자동으로 적절한 스타일이 적용됩니다:
-
-- **크기**: `size` prop에 따라 폰트 크기 자동 적용
-- **색상**: `variant`에 따라 텍스트 색상 자동 적용
-  - `fill`: 흰색 (`text-white`)
-  - `weak`: 배경색과 같은 계열 (`text-main`, `text-error`, `text-gray-9`)
-- **굵기**: `semibold` 자동 적용
-
-```tsx
-// 이렇게만 써도 됩니다
-<Button size="medium" variant="weak" color="primary">버튼</Button>
-
-// 복잡한 내용은 직접 구성
-<Button>
-  <HStack gap={8}>
-    <Icon />
-    <Text weight="bold">커스텀 텍스트</Text>
-  </HStack>
-</Button>
-```
+`children`이 문자열이면 `size`의 글꼴, `variant`의 색(`fill`은 흰색·다크는 `text-gray-9`, `weak`는 같은 계열 `text-main`·`text-error`·`text-gray-9`), `semibold`를 자동으로 붙인다. 아이콘과 글자를 섞을 때는 `HStack`과 `Text`로 직접 구성한다.

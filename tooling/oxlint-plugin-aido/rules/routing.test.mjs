@@ -30,6 +30,20 @@ tester.run('no-destructured-search-params', rules['no-destructured-search-params
   invalid: [{ code: 'const { todoId } = useLocalSearchParams();', errors: 1 }],
 });
 
+tester.run('route-setter-location', rules['route-setter-location'], {
+  valid: [
+    'const [{ todoId }] = useRouteParams(schema);',
+    'const [params] = useRouteParams(schema);',
+    'const [view, setView] = useView(key, schema);',
+    'const [sort, setSort] = useTodoCommentSort();',
+  ],
+  invalid: [
+    { code: 'const [{ startVoiceNote }, setParams] = useRouteParams(schema);', errors: 1 },
+    { code: 'const [, update] = useRouteParams(schema);', errors: 1 },
+    { code: 'const setParams = useRouteParams(schema)[1];', errors: 1 },
+  ],
+});
+
 tester.run('no-router-push', rules['no-router-push'], {
   valid: ['router.replace(href);', 'navigation.push(href);'],
   invalid: [{ code: "router.push('/todo');", errors: 1 }],

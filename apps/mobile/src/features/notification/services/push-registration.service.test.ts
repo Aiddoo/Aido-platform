@@ -1,6 +1,6 @@
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { toInstant } from '@src/shared/date/instant';
-import { NetworkError, ok } from '@src/shared/errors';
+import { type ApiError, NetworkError, ok, type Result } from '@src/shared/errors';
 import {
   createHttpClientStub,
   createIdGeneratorStub,
@@ -11,6 +11,7 @@ import {
   createPushNotificationGatewayStub,
   createVendorIdGatewayStub,
 } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import {
   createNotificationApiError,
@@ -359,36 +360,86 @@ describe('PushRegistrationService.report', () => {
 });
 
 describe('PushRegistrationService.requestPermission', () => {
-  it('시스템 창을 띄우고, 바뀐 권한을 바로 보고한다', async () => {
+  setupFakeTimersPerTest();
+
+  it('시스템 창이 닫히면 토큰 발급과 보고를 기다리지 않고 권한을 돌려준 뒤 보고한다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub({
       requestPermission: jest.fn(async () => createPushPermissionResponse()),
     });
+    const token = Promise.withResolvers<string>();
+    gateway.getToken.mockReturnValueOnce(token.promise);
     const { service, httpClient } = setup(gateway);
 
     // When
     const permission = await service.requestPermission();
+    const reportedBeforeToken = httpClient.put.mock.calls.length > 0;
+    token.resolve('ExponentPushToken[device-123]');
+    await jest.advanceTimersByTimeAsync(0);
 
     // Then
     expect(gateway.requestPermission).toHaveBeenCalledTimes(1);
     expect(permission).toEqual({ status: 'GRANTED', canAskAgain: false });
+    expect(reportedBeforeToken).toBe(false);
     expect(httpClient.put).toHaveBeenCalledTimes(1);
   });
 
-  it('보고가 실패해도 권한 요청 결과는 돌려준다', async () => {
+  it('권한을 돌려준 뒤 가는 중인 보고는 로그아웃 해제가 끝까지 기다린다', async () => {
     // Given
-    const { service, httpClient, logger } = setup();
-    httpClient.put.mockRejectedValue(new Error('offline'));
+    const { service, httpClient } = setup();
+    const put = createPendingResponse(ok(createPushDeviceResponseDto()));
+    httpClient.put.mockReturnValueOnce(put.response);
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    await service.requestPermission();
+    await jest.advanceTimersByTimeAsync(0);
 
     // When
-    const permission = await service.requestPermission();
+    const unregistering = service.unregister();
+    await jest.advanceTimersByTimeAsync(0);
+    const deletedBeforeReportSettled = httpClient.delete.mock.calls.length > 0;
+    put.settle();
+    const result = await unregistering;
 
     // Then
-    expect(permission.status).toBe('GRANTED');
-    expect(logger.warn).toHaveBeenCalledWith('notification.push-device.report-failed', {
-      error: 'offline',
-    });
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+    expect(deletedBeforeReportSettled).toBe(false);
+    expect(result).toEqual({ ok: true, value: undefined });
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    {
+      failure: '연결이 끊겨',
+      respond: async (): Promise<Result<unknown, ApiError>> => {
+        throw new Error('offline');
+      },
+      logged: { error: 'offline' },
+    },
+    {
+      failure: '서버가 거절해',
+      respond: async (): Promise<Result<unknown, ApiError>> => ({
+        ok: false,
+        error: createNotificationApiError(),
+      }),
+      logged: { errorCode: 'NOTIFICATION_1001' },
+    },
+  ])(
+    '$failure 보고가 실패해도 권한을 돌려주고 실패를 경고로 남긴다',
+    async ({ respond, logged }) => {
+      // Given
+      const { service, httpClient, logger } = setup();
+      httpClient.put.mockImplementation(respond);
+
+      // When
+      const permission = await service.requestPermission();
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Then
+      expect(permission.status).toBe('GRANTED');
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+      expect(logger.warn).toHaveBeenCalledWith('notification.push-device.report-failed', logged);
+    },
+  );
 });
 
 describe('PushRegistrationService.unregister', () => {

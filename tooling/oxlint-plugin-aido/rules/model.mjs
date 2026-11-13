@@ -126,7 +126,7 @@ function describeFirstParameter(declaration, aliases) {
   });
 }
 
-// Policy는 모듈 함수를 같은 이름으로 모으기만 한다. 멤버는 모델 전체를 첫 인자로 받는다(.claude/architecture.md#모델과-policy)
+// Policy는 모듈 함수를 같은 이름으로 모으기만 한다. 멤버는 모델 전체를 첫 인자로 받는다(apps/mobile/docs/architecture/model.md#모델과-policy)
 const policyFacade = {
   meta: { type: 'suggestion' },
   create(context) {

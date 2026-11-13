@@ -30,7 +30,7 @@ import {
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
@@ -107,7 +107,7 @@ export function VoiceNoteRecorder() {
   }, []);
 
   return (
-    <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
+    <VStack flex={1} gap={12} className="px-4 pt-2 pb-3">
       <Stack.Screen
         options={{
           headerTitle: () => (
@@ -357,14 +357,14 @@ VoiceNoteRecorder.Loading = function Loading() {
   return match(isOnline)
     .with(true, () =>
       isCompact ? (
-        <VStack flex={1} gap={12} className="px-4 pb-3 pt-2" testID="voice-note-screen-loading">
+        <VStack flex={1} gap={12} className="px-4 pt-2 pb-3" testID="voice-note-screen-loading">
           <VStack align="center">
             <Skeleton className="rounded-full" style={{ width: ringSize, height: ringSize }} />
           </VStack>
           <Skeleton className="h-20 self-stretch rounded-xl" />
         </VStack>
       ) : (
-        <HStack flex={1} gap={20} className="px-4 pb-3 pt-2" testID="voice-note-screen-loading">
+        <HStack flex={1} gap={20} className="px-4 pt-2 pb-3" testID="voice-note-screen-loading">
           <VStack flex={1} gap={12} justify="center" align="center">
             <Skeleton className="rounded-full" style={{ width: ringSize, height: ringSize }} />
             <Skeleton className="h-20 self-stretch rounded-xl" />

@@ -5,6 +5,7 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useFeedFriendId } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useTrack } from '@src/shared/analytics';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -21,7 +22,7 @@ import {
   VStack,
   QueryErrorFallback,
 } from '@src/shared/ui';
-import { TEXT_SIZE_CLASSES } from '@src/shared/ui/text/text.variants';
+import { TEXT_SIZE_CLASSES } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   usePrefetchInfiniteQuery,
@@ -257,9 +258,11 @@ FriendStrip.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
       messageProps={{ numberOfLines: 2 }}
       reset={reset}
       hasInquiry
-      pl={STRIP_PADDING + edgeInsets.start}
-      pr={STRIP_PADDING + edgeInsets.end}
-      style={{ height }}
+      style={{
+        height,
+        paddingLeft: STRIP_PADDING + edgeInsets.start,
+        paddingRight: STRIP_PADDING + edgeInsets.end,
+      }}
     />
   );
 };
@@ -274,6 +277,7 @@ FriendStrip.Empty = function Empty({
   shouldShowHint = true,
 }: FriendStripProps) {
   const { t } = useTranslation('friend');
+  const fontScaledSize = useFontScaledSize();
   const { trackEvent } = useTrack();
   const push = useSingleTap(router.push);
   const isInviteAvailable = onInvite != null;
@@ -314,7 +318,13 @@ FriendStrip.Empty = function Empty({
         }}
       >
         <ActionCell
-          icon={<PlusIcon width={16} height={16} colorClassName="text-gray-6" />}
+          icon={
+            <PlusIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-gray-6"
+            />
+          }
           label={label}
         />
       </PressableFeedback>
@@ -333,6 +343,7 @@ function ListEnd({
   onRetry: () => void;
 }) {
   const { t } = useTranslation('friend');
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
   if (isFetchNextPageError) {
@@ -344,7 +355,13 @@ function ListEnd({
           onPress={onRetry}
         >
           <ActionCell
-            icon={<RefreshIcon width={16} height={16} colorClassName="text-gray-6" />}
+            icon={
+              <RefreshIcon
+                width={fontScaledSize(16)}
+                height={fontScaledSize(16)}
+                colorClassName="text-gray-6"
+              />
+            }
             label={t('friendStrip.loadMoreFailed')}
           />
         </PressableFeedback>
@@ -368,7 +385,13 @@ function ListEnd({
         onPress={() => push('/friends/search')}
       >
         <ActionCell
-          icon={<PlusIcon width={16} height={16} colorClassName="text-gray-6" />}
+          icon={
+            <PlusIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-gray-6"
+            />
+          }
           label={t('friendStrip.findFriends')}
         />
       </PressableFeedback>

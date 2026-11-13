@@ -2,23 +2,12 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, H3, Text, VStack } from '@src/shared/ui';
 import type { ReactNode } from 'react';
 
-/** 상장 느낌의 이중 라운드 테두리. 바깥은 굵고 진하게, 안쪽은 가늘고 옅게 겹쳐 그린다 */
-function CertificateBorder({ children }: { children: ReactNode }) {
-  return (
-    <Box className="relative">
-      <Box className="absolute inset-[1.25px] rounded-[2px] border-[1.5px] border-main/60" />
-      <Box className="absolute inset-[6.75px] rounded-[1px] border-[0.5px] border-main/35" />
-      <Box className="m-2">{children}</Box>
-    </Box>
-  );
-}
-
 /** 주간 달성 배지 상장. 머리말·제목·부제목과 이중 테두리를 고정하고 본문만 children으로 받는다. */
 export function Certificate({ subtitle, children }: { subtitle?: ReactNode; children: ReactNode }) {
   const { t } = useTranslation('achievement');
 
   return (
-    <Box className="bg-gray-1 rounded-sm overflow-hidden p-3">
+    <Box className="overflow-hidden rounded-sm bg-gray-1 p-3">
       <CertificateBorder>
         <Box className="px-5 pt-7 pb-5">
           <VStack align="center" gap={4}>
@@ -50,3 +39,14 @@ Certificate.Ornament = function Ornament() {
     </Text>
   );
 };
+
+/** 상장 느낌의 이중 라운드 테두리. 바깥은 굵고 진하게, 안쪽은 가늘고 옅게 겹쳐 그린다 */
+function CertificateBorder({ children }: { children: ReactNode }) {
+  return (
+    <Box className="relative">
+      <Box className="absolute inset-[1.25px] rounded-[2px] border-[1.5px] border-main/60" />
+      <Box className="absolute inset-[6.75px] rounded-[1px] border-[0.5px] border-main/35" />
+      <Box className="m-2">{children}</Box>
+    </Box>
+  );
+}

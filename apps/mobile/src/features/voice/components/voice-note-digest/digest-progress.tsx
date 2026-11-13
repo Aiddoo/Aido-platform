@@ -1,23 +1,23 @@
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
 import { Spinner } from 'heroui-native';
-import type { ComponentProps } from 'react';
 
-interface DigestProgressProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
+interface DigestProgressProps {
   characterCount: number;
   markCount: number;
 }
 
-export function DigestProgress({ characterCount, markCount, ...stackProps }: DigestProgressProps) {
+export function DigestProgress({ characterCount, markCount }: DigestProgressProps) {
   const { t } = useTranslation('voiceNote');
   const { locale } = useDateFormatContext();
 
   // 핵심과 할 일은 서버가 한 요청으로 만들어 어느 쪽이 끝났는지 몰라 둘 다 진행 중으로 둔다
   return (
-    <VStack gap={12} {...stackProps}>
+    <VStack gap={12}>
       <DigestProgress.Step
         label={t('digest.steps.transcript')}
         status="done"
@@ -44,6 +44,7 @@ interface DigestStepProps {
 
 DigestProgress.Step = function Step({ label, status, detail }: DigestStepProps) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const stateLabel = {
     done: t('digest.state.done'),
     doing: t('digest.state.doing'),
@@ -62,7 +63,13 @@ DigestProgress.Step = function Step({ label, status, detail }: DigestStepProps) 
           status === 'done' ? 'border-main bg-main' : 'border-gray-3',
         )}
       >
-        {status === 'done' && <CheckmarkIcon colorClassName="text-white" width={14} height={14} />}
+        {status === 'done' && (
+          <CheckmarkIcon
+            colorClassName="text-white"
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+          />
+        )}
         {status === 'doing' && <Spinner size="sm" color="accent" />}
       </Box>
       <Text

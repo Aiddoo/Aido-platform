@@ -8,27 +8,27 @@ describe('createAuthSessionStore', () => {
     store.subscribe(listener);
 
     // When
-    store.dispatch({ type: 'bootResolved', status: 'authenticated' });
+    store.resolveBoot('authenticated');
 
     // Then
-    expect(store.getState()).toEqual({ status: 'authenticated' });
+    expect(store.getSnapshot()).toEqual({ status: 'authenticated' });
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
   it('상태가 그대로면 다시 그리거나 정리를 반복하지 않게 알리지 않고 값도 바꾸지 않는다', () => {
     // Given
     const store = createAuthSessionStore({ status: 'unauthenticated', reason: 'signed-out' });
-    const before = store.getState();
+    const before = store.getSnapshot();
     const listener = jest.fn();
     store.subscribe(listener);
 
     // When
-    store.dispatch({ type: 'signedOut' });
-    store.dispatch({ type: 'sessionExpired' });
+    store.signOut();
+    store.expire();
 
     // Then
     expect(listener).not.toHaveBeenCalled();
-    expect(store.getState()).toBe(before);
+    expect(store.getSnapshot()).toBe(before);
   });
 
   it('구독을 끊으면 더 알리지 않는다', () => {
@@ -39,7 +39,7 @@ describe('createAuthSessionStore', () => {
 
     // When
     unsubscribe();
-    store.dispatch({ type: 'signedIn' });
+    store.signIn();
 
     // Then
     expect(listener).not.toHaveBeenCalled();

@@ -8,7 +8,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
 import { Button } from '@src/shared/ui';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,

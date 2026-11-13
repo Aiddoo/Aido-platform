@@ -2,6 +2,7 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { getUserFacingMessage } from '@src/shared/errors';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -43,6 +44,7 @@ type NudgeThanksBottomSheetProps = Omit<
 
 export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const sheet = useSheetRoute('/feed');
   const handleClose = () => sheet.close();
@@ -56,7 +58,11 @@ export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
     >
       <VStack gap={20} pb={16}>
         <HStack align="center" gap={8}>
-          <HeartFilledIcon width={20} height={20} colorClassName="text-main" />
+          <HeartFilledIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-main"
+          />
           <Text size="b2" weight="bold" className="shrink">
             {t('interaction.thanksTitle')}
           </Text>
@@ -78,6 +84,7 @@ export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
 
 NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
+  const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const { height } = useWindowDimensions();
   const thanksPreviewQuery = useSuspenseInfiniteQuery(
@@ -91,7 +98,11 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
     return (
       <VStack gap={24} py={16}>
         <HStack align="center" gap={12}>
-          <HeartFilledIcon width={28} height={28} colorClassName="text-main" />
+          <HeartFilledIcon
+            width={fontScaledSize(28)}
+            height={fontScaledSize(28)}
+            colorClassName="text-main"
+          />
           <Text size="b3" weight="semibold" className="shrink">
             {t(
               sendThanks.data > 0

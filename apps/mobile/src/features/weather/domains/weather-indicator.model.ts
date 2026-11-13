@@ -16,10 +16,10 @@ const AIR_QUALITY_GRADES = [
   'veryBad',
 ] as const satisfies readonly AirQualityGrade[];
 
-/** 환경부 통합 예보 기준 (μg/m³). 각 값 이하가 해당 등급이다 */
 /** 좋음·보통·나쁨의 상한. 넘으면 매우 나쁨이다 */
 type PollutantUpperBounds = readonly [good: number, moderate: number, bad: number];
 
+/** 환경부 통합 예보 기준 (μg/m³). 각 값 이하가 해당 등급이다 */
 const POLLUTANT_UPPER_BOUNDS = {
   pm10: [30, 80, 150],
   pm25: [15, 35, 75],

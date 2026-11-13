@@ -17,9 +17,9 @@ export function QuickVoiceButton(pressableProps: QuickVoiceButtonProps) {
     <PressableFeedback
       accessibilityRole="button"
       accessibilityLabel={t('button.label')}
+      hitSlop={4}
       {...pressableProps}
-      style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-      className="items-center justify-center rounded-full bg-main/10"
+      className="size-9 items-center justify-center rounded-full bg-main/10"
     >
       <MicIcon width={fontScaledSize(20)} height={fontScaledSize(20)} colorClassName="text-main" />
     </PressableFeedback>

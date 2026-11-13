@@ -2,7 +2,7 @@ import { useHaptics, useInquiryApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions } from '@tanstack/react-query';
 
 import type { InquiryFormValues } from '../schemas/inquiry-form.schema';

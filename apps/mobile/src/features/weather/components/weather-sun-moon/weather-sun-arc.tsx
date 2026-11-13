@@ -1,6 +1,7 @@
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { Box } from '@src/shared/ui';
+import { useId } from 'react';
 import Animated, { css } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
@@ -37,6 +38,7 @@ export function WeatherSunArc({
   /** 해가 지평선 아래면 점을 작고 흐리게 그리고 빛 퍼짐을 끈다. */
   isNight: boolean;
 }) {
+  const dayGradientId = useId();
   const dotSize = isNight ? NIGHT_SUN_DOT_SIZE : SUN_DOT_SIZE;
   const dayColor = useResolvedColor('text-on-sky/85');
   const nightColor = useResolvedColor('text-on-sky/28');
@@ -52,12 +54,12 @@ export function WeatherSunArc({
         accessible={false}
       >
         <Defs>
-          <LinearGradient id="weatherSunDay" x1="0" y1="0" x2="0" y2="1">
+          <LinearGradient id={dayGradientId} x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={SUN_COLORS.glow} stopOpacity={0.35} />
             <Stop offset="1" stopColor={SUN_COLORS.glow} stopOpacity={0} />
           </LinearGradient>
         </Defs>
-        <Path d={SUN_ARC_PATHS.dayFill} fill="url(#weatherSunDay)" />
+        <Path d={SUN_ARC_PATHS.dayFill} fill={`url(#${dayGradientId})`} />
         <Path
           d={SUN_ARC_PATHS.nightBefore}
           fill="none"

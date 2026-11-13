@@ -86,7 +86,8 @@ export function HeatLayer({ width, height, isLowEndDevice, time }: HeatLayerProp
         <LinearGradient start={vec(0, start)} end={vec(0, height)} colors={GLOW_COLORS} />
       </Rect>
       <HeatLayer.Embers width={width} height={height} isLowEndDevice={isLowEndDevice} time={time} />
-      <HeatLayer.Shimmer width={width} height={height} time={time} />
+      {/* 아지랑이는 그린 화면을 매 프레임 다시 읽는 셰이더라 저사양에서는 끄고 물결·불씨·열기만 남긴다 */}
+      {!isLowEndDevice && <HeatLayer.Shimmer width={width} height={height} time={time} />}
     </Group>
   );
 }
