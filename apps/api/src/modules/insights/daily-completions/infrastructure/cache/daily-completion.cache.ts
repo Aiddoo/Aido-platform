@@ -16,7 +16,7 @@ import {
   DAILY_COMPLETION_RANGE_ROW_SCHEMA,
   toDailyCompletionRange,
   toDailyCompletionRangeRow,
-} from "./daily-completion-row.mapper.js";
+} from "./daily-completion-cache.mapper.js";
 import {
   DAILY_COMPLETION_CACHE_TTL_MS,
   DAILY_COMPLETION_GENERATION_TTL_MS,

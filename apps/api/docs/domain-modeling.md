@@ -21,7 +21,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 - `planCreation`·`of`·`from` 같은 다른 이름을 쓰지 않는다.
 - DB 시퀀스 id(`serial`)는 Repository `nextId()`로 먼저 받는다(IDDD `nextIdentity()`). 그래서 `create`와 `reconstitute`가 같은 완전한 타입을 돌려주고 "id 없는 Aggregate"가 없다. 묶음은 `nextIds(count)` 한 쿼리다.
-- 복원 위치는 infrastructure의 `*-row.mapper.ts`(env에서 읽으면 `*-env.mapper.ts`) 한 곳이다. Application이 행을 받아 복원하지 않는다.
+- 복원 위치는 infrastructure의 출처별 매퍼 한 곳이다: DB 행 `*-row.mapper.ts`, env `*-env.mapper.ts`, 캐시 값 `*-cache.mapper.ts`. Application이 행·값을 받아 복원하지 않는다.
 
 ## 상태 전이
 
