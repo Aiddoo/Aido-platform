@@ -30,7 +30,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
@@ -220,7 +220,7 @@ export class PushDeviceController {
     required: false,
     example: "ko",
   })
-  @ApiCreatedResponse({ type: RegisterTokenResponseDto })
+  @ApiCreatedSuccessResponse({ type: RegisterTokenResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.NOTIFICATION_1001)
   async registerToken(

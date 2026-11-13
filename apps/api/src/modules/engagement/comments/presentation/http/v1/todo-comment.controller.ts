@@ -31,7 +31,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
@@ -226,7 +226,7 @@ export class TodoCommentController {
     description:
       "parentId가 없으면 새 댓글, 있으면 그 글이 속한 묶음 끝에 답글로 붙습니다(답글에 답해도 2단계). 이어 쓴 글은 같은 묶음에 각자 앞 글에 답하며 붙습니다. 사용자마다 분당 30회까지입니다.",
   })
-  @ApiCreatedResponse({ type: TodoCommentChainResponseDto })
+  @ApiCreatedSuccessResponse({ type: TodoCommentChainResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.BLOCK_2204)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])

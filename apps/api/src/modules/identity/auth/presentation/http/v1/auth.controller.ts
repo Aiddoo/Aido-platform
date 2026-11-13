@@ -44,7 +44,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
@@ -139,7 +139,7 @@ export class AuthController {
 - IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		`,
   })
-  @ApiCreatedResponse({ type: MessageResponseDto })
+  @ApiCreatedSuccessResponse({ type: MessageResponseDto })
   @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
   async register(
     @Body({ schema: RegisterDto }) dto: RegisterDto,

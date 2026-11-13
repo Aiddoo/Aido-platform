@@ -31,7 +31,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -298,7 +298,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - **진행률 바**: \`itemStats.completed / itemStats.total * 100\` (예: 33%)
 - **펼침/접힘 토글**: \`itemStats.total > 0\`이면 토글 버튼 표시`,
   })
-  @ApiCreatedResponse({ type: CreateTodoResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
   @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [
@@ -368,7 +368,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - 카테고리 한도를 초과하면 전체 요청 거부
 - 진행 중인 반복이 ${TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY}개면 \`TODO_0813\`으로 거부`,
   })
-  @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateRecurringTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.TODO_0812)
   @ApiForbiddenError(ErrorCode.TODO_0813)
@@ -992,7 +992,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 | 하위 항목 한도 초과 (${TODO_ITEM_LIMITS.MAX_PER_TODO}개) | TODO_0821 | 403 |
 | 유효성 검증 실패 | SYS_0002 | 400 |`,
   })
-  @ApiCreatedResponse({ type: UpdateTodoResponseDto })
+  @ApiCreatedSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
   @ApiForbiddenError(ErrorCode.TODO_0821)

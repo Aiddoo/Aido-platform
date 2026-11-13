@@ -36,7 +36,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
@@ -154,7 +154,7 @@ export class MemoController {
 선택 헤더 \`${IDEMPOTENCY_KEY_HEADER}\`(${IDEMPOTENCY_KEY_MAX_LENGTH}자 이하 인쇄 가능한 ASCII)를 저장 한 번마다 새로 만들어 보냅니다.
 응답을 받지 못해 같은 키로 다시 보내면 새로 만들지 않고 그 키로 처음 만든 메모를 돌려줍니다. 같은 키로 글이 다르면 409 \`MEMO_2004\`입니다. 미전송 시 요청마다 만듭니다.`,
   })
-  @ApiCreatedResponse({ type: MemoMutationResponseDto })
+  @ApiCreatedSuccessResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.MEMO_2003)
   async create(
@@ -327,7 +327,7 @@ export class MemoController {
 
 메모 내용이 할 일의 \`title\`(최대 200자)로 변환됩니다. 200자를 초과하면 잘립니다.`,
   })
-  @ApiCreatedResponse({ type: ConvertMemoToTodoResponseDto })
+  @ApiCreatedSuccessResponse({ type: ConvertMemoToTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
   @ApiForbiddenError(ErrorCode.TODO_0811)
@@ -383,7 +383,7 @@ export class MemoController {
 - 모든 Todo가 순차 생성된 후 메모가 삭제됩니다.
 - 중간에 실패 시 이미 생성된 Todo는 유지되고 메모도 유지됩니다.`,
   })
-  @ApiCreatedResponse({ type: ConvertMemoToTodosResponseDto })
+  @ApiCreatedSuccessResponse({ type: ConvertMemoToTodosResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
   @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.TODO_0811, ErrorCode.TODO_0813])

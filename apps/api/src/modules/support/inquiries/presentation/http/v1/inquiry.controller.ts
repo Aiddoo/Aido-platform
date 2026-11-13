@@ -13,7 +13,7 @@ import {
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
-import { ApiCreatedResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ApiCreatedSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { CreateInquiryUseCase } from "../../../application/use-cases/create-inquiry.use-case.js";
@@ -51,7 +51,7 @@ export class InquiryController {
 
 사용자마다 분당 5회까지 접수하며, 넘으면 429(SYS_0001)를 돌려줍니다.`,
   })
-  @ApiCreatedResponse({ type: CreateInquiryResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateInquiryResponseDto })
   @ApiErrorResponse({ errorCode: ErrorCode.INQUIRY_1501 })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async createInquiry(

@@ -32,7 +32,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
@@ -148,7 +148,7 @@ export class FollowController {
 
 사용자마다 분당 30회까지 보낼 수 있고, 넘으면 429(SYS_0001)를 돌려줍니다.`,
   })
-  @ApiCreatedResponse({ type: SendFriendRequestResponseDto })
+  @ApiCreatedSuccessResponse({ type: SendFriendRequestResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.FOLLOW_0904)
   @ApiNotFoundError(ErrorCode.FOLLOW_0905)

@@ -52,7 +52,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 
 배포 환경이 운영이 아니면(로컬 실행·테스트·개발서버·staging, `appConfig`의 `responseContractCheck`) [configureApplication](../src/platform/http/configure-application.ts)이 [`ResponseContractInterceptor`](../src/platform/http/interceptors/response-contract.interceptor.ts)를 전역으로 더한다. 운영에는 요청마다 parse하는 비용을 피하려고 등록하지 않는다([설정](configuration.md#배포-환경)).
 
-- `@ApiSuccessResponse`·`@ApiCreatedResponse`가 Swagger에 등록한 바로 그 Zod schema로, 실제 상태 코드의 body를 JSON으로 바꾼 뒤(`@RawResponse`가 아니면 envelope 포함) `safeParse`한다. 응답 값은 바꾸지 않는다.
+- `@ApiSuccessResponse`·`@ApiCreatedSuccessResponse`가 Swagger에 등록한 바로 그 Zod schema로, 실제 상태 코드의 body를 JSON으로 바꾼 뒤(`@RawResponse`가 아니면 envelope 포함) `safeParse`한다. 응답 값은 바꾸지 않는다.
 - 다르거나 선언한 성공 상태와 다른 상태로 응답하면 `http.response-contract.violated` 로그(handler·path·Zod issues)를 남기고 500(`SYS_0001`)으로 실패한다. 그래서 E2E가 선언과 다른 응답을 바로 잡는다.
 - Zod가 아닌 선언(class `type`, OpenAPI `schema` 객체)과 `@Res()`로 직접 보낸 응답은 검사하지 않는다. 친구·카테고리 한도 응답의 class DTO는 Zod로 옮기면 제약 없는 nullable 숫자가 `nullable: true` 대신 `type: ["number", "null"]`이 되어 released 지문이 달라지므로 그대로 둔다.
 - 실패는 서버 응답을 출시 계약에 맞추거나, 선언이 틀렸으면 선언을 고쳐서 없앤다. 출시 계약과 released fixture는 바꾸지 않는다.

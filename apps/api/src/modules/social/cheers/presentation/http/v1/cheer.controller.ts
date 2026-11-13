@@ -32,7 +32,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
@@ -115,7 +115,7 @@ export class CheerController {
 - FREE: 일 3회, ACTIVE: 무제한
 - 동일 친구에게 24시간 쿨다운`,
   })
-  @ApiCreatedResponse({ type: CreateCheerResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateCheerResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.CHEER_1204)
   @ApiForbiddenError(ErrorCode.CHEER_1203)

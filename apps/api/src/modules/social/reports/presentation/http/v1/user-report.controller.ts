@@ -16,7 +16,7 @@ import {
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
-import { ApiCreatedResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ApiCreatedSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
@@ -58,7 +58,7 @@ export class UserReportController {
 
 신고해도 상대에게는 알리지 않습니다. 상대를 더 보고 싶지 않다면 차단 API를 함께 사용합니다.`,
   })
-  @ApiCreatedResponse({ type: CreateUserReportResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateUserReportResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.REPORT_2251)
   @ApiBadRequestError(ErrorCode.REPORT_2253)

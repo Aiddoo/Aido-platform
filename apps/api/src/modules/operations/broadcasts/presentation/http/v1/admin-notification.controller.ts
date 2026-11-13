@@ -16,7 +16,7 @@ import {
   ApiNotFoundError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
-import { ApiCreatedResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { ApiCreatedSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { BroadcastNotificationUseCase } from "../../../application/use-cases/broadcast-notification.use-case.js";
 import { SendTargetedNotificationUseCase } from "../../../application/use-cases/send-targeted-notification.use-case.js";
@@ -62,7 +62,7 @@ v2와 같은 캠페인으로 접수하고 바로 응답합니다. 응답 수는 
 - \`ACTIVE_LAST_30_DAYS\`: 최근 30일 내 활동한 사용자
 - \`SUBSCRIBERS\`: 유료 구독 사용자`,
   })
-  @ApiCreatedResponse({ type: BroadcastResultDto })
+  @ApiCreatedSuccessResponse({ type: BroadcastResultDto })
   @ApiBadRequestError(ErrorCode.ADMIN_1403)
   @ApiForbiddenError(ErrorCode.ADMIN_1401)
   @ApiNotFoundError(ErrorCode.ADMIN_1402)
@@ -90,7 +90,7 @@ v2와 같은 캠페인으로 접수하고 바로 응답합니다. 응답 수는 
 
 존재하지 않는 사용자 ID는 자동으로 필터링됩니다.`,
   })
-  @ApiCreatedResponse({ type: BroadcastResultDto })
+  @ApiCreatedSuccessResponse({ type: BroadcastResultDto })
   @ApiForbiddenError(ErrorCode.ADMIN_1401)
   @ApiNotFoundError(ErrorCode.ADMIN_1402)
   async sendTargetedNotification(

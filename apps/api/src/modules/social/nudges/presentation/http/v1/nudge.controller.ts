@@ -32,7 +32,7 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
@@ -122,7 +122,7 @@ export class NudgeController {
 - FREE: 일 3회, ACTIVE: 무제한
 - 동일 Todo에 24시간 쿨다운`,
   })
-  @ApiCreatedResponse({ type: CreateNudgeResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateNudgeResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.NUDGE_1104, ErrorCode.NUDGE_1106])
   @ApiForbiddenError(ErrorCode.NUDGE_1103)
@@ -281,7 +281,7 @@ export class NudgeController {
 - 같은 친구에게 1시간 쿨다운
 - 일일 제한 없음`,
   })
-  @ApiCreatedResponse({ type: CreateRemindNudgeResponseDto })
+  @ApiCreatedSuccessResponse({ type: CreateRemindNudgeResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.NUDGE_1104, ErrorCode.NUDGE_1107])
   @ApiForbiddenError(ErrorCode.NUDGE_1103)

@@ -10,7 +10,7 @@ import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ApiUnauthorizedError } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
-  ApiCreatedResponse,
+  ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
@@ -41,7 +41,7 @@ export class {{pascalCase aggregate}}Controller {
 
   @Post()
   @ApiDoc({ summary: "{{aggregate}} 만들기", operationId: "create{{pascalCase aggregate}}" })
-  @ApiCreatedResponse({ type: {{pascalCase aggregate}}DetailResponseDto })
+  @ApiCreatedSuccessResponse({ type: {{pascalCase aggregate}}DetailResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async create(
     @CurrentUser() user: CurrentUserPayload,
