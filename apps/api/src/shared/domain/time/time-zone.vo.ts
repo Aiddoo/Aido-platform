@@ -1,6 +1,4 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { invalidTimeZone } from "#api/shared/domain/exceptions/shared-domain.errors";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
 function toCanonicalTimeZoneId(raw: string): string | null {
@@ -22,7 +20,7 @@ export class TimeZone extends ValueObject<string> {
   static create(raw: string): TimeZone {
     const timeZoneId = toCanonicalTimeZoneId(raw);
     if (timeZoneId == null) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "timeZone" });
+      throw invalidTimeZone();
     }
     return new TimeZone(timeZoneId);
   }

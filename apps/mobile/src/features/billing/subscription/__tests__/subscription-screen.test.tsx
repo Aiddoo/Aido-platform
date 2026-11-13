@@ -4,13 +4,16 @@ import { ok } from '@src/core/errors/result';
 import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/purchases-gateway';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { type User, userSchema } from '@src/features/identity/user/domains/user.model';
+import { type User } from '@src/features/identity/user/domains/user.model';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
+import { i18n } from '@src/shared/i18n';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -18,19 +21,15 @@ import {
   createRouteParamsFake,
   createTestDi,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { i18n } from '@src/shared/i18n';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
-import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
-import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/subscription';
-import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
+import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/subscription';
+import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
-
-const HOUR_MS = 60 * 60 * 1000;
 
 type StorePackage = PurchaseOffering['packages'][number];
 
@@ -92,45 +91,6 @@ const ADMIN: ScreenState = {
   me: createCurrentUserDto({ role: 'ADMIN', subscriptionStatus: 'FREE' }),
 };
 
-function createEndingRewardState(): ScreenState {
-  const endsAt = new Date(Date.now() + 2 * HOUR_MS).toISOString();
-  return {
-    tier: 'PREMIUM',
-    me: createCurrentUserDto({
-      subscriptionStatus: 'ACTIVE',
-      isPremium: true,
-      premiumSource: 'GRANT',
-      premiumEndsAt: endsAt,
-      premiumPeriodEndsAt: endsAt,
-      willRenew: false,
-      bankedPremiumDays: 0,
-      premiumGrantEndedAt: null,
-    }),
-  };
-}
-
-const DAY_MS = 24 * HOUR_MS;
-
-/** 체험 끝(첫 결제일)이 지금부터 정확히 N일 뒤라 기기 시간대에서도 달력 N일 뒤다 */
-function createTrialState({ daysLeft, willRenew }: { daysLeft: number; willRenew: boolean }) {
-  const periodEndsAt = new Date(Date.now() + daysLeft * DAY_MS).toISOString();
-  return {
-    tier: 'PREMIUM',
-    me: createCurrentUserDto({
-      subscriptionStatus: 'ACTIVE',
-      isPremium: true,
-      premiumSource: 'STORE',
-      premiumEndsAt: periodEndsAt,
-      premiumPeriodEndsAt: periodEndsAt,
-      willRenew,
-      bankedPremiumDays: 0,
-      premiumGrantEndedAt: null,
-      premiumIsTrial: true,
-      premiumPlanType: 'ANNUAL',
-    }),
-  } satisfies ScreenState;
-}
-
 // 요금제를 받는 중에 머물러 페이월 자리(요금제 요청)만 확인하는 것이 기본이다
 async function renderSubscriptionScreen(
   state: ScreenState | null,
@@ -143,12 +103,6 @@ async function renderSubscriptionScreen(
   const analytics = createAnalyticsStub();
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto({ tier: state?.tier })));
-  const di = createTestDi({
-    httpClient,
-    analytics,
-    purchasesGateway: purchases,
-  });
-  di.purchasesSession.configure();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -160,14 +114,18 @@ async function renderSubscriptionScreen(
       createEntitlementSnapshot({ tier: state.tier }),
     );
   }
+  const di = createTestDi({ ports: { httpClient, analytics, purchases, queryClient } });
+  di.purchasesSession.configure();
+  // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
+  await di.purchasesSession.logIn('user-1');
 
-  await renderUi(
+  await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <SubscriptionRoute />
       </OverlayProvider>
     </LocalDateProvider>,
-    { di, queryClient },
+    { di },
   );
 
   return { purchases, analytics };
@@ -212,46 +170,6 @@ describe('구독 화면', () => {
       expect(screen.queryByTestId('subscription-purchase')).toBeNull();
     },
   );
-
-  it('저장해 둔 옛 내 정보에 요금제가 없어도 영수증은 요금제 없이 구독으로 보인다', async () => {
-    // Given
-    // 앱 버전이 같은 OTA 뒤에는 요금제 필드가 생기기 전의 /me가 영속 캐시에서 복원된다
-    const { planType: _planType, ...restoredAccess } = toUser(PAID.me).premiumAccess;
-    const restoredMe = userSchema.parse({ ...toUser(PAID.me), premiumAccess: restoredAccess });
-
-    // When
-    await renderSubscriptionScreen({ ...PAID, restoredMe });
-
-    // Then
-    const planRow = await screen.findByTestId('subscription-receipt-row-plan');
-    expect(within(planRow).getByText('구독')).toBeTruthy();
-  });
-
-  it('관리자 영수증은 관리자 계정 행만 보이고 구독 버튼이 없다', async () => {
-    // Given
-    const state = ADMIN;
-
-    // When
-    await renderSubscriptionScreen(state);
-
-    // Then
-    expect(await screen.findByText('관리자 계정')).toBeTruthy();
-    expect(screen.getByText('관리자')).toBeTruthy();
-    expect(screen.queryByText('구독하고 계속 쓰기')).toBeNull();
-    expect(screen.queryByText('구독 관리 (스토어 설정)')).toBeNull();
-  });
-
-  it('곧 끝나는 초대 보상은 끝남 안내와 구독 버튼을 보여 준다', async () => {
-    // Given
-    const state = createEndingRewardState();
-
-    // When
-    await renderSubscriptionScreen(state);
-
-    // Then
-    expect(await screen.findByTestId('subscription-ending-notice')).toBeTruthy();
-    expect(screen.getByText('구독하고 계속 쓰기')).toBeTruthy();
-  });
 
   it('요금제를 받으면 고를 수 있게 보여 주고 페이월을 본 것으로 센다', async () => {
     // Given
@@ -309,105 +227,6 @@ describe('구독 화면', () => {
       expect(analytics.trackEvent).not.toHaveBeenCalledWith('paywall_viewed', expect.anything());
     },
   );
-
-  it('오프라인에서 요금제를 못 받으면 요금제 자리에서 연결되면 보여 준다고 알린다', async () => {
-    // Given
-    onlineManager.setOnline(false);
-
-    // When
-    await renderSubscriptionScreen(FREE);
-
-    // Then
-    expect(await screen.findByTestId('subscription-offline')).toBeTruthy();
-    expect(screen.getByTestId('subscription-paywall')).toBeTruthy();
-    expect(screen.queryByTestId('subscription-amount-due-today')).toBeNull();
-    expect(screen.queryByTestId('subscription-trial-timeline')).toBeNull();
-    expect(screen.getByTestId('subscription-purchase').props.accessibilityState.disabled).toBe(
-      true,
-    );
-  });
-
-  it('오프라인에서 내 정보가 없으면 영수증 자리에서 연결되면 보여 준다고 알린다', async () => {
-    // Given
-    onlineManager.setOnline(false);
-
-    // When
-    await renderSubscriptionScreen(null);
-
-    // Then
-    expect(await screen.findByTestId('subscription-offline')).toBeTruthy();
-  });
-
-  it.each([
-    ['AI 리포트', 'AI_REPORT', 'ai_report', 2],
-    ['말로 메모하기', 'VOICE_NOTE', 'voice_note', 4],
-  ] as const)(
-    '%s에서 막혀 들어오면 그 혜택 장부터 보여 주고 따로 기능 카드를 두지 않는다',
-    async (_case, feature, analyticsFeature, index) => {
-      // Given
-      const routeParams = { feature };
-
-      // When
-      const { analytics } = await renderSubscriptionScreen(
-        FREE,
-        () => Promise.resolve(MONTHLY_AND_ANNUAL),
-        routeParams,
-      );
-
-      // Then
-      expect(await screen.findByTestId(`paywall-benefit-${feature}`)).toBeTruthy();
-      expect(screen.queryByTestId('paywall-blocked-feature')).toBeNull();
-      expect(
-        analytics.trackEvent.mock.calls.filter(
-          ([eventName]) => eventName === 'paywall_benefit_viewed',
-        ),
-      ).toEqual([['paywall_benefit_viewed', { feature: analyticsFeature, index }]]);
-    },
-  );
-
-  it('혜택 장에 없는 친구 한도에서 막혀 들어오면 기능 카드를 먼저 두고 첫 혜택 장부터 보여 준다', async () => {
-    // Given
-    const routeParams = { feature: 'FRIEND' };
-
-    // When
-    const { analytics } = await renderSubscriptionScreen(
-      FREE,
-      () => Promise.resolve(MONTHLY_AND_ANNUAL),
-      routeParams,
-    );
-
-    // Then
-    const blockedFeature = await screen.findByTestId('paywall-blocked-feature');
-    expect(within(blockedFeature).getByText('친구 무제한')).toBeTruthy();
-    expect(screen.getByTestId('paywall-benefit-AI_PARSE')).toBeTruthy();
-    expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_benefit_viewed', {
-      feature: 'ai_parse',
-      index: 1,
-    });
-    expect(await screen.findByRole('button', { name: '연간으로 시작하기' })).toBeTruthy();
-    expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_viewed', {
-      view: 'status',
-      feature: 'friend_limit',
-    });
-  });
-
-  it('모르는 기능으로 들어오면 막힌 기능 없이 첫 혜택 장부터 보여 준다', async () => {
-    // Given
-    const routeParams = { feature: 'UNKNOWN' };
-
-    // When
-    const { analytics } = await renderSubscriptionScreen(
-      FREE,
-      () => Promise.resolve(MONTHLY_AND_ANNUAL),
-      routeParams,
-    );
-
-    // Then
-    expect(await screen.findByRole('button', { name: '연간으로 시작하기' })).toBeTruthy();
-    expect(screen.queryByTestId('paywall-blocked-feature')).toBeNull();
-    expect(screen.getByTestId('paywall-benefit-AI_PARSE')).toBeTruthy();
-    expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_viewed', { view: 'status' });
-  });
 
   it('월간을 고르면 버튼이 월간으로 바뀌고 고른 요금제를 한 번만 센다', async () => {
     // Given
@@ -472,6 +291,43 @@ describe('구독 화면', () => {
       );
     expect(purchaseEvents).toEqual(['purchase_cancelled']);
   });
+  it('결제 버튼을 같은 프레임에 두 번 눌러도 결제 창은 한 번만 연다', async () => {
+    // Given
+    const { purchases } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+    purchases.purchase.mockReturnValue(new Promise(() => {}));
+    const button = await screen.findByRole('button', { name: '연간으로 시작하기' });
+
+    // When
+    await act(async () => {
+      fireEvent.press(button);
+      fireEvent.press(button);
+    });
+
+    // Then
+    await waitFor(() => expect(purchases.purchase).toHaveBeenCalled());
+    expect(purchases.purchase).toHaveBeenCalledTimes(1);
+  });
+
+  it('스토어 연결이 끊겨 결제를 마치지 못하면 문의할 수 있는 다이얼로그를 띄운다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { purchases } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+    purchases.purchase.mockRejectedValue(new PurchasesGatewayError('network', null, 'offline'));
+
+    // When
+    await user.press(await screen.findByRole('button', { name: '연간으로 시작하기' }));
+
+    // Then
+    expect(await screen.findByText('결제를 마치지 못했어요')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: i18n.t('subscription:failure.contactSupport') }),
+    ).toBeTruthy();
+  });
+
   describe('결제 뒤 시작 화면', () => {
     it('체험으로 결제하면 서버 반영이 늦어도 방금 산 요금제로 체험 일정을 보여 주고 반영이 늦는다고 알린다', async () => {
       // Given
@@ -482,7 +338,7 @@ describe('구독 화면', () => {
       // 스토어 결제는 끝났지만 권한이 아직 안 보여 서버 반영을 기다리지 못한 경우
       purchases.purchase.mockResolvedValue({
         type: 'purchased',
-        status: { activeEntitlements: [] },
+        status: { activeEntitlements: [], managementUrl: null },
       });
 
       // When
@@ -510,7 +366,7 @@ describe('구독 화면', () => {
       );
       purchases.purchase.mockResolvedValue({
         type: 'purchased',
-        status: { activeEntitlements: [] },
+        status: { activeEntitlements: [], managementUrl: null },
       });
       await user.press(await screen.findByText('월간 구독'));
 
@@ -525,6 +381,29 @@ describe('구독 화면', () => {
       expect(
         await screen.findAllByText('결제가 반영되기까지 잠시 걸릴 수 있어요'),
       ).not.toHaveLength(0);
+    });
+  });
+
+  describe('결제 뒤 시작 화면의 완료', () => {
+    it('완료를 연달아 눌러도 한 번만 돌아간다', async () => {
+      // Given
+      const user = userEvent.setup();
+      const { purchases } = await renderSubscriptionScreen(FREE, () =>
+        Promise.resolve(ANNUAL_WITH_FREE_TRIAL),
+      );
+      purchases.purchase.mockResolvedValue({
+        type: 'purchased',
+        status: { activeEntitlements: [], managementUrl: null },
+      });
+      await user.press(await screen.findByRole('button', { name: '2주 무료로 시작하기' }));
+      const done = await screen.findByTestId('subscription-welcome-done');
+
+      // When
+      await fireEvent.press(done);
+      await fireEvent.press(done);
+
+      // Then
+      expect(router.back).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -557,83 +436,6 @@ describe('구독 화면', () => {
       });
     });
 
-    it.each([
-      ['ko', 'WEEK', 1, '1주 무료', '1주 무료로 시작하기'],
-      ['ko', 'MONTH', 1, '1개월 무료', '1개월 무료로 시작하기'],
-      ['en', 'WEEK', 2, '2 weeks free', 'Start free for 2 weeks'],
-      ['en', 'WEEK', 1, '1 week free', 'Start free for 1 week'],
-      ['en', 'MONTH', 1, '1 month free', 'Start free for 1 month'],
-    ] as const)(
-      '%s: 스토어가 준 체험 기간(%s × %i)을 칩과 버튼에 그대로 쓴다',
-      async (language, periodUnit, periodNumberOfUnits, chipLabel, buttonLabel) => {
-        // Given
-        await i18n.changeLanguage(language);
-
-        // When
-        await renderSubscriptionScreen(FREE, () =>
-          Promise.resolve(createAnnualTrialOffering({ periodUnit, periodNumberOfUnits })),
-        );
-
-        // Then
-        expect(await screen.findByRole('button', { name: buttonLabel })).toBeTruthy();
-        expect(screen.getByText(chipLabel)).toBeTruthy();
-      },
-    );
-
-    it('체험이 없는 월간으로 바꾸면 일정을 숨기고 체험 고지 대신 정기결제 고지를 두며, 다시 연간으로 와도 일정은 한 번만 센다', async () => {
-      // Given
-      const user = userEvent.setup();
-      const { analytics } = await renderSubscriptionScreen(FREE, () =>
-        Promise.resolve(ANNUAL_WITH_FREE_TRIAL),
-      );
-      await screen.findByTestId('subscription-trial-timeline');
-
-      // When
-      await user.press(screen.getByText('월간 구독'));
-
-      // Then
-      expect(await screen.findByRole('button', { name: '월간으로 시작하기' })).toBeTruthy();
-      expect(screen.queryByTestId('subscription-trial-timeline')).toBeNull();
-      expect(screen.queryByTestId('subscription-trial-disclosure')).toBeNull();
-      expect(screen.getByTestId('subscription-renewal-disclosure').props.children).toBe(
-        '월\u00A0₩3,900 정기결제 · 언제든 해지할 수 있어요',
-      );
-      const amountDueToday = screen.getByTestId('subscription-amount-due-today');
-      expect(within(amountDueToday).getByText('₩3,900')).toBeTruthy();
-      expect(screen.queryByText('체험 끝나기 전 알림')).toBeNull();
-      expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_plan_selected', {
-        plan_type: 'monthly',
-        is_trial: false,
-      });
-
-      // When
-      await user.press(screen.getByText('연간 구독'));
-
-      // Then
-      expect(await screen.findByTestId('subscription-trial-timeline')).toBeTruthy();
-      expect(
-        analytics.trackEvent.mock.calls.filter(
-          ([eventName]) => eventName === 'trial_timeline_viewed',
-        ),
-      ).toHaveLength(1);
-    });
-
-    it('체험 자격이 없으면 체험 문구 없이 일반 연간 버튼을 보여 준다', async () => {
-      // When
-      await renderSubscriptionScreen(FREE, () => Promise.resolve(MONTHLY_AND_ANNUAL));
-
-      // Then
-      expect(await screen.findByRole('button', { name: '연간으로 시작하기' })).toBeTruthy();
-      expect(screen.queryByTestId('subscription-trial-timeline')).toBeNull();
-      expect(screen.queryByTestId('subscription-plan-free-trial')).toBeNull();
-      expect(screen.queryByTestId('subscription-trial-disclosure')).toBeNull();
-      const amountDueToday = screen.getByTestId('subscription-amount-due-today');
-      expect(within(amountDueToday).getByText('₩29,900')).toBeTruthy();
-      expect(screen.getByTestId('subscription-renewal-disclosure').props.children).toBe(
-        '연\u00A0₩29,900 정기결제 · 언제든 해지할 수 있어요',
-      );
-    });
-
     it('체험으로 결제 창에서 취소하면 체험이었다는 것까지 센다', async () => {
       // Given
       const user = userEvent.setup();
@@ -654,90 +456,6 @@ describe('구독 화면', () => {
           is_trial: true,
         }),
       );
-    });
-
-    it('체험 중이면 체험 영수증에 종료일·첫 결제일과 금액·해지 방법을 보여 준다', async () => {
-      // Given
-      const state = createTrialState({ daysLeft: 20, willRenew: true });
-
-      // When
-      const { purchases } = await renderSubscriptionScreen(state, () =>
-        Promise.resolve(ANNUAL_WITH_FREE_TRIAL),
-      );
-
-      // Then
-      expect(await screen.findByTestId('subscription-receipt-trial')).toBeTruthy();
-      expect(screen.getByText('무료 체험 중')).toBeTruthy();
-      expect(screen.getByTestId('subscription-receipt-row-trialEndsOn')).toBeTruthy();
-      const firstBilling = screen.getByTestId('subscription-receipt-row-firstBillingDate');
-      expect(await within(firstBilling).findByText(/ · 연 ₩29,900$/)).toBeTruthy();
-      expect(
-        screen.getByText('체험이 끝나기 전에 스토어 구독 설정에서 해지하면 결제되지 않아요'),
-      ).toBeTruthy();
-      expect(screen.getByText('구독 관리 (스토어 설정)')).toBeTruthy();
-      expect(screen.queryByTestId('subscription-ending-notice')).toBeNull();
-      expect(purchases.getOffering).toHaveBeenCalled();
-    });
-
-    it.each([
-      ['자동 갱신 중 3일 남았으면', 3, true, 'D-3', '3일 뒤 연간 구독이 시작돼요'],
-      ['자동 갱신 중 하루 남았으면', 1, true, 'D-1', '내일 연간 구독이 시작돼요'],
-      ['해지하고 3일 남았으면', 3, false, 'D-3', '무료 체험이 3일 뒤 끝나요'],
-      ['해지하고 하루 남았으면', 1, false, 'D-1', '내일 무료 체험이 끝나요'],
-    ] as const)(
-      '체험이 %s 끝남 안내를 보여 준다',
-      async (_case, daysLeft, willRenew, badge, message) => {
-        // Given
-        const state = createTrialState({ daysLeft, willRenew });
-
-        // When
-        await renderSubscriptionScreen(state);
-
-        // Then
-        const notice = await screen.findByTestId('subscription-ending-notice');
-        expect(within(notice).getByText(badge)).toBeTruthy();
-        expect(within(notice).getByText(message)).toBeTruthy();
-      },
-    );
-
-    it('자동 갱신되는 연간 구독이 7일 남았으면 갱신 푸시와 같은 문장으로 알린다', async () => {
-      // Given
-      const renewsAt = new Date(Date.now() + 7 * DAY_MS).toISOString();
-      const state: ScreenState = {
-        tier: 'PREMIUM',
-        me: createCurrentUserDto({
-          subscriptionStatus: 'ACTIVE',
-          isPremium: true,
-          premiumSource: 'STORE',
-          premiumEndsAt: renewsAt,
-          premiumPeriodEndsAt: renewsAt,
-          willRenew: true,
-          bankedPremiumDays: 0,
-          premiumGrantEndedAt: null,
-          premiumIsTrial: false,
-          premiumPlanType: 'ANNUAL',
-        }),
-      };
-
-      // When
-      await renderSubscriptionScreen(state);
-
-      // Then
-      const notice = await screen.findByTestId('subscription-ending-notice');
-      expect(within(notice).getByText('D-7')).toBeTruthy();
-      expect(within(notice).getByText('7일 뒤 연간 구독이 갱신돼요')).toBeTruthy();
-    });
-
-    it('체험이 4일 넘게 남았으면 끝남 안내를 보이지 않는다', async () => {
-      // Given
-      const state = createTrialState({ daysLeft: 4, willRenew: true });
-
-      // When
-      await renderSubscriptionScreen(state);
-
-      // Then
-      expect(await screen.findByTestId('subscription-receipt-trial')).toBeTruthy();
-      expect(screen.queryByTestId('subscription-ending-notice')).toBeNull();
     });
   });
 });

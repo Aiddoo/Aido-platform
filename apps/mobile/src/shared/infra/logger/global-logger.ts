@@ -1,15 +1,15 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 
 import { createConsoleLogger } from './console-logger';
 
 const fallback = createConsoleLogger({ minLevel: 'debug' });
-let instance: Logger = fallback;
+let instance: AppLogger = fallback;
 
-export function setGlobalLogger(logger: Logger): void {
+export function setGlobalLogger(logger: AppLogger): void {
   instance = logger;
 }
 
-export const logger: Logger = {
+export const logger: AppLogger = {
   debug: (...args) => instance.debug(...args),
   info: (...args) => instance.info(...args),
   warn: (...args) => instance.warn(...args),

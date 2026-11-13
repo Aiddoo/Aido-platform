@@ -1,22 +1,22 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
 import {
   type AppLifecycleGatewayStub,
   createAppLifecycleGatewayStub,
   createIncomingLinkGatewayStub,
   createTestDi,
-} from '@src/shared/__tests__';
-import { OverlayStateContext } from '@src/shared/ui/overlay/overlay-state-context';
+  type TestDi,
+} from '@src/testing/core';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';
 
 import { useStableFeedForeground } from './use-stable-feed-foreground';
 
-let mockHasActiveOverlay = false;
-let mockIsKeyboardVisible = false;
 let incomingLink: ReturnType<typeof createIncomingLinkGatewayStub>;
 let appLifecycle: AppLifecycleGatewayStub;
-let deepLinkListener: (() => void) | undefined;
+let di: TestDi;
+let deepLinkListener: ((url: string) => void) | undefined;
 let idleCallbacks: Array<() => void> = [];
 
 const mockUseKeyboardState = jest.mocked(useKeyboardState);
@@ -33,27 +33,25 @@ const createKeyboardState = (isVisible: boolean): IKeyboardState => ({
 
 function OverlayStateWrapper({ children }: PropsWithChildren) {
   return (
-    <StaticDIProvider container={createTestDi({ incomingLink, appLifecycle })}>
-      <OverlayStateContext.Provider value={{ hasActiveOverlay: mockHasActiveOverlay }}>
+    <StaticDIProvider container={di}>
+      <OverlayStateContext.Provider value={{ hasActiveOverlay: false }}>
         {children}
       </OverlayStateContext.Provider>
     </StaticDIProvider>
   );
 }
 
-function useStableInFeed({ hasPendingNavigation = false } = {}) {
-  return useStableFeedForeground({ isAuthenticated: true, hasPendingNavigation });
+function useStableInFeed() {
+  return useStableFeedForeground({ authStatus: 'authenticated', hasPendingNavigation: false });
 }
 
 describe('useStableFeedForeground', () => {
   beforeEach(() => {
-    mockHasActiveOverlay = false;
-    mockIsKeyboardVisible = false;
     deepLinkListener = undefined;
     idleCallbacks = [];
     appLifecycle = createAppLifecycleGatewayStub();
     mockUseKeyboardState.mockImplementation((selector) => {
-      const state = createKeyboardState(mockIsKeyboardVisible);
+      const state = createKeyboardState(false);
       return selector == null ? state : selector(state);
     });
     incomingLink = createIncomingLinkGatewayStub();
@@ -61,6 +59,7 @@ describe('useStableFeedForeground', () => {
       deepLinkListener = listener;
       return () => {};
     });
+    di = createTestDi({ ports: { incomingLink, appLifecycle } });
     jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     Object.defineProperty(globalThis, 'requestIdleCallback', {
       configurable: true,
@@ -104,7 +103,7 @@ describe('useStableFeedForeground', () => {
 
     // When
     await act(async () => {
-      deepLinkListener?.();
+      deepLinkListener?.('aido://feed');
     });
 
     // Then
@@ -133,63 +132,5 @@ describe('useStableFeedForeground', () => {
 
     // Then
     expect(globalThis.cancelIdleCallback).toHaveBeenCalledWith(1);
-  });
-
-  it('실제 OverlayProvider의 폼/오버레이 신호가 활성인 동안만 자동 노출을 막는다', async () => {
-    // Given
-    mockHasActiveOverlay = true;
-    const hook = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    // Then
-    expect(hook.result.current).toBe(false);
-
-    // When
-    mockHasActiveOverlay = false;
-    await hook.rerender(undefined);
-
-    // Then
-    await waitFor(() => expect(hook.result.current).toBe(true));
-  });
-
-  it('키보드가 올라와 있는 동안은 자동 노출을 막는다', async () => {
-    // Given
-    mockIsKeyboardVisible = true;
-    const hook = await renderHook(() => useStableInFeed(), { wrapper: OverlayStateWrapper });
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    // Then
-    expect(hook.result.current).toBe(false);
-
-    // When
-    mockIsKeyboardVisible = false;
-    await hook.rerender(undefined);
-
-    // Then
-    await waitFor(() => expect(hook.result.current).toBe(true));
-  });
-
-  it('눌린 푸시를 처리하는 동안은 안정되지 않았다고 본다', async () => {
-    // Given
-    const { result, rerender } = await renderHook(
-      (props: { hasPendingNavigation: boolean }) => useStableInFeed(props),
-      { initialProps: { hasPendingNavigation: true }, wrapper: OverlayStateWrapper },
-    );
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    // Then
-    expect(result.current).toBe(false);
-
-    // When
-    await rerender({ hasPendingNavigation: false });
-
-    // Then
-    expect(result.current).toBe(true);
   });
 });

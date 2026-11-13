@@ -22,6 +22,31 @@ describe('scrubContext', () => {
     },
   );
 
+  it.each([
+    {
+      scenario: '날짜 바뀜',
+      data: { previousDate: '2026-11-11', nextDate: '2026-11-12', trigger: 'foreground' },
+    },
+    {
+      scenario: '말하기',
+      data: { mode: 'quick', locale: 'ko-KR', on_device: true, duration_bucket: '10-30s' },
+    },
+    {
+      scenario: '위젯 동기화',
+      data: { date: '2026-11-12', state: 'ready', total: 3, dayCount: 7 },
+    },
+    {
+      scenario: '푸시 payload',
+      data: { source: 'response', droppedPaths: 'data.todoId', isReadable: false },
+    },
+  ])('$scenario breadcrumb의 키는 그대로 남긴다', ({ data }) => {
+    // When
+    const result = scrubContext(data);
+
+    // Then
+    expect(result).toEqual(data);
+  });
+
   it('허용된 키라도 객체와 배열 값은 지운다', () => {
     // When
     const result = scrubContext({ error: { message: '메모 본문' }, reason: ['a'], step: 'play' });

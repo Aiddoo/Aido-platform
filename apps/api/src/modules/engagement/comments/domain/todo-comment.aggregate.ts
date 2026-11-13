@@ -1,10 +1,14 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { CommentPlacement } from "./comment-placement.vo.js";
+import {
+  commentChangeForbidden,
+  commentCountConflict,
+  commentDeleted,
+  commentNotThreadHead,
+  invalidReplyCount,
+} from "./comments.errors.js";
 import { TodoCommentContent } from "./todo-comment-content.vo.js";
 import { TodoCommentId } from "./todo-comment-id.vo.js";
 
@@ -152,7 +156,7 @@ export class TodoComment extends AggregateRoot<TodoCommentId, TodoCommentProps> 
   // 작성자·삭제 여부를 내용 검증보다 먼저 본다(오류 우선순위)
   edit(actorId: UserId, rawContent: string, now: Temporal.Instant): boolean {
     if (!this.isAuthoredBy(actorId)) {
-      throw new DomainException(ErrorCode.TODO_0832, { commentId: this.id.value });
+      throw commentChangeForbidden(this.id.value);
     }
     this.assertActive();
     this.props.content = TodoCommentContent.create(rawContent);
@@ -168,7 +172,7 @@ export class TodoComment extends AggregateRoot<TodoCommentId, TodoCommentProps> 
     readonly now: Temporal.Instant;
   }): boolean {
     if (!this.isAuthoredBy(params.actorId) && !params.actorId.equals(params.todoOwnerId)) {
-      throw new DomainException(ErrorCode.TODO_0832, { commentId: this.id.value });
+      throw commentChangeForbidden(this.id.value);
     }
     if (this.isDeleted) {
       return false;
@@ -184,7 +188,7 @@ export class TodoComment extends AggregateRoot<TodoCommentId, TodoCommentProps> 
   addReplies(count: number, now: Temporal.Instant): boolean {
     this.#assertThreadHead();
     if (!Number.isSafeInteger(count) || count < 1) {
-      throw new DomainException(ErrorCode.SYS_0002, { commentId: this.id.value });
+      throw invalidReplyCount(this.id.value);
     }
     this.props.replyCount += count;
     this.props.updatedAt = now;
@@ -194,7 +198,7 @@ export class TodoComment extends AggregateRoot<TodoCommentId, TodoCommentProps> 
   removeReply(now: Temporal.Instant): boolean {
     this.#assertThreadHead();
     if (this.props.replyCount === 0) {
-      throw new DomainException(ErrorCode.SYS_0003, { commentId: this.id.value });
+      throw commentCountConflict(this.id.value);
     }
     this.props.replyCount -= 1;
     this.props.updatedAt = now;
@@ -211,7 +215,7 @@ export class TodoComment extends AggregateRoot<TodoCommentId, TodoCommentProps> 
   removeLike(now: Temporal.Instant): boolean {
     this.assertActive();
     if (this.props.likeCount === 0) {
-      throw new DomainException(ErrorCode.SYS_0003, { commentId: this.id.value });
+      throw commentCountConflict(this.id.value);
     }
     this.props.likeCount -= 1;
     this.props.updatedAt = now;
@@ -220,7 +224,7 @@ export class TodoComment extends AggregateRoot<TodoCommentId, TodoCommentProps> 
 
   assertActive(): void {
     if (this.isDeleted) {
-      throw new DomainException(ErrorCode.TODO_0833, { commentId: this.id.value });
+      throw commentDeleted(this.id.value);
     }
   }
 
@@ -246,7 +250,7 @@ export class TodoComment extends AggregateRoot<TodoCommentId, TodoCommentProps> 
 
   #assertThreadHead(): void {
     if (this.isReply) {
-      throw new DomainException(ErrorCode.SYS_0003, { commentId: this.id.value });
+      throw commentNotThreadHead(this.id.value);
     }
   }
 }

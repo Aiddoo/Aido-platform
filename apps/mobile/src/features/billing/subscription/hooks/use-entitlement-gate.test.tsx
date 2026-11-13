@@ -4,20 +4,21 @@ import { ErrorCode } from '@aido/api/errors';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { readStoredValue } from '@src/shared/storage/define-stored-value';
+import { Button } from '@src/shared/ui';
+import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { readStoredValue } from '@src/shared/storage/define-stored-value';
-import { Button } from '@src/shared/ui';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
-import { screen, userEvent, waitFor } from '@testing-library/react-native';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import {
@@ -26,9 +27,9 @@ import {
   createFeatureQuotaDto,
   createLimitApiError,
 } from '../__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { type EntitlementSnapshot } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
+import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { upsellDismissalStoredValue } from '../schemas/upsell-dismissal-storage.schema';
 import { useEntitlementGate } from './use-entitlement-gate';
 
@@ -69,15 +70,22 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
 
-  await renderUi(
+  const { unmount } = await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <AiParseGate error={error} onAlternative={onAlternative} />
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: { httpClient, analytics, errorReporter: createErrorReporterStub(), syncStorage },
-      queryClient,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics,
+          errorReporter: createErrorReporterStub(),
+          syncStorage,
+          queryClient,
+        },
+      }),
     },
   );
 
@@ -85,6 +93,7 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
     analytics,
     queryClient,
     onAlternative,
+    unmount,
     readDismissals: () => readStoredValue(syncStorage, upsellDismissalStoredValue, ACCOUNT_ID),
     countEvents: (eventName: string) =>
       analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length,
@@ -197,6 +206,25 @@ describe('useEntitlementGate', () => {
       presentation: 'toast',
     });
     expect(countEvents('premium_upsell_dismissed')).toBe(1);
+  });
+
+  it('시트를 띄운 화면이 답 없이 사라지면 닫은 것으로 남기지 않는다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { countEvents, readDismissals, unmount } = await renderGate(
+      createEntitlementSnapshot(USED_UP),
+    );
+    await user.press(screen.getByRole('button', { name: '시작' }));
+    await screen.findByRole('button', { name: '나중에' });
+
+    // When
+    await act(async () => {
+      unmount();
+    });
+
+    // Then
+    expect(readDismissals().AI_PARSE).toBeUndefined();
+    expect(countEvents('premium_upsell_dismissed')).toBe(0);
   });
 
   it('무료 대안이 있으면 오늘 닫았어도 대안을 주 버튼으로 둔 시트를 띄운다', async () => {

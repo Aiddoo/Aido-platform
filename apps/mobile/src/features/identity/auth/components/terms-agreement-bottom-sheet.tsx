@@ -1,4 +1,5 @@
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -11,8 +12,9 @@ import {
   IconButton,
   Text,
   VStack,
+  Checkbox,
 } from '@src/shared/ui';
-import { Checkbox, ControlField, Label, Separator } from 'heroui-native';
+import { ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
@@ -68,7 +70,7 @@ export function TermsAgreementBottomSheet({
             onSelectedChange={setAllAgreed}
           >
             <ControlField.Indicator>
-              <Checkbox className="shadow-none border border-main size-5 rounded-md" />
+              <Checkbox />
             </ControlField.Indicator>
             <Label>
               <Text size="b2" weight="semibold">
@@ -143,10 +145,12 @@ TermsAgreementBottomSheet.Item = function Item({
   onPressLink,
   ...props
 }: TermsAgreementItemProps) {
+  const fontScaledSize = useFontScaledSize();
+
   return (
     <ControlField {...props}>
       <ControlField.Indicator>
-        <Checkbox className="shadow-none border border-main size-5 rounded-md" />
+        <Checkbox />
       </ControlField.Indicator>
       <HStack flex={1} justify="between" align="center">
         <Label>
@@ -155,8 +159,14 @@ TermsAgreementBottomSheet.Item = function Item({
         {onPressLink && (
           <IconButton
             accessibilityLabel={label}
-            icon={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />}
-            className="min-h-0 min-w-0"
+            icon={
+              <ArrowRightIcon
+                width={fontScaledSize(16)}
+                height={fontScaledSize(16)}
+                colorClassName="text-gray-5"
+              />
+            }
+            className="size-4 min-h-0 min-w-0"
             hitSlop={8}
             onPress={onPressLink}
           />

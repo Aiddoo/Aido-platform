@@ -1,65 +1,57 @@
-import { useHaptics, useTodoService, useSubTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import {
   changeCachedCategoryTodoCount,
+  getCachedTodoCategories,
   invalidateTodoCategories,
 } from '@src/features/planning/category/queries/todo-category-cache';
-import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/constants/todo-mutation-keys';
-import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import {
-  findTodoSeriesFailure,
-  getTodoSeriesLimit,
-  shouldRefreshTodos,
-} from '@src/features/planning/todo/domains/todo-series.error';
+import type { TodoEditedFields } from '@src/features/planning/todo/constants/todo.events';
+import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
+import { isTodoSeriesFailure } from '@src/features/planning/todo/domains/todo-series.error';
 import {
   isCategoryTodoLimitError,
   isRecurringCategoryTodoLimitError,
+  isRecurringTodoRejection,
 } from '@src/features/planning/todo/domains/todo.error';
-import { getVisibility } from '@src/features/planning/todo/domains/todo.model';
-import type { OptimisticTodo } from '@src/features/planning/todo/domains/todo.model';
+import {
+  getScheduledTime,
+  getTodoDateSpan,
+  type OptimisticTodo,
+  type TodoFieldChanges,
+} from '@src/features/planning/todo/domains/todo.model';
+import { useTodoSeriesFailureFeedback } from '@src/features/planning/todo/hooks/use-todo-series-failure-feedback';
 import {
   appendTodoToList,
   beginTodoWrite,
   findCachedTodo,
-  getCachedTodoDateSpan,
-  getTodoDateSpan,
-  getTodoExistenceFilters,
-  invalidateTodos,
   removeTodoFromList,
   saveCreatedTodo,
   settleTodoEdit,
+  settleTodoSeriesWrite,
   settleTodoWrite,
   syncDailyCompletionWithList,
-  updateCachedTodo,
-  updateCachedTodoExistence,
+  updateCachedTodoOverview,
   withTodoCreated,
 } from '@src/features/planning/todo/queries/todo-cache';
-import type {
-  CreateTodoInput,
-  UpdateTodoInput,
-} from '@src/features/planning/todo/schemas/todo-request.schema';
-import type {
-  RepeatingTodoDraft,
-  TodoSeriesEditOptions,
-} from '@src/features/planning/todo/schemas/todo-series-request.schema';
+import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/queries/todo-mutation-keys';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
+import type { TodoSeriesEditOptions } from '@src/features/planning/todo/schemas/todo-series-request.schema';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 interface CreateTodoVariables {
-  input: CreateTodoInput;
+  values: TodoFormValues;
 }
 
 export function useCreateTodoMutationOptions() {
   const haptics = useHaptics();
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -68,39 +60,39 @@ export function useCreateTodoMutationOptions() {
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
     mutationKey: TODO_MUTATION_KEYS.completionWrites(),
-    mutationFn: async ({ input }: CreateTodoVariables) => {
-      const result = await todoService.createTodo(input);
+    mutationFn: async ({ values }: CreateTodoVariables) => {
+      const result = await todoApi.createTodo(values);
       return unwrap(result);
     },
-    onMutate: async ({ input }) => {
-      const startDate = input.startDate;
-      const span = getTodoDateSpan({ startDate, endDate: input.endDate ?? null });
+    onMutate: async ({ values }) => {
+      const startDate = values.startDate;
+      const span = getTodoDateSpan(values);
       const ticket = await beginTodoWrite(queryClient, {
         date: startDate,
         isCompletionAffected: true,
       });
 
       const category = TodoCategoryPolicy.findCategory(
-        queryClient.getQueryData(TODO_CATEGORY_QUERY_KEYS.list())?.categories ?? [],
-        input.categoryId,
+        getCachedTodoCategories(queryClient)?.categories ?? [],
+        values.categoryId,
       );
 
       // 카테고리를 찾지 못하면 낙관적 삽입을 건너뛰고 서버 응답 뒤 invalidate로 맞춘다
-      if (!category) {
+      if (category == null) {
         return { startDate, span, ticket, optimisticId: undefined };
       }
 
       const optimisticTodo: OptimisticTodo = {
         id: createOptimisticId(),
-        title: input.title,
-        startDate: input.startDate,
-        endDate: input.endDate ?? null,
+        title: values.title,
+        startDate: values.startDate,
+        endDate: values.endDate,
         category: { id: category.id, name: category.name, color: category.color },
         completed: false,
-        localTime: input.scheduledTime ?? null,
+        localTime: getScheduledTime(values),
         scheduledAt: null,
-        isAllDay: input.isAllDay,
-        visibility: getVisibility(input.visibility),
+        isAllDay: values.isAllDay,
+        visibility: values.visibility,
         recurrenceGroupId: null,
         repeat: null,
         subTodos: [],
@@ -113,27 +105,25 @@ export function useCreateTodoMutationOptions() {
 
       return { startDate, span, ticket, optimisticId: optimisticTodo.id };
     },
-    onSuccess: (saved, { input }, { startDate, optimisticId }) => {
+    onSuccess: (saved, { values }, { startDate, optimisticId }) => {
       // 응답이 만든 할 일 전체라 목록·존재 여부·카테고리 개수를 응답으로 고치고 다시 받지 않는다
-      if (optimisticId == null) {
-        invalidateTodoCategories(queryClient);
-      } else {
+      if (optimisticId != null) {
         saveCreatedTodo(queryClient, { date: startDate, optimisticId }, saved);
         changeCachedCategoryTodoCount(queryClient, { categoryId: saved.category.id, delta: 1 });
       }
-      updateCachedTodoExistence(queryClient, withTodoCreated);
+      updateCachedTodoOverview(queryClient, withTodoCreated);
       emitTodoCreated();
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
         source: 'manual',
         creation_entry: 'manual',
         is_recurring: false,
-        has_scheduled_time: !!input.scheduledTime,
-        is_all_day: input.isAllDay,
-        visibility: getVisibility(input.visibility),
+        has_scheduled_time: getScheduledTime(values) != null,
+        is_all_day: values.isAllDay,
+        visibility: values.visibility,
       });
       const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
+      if (accountId != null) {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_creation' });
       }
     },
@@ -146,280 +136,149 @@ export function useCreateTodoMutationOptions() {
       if (isCategoryTodoLimitError(error)) {
         haptics.notify('error');
         toast.error(t('todo:toast.categoryLimitReached'));
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.addFailedRetry'),
-      });
     },
-    onSettled: (_saved, error, { input }, context) => {
+    onSettled: (_saved, error, { values }, context) => {
+      // 카테고리를 몰라 낙관적으로 넣지 못했으면 개수도 서버에 묻는다
+      if (error == null && context?.optimisticId == null) {
+        invalidateTodoCategories(queryClient);
+      }
       settleTodoWrite(queryClient, {
-        date: input.startDate,
-        span: context?.span ?? getTodoDateSpan({ startDate: input.startDate, endDate: null }),
+        date: values.startDate,
+        span: context?.span ?? getTodoDateSpan({ startDate: values.startDate, endDate: null }),
         isCompletionAffected: true,
         hasFailed: error != null || context?.optimisticId == null,
         ticket: context?.ticket,
       });
     },
-  });
-}
-
-interface AddSubTodoVariables {
-  todoId: number;
-  title: string;
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
-}
-
-export function useAddSubTodoMutationOptions() {
-  const subTodoService = useSubTodoService();
-  const { trackEvent } = useTrack();
-  const queryClient = useQueryClient();
-  const haptics = useHaptics();
-  const toast = useAppToast();
-
-  return mutationOptions({
-    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
-    networkMode: 'always',
-    mutationKey: TODO_MUTATION_KEYS.completionWrites(),
-    mutationFn: async ({ todoId, title }: AddSubTodoVariables) => {
-      const result = await subTodoService.addSubTodo(todoId, { title });
-      return unwrap(result);
-    },
-    onMutate: async ({ todoId, title, date }) => {
-      // 끝낸 일에 더할 때만 완료가 풀려 달력·위젯·시작 체크리스트가 바뀐다. 취소는 진행 중 조회를 되돌려 먼저 읽어도 같다
-      const wasCompleted = findCachedTodo(queryClient, { date, todoId })?.completed ?? false;
-      const ticket = await beginTodoWrite(queryClient, {
-        date,
-        todoId,
-        isCompletionAffected: wasCompleted,
-      });
-      const optimisticId = createOptimisticId();
-      const span = getCachedTodoDateSpan(queryClient, { date, todoId });
-      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoAdded(todo, {
-          id: optimisticId,
-          title,
-          completed: false,
-          sortOrder: todo.subTodos.length,
-        }),
-      );
-      if (wasCompleted) {
-        syncDailyCompletionWithList(queryClient, { date });
-      }
-
-      return { optimisticId, wasCompleted, ticket, span };
-    },
-    onSuccess: (saved, { todoId, date }, { optimisticId }) => {
-      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoConfirmed(todo, optimisticId, saved),
-      );
-      trackEvent('todo_item_added', { todo_id: todoId });
-    },
-    onError: (error, { todoId, date }, context) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.subTodoAddFailed'),
-      });
-
-      if (context != null) {
-        updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
-          ...SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
-          completed: context.wasCompleted,
-        }));
-        if (context.wasCompleted) {
-          syncDailyCompletionWithList(queryClient, { date });
-        }
-      }
-    },
-    onSettled: (_saved, error, { todoId, date }, context) => {
-      const wasCompleted = context?.wasCompleted ?? true;
-      settleTodoWrite(queryClient, {
-        date,
-        todoId,
-        span: context?.span ?? { startDate: date, endDate: date },
-        isCompletionAffected: wasCompleted,
-        hasFailed: error != null,
-        ticket: context?.ticket,
-        extra: wasCompleted ? getTodoExistenceFilters() : [],
-      });
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.addFailedRetry',
+        isHandledByFeature: isCategoryTodoLimitError,
+      },
     },
   });
 }
 
 interface CreateRecurringTodoVariables {
-  input: RepeatingTodoDraft;
+  values: TodoFormValues & { repeat: TodoRepeat };
 }
 
 export function useCreateRecurringTodoMutationOptions() {
   const haptics = useHaptics();
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
-    mutationFn: async ({ input }: CreateRecurringTodoVariables) => {
-      const result = await todoService.createRepeatingTodo(input);
+    // 회차를 낙관적으로 넣지 않지만, 넓게 다시 받을 때 진행 중인 체크의 낙관적 값을 덮지 않게 같은 키로 센다
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
+    mutationFn: async ({ values }: CreateRecurringTodoVariables) => {
+      const result = await todoApi.createRepeatingTodo(values);
       return unwrap(result);
     },
-    onSuccess: (_, { input }) => {
+    onSuccess: (_, { values }) => {
       emitTodoCreated();
-      invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));
       trackEvent('todo_created', {
         source: 'manual',
         creation_entry: 'recurring',
         is_recurring: true,
-        has_scheduled_time: !!input.scheduledTime,
-        is_all_day: input.isAllDay,
-        visibility: input.visibility,
-        repeat_frequency: input.repeat.frequency,
-        repeat_end: input.repeat.end.type,
+        has_scheduled_time: getScheduledTime(values) != null,
+        is_all_day: values.isAllDay,
+        visibility: values.visibility,
+        repeat_frequency: values.repeat.frequency,
+        repeat_end: values.repeat.end.type,
       });
       const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
+      if (accountId != null) {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_creation' });
       }
     },
     onError: (error) => {
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
+      if (showTodoSeriesFailure(error)) {
         return;
       }
 
       if (isRecurringCategoryTodoLimitError(error)) {
         haptics.notify('error');
         toast.error(t('todo:toast.recurringCategoryLimit'));
-        return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.addFailedRetry'),
-      });
+    },
+    // 반복 회차가 어느 날짜에 생겼는지 몰라 넓게 맞춘다
+    onSettled: (_saved, error) => {
+      if (error == null) {
+        settleTodoSeriesWrite(queryClient);
+      }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.addFailedRetry',
+        isHandledByFeature: isRecurringTodoRejection,
+      },
     },
   });
 }
 
-interface UpdateSubTodoVariables {
-  todoId: number;
-  subTodoId: number;
-  title: string;
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
-  date: string;
-}
+// 수정 폼이 칸을 담는 순서다. 분석의 field 값이 이 순서로 이어진다
+const TODO_EDITED_FIELD_ORDER = [
+  'title',
+  'categoryId',
+  'startDate',
+  'endDate',
+  'scheduledTime',
+  'isAllDay',
+  'visibility',
+] as const satisfies readonly (keyof TodoFieldChanges)[];
 
-export function useUpdateSubTodoMutationOptions() {
-  const subTodoService = useSubTodoService();
-  const { trackEvent } = useTrack();
-  const queryClient = useQueryClient();
-  const haptics = useHaptics();
-  const toast = useAppToast();
-
-  return mutationOptions({
-    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
-    networkMode: 'always',
-    mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ todoId, subTodoId, title }: UpdateSubTodoVariables) => {
-      const result = await subTodoService.updateSubTodo(todoId, subTodoId, { title });
-      return unwrap(result);
-    },
-    onMutate: async ({ todoId, subTodoId, title, date }) => {
-      const ticket = await beginTodoWrite(queryClient, {
-        date,
-        todoId,
-        isCompletionAffected: false,
-      });
-      const previous = findCachedTodo(queryClient, { date, todoId })?.subTodos.find(
-        (subTodo) => subTodo.id === subTodoId,
-      );
-      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-        SubTodoPolicy.withSubTodoRenamed(todo, subTodoId, title),
-      );
-
-      return {
-        previousTitle: previous?.title,
-        ticket,
-        span: getCachedTodoDateSpan(queryClient, { date, todoId }),
-      };
-    },
-    onSuccess: (_data, { todoId, subTodoId }) => {
-      trackEvent('todo_item_updated', { todo_id: todoId, item_id: subTodoId });
-    },
-    onError: (error, { todoId, subTodoId, date }, context) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.subTodoUpdateFailed'),
-      });
-      const previousTitle = context?.previousTitle;
-      if (previousTitle != null) {
-        updateCachedTodo(queryClient, { date, todoId }, (todo) =>
-          SubTodoPolicy.withSubTodoRenamed(todo, subTodoId, previousTitle),
-        );
-      }
-    },
-    onSettled: (_data, error, { todoId, date }, context) => {
-      settleTodoWrite(queryClient, {
-        date,
-        todoId,
-        span: context?.span ?? { startDate: date, endDate: date },
-        isCompletionAffected: false,
-        hasFailed: error != null,
-        ticket: context?.ticket,
-      });
-    },
-  });
+// 칸을 고치지 않고 반복만 바꾼 수정(단일 → 반복 포함)은 repeat 한 칸으로 남긴다
+function toEditedFields(
+  fields: TodoFieldChanges,
+  options: TodoSeriesEditOptions = {},
+): TodoEditedFields | undefined {
+  const [first, ...rest] = TODO_EDITED_FIELD_ORDER.filter((field) => field in fields);
+  if (first == null) {
+    // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 바꾼 것이다
+    return options.repeat === undefined ? undefined : 'repeat';
+  }
+  return rest.length === 0 ? first : `${first},${rest.join(',')}`;
 }
 
 interface UpdateTodoVariables {
   todoId: number;
-  input: UpdateTodoInput;
+  fields: TodoFieldChanges;
   options?: TodoSeriesEditOptions;
 }
 
 export function useUpdateTodoMutationOptions() {
-  const todoService = useTodoService();
+  const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
     networkMode: 'always',
     // 저장을 기다리는 시트라 낙관적으로 쓰지 않는다. 다른 체크의 낙관적 값을 재조회로 덮지 않게 같은 키로 센다
     mutationKey: TODO_MUTATION_KEYS.listWrites(),
-    mutationFn: async ({ todoId, input, options }: UpdateTodoVariables) => {
-      const result = await todoService.updateTodo(todoId, input, options);
+    mutationFn: async ({ todoId, fields, options }: UpdateTodoVariables) => {
+      const result = await todoApi.updateTodo(todoId, fields, options);
       return unwrap(result);
     },
     onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
-    onSuccess: (saved, variables, { before }) => {
-      // 반복 범위·규칙을 바꾸면 바뀐 회차의 날짜를 몰라 넓게 맞춘다.
-      // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기다
-      if (variables.options?.scope == null && variables.options?.repeat === undefined) {
-        settleTodoEdit(queryClient, { before, after: saved });
-      } else {
-        invalidateTodos(queryClient);
-      }
+    onSuccess: (_saved, variables) => {
       toast.success(t('todo:toast.todoUpdated'));
-      const field = Object.keys(variables.input).join(',');
-      trackEvent('todo_edited', { todo_id: variables.todoId, field });
+      trackEvent('todo_edited', {
+        todo_id: variables.todoId,
+        field: toEditedFields(variables.fields, variables.options),
+      });
       if (variables.options?.scope != null) {
         trackEvent('todo_series_edited', { scope: variables.options.scope });
       }
@@ -429,25 +288,26 @@ export function useUpdateTodoMutationOptions() {
       }
     },
     onError: (error) => {
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
+      showTodoSeriesFailure(error);
+    },
+    onSettled: (saved, _error, { options }, context) => {
+      if (saved == null) {
         return;
       }
-
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('todo:toast.updateFailedRetry'),
-      });
+      // 반복 범위·규칙을 바꾸면 바뀐 회차의 날짜를 몰라 넓게 맞춘다.
+      // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기다
+      if (options?.scope == null && options?.repeat === undefined) {
+        settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
+      } else {
+        settleTodoSeriesWrite(queryClient);
+      }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.updateFailedRetry',
+        isHandledByFeature: isTodoSeriesFailure,
+      },
     },
   });
 }

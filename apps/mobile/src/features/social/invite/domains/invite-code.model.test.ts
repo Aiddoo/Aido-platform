@@ -3,12 +3,18 @@ import {
   normalizeInviteCode as normalizeInviteCodeContract,
 } from '@aido/api';
 
-import { InviteCodePolicy } from './invite-code.model';
+import {
+  findInvalidCharacters,
+  normalizeInviteCode,
+  normalizeInviteCodeInput,
+  normalizePastedInviteCode,
+  parseInviteCode,
+} from './invite-code.model';
 
 describe('normalizeInviteCodeInput', () => {
   it('붙여 넣은 공백·하이픈·소문자를 서버 형태로 맞춘 값을 반환한다', () => {
     // When
-    const result = InviteCodePolicy.normalizeInviteCodeInput(' k7m-2 qx ');
+    const result = normalizeInviteCodeInput(' k7m-2 qx ');
 
     // Then
     expect(result).toBe('K7M2QX');
@@ -16,7 +22,7 @@ describe('normalizeInviteCodeInput', () => {
 
   it('6자를 넘으면 앞 6자만 반환한다', () => {
     // When
-    const result = InviteCodePolicy.normalizeInviteCodeInput('K7M2QXZZ');
+    const result = normalizeInviteCodeInput('K7M2QXZZ');
 
     // Then
     expect(result).toBe('K7M2QX');
@@ -24,7 +30,7 @@ describe('normalizeInviteCodeInput', () => {
 
   it('전각 영숫자와 전각 하이픈을 반각으로 바꾼 값을 반환한다', () => {
     // When
-    const result = InviteCodePolicy.normalizeInviteCodeInput('ｋ７ｍ－２ＱＸ');
+    const result = normalizeInviteCodeInput('ｋ７ｍ－２ＱＸ');
 
     // Then
     // NFKC: ｋ→k, ７→7, －→- 뒤 하이픈 제거·대문자
@@ -35,7 +41,7 @@ describe('normalizeInviteCodeInput', () => {
 describe('normalizePastedInviteCode', () => {
   it('빈 칸에 붙여 넣으면 공백·하이픈·소문자를 맞춘 코드를 반환한다', () => {
     // When
-    const result = InviteCodePolicy.normalizePastedInviteCode('', ' k7m-2qx ');
+    const result = normalizePastedInviteCode('', ' k7m-2qx ');
 
     // Then
     expect(result).toBe('K7M2QX');
@@ -47,7 +53,7 @@ describe('normalizePastedInviteCode', () => {
     ['앞에', 'K7M2QXABCDEF'],
   ])('채운 코드 %s 붙여 넣으면 붙여 넣은 코드로 바꾼다', (_position, next) => {
     // When
-    const result = InviteCodePolicy.normalizePastedInviteCode('ABCDEF', next);
+    const result = normalizePastedInviteCode('ABCDEF', next);
 
     // Then
     expect(result).toBe('K7M2QX');
@@ -55,7 +61,7 @@ describe('normalizePastedInviteCode', () => {
 
   it('붙여 넣은 글자가 코드보다 짧으면 쓰던 코드에 이어 붙인다', () => {
     // When
-    const result = InviteCodePolicy.normalizePastedInviteCode('K7', 'K7m-2qx');
+    const result = normalizePastedInviteCode('K7', 'K7m-2qx');
 
     // Then
     // 붙여 넣은 'm-2qx'는 정규화하면 4자라 코드 하나를 채우지 못한다
@@ -63,24 +69,10 @@ describe('normalizePastedInviteCode', () => {
   });
 });
 
-describe('isFilledInviteCode', () => {
-  it.each([
-    ['K7M2Q', false],
-    ['K7M2QX', true],
-    ['K7-M2-QX', true],
-  ])('%s를 입력하면 %s를 반환한다', (raw, expected) => {
-    // When
-    const result = InviteCodePolicy.isFilledInviteCode(raw);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
 describe('findInvalidCharacters', () => {
   it.each(['0', 'O', '1', 'I', 'L'])('헷갈리기 쉬운 %s는 confusable로 분류한다', (character) => {
     // When
-    const [invalid] = InviteCodePolicy.findInvalidCharacters(character);
+    const [invalid] = findInvalidCharacters(character);
 
     // Then
     expect(invalid?.kind).toBe('confusable');
@@ -90,7 +82,7 @@ describe('findInvalidCharacters', () => {
     '그 밖에 코드에 없는 %s는 unused로 분류한다',
     (character) => {
       // When
-      const [invalid] = InviteCodePolicy.findInvalidCharacters(character);
+      const [invalid] = findInvalidCharacters(character);
 
       // Then
       expect(invalid?.kind).toBe('unused');
@@ -101,7 +93,7 @@ describe('findInvalidCharacters', () => {
 describe('parseInviteCode', () => {
   it('정규화하면 6자 코드가 되는 값은 코드를 반환한다', () => {
     // When
-    const result = InviteCodePolicy.parseInviteCode('k7m2-qx');
+    const result = parseInviteCode('k7m2-qx');
 
     // Then
     expect(result).toBe('K7M2QX');
@@ -109,7 +101,7 @@ describe('parseInviteCode', () => {
 
   it('전각 영숫자와 하이픈은 반각으로 바꿔 읽는다', () => {
     // When
-    const result = InviteCodePolicy.parseInviteCode('Ｋ７Ｍ２－ＱＸ');
+    const result = parseInviteCode('Ｋ７Ｍ２－ＱＸ');
 
     // Then
     expect(result).toBe('K7M2QX');
@@ -119,7 +111,7 @@ describe('parseInviteCode', () => {
     '헷갈리는 글자가 섞인 %s는 null을 반환한다',
     (raw) => {
       // When
-      const result = InviteCodePolicy.parseInviteCode(raw);
+      const result = parseInviteCode(raw);
 
       // Then
       expect(result).toBeNull();
@@ -130,7 +122,7 @@ describe('parseInviteCode', () => {
     '길이나 형식이 맞지 않는 %p는 null을 반환한다',
     (raw) => {
       // When
-      const result = InviteCodePolicy.parseInviteCode(raw);
+      const result = parseInviteCode(raw);
 
       // Then
       expect(result).toBeNull();
@@ -141,7 +133,7 @@ describe('parseInviteCode', () => {
     '%p를 서버 초대 코드 검증과 같게 판단한다',
     (raw) => {
       // When
-      const result = InviteCodePolicy.parseInviteCode(raw);
+      const result = parseInviteCode(raw);
 
       // Then
       const contract = inviteCodeContractSchema.safeParse(raw);
@@ -153,7 +145,7 @@ describe('parseInviteCode', () => {
 describe('normalizeInviteCode', () => {
   it('공백과 하이픈을 지우고 대문자로 바꾼다', () => {
     // When
-    const result = InviteCodePolicy.normalizeInviteCode(' k7m2-qx ');
+    const result = normalizeInviteCode(' k7m2-qx ');
 
     // Then
     expect(result).toBe('K7M2QX');
@@ -164,7 +156,7 @@ describe('normalizeInviteCode', () => {
     const raw = '  a b-c\tD-e ';
 
     // When
-    const result = InviteCodePolicy.normalizeInviteCode(raw);
+    const result = normalizeInviteCode(raw);
 
     // Then
     expect(result).toBe(normalizeInviteCodeContract(raw));

@@ -1,11 +1,14 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import {
+  notificationActionSchema,
+  notificationContextSchema,
+  notificationTypeSchema,
+} from "../../../common/notification-value.js";
 import { PUSH_DEVICE_PLATFORM } from "../../../vocabulary/notification.constants.js";
-import { notificationTypeSchema } from "./notification.common.js";
 import { notificationBodySchema, notificationTitleSchema } from "./notification.content.js";
 import { notificationNavigationSchema } from "./notification.navigation.js";
-import { notificationActionSchema, notificationContextSchema } from "./notification.payload.js";
 import { pushPermissionSchema } from "./notification.request.js";
 
 export const notificationMetadataSchema = z.record(z.string(), z.unknown()).nullable();

@@ -1,21 +1,26 @@
-import { formatYearAwareDateKeyLabel } from '@src/shared/date/date-format';
+import type { DateKey } from '@src/shared/date/date-key';
+import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { Box, Button, Text, TextSkeleton } from '@src/shared/ui';
+import { Box, Button, Text, TextSkeleton, useConfirmDialog } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import {
-  FREE_TRIAL_PERIOD_LABEL_KEYS,
-  PLAN_PRICE_LABEL_KEYS,
-} from '../constants/subscription-labels';
 import { type SubscriptionPlan } from '../domains/subscription.model';
 import { hasFreeTrial, SubscriptionPolicy } from '../domains/subscription.model';
+import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
+import { toSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
+import {
+  getFreeTrialPeriodLabelKey,
+  getPlanPriceLabelKey,
+} from '../utils/subscription-label.view-model';
 import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';
 
 interface PurchaseButtonProps {
@@ -27,6 +32,7 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
   const { t } = useTranslation('subscription');
   const [planId] = useSelectedPlanId();
   const purchase = useMutation(usePurchaseMutationOptions());
+  const offerPurchaseInquiry = useOfferPurchaseInquiry();
   const isOnline = useIsOnline();
   const { currentLocalDateKey } = useLocalDate();
   // 요금제 자리의 경계 밖이라 실패를 던지지 않는다. 요금제를 받기 전에는 버튼만 잠긴다
@@ -44,14 +50,16 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
       ? null
       : SubscriptionPolicy.getFreeTrialEndDateKey(selectedPlan, currentLocalDateKey);
 
-  const handlePurchase = () => {
-    if (!selectedPlan || purchase.isPending) {
+  // isPending은 다음 렌더에야 바뀌어 같은 프레임의 두 번째 탭이 결제 창을 한 번 더 연다
+  const handlePurchase = useSingleTap(() => {
+    if (selectedPlan == null || purchase.isPending) {
       return;
     }
     purchase.mutate(selectedPlan, {
       onSuccess: ({ hadRewardOnly }) => onPurchased({ plan: selectedPlan, hadRewardOnly }),
+      onError: offerPurchaseInquiry,
     });
-  };
+  });
 
   return (
     <>
@@ -63,14 +71,14 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
       <Button
         onPress={handlePurchase}
         isLoading={purchase.isPending}
-        isDisabled={!selectedPlan || purchase.isPending || !isOnline}
+        isDisabled={selectedPlan == null || purchase.isPending || !isOnline}
         testID="subscription-purchase"
       >
         {t(getPurchaseLabelKey(selectedPlan), {
           period:
             freeTrial == null
               ? undefined
-              : t(FREE_TRIAL_PERIOD_LABEL_KEYS[freeTrial.periodUnit], {
+              : t(getFreeTrialPeriodLabelKey(freeTrial.periodUnit), {
                   count: freeTrial.periodNumberOfUnits,
                 }),
         })}
@@ -85,11 +93,23 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
   );
 }
 
+/** 요금제를 받는 동안 잠긴 버튼과 약관 줄 자리를 그대로 잡는다 */
+PurchaseButton.Loading = function Loading() {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <>
+      <Button isDisabled>{t('paywall.subscribeButton')}</Button>
+      <TextSkeleton size={DISCLOSURE_TEXT_SIZE} className="mt-2 w-56 self-center" />
+    </>
+  );
+};
+
 const DISCLOSURE_TEXT_SIZE = 'e1';
 
 interface PurchaseDisclosureProps {
   plan: SubscriptionPlan | null;
-  trialEndDateKey: string | null;
+  trialEndDateKey: DateKey | null;
   isPlanLoading: boolean;
 }
 
@@ -106,7 +126,7 @@ function PurchaseDisclosure({ plan, trialEndDateKey, isPlanLoading }: PurchaseDi
     ) : null;
   }
 
-  const price = t(PLAN_PRICE_LABEL_KEYS[plan.planType], { price: plan.priceString });
+  const price = t(getPlanPriceLabelKey(plan.planType), { price: plan.priceString });
 
   return (
     <Text
@@ -133,6 +153,34 @@ function PurchaseDisclosure({ plan, trialEndDateKey, isPlanLoading }: PurchaseDi
           })}
     </Text>
   );
+}
+
+/** 돈이 빠져나갔을 수도 있는 결제 실패는 지나가는 토스트 대신 다이얼로그로 문의할 길을 남긴다 */
+function useOfferPurchaseInquiry() {
+  const { t } = useTranslation(['subscription', 'common']);
+  const confirmDialog = useConfirmDialog();
+  const openInquiry = useOpenSubscriptionInquiry();
+
+  return (error: unknown) => {
+    const failure = toSubscriptionActionFailure('purchase', error);
+    if (failure.type !== 'contactSupport') {
+      return;
+    }
+    // 다이얼로그가 닫힐 때까지 구매 버튼이 돌지 않게 기다리지 않는다
+    confirmDialog
+      .openAsync({
+        title: t(failure.titleKey),
+        description: t(failure.descriptionKey),
+        cancelLabel: t('common:actions.close'),
+        confirmLabel: t('subscription:failure.contactSupport'),
+      })
+      .then((shouldContactSupport) => {
+        if (shouldContactSupport) {
+          openInquiry(failure);
+        }
+      })
+      .catch(noop);
+  };
 }
 
 /** 고른 요금제가 버튼 글자가 된다. 요금제를 받기 전에는 잠긴 버튼에 일반 문구를 둔다 */

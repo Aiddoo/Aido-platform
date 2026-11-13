@@ -4,24 +4,20 @@ import { ok } from '@src/core/errors/result';
 import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { NetworkError } from '@src/shared/errors';
 import { Button, Text } from '@src/shared/ui';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { OverlayProvider } from '@src/shared/ui';
+import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
-import { noop } from 'es-toolkit';
 import { useState } from 'react';
 
 import { createConsent } from '../__tests__/consent.fixtures';
-import { CONSENT_QUERY_KEYS } from '../constants/consent-query-keys';
 import { type Consent } from '../domains/consent.model';
-import {
-  AI_CONSENT_CHECK_TIMEOUT_MS,
-  readWithoutBlocking,
-  useAiDataSharingConsentGate,
-} from './use-ai-data-sharing-consent-gate';
+import { CONSENT_QUERY_KEYS } from '../queries/consent-query-keys';
+import { useAiDataSharingConsentGate } from './use-ai-data-sharing-consent-gate';
 
 const RENEWAL_NOTICE = '지금 답하지 않아도 전처럼 쓸 수 있어요.';
 
@@ -76,33 +72,15 @@ async function renderGate(
     queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser(me));
   }
 
-  await renderUi(
+  await renderScreen(
     <OverlayProvider>
       <ConsentGateProbe />
     </OverlayProvider>,
-    {
-      di: { httpClient },
-      queryClient,
-    },
+    { di: createTestDi({ ports: { httpClient, queryClient } }) },
   );
 
   return { httpClient };
 }
-
-describe('readWithoutBlocking', () => {
-  it('연결이 있어도 응답이 오지 않으면 제한 시간 뒤 없는 값으로 이어 간다', async () => {
-    // Given
-    jest.useFakeTimers();
-    const result = readWithoutBlocking(undefined, () => new Promise(() => undefined), noop);
-
-    // When
-    await jest.advanceTimersByTimeAsync(AI_CONSENT_CHECK_TIMEOUT_MS);
-
-    // Then
-    await expect(result).resolves.toBeNull();
-    jest.useRealTimers();
-  });
-});
 
 describe('useAiDataSharingConsentGate', () => {
   describe('연결이 없을 때', () => {

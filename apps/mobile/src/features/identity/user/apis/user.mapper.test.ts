@@ -2,6 +2,7 @@ import { toInstant } from '@src/shared/date/instant';
 
 import { PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '../__tests__/user.fixtures';
+import { currentUserResponseSchema } from '../schemas/user-response.schema';
 import { toUser } from './user.mapper';
 
 describe('toUser', () => {
@@ -70,8 +71,8 @@ describe('toUser', () => {
   });
 
   it.each([
-    ['1.15.0 서버가 체험이라고 보내면 체험으로 옮긴다', true, true],
-    ['1.15.0 전 서버라 체험 필드가 없으면 체험이 아닌 것으로 읽는다', undefined, false],
+    ['서버가 체험이라고 보내면 체험으로 옮긴다', true, true],
+    ['서버가 체험이 아니라고 보내면 체험이 아닌 것으로 옮긴다', false, false],
   ] as const)('%s', (_case, premiumIsTrial, expected) => {
     // Given
     const dto = { ...PREMIUM_ME_EXAMPLES.trialDuringReward, premiumIsTrial };
@@ -82,15 +83,17 @@ describe('toUser', () => {
     // Then
     expect(result.premiumAccess.isTrial).toBe(expected);
   });
+});
 
-  it('providers 배열 매핑', () => {
+describe('currentUserResponseSchema', () => {
+  it('프리미엄 효력·권한이 빠진 응답은 받아들이지 않는다', () => {
     // Given
-    const dto = createCurrentUserDto({ providers: ['CREDENTIAL', 'GOOGLE'] });
+    const { isPremium: _isPremium, entitlements: _entitlements, ...dto } = createCurrentUserDto();
 
     // When
-    const result = toUser(dto);
+    const result = currentUserResponseSchema.safeParse(dto);
 
     // Then
-    expect(result.providers).toEqual(['CREDENTIAL', 'GOOGLE']);
+    expect(result.success).toBe(false);
   });
 });

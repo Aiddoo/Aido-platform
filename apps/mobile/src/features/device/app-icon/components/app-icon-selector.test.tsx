@@ -1,20 +1,21 @@
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
 import type { EntitlementSnapshot } from '@src/features/billing/subscription/domains/entitlement.model';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
   createAnalyticsStub,
   createAppIconGatewayStub,
   createErrorReporterStub,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
-import { APP_ICON_QUERY_KEYS } from '../constants/app-icon-query-keys';
 import type { AppIconKey } from '../domains/app-icon.model';
+import { APP_ICON_QUERY_KEYS } from '../queries/app-icon-query-keys';
 import { AppIconSelector } from './app-icon-selector';
 
 const PREMIUM_GATE_TITLE = '앱 아이콘 변경은 프리미엄 기능이에요';
@@ -28,19 +29,21 @@ async function renderSelector(snapshot: EntitlementSnapshot, currentIcon: AppIco
   queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), snapshot);
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser());
 
-  await renderUi(
+  await renderScreen(
     <Suspense>
       <AppIconSelector />
     </Suspense>,
     {
-      queryClient,
+      di: createTestDi({
+        ports: {
+          appIcon: gateway,
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          queryClient,
+        },
+      }),
       withLocalDate: true,
       withOverlay: true,
-      di: {
-        appIconGateway: gateway,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-      },
     },
   );
 

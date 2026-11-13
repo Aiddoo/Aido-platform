@@ -1,5 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
-import { MEMO_LIMITS } from "@aido/api/vocabulary";
+import {
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENCY_KEY_MAX_LENGTH,
+  MEMO_LIMITS,
+} from "@aido/api/vocabulary";
 import {
   Body,
   Controller,
@@ -21,6 +25,8 @@ import {
 import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
+import { type RequestClient } from "#api/platform/http/request-client/request-client";
+import { CurrentRequestClient } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiErrorCodesResponse,
@@ -141,7 +147,12 @@ export class MemoController {
 | 항목 | 제한 |
 |------|------|
 | 사용자당 최대 메모 | ${MEMO_LIMITS.MAX_PER_USER}개 |
-| 메모 내용 길이 | 1-${MEMO_LIMITS.MAX_CONTENT_LENGTH}자 |`,
+| 메모 내용 길이 | 1-${MEMO_LIMITS.MAX_CONTENT_LENGTH}자 |
+
+### 재시도
+
+선택 헤더 \`${IDEMPOTENCY_KEY_HEADER}\`(${IDEMPOTENCY_KEY_MAX_LENGTH}자 이하 인쇄 가능한 ASCII)를 저장 한 번마다 새로 만들어 보냅니다.
+응답을 받지 못해 같은 키로 다시 보내면 새로 만들지 않고 그 키로 처음 만든 메모를 돌려줍니다. 같은 키로 글이 다르면 409 \`MEMO_2004\`입니다. 미전송 시 요청마다 만듭니다.`,
   })
   @ApiCreatedResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -149,8 +160,13 @@ export class MemoController {
   async create(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateMemoDto }) dto: CreateMemoDto,
+    @CurrentRequestClient() client: RequestClient,
   ): Promise<MemoMutationResponseDto> {
-    const memo = await this.#createMemo.execute({ userId: user.userId, content: dto.content });
+    const memo = await this.#createMemo.execute({
+      userId: user.userId,
+      content: dto.content,
+      idempotencyKey: client.idempotencyKey,
+    });
     return toMemoMutationResponse(memo, MEMO_RESPONSE_MESSAGES.CREATED);
   }
 

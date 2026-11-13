@@ -1,16 +1,4 @@
-import type { TodoVisibility } from '@aido/api/vocabulary';
-
 import type { TodoRepeat, TodoUpdateScope } from '../domains/todo-repeat.model';
-
-export interface RepeatingTodoDraft {
-  title: string;
-  categoryId: number;
-  startDate: string;
-  scheduledTime?: string | null;
-  isAllDay: boolean;
-  visibility: TodoVisibility;
-  repeat: TodoRepeat;
-}
 
 export interface TodoSeriesEditOptions {
   /** 반복 회차를 고칠 때만. 단일 할 일에 보내면 서버가 TODO_0844로 거절한다 */

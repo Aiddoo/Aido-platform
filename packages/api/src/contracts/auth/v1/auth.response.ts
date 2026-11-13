@@ -3,6 +3,7 @@ import { z } from "zod";
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
 import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from "../../../vocabulary/auth.constants.js";
+import { USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
 import type { PremiumFeature } from "../../../vocabulary/plan-catalog.constants.js";
 import {
   PREMIUM_SOURCE,
@@ -186,7 +187,10 @@ export const currentUserSchema = z
     userId: entityIdSchema.describe("사용자 고유 ID"),
     email: z.email().describe("이메일 주소"),
     sessionId: entityIdSchema.describe("현재 세션 ID"),
-    userTag: z.string().length(8).describe("사용자 태그 (8자리 영숫자, 해시태그 검색용)"),
+    userTag: z
+      .string()
+      .length(USER_TAG_LENGTH)
+      .describe("사용자 태그 (8자리 영숫자, 해시태그 검색용)"),
     role: userRoleSchema.describe("사용자 역할"),
     status: userStatusSchema.describe("계정 상태"),
     emailVerifiedAt: nullableDatetimeSchema.describe("이메일 인증 완료 시점 (미인증 시 null)"),

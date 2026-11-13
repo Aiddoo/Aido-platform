@@ -1,11 +1,11 @@
 import {
   type TodoCommentV2,
-  todoCommentSchema as todoCommentV1Schema,
   todoCommentThreadsResponseSchema,
   todoCommentV2Schema,
 } from '@aido/api';
 
 import { todoCommentSchema, todoCommentThreadPageSchema } from '../domains/todo-comment.model';
+import { writtenTodoCommentMutationResponseSchema } from '../schemas/todo-comment-response.schema';
 import {
   toRepliesQuery,
   toThreadsQuery,
@@ -114,28 +114,38 @@ describe('todo comment mapper', () => {
     expect(todoCommentSchema.parse(page.items[0]?.comment)).toEqual(page.items[0]?.comment);
   });
 
-  it('v1 쓰기 응답의 parentId를 묶음 머리로, 빠진 1.13.0 필드는 할 수 없음으로 읽는다', () => {
+  it('v1 쓰기 응답의 parentId를 묶음 머리로 읽는다', () => {
     // Given
-    const dto = todoCommentV1Schema.parse({
-      id: REPLY_ID,
-      threadId: HEAD_ID,
-      parentId: HEAD_ID,
-      depth: 1,
-      author: {
-        id: 'cm32345678901234567890123',
-        name: '이영희',
-        profileImage: null,
-        isTodoOwner: false,
+    const { comment: dto } = writtenTodoCommentMutationResponseSchema.parse({
+      comment: {
+        id: REPLY_ID,
+        threadId: HEAD_ID,
+        parentId: HEAD_ID,
+        depth: 1,
+        author: {
+          id: 'cm32345678901234567890123',
+          name: '이영희',
+          profileImage: null,
+          isTodoOwner: false,
+        },
+        content: '저도요',
+        isDeleted: false,
+        isEdited: false,
+        likeCount: 0,
+        replyCount: 0,
+        replyTo: { commentId: HEAD_ID, authorName: '김철수' },
+        isAuthorBlocked: false,
+        viewer: {
+          isLiked: false,
+          canEdit: true,
+          canDelete: true,
+          canReply: true,
+          canReport: false,
+          canBlock: false,
+        },
+        createdAt: '2026-08-26T00:00:00.000Z',
+        editedAt: null,
       },
-      content: '저도요',
-      isDeleted: false,
-      isEdited: false,
-      likeCount: 0,
-      replyCount: 0,
-      replyTo: { commentId: HEAD_ID, authorName: '김철수' },
-      viewer: { isLiked: false, canEdit: true, canDelete: true, canReply: true },
-      createdAt: '2026-08-26T00:00:00.000Z',
-      editedAt: null,
     });
 
     // When

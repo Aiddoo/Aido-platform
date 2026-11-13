@@ -1,0 +1,134 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "6f05fff6-d085-4122-865c-9e280f618f30",
+  "prevIds": [
+    "b50c948e-bd0a-4646-aac6-657668afb1d5",
+    "fbc7e3f7-04df-4d88-bc15-04c16ddb5601"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Memo",
+        "idempotencyKey"
+      ],
+      "writes": [
+        "s|col|public.Memo.idempotencyKey",
+        "n|col|public.Memo.idempotencyKey",
+        "e|col|public.Memo.idempotencyKey"
+      ],
+      "reads": [
+        "n|tbl|public.Memo",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Memo",
+        "requestHash"
+      ],
+      "writes": [
+        "s|col|public.Memo.requestHash",
+        "n|col|public.Memo.requestHash",
+        "e|col|public.Memo.requestHash"
+      ],
+      "reads": [
+        "n|tbl|public.Memo",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "Memo",
+        "Memo_userId_idempotencyKey_key"
+      ],
+      "writes": [
+        "s|idx|public.Memo_userId_idempotencyKey_key",
+        "n|idx|public.Memo_userId_idempotencyKey_key",
+        "e|idx|public.Memo_userId_idempotencyKey_key",
+        "n|rel|public.Memo_userId_idempotencyKey_key"
+      ],
+      "reads": [
+        "n|tbl|public.Memo",
+        "n|sch|public",
+        "n|col|public.Memo.userId",
+        "n|col|public.Memo.idempotencyKey"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Memo",
+        "name": "idempotencyKey",
+        "type": "varchar(128)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Memo",
+        "name": "requestHash",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Memo",
+        "name": "Memo_userId_idempotencyKey_key",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "userId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "idempotencyKey",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "(\"idempotencyKey\" IS NOT NULL)",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    }
+  ]
+}

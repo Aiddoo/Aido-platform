@@ -1,31 +1,44 @@
-import { useFocusEffect } from 'expo-router';
 import {
   Fragment,
   type ReactNode,
-  useCallback,
   useEffect,
   useEffectEvent,
   useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
-import { BackHandler } from 'react-native';
 
 import {
   createStepperState,
   getCurrentEntry,
   type StepEntry,
+  type StepInput,
   type StepName,
   type StepperAction,
   type StepperContexts,
+  type StepperState,
   stepperReducer,
+  toStepEntry,
 } from '../utils/stepper-reducer';
+import { useAndroidBackHandler } from './use-android-back-handler';
 
-export type { StepperContexts } from '../utils/stepper-reducer';
+/** 값이나 지금 단계의 context를 받아 다음 context를 만드는 updater */
+type ContextInput<Contexts extends StepperContexts, Name extends StepName<Contexts>> =
+  | Contexts[Name]
+  | ((prev: Contexts[StepName<Contexts>]) => Contexts[Name]);
+
+/** context가 빈 단계(`Record<string, never>`)는 인자를 생략한다 */
+type ContextArgs<Contexts extends StepperContexts, Name extends StepName<Contexts>> =
+  Record<string, never> extends Contexts[Name]
+    ? [context?: ContextInput<Contexts, Name>]
+    : [context: ContextInput<Contexts, Name>];
 
 interface StepperHistory<Contexts extends StepperContexts> {
-  push: <Name extends StepName<Contexts>>(step: Name, context: Contexts[Name]) => void;
-  replace: <Name extends StepName<Contexts>>(step: Name, context: Contexts[Name]) => void;
+  push: <Name extends StepName<Contexts>>(step: Name, ...args: ContextArgs<Contexts, Name>) => void;
+  replace: <Name extends StepName<Contexts>>(
+    step: Name,
+    ...args: ContextArgs<Contexts, Name>
+  ) => void;
   back: () => void;
   go: (delta: number) => void;
 }
@@ -48,7 +61,7 @@ type StepChange<Contexts extends StepperContexts> = StepEntry<Contexts> & { inde
 
 export interface UseStepperOptions<Contexts extends StepperContexts> {
   id: string;
-  initial: StepEntry<Contexts>;
+  initial: StepInput<Contexts>;
   onStepChange?: (change: StepChange<Contexts>) => void;
 }
 
@@ -57,7 +70,10 @@ export type Stepper<Contexts extends StepperContexts> = StepEntry<Contexts> & {
   index: number;
   historySteps: readonly StepEntry<Contexts>[];
   history: StepperHistory<Contexts>;
-  /** 안에서 훅을 쓰는 컴포넌트라 `<stepper.Render … />` JSX로만 그린다. 함수로 부르면 훅이 부모 훅에 섞여 순서가 흔들린다 */
+  /**
+   * 안에서 훅을 쓰는 컴포넌트라 `<stepper.Render … />` JSX로만 그린다. 함수로 부르면 훅이 부모 훅에 섞여 순서가 흔들린다.
+   * 이웃 단계에 같은 렌더러 함수를 넘기면 한 화면으로 이어져 다시 마운트되지 않는다(칸이 하나씩 늘어나는 입력에서 키보드가 내려가지 않는다)
+   */
   Render: (renderers: StepRenderers<Contexts>) => ReactNode;
 };
 
@@ -68,7 +84,7 @@ interface StepperStore<Contexts extends StepperContexts> {
 }
 
 function createStepperStore<Contexts extends StepperContexts>(
-  initial: StepEntry<Contexts>,
+  initial: StepInput<Contexts>,
 ): StepperStore<Contexts> {
   let state = createStepperState<Contexts>(initial);
   const listeners = new Set<() => void>();
@@ -92,21 +108,41 @@ function createStepperStore<Contexts extends StepperContexts>(
   };
 }
 
+function isContextUpdater(
+  input: object | ((prev: object) => object),
+): input is (prev: object) => object {
+  return typeof input === 'function';
+}
+
+/** updater는 부른 순간의 지금 단계 context를 받는다. 공개 타입이 단계와 context의 짝을 지키고 구현은 넓은 타입으로 만든다 */
 function createStepEntry<Contexts extends StepperContexts, Name extends StepName<Contexts>>(
+  current: StepEntry<Contexts>,
   step: Name,
-  context: Contexts[Name],
-): StepEntry<Contexts, Name> {
-  return { step, context };
+  ...args: ContextArgs<Contexts, Name>
+): StepEntry<Contexts>;
+function createStepEntry(
+  current: { context: object },
+  step: string,
+  input?: object | ((prev: object) => object),
+): { step: string; context: object } {
+  const context = input != null && isContextUpdater(input) ? input(current.context) : input;
+  return toStepEntry({ step, context });
 }
 
 function createHistory<Contexts extends StepperContexts>(
   store: StepperStore<Contexts>,
 ): StepperHistory<Contexts> {
   return {
-    push: (step, context) =>
-      store.dispatch({ type: 'push', entry: createStepEntry(step, context) }),
-    replace: (step, context) =>
-      store.dispatch({ type: 'replace', entry: createStepEntry(step, context) }),
+    push: (step, ...args) =>
+      store.dispatch({
+        type: 'push',
+        entry: createStepEntry(getCurrentEntry(store.getState()), step, ...args),
+      }),
+    replace: (step, ...args) =>
+      store.dispatch({
+        type: 'replace',
+        entry: createStepEntry(getCurrentEntry(store.getState()), step, ...args),
+      }),
     back: () => store.dispatch({ type: 'go', delta: -1 }),
     go: (delta) => store.dispatch({ type: 'go', delta }),
   };
@@ -120,6 +156,25 @@ function renderStep<Contexts extends StepperContexts, Name extends StepName<Cont
   return renderers[entry.step]({ step: entry.step, context: entry.context, history });
 }
 
+/** 같은 렌더러를 쓰는 앞 단계까지 거슬러 올라간 첫 단계가 마운트 단위다. 렌더러가 다르면 단계마다 새로 마운트된다 */
+function getMountKey<Contexts extends StepperContexts>(
+  state: StepperState<Contexts>,
+  renderers: StepRenderers<Contexts>,
+): string {
+  const current = getCurrentEntry(state);
+  const renderer = renderers[current.step];
+  let start = state.cursor;
+  let startStep: string = current.step;
+  for (const entry of state.entries.slice(0, state.cursor).reverse()) {
+    if (renderers[entry.step] !== renderer) {
+      break;
+    }
+    start -= 1;
+    startStep = entry.step;
+  }
+  return `${start}:${startStep}`;
+}
+
 /** Render의 정체성은 훅 생성 때 한 번 정해져 부모가 다시 그려져도 입력 포커스·상태가 유지된다. 렌더러 안에서 훅을 쓰지 않는다 */
 function createRender<Contexts extends StepperContexts>(
   store: StepperStore<Contexts>,
@@ -130,7 +185,7 @@ function createRender<Contexts extends StepperContexts>(
     const entry = getCurrentEntry(state);
 
     return (
-      <Fragment key={`${state.cursor}:${entry.step}`}>
+      <Fragment key={getMountKey(state, renderers)}>
         {renderStep(renderers, entry, history)}
       </Fragment>
     );
@@ -161,18 +216,15 @@ export function useStepper<Contexts extends StepperContexts>({
     notifyStepChange({ ...current, index: state.cursor });
   }, [current, state.cursor]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (store.getState().cursor === 0) {
-          return false;
-        }
-        history.back();
-        return true;
-      });
-      return () => subscription.remove();
-    }, [store, history]),
-  );
+  useAndroidBackHandler({
+    onBack: () => {
+      if (store.getState().cursor === 0) {
+        return false;
+      }
+      history.back();
+      return true;
+    },
+  });
 
   return {
     ...current,

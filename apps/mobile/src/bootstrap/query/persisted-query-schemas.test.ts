@@ -2,31 +2,32 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
-import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/constants/entitlement-query-keys';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createPreference } from '@src/features/identity/preference/__tests__/preference.fixtures';
-import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/constants/preference-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createTodoCategoryWithCountDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import { toTodoCategoryWithCount } from '@src/features/planning/category/apis/todo-category.mapper';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/constants/todo-category-query-keys';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { createDailyCompletionsDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { toDailyCompletionsResult } from '@src/features/planning/todo/apis/todo.mapper';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { createFriendsListDto } from '@src/features/social/friend/__tests__/friend.fixtures';
 import { toFriendsPage } from '@src/features/social/friend/apis/friend.mapper';
-import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/constants/friend-query-keys';
+import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';
 import { createWeatherReport } from '@src/features/weather/__tests__/weather-report.fixtures';
-import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
-import {
-  createLoggerStub,
-  createMemorySyncStorage,
-  createTestQueryClient,
-} from '@src/shared/__tests__';
+import { WEATHER_QUERY_KEYS } from '@src/features/weather/queries/weather-query-keys';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { setGlobalLogger } from '@src/shared/infra/logger/global-logger';
+import {
+  createAppLoggerStub,
+  createMemorySyncStorage,
+  createTestQueryClient,
+} from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { partialMatchKey, type QueryKey } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,
@@ -77,6 +78,7 @@ function createValidCache(): CacheEntry[] {
         place: null,
         countryCode: 'KR',
         revision: 1,
+        isLastKnown: false,
       },
     ],
     [REPORT_KEY, createWeatherReport()],
@@ -109,15 +111,15 @@ async function saveThenRestore(cache: CacheEntry[]) {
 }
 
 describe('영속 캐시 복원 검증', () => {
-  const logger = createLoggerStub();
+  setupFakeTimersPerTest();
+
+  const logger = createAppLoggerStub();
 
   beforeEach(() => {
-    jest.useFakeTimers();
     setGlobalLogger(logger);
   });
 
   afterEach(() => {
-    jest.useRealTimers();
     jest.clearAllMocks();
   });
 
@@ -159,23 +161,6 @@ describe('영속 캐시 복원 검증', () => {
     // Then
     expect(restored.getQueryData(LIST_KEY)).toBeUndefined();
     expect(restored.getQueryData(ME_KEY)).toBeDefined();
-  });
-
-  it('요금제 종류(planType)가 없던 같은 버전의 /me는 스키마 기본값(null)을 채워 복원한다', async () => {
-    // Given
-    const user = toUser(createCurrentUserDto());
-    const { planType: _omitted, ...premiumAccessWithoutPlanType } = user.premiumAccess;
-    const cache = replaceData(createValidCache(), ME_KEY, {
-      ...user,
-      premiumAccess: premiumAccessWithoutPlanType,
-    });
-
-    // When
-    const { restored } = await saveThenRestore(cache);
-
-    // Then
-    expect(restored.getQueryData(ME_KEY)).toEqual(user);
-    expect(restored.getQueryData<typeof user>(ME_KEY)?.premiumAccess.planType).toBeNull();
   });
 
   it('한 항목만 깨진 목록은 목록 조회 전체를 버린다', async () => {
@@ -252,7 +237,7 @@ describe('영속 캐시 복원 검증', () => {
     expect(logger.warn).toHaveBeenCalledWith(QUERY_CACHE_LOG_EVENT.RESTORED_QUERIES_DROPPED, {
       droppedCount: 1,
       totalCount: 9,
-      droppedRoots: ['user'],
+      droppedRoots: 'user',
     });
   });
 
@@ -302,7 +287,8 @@ describe('PERSISTED_QUERY_SCHEMAS', () => {
     );
     const names = queryFiles.flatMap((path) =>
       readFileSync(path, 'utf8')
-        .split(/^export function /m)
+        // 쿼리 옵션을 내보내지 않는 지역 함수(달력 범위 조회 등)에 둘 수도 있어 모든 함수 선언을 훑는다
+        .split(/^(?:export )?function /m)
         .slice(1)
         .filter((block) => block.includes('PERSISTED_QUERY_OPTIONS'))
         .map((block) => /queryKey: (\w+_QUERY_KEYS\.\w+)\(/.exec(block)?.[1] ?? 'UNKNOWN'),

@@ -1,3 +1,5 @@
+import { TODAY_SUMMARY_TOP_TODOS_MAX } from "@aido/api/vocabulary";
+
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -6,8 +8,6 @@ import { summarizeCompletion } from "../../domain/todo-completion.domain-service
 import { resolveTodoSummaryDate } from "../../domain/todo-summary-date.domain-service.js";
 import { type StreakPort } from "../ports/streak.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
-
-const TOP_TODOS_LIMIT = 10;
 
 export interface GetTodoSummaryInput {
   readonly userId: string;
@@ -62,7 +62,11 @@ export class GetTodoSummaryUseCase {
     const [stats, topTodos, streakContext] = await Promise.all([
       this.#dependencies.todoReadRepository.getTodayTodoStats(ownerId, date),
 
-      this.#dependencies.todoReadRepository.findTodayTopTodos(ownerId, date, TOP_TODOS_LIMIT),
+      this.#dependencies.todoReadRepository.findTodayTopTodos(
+        ownerId,
+        date,
+        TODAY_SUMMARY_TOP_TODOS_MAX,
+      ),
       this.#dependencies.streakPort.getStreakContext(ownerId),
     ]);
 

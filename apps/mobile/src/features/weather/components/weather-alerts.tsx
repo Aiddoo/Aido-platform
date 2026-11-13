@@ -1,6 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack } from '@src/shared/analytics';
-import { formatClockTime, type TimeFormat } from '@src/shared/date/date-format';
+import { formatClockTime, type TimeFormat } from '@src/shared/date/format/date-format';
 import { type Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -24,14 +24,14 @@ const CHEVRON_SIZE = 14;
 
 /** 서버가 심각도 순으로 보내므로 가장 심각한 특보 하나만 카드로 보이고 나머지는 개수로 알린다 */
 export function WeatherAlerts() {
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.alerts },
       useGetPreferenceQueryOptions(),
     ],
   });
   const now = useMinuteNow();
-  const [mostSevere, ...rest] = WeatherReportPolicy.getActiveAlerts(data.alerts, now);
+  const [mostSevere, ...rest] = WeatherReportPolicy.getActiveAlerts(weather.alerts, now);
 
   if (mostSevere == null) {
     return <WeatherAlerts.Empty />;
@@ -41,7 +41,7 @@ export function WeatherAlerts() {
       alert={mostSevere}
       isInEffect={WeatherReportPolicy.isAlertInEffect(mostSevere, now)}
       otherCount={rest.length}
-      timeZone={data.location.timezone}
+      timeZone={weather.location.timezone}
       timeFormat={preference.timeFormat}
       now={now}
     />
@@ -85,6 +85,7 @@ WeatherAlerts.Item = function Item({
       ? t('alerts.sourceWithMore', { source, more: t('alerts.more', { count: otherCount }) })
       : source;
   const chevronSize = Math.round(CHEVRON_SIZE * fontScaleRatio);
+  const glyphSize = Math.round(GLYPH_SIZE * fontScaleRatio);
 
   const handlePress = () => {
     trackEvent('weather_alert_opened', { severity: alert.severity });
@@ -106,7 +107,7 @@ WeatherAlerts.Item = function Item({
               ALERT_GLYPH_BACKGROUND_CLASS,
             )}
           >
-            <WeatherIcon.Warning width={GLYPH_SIZE} height={GLYPH_SIZE} />
+            <WeatherIcon.Warning width={glyphSize} height={glyphSize} />
           </Box>
           <VStack flex={1} gap={1}>
             <Text

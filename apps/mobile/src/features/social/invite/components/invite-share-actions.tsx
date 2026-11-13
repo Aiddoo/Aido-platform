@@ -1,4 +1,5 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
@@ -14,16 +15,17 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
-import type { ComponentProps, ReactNode } from 'react';
+import { debounce, noop } from 'es-toolkit';
+import { type ComponentProps, type ReactNode, useCallback, useEffect, useState } from 'react';
 
-import type { InviteShareChannel } from '../apis/invite-share.service';
-import { useCopiedFeedback } from '../hooks/use-copied-feedback';
 import { useCreateInviteShareContent } from '../hooks/use-create-invite-share-content';
 import { useShareInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
+import type { InviteShareChannel } from '../services/invite-share.service';
 
-export function InviteShareActions(props: ComponentProps<typeof VStack>) {
+const COPIED_FEEDBACK_MS = 1500;
+
+export function InviteShareActions() {
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
     queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
   });
@@ -44,12 +46,7 @@ export function InviteShareActions(props: ComponentProps<typeof VStack>) {
     );
 
   return (
-    <InviteShareButtons
-      isDisabled={share.isPending}
-      isCopied={isCopied}
-      onShare={handleShare}
-      {...props}
-    />
+    <InviteShareButtons isDisabled={share.isPending} isCopied={isCopied} onShare={handleShare} />
   );
 }
 
@@ -63,23 +60,18 @@ InviteShareActions.Unavailable = function Unavailable() {
   return <InviteShareButtons isDisabled isCopied={false} onShare={noop} />;
 };
 
-interface InviteShareButtonsProps extends ComponentProps<typeof VStack> {
+interface InviteShareButtonsProps {
   isDisabled: boolean;
   isCopied: boolean;
   onShare: (channel: InviteShareChannel) => void;
 }
 
-function InviteShareButtons({
-  isDisabled,
-  isCopied,
-  onShare,
-  className,
-  ...props
-}: InviteShareButtonsProps) {
+function InviteShareButtons({ isDisabled, isCopied, onShare }: InviteShareButtonsProps) {
   const { t } = useTranslation('invite');
+  const fontScaledSize = useFontScaledSize();
 
   return (
-    <VStack gap={10} className={className} {...props}>
+    <VStack gap={10}>
       <Button
         testID="invite-share-kakao"
         className="h-[54px] bg-kakao"
@@ -87,7 +79,7 @@ function InviteShareButtons({
         onPress={() => onShare('kakao')}
       >
         <HStack align="center" gap={8}>
-          <KakaoIcon width={20} height={20} />
+          <KakaoIcon width={fontScaledSize(20)} height={fontScaledSize(20)} />
           <Text size="b2" weight="bold" shade={9} className="dark:text-gray-1">
             {t('share.kakao')}
           </Text>
@@ -99,9 +91,17 @@ function InviteShareButtons({
           <InviteSecondaryShareButton
             icon={
               isCopied ? (
-                <CheckIcon width={18} height={18} colorClassName="text-main" />
+                <CheckIcon
+                  width={fontScaledSize(18)}
+                  height={fontScaledSize(18)}
+                  colorClassName="text-main"
+                />
               ) : (
-                <CopyIcon width={18} height={18} colorClassName="text-gray-8" />
+                <CopyIcon
+                  width={fontScaledSize(18)}
+                  height={fontScaledSize(18)}
+                  colorClassName="text-gray-8"
+                />
               )
             }
             testID="invite-share-copy-link"
@@ -112,7 +112,13 @@ function InviteShareButtons({
         }
         system={
           <InviteSecondaryShareButton
-            icon={<ShareIcon width={18} height={18} colorClassName="text-gray-8" />}
+            icon={
+              <ShareIcon
+                width={fontScaledSize(18)}
+                height={fontScaledSize(18)}
+                colorClassName="text-gray-8"
+              />
+            }
             testID="invite-share-system"
             label={t('share.system')}
             isDisabled={isDisabled}
@@ -170,4 +176,19 @@ function InviteSecondaryShareButton({
       </HStack>
     </Button>
   );
+}
+
+/** 복사 버튼 아이콘을 잠깐 체크로 바꾼다. 다시 누르면 시간을 새로 센다 */
+function useCopiedFeedback() {
+  const [isCopied, setIsCopied] = useState(false);
+  const [hideCopied] = useState(() => debounce(() => setIsCopied(false), COPIED_FEEDBACK_MS));
+
+  useEffect(() => () => hideCopied.cancel(), [hideCopied]);
+
+  const showCopied = useCallback(() => {
+    setIsCopied(true);
+    hideCopied();
+  }, [hideCopied]);
+
+  return [isCopied, showCopied] as const;
 }

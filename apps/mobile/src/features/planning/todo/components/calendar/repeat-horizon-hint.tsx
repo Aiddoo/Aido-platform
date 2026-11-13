@@ -7,7 +7,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import { useGetHasUpcomingRepeatQueryOptions } from '../../queries/todo.queries';
+import { useGetTodoOverviewQueryOptions } from '../../queries/todo.queries';
 import { RepeatHintLine } from '../repeat-hint-line';
 
 interface RepeatHorizonHintProps {
@@ -20,7 +20,10 @@ export function RepeatHorizonHint({ shouldShowHint = true }: RepeatHorizonHintPr
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const [selectedDateKey] = useFeedDateKey();
-  const { data: hasUpcomingRepeat = false } = useQuery(useGetHasUpcomingRepeatQueryOptions());
+  const { data: hasActiveRepeat = false } = useQuery({
+    ...useGetTodoOverviewQueryOptions(),
+    select: (overview) => overview.hasActiveRepeat,
+  });
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
   return (
@@ -32,7 +35,7 @@ export function RepeatHorizonHint({ shouldShowHint = true }: RepeatHorizonHintPr
       placement="bottom"
       align="start"
       avoidCollisions
-      isEnabled={isInfoOpen || hasUpcomingRepeat}
+      isEnabled={isInfoOpen || hasActiveRepeat}
       isForced={isInfoOpen}
       shouldAutoOpen={shouldShowHint}
       isPassThrough={!isInfoOpen}
