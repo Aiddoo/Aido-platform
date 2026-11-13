@@ -5,6 +5,9 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { {{pascalCase aggregate}} } from "../../domain/{{aggregate}}.aggregate.js";
+{{#unless isSerial}}
+import { {{pascalCase aggregate}}Id } from "../../domain/{{aggregate}}-id.vo.js";
+{{/unless}}
 import { {{pascalCase aggregate}}Name } from "../../domain/{{aggregate}}-name.vo.js";
 import type { {{pascalCase aggregate}}RepositoryPort } from "../ports/{{aggregate}}.repository.port.js";
 import { {{pascalCase aggregate}}LockKeys } from "../{{slice}}.lock-keys.js";
@@ -18,7 +21,11 @@ export interface Create{{pascalCase aggregate}}Command {
 export interface Create{{pascalCase aggregate}}Dependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+{{#if isSerial}}
   readonly {{camelCase aggregate}}Repository: Pick<{{pascalCase aggregate}}RepositoryPort, "nextId" | "save">;
+{{else}}
+  readonly {{camelCase aggregate}}Repository: Pick<{{pascalCase aggregate}}RepositoryPort, "save">;
+{{/if}}
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -38,7 +45,11 @@ export class Create{{pascalCase aggregate}}UseCase {
     const created = await unitOfWork.run(async () => {
       await mutationLock.acquire([{{pascalCase aggregate}}LockKeys.owner(userId)]);
       const {{camelCase aggregate}} = {{pascalCase aggregate}}.create({
+{{#if isSerial}}
         id: await {{camelCase aggregate}}Repository.nextId(),
+{{else}}
+        id: {{pascalCase aggregate}}Id.generate(),
+{{/if}}
         userId,
         name,
         now: clock.now(),

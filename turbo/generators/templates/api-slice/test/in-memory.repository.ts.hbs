@@ -28,21 +28,21 @@ function compareNewestFirst(left: {{pascalCase aggregate}}, right: {{pascalCase 
 
 export class InMemory{{pascalCase aggregate}}Repository extends {{pascalCase aggregate}}RepositoryPort {
   readonly #{{camelCase slice}} = new Map<{{idTsType}}, {{pascalCase aggregate}}>();
+{{#if isSerial}}
   #sequence = 0;
+{{/if}}
 
   get size(): number {
     return this.#{{camelCase slice}}.size;
   }
 
+{{#if isSerial}}
   async nextId(): Promise<{{pascalCase aggregate}}Id> {
     this.#sequence += 1;
-{{#if isSerial}}
     return {{pascalCase aggregate}}Id.reconstitute(1000 + this.#sequence);
-{{else}}
-    return {{pascalCase aggregate}}Id.reconstitute(`c${this.#sequence.toString(16).padStart(24, "0")}`);
-{{/if}}
   }
 
+{{/if}}
   async findByIdAndUserId(
     {{camelCase aggregate}}Id: {{pascalCase aggregate}}Id,
     userId: UserId,
