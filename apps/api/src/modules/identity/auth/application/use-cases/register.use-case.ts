@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
@@ -8,13 +7,13 @@ import type {
 } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
 import { Email } from "#api/modules/identity/auth/domain/email.vo";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
+import { emailAlreadyRegistered } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type {
   AuthRegistrationNotifierPort,
@@ -69,7 +68,7 @@ export class RegisterUseCase {
 
     const existingUser = await this.#dependencies.userRepository.findByEmail(email);
     if (existingUser != null) {
-      throw new ApplicationException(ErrorCode.EMAIL_0501, { email });
+      throw emailAlreadyRegistered(email);
     }
 
     const hashedPassword = await this.#dependencies.passwordService.hash(password);
@@ -115,7 +114,7 @@ export class RegisterUseCase {
       });
     } catch (error) {
       if (error instanceof AuthPersistenceConflict && error.kind === "EMAIL_ALREADY_EXISTS") {
-        throw new ApplicationException(ErrorCode.EMAIL_0501, { email });
+        throw emailAlreadyRegistered(email);
       }
       throw error;
     }

@@ -10,7 +10,9 @@ import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { formatPlanAmount } from '../utils/plan-price.view-model';
 
-const AMOUNT_ENTERING = FadeIn.duration(ANIMATION.duration.fast).reduceMotion(ReduceMotion.System);
+const AMOUNT_ENTERING = FadeIn.duration(ANIMATION.durationMs.fast).reduceMotion(
+  ReduceMotion.System,
+);
 
 export function AmountDueToday(props: Omit<ComponentProps<typeof HStack>, 'children'>) {
   const { t } = useTranslation('subscription');

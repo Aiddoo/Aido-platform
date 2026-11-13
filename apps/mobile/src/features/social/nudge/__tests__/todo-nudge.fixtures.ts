@@ -6,6 +6,7 @@ import {
   type NudgeCooldownInfo,
   type NudgeLimitInfo,
 } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
 import {
@@ -62,7 +63,7 @@ export function createSendNudgeResponseDto(
 }
 
 export function createNudgeApiError(
-  overrides?: Partial<{ code: string; message: string; status: number }>,
+  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
   return new ApiError(
     overrides?.code ?? 'NUDGE_1101',
@@ -70,8 +71,6 @@ export function createNudgeApiError(
     overrides?.status ?? 400,
   );
 }
-
-export const INVALID_DTO = { invalid: 'data' };
 
 export function createNudgeLimitInfo(
   overrides?: Partial<NudgeLimitInfoModel>,

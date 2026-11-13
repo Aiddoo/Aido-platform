@@ -187,4 +187,27 @@ describe("SendNudgeThanksUseCase — 완료한 할 일의 콕에 감사", () => 
     // Then
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1105 });
   });
+
+  it("서버 설정으로 답장·감사가 꺼졌으면 저장·알림 없이 NUDGE_1111로 거절한다", async () => {
+    // Given
+    const nudgeRepository = new InMemoryNudgeRepository();
+    const todoId = await seedCompletedTodo(nudgeRepository, [NUDGE_FIXTURE_SENDER_ID]);
+    const notifier = new RecordingNudgeNotifier();
+    const useCase = createSendNudgeThanksUseCase(nudgeRepository, {
+      interactionConfig: { isEnabled: false },
+      notifier,
+    });
+
+    // When
+    const result = useCase.execute({
+      userId: NUDGE_FIXTURE_RECEIVER_ID,
+      todoId,
+      throughNudgeId: 1,
+    });
+
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1111 });
+    expect((await nudgeRepository.findById(NudgeId.reconstitute(1)))?.thankedAt).toBeNull();
+    expect(notifier.interactions).toEqual([]);
+  });
 });

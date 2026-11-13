@@ -1,3 +1,5 @@
+import { fromEpochMs } from '@src/shared/date/instant';
+
 import { CoachmarkPolicy } from './coachmark.model';
 
 describe('shouldShow', () => {
@@ -26,14 +28,17 @@ describe('isReadLongEnough', () => {
       visibleMs: 800,
       expected: false,
     },
+    { title: '2초에 1ms 모자라면 읽지 않은 것으로 본다', visibleMs: 1_999, expected: false },
     { title: '2초 보면 읽은 것으로 본다', visibleMs: 2_000, expected: true },
+    { title: '2초를 1ms 넘기면 읽은 것으로 본다', visibleMs: 2_001, expected: true },
     { title: '한참 보면 읽은 것으로 본다', visibleMs: 30_000, expected: true },
   ])('$title', ({ visibleMs, expected }) => {
     // Given
-    const display = { openedAtMs: 1_000_000 };
+    const openedAtMs = 1_000_000;
+    const display = { openedAt: fromEpochMs(openedAtMs) };
 
     // When
-    const result = CoachmarkPolicy.isReadLongEnough(display, display.openedAtMs + visibleMs);
+    const result = CoachmarkPolicy.isReadLongEnough(display, fromEpochMs(openedAtMs + visibleMs));
 
     // Then
     expect(result).toBe(expected);

@@ -40,7 +40,7 @@ import {
   formatTemperature,
   type TemperatureUnit,
   toDisplayTemperature,
-} from '../utils/weather-temperature';
+} from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
@@ -122,7 +122,7 @@ export function HourlyForecast() {
 
   // select가 지금 시각으로 칸을 고르므로 조회보다 먼저 읽는다
   const now = useMinuteNow();
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       {
         ...useGetWeatherReportQueryOptions(),
@@ -135,9 +135,9 @@ export function HourlyForecast() {
   const fontScaleRatio = useFontScaleRatio();
   const labelMinimumFontScale = useMinimumFontScale('b3');
   const valueText = useHourlyValueTextStyle();
-  const dateFormat = useLocationDateFormat(data.location.timezone);
+  const dateFormat = useLocationDateFormat(weather.location.timezone);
 
-  const { timeline, summary } = data;
+  const { timeline, summary } = weather;
   const cellWidth = CELL_WIDTH[preference.timeFormat] * fontScaleRatio;
   const context: TimelineContext = {
     t,
@@ -405,6 +405,7 @@ HourlyForecast.Loading = function Loading() {
         {range(LOADING_CELL_COUNT).map((index) => (
           <VStack key={index} align="center" style={{ width: CELL_WIDTH.TWENTY_FOUR_HOUR }}>
             <TextSkeleton size="b3" className="w-8 opacity-40" />
+            {/* oxlint-disable-next-line aido/spacing-scale -- 불러오는 칸이 아이콘 칸 높이(CELL_ICON_HEIGHT)와 같은 자리를 잡는다 */}
             <Spacing size={CELL_ICON_HEIGHT} />
             <TextSkeleton size="b1" className="w-8 opacity-40" />
           </VStack>

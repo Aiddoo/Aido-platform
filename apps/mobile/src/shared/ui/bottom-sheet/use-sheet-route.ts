@@ -1,6 +1,8 @@
+import { dismissToTab } from '@src/shared/navigation/open-entry-href';
 import { type Href, useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { use, useRef, useState } from 'react';
 
+import { ToastLayerClosingContext } from '../toast/toast-layer';
 import { exitSheetRoute, type SheetRouteExit } from './sheet-route';
 
 const BACK: SheetRouteExit = { type: 'back' };
@@ -8,6 +10,7 @@ const BACK: SheetRouteExit = { type: 'back' };
 /** 애니메이션이 끝나 `onOpenChange(false)`가 오면 route를 한 번만 떠난다 */
 export function useSheetRoute(fallbackHref: Href) {
   const router = useRouter();
+  const startToastLayerClosing = use(ToastLayerClosingContext);
   const [isOpen, setIsOpen] = useState(true);
   const pendingExitRef = useRef<SheetRouteExit>(BACK);
   const hasExitedRef = useRef(false);
@@ -17,11 +20,15 @@ export function useSheetRoute(fallbackHref: Href) {
       return;
     }
     hasExitedRef.current = true;
-    exitSheetRoute(router, next, fallbackHref);
+    startToastLayerClosing?.();
+    // router.dismissTo는 시트가 focus면 함께 쓰는 화면을 마이 탭에 연다
+    exitSheetRoute({ ...router, dismissTo: dismissToTab }, next, fallbackHref);
   };
 
+  // 닫힘 애니메이션을 기다리지 않고 알려, 같은 흐름이 방금 띄운 토스트가 닫히는 시트에 그려졌다 사라지지 않게 한다
   const close = (next: SheetRouteExit = BACK) => {
     pendingExitRef.current = next;
+    startToastLayerClosing?.();
     setIsOpen(false);
   };
 

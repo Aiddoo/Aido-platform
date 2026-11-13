@@ -1,5 +1,6 @@
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
+import { createDateKey } from '@src/testing/date-key';
 
 import type { StoreReviewState } from './store-review.model';
 import { createEmptyStoreReviewState, StoreReviewPolicy } from './store-review.model';
@@ -13,7 +14,9 @@ const daysBefore = (days: number, msLater = 0) =>
   toInstant(new Date(toEpochMs(NOW) - days * DAY_MS + msLater).toISOString());
 
 const withActiveDays = (...localDates: string[]): StoreReviewState =>
-  localDates.reduce(StoreReviewPolicy.withActiveDay, createEmptyStoreReviewState());
+  localDates
+    .map(createDateKey)
+    .reduce(StoreReviewPolicy.withActiveDay, createEmptyStoreReviewState());
 
 const ENGAGED: StoreReviewState = withActiveDays('2026-10-20', '2026-10-24', '2026-10-27');
 
@@ -23,7 +26,7 @@ describe('getEligibility', () => {
     const twoDays = withActiveDays('2026-10-25', '2026-10-26');
 
     // When
-    const threeDays = StoreReviewPolicy.withActiveDay(twoDays, '2026-10-27');
+    const threeDays = StoreReviewPolicy.withActiveDay(twoDays, createDateKey('2026-10-27'));
     const twoDaysEligibility = StoreReviewPolicy.getEligibility(twoDays, NOW);
     const threeDaysEligibility = StoreReviewPolicy.getEligibility(threeDays, NOW);
 

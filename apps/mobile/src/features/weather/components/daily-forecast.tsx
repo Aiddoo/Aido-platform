@@ -1,6 +1,4 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
 import {
   formatClockTime,
   formatDateKeyLabel,
@@ -8,15 +6,15 @@ import {
   type DateFormatContext,
   type TimeFormat,
 } from '@src/shared/date/format/date-format';
+import { formatRangeLabel } from '@src/shared/date/format/date-labels';
 import { type Instant } from '@src/shared/date/instant';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { CalendarIcon } from '@src/shared/ui/icon';
+import { CalendarIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { usePrefetchQuery, useQuery, useSuspenseQueries } from '@tanstack/react-query';
+import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { range, round, zip } from 'es-toolkit';
 import { Accordion, PressableFeedback } from 'heroui-native';
 import { memo, type PropsWithChildren, useMemo } from 'react';
@@ -27,14 +25,18 @@ import {
   PRECIPITATION_CHANCE_TEXT_CLASS,
   TODO_DOT_COLOR,
 } from '../constants/weather-colors.constants';
-import { VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
+import { FORECAST_DAYS, VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
 import { getTodayKey } from '../domains/weather-report.model';
 import type { DailyForecastEntry } from '../domains/weather-report.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
-import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { getTemperatureColor } from '../utils/get-temperature-color';
+import {
+  useGetForecastCompletionsQueryOptions,
+  useGetWeatherReportQueryOptions,
+  WeatherReportSelect,
+} from '../queries/weather.queries';
+import { getTemperatureColor } from '../utils/temperature-color.view-model';
 import {
   type TemperatureBar,
   toTemperatureBars,
@@ -45,15 +47,15 @@ import {
   formatDegrees,
   formatTemperature,
   toDisplayTemperature,
-} from '../utils/weather-temperature';
+} from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
 /** 낮·밤 예보가 나누는 시각(WeatherKit daytimeForecast 07~19시) */
 const DAYTIME_HOURS = { start: 7, end: 19 } as const;
-/** 예보 일수. 할 일 점을 찍을 날 수와 로딩 행 수도 같다 */
-const FORECAST_DAYS = 10;
 const ICON_SIZE = 26;
+/** 카드 제목 아이콘(`WeatherIcon.Card`)과 같은 크기 */
+const TITLE_ICON_SIZE = 13;
 const COLUMN_WIDTH = { day: 58, icon: 38, low: 46, high: 40 } as const;
 const EXPAND_ENTERING = FadeInDown.duration(600)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1))
@@ -69,26 +71,20 @@ interface RowFormat {
 
 /** 할 일 조회가 실패해도 예보는 그대로 보이도록 할 일 점은 suspend하지 않고 점만 뺀다 */
 export function DailyForecast() {
-  const { t } = useTranslation('weather');
-  const todayKey = useTodayKey();
-  const completionsQuery = useGetDailyCompletionsQueryOptions({
-    startDate: todayKey,
-    endDate: addDaysToDateKey(todayKey, FORECAST_DAYS - 1),
-  });
-  usePrefetchQuery(completionsQuery);
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const { t } = useTranslation(['weather', 'common']);
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.daily },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const { data: completions } = useQuery(completionsQuery);
+  const { data: completions } = useQuery(useGetForecastCompletionsQueryOptions());
   const fontScaleRatio = useFontScaleRatio();
-  const dateFormat = useLocationDateFormat(data.location.timezone);
+  const dateFormat = useLocationDateFormat(weather.location.timezone);
   const now = useMinuteNow();
-  const forecastTodayKey = getTodayKey(data, now);
-  const bars = toTemperatureBars(data.daily);
-  const nowPosition = toTemperaturePosition(data.daily, data.current.temperature);
+  const forecastTodayKey = getTodayKey(weather, now);
+  const bars = toTemperatureBars(weather.daily);
+  const nowPosition = toTemperaturePosition(weather.daily, weather.current.temperature);
   const format = useMemo<RowFormat>(
     () => ({
       dateFormat: { locale: dateFormat.locale, timeZone: dateFormat.timeZone },
@@ -98,15 +94,15 @@ export function DailyForecast() {
     [dateFormat.locale, dateFormat.timeZone, preference.timeFormat, fontScaleRatio],
   );
 
-  if (data.daily.length === 0) {
+  if (weather.daily.length === 0) {
     return <DailyForecast.Empty />;
   }
 
   return (
     <WeatherCard className="gap-0 pb-1.5">
-      <DailyForecast.Header count={data.daily.length} />
+      <DailyForecast.Header count={weather.daily.length} />
       <Accordion hideSeparator className="mt-2">
-        {zip(data.daily, bars).map(([day, bar]) => {
+        {zip(weather.daily, bars).map(([day, bar]) => {
           const isToday = day.date === forecastTodayKey;
           return (
             <DailyForecast.Item
@@ -116,7 +112,7 @@ export function DailyForecast() {
               nowPosition={isToday ? nowPosition : null}
               label={
                 isToday
-                  ? t('daily.today')
+                  ? t('common:relativeDay.today')
                   : formatDateKeyLabel(day.date, 'weekday', format.dateFormat)
               }
               hasTodo={(completions?.[day.date]?.totalTodos ?? 0) > 0}
@@ -131,17 +127,23 @@ export function DailyForecast() {
 
 DailyForecast.Header = function Header({ count }: { count: number }) {
   const { t } = useTranslation('weather');
+  const titleIconSize = Math.round(TITLE_ICON_SIZE * useFontScaleRatio());
 
   return (
     <HStack align="center" justify="between" gap={8}>
       <HStack align="center" gap={6} accessibilityRole="header" className="shrink">
-        <CalendarIcon width={13} height={13} colorClassName="text-on-sky/[0.62]" />
+        <CalendarIcon
+          width={titleIconSize}
+          height={titleIconSize}
+          colorClassName="text-on-sky/[0.62]"
+        />
         <Text size="b4" weight="medium" className="text-on-sky/[0.62]" numberOfLines={1}>
           {t('daily.title', { count })}
         </Text>
       </HStack>
       <HStack
         align="center"
+        // oxlint-disable-next-line aido/spacing-scale -- 요일 아이콘과 글자 사이. 규격 단계 사이 5px을 쓴다
         gap={5}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
@@ -205,6 +207,7 @@ DailyForecast.Item = memo(function Item({
           accessibilityHint={t('daily.expandHint')}
           className="min-h-14 flex-row items-center justify-start gap-0 p-0"
         >
+          {/* oxlint-disable-next-line aido/spacing-scale -- 요일 아이콘과 글자 사이. 규격 단계 사이 5px을 쓴다 */}
           <HStack align="center" gap={5} style={{ width: width('day') }}>
             <Text size="b1" weight="medium" tone="onSky" numberOfLines={1} className="shrink">
               {label}
@@ -255,14 +258,17 @@ DailyForecast.Item = memo(function Item({
 
       <Accordion.Content
         animation={{ entering: { value: EXPAND_ENTERING } }}
-        className="gap-2 px-0 pb-3.5 pt-0.5"
+        className="gap-2 px-0 pt-0.5 pb-3.5"
       >
-        <HStack gap={8}>
+        <HStack className="gap-2">
           {day.daytime != null && (
             <PartCard
               title={t('daily.daytime', {
-                start: hour(DAYTIME_HOURS.start),
-                end: hour(DAYTIME_HOURS.end),
+                range: formatRangeLabel(
+                  { start: hour(DAYTIME_HOURS.start), end: hour(DAYTIME_HOURS.end) },
+                  'compact',
+                  format.dateFormat,
+                ),
               })}
               value={t('daily.dayPart', {
                 condition: t(getWeatherConditionLabelKey(day.daytime.condition)),
@@ -273,8 +279,11 @@ DailyForecast.Item = memo(function Item({
           {day.overnight != null && (
             <PartCard
               title={t('daily.overnight', {
-                start: hour(DAYTIME_HOURS.end),
-                end: hour(DAYTIME_HOURS.start),
+                range: formatRangeLabel(
+                  { start: hour(DAYTIME_HOURS.end), end: hour(DAYTIME_HOURS.start) },
+                  'compact',
+                  format.dateFormat,
+                ),
               })}
               value={t('daily.nightPart', {
                 condition: t(getWeatherConditionLabelKey(day.overnight.condition)),
@@ -332,6 +341,7 @@ DailyForecast.TemperatureBar = function TemperatureBar({
       )}
       {nowPosition != null && (
         <Box
+          // oxlint-disable-next-line aido/no-arbitrary-spacing-class -- 현재 시각 점(size-[15px])의 가운데를 맞추는 절반 값이라 같은 토큰이 없다
           className="absolute -top-[5px] -ml-[7.5px] size-[15px] items-center justify-center rounded-full"
           style={{ left: `${nowPosition * 100}%`, backgroundColor: nowRing }}
         >

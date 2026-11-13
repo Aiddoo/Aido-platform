@@ -92,3 +92,8 @@ export function toPlanSummary(receipt: SubscriptionReceiptViewModel): PlanSummar
       .otherwise(() => null),
   };
 }
+
+/** 서버가 한도보다 많이 센 기록이 와도 한도를 넘는 숫자는 보여 주지 않는다 */
+export function toDisplayedUsedCount(used: number, limit: number): number {
+  return Math.min(used, limit);
+}

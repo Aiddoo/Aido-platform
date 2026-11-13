@@ -4,11 +4,15 @@ import {
   useWeatherLocationService,
   useWeatherApi,
 } from '@src/bootstrap/providers/di-context';
-import { type Logger } from '@src/core/ports/logger';
+import { type AppLogger } from '@src/core/ports/app-logger';
+import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
-import { getErrorMessage, isCodedError, toError, unwrap } from '@src/shared/errors';
+import { getErrorMessage, toError, unwrap } from '@src/shared/errors';
+import { useTodayKey } from '@src/shared/hooks/use-today';
+import { shouldRetryQuery } from '@src/shared/query/query-retry';
 import {
   type Query,
   type QueryClient,
@@ -20,6 +24,7 @@ import { orderBy, pick } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
+import { FORECAST_DAYS } from '../constants/weather.constants';
 import { getHourlySummary } from '../domains/weather-hourly.model';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { type LocationReading } from '../domains/weather-location.model';
@@ -32,9 +37,15 @@ import { type WeatherReport } from '../domains/weather-report.model';
 import { WEATHER_ERROR_CODE } from '../domains/weather.error';
 import { useDevWeatherOverride } from '../hooks/use-dev-weather-override';
 import { type UnexpectedLocationFailure } from '../services/weather-location.service';
-import { withDevWeatherOverride } from '../utils/weather-dev-override';
+import { withDevWeatherOverride } from '../utils/weather-dev-override.view-model';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
-import { removeOutdatedWeatherReports } from './weather-cache';
+import {
+  findCachedReportLocation,
+  getCachedWeatherLocation,
+  getCachedWeatherReport,
+  queryCachedWeatherReport,
+  removeOutdatedWeatherReports,
+} from './weather-cache';
 import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 
 const LOCATION_STALE_TIME_MS = 30 * MINUTE_MS;
@@ -45,19 +56,14 @@ function refetchOnFocus(query: Query<LocationReading, Error>) {
 }
 
 /** 리포트 실패는 리포트 경계가 알리므로 여기서는 비교할 위치가 없는 것으로 보고 기록만 남긴다 */
-async function findReportLocation(client: QueryClient, logger: Logger, revision: number) {
-  const queryKey = WEATHER_QUERY_KEYS.report({ locationRevision: revision });
-  const state = client.getQueryState<WeatherReport>(queryKey);
-  if (state?.data == null && state?.fetchStatus === 'fetching') {
-    const report = await client.query<WeatherReport>({ queryKey }).catch((error) => {
+function findReportLocation(client: QueryClient, logger: AppLogger, locationRevision: number) {
+  return findCachedReportLocation(client, {
+    locationRevision,
+    onReadFailed: (error) =>
       logger.info(WEATHER_LOG_EVENT.REPORT_LOCATION_READ_FAILED, {
         error: getErrorMessage(error),
-      });
-      return null;
-    });
-    return report?.location ?? null;
-  }
-  return state?.data?.location ?? null;
+      }),
+  });
 }
 
 /** 피드 배지·날씨 화면·안내가 같은 key를 구독하므로 위치 읽기와 PUT을 여기서 해 한 번만 일어나게 한다 */
@@ -80,10 +86,10 @@ export function useGetWeatherLocationQueryOptions() {
 
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.location(),
-    queryFn: async ({ signal, client, queryKey }): Promise<LocationReading> =>
+    queryFn: async ({ signal, client }): Promise<LocationReading> =>
       unwrap(
         await weatherLocationService.resolveLocation({
-          previous: client.getQueryData(queryKey),
+          previous: getCachedWeatherLocation(client),
           signal,
           findReportLocation: (revision) => findReportLocation(client, logger, revision),
           onUnexpectedFailure: reportUnexpectedFailure,
@@ -101,8 +107,8 @@ export function useGetWeatherLocationQueryOptions() {
 
 /** 날씨 블록이 같은 리포트 캐시를 고르도록 위치 리비전을 돌려준다. 위치를 읽는 동안에도 0으로 바로 받는다. */
 export function useWeatherLocationRevision(): number {
-  const { data } = useQuery(useGetWeatherLocationQueryOptions());
-  return WeatherLocationPolicy.getReadingRevision(data);
+  const { data: reading } = useQuery(useGetWeatherLocationQueryOptions());
+  return WeatherLocationPolicy.getReadingRevision(reading);
 }
 
 const REPORT_STALE_TIME_MS = 10 * MINUTE_MS;
@@ -112,7 +118,7 @@ const REPORT_REFETCH_INTERVAL_MS = 15 * MINUTE_MS;
 const REPORT_MAX_RETRIES = 2;
 
 function shouldRetryReport(failureCount: number, error: unknown): boolean {
-  return !isCodedError(error) && failureCount < REPORT_MAX_RETRIES;
+  return failureCount < REPORT_MAX_RETRIES && shouldRetryQuery(failureCount, error);
 }
 
 /** 개발 QA 덮어쓰기는 실제 리포트 캐시로 만들어 새로 요청하지 않고, 키를 나눠 기기에 저장하지 않는다 */
@@ -127,7 +133,7 @@ export function useGetWeatherReportQueryOptions() {
     queryFn: async ({ signal, client: queryClient }) => {
       // 새 위치의 리포트를 받기 시작하면 화면은 이미 이 리비전을 보므로 이전 위치의 리포트는 기기 캐시에 남기지 않는다
       removeOutdatedWeatherReports(queryClient, { locationRevision });
-      const reading = queryClient.getQueryData(WEATHER_QUERY_KEYS.location());
+      const reading = getCachedWeatherLocation(queryClient);
       return unwrap(
         await weatherApi.getReportWithReregistration({
           lastRegistered:
@@ -147,17 +153,26 @@ export function useGetWeatherReportQueryOptions() {
     return reportOptions;
   }
 
-  const cached = client.getQueryData(reportOptions.queryKey);
+  const cached = getCachedWeatherReport(client, { locationRevision });
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision, devOverride }),
     queryFn: async ({ client: queryClient }) =>
       withDevWeatherOverride(
-        await queryClient.query({ ...reportOptions, staleTime: 'static' }),
+        await queryCachedWeatherReport(queryClient, reportOptions),
         devOverride,
       ),
     initialData: cached == null ? undefined : withDevWeatherOverride(cached, devOverride),
     staleTime: REPORT_STALE_TIME_MS,
     retry: shouldRetryReport,
+  });
+}
+
+/** 10일 예보에 할 일 점을 찍을 완료 기록. 화면의 prefetch와 예보 카드가 같은 키를 쓰게 범위를 한 곳에서 정한다 */
+export function useGetForecastCompletionsQueryOptions() {
+  const todayKey = useTodayKey();
+  return useGetDailyCompletionsQueryOptions({
+    startDate: todayKey,
+    endDate: addDaysToDateKey(todayKey, FORECAST_DAYS - 1),
   });
 }
 

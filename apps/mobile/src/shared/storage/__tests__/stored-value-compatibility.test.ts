@@ -14,7 +14,11 @@ import { pendingRedemptionStoredValue } from '@src/features/social/invite/schema
 import { offlineModelDeclinedStoredValue } from '@src/features/voice/schemas/offline-model-declined-storage.schema';
 import { recognitionLanguageStoredValue } from '@src/features/voice/schemas/recognition-language-storage.schema';
 import { toInstant } from '@src/shared/date/instant';
+import { fontScaleStoredValue } from '@src/shared/preferences/schemas/font-scale-storage.schema';
+import { languageModeStoredValue } from '@src/shared/preferences/schemas/language-mode-storage.schema';
+import { themeModeStoredValue } from '@src/shared/preferences/schemas/theme-mode-storage.schema';
 import { createMemorySyncStorage } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 
 import {
   readStoredValue,
@@ -43,6 +47,33 @@ function releasedValue<TValue, TScope>(
 }
 
 const RELEASED_VALUES = [
+  {
+    name: 'themeModeStoredValue',
+    ...releasedValue(themeModeStoredValue, [], {
+      key: 'aido_theme_mode',
+      raw: 'dark',
+      value: 'dark',
+      area: 'device',
+    }),
+  },
+  {
+    name: 'languageModeStoredValue',
+    ...releasedValue(languageModeStoredValue, [], {
+      key: 'aido_language',
+      raw: 'en',
+      value: 'en',
+      area: 'device',
+    }),
+  },
+  {
+    name: 'fontScaleStoredValue',
+    ...releasedValue(fontScaleStoredValue, [], {
+      key: 'aido_font_scale',
+      raw: 'xlarge',
+      value: 'xlarge',
+      area: 'device',
+    }),
+  },
   {
     name: 'calendarViewModeStoredValue',
     ...releasedValue(calendarViewModeStoredValue, [], {
@@ -93,7 +124,7 @@ const RELEASED_VALUES = [
     ...releasedValue(upsellDismissalStoredValue, ['user-1'], {
       key: 'aido_upsell_dismissed_v1:user-1',
       raw: '{"AI_PARSE":"2026-11-10","FUTURE_FEATURE":"2026-11-01"}',
-      value: { AI_PARSE: '2026-11-10', FUTURE_FEATURE: '2026-11-01' },
+      value: { AI_PARSE: createDateKey('2026-11-10'), FUTURE_FEATURE: createDateKey('2026-11-01') },
       area: 'device',
     }),
   },

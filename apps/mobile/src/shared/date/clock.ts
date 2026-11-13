@@ -1,13 +1,14 @@
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
 
+import type { DateKey } from './date-key';
 import { fromEpochMs, type Instant, toEpochMs } from './instant';
 import { instantToDate } from './native-date';
 import { getNextLocalMidnight, getZoneOffsetMs, toDateKey } from './zoned';
 
 export type LocalDateState = {
   currentLocalDate: Date;
-  currentLocalDateKey: string;
+  currentLocalDateKey: DateKey;
   currentTimeZone: string;
   currentUtcOffsetMinutes: number;
 };

@@ -12,21 +12,38 @@ export function createAuthSessionStoreStub(initialStatus: AuthStatus = 'authenti
   let store = createAuthSessionStore(createAuthSessionState(initialStatus));
   const listeners = new Set<() => void>();
 
+  const notify = () => listeners.forEach((listener) => listener());
   const stub: AuthSessionStore & { setStatus(status: AuthStatus): void } = {
-    getState: () => store.getState(),
+    getSnapshot: () => store.getSnapshot(),
     subscribe: (listener) => {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
       };
     },
-    dispatch: (event) => {
-      store.dispatch(event);
-      listeners.forEach((listener) => listener());
+    resolveBoot: (status) => {
+      store.resolveBoot(status);
+      notify();
+    },
+    failBoot: () => {
+      store.failBoot();
+      notify();
+    },
+    signIn: () => {
+      store.signIn();
+      notify();
+    },
+    signOut: () => {
+      store.signOut();
+      notify();
+    },
+    expire: () => {
+      store.expire();
+      notify();
     },
     setStatus: (status) => {
       store = createAuthSessionStore(createAuthSessionState(status));
-      listeners.forEach((listener) => listener());
+      notify();
     },
   };
   return stub;

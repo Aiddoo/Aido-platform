@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { ArrowRightIcon, Box, ListRow } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
@@ -20,6 +21,7 @@ export function TodoActionRow({
   hasArrow = false,
   ...pressableProps
 }: TodoActionRowProps) {
+  const fontScaledSize = useFontScaledSize();
   return (
     <PressableFeedback accessibilityRole="button" {...pressableProps}>
       <ListRow
@@ -44,7 +46,11 @@ export function TodoActionRow({
         }
         right={
           hasArrow ? (
-            <ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />
+            <ArrowRightIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-gray-7"
+            />
           ) : undefined
         }
       />

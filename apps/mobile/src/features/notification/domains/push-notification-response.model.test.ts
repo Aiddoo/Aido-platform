@@ -1,3 +1,5 @@
+import { fromEpochMs } from '@src/shared/date/instant';
+
 import { createPushNotificationResponse } from '../__tests__/notification.fixtures';
 import {
   hasHandledResponse,
@@ -22,7 +24,8 @@ describe('PushNotificationResponsePolicy.isMarketingOptOut', () => {
 });
 
 describe('PushNotificationResponsePolicy.getResponseAction', () => {
-  const NOW = 1_000_000_000;
+  const NOW_MS = 1_000_000_000;
+  const NOW = fromEpochMs(NOW_MS);
   const DEFAULT_TAP = createPushNotificationResponse({ receivedAt: NOW });
 
   it.each(['loading', 'locked'] as const)(
@@ -82,7 +85,7 @@ describe('PushNotificationResponsePolicy.getResponseAction', () => {
     // When
     const action = PushNotificationResponsePolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'authenticated',
-      now: NOW + 10 * 60_000,
+      now: fromEpochMs(NOW_MS + 10 * 60_000),
     });
 
     // Then
@@ -93,7 +96,7 @@ describe('PushNotificationResponsePolicy.getResponseAction', () => {
     // When
     const action = PushNotificationResponsePolicy.getResponseAction(DEFAULT_TAP, {
       authStatus: 'authenticated',
-      now: NOW + 10 * 60_000 + 1,
+      now: fromEpochMs(NOW_MS + 10 * 60_000 + 1),
     });
 
     // Then
@@ -124,8 +127,8 @@ describe('PushNotificationResponsePolicy.getOpenAppState', () => {
       const response = createPushNotificationResponse({
         isLaunchResponse,
         appState,
-        activeSince,
-        receivedAt,
+        activeSince: activeSince == null ? null : fromEpochMs(activeSince),
+        receivedAt: fromEpochMs(receivedAt),
       });
 
       // When

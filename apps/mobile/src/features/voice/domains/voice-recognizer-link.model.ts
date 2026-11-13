@@ -81,7 +81,7 @@ export function shouldRestartStalledRecognizer(
 }
 
 /** 인식기와 세션의 연결 상태. 화면에 보이지 않고 시각은 호출한 쪽이 넘긴다 */
-interface VoiceRecognizerLink {
+export interface VoiceRecognizerLink {
   /** 인식기에 시작을 맡긴 뒤 `end`를 아직 받지 못했다 */
   isRunning: boolean;
   /** 지금 구간에 앱이 stop을 불렀다. 그 구간의 `end`나 다음 시작까지 유지한다 */

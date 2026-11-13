@@ -4,6 +4,7 @@ import { useTrack } from '@src/shared/analytics';
 import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { useCopyToClipboard } from '@src/shared/hooks/use-copy-to-clipboard';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -25,10 +26,10 @@ import {
   Text,
   TextSkeleton,
   TrashIcon,
-  useConfirmDialog,
   VStack,
   MenuContent,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 import { router } from 'expo-router';
@@ -51,17 +52,10 @@ import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
+import { useConfirmTodoCommentDelete } from '../hooks/use-confirm-todo-comment-delete';
 import { useTodoCommentForm } from '../hooks/use-todo-comment-form';
-import {
-  useDeleteTodoCommentMutationOptions,
-  useSetTodoCommentLikeMutationOptions,
-} from '../queries/todo-comment.mutations';
-import {
-  EMPTY_TODO_COMMENT_FORM_VALUES,
-  toEditFormValues,
-  toReplyFormValues,
-} from '../schemas/todo-comment-form.schema';
-import { findComposerTarget } from '../utils/todo-comment-form-fields';
+import { useSetTodoCommentLikeMutationOptions } from '../queries/todo-comment.mutations';
+import { toEditFormValues, toReplyFormValues } from '../schemas/todo-comment-form.schema';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import {
   playTodoCommentHeartBurst,
@@ -100,9 +94,9 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
         <TodoCommentAuthorAvatar
           author={comment.author}
           size={TodoCommentPolicy.isReply(comment) ? 'sm' : 'md'}
-          // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-          className={displayState === 'active' ? undefined : 'opacity-40'}
+          className={cn(displayState !== 'active' && 'opacity-40')}
         />
+        {/* oxlint-disable-next-line aido/spacing-scale -- 작성자 줄과 본문 사이는 글줄 간격이라 규격 단계 사이 3px을 쓴다 */}
         <VStack gap={3} flex={1} className="min-w-0">
           {match(displayState)
             .with('active', () => (
@@ -140,8 +134,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
 TodoCommentItem.Loading = function Loading({ isReply = false }: { isReply?: boolean }) {
   return (
     <HStack gap={12} align="start" className="min-w-0">
-      {/* oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400 */}
-      <Skeleton className={isReply ? 'size-7 rounded-full' : 'size-9 rounded-full'} />
+      <Skeleton className={cn('rounded-full', isReply ? 'size-7' : 'size-9')} />
       <VStack gap={6} flex={1} className="min-w-0 py-1">
         <TextSkeleton size="b4" className="w-28" />
         <TextSkeleton size="b3" className="w-4/5" />
@@ -198,8 +191,7 @@ function Meta({ text, isShrinkable = false }: { text: string; isShrinkable?: boo
       shade={7}
       numberOfLines={1}
       ellipsizeMode="tail"
-      // oxlint-disable-next-line aido/no-classname-concat -- 1.15.2 전환 #1400
-      className={isShrinkable ? 'min-w-0 shrink' : 'shrink-0 tabular-nums'}
+      className={cn(isShrinkable ? 'min-w-0 shrink' : 'shrink-0 tabular-nums')}
     >
       {text}
     </Text>
@@ -331,8 +323,7 @@ function LikeButton({ comment, scale }: { comment: TodoComment; scale: SharedVal
   const likeComment = useMutation(
     useSetTodoCommentLikeMutationOptions({ todoId: comment.todoId, commentId: comment.id }),
   );
-  // oxlint-disable-next-line aido/shared-value-accessor -- 1.15.2 전환 #1400
-  const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   const isLiked = comment.viewer.isLiked;
 
   return (
@@ -425,14 +416,12 @@ interface ActionMenuProps {
 /** ⋯와 길게 누르기가 같은 메뉴를 연다. 내 글은 수정·복사·삭제, 남의 글은 복사·신고·차단이다 */
 function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) {
   const { t } = useTranslation(['todoComment', 'moderation']);
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
   const { copy } = useCopyToClipboard();
-  const confirmDialog = useConfirmDialog();
-  const { reset, getValues } = useTodoCommentForm();
+  const confirmDelete = useConfirmTodoCommentDelete();
+  const { reset } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();
-  const deleteComment = useMutation(
-    useDeleteTodoCommentMutationOptions({ todoId: comment.todoId }),
-  );
   const author = comment.author;
   const authorName = author?.name ?? t('moderation:fallbackName');
   const hasPrimaryActions =
@@ -453,43 +442,20 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
       failureLogEvent: TODO_COMMENT_LOG_EVENT.COPY_FAILED,
     });
 
-  const confirmDelete = async () => {
-    const isConfirmed = await confirmDialog.openAsync({
-      title: t('deleteConfirm.title'),
-      description: match(comment)
-        .when(TodoCommentPolicy.canDeleteOnlyAsTodoOwner, () =>
-          t('deleteConfirm.othersDescription'),
-        )
-        .when(TodoCommentPolicy.isTombstonedOnDelete, () => t('deleteConfirm.tombstoneDescription'))
-        .otherwise(() => t('deleteConfirm.description')),
-      confirmLabel: t('deleteConfirm.confirm'),
-      confirmColor: 'danger',
-      cancelLabel: t('actions.cancel'),
-    });
-    if (isConfirmed) {
-      // 답글이나 수정 대상으로 고른 글을 지우면 작성기가 지운 글에 보내지 않게 비운다
-      if (findComposerTarget(getValues('mode'))?.id === comment.id) {
-        reset(EMPTY_TODO_COMMENT_FORM_VALUES);
-      }
-      deleteComment.mutate({ comment });
-    }
-  };
-
   return (
     <Menu isOpen={isOpen} onOpenChange={onOpenChange}>
       <Menu.Trigger asChild>
         <PressableFeedback
           hitSlop={MORE_HIT_SLOP}
           className="min-h-6 min-w-8 items-center justify-center"
-          isDisabled={deleteComment.isPending}
           testID={`todo-comment-more-${comment.id}`}
           accessibilityRole="button"
           accessibilityLabel={t('actions.more')}
-          accessibilityState={{ expanded: isOpen, busy: deleteComment.isPending }}
+          accessibilityState={{ expanded: isOpen }}
         >
           <MoreIcon
-            width={MENU_TRIGGER_ICON_SIZE}
-            height={MENU_TRIGGER_ICON_SIZE}
+            width={fontScaledSize(MENU_TRIGGER_ICON_SIZE)}
+            height={fontScaledSize(MENU_TRIGGER_ICON_SIZE)}
             colorClassName="text-gray-6"
           />
         </PressableFeedback>
@@ -521,7 +487,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
             title={t('actions.delete')}
             variant="danger"
             testID="todo-comment-delete"
-            onPress={confirmDelete}
+            onPress={() => confirmDelete(comment)}
           />
         )}
         {TodoCommentPolicy.canReportComment(comment) && (

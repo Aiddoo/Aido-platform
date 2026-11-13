@@ -7,7 +7,11 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
 import { decideNudgeThanksPreviewScope } from "../../domain/nudge-interaction.domain-service.js";
-import { nudgeInteractionNotFound, thanksTodoNotFound } from "../nudges.errors.js";
+import {
+  nudgeInteractionDisabled,
+  nudgeInteractionNotFound,
+  thanksTodoNotFound,
+} from "../nudges.errors.js";
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
 import type { NudgeThanksPreview } from "../read-models/nudge-interaction.read-model.js";
@@ -53,7 +57,7 @@ export class GetNudgeThanksPreviewUseCase {
   async execute(query: GetNudgeThanksPreviewQuery): Promise<NudgeThanksPreview> {
     const { nudgeReader, interactionConfig } = this.#dependencies;
     if (!interactionConfig.isEnabled) {
-      throw nudgeInteractionNotFound();
+      throw nudgeInteractionDisabled();
     }
     const ownerId = UserId.reconstitute(query.userId);
     const todoId = TodoId.reconstitute(query.todoId);
