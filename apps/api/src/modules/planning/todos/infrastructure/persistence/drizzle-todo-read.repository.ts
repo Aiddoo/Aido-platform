@@ -26,8 +26,9 @@ import type {
 } from "../../application/read-models/todo.read-model.js";
 import { toFriendTodoReadModel, toTodoReadModel } from "./todo-read-model.mapper.js";
 
+// 종료일 유무로 갈라야 두 갈래가 각각 `Todo_userId_startDate_endDate_idx` 범위 조회가 된다
 /** Inclusive overlap. A single supplied boundary selects that exact calendar date. */
-function todoDateCondition(
+export function todoDateCondition(
   startDate?: Temporal.PlainDate,
   endDate?: Temporal.PlainDate,
 ): SQL | undefined {

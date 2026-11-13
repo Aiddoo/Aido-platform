@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, count, eq, gte, isNull, lte, or } from "drizzle-orm";
+import { and, count, eq, gte, isNotNull, isNull, lte, or } from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
 import { type Database, DRIZZLE } from "#api/platform/database/database.client";
@@ -21,10 +21,10 @@ export class DrizzleTodoCompletionStatsReader implements TodoCompletionStatsRead
   }
 
   async countForDay(userId: UserId, date: Temporal.PlainDate): Promise<TodoCompletionStats> {
-    // 여러 날 할 일은 시작일부터 종료일까지 모든 날에 센다(planning의 날짜 조회와 같은 겹침 규칙)
-    const spansDay = and(
-      lte(todo.startDate, date),
-      or(gte(todo.endDate, date), and(isNull(todo.endDate), gte(todo.startDate, date))),
+    // planning 날짜 조회(todoDateCondition)와 같은 겹침 규칙·모양이다. 두 갈래라야 날짜 인덱스를 탄다
+    const spansDay = or(
+      and(isNotNull(todo.endDate), lte(todo.startDate, date), gte(todo.endDate, date)),
+      and(isNull(todo.endDate), eq(todo.startDate, date)),
     );
     const groups = await this.#db
       .select({ completed: todo.completed, count: count() })
