@@ -92,6 +92,23 @@ workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `script
 
 새 cursor를 발급한 API를 이전 형식으로 되돌리면 클라이언트가 첫 페이지부터 다시 조회해야 할 수 있다. 공개 routing/payload·개인정보 보정처럼 API와 스키마가 함께 바뀌는 릴리스는 그 릴리스 노트(`docs/releases`)의 제한을 함께 확인한다.
 
+## 서버 관리 (보안 패치·재부팅·Docker)
+
+`/var/run/reboot-required`가 생기거나 한 달이 지나면 사용이 적은 시간(KST 새벽)에 한다. 야간 백업 cron(`~/apps/backup.sh`, 03:00 UTC)과 겹치지 않게 한다. 재부팅은 1분 안팎 멈추고, 컨테이너는 `restart: unless-stopped`로 다시 뜬다. 멈춘 동안의 리마인더는 sweep이 따라잡는다([Job과 종료](#job과-종료)).
+
+```sh
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get -y \
+  -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade --with-new-pkgs
+docker image prune -f && docker builder prune -af   # :latest·:rollback 두 세대만 남긴다(deploy.sh와 같은 모델)
+sudo systemctl reboot
+```
+
+- 확인: `uname -r`(새 커널), `docker ps`(healthy), `curl -s 127.0.0.1:8080/health`, 5분 안에 큐 작업이 completed로 쌓이는지, `free -m`(스왑), `crontab -l`(백업).
+- Docker 데몬 설정은 [docker-daemon.json](../../../scripts/ops/docker-daemon.json)이 정본이다. `/etc/docker/daemon.json`에 두고 `sudo dockerd --validate --config-file /etc/docker/daemon.json`으로 확인한다. `live-restore`가 켜져 있으면 데몬을 재시작해도 컨테이너가 계속 돈다.
+- 손으로 만든 이미지 태그(`pre-<버전>` 등)는 그 버전 롤백이 필요 없어지면 지운다. 롤백은 `:rollback` 한 세대다.
+- `REDIS_URL`은 `CACHE_TYPE=redis`로 여러 대를 운영할 때만 둔다([확장](scaling.md#인스턴스를-2대-이상으로-늘릴-때)). 큐는 pg-boss라 Redis가 필요 없다.
+
 ## 공개 버전과 env 반영
 
 env 목록과 규칙은 [설정](configuration.md), 운영 경보를 사람에게 보내는 Sentry 규칙은 [관측](observability.md#sentry-무료-플랜-운영)에 있다.

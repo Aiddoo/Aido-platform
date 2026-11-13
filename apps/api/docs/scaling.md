@@ -6,6 +6,8 @@
 
 - 운영은 API 컨테이너 1대(512MB, 힙 384MiB)와 RDS `db.t4g.micro` 하나다. 앱 풀 10 + pg-boss 3, 7일 최대 연결 17, `max_connections` 79.
 - 병목은 연결 수가 아니라 RDS 메모리(여유 약 55MB, 스왑 약 80MB)다. 연결 하나가 수 MB를 쓰므로 풀을 키우지 않는다.
+- EC2는 2 vCPU·RAM 1.8GB이고 API 컨테이너는 CPU 약 6%다. 실제 큐 작업은 분당 최대 26건, 처리 시간은 수십 ms라 워커가 동시에 1~2개만 돈다.
+- `CACHE_TYPE=memory`이고 운영 env의 `REDIS_URL`은 비워 둔다(큐를 pg-boss로 옮긴 뒤 연결 0). 여러 대로 늘릴 때 아래 체크리스트대로 다시 켠다.
 
 ## 캐시
 
